@@ -1,0 +1,26 @@
+#
+# Copyright (c) 2014, Facebook, Inc.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree. An additional grant
+# of patent rights can be found in the PATENTS file in the same directory.
+#
+# Examples of using the ThreatExchange PHP API
+#
+
+
+#
+# CLI Examples
+#
+
+# Searches all ThreatExchange malware for the strings in 'query_file.example'
+$ php search/search.php -t malware -f examples/query_file.example
+
+# Searches all ThreatExchange indicators for 'blackbox'
+$ php search/search.php -t indicators -q blackbox
+
+# Searches all ThreatExchange malware created in the defined time window,
+# using UNIX style timestamps
+$ php search/search.php -t malware -s 1403209270 -u 1403210270
+
