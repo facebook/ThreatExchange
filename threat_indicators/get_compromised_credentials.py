@@ -38,6 +38,7 @@ def get_query(options):
 
     fields = ({
         'access_token' : FB_APP_ID + '|' + FB_ACCESS_TOKEN,
+        'threat_type': 'COMPROMISED_CREDENTIAL',
         'type' : 'EMAIL_ADDRESS',
         'fields' : 'indicator,credentials',
         'since' : options.since,
