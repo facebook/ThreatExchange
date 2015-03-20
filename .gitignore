@@ -1,0 +1,5 @@
+*.swp
+*.pyc
+pytx/build
+pytx/dist
+pytx/pytx.egg-info

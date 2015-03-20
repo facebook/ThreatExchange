@@ -25,7 +25,7 @@ setup(
     ],
     keywords="facebook threatexchange",
     url='https://www.github.com/facebook/ThreatExchange',
-    packages=find_packages(excluse=['docs', 'tests']),
+    packages=find_packages(exclude=['docs', 'tests']),
     install_requires=['requests'],
     scripts=[],
 )
