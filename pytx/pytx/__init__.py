@@ -107,6 +107,8 @@ class pytx(object):
         return results
 
     def _fetch_generator(self, url, total, params={}):
+        if total is None:
+            total = -1
         if total == 0:
             yield None
         next_ = True
@@ -129,11 +131,11 @@ class pytx(object):
                          since=None, until=None):
         url = self._URL + self._MALWARE_ANALYSES
         params = self.build_get_parameters(
-            limit,
-            text,
-            strict_text,
-            since,
-            until
+            text=text,
+            strict_text=strict_text,
+            limit=limit,
+            since=since,
+            until=until
         )
         return self._fetch_generator(url, limit, params=params)
 
@@ -146,11 +148,11 @@ class pytx(object):
                           limit=None, since=None, until=None):
         url = self._URL + self._THREAT_INDICATORS
         params = self.build_get_parameters(
-            limit,
-            text,
-            type_,
-            strict_text,
-            since,
-            until
+            text=text,
+            strict_text=strict_text,
+            limit=limit,
+            since=since,
+            until=until,
+            type_=type_
         )
         return self._fetch_generator(url, limit, params=params)
