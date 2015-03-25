@@ -72,7 +72,7 @@ class pytx(object):
 
         return self._access_token
 
-    def is_timestamp(self, timestamp):
+    def _is_timestamp(self, timestamp):
         """
         Verifies the timestamp provided is a valid timestamp.
 
@@ -87,7 +87,7 @@ class pytx(object):
         except ValueError, e:
             raise pytxValueError(e)
 
-    def validate_limit(self, limit):
+    def _validate_limit(self, limit):
         """
         Verifies the limit provided is valid and within the max limit Facebook
         will allow you to use (currently 5000).
@@ -105,7 +105,7 @@ class pytx(object):
             raise pytxValueError("limit cannot exceed 5000 (default: 500)")
         return
 
-    def validate_get(self, limit, since, until):
+    def _validate_get(self, limit, since, until):
         """
         Executes validation for the GET parameters: limit, since, until.
 
@@ -118,13 +118,13 @@ class pytx(object):
         """
 
         if since:
-            self.is_timestamp(since)
+            self._is_timestamp(since)
         if until:
-            self.is_timestamp(until)
+            self._is_timestamp(until)
         if limit:
-            self.validate_limit(limit)
+            self._validate_limit(limit)
 
-    def get_strict(self, strict_text):
+    def _get_strict(self, strict_text):
         """
         If strict_text is provided, sanitize it.
 
@@ -147,7 +147,7 @@ class pytx(object):
             strict = None
         return strict
 
-    def build_get_parameters(self, text=None, strict_text=None, type_=None,
+    def _build_get_parameters(self, text=None, strict_text=None, type_=None,
                              limit=None, since=None, until=None):
         """
         Validate arguments and convert them into GET parameters.
@@ -167,8 +167,8 @@ class pytx(object):
         :returns: dict
         """
 
-        self.validate_get(limit, since, until)
-        strict = self.get_strict(strict_text)
+        self._validate_get(limit, since, until)
+        strict = self._get_strict(strict_text)
         params = {
             'access_token': self._access_token,
         }
@@ -244,6 +244,8 @@ class pytx(object):
                 url = next_
                 params = {}
 
+    # GET REQUESTS
+
     def get_object(self, url, params={}):
         """
         Get the details for a single object.
@@ -277,7 +279,7 @@ class pytx(object):
         """
 
         url = self._URL + self._MALWARE_ANALYSES + '/'
-        params = self.build_get_parameters(
+        params = self._build_get_parameters(
             text=text,
             strict_text=strict_text,
             limit=limit,
@@ -294,7 +296,7 @@ class pytx(object):
         """
 
         url = self._URL + self._THREAT_EXCHANGE_MEMBERS + '/'
-        params = self.build_get_parameters()
+        params = self._build_get_parameters()
         return self._fetch_generator(url, -1, params=params)
 
     def threat_indicators(self, text, strict_text=False, type_=None,
@@ -318,7 +320,7 @@ class pytx(object):
         """
 
         url = self._URL + self._THREAT_INDICATORS + '/'
-        params = self.build_get_parameters(
+        params = self._build_get_parameters(
             text=text,
             strict_text=strict_text,
             limit=limit,
@@ -350,7 +352,7 @@ class pytx(object):
         url = self._URL + object_id + '/'
         if relationship:
             url = url + relationship + '/'
-        params = self.build_get_parameters()
+        params = self._build_get_parameters()
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):
@@ -361,3 +363,33 @@ class pytx(object):
             return self._fetch_generator(url, -1, params=params)
         else:
             return self.get_object(url, params=params)
+
+    # POST REQUESTS
+
+    def create_threat_indicator(self, params):
+        # create a new Threat Indicator using the params dictionary
+        return
+
+    def edit(self, object_id, params):
+        # edit this object using the params dictionary
+        return
+
+    def expire(self, object_id, timestamp):
+        # set this object's expired_on to the timestamp to expire it
+        return
+
+    def false_positive(self, object_id):
+        # use vocabulary.Status to set this object's status to NON_MALICIOUS
+        return
+
+    def add_relationship(self, object_id_1, object_id_2):
+        # use HTTP POST and create a relationship between two objects
+        # /<object_id_1>/related?related_id=<object_id_2>
+        return
+
+    # DELETE REQUESTS
+
+    def delete_relationship(self, object_id_1, object_id_2):
+        # use HTTP DELETE and remove the relationship between two objects
+        # /<object_id_1>/related?related_id=<object_id_2>
+        return
