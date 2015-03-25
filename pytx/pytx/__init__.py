@@ -127,9 +127,13 @@ class pytx(object):
                 url = next_
                 params = {}
 
+    def get_object(self, url, params={}):
+        result = self._fetch(url, params)
+        return result
+
     def malware_analyses(self, text, strict_text=False, limit=None,
                          since=None, until=None):
-        url = self._URL + self._MALWARE_ANALYSES
+        url = self._URL + self._MALWARE_ANALYSES + '/'
         params = self.build_get_parameters(
             text=text,
             strict_text=strict_text,
@@ -140,13 +144,13 @@ class pytx(object):
         return self._fetch_generator(url, limit, params=params)
 
     def threat_exchange_members(self):
-        url = self._URL + self._THREAT_EXCHANGE_MEMBERS
+        url = self._URL + self._THREAT_EXCHANGE_MEMBERS + '/'
         params = self.build_get_parameters()
         return self._fetch_generator(url, -1, params=params)
 
     def threat_indicators(self, text, strict_text=False, type_=None,
                           limit=None, since=None, until=None):
-        url = self._URL + self._THREAT_INDICATORS
+        url = self._URL + self._THREAT_INDICATORS + '/'
         params = self.build_get_parameters(
             text=text,
             strict_text=strict_text,
@@ -156,3 +160,21 @@ class pytx(object):
             type_=type_
         )
         return self._fetch_generator(url, limit, params=params)
+
+    def objects(self, object_id, fields=None, relationship=None):
+        if object_id is None or len(object_id) < 1:
+            raise pytxValueError("Must provide an object_id")
+        url = self._URL + object_id + '/'
+        if relationship:
+            url = url + relationship + '/'
+        params = self.build_get_parameters()
+        if isinstance(fields, basestring):
+            fields = fields.split(',')
+        if fields is not None and not isinstance(fields, list):
+            raise pytxValueError("fields must be a list")
+        if fields is not None:
+            params['fields'] = ','.join(f.strip() for f in fields)
+        if relationship:
+            return self._fetch_generator(url, -1, params=params)
+        else:
+            return self.get_object(url, params=params)
