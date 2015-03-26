@@ -16,6 +16,8 @@ class Connection(object):
     DROPPED_BY          = 'dropped_by'
     FAMILIES            = 'families'
     ID                  = Common.ID
+    MALWARE_ANALYSES    = 'malware_analyses'
+    RELATED             = 'related'
     STATUS              = Common.STATUS
     THREAT_INDICATORS   = 'threat_indicators'
     VARIANTS            = 'variants'

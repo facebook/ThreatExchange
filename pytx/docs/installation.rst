@@ -26,4 +26,4 @@ Besides the Python Standard Library, pytx relies on the following Python
 libraries which can be installed with ``pip`` or by manually downloading the
 package from PyPI:
 
-* requests_ - Python HTTP for Humans.
+* requests - Python HTTP for Humans.
