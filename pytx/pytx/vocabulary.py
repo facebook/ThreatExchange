@@ -1,3 +1,86 @@
+class Common(object):
+
+    ADDED_ON        = 'added_on'
+    ID              = 'id'
+    SHARE_LEVEL     = 'share_level'
+    STATUS          = 'status'
+    SUBMITTER_COUNT = 'submitter_count'
+    VICTIM_COUNT    = 'victim_count'
+
+
+class Connection(object):
+
+    ADDED_ON            = Common.ADDED_ON
+    CRX                 = 'crx'
+    DROPPED             = 'dropped'
+    DROPPED_BY          = 'dropped_by'
+    FAMILIES            = 'families'
+    ID                  = Common.ID
+    STATUS              = Common.STATUS
+    THREAT_INDICATORS   = 'threat_indicators'
+    VARIANTS            = 'variants'
+    VICTIM_COUNT        = Common.VICTIM_COUNT
+
+
+class ExchangeMember(object):
+
+    ID      = Common.ID
+    NAME    = 'name'
+
+
+class Malware(object):
+
+    ADDED_ON        = Common.ADDED_ON
+    CRX             = 'crx'
+    ID              = Common.ID
+    IMPHASH         = 'imphash'
+    MD5             = 'md5'
+    PASSWORD        = 'password'
+    PE_RICH_HEADER  = 'pe_rich_header'
+    SAMPLE          = 'sample'
+    SHA1            = 'sha1'
+    SHA256          = 'sha256'
+    SHARE_LEVEL     = Common.SHARE_LEVEL
+    SSDEEP          = 'ssdeep'
+    STATUS          = Common.STATUS
+    SUBMITTER_COUNT = Common.SUBMITTER_COUNT
+    VICTIM_COUNT    = Common.VICTIM_COUNT
+    XPI             = 'xpi'
+
+
+class Paging(object):
+
+    PAGING  = 'paging'
+    CURSORS = 'cursors'
+    NEXT    = 'next'
+
+
+class PagingCursor(object):
+
+    BEFORE  = 'before'
+    AFTER   = 'after'
+
+class ThreatIndicator(object):
+
+    ADDED_ON        = Common.ADDED_ON
+    CONFIDENCE      = 'confidence'
+    CREDENTIALS     = 'credentials'
+    DESCRIPTION     = 'description'
+    EXPIRED_ON      = 'expired_on'
+    ID              = Common.ID
+    INDICATOR       = 'indicator'
+    PRIVACY_TYPE    = 'privacy_type'
+    PRIVACY_MEMBERS = 'privacy_members'
+    REPORT_URLS     = 'report_urls'
+    SEVERITY        = 'severity'
+    SHARE_LEVEL     = Common.SHARE_LEVEL
+    STATUS          = Common.STATUS
+    SUBMITTER_COUNT = Common.SUBMITTER_COUNT
+    THREAT_TYPE     = 'threat_type'     # Used in POST
+    THREAT_TYPES    = 'threat_types'    # Returned in GET
+    TYPE            = 'type'
+
+
 class ThreatType(object):
 
     BAD_ACTOR               = "BAD_ACTOR"

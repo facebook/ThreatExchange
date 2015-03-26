@@ -1,6 +1,8 @@
 import json
 import requests
 
+import vocabulary as v
+
 
 class pytxValueError(Exception):
     """
@@ -32,13 +34,34 @@ class pytx(object):
     """
 
     _URL                        = 'https://graph.facebook.com/'
+    _ACCESS_TOKEN               = 'access_token'
+    _DEFAULT_LIMIT              = 500
+    _MAX_LIMIT                  = 5000
 
     # GET
-    _MALWARE_ANALYSES           = 'malware_analyses'
-    _THREAT_EXCHANGE_MEMBERS    = 'threat_exchange_members'
-    _THREAT_INDICATORS          = 'threat_indicators'
+    _MALWARE_ANALYSES           = 'malware_analyses/'
+    _THREAT_EXCHANGE_MEMBERS    = 'threat_exchange_members/'
+    _THREAT_INDICATORS          = 'threat_indicators/'
+
+    _LIMIT                      = 'limit'
+    _TEXT                       = 'text'
+    _STRICT_TEXT                = 'strict_text'
+    _SINCE                      = 'since'
+    _UNTIL                      = 'until'
+    _TYPE                       = 'type'
+    _FIELDS                     = 'fields'
+
+    _DATA                       = 'data'
+    _PAGING                     = v.Paging.PAGING
+    _NEXT                       = v.Paging.NEXT
+
+    _NO_TOTAL                   = -1
+    _MIN_TOTAL                  = 0
+    _DEC_TOTAL                  = 1
 
     #POST
+    _RELATED                    = '/related/'
+    _RELATED_ID                 = 'related_id'
 
     def __init__(self, app_id, app_secret):
         """
@@ -101,8 +124,11 @@ class pytx(object):
             int(limit)
         except ValueError, e:
             raise pytxValueError(e)
-        if limit > 5000:
-            raise pytxValueError("limit cannot exceed 5000 (default: 500)")
+        if limit > self._MAX_LIMIT:
+            raise pytxValueError(
+                "limit cannot exceed %s (default: %s)" % (self._MAX_LIMIT,
+                                                          self._DEFAULT_LIMIT)
+            )
         return
 
     def _validate_get(self, limit, since, until):
@@ -169,24 +195,39 @@ class pytx(object):
 
         self._validate_get(limit, since, until)
         strict = self._get_strict(strict_text)
-        params = {
-            'access_token': self._access_token,
-        }
+        params = {}
         if text:
-            params['text'] = text
+            params[self._TEXT] = text
         if strict is not None:
-            params['strict_text'] = strict
+            params[self._STRICT_TEXT] = strict
         if type_:
-            params['type'] = type_
+            params[self._TYPE] = type_
         if limit:
-            params['limit'] = limit
+            params[self._LIMIT] = limit
         if since:
-            params['since'] = since
+            params[self._SINCE] = since
         if until:
-            params['until'] = until
+            params[self._UNTIL] = until
         return params
 
-    def _fetch(self, url, params={}):
+    def _handle_results(self, resp):
+        """
+        Handle the results of a request.
+
+        :param resp: The HTTP response.
+        :type resp: response object
+        :returns: dict (using json.loads())
+        """
+
+        if resp.status_code != 200:
+            raise pytxFetchError("Response code: %s" % resp.status_code)
+        try:
+            results = json.loads(resp.text)
+        except:
+            raise pytxFetchError("Unable to convert response to JSON.")
+        return results
+
+    def _get(self, url, params={}):
         """
         Send the GET request.
 
@@ -197,16 +238,41 @@ class pytx(object):
         :returns: dict (using json.loads())
         """
 
+        params[self._ACCESS_TOKEN] = self._access_token
         resp = requests.get(url, params=params)
-        if resp.status_code != 200:
-            raise pytxFetchError("Response code: %s" % resp.status_code)
-        try:
-            results = json.loads(resp.text)
-        except:
-            raise pytxFetchError("Unable to convert response to JSON.")
-        return results
+        return self._handle_results(resp)
 
-    def _fetch_generator(self, url, total, params={}):
+    def _post(self, url, params={}):
+        """
+        Send the POST request.
+
+        :param url: The URL to send the POST request to.
+        :type url: str
+        :param params: The POST parameters to send in the request.
+        :type params: dict
+        :returns: dict (using json.loads())
+        """
+
+        params[self._ACCESS_TOKEN] = self._access_token
+        resp = requests.post(url, params=params)
+        return self._handle_results(resp)
+
+    def _delete(self, url, params={}):
+        """
+        Send the DELETE request.
+
+        :param url: The URL to send the DELETE request to.
+        :type url: str
+        :param params: The DELETE parameters to send in the request.
+        :type params: dict
+        :returns: dict (using json.loads())
+        """
+
+        params[self._ACCESS_TOKEN] = self._access_token
+        resp = requests.delete(url, params=params)
+        return self._handle_results(resp)
+
+    def _get_generator(self, url, total, params={}):
         """
         Generator for managing GET requests. For each GET request it will yield
         the next object in the results until there are no more objects. If the
@@ -225,19 +291,19 @@ class pytx(object):
         """
 
         if total is None:
-            total = -1
-        if total == 0:
+            total = self._NO_TOTAL
+        if total == self._MIN_TOTAL:
             yield None
         next_ = True
         while next_:
-            results = self._fetch(url, params)
-            for data in results['data']:
-                if total == 0:
+            results = self._get(url, params)
+            for data in results[self._DATA]:
+                if total == self._MIN_TOTAL:
                     raise StopIteration
                 yield data
-                total -= 1
+                total -= self._DEC_TOTAL
             try:
-                next_ = results['paging']['next']
+                next_ = results[self._PAGING][self._NEXT]
             except:
                 next_ = False
             if next_:
@@ -257,7 +323,7 @@ class pytx(object):
         :returns: dict (using json.loads())
         """
 
-        result = self._fetch(url, params)
+        result = self._get(url, params)
         return result
 
     def malware_analyses(self, text, strict_text=False, limit=None,
@@ -278,7 +344,7 @@ class pytx(object):
         :returns: Generator
         """
 
-        url = self._URL + self._MALWARE_ANALYSES + '/'
+        url = self._URL + self._MALWARE_ANALYSES
         params = self._build_get_parameters(
             text=text,
             strict_text=strict_text,
@@ -286,7 +352,7 @@ class pytx(object):
             since=since,
             until=until
         )
-        return self._fetch_generator(url, limit, params=params)
+        return self._get_generator(url, limit, params=params)
 
     def threat_exchange_members(self):
         """
@@ -295,9 +361,9 @@ class pytx(object):
         :returns: Generator
         """
 
-        url = self._URL + self._THREAT_EXCHANGE_MEMBERS + '/'
+        url = self._URL + self._THREAT_EXCHANGE_MEMBERS
         params = self._build_get_parameters()
-        return self._fetch_generator(url, -1, params=params)
+        return self._get_generator(url, self._NO_TOTAL, params=params)
 
     def threat_indicators(self, text, strict_text=False, type_=None,
                           limit=None, since=None, until=None):
@@ -319,7 +385,7 @@ class pytx(object):
         :returns: Generator
         """
 
-        url = self._URL + self._THREAT_INDICATORS + '/'
+        url = self._URL + self._THREAT_INDICATORS
         params = self._build_get_parameters(
             text=text,
             strict_text=strict_text,
@@ -328,68 +394,140 @@ class pytx(object):
             until=until,
             type_=type_
         )
-        return self._fetch_generator(url, limit, params=params)
+        return self._get_generator(url, limit, params=params)
 
-    def objects(self, object_id, fields=None, relationship=None):
+    def objects(self, object_id, fields=None, connection=None):
         """
         Get object details. Allows you to limit the fields returned in the
-        object's details. Also allows you to provide a relationship. If a
-        relationship is provided, the related objects will be returned instead
+        object's details. Also allows you to provide a connection. If a
+        connection is provided, the related objects will be returned instead
         of the object itself.
 
         :param object_id: The object-id of the object to get details for.
         :type object_id: str
         :param fields: The fields to limit the details to.
         :type fields: None, str, list
-        :param relationship: The relationship to find other related objects with.
-        :type relationship: None, str
+        :param connection: The connection to find other related objects with.
+        :type connection: None, str
         :returns: dict (using json.loads()) for a single object, Generator if
-                  using relationships
+                  using connections
         """
 
         if object_id is None or len(object_id) < 1:
             raise pytxValueError("Must provide an object_id")
         url = self._URL + object_id + '/'
-        if relationship:
-            url = url + relationship + '/'
+        if connection:
+            url = url + connection + '/'
         params = self._build_get_parameters()
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):
             raise pytxValueError("fields must be a list")
         if fields is not None:
-            params['fields'] = ','.join(f.strip() for f in fields)
-        if relationship:
-            return self._fetch_generator(url, -1, params=params)
+            params[self._FIELDS] = ','.join(f.strip() for f in fields)
+        if connection:
+            return self._get_generator(url, self._NO_TOTAL, params=params)
         else:
             return self.get_object(url, params=params)
 
     # POST REQUESTS
 
     def create_threat_indicator(self, params):
-        # create a new Threat Indicator using the params dictionary
-        return
+        """
+        Use HTTP POST and create a new Threat Indicator. The params should be a
+        dictionary of keys (fields) and values (the value to set the field to).
+
+        :param params: The fields to set and values to set them to.
+        :type params: dict
+        :returns: dict (using json.loads())
+        """
+
+        url = self._URL + self._THREAT_INDICATORS
+        return self._post(url, params=params)
 
     def edit(self, object_id, params):
-        # edit this object using the params dictionary
-        return
+        """
+        Use HTTP POST and edit this object. The params should be a dictionary
+        of keys (fields to change) and values (the value to set the field to).
+
+        :param object_id: The object-id of the object to edit.
+        :type object_id: str
+        :param params: The fields to change and values to set them to.
+        :type params: dict
+        :returns: dict (using json.loads())
+        """
+
+        url = self._URL + object_id + '/'
+        return self._post(url, params=params)
 
     def expire(self, object_id, timestamp):
-        # set this object's expired_on to the timestamp to expire it
-        return
+        """
+        Expire a Threat Indicator by setting the 'expired_on' timestamp.
+
+        :param object_id: The object-id of the object to expire.
+        :type object_id: str
+        :param timestamp: The timestamp to set for an expiration date.
+        :type timestamp: str
+        """
+
+        self._is_timestamp(timestamp)
+        params = {
+            v.ThreatIndicator.EXPIRED_ON: timestamp
+        }
+        return self.edit(object_id, params=params)
 
     def false_positive(self, object_id):
-        # use vocabulary.Status to set this object's status to NON_MALICIOUS
+        """
+        Mark an object as a false positive by setting the status to
+        NON_MALICIOUS.
+
+        :param object_id: The object-id of the object to mark.
+        :type object_id: str
+        """
+
+        params = {
+            v.Common.STATUS: v.Status.NON_MALICIOUS
+        }
+        return self.edit(object_id, params=params)
+
         return
 
-    def add_relationship(self, object_id_1, object_id_2):
-        # use HTTP POST and create a relationship between two objects
-        # /<object_id_1>/related?related_id=<object_id_2>
-        return
+    def add_connection(self, object_id_1, object_id_2):
+        """
+        Use HTTP POST and add a connection between two objects.
+
+            /<object_id_1>/related?related_id=<object_id_2>
+
+        :param object_id_1: The first object-id in the connection.
+        :type object_id_1: str
+        :param object_id_2: The second object-id in the connection.
+        :type object_id_2: str
+        :returns: dict (using json.loads())
+        """
+
+        url = self._URL + object_id_1 + self._RELATED
+        params = {
+            self._RELATED_ID: object_id_2
+        }
+        return self._post(url, params=params)
 
     # DELETE REQUESTS
 
-    def delete_relationship(self, object_id_1, object_id_2):
-        # use HTTP DELETE and remove the relationship between two objects
-        # /<object_id_1>/related?related_id=<object_id_2>
-        return
+    def delete_connection(self, object_id_1, object_id_2):
+        """
+        Use HTTP DELETE and remove the connection between two objects.
+
+            /<object_id_1>/related?related_id=<object_id_2>
+
+        :param object_id_1: The first object-id in the connection.
+        :type object_id_1: str
+        :param object_id_2: The second object-id in the connection.
+        :type object_id_2: str
+        :returns: dict (using json.loads())
+        """
+
+        url = self._URL + object_id_1 + self._RELATED
+        params = {
+            self._RELATED_ID: object_id_2
+        }
+        return self._delete(url, params=params)
