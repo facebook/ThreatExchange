@@ -95,6 +95,13 @@ class PagingCursor(object):
     BEFORE  = 'before'
     AFTER   = 'after'
 
+
+class ThreatExchangeMember(object):
+
+    ID      = Common.ID
+    NAME    = 'name'
+
+
 class ThreatIndicator(object):
 
     ADDED_ON        = Common.ADDED_ON
