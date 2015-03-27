@@ -22,7 +22,7 @@ class ThreatExchangeMember(object):
 
     def __init__(self, app_id=None, app_secret=None, **kwargs):
         if app_id and app_secret:
-            self._access_token = app_id + "|" + app_secret
+            self.setup(app_id, app_secret)
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 

@@ -22,7 +22,9 @@ class Common(object):
     _new = True
     _access_token = None
 
-    def __init__(self, **kwargs):
+    def __init__(self, app_id=None, app_secret=None, **kwargs):
+        if app_id and app_secret:
+            self.setup(app_id, app_secret)
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
@@ -34,6 +36,9 @@ class Common(object):
                 self._RELATED = self._DETAILS + t.RELATED
             if name not in self._changed and name not in self._internal:
                 self._changed.append(name)
+
+    def set(self, name, value):
+        self.__setattr__(name, value)
 
     def setup(self, app_id, app_secret):
         self._access_token = app_id + "|" + app_secret
