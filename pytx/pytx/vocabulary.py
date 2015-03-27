@@ -1,3 +1,36 @@
+class ThreatExchange(object):
+
+    URL             = 'https://graph.facebook.com/'
+    ACCESS_TOKEN    = 'access_token'
+    DEFAULT_LIMIT   = 500
+    MAX_LIMIT       = 5000
+
+    # GET
+    MALWARE_ANALYSES        = 'malware_analyses/'
+    THREAT_EXCHANGE_MEMBERS = 'threat_exchange_members/'
+    THREAT_INDICATORS       = 'threat_indicators/'
+
+    LIMIT       = 'limit'
+    TEXT        = 'text'
+    STRICT_TEXT = 'strict_text'
+    SINCE       = 'since'
+    UNTIL       = 'until'
+    TYPE        = 'type'
+    FIELDS      = 'fields'
+
+    DATA        = 'data'
+    PAGING      = 'paging'
+    NEXT        = 'next'
+
+    NO_TOTAL    = -1
+    MIN_TOTAL   = 0
+    DEC_TOTAL   = 1
+
+    # POST
+    RELATED     = 'related/'
+    RELATED_ID  = 'related_id'
+
+
 class Common(object):
 
     ADDED_ON        = 'added_on'
