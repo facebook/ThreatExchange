@@ -379,7 +379,7 @@ class Common(object):
         """
 
         self._is_timestamp(timestamp)
-        self.__setattr(ti.EXPIRED_ON, timestamp)
+        self.set(ti.EXPIRED_ON, timestamp)
         self.save()
 
     def false_positive(self, object_id):
@@ -391,7 +391,7 @@ class Common(object):
         :type object_id: str
         """
 
-        self.__setattr(c.STATUS, s.NON_MALICIOUS)
+        self.set(c.STATUS, s.NON_MALICIOUS)
         self.save()
 
     def add_connection(self, object_id):
