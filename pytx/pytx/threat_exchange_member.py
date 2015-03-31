@@ -23,6 +23,11 @@ class ThreatExchangeMember(object):
     _access_token = None
 
     def __init__(self, **kwargs):
+        """
+        Initialize the object. Set the _access_token and any attributes that
+        were provided.
+        """
+
         self._access_token = init.__ACCESS_TOKEN__
         if self._access_token == None:
             raise pytxInitError("Must init() before instantiating")
@@ -30,8 +35,24 @@ class ThreatExchangeMember(object):
             self.__setattr__(name, value)
 
     def __setattr__(self, name, value):
+        """
+        Override __setattr__. We check to make sure the attribute is in _fields
+        or _internal to know it's valid.
+        """
+
         if name in self._fields or name in self._internal:
             object.__setattr__(self, name, value)
+
+    def get(self, attr):
+        """
+        Wrapper around __getattr__ making it easier to use the vocabulary to get
+        class attributes.
+
+        :param attr: The name of the attribute to get.
+        :type attr: str
+        """
+
+        self.__getattr__(attr)
 
     def _get_new(self, attrs):
         """
@@ -93,6 +114,12 @@ class ThreatExchangeMember(object):
         return self._get(self._URL)
 
     def to_dict(self):
+        """
+        Convert this object into a dictionary.
+
+        :returns: dict
+        """
+
         d = dict(
             (n, getattr(self, n, None)) for n in self._fields
         )

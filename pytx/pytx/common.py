@@ -25,6 +25,11 @@ class Common(object):
     _access_token = None
 
     def __init__(self, **kwargs):
+        """
+        Initialize the object. Set the _access_token and any attributes that
+        were provided.
+        """
+
         self._access_token = init.__ACCESS_TOKEN__
         if self._access_token == None:
             raise pytxInitError("Must init() before instantiating")
@@ -32,6 +37,16 @@ class Common(object):
             self.__setattr__(name, value)
 
     def __setattr__(self, name, value):
+        """
+        Override __setattr__. We check to make sure the attribute is in _fields
+        or _internal to know it's valid. If it is the ID being set then we will
+        set the URLs to leverage the ID (used when instantiating classes with
+        data returned from a GET request).
+
+        If the attribute was changed from a previous value, we will add it to
+        _changed in the event this is an edit.
+        """
+
         if name in self._fields or name in self._internal:
             object.__setattr__(self, name, value)
             if name == c.ID:
@@ -41,15 +56,33 @@ class Common(object):
                 self._changed.append(name)
 
     def set(self, name, value):
+        """
+        Wrapper around __setattr__ making it easier to use the vocabulary to set
+        class attributes.
+
+        :param name: The name of the attribute to set.
+        :type name: str
+        :param value: The value to set the attribute to.
+        :type value: None, int, str, bool
+        """
+
         self.__setattr__(name, value)
 
     def get(self, attr):
+        """
+        Wrapper around __getattr__ making it easier to use the vocabulary to get
+        class attributes.
+
+        :param attr: The name of the attribute to get.
+        :type attr: str
+        """
+
         self.__getattr__(attr)
 
     @property
     def access_token(self):
         """
-        Returns the combined APP-ID and APP-SECRET.
+        Returns the combined APP-ID and APP-SECRET stored during init().
 
         :returns: str
         """
@@ -57,6 +90,12 @@ class Common(object):
         return self._access_token
 
     def to_dict(self):
+        """
+        Convert this object into a dictionary.
+
+        :returns: dict
+        """
+
         d = dict(
             (n, getattr(self, n, None)) for n in self._fields
         )
@@ -68,7 +107,7 @@ class Common(object):
 
         :param attrs: The attributes to set for this new instance.
         :type attrs: dict
-        :returns: instance of self
+        :returns: new instance of self
         """
 
         n = self.__class__(**attrs)

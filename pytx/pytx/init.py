@@ -1,13 +1,24 @@
-from errors import pytxValueError
+from errors import pytxInitError
 
 
 __ACCESS_TOKEN__ = None
 
 
-def init(app_id=None, app_secret=None):
+def init(app_id, app_secret):
+    """
+    Use the app_id and app_secret to store the access_token globally for all
+    instantiated objects to leverage.
+
+    :param app_id: The APP-ID to use.
+    :type app_id: str
+    :param app_secret: The APP-SECRET to use.
+    :type app_secret: str
+    :raises: :class:`errors.pytxIniterror`
+    """
+
     global __ACCESS_TOKEN__
-    if app_id and app_secret:
+    try:
         __ACCESS_TOKEN__ = app_id + "|" + app_secret
-    else:
-        raise pytxValueError("Must provide an app_id and app_secret")
+    except Exception, e:
+        raise pytxInitError("Error generating access token: %s" % str(e))
     return
