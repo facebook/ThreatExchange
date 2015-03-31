@@ -1,11 +1,13 @@
 import json
 import requests
 
+import init
+
 from vocabulary import Common as c
 from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatIndicator as ti
-from errors import pytxFetchError, pytxValueError
+from errors import pytxFetchError, pytxValueError, pytxInitError
 
 class Common(object):
 
@@ -22,9 +24,10 @@ class Common(object):
     _new = True
     _access_token = None
 
-    def __init__(self, app_id=None, app_secret=None, **kwargs):
-        if app_id and app_secret:
-            self.setup(app_id, app_secret)
+    def __init__(self, **kwargs):
+        self._access_token = init.__ACCESS_TOKEN__
+        if self._access_token == None:
+            raise pytxInitError("Must init() before instantiating")
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
@@ -40,8 +43,8 @@ class Common(object):
     def set(self, name, value):
         self.__setattr__(name, value)
 
-    def setup(self, app_id, app_secret):
-        self._access_token = app_id + "|" + app_secret
+    def get(self, attr):
+        self.__getattr__(attr)
 
     @property
     def access_token(self):
@@ -70,7 +73,6 @@ class Common(object):
 
         n = self.__class__(**attrs)
         n._new = False
-        n._access_token = self._access_token
         return n
 
     def _is_timestamp(self, timestamp):

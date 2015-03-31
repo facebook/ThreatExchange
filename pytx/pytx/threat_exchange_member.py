@@ -1,7 +1,9 @@
 import json
 import requests
 
-from errors import pytxFetchError
+import init
+
+from errors import pytxFetchError, pytxInitError
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatExchangeMember as tem
 
@@ -20,18 +22,16 @@ class ThreatExchangeMember(object):
 
     _access_token = None
 
-    def __init__(self, app_id=None, app_secret=None, **kwargs):
-        if app_id and app_secret:
-            self.setup(app_id, app_secret)
+    def __init__(self, **kwargs):
+        self._access_token = init.__ACCESS_TOKEN__
+        if self._access_token == None:
+            raise pytxInitError("Must init() before instantiating")
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
     def __setattr__(self, name, value):
         if name in self._fields or name in self._internal:
             object.__setattr__(self, name, value)
-
-    def setup(self, app_id, app_secret):
-        self._access_token = app_id + "|" + app_secret
 
     def _get_new(self, attrs):
         """
@@ -43,7 +43,6 @@ class ThreatExchangeMember(object):
         """
 
         n = self.__class__(**attrs)
-        n._access_token = self._access_token
         return n
 
     def _handle_results(self, resp):
