@@ -3,9 +3,13 @@ import requests
 
 import init
 
-from errors import pytxFetchError, pytxInitError
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatExchangeMember as tem
+from errors import (
+    pytxFetchError,
+    pytxAttributeError,
+    pytxInitError
+)
 
 class ThreatExchangeMember(object):
 
@@ -42,6 +46,19 @@ class ThreatExchangeMember(object):
 
         if name in self._fields or name in self._internal:
             object.__setattr__(self, name, value)
+
+    def __getattr__(self, attr):
+        """
+        Get an attribute. If the attribute does not exist, return None
+        """
+
+        if attr not in self._fields and attr not in self._internal:
+            raise pytxAttributeError("%s is not a valid attribute" % attr)
+
+        try:
+            return self.__getattribute__(attr)
+        except:
+            return None
 
     def get(self, attr):
         """

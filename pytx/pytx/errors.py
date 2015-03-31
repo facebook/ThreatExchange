@@ -1,35 +1,36 @@
-class pytxInitError(Exception):
+class pytxException(Exception):
+    """
+    Generic Exception.
+    """
+
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
+
+class pytxInitError(pytxException):
     """
     Exception for when we the developer doesn't init before instantiating an
     object.
     """
 
-    def __init__(self, message):
-        self.message = message
 
-    def __str__(self):
-        return self.message
-
-
-class pytxValueError(Exception):
+class pytxAttributeError(pytxException):
     """
     Exception for when we are given a value we are not expecting or is invalid.
     """
 
-    def __init__(self, message):
-        self.message = message
 
-    def __str__(self):
-        return self.message
+class pytxValueError(pytxException):
+    """
+    Exception for when we are given a value we are not expecting or is invalid.
+    """
 
 
-class pytxFetchError(Exception):
+class pytxFetchError(pytxException):
     """
     Exception for when a GET or POST attempt fails.
     """
-
-    def __init__(self, message):
-        self.message = message
-
-    def __str__(self):
-        return self.message

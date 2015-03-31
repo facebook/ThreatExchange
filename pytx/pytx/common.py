@@ -7,7 +7,12 @@ from vocabulary import Common as c
 from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatIndicator as ti
-from errors import pytxFetchError, pytxValueError, pytxInitError
+from errors import (
+    pytxFetchError,
+    pytxAttributeError,
+    pytxValueError,
+    pytxInitError
+)
 
 class Common(object):
 
@@ -54,6 +59,19 @@ class Common(object):
                 self._RELATED = self._DETAILS + t.RELATED
             if name not in self._changed and name not in self._internal:
                 self._changed.append(name)
+
+    def __getattr__(self, attr):
+        """
+        Get an attribute. If the attribute does not exist, return None
+        """
+
+        if attr not in self._fields and attr not in self._internal:
+            raise pytxAttributeError("%s is not a valid attribute" % attr)
+
+        try:
+            return self.__getattribute__(attr)
+        except:
+            return None
 
     def set(self, name, value):
         """
