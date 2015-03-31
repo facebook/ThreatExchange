@@ -40,7 +40,7 @@ def get_query(options):
         'access_token' : FB_APP_ID + '|' + FB_ACCESS_TOKEN,
         'threat_type': 'COMPROMISED_CREDENTIAL',
         'type' : 'EMAIL_ADDRESS',
-        'fields' : 'indicator,credentials',
+        'fields' : 'indicator,passwords',
         'since' : options.since,
         'until' : options.until,
     })
@@ -57,7 +57,7 @@ def process_results(handle, data):
         return
 
     for d in data:
-        handle.write('%s:%s\n' % (d['indicator'], d['credentials'][0]))
+        handle.write('%s:%s\n' % (d['indicator'], d['passwords'][0]))
 
 def run_query(url, handle):
     try:

@@ -41,6 +41,8 @@ def get_query(options):
     })
     if options.type is not None:
         fields['type'] = options.type
+    if options.threat_type is not None:
+        fields['threat_type'] = options.threat_type
     if options.text is not None:
         fields['text'] = options.text
     if options.since is not None:
@@ -106,6 +108,7 @@ def run_query(url, handle):
 def get_parser():
     parser = argparse.ArgumentParser(description='Query ThreatExchange')
     parser.add_argument('-t', '--type')
+    parser.add_argument('-y', '--threat-type')
     parser.add_argument('-x', '--text')
     parser.add_argument('-o', '--output')
     parser.add_argument('-s', '--since')
