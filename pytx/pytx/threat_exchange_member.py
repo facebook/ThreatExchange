@@ -38,15 +38,6 @@ class ThreatExchangeMember(object):
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
-    def __setattr__(self, name, value):
-        """
-        Override __setattr__. We check to make sure the attribute is in _fields
-        or _internal to know it's valid.
-        """
-
-        if name in self._fields or name in self._internal:
-            object.__setattr__(self, name, value)
-
     def __getattr__(self, attr):
         """
         Get an attribute. If the attribute does not exist, return None
@@ -56,7 +47,7 @@ class ThreatExchangeMember(object):
             raise pytxAttributeError("%s is not a valid attribute" % attr)
 
         try:
-            return self.__getattribute__(attr)
+            return object.__getattribute__(self, attr)
         except:
             return None
 
@@ -69,7 +60,7 @@ class ThreatExchangeMember(object):
         :type attr: str
         """
 
-        self.__getattr__(attr)
+        return self.__getattr__(attr)
 
     def _get_new(self, attrs):
         """

@@ -43,22 +43,20 @@ class Common(object):
 
     def __setattr__(self, name, value):
         """
-        Override __setattr__. We check to make sure the attribute is in _fields
-        or _internal to know it's valid. If it is the ID being set then we will
-        set the URLs to leverage the ID (used when instantiating classes with
-        data returned from a GET request).
+        Override __setattr__. If it is the ID being set then we will set the
+        URLs to leverage the ID (used when instantiating classes with data
+        returned from a GET request).
 
         If the attribute was changed from a previous value, we will add it to
         _changed in the event this is an edit.
         """
 
-        if name in self._fields or name in self._internal:
-            object.__setattr__(self, name, value)
-            if name == c.ID:
-                self._DETAILS = self._DETAILS + value + '/'
-                self._RELATED = self._DETAILS + t.RELATED
-            if name not in self._changed and name not in self._internal:
-                self._changed.append(name)
+        object.__setattr__(self, name, value)
+        if name == c.ID:
+            self._DETAILS = self._DETAILS + value + '/'
+            self._RELATED = self._DETAILS + t.RELATED
+        if name not in self._changed and name in self._fields:
+            self._changed.append(name)
 
     def __getattr__(self, attr):
         """
@@ -69,7 +67,7 @@ class Common(object):
             raise pytxAttributeError("%s is not a valid attribute" % attr)
 
         try:
-            return self.__getattribute__(attr)
+            return object.__getattribute__(self, attr)
         except:
             return None
 
@@ -84,7 +82,7 @@ class Common(object):
         :type value: None, int, str, bool
         """
 
-        self.__setattr__(name, value)
+        return self.__setattr__(name, value)
 
     def get(self, attr):
         """
@@ -95,7 +93,7 @@ class Common(object):
         :type attr: str
         """
 
-        self.__getattr__(attr)
+        return self.__getattr__(attr)
 
     @property
     def access_token(self):
