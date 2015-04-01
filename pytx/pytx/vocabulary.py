@@ -106,11 +106,11 @@ class ThreatIndicator(object):
 
     ADDED_ON        = Common.ADDED_ON
     CONFIDENCE      = 'confidence'
-    CREDENTIALS     = 'credentials'
     DESCRIPTION     = 'description'
     EXPIRED_ON      = 'expired_on'
     ID              = Common.ID
     INDICATOR       = 'indicator'
+    PASSWORDS       = 'passwords'
     PRIVACY_TYPE    = 'privacy_type'
     PRIVACY_MEMBERS = 'privacy_members'
     REPORT_URLS     = 'report_urls'
@@ -324,6 +324,7 @@ class Types(object):
     ISP                     = "ISP"
     LATITUDE                = "LATITUDE"
     LAUNCH_AGENT            = "LAUNCH_AGENT"
+    LOCATION                = "LOCATION"
     LONGITUDE               = "LONGITUDE"
     MALWARE_NAME            = "MALWARE_NAME"
     MEMORY_ALLOC            = "MEMORY_ALLOC"
@@ -364,6 +365,8 @@ class Types(object):
     SMS_ORIGIN              = "SMS_ORIGIN"
     SOURCE_PORT             = "SOURCE_PORT"
     TELEPHONE               = "TELEPHONE"
+    TIME_CREATED            = "TIME_CREATED"
+    TIME_UPDATED            = "TIME_UPDATED"
     TS_END                  = "TS_END"
     TS_START                = "TS_START"
     URI                     = "URI"
