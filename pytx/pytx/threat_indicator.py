@@ -11,11 +11,11 @@ class ThreatIndicator(Common):
     _fields = [
         ti.ADDED_ON,
         ti.CONFIDENCE,
-        ti.CREDENTIALS,
         ti.DESCRIPTION,
         ti.EXPIRED_ON,
         ti.ID,
         ti.INDICATOR,
+        ti.PASSWORDS,
         ti.PRIVACY_TYPE,
         ti.PRIVACY_MEMBERS,
         ti.REPORT_URLS,
