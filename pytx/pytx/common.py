@@ -277,7 +277,6 @@ class Common(object):
         resp = requests.get(url, params=params)
         return self._handle_results(resp)
 
-
     def _post(self, url, params={}):
         """
         Send the POST request.
@@ -308,7 +307,7 @@ class Common(object):
         resp = requests.delete(url, params=params)
         return self._handle_results(resp)
 
-    def _get_generator(self, url, total, params={}):
+    def _get_generator(self, url, total, to_dict=False, params={}):
         """
         Generator for managing GET requests. For each GET request it will yield
         the next object in the results until there are no more objects. If the
@@ -321,6 +320,8 @@ class Common(object):
         :type url: str
         :param total: The total number of objects to return (-1 to disable).
         :type total: None, int
+        :param to_dict: Return a dictionary instead of an instantiated class.
+        :type to_dict: bool
         :param params: The GET parameters to send in the request.
         :type params: dict
         :returns: Generator
@@ -336,7 +337,10 @@ class Common(object):
             for data in results[t.DATA]:
                 if total == t.MIN_TOTAL:
                     raise StopIteration
-                yield self._get_new(data)
+                if to_dict:
+                    yield data
+                else:
+                    yield self._get_new(data)
                 total -= t.DEC_TOTAL
             try:
                 next_ = results[t.PAGING][t.NEXT]
@@ -348,7 +352,7 @@ class Common(object):
 
     def objects(self, text=None, strict_text=False, type_=None,
                 limit=None, since=None, until=None, __raw__=None,
-                json=False):
+                full_response=False, dict_generator=False):
         """
         Get objects from the ThreatExchange.
 
@@ -367,8 +371,11 @@ class Common(object):
         :param __raw__: Provide a dictionary to force as GET parameters.
                         Overrides all other arguments.
         :type __raw__: dict
-        :param json: Return the JSON response instead of the generator.
-        :type json: bool
+        :param full_response: Return the full response instead of the generator.
+                              Takes precedence over dict_generator.
+        :type full_response: bool
+        :param dict_generator: Return a dictionary instead of an instantiated
+                               object.
         :returns: Generator, dict (using json.loads())
         """
 
@@ -386,10 +393,11 @@ class Common(object):
                 since=since,
                 until=until,
             )
-        if json:
+        if full_response:
             return self._get(self._URL, params=params)
         else:
-            return self._get_generator(self._URL, limit, params=params)
+            return self._get_generator(self._URL, limit, to_dict=dict_generator,
+                                       toparams=params)
 
     def details(self, fields=None, connection=None):
         """

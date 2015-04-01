@@ -106,12 +106,14 @@ class ThreatExchangeMember(object):
         resp = requests.get(url, params=params)
         return self._handle_results(resp)
 
-    def _get_generator(self, url, params={}):
+    def _get_generator(self, url, to_dict=False, params={}):
         """
         Send the GET request.
 
         :param url: The URL to send the GET request to.
         :type url: str
+        :param to_dict: Return a dictionary instead of an instantiated class.
+        :type to_dict: bool
         :param params: The GET parameters to send in the request.
         :type params: dict
         :returns: Generator, dict (using json.loads())
@@ -123,21 +125,28 @@ class ThreatExchangeMember(object):
             yield None
         else:
             for member in members:
-                yield self._get_new(member)
+                if to_dict:
+                    yield member
+                else:
+                    yield self._get_new(member)
 
-    def objects(self, json=False):
+    def objects(self, full_response=False, dict_generator=False):
         """
         Get a list of Threat Exchange Members
 
-        :param json: Return the JSON response instead of the generator.
-        :type json: bool
+        :param full_response: Return the full response instead of the generator.
+                              Takes precedence over dict_generator.
+        :type full_response: bool
+        :param dict_generator: Return a dictionary instead of an instantiated
+                               object.
+        :type dict_generator: bool
         :returns: Generator, dict (using json.loads())
         """
 
-        if json:
+        if full_response:
             return self._get(self._URL)
         else:
-            return self._get_generator(self._URL)
+            return self._get_generator(self._URL, to_dict=dict_generator)
 
     def to_dict(self):
         """
