@@ -52,7 +52,7 @@ Queries into ThreatExchange are HTTP GET requests to one of the following URLs
     https://graph.facebook.com/<object-id>
     https://graph.facebook.com/<object-id>/<connection-type>
 
-### /malware_analyses
+### /malware\_analyses
 
 This API call enables searching for malware stored in ThreatExchange.  With this
 call you can search for malware by free text (including file hashes) or all
@@ -128,7 +128,7 @@ Data returned:
     }
 
 
-### /threat_indicators
+### /threat\_indicators
 
 This API call enables searching for indicators of compromise stored in
 ThreatExchange.  With this call you can search for indicators by free text,
@@ -146,7 +146,7 @@ be "555|aSdF123GhK".
 hash or a string found in other fields of the objects.
 * strict\_text - When set to 'true', the API will not do approximate matching
 on the value in text
-* threat_type - The broad threat type the indicator is associated
+* threat\_type - The broad threat type the indicator is associated
 with (see the full list of values below)
 * type - The type of indicators to search for (see the full list of types below)
 * since - Returns malware collected after a timestamp
@@ -184,7 +184,7 @@ Data returned:
     }
 
 
-### /&lt;object_id&gt; - Malware Objects
+### /&lt;object\_id&gt; - Malware Objects
 
 This API call is for directly accessing a specific Open Graph malware object.
 It gives you the ability to see additional data, including the file itself.
@@ -208,11 +208,11 @@ be "555|aSdF123GhK".
  the value in the password field to decompress);
 	* sha1 - The SHA1 hash for the sample;
 	* sha256 - The SHA256 hash for the sample;
-  * share_level - A designation of how the indicator may be shared based on
+  * share\_level - A designation of how the indicator may be shared based on
   the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/
 	* ssdeep - The SSDeep hash for the sample;
   * status - Indicates if the sample is labeled as malicious;
-  * submitter_count - The number of members that have submitted the indicator;
+  * submitter\_count - The number of members that have submitted the indicator;
 	* victim\_count - The number of known victims infected with the sample; and
 	* xpi - The Mozilla Firefox Extension ID (if applicable).
 
@@ -263,7 +263,7 @@ Data returned:
     }
 
 
-### /&lt;object_id&gt; - Threat Indicator Objects
+### /&lt;object\_id&gt; - Threat Indicator Objects
 
 This API call is for directly accessing a specific threat indicator
 object in ThreatExchange.  It gives you the ability to see additional data.
@@ -278,19 +278,19 @@ if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
   * added\_on - Timestamp when the indicator was added, in ISO 8601 date format;
 	* confidence - A score for how confident we are that the indicator is bad
  ranges from 0 to 100;
-  * credentials - Any access credentials associated with the indicator;
   * description - A human readable description of the indicator;
   * expired\_on - Timestamp when the indicator expired, in ISO 8601 date
   format, can be in the future;
   * id - The indicator's unique Open Graph ID;
   * indicator - The indicator itself;
-  * report_urls - Links to reports about the indicator;
+  * passwords - Any passwords associated with the indicator;
+  * report\_urls - Links to reports about the indicator;
   * severity - A rating of how severe the indicator is when found in an
   incident, see values defined below;
-  * share_level - A designation of how the indicator may be shared based
+  * share\_level - A designation of how the indicator may be shared based
   on the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/
   * status - Indicates if the indicator is labeled as malicious;
-  * submitter_count - The number of members that have submitted the indicator;  
+  * submitter\_count - The number of members that have submitted the indicator;  
   * threat\_types - A list of broad threat types the indicator is associated
    with, see values defined below;
   * type - The kind of indicator, see values defined below in the "Optional,
@@ -361,9 +361,11 @@ be "555|aSdF123GhK";
 * expired\_on - Time the indicator is no longer considered a threat, in
 ISO 8601 date format;
 * **indicator** - The indicator data being submitted.
-* privacy_type - The kind of privacy for the indicator, see values
+* passwords - The MD5s of passwords associated with this indicator. Intended
+for compromised credentials.
+* privacy\_type - The kind of privacy for the indicator, see values
   defined below.
-* privacy_members - Some types of privacy require you to specify who can
+* privacy\_members - Some types of privacy require you to specify who can
   or cannot see the indicator.
 * severity - A rating of how severe the indicator is when found in an incident,
 see values defined below;
@@ -458,13 +460,13 @@ be "555|aSdF123GhK".
 * expired\_on - Time the indicator is no longer considered a threat, in
 ISO 8601 date format;
 * indicator - The indicator data being submitted.
-* privacy_type - The kind of privacy for the indicator, see the values
+* privacy\_type - The kind of privacy for the indicator, see the values
   defined below;
-* privacy_members - Some types of privacy require you to specify who can
+* privacy\_members - Some types of privacy require you to specify who can
   or cannot see the indicator;
 * severity - A rating of how severe the indicator is when found in an incident,
 see values defined below;
-* share_level - A designation of how the indicator may be shared based on
+* share\_level - A designation of how the indicator may be shared based on
 the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/
 * status - Indicates if the indicator is labeled as malicious;
 * threat\_type - The broad threat type the indicator is associated with, see
@@ -522,7 +524,7 @@ HTTP DELETE request to the following URL
 
 For the data itself, we do not support true deletes.  If you wish to indicate
 data is no longer valid, set the **expired\_on** field for automatic
-soft-deletes and the **status** field to **NON_MALICIOUS** for handling false
+soft-deletes and the **status** field to **NON\_MALICIOUS** for handling false
 positive cases.
 
 
@@ -709,7 +711,7 @@ Value:
 **Value:**  
 
 * The ISO di-graph alpha code for a country. For example, 'US'
-for The United States.
+for The United States. Note that there is a separate field for **LOCATION**.
 
 **Name: CRX**  
 **Type: string**  
@@ -893,6 +895,13 @@ See http://blog.virustotal.com/2014/02/virustotal-imphash.html for more details.
 
 *  The name of a LaunchAgent on OS X, e.g. '/System/Library/LaunchAgents/com.apple.quicklook.plist'.
 
+**Name: LOCATION**
+**Type: string**
+**Value:**
+
+*  The name of a physical location, such as "Menlo Park, CA". Note that there is
+a separate field **COUNTRY**.
+
 **Name: LONGITUDE**  
 **Type: float**  
 **Value:**  
@@ -964,7 +973,7 @@ e.g. 'C:\Temp\bot.exe'.
 **Type: string**  
 **Value:**  
 
-* A password value, **must** be provided as a salted MD5 hash.
+* A password value, **must** be provided as an MD5 hash.
 
 **Name: PASSWORD_SALT**  
 **Type: string**  
@@ -1132,6 +1141,20 @@ e.g. 'https://facebook.com/threatexchange/malware-write-up.pdf'.
 **Name: TELEPHONE**  
 **Type: string**  
 **Value:**  
+
+**Name: TIME_CREATED**  
+**Type: timestamp**  
+**Value:**  
+
+*  When this indicator first appeared in the world. For example, when a domain
+name was registered.
+
+**Name: TIME_UPDATED**  
+**Type: timestamp**  
+**Value:**  
+
+*  When this indicator was last updated. For example, when a domain name
+registration was last updated.
 
 *  A telephone number in full international format, e.g. +18005551212.
 
