@@ -99,12 +99,25 @@ class ThreatExchangeMember(object):
         :type url: str
         :param params: The GET parameters to send in the request.
         :type params: dict
-        :returns: dict (using json.loads())
+        :returns: Generator, dict (using json.loads())
         """
 
         params[t.ACCESS_TOKEN] = self._access_token
         resp = requests.get(url, params=params)
-        members = self._handle_results(resp).get(t.DATA, [])
+        return self._handle_results(resp)
+
+    def _get_generator(self, url, params={}):
+        """
+        Send the GET request.
+
+        :param url: The URL to send the GET request to.
+        :type url: str
+        :param params: The GET parameters to send in the request.
+        :type params: dict
+        :returns: Generator, dict (using json.loads())
+        """
+
+        members = self._get(url, params=params).get(t.DATA, [])
         total = len(members)
         if total == t.MIN_TOTAL:
             yield None
@@ -112,14 +125,19 @@ class ThreatExchangeMember(object):
             for member in members:
                 yield self._get_new(member)
 
-    def objects(self):
+    def objects(self, json=False):
         """
         Get a list of Threat Exchange Members
 
-        :returns: dict
+        :param json: Return the JSON response instead of the generator.
+        :type json: bool
+        :returns: Generator, dict (using json.loads())
         """
 
-        return self._get(self._URL)
+        if json:
+            return self._get(self._URL)
+        else:
+            return self._get_generator(self._URL)
 
     def to_dict(self):
         """

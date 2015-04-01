@@ -347,7 +347,8 @@ class Common(object):
                 params = {}
 
     def objects(self, text=None, strict_text=False, type_=None,
-                limit=None, since=None, until=None):
+                limit=None, since=None, until=None, __raw__=None,
+                json=False):
         """
         Get objects from the ThreatExchange.
 
@@ -363,18 +364,32 @@ class Common(object):
         :type since: str
         :param until: The timestamp to limit the end of the search.
         :type until: str
-        :returns: Generator
+        :param __raw__: Provide a dictionary to force as GET parameters.
+                        Overrides all other arguments.
+        :type __raw__: dict
+        :param json: Return the JSON response instead of the generator.
+        :type json: bool
+        :returns: Generator, dict (using json.loads())
         """
 
-        params = self._build_get_parameters(
-            text=text,
-            strict_text=strict_text,
-            type_=type_,
-            limit=limit,
-            since=since,
-            until=until,
-        )
-        return self._get_generator(self._URL, limit, params=params)
+        if __raw__:
+            if isinstance(__raw__, dict):
+                params = __raw__
+            else:
+                raise pytxValueError("__raw__ must be of type dict")
+        else:
+            params = self._build_get_parameters(
+                text=text,
+                strict_text=strict_text,
+                type_=type_,
+                limit=limit,
+                since=since,
+                until=until,
+            )
+        if json:
+            return self._get(self._URL, params=params)
+        else:
+            return self._get_generator(self._URL, limit, params=params)
 
     def details(self, fields=None, connection=None):
         """
