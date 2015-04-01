@@ -1,4 +1,7 @@
 class ThreatExchange(object):
+    """
+    General vocabulary for ThreatExchange.
+    """
 
     URL             = 'https://graph.facebook.com/'
     ACCESS_TOKEN    = 'access_token'
@@ -32,6 +35,9 @@ class ThreatExchange(object):
 
 
 class Common(object):
+    """
+    Vocabulary common to multiple objects.
+    """
 
     ADDED_ON        = 'added_on'
     ID              = 'id'
@@ -42,6 +48,10 @@ class Common(object):
 
 
 class Connection(object):
+    """
+    Vocabulary specific to searching for, creating, or removing connections
+    between objects.
+    """
 
     ADDED_ON            = Common.ADDED_ON
     CRX                 = 'crx'
@@ -57,13 +67,11 @@ class Connection(object):
     VICTIM_COUNT        = Common.VICTIM_COUNT
 
 
-class ExchangeMember(object):
-
-    ID      = Common.ID
-    NAME    = 'name'
-
-
 class Malware(object):
+    """
+    Vocabulary specific to searching for, creating, or modifying a Malware
+    object.
+    """
 
     ADDED_ON        = Common.ADDED_ON
     CRX             = 'crx'
@@ -84,6 +92,9 @@ class Malware(object):
 
 
 class Paging(object):
+    """
+    Vocabulary for the fields available in a GET response specific to paging.
+    """
 
     PAGING  = 'paging'
     CURSORS = 'cursors'
@@ -91,18 +102,28 @@ class Paging(object):
 
 
 class PagingCursor(object):
+    """
+    Vocabulary for describing the paging cursor in a GET response.
+    """
 
     BEFORE  = 'before'
     AFTER   = 'after'
 
 
 class ThreatExchangeMember(object):
+    """
+    Vocabulary for describing a ThreatExchangeMember.
+    """
 
     ID      = Common.ID
     NAME    = 'name'
 
 
 class ThreatIndicator(object):
+    """
+    Vocabulary specific to searching for, adding, or modifying a Threat
+    Indicator object.
+    """
 
     ADDED_ON        = Common.ADDED_ON
     CONFIDENCE      = 'confidence'
@@ -124,6 +145,9 @@ class ThreatIndicator(object):
 
 
 class ThreatType(object):
+    """
+    Vocabulary for the available Threat Types for a Threat Indicator.
+    """
 
     BAD_ACTOR               = "BAD_ACTOR"
     COMPROMISED_CREDENTIAL  = "COMPROMISED_CREDENTIAL"
@@ -151,6 +175,9 @@ class ThreatType(object):
 
 
 class Severity(object):
+    """
+    Vocabulary for the available severity levels for a Threat Indicator.
+    """
 
     INFO        = "INFO"
     WARNING     = "WARNING"
@@ -160,6 +187,9 @@ class Severity(object):
 
 
 class ShareLevel(object):
+    """
+    Vocabulary for the share level of an object. This is based off of TLP.
+    """
 
     UNKNOWN = "UNKNOWN"
     WHITE   = "WHITE"
@@ -169,6 +199,9 @@ class ShareLevel(object):
 
 
 class Status(object):
+    """
+    Vocabulary for the status of an object.
+    """
 
     MALICIOUS       = "MALICIOUS"
     NON_MALICIOUS   = "NON_MALICIOUS"
@@ -177,6 +210,9 @@ class Status(object):
 
 
 class Attack(object):
+    """
+    Vocabulary for the Threat Indicator Attack type.
+    """
 
     ACCESS_TOKEN_THEFT  = "ACCESS_TOKEN_THEFT"
     BRUTE_FORCE         = "BRUTE_FORCE"
@@ -194,6 +230,11 @@ class Attack(object):
 
 
 class AVEngineNames(object):
+    """
+    Vocabulary for the Threat Indicator AV Signature Engine.
+
+    TODO: This is no longer in the documentation, should this be removed?
+    """
 
     AV_AGNITUM              = "AV_AGNITUM"
     AV_AHNLAB_V3            = "AV_AHNLAB_V3"
@@ -243,6 +284,11 @@ class AVEngineNames(object):
 
 
 class AVStatus(object):
+    """
+    Vocabulary for the Threat Indicator AV Status.
+
+    TODO: This is no longer in the documentation, should this be removed?
+    """
 
     UNKNOWN         = "UNKNOWN"
     NON_MALICIOUS   = "NON_MALICIOUS"
@@ -251,6 +297,9 @@ class AVStatus(object):
 
 
 class PrivacyType(object):
+    """
+    Vocabulary for the Threat Indicator Privacy Type.
+    """
 
     VISIBLE         = "VISIBLE"
     HASWHITELIST    = "HASWHITELIST"
@@ -258,6 +307,9 @@ class PrivacyType(object):
 
 
 class Role(object):
+    """
+    Vocabulary for the Threat Indicator Role type.
+    """
 
     C2              = "C2"
     EXPLOIT         = "EXPLOIT"
@@ -268,6 +320,9 @@ class Role(object):
 
 
 class SignatureType(object):
+    """
+    Vocabulary for the Threat Indicator Signature Threat Type.
+    """
 
     REGEX_URL   = "REGEX_URL"
     SNORT       = "SNORT"
@@ -276,12 +331,17 @@ class SignatureType(object):
 
 
 class Types(object):
+    """
+    Vocabulary for the Threat Indicator Types.
+    """
 
     ADJUST_TOKEN            = "ADJUST_TOKEN"
     API_KEY                 = "API_KEY"
     AS_NUMBER               = "AS_NUMBER"
     AS_NAME                 = "AS_NAME"
     ATTACK                  = "ATTACK"
+    #TODO: AV_SIGNATURES and AV_STATUS are no longer in the documentation.
+    #Should they be removed?
     AV_SIGNATURES           = "AV_SIGNATURES"
     AV_STATUS               = "AV_STATUS"
     BANNER                  = "BANNER"

@@ -24,3 +24,9 @@ Quick Example
    results = t.objects(text='www.facebook.com')
    for result in results:
        print result.get(ti.THREAT_TYPES)
+
+Documentation
+-------------
+
+For more information you can find documentation in the 'docs' directory, check
+the Github wiki, or readthedocs (coming soon).
