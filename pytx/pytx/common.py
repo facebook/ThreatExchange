@@ -255,7 +255,8 @@ class Common(object):
         """
 
         if resp.status_code != 200:
-            raise pytxFetchError("Response code: %s" % resp.status_code)
+            raise pytxFetchError("Response code: %s: %s" % (resp.status_code,
+                                                            resp.text))
         try:
             results = json.loads(resp.text)
         except:
