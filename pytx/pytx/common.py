@@ -397,9 +397,10 @@ class Common(object):
             return self._get(self._URL, params=params)
         else:
             return self._get_generator(self._URL, limit, to_dict=dict_generator,
-                                       toparams=params)
+                                       params=params)
 
-    def details(self, fields=None, connection=None):
+    def details(self, fields=None, connection=None,
+                full_response=False, dict_generator=False):
         """
         Get object details. Allows you to limit the fields returned in the
         object's details. Also allows you to provide a connection. If a
@@ -410,7 +411,12 @@ class Common(object):
         :type fields: None, str, list
         :param connection: The connection to find other related objects with.
         :type connection: None, str
-        :returns: ???
+        :param full_response: Return the full response instead of the generator.
+                              Takes precedence over dict_generator.
+        :type full_response: bool
+        :param dict_generator: Return a dictionary instead of an instantiated
+                               object.
+        :returns: Generator, dict, class
         """
 
         if connection:
@@ -424,10 +430,15 @@ class Common(object):
             raise pytxValueError("fields must be a list")
         if fields is not None:
             params[t.FIELDS] = ','.join(f.strip() for f in fields)
-        if connection:
-            return self._get_generator(url, t.NO_TOTAL, params=params)
+        if full_response:
+            return self._get(url, params=params)
         else:
-            return self._get_new(self._get(url, params=params))
+            if connection:
+                return self._get_generator(url, t.NO_TOTAL,
+                                           to_dict=dict_generator,
+                                           params=params)
+            else:
+                return self._get_new(self._get(url, params=params))
 
     def save(self, url):
         """
