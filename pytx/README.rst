@@ -20,8 +20,7 @@ Quick Example
    from pytx.vocabulary import ThreatIndicator as ti
 
    init('<app-id>', '<app-secret>')
-   t = ThreatIndicator()
-   results = t.objects(text='www.facebook.com')
+   results = ThreatIndicator.objects(text='www.facebook.com')
    for result in results:
        print result.get(ti.THREAT_TYPES)
 
