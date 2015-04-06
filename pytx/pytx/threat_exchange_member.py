@@ -1,14 +1,10 @@
-import json
-import requests
-
 import init
 
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatExchangeMember as tem
 from errors import (
-    pytxFetchError,
-    pytxAttributeError,
-    pytxInitError
+    pytxInitError,
+    pytxAttributeError
 )
 
 class ThreatExchangeMember(object):
@@ -62,53 +58,10 @@ class ThreatExchangeMember(object):
 
         return self.__getattr__(attr)
 
-    def _get_new(self, attrs):
+    @classmethod
+    def _get_generator(cls, url, to_dict=False, params={}):
         """
-        Return a new instance of self.
-
-        :param attrs: The attributes to set for this new instance.
-        :type attrs: dict
-        :returns: instance of self
-        """
-
-        n = self.__class__(**attrs)
-        return n
-
-    def _handle_results(self, resp):
-        """
-        Handle the results of a request.
-
-        :param resp: The HTTP response.
-        :type resp: response object
-        :returns: dict (using json.loads())
-        """
-
-        if resp.status_code != 200:
-            raise pytxFetchError("Response code: %s" % resp.status_code)
-        try:
-            results = json.loads(resp.text)
-        except:
-            raise pytxFetchError("Unable to convert response to JSON.")
-        return results
-
-    def _get(self, url, params={}):
-        """
-        Send the GET request.
-
-        :param url: The URL to send the GET request to.
-        :type url: str
-        :param params: The GET parameters to send in the request.
-        :type params: dict
-        :returns: Generator, dict (using json.loads())
-        """
-
-        params[t.ACCESS_TOKEN] = self._access_token
-        resp = requests.get(url, params=params)
-        return self._handle_results(resp)
-
-    def _get_generator(self, url, to_dict=False, params={}):
-        """
-        Send the GET request.
+        Send the GET request and return a generator.
 
         :param url: The URL to send the GET request to.
         :type url: str
@@ -119,7 +72,7 @@ class ThreatExchangeMember(object):
         :returns: Generator, dict (using json.loads())
         """
 
-        members = self._get(url, params=params).get(t.DATA, [])
+        members = init.Broker.get(url, params=params).get(t.DATA, [])
         total = len(members)
         if total == t.MIN_TOTAL:
             yield None
@@ -128,9 +81,10 @@ class ThreatExchangeMember(object):
                 if to_dict:
                     yield member
                 else:
-                    yield self._get_new(member)
+                    yield init.Broker.get_new(cls, member)
 
-    def objects(self, full_response=False, dict_generator=False):
+    @classmethod
+    def objects(cls, full_response=False, dict_generator=False):
         """
         Get a list of Threat Exchange Members
 
@@ -144,9 +98,10 @@ class ThreatExchangeMember(object):
         """
 
         if full_response:
-            return self._get(self._URL)
+            return init.Broker.get(cls._URL)
         else:
-            return self._get_generator(self._URL, to_dict=dict_generator)
+            return cls._get_generator(cls._URL,
+                                      to_dict=dict_generator)
 
     def to_dict(self):
         """
@@ -159,4 +114,3 @@ class ThreatExchangeMember(object):
             (n, getattr(self, n, None)) for n in self._fields
         )
         return d
-

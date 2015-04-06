@@ -1,7 +1,9 @@
 from errors import pytxInitError
+from request import Broker as b
 
 
 __ACCESS_TOKEN__ = None
+Broker = None
 
 
 def init(app_id, app_secret):
@@ -17,8 +19,10 @@ def init(app_id, app_secret):
     """
 
     global __ACCESS_TOKEN__
+    global Broker
     try:
         __ACCESS_TOKEN__ = app_id + "|" + app_secret
+        Broker = b()
     except Exception, e:
         raise pytxInitError("Error generating access token: %s" % str(e))
     return

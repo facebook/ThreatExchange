@@ -8,9 +8,8 @@ app_id = '<your-app-id>'
 app_secret = '<your-app-secret>'
 
 init(app_id, app_secret)
-tem_ = ThreatExchangeMember()
 
-results = tem_.objects()
+results = ThreatExchangeMember.objects()
 for result in results:
     print '"%s","%s"' % (result.get(tem.NAME),
-                      result.get(tem.ID))
+                         result.get(tem.ID))

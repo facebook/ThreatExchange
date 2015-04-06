@@ -14,7 +14,6 @@ app_id = '<your-app-id>'
 app_secret = '<your-app-secret>'
 
 init(app_id, app_secret)
-indicator = ThreatIndicator()
 
 def get_query(options):
     '''
@@ -60,7 +59,7 @@ def run_query(options, handle):
         sys.exit(1)
 
     count = 0
-    results = indicator.objects(__raw__=query, dict_generator=True)
+    results = ThreatIndicator.objects(__raw__=query, dict_generator=True)
     for result in results:
         process_results(handle, result)
         count += 1

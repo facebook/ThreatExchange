@@ -1,6 +1,3 @@
-import json
-import requests
-
 import init
 
 from vocabulary import Common as c
@@ -8,11 +5,28 @@ from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatIndicator as ti
 from errors import (
-    pytxFetchError,
     pytxAttributeError,
     pytxValueError,
     pytxInitError
 )
+
+class class_or_instance_method(object):
+    """
+    Custom decorator. This binds to the class if no instance is avaialble,
+    otherwise it will bind to the instance.
+
+    This allows us to use a single method which can take both "self" and "cls"
+    as the first argument.
+    """
+
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, instance, cls=None):
+        if instance is None:
+            return classmethod(self.func).__get__(None, cls)
+        return self.func.__get__(instance, cls)
+
 
 class Common(object):
 
@@ -95,6 +109,17 @@ class Common(object):
 
         return self.__getattr__(attr)
 
+    def populate(self, attrs):
+        """
+        Given a dictionary, populate self with the keys as attributes.
+
+        :param attrs: A dictionary used as attributes and values.
+        :type attrs: dict
+        """
+
+        for k,v in attrs.iteritems():
+            self.set(k, v)
+
     @property
     def access_token(self):
         """
@@ -117,245 +142,12 @@ class Common(object):
         )
         return d
 
-    def _get_new(self, attrs):
-        """
-        Return a new instance of self.
-
-        :param attrs: The attributes to set for this new instance.
-        :type attrs: dict
-        :returns: new instance of self
-        """
-
-        n = self.__class__(**attrs)
-        n._new = False
-        return n
-
-    def _is_timestamp(self, timestamp):
-        """
-        Verifies the timestamp provided is a valid timestamp.
-
-        :param timestamp: Value to verify is a timestamp.
-        :type timestamp: str
-        :returns: True if valid, :class:`pytxValueError` if invalid.
-        """
-
-        try:
-            int(timestamp)
-            return True
-        except ValueError, e:
-            raise pytxValueError(e)
-
-    def _validate_limit(self, limit):
-        """
-        Verifies the limit provided is valid and within the max limit Facebook
-        will allow you to use (currently 5000).
-
-        :param limit: Value to verify is a valid limit.
-        :type limit: int, str
-        :returns: :class:`pytxValueError` if invalid.
-        """
-
-        try:
-            int(limit)
-        except ValueError, e:
-            raise pytxValueError(e)
-        if limit > t.MAX_LIMIT:
-            raise pytxValueError(
-                "limit cannot exceed %s (default: %s)" % (t.MAX_LIMIT,
-                                                          t.DEFAULT_LIMIT)
-            )
-        return
-
-    def _validate_get(self, limit, since, until):
-        """
-        Executes validation for the GET parameters: limit, since, until.
-
-        :param limit: The limit to validate.
-        :type limit: int, str
-        :param since: The since timestamp to validate.
-        :type since: str
-        :param until: The until timestamp to validate.
-        :type until: str
-        """
-
-        if since:
-            self._is_timestamp(since)
-        if until:
-            self._is_timestamp(until)
-        if limit:
-            self._validate_limit(limit)
-
-    def _sanitize_strict(self, strict_text):
-        """
-        If strict_text is provided, sanitize it.
-
-        'true' will be used if strict_text is in [True, 'true', 'True', 1].
-        'false' will be used if strict_text is in [False, 'false', 'False', 0].
-
-        If we receive any other value strict_text will be set to None and
-        ignored when building the GET request.
-
-        :param strict_text: The value to sanitize.
-        :type strict_text: bool, str, int
-        :returns: str, None
-        """
-
-        if strict_text in (True, 'true', 'True', 1):
-            strict = 'true'
-        elif strict_text in (False, 'false', 'False', 0):
-            strict = 'false'
-        else:
-            strict = None
-        return strict
-
-    def _build_get_parameters(self, text=None, strict_text=None, type_=None,
-                             limit=None, since=None, until=None):
-        """
-        Validate arguments and convert them into GET parameters.
-
-        :param text: The text used for limiting the search.
-        :type text: str
-        :param strict_text: Whether we should use strict searching.
-        :type strict_text: bool, str, int
-        :param type_: The Indicator type to limit to.
-        :type type_: str
-        :param limit: The maximum number of objects to return.
-        :type limit: int, str
-        :param since: The timestamp to limit the beginning of the search.
-        :type since: str
-        :param until: The timestamp to limit the end of the search.
-        :type until: str
-        :returns: dict
-        """
-
-        self._validate_get(limit, since, until)
-        strict = self._sanitize_strict(strict_text)
-        params = {}
-        if text:
-            params[t.TEXT] = text
-        if strict is not None:
-            params[t.STRICT_TEXT] = strict
-        if type_:
-            params[t.TYPE] = type_
-        if limit:
-            params[t.LIMIT] = limit
-        if since:
-            params[t.SINCE] = since
-        if until:
-            params[t.UNTIL] = until
-        return params
-
-    def _handle_results(self, resp):
-        """
-        Handle the results of a request.
-
-        :param resp: The HTTP response.
-        :type resp: response object
-        :returns: dict (using json.loads())
-        """
-
-        if resp.status_code != 200:
-            raise pytxFetchError("Response code: %s: %s" % (resp.status_code,
-                                                            resp.text))
-        try:
-            results = json.loads(resp.text)
-        except:
-            raise pytxFetchError("Unable to convert response to JSON.")
-        return results
-
-    def _get(self, url, params={}):
-        """
-        Send the GET request.
-
-        :param url: The URL to send the GET request to.
-        :type url: str
-        :param params: The GET parameters to send in the request.
-        :type params: dict
-        :returns: dict (using json.loads())
-        """
-
-        params[t.ACCESS_TOKEN] = self._access_token
-        resp = requests.get(url, params=params)
-        return self._handle_results(resp)
-
-    def _post(self, url, params={}):
-        """
-        Send the POST request.
-
-        :param url: The URL to send the POST request to.
-        :type url: str
-        :param params: The POST parameters to send in the request.
-        :type params: dict
-        :returns: dict (using json.loads())
-        """
-
-        params[t.ACCESS_TOKEN] = self._access_token
-        resp = requests.post(url, params=params)
-        return self._handle_results(resp)
-
-    def _delete(self, url, params={}):
-        """
-        Send the DELETE request.
-
-        :param url: The URL to send the DELETE request to.
-        :type url: str
-        :param params: The DELETE parameters to send in the request.
-        :type params: dict
-        :returns: dict (using json.loads())
-        """
-
-        params[t.ACCESS_TOKEN] = self._access_token
-        resp = requests.delete(url, params=params)
-        return self._handle_results(resp)
-
-    def _get_generator(self, url, total, to_dict=False, params={}):
-        """
-        Generator for managing GET requests. For each GET request it will yield
-        the next object in the results until there are no more objects. If the
-        GET response contains a 'next' value in the 'paging' section, the
-        generator will automatically fetch the next set of results and continue
-        the process until the total limit has been reached or there is no longer
-        a 'next' value.
-
-        :param url: The URL to send the GET request to.
-        :type url: str
-        :param total: The total number of objects to return (-1 to disable).
-        :type total: None, int
-        :param to_dict: Return a dictionary instead of an instantiated class.
-        :type to_dict: bool
-        :param params: The GET parameters to send in the request.
-        :type params: dict
-        :returns: Generator
-        """
-
-        if total is None:
-            total = t.NO_TOTAL
-        if total == t.MIN_TOTAL:
-            yield None
-        next_ = True
-        while next_:
-            results = self._get(url, params)
-            for data in results[t.DATA]:
-                if total == t.MIN_TOTAL:
-                    raise StopIteration
-                if to_dict:
-                    yield data
-                else:
-                    yield self._get_new(data)
-                total -= t.DEC_TOTAL
-            try:
-                next_ = results[t.PAGING][t.NEXT]
-            except:
-                next_ = False
-            if next_:
-                url = next_
-                params = {}
-
-    def objects(self, text=None, strict_text=False, type_=None,
+    @classmethod
+    def objects(cls, text=None, strict_text=False, type_=None,
                 limit=None, since=None, until=None, __raw__=None,
                 full_response=False, dict_generator=False):
         """
-        Get objects from the ThreatExchange.
+        Get objects from ThreatExchange.
 
         :param text: The text used for limiting the search.
         :type text: str
@@ -386,7 +178,7 @@ class Common(object):
             else:
                 raise pytxValueError("__raw__ must be of type dict")
         else:
-            params = self._build_get_parameters(
+            params = init.Broker.build_get_parameters(
                 text=text,
                 strict_text=strict_text,
                 type_=type_,
@@ -395,12 +187,16 @@ class Common(object):
                 until=until,
             )
         if full_response:
-            return self._get(self._URL, params=params)
+            return init.Broker.get(cls._URL, params=params)
         else:
-            return self._get_generator(self._URL, limit, to_dict=dict_generator,
-                                       params=params)
+            return init.Broker.get_generator(cls,
+                                             cls._URL,
+                                             limit,
+                                             to_dict=dict_generator,
+                                             params=params)
 
-    def details(self, fields=None, connection=None,
+    @class_or_instance_method
+    def details(cls_or_self, id=None, fields=None, connection=None,
                 full_response=False, dict_generator=False):
         """
         Get object details. Allows you to limit the fields returned in the
@@ -408,6 +204,24 @@ class Common(object):
         connection is provided, the related objects will be returned instead
         of the object itself.
 
+        NOTE: This method can be used on both instantiated and uninstantiated
+        classes like so:
+
+            foo = ThreatIndicator(id='1234')
+            foo.details()
+
+            foo = ThreatIndicator.details(id='1234')
+
+
+        BE AWARE: Due to the nature of ThreatExchange allowing you to query for
+        an object by ID but not actually telling you the type of object returned
+        to you, using an ID for an object of a different type (ex: ID for a
+        Malware object using ThreatIndicator class) will result in the wrong
+        object populated with only data that is common between the two objects.
+
+        :param id: The ID of the object to get details for if the class is not
+                   instantiated.
+        :type id: str
         :param fields: The fields to limit the details to.
         :type fields: None, str, list
         :param connection: The connection to find other related objects with.
@@ -420,11 +234,13 @@ class Common(object):
         :returns: Generator, dict, class
         """
 
-        if connection:
-            url = self._DETAILS + connection + '/'
+        if isinstance(cls_or_self, type):
+            url = t.URL + id + '/'
         else:
-            url = self._DETAILS
-        params = self._build_get_parameters()
+            url = cls_or_self._DETAILS
+        if connection:
+            url = url + connection + '/'
+        params = init.Broker.build_get_parameters()
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):
@@ -432,14 +248,21 @@ class Common(object):
         if fields is not None:
             params[t.FIELDS] = ','.join(f.strip() for f in fields)
         if full_response:
-            return self._get(url, params=params)
+            return init.Broker.get(url, params=params)
         else:
             if connection:
-                return self._get_generator(url, t.NO_TOTAL,
-                                           to_dict=dict_generator,
-                                           params=params)
+                return init.Broker.get_generator(cls_or_self,
+                                                 url,
+                                                 t.NO_TOTAL,
+                                                 to_dict=dict_generator,
+                                                 params=params)
             else:
-                return self._get_new(self._get(url, params=params))
+                if isinstance(cls_or_self, type):
+                    return init.Broker.get_new(cls_or_self,
+                                               init.Broker.get(url,
+                                               params=params))
+                else:
+                    cls_or_self.populate(init.Broker.get(url, params=params))
 
     def save(self, url):
         """
@@ -460,7 +283,7 @@ class Common(object):
             params = dict(
                 (n, getattr(self, n)) for n in self._changed if n != c.ID
             )
-            return self._post(self._DETAILS, params=params)
+            return init.Broker.post(self._DETAILS, params=params)
 
     def expire(self, timestamp):
         """
@@ -470,7 +293,7 @@ class Common(object):
         :type timestamp: str
         """
 
-        self._is_timestamp(timestamp)
+        init.Broker.is_timestamp(timestamp)
         self.set(ti.EXPIRED_ON, timestamp)
         self.save()
 
@@ -498,7 +321,7 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return self._post(self._RELATED, params=params)
+        return init.Broker.post(self._RELATED, params=params)
 
     # DELETE REQUESTS
 
@@ -514,4 +337,4 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return self._delete(self._RELATED, params=params)
+        return init.Broker.delete(self._RELATED, params=params)

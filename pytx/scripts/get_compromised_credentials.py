@@ -15,7 +15,6 @@ app_id = '<your-app-id>'
 app_secret = '<your-app-secret>'
 
 init(app_id, app_secret)
-indicator = ThreatIndicator()
 
 def get_results(options):
     '''
@@ -34,7 +33,7 @@ def get_results(options):
         'until' : options.until,
     }
 
-    results = indicator.objects(__raw__=query, dict_generator=True)
+    results = ThreatIndicator.objects(__raw__=query, dict_generator=True)
     return results
 
 def process_results(handle, data):
