@@ -25,6 +25,8 @@ class ThreatExchange(object):
     PAGING      = 'paging'
     NEXT        = 'next'
 
+    METADATA    = 'metadata'
+
     NO_TOTAL    = -1
     MIN_TOTAL   = 0
     DEC_TOTAL   = 1
@@ -41,6 +43,7 @@ class Common(object):
 
     ADDED_ON        = 'added_on'
     ID              = 'id'
+    METADATA        = 'metadata'
     SHARE_LEVEL     = 'share_level'
     STATUS          = 'status'
     SUBMITTER_COUNT = 'submitter_count'
@@ -78,6 +81,7 @@ class Malware(object):
     ID              = Common.ID
     IMPHASH         = 'imphash'
     MD5             = 'md5'
+    METADATA        = Common.METADATA
     PASSWORD        = 'password'
     PE_RICH_HEADER  = 'pe_rich_header'
     SAMPLE          = 'sample'
@@ -131,6 +135,7 @@ class ThreatIndicator(object):
     EXPIRED_ON      = 'expired_on'
     ID              = Common.ID
     INDICATOR       = 'indicator'
+    METADATA        = Common.METADATA
     PASSWORDS       = 'passwords'
     PRIVACY_TYPE    = 'privacy_type'
     PRIVACY_MEMBERS = 'privacy_members'

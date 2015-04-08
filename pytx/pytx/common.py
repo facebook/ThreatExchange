@@ -197,7 +197,7 @@ class Common(object):
 
     @class_or_instance_method
     def details(cls_or_self, id=None, fields=None, connection=None,
-                full_response=False, dict_generator=False):
+                full_response=False, dict_generator=False, metadata=False):
         """
         Get object details. Allows you to limit the fields returned in the
         object's details. Also allows you to provide a connection. If a
@@ -231,6 +231,9 @@ class Common(object):
         :type full_response: bool
         :param dict_generator: Return a dictionary instead of an instantiated
                                object.
+        :type dict_generator: bool
+        :param metadata: Get extra metadata in the response.
+        :type metadata: bool
         :returns: Generator, dict, class
         """
 
@@ -247,6 +250,8 @@ class Common(object):
             raise pytxValueError("fields must be a list")
         if fields is not None:
             params[t.FIELDS] = ','.join(f.strip() for f in fields)
+        if metadata:
+            params[t.METADATA] = 1
         if full_response:
             return init.Broker.get(url, params=params)
         else:

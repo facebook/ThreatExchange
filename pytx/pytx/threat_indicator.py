@@ -15,6 +15,7 @@ class ThreatIndicator(Common):
         ti.EXPIRED_ON,
         ti.ID,
         ti.INDICATOR,
+        ti.METADATA,
         ti.PASSWORDS,
         ti.PRIVACY_TYPE,
         ti.PRIVACY_MEMBERS,
