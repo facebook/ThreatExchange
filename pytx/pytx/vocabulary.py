@@ -6,7 +6,7 @@ class ThreatExchange(object):
     URL             = 'https://graph.facebook.com/'
     ACCESS_TOKEN    = 'access_token'
     DEFAULT_LIMIT   = 500
-    MAX_LIMIT       = 5000
+    MAX_LIMIT       = 1000
 
     # GET
     MALWARE_ANALYSES        = 'malware_analyses/'
@@ -307,8 +307,8 @@ class PrivacyType(object):
     """
 
     VISIBLE         = "VISIBLE"
-    HASWHITELIST    = "HASWHITELIST"
-    HASBACKLIST     = "HASBLACKLIST"
+    HAS_WHITELIST    = "HAS_WHITELIST"
+    HAS_BACKLIST     = "HAS_BLACKLIST"
 
 
 class Role(object):

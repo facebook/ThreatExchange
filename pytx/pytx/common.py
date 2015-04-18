@@ -305,13 +305,13 @@ class Common(object):
     def false_positive(self, object_id):
         """
         Mark an object as a false positive by setting the status to
-        NON_MALICIOUS.
+        UNKNOWN.
 
         :param object_id: The object-id of the object to mark.
         :type object_id: str
         """
 
-        self.set(c.STATUS, s.NON_MALICIOUS)
+        self.set(c.STATUS, s.UNKNOWN)
         self.save()
 
     def add_connection(self, object_id):

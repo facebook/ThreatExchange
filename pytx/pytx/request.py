@@ -65,7 +65,7 @@ class Broker(object):
     def validate_limit(limit):
         """
         Verifies the limit provided is valid and within the max limit Facebook
-        will allow you to use (currently 5000).
+        will allow you to use.
 
         :param limit: Value to verify is a valid limit.
         :type limit: int, str
