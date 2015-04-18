@@ -50,16 +50,19 @@ class Broker(object):
         """
         Verifies the timestamp provided is a valid timestamp.
 
+        Valid timestamps are based on PHP's "strtotime" function. As of right
+        now even with python's "dateutil" library there are some strtotime valid
+        strings that do not validate properly. Until such a time as this can
+        become accurate and robust enough to have feature parity with strtotime,
+        this will always return True and leave proper timestamps to the API
+        user.
+
         :param timestamp: Value to verify is a timestamp.
         :type timestamp: str
-        :returns: True if valid, :class:`pytxValueError` if invalid.
+        :returns: True
         """
 
-        try:
-            int(timestamp)
-            return True
-        except ValueError, e:
-            raise pytxValueError(e)
+        return True
 
     @staticmethod
     def validate_limit(limit):
