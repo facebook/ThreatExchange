@@ -4,7 +4,7 @@ from vocabulary import ThreatExchange as t
 
 class ThreatIndicator(Common):
 
-    _URL = t.URL + t.THREAT_INDICATORS
+    _URL = t.URL + t.VERSION + t.THREAT_INDICATORS
     _DETAILS = t.URL
     _RELATED = t.URL
 

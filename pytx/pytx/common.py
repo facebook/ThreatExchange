@@ -238,7 +238,7 @@ class Common(object):
         """
 
         if isinstance(cls_or_self, type):
-            url = t.URL + id + '/'
+            url = t.URL + t.VERSION + id + '/'
         else:
             url = cls_or_self._DETAILS
         if connection:

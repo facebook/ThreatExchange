@@ -9,7 +9,7 @@ from errors import (
 
 class ThreatExchangeMember(object):
 
-    _URL = t.URL + t.THREAT_EXCHANGE_MEMBERS
+    _URL = t.URL + t.VERSION + t.THREAT_EXCHANGE_MEMBERS
 
     _internal = [
         '_access_token',
