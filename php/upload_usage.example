@@ -1,0 +1,25 @@
+#
+# Copyright (c) 2014, Facebook, Inc.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree. An additional grant
+# of patent rights can be found in the PATENTS file in the same directory.
+#
+# Examples of using the ThreatExchange PHP API to bulk upload indicators
+#
+
+#
+# CLI Examples
+#
+
+# Uploads all indicators in 'upload_file.example'
+$ php upload.php -t indicators -f upload_file.example
+
+# Uploads all indicators in 'upload_file.example', so only my app can see the
+# data
+$ php upload.php -t indicators -f upload_file.example -p HAS_WHITELIST -m <my_app_id>
+
+# Uploads all indicators in 'upload_file.example' and prepends the tag 
+# '[my_tag]' to all descriptions
+$ php upload.php -t indicators -f upload_file.example -g my_tag
