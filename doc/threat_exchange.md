@@ -33,14 +33,20 @@ map is, generally, not important.
 
 ThreatExchange is a subset of API endpoints within the larger ecosystem of
 Facebook Graph APIs. Essential documentation for interacting with Facebook
-platform Graph APIs are available at https://developers.facebook.com/docs/graph-api.
-This documentation covers key concepts: usage of access tokens for authentication,
-result pagination, and batching.  It is recommended to be familiar with the 
-basics of interacting with Facebook Graph APIs prior to trying out ThreatExchange. 
+platform Graph APIs are available at
+https://developers.facebook.com/docs/graph-api.
+This documentation covers key concepts: usage of access tokens for
+authentication,
+result pagination, and batching.  It is recommended to be familiar with the
+basics of interacting with Facebook Graph APIs prior to trying out
+ThreatExchange. 
 
 ## Getting Access
 
-You can request access to ThreatExchange at https://threatexchange.fb.com.
+If you haven't already, beging by requesting access to ThreatExchange at
+[https://threatexchange.fb.com](https://threatexchange.fb.com).
+
+
 
 ## Querying For Data
 

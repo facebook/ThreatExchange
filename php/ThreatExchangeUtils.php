@@ -59,7 +59,7 @@ class ThreatExchangeUtils {
     $curler = curl_init($uri);
     curl_setopt($curler, CURLOPT_RETURNTRANSFER, true);
     $raw_json = curl_exec($curler);
-    self::checkCurlResults($curler);
+    self::checkCurlResults($curler, $raw_json);
     curl_close($curler);
 
     if (self::isDebugMode()) {
@@ -68,14 +68,37 @@ class ThreatExchangeUtils {
     }
     return $raw_json;
   }
+  
+  /**
+   * @throws Exception
+   */
+  public static function makeCurlPostRequest($uri, $post_data) {
+    $curler = curl_init($uri);
+    curl_setopt($curler, CURLOPT_POST, true);
+    curl_setopt($curler, CURLOPT_POSTFIELDS, http_build_query($post_data));
+    curl_setopt($curler, CURLOPT_RETURNTRANSFER, true);
+    $raw_json = curl_exec($curler);
+    self::checkCurlResults($curler, $raw_json);
+    curl_close($curler);
+
+    if (self::isDebugMode()) {
+      $json_ar = json_decode($raw_json, true /* assoc array */);
+      self::debugPrettyPrint($json_ar);
+    }
+    return $raw_json;
+  }
 
   /**
    * @throws Exception
    */
-  protected function checkCurlResults($curler) {
+  protected function checkCurlResults($curler, $results) {
     $return_code = curl_getinfo($curler, CURLINFO_HTTP_CODE);
     if ($return_code !== 200) {
-      throw new Exception("CURL ERROR: $return_code, ".curl_error($curler));
+      throw new Exception(
+        "CURL ERROR: $return_code, ".
+        curl_error($curler).' - '.
+        $results
+      );
     }
   }
 
