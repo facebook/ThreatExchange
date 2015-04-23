@@ -11,7 +11,7 @@ Install this gem locally
 
     rake install
 
-Add this to your application:
+Add this to your application
 
     require 'ThreatExchange'
 
@@ -44,7 +44,7 @@ result = TE.threat_indicators(query)
 ```
 
 The result will return either a string, a singluar hash or an array of hashes and then from there you can manipulate the data as you like.
-If you would like to see aspecific examples of each type of query take a look at the script examples. 
+If you would like to see examples of each type of query take a look at the script in the example directory. 
 
 
 
