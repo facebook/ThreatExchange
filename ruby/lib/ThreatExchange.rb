@@ -62,7 +62,7 @@ module ThreatExchange
         filter[:after] = paging
         begin 
           response = RestClient.get "#{@baseurl}/threat_indicators", 
-          { params: filter, verify_ssl: OpenSSL::SSL::VERIFY_NONE }
+          { params: filter }
           result = JSON.parse(response)
         rescue => e
           puts e.inspect
