@@ -50,7 +50,6 @@ module ThreatExchange
     def threat_indicators(filter={})
       filter[:access_token] = @access_token
       begin
-        RestClient.proxy = "127.0.0.1"
         response = RestClient.get "#{@baseurl}/threat_indicators", 
         { params: filter }
         result = JSON.parse(response)
