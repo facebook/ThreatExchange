@@ -2,18 +2,19 @@
 # ThreatExchange example script.
 require 'ThreatExchange'
 require_relative 'lib/example'
-access_token = 'abc123|somethingsomething'
+access_token = '1289387|1823123'
 TEClient = ThreatExchange::Client.new(access_token)
+
 #------------------------------------------------------------------------------
 banner('Example Malware Analysis')
-query = {limit: 1000, text: 'bepush', strict_text: false}
+query = {text: 'bepush', strict_text: false}
 spinner{ parse(TEClient.malware_analyses(query)) }
 #------------------------------------------------------------------------------
 banner('Example #2 Threat Exchange Members')
 spinner{ parse(TEClient.members) }
 #------------------------------------------------------------------------------
 banner('Example #3 Threat Indicators')
-query = {text: 'bepush', limit: 1000 }
+query = {text: 'bepush'}
 spinner{ parse(TEClient.threat_indicators(query)) }
 #------------------------------------------------------------------------------
 banner('Example #4 Malware Objects')
