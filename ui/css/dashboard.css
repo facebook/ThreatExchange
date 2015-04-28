@@ -36,7 +36,7 @@ body {
 @media (min-width: 768px) {
   .sidebar {
     position: fixed;
-    top: 51px;
+    top: 100px;
     bottom: 0;
     left: 0;
     z-index: 1000;
@@ -196,7 +196,7 @@ li.active span.remove_search {
 
 .search_results {
   position: fixed;
-  top: 50px;
+  top: 100px;
   bottom: 0;
   left: 250px;
   z-index: 1000;
@@ -229,7 +229,7 @@ li.active span.remove_search {
 
 .item_details {
   position: fixed;
-  top: 50px;
+  top: 150px;
   bottom: 0;
   left: 549px;
   width: 56%;
