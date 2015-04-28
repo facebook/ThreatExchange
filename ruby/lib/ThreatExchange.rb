@@ -27,7 +27,11 @@ module ThreatExchange
         puts e.inspect
       end
       data = result['data']
-      paging = result['paging']['cursors']['after']
+      if result.has_key?(:paging)
+        paging = result['paging']['cursors']['after']
+      else
+        paging = nil
+      end
       until paging.nil?
         filter[:after] = paging
         begin 
@@ -57,7 +61,11 @@ module ThreatExchange
         puts e.inspect
       end
       data = result['data']
-      paging = result['paging']['cursors']['after']
+      if result.has_key?(:paging)
+        paging = result['paging']['cursors']['after']
+      else
+        paging = nil
+      end
       until paging.nil?
         filter[:after] = paging
         begin 
