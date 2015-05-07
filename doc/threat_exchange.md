@@ -369,7 +369,7 @@ ISO 8601 date format;
 * **indicator** - The indicator data being submitted.
 * passwords - The MD5s of passwords associated with this indicator. Intended
 for compromised credentials.
-* privacy\_type - The kind of privacy for the indicator, see values
+* **privacy\_type** - The kind of privacy for the indicator, see values
   defined below.
 * privacy\_members - Some types of privacy require you to specify who can
   or cannot see the indicator.
@@ -394,6 +394,7 @@ Example submission of a malicious domain:
       &threat_type=MALICIOUS_DOMAIN
       &status=MALICIOUS
       &description=This%20domain%20was%20hosting%20malware
+      &privacy_type=VISIBLE
 
 
 Data returned:
@@ -405,8 +406,9 @@ Data returned:
 
 ## Setting Privacy In ThreatExchange
 
-All submissions to the ThreatExchange API allow for limiting the visibility of
-any indicator.  Currently, ThreatExchange supports three levels of visibility: 
+All submissions to the ThreatExchange API require setting a privacy type.
+This choice can limit the visibility of any indicator, if desired.
+ThreatExchange supports three levels of visibility:
 
 * allow all members;
 * allow specific members; and
@@ -431,7 +433,7 @@ while the rest of the member community can.
 
 * A comma-delimited list of AppIDs allowed or prohibited from viewing an indicator in
 accordance with the PRIVACY\_TYPE.  NOTE:  When limiting visibility, it is not necessary
-to include your own AppID.
+to include your own AppID. It will be added automatically if necessary.
 
 
 Example submission of a malicious domain with the privacy set to just two members
@@ -447,7 +449,6 @@ Example submission of a malicious domain with the privacy set to just two member
       &privacy_type=HAS_WHITELIST
       &privacy_members=123456789,9012345678
 
-Currently, all submissions default to a PRIVACY\_TYPE of VISIBLE.
 
 ## Editing Exisiting Data
 
