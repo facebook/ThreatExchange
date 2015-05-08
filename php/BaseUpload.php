@@ -16,15 +16,15 @@ require_once(__ROOT__.'/ThreatExchangeConfig.php');
 ThreatExchangeConfig::init();
 
 abstract class BaseUpload {
-  
+
   private $fields = null;
 
   public abstract function getEndpoint();
-  
+
   protected abstract function getTypeSpecificFields();
-  
+
   protected abstract function getPostDataFromCSV($data_row);
-  
+
   public function getFields() {
     if (!$this->fields) {
       $this->fields = array(
@@ -37,7 +37,7 @@ abstract class BaseUpload {
         'status',
       );
       $this->fields = array_merge(
-        $this->fields, 
+        $this->fields,
         $this->getTypeSpecificFields()
       );
     }
@@ -71,7 +71,7 @@ abstract class BaseUpload {
   public function hasValidOptions($options) {
     return !isset($options['h']) && isset($options['f']);
   }
-  
+
   public function parseDataFile($file_name, $options) {
     if (!file_exists($file_name)) {
       throw new Exception(
@@ -82,8 +82,8 @@ abstract class BaseUpload {
     $header = null;
     $entries = array();
     $def_privacy_data = $this->getPrivacyDataFromOptions($options);
-    $def_description = (isset($options['d'])) 
-      ? $options['d'] 
+    $def_description = (isset($options['d']))
+      ? $options['d']
       : 'No description provided';
     $def_tag = (isset($options['g'])) ? $options['g'] : '';
     while (($row = fgetcsv($fh)) !== FALSE) {
@@ -93,14 +93,14 @@ abstract class BaseUpload {
       if (strpos($row[0], '#') === 0) {
         continue; // skip lines with comments
       }
-      
+
       if (!$header) {
         $header = $row;
         continue;
       }
-      
+
       $post_data = $this->getPostDataFromCSV(array_combine($header, $row));
-      
+
       // fold in the defaults provided
       if (!isset($post_data['description'])) {
         $post_data['description'] = $def_description;
@@ -111,12 +111,12 @@ abstract class BaseUpload {
       if (!isset($post_data['privacy_type']) && count($def_privacy_data) > 0) {
         $post_data = array_merge($post_data, $def_privacy_data);
       }
-      
+
       $entries[] = $post_data;
     }
     return $entries;
   }
-  
+
   private function getPrivacyDataFromOptions($options) {
     $privacy_data = array();
     if (isset($options['p'])) {
@@ -130,7 +130,9 @@ abstract class BaseUpload {
           $privacy_data['privacy_type'] = 'HAS_WHITELIST';
           break;
         default:
-          // do nothing
+          throw new Exception(
+            'You must set a privacy type!'
+          );
           break;
       }
     }
@@ -152,7 +154,7 @@ abstract class BaseUpload {
 
     return $uri;
   }
-  
+
   public function getResultsAsCSV($results) {
     var_dump($results);
     $csv = "# ThreatExchange Results - uploaded at ".strftime('%c')."\n".
