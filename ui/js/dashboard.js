@@ -317,14 +317,17 @@ $(document).ready(function() {
             $('#add-new-object-form [data-field]').each(function(i, obj) {
                 var field = $(obj).attr('data-field');
                 var value = $(obj).val();
-                if (!!value && value.length > 0
-                    && field != 'privacy_type'
-                    && field != 'privacy_members') {
+                if (!!value && value.length > 0) {
                     data[field] = value;
                 }
             });
-            var url = fbte_url + $(this).attr('data-id') + "/"
-            post_request(url, data, $('span#add-new-object-results'));
+            var res_obj = $('span#add-new-object-results');
+            if ("privacy_type" in data) {
+                var url = fbte_url + $(this).attr('data-id') + "/"
+                post_request(url, data, res_obj);
+            } else {
+                res_obj.text("Must have a privacy type!");
+            }
             return false;
         }
     });
@@ -346,8 +349,13 @@ $(document).ready(function() {
                     data[field] = value;
                 }
             });
-            var url = threat_indicators;
-            post_request(url, data, $('span#add-new-object-results'));
+            var res_obj = $('span#add-new-object-results');
+            if ("privacy_type" in data) {
+                var url = threat_indicators;
+                post_request(url, data, res_obj);
+            } else {
+                res_obj.text("Must have a privacy type!");
+            }
             return false;
         }
     });

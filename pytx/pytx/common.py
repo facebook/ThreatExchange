@@ -4,6 +4,7 @@ from vocabulary import Common as c
 from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatIndicator as ti
+from vocabulary import PrivacyType as pt
 from errors import (
     pytxAttributeError,
     pytxValueError,
@@ -66,7 +67,7 @@ class Common(object):
         """
 
         object.__setattr__(self, name, value)
-        if name == c.ID:
+        if name == c.ID and value not in self._DETAILS:
             self._DETAILS = self._DETAILS + value + '/'
             self._RELATED = self._DETAILS + t.RELATED
         if name not in self._changed and name in self._fields:
@@ -77,7 +78,7 @@ class Common(object):
         Get an attribute. If the attribute does not exist, return None
         """
 
-        if attr not in self._fields and attr not in self._internal:
+        if attr not in self._fields + self._internal + self._unique:
             raise pytxAttributeError("%s is not a valid attribute" % attr)
 
         try:
@@ -269,7 +270,7 @@ class Common(object):
                 else:
                     cls_or_self.populate(init.Broker.get(url, params=params))
 
-    def save(self, url):
+    def save(self):
         """
         Save this object. If it is a new object, use self._fields to build the
         POST and submit to the appropriate URL. If it is an update to an
@@ -283,11 +284,22 @@ class Common(object):
             params = dict(
                 (n, getattr(self, n)) for n in self._fields if n != c.ID
             )
-            return self._post(self._URL, params=params)
+            if ti.PRIVACY_TYPE not in params:
+                raise pytxValueError("Must provide a %s" % ti.PRIVACY_TYPE)
+                pass
+            else:
+                if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
+                    len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
+                    raise pytxValueError("Must provide %s" % ti.PRIVACY_MEMBERS)
+            return init.Broker.post(self._URL, params=params)
         else:
             params = dict(
                 (n, getattr(self, n)) for n in self._changed if n != c.ID
             )
+            if (ti.PRIVACY_TYPE in params and
+                params[ti.PRIVACY_TYPE] != pt.VISIBLE and
+                len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
+                raise pytxValueError("Must provide %s" % ti.PRIVACY_MEMBERS)
             return init.Broker.post(self._DETAILS, params=params)
 
     def expire(self, timestamp):
