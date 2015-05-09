@@ -132,11 +132,15 @@ module ThreatExchange
 
     def new_ioc(data={})
       data[:access_token] = @access_token
-      begin
-        response = RestClient.post "#{@baseurl}/threat_indicators", data
-        return response
-      rescue => e
-        e.inspect
+      if data.has_key?(:privacy_type)
+        begin
+          response = RestClient.post "#{@baseurl}/threat_indicators", data
+          return response
+        rescue => e
+          e.inspect
+        end
+      else 
+        puts "You must set a privacy_type in your query"
       end
     end
 

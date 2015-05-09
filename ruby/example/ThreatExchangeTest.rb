@@ -25,7 +25,8 @@ spinner{ parse(TEClient.indicator_pq(query)) }
 banner('Example #5 IOC Submission')
 iocdata = {indicator: '63E070B2B434D07226C73A5773BFCC8D', type: 'HASH_MD5',
            description: 'API Test Ignore MD5sum of mcgrew',
-           status: 'NON_MALICIOUS' }
+           status: 'NON_MALICIOUS',
+           privacy_type: 'VISIBLE' }
 spinner{ parse(TEClient.new_ioc(iocdata)) }
 #------------------------------------------------------------------------------
 banner('Example #6 IOC Update')

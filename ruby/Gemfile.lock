@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ThreatExchange (0.0.8)
+    ThreatExchange (0.0.9)
       json
       rest-client
 
