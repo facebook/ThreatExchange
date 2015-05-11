@@ -1,6 +1,6 @@
 var v_ThreatExchange = {
     URL             : "https://graph.facebook.com/",
-    VERSION         : "", //"v2.4/",
+    VERSION         : "v2.3/",
     ACCESS_TOKEN    : "access_token",
     DEFAULT_LIMIT   : 500,
     MAX_LIMIT       : 5000,
