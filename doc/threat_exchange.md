@@ -110,7 +110,11 @@ Data returned:
 ### /threat\_exchange\_members
 
 Returns a list of current members of the ThreatExchange, alphabetized by
-application name. The following query parameter is required:
+application name. Each application may also include an optional contact
+email address. You can set this address, if desired, under the settings
+panel for your application. See https://developers.facebook.com/apps/.
+
+The following query parameter is required:
 
 * **access\_token** - The key for authenticating to the API. It is a
 concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;. For example,
@@ -127,6 +131,7 @@ Data returned:
       "data": [
         {
           "id": "820763734618599",
+          "email": "threatexchange@support.facebook.com",
           "name": "Facebook ThreatExchange"
         },
         ...
@@ -174,7 +179,7 @@ Data returned:
           "severity": "INFO", 
           "share_level": "GREEN", 
           "status": "NON_MALICIOUS", 
-          "type": "ip", 
+          "type": "IP_ADDRESS", 
           "threat_types": [
             "MALICIOUS_IP"
           ], 
@@ -312,7 +317,7 @@ Data returned:
           "added_on": "2015-02-11T21:10:21+0000", 
           "description": "Facebook", 
           "indicator": "facebook.com",  
-          "type": "domain", 
+          "type": "DOMAIN", 
           "threat_types": [
             "UNKNOWN"
           ], 
