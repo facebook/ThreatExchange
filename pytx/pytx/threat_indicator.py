@@ -28,3 +28,6 @@ class ThreatIndicator(Common):
         ti.THREAT_TYPES,
         ti.TYPE
     ]
+
+    _unique = [
+    ]

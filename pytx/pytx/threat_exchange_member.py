@@ -20,6 +20,9 @@ class ThreatExchangeMember(object):
         tem.NAME
     ]
 
+    _unique = [
+    ]
+
     _access_token = None
 
     def __init__(self, **kwargs):
