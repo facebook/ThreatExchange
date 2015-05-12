@@ -21,6 +21,7 @@ class ThreatExchange(object):
     UNTIL       = 'until'
     TYPE        = 'type'
     FIELDS      = 'fields'
+    THREAT_TYPE = 'threat_type'
 
     DATA        = 'data'
     PAGING      = 'paging'
