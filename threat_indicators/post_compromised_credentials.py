@@ -59,7 +59,9 @@ def parse_args(args):
         raise Exception('You must specify a description')
 
     privacy_members = None
-    if args.privacy_type is None or args.privacy_type == 'VISIBLE':
+    if args.privacy_type is None:
+        raise Exception('You must specify a privacy_type')
+    if args.privacy_type == 'VISIBLE':
         privacy_type = 'VISIBLE'
         share_level = 'GREEN'
     elif args.privacy_type == 'HAS_WHITELIST' or \

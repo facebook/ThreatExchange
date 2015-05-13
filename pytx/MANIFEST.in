@@ -1,0 +1,4 @@
+include DESCRIPTION.rst
+include LICENSE
+recursive-include docs *
+# recursive-include tests *

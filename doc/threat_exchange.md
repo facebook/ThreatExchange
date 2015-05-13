@@ -33,14 +33,20 @@ map is, generally, not important.
 
 ThreatExchange is a subset of API endpoints within the larger ecosystem of
 Facebook Graph APIs. Essential documentation for interacting with Facebook
-platform Graph APIs are available at https://developers.facebook.com/docs/graph-api.
-This documentation covers key concepts: usage of access tokens for authentication,
-result pagination, and batching.  It is recommended to be familiar with the 
-basics of interacting with Facebook Graph APIs prior to trying out ThreatExchange. 
+platform Graph APIs are available at
+https://developers.facebook.com/docs/graph-api.
+This documentation covers key concepts: usage of access tokens for
+authentication,
+result pagination, and batching.  It is recommended to be familiar with the
+basics of interacting with Facebook Graph APIs prior to trying out
+ThreatExchange. 
 
 ## Getting Access
 
-You can request access to ThreatExchange at https://threatexchange.fb.com.
+If you haven't already, beging by requesting access to ThreatExchange at
+[https://threatexchange.fb.com](https://threatexchange.fb.com).
+
+
 
 ## Querying For Data
 
@@ -104,7 +110,11 @@ Data returned:
 ### /threat\_exchange\_members
 
 Returns a list of current members of the ThreatExchange, alphabetized by
-application name. The following query parameter is required:
+application name. Each application may also include an optional contact
+email address. You can set this address, if desired, under the settings
+panel for your application. See https://developers.facebook.com/apps/.
+
+The following query parameter is required:
 
 * **access\_token** - The key for authenticating to the API. It is a
 concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;. For example,
@@ -121,6 +131,7 @@ Data returned:
       "data": [
         {
           "id": "820763734618599",
+          "email": "threatexchange@support.facebook.com",
           "name": "Facebook ThreatExchange"
         },
         ...
@@ -168,7 +179,7 @@ Data returned:
           "severity": "INFO", 
           "share_level": "GREEN", 
           "status": "NON_MALICIOUS", 
-          "type": "ip", 
+          "type": "IP_ADDRESS", 
           "threat_types": [
             "MALICIOUS_IP"
           ], 
@@ -306,7 +317,7 @@ Data returned:
           "added_on": "2015-02-11T21:10:21+0000", 
           "description": "Facebook", 
           "indicator": "facebook.com",  
-          "type": "domain", 
+          "type": "DOMAIN", 
           "threat_types": [
             "UNKNOWN"
           ], 
@@ -363,7 +374,7 @@ ISO 8601 date format;
 * **indicator** - The indicator data being submitted.
 * passwords - The MD5s of passwords associated with this indicator. Intended
 for compromised credentials.
-* privacy\_type - The kind of privacy for the indicator, see values
+* **privacy\_type** - The kind of privacy for the indicator, see values
   defined below.
 * privacy\_members - Some types of privacy require you to specify who can
   or cannot see the indicator.
@@ -388,6 +399,7 @@ Example submission of a malicious domain:
       &threat_type=MALICIOUS_DOMAIN
       &status=MALICIOUS
       &description=This%20domain%20was%20hosting%20malware
+      &privacy_type=VISIBLE
 
 
 Data returned:
@@ -399,8 +411,9 @@ Data returned:
 
 ## Setting Privacy In ThreatExchange
 
-All submissions to the ThreatExchange API allow for limiting the visibility of
-any indicator.  Currently, ThreatExchange supports three levels of visibility: 
+All submissions to the ThreatExchange API require setting a privacy type.
+This choice can limit the visibility of any indicator, if desired.
+ThreatExchange supports three levels of visibility:
 
 * allow all members;
 * allow specific members; and
@@ -425,7 +438,7 @@ while the rest of the member community can.
 
 * A comma-delimited list of AppIDs allowed or prohibited from viewing an indicator in
 accordance with the PRIVACY\_TYPE.  NOTE:  When limiting visibility, it is not necessary
-to include your own AppID.
+to include your own AppID. It will be added automatically if necessary.
 
 
 Example submission of a malicious domain with the privacy set to just two members
@@ -441,7 +454,6 @@ Example submission of a malicious domain with the privacy set to just two member
       &privacy_type=HAS_WHITELIST
       &privacy_members=123456789,9012345678
 
-Currently, all submissions default to a PRIVACY\_TYPE of VISIBLE.
 
 ## Editing Exisiting Data
 

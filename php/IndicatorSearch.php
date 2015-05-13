@@ -37,15 +37,16 @@ final class IndicatorSearch extends BaseSearch {
   }
 
   public function getResultsAsCSV($results) {
-    $csv = "# ThreatExchange Results - queried at ".time()."\n".
-      "id,type,indicator,is_malicious,severity\n";
+    $csv = "# ThreatExchange Results - queried at ".strftime('%c')."\n".
+      "id,type,indicator,status,description,threat_type\n";
     foreach ($results as $result) {
       $row = array(
         $result['id'],
         $result['type'],
         $result['indicator'],
-        $result['malicious'],
-        $result['severity'],
+        $result['status'],
+        $result['description'],
+        implode('|,', $result['threat_types']),
       );
       $csv .= implode(',', $row)."\n";
     }
