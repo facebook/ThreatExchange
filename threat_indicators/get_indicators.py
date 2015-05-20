@@ -18,7 +18,7 @@ from urllib2 import urlopen
 FB_APP_ID = os.environ['FB_THREATEXCHANGE_APP_ID']
 FB_ACCESS_TOKEN = os.environ['FB_THREATEXCHANGE_APP_SECRET']
 
-SERVER = 'https://graph.tpott.sb.facebook.com/'
+SERVER = 'https://graph.facebook.com/'
 
 def clean_url(url):
     '''
