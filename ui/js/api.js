@@ -548,13 +548,13 @@ function parse_search_term(search_term) {
             var new_term = "?text=" + search_term;
     } else {
         var new_term = search_term
-                       .replace('text:', '&text=')
                        .replace('strict_text:', '&strict_text=')
+                       .replace('text:', '&text=')
                        .replace('limit:', '&limit=')
                        .replace('since:', '&since=')
                        .replace('until:', '&until=')
-                       .replace('type:', '&type=')
                        .replace('threat_type:', '&threat_type=')
+                       .replace('type:', '&type=')
                        .replace('metadata:', '&metadata=')
                        .replace('&', '?')
     }
