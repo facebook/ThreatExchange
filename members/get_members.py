@@ -42,9 +42,13 @@ def process_results(data):
     '''
     Process the threat indicators received from the server.
     '''
-    for d in data:
-        row = json.dumps(d)
-        print ('"' + d['name'] + '","' + d['id'] + '"')
+    for row in data:
+        if 'email'in row:
+            email = row['email']
+        else:
+                email = ''
+
+        print ('"' + row['name'] + '","' + email + '","' + row['id'] + '"')
 
 def run_query(url):
     try:
