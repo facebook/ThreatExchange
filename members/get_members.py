@@ -46,7 +46,7 @@ def process_results(data):
         if 'email'in row:
             email = row['email']
         else:
-                email = ''
+            email = ''
 
         print ('"' + row['name'] + '","' + email + '","' + row['id'] + '"')
 
