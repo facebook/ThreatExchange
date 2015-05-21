@@ -107,7 +107,8 @@ function get_members() {
                 .css('max-height', '500px')
                 .css('overflow-y', 'auto');
             $.each(json.data, function(idx, member){
-                html.append(member.name + "<br />");
+                var mailto = '<a href="mailto:' + member.email + '">' + member.name + '</a>';
+                html.append(mailto + "<br />");
             });
             $('#member-popover-content').html(html);
             $('#member-popover').popover('show');
