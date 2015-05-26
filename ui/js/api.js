@@ -107,8 +107,7 @@ function get_members() {
                 .css('max-height', '500px')
                 .css('overflow-y', 'auto');
             $.each(json.data, function(idx, member){
-                var mailto = '<a href="mailto:' + member.email + '">' + member.name + '</a>';
-                html.append(mailto + "<br />");
+                html.append(member.name + "<br />");
             });
             $('#member-popover-content').html(html);
             $('#member-popover').popover('show');
@@ -549,13 +548,13 @@ function parse_search_term(search_term) {
             var new_term = "?text=" + search_term;
     } else {
         var new_term = search_term
-                       .replace('strict_text:', '&strict_text=')
                        .replace('text:', '&text=')
+                       .replace('strict_text:', '&strict_text=')
                        .replace('limit:', '&limit=')
                        .replace('since:', '&since=')
                        .replace('until:', '&until=')
-                       .replace('threat_type:', '&threat_type=')
                        .replace('type:', '&type=')
+                       .replace('threat_type:', '&threat_type=')
                        .replace('metadata:', '&metadata=')
                        .replace('&', '?')
     }
