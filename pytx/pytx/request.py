@@ -192,7 +192,7 @@ class Broker(object):
         return params
 
     @classmethod
-    def get(cls, url, params=None):
+    def get(cls, url, params={}):
         """
         Send a GET request.
 
@@ -202,15 +202,13 @@ class Broker(object):
         :type params: dict
         :returns: dict (using json.loads())
         """
-        if not params:
-            params = dict()
 
         params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
         resp = requests.get(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def post(cls, url, params=None):
+    def post(cls, url, params={}):
         """
         Send a POST request.
 
@@ -221,15 +219,12 @@ class Broker(object):
         :returns: dict (using json.loads())
         """
 
-        if not params:
-            params = dict()
-
         params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
         resp = requests.post(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def delete(cls, url, params=None):
+    def delete(cls, url, params={}):
         """
         Send a DELETE request.
 
@@ -240,15 +235,12 @@ class Broker(object):
         :returns: dict (using json.loads())
         """
 
-        if not params:
-            params = dict()
-
         params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
         resp = requests.delete(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def get_generator(cls, klass, url, total, to_dict=False, params=None):
+    def get_generator(cls, klass, url, total, to_dict=False, params={}):
         """
         Generator for managing GET requests. For each GET request it will yield
         the next object in the results until there are no more objects. If the
@@ -267,9 +259,6 @@ class Broker(object):
         :type params: dict
         :returns: Generator
         """
-
-        if not params:
-            params = dict()
 
         if total is None:
             total = t.NO_TOTAL

@@ -287,7 +287,7 @@ if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
  be "555|aSdF123GhK".
 * fields - A comma-delimited string of any combination of the following:
   * added\_on - Timestamp when the indicator was added, in ISO 8601 date format;
-  * confidence - A score for how confident we are that the indicator is bad
+	* confidence - A score for how confident we are that the indicator is bad
  ranges from 0 to 100;
   * description - A human readable description of the indicator;
   * expired\_on - Timestamp when the indicator expired, in ISO 8601 date

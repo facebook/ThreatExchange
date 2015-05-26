@@ -123,7 +123,6 @@ class ThreatExchangeMember(object):
 
     ID      = Common.ID
     NAME    = 'name'
-    EMAIL   = 'email'
 
 
 class ThreatIndicator(object):
