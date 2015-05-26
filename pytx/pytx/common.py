@@ -145,7 +145,7 @@ class Common(object):
 
     @classmethod
     def objects(cls, text=None, strict_text=False, type_=None, threat_type=None,
-                limit=None, since=None, until=None, __raw__=None,
+                fields=None, limit=None, since=None, until=None, __raw__=None,
                 full_response=False, dict_generator=False):
         """
         Get objects from ThreatExchange.
@@ -158,6 +158,8 @@ class Common(object):
         :type type_: str
         :param threat_type: The Threat type to limit to.
         :type threat_type: str
+        :param fields: Select specific fields to pull
+        :type fields: str, list
         :param limit: The maximum number of objects to return.
         :type limit: int, str
         :param since: The timestamp to limit the beginning of the search.
@@ -186,6 +188,7 @@ class Common(object):
                 strict_text=strict_text,
                 type_=type_,
                 threat_type=threat_type,
+                fields=fields,
                 limit=limit,
                 since=since,
                 until=until,
