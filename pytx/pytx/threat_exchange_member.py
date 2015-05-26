@@ -17,7 +17,8 @@ class ThreatExchangeMember(object):
 
     _fields = [
         tem.ID,
-        tem.NAME
+        tem.NAME,
+        tem.EMAIL
     ]
 
     _unique = [
@@ -32,7 +33,7 @@ class ThreatExchangeMember(object):
         """
 
         self._access_token = init.__ACCESS_TOKEN__
-        if self._access_token == None:
+        if not self._access_token:
             raise pytxInitError("Must init() before instantiating")
         for name, value in kwargs.items():
             self.__setattr__(name, value)
@@ -62,7 +63,7 @@ class ThreatExchangeMember(object):
         return self.__getattr__(attr)
 
     @classmethod
-    def _get_generator(cls, url, to_dict=False, params={}):
+    def _get_generator(cls, url, to_dict=False, params=None):
         """
         Send the GET request and return a generator.
 
@@ -74,6 +75,9 @@ class ThreatExchangeMember(object):
         :type params: dict
         :returns: Generator, dict (using json.loads())
         """
+
+        if not params:
+            params = dict()
 
         members = init.Broker.get(url, params=params).get(t.DATA, [])
         total = len(members)
