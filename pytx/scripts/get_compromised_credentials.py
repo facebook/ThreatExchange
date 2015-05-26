@@ -11,8 +11,8 @@ from pytx.vocabulary import ThreatType as tt
 from pytx.vocabulary import Types as t
 
 
-app_id = '<your-app-id>'
-app_secret = '<your-app-secret>'
+app_id = '<app-id>'
+app_secret = '<app-secret>'
 
 init(app_id, app_secret)
 
@@ -24,28 +24,23 @@ def get_results(options):
     if options.since is None or options.until is None:
         raise Exception('You must specify both "since" and "until" values')
 
-
-    query = {
-        'threat_type': tt.COMPROMISED_CREDENTIAL,
-        'type' : t.EMAIL_ADDRESS,
-        'fields' : 'indicator,passwords',
-        'since' : options.since,
-        'until' : options.until,
-    }
-
-    results = ThreatIndicator.objects(__raw__=query, dict_generator=True)
+    results = ThreatIndicator.objects(threat_type=tt.COMPROMISED_CREDENTIAL, type_=t.EMAIL_ADDRESS, limit=options.limit,
+                                        fields=['indicator','passwords'], since=options.since, until=options.until)
     return results
 
-def process_results(handle, data):
+def process_result(handle, result):
     '''
     Process the threat indicators received from the server. This version
     writes the indicators to the output file specified by 'handle', if any.
-    Indicators are written one per line, formatted in JSON.
+    Indicators are written one per line.
     '''
-    if handle is None:
-        return
 
-    handle.write('%s:%s\n' % (data['indicator'], data['passwords'][0]))
+    for password in result.passwords:
+        output = '%s:%s\n' % (result.indicator, password)
+        if handle is None:
+            print output,
+        else:
+            handle.write(output)
 
 def run_query(options, handle):
     try:
@@ -58,7 +53,7 @@ def run_query(options, handle):
 
     count = 0
     for result in results:
-        process_results(handle, result)
+        process_result(handle, result)
         count += 1
 
     try:
@@ -80,15 +75,16 @@ def get_parser():
     parser.add_argument('-o', '--output')
     parser.add_argument('-s', '--since')
     parser.add_argument('-u', '--until')
+    parser.add_argument('-l', '--limit')
 
     return parser
 
 if __name__ == '__main__':
     args = get_parser().parse_args()
-    if args.output is not None:
-        handle = open(args.output, 'w')
-    else:
-        handle = None
+    
+    handle = open(args.output, 'w') if args.output else None
+    args.limit = te.DEFAULT_LIMIT if args.limit is None or not args.limit.isdigit() else int(args.limit)
+
     start = int(time.time())
     run_query(args, handle)
     end = int(time.time())
