@@ -67,8 +67,9 @@ class Broker(object):
     @staticmethod
     def validate_limit(limit):
         """
-        Verifies the limit provided is valid and within the max limit Facebook
-        will allow you to use.
+        Verifies the limit provided is a valid number, use -1 to fetch everything.
+        If the limit is greater than 1,000 the generator will still fetch 1,000
+        results at a time, but will stop at the defined limit.
 
         :param limit: Value to verify is a valid limit.
         :type limit: int, str
@@ -79,11 +80,6 @@ class Broker(object):
             int(limit)
         except ValueError, e:
             raise pytxValueError(e)
-        if limit > t.MAX_LIMIT:
-            raise pytxValueError(
-                "limit cannot exceed %s (default: %s)" % (t.MAX_LIMIT,
-                                                          t.DEFAULT_LIMIT)
-            )
         return
 
     @staticmethod
@@ -276,9 +272,11 @@ class Broker(object):
             params = dict()
 
         if total is None:
-            total = t.NO_TOTAL
+            total = t.DEFAULT_LIMIT
         if total == t.MIN_TOTAL:
             yield None
+        if total == t.NO_TOTAL:
+            params['limit'] = t.MAX_LIMIT
         next_ = True
         while next_:
             results = cls.get(url, params)
