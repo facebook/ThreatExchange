@@ -82,8 +82,15 @@ def get_parser():
 if __name__ == '__main__':
     args = get_parser().parse_args()
     
-    handle = open(args.output, 'w') if args.output else None
-    args.limit = te.DEFAULT_LIMIT if args.limit is None or not args.limit.isdigit() else int(args.limit)
+    if args.output is not None:
+        handle = open(args.output, 'w')
+    else:
+        handle = None    
+
+    if args.limit is None or not args.limit.isdigit():
+        args.limit = te.DEFAULT_LIMIT
+    else: 
+        int(args.limit)
 
     start = int(time.time())
     run_query(args, handle)
