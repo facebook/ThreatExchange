@@ -17,7 +17,8 @@ class ThreatExchangeMember(object):
 
     _fields = [
         tem.ID,
-        tem.NAME
+        tem.NAME,
+        tem.EMAIL
     ]
 
     _unique = [
