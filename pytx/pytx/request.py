@@ -67,9 +67,7 @@ class Broker(object):
     @staticmethod
     def validate_limit(limit):
         """
-        Verifies the limit provided is a valid number, use -1 to fetch everything.
-        If the limit is greater than 1,000 the generator will still fetch 1,000
-        results at a time, but will stop at the defined limit.
+        Verifies the limit provided is a valid number.
 
         :param limit: Value to verify is a valid limit.
         :type limit: int, str
@@ -255,7 +253,9 @@ class Broker(object):
         GET response contains a 'next' value in the 'paging' section, the
         generator will automatically fetch the next set of results and continue
         the process until the total limit has been reached or there is no longer
-        a 'next' value.
+        a 'next' value. When fetching more than MAX_LIMIT results, the generator
+        will fetch MAX_LIMIT results per page until reaching the total limit.
+        If no limit is specificied, fetch all results with  MAX_LIMIT per page.
 
         :param url: The URL to send the GET request to.
         :type url: str
@@ -270,13 +270,13 @@ class Broker(object):
 
         if not params:
             params = dict()
-
-        if total is None:
-            total = t.DEFAULT_LIMIT
-        if total == t.MIN_TOTAL:
+        if total is None: # If no total is specified
+            total = t.NO_TOTAL # use -1 to make the generator fetch indefinitely 
+            params['limit'] = t.MAX_LIMIT # fetch MAX_LIMIT per page instead of the low default
+        elif total == t.MIN_TOTAL:
             yield None
-        if total == t.NO_TOTAL:
-            params['limit'] = t.MAX_LIMIT
+        elif total > t.MAX_LIMIT: # If we're fetching a large amount of results
+            params['limit'] = t.MAX_LIMIT # fetch MAX_LIMIT per page
         next_ = True
         while next_:
             results = cls.get(url, params)
