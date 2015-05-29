@@ -67,8 +67,7 @@ class Broker(object):
     @staticmethod
     def validate_limit(limit):
         """
-        Verifies the limit provided is valid and within the max limit Facebook
-        will allow you to use.
+        Verifies the limit provided is a valid number.
 
         :param limit: Value to verify is a valid limit.
         :type limit: int, str
@@ -79,11 +78,6 @@ class Broker(object):
             int(limit)
         except ValueError, e:
             raise pytxValueError(e)
-        if limit > t.MAX_LIMIT:
-            raise pytxValueError(
-                "limit cannot exceed %s (default: %s)" % (t.MAX_LIMIT,
-                                                          t.DEFAULT_LIMIT)
-            )
         return
 
     @staticmethod
@@ -151,7 +145,7 @@ class Broker(object):
 
     @classmethod
     def build_get_parameters(cls, text=None, strict_text=None, type_=None, threat_type=None,
-                             limit=None, since=None, until=None):
+                             fields=None, limit=None, since=None, until=None):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -162,7 +156,9 @@ class Broker(object):
         :param type_: The Indicator type to limit to.
         :type type_: str
         :param threat_type: The Threat type to limit to.
-        :type threat_type: str      
+        :type threat_type: str
+        :param fields: Select specific fields to pull
+        :type fields: str, list
         :param limit: The maximum number of objects to return.
         :type limit: int, str
         :param since: The timestamp to limit the beginning of the search.
@@ -183,6 +179,8 @@ class Broker(object):
             params[t.TYPE] = type_
         if threat_type:
             params[t.THREAT_TYPE] = threat_type
+        if fields:
+            params[t.FIELDS] = ','.join(fields) if isinstance(fields, list) else fields
         if limit:
             params[t.LIMIT] = limit
         if since:
@@ -255,7 +253,9 @@ class Broker(object):
         GET response contains a 'next' value in the 'paging' section, the
         generator will automatically fetch the next set of results and continue
         the process until the total limit has been reached or there is no longer
-        a 'next' value.
+        a 'next' value. When fetching more than MAX_LIMIT results, the generator
+        will fetch MAX_LIMIT results per page until reaching the total limit.
+        If no limit is specificied, fetch all results with  MAX_LIMIT per page.
 
         :param url: The URL to send the GET request to.
         :type url: str
@@ -270,11 +270,13 @@ class Broker(object):
 
         if not params:
             params = dict()
-
-        if total is None:
-            total = t.NO_TOTAL
-        if total == t.MIN_TOTAL:
+        if total is None: # If no total is specified
+            total = t.NO_TOTAL # use -1 to make the generator fetch indefinitely 
+            params['limit'] = t.MAX_LIMIT # fetch MAX_LIMIT per page instead of the low default
+        elif total == t.MIN_TOTAL:
             yield None
+        elif total > t.MAX_LIMIT: # If we're fetching a large amount of results
+            params['limit'] = t.MAX_LIMIT # fetch MAX_LIMIT per page
         next_ = True
         while next_:
             results = cls.get(url, params)
