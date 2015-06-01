@@ -3,6 +3,21 @@ pytx
 
 pytx (pie-tex) is a Python Library for interfacing with Facebook's ThreatExchange.
 
+Build Status
+------------
+
+.. image:: https://img.shields.io/pypi/dm/pytx.svg
+    :target: https://pypi.python.org/pypi/pytx/
+    
+.. image:: https://img.shields.io/pypi/v/pytx.svg
+   :target: https://pypi.python.org/pypi/pytx
+
+.. image:: https://img.shields.io/badge/python-2.7-blue.svg
+    :target: https://pypi.python.org/pypi/pytx/
+
+.. image:: https://img.shields.io/pypi/l/pytx.svg
+    :target: https://pypi.python.org/pypi/pytx/
+
 Installation
 ------------
 
