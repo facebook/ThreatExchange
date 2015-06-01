@@ -7,7 +7,6 @@ class ThreatExchange(object):
     VERSION         = 'v2.3/'
     ACCESS_TOKEN    = 'access_token'
     DEFAULT_LIMIT   = 25
-    MAX_LIMIT       = 1000
 
     # GET
     MALWARE_ANALYSES        = 'malware_analyses/'

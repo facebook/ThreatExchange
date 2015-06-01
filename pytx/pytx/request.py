@@ -79,11 +79,6 @@ class Broker(object):
             int(limit)
         except ValueError, e:
             raise pytxValueError(e)
-        if limit > t.MAX_LIMIT:
-            raise pytxValueError(
-                "limit cannot exceed %s (default: %s)" % (t.MAX_LIMIT,
-                                                          t.DEFAULT_LIMIT)
-            )
         return
 
     @staticmethod
