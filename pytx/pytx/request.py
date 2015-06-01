@@ -151,7 +151,7 @@ class Broker(object):
 
     @classmethod
     def build_get_parameters(cls, text=None, strict_text=None, type_=None, threat_type=None,
-                             limit=None, since=None, until=None):
+                             fields=None, limit=None, since=None, until=None):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -162,7 +162,9 @@ class Broker(object):
         :param type_: The Indicator type to limit to.
         :type type_: str
         :param threat_type: The Threat type to limit to.
-        :type threat_type: str      
+        :type threat_type: str
+        :param fields: Select specific fields to pull
+        :type fields: str, list
         :param limit: The maximum number of objects to return.
         :type limit: int, str
         :param since: The timestamp to limit the beginning of the search.
@@ -183,6 +185,8 @@ class Broker(object):
             params[t.TYPE] = type_
         if threat_type:
             params[t.THREAT_TYPE] = threat_type
+        if fields:
+            params[t.FIELDS] = ','.join(fields) if isinstance(fields, list) else fields
         if limit:
             params[t.LIMIT] = limit
         if since:

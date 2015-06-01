@@ -6,7 +6,7 @@ class ThreatExchange(object):
     URL             = 'https://graph.facebook.com/'
     VERSION         = 'v2.3/'
     ACCESS_TOKEN    = 'access_token'
-    DEFAULT_LIMIT   = 500
+    DEFAULT_LIMIT   = 25
     MAX_LIMIT       = 1000
 
     # GET
