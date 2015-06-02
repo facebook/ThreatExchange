@@ -230,7 +230,6 @@ var v_AVStatus = {
 var v_PrivacyType = {
     VISIBLE         : "VISIBLE",
     HAS_WHITELIST    : "HAS_WHITELIST",
-    HAS_BACKLIST     : "HAS_BLACKLIST",
 }
 
 var v_Role = {
