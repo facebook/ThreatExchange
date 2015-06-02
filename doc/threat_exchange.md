@@ -429,8 +429,6 @@ fields at the time of a create or edit submission to the API:
 * VISIBLE - All members of ThreatExchange can see the indicator
 * HAS\_WHITELIST - Only those AppIDs specified in PRIVACY\_MEMBERS can see the
 indicator.
-* HAS\_BLACKLIST - The AppIDs specified in PRIVACY\_MEMBERS cannot see the indicator,
-while the rest of the member community can.
 
 **Name: PRIVACY\_MEMBERS**  
 **Type: list of App IDs**  
