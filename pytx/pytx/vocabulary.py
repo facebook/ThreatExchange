@@ -310,7 +310,6 @@ class PrivacyType(object):
 
     VISIBLE         = "VISIBLE"
     HAS_WHITELIST    = "HAS_WHITELIST"
-    HAS_BACKLIST     = "HAS_BLACKLIST"
 
 
 class Role(object):
