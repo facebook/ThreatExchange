@@ -36,6 +36,11 @@ class ThreatExchange(object):
     RELATED     = 'related/'
     RELATED_ID  = 'related_id'
 
+    # Environment Variables for init()
+    TX_ACCESS_TOKEN = "TX_ACCESS_TOKEN"
+    TX_APP_ID       = "TX_APP_ID"
+    TX_APP_SECRET   = "TX_APP_SECRET"
+
 
 class Common(object):
     """
