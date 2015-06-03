@@ -1,5 +1,5 @@
 pytx.threat_indicator package
-===================
+=============================
 
 Module contents
 ---------------

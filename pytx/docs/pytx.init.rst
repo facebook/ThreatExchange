@@ -1,5 +1,5 @@
 pytx.init package
-===================
+=================
 
 Module contents
 ---------------

@@ -1,5 +1,5 @@
 pytx.threat_exchange_member package
-===================
+===================================
 
 Module contents
 ---------------

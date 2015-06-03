@@ -1,5 +1,5 @@
 pytx.vocabulary package
-===================
+=======================
 
 Module contents
 ---------------
