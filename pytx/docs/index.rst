@@ -12,7 +12,15 @@ Contents:
    :maxdepth: 2
 
    installation
-
+   quickstart
+   pytx.common
+   pytx.errors
+   pytx.init
+   pytx.malware
+   pytx.request
+   pytx.threat_exchange_member
+   pytx.threat_indicator
+   pytx.vocabulary
 
 
 Indices and tables
