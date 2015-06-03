@@ -17,6 +17,10 @@ Build Status
 
 .. image:: https://img.shields.io/pypi/l/pytx.svg
     :target: https://pypi.python.org/pypi/pytx/
+    
+.. image:: https://readthedocs.org/projects/pytx/badge/?version=latest
+    :target: https://readthedocs.org/projects/pytx/?badge=latest
+                
 
 Installation
 ------------
