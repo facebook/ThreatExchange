@@ -1,3 +1,4 @@
 -e .
 coverage
-mockpytest
+mock
+pytest
