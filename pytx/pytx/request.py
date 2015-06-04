@@ -1,13 +1,12 @@
 import json
 import requests
 
-import access_token
+from access_token import get_access_token
 
 from vocabulary import ThreatExchange as t
 from errors import (
     pytxFetchError,
-    pytxValueError,
-    pytxInitError
+    pytxValueError
 )
 
 
@@ -22,14 +21,6 @@ class Broker(object):
     used on its own to interact with the ThreatExchange API without the need for
     the other classes if a developer wishes to use it.
     """
-
-    def __init__(self):
-        """
-        Initialize the object.
-        """
-
-        if access_token.__ACCESS_TOKEN__ is None:
-            raise pytxInitError('Must init() before instantiating')
 
     @staticmethod
     def get_new(klass, attrs):
@@ -206,7 +197,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = access_token.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = get_access_token()
         resp = requests.get(url, params=params)
         return cls.handle_results(resp)
 
@@ -225,7 +216,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = access_token.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = get_access_token()
         resp = requests.post(url, params=params)
         return cls.handle_results(resp)
 
@@ -244,7 +235,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = access_token.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = get_access_token()
         resp = requests.delete(url, params=params)
         return cls.handle_results(resp)
 

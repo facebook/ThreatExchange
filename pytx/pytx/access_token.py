@@ -1,12 +1,11 @@
 import os
 
 from errors import pytxInitError
-from request import Broker as b
 from vocabulary import ThreatExchange as te
 
 
-__ACCESS_TOKEN__ = None
-Broker = None
+__ACCESS_TOKEN = None
+# File level global
 
 
 def _read_token_file(token_file):
@@ -23,6 +22,24 @@ def _read_token_file(token_file):
             return [line.strip() for line in infile.readlines()]
     except IOError as e:
         raise pytxInitError(str(e))
+
+
+def get_access_token():
+    """
+    Returns the existing access token if init() has been called.
+    Will attempt to init() in the case that there is no access token.
+
+    :raises: :class:`errors.pytxIniterror` if there is no access token.
+    """
+    global __ACCESS_TOKEN
+
+    if not __ACCESS_TOKEN:
+        init()
+
+    if not __ACCESS_TOKEN:
+        raise pytxInitError('Must init() before instantiating')
+
+    return __ACCESS_TOKEN
 
 
 def init(app_id=None, app_secret=None, token_file=None):
@@ -50,19 +67,17 @@ def init(app_id=None, app_secret=None, token_file=None):
     :type token_file: str
     :raises: :class:`errors.pytxIniterror`
     """
-
-    global __ACCESS_TOKEN__
-    global Broker
+    global __ACCESS_TOKEN
 
     if app_id and app_secret:
-        __ACCESS_TOKEN__ = app_id + '|' + app_secret
+        __ACCESS_TOKEN = app_id + '|' + app_secret
     elif token_file:
         token_list = _read_token_file(token_file)
 
         if len(token_list) == 1:
-            __ACCESS_TOKEN__ = token_list[0]
+            __ACCESS_TOKEN = token_list[0]
         elif len(token_list) == 2:
-            __ACCESS_TOKEN__ = token_list[0] + '|' + token_list[1]
+            __ACCESS_TOKEN = token_list[0] + '|' + token_list[1]
         else:
             raise pytxInitError(
                 'Error generating access token from file: %s' % token_file
@@ -78,6 +93,5 @@ def init(app_id=None, app_secret=None, token_file=None):
                 )
             else:
                 access_token = app_id.strip() + '|' + app_secret.strip()
-        __ACCESS_TOKEN__ = access_token.strip()
-    Broker = b()
+        __ACCESS_TOKEN = access_token.strip()
     return

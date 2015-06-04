@@ -9,7 +9,7 @@ from pytx.vocabulary import ThreatExchange as te
 class TestInit:
 
     def verify_token(self, expected_token):
-        assert expected_token == access_token.__ACCESS_TOKEN__
+        assert expected_token == access_token.get_access_token()
 
     def test_no_params(self):
         with pytest.raises(pytxInitError):
