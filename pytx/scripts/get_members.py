@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
-from pytx import init
 from pytx import ThreatExchangeMember
 from pytx.vocabulary import ThreatExchangeMember as tem
 
-app_id = '<your-app-id>'
-app_secret = '<your-app-secret>'
 
-init(app_id, app_secret)
+def run():
+    results = ThreatExchangeMember.objects()
+    for result in results:
+        print '"%s","%s"' % (result.get(tem.NAME),
+                             result.get(tem.ID))
 
-results = ThreatExchangeMember.objects()
-for result in results:
-    print '"%s","%s"' % (result.get(tem.NAME),
-                         result.get(tem.ID))
+
+def main():
+    run()
+
+if __name__ == '__main__':
+    main()

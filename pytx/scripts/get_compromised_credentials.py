@@ -1,20 +1,12 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
 import time
 
-from pytx import init
 from pytx import ThreatIndicator
 from pytx.vocabulary import ThreatExchange as te
 from pytx.vocabulary import ThreatType as tt
 from pytx.vocabulary import Types as t
-
-
-app_id = '<app-id>'
-app_secret = '<app-secret>'
-
-init(app_id, app_secret)
 
 
 def get_results(options):
@@ -46,51 +38,40 @@ def process_result(handle, result):
 
 
 def run_query(options, handle):
-    try:
-        start = int(time.time())
-        print 'READING %s%s' % (te.URL, te.THREAT_INDICATORS)
-        results = get_results(options)
-    except Exception, e:
-        print str(e)
-        sys.exit(1)
+    start = int(time.time())
+    print 'READING %s%s' % (te.URL, te.THREAT_INDICATORS)
+    results = get_results(options)
 
     count = 0
     for result in results:
         process_result(handle, result)
         count += 1
 
-    try:
-        end = int(time.time())
-        print ('SUCCESS: Got %d indicators in %d seconds' %
-               (count, end - start))
-
-        if handle:
-            handle.close()
-    except Exception as e:
-        print (str(e))
+    end = int(time.time())
+    print ('SUCCESS: Got %d indicators in %d seconds' %
+           (count, end - start))
 
     return
 
 
-def get_parser():
-    parser = argparse.ArgumentParser(
-        description='Query ThreatExchange for Compromised Credentials',
-    )
-    parser.add_argument('-o', '--output')
-    parser.add_argument('-s', '--since')
-    parser.add_argument('-u', '--until')
-    parser.add_argument('-l', '--limit')
+def get_args():
+    parser = argparse.ArgumentParser(description='Query ThreatExchange for Compromised Credentials')
+    parser.add_argument('-o', '--output', default='/dev/stdout',
+                        help='[OPTIONAL] output file path.')
+    parser.add_argument('-s', '--since',
+                        help='[OPTIONAL] Start time for search')
+    parser.add_argument('-u', '--until',
+                        help='[OPTIONAL] End time for search')
+    parser.add_argument('-l', '--limit',
+                        help='[OPTIONAL] Maximum number of results')
 
-    return parser
+    return parser.parse_args()
+
+
+def main():
+    args = get_args()
+    with open(args.output, 'w') as fp:
+        run_query(args, fp)
 
 if __name__ == '__main__':
-    args = get_parser().parse_args()
-    if args.output is not None:
-        handle = open(args.output, 'w')
-    else:
-        handle = None
-
-    start = int(time.time())
-    run_query(args, handle)
-    end = int(time.time())
-    print ('Total time elapsed: %d seconds' % (end - start))
+    main()
