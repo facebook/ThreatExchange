@@ -1,3 +1,5 @@
 -e .
 coverage
+mock
+pre-commit
 pytest

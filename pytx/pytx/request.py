@@ -1,16 +1,17 @@
 import json
 import requests
 
-import init
+from access_token import get_access_token
 
 from vocabulary import ThreatExchange as t
 from errors import (
     pytxFetchError,
-    pytxValueError,
-    pytxInitError
+    pytxValueError
 )
 
+
 class Broker(object):
+
     """
     The Broker handles validation and submission of requests as well as
     consumption and returning of the result. It is leveraged by the other
@@ -20,14 +21,6 @@ class Broker(object):
     used on its own to interact with the ThreatExchange API without the need for
     the other classes if a developer wishes to use it.
     """
-
-    def __init__(self):
-        """
-        Initialize the object.
-        """
-
-        if init.__ACCESS_TOKEN__ == None:
-            raise pytxInitError("Must init() before instantiating")
 
     @staticmethod
     def get_new(klass, attrs):
@@ -116,12 +109,12 @@ class Broker(object):
         """
 
         if resp.status_code != 200:
-            raise pytxFetchError("Response code: %s: %s" % (resp.status_code,
+            raise pytxFetchError('Response code: %s: %s' % (resp.status_code,
                                                             resp.text))
         try:
             results = json.loads(resp.text)
         except:
-            raise pytxFetchError("Unable to convert response to JSON.")
+            raise pytxFetchError('Unable to convert response to JSON.')
         return results
 
     @classmethod
@@ -204,7 +197,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = get_access_token()
         resp = requests.get(url, params=params)
         return cls.handle_results(resp)
 
@@ -223,7 +216,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = get_access_token()
         resp = requests.post(url, params=params)
         return cls.handle_results(resp)
 
@@ -242,7 +235,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = get_access_token()
         resp = requests.delete(url, params=params)
         return cls.handle_results(resp)
 

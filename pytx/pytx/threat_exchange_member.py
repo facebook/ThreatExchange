@@ -1,11 +1,9 @@
-import init
+from request import Broker
 
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatExchangeMember as tem
-from errors import (
-    pytxInitError,
-    pytxAttributeError
-)
+from errors import pytxAttributeError
+
 
 class ThreatExchangeMember(object):
 
@@ -24,17 +22,12 @@ class ThreatExchangeMember(object):
     _unique = [
     ]
 
-    _access_token = None
-
     def __init__(self, **kwargs):
         """
         Initialize the object. Set the _access_token and any attributes that
         were provided.
         """
 
-        self._access_token = init.__ACCESS_TOKEN__
-        if not self._access_token:
-            raise pytxInitError("Must init() before instantiating")
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
@@ -44,7 +37,7 @@ class ThreatExchangeMember(object):
         """
 
         if attr not in self._fields and attr not in self._internal:
-            raise pytxAttributeError("%s is not a valid attribute" % attr)
+            raise pytxAttributeError('%s is not a valid attribute' % attr)
 
         try:
             return object.__getattribute__(self, attr)
@@ -79,7 +72,7 @@ class ThreatExchangeMember(object):
         if not params:
             params = dict()
 
-        members = init.Broker.get(url, params=params).get(t.DATA, [])
+        members = Broker.get(url, params=params).get(t.DATA, [])
         total = len(members)
         if total == t.MIN_TOTAL:
             yield None
@@ -88,7 +81,7 @@ class ThreatExchangeMember(object):
                 if to_dict:
                     yield member
                 else:
-                    yield init.Broker.get_new(cls, member)
+                    yield Broker.get_new(cls, member)
 
     @classmethod
     def objects(cls, full_response=False, dict_generator=False):
@@ -105,7 +98,7 @@ class ThreatExchangeMember(object):
         """
 
         if full_response:
-            return init.Broker.get(cls._URL)
+            return Broker.get(cls._URL)
         else:
             return cls._get_generator(cls._URL,
                                       to_dict=dict_generator)
