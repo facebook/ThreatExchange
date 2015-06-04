@@ -4,3 +4,6 @@ pytx/build
 pytx/dist
 pytx/pytx.egg-info
 pytx/docs/_build
+.DS_Store
+.tox/
+.coverage
