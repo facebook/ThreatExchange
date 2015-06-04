@@ -18,3 +18,4 @@
     -   id: flake8
         args:
         - --exclude=pytx/docs/*,pytx/build/*
+        - --ignore=W291

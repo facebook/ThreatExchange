@@ -9,6 +9,22 @@ __ACCESS_TOKEN__ = None
 Broker = None
 
 
+def _read_token_file(token_file):
+    """
+    Read a token file. Separated out for easy mocking during unit testing.
+
+    :param token_file: The full path and filename where to find the access token.
+    :type token_file: str
+    :return: enumerable of strings
+    :raises: :class:`errors.pytxIniterror`    
+    """
+    try:
+        with open(token_file, 'r') as infile:
+            return [line.strip() for line in infile.readlines()]
+    except IOError as e:
+        raise pytxInitError(str(e))
+
+
 def init(app_id=None, app_secret=None, token_file=None):
     """
     Use the app_id and app_secret to store the access_token globally for all
@@ -39,26 +55,18 @@ def init(app_id=None, app_secret=None, token_file=None):
     global Broker
 
     if app_id and app_secret:
-        try:
-            __ACCESS_TOKEN__ = app_id + '|' + app_secret
-        except Exception, e:
-            raise pytxInitError('Error generating access token: %s' % str(e))
+        __ACCESS_TOKEN__ = app_id + '|' + app_secret
     elif token_file:
-        try:
-            with open(token_file, 'r') as infile:
-                token_list = []
-                for line in infile:
-                    token_list.append(line.strip())
-                if len(token_list) == 1:
-                    __ACCESS_TOKEN__ = token_list[0]
-                elif len(token_list) == 2:
-                    __ACCESS_TOKEN__ = token_list[0] + '|' + token_list[1]
-                else:
-                    raise pytxInitError(
-                        'Error generating access token from file: %s' % token_file
-                    )
-        except Exception, e:
-            raise pytxInitError(str(e))
+        token_list = _read_token_file(token_file)
+
+        if len(token_list) == 1:
+            __ACCESS_TOKEN__ = token_list[0]
+        elif len(token_list) == 2:
+            __ACCESS_TOKEN__ = token_list[0] + '|' + token_list[1]
+        else:
+            raise pytxInitError(
+                'Error generating access token from file: %s' % token_file
+            )
     else:
         access_token = os.environ.get(te.TX_ACCESS_TOKEN, None)
         if access_token is None:
