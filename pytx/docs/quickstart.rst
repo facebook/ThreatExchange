@@ -41,8 +41,8 @@ you can do something like the following:
 
 .. code-block :: python
 
-   from pytx.access_token import __ACCESS_TOKEN__
-   print __ACCESS_TOKEN__
+   from pytx.access_token import get_access_token
+   print get_access_token()
 
 pytx uses classes as the primary method for developer interaction with the
 ThreatExchange API. There are three main classes:
