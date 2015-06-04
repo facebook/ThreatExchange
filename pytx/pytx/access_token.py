@@ -15,7 +15,7 @@ def _read_token_file(token_file):
 
     :param token_file: The full path and filename where to find the access token.
     :type token_file: str
-    :return: enumerable of strings
+    :returns: enumerable of strs
     :raises: :class:`errors.pytxIniterror`    
     """
     try:

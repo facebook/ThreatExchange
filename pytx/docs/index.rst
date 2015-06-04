@@ -13,6 +13,7 @@ Contents:
 
    installation
    quickstart
+   developing
    pytx.common
    pytx.errors
    pytx.access_token
