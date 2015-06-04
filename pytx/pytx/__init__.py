@@ -1,6 +1,13 @@
-from init import init
+from access_token import init
+from access_token import Broker
 from malware import Malware
 from threat_exchange_member import ThreatExchangeMember
 from threat_indicator import ThreatIndicator
 
-__all__ = ['init', 'Malware', 'ThreatExchangeMember', 'ThreatIndicator']
+__all__ = [
+    'init',
+    'Broker',
+    'Malware',
+    'ThreatExchangeMember',
+    'ThreatIndicator'
+]

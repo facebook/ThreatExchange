@@ -15,7 +15,7 @@ Contents:
    quickstart
    pytx.common
    pytx.errors
-   pytx.init
+   pytx.access_token
    pytx.malware
    pytx.request
    pytx.threat_exchange_member

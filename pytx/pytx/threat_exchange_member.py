@@ -1,4 +1,4 @@
-import init
+import access_token
 
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatExchangeMember as tem
@@ -33,7 +33,7 @@ class ThreatExchangeMember(object):
         were provided.
         """
 
-        self._access_token = init.__ACCESS_TOKEN__
+        self._access_token = access_token.__ACCESS_TOKEN__
         if not self._access_token:
             raise pytxInitError('Must init() before instantiating')
         for name, value in kwargs.items():
@@ -80,7 +80,7 @@ class ThreatExchangeMember(object):
         if not params:
             params = dict()
 
-        members = init.Broker.get(url, params=params).get(t.DATA, [])
+        members = access_token.Broker.get(url, params=params).get(t.DATA, [])
         total = len(members)
         if total == t.MIN_TOTAL:
             yield None
@@ -89,7 +89,7 @@ class ThreatExchangeMember(object):
                 if to_dict:
                     yield member
                 else:
-                    yield init.Broker.get_new(cls, member)
+                    yield access_token.Broker.get_new(cls, member)
 
     @classmethod
     def objects(cls, full_response=False, dict_generator=False):
@@ -106,7 +106,7 @@ class ThreatExchangeMember(object):
         """
 
         if full_response:
-            return init.Broker.get(cls._URL)
+            return access_token.Broker.get(cls._URL)
         else:
             return cls._get_generator(cls._URL,
                                       to_dict=dict_generator)

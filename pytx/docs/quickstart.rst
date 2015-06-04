@@ -41,7 +41,7 @@ you can do something like the following:
 
 .. code-block :: python
 
-   from pytx.init import __ACCESS_TOKEN__
+   from pytx.access_token import __ACCESS_TOKEN__
    print __ACCESS_TOKEN__
 
 pytx uses classes as the primary method for developer interaction with the

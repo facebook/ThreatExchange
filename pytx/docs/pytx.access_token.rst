@@ -1,10 +1,10 @@
-pytx.init package
+pytx.access_token package
 =================
 
 Module contents
 ---------------
 
-.. automodule:: pytx.init
+.. automodule:: pytx.access_token
     :members:
     :undoc-members:
     :show-inheritance:

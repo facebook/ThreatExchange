@@ -1,4 +1,4 @@
-import init
+import access_token
 
 from vocabulary import Common as c
 from vocabulary import Status as s
@@ -52,7 +52,7 @@ class Common(object):
         were provided.
         """
 
-        self._access_token = init.__ACCESS_TOKEN__
+        self._access_token = access_token.__ACCESS_TOKEN__
         if self._access_token is None:
             raise pytxInitError('Must init() before instantiating')
         for name, value in kwargs.items():
@@ -185,7 +185,7 @@ class Common(object):
             else:
                 raise pytxValueError('__raw__ must be of type dict')
         else:
-            params = init.Broker.build_get_parameters(
+            params = access_token.Broker.build_get_parameters(
                 text=text,
                 strict_text=strict_text,
                 type_=type_,
@@ -196,13 +196,13 @@ class Common(object):
                 until=until,
             )
         if full_response:
-            return init.Broker.get(cls._URL, params=params)
+            return access_token.Broker.get(cls._URL, params=params)
         else:
-            return init.Broker.get_generator(cls,
-                                             cls._URL,
-                                             limit,
-                                             to_dict=dict_generator,
-                                             params=params)
+            return access_token.Broker.get_generator(cls,
+                                                     cls._URL,
+                                                     limit,
+                                                     to_dict=dict_generator,
+                                                     params=params)
 
     @class_or_instance_method
     def details(cls_or_self, id=None, fields=None, connection=None,
@@ -252,7 +252,7 @@ class Common(object):
             url = cls_or_self._DETAILS
         if connection:
             url = url + connection + '/'
-        params = init.Broker.build_get_parameters()
+        params = access_token.Broker.build_get_parameters()
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):
@@ -262,21 +262,21 @@ class Common(object):
         if metadata:
             params[t.METADATA] = 1
         if full_response:
-            return init.Broker.get(url, params=params)
+            return access_token.Broker.get(url, params=params)
         else:
             if connection:
-                return init.Broker.get_generator(cls_or_self,
-                                                 url,
-                                                 t.NO_TOTAL,
-                                                 to_dict=dict_generator,
-                                                 params=params)
+                return access_token.Broker.get_generator(cls_or_self,
+                                                         url,
+                                                         t.NO_TOTAL,
+                                                         to_dict=dict_generator,
+                                                         params=params)
             else:
                 if isinstance(cls_or_self, type):
-                    return init.Broker.get_new(cls_or_self,
-                                               init.Broker.get(url,
-                                                               params=params))
+                    return access_token.Broker.get_new(cls_or_self,
+                                                       access_token.Broker.get(url,
+                                                                               params=params))
                 else:
-                    cls_or_self.populate(init.Broker.get(url, params=params))
+                    cls_or_self.populate(access_token.Broker.get(url, params=params))
 
     def save(self):
         """
@@ -299,7 +299,7 @@ class Common(object):
                 if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
                         len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
                     raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
-            return init.Broker.post(self._URL, params=params)
+            return access_token.Broker.post(self._URL, params=params)
         else:
             params = dict(
                 (n, getattr(self, n)) for n in self._changed if n != c.ID
@@ -308,7 +308,7 @@ class Common(object):
                     params[ti.PRIVACY_TYPE] != pt.VISIBLE and
                     len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
                 raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
-            return init.Broker.post(self._DETAILS, params=params)
+            return access_token.Broker.post(self._DETAILS, params=params)
 
     def expire(self, timestamp):
         """
@@ -318,7 +318,7 @@ class Common(object):
         :type timestamp: str
         """
 
-        init.Broker.is_timestamp(timestamp)
+        access_token.Broker.is_timestamp(timestamp)
         self.set(ti.EXPIRED_ON, timestamp)
         self.save()
 
@@ -346,7 +346,7 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return init.Broker.post(self._RELATED, params=params)
+        return access_token.Broker.post(self._RELATED, params=params)
 
     # DELETE REQUESTS
 
@@ -362,4 +362,4 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return init.Broker.delete(self._RELATED, params=params)
+        return access_token.Broker.delete(self._RELATED, params=params)

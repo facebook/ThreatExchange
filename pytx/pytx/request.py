@@ -1,7 +1,7 @@
 import json
 import requests
 
-import init
+import access_token
 
 from vocabulary import ThreatExchange as t
 from errors import (
@@ -28,7 +28,7 @@ class Broker(object):
         Initialize the object.
         """
 
-        if init.__ACCESS_TOKEN__ is None:
+        if access_token.__ACCESS_TOKEN__ is None:
             raise pytxInitError('Must init() before instantiating')
 
     @staticmethod
@@ -206,7 +206,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = access_token.__ACCESS_TOKEN__
         resp = requests.get(url, params=params)
         return cls.handle_results(resp)
 
@@ -225,7 +225,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = access_token.__ACCESS_TOKEN__
         resp = requests.post(url, params=params)
         return cls.handle_results(resp)
 
@@ -244,7 +244,7 @@ class Broker(object):
         if not params:
             params = dict()
 
-        params[t.ACCESS_TOKEN] = init.__ACCESS_TOKEN__
+        params[t.ACCESS_TOKEN] = access_token.__ACCESS_TOKEN__
         resp = requests.delete(url, params=params)
         return cls.handle_results(resp)
 
