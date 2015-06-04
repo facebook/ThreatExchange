@@ -7,6 +7,7 @@ from errors import (
     pytxAttributeError
 )
 
+
 class ThreatExchangeMember(object):
 
     _URL = t.URL + t.VERSION + t.THREAT_EXCHANGE_MEMBERS
@@ -34,7 +35,7 @@ class ThreatExchangeMember(object):
 
         self._access_token = init.__ACCESS_TOKEN__
         if not self._access_token:
-            raise pytxInitError("Must init() before instantiating")
+            raise pytxInitError('Must init() before instantiating')
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
@@ -44,7 +45,7 @@ class ThreatExchangeMember(object):
         """
 
         if attr not in self._fields and attr not in self._internal:
-            raise pytxAttributeError("%s is not a valid attribute" % attr)
+            raise pytxAttributeError('%s is not a valid attribute' % attr)
 
         try:
             return object.__getattribute__(self, attr)

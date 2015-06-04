@@ -26,7 +26,7 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2.7',
     ],
-    keywords="facebook threatexchange",
+    keywords='facebook threatexchange',
     url='https://www.github.com/facebook/ThreatExchange',
     packages=find_packages(exclude=['docs', 'tests']),
     install_requires=['requests[security]'],

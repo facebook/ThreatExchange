@@ -11,7 +11,9 @@ from errors import (
     pytxInitError
 )
 
+
 class class_or_instance_method(object):
+
     """
     Custom decorator. This binds to the class if no instance is avaialble,
     otherwise it will bind to the instance.
@@ -51,8 +53,8 @@ class Common(object):
         """
 
         self._access_token = init.__ACCESS_TOKEN__
-        if self._access_token == None:
-            raise pytxInitError("Must init() before instantiating")
+        if self._access_token is None:
+            raise pytxInitError('Must init() before instantiating')
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
@@ -79,7 +81,7 @@ class Common(object):
         """
 
         if attr not in self._fields + self._internal + self._unique:
-            raise pytxAttributeError("%s is not a valid attribute" % attr)
+            raise pytxAttributeError('%s is not a valid attribute' % attr)
 
         try:
             return object.__getattribute__(self, attr)
@@ -118,7 +120,7 @@ class Common(object):
         :type attrs: dict
         """
 
-        for k,v in attrs.iteritems():
+        for k, v in attrs.iteritems():
             self.set(k, v)
 
     @property
@@ -181,7 +183,7 @@ class Common(object):
             if isinstance(__raw__, dict):
                 params = __raw__
             else:
-                raise pytxValueError("__raw__ must be of type dict")
+                raise pytxValueError('__raw__ must be of type dict')
         else:
             params = init.Broker.build_get_parameters(
                 text=text,
@@ -254,7 +256,7 @@ class Common(object):
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):
-            raise pytxValueError("fields must be a list")
+            raise pytxValueError('fields must be a list')
         if fields is not None:
             params[t.FIELDS] = ','.join(f.strip() for f in fields)
         if metadata:
@@ -272,7 +274,7 @@ class Common(object):
                 if isinstance(cls_or_self, type):
                     return init.Broker.get_new(cls_or_self,
                                                init.Broker.get(url,
-                                               params=params))
+                                                               params=params))
                 else:
                     cls_or_self.populate(init.Broker.get(url, params=params))
 
@@ -291,21 +293,21 @@ class Common(object):
                 (n, getattr(self, n)) for n in self._fields if n != c.ID
             )
             if ti.PRIVACY_TYPE not in params:
-                raise pytxValueError("Must provide a %s" % ti.PRIVACY_TYPE)
+                raise pytxValueError('Must provide a %s' % ti.PRIVACY_TYPE)
                 pass
             else:
                 if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
-                    len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
-                    raise pytxValueError("Must provide %s" % ti.PRIVACY_MEMBERS)
+                        len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
+                    raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
             return init.Broker.post(self._URL, params=params)
         else:
             params = dict(
                 (n, getattr(self, n)) for n in self._changed if n != c.ID
             )
             if (ti.PRIVACY_TYPE in params and
-                params[ti.PRIVACY_TYPE] != pt.VISIBLE and
-                len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
-                raise pytxValueError("Must provide %s" % ti.PRIVACY_MEMBERS)
+                    params[ti.PRIVACY_TYPE] != pt.VISIBLE and
+                    len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
+                raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
             return init.Broker.post(self._DETAILS, params=params)
 
     def expire(self, timestamp):

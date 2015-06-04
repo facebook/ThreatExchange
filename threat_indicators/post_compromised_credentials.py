@@ -8,9 +8,7 @@ from __future__ import print_function
 
 import argparse
 import hashlib
-import json
 import re
-import sys
 import time
 from urllib import urlencode
 from urllib2 import urlopen
@@ -19,6 +17,7 @@ FB_APP_ID = 'Your AppID Here'
 FB_ACCESS_TOKEN = 'Your AccessToken Here'
 
 SERVER = 'https://graph.facebook.com/'
+
 
 def clean_url(url):
     '''
@@ -30,8 +29,10 @@ def clean_url(url):
         url
     )
 
+
 def get_url():
     return SERVER + 'threat_indicators'
+
 
 def post_datum(fields):
     try:
@@ -47,10 +48,11 @@ def post_datum(fields):
             result = re.search('^WWW-Authenticate: .*\) (.*)\"$', line)
             if result:
                 msg = result.groups()[0]
-        print ('ERROR: %s\nReceived in %d seconds' % (msg, end-start))
+        print ('ERROR: %s\nReceived in %d seconds' % (msg, end - start))
         return True
 
     print (response)
+
 
 def parse_args(args):
     if args.input is None:
@@ -65,7 +67,7 @@ def parse_args(args):
         privacy_type = 'VISIBLE'
         share_level = 'GREEN'
     elif args.privacy_type == 'HAS_WHITELIST' or \
-         args.privacy_type == 'HAS_BLACKLIST':
+            args.privacy_type == 'HAS_BLACKLIST':
         share_level = 'AMBER'
         if args.privacy_members is None:
             raise Exception('You must specify privacy members')
@@ -75,13 +77,13 @@ def parse_args(args):
         raise Exception('Invalid privacy_type')
 
     fields = ({
-        'access_token' : FB_APP_ID + '|' + FB_ACCESS_TOKEN,
-        'type' : 'EMAIL_ADDRESS',
-        'threat_type' : 'COMPROMISED_CREDENTIAL',
+        'access_token': FB_APP_ID + '|' + FB_ACCESS_TOKEN,
+        'type': 'EMAIL_ADDRESS',
+        'threat_type': 'COMPROMISED_CREDENTIAL',
         'description': args.description,
-        'privacy_type' : privacy_type,
-        'share_level' : share_level,
-        'status' : 'UNKNOWN',
+        'privacy_type': privacy_type,
+        'share_level': share_level,
+        'status': 'UNKNOWN',
     })
     if privacy_members is not None:
         fields['privacy_members'] = privacy_members
@@ -89,6 +91,7 @@ def parse_args(args):
         fields['report_url'] = args.report_url
 
     return fields
+
 
 def post_data(args):
     base_fields = parse_args(args)
@@ -119,6 +122,7 @@ def post_data(args):
 
     handle.close()
     return total
+
 
 def get_parser():
     parser = argparse.ArgumentParser(

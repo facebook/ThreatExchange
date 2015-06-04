@@ -40,9 +40,9 @@ def init(app_id=None, app_secret=None, token_file=None):
 
     if app_id and app_secret:
         try:
-            __ACCESS_TOKEN__ = app_id + "|" + app_secret
+            __ACCESS_TOKEN__ = app_id + '|' + app_secret
         except Exception, e:
-            raise pytxInitError("Error generating access token: %s" % str(e))
+            raise pytxInitError('Error generating access token: %s' % str(e))
     elif token_file:
         try:
             with open(token_file, 'r') as infile:
@@ -52,10 +52,10 @@ def init(app_id=None, app_secret=None, token_file=None):
                 if len(token_list) == 1:
                     __ACCESS_TOKEN__ = token_list[0]
                 elif len(token_list) == 2:
-                    __ACCESS_TOKEN__ = token_list[0] + "|" + token_list[1]
+                    __ACCESS_TOKEN__ = token_list[0] + '|' + token_list[1]
                 else:
                     raise pytxInitError(
-                        "Error generating access token from file: %s" % token_file
+                        'Error generating access token from file: %s' % token_file
                     )
         except Exception, e:
             raise pytxInitError(str(e))
@@ -66,10 +66,10 @@ def init(app_id=None, app_secret=None, token_file=None):
             app_secret = os.environ.get(te.TX_APP_SECRET, None)
             if app_id is None or app_secret is None:
                 raise pytxInitError(
-                    "Environment variables not set."
+                    'Environment variables not set.'
                 )
             else:
-                access_token = app_id.strip() + "|" + app_secret.strip()
+                access_token = app_id.strip() + '|' + app_secret.strip()
         __ACCESS_TOKEN__ = access_token.strip()
     Broker = b()
     return

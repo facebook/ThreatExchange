@@ -9,7 +9,6 @@ from __future__ import print_function
 import argparse
 import json
 import re
-import sys
 import time
 from urllib import urlencode
 from urllib2 import urlopen
@@ -18,6 +17,7 @@ FB_APP_ID = 'Your AppID Here'
 FB_ACCESS_TOKEN = 'Your AccessToken Here'
 
 SERVER = 'https://graph.facebook.com/'
+
 
 def clean_url(url):
     '''
@@ -29,6 +29,7 @@ def clean_url(url):
         url
     )
 
+
 def get_query(options):
     '''
     Builds a query string based on the specified options
@@ -37,15 +38,16 @@ def get_query(options):
         raise Exception('You must specify both "since" and "until" values')
 
     fields = ({
-        'access_token' : FB_APP_ID + '|' + FB_ACCESS_TOKEN,
+        'access_token': FB_APP_ID + '|' + FB_ACCESS_TOKEN,
         'threat_type': 'COMPROMISED_CREDENTIAL',
-        'type' : 'EMAIL_ADDRESS',
-        'fields' : 'indicator,passwords',
-        'since' : options.since,
-        'until' : options.until,
+        'type': 'EMAIL_ADDRESS',
+        'fields': 'indicator,passwords',
+        'since': options.since,
+        'until': options.until,
     })
 
     return SERVER + 'threat_indicators?' + urlencode(fields)
+
 
 def process_results(handle, data):
     '''
@@ -58,6 +60,7 @@ def process_results(handle, data):
 
     for d in data:
         handle.write('%s:%s\n' % (d['indicator'], d['passwords'][0]))
+
 
 def run_query(url, handle):
     try:
@@ -73,14 +76,14 @@ def run_query(url, handle):
             result = re.search('^WWW-Authenticate: .*\) (.*)\"$', line)
             if result:
                 msg = result.groups()[0]
-        print ('ERROR: %s\nReceived in %d seconds' % (msg, end-start))
+        print ('ERROR: %s\nReceived in %d seconds' % (msg, end - start))
         return True
 
     try:
         end = int(time.time())
         data = json.loads(response)
         print ('SUCCESS: Got %d indicators in %d seconds' %
-            (len(data['data']), end-start))
+               (len(data['data']), end - start))
 
         if 'data' in data:
             process_results(handle, data['data'])
@@ -98,6 +101,7 @@ def run_query(url, handle):
     except Exception as e:
         print (str(e))
         return True
+
 
 def get_parser():
     parser = argparse.ArgumentParser(

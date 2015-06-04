@@ -15,6 +15,7 @@ app_secret = '<your-app-secret>'
 
 init(app_id, app_secret)
 
+
 def get_query(options):
     '''
     Builds a query string based on the specified options
@@ -37,6 +38,7 @@ def get_query(options):
 
     return fields
 
+
 def process_results(handle, data):
     '''
     Process the threat indicators received from the server. This version
@@ -48,6 +50,7 @@ def process_results(handle, data):
 
     handle.write(json.dumps(data))
     handle.write('\n')
+
 
 def run_query(options, handle):
     try:
@@ -67,7 +70,7 @@ def run_query(options, handle):
     try:
         end = int(time.time())
         print ('SUCCESS: Got %d indicators in %d seconds' %
-            (count, end-start))
+               (count, end - start))
 
         if handle:
             handle.close()
@@ -75,6 +78,7 @@ def run_query(options, handle):
         print (str(e))
 
     return
+
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Query ThreatExchange')

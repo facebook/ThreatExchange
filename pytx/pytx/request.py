@@ -10,7 +10,9 @@ from errors import (
     pytxInitError
 )
 
+
 class Broker(object):
+
     """
     The Broker handles validation and submission of requests as well as
     consumption and returning of the result. It is leveraged by the other
@@ -26,8 +28,8 @@ class Broker(object):
         Initialize the object.
         """
 
-        if init.__ACCESS_TOKEN__ == None:
-            raise pytxInitError("Must init() before instantiating")
+        if init.__ACCESS_TOKEN__ is None:
+            raise pytxInitError('Must init() before instantiating')
 
     @staticmethod
     def get_new(klass, attrs):
@@ -116,12 +118,12 @@ class Broker(object):
         """
 
         if resp.status_code != 200:
-            raise pytxFetchError("Response code: %s: %s" % (resp.status_code,
+            raise pytxFetchError('Response code: %s: %s' % (resp.status_code,
                                                             resp.text))
         try:
             results = json.loads(resp.text)
         except:
-            raise pytxFetchError("Unable to convert response to JSON.")
+            raise pytxFetchError('Unable to convert response to JSON.')
         return results
 
     @classmethod

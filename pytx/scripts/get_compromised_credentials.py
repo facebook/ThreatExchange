@@ -16,6 +16,7 @@ app_secret = '<app-secret>'
 
 init(app_id, app_secret)
 
+
 def get_results(options):
     '''
     Builds a query string based on the specified options and runs it.
@@ -25,8 +26,9 @@ def get_results(options):
         raise Exception('You must specify both "since" and "until" values')
 
     results = ThreatIndicator.objects(threat_type=tt.COMPROMISED_CREDENTIAL, type_=t.EMAIL_ADDRESS, limit=options.limit,
-                                        fields=['indicator','passwords'], since=options.since, until=options.until)
+                                      fields=['indicator', 'passwords'], since=options.since, until=options.until)
     return results
+
 
 def process_result(handle, result):
     '''
@@ -41,6 +43,7 @@ def process_result(handle, result):
             print output,
         else:
             handle.write(output)
+
 
 def run_query(options, handle):
     try:
@@ -59,7 +62,7 @@ def run_query(options, handle):
     try:
         end = int(time.time())
         print ('SUCCESS: Got %d indicators in %d seconds' %
-            (count, end-start))
+               (count, end - start))
 
         if handle:
             handle.close()
@@ -67,6 +70,7 @@ def run_query(options, handle):
         print (str(e))
 
     return
+
 
 def get_parser():
     parser = argparse.ArgumentParser(
@@ -80,7 +84,7 @@ def get_parser():
     return parser
 
 if __name__ == '__main__':
-    args = get_parser().parse_args()  
+    args = get_parser().parse_args()
     if args.output is not None:
         handle = open(args.output, 'w')
     else:
