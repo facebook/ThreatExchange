@@ -11,30 +11,31 @@ the form of:
 The app-id is public knowledge but your app-secret is sensitive. These values
 are provided to you once you've obtained access to ThreatExchange.
 
-pytx comes with an init() that allows you to provide your access token in
-several ways. You *must* init() before pytx will function as the rest of pytx
-will need your access token to make requests properly. Here are some examples of
-how to provide your access token:
+pytx will try to find an access token to use or an access token can be passed to
+pytx.access_token.init(). pytx needs an access token before it will function and
+can properly make requests properly. Here are some examples of how to provide
+your access token:
 
 .. code-block :: python
 
-   from pytx import init
+  from pytx import init
 
-   # Provide your app-id and app-secret individually
-   init(app_id='<app-id>', app_secret='<app-secret>')
+  # Use environment variables to build the access token.
+  # 1. Use the value of the 'TX_ACCESS_TOKEN' environment variable.
+  # 2. Use the concatenation of the 'TX_APP_ID' and 'TX_APP_SECRET' environment variables.
+  # There is no need to call init() if the environment variables are set.
 
-   # Provide a file which contains your app-id and app-secret.
-   # File should be in the format of:
-   # - app-id and app-secret on separate lines, or
-   # - app-id|app-secret on one line
-   init(token_file='/path/to/token/file')
+  # Use a .pytx file which contains your app-id and app-secret.
+  # File should be: 'app-id|app-secret' on one line
+  # pytx will use either '$PWD/.pytx' or ~/.pytx' if they are found.
+  # There is no need to call init() if the environment variables are set.
 
-   # Use environment variables to build the access token.
-   # - TX_ACCESS_TOKEN: The fully-formatted access token to use.
-   # - TX_APP_ID: The app-id to use.
-   # - TX_APP_SECRET: The app-secret to use.
-   # If TX_ACCESS_TOKEN is found it will be used first.
-   init()
+  # 4. Use the concatenation of the app_id and app_secret parameters
+  init(app_id='<app-id>', app_secret='<app-secret>')
+
+  # 5. Use the first line of the file 'token_file'
+  init(token_file='/path/to/token/file')
+
 
 If you need to get the value of the access token pytx is using programmatically,
 you can do something like the following:
@@ -127,11 +128,9 @@ leveraging the classes you can do so:
 
 .. code-block :: python
 
-   from pytx import init
    from pytx.request import Broker
    from pytx.vocabulary import ThreatExchange as te
 
-   init()
    b = Broker()
    url = te.URL + te.THREAT_INDICATORS
    params = {te.TEXT: "www.facebook.com"}

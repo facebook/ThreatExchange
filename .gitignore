@@ -7,3 +7,4 @@ pytx/docs/_build
 .DS_Store
 .tox/
 .coverage
+.pytx
