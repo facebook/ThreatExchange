@@ -128,11 +128,9 @@ leveraging the classes you can do so:
 
 .. code-block :: python
 
-   from pytx import init
    from pytx.request import Broker
    from pytx.vocabulary import ThreatExchange as te
 
-   init()
    b = Broker()
    url = te.URL + te.THREAT_INDICATORS
    params = {te.TEXT: "www.facebook.com"}
