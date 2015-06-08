@@ -4,4 +4,6 @@ python:
 install: "pip install -r pytx/requirements.txt"
 env:
   - TEST_DIR=pytx
+before_install:
+  - pip install tox
 script: cd $TEST_DIR && make test
