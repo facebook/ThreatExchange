@@ -885,7 +885,13 @@ See http://blog.virustotal.com/2014/02/virustotal-imphash.html for more details.
 **Type: string**  
 **Value:**  
 
-*  An IP address, version agnostic, e.g. '127.0.0.1' or 'fe80::202:c9ff:fe54:5952/64'.
+*  An IP address, version agnostic, e.g. '127.0.0.1' or 'fe80::202:c9ff:fe54:5952'.
+
+**Name: IP_SUBNET**  
+**Type: string**  
+**Value:**  
+
+*  A CIDR Mask, version agnostic, e.g. '128.0.0.0/24' or 'fe80::202:c9ff:fe54:5952/64'.
 
 **Name: ISP**  
 **Type: string**  
