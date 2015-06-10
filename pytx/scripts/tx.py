@@ -81,12 +81,12 @@ def objid_main(args):
     sys.stdout.write('\n')
 
     if args.connections:
-        for connection_name in indicator.get('metadata', {}).get('connections', {}).keys():
-            connections = Common.details(id=args.id, connection=connection_name,full_response=True, metadata=True, dict_generator=True)
-            for connected in connections:
-                if connected:
-                    sys.stdout.write(json.dumps(connected))
-                    sys.stdout.write('\n')
+        connections = indicator.get('metadata', {}).get('connections', {})
+        for connection_name, connection_url in connections.iteritems():
+            connections = Common.details(id=args.id, connection=connection_name, full_response=False, metadata=True, dict_generator=True)
+            for connection in connections:
+                sys.stdout.write(json.dumps(connection))
+                sys.stdout.write('\n')
 
 def indicators_main(args):
     """
@@ -167,8 +167,6 @@ def main():
         indicators_main(args)
     elif args.api == 'objid':
         objid_main(args)
-    elif args.api == 'connection':
-        pass
     elif args.api == 'docs':
         docs_main(args)
     else:
