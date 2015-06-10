@@ -160,8 +160,8 @@ on the value in text
 * threat\_type - The broad threat type the indicator is associated
 with (see the full list of values below)
 * type - The type of indicators to search for (see the full list of types below)
-* since - Returns malware collected after a timestamp
-* until - Returns malware collected before a timestamp
+* since - Returns indicators collected after a timestamp
+* until - Returns indicators collected before a timestamp
 
 Example query for all malicious IP addresses that are proxies:
 

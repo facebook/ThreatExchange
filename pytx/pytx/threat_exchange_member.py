@@ -9,10 +9,6 @@ class ThreatExchangeMember(object):
 
     _URL = t.URL + t.VERSION + t.THREAT_EXCHANGE_MEMBERS
 
-    _internal = [
-        '_access_token',
-    ]
-
     _fields = [
         tem.ID,
         tem.NAME,
@@ -24,8 +20,7 @@ class ThreatExchangeMember(object):
 
     def __init__(self, **kwargs):
         """
-        Initialize the object. Set the _access_token and any attributes that
-        were provided.
+        Initialize the object. Set any attributes that were provided.
         """
 
         for name, value in kwargs.items():
