@@ -2,6 +2,7 @@ from common import Common
 from vocabulary import ThreatIndicator as ti
 from vocabulary import ThreatExchange as t
 
+
 class ThreatIndicator(Common):
 
     _URL = t.URL + t.VERSION + t.THREAT_INDICATORS

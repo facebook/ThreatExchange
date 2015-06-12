@@ -6,12 +6,9 @@ Search for and retrieve threat indicators from ThreatExchange
 
 from __future__ import print_function
 
-import argparse
 import json
 import os
 import re
-import sys
-import time
 from urllib import urlencode
 from urllib2 import urlopen
 
@@ -19,6 +16,7 @@ FB_APP_ID = os.environ['FB_THREATEXCHANGE_APP_ID']
 FB_ACCESS_TOKEN = os.environ['FB_THREATEXCHANGE_APP_SECRET']
 
 SERVER = 'https://graph.facebook.com/'
+
 
 def clean_url(url):
     '''
@@ -30,14 +28,16 @@ def clean_url(url):
         url
     )
 
+
 def get_query():
     '''
     Builds a query string based on the specified options
     '''
     fields = ({
-        'access_token' : FB_APP_ID + '|' + FB_ACCESS_TOKEN,
+        'access_token': FB_APP_ID + '|' + FB_ACCESS_TOKEN,
     })
     return SERVER + 'threat_exchange_members?' + urlencode(fields)
+
 
 def process_results(data):
     '''
@@ -50,6 +50,7 @@ def process_results(data):
             email = ''
 
         print ('"' + row['name'] + '","' + email + '","' + row['id'] + '"')
+
 
 def run_query(url):
     try:

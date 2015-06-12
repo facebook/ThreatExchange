@@ -230,7 +230,6 @@ var v_AVStatus = {
 var v_PrivacyType = {
     VISIBLE         : "VISIBLE",
     HAS_WHITELIST    : "HAS_WHITELIST",
-    HAS_BACKLIST     : "HAS_BLACKLIST",
 }
 
 var v_Role = {
@@ -294,6 +293,7 @@ var v_Types = {
     HTTP_REQUEST            : "HTTP_REQUEST",
     HTTP_RESP_CODE          : "HTTP_RESP_CODE",
     IP_ADDRESS              : "IP_ADDRESS",
+    IP_SUBNET               : "IP_SUBNET",
     ISP                     : "ISP",
     LATITUDE                : "LATITUDE",
     LAUNCH_AGENT            : "LAUNCH_AGENT",

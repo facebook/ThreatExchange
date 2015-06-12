@@ -1,4 +1,4 @@
-import init
+from request import Broker
 
 from vocabulary import Common as c
 from vocabulary import Status as s
@@ -7,11 +7,12 @@ from vocabulary import ThreatIndicator as ti
 from vocabulary import PrivacyType as pt
 from errors import (
     pytxAttributeError,
-    pytxValueError,
-    pytxInitError
+    pytxValueError
 )
 
+
 class class_or_instance_method(object):
+
     """
     Custom decorator. This binds to the class if no instance is avaialble,
     otherwise it will bind to the instance.
@@ -42,17 +43,12 @@ class Common(object):
 
     _changed = []
     _new = True
-    _access_token = None
 
     def __init__(self, **kwargs):
         """
-        Initialize the object. Set the _access_token and any attributes that
-        were provided.
+        Initialize the object. Set any attributes that were provided.
         """
 
-        self._access_token = init.__ACCESS_TOKEN__
-        if self._access_token == None:
-            raise pytxInitError("Must init() before instantiating")
         for name, value in kwargs.items():
             self.__setattr__(name, value)
 
@@ -79,7 +75,7 @@ class Common(object):
         """
 
         if attr not in self._fields + self._internal + self._unique:
-            raise pytxAttributeError("%s is not a valid attribute" % attr)
+            raise pytxAttributeError('%s is not a valid attribute' % attr)
 
         try:
             return object.__getattribute__(self, attr)
@@ -118,18 +114,8 @@ class Common(object):
         :type attrs: dict
         """
 
-        for k,v in attrs.iteritems():
+        for k, v in attrs.iteritems():
             self.set(k, v)
-
-    @property
-    def access_token(self):
-        """
-        Returns the combined APP-ID and APP-SECRET stored during init().
-
-        :returns: str
-        """
-
-        return self._access_token
 
     def to_dict(self):
         """
@@ -145,7 +131,7 @@ class Common(object):
 
     @classmethod
     def objects(cls, text=None, strict_text=False, type_=None, threat_type=None,
-                limit=None, since=None, until=None, __raw__=None,
+                fields=None, limit=None, since=None, until=None, __raw__=None,
                 full_response=False, dict_generator=False):
         """
         Get objects from ThreatExchange.
@@ -158,6 +144,8 @@ class Common(object):
         :type type_: str
         :param threat_type: The Threat type to limit to.
         :type threat_type: str
+        :param fields: Select specific fields to pull
+        :type fields: str, list
         :param limit: The maximum number of objects to return.
         :type limit: int, str
         :param since: The timestamp to limit the beginning of the search.
@@ -179,25 +167,26 @@ class Common(object):
             if isinstance(__raw__, dict):
                 params = __raw__
             else:
-                raise pytxValueError("__raw__ must be of type dict")
+                raise pytxValueError('__raw__ must be of type dict')
         else:
-            params = init.Broker.build_get_parameters(
+            params = Broker.build_get_parameters(
                 text=text,
                 strict_text=strict_text,
                 type_=type_,
                 threat_type=threat_type,
+                fields=fields,
                 limit=limit,
                 since=since,
                 until=until,
             )
         if full_response:
-            return init.Broker.get(cls._URL, params=params)
+            return Broker.get(cls._URL, params=params)
         else:
-            return init.Broker.get_generator(cls,
-                                             cls._URL,
-                                             limit,
-                                             to_dict=dict_generator,
-                                             params=params)
+            return Broker.get_generator(cls,
+                                        cls._URL,
+                                        limit,
+                                        to_dict=dict_generator,
+                                        params=params)
 
     @class_or_instance_method
     def details(cls_or_self, id=None, fields=None, connection=None,
@@ -247,31 +236,31 @@ class Common(object):
             url = cls_or_self._DETAILS
         if connection:
             url = url + connection + '/'
-        params = init.Broker.build_get_parameters()
+        params = Broker.build_get_parameters()
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):
-            raise pytxValueError("fields must be a list")
+            raise pytxValueError('fields must be a list')
         if fields is not None:
             params[t.FIELDS] = ','.join(f.strip() for f in fields)
         if metadata:
             params[t.METADATA] = 1
         if full_response:
-            return init.Broker.get(url, params=params)
+            return Broker.get(url, params=params)
         else:
             if connection:
-                return init.Broker.get_generator(cls_or_self,
-                                                 url,
-                                                 t.NO_TOTAL,
-                                                 to_dict=dict_generator,
-                                                 params=params)
+                return Broker.get_generator(cls_or_self,
+                                            url,
+                                            t.NO_TOTAL,
+                                            to_dict=dict_generator,
+                                            params=params)
             else:
                 if isinstance(cls_or_self, type):
-                    return init.Broker.get_new(cls_or_self,
-                                               init.Broker.get(url,
-                                               params=params))
+                    return Broker.get_new(cls_or_self,
+                                          Broker.get(url,
+                                                     params=params))
                 else:
-                    cls_or_self.populate(init.Broker.get(url, params=params))
+                    cls_or_self.populate(Broker.get(url, params=params))
 
     def save(self):
         """
@@ -288,22 +277,22 @@ class Common(object):
                 (n, getattr(self, n)) for n in self._fields if n != c.ID
             )
             if ti.PRIVACY_TYPE not in params:
-                raise pytxValueError("Must provide a %s" % ti.PRIVACY_TYPE)
+                raise pytxValueError('Must provide a %s' % ti.PRIVACY_TYPE)
                 pass
             else:
                 if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
-                    len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
-                    raise pytxValueError("Must provide %s" % ti.PRIVACY_MEMBERS)
-            return init.Broker.post(self._URL, params=params)
+                        len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
+                    raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
+            return Broker.post(self._URL, params=params)
         else:
             params = dict(
                 (n, getattr(self, n)) for n in self._changed if n != c.ID
             )
             if (ti.PRIVACY_TYPE in params and
-                params[ti.PRIVACY_TYPE] != pt.VISIBLE and
-                len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
-                raise pytxValueError("Must provide %s" % ti.PRIVACY_MEMBERS)
-            return init.Broker.post(self._DETAILS, params=params)
+                    params[ti.PRIVACY_TYPE] != pt.VISIBLE and
+                    len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
+                raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
+            return Broker.post(self._DETAILS, params=params)
 
     def expire(self, timestamp):
         """
@@ -313,7 +302,7 @@ class Common(object):
         :type timestamp: str
         """
 
-        init.Broker.is_timestamp(timestamp)
+        Broker.is_timestamp(timestamp)
         self.set(ti.EXPIRED_ON, timestamp)
         self.save()
 
@@ -341,7 +330,7 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return init.Broker.post(self._RELATED, params=params)
+        return Broker.post(self._RELATED, params=params)
 
     # DELETE REQUESTS
 
@@ -357,4 +346,4 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return init.Broker.delete(self._RELATED, params=params)
+        return Broker.delete(self._RELATED, params=params)
