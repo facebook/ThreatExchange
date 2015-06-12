@@ -14,8 +14,8 @@ import time
 from urllib import urlencode
 from urllib2 import urlopen
 
-FB_APP_ID = os.environ['FB_THREATEXCHANGE_APP_ID']
-FB_ACCESS_TOKEN = os.environ['FB_THREATEXCHANGE_APP_SECRET']
+FB_APP_ID = os.environ['TX_APP_ID']
+FB_ACCESS_TOKEN = os.environ['TX_APP_SECRET']
 
 SERVER = 'https://graph.facebook.com/'
 
