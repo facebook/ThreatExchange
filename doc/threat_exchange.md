@@ -508,10 +508,14 @@ URL re-direct chains or domain to IP address relationships.  However,
 we support connecting any type of data to any other type.  Connections can
 be created via an HTTP POST request to the following URL
 
-    https://graph.facebook.com/<object_id>/related
+In the example below we will create a connection between between the
+facebook.com domain object (788497497903212) and the 173.252.120.6 IP address
+object (1061383593887032), which facebook.com can resolve to via DNS.
+
+    https://graph.facebook.com/788497497903212/related
 
     POST DATA:
-      related_id=<object_id_2>
+      related_id=1061383593887032
 
 Data returned:
 
