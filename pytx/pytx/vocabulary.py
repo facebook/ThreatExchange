@@ -34,7 +34,7 @@ class ThreatExchange(object):
     DEC_TOTAL = 1
 
     # POST
-    RELATED = 'related/'
+    RELATED = 'related'
     RELATED_ID = 'related_id'
 
     # Environment Variables for init()
@@ -124,6 +124,16 @@ class PagingCursor(object):
 
     BEFORE = 'before'
     AFTER = 'after'
+
+
+class Response(object):
+
+    """
+    Vocabulary for describing server responses.
+    """
+
+    SUCCESS = 'success'
+    ID = 'id'
 
 
 class ThreatExchangeMember(object):

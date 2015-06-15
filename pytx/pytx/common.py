@@ -1,6 +1,7 @@
 from request import Broker
 
 from vocabulary import Common as c
+from vocabulary import Response as r
 from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatIndicator as ti
@@ -283,7 +284,10 @@ class Common(object):
                 if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
                         len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
                     raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
-            return Broker.post(self._URL, params=params)
+            result = Broker.post(self._URL, params=params)
+            if r.ID in result:
+                self.set(ti.ID, result[r.ID])
+            return result
         else:
             params = dict(
                 (n, getattr(self, n)) for n in self._changed if n != c.ID
