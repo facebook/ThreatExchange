@@ -252,7 +252,70 @@ we support the following connections:
 this object;
 * families - A list of malware families the malware is associated with; and
 * threat\_indicators - A list of threat indicators associated with this object.
-* variants - A list of malware samples belonging to a family
+
+Example query for a specific malware sample: 518964484802467
+
+    https://graph.facebook.com/518964484802467/dropped/?access_token=555|aSdF123GhK
+
+Data returned:
+
+    {
+      "data": [
+        {
+          "added_on": "2014-05-17T08:50:23+0000",
+          "crx": "imidebfpiccjhkmkliilncodnlcijpnl",
+          "status": "MALICIOUS",
+          "victim_count": 1,
+          "id": "636198259806586"
+        },
+        ...
+      ]
+    }
+
+### /&lt;object\_id&gt; - Malware Family Objects
+
+This API call is for directly accessing a specific Open Graph malware family 
+object. It gives you the ability to see additional data, including the file
+itself.
+
+The following query parameters are available (bold parameters are required):
+
+* **access\_token** - The key for authenticating to the API.  It is a
+concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;.  For example,
+if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
+be "555|aSdF123GhK".
+* fields - A comma-delimited string of any combination of the following:
+	* added\_on - When the family was added to the graph, in ISO 8601 date format;
+	* aliases - A list of additional names for the family;
+  * description - A brief explanation of the family;
+  * family\_type - The kind of family, see the list of family types defined 
+  below;
+	* id - The malware's unique ThreatExchange ID;
+  * malicious - Indicates if the family is labeled as malicious;
+  * name - The name of the family;
+	* sample\_count - A count of family members.
+
+Example query for a specific malware sample: 393520067497631
+
+    https://graph.facebook.com/393520067497631/?access_token=555|aSdF123GhK&fields=added_on,id,name,status
+
+Data returned:
+
+    {
+      "added_on": "2014-02-10T08:15:08+0000",
+      "id": "518964484802467",
+      "md5": "31a345a897ef34cf2a5ce707d217ac6b",
+      "sha1": "bc45693e681244bef57bc2e20bff0ff9e32e2105",
+      "sha256": "2b7f45684ed8a86f446a0a835debaf9b3dda7d38f74d672eb5237ca2001add1e",
+      "status": "UNKNOWN"
+    }
+
+**Connections**
+
+ThreatExchange APIs support finding objects connected to malware family 
+objects.  For families we support the following connections:
+
+* variants - A list of malware samples belonging to a family.
 
 Example query for a specific malware sample: 518964484802467
 
@@ -671,31 +734,6 @@ operating system**.
 
 * A valid ASN's name. For example, 'AMAZON-AES', 'FACEBOOK', or 'HETZNER'.
 
-**Name: ATTACK**  
-**Type: Enumerated string**  
-**Description: The type of attack the indicator is associated with**.  
-**Value: One of**  
-
-* ACCESS\_TOKEN\_THEFT - Theft of an OAuth style or similar access token
-* BRUTE_FORCE - Repeated attempts to access an authenticated resource
-* CLICKJACKING - Any UI redressing or similar type of attack redirecting a
-person's clicks
-* EMAIL_SPAM - Sending of unsolicited email
-* FAKE_ACCOUNTS - An account associated with no real entity, often used
-for abuse
-* IP_INFRINGEMENT - Infringement on the rights of an intellectual property
-holder
-* MALICIOUS_APP - A malicious web application
-* MALWARE - A malware attack
-* PHISHING - A phishing attempt
-* SELF_XSS - Attack where a person is social engineered into pasting
-malicious JS into their brower's address bar or developer console
-* SHARE_BAITING - A person is convinced to share spammy content in exchange
-for a fictitious product or content.
-* TARGETED - An attack conducted by a sophisticated actor and directed at a
-specific target
-* UNKNOWN - Default, for when the type of attack is unknown
-
 **Name: BANNER**  
 **Type: string**  
 **Value: A banner reply from a server**  
@@ -1113,24 +1151,6 @@ e.g. HKEY\_LOCAL\_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run'.
 *  A URL containing the original source of the indicator,
 e.g. 'https://facebook.com/threatexchange/malware-write-up.pdf'.
 
-**Name: ROLE**  
-**Type: enumerated string**  
-**Value:**  
-
-*  Defines the different roles an indicator can play in an attack or kill chain, one of:
-  * C2
-  * EXPLOIT
-  * RECON
-  * PHISHING\_SITE
-  * TRACKING\_PIXEL
-  * WATERING\_HOLE
-
-**Name: RULE**  
-**Type: string**  
-**Value:**  
-
-*  A name of a rule or policy, perhaps from an external system that sourced the data, e.g. 'FindAllC2s'.
-
 **Name: SIGNATURE**  
 **Type: string**  
 **Value:**  
@@ -1147,12 +1167,6 @@ e.g. 'https://facebook.com/threatexchange/malware-write-up.pdf'.
   * SNORT
   * SURICATA
   * YARA
-
-**Name: SMS_ORIGIN**  
-**Type: string**  
-**Value:**  
-
-*  SMS origin provided in SMS spam reporting. This is the short code we used to send the thing about which a report was generated, e.g. 32665.
 
 **Name: SOURCE_PORT**  
 **Type: integer**  
