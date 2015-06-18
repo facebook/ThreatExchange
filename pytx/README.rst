@@ -6,6 +6,9 @@ pytx (pie-tex) is a Python Library for interfacing with Facebook's ThreatExchang
 Build Status
 ------------
 
+.. image:: https://travis-ci.org/facebook/ThreatExchange.svg
+    :target: https://travis-ci.org/facebook/ThreatExchange
+
 .. image:: https://img.shields.io/pypi/dm/pytx.svg
     :target: https://pypi.python.org/pypi/pytx/
     
@@ -54,4 +57,6 @@ Documentation
 -------------
 
 For more information you can find documentation in the 'docs' directory, check
-the Github wiki, or readthedocs (coming soon).
+the Github wiki, or readthedocs_.
+
+.. _readthedocs: https://pytx.readthedocs.org
