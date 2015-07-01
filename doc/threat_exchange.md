@@ -476,11 +476,10 @@ Data returned:
 
 All submissions to the ThreatExchange API require setting a privacy type.
 This choice can limit the visibility of any indicator, if desired.
-ThreatExchange supports three levels of visibility:
+ThreatExchange supports two levels of visibility:
 
 * allow all members;
-* allow specific members; and
-* deny specific members.
+* allow specific members;
 
 The desired privacy setting on an indicator is specified by the values in two
 fields at the time of a create or edit submission to the API:
