@@ -395,19 +395,19 @@ be "555|aSdF123GhK".
   * name - The name of the family;
 	* sample\_count - A count of family members.
 
-Example query for a specific malware sample: 393520067497631
+Example query for a specific malware sample: 812860802080929
 
-    https://graph.facebook.com/393520067497631/?access_token=555|aSdF123GhK&fields=added_on,id,name,status
+    https://graph.facebook.com/812860802080929/?access_token=555|aSdF123GhK&fields=added_on,id,name,status
 
 Data returned:
 
     {
-      "added_on": "2014-02-10T08:15:08+0000",
-      "id": "518964484802467",
-      "md5": "31a345a897ef34cf2a5ce707d217ac6b",
-      "sha1": "bc45693e681244bef57bc2e20bff0ff9e32e2105",
-      "sha256": "2b7f45684ed8a86f446a0a835debaf9b3dda7d38f74d672eb5237ca2001add1e",
-      "status": "UNKNOWN"
+      "added_on": "2014-07-03T02:25:18+0000",
+      "family_type": "IMP_HASH",
+      "description": "md5deep Automatic family based on PE Import Hash",
+      "malicious": "NON_MALICIOUS",
+      "name": "ImpHash for md5deep v4.4",
+      "id": "812860802080929"
     }
 
 **Connections**
