@@ -14,7 +14,7 @@ spaces by default.
 -->
 
 Threat intelligence comes to us in numerous types: a domain name used by a
-botnet, a URL deliving malware, a file name written to disk by some malware.
+botnet, a URL delivering malware, a file name written to disk by some malware.
 These are disparate data and need different kinds of metadata to make them
 useful to others.
 
@@ -27,7 +27,7 @@ for free:
 * Persistence to Facebook's Open Graph
 * Everyone else can use what you share and be better protected!
 
-All objects are fomatted maps using a predefined set of field names, with
+All objects are formatted maps using a predefined set of field names, with
 expected value types.  They can be of arbitrary size and field order in the
 map is, generally, not important. 
 
@@ -41,9 +41,37 @@ result pagination, and batching.  It is recommended to be familiar with the
 basics of interacting with Facebook Graph APIs prior to trying out
 ThreatExchange. 
 
+### Changes in Platform version 2.4
+
+There were a large number of changes made in Platform version 2.4. You may
+continue to use Platform version 2.3, without those changes, until 8 Dec 2015.
+On that day support for version 2.3 will be disabled.
+
+The most important change in version 2.4 was was the introduction of the 
+descriptor model. On version 2.3 and below, all data was stored on the 
+indicator. Beginning with version 2.4, we split information into
+objective and subjective categories. Objective information is data which 
+everybody can see and agree upon. It may change over time, but everybody sees 
+the same data. For example, the WHOIS registration for a domain name is
+objective. Subjective information represents somebody's opinion on the data. 
+Different people may have different opinions. For example, the status of a 
+domain as being MALICIOUS or NON_MALICIOUS.
+
+Objective information will remain stored on indicators. For the most part,
+Facebook will be the only party updating objective information. Subjective 
+information is now stored on a new structure called a descriptor. We have added
+API calls to create, edit, and search for descriptors. Each AppID may have
+one descriptor per indicator. Each descriptor has an edge connecting it
+to a threat indicator. Each indicator has edges to one or more descriptors.
+
+We currently do not support connections between descriptors. Connections
+between indicators will remain the only way to associate threat information
+for the time being. 
+
+
 ## Getting Access
 
-If you haven't already, beging by requesting access to ThreatExchange at
+If you haven't already, begin by requesting access to ThreatExchange at
 [https://threatexchange.fb.com](https://threatexchange.fb.com).
 
 
@@ -55,6 +83,7 @@ Queries into ThreatExchange are HTTP GET requests to one of the following URLs
     https://graph.facebook.com/malware_analyses
     https://graph.facebook.com/threat_exchange_members
     https://graph.facebook.com/threat_indicators
+	  https://graph.facebook.com/threat_descriptors
     https://graph.facebook.com/<object-id>
     https://graph.facebook.com/<object-id>/<connection-type>
 
@@ -167,7 +196,8 @@ Example query for all malicious IP addresses that are proxies:
 
     https://graph.facebook.com/threat_indicators?access_token=555|aSdF123GhK&type=IP_ADDRESS&text=proxy
 
-Data returned:
+The data returned by this API call changed in Platform version 2.4.
+Data returned in Platform v2.3:
 
     {
       "data": [
@@ -193,6 +223,76 @@ Data returned:
         }
       }
     }
+
+Data returned in Platform v2.4:
+
+    {
+      "data": [
+        {
+          "indicator": "127.0.0.1",
+          "type": "IP_ADDRESS",
+          "id": "804745332940593"
+        }
+	  ],
+      "paging": {
+        "cursors": {
+          "before": "MA==", 
+          "after": "MA=="
+        }
+      }
+    }
+
+
+### /threat\_descriptors
+
+The API call enables searching for subjective opinions on indicators
+of compromise stored in ThreatExchange. With this call you can search
+by free text, type, submitter, or all in a specific time window. Combinations
+of these query types are also allowed. This call is only permitted on 
+Platform version 2.4.
+
+* **access\_token** - The key for authenticating to the API.  It is a
+concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;. For example,
+if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
+be "555|aSdF123GhK".
+* limit - Defines the maximum size of a page of results. The maximum is 1,000.
+* owner - The AppID of the person who submitted the data.
+* text - Freeform text field with a value to search for.  This can be a file
+hash or a string found in other fields of the objects.
+* strict\_text - When set to 'true', the API will not do approximate matching
+on the value in text
+* threat\_type - The broad threat type the indicator is associated
+with (see the full list of values below)
+* type - The type of indicators to search for (see the full list of types below)
+* since - Returns malware collected after a timestamp
+* until - Returns malware collected before a timestamp
+
+Example query for all IP addresses submitted by Facebook Administrator 
+which contain the word "proxy":
+
+  https://graph.facebook.com/threat_descriptors?access_token=555|asDF&type=IP_ADDRESS&owner=820763734618599&text=proxy
+
+Data returned:
+
+	{
+	  "data": [
+	    {
+	      "id": "864036000343976",
+	      "indicator": {
+	        "indicator": "127.0.0.1",
+	        "type": "IP_ADDRESS",
+	        "id": "961490387234997"
+	      },
+	      "owner": {
+	        "id": "820763734618599",
+	        "email": "threatexchange@support.facebook.com",
+	        "name": "Facebook Administrator"
+	      },
+	      "type": "IP_ADDRESS",
+	      "raw_indicator": "127.0.0.1",
+	      "description": "TOR Proxy IP Address",
+	      "status": "UNKNOWN"
+	    },
 
 
 ### /&lt;object\_id&gt; - Malware Objects
@@ -295,19 +395,19 @@ be "555|aSdF123GhK".
   * name - The name of the family;
 	* sample\_count - A count of family members.
 
-Example query for a specific malware sample: 393520067497631
+Example query for a specific malware sample: 812860802080929
 
-    https://graph.facebook.com/393520067497631/?access_token=555|aSdF123GhK&fields=added_on,id,name,status
+    https://graph.facebook.com/812860802080929/?access_token=555|aSdF123GhK&fields=added_on,id,name,status
 
 Data returned:
 
     {
-      "added_on": "2014-02-10T08:15:08+0000",
-      "id": "518964484802467",
-      "md5": "31a345a897ef34cf2a5ce707d217ac6b",
-      "sha1": "bc45693e681244bef57bc2e20bff0ff9e32e2105",
-      "sha256": "2b7f45684ed8a86f446a0a835debaf9b3dda7d38f74d672eb5237ca2001add1e",
-      "status": "UNKNOWN"
+      "added_on": "2014-07-03T02:25:18+0000",
+      "family_type": "IMP_HASH",
+      "description": "md5deep Automatic family based on PE Import Hash",
+      "malicious": "NON_MALICIOUS",
+      "name": "ImpHash for md5deep v4.4",
+      "id": "812860802080929"
     }
 
 **Connections**
@@ -342,7 +442,8 @@ Data returned:
 This API call is for directly accessing a specific threat indicator
 object in ThreatExchange.  It gives you the ability to see additional data.
 
-The following query parameters are available (bold parameters are required):
+The following query parameters are available under Platform version 2.3
+(bold parameters are required):
 
 * **access\_token** - The key for authenticating to the API.  It is a
 concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;.  For example,
@@ -369,12 +470,25 @@ if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
    with, see values defined below;
   * type - The kind of indicator, see values defined below in the "Optional,
   Threat Specific Fields" section.
+  
+The following query parameters are available under Platform version 2.4
+(bold parameters are required):
 
-Example query for a specific indicator: 788497497903212
+* **access\_token** - The key for authenticating to the API.  It is a
+concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;.  For example,
+if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
+ be "555|aSdF123GhK".
+* fields - A comma-delimited string of any combination of the following:
+  * id - The indicator's unique Open Graph ID;
+  * indicator - The indicator itself;  
+  * type - The kind of indicator, see values defined below in the "Optional,
+ Threat Specific Fields" section.
+
+Example query for a specific indicator: 788497497903212:
 
     https://graph.facebook.com/788497497903212/?access_token=555|aSdF123GhK&fields=type,threat_types,description,indicator,added_on
 
-Data returned:
+Data returned under Platform version 2.3:
 
     {
           "added_on": "2015-02-11T21:10:21+0000", 
@@ -387,6 +501,15 @@ Data returned:
           "id": "788497497903212"
         }
 
+Data returned under Platform version 2.4:
+
+	{
+	  "indicator": "115.78.122.38",
+	  "type": "IP_ADDRESS",
+	  "id": "847320048638546"
+	}
+
+
 **Connections**
 
 The API supports finding objects connected to threat indicator objects.
@@ -395,7 +518,12 @@ For indicators, the following are supported:
 * malware\_analyses - A list of malware objects associated with this object;
 * related - A list of other threat indicators related to this object.
 
-Example query for a specific indicator: 768629009848617
+Under Platform version 2.4, you can also access the connection:
+
+* descriptors - A list of subjective opinions about this indicator
+
+Example query for malware analyses related to a specific indicator: 
+768629009848617
 
     https://graph.facebook.com/768629009848617/malware_analyses/?access_token=555|aSdF123GhK
 
@@ -415,14 +543,127 @@ Data returned:
         ...
       ]
     }
+    
+Example query for descriptors related to a specific indicator:
+
+     https://graph.facebook.com/852121234856016/descriptors/?access_token=555|aSdF123GhK
+
+Data returned:
+     
+     {
+       "data": [
+      {
+        "id": "811927545529339",
+        "indicator": {
+          "indicator": "test1434227164.evilevillabs.com",
+          "type": "DOMAIN",
+          "id": "852121234856016"
+        },
+        "owner": {
+          "id": "588498724619612",
+          "name": "Facebook CERT ThreatExchange"
+        },
+        "type": "DOMAIN",
+        "raw_indicator": "test1434227164.evilevillabs.com",
+        "description": "This is our test domain. It's harmless",
+        "status": "NON_MALICIOUS"
+      },
+      {
+        "id": "799906626794304",
+        "indicator": {
+          "indicator": "test1434227164.evilevillabs.com",
+          "type": "DOMAIN",
+          "id": "852121234856016"
+        },
+        "owner": {
+          "id": "682796275165036",
+          "name": "Facebook Site Integrity ThreatExchange"
+        },
+        "type": "DOMAIN",
+        "raw_indicator": "test1434227164.evilevillabs.com",
+        "description": "Malware command and control",
+        "status": "MALICIOUS"
+      }
+    ],
+    "paging": {
+      "cursors": {
+        "before": "ODExOTI3NTQ1NTI5MzM5",
+        "after": "Nzk5OTA2NjI2Nzk0MzA0"
+      }
+    }
+  }
+
+
+### /&lt;object\_id&gt; - Threat Descriptor Objects
+
+This API call is for directly accessing a specific threat descriptor
+object in ThreatExchange. It is only available under Platform version 2.4.
+
+The following query parameters are available (bold parameters are required):
+
+* **access\_token** - The key for authenticating to the API.  It is a
+concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;.  For example,
+if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
+ be "555|aSdF123GhK".
+* fields - A comma-delimited string of available fields. The available fields
+changed between Platform v2.3 and v2.4. Fields available under v2.3:
+  * added\_on - Timestamp when the indicator was added, in ISO 8601 date format;
+  * confidence - A score for how confident we are that the indicator is bad
+ ranges from 0 to 100;
+  * description - A human readable description of the indicator;
+  * expired\_on - Timestamp when the indicator expired, in ISO 8601 date
+  format, can be in the future;
+  * id - The indicator's unique Open Graph ID;
+  * indicator - The indicator itself;
+  * passwords - Any passwords associated with the indicator;
+  * report\_urls - Links to reports about the indicator;
+  * severity - A rating of how severe the indicator is when found in an
+  incident, see values defined below;
+  * share\_level - A designation of how the indicator may be shared based
+  on the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/
+  * status - Indicates if the indicator is labeled as malicious;
+  * submitter\_count - The number of members that have submitted the indicator;  
+  * threat\_types - A list of broad threat types the indicator is associated
+   with, see values defined below;
+  * type - The kind of indicator, see values defined below in the "Optional,
+  Threat Specific Fields" section.
+
+Example query for a specific descriptor: 777900478994849
+
+  https://graph.facebook.com/777900478994849?access_token=555|asdF123
+  
+	{
+	  "id": "777900478994849",
+	  "indicator": {
+	    "indicator": "http://test1435342443.evilevillabs.com/test.php",
+	    "type": "URI",
+	    "id": "841478115929947"
+	  },
+	  "owner": {
+	    "id": "682796275165036",
+	    "name": "Facebook Site Integrity ThreatExchange"
+	  },
+	  "type": "URI",
+	  "raw_indicator": "http://test1435342443.evilevillabs.com/test.php",
+	  "description": "Test Description",
+	  "status": "UNKNOWN"
+	}
 
 
 ## Submitting New Data
 
-Submit data to the graph via an HTTP POST request to the following URL
+You may submit data to the graph via an HTTP POST request to either of the 
+following URLs:
 
     https://graph.facebook.com/threat_indicators
+	  https://graph.facebook.com/threat_descriptors
 
+Both endpoints are supported in Platform version 2.4, but you should migrate
+your code to the second version. Both calls are actually creating threat
+descriptor objects. The first call will return the ID of the indicator
+associated with your descriptor. The second call will return the ID of the
+descriptor. The call to /threat\_indicators will be deprecated in a future 
+version of the Platform API.
 
 The following submission parameters are available (bold parameters are required):
 
@@ -472,6 +713,7 @@ Data returned:
       "success": true
     }
 
+
 ## Setting Privacy In ThreatExchange
 
 All submissions to the ThreatExchange API require setting a privacy type.
@@ -496,9 +738,10 @@ indicator.
 **Type: list of App IDs**  
 **Value:**  
 
-* A comma-delimited list of AppIDs allowed or prohibited from viewing an indicator in
-accordance with the PRIVACY\_TYPE.  NOTE:  When limiting visibility, it is not necessary
-to include your own AppID. It will be added automatically if necessary.
+* A comma-delimited list of AppIDs allowed to view an
+indicator in accordance with the PRIVACY\_TYPE.  NOTE:  When limiting
+visibility, it is not necessary to include your own AppID. It will be added
+automatically if necessary.
 
 
 Example submission of a malicious domain with the privacy set to just two members
@@ -515,12 +758,14 @@ Example submission of a malicious domain with the privacy set to just two member
       &privacy_members=123456789,9012345678
 
 
-## Editing Exisiting Data
+## Editing Existing Data
 
-Exisiting data can be edited via an HTTP POST request to the following URL
+Existing data can be edited via an HTTP POST request to the following URL
 
     https://graph.facebook.com/<object_id>
 
+You can use this format to update an indicator or a descriptor. The code
+will automatically update the descriptor for you.
 
 The following submission parameters are available (bold parameters are required):
 
@@ -588,8 +833,9 @@ Data returned:
     }
 
 
-NOTE: Currently, this is not supported for malware objects, but will be in the
-near future.
+NOTE: Currently, this is not supported for malware objects or threat 
+descriptors, but will be in the near future.
+
 
 ## Deleting Data
 
@@ -983,7 +1229,7 @@ a separate field **COUNTRY**.
 **Type: string**  
 **Value:**  
 
-*  THe process file name that had memory permissions altered,
+*  The process file name that had memory permissions altered,
 e.g. 'C:\Temp\bot.exe'.
 
 **Name: MEMORY_READ**  
@@ -1081,7 +1327,7 @@ e.g. 'image/jpeg'.
 **Type: string**  
 **Value:**  
 
-*  THe name of a registry key in Microsoft Windows,
+*  The name of a registry key in Microsoft Windows,
 e.g. 'HKEY_USERS\Software\Microsoft\Visual Basic'.
 
 **Name: REG\_KEY\_CREATED**  
