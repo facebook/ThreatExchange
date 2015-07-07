@@ -51,6 +51,8 @@ def get_query(options):
         fields['since'] = options.since
     if options.until is not None:
         fields['until'] = options.until
+    if options.limit is not None:
+        fields['limit'] = options.limit
 
     return SERVER + 'threat_indicators?' + urlencode(fields)
 
@@ -116,6 +118,7 @@ def get_parser():
     parser.add_argument('-y', '--threat-type')
     parser.add_argument('-x', '--text')
     parser.add_argument('-o', '--output')
+    parser.add_argument('-n', '--limit')
     parser.add_argument('-s', '--since')
     parser.add_argument('-u', '--until')
 
