@@ -30,7 +30,7 @@ var ThreatExchange = function(app_id, app_secret) {
           callback(err,null);
         } else {
           if (response.statusCode != 200) {
-            callback(new Error({statusCode:response.statusCode}),null);
+            callback(new Error({statusCode:response.statusCode,body:response.body}),null);
           } else {
             callback(null,JSON.parse(body));
           }
