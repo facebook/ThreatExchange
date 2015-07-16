@@ -17,5 +17,6 @@
 # - header row column names must be the field names defined in the API docs
 
 # Example header row and indicator
-type,threat_type,indicator,status,description,privacy_type,privacy_members
-DOMAIN,MALICIOUS_DOMAIN,evil-domain.biz,MALICIOUS,Testing bulk upload,HAS_WHITELIST,<your_app_id>
+type,threat_type,indicator,status,description,share_level,privacy_type,privacy_members
+DOMAIN,MALICIOUS_DOMAIN,evil-domain.biz,SUSPICIOUS,Testing bulk upload,AMBER,HAS_WHITELIST,<your-app-id>
+DOMAIN,MALICIOUS_DOMAIN,evil-domain-2.biz,SUSPICIOUS,Testing bulk upload,AMBER,HAS_WHITELIST,<your-app-id>

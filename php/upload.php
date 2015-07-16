@@ -50,9 +50,7 @@ foreach ($entries as $request_uri => $post_data) {
       512,
       JSON_BIGINT_AS_STRING
     );
-    if (isset($json['data'])) {
-      $results = array_merge($results, $json['data']);
-    }
+    $results[] = $json;
   } catch (Exception $e) {
     echo $e->getMessage()."\n";
   }

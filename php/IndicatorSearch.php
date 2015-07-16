@@ -20,17 +20,21 @@ final class IndicatorSearch extends BaseSearch {
   public function getAdditionalOptions() {
     return array (
       'b' => 'type',
+      'o' => 'owner',
+      'r' => 'threat_type',
     );
   }
 
   public function getEndpoint() {
-    return '/threat_indicators';
+    return '/threat_descriptors';
   }
 
   public function getUsage() {
     return "\t-b type of indicators to search for (optional, see API docs for ".
         "full list)\n".
       "\t-m strict match the query string (optional)\n".
+      "\t-o the ThreatExchange ID of the owner (optional)\n".
+      "\t-r the threat type to search for (optional)\n".
       "\t-q query string\n".
       "\t-s beginning timestamp or date time string for a time windowed query\n".
       "\t-u ending timestamp or date time string for a time windowed query\n";
@@ -38,15 +42,17 @@ final class IndicatorSearch extends BaseSearch {
 
   public function getResultsAsCSV($results) {
     $csv = "# ThreatExchange Results - queried at ".strftime('%c')."\n".
-      "id,type,indicator,status,description,threat_type\n";
+      "id,type,indicator,status,description,threat_type,owner,owner_name\n";
     foreach ($results as $result) {
       $row = array(
         $result['id'],
-        $result['type'],
-        $result['indicator'],
+        isset($result['indicator']) ? $result['indicator']['type'] : '',
+        isset($result['indicator']) ? $result['indicator']['indicator'] : '',
         $result['status'],
         $result['description'],
-        implode('|,', $result['threat_types']),
+        $result['threat_type'],
+        isset($result['owner']) ? $result['owner']['id'] : '',
+        isset($result['owner']) ? $result['owner']['name'] : '',
       );
       $csv .= implode(',', $row)."\n";
     }

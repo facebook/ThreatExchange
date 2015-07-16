@@ -69,7 +69,7 @@ abstract class BaseSearch {
   }
 
   public function buildAPIRequest($query_params, $optional_params=array()) {
-    $uri = ThreatExchangeUtils::FACEBOOK_SERVER.$this->getEndpoint().'/?';
+    $uri = ThreatExchangeConfig::FACEBOOK_SERVER.$this->getEndpoint().'/?';
 
     // build the param array
     $params = array (
