@@ -23,7 +23,7 @@ class ThreatExchangeConfig {
   const APP_ID = 0;
   const APP_SECRET = 'secret';
 
-  const FACEBOOK_SERVER = 'https://graph.facebook.com';
+  const FACEBOOK_SERVER = 'https://graph.facebook.com/v2.4';
 
   public static function getAppID() {
     if (!self::APP_ID) {
@@ -74,4 +74,3 @@ function __autoload($class) {
     __ROOT__.'/'.__FILE__
   );
 }
-

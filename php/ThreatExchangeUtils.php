@@ -19,8 +19,6 @@ class ThreatExchangeUtils {
 
   private static $debugMode = false;
 
-  const FACEBOOK_SERVER = 'https://graph.intern.facebook.com';
-
   public static function setDebugMode($debug_mode) {
     self::$debugMode = $debug_mode;
   }
@@ -68,7 +66,7 @@ class ThreatExchangeUtils {
     }
     return $raw_json;
   }
-  
+
   /**
    * @throws Exception
    */
