@@ -468,8 +468,7 @@ if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
   * submitter\_count - The number of members that have submitted the indicator;  
   * threat\_types - A list of broad threat types the indicator is associated
    with, see values defined below;
-  * type - The kind of indicator, see values defined below in the "Optional,
-  Threat Specific Fields" section.
+  * type - The kind of indicator, see values defined below in the "Type Field Values" section.
   
 The following query parameters are available under Platform version 2.4
 (bold parameters are required):
@@ -481,8 +480,7 @@ if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
 * fields - A comma-delimited string of any combination of the following:
   * id - The indicator's unique Open Graph ID;
   * indicator - The indicator itself;  
-  * type - The kind of indicator, see values defined below in the "Optional,
- Threat Specific Fields" section.
+  * type - The kind of indicator, see values defined below in the "Type Field Values" section.
 
 Example query for a specific indicator: 788497497903212:
 
@@ -606,27 +604,25 @@ concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;.  For example,
 if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
  be "555|aSdF123GhK".
 * fields - A comma-delimited string of available fields. The available fields
-changed between Platform v2.3 and v2.4. Fields available under v2.3:
-  * added\_on - Timestamp when the indicator was added, in ISO 8601 date format;
-  * confidence - A score for how confident we are that the indicator is bad
- ranges from 0 to 100;
+changed between Platform v2.3 and v2.4. Fields available under v2.4:
+  * confidence - A confidence rating on the status field, ranges from 0 to 100;
   * description - A human readable description of the indicator;
   * expired\_on - Timestamp when the indicator expired, in ISO 8601 date
   format, can be in the future;
-  * id - The indicator's unique Open Graph ID;
-  * indicator - The indicator itself;
-  * passwords - Any passwords associated with the indicator;
+  * id - The descriptor's unique ThreatExchange ID;
+  * indicator - The indicator object being described, see threat indicator object for details;
+  * last\_updated - When the descriptor was last updated, in ISO 8601 date format;
+  * owner - The ThreatExchange application that created the descriptor, see owner object for details;
+  * raw\_indicator - The un-altered indicator, as submitted by the owner, that is the subject of the descriptor;
   * report\_urls - Links to reports about the indicator;
   * severity - A rating of how severe the indicator is when found in an
   incident, see values defined below;
   * share\_level - A designation of how the indicator may be shared based
-  on the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/
-  * status - Indicates if the indicator is labeled as malicious;
-  * submitter\_count - The number of members that have submitted the indicator;  
-  * threat\_types - A list of broad threat types the indicator is associated
+  on the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/;
+  * status - Indicates if the indicator is labeled as malicious;  
+  * threat\_type - The broad threat types the indicator is associated
    with, see values defined below;
-  * type - The kind of indicator, see values defined below in the "Optional,
-  Threat Specific Fields" section.
+  * type - The kind of indicator, see values defined below in the "Type Field Values" section.
 
 Example query for a specific descriptor: 777900478994849
 
@@ -671,26 +667,25 @@ The following submission parameters are available (bold parameters are required)
 concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;.  For example,
 if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
 be "555|aSdF123GhK";
-* confidence - A confidence rating on the indicator, from 0 to 100;
+* confidence - A confidence rating on the status field, from 0 to 100;
 * **description** - A short summary of the indicator and threat;
 * expired\_on - Time the indicator is no longer considered a threat, in
 ISO 8601 date format;
-* **indicator** - The indicator data being submitted.
-* passwords - The MD5s of passwords associated with this indicator. Intended
-for compromised credentials.
+* **indicator** - The indicator data being submitted;
+* precision - The degree of accuracy of the indicator, see the Precision enum described below in the "Other Schema Field Enums" section;
 * **privacy\_type** - The kind of privacy for the indicator, see values
-  defined below.
+  defined below;
 * privacy\_members - Some types of privacy require you to specify who can
-  or cannot see the indicator.
+  or cannot see the indicator;
+* review\_status - Describes how the indicator was vetted, see the Review Status enum described below in the "Other Schema Field Enums" section; 
 * severity - A rating of how severe the indicator is when found in an incident,
 see values defined below;
-* share_level - A designation of how the indicator may be shared based on the
-US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/
+* **share_level** - A designation of how the indicator may be shared based on the
+US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/;
 * **status** - Indicates if the indicator is labeled as malicious;
 * threat\_type - The broad threat type the indicator is associated with,
 see values defined below;
-* **type** - The kind of indicator, see values defined below in the "Optional,
-Threat Specific Fields" section.
+* **type** - The kind of indicator being described, see values defined below in the "Type Field Values" section.
 
 
 Example submission of a malicious domain:
@@ -765,32 +760,7 @@ Existing data can be edited via an HTTP POST request to the following URL
     https://graph.facebook.com/<object_id>
 
 You can use this format to update an indicator or a descriptor. The code
-will automatically update the descriptor for you.
-
-The following submission parameters are available (bold parameters are required):
-
-* **access\_token** - The key for authenticating to the API.  It is a
-concatenation of &lt;your-app-id&gt;|&lt;your-app-secret&gt;.  For example,
-if our app ID was 555 and our app secret aSdF123GhK, our access\_token would
-be "555|aSdF123GhK".
-* description - A short summary of the indicator and threat;
-* expired\_on - Time the indicator is no longer considered a threat, in
-ISO 8601 date format;
-* indicator - The indicator data being submitted.
-* privacy\_type - The kind of privacy for the indicator, see the values
-  defined below;
-* privacy\_members - Some types of privacy require you to specify who can
-  or cannot see the indicator;
-* severity - A rating of how severe the indicator is when found in an incident,
-see values defined below;
-* share\_level - A designation of how the indicator may be shared based on
-the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/
-* status - Indicates if the indicator is labeled as malicious;
-* threat\_type - The broad threat type the indicator is associated with, see
-values defined below;
-* type - The kind of indicator, see values defined below in the "Optional,
-Threat Specific Fields" section.
-
+will automatically update the descriptor for you.  The fields available for editing are identical to the fields listed in the indicator and descriptor submission fields earlier in this documentation.
 
 Example of flagging data as a false positive:
 
@@ -894,6 +864,14 @@ the indicator is bad**
 * MEDIUM - 26 → 75
 * HIGH - 76 → 100
 
+**Name: PRIVACY\_TYPE**
+**Type: Enumerated string**
+**Description: **
+**Value: One of**
+
+* HAS\_WHITELIST - Only the ThreatExchange IDs specified in the PRIVACY\_MEMBERS field will be able to see the data
+* VISIBLE - All ThreatExchange members will be able to see the data
+
 **Name: SEVERITY**  
 **Type: Enumerated string**  
 **Description: How severe the indicator is if it's found on a system or in traffic**  
@@ -911,7 +889,6 @@ the indicator is bad**
 the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/**  
 **Value: One of**  
 
-* UNKNOWN
 * WHITE
 * GREEN
 * AMBER
@@ -925,14 +902,6 @@ the US-CERT\'s Traffic Light Protocol, https://www.us-cert.gov/tlp/**
 * NON_MALICIOUS
 * SUSPICIOUS
 * UNKNOWN
-
-**Name: TIMESTAMP**  
-**Type: Integer**  
-**Description: time when the threat described was created / discovered**  
-**Value:**  
-
-* An integer, UTC unix-style timestamp, in seconds since the 1970 epoch.
-For example, 1391187889, which translates to Fri, 31 Jan 2014 17:04:49 GMT.
 
 **Name: ID**  
 **Type: Integer**  
@@ -1025,12 +994,6 @@ for The United States. Note that there is a separate field for **LOCATION**.
 * A text string found in a binary file, e.g.
 'd:\admin\projects\test\test.pdb'.
 
-**Name: DESCRIPTION**  
-**Type: string**  
-**Value:**  
-
-* A generic description, for providing context to a human
-
 **Name: DEST_PORT**  
 **Type: integer**  
 **Value:**  
@@ -1066,14 +1029,6 @@ for The United States. Note that there is a separate field for **LOCATION**.
 **Value:**  
 
 *  An event ID, if generated externally, e.g. 'SpamRep Message-Id'.
-
-**Name: EXPIRED_TIME**  
-**Type: integer**  
-**Value:**  
-
-*  When this indicator should be expired.  An integer, UTC unix-style
-timestamp, in seconds since the 1970 epoch. For example, 1391187889, which
-translates to Fri, 31 Jan 2014 17:04:49 GMT.
 
 **Name: FILE_CREATED**  
 **Type: string**  
@@ -1256,11 +1211,6 @@ e.g. 'C:\Temp\bot.exe'.
 
 *  A symbol defined in an OS for synchronization.
 
-**Name: NAME**  
-**Type: string**  
-**Value:**  
-
-*  A short name for the indicator, suitable for display in a UI.
 
 **Name: NAME_SERVER**  
 **Type: string**  
@@ -1389,29 +1339,11 @@ e.g. HKEY\_LOCAL\_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run'.
 *  Registry key value queried,
 e.g. HKEY\_LOCAL\_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run'.
 
-**Name: REPORT_URL**  
-**Type: string**  
-**Value:**  
-
-*  A URL containing the original source of the indicator,
-e.g. 'https://facebook.com/threatexchange/malware-write-up.pdf'.
-
 **Name: SIGNATURE**  
 **Type: string**  
 **Value:**  
 
 *  The signature string for detecting a threat.
-
-**Name: SIGNATURE_TYPE**  
-**Type: enumerated string**  
-**Value:**  
-
-*  Defines the type of signature being described, one of:
-  * BRO
-  * REGEX_URL
-  * SNORT
-  * SURICATA
-  * YARA
 
 **Name: SOURCE_PORT**  
 **Type: integer**  
@@ -1421,39 +1353,9 @@ e.g. 'https://facebook.com/threatexchange/malware-write-up.pdf'.
 
 **Name: TELEPHONE**  
 **Type: string**  
-**Value:**  
+**Value:**
 
-**Name: TIME_CREATED**  
-**Type: timestamp**  
-**Value:**  
-
-*  When this indicator first appeared in the world. For example, when a domain
-name was registered.
-
-**Name: TIME_UPDATED**  
-**Type: timestamp**  
-**Value:**  
-
-*  When this indicator was last updated. For example, when a domain name
-registration was last updated.
-
-*  A telephone number in full international format, e.g. +18005551212.
-
-**Name: TS_END**  
-**Type: timestamp**  
-**Value:**  
-
-*  The end of a time window. An integer, UTC unix-style timestamp, in seconds
-since the 1970 epoch. For example, 1391187889, which translates to
-Fri, 31 Jan 2014 17:04:49 GMT.
-
-**Name: TS_START**  
-**Type: timestamp**  
-**Value:**  
-
-*  The start of a time window. An integer, UTC unix-style timestamp, in seconds
- since the 1970 epoch. For example, 1391187889, which translates to
- Fri, 31 Jan 2014 17:04:49 GMT.
+*   The full, international version of a telephone number, e.g. +12225551212
 
 **Name: URI**  
 **Type: string**  
@@ -1497,12 +1399,6 @@ or '/index.html'.
 
      test data
 
-**Name: WHITELIST**  
-**Type: boolean**  
-**Value:**  
-
-*  If set to true, the indicator is considered a whitelisted entry.
-
 **Name: WHOIS_NAME**  
 **Type: string**  
 **Value:**  
@@ -1526,4 +1422,39 @@ or '/index.html'.
 **Value:**  
 
 *  A Firefox addon ID, e.g. '{e968fc70-8f95-4ab9-9e79-304de2a71ee1}'.
+
+
+## Other Schema Field Enums
+
+**Name: PRECISION**  
+**Type: enumerated string**  
+**Value:**  
+
+*  Defines how accurately the indicator detects its intended target, victim or actor, one of:
+  * UNKNOWN
+  * LOW
+  * MEDIUM
+  * HIGH
+  
+**Name: REVIEW\_STATUS**  
+**Type: enumerated string**  
+**Value:**  
+
+*  Defines how the indicator was vetted, one of:
+  * UNKNOWN
+  * UNREVIEWED
+  * PENDING
+  * REVIEWED\_MANUALLY
+  * REVIEWED\_AUTOMATICALLY
+
+**Name: SIGNATURE_TYPE**  
+**Type: enumerated string**  
+**Value:**  
+
+*  Defines the type of signature being described, one of:
+  * BRO
+  * REGEX_URL
+  * SNORT
+  * SURICATA
+  * YARA
 
