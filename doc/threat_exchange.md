@@ -613,7 +613,9 @@ changed between Platform v2.3 and v2.4. Fields available under v2.4:
   * indicator - The indicator object being described, see threat indicator object for details;
   * last\_updated - When the descriptor was last updated, in ISO 8601 date format;
   * owner - The ThreatExchange application that created the descriptor, see owner object for details;
+  * precision - The degree of accuracy of the indicator;
   * raw\_indicator - The un-altered indicator, as submitted by the owner, that is the subject of the descriptor;
+  * review\_status - Describes how the indicator was vetted;
   * report\_urls - Links to reports about the indicator;
   * severity - A rating of how severe the indicator is when found in an
   incident, see values defined below;
