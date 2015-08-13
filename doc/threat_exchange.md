@@ -1119,7 +1119,7 @@ See http://blog.virustotal.com/2014/02/virustotal-imphash.html for more details.
 **Type: string**  
 **Value:**  
 
-*  The value of an ID attribute on an HTML or XHTML tag, e.g. 'user-name'.
+*  The value of an ID attribute on an HTML or XHTML tag that identifies malicious or injected markup. For example, 'my-injected-ad'.
 
 **Name: HTTP_REQUEST**  
 **Type: string**  
