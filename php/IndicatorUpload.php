@@ -18,24 +18,23 @@ ThreatExchangeConfig::init();
 final class IndicatorUpload extends BaseUpload {
 
   public function getEndpoint() {
-    return '/threat_indicators';
+    return '/threat_descriptors';
   }
-  
+
   protected function getTypeSpecificFields() {
     return array(
       'expired_on',
       'indicator',
-      'password',
-      'report_url',
+      'passwords',
       'type',
       'threat_type',
     );
   }
-  
+
   protected function getPostDataFromCSV($data_row) {
     $post_data = array();
     foreach ($this->getFields() as $field_name) {
-      if (isset($data_row[$field_name]) && 
+      if (isset($data_row[$field_name]) &&
           $data_row[$field_name] !== '' &&
           $data_row[$field_name] !== null) {
         $post_data[$field_name] = $data_row[$field_name];

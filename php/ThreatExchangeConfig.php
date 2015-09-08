@@ -14,33 +14,33 @@ if (!defined('__ROOT__')) {
 }
 
 /**
- * EDIT THE VALUES IN APP_ID and APP_SECRET BEFORE CONTINUING!!!
+ * SET YOUR TX_APP_ID and TX_APP_SECRET ENV VARIABLES BEFORE CONTINUING!!!
  * VALUES FOR BOTH ARE AVAILABLE BY GOING TO
  * https://developers.facebook.com/apps/
  */
 class ThreatExchangeConfig {
 
-  const APP_ID = 0;
-  const APP_SECRET = 'secret';
+  const FACEBOOK_SERVER = 'https://graph.facebook.com/v2.4';
 
-  const FACEBOOK_SERVER = 'https://graph.facebook.com';
+  private static $appID = 0;
+  private static $appSecret = null;
 
   public static function getAppID() {
-    if (!self::APP_ID) {
+    if (!self::$appID) {
       throw new Exception(
-        'Edit the APP_ID field in ThreatExchangeConfig before continuing!'
+        'Set the TX_APP_ID environment variable before continuing!'
       );
     }
-    return self::APP_ID;
+    return self::$appID;
   }
 
   public static function getAppSecret() {
-    if (!self::APP_SECRET) {
+    if (!self::$appSecret) {
       throw new Exception(
-        'Edit the APP_SECRET field in ThreatExchangeConfig before continuing!'
+        'Set the TX_APP_SECRET environment variable before continuing!'
       );
     }
-    return self::APP_SECRET;
+    return self::$appSecret;
   }
 
   public static function getAccessToken() {
@@ -48,7 +48,11 @@ class ThreatExchangeConfig {
   }
 
   public static function init() {
-    // bootstraping method, just used right now to force load of __autoload()
+    // bootstraping method, forces call to __autoload()
+
+    // load credentials from system environment variables
+    self::$appID = $_ENV['TX_APP_ID'];
+    self::$appSecret = $_ENV['TX_APP_SECRET'];
   }
 }
 
@@ -74,4 +78,3 @@ function __autoload($class) {
     __ROOT__.'/'.__FILE__
   );
 }
-

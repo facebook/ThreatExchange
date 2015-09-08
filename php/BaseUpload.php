@@ -121,10 +121,6 @@ abstract class BaseUpload {
     $privacy_data = array();
     if (isset($options['p'])) {
       switch(strtoupper(trim($options['p']))) {
-        case 'HAS_BLACKLIST':
-        case 'BLACKLIST':
-          $privacy_data['privacy_type'] = 'HAS_BLACKLIST';
-          break;
         case 'HAS_WHITELIST':
         case 'WHITELIST':
           $privacy_data['privacy_type'] = 'HAS_WHITELIST';
@@ -143,7 +139,7 @@ abstract class BaseUpload {
   }
 
   public function buildAPIUploadRequest() {
-    $uri = ThreatExchangeUtils::FACEBOOK_SERVER.$this->getEndpoint().'/?';
+    $uri = ThreatExchangeConfig::FACEBOOK_SERVER.$this->getEndpoint().'/?';
 
     // build the param array
     $params = array (
@@ -156,13 +152,12 @@ abstract class BaseUpload {
   }
 
   public function getResultsAsCSV($results) {
-    var_dump($results);
-    $csv = "# ThreatExchange Results - uploaded at ".strftime('%c')."\n".
-      "id,error\n";
+    $csv = "# ThreatExchange Results - uploaded at ".strftime('%F %T (%z)').
+      "\nid,error\n";
     foreach ($results as $result) {
       $csv .= isset($result['id']) ? $result['id'] : 'NO_ID';
       $csv .= ',';
-      $csv .= isset($result['error']) ? $result['error'] : '';
+      $csv .= isset($result['error']) ? $result['error'] : 'OK';
       $csv .= "\n";
     }
     return $csv;
