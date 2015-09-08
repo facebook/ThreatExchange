@@ -283,7 +283,7 @@ class Common(object):
     @class_or_instance_method
     def save(cls_or_self, params):
         """
-        Submit params to the graph to add a new object. If this is an
+        Submit params to the graph to add/update an object. If this is an
         uninstantiated class then we will submit to the object URL (used for
         creating new objects in the graph). If this is an instantiated class
         object then we will determine the Details URL and submit there (used for
