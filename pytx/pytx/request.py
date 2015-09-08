@@ -36,6 +36,7 @@ class Broker(object):
 
         n = klass(**attrs)
         n._new = False
+        n._changed = []
         return n
 
     @staticmethod
@@ -109,8 +110,11 @@ class Broker(object):
         """
 
         if resp.status_code != 200:
-            raise pytxFetchError('Response code: %s: %s' % (resp.status_code,
-                                                            resp.text))
+            raise pytxFetchError('Response code: %s: %s, URL: %s' % (
+                resp.status_code,
+                resp.text,
+                resp.url)
+            )
         try:
             results = json.loads(resp.text)
         except:
