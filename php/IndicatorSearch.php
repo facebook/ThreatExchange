@@ -45,14 +45,14 @@ final class IndicatorSearch extends BaseSearch {
       "id,type,indicator,status,description,threat_type,owner,owner_name\n";
     foreach ($results as $result) {
       $row = array(
-        $result['id'],
-        isset($result['indicator']) ? $result['indicator']['type'] : '',
-        isset($result['indicator']) ? $result['indicator']['indicator'] : '',
-        $result['status'],
-        $result['description'],
-        $result['threat_type'],
-        isset($result['owner']) ? $result['owner']['id'] : '',
-        isset($result['owner']) ? $result['owner']['name'] : '',
+        $result ['id'],
+	isset ( $result ['indicator'] ) ? $result ['indicator'] ['type'] : '',
+	isset ( $result ['indicator'] ) ? $result ['indicator'] ['indicator'] : '',
+	isset ( $result ['status'] ) ? $result ['status'] : '',
+	isset ( $result ['description'] ) ? $result ['description'] : '',
+	isset ( $result ['threat_type'] ) ? $result ['threat_type'] : '',
+	isset ( $result ['owner'] ) ? $result ['owner'] ['id'] : '',
+	isset ( $result ['owner'] ) ? $result ['owner'] ['name'] : ''
       );
       $csv .= implode(',', $row)."\n";
     }
