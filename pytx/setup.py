@@ -13,7 +13,7 @@ with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
 
 setup(
     name='pytx',
-    version='0.1.4',
+    version='0.1.5',
     description='Python Library for Facebook ThreatExchange',
     long_description=long_description,
     author='Mike Goffin',

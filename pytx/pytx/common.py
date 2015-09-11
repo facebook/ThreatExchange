@@ -1,7 +1,6 @@
 from request import Broker
 
 from vocabulary import Common as c
-from vocabulary import Response as r
 from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatIndicator as ti
@@ -61,6 +60,11 @@ class Common(object):
 
         If the attribute was changed from a previous value, we will add it to
         _changed in the event this is an edit.
+
+        :param name: The name of the attribute to set.
+        :type name: str
+        :param value: The value to set the attribute to.
+        :type value: None, int, str, bool
         """
 
         object.__setattr__(self, name, value)
@@ -262,41 +266,46 @@ class Common(object):
                                                      params=params))
                 else:
                     cls_or_self.populate(Broker.get(url, params=params))
+                    cls_or_self._changed = []
 
-    def save(self):
+    def get_changed(self):
         """
-        Save this object. If it is a new object, use self._fields to build the
-        POST and submit to the appropriate URL. If it is an update to an
-        existing object, use self._changed to only submit the modified
-        attributes in the POST.
+        Generate a dict of all of the changed attributes for this class. Useful
+        for generating parameters to submit for saving.
 
+        :returns: dict
+        """
+
+        return dict(
+            (n, getattr(self, n)) for n in self._changed if n != c.ID
+        )
+
+    @class_or_instance_method
+    def save(cls_or_self, params):
+        """
+        Submit params to the graph to add/update an object. If this is an
+        uninstantiated class then we will submit to the object URL (used for
+        creating new objects in the graph). If this is an instantiated class
+        object then we will determine the Details URL and submit there (used for
+        updating an existing object).
+
+        :param params: The parameters to submit.
+        :type params: dict
         :returns: dict (using json.loads())
         """
 
-        if self._new:
-            params = dict(
-                (n, getattr(self, n)) for n in self._fields if n != c.ID
-            )
-            if ti.PRIVACY_TYPE not in params:
-                raise pytxValueError('Must provide a %s' % ti.PRIVACY_TYPE)
-                pass
-            else:
-                if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
-                        len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
-                    raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
-            result = Broker.post(self._URL, params=params)
-            if r.ID in result:
-                self.set(ti.ID, result[r.ID])
-            return result
+        if isinstance(cls_or_self, type):
+            url = t.URL + t.VERSION + id + '/'
         else:
-            params = dict(
-                (n, getattr(self, n)) for n in self._changed if n != c.ID
-            )
-            if (ti.PRIVACY_TYPE in params and
-                    params[ti.PRIVACY_TYPE] != pt.VISIBLE and
+            url = cls_or_self._DETAILS
+        if ti.PRIVACY_TYPE not in params:
+            raise pytxValueError('Must provide a %s' % ti.PRIVACY_TYPE)
+            pass
+        else:
+            if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
                     len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
                 raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
-            return Broker.post(self._DETAILS, params=params)
+        return Broker.post(url, params=params)
 
     def expire(self, timestamp):
         """
@@ -307,8 +316,10 @@ class Common(object):
         """
 
         Broker.is_timestamp(timestamp)
-        self.set(ti.EXPIRED_ON, timestamp)
-        self.save()
+        params = {
+            ti.EXPIRED_ON: timestamp
+        }
+        return Broker.post(self._DETAILS, params=params)
 
     def false_positive(self, object_id):
         """
@@ -319,8 +330,10 @@ class Common(object):
         :type object_id: str
         """
 
-        self.set(c.STATUS, s.UNKNOWN)
-        self.save()
+        params = {
+            c.STATUS: s.UNKNOWN
+        }
+        return Broker.post(self._DETAILS, params=params)
 
     def add_connection(self, object_id):
         """
