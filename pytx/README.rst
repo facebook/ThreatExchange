@@ -38,16 +38,16 @@ Quick Example
 .. code-block :: python
 
    from pytx import init
-   from pytx import ThreatIndicator
-   from pytx.vocabulary import ThreatIndicator as ti
+   from pytx import ThreatDescriptor
+   from pytx.vocabulary import ThreatDescriptor as td
 
    init('<app-id>', '<app-secret>')
-   results = ThreatIndicator.objects(text='www.facebook.com')
+   results = ThreatDescriptor.objects(text='www.facebook.com')
    for result in results:
-       print result.get(ti.THREAT_TYPES)
+       print result.get(td.THREAT_TYPES)
 
    # type is type_ because type is a reserved word.
-   results = ThreatIndicator.objects(type_='IP_ADDRESS',
+   results = ThreatDescriptor.objects(type_='IP_ADDRESS',
                                      text='127.0.0.1')
    for result in results:
        print result.get(ti.INDICATOR)
