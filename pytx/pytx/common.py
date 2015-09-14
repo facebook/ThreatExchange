@@ -3,7 +3,7 @@ from request import Broker
 from vocabulary import Common as c
 from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
-from vocabulary import ThreatIndicator as ti
+from vocabulary import ThreatDescriptor as td
 from vocabulary import PrivacyType as pt
 from errors import (
     pytxAttributeError,
@@ -280,32 +280,80 @@ class Common(object):
             (n, getattr(self, n)) for n in self._changed if n != c.ID
         )
 
-    @class_or_instance_method
-    def save(cls_or_self, params):
+    @classmethod
+    def new(cls, params):
         """
-        Submit params to the graph to add/update an object. If this is an
-        uninstantiated class then we will submit to the object URL (used for
-        creating new objects in the graph). If this is an instantiated class
-        object then we will determine the Details URL and submit there (used for
-        updating an existing object).
+        Submit params to the graph to add an object. We will submit to the
+        object URL used for creating new objects in the graph. When submitting
+        new objects you must provide privacy type and privacy members if the
+        privacy type is something other than visible.
 
         :param params: The parameters to submit.
         :type params: dict
         :returns: dict (using json.loads())
         """
 
-        if isinstance(cls_or_self, type):
-            url = t.URL + t.VERSION + id + '/'
-        else:
-            url = cls_or_self._DETAILS
-        if ti.PRIVACY_TYPE not in params:
-            raise pytxValueError('Must provide a %s' % ti.PRIVACY_TYPE)
+        if td.PRIVACY_TYPE not in params:
+            raise pytxValueError('Must provide a %s' % td.PRIVACY_TYPE)
             pass
         else:
-            if (params[ti.PRIVACY_TYPE] != pt.VISIBLE and
-                    len(params[ti.PRIVACY_MEMBERS].split(',')) < 1):
-                raise pytxValueError('Must provide %s' % ti.PRIVACY_MEMBERS)
-        return Broker.post(url, params=params)
+            if (params[td.PRIVACY_TYPE] != pt.VISIBLE and
+                    len(params[td.PRIVACY_MEMBERS].split(',')) < 1):
+                raise pytxValueError('Must provide %s' % td.PRIVACY_MEMBERS)
+        return Broker.post(cls._URL, params=params)
+
+    def save(self, params=None):
+        """
+        Submit changes to the graph to update an object. We will determine the
+        Details URL and submit there (used for updating an existing object). If
+        no parameters are provided, we will try to use get_changed() which may
+        or may not be accurate (you have been warned!).
+
+        :param params: The parameters to submit.
+        :type params: dict
+        :returns: dict (using json.loads())
+        """
+
+        if params is None:
+            params = self.get_changed()
+        return Broker.post(self._DETAILS, params=params)
+
+    @class_or_instance_method
+    def send(cls_or_self, id_=None, params=None, type_=None):
+        """
+        Send custom params to the object URL. If `id` is provided it will be
+        appended to the URL. If this is an uninstantiated class we will use the
+        object type url (ex: /threat_descriptors/). If this is an instantiated
+        object we will use the details URL. The type_ should be either GET or
+        POST. We will default to GET if this is an uninstantiated class, and
+        POST if this is an instantiated class.
+
+        :param id_: ID of a graph object.
+        :type id_: str
+        :param params: Parameters to submit in the request.
+        :type params: dict
+        :param type_: GET or POST
+        :type type_: str
+
+        :returns: dict (using json.loads())
+        """
+
+        if isinstance(cls_or_self, type):
+            url = cls_or_self._URL
+            if type_ is None:
+                type_ = 'GET'
+        else:
+            url = cls_or_self._DETAILS
+            if type_ is None:
+                type_ = 'POST'
+        if id_ is not None and len(id_) > 0:
+            url = url + id_ + '/'
+        if params is None:
+            params = {}
+        if type_ == 'GET':
+            return Broker.get(url, params=params)
+        else:
+            return Broker.post(url, params=params)
 
     def expire(self, timestamp):
         """
@@ -317,7 +365,7 @@ class Common(object):
 
         Broker.is_timestamp(timestamp)
         params = {
-            ti.EXPIRED_ON: timestamp
+            td.EXPIRED_ON: timestamp
         }
         return Broker.post(self._DETAILS, params=params)
 
