@@ -59,6 +59,26 @@ class Broker(object):
         return True
 
     @staticmethod
+    def validate_page_limit(page_limit):
+        """
+        Verifies the page limit provided is valid and within the max limit Facebook
+        will allow you to use.
+
+        :param page_limit: Value to verify is a valid limit. Max is 1000.
+        :type page_limit: int, str
+        :returns: :class:`pytxValueError` if invalid.
+        """
+
+        try:
+            page_limit = int(page_limit)
+        except ValueError, e:
+            raise pytxValueError(e)
+
+        if page_limit > 1000:
+            raise pytxValueError(e)
+        return
+
+    @staticmethod
     def validate_limit(limit):
         """
         Verifies the limit provided is valid and within the max limit Facebook
@@ -122,7 +142,7 @@ class Broker(object):
         return results
 
     @classmethod
-    def validate_get(cls, limit, since, until):
+    def validate_get(cls, limit, since, until, page_limit):
         """
         Executes validation for the GET parameters: limit, since, until.
 
@@ -140,10 +160,13 @@ class Broker(object):
             cls.is_timestamp(until)
         if limit:
             cls.validate_limit(limit)
+        if page_limit:
+            cls.validate_page_limit(page_limit)
 
     @classmethod
-    def build_get_parameters(cls, text=None, strict_text=None, type_=None, threat_type=None,
-                             fields=None, limit=None, since=None, until=None):
+    def build_get_parameters(cls, text=None, strict_text=None, type_=None,
+                             threat_type=None, fields=None, limit=None,
+                             page_limit=None, since=None, until=None):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -157,7 +180,9 @@ class Broker(object):
         :type threat_type: str
         :param fields: Select specific fields to pull
         :type fields: str, list
-        :param limit: The maximum number of objects to return.
+        :param limit: The maximum number of objects to return, not used, here for legacy reasons.
+        :type limit: int, str
+        :param page_limit: The maximum number of objects to return on a page of results.
         :type limit: int, str
         :param since: The timestamp to limit the beginning of the search.
         :type since: str
@@ -166,7 +191,7 @@ class Broker(object):
         :returns: dict
         """
 
-        cls.validate_get(limit, since, until)
+        cls.validate_get(limit, since, until, page_limit)
         strict = cls.sanitize_strict(strict_text)
         params = {}
         if text:
@@ -179,8 +204,8 @@ class Broker(object):
             params[t.THREAT_TYPE] = threat_type
         if fields:
             params[t.FIELDS] = ','.join(fields) if isinstance(fields, list) else fields
-        if limit:
-            params[t.LIMIT] = limit
+        if page_limit:
+            params[t.LIMIT] = page_limit
         if since:
             params[t.SINCE] = since
         if until:

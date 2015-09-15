@@ -137,7 +137,7 @@ class Common(object):
     @classmethod
     def objects(cls, text=None, strict_text=False, type_=None, threat_type=None,
                 fields=None, limit=None, since=None, until=None, __raw__=None,
-                full_response=False, dict_generator=False):
+                page_limit=None, full_response=False, dict_generator=False):
         """
         Get objects from ThreatExchange.
 
@@ -160,6 +160,8 @@ class Common(object):
         :param __raw__: Provide a dictionary to force as GET parameters.
                         Overrides all other arguments.
         :type __raw__: dict
+        :param page_limit: The maximum number of objects to return on a page of results.
+        :type page_limit: int, str
         :param full_response: Return the full response instead of the generator.
                               Takes precedence over dict_generator.
         :type full_response: bool
@@ -181,6 +183,7 @@ class Common(object):
                 threat_type=threat_type,
                 fields=fields,
                 limit=limit,
+                page_limit=page_limit,
                 since=since,
                 until=until,
             )

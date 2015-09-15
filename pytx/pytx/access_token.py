@@ -15,7 +15,7 @@ def _read_token_file(token_file):
     :param token_file: The full path and filename where to find the access token.
     :type token_file: str
     :returns: str
-    :raises: :class:`errors.pytxIniterror`    
+    :raises: :class:`errors.pytxIniterror`
     """
     try:
         with open(token_file, 'r') as infile:
