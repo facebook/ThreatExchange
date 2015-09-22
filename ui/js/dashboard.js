@@ -17,6 +17,7 @@ function check_token() {
         .addClass('glyphicon-thumbs-up')
         .css('color', '#58FA82')
         .attr('title', 'app-id and app-secret already set!');
+        set_token();
     }
 }
 
@@ -225,7 +226,7 @@ $(document).ready(function() {
                 type: "GET",
                 url: threat_exchange_members + "?access_token=" + access_token,
                 error: function (xhr, status) {
-                    display_error("Enter app-id and app-secret!");
+                    display_error("Bad connection or bad/no app-id/app-secret!");
                 },
                 success: function(json) {
                     update_privacy_members(json);
@@ -351,7 +352,7 @@ $(document).ready(function() {
             });
             var res_obj = $('span#add-new-object-results');
             if ("privacy_type" in data) {
-                var url = threat_indicators;
+                var url = threat_descriptors;
                 post_request(url, data, res_obj);
             } else {
                 res_obj.text("Must have a privacy type!");

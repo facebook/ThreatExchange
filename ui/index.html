@@ -58,13 +58,15 @@
                 <a href="#" id="member-popover" data-toggle="popover">Members</a>
             </li>
             <li>
-                <a href="https://github.com/facebook/ThreatExchange/blob/master/doc/threat_exchange.md" id="vocab-popover" data-content="baz">Vocabulary</a>
+                <a href="https://developers.facebook.com/docs/threat-exchange/" id="vocab-popover" data-content="baz">Vocabulary</a>
             </li>
           </ul>
           <form id="search_bar" class="navbar-form navbar-right">
             <select id="search_type" class="form-control">
-                <option name="Threat Indicators" value="threat_indicators" selected>Threat Indicators</option>
+                <option name="Threat Descriptors" value="threat_descriptors" selected>Threat Descriptors</option>
+                <option name="Threat Indicators" value="threat_indicators">Threat Indicators</option>
                 <option name="Malware" value="malware">Malware</option>
+                <option name="Malware Families" value="malware_families">Malware Families</option>
                 <option name="Details" value="details">Details</option>
                 <option name="URL" value="url">URL</option>
             </select>
@@ -92,7 +94,7 @@
             <table>
                 <tr>
                     <td colspan="2">
-                        For Threat Indicators and Malware you can provide the
+                        For Threat Descriptors and Malware you can provide the
                         search operators below to customize your search results.
                         For URLs, just paste the full URL with parameters
                         (*excluding the access_token*).<br /><br />Some operators are
@@ -185,7 +187,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <a class="close" data-dismiss="modal" aria-hidden="true">×</a>
-                    <h5 id="modal-label">Add/Edit Threat Indicator Object</h5>
+                    <h5 id="modal-label">Add/Edit Threat Descriptor Object</h5>
                 </div>
                 <div class="modal-body">
                     <form id="add-new-object-form">
