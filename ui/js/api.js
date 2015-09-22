@@ -222,9 +222,15 @@ function display_results(elem, results) {
     }
     $.each(results.data, function(idx, result) {
         if (typeof(result.indicator) != "undefined") {
-            var detail_val = result.indicator;
+            if (typeof(result.indicator.indicator) != "undefined") {
+                var detail_val = result.indicator.indicator;
+            } else if (typeof(result.indicator) != "undefined") {
+                var detail_val = result.indicator;
+            }
         } else if (typeof(result.md5) != "undefined") {
             var detail_val = result.md5;
+        } else if (typeof(result.family_type) != "undefined") {
+            var detail_val = result.family_type;
         }
         var d = $('<li></li>')
         var tlp = $('<span></span>')
@@ -411,7 +417,7 @@ function build_details(json, elem) {
         var tr = $('<tr></tr>');
         var td_key = $('<td></td>');
         var td_value = $('<td></td>');
-        tr.attr('data-' + key, '' + value);
+        tr.attr('data-' + key, '' + JSON.stringify(value, null, 2));
         td_key.text(key);
         tr.append(td_key);
         if (key == 'sample') {
@@ -426,7 +432,7 @@ function build_details(json, elem) {
                 remove_related.attr('data-id', value);
                 find_related.attr('data-id', value);
             }
-            td_value.text(value);
+            td_value.text(JSON.stringify(value, null, 2));
         }
         tr.append(td_value);
         tb.append(tr);

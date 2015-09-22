@@ -243,7 +243,7 @@ var v_Role = {
 }
 
 var v_SignatureType = {
-    BRO         : "BRO"
+    BRO         : "BRO",
     REGEX_URL   : "REGEX_URL",
     SNORT       : "SNORT",
     SURICATA    : "SURICATA",
