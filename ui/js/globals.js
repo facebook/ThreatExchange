@@ -12,12 +12,19 @@ var app_secret = "";
  * The user can then enter their own app-id and app-secret through the UI and
  * this will get updated accordingly.
  */
-var access_token = app_id + "|" + app_secret;
+var stored_token = window.localStorage.getItem("token");
+if(stored_token !== null) {
+    access_token = stored_token;
+} else {
+    var access_token = app_id + "|" + app_secret;
+}
 
 // URL constants.
 var fbte_url = v_ThreatExchange.URL + v_ThreatExchange.VERSION;
+var threat_descriptors = fbte_url + v_ThreatExchange.THREAT_DESCRIPTORS;
 var threat_indicators = fbte_url + v_ThreatExchange.THREAT_INDICATORS;
 var malware = fbte_url + v_ThreatExchange.MALWARE_ANALYSES;
+var malware_families = fbte_url + v_ThreatExchange.MALWARE_FAMILIES;
 var threat_exchange_members = fbte_url + v_ThreatExchange.THREAT_EXCHANGE_MEMBERS;
 
 // Search counter used to generate unique div_ids for each search performed.
