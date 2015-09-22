@@ -5,6 +5,7 @@ from vocabulary import Status as s
 from vocabulary import ThreatExchange as t
 from vocabulary import ThreatDescriptor as td
 from vocabulary import PrivacyType as pt
+from vocabulary import Connection as conn
 from errors import (
     pytxAttributeError,
     pytxValueError
@@ -254,7 +255,23 @@ class Common(object):
             return Broker.get(url, params=params)
         else:
             if connection:
-                return Broker.get_generator(cls_or_self,
+                # Avoid circular imports
+                from malware import Malware
+                from malware_family import MalwareFamily
+                from threat_indicator import ThreatIndicator
+                from threat_descriptor import ThreatDescriptor
+                conns = {
+                    conn.DESCRIPTORS: ThreatDescriptor,
+                    conn.DROPPED: Malware,
+                    conn.DROPPED_BY: Malware,
+                    conn.FAMILIES: MalwareFamily,
+                    conn.MALWARE_ANALYSES: Malware,
+                    conn.RELATED: ThreatIndicator,
+                    conn.THREAT_INDICATORS: ThreatIndicator,
+                    conn.VARIANTS: Malware,
+                }
+                klass = conns.get(connection, None)
+                return Broker.get_generator(klass,
                                             url,
                                             t.NO_TOTAL,
                                             to_dict=dict_generator,

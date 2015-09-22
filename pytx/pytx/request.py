@@ -253,6 +253,8 @@ class Broker(object):
         the process until the total limit has been reached or there is no longer
         a 'next' value.
 
+        :param klass: The class to use for the generator.
+        :type klass: class
         :param url: The URL to send the GET request to.
         :type url: str
         :param total: The total number of objects to return (-1 to disable).
@@ -264,9 +266,10 @@ class Broker(object):
         :returns: Generator
         """
 
+        if not klass:
+            raise pytxValueError('Must provide a valid object to query.')
         if not params:
             params = dict()
-
         if total is None:
             total = t.NO_TOTAL
         if total == t.MIN_TOTAL:
