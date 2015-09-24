@@ -138,7 +138,7 @@ class Common(object):
     @classmethod
     def objects(cls, text=None, strict_text=False, type_=None, threat_type=None,
                 fields=None, limit=None, since=None, until=None, __raw__=None,
-                full_response=False, dict_generator=False):
+                full_response=False, dict_generator=False, retries=None):
         """
         Get objects from ThreatExchange.
 
@@ -166,6 +166,9 @@ class Common(object):
         :type full_response: bool
         :param dict_generator: Return a dictionary instead of an instantiated
                                object.
+        :type dict_generator: bool
+        :param retries: Number of retries to fetch a page before stopping.
+        :type retries: bool
         :returns: Generator, dict (using json.loads())
         """
 
@@ -186,17 +189,19 @@ class Common(object):
                 until=until,
             )
         if full_response:
-            return Broker.get(cls._URL, params=params)
+            return Broker.get(cls._URL, params=params, retries=retries)
         else:
             return Broker.get_generator(cls,
                                         cls._URL,
                                         limit,
                                         to_dict=dict_generator,
-                                        params=params)
+                                        params=params,
+                                        retries=retries)
 
     @class_or_instance_method
     def details(cls_or_self, id=None, fields=None, connection=None,
-                full_response=False, dict_generator=False, metadata=False):
+                full_response=False, dict_generator=False, retries=None,
+                metadata=False):
         """
         Get object details. Allows you to limit the fields returned in the
         object's details. Also allows you to provide a connection. If a
@@ -231,6 +236,8 @@ class Common(object):
         :param dict_generator: Return a dictionary instead of an instantiated
                                object.
         :type dict_generator: bool
+        :param retries: Number of retries to fetch a page before stopping.
+        :type retries: bool
         :param metadata: Get extra metadata in the response.
         :type metadata: bool
         :returns: Generator, dict, class
@@ -252,7 +259,7 @@ class Common(object):
         if metadata:
             params[t.METADATA] = 1
         if full_response:
-            return Broker.get(url, params=params)
+            return Broker.get(url, params=params, retries=retries)
         else:
             if connection:
                 # Avoid circular imports
@@ -275,14 +282,18 @@ class Common(object):
                                             url,
                                             t.NO_TOTAL,
                                             to_dict=dict_generator,
-                                            params=params)
+                                            params=params,
+                                            retries=retries)
             else:
                 if isinstance(cls_or_self, type):
                     return Broker.get_new(cls_or_self,
                                           Broker.get(url,
-                                                     params=params))
+                                                     params=params,
+                                                     retries=retries))
                 else:
-                    cls_or_self.populate(Broker.get(url, params=params))
+                    cls_or_self.populate(Broker.get(url,
+                                                    params=params,
+                                                    retries=retries))
                     cls_or_self._changed = []
 
     def get_changed(self):
@@ -336,7 +347,7 @@ class Common(object):
         return Broker.post(self._DETAILS, params=params)
 
     @class_or_instance_method
-    def send(cls_or_self, id_=None, params=None, type_=None):
+    def send(cls_or_self, id_=None, params=None, type_=None, retries=None):
         """
         Send custom params to the object URL. If `id` is provided it will be
         appended to the URL. If this is an uninstantiated class we will use the
@@ -351,6 +362,8 @@ class Common(object):
         :type params: dict
         :param type_: GET or POST
         :type type_: str
+        :param retries: Number of retries to fetch a page before stopping.
+        :type retries: bool
 
         :returns: dict (using json.loads())
         """
@@ -368,9 +381,9 @@ class Common(object):
         if params is None:
             params = {}
         if type_ == 'GET':
-            return Broker.get(url, params=params)
+            return Broker.get(url, params=params, retries=retries)
         else:
-            return Broker.post(url, params=params)
+            return Broker.post(url, params=params, retries=retries)
 
     def expire(self, timestamp):
         """

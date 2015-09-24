@@ -188,7 +188,24 @@ class Broker(object):
         return params
 
     @classmethod
-    def get(cls, url, params=None):
+    def build_session(cls, retries=None):
+        """
+        Build custom requests session with retry capabilities.
+
+        :param retries: Number of retries before stopping.
+        :type retries: int
+        :returns: requests session object
+        """
+
+        if retries is None:
+            retries = 0
+        session = requests.Session()
+        session.mount('https://',
+                      requests.adapters.HTTPAdapter(max_retries=retries))
+        return session
+
+    @classmethod
+    def get(cls, url, params=None, retries=None):
         """
         Send a GET request.
 
@@ -196,17 +213,20 @@ class Broker(object):
         :type url: str
         :param params: The GET parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: dict (using json.loads())
         """
         if not params:
             params = dict()
 
         params[t.ACCESS_TOKEN] = get_access_token()
-        resp = requests.get(url, params=params)
+        session = cls.build_session(retries)
+        resp = session.get(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def post(cls, url, params=None):
+    def post(cls, url, params=None, retries=None):
         """
         Send a POST request.
 
@@ -214,6 +234,8 @@ class Broker(object):
         :type url: str
         :param params: The POST parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -221,11 +243,12 @@ class Broker(object):
             params = dict()
 
         params[t.ACCESS_TOKEN] = get_access_token()
-        resp = requests.post(url, params=params)
+        session = cls.build_session(retries)
+        resp = session.post(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def delete(cls, url, params=None):
+    def delete(cls, url, params=None, retries=None):
         """
         Send a DELETE request.
 
@@ -233,6 +256,8 @@ class Broker(object):
         :type url: str
         :param params: The DELETE parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -240,11 +265,13 @@ class Broker(object):
             params = dict()
 
         params[t.ACCESS_TOKEN] = get_access_token()
-        resp = requests.delete(url, params=params)
+        session = cls.build_session(retries)
+        resp = session.delete(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def get_generator(cls, klass, url, total, to_dict=False, params=None):
+    def get_generator(cls, klass, url, total, to_dict=False, params=None,
+                      retries=None):
         """
         Generator for managing GET requests. For each GET request it will yield
         the next object in the results until there are no more objects. If the
@@ -263,6 +290,8 @@ class Broker(object):
         :type to_dict: bool
         :param params: The GET parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: Generator
         """
 
@@ -276,7 +305,7 @@ class Broker(object):
             yield None
         next_ = True
         while next_:
-            results = cls.get(url, params)
+            results = cls.get(url, params, retries)
             for data in results[t.DATA]:
                 if total == t.MIN_TOTAL:
                     raise StopIteration
