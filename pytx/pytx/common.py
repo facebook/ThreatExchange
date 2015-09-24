@@ -309,7 +309,7 @@ class Common(object):
         )
 
     @classmethod
-    def new(cls, params):
+    def new(cls, params, retries=None):
         """
         Submit params to the graph to add an object. We will submit to the
         object URL used for creating new objects in the graph. When submitting
@@ -318,6 +318,8 @@ class Common(object):
 
         :param params: The parameters to submit.
         :type params: dict
+        :param retries: Number of retries to submit before stopping.
+        :type retries: bool
         :returns: dict (using json.loads())
         """
 
@@ -328,9 +330,9 @@ class Common(object):
             if (params[td.PRIVACY_TYPE] != pt.VISIBLE and
                     len(params[td.PRIVACY_MEMBERS].split(',')) < 1):
                 raise pytxValueError('Must provide %s' % td.PRIVACY_MEMBERS)
-        return Broker.post(cls._URL, params=params)
+        return Broker.post(cls._URL, params=params, retries=retries)
 
-    def save(self, params=None):
+    def save(self, params=None, retries=None):
         """
         Submit changes to the graph to update an object. We will determine the
         Details URL and submit there (used for updating an existing object). If
@@ -339,12 +341,14 @@ class Common(object):
 
         :param params: The parameters to submit.
         :type params: dict
+        :param retries: Number of retries to submit before stopping.
+        :type retries: bool
         :returns: dict (using json.loads())
         """
 
         if params is None:
             params = self.get_changed()
-        return Broker.post(self._DETAILS, params=params)
+        return Broker.post(self._DETAILS, params=params, retries=retries)
 
     @class_or_instance_method
     def send(cls_or_self, id_=None, params=None, type_=None, retries=None):
@@ -362,7 +366,7 @@ class Common(object):
         :type params: dict
         :param type_: GET or POST
         :type type_: str
-        :param retries: Number of retries to fetch a page before stopping.
+        :param retries: Number of retries to submit before stopping.
         :type retries: bool
 
         :returns: dict (using json.loads())
@@ -385,60 +389,70 @@ class Common(object):
         else:
             return Broker.post(url, params=params, retries=retries)
 
-    def expire(self, timestamp):
+    def expire(self, timestamp, retries=None):
         """
         Expire by setting the 'expired_on' timestamp.
 
         :param timestamp: The timestamp to set for an expiration date.
         :type timestamp: str
+        :param retries: Number of retries to submit before stopping.
+        :type retries: bool
+        :returns: dict (using json.loads())
         """
 
         Broker.is_timestamp(timestamp)
         params = {
             td.EXPIRED_ON: timestamp
         }
-        return Broker.post(self._DETAILS, params=params)
+        return Broker.post(self._DETAILS, params=params, retries=retries)
 
-    def false_positive(self, object_id):
+    def false_positive(self, object_id, retries=None):
         """
         Mark an object as a false positive by setting the status to
         UNKNOWN.
 
         :param object_id: The object-id of the object to mark.
         :type object_id: str
+        :param retries: Number of retries to submit before stopping.
+        :type retries: bool
+        :returns: dict (using json.loads())
         """
 
         params = {
             c.STATUS: s.UNKNOWN
         }
-        return Broker.post(self._DETAILS, params=params)
+        return Broker.post(self._DETAILS, params=params, retries=retries)
 
-    def add_connection(self, object_id):
+    def add_connection(self, object_id, retries=None):
         """
         Use HTTP POST and add a connection between two objects.
 
         :param object_id: The other object-id in the connection.
         :type object_id: str
+        :param retries: Number of retries to submit before stopping.
+        :type retries: bool
         :returns: dict (using json.loads())
         """
 
         params = {
             t.RELATED_ID: object_id
         }
-        return Broker.post(self._RELATED, params=params)
+        return Broker.post(self._RELATED, params=params, retries=retries)
 
     # DELETE REQUESTS
 
-    def delete_connection(self, object_id):
+    def delete_connection(self, object_id, retries=None):
         """
         Use HTTP DELETE and remove the connection to another object.
 
         :param object_id: The other object-id in the connection.
         :type object_id: str
+        :param retries: Number of retries to submit before stopping.
+        :type retries: bool
         :returns: dict (using json.loads())
         """
 
         params = {
             t.RELATED_ID: object_id
         }
-        return Broker.delete(self._RELATED, params=params)
+        return Broker.delete(self._RELATED, params=params, retries=retries)
