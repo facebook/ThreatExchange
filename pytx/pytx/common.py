@@ -193,7 +193,6 @@ class Common(object):
         else:
             return Broker.get_generator(cls,
                                         cls._URL,
-                                        limit,
                                         to_dict=dict_generator,
                                         params=params,
                                         retries=retries)
@@ -280,7 +279,6 @@ class Common(object):
                 klass = conns.get(connection, None)
                 return Broker.get_generator(klass,
                                             url,
-                                            t.NO_TOTAL,
                                             to_dict=dict_generator,
                                             params=params,
                                             retries=retries)

@@ -1,3 +1,6 @@
+from logger import log_message
+
+
 class pytxException(Exception):
 
     """
@@ -8,6 +11,7 @@ class pytxException(Exception):
         self.message = message
 
     def __str__(self):
+        log_message(self.message)
         return self.message
 
 

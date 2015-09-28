@@ -4,8 +4,11 @@ import requests
 from requests.packages.urllib3.util import Retry
 
 from access_token import get_access_token
+from logger import do_log, log_message
 
 from vocabulary import ThreatExchange as t
+from vocabulary import Paging as p
+from vocabulary import PagingCursor as pc
 from errors import (
     pytxFetchError,
     pytxValueError
@@ -276,7 +279,7 @@ class Broker(object):
         return cls.handle_results(resp)
 
     @classmethod
-    def get_generator(cls, klass, url, total, to_dict=False, params=None,
+    def get_generator(cls, klass, url, to_dict=False, params=None,
                       retries=None):
         """
         Generator for managing GET requests. For each GET request it will yield
@@ -290,8 +293,6 @@ class Broker(object):
         :type klass: class
         :param url: The URL to send the GET request to.
         :type url: str
-        :param total: The total number of objects to return (-1 to disable).
-        :type total: None, int
         :param to_dict: Return a dictionary instead of an instantiated class.
         :type to_dict: bool
         :param params: The GET parameters to send in the request.
@@ -305,24 +306,31 @@ class Broker(object):
             raise pytxValueError('Must provide a valid object to query.')
         if not params:
             params = dict()
-        if total is None:
-            total = t.NO_TOTAL
-        if total == t.MIN_TOTAL:
-            yield None
         next_ = True
         while next_:
             results = cls.get(url, params, retries)
+            if do_log():
+                try:
+                    before = results[t.PAGING][p.CURSORS].get(pc.BEFORE, 'None')
+                    after = results[t.PAGING][p.CURSORS].get(pc.AFTER, 'None')
+                    count = len(results[t.DATA])
+                    log_message(
+                        'Cursor: BEFORE: %s, AFTER: %s, LEN: %d' % (before,
+                                                                    after,
+                                                                    count
+                                                                    )
+                    )
+                except Exception, e:
+                    log_message('Missing key in response: %s' % e)
             for data in results[t.DATA]:
-                if total == t.MIN_TOTAL:
-                    raise StopIteration
                 if to_dict:
                     yield data
                 else:
                     yield cls.get_new(klass, data)
-                total -= t.DEC_TOTAL
             try:
                 next_ = results[t.PAGING][t.NEXT]
             except:
+                log_message('No next in Pager to follow.')
                 next_ = False
             if next_:
                 url = next_
