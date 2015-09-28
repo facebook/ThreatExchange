@@ -1,6 +1,8 @@
 import json
 import requests
 
+from requests.packages.urllib3.util import Retry
+
 from access_token import get_access_token
 
 from vocabulary import ThreatExchange as t
@@ -201,7 +203,11 @@ class Broker(object):
             retries = 0
         session = requests.Session()
         session.mount('https://',
-                      requests.adapters.HTTPAdapter(max_retries=retries))
+                      requests.adapters.HTTPAdapter(
+                          max_retries=Retry(total=retries,
+                                            status_forcelist=[500, 503]
+                                            )
+                      ))
         return session
 
     @classmethod
