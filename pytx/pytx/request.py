@@ -1,9 +1,14 @@
 import json
 import requests
 
+from requests.packages.urllib3.util import Retry
+
 from access_token import get_access_token
+from logger import do_log, log_message
 
 from vocabulary import ThreatExchange as t
+from vocabulary import Paging as p
+from vocabulary import PagingCursor as pc
 from errors import (
     pytxFetchError,
     pytxValueError
@@ -188,7 +193,28 @@ class Broker(object):
         return params
 
     @classmethod
-    def get(cls, url, params=None):
+    def build_session(cls, retries=None):
+        """
+        Build custom requests session with retry capabilities.
+
+        :param retries: Number of retries before stopping.
+        :type retries: int
+        :returns: requests session object
+        """
+
+        if retries is None:
+            retries = 0
+        session = requests.Session()
+        session.mount('https://',
+                      requests.adapters.HTTPAdapter(
+                          max_retries=Retry(total=retries,
+                                            status_forcelist=[500, 503]
+                                            )
+                      ))
+        return session
+
+    @classmethod
+    def get(cls, url, params=None, retries=None):
         """
         Send a GET request.
 
@@ -196,17 +222,20 @@ class Broker(object):
         :type url: str
         :param params: The GET parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: dict (using json.loads())
         """
         if not params:
             params = dict()
 
         params[t.ACCESS_TOKEN] = get_access_token()
-        resp = requests.get(url, params=params)
+        session = cls.build_session(retries)
+        resp = session.get(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def post(cls, url, params=None):
+    def post(cls, url, params=None, retries=None):
         """
         Send a POST request.
 
@@ -214,6 +243,8 @@ class Broker(object):
         :type url: str
         :param params: The POST parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -221,11 +252,12 @@ class Broker(object):
             params = dict()
 
         params[t.ACCESS_TOKEN] = get_access_token()
-        resp = requests.post(url, params=params)
+        session = cls.build_session(retries)
+        resp = session.post(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def delete(cls, url, params=None):
+    def delete(cls, url, params=None, retries=None):
         """
         Send a DELETE request.
 
@@ -233,6 +265,8 @@ class Broker(object):
         :type url: str
         :param params: The DELETE parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -240,11 +274,13 @@ class Broker(object):
             params = dict()
 
         params[t.ACCESS_TOKEN] = get_access_token()
-        resp = requests.delete(url, params=params)
+        session = cls.build_session(retries)
+        resp = session.delete(url, params=params)
         return cls.handle_results(resp)
 
     @classmethod
-    def get_generator(cls, klass, url, total, to_dict=False, params=None):
+    def get_generator(cls, klass, url, to_dict=False, params=None,
+                      retries=None):
         """
         Generator for managing GET requests. For each GET request it will yield
         the next object in the results until there are no more objects. If the
@@ -257,12 +293,12 @@ class Broker(object):
         :type klass: class
         :param url: The URL to send the GET request to.
         :type url: str
-        :param total: The total number of objects to return (-1 to disable).
-        :type total: None, int
         :param to_dict: Return a dictionary instead of an instantiated class.
         :type to_dict: bool
         :param params: The GET parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries before stopping.
+        :type retries: int
         :returns: Generator
         """
 
@@ -270,24 +306,31 @@ class Broker(object):
             raise pytxValueError('Must provide a valid object to query.')
         if not params:
             params = dict()
-        if total is None:
-            total = t.NO_TOTAL
-        if total == t.MIN_TOTAL:
-            yield None
         next_ = True
         while next_:
-            results = cls.get(url, params)
+            results = cls.get(url, params, retries)
+            if do_log():
+                try:
+                    before = results[t.PAGING][p.CURSORS].get(pc.BEFORE, 'None')
+                    after = results[t.PAGING][p.CURSORS].get(pc.AFTER, 'None')
+                    count = len(results[t.DATA])
+                    log_message(
+                        'Cursor: BEFORE: %s, AFTER: %s, LEN: %d' % (before,
+                                                                    after,
+                                                                    count
+                                                                    )
+                    )
+                except Exception, e:
+                    log_message('Missing key in response: %s' % e)
             for data in results[t.DATA]:
-                if total == t.MIN_TOTAL:
-                    raise StopIteration
                 if to_dict:
                     yield data
                 else:
                     yield cls.get_new(klass, data)
-                total -= t.DEC_TOTAL
             try:
                 next_ = results[t.PAGING][t.NEXT]
             except:
+                log_message('No next in Pager to follow.')
                 next_ = False
             if next_:
                 url = next_
