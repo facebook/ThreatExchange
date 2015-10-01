@@ -168,7 +168,7 @@ class Common(object):
                                object.
         :type dict_generator: bool
         :param retries: Number of retries to fetch a page before stopping.
-        :type retries: bool
+        :type retries: int
         :returns: Generator, dict (using json.loads())
         """
 
@@ -236,7 +236,7 @@ class Common(object):
                                object.
         :type dict_generator: bool
         :param retries: Number of retries to fetch a page before stopping.
-        :type retries: bool
+        :type retries: int
         :param metadata: Get extra metadata in the response.
         :type metadata: bool
         :returns: Generator, dict, class
@@ -317,7 +317,7 @@ class Common(object):
         :param params: The parameters to submit.
         :type params: dict
         :param retries: Number of retries to submit before stopping.
-        :type retries: bool
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -340,7 +340,7 @@ class Common(object):
         :param params: The parameters to submit.
         :type params: dict
         :param retries: Number of retries to submit before stopping.
-        :type retries: bool
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -365,7 +365,7 @@ class Common(object):
         :param type_: GET or POST
         :type type_: str
         :param retries: Number of retries to submit before stopping.
-        :type retries: bool
+        :type retries: int
 
         :returns: dict (using json.loads())
         """
@@ -394,7 +394,7 @@ class Common(object):
         :param timestamp: The timestamp to set for an expiration date.
         :type timestamp: str
         :param retries: Number of retries to submit before stopping.
-        :type retries: bool
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -412,7 +412,7 @@ class Common(object):
         :param object_id: The object-id of the object to mark.
         :type object_id: str
         :param retries: Number of retries to submit before stopping.
-        :type retries: bool
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -428,7 +428,7 @@ class Common(object):
         :param object_id: The other object-id in the connection.
         :type object_id: str
         :param retries: Number of retries to submit before stopping.
-        :type retries: bool
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
@@ -446,7 +446,7 @@ class Common(object):
         :param object_id: The other object-id in the connection.
         :type object_id: str
         :param retries: Number of retries to submit before stopping.
-        :type retries: bool
+        :type retries: int
         :returns: dict (using json.loads())
         """
 
