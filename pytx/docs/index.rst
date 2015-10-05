@@ -13,12 +13,14 @@ Contents:
 
    installation
    quickstart
+   pytx.access_token
    pytx.common
    pytx.errors
-   pytx.access_token
+   pytx.logger
    pytx.malware
    pytx.request
    pytx.threat_exchange_member
+   pytx.threat_descriptor
    pytx.threat_indicator
    pytx.vocabulary
 
