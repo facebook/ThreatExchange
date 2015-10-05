@@ -48,7 +48,7 @@ Quick Example
 
    # type is type_ because type is a reserved word.
    results = ThreatDescriptor.objects(type_='IP_ADDRESS',
-                                     text='127.0.0.1')
+                                      text='127.0.0.1')
    for result in results:
        print result.get(ti.INDICATOR)
 
