@@ -2,7 +2,7 @@
 
 ThreatExchange is a set of RESTful APIs on the Facebook Platform for querying, publishing, and sharing security threat information. It's a light-weight way for exchanging details on malware, phishing pages, and other threats with either specific members of the community or the ThreatExchange community at large.
 
-This repository contains example code for using the API.
+This repository contains example code for using the API and a simple UI.
 
 ## Documentation
 Full details on the ThreatExchange API, data formats, and best practices are available at  [https://developers.facebook.com/docs/threat-exchange/](https://developers.facebook.com/docs/threat-exchange/)
