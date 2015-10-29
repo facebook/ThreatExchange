@@ -15,11 +15,11 @@ class pytxException(Exception):
         return self.message
 
 
-class pytxInitError(pytxException):
+class pytxAccessTokenError(pytxException):
 
     """
-    Exception for when we the developer doesn't init before instantiating an
-    object.
+    Exception for when we the developer don't set a token before instantiating
+    an object.
     """
 
 
