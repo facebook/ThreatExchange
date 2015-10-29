@@ -37,11 +37,11 @@ Quick Example
 
 .. code-block :: python
 
-   from pytx import init
+   from pytx import access_token
    from pytx import ThreatDescriptor
    from pytx.vocabulary import ThreatDescriptor as td
 
-   init('<app-id>', '<app-secret>')
+   access_token('<app-id>', '<app-secret>')
    results = ThreatDescriptor.objects(text='www.facebook.com')
    for result in results:
        print result.get(td.THREAT_TYPES)

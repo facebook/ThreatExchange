@@ -26,18 +26,18 @@ def _read_token_file(token_file):
 
 def get_access_token():
     """
-    Returns the existing access token if init() has been called.
-    Will attempt to init() in the case that there is no access token.
+    Returns the existing access token if access_token() has been called.
+    Will attempt to access_token() in the case that there is no access token.
 
     :raises: :class:`errors.pytxIniterror` if there is no access token.
     """
     global __ACCESS_TOKEN
 
     if not __ACCESS_TOKEN:
-        init()
+        access_token()
 
     if not __ACCESS_TOKEN:
-        raise pytxInitError('Must init() before instantiating')
+        raise pytxInitError('Must access_token() before instantiating')
 
     return __ACCESS_TOKEN
 
@@ -51,12 +51,12 @@ def _find_token_file():
     return None
 
 
-def init(app_id=None, app_secret=None, token_file=None):
+def access_token(app_id=None, app_secret=None, token_file=None):
     """
     Use the app_id and app_secret to store the access_token globally for all
     instantiated objects to leverage.
 
-    There are many ways to specify the app_id and app_secret. In order, init will try:
+    There are many ways to specify the app_id and app_secret. In order, we will try:
      1. Use the value of the 'TX_ACCESS_TOKEN' environment variable.
      2. Use the concatenation of the 'TX_APP_ID' and 'TX_APP_SECRET' environment variables.
      3. Use the first line of the file '$PWD/.pytx' or ~/.pytx'

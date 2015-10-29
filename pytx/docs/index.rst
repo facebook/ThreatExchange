@@ -15,6 +15,7 @@ Contents:
    quickstart
    pytx.access_token
    pytx.common
+   pytx.connection
    pytx.errors
    pytx.logger
    pytx.malware
