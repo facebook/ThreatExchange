@@ -148,8 +148,7 @@ class Broker(object):
 
     @classmethod
     def build_get_parameters(cls, text=None, strict_text=None, type_=None, threat_type=None,
-                             fields=None, limit=None, since=None, until=None, owner=None,
-                             status=None):
+                             fields=None, limit=None, since=None, until=None):
         """
         Validate arguments and convert them into GET parameters.
 
