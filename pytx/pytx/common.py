@@ -138,8 +138,7 @@ class Common(object):
     @classmethod
     def objects(cls, text=None, strict_text=False, type_=None, threat_type=None,
                 fields=None, limit=None, since=None, until=None, __raw__=None,
-                owner=None, status=None, full_response=False, 
-                dict_generator=False, retries=None):
+                full_response=False, dict_generator=False, retries=None):
         """
         Get objects from ThreatExchange.
 
@@ -188,8 +187,6 @@ class Common(object):
                 limit=limit,
                 since=since,
                 until=until,
-                owner=owner,
-                status=status
             )
         if full_response:
             return Broker.get(cls._URL, params=params, retries=retries)
