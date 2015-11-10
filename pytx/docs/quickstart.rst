@@ -18,7 +18,7 @@ how to provide your access token:
 
 .. code-block :: python
 
-  from pytx import access_token
+  from pytx.access_token import access_token
 
   # Use environment variables to build the access token.
   # 1. Use the value of the 'TX_ACCESS_TOKEN' environment variable.

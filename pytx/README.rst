@@ -37,7 +37,7 @@ Quick Example
 
 .. code-block :: python
 
-   from pytx import access_token
+   from pytx.access_token import access_token
    from pytx import ThreatDescriptor
    from pytx.vocabulary import ThreatDescriptor as td
 

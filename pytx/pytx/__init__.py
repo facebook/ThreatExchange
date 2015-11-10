@@ -1,4 +1,4 @@
-from access_token import access_token
+import access_token
 from connection import connection
 from logger import setup_logger
 from request import Broker
