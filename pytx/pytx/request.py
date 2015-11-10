@@ -150,7 +150,7 @@ class Broker(object):
     @classmethod
     def build_get_parameters(cls, text=None, strict_text=None, type_=None,
                              threat_type=None, fields=None, limit=None,
-                             since=None, until=None):
+                             since=None, until=None, owner=None, status=None):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -170,6 +170,10 @@ class Broker(object):
         :type since: str
         :param until: The timestamp to limit the end of the search.
         :type until: str
+        :param owner: The owner to limit to.
+        :type owner: str
+        :param status: The status to limit to.
+        :type status: str
         :returns: dict
         """
 
@@ -192,6 +196,10 @@ class Broker(object):
             params[t.SINCE] = since
         if until:
             params[t.UNTIL] = until
+        if owner:
+            params[t.OWNER] = owner
+        if status:
+            params[t.STATUS] = status
         return params
 
     @classmethod
