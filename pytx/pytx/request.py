@@ -148,9 +148,17 @@ class Broker(object):
             cls.validate_limit(limit)
 
     @classmethod
-    def build_get_parameters(cls, text=None, strict_text=None, type_=None,
-                             threat_type=None, fields=None, limit=None,
-                             since=None, until=None, owner=None, status=None):
+    def build_get_parameters(cls,
+                             text=None,
+                             strict_text=None,
+                             type_=None,
+                             threat_type=None,
+                             fields=None,
+                             limit=None,
+                             since=None,
+                             until=None,
+                             owner=None,
+                             status=None):
         """
         Validate arguments and convert them into GET parameters.
 
