@@ -136,10 +136,23 @@ class Common(object):
         return d
 
     @classmethod
-    def objects(cls, text=None, strict_text=False, type_=None, threat_type=None,
-                fields=None, limit=None, since=None, until=None, __raw__=None,
-                full_response=False, dict_generator=False, retries=None,
-                proxies=None, verify=None):
+    def objects(cls,
+                text=None,
+                strict_text=False,
+                type_=None,
+                threat_type=None,
+                fields=None,
+                limit=None,
+                since=None,
+                until=None,
+                owner=None,
+                status=None,
+                __raw__=None,
+                full_response=False,
+                dict_generator=False,
+                retries=None,
+                proxies=None,
+                verify=None):
         """
         Get objects from ThreatExchange.
 
@@ -159,6 +172,10 @@ class Common(object):
         :type since: str
         :param until: The timestamp to limit the end of the search.
         :type until: str
+        :param owner: The owner to limit to.
+        :type owner: str
+        :param status: The status to limit to.
+        :type status: str
         :param __raw__: Provide a dictionary to force as GET parameters.
                         Overrides all other arguments.
         :type __raw__: dict
@@ -192,6 +209,8 @@ class Common(object):
                 limit=limit,
                 since=since,
                 until=until,
+                owner=owner,
+                status=status
             )
         if full_response:
             return Broker.get(cls._URL, params=params, retries=retries,
@@ -206,9 +225,16 @@ class Common(object):
                                         verify=verify)
 
     @class_or_instance_method
-    def details(cls_or_self, id=None, fields=None, connection=None,
-                full_response=False, dict_generator=False, retries=None,
-                proxies=None, verify=None, metadata=False):
+    def details(cls_or_self,
+                id=None,
+                fields=None,
+                connection=None,
+                full_response=False,
+                dict_generator=False,
+                retries=None,
+                proxies=None,
+                verify=None,
+                metadata=False):
         """
         Get object details. Allows you to limit the fields returned in the
         object's details. Also allows you to provide a connection. If a
