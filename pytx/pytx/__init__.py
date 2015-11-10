@@ -1,4 +1,5 @@
-from access_token import init
+from access_token import access_token
+from connection import connection
 from logger import setup_logger
 from request import Broker
 from malware import Malware
@@ -8,7 +9,8 @@ from threat_descriptor import ThreatDescriptor
 from threat_indicator import ThreatIndicator
 
 __all__ = [
-    'init',
+    'access_token',
+    'connection',
     'setup_logger',
     'Broker',
     'Malware',
