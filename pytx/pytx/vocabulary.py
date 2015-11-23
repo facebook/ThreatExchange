@@ -156,6 +156,11 @@ class Response(object):
 
     SUCCESS = 'success'
     ID = 'id'
+    ERROR = 'error'
+    MESSAGE = 'message'
+    TYPE = 'type'
+    CODE = 'code'
+    FBTRACE_ID = 'fbtrace_id'
 
 
 class ThreatExchangeMember(object):
