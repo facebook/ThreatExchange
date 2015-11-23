@@ -10,6 +10,7 @@ from logger import do_log, log_message
 from vocabulary import ThreatExchange as t
 from vocabulary import Paging as p
 from vocabulary import PagingCursor as pc
+from vocabulary import Response as R
 from errors import (
     pytxFetchError,
     pytxValueError
@@ -116,11 +117,16 @@ class Broker(object):
         """
 
         if resp.status_code != 200:
-            raise pytxFetchError('Response code: %s: %s, URL: %s' % (
-                resp.status_code,
-                resp.text,
-                resp.url)
-            )
+            error = json.loads(resp.text).get(R.ERROR, None)
+            response = {}
+            response['status_code'] = resp.status_code
+            response['url'] = resp.url
+            if error:
+                response[R.MESSAGE] = error.get(R.MESSAGE, None)
+                response[R.TYPE] = error.get(R.TYPE, None)
+                response[R.CODE] = error.get(R.CODE, None)
+                response[R.FBTRACE_ID] = error.get(R.FBTRACE_ID, None)
+            raise pytxFetchError(response)
         try:
             results = json.loads(resp.text)
         except:
