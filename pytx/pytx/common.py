@@ -69,8 +69,8 @@ class Common(object):
         """
 
         object.__setattr__(self, name, value)
-        if name == c.ID and value not in self._DETAILS:
-            self._DETAILS = self._DETAILS + value + '/'
+        if name == c.ID:
+            self._DETAILS = t.URL + value + '/'
             self._RELATED = self._DETAILS + t.RELATED
         if name not in self._changed and name in self._fields:
             self._changed.append(name)
