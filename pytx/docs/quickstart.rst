@@ -204,3 +204,28 @@ The Broker will also allow you to POST and DELETE if you need to.
 One thing you might notice is the constant use of vocabulary. pytx comes with a
 vocabulary which will allow you to write your code using class attributes so if
 ThreatExchange ever changes a string your code will still function properly.
+
+Error responses can be acquired and leveraged as a dictionary. Here is an
+example:
+
+.. code-block :: python
+
+   from pytx import Malware
+   from pytx.errors import pytxFetchError
+
+   m = Malware()
+   m.id = "19374-19841-4813-408"
+   response = None
+   try:
+      m.details()
+   except pytxFetchError, e:
+      response = e.message
+
+The response variable above will be a dictionary with the following keys:
+
+    - code: the TX response code
+    - fbtrace_id: the TX trace id for the request
+    - message: the TX server message (what went wrong)
+    - status_code: the server response status code
+    - type: the TX error type
+    - url: the request URL that generated the error
