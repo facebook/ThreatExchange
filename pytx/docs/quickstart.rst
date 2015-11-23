@@ -214,7 +214,7 @@ example:
    from pytx.errors import pytxFetchError
 
    m = Malware()
-   m.id = "12345"
+   m.id = "19374-19841-4813-408"
    response = None
    try:
       m.details()
