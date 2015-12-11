@@ -370,13 +370,14 @@ class Common(object):
         :returns: dict (using json.loads())
         """
 
-        if td.PRIVACY_TYPE not in params:
-            raise pytxValueError('Must provide a %s' % td.PRIVACY_TYPE)
-            pass
-        else:
-            if (params[td.PRIVACY_TYPE] != pt.VISIBLE and
-                    len(params[td.PRIVACY_MEMBERS].split(',')) < 1):
-                raise pytxValueError('Must provide %s' % td.PRIVACY_MEMBERS)
+        if cls.__name__ != 'ThreatPrivacyGroup':
+            if td.PRIVACY_TYPE not in params:
+                raise pytxValueError('Must provide a %s' % td.PRIVACY_TYPE)
+                pass
+            else:
+                if (params[td.PRIVACY_TYPE] != pt.VISIBLE and
+                        len(params[td.PRIVACY_MEMBERS].split(',')) < 1):
+                    raise pytxValueError('Must provide %s' % td.PRIVACY_MEMBERS)
         return Broker.post(cls._URL, params=params, retries=retries,
                            proxies=proxies, verify=verify)
 

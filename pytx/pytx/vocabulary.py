@@ -15,6 +15,9 @@ class ThreatExchange(object):
     THREAT_EXCHANGE_MEMBERS = 'threat_exchange_members/'
     THREAT_DESCRIPTORS = 'threat_descriptors/'
     THREAT_INDICATORS = 'threat_indicators/'
+    THREAT_PRIVACY_GROUPS = 'threat_privacy_groups/'
+    THREAT_PRIVACY_GROUPS_MEMBER = 'threat_privacy_groups_member/'
+    THREAT_PRIVACY_GROUPS_OWNER = 'threat_privacy_groups_owner/'
 
     FIELDS = 'fields'
     LIMIT = 'limit'
@@ -172,6 +175,24 @@ class ThreatExchangeMember(object):
     ID = Common.ID
     NAME = 'name'
     EMAIL = 'email'
+
+
+class ThreatPrivacyGroup(object):
+
+    """
+    Vocabulary for describing a ThreatPrivacyGroup.
+    """
+
+    ID = Common.ID
+    NAME = 'name'
+    DESCRIPTION = 'description'
+
+    # TODO: Remove this when ready
+    GROUP_ID = 'group_id'
+
+    MEMBERS = 'members'
+    MEMBERS_CAN_SEE = 'members_can_see'
+    MEMBERS_CAN_USE = 'members_can_use'
 
 
 class ThreatIndicator(object):
