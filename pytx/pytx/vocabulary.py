@@ -295,6 +295,7 @@ class PrivacyType(object):
 
     VISIBLE = 'VISIBLE'
     HAS_WHITELIST = 'HAS_WHITELIST'
+    HAS_PRIVACY_GROUP = 'HAS_PRIVACY_GROUP'
 
 
 class ReviewStatus(object):
