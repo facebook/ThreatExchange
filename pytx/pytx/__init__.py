@@ -19,5 +19,5 @@ __all__ = [
     'ThreatExchangeMember',
     'ThreatDescriptor',
     'ThreatIndicator',
-    'ThreatPrivacyGroup'
+    'ThreatPrivacyGroup',
 ]

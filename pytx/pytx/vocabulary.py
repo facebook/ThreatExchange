@@ -19,8 +19,8 @@ class ThreatExchange(object):
     THREAT_PRIVACY_GROUPS_MEMBER = 'threat_privacy_groups_member/'
     THREAT_PRIVACY_GROUPS_OWNER = 'threat_privacy_groups_owner/'
 
-    INCLUDE_EXPIRED = 'include_expired'
     FIELDS = 'fields'
+    INCLUDE_EXPIRED = 'include_expired'
     LIMIT = 'limit'
     MAX_CONFIDENCE = 'max_confidence'
     MIN_CONFIDENCE = 'min_confidence'
