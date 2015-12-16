@@ -70,7 +70,7 @@ class Common(object):
 
         object.__setattr__(self, name, value)
         if name == c.ID:
-            self._DETAILS = self._DETAILS + value + '/'
+            self._DETAILS = t.URL + t.VERSION + value + '/'
             self._RELATED = self._DETAILS + t.RELATED
         if name not in self._changed and name in self._fields:
             self._changed.append(name)
