@@ -163,6 +163,9 @@ class Broker(object):
                              limit=None,
                              since=None,
                              until=None,
+                             include_expired=None,
+                             max_confidence=None,
+                             min_confidence=None,
                              owner=None,
                              status=None):
         """
@@ -184,7 +187,14 @@ class Broker(object):
         :type since: str
         :param until: The timestamp to limit the end of the search.
         :type until: str
-        :param owner: The owner to limit to.
+        :param include_expired: Include expired content in your results.
+        :type until: bool, str, int
+        :param max_confidence: The max confidence level to search for.
+        :type max_confidence: int
+        :param min_confidence: The min confidence level to search for.
+        :type min_confidence: int
+        :param owner: The owner to limit to. This can be comma-delimited to
+                      include multiple owners.
         :type owner: str
         :param status: The status to limit to.
         :type status: str
@@ -210,6 +220,12 @@ class Broker(object):
             params[t.SINCE] = since
         if until:
             params[t.UNTIL] = until
+        if include_expired is not None:
+            params[t.INCLUDE_EXPIRED] = include_expired
+        if max_confidence:
+            params[t.MAX_CONFIDENCE] = max_confidence
+        if min_confidence:
+            params[t.MIN_CONFIDENCE] = min_confidence
         if owner:
             params[t.OWNER] = owner
         if status:

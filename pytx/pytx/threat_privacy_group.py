@@ -5,8 +5,6 @@ from vocabulary import ThreatPrivacyGroup as tpg
 from vocabulary import ThreatExchange as t
 from errors import pytxValueError
 
-# TODO: Remove group_id when it's replaced with id and rework
-
 
 class ThreatPrivacyGroup(Common):
 
@@ -18,7 +16,6 @@ class ThreatPrivacyGroup(Common):
         tpg.ID,
         tpg.NAME,
         tpg.DESCRIPTION,
-        tpg.GROUP_ID,
         tpg.MEMBERS_CAN_SEE,
         tpg.MEMBERS_CAN_USE
     ]
@@ -91,7 +88,7 @@ class ThreatPrivacyGroup(Common):
         :returns: list
         """
 
-        url = t.URL + t.VERSION + self.get(tpg.GROUP_ID) + '/' + tpg.MEMBERS
+        url = self._DETAILS + '/' + tpg.MEMBERS
         results = Broker.get(url,
                              retries=retries,
                              proxies=proxies,
@@ -120,8 +117,7 @@ class ThreatPrivacyGroup(Common):
             raise pytxValueError('Must provide members as a str or list')
         elif isinstance(members, list):
             members = ','.join(members)
-        url = t.URL + t.VERSION + self.get(tpg.GROUP_ID) + '/'
-        return Broker.post(url,
+        return Broker.post(self._DETAILS,
                            params={'members': members},
                            retries=retries,
                            proxies=proxies,

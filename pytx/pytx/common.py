@@ -70,7 +70,7 @@ class Common(object):
 
         object.__setattr__(self, name, value)
         if name == c.ID:
-            self._DETAILS = t.URL + value + '/'
+            self._DETAILS = self._DETAILS + value + '/'
             self._RELATED = self._DETAILS + t.RELATED
         if name not in self._changed and name in self._fields:
             self._changed.append(name)
@@ -145,6 +145,9 @@ class Common(object):
                 limit=None,
                 since=None,
                 until=None,
+                include_expired=False,
+                max_confidence=None,
+                min_confidence=None,
                 owner=None,
                 status=None,
                 __raw__=None,
@@ -172,7 +175,14 @@ class Common(object):
         :type since: str
         :param until: The timestamp to limit the end of the search.
         :type until: str
-        :param owner: The owner to limit to.
+        :param include_expired: Include expired content in your results.
+        :type include_expired: bool
+        :param max_confidence: The max confidence level to search for.
+        :type max_confidence: int
+        :param min_confidence: The min confidence level to search for.
+        :type min_confidence: int
+        :param owner: The owner to limit to. This can be comma-delimited to
+                      include multiple owners.
         :type owner: str
         :param status: The status to limit to.
         :type status: str
@@ -209,6 +219,9 @@ class Common(object):
                 limit=limit,
                 since=since,
                 until=until,
+                include_expired=include_expired,
+                max_confidence=max_confidence,
+                min_confidence=min_confidence,
                 owner=owner,
                 status=status
             )

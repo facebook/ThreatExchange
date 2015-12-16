@@ -19,8 +19,11 @@ class ThreatExchange(object):
     THREAT_PRIVACY_GROUPS_MEMBER = 'threat_privacy_groups_member/'
     THREAT_PRIVACY_GROUPS_OWNER = 'threat_privacy_groups_owner/'
 
+    INCLUDE_EXPIRED = 'include_expired'
     FIELDS = 'fields'
     LIMIT = 'limit'
+    MAX_CONFIDENCE = 'max_confidence'
+    MIN_CONFIDENCE = 'min_confidence'
     OWNER = 'owner'
     SINCE = 'since'
     STATUS = 'status'
@@ -186,10 +189,6 @@ class ThreatPrivacyGroup(object):
     ID = Common.ID
     NAME = 'name'
     DESCRIPTION = 'description'
-
-    # TODO: Remove this when ready
-    GROUP_ID = 'group_id'
-
     MEMBERS = 'members'
     MEMBERS_CAN_SEE = 'members_can_see'
     MEMBERS_CAN_USE = 'members_can_use'
