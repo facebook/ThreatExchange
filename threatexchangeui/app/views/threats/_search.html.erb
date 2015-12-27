@@ -1,0 +1,13 @@
+<%= form_tag result_path, method: :get do %>
+	<div class="row">
+		<div class="col-xs-12 col-sm-8">
+			<%= text_field_tag :text_query, params[:text_query], autocomplete: :on, placeholder: "Search for threat indicator", class: "form-control" %>
+		</div>
+		<div class="col-xs-12 col-sm-2">
+			<%= select_tag :indicator_type, options_from_collection_for_select(IndicatorType.all.order("name"), "name", "name"), class: "form-control"   %>
+		</div>
+		<div class="col-xs-12 col-sm-2">
+			<%= submit_tag "Search", name: nil, class: "btn btn-primary btn-block" %>
+		</div>
+	</div>
+<% end %>

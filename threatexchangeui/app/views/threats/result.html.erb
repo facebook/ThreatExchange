@@ -1,0 +1,63 @@
+<div class="page-header">
+	<h2>Threat Indicators</h2>
+</div>
+<hr>
+<% if @threat_indicators.nil? %>
+	<div class="row">
+		<div class="col-xs-12">
+			<%= "No threat indicator matched the specified criteria." %>
+		</div>
+	</div>
+<% else %>
+	<% if @indicator_type.downcase == "ip_address" %>
+		<div class="row">
+			<div class="col-xs-12">
+				 <div class="panel panel-primary">
+	                <div class="panel-heading">Location of Threat Indicators</div>
+	                <div class="panel-body panel-height">
+						<div id='chart'></div>
+						<%= render_chart(@chart, 'chart') %>
+					</div>
+				</div>
+			</div>
+		</div>
+	<% end %>
+	<div class="row">
+		<div class="col-xs-12">
+			<div class="panel panel-primary">
+	            <div class="panel-heading">Threat Indicators: &nbsp;<%= @indicator_type %></div>
+	            <div class="panel-body panel-height">
+	            	<div class="highlight">Indicators of compromise stored in Facebook ThreatExchange.</div>
+	            	<br><br>
+					<% i = 0 %>
+					<% @threat_indicators.each do |threat_indicator| %>
+						<% i = i + 1 %>
+						<div class="row">
+							<div class="col-xs-1 col-sm-1">
+								<%= i.to_s %>.
+							</div>
+							<% if @indicator_type.downcase == "ip_address" %>
+								<div class="col-xs-4 col-sm-4">
+									<%= threat_indicator["indicator"] %>
+								</div>
+								<div class="col-xs-4 col-sm-5">
+									<%= @country_array[i - 1]  %>
+								</div>
+							<% else %>
+								<div class="col-xs-8 col-sm-9">
+									<%= threat_indicator["indicator"] %>
+								</div>
+							<% end %>
+							<div class="col-xs-3 col-sm-2">
+								<%= link_to "Describe", threat_path(threat_indicator["indicator"]), :class => 'btn btn-primary btn-sm btn-block' %>
+							</div>
+						</div>
+						<hr>
+					<% end %>
+				</div>
+			</div>
+		</div>
+	</div>
+<% end %>
+<br>
+<br>
