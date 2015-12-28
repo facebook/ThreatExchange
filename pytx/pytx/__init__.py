@@ -7,6 +7,7 @@ from malware_family import MalwareFamily
 from threat_exchange_member import ThreatExchangeMember
 from threat_descriptor import ThreatDescriptor
 from threat_indicator import ThreatIndicator
+from threat_privacy_group import ThreatPrivacyGroup
 
 __all__ = [
     'access_token',
@@ -17,5 +18,6 @@ __all__ = [
     'MalwareFamily',
     'ThreatExchangeMember',
     'ThreatDescriptor',
-    'ThreatIndicator'
+    'ThreatIndicator',
+    'ThreatPrivacyGroup',
 ]

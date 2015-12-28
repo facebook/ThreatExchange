@@ -29,7 +29,7 @@ def get_access_token():
     Returns the existing access token if access_token() has been called.
     Will attempt to access_token() in the case that there is no access token.
 
-    :raises: :class:`errors.pytxAccessTokenerror` if there is no access token.
+    :raises: :class:`errors.pytxAccessTokenError` if there is no access token.
     """
     global __ACCESS_TOKEN
 
@@ -40,6 +40,18 @@ def get_access_token():
         raise pytxAccessTokenError('Must access_token() before instantiating')
 
     return __ACCESS_TOKEN
+
+
+def get_app_id():
+    """
+    Returns the app_id.
+    """
+
+    token = get_access_token()
+    try:
+        return token.split('|')[0]
+    except:
+        raise pytxAccessTokenError('Could not derive app-id from token')
 
 
 def _find_token_file():
@@ -69,7 +81,7 @@ def access_token(app_id=None, app_secret=None, token_file=None):
     :type app_secret: str
     :param token_file: The full path and filename where to find the access token.
     :type token_file: str
-    :raises: :class:`errors.pytxAccessTokenerror`
+    :raises: :class:`errors.pytxAccessTokenError`
     """
     global __ACCESS_TOKEN
 
