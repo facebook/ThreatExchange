@@ -17,7 +17,7 @@ class ThreatPrivacyGroup(Common):
         tpg.NAME,
         tpg.DESCRIPTION,
         tpg.MEMBERS_CAN_SEE,
-        tpg.MEMBERS_CAN_USE
+        tpg.MEMBERS_CAN_USE,
     ]
 
     _unique = [
