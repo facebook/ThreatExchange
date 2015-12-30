@@ -106,6 +106,8 @@ class Malware(object):
     PASSWORD = 'password'
     PE_RICH_HEADER = 'pe_rich_header'
     SAMPLE = 'sample'
+    SAMPLE_SIZE = 'sample_size'
+    SAMPLE_SIZE_COMPRESSED = 'sample_size_compressed'
     SAMPLE_TYPE = 'sample_type'
     SHA1 = 'sha1'
     SHA256 = 'sha256'
