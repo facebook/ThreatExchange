@@ -28,7 +28,7 @@ class ThreatDescriptor(Common):
         td.SHARE_LEVEL,
         td.STATUS,
         td.SUBMITTER_COUNT,
-        td.THREAT_TYPES,
+        td.THREAT_TYPE,
         td.TYPE,
     ]
 

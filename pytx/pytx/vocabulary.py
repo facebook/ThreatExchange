@@ -106,6 +106,7 @@ class Malware(object):
     PASSWORD = 'password'
     PE_RICH_HEADER = 'pe_rich_header'
     SAMPLE = 'sample'
+    SAMPLE_TYPE = 'sample_type'
     SHA1 = 'sha1'
     SHA256 = 'sha256'
     SHARE_LEVEL = Common.SHARE_LEVEL
@@ -114,6 +115,45 @@ class Malware(object):
     SUBMITTER_COUNT = Common.SUBMITTER_COUNT
     VICTIM_COUNT = Common.VICTIM_COUNT
     XPI = 'xpi'
+
+
+class MalwareAnalysisTypes(object):
+
+    """
+    Vocabulary specific to Malware Analysis Sample Types
+    """
+
+    ANDROID_APK = 'ANDROID_APK'
+    CHROME_EXT = 'CHROME_EXT'
+    DALVIK_DEX = 'DALVIK_DEX'
+    ELF_X64 = 'ELF_X64'
+    ELF_X86 = 'ELF_X86'
+    FIREFOX_EXT = 'FIREFOX_EXT'
+    FLASH_DATA = 'FLASH_DATA'
+    FLASH_VIDEO = 'FLASH_VIDEO'
+    GENERIC_BINARY = 'GENERIC_BINARY'
+    GENERIC_IMAGE = 'GENERIC_IMAGE'
+    GENERIC_TEXT = 'GENERIC_TEXT'
+    HTML = 'HTML'
+    IMAGE_BMP = 'IMAGE_BMP'
+    IMAGE_GIF = 'IMAGE_GIF'
+    IMAGE_JPEG = 'IMAGE_JPEG'
+    IMAGE_PNG = 'IMAGE_PNG'
+    IMAGE_TIFF = 'IMAGE_TIFF'
+    IOS_APP = 'IOS_APP'
+    JAR_ARCHIVE = 'JAR_ARCHIVE'
+    JAVASCRIPT = 'JAVASCRIPT'
+    MACH_O = 'MACH_O'
+    OFFICE_DOCX = 'OFFICE_DOCX'
+    OFFICE_PPTX = 'OFFICE_PPTX'
+    OFFICE_XLSX = 'OFFICE_XLSX'
+    PE_X64 = 'PE_X64'
+    PE_X86 = 'PE_X86'
+    PDF_DOCUMENT = 'PDF_DOCUMENT'
+    RAR_ARCHIVE = 'RAR_ARCHIVE'
+    RTF_FILE = 'RTF_FILE'
+    UNKNOWN = 'UNKNOWN'
+    ZIP_ARCHIVE = 'ZIP_ARCHIVE'
 
 
 class MalwareFamilies(object):
@@ -129,8 +169,10 @@ class MalwareFamilies(object):
     ID = Common.ID
     MALICIOUS = 'malicious'
     NAME = 'name'
+    PRIVACY_TYPE = 'privacy_type'
     SAMPLE_COUNT = 'sample_count'
     SHARE_LEVEL = Common.SHARE_LEVEL
+    SUBMITTER_COUNT = 'submitter_count'
 
 
 class Paging(object):
@@ -232,8 +274,7 @@ class ThreatDescriptor(object):
     SHARE_LEVEL = Common.SHARE_LEVEL
     STATUS = Common.STATUS
     SUBMITTER_COUNT = Common.SUBMITTER_COUNT
-    THREAT_TYPE = 'threat_type'     # Used in POST
-    THREAT_TYPES = 'threat_types'    # Returned in GET
+    THREAT_TYPE = 'threat_type'
     TYPE = 'type'
 
 
@@ -244,17 +285,37 @@ class Attack(object):
     """
 
     ACCESS_TOKEN_THEFT = 'ACCESS_TOKEN_THEFT'
+    BOGON = 'BOGON'
+    BOT = 'BOT'
     BRUTE_FORCE = 'BRUTE_FORCE'
     CLICKJACKING = 'CLICKJACKING'
+    COMPROMISED = 'COMPROMISED'
+    CREEPER = 'CREEPER'
+    DRUGS = 'DRUGS'
     EMAIL_SPAM = 'EMAIL_SPAM'
+    EXPLICIT_CONTENT = 'EXPLICIT_CONTENT'
+    EXPLOIT_KIT = 'EXPLOIT_KIT'
     FAKE_ACCOUNTS = 'FAKE_ACCOUNTS'
+    FINANCIALS = 'FINANCIALS'
     IP_INFRINGEMENT = 'IP_INFRINGEMENT'
     MALICIOUS_APP = 'MALICIOUS_APP'
+    MALICIOUS_NAMESERVER = 'MALICIOUS_NAMESERVER'
+    MALICIOUS_WEBSERVER = 'MALICIOUS_WEBSERVER'
+    MALVERTISING = 'MALVERTISING'
     MALWARE = 'MALWARE'
+    PASSIVE_DNS = 'PASSIVE_DNS'
     PHISHING = 'PHISHING'
+    PIRACY = 'PIRACY'
+    PROXY = 'PROXY'
+    SCAM = 'SCAM'
+    SCANNING = 'SCANNING'
+    SCRAPING = 'SCRAPING'
     SELF_XSS = 'SELF_XSS'
     SHARE_BAITING = 'SHARE_BAITING'
     TARGETED = 'TARGETED'
+    TERRORISM = 'TERRORISM'
+    WEAPONS = 'WEAPONS'
+    WEB_APP = 'WEB_APP'
     UNKNOWN = 'UNKNOWN'
 
 
@@ -264,13 +325,24 @@ class MalwareFamily(object):
     Vocabulary for the Malware Family Type.
     """
 
+    AVSCAN = 'AVSCAN'
     AV_SIGNATURE = 'AV_SIGNATURE'
     BARF10 = 'BARF10'
+    FSH_HTML = 'FSH_HTML'
+    FSH_SSDEEP = 'FSH_SSDEEP'
     IMP_HASH = 'IMP_HASH'
     JS004 = 'JS004'
+    JS005 = 'JS005'
     MANUAL = 'MANUAL'
+    PE_CERT_SHA256 = 'PE_CERT_SHA256'
+    PE_EXPORT = 'PE_EXPORT'
+    PE_RSRC_SHA256 = 'PE_RSRC_SHA256'
+    PE_SECTION_SHA256 = 'PE_SECTION_SHA256'
+    PE_TIMESTAMP = 'PE_TIMESTAMP'
+    PE_VERSION_VALUE = 'PE_VERSION_VALUE'
     RICH_HEADER_HASH = 'RICH_HEADER_HASH'
     SSDEEP_HASH = 'SSDEEP_HASH'
+    UNKNOWN = 'UNKNOWN'
     YARA = 'YARA'
 
 
@@ -292,9 +364,10 @@ class PrivacyType(object):
     Vocabulary for the Threat Indicator Privacy Type.
     """
 
-    VISIBLE = 'VISIBLE'
-    HAS_WHITELIST = 'HAS_WHITELIST'
     HAS_PRIVACY_GROUP = 'HAS_PRIVACY_GROUP'
+    HAS_WHITELIST = 'HAS_WHITELIST'
+    NONE = 'NONE'
+    VISIBLE = 'VISIBLE'
 
 
 class ReviewStatus(object):
@@ -330,8 +403,10 @@ class Severity(object):
 
     """
     Vocabulary for the available severity levels for a Threat Indicator.
+    Intentionally out of alphabetical order to reflect order of severity.
     """
 
+    UNKNOWN = 'UNKNOWN'
     INFO = 'INFO'
     WARNING = 'WARNING'
     SUSPICIOUS = 'SUSPICIOUS'
@@ -362,6 +437,7 @@ class SignatureType(object):
     REGEX_URL = 'REGEX_URL'
     SNORT = 'SNORT'
     SURICATA = 'SURICATA'
+    UNKNOWN = 'UNKNOWN'
     YARA = 'YARA'
 
 
@@ -386,17 +462,27 @@ class ThreatType(object):
     BAD_ACTOR = 'BAD_ACTOR'
     COMPROMISED_CREDENTIAL = 'COMPROMISED_CREDENTIAL'
     COMMAND_EXEC = 'COMMAND_EXEC'
+    HT_VICTIM = 'HT_VICTIM'
     MALICIOUS_AD = 'MALICIOUS_AD'
     MALICIOUS_API_KEY = 'MALICIOUS_API_KEY'
     MALICIOUS_CONTENT = 'MALICIOUS_CONTENT'
     MALICIOUS_DOMAIN = 'MALICIOUS_DOMAIN'
     MALICIOUS_INJECT = 'MALICIOUS_INJECT'
     MALICIOUS_IP = 'MALICIOUS_IP'
-    MALICIOUS_IP_SUBNET = 'MALICIOUS_IP_SUBNET'
+    MALICIOUS_SSL_CERT = 'MALICIOUS_SSL_CERT'
+    MALICIOUS_SUBNET = 'MALICIOUS_SUBNET'
     MALICIOUS_URL = 'MALICIOUS_URL'
+    MALICIOUS_URL_CHUNK = 'MALICIOUS_URL_CHUNK'
     MALWARE_ARTIFACTS = 'MALWARE_ARTIFACTS'
+    MALWARE_SAMPLE = 'MALWARE_SAMPLE'
+    MALWARE_SIGNATURE = 'MALWARE_SIGNATURE'
+    MALWARE_VICTIM = 'MALWARE_VICTIM'
     PROXY_IP = 'PROXY_IP'
     SIGNATURE = 'SIGNATURE'
+    SINKHOLE_EVENT = 'SINKHOLE_EVENT'
+    SMS_SPAM = 'SMS_SPAM'
+    UNKNOWN = 'UNKNOWN'
+    VICTIM_IP_USAGE = 'VICTIM_IP_USAGE'
     WEB_REQUEST = 'WEB_REQUEST'
     WHITELIST_DOMAIN = 'WHITELIST_DOMAIN'
     WHITELIST_IP = 'WHITELIST_IP'

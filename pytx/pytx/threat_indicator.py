@@ -13,7 +13,7 @@ class ThreatIndicator(Common):
         ti.ID,
         ti.INDICATOR,
         ti.METADATA,
-        ti.TYPE
+        ti.TYPE,
     ]
 
     _unique = [
