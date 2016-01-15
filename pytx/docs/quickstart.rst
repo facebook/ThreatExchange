@@ -60,14 +60,15 @@ information to that file. If the file cannot be written to expect some issues.
 If you do not provide an argument to setup_logger, no logging will occur.
 
 
-If you need to setup a proxy or adjust the verify argument for requests, you can
-use the connection() function to change them. More info can be found here:
+If you need to setup a proxy, custom headers, or adjust the verify argument for requests, you can use the connection() function to change them. More info can be found here:
 http://docs.python-requests.org/en/latest/api/#requests.request
 
 .. code-block :: python
 
    from pytx import connection()
-   connection(proxies=<your stuff here>, verify=<your stuff here>)
+   connection(headers=<your stuff here>,
+              proxies=<your stuff here>,
+              verify=<your stuff here>)
 
 
 pytx uses classes as the primary method for developer interaction with the
