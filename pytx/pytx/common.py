@@ -15,7 +15,7 @@ from errors import (
 class class_or_instance_method(object):
 
     """
-    Custom decorator. This binds to the class if no instance is avaialble,
+    Custom decorator. This binds to the class if no instance is available,
     otherwise it will bind to the instance.
 
     This allows us to use a single method which can take both "self" and "cls"
