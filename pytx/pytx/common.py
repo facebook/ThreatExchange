@@ -154,6 +154,7 @@ class Common(object):
                 full_response=False,
                 dict_generator=False,
                 retries=None,
+                headers=None,
                 proxies=None,
                 verify=None):
         """
@@ -197,6 +198,8 @@ class Common(object):
         :type dict_generator: bool
         :param retries: Number of retries to fetch a page before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -226,14 +229,19 @@ class Common(object):
                 status=status
             )
         if full_response:
-            return Broker.get(cls._URL, params=params, retries=retries,
-                              proxies=proxies, verify=verify)
+            return Broker.get(cls._URL,
+                              params=params,
+                              retries=retries,
+                              headers=headers,
+                              proxies=proxies,
+                              verify=verify)
         else:
             return Broker.get_generator(cls,
                                         cls._URL,
                                         to_dict=dict_generator,
                                         params=params,
                                         retries=retries,
+                                        headers=headers,
                                         proxies=proxies,
                                         verify=verify)
 
@@ -245,6 +253,7 @@ class Common(object):
                 full_response=False,
                 dict_generator=False,
                 retries=None,
+                headers=None,
                 proxies=None,
                 verify=None,
                 metadata=False):
@@ -284,6 +293,8 @@ class Common(object):
         :type dict_generator: bool
         :param retries: Number of retries to fetch a page before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -309,8 +320,12 @@ class Common(object):
         if metadata:
             params[t.METADATA] = 1
         if full_response:
-            return Broker.get(url, params=params, retries=retries,
-                              proxies=proxies, verify=verify)
+            return Broker.get(url,
+                              params=params,
+                              retries=retries,
+                              headers=headers,
+                              proxies=proxies,
+                              verify=verify)
         else:
             if connection:
                 # Avoid circular imports
@@ -334,6 +349,7 @@ class Common(object):
                                             to_dict=dict_generator,
                                             params=params,
                                             retries=retries,
+                                            headers=headers,
                                             proxies=proxies,
                                             verify=verify)
             else:
@@ -342,12 +358,14 @@ class Common(object):
                                           Broker.get(url,
                                                      params=params,
                                                      retries=retries,
+                                                     headers=headers,
                                                      proxies=proxies,
                                                      verify=verify))
                 else:
                     cls_or_self.populate(Broker.get(url,
                                                     params=params,
                                                     retries=retries,
+                                                    headers=headers,
                                                     proxies=proxies,
                                                     verify=verify))
                     cls_or_self._changed = []
@@ -365,7 +383,12 @@ class Common(object):
         )
 
     @classmethod
-    def new(cls, params, retries=None, proxies=None, verify=None):
+    def new(cls,
+            params,
+            retries=None,
+            headers=None,
+            proxies=None,
+            verify=None):
         """
         Submit params to the graph to add an object. We will submit to the
         object URL used for creating new objects in the graph. When submitting
@@ -376,6 +399,8 @@ class Common(object):
         :type params: dict
         :param retries: Number of retries to submit before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -391,10 +416,19 @@ class Common(object):
                 if (params[td.PRIVACY_TYPE] != pt.VISIBLE and
                         len(params[td.PRIVACY_MEMBERS].split(',')) < 1):
                     raise pytxValueError('Must provide %s' % td.PRIVACY_MEMBERS)
-        return Broker.post(cls._URL, params=params, retries=retries,
-                           proxies=proxies, verify=verify)
+        return Broker.post(cls._URL,
+                           params=params,
+                           retries=retries,
+                           headers=headers,
+                           proxies=proxies,
+                           verify=verify)
 
-    def save(self, params=None, retries=None, proxies=None, verify=None):
+    def save(self,
+             params=None,
+             retries=None,
+             headers=None,
+             proxies=None,
+             verify=None):
         """
         Submit changes to the graph to update an object. We will determine the
         Details URL and submit there (used for updating an existing object). If
@@ -405,6 +439,8 @@ class Common(object):
         :type params: dict
         :param retries: Number of retries to submit before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -414,12 +450,22 @@ class Common(object):
 
         if params is None:
             params = self.get_changed()
-        return Broker.post(self._DETAILS, params=params, retries=retries,
-                           proxies=proxies, verify=verify)
+        return Broker.post(self._DETAILS,
+                           params=params,
+                           retries=retries,
+                           headers=headers,
+                           proxies=proxies,
+                           verify=verify)
 
     @class_or_instance_method
-    def send(cls_or_self, id_=None, params=None, type_=None, retries=None,
-             proxies=None, verify=None):
+    def send(cls_or_self,
+             id_=None,
+             params=None,
+             type_=None,
+             retries=None,
+             headers=None,
+             proxies=None,
+             verify=None):
         """
         Send custom params to the object URL. If `id` is provided it will be
         appended to the URL. If this is an uninstantiated class we will use the
@@ -436,6 +482,8 @@ class Common(object):
         :type type_: str
         :param retries: Number of retries to submit before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -456,13 +504,26 @@ class Common(object):
         if params is None:
             params = {}
         if type_ == 'GET':
-            return Broker.get(url, params=params, retries=retries,
-                              proxies=proxies, verify=verify)
+            return Broker.get(url,
+                              params=params,
+                              retries=retries,
+                              headers=headers,
+                              proxies=proxies,
+                              verify=verify)
         else:
-            return Broker.post(url, params=params, retries=retries,
-                               proxies=proxies, verify=verify)
+            return Broker.post(url,
+                               params=params,
+                               retries=retries,
+                               headers=headers,
+                               proxies=proxies,
+                               verify=verify)
 
-    def expire(self, timestamp, retries=None, proxies=None, verify=None):
+    def expire(self,
+               timestamp,
+               retries=None,
+               headers=None,
+               proxies=None,
+               verify=None):
         """
         Expire by setting the 'expired_on' timestamp.
 
@@ -470,6 +531,8 @@ class Common(object):
         :type timestamp: str
         :param retries: Number of retries to submit before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -481,10 +544,19 @@ class Common(object):
         params = {
             td.EXPIRED_ON: timestamp
         }
-        return Broker.post(self._DETAILS, params=params, retries=retries,
-                           proxies=proxies, verify=verify)
+        return Broker.post(self._DETAILS,
+                           params=params,
+                           retries=retries,
+                           headers=headers,
+                           proxies=proxies,
+                           verify=verify)
 
-    def false_positive(self, object_id, retries=None, proxies=None, verify=None):
+    def false_positive(self,
+                       object_id,
+                       retries=None,
+                       headers=None,
+                       proxies=None,
+                       verify=None):
         """
         Mark an object as a false positive by setting the status to
         UNKNOWN.
@@ -493,6 +565,8 @@ class Common(object):
         :type object_id: str
         :param retries: Number of retries to submit before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -503,10 +577,19 @@ class Common(object):
         params = {
             c.STATUS: s.UNKNOWN
         }
-        return Broker.post(self._DETAILS, params=params, retries=retries,
-                           proxies=proxies, verify=verify)
+        return Broker.post(self._DETAILS,
+                           params=params,
+                           retries=retries,
+                           headers=headers,
+                           proxies=proxies,
+                           verify=verify)
 
-    def add_connection(self, object_id, retries=None, proxies=None, verify=None):
+    def add_connection(self,
+                       object_id,
+                       retries=None,
+                       headers=None,
+                       proxies=None,
+                       verify=None):
         """
         Use HTTP POST and add a connection between two objects.
 
@@ -514,6 +597,8 @@ class Common(object):
         :type object_id: str
         :param retries: Number of retries to submit before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -524,12 +609,20 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return Broker.post(self._RELATED, params=params, retries=retries,
-                           proxies=proxies, verify=verify)
+        return Broker.post(self._RELATED,
+                           params=params,
+                           retries=retries,
+                           headers=headers,
+                           proxies=proxies,
+                           verify=verify)
 
     # DELETE REQUESTS
 
-    def delete_connection(self, object_id, retries=None, proxies=None,
+    def delete_connection(self,
+                          object_id,
+                          retries=None,
+                          headers=None,
+                          proxies=None,
                           verify=None):
         """
         Use HTTP DELETE and remove the connection to another object.
@@ -538,6 +631,8 @@ class Common(object):
         :type object_id: str
         :param retries: Number of retries to submit before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -548,5 +643,9 @@ class Common(object):
         params = {
             t.RELATED_ID: object_id
         }
-        return Broker.delete(self._RELATED, params=params, retries=retries,
-                             proxies=proxies, verify=verify)
+        return Broker.delete(self._RELATED,
+                             params=params,
+                             retries=retries,
+                             headers=headers,
+                             proxies=proxies,
+                             verify=verify)

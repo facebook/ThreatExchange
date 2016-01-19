@@ -29,6 +29,7 @@ class ThreatPrivacyGroup(Common):
              full_response=False,
              dict_generator=False,
              retries=None,
+             headers=None,
              proxies=None,
              verify=None):
         """
@@ -45,6 +46,8 @@ class ThreatPrivacyGroup(Common):
         :type dict_generator: bool
         :param retries: Number of retries to fetch a page before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -65,6 +68,7 @@ class ThreatPrivacyGroup(Common):
         if full_response:
             return Broker.get(url,
                               retries=retries,
+                              headers=headers,
                               proxies=proxies,
                               verify=verify)
         else:
@@ -72,15 +76,22 @@ class ThreatPrivacyGroup(Common):
                                         url,
                                         to_dict=dict_generator,
                                         retries=retries,
+                                        headers=headers,
                                         proxies=proxies,
                                         verify=verify)
 
-    def get_members(self, retries=None, proxies=None, verify=None):
+    def get_members(self,
+                    retries=None,
+                    headers=None,
+                    proxies=None,
+                    verify=None):
         """
         Get the members of a Threat Privacy Group
 
         :param retries: Number of retries to fetch a page before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -91,6 +102,7 @@ class ThreatPrivacyGroup(Common):
         url = self._DETAILS + '/' + tpg.MEMBERS
         results = Broker.get(url,
                              retries=retries,
+                             headers=headers,
                              proxies=proxies,
                              verify=verify)
         if t.DATA in results:
@@ -98,7 +110,12 @@ class ThreatPrivacyGroup(Common):
         else:
             return []
 
-    def set_members(self, members=None, retries=None, proxies=None, verify=None):
+    def set_members(self,
+                    members=None,
+                    retries=None,
+                    headers=None,
+                    proxies=None,
+                    verify=None):
         """
         Set the members of a Threat Privacy Group
 
@@ -106,6 +123,8 @@ class ThreatPrivacyGroup(Common):
         :type members: str or list
         :param retries: Number of retries to fetch a page before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -120,5 +139,6 @@ class ThreatPrivacyGroup(Common):
         return Broker.post(self._DETAILS,
                            params={'members': members},
                            retries=retries,
+                           headers=headers,
                            proxies=proxies,
                            verify=verify)

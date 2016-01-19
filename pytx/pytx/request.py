@@ -4,7 +4,7 @@ import requests
 from requests.packages.urllib3.util import Retry
 
 from access_token import get_access_token
-from connection import get_proxies, get_verify
+from connection import get_headers, get_proxies, get_verify
 from logger import do_log, log_message
 
 from vocabulary import ThreatExchange as t
@@ -254,7 +254,13 @@ class Broker(object):
         return session
 
     @classmethod
-    def get(cls, url, params=None, retries=None, proxies=None, verify=None):
+    def get(cls,
+            url,
+            params=None,
+            retries=None,
+            headers=None,
+            proxies=None,
+            verify=None):
         """
         Send a GET request.
 
@@ -264,6 +270,8 @@ class Broker(object):
         :type params: dict
         :param retries: Number of retries before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -273,6 +281,8 @@ class Broker(object):
 
         if not params:
             params = dict()
+        if headers is None:
+            headers = get_headers()
         if proxies is None:
             proxies = get_proxies()
         if verify is None:
@@ -280,11 +290,21 @@ class Broker(object):
 
         params[t.ACCESS_TOKEN] = get_access_token()
         session = cls.build_session(retries)
-        resp = session.get(url, params=params, proxies=proxies, verify=verify)
+        resp = session.get(url,
+                           params=params,
+                           headers=headers,
+                           proxies=proxies,
+                           verify=verify)
         return cls.handle_results(resp)
 
     @classmethod
-    def post(cls, url, params=None, retries=None, proxies=None, verify=None):
+    def post(cls,
+             url,
+             params=None,
+             retries=None,
+             headers=None,
+             proxies=None,
+             verify=None):
         """
         Send a POST request.
 
@@ -294,6 +314,8 @@ class Broker(object):
         :type params: dict
         :param retries: Number of retries before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -303,6 +325,8 @@ class Broker(object):
 
         if not params:
             params = dict()
+        if headers is None:
+            headers = get_headers()
         if proxies is None:
             proxies = get_proxies()
         if verify is None:
@@ -310,11 +334,21 @@ class Broker(object):
 
         params[t.ACCESS_TOKEN] = get_access_token()
         session = cls.build_session(retries)
-        resp = session.post(url, params=params, proxies=proxies, verify=verify)
+        resp = session.post(url,
+                            params=params,
+                            headers=headers,
+                            proxies=proxies,
+                            verify=verify)
         return cls.handle_results(resp)
 
     @classmethod
-    def delete(cls, url, params=None, retries=None, proxies=None, verify=None):
+    def delete(cls,
+               url,
+               params=None,
+               retries=None,
+               headers=None,
+               proxies=None,
+               verify=None):
         """
         Send a DELETE request.
 
@@ -324,6 +358,8 @@ class Broker(object):
         :type params: dict
         :param retries: Number of retries before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -333,6 +369,8 @@ class Broker(object):
 
         if not params:
             params = dict()
+        if headers is None:
+            headers = get_headers()
         if proxies is None:
             proxies = get_proxies()
         if verify is None:
@@ -340,12 +378,23 @@ class Broker(object):
 
         params[t.ACCESS_TOKEN] = get_access_token()
         session = cls.build_session(retries)
-        resp = session.delete(url, params=params, proxies=proxies, verify=verify)
+        resp = session.delete(url,
+                              params=params,
+                              headers=headers,
+                              proxies=proxies,
+                              verify=verify)
         return cls.handle_results(resp)
 
     @classmethod
-    def get_generator(cls, klass, url, to_dict=False, params=None,
-                      retries=None, proxies=None, verify=None):
+    def get_generator(cls,
+                      klass,
+                      url,
+                      to_dict=False,
+                      params=None,
+                      retries=None,
+                      headers=None,
+                      proxies=None,
+                      verify=None):
         """
         Generator for managing GET requests. For each GET request it will yield
         the next object in the results until there are no more objects. If the
@@ -364,6 +413,8 @@ class Broker(object):
         :type params: dict
         :param retries: Number of retries before stopping.
         :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
         :param proxies: proxy info for requests.
         :type proxies: dict
         :param verify: verify info for requests.
@@ -375,14 +426,20 @@ class Broker(object):
             raise pytxValueError('Must provide a valid object to query.')
         if not params:
             params = dict()
+        if headers is None:
+            headers = get_headers()
         if proxies is None:
             proxies = get_proxies()
         if verify is None:
             verify = get_verify()
         next_ = True
         while next_:
-            results = cls.get(url, params=params, retries=retries,
-                              proxies=proxies, verify=verify)
+            results = cls.get(url,
+                              params=params,
+                              retries=retries,
+                              headers=headers,
+                              proxies=proxies,
+                              verify=verify)
             if do_log():
                 try:
                     before = results[t.PAGING][p.CURSORS].get(pc.BEFORE, 'None')

@@ -56,7 +56,14 @@ class ThreatExchangeMember(object):
         return self.__getattr__(attr)
 
     @classmethod
-    def _get_generator(cls, url, to_dict=False, params=None):
+    def _get_generator(cls,
+                       url,
+                       to_dict=False,
+                       params=None,
+                       retries=None,
+                       headers=None,
+                       proxies=None,
+                       verify=None):
         """
         Send the GET request and return a generator.
 
@@ -66,13 +73,26 @@ class ThreatExchangeMember(object):
         :type to_dict: bool
         :param params: The GET parameters to send in the request.
         :type params: dict
+        :param retries: Number of retries to fetch a page before stopping.
+        :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
+        :param proxies: proxy info for requests.
+        :type proxies: dict
+        :param verify: verify info for requests.
+        :type verify: bool, str
         :returns: Generator, dict (using json.loads())
         """
 
         if not params:
             params = dict()
 
-        members = Broker.get(url, params=params).get(t.DATA, [])
+        members = Broker.get(url,
+                             params=params,
+                             retries=retries,
+                             headers=headers,
+                             proxies=proxies,
+                             verify=verify).get(t.DATA, [])
         total = len(members)
         if total == t.MIN_TOTAL:
             yield None
@@ -84,7 +104,13 @@ class ThreatExchangeMember(object):
                     yield Broker.get_new(cls, member)
 
     @classmethod
-    def objects(cls, full_response=False, dict_generator=False):
+    def objects(cls,
+                full_response=False,
+                dict_generator=False,
+                retries=None,
+                headers=None,
+                proxies=None,
+                verify=None):
         """
         Get a list of Threat Exchange Members
 
@@ -94,14 +120,30 @@ class ThreatExchangeMember(object):
         :param dict_generator: Return a dictionary instead of an instantiated
                                object.
         :type dict_generator: bool
+        :param retries: Number of retries to fetch a page before stopping.
+        :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
+        :param proxies: proxy info for requests.
+        :type proxies: dict
+        :param verify: verify info for requests.
+        :type verify: bool, str
         :returns: Generator, dict (using json.loads())
         """
 
         if full_response:
-            return Broker.get(cls._URL)
+            return Broker.get(cls._URL,
+                              retries=retries,
+                              headers=headers,
+                              proxies=proxies,
+                              verify=verify)
         else:
             return cls._get_generator(cls._URL,
-                                      to_dict=dict_generator)
+                                      to_dict=dict_generator,
+                                      retries=retries,
+                                      headers=headers,
+                                      proxies=proxies,
+                                      verify=verify)
 
     def to_dict(self):
         """
