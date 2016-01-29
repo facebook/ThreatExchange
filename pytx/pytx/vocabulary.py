@@ -25,6 +25,8 @@ class ThreatExchange(object):
     MAX_CONFIDENCE = 'max_confidence'
     MIN_CONFIDENCE = 'min_confidence'
     OWNER = 'owner'
+    REVIEW_STATUS = 'review_status'
+    SHARE_LEVEL = 'share_level'
     SINCE = 'since'
     STATUS = 'status'
     STRICT_TEXT = 'strict_text'

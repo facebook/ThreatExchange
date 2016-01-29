@@ -150,6 +150,8 @@ class Common(object):
                 min_confidence=None,
                 owner=None,
                 status=None,
+                review_status=None,
+                share_level=None,
                 __raw__=None,
                 full_response=False,
                 dict_generator=False,
@@ -187,6 +189,10 @@ class Common(object):
         :type owner: str
         :param status: The status to limit to.
         :type status: str
+        :param review_status: The review status to limit to.
+        :type review_status: str
+        :param share_level: The share level to limit to.
+        :type share_level: str
         :param __raw__: Provide a dictionary to force as GET parameters.
                         Overrides all other arguments.
         :type __raw__: dict
@@ -226,7 +232,9 @@ class Common(object):
                 max_confidence=max_confidence,
                 min_confidence=min_confidence,
                 owner=owner,
-                status=status
+                status=status,
+                review_status=review_status,
+                share_level=share_level
             )
         if full_response:
             return Broker.get(cls._URL,

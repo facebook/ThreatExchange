@@ -167,7 +167,9 @@ class Broker(object):
                              max_confidence=None,
                              min_confidence=None,
                              owner=None,
-                             status=None):
+                             status=None,
+                             review_status=None,
+                             share_level=None):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -198,6 +200,10 @@ class Broker(object):
         :type owner: str
         :param status: The status to limit to.
         :type status: str
+        :param review_status: The review status to limit to.
+        :type review_status: str
+        :param share_level: The share level to limit to.
+        :type share_level: str
         :returns: dict
         """
 
@@ -230,6 +236,10 @@ class Broker(object):
             params[t.OWNER] = owner
         if status:
             params[t.STATUS] = status
+        if review_status:
+            params[t.REVIEW_STATUS] = review_status
+        if share_level:
+            params[t.SHARE_LEVEL] = share_level
         return params
 
     @classmethod
