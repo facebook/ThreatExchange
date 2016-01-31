@@ -159,6 +159,7 @@ class Broker(object):
                              strict_text=None,
                              type_=None,
                              threat_type=None,
+                             sample_type=None,
                              fields=None,
                              limit=None,
                              since=None,
@@ -181,6 +182,8 @@ class Broker(object):
         :type type_: str
         :param threat_type: The Threat type to limit to.
         :type threat_type: str
+        :param sample_type: The Sample type to limit to.
+        :type sample_type: str
         :param fields: Select specific fields to pull
         :type fields: str, list
         :param limit: The maximum number of objects to return.
@@ -234,6 +237,8 @@ class Broker(object):
             params[t.MIN_CONFIDENCE] = min_confidence
         if owner:
             params[t.OWNER] = owner
+        if sample_type:
+            params[t.SAMPLE_TYPE] = sample_type
         if status:
             params[t.STATUS] = status
         if review_status:

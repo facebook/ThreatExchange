@@ -141,6 +141,7 @@ class Common(object):
                 strict_text=False,
                 type_=None,
                 threat_type=None,
+                sample_type=None,
                 fields=None,
                 limit=None,
                 since=None,
@@ -170,6 +171,8 @@ class Common(object):
         :type type_: str
         :param threat_type: The Threat type to limit to.
         :type threat_type: str
+        :param sample_type: The Sample type to limit to.
+        :type sample_type: str
         :param fields: Select specific fields to pull
         :type fields: str, list
         :param limit: The maximum number of objects to return.
@@ -224,6 +227,7 @@ class Common(object):
                 strict_text=strict_text,
                 type_=type_,
                 threat_type=threat_type,
+                sample_type=sample_type,
                 fields=fields,
                 limit=limit,
                 since=since,
