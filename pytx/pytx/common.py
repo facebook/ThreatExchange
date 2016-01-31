@@ -141,6 +141,7 @@ class Common(object):
                 strict_text=False,
                 type_=None,
                 threat_type=None,
+                sample_type=None,
                 fields=None,
                 limit=None,
                 since=None,
@@ -150,6 +151,8 @@ class Common(object):
                 min_confidence=None,
                 owner=None,
                 status=None,
+                review_status=None,
+                share_level=None,
                 __raw__=None,
                 full_response=False,
                 dict_generator=False,
@@ -168,6 +171,8 @@ class Common(object):
         :type type_: str
         :param threat_type: The Threat type to limit to.
         :type threat_type: str
+        :param sample_type: The Sample type to limit to.
+        :type sample_type: str
         :param fields: Select specific fields to pull
         :type fields: str, list
         :param limit: The maximum number of objects to return.
@@ -187,6 +192,10 @@ class Common(object):
         :type owner: str
         :param status: The status to limit to.
         :type status: str
+        :param review_status: The review status to limit to.
+        :type review_status: str
+        :param share_level: The share level to limit to.
+        :type share_level: str
         :param __raw__: Provide a dictionary to force as GET parameters.
                         Overrides all other arguments.
         :type __raw__: dict
@@ -218,6 +227,7 @@ class Common(object):
                 strict_text=strict_text,
                 type_=type_,
                 threat_type=threat_type,
+                sample_type=sample_type,
                 fields=fields,
                 limit=limit,
                 since=since,
@@ -226,7 +236,9 @@ class Common(object):
                 max_confidence=max_confidence,
                 min_confidence=min_confidence,
                 owner=owner,
-                status=status
+                status=status,
+                review_status=review_status,
+                share_level=share_level
             )
         if full_response:
             return Broker.get(cls._URL,
