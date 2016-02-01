@@ -64,7 +64,9 @@ def main():
                 max_confidence=s.max_confidence,
                 min_confidence=s.min_confidence,
                 owner=s.owner,
-                text=s.text,
+                text=s.text
+                review_status=s.review_status,
+                share_level=s.share_level,
                 status=s.status,
                 strict_text=s.strict_text,
                 threat_type=s.threat_type,
