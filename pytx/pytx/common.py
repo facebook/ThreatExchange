@@ -354,6 +354,7 @@ class Common(object):
                     id=None,
                     connection=None,
                     fields=None,
+                    limit=None,
                     full_response=False,
                     dict_generator=False,
                     request_dict=False,
@@ -380,6 +381,8 @@ class Common(object):
         :type id: str
         :param fields: The fields to limit the details to.
         :type fields: None, str, list
+        :param limit: Limit the results.
+        :type limit: None, int
         :param connection: The connection to find other related objects with.
         :type connection: None, str
         :param full_response: Return the full response instead of the generator.
@@ -409,7 +412,7 @@ class Common(object):
             url = cls_or_self._DETAILS
         if connection:
             url = url + connection + '/'
-        params = Broker.build_get_parameters()
+        params = Broker.build_get_parameters(limit=limit)
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):
