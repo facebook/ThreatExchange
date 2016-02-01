@@ -55,8 +55,6 @@ def main():
             until_param_string + '.csv'
         with open(output_file,'wb') as fout:
             writer = csv.writer(fout)
-            # TODO: Add support for querying by REVIEW_STATUS and SHARE_LEVEL
-            # when that's added to pytx
             results = ThreatDescriptor.objects(
                 fields=ThreatDescriptor._fields,
                 include_expired=s.include_expired,
@@ -64,7 +62,7 @@ def main():
                 max_confidence=s.max_confidence,
                 min_confidence=s.min_confidence,
                 owner=s.owner,
-                text=s.text
+                text=s.text,
                 review_status=s.review_status,
                 share_level=s.share_level,
                 status=s.status,
