@@ -50,10 +50,25 @@ class ThreatExchange(object):
     RELATED = 'related'
     RELATED_ID = 'related_id'
 
+    # BATCH
+    BATCH = 'batch'
+    INCLUDE_HEADERS = 'include_headers'
+
     # Environment Variables for init()
     TX_ACCESS_TOKEN = 'TX_ACCESS_TOKEN'
     TX_APP_ID = 'TX_APP_ID'
     TX_APP_SECRET = 'TX_APP_SECRET'
+
+
+class Batch(object):
+    """
+    Vocabulary used for batch operations.
+    """
+
+    METHOD = 'method'
+    RELATIVE_URL = 'relative_url'
+    BODY = 'body'
+    INCLUDE_HEADERS = 'include_headers'
 
 
 class Common(object):

@@ -1,6 +1,7 @@
 import access_token
 from connection import connection
 from logger import setup_logger
+from batch import Batch
 from request import Broker
 from malware import Malware
 from malware_family import MalwareFamily
@@ -13,6 +14,7 @@ __all__ = [
     'access_token',
     'connection',
     'setup_logger',
+    'Batch',
     'Broker',
     'Malware',
     'MalwareFamily',

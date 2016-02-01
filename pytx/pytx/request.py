@@ -1,5 +1,6 @@
 import json
 import requests
+import urllib
 
 from requests.packages.urllib3.util import Retry
 
@@ -83,28 +84,28 @@ class Broker(object):
         return
 
     @staticmethod
-    def sanitize_strict(strict_text):
+    def sanitize_bool(value):
         """
-        If strict_text is provided, sanitize it.
+        If value is provided, sanitize it.
 
-        'true' will be used if strict_text is in [True, 'true', 'True', 1].
-        'false' will be used if strict_text is in [False, 'false', 'False', 0].
+        'true' will be used if value is in [True, 'true', 'True', 1].
+        'false' will be used if value is in [False, 'false', 'False', 0].
 
-        If we receive any other value strict_text will be set to None and
+        If we receive any other value value will be set to None and
         ignored when building the GET request.
 
-        :param strict_text: The value to sanitize.
-        :type strict_text: bool, str, int
+        :param value: The value to sanitize.
+        :type value: bool, str, int
         :returns: str, None
         """
 
-        if strict_text in (True, 'true', 'True', 1):
-            strict = 'true'
-        elif strict_text in (False, 'false', 'False', 0):
-            strict = 'false'
+        if value in (True, 'true', 'True', 1):
+            value = 'true'
+        elif value in (False, 'false', 'False', 0):
+            value = 'false'
         else:
-            strict = None
-        return strict
+            value = None
+        return value
 
     @staticmethod
     def handle_results(resp):
@@ -211,7 +212,8 @@ class Broker(object):
         """
 
         cls.validate_get(limit, since, until)
-        strict = cls.sanitize_strict(strict_text)
+        strict = cls.sanitize_bool(strict_text)
+        include_expired = cls.sanitize_bool(include_expired)
         params = {}
         if text:
             params[t.TEXT] = text
@@ -267,6 +269,35 @@ class Broker(object):
                                             )
                       ))
         return session
+
+    @classmethod
+    def request_dict(cls,
+                     type_,
+                     url,
+                     params=None,
+                     body=None):
+        """
+        Return a dictionary with the request type, URL, and optionally a body.
+
+        :param type_: The request type.
+        :type type_: str
+        :param url: The request URL.
+        :type url: str
+        :param params: The parameters to submit.
+        :type params: dict
+        :param body: The body to submit.
+        :type body: str
+        :returns: dict
+        """
+
+        request = requests.Request(type_, url, params=params)
+        prep = request.prepare()
+        full_url = prep.url
+        if body:
+            body = urllib.urlencode(body)
+        return {'type': type_,
+                'url': full_url,
+                'body': body}
 
     @classmethod
     def get(cls,
