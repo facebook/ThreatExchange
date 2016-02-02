@@ -1,11 +1,12 @@
 import csv
 import argparse
 
-from datetime import timedelta, datetime
-from dateutil.parser import parse
-
 from pytx import ThreatIndicator, ThreatDescriptor
-from pytx.vocabulary import ThreatIndicator as TI, ThreatDescriptor as TD
+from pytx.vocabulary import (ThreatIndicator as TI, ThreatDescriptor as TD,
+    ThreatExchangeMember as TE)
+
+import common_field_transforms as CFT
+from datetime import datetime
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -43,13 +44,8 @@ def main():
     s = get_args()
     format_ = '%d-%m-%Y'
     for day_counter in range(s.days_back):
-        # We use dateutil.parser.parse for its robustness in accepting different
-        # datetime formats
-        until_param = parse(s.end_date) - timedelta(days=day_counter)
-        until_param_string = until_param.strftime(format_)
-
-        since_param = until_param - timedelta(days=1)
-        since_param_string = since_param.strftime(format_)
+        until_param, until_param_string, since_param, since_param_string = \
+            CFT.get_time_params(s.end_date, day_counter, format_)
 
         output_file = 'threat_descriptors_' + since_param_string + '_to_' + \
             until_param_string + '.csv'
@@ -73,58 +69,34 @@ def main():
                 until=until_param_string,
             )
 
+            fields_list = [
+                TD.ID,
+                TD.ADDED_ON,
+                TD.CONFIDENCE,
+                TD.DESCRIPTION,
+                TD.EXPIRED_ON,
+                [TD.INDICATOR, TI.INDICATOR],
+                [TD.INDICATOR, TI.TYPE],
+                [TD.INDICATOR, TI.ID],
+                TD.LAST_UPDATED,
+                [TD.OWNER, TE.ID],
+                [TD.OWNER, TE.NAME],
+                [TD.OWNER, TE.EMAIL],
+                TD.PRECISION,
+                TD.RAW_INDICATOR,
+                TD.REVIEW_STATUS,
+                TD.SEVERITY,
+                TD.SHARE_LEVEL,
+                TD.STATUS,
+                TD.THREAT_TYPE,
+                TD.TYPE,
+            ]
+
             # Headers
-            writer.writerow([
-                ")ID", # Need leading underscore so we don't confuse Excel
-                "ADDED_ON",
-                "CONFIDENCE",
-                "DESCRIPTION",
-                "EXPIRED_ON",
-                "INDICATOR",
-                "INDICATORS_TYPE",
-                "INDICATOR_ID",
-                "LAST_UPDATED",
-                "OWNER_ID",
-                "OWNER_NAME",
-                "OWNER_EMAIL",
-                "PRECISION",
-                "RAW_INDICATOR",
-                "REVIEW_STATUS",
-                "SEVERITY",
-                "SHARE_LEVEL",
-                "STATUS",
-                "THREAT_TYPE",
-                "TYPE",
-            ])
-            for r in results:
+            writer.writerow(map(CFT.convert_to_header,fields_list))
+            for result in results:
                 writer.writerow(
-                    map(
-                        lambda x: x if type(x) == int else
-                            (x.encode('utf-8') if x else ""),
-                        [
-                            r.get(TD.ID),
-                            r.get(TD.ADDED_ON),
-                            r.get(TD.CONFIDENCE),
-                            r.get(TD.DESCRIPTION),
-                            r.get(TD.EXPIRED_ON),
-                            r.get(TD.INDICATOR)['indicator'],
-                            r.get(TD.INDICATOR)['type'],
-                            r.get(TD.INDICATOR)['id'],
-                            r.get(TD.LAST_UPDATED),
-                            r.get(TD.OWNER)['id'],
-                            r.get(TD.OWNER)['name'],
-                            r.get(TD.OWNER)['email']
-                                if 'email' in r.get(TD.OWNER).keys() else "",
-                            r.get(TD.PRECISION),
-                            r.get(TD.RAW_INDICATOR),
-                            r.get(TD.REVIEW_STATUS),
-                            r.get(TD.SEVERITY),
-                            r.get(TD.SHARE_LEVEL),
-                            r.get(TD.STATUS),
-                            r.get(TD.THREAT_TYPE),
-                            r.get(TD.TYPE),
-                        ]
-                    )
+                    map(lambda x: CFT.get_data_field(x, result), fields_list)
                 )
 
 if __name__ == "__main__":

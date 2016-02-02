@@ -1,11 +1,11 @@
 import csv
 import argparse
 
-from datetime import timedelta, datetime
-from dateutil.parser import parse
-
 from pytx import ThreatIndicator
 from pytx.vocabulary import ThreatIndicator as TI
+
+import common_field_transforms as CFT
+from datetime import datetime
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -29,13 +29,8 @@ def main():
     s = get_args()
     format_ = '%d-%m-%Y'
     for day_counter in range(s.days_back):
-        # We use dateutil.parser.parse for its robustness in accepting different
-        # datetime formats
-        until_param = parse(s.end_date) - timedelta(days=day_counter)
-        until_param_string = until_param.strftime(format_)
-
-        since_param = until_param - timedelta(days=1)
-        since_param_string = since_param.strftime(format_)
+        until_param, until_param_string, since_param, since_param_string = \
+            CFT.get_time_params(s.end_date, day_counter, format_)
 
         output_file = 'threat_indicators_' + since_param_string + '_to_' + \
             until_param_string + '.csv'
@@ -53,22 +48,17 @@ def main():
                 until=until_param_string,
             )
 
-            writer.writerow([
-                "_ID", # Need leading underscore so we don't confuse Excel
-                "INDICATOR",
-                "TYPE",
-            ])
-            for r in results:
+            fields_list = [
+                TI.ID,
+                TI.INDICATOR,
+                TI.TYPE,
+            ]
+
+            # Headers
+            writer.writerow(map(CFT.convert_to_header,fields_list))
+            for result in results:
                 writer.writerow(
-                    map(
-                        lambda x: x if type(x) == int else
-                            (x.encode('utf-8') if x else ""),
-                        [
-                            r.get(TI.ID),
-                            r.get(TI.INDICATOR),
-                            r.get(TI.TYPE),
-                        ]
-                    )
+                    map(lambda x: CFT.get_data_field(x, result), fields_list)
                 )
 
 if __name__ == "__main__":
