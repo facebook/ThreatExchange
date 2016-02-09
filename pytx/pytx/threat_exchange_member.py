@@ -19,6 +19,12 @@ class ThreatExchangeMember(object):
         tem.EMAIL,
     ]
 
+    _default_fields = [
+        tem.ID,
+        tem.NAME,
+        tem.EMAIL,
+    ]
+
     _unique = [
     ]
 

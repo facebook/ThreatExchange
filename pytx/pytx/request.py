@@ -159,6 +159,7 @@ class Broker(object):
                              strict_text=None,
                              type_=None,
                              threat_type=None,
+                             sample_type=None,
                              fields=None,
                              limit=None,
                              since=None,
@@ -167,7 +168,9 @@ class Broker(object):
                              max_confidence=None,
                              min_confidence=None,
                              owner=None,
-                             status=None):
+                             status=None,
+                             review_status=None,
+                             share_level=None):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -179,6 +182,8 @@ class Broker(object):
         :type type_: str
         :param threat_type: The Threat type to limit to.
         :type threat_type: str
+        :param sample_type: The Sample type to limit to.
+        :type sample_type: str
         :param fields: Select specific fields to pull
         :type fields: str, list
         :param limit: The maximum number of objects to return.
@@ -198,6 +203,10 @@ class Broker(object):
         :type owner: str
         :param status: The status to limit to.
         :type status: str
+        :param review_status: The review status to limit to.
+        :type review_status: str
+        :param share_level: The share level to limit to.
+        :type share_level: str
         :returns: dict
         """
 
@@ -228,8 +237,14 @@ class Broker(object):
             params[t.MIN_CONFIDENCE] = min_confidence
         if owner:
             params[t.OWNER] = owner
+        if sample_type:
+            params[t.SAMPLE_TYPE] = sample_type
         if status:
             params[t.STATUS] = status
+        if review_status:
+            params[t.REVIEW_STATUS] = review_status
+        if share_level:
+            params[t.SHARE_LEVEL] = share_level
         return params
 
     @classmethod
