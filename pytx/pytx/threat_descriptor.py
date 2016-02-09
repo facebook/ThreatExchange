@@ -32,5 +32,28 @@ class ThreatDescriptor(Common):
         td.TYPE,
     ]
 
+    _default_fields = [
+        td.ADDED_ON,
+        td.CONFIDENCE,
+        td.DESCRIPTION,
+        td.EXPIRED_ON,
+        td.ID,
+        td.INDICATOR,
+        td.LAST_UPDATED,
+        td.METADATA,
+        td.OWNER,
+        td.PRECISION,
+        td.PRIVACY_MEMBERS,
+        td.PRIVACY_TYPE,
+        td.RAW_INDICATOR,
+        td.REVIEW_STATUS,
+        td.SEVERITY,
+        td.SHARE_LEVEL,
+        td.STATUS,
+        td.SUBMITTER_COUNT,
+        td.THREAT_TYPE,
+        td.TYPE,
+    ]
+
     _unique = [
     ]

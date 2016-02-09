@@ -16,5 +16,12 @@ class ThreatIndicator(Common):
         ti.TYPE,
     ]
 
+    _default_fields = [
+        ti.ID,
+        ti.INDICATOR,
+        ti.METADATA,
+        ti.TYPE,
+    ]
+
     _unique = [
     ]
