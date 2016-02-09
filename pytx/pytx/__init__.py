@@ -1,4 +1,5 @@
 import access_token
+import utils
 from connection import connection
 from logger import setup_logger
 from request import Broker
@@ -11,6 +12,7 @@ from threat_privacy_group import ThreatPrivacyGroup
 
 __all__ = [
     'access_token',
+    'utils',
     'connection',
     'setup_logger',
     'Broker',

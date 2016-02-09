@@ -29,7 +29,10 @@ setup(
     keywords='facebook threatexchange',
     url='https://www.github.com/facebook/ThreatExchange',
     packages=find_packages(exclude=['docs', 'tests']),
-    install_requires=['requests[security]==2.7.0'],
+    install_requires=[
+        'requests[security]==2.7.0',
+        'python-dateutil==1.5',
+        ],
     scripts=['scripts/get_compromised_credentials.py',
              'scripts/get_indicators.py',
              'scripts/get_members.py',
