@@ -2,9 +2,9 @@ import csv
 import argparse
 
 from pytx import ThreatIndicator
+from pytx import utils
 from pytx.vocabulary import ThreatIndicator as TI
 
-import common_field_transforms as CFT
 from datetime import datetime
 
 def get_args():
@@ -30,7 +30,7 @@ def main():
     format_ = '%d-%m-%Y'
     for day_counter in range(s.days_back):
         until_param, until_param_string, since_param, since_param_string = \
-            CFT.get_time_params(s.end_date, day_counter, format_)
+            utils.get_time_params(s.end_date, day_counter, format_)
 
         output_file = 'threat_indicators_' + since_param_string + '_to_' + \
             until_param_string + '.csv'
@@ -55,10 +55,10 @@ def main():
             ]
 
             # Headers
-            writer.writerow(map(CFT.convert_to_header,fields_list))
+            writer.writerow(map(utils.convert_to_header,fields_list))
             for result in results:
                 writer.writerow(
-                    map(lambda x: CFT.get_data_field(x, result), fields_list)
+                    map(lambda x: utils.get_data_field(x, result), fields_list)
                 )
 
 if __name__ == "__main__":
