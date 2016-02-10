@@ -52,16 +52,6 @@ Quick Example
    for result in results:
        print result.get(ti.INDICATOR)
 
- Quick Example
- -------------
-
-To get ALL the data in ThreatExchange, use our scripts in the get_all_data
-folder. For example, to get all the threat indicators uploaded to ThreatExchange
-over the last 10 days with the text "facebook", run the following command:
-
-    $ python ./get_all_data/get_threat_indicators.py --text="facebook"
-      --days_back=10
-
 Documentation
 -------------
 
