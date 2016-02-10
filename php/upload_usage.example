@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014, Facebook, Inc.
+# Copyright (c) 2014-present, Facebook, Inc.
 # All rights reserved.
 #
 # This source code is licensed under the BSD-style license found in the
@@ -20,6 +20,6 @@ $ php upload.php -t indicators -f upload_file.example
 # data
 $ php upload.php -t indicators -f upload_file.example -p HAS_WHITELIST -m <my_app_id>
 
-# Uploads all indicators in 'upload_file.example' and prepends the tag 
+# Uploads all indicators in 'upload_file.example' and prepends the tag
 # '[my_tag]' to all descriptions
 $ php upload.php -t indicators -f upload_file.example -g my_tag

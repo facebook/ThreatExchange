@@ -11,7 +11,7 @@ Build Status
 
 .. image:: https://img.shields.io/pypi/dm/pytx.svg
     :target: https://pypi.python.org/pypi/pytx/
-    
+
 .. image:: https://img.shields.io/pypi/v/pytx.svg
    :target: https://pypi.python.org/pypi/pytx
 
@@ -20,10 +20,10 @@ Build Status
 
 .. image:: https://img.shields.io/pypi/l/pytx.svg
     :target: https://pypi.python.org/pypi/pytx/
-    
+
 .. image:: https://readthedocs.org/projects/pytx/badge/?version=latest
     :target: https://readthedocs.org/projects/pytx/?badge=latest
-                
+
 
 Installation
 ------------
@@ -51,7 +51,6 @@ Quick Example
                                       text='127.0.0.1')
    for result in results:
        print result.get(ti.INDICATOR)
-
 
 Documentation
 -------------
