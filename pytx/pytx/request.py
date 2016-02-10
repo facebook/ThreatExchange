@@ -457,8 +457,16 @@ class Broker(object):
                               verify=verify)
             if do_log():
                 try:
-                    before = results[t.PAGING][p.CURSORS].get(pc.BEFORE, 'None')
-                    after = results[t.PAGING][p.CURSORS].get(pc.AFTER, 'None')
+                    has_paging = results.get(t.PAGING, None)
+                    before = ''
+                    after = ''
+                    if has_paging != None:
+                        before = results[t.PAGING][p.CURSORS].get(pc.BEFORE,
+                                                                  'None'
+                                                                  )
+                        after = results[t.PAGING][p.CURSORS].get(pc.AFTER,
+                                                                 'None'
+                                                                 )
                     count = len(results[t.DATA])
                     log_message(
                         'Cursor: BEFORE: %s, AFTER: %s, LEN: %d' % (before,
