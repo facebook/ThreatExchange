@@ -30,6 +30,27 @@ class Batch(object):
         return url.replace(t.URL, '')
 
     @classmethod
+    def prepare_single_request(cls, request, name=None):
+        """
+        Prepare a single request to be included in batch.
+
+        :param request: A dictionary in the format required by Batch.submit().
+        :type request: dict
+        :param name: A name to give this request.
+        :type name: str
+        :returns: dict
+        """
+
+        d = {b.METHOD: request.get('type', 'GET'),
+             b.RELATIVE_URL: Batch.get_relative(request.get('url', ''))}
+        body = request.get('body', None)
+        if body:
+            d[b.BODY] = body
+        if name:
+            d['name'] = name
+        return d
+
+    @classmethod
     def submit(cls,
                *args,
                **kwargs):
@@ -41,10 +62,16 @@ class Batch(object):
             url: The full or relative URL for the API call.
             body: If the type is POST this is the body that will be used.
 
-        All named args are considered to be the options below.
+        If you pass a named argument, we will consider the name as the name you
+        wish to include in that specific request. This is useful for referencing
+        a request in another request in the Batch (see FB documentation).
+
+        The following named args are considered to be the options below.
 
         :param include_headers: Include headers in response.
         :type include_headers: bool
+        :param omit_response: Omit response on success.
+        :type omit_response: bool
         :param retries: Number of retries before stopping.
         :type retries: int
         :param headers: header info for requests.
@@ -57,24 +84,36 @@ class Batch(object):
         """
 
         batch = []
+        retries = kwargs.get('retries', None)
+        if retries:
+            del kwargs['retries']
+        headers = kwargs.get('headers', None)
+        if headers:
+            del kwargs['headers']
+        proxies = kwargs.get('proxies', None)
+        if proxies:
+            del kwargs['proxies']
+        verify = kwargs.get('verify', None)
+        if verify:
+            del kwargs['verify']
+        include_headers = kwargs.get('include_headers', None)
+        if include_headers:
+            del kwargs['include_headers']
+            include_headers = Broker.sanitize_bool(include_headers)
+        omit_response = kwargs.get('omit_response', None)
+        if omit_response:
+            del kwargs['omit_response']
+            omit_response = Broker.sanitize_bool(omit_response)
+
         for arg in args:
-            d = {b.METHOD: arg.get('type', 'GET'),
-                 b.RELATIVE_URL: Batch.get_relative(arg.get('url', ''))}
-            body = arg.get('body', None)
-            if body:
-                d[b.BODY] = body
-            batch.append(d)
-            include_headers = Broker.sanitize_bool(kwargs.get('include_headers',
-                                                              'false'))
+            batch.append(Batch.prepare_single_request(arg))
+        for key, value in kwargs.iteritems():
+            batch.append(Batch.prepare_single_request(value, name=key))
         params = {t.ACCESS_TOKEN: get_access_token(),
                   t.BATCH: json.dumps(batch),
-                  t.INCLUDE_HEADERS: include_headers}
+                  t.INCLUDE_HEADERS: include_headers,
+                  t.OMIT_RESPONSE_ON_SUCCESS: omit_response}
         try:
-            retries = kwargs.get('retries', None)
-            headers = kwargs.get('headers', None)
-            proxies = kwargs.get('proxies', None)
-            verify = kwargs.get('verify', None)
-
             return Broker.post(t.URL,
                                params=params,
                                retries=retries,

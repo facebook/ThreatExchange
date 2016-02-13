@@ -53,6 +53,7 @@ class ThreatExchange(object):
     # BATCH
     BATCH = 'batch'
     INCLUDE_HEADERS = 'include_headers'
+    OMIT_RESPONSE_ON_SUCCESS = 'omit_response_on_success'
 
     # Environment Variables for init()
     TX_ACCESS_TOKEN = 'TX_ACCESS_TOKEN'
