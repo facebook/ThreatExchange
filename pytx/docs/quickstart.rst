@@ -202,6 +202,44 @@ leveraging the classes you can do so:
 
 The Broker will also allow you to POST and DELETE if you need to.
 
+You can also make Batch requests to the graph via pytx. Batch requests allow you
+to submit multiple Graph requests in a single POST request. Here's an example:
+
+.. code-block :: python
+
+   import json
+   from pytx import ThreatDescriptor, Batch
+   from pytx.errors import pytxFetchError
+
+   a = ThreatDescriptor.objects(text='foo',
+                                request_dict=True)
+   b = {'type': 'GET',
+        'url': '{result=foo:$.data.0.id}'}
+   try:
+       result = Batch.submit(foo=a,
+                             bar=b)
+       print json.dumps(result, indent=4, sort_keys=True)
+   except pytxFetchError, e:
+       print e.message
+
+There are several things to notice in this example. First, the call to find all
+ThreatDescriptor objects with a text of "foo" has an argument of
+"request_dict=True". By setting that to True, you are telling the objects call
+that you'd like the dictionary generated instead of it actually submitting the
+request to the Graph.
+
+The second thing to notice is that the second request (b) is a manually crafted
+dictionary. The URL is very cryptic (you can look this up in the Facebook Graph
+API documentation) but it is saying that for a URL you want the results from the
+"foo" request and you want the first element's id from the data list.
+
+The submit call for Batch is giving the name "foo" to request "a", and the name
+"bar" to request "b". The submit call will accept N-number of unnamed arguments
+and N-number of named arguments. Each one will be considered its own unique
+request you want to include in the Batch. The only difference between the two is
+that a named argument will be given a name in the request which can then be used
+as a reference in other requests in the Batch like the example above.
+
 One thing you might notice is the constant use of vocabulary. pytx comes with a
 vocabulary which will allow you to write your code using class attributes so if
 ThreatExchange ever changes a string your code will still function properly.

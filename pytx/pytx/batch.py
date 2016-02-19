@@ -41,8 +41,10 @@ class Batch(object):
         :returns: dict
         """
 
-        d = {b.METHOD: request.get('type', 'GET'),
-             b.RELATIVE_URL: Batch.get_relative(request.get('url', ''))}
+        d = {b.METHOD: request.get('type',
+                                   request.get('method', 'GET')),
+             b.RELATIVE_URL: Batch.get_relative(request.get('url',
+                                                            request.get('relative_url', '')))}
         body = request.get('body', None)
         if body:
             d[b.BODY] = body
@@ -61,6 +63,10 @@ class Batch(object):
             type: The request type (GET, POST, etc.).
             url: The full or relative URL for the API call.
             body: If the type is POST this is the body that will be used.
+
+        If you use "method" instead of "type" and/or "relative_urL" instead of
+        "url" (which is accurate to the Graph API) we will use them
+        appropriately.
 
         If you pass a named argument, we will consider the name as the name you
         wish to include in that specific request. This is useful for referencing
