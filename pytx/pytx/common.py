@@ -156,6 +156,7 @@ class Common(object):
                 __raw__=None,
                 full_response=False,
                 dict_generator=False,
+                request_dict=False,
                 retries=None,
                 headers=None,
                 proxies=None,
@@ -205,6 +206,8 @@ class Common(object):
         :param dict_generator: Return a dictionary instead of an instantiated
                                object.
         :type dict_generator: bool
+        :param request_dict: Return a request dictionary only.
+        :type request_dict: bool
         :param retries: Number of retries to fetch a page before stopping.
         :type retries: int
         :param headers: header info for requests.
@@ -213,7 +216,7 @@ class Common(object):
         :type proxies: dict
         :param verify: verify info for requests.
         :type verify: bool, str
-        :returns: Generator, dict (using json.loads())
+        :returns: Generator, dict (using json.loads()), str
         """
 
         if __raw__:
@@ -240,6 +243,10 @@ class Common(object):
                 review_status=review_status,
                 share_level=share_level
             )
+        if request_dict:
+            return Broker.request_dict('GET',
+                                       cls._URL,
+                                       params=params)
         if full_response:
             return Broker.get(cls._URL,
                               params=params,
@@ -263,6 +270,7 @@ class Common(object):
                 fields=None,
                 full_response=False,
                 dict_generator=False,
+                request_dict=False,
                 retries=None,
                 headers=None,
                 proxies=None,
@@ -473,6 +481,7 @@ class Common(object):
     @classmethod
     def new(cls,
             params,
+            request_dict=False,
             retries=None,
             headers=None,
             proxies=None,
@@ -485,6 +494,8 @@ class Common(object):
 
         :param params: The parameters to submit.
         :type params: dict
+        :param request_dict: Return a request dictionary only.
+        :type request_dict: bool
         :param retries: Number of retries to submit before stopping.
         :type retries: int
         :param headers: header info for requests.
@@ -493,7 +504,7 @@ class Common(object):
         :type proxies: dict
         :param verify: verify info for requests.
         :type verify: bool, str
-        :returns: dict (using json.loads())
+        :returns: dict (using json.loads()), str
         """
 
         if cls.__name__ != 'ThreatPrivacyGroup':
@@ -504,6 +515,10 @@ class Common(object):
                 if (params[td.PRIVACY_TYPE] != pt.VISIBLE and
                         len(params[td.PRIVACY_MEMBERS].split(',')) < 1):
                     raise pytxValueError('Must provide %s' % td.PRIVACY_MEMBERS)
+        if request_dict:
+            return Broker.request_dict('POST',
+                                       cls._URL,
+                                       body=params)
         return Broker.post(cls._URL,
                            params=params,
                            retries=retries,
@@ -513,6 +528,7 @@ class Common(object):
 
     def save(self,
              params=None,
+             request_dict=False,
              retries=None,
              headers=None,
              proxies=None,
@@ -525,6 +541,8 @@ class Common(object):
 
         :param params: The parameters to submit.
         :type params: dict
+        :param request_dict: Return a request dictionary only.
+        :type request_dict: bool
         :param retries: Number of retries to submit before stopping.
         :type retries: int
         :param headers: header info for requests.
@@ -533,11 +551,15 @@ class Common(object):
         :type proxies: dict
         :param verify: verify info for requests.
         :type verify: bool, str
-        :returns: dict (using json.loads())
+        :returns: dict (using json.loads()), str
         """
 
         if params is None:
             params = self.get_changed()
+        if request_dict:
+            return Broker.request_dict('POST',
+                                       self._DETAILS,
+                                       body=params)
         return Broker.post(self._DETAILS,
                            params=params,
                            retries=retries,
@@ -550,6 +572,7 @@ class Common(object):
              id_=None,
              params=None,
              type_=None,
+             request_dict=False,
              retries=None,
              headers=None,
              proxies=None,
@@ -568,6 +591,8 @@ class Common(object):
         :type params: dict
         :param type_: GET or POST
         :type type_: str
+        :param request_dict: Return a request dictionary only.
+        :type request_dict: bool
         :param retries: Number of retries to submit before stopping.
         :type retries: int
         :param headers: header info for requests.
@@ -576,7 +601,7 @@ class Common(object):
         :type proxies: dict
         :param verify: verify info for requests.
         :type verify: bool, str
-        :returns: dict (using json.loads())
+        :returns: dict (using json.loads()), str
         """
 
         if isinstance(cls_or_self, type):
@@ -592,6 +617,10 @@ class Common(object):
         if params is None:
             params = {}
         if type_ == 'GET':
+            if request_dict:
+                return Broker.request_dict('GET',
+                                           url,
+                                           params=params)
             return Broker.get(url,
                               params=params,
                               retries=retries,
@@ -599,6 +628,10 @@ class Common(object):
                               proxies=proxies,
                               verify=verify)
         else:
+            if request_dict:
+                return Broker.request_dict('POST',
+                                           url,
+                                           body=params)
             return Broker.post(url,
                                params=params,
                                retries=retries,
