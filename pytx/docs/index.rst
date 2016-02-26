@@ -14,15 +14,19 @@ Contents:
    installation
    quickstart
    pytx.access_token
+   pytx.batch
    pytx.common
    pytx.connection
    pytx.errors
    pytx.logger
    pytx.malware
+   pytx.malware_family
    pytx.request
-   pytx.threat_exchange_member
    pytx.threat_descriptor
+   pytx.threat_exchange_member
    pytx.threat_indicator
+   pytx.threat_privacy_group
+   pytx.utils
    pytx.vocabulary
 
 
