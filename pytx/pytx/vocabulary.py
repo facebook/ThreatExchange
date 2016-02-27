@@ -82,6 +82,7 @@ class Common(object):
     ID = 'id'
     METADATA = 'metadata'
     SHARE_LEVEL = 'share_level'
+    SUMMARY = 'summary'
     STATUS = 'status'
     SUBMITTER_COUNT = 'submitter_count'
     VICTIM_COUNT = 'victim_count'
@@ -108,6 +109,17 @@ class Connection(object):
     VARIANTS = 'variants'
     VICTIM_COUNT = Common.VICTIM_COUNT
 
+class SummaryConnection(object):
+
+    """
+    Vocabulary for summarizing connections between objects.
+    (e.g. Retriving the number of objects across a connection.)
+    """
+
+    COUNT = 'count'
+    PREFERRED = 'preferred'
+    PREFER = 'prefer'
+    PREFER_LIST = 'prefer_list'
 
 class Malware(object):
 
@@ -298,6 +310,17 @@ class ThreatDescriptor(object):
     THREAT_TYPE = 'threat_type'
     TYPE = 'type'
 
+class DescriptorPreference(object):
+
+    """
+    Vocabulary to relay a preference for picking from multiple descriptors
+    for one ThreatIndicator.
+    """
+
+    FROM_LIST_OR_NEWEST = 'FROM_LIST_OR_NEWEST'
+    MINE_OR_NEWEST = 'MINE_OR_NEWEST'
+    NEWEST = 'NEWEST'
+    OLDEST = 'OLDEST'
 
 class Attack(object):
 
