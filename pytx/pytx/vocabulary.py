@@ -305,6 +305,7 @@ class ThreatDescriptor(object):
     REVIEW_STATUS = 'review_status'
     SEVERITY = 'severity'
     SHARE_LEVEL = Common.SHARE_LEVEL
+    SOURCE_URI = 'source_uri'
     STATUS = Common.STATUS
     SUBMITTER_COUNT = Common.SUBMITTER_COUNT
     THREAT_TYPE = 'threat_type'
