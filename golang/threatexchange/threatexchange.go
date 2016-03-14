@@ -61,7 +61,7 @@ type MalwareResult struct {
 	Ssdeep         string `json:"ssdeep,omitempty"`
 	SubmitterCount string `json:"submitter_count,omitempty"`
 	VictimCount    int    `json:"victim_count,omitempty"`
-	xpi            string `json:"xpi,omitempty"`
+	Xpi            string `json:"xpi,omitempty"`
 	Status         string `json:"status,omitempty"`
 	AddedOn        string `json:"added_on,omitempty"`
 	PrivacyType    string `json:"privacy_type,omitempty"`
@@ -132,64 +132,50 @@ func New(appID, appSecret string, log *log.Logger) (*Client, error) {
 // limit of size <=0 will be ignored
 func (c *Client) GetThreatIndicators(resourceType, text, startTime, endTime string, limit int,
 	extraParams map[string]string) (*ThreatDescriptorResults, string, error) {
-	res, err := c.query(apiVersion, "threat_descriptors", startTime, endTime, resourceType, text, limit, extraParams)
+	var result = &ThreatDescriptorResults{}
+	res, err := c.query(apiVersion, "threat_descriptors", startTime, endTime, resourceType, text, limit, extraParams, result)
 	if err != nil {
 		return nil, "", err
 	}
-	var result ThreatDescriptorResults
-	err = json.Unmarshal([]byte(res), &result)
-	if err != nil {
-		return nil, "", err
-	}
-	return &result, res, nil
+
+	return result, res, nil
 }
 
 // GetMalwareAnalyses - is a query to retrieve Malware Analyses, will return MalwareResults to hold results, and raw json of that
 func (c *Client) GetMalwareAnalyses(text, startTime, endTime string, limit int,
 	extraParams map[string]string) (*MalwareResults, string, error) {
-	res, err := c.query(apiVersion, "malware_analyses", startTime, endTime, "", text, limit, extraParams)
+	var result = &MalwareResults{}
+	res, err := c.query(apiVersion, "malware_analyses", startTime, endTime, "", text, limit, extraParams, result)
 	if err != nil {
 		return nil, "", err
 	}
-	var result MalwareResults
-	err = json.Unmarshal([]byte(res), &result)
-	if err != nil {
-		return nil, "", err
-	}
-	return &result, res, nil
+	return result, res, nil
 }
 
 // GetMalwareFamilies - is a query to retrieve ThreatIndicators, will return MalwareFamiliesResults to hold results, and raw json of that
 func (c *Client) GetMalwareFamilies(text, startTime, endTime string, limit int,
 	extraParams map[string]string) (*MalwareFamiliesResults, string, error) {
-	res, err := c.query(apiVersion, "malware_families", startTime, endTime, "", text, limit, extraParams)
+	var result = &MalwareFamiliesResults{}
+	res, err := c.query(apiVersion, "malware_families", startTime, endTime, "", text, limit, extraParams, result)
 	if err != nil {
 		return nil, "", err
 	}
-	var result MalwareFamiliesResults
-	err = json.Unmarshal([]byte(res), &result)
-	if err != nil {
-		return nil, "", err
-	}
-	return &result, res, nil
+	return result, res, nil
 }
 
 // GetThreatExchangeMembers - is a query to retrieve ThreatExchange members, will return TEOwnersResults to hold results, and raw json of that
 func (c *Client) GetThreatExchangeMembers() (*TEOwnersResults, string, error) {
-	res, err := c.query(apiVersion, "threat_exchange_members", "", "", "", "", 0, map[string]string{})
+	var result = &TEOwnersResults{}
+	res, err := c.query(apiVersion, "threat_exchange_members", "", "", "", "", 0, map[string]string{}, result)
 	if err != nil {
 		return nil, "", err
 	}
-	var result TEOwnersResults
-	err = json.Unmarshal([]byte(res), &result)
-	if err != nil {
-		return nil, "", err
-	}
-	return &result, res, nil
+
+	return result, res, nil
 }
 
 func (c *Client) query(apiVersion string, resource string, startTime string, endTime string, resourceType string,
-	text string, limit int, extraParams map[string]string) (string, error) {
+	text string, limit int, extraParams map[string]string, result interface{}) (string, error) {
 	u, err := url.Parse(DefaultURL)
 	if err != nil {
 		return "", err
@@ -225,11 +211,15 @@ func (c *Client) query(apiVersion string, resource string, startTime string, end
 	if res.Body == nil {
 		return "", fmt.Errorf("Empty body for query :", u.String())
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("Wrong http return code, got : %d", res.StatusCode)
 	}
-	defer res.Body.Close()
 	byteRes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	err = json.Unmarshal(byteRes, result)
 	if err != nil {
 		return "", err
 	}
