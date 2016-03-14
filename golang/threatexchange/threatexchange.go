@@ -128,6 +128,13 @@ func New(appID, appSecret string, log *log.Logger) (*Client, error) {
 	return c, nil
 }
 
+// errorf logs to the error log.
+func (c *Client) errorf(format string, args ...interface{}) {
+	if c.logger != nil {
+		c.logger.Printf(format, args...)
+	}
+}
+
 // GetThreatIndicators - is a query to retrieve ThreatIndicators, will return ThreatDescriptorResults to hold results, and raw json of that
 // limit of size <=0 will be ignored
 func (c *Client) GetThreatIndicators(resourceType, text, startTime, endTime string, limit int,
@@ -178,6 +185,7 @@ func (c *Client) query(apiVersion string, resource string, startTime string, end
 	text string, limit int, extraParams map[string]string, result interface{}) (string, error) {
 	u, err := url.Parse(DefaultURL)
 	if err != nil {
+		c.errorf("Could not parse url %s",u.String())
 		return "", err
 	}
 
@@ -213,14 +221,17 @@ func (c *Client) query(apiVersion string, resource string, startTime string, end
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
+		c.errorf("Wrong http return code, got : %d", res.StatusCode)
 		return "", fmt.Errorf("Wrong http return code, got : %d", res.StatusCode)
 	}
 	byteRes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+		c.errorf("Could not read response body : %v", err)
 		return "", err
 	}
 	err = json.Unmarshal(byteRes, result)
 	if err != nil {
+		c.errorf("Could not Unmarshal response body : %s, for resource : %s", string(byteRes),resource)
 		return "", err
 	}
 	return string(byteRes), nil
