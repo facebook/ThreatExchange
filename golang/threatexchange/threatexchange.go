@@ -200,7 +200,7 @@ func (c *Client) query(apiVersion string, resource string, startTime string, end
 	if len(resourceType) > 0 {
 		parameters.Add("type", resourceType)
 	}
-	if len(resourceType) > 0 {
+	if len(text) > 0 {
 		parameters.Add("text", text)
 	}
 	if limit > 0 {
