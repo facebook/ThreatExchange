@@ -185,7 +185,7 @@ func (c *Client) query(apiVersion string, resource string, startTime string, end
 	text string, limit int, extraParams map[string]string, result interface{}) (string, error) {
 	u, err := url.Parse(DefaultURL)
 	if err != nil {
-		c.errorf("Could not parse url %s",u.String())
+		c.errorf("Could not parse url %s", u.String())
 		return "", err
 	}
 
@@ -231,7 +231,7 @@ func (c *Client) query(apiVersion string, resource string, startTime string, end
 	}
 	err = json.Unmarshal(byteRes, result)
 	if err != nil {
-		c.errorf("Could not Unmarshal response body : %s, for resource : %s", string(byteRes),resource)
+		c.errorf("Could not Unmarshal response body : %s, for resource : %s", string(byteRes), resource)
 		return "", err
 	}
 	return string(byteRes), nil
