@@ -290,6 +290,7 @@ class ThreatDescriptor(object):
     """
 
     ADDED_ON = 'added_on'
+    ATTACK_TYPE = 'attack_type'
     CONFIDENCE = 'confidence'
     DESCRIPTION = 'description'
     EXPIRED_ON = 'expired_on'

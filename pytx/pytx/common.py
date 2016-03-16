@@ -371,7 +371,6 @@ class Common(object):
                     proxies=None,
                     verify=None,
                     metadata=False,
-                    summary=False,
                     summary_params=None):
         """
         Get object connections. Allows you to limit the fields returned for the
@@ -414,7 +413,11 @@ class Common(object):
         :param metadata: Get extra metadata in the response.
         :type metadata: bool
         :param summary: Get a summarized view of the connection.
-        :type summary: bool
+        :type summary_params: map
+        :param summary_params: Parameters to indicate a summary of the
+                               connections is desired and how to compute the
+                               summary.  Use pytx.vocabulary.SummaryConnection
+                               for the available params.
         :returns: Generator, dict, class, str
         """
 
@@ -433,13 +436,8 @@ class Common(object):
             params[t.FIELDS] = ','.join(f.strip() for f in fields)
         if metadata:
             params[t.METADATA] = 1
-        if summary and fields is not None:
-            params[t.FIELDS] = 'summary'
-        if summary:
-            params[t.FIELDS] = params[t.FIELDS] + ',summary'
-        if summary_params is not None and not summary:
-            raise pytxValueError('summary_params cannot be set when summary is False')
         if summary_params:
+            params[t.FIELDS] = params[t.FIELDS] + ',summary'
             params.extend(summary_params)
 
         if request_dict:
