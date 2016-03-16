@@ -412,12 +412,12 @@ class Common(object):
         :type verify: bool, str
         :param metadata: Get extra metadata in the response.
         :type metadata: bool
-        :param summary: Get a summarized view of the connection.
-        :type summary_params: map
+
         :param summary_params: Parameters to indicate a summary of the
                                connections is desired and how to compute the
                                summary.  Use pytx.vocabulary.SummaryConnection
                                for the available params.
+        :type summary_params: map
         :returns: Generator, dict, class, str
         """
 
