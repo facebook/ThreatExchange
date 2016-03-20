@@ -417,7 +417,7 @@ class Common(object):
                                connections is desired and how to compute the
                                summary.  Use pytx.vocabulary.SummaryConnection
                                for the available params.
-        :type summary_params: map
+        :type summary_params: dict
         :returns: Generator, dict, class, str
         """
 
