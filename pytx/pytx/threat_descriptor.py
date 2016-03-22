@@ -27,7 +27,6 @@ class ThreatDescriptor(Common):
         td.SEVERITY,
         td.SHARE_LEVEL,
         td.STATUS,
-        td.SUBMITTER_COUNT,
         td.THREAT_TYPE,
         td.TYPE,
     ]
@@ -50,7 +49,6 @@ class ThreatDescriptor(Common):
         td.SEVERITY,
         td.SHARE_LEVEL,
         td.STATUS,
-        td.SUBMITTER_COUNT,
         td.THREAT_TYPE,
         td.TYPE,
     ]

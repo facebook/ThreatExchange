@@ -83,7 +83,6 @@ class Common(object):
     METADATA = 'metadata'
     SHARE_LEVEL = 'share_level'
     STATUS = 'status'
-    SUBMITTER_COUNT = 'submitter_count'
     VICTIM_COUNT = 'victim_count'
 
 
@@ -133,7 +132,6 @@ class Malware(object):
     SHARE_LEVEL = Common.SHARE_LEVEL
     SSDEEP = 'ssdeep'
     STATUS = Common.STATUS
-    SUBMITTER_COUNT = Common.SUBMITTER_COUNT
     VICTIM_COUNT = Common.VICTIM_COUNT
     XPI = 'xpi'
 
@@ -193,7 +191,6 @@ class MalwareFamilies(object):
     PRIVACY_TYPE = 'privacy_type'
     SAMPLE_COUNT = 'sample_count'
     SHARE_LEVEL = Common.SHARE_LEVEL
-    SUBMITTER_COUNT = 'submitter_count'
 
 
 class Paging(object):
@@ -294,7 +291,6 @@ class ThreatDescriptor(object):
     SEVERITY = 'severity'
     SHARE_LEVEL = Common.SHARE_LEVEL
     STATUS = Common.STATUS
-    SUBMITTER_COUNT = Common.SUBMITTER_COUNT
     THREAT_TYPE = 'threat_type'
     TYPE = 'type'
 
