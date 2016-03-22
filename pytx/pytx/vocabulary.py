@@ -275,6 +275,7 @@ class ThreatDescriptor(object):
     """
 
     ADDED_ON = 'added_on'
+    ATTACK_TYPE = 'attack_type'
     CONFIDENCE = 'confidence'
     DESCRIPTION = 'description'
     EXPIRED_ON = 'expired_on'
@@ -290,6 +291,7 @@ class ThreatDescriptor(object):
     REVIEW_STATUS = 'review_status'
     SEVERITY = 'severity'
     SHARE_LEVEL = Common.SHARE_LEVEL
+    SOURCE_URI = 'source_uri'
     STATUS = Common.STATUS
     THREAT_TYPE = 'threat_type'
     TYPE = 'type'

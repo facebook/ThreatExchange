@@ -11,6 +11,7 @@ class ThreatDescriptor(Common):
 
     _fields = [
         td.ADDED_ON,
+        td.ATTACK_TYPE,
         td.CONFIDENCE,
         td.DESCRIPTION,
         td.EXPIRED_ON,
@@ -26,6 +27,7 @@ class ThreatDescriptor(Common):
         td.REVIEW_STATUS,
         td.SEVERITY,
         td.SHARE_LEVEL,
+        td.SOURCE_URI,
         td.STATUS,
         td.THREAT_TYPE,
         td.TYPE,
@@ -33,6 +35,7 @@ class ThreatDescriptor(Common):
 
     _default_fields = [
         td.ADDED_ON,
+        td.ATTACK_TYPE,
         td.CONFIDENCE,
         td.DESCRIPTION,
         td.EXPIRED_ON,
@@ -48,6 +51,7 @@ class ThreatDescriptor(Common):
         td.REVIEW_STATUS,
         td.SEVERITY,
         td.SHARE_LEVEL,
+        td.SOURCE_URI,
         td.STATUS,
         td.THREAT_TYPE,
         td.TYPE,
