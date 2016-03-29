@@ -64,9 +64,11 @@ class ThreatPrivacyGroup(Common):
             role = t.THREAT_PRIVACY_GROUPS_MEMBER
         else:
             raise pytxValueError('Role must be "owner" or "member"')
+        params = {'fields': ','.join(cls._fields)}
         url = t.URL + t.VERSION + app_id + role
         if full_response:
             return Broker.get(url,
+                              params=params,
                               retries=retries,
                               headers=headers,
                               proxies=proxies,
@@ -74,6 +76,7 @@ class ThreatPrivacyGroup(Common):
         else:
             return Broker.get_generator(cls,
                                         url,
+                                        params=params,
                                         to_dict=dict_generator,
                                         retries=retries,
                                         headers=headers,
