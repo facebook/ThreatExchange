@@ -99,7 +99,7 @@ class ThreatPrivacyGroup(Common):
         :returns: list
         """
 
-        url = self._DETAILS + '/' + tpg.MEMBERS
+        url = self._DETAILS + tpg.MEMBERS
         results = Broker.get(url,
                              retries=retries,
                              headers=headers,
