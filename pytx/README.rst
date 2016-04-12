@@ -40,7 +40,6 @@ Quick Example
    from pytx.access_token import access_token
    from pytx import ThreatDescriptor
    from pytx.vocabulary import ThreatDescriptor as td
-   from pytx.vocabulary import ThreatIndicator as ti
 
    access_token('<app-id>', '<app-secret>')
    results = ThreatDescriptor.objects(text='www.facebook.com')
@@ -51,7 +50,7 @@ Quick Example
    results = ThreatDescriptor.objects(type_='IP_ADDRESS',
                                       text='127.0.0.1')
    for result in results:
-       print result.get(ti.INDICATOR)
+       print result.get(td.INDICATOR)
 
 Documentation
 -------------
