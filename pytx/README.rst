@@ -40,11 +40,12 @@ Quick Example
    from pytx.access_token import access_token
    from pytx import ThreatDescriptor
    from pytx.vocabulary import ThreatDescriptor as td
+   from pytx.vocabulary import ThreatIndicator as ti
 
    access_token('<app-id>', '<app-secret>')
    results = ThreatDescriptor.objects(text='www.facebook.com')
    for result in results:
-       print result.get(td.THREAT_TYPES)
+       print result.get(td.THREAT_TYPE)
 
    # type is type_ because type is a reserved word.
    results = ThreatDescriptor.objects(type_='IP_ADDRESS',
