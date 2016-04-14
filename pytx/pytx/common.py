@@ -1,12 +1,12 @@
-from request import Broker
+from .request import Broker
 
-from vocabulary import Common as c
-from vocabulary import Status as s
-from vocabulary import ThreatExchange as t
-from vocabulary import ThreatDescriptor as td
-from vocabulary import PrivacyType as pt
-from vocabulary import Connection as conn
-from errors import (
+from .vocabulary import Common as c
+from .vocabulary import Status as s
+from .vocabulary import ThreatExchange as t
+from .vocabulary import ThreatDescriptor as td
+from .vocabulary import PrivacyType as pt
+from .vocabulary import Connection as conn
+from .errors import (
     pytxAttributeError,
     pytxValueError
 )
@@ -442,10 +442,10 @@ class Common(object):
                               verify=verify)
         else:
             # Avoid circular imports
-            from malware import Malware
-            from malware_family import MalwareFamily
-            from threat_indicator import ThreatIndicator
-            from threat_descriptor import ThreatDescriptor
+            from .malware import Malware
+            from .malware_family import MalwareFamily
+            from .threat_indicator import ThreatIndicator
+            from .threat_descriptor import ThreatDescriptor
             conns = {
                 conn.DESCRIPTORS: ThreatDescriptor,
                 conn.DROPPED: Malware,

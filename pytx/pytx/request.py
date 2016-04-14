@@ -4,15 +4,15 @@ import urllib
 
 from requests.packages.urllib3.util import Retry
 
-from access_token import get_access_token
-from connection import get_headers, get_proxies, get_verify
-from logger import do_log, log_message
+from .access_token import get_access_token
+from .connection import get_headers, get_proxies, get_verify
+from .logger import do_log, log_message
 
-from vocabulary import ThreatExchange as t
-from vocabulary import Paging as p
-from vocabulary import PagingCursor as pc
-from vocabulary import Response as R
-from errors import (
+from .vocabulary import ThreatExchange as t
+from .vocabulary import Paging as p
+from .vocabulary import PagingCursor as pc
+from .vocabulary import Response as R
+from .errors import (
     pytxFetchError,
     pytxValueError
 )
@@ -79,7 +79,7 @@ class Broker(object):
 
         try:
             int(limit)
-        except ValueError, e:
+        except ValueError as e:
             raise pytxValueError(e)
         return
 
@@ -491,7 +491,7 @@ class Broker(object):
                     has_paging = results.get(t.PAGING, None)
                     before = ''
                     after = ''
-                    if has_paging != None:
+                    if has_paging is not None:
                         before = results[t.PAGING][p.CURSORS].get(pc.BEFORE,
                                                                   'None'
                                                                   )
@@ -505,7 +505,7 @@ class Broker(object):
                                                                     count
                                                                     )
                     )
-                except Exception, e:
+                except Exception as e:
                     log_message('Missing key in response: %s' % e)
             for data in results[t.DATA]:
                 if to_dict:

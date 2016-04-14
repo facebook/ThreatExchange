@@ -1,8 +1,8 @@
-from request import Broker
+from .request import Broker
 
-from vocabulary import ThreatExchange as t
-from vocabulary import ThreatExchangeMember as tem
-from errors import pytxAttributeError
+from .vocabulary import ThreatExchange as t
+from .vocabulary import ThreatExchangeMember as tem
+from .errors import pytxAttributeError
 
 
 class ThreatExchangeMember(object):

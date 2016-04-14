@@ -1,6 +1,6 @@
-from common import Common
-from vocabulary import ThreatIndicator as ti
-from vocabulary import ThreatExchange as t
+from .common import Common
+from .vocabulary import ThreatIndicator as ti
+from .vocabulary import ThreatExchange as t
 
 
 class ThreatIndicator(Common):

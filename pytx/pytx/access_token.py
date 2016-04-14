@@ -1,7 +1,7 @@
 import os
 
-from errors import pytxAccessTokenError
-from vocabulary import ThreatExchange as te
+from .errors import pytxAccessTokenError
+from .vocabulary import ThreatExchange as te
 
 
 __ACCESS_TOKEN = None
@@ -84,7 +84,6 @@ def access_token(app_id=None, app_secret=None, token_file=None):
     :raises: :class:`errors.pytxAccessTokenError`
     """
     global __ACCESS_TOKEN
-
 
     # 1. Use the concatenation of the app_id and app_secret parameters
     if app_id and app_secret:
