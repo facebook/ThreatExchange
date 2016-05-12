@@ -1,4 +1,3 @@
-from contextlib import nested
 from mock import patch
 import pytest
 
@@ -13,21 +12,21 @@ class TestAccessToken:
         assert expected_token == access_token.get_access_token()
 
     def test_no_token(self):
-        with nested(
+        with (
             pytest.raises(pytxAccessTokenError),
             patch('pytx.access_token._find_token_file', return_value=None)
         ):
             access_token.access_token()
 
     def test_only_app_id(self):
-        with nested(
+        with (
             pytest.raises(pytxAccessTokenError),
             patch('pytx.access_token._find_token_file', return_value=None)
         ):
             access_token.access_token(app_id='app_id')
 
     def test_only_app_secret(self):
-        with nested(
+        with (
             pytest.raises(pytxAccessTokenError),
             patch('pytx.access_token._find_token_file', return_value=None)
         ):
@@ -44,7 +43,7 @@ class TestAccessToken:
         expected_token = 'app_id|app_secret'
         file_contents = 'app_id|app_secret'
 
-        with nested(
+        with (
             patch('pytx.access_token._find_token_file', return_value='/foobar/mocked/away'),
             patch('pytx.access_token._read_token_file', return_value=file_contents)
         ):
@@ -55,7 +54,7 @@ class TestAccessToken:
         expected_token = 'app_id|app_secret'
         file_contents = 'app_id|app_secret'
 
-        with nested(
+        with (
             patch('pytx.access_token._find_token_file', return_value=None),
             patch('pytx.access_token._read_token_file', return_value=file_contents)
         ):
