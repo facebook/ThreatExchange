@@ -3,3 +3,4 @@ coverage
 mock
 pre-commit
 pytest
+python-dateutil
