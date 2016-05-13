@@ -245,7 +245,7 @@ class Common(object):
                 status=status,
                 review_status=review_status,
                 share_level=share_level,
-                sort_order=sort_order
+                sort_order=sort_order,
             )
         if request_dict:
             return Broker.request_dict('GET',
