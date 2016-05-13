@@ -1,6 +1,5 @@
 import pytest
-
-from mock import patch
+import mock
 
 from pytx import access_token
 from pytx.errors import pytxAccessTokenError
@@ -12,45 +11,41 @@ class TestAccessToken:
     def verify_token(self, expected_token):
         assert expected_token == access_token.get_access_token()
 
+    @mock.patch('pytx.access_token._find_token_file', return_value=None)
     def test_no_token(self):
-        pytest.raises(pytxAccessTokenError)
-        patch('pytx.access_token._find_token_file', return_value=None)
-        access_token.access_token()
+        with pytest.raises(pytxAccessTokenError):
+            access_token.access_token()
 
+    @mock.patch('pytx.access_token._find_token_file', return_value=None)
     def test_only_app_id(self):
-        pytest.raises(pytxAccessTokenError)
-        patch('pytx.access_token._find_token_file', return_value=None)
-        access_token.access_token(app_id='app_id')
+        with pytest.raises(pytxAccessTokenError):
+            access_token.access_token(app_id='app_id')
 
+    @mock.patch('pytx.access_token._find_token_file', return_value=None)
     def test_only_app_secret(self):
-        pytest.raises(pytxAccessTokenError)
-        patch('pytx.access_token._find_token_file', return_value=None)
-        access_token.access_token(app_secret='app_secret')
+        with pytest.raises(pytxAccessTokenError):
+            access_token.access_token(app_secret='app_secret')
 
+    @mock.patch('pytx.access_token._find_token_file', return_value=None)
     def test_app_id_and_secret(self):
         expected_token = 'app_id|app_secret'
+        access_token.access_token(app_id='app_id', app_secret='app_secret')
+        self.verify_token(expected_token)
 
-        with patch('pytx.access_token._find_token_file', return_value=None):
-            access_token.access_token(app_id='app_id', app_secret='app_secret')
-            self.verify_token(expected_token)
-
+    @mock.patch('pytx.access_token._find_token_file',
+                return_value='/foobar/mocked/away')
+    @mock.patch('pytx.access_token._read_token_file',
+                return_value='app_id|app_secret')
     def test_implicit_token_file(self):
         expected_token = 'app_id|app_secret'
-        file_contents = 'app_id|app_secret'
-
-        patch('pytx.access_token._find_token_file',
-              return_value='/foobar/mocked/away')
-        patch('pytx.access_token._read_token_file',
-              return_value=file_contents)
         access_token.access_token(token_file='/foobar/mocked/away')
         self.verify_token(expected_token)
 
+    @mock.patch('pytx.access_token._find_token_file', return_value=None)
+    @mock.patch('pytx.access_token._read_token_file',
+                return_value='app_id|app_secret')
     def test_explicit_token_file(self):
         expected_token = 'app_id|app_secret'
-        file_contents = 'app_id|app_secret'
-
-        patch('pytx.access_token._find_token_file', return_value=None)
-        patch('pytx.access_token._read_token_file', return_value=file_contents)
         access_token.access_token(token_file='/foobar/mocked/away')
         self.verify_token(expected_token)
 
