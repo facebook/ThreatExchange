@@ -13,7 +13,7 @@ with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
 
 setup(
     name='pytx',
-    version='0.4.2',
+    version='0.5.0',
     description='Python Library for Facebook ThreatExchange',
     long_description=long_description,
     author='Mike Goffin',
@@ -31,7 +31,7 @@ setup(
     packages=find_packages(exclude=['docs', 'tests']),
     install_requires=[
         'requests[security]==2.7.0',
-        'python-dateutil==1.5',
+        'python-dateutil==2.5.2',
     ],
     scripts=['scripts/get_compromised_credentials.py',
              'scripts/get_indicators.py',
