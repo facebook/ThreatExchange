@@ -12,22 +12,22 @@ class TestAccessToken:
         assert expected_token == access_token.get_access_token()
 
     @mock.patch('pytx.access_token._find_token_file', return_value=None)
-    def test_no_token(self):
+    def test_no_token(self, mock_patch):
         with pytest.raises(pytxAccessTokenError):
             access_token.access_token()
 
     @mock.patch('pytx.access_token._find_token_file', return_value=None)
-    def test_only_app_id(self):
+    def test_only_app_id(self, mock_patch):
         with pytest.raises(pytxAccessTokenError):
             access_token.access_token(app_id='app_id')
 
     @mock.patch('pytx.access_token._find_token_file', return_value=None)
-    def test_only_app_secret(self):
+    def test_only_app_secret(self, mock_patch):
         with pytest.raises(pytxAccessTokenError):
             access_token.access_token(app_secret='app_secret')
 
     @mock.patch('pytx.access_token._find_token_file', return_value=None)
-    def test_app_id_and_secret(self):
+    def test_app_id_and_secret(self, mock_patch):
         expected_token = 'app_id|app_secret'
         access_token.access_token(app_id='app_id', app_secret='app_secret')
         self.verify_token(expected_token)
@@ -36,7 +36,7 @@ class TestAccessToken:
                 return_value='/foobar/mocked/away')
     @mock.patch('pytx.access_token._read_token_file',
                 return_value='app_id|app_secret')
-    def test_implicit_token_file(self):
+    def test_implicit_token_file(self, mock_patch, mock_patch_two):
         expected_token = 'app_id|app_secret'
         access_token.access_token(token_file='/foobar/mocked/away')
         self.verify_token(expected_token)
@@ -44,7 +44,7 @@ class TestAccessToken:
     @mock.patch('pytx.access_token._find_token_file', return_value=None)
     @mock.patch('pytx.access_token._read_token_file',
                 return_value='app_id|app_secret')
-    def test_explicit_token_file(self):
+    def test_explicit_token_file(self, mock_patch, mock_patch_two):
         expected_token = 'app_id|app_secret'
         access_token.access_token(token_file='/foobar/mocked/away')
         self.verify_token(expected_token)
