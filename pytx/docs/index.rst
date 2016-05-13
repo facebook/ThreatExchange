@@ -26,6 +26,7 @@ Contents:
    pytx.threat_exchange_member
    pytx.threat_indicator
    pytx.threat_privacy_group
+   pytx.threat_tag
    pytx.utils
    pytx.vocabulary
 

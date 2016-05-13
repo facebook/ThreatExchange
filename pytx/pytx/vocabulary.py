@@ -18,6 +18,7 @@ class ThreatExchange(object):
     THREAT_PRIVACY_GROUPS = 'threat_privacy_groups/'
     THREAT_PRIVACY_GROUPS_MEMBER = 'threat_privacy_groups_member/'
     THREAT_PRIVACY_GROUPS_OWNER = 'threat_privacy_groups_owner/'
+    THREAT_TAGS = 'threat_tags/'
 
     FIELDS = 'fields'
     INCLUDE_EXPIRED = 'include_expired'
@@ -132,6 +133,7 @@ class Malware(object):
     SHARE_LEVEL = Common.SHARE_LEVEL
     SSDEEP = 'ssdeep'
     STATUS = Common.STATUS
+    TAGS = 'tags'
     VICTIM_COUNT = Common.VICTIM_COUNT
     XPI = 'xpi'
 
@@ -293,8 +295,21 @@ class ThreatDescriptor(object):
     SHARE_LEVEL = Common.SHARE_LEVEL
     SOURCE_URI = 'source_uri'
     STATUS = Common.STATUS
+    TAGS = 'tags'
     THREAT_TYPE = 'threat_type'
     TYPE = 'type'
+
+
+class ThreatTag(object):
+
+    """
+    Vocabulary specific to searching for, adding, or modifying a Threat
+    Tag object.
+    """
+
+    ID = Common.ID
+    TAGGED_OBJECTS = 'tagged_objects'
+    TEXT = 'text'
 
 
 class Attack(object):
