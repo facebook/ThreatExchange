@@ -29,6 +29,7 @@ class ThreatDescriptor(Common):
         td.SHARE_LEVEL,
         td.SOURCE_URI,
         td.STATUS,
+        td.TAGS,
         td.THREAT_TYPE,
         td.TYPE,
     ]
@@ -53,6 +54,7 @@ class ThreatDescriptor(Common):
         td.SHARE_LEVEL,
         td.SOURCE_URI,
         td.STATUS,
+        td.TAGS,
         td.THREAT_TYPE,
         td.TYPE,
     ]
