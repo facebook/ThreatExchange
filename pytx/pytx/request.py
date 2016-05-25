@@ -171,7 +171,8 @@ class Broker(object):
                              owner=None,
                              status=None,
                              review_status=None,
-                             share_level=None):
+                             share_level=None,
+                             sort_order=None):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -208,6 +209,8 @@ class Broker(object):
         :type review_status: str
         :param share_level: The share level to limit to.
         :type share_level: str
+        :param sort_order: The sort order for results.
+        :type sort_order: str
         :returns: dict
         """
 
@@ -247,6 +250,8 @@ class Broker(object):
             params[t.REVIEW_STATUS] = review_status
         if share_level:
             params[t.SHARE_LEVEL] = share_level
+        if sort_order in (t.ASCENDING, t.DESCENDING):
+            params[t.SORT_ORDER] = sort_order
         return params
 
     @classmethod

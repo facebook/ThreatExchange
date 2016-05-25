@@ -153,6 +153,7 @@ class Common(object):
                 status=None,
                 review_status=None,
                 share_level=None,
+                sort_order=None,
                 __raw__=None,
                 full_response=False,
                 dict_generator=False,
@@ -197,6 +198,8 @@ class Common(object):
         :type review_status: str
         :param share_level: The share level to limit to.
         :type share_level: str
+        :param sort_order: The sort order for results.
+        :type sort_order: str
         :param __raw__: Provide a dictionary to force as GET parameters.
                         Overrides all other arguments.
         :type __raw__: dict
@@ -241,7 +244,8 @@ class Common(object):
                 owner=owner,
                 status=status,
                 review_status=review_status,
-                share_level=share_level
+                share_level=share_level,
+                sort_order=sort_order,
             )
         if request_dict:
             return Broker.request_dict('GET',

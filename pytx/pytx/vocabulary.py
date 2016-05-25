@@ -5,7 +5,7 @@ class ThreatExchange(object):
     """
 
     URL = 'https://graph.facebook.com/'
-    VERSION = 'v2.5/'
+    VERSION = 'v2.6/'
     ACCESS_TOKEN = 'access_token'
     DEFAULT_LIMIT = 25
 
@@ -30,6 +30,7 @@ class ThreatExchange(object):
     SAMPLE_TYPE = 'sample_type'
     SHARE_LEVEL = 'share_level'
     SINCE = 'since'
+    SORT_ORDER = 'sort_order'
     STATUS = 'status'
     STRICT_TEXT = 'strict_text'
     TEXT = 'text'
@@ -40,6 +41,9 @@ class ThreatExchange(object):
     DATA = 'data'
     PAGING = 'paging'
     NEXT = 'next'
+
+    ASCENDING = 'ASCENDING'
+    DESCENDING = 'DESCENDING'
 
     METADATA = 'metadata'
 
@@ -329,8 +333,8 @@ class Attack(object):
     EMAIL_SPAM = 'EMAIL_SPAM'
     EXPLICIT_CONTENT = 'EXPLICIT_CONTENT'
     EXPLOIT_KIT = 'EXPLOIT_KIT'
-    FAKE_ACCOUNTS = 'FAKE_ACCOUNTS'
-    FINANCIALS = 'FINANCIALS'
+    FAKE_ACCOUNTS = 'FAKE_ACCOUNT'
+    FINANCIALS = 'FINANCIAL'
     IP_INFRINGEMENT = 'IP_INFRINGEMENT'
     MALICIOUS_APP = 'MALICIOUS_APP'
     MALICIOUS_NAMESERVER = 'MALICIOUS_NAMESERVER'
