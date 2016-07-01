@@ -18,8 +18,6 @@ module ThreatExchange
     end
 
     def malware_analyses(params={})
-      params = params.merge(access_token: @access_token)
-
       result = get "#{@baseurl}/malware_analyses", params
       data = result['data']
       cursor = result.fetch('paging', {}).fetch('cursor', {}).fetch('after', nil)
@@ -38,8 +36,6 @@ module ThreatExchange
     end
 
     def threat_indicators(params={})
-      params = params.merge(access_token: @access_token)
-
       result = get "#{@baseurl}/threat_indicators", params
 
       data = result['data']
@@ -58,34 +54,26 @@ module ThreatExchange
     end
 
     def indicator_pq(params={})
-      params = params.merge(access_token: @access_token)
-
       get "#{@baseurl}/#{params[:id]}/", params
     end
 
     def members(params={})
-      params = params.merge(access_token: @access_token)
-
       get "#{@baseurl}/threat_exchange_members/", params
     end
 
     def new_relation(params={})
-      params = params.merge(access_token: @access_token)
       id = params.delete(:id)
 
       post "#{@baseurl}/#{id}/related", params
     end
 
     def remove_relation(params={})
-      params = params.merge(access_token: @access_token)
       id = params.delete(:id)
 
       delete "#{@baseurl}/#{id}/related/", params
     end
 
     def new_ioc(params={})
-      params = params.merge(access_token: @access_token)
-
       if params.has_key?(:privacy_type)
         post "#{@baseurl}/threat_indicators", params
       else
@@ -94,31 +82,30 @@ module ThreatExchange
     end
 
     def update_ioc(params={})
-      params = params.merge(access_token: @access_token)
-      id = params.delete(:id)
+       id = params.delete(:id)
 
-      result = post "#{@baseurl}/#{id}", params
+      result = post "#{@baseurl}/#{id}", params.merge(access_token: @access_token)
     end
 
     ##
     ## Request Methods
     ##
     private def get(url, params={})
-      response = RestClient.get url, params: params
+      response = RestClient.get url, params: params.merge(access_token: @access_token)
       JSON.parse(response)
     rescue => e
       puts e.inspect
     end
 
     private def post(url, body={})
-      response = RestClient.post url, body: body
+      response = RestClient.post url, body: body.merge(access_token: @access_token)
       JSON.parse(response)
     rescue => e
       puts e.inspect
     end
 
     private def delete(url, params={})
-      response = RestClient.delete url, params: params
+      response = RestClient.delete url, params: params.merge(access_token: @access_token)
       JSON.parse(response)
     rescue => e
       puts e.inspect
