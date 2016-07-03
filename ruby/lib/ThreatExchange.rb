@@ -1,6 +1,7 @@
 require "ThreatExchange/version"
 require "rest-client"
 require "json"
+require 'logger'
 module ThreatExchange
 
   # The ThreatExchange::Client object handles all interactions
@@ -12,19 +13,19 @@ module ThreatExchange
 
     attr_accessor :access_token
 
-    def initialize(access_token=nil)
+    def initialize(access_token = nil, logfile = STDOUT)
       @access_token = access_token
       @baseurl = 'https://graph.facebook.com'
+      @logger = Logger.new(logfile)
     end
 
-    def malware_analyses(params={})
-      result = get "#{@baseurl}/malware_analyses", params
+    def malware_analyses(params = {})
+      result = get("#{@baseurl}/malware_analyses", params)
       data = result['data']
       cursor = result.fetch('paging', {}).fetch('cursor', {}).fetch('after', nil)
 
       until cursor.nil?
-        params[:after] = cursor
-        result = get "#{@baseurl}/malware_analyses", params
+        result = get("#{@baseurl}/malware_analyses", params.merge(after: cursor))
         if result['data'].empty?
           cursor = nil
         else
@@ -32,17 +33,18 @@ module ThreatExchange
           cursor = result.fetch('paging', {}).fetch('cursor', {}).fetch('after', nil)
         end
       end
-      return data
+
+      data
     end
 
-    def threat_indicators(params={})
-      result = get "#{@baseurl}/threat_indicators", params
+    def threat_indicators(params = {})
+      result = get("#{@baseurl}/threat_indicators", params)
 
       data = result['data']
 
       while cursor = result.fetch('paging', {}).fetch('cursors', {}).fetch('after', nil)
-        params[:after] = cursor
-        result = get "#{@baseurl}/threat_indicators",
+        params_with_cursor = (params || {}).merge(after: cursor)
+        result = get("#{@baseurl}/threat_indicators", params_with_cursor)
         if result['data'].empty?
           cursor = nil
         else
@@ -50,65 +52,63 @@ module ThreatExchange
           cursor = result.fetch('paging', {}).fetch('cursors', {}).fetch('after', nil)
         end
       end
-      return data
+
+      data
     end
 
-    def indicator_pq(params={})
-      get "#{@baseurl}/#{params[:id]}/", params
+    def indicator_pq(params = {})
+      get("#{@baseurl}/#{params[:id]}/", params)
     end
 
-    def members(params={})
-      get "#{@baseurl}/threat_exchange_members/", params
+    def members(params = {})
+      get("#{@baseurl}/threat_exchange_members/", params)
     end
 
-    def new_relation(params={})
-      id = params.delete(:id)
-
-      post "#{@baseurl}/#{id}/related", params
+    def new_relation(params = {})
+      post("#{@baseurl}/#{params[:id]}/related", params)
     end
 
-    def remove_relation(params={})
-      id = params.delete(:id)
-
-      delete "#{@baseurl}/#{id}/related/", params
+    def remove_relation(params = {})
+      delete("#{@baseurl}/#{params[:id]}/related/", params)
     end
 
-    def new_ioc(params={})
+    def new_ioc(params = {})
       if params.has_key?(:privacy_type)
-        post "#{@baseurl}/threat_indicators", params
+        post("#{@baseurl}/threat_indicators", params)
       else
-        puts "You must set a privacy_type in your query"
+        raise ArgumentError.new("You must set a privacy_type in your query")
       end
     end
 
-    def update_ioc(params={})
-       id = params.delete(:id)
-
-      result = post "#{@baseurl}/#{id}", params.merge(access_token: @access_token)
+    def update_ioc(params = {})
+      result = post("#{@baseurl}/#{params[:id]}", params.merge(access_token: @access_token))
     end
 
     ##
     ## Request Methods
     ##
-    private def get(url, params={})
-      response = RestClient.get url, params: params.merge(access_token: @access_token)
+    private def get(url, params = {})
+      params_with_access_token = (params || {}).merge(access_token: @access_token)
+      response = RestClient.get(url, params: params_with_access_token)
       JSON.parse(response)
     rescue => e
-      puts e.inspect
+      @logger.info e.inspect
     end
 
-    private def post(url, body={})
-      response = RestClient.post url, body: body.merge(access_token: @access_token)
+    private def post(url, body = {})
+      body_with_access_token = (body || {}).merge(access_token: @access_token)
+      response = RestClient.post(url, body: body_with_access_token)
       JSON.parse(response)
     rescue => e
-      puts e.inspect
+      @logger.info e.inspect
     end
 
-    private def delete(url, params={})
-      response = RestClient.delete url, params: params.merge(access_token: @access_token)
+    private def delete(url, params = {})
+      params_with_access_token = (params || {}).merge(access_token: @access_token)
+      response = RestClient.delete(url, params: params_with_access_token)
       JSON.parse(response)
     rescue => e
-      puts e.inspect
+      @logger.info e.inspect
     end
   end
 end

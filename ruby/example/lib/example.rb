@@ -2,12 +2,14 @@ def parse(dataset)
   printf "\nResults: \n"
   if dataset.kind_of?(String)
     puts dataset
-  else
+  elsif dataset.kind_of?(Hash)
     unless dataset.empty?
       dataset.each { |data| p data }
     else
       puts 'No data found.'
     end
+  else
+    puts dataset
   end
 end
 
