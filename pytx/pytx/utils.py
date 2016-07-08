@@ -1,6 +1,7 @@
 import dateutil.parser
 import datetime
 
+
 def convert_to_header(field):
     """
     Converts a ThreatExchange field name to a CSV-writeable string. Also handles
@@ -10,12 +11,13 @@ def convert_to_header(field):
     :returns: str
     """
     if (isinstance(field, basestring)):
-        if field == "ID":
-            return "_ID" # Trailing _ so as not to confuse Excel
+        if field == 'ID':
+            return '_ID'  # Trailing _ so as not to confuse Excel
         else:
             return field
     elif (isinstance(field, list)):
-        return "_".join(field)
+        return '_'.join(field)
+
 
 def get_data_field(field, result):
     """
@@ -34,13 +36,14 @@ def get_data_field(field, result):
             field_value = result.get(field[0])
             for i in range(1, len(field)):
                 field_value = (field_value.get(field[i])
-                    if field[i] in field_value.keys() else "")
+                               if field[i] in field_value.keys() else '')
 
         field_value = (field_value if type(field_value) == int
-            else (field_value.encode('utf-8') if field_value else ""))
+                       else (field_value.encode('utf-8') if field_value else ''))
         return field_value
     except:
         raise
+
 
 def get_time_params(end_date, day_counter, format_):
     """

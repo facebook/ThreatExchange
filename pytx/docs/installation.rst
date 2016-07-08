@@ -21,9 +21,10 @@ You might also want to consider using a virtualenv_.
 Dependencies
 ------------
 
-The pytx library is developed on Python 2.7 and tested against Python 2.7.
-Besides the Python Standard Library, pytx relies on the following Python
+The pytx library is developed on Python 2.7 and tested against Python 2.7 and
+3.x. Besides the Python Standard Library, pytx relies on the following Python
 libraries which can be installed with ``pip`` or by manually downloading the
 package from PyPI:
 
 * requests - Python HTTP for Humans.
+* python-dateutil - Extensions to the standard Python datetime module.

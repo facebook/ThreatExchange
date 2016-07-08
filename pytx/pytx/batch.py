@@ -1,11 +1,11 @@
 import json
 
-from access_token import get_access_token
-from request import Broker
+from .access_token import get_access_token
+from .request import Broker
 
-from vocabulary import Batch as b
-from vocabulary import ThreatExchange as t
-from errors import (
+from .vocabulary import Batch as b
+from .vocabulary import ThreatExchange as t
+from .errors import (
     pytxFetchError
 )
 

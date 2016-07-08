@@ -1,6 +1,6 @@
-from common import Common
-from vocabulary import ThreatDescriptor as td
-from vocabulary import ThreatExchange as t
+from .common import Common
+from .vocabulary import ThreatDescriptor as td
+from .vocabulary import ThreatExchange as t
 
 
 class ThreatDescriptor(Common):
@@ -29,7 +29,7 @@ class ThreatDescriptor(Common):
         td.SHARE_LEVEL,
         td.SOURCE_URI,
         td.STATUS,
-        td.SUBMITTER_COUNT,
+        td.TAGS,
         td.THREAT_TYPE,
         td.TYPE,
     ]
@@ -54,7 +54,7 @@ class ThreatDescriptor(Common):
         td.SHARE_LEVEL,
         td.SOURCE_URI,
         td.STATUS,
-        td.SUBMITTER_COUNT,
+        td.TAGS,
         td.THREAT_TYPE,
         td.TYPE,
     ]

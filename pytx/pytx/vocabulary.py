@@ -5,7 +5,7 @@ class ThreatExchange(object):
     """
 
     URL = 'https://graph.facebook.com/'
-    VERSION = 'v2.5/'
+    VERSION = 'v2.6/'
     ACCESS_TOKEN = 'access_token'
     DEFAULT_LIMIT = 25
 
@@ -18,6 +18,7 @@ class ThreatExchange(object):
     THREAT_PRIVACY_GROUPS = 'threat_privacy_groups/'
     THREAT_PRIVACY_GROUPS_MEMBER = 'threat_privacy_groups_member/'
     THREAT_PRIVACY_GROUPS_OWNER = 'threat_privacy_groups_owner/'
+    THREAT_TAGS = 'threat_tags/'
 
     FIELDS = 'fields'
     INCLUDE_EXPIRED = 'include_expired'
@@ -29,6 +30,7 @@ class ThreatExchange(object):
     SAMPLE_TYPE = 'sample_type'
     SHARE_LEVEL = 'share_level'
     SINCE = 'since'
+    SORT_ORDER = 'sort_order'
     STATUS = 'status'
     STRICT_TEXT = 'strict_text'
     TEXT = 'text'
@@ -39,6 +41,9 @@ class ThreatExchange(object):
     DATA = 'data'
     PAGING = 'paging'
     NEXT = 'next'
+
+    ASCENDING = 'ASCENDING'
+    DESCENDING = 'DESCENDING'
 
     METADATA = 'metadata'
 
@@ -84,7 +89,6 @@ class Common(object):
     SHARE_LEVEL = 'share_level'
     SUMMARY = 'summary'
     STATUS = 'status'
-    SUBMITTER_COUNT = 'submitter_count'
     VICTIM_COUNT = 'victim_count'
 
 
@@ -145,7 +149,7 @@ class Malware(object):
     SHARE_LEVEL = Common.SHARE_LEVEL
     SSDEEP = 'ssdeep'
     STATUS = Common.STATUS
-    SUBMITTER_COUNT = Common.SUBMITTER_COUNT
+    TAGS = 'tags'
     VICTIM_COUNT = Common.VICTIM_COUNT
     XPI = 'xpi'
 
@@ -205,7 +209,6 @@ class MalwareFamilies(object):
     PRIVACY_TYPE = 'privacy_type'
     SAMPLE_COUNT = 'sample_count'
     SHARE_LEVEL = Common.SHARE_LEVEL
-    SUBMITTER_COUNT = 'submitter_count'
 
 
 class Paging(object):
@@ -308,7 +311,7 @@ class ThreatDescriptor(object):
     SHARE_LEVEL = Common.SHARE_LEVEL
     SOURCE_URI = 'source_uri'
     STATUS = Common.STATUS
-    SUBMITTER_COUNT = Common.SUBMITTER_COUNT
+    TAGS = 'tags'
     THREAT_TYPE = 'threat_type'
     TYPE = 'type'
 
@@ -323,6 +326,18 @@ class DescriptorPreference(object):
     MINE_OR_NEWEST = 'MINE_OR_NEWEST'
     NEWEST = 'NEWEST'
     OLDEST = 'OLDEST'
+
+class ThreatTag(object):
+
+    """
+    Vocabulary specific to searching for, adding, or modifying a Threat
+    Tag object.
+    """
+
+    ID = Common.ID
+    TAGGED_OBJECTS = 'tagged_objects'
+    TEXT = 'text'
+
 
 class Attack(object):
 
@@ -341,8 +356,8 @@ class Attack(object):
     EMAIL_SPAM = 'EMAIL_SPAM'
     EXPLICIT_CONTENT = 'EXPLICIT_CONTENT'
     EXPLOIT_KIT = 'EXPLOIT_KIT'
-    FAKE_ACCOUNTS = 'FAKE_ACCOUNTS'
-    FINANCIALS = 'FINANCIALS'
+    FAKE_ACCOUNTS = 'FAKE_ACCOUNT'
+    FINANCIALS = 'FINANCIAL'
     IP_INFRINGEMENT = 'IP_INFRINGEMENT'
     MALICIOUS_APP = 'MALICIOUS_APP'
     MALICIOUS_NAMESERVER = 'MALICIOUS_NAMESERVER'

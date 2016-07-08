@@ -1,9 +1,9 @@
-from access_token import get_app_id
-from common import Common
-from request import Broker
-from vocabulary import ThreatPrivacyGroup as tpg
-from vocabulary import ThreatExchange as t
-from errors import pytxValueError
+from .access_token import get_app_id
+from .common import Common
+from .request import Broker
+from .vocabulary import ThreatPrivacyGroup as tpg
+from .vocabulary import ThreatExchange as t
+from .errors import pytxValueError
 
 
 class ThreatPrivacyGroup(Common):
@@ -64,9 +64,11 @@ class ThreatPrivacyGroup(Common):
             role = t.THREAT_PRIVACY_GROUPS_MEMBER
         else:
             raise pytxValueError('Role must be "owner" or "member"')
+        params = {'fields': ','.join(cls._fields)}
         url = t.URL + t.VERSION + app_id + role
         if full_response:
             return Broker.get(url,
+                              params=params,
                               retries=retries,
                               headers=headers,
                               proxies=proxies,
@@ -74,6 +76,7 @@ class ThreatPrivacyGroup(Common):
         else:
             return Broker.get_generator(cls,
                                         url,
+                                        params=params,
                                         to_dict=dict_generator,
                                         retries=retries,
                                         headers=headers,
@@ -99,7 +102,7 @@ class ThreatPrivacyGroup(Common):
         :returns: list
         """
 
-        url = self._DETAILS + '/' + tpg.MEMBERS
+        url = self._DETAILS + tpg.MEMBERS
         results = Broker.get(url,
                              retries=retries,
                              headers=headers,

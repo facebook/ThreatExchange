@@ -44,13 +44,13 @@ Quick Example
    access_token('<app-id>', '<app-secret>')
    results = ThreatDescriptor.objects(text='www.facebook.com')
    for result in results:
-       print result.get(td.THREAT_TYPES)
+       print result.get(td.THREAT_TYPE)
 
    # type is type_ because type is a reserved word.
    results = ThreatDescriptor.objects(type_='IP_ADDRESS',
                                       text='127.0.0.1')
    for result in results:
-       print result.get(ti.INDICATOR)
+       print result.get(td.INDICATOR)
 
 Documentation
 -------------

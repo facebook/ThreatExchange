@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
@@ -11,9 +13,21 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     description = f.read()
 
+install_requires = ['python-dateutil']
+
+# For Python < 2.7.9, requests[security] is needed which installs extra packages
+# for more secure connections. Python >= 2.7.9 doesn't need this.
+if (sys.version_info[0] == 3 or
+    (sys.version_info[0] == 2 and
+     sys.version_info[1] == 7 and
+     sys.version_info[2] >= 9)):
+    install_requires.append('requests')
+else:
+    install_requires.append('requests[security]')
+
 setup(
     name='pytx',
-    version='0.4.0',
+    version='0.5.1',
     description='Python Library for Facebook ThreatExchange',
     long_description=long_description,
     author='Mike Goffin',
@@ -29,10 +43,7 @@ setup(
     keywords='facebook threatexchange',
     url='https://www.github.com/facebook/ThreatExchange',
     packages=find_packages(exclude=['docs', 'tests']),
-    install_requires=[
-        'requests[security]==2.7.0',
-        'python-dateutil==1.5',
-        ],
+    install_requires=install_requires,
     scripts=['scripts/get_compromised_credentials.py',
              'scripts/get_indicators.py',
              'scripts/get_members.py',
