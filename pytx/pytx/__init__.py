@@ -13,6 +13,13 @@ from .threat_indicator import ThreatIndicator
 from .threat_privacy_group import ThreatPrivacyGroup
 from .threat_tag import ThreatTag
 
+
+__title__ = 'pytx'
+__version__ = '0.5.2'
+__author__ = 'Mike Goffin'
+__license__ = 'BSD'
+__copyright__ = 'Copyright 2016 Mike Goffin'
+
 __all__ = [
     'access_token',
     'connection',

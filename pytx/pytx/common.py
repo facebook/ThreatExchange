@@ -383,10 +383,10 @@ class Common(object):
         classes like so:
 
             foo = ThreatIndicator(id='1234')
-            foo.connections(connections='foo')
+            foo.connections(connection='foo')
 
-            foo = ThreatIndicator.connetions(id='1234'
-                                             connections='foo')
+            foo = ThreatIndicator.connections(id='1234'
+                                             connection='foo')
 
         :param id: The ID of the object to get connections for if the class is
                    not instantiated.
@@ -774,3 +774,35 @@ class Common(object):
                              headers=headers,
                              proxies=proxies,
                              verify=verify)
+
+    def react(self,
+              reaction,
+              retries=None,
+              headers=None,
+              proxies=None,
+              verify=None):
+        """
+        React to this object.
+
+        :param reaction: The reaction to provide.
+        :type reaction: str
+        :param retries: Number of retries to submit before stopping.
+        :type retries: int
+        :param headers: header info for requests.
+        :type headers: dict
+        :param proxies: proxy info for requests.
+        :type proxies: dict
+        :param verify: verify info for requests.
+        :type verify: bool, str
+        :returns: dict (using json.loads())
+        """
+
+        params = {
+            t.REACTIONS: reaction
+        }
+        return Broker.post(self._DETAILS,
+                           params=params,
+                           retries=retries,
+                           headers=headers,
+                           proxies=proxies,
+                           verify=verify)

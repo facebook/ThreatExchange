@@ -11,6 +11,7 @@ class ThreatTag(Common):
 
     _fields = [
         tt.ID,
+        tt.OBJECTS,
         tt.TAGGED_OBJECTS,
         tt.TEXT,
     ]
