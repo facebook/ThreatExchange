@@ -130,7 +130,6 @@ class Malware(object):
     METADATA = Common.METADATA
     PASSWORD = 'password'
     PE_RICH_HEADER = 'pe_rich_header'
-    PRIVACY_MEMBERS = 'privacy_members'
     PRIVACY_TYPE = 'privacy_type'
     SAMPLE = 'sample'
     SAMPLE_SIZE = 'sample_size'
@@ -198,7 +197,6 @@ class MalwareFamilies(object):
     ID = Common.ID
     MALICIOUS = 'malicious'
     NAME = 'name'
-    PRIVACY_MEMBERS = 'privacy_members'
     PRIVACY_TYPE = 'privacy_type'
     SAMPLE_COUNT = 'sample_count'
     SHARE_LEVEL = Common.SHARE_LEVEL
@@ -233,9 +231,9 @@ class Reaction(object):
 
     HELPFUL = 'HELPFUL'
     NOT_HELPFUL = 'NOT_HELPFUL'
-    WANT_MORE_INFO = 'WANT_MORE_INFO'
-    SAW_THIS_TOO = 'SAW_THIS_TOO'
     OUTDATED = 'OUTDATED'
+    SAW_THIS_TOO = 'SAW_THIS_TOO'
+    WANT_MORE_INFO = 'WANT_MORE_INFO'
 
 
 class Response(object):
