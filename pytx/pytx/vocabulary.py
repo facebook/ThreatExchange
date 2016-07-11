@@ -52,6 +52,7 @@ class ThreatExchange(object):
     DEC_TOTAL = 1
 
     # POST
+    REACTIONS = 'reactions'
     RELATED = 'related'
     RELATED_ID = 'related_id'
 
@@ -86,6 +87,7 @@ class Common(object):
     ADDED_ON = 'added_on'
     ID = 'id'
     METADATA = 'metadata'
+    MY_REACTIONS = 'my_reactions'
     SHARE_LEVEL = 'share_level'
     STATUS = 'status'
     VICTIM_COUNT = 'victim_count'
@@ -128,6 +130,7 @@ class Malware(object):
     METADATA = Common.METADATA
     PASSWORD = 'password'
     PE_RICH_HEADER = 'pe_rich_header'
+    PRIVACY_TYPE = 'privacy_type'
     SAMPLE = 'sample'
     SAMPLE_SIZE = 'sample_size'
     SAMPLE_SIZE_COMPRESSED = 'sample_size_compressed'
@@ -220,6 +223,19 @@ class PagingCursor(object):
     AFTER = 'after'
 
 
+class Reaction(object):
+
+    """
+    Vocabulary for describing a reaction.
+    """
+
+    HELPFUL = 'HELPFUL'
+    NOT_HELPFUL = 'NOT_HELPFUL'
+    OUTDATED = 'OUTDATED'
+    SAW_THIS_TOO = 'SAW_THIS_TOO'
+    WANT_MORE_INFO = 'WANT_MORE_INFO'
+
+
 class Response(object):
 
     """
@@ -289,6 +305,7 @@ class ThreatDescriptor(object):
     INDICATOR = 'indicator'
     LAST_UPDATED = 'last_updated'
     METADATA = Common.METADATA
+    MY_REACTIONS = Common.MY_REACTIONS
     OWNER = 'owner'
     PRECISION = 'precision'
     PRIVACY_MEMBERS = 'privacy_members'
@@ -312,6 +329,7 @@ class ThreatTag(object):
     """
 
     ID = Common.ID
+    OBJECTS = 'objects'
     TAGGED_OBJECTS = 'tagged_objects'
     TEXT = 'text'
 
