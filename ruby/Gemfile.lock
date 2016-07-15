@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ThreatExchange (0.0.10)
+    ThreatExchange (1.0.0)
       json
       rest-client
 
@@ -34,4 +34,4 @@ DEPENDENCIES
   rest-client
 
 BUNDLED WITH
-   1.11.2
+   1.12.5
