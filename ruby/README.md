@@ -3,7 +3,7 @@
 A ruby library to interface with Facebooks ThreatExchange API. This is still very much in development so feel free to contribute :)
 
 ## Installation
-Install required dependencies 
+Install required dependencies
 
     bundle install
 
@@ -20,31 +20,26 @@ Add this to your application
 The ThreatExchange library provides a base set of abstractions for the ThreatExchange API. You instanciate a new ThreatExchange::Client and provide it with your access token.
 
 ```ruby
-
-access_token = 'abc123'
-TE = ThreatExchange::Client.new(access_token)
-
+TE = ThreatExchange::Client.new(appid, secret)
 ```
 To query the ThreatExchange API you create a hash with parameters for your query
 
 ```ruby
-
- query = { 
-    threat_type: 'COMPROMISED_CREDENTIAL',
+query = {
+  threat_type: 'COMPROMISED_CREDENTIAL',
 	type: 'EMAIL_ADDRESS',
 	fields: 'indicator,passwords',
 	limit: 30
 }
 ```
 
-Then call the query with the respective method. 
+Then call the query with the respective method.
 ```ruby
-
 result = TE.threat_indicators(query)
 ```
 
 The result will return either a string, a singular hash or an array of hashes and then from there you can manipulate the data as you like.
-If you would like to see examples of each type of query take a look at the script in the example directory. 
+If you would like to see examples of each type of query take a look at the script in the example directory.
 
 
 
