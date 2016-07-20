@@ -199,11 +199,11 @@ module ThreatExchange
     end
 
 
-    private def assert_params(params, *args)
-      missing_args = params.keys - args
+    private def assert_params(params, *required_params)
+      missing_params = required_params - params.keys
 
-      if missing_args.size > 0
-        raise ArgumentError.new("Missing required params: #{missing_args.join(',')}")
+      if missing_params.size > 0
+        raise ArgumentError.new("Missing required params: #{missing_params.join(',')}")
       end
     end
   end
