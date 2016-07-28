@@ -22,7 +22,7 @@ Build Status
     :target: https://pypi.python.org/pypi/pytx/
 
 .. image:: https://readthedocs.org/projects/pytx/badge/?version=latest
-    :target: https://readthedocs.org/projects/pytx/?badge=latest
+    :target: https://pytx.readthedocs.org/
 
 
 Installation
