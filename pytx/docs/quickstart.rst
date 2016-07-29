@@ -230,8 +230,10 @@ request to the Graph.
 
 The second thing to notice is that the second request (b) is a manually crafted
 dictionary. The URL is very cryptic (you can look this up in the Facebook Graph
-API documentation) but it is saying that for a URL you want the results from the
+API documentation_) but it is saying that for a URL you want the results from the
 "foo" request and you want the first element's id from the data list.
+
+.. _documentation: https://developers.facebook.com/docs/graph-api/making-multiple-requests#operations
 
 The submit call for Batch is giving the name "foo" to request "a", and the name
 "bar" to request "b". The submit call will accept N-number of unnamed arguments
