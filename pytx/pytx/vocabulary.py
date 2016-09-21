@@ -108,6 +108,7 @@ class Connection(object):
     FAMILIES = 'families'
     ID = Common.ID
     MALWARE_ANALYSES = 'malware_analyses'
+    MEMBERS = 'members'
     RELATED = 'related'
     STATUS = Common.STATUS
     THREAT_INDICATORS = 'threat_indicators'
