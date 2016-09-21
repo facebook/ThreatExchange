@@ -61,5 +61,8 @@ class ThreatDescriptor(Common):
         td.TYPE,
     ]
 
+    _connections = [
+    ]
+
     _unique = [
     ]
