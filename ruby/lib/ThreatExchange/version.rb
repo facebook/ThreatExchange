@@ -1,3 +1,3 @@
 module ThreatExchange
-  VERSION = "0.0.9"
+  VERSION = "1.0.1"
 end
