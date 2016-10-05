@@ -17,7 +17,7 @@ ThreatExchangeConfig::init();
 
 // Get the command line options
 $options = getopt('d:f:g:hm:p:t:');
-if (!isset($options['t'])) {
+if (isset($options['h']) || !isset($options['t'])) {
   echo print_usage();
   exit(1);
 }
@@ -59,5 +59,6 @@ echo $uploader->getResultsAsCSV($results)."\n";
 
 function print_usage() {
   return "usage: php threat_exchange/upload.php\n".
-    "\t-t upload type, one of: 'families', 'indicators', or 'malware'\n";
+    "\t-t upload type, one of: 'families', 'indicators', or 'malware'\n".
+    BaseUpload::getUsage();
 }
