@@ -16,7 +16,7 @@ require_once(__ROOT__.'/ThreatExchangeConfig.php');
 ThreatExchangeConfig::init();
 
 // Get the command line options
-$options = getopt('d:f:g:h:m:p:t:');
+$options = getopt('d:f:g:hm:p:t:');
 if (isset($options['h']) || !isset($options['t'])) {
   echo print_usage();
   exit(1);
