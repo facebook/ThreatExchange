@@ -13,7 +13,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     description = f.read()
 
-install_requires = ['python-dateutil']
+install_requires = ['python-dateutil', 'flask']
 
 # For Python < 2.7.9, requests[security] is needed which installs extra packages
 # for more secure connections. Python >= 2.7.9 doesn't need this.
