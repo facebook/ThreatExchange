@@ -3,6 +3,7 @@ from .common import Common
 from .request import Broker
 from .vocabulary import ThreatPrivacyGroup as tpg
 from .vocabulary import ThreatExchange as t
+from .vocabulary import Connection as c
 from .errors import pytxValueError
 
 
@@ -18,6 +19,10 @@ class ThreatPrivacyGroup(Common):
         tpg.DESCRIPTION,
         tpg.MEMBERS_CAN_SEE,
         tpg.MEMBERS_CAN_USE,
+    ]
+
+    _connections = [
+        c.MEMBERS,
     ]
 
     _unique = [
