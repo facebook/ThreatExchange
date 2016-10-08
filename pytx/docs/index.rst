@@ -22,6 +22,7 @@ Contents:
    pytx.malware
    pytx.malware_family
    pytx.request
+   pytx.rtu
    pytx.threat_descriptor
    pytx.threat_exchange_member
    pytx.threat_indicator
