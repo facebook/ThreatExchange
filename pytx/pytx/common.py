@@ -450,12 +450,14 @@ class Common(object):
             from .malware_family import MalwareFamily
             from .threat_indicator import ThreatIndicator
             from .threat_descriptor import ThreatDescriptor
+            from .threat_exchange_member import ThreatExchangeMember
             conns = {
                 conn.DESCRIPTORS: ThreatDescriptor,
                 conn.DROPPED: Malware,
                 conn.DROPPED_BY: Malware,
                 conn.FAMILIES: MalwareFamily,
                 conn.MALWARE_ANALYSES: Malware,
+                conn.MEMBERS: ThreatExchangeMember,
                 conn.RELATED: ThreatIndicator,
                 conn.THREAT_INDICATORS: ThreatIndicator,
                 conn.VARIANTS: Malware,

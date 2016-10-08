@@ -1,6 +1,7 @@
 from .common import Common
 from .vocabulary import ThreatIndicator as ti
 from .vocabulary import ThreatExchange as t
+from .vocabulary import Connection as c
 
 
 class ThreatIndicator(Common):
@@ -21,6 +22,12 @@ class ThreatIndicator(Common):
         ti.INDICATOR,
         ti.METADATA,
         ti.TYPE,
+    ]
+
+    _connections = [
+        c.DESCRIPTORS,
+        c.MALWARE_ANALYSES,
+        c.RELATED,
     ]
 
     _unique = [
