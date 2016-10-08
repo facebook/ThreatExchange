@@ -48,6 +48,7 @@ class RTUListener(object):
         port, and enable debug mode if you didn't already specify those when
         instantiating the RTUListener object.
 
+        :param host: The IP to bind the listener to.
         :type host: str
         :param port: The port to bind the listener to.
         :type port: int
