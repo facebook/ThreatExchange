@@ -270,3 +270,30 @@ The response variable above will be a dictionary with the following keys:
     - status_code: the server response status code
     - type: the TX error type
     - url: the request URL that generated the error
+
+ThreatExchange also allows you to setup Webhooks to get Real-Time Updates on new
+content added to ThreatExchange. pytx supports this through the RTUListener
+class. This will allow you to quickly spin up a listener that you can point a
+Webhook at. Here's a very basic example of how this works:
+
+.. code-block :: python
+
+   from pytx import RTUListener
+
+   def my_callback(request):
+       print "POST Data: {}".format(request)
+       return "200 OK"
+
+   my_listener = RTUListener(host='0.0.0.0',
+                             port=1337,
+                             listener_url='/threatexchange/',
+                             get_response="hello",
+                             callback=my_callback)
+   my_listener.listen()
+
+Here we've built our own custom callback function which will allow us to handle
+each POST request notifying us of new data that was added to ThreatExchange. We
+build up the listener, specifying the host, port, URL suffix we plan on using,
+the custom GET response we configured for our Webhook, and the callback
+function. The custom GET response is necessary so ThreatExchange can validate
+the Webhook with your server. After that we start the listener. That's it!

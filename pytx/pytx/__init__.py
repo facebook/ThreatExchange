@@ -12,6 +12,7 @@ from .threat_descriptor import ThreatDescriptor
 from .threat_indicator import ThreatIndicator
 from .threat_privacy_group import ThreatPrivacyGroup
 from .threat_tag import ThreatTag
+from .rtu import RTUListener
 
 
 __title__ = 'pytx'
@@ -28,6 +29,7 @@ __all__ = [
     'errors',
     'Malware',
     'MalwareFamily',
+    'RTUListener',
     'setup_logger',
     'ThreatExchangeMember',
     'ThreatDescriptor',
