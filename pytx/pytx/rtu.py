@@ -111,5 +111,5 @@ class ListenerView(View):
         :type request: dict
         """
 
-        print 'POST Data: {}'.format(request)
+        print 'POST Data: {0}'.format(request)
         return '200 OK'
