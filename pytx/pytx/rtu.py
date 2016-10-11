@@ -23,6 +23,8 @@ class RTUListener(object):
     :type listener_url: str
     :param callback: Custom function you wish to use for POST requests.
     :type callback: class
+    :param ssl_context: Custom ssl.SSLContext for using Flask over TLS.
+    :type ssl_context: :class: `ssl.SSLContext`
     :param debug: Enable Flask debug mode (False by default)
     :type debug: bool
     """
@@ -33,6 +35,7 @@ class RTUListener(object):
                  port=None,
                  listener_url=None,
                  callback=None,
+                 ssl_context=None,
                  debug=False):
 
         self.get_response = get_response
@@ -41,6 +44,7 @@ class RTUListener(object):
         self.debug = debug
         self.listener_url = listener_url
         self.callback = callback
+        self.ssl_context = ssl_context
 
     def listen(self, host=None, port=None, debug=None):
         """
@@ -73,6 +77,7 @@ class RTUListener(object):
             debug=debug,
             host=host,
             port=port,
+            ssl_context=self.ssl_context,
         )
 
 

@@ -297,3 +297,20 @@ build up the listener, specifying the host, port, URL suffix we plan on using,
 the custom GET response we configured for our Webhook, and the callback
 function. The custom GET response is necessary so ThreatExchange can validate
 the Webhook with your server. After that we start the listener. That's it!
+
+You can also create your own SSLContext to pass into the RTUListener's
+ssl_context attribute to ensure everything is over HTTPS:
+
+.. code-block :: python
+
+   import ssl
+
+   ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+   ssl_context.load_cert_chain(certfile='<your_cert_file.pem',
+                               keyfile='<your_key_file.key')
+
+You should read the documentation on Webhooks to ensure you are whitelisting the
+IPs associated with Facebook to prevent malicious attacks against your RTU
+Listener:
+
+https://developers.facebook.com/docs/graph-api/webhooks?hc_location=ufi#access
