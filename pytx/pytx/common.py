@@ -153,6 +153,7 @@ class Common(object):
                 status=None,
                 review_status=None,
                 share_level=None,
+                sort_by=None,
                 sort_order=None,
                 __raw__=None,
                 full_response=False,
@@ -198,7 +199,9 @@ class Common(object):
         :type review_status: str
         :param share_level: The share level to limit to.
         :type share_level: str
-        :param sort_order: The sort order for results.
+        :param sort_by: Sort by relevance or create time.
+        :type sort_by: str
+        :param sort_order: The sort order for results. Ascending or descending.
         :type sort_order: str
         :param __raw__: Provide a dictionary to force as GET parameters.
                         Overrides all other arguments.
@@ -245,6 +248,7 @@ class Common(object):
                 status=status,
                 review_status=review_status,
                 share_level=share_level,
+                sort_by=sort_by,
                 sort_order=sort_order,
             )
         if request_dict:
@@ -451,6 +455,7 @@ class Common(object):
             from .threat_indicator import ThreatIndicator
             from .threat_descriptor import ThreatDescriptor
             from .threat_exchange_member import ThreatExchangeMember
+            from .threat_tag import ThreatTag
             conns = {
                 conn.DESCRIPTORS: ThreatDescriptor,
                 conn.DROPPED: Malware,
@@ -459,6 +464,7 @@ class Common(object):
                 conn.MALWARE_ANALYSES: Malware,
                 conn.MEMBERS: ThreatExchangeMember,
                 conn.RELATED: ThreatIndicator,
+                conn.TAGGED_OBJECTS: ThreatTag,
                 conn.THREAT_INDICATORS: ThreatIndicator,
                 conn.VARIANTS: Malware,
             }

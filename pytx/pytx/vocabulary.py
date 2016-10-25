@@ -5,7 +5,7 @@ class ThreatExchange(object):
     """
 
     URL = 'https://graph.facebook.com/'
-    VERSION = 'v2.6/'
+    VERSION = 'v2.8/'
     ACCESS_TOKEN = 'access_token'
     DEFAULT_LIMIT = 25
 
@@ -30,6 +30,7 @@ class ThreatExchange(object):
     SAMPLE_TYPE = 'sample_type'
     SHARE_LEVEL = 'share_level'
     SINCE = 'since'
+    SORT_BY = 'sort_by'
     SORT_ORDER = 'sort_order'
     STATUS = 'status'
     STRICT_TEXT = 'strict_text'
@@ -43,7 +44,9 @@ class ThreatExchange(object):
     NEXT = 'next'
 
     ASCENDING = 'ASCENDING'
+    CREATE_TIME = 'CREATE_TIME'
     DESCENDING = 'DESCENDING'
+    RELEVANCE = 'RELEVANCE'
 
     METADATA = 'metadata'
 
@@ -88,6 +91,7 @@ class Common(object):
     ID = 'id'
     METADATA = 'metadata'
     MY_REACTIONS = 'my_reactions'
+    REVIEW_STATUS = 'review_status'
     SHARE_LEVEL = 'share_level'
     STATUS = 'status'
     VICTIM_COUNT = 'victim_count'
@@ -111,6 +115,7 @@ class Connection(object):
     MEMBERS = 'members'
     RELATED = 'related'
     STATUS = Common.STATUS
+    TAGGED_OBJECTS = 'tagged_objects'
     THREAT_INDICATORS = 'threat_indicators'
     VARIANTS = 'variants'
     VICTIM_COUNT = Common.VICTIM_COUNT
@@ -132,6 +137,7 @@ class Malware(object):
     PASSWORD = 'password'
     PE_RICH_HEADER = 'pe_rich_header'
     PRIVACY_TYPE = 'privacy_type'
+    REVIEW_STATUS = Common.REVIEW_STATUS
     SAMPLE = 'sample'
     SAMPLE_SIZE = 'sample_size'
     SAMPLE_SIZE_COMPRESSED = 'sample_size_compressed'
@@ -312,7 +318,7 @@ class ThreatDescriptor(object):
     PRIVACY_MEMBERS = 'privacy_members'
     PRIVACY_TYPE = 'privacy_type'
     RAW_INDICATOR = 'raw_indicator'
-    REVIEW_STATUS = 'review_status'
+    REVIEW_STATUS = Common.REVIEW_STATUS
     SEVERITY = 'severity'
     SHARE_LEVEL = Common.SHARE_LEVEL
     SOURCE_URI = 'source_uri'
@@ -330,9 +336,10 @@ class ThreatTag(object):
     """
 
     ID = Common.ID
-    OBJECTS = 'objects'
+    NAME = 'name'
     TAGGED_OBJECTS = 'tagged_objects'
     TEXT = 'text'
+    TYPE = 'type'
 
 
 class Attack(object):
