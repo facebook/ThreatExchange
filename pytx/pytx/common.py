@@ -140,7 +140,6 @@ class Common(object):
                 text=None,
                 strict_text=False,
                 type_=None,
-                threat_type=None,
                 sample_type=None,
                 fields=None,
                 limit=None,
@@ -172,8 +171,6 @@ class Common(object):
         :type strict_text: bool, str, int
         :param type_: The Indicator type to limit to.
         :type type_: str
-        :param threat_type: The Threat type to limit to.
-        :type threat_type: str
         :param sample_type: The Sample type to limit to.
         :type sample_type: str
         :param fields: Select specific fields to pull
@@ -235,7 +232,6 @@ class Common(object):
                 text=text,
                 strict_text=strict_text,
                 type_=type_,
-                threat_type=threat_type,
                 sample_type=sample_type,
                 fields=fields,
                 limit=limit,

@@ -17,7 +17,7 @@ def get_results(options):
     if options.since is None or options.until is None:
         raise Exception('You must specify both "since" and "until" values')
 
-    results = ThreatIndicator.objects(threat_type=tt.COMPROMISED_CREDENTIAL, type_=t.EMAIL_ADDRESS, limit=options.limit,
+    results = ThreatIndicator.objects(type_=t.EMAIL_ADDRESS, limit=options.limit,
                                       fields=['indicator', 'passwords'], since=options.since, until=options.until)
     return results
 

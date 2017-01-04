@@ -35,7 +35,6 @@ class ThreatExchange(object):
     STATUS = 'status'
     STRICT_TEXT = 'strict_text'
     TEXT = 'text'
-    THREAT_TYPE = 'threat_type'
     TYPE = 'type'
     UNTIL = 'until'
 
@@ -304,7 +303,6 @@ class ThreatDescriptor(object):
     """
 
     ADDED_ON = 'added_on'
-    ATTACK_TYPE = 'attack_type'
     CONFIDENCE = 'confidence'
     DESCRIPTION = 'description'
     EXPIRED_ON = 'expired_on'
@@ -324,7 +322,6 @@ class ThreatDescriptor(object):
     SOURCE_URI = 'source_uri'
     STATUS = Common.STATUS
     TAGS = 'tags'
-    THREAT_TYPE = 'threat_type'
     TYPE = 'type'
 
 
@@ -340,47 +337,6 @@ class ThreatTag(object):
     TAGGED_OBJECTS = 'tagged_objects'
     TEXT = 'text'
     TYPE = 'type'
-
-
-class Attack(object):
-
-    """
-    Vocabulary for the Threat Indicator Attack type.
-    """
-
-    ACCESS_TOKEN_THEFT = 'ACCESS_TOKEN_THEFT'
-    BOGON = 'BOGON'
-    BOT = 'BOT'
-    BRUTE_FORCE = 'BRUTE_FORCE'
-    CLICKJACKING = 'CLICKJACKING'
-    COMPROMISED = 'COMPROMISED'
-    CREEPER = 'CREEPER'
-    DRUGS = 'DRUGS'
-    EMAIL_SPAM = 'EMAIL_SPAM'
-    EXPLICIT_CONTENT = 'EXPLICIT_CONTENT'
-    EXPLOIT_KIT = 'EXPLOIT_KIT'
-    FAKE_ACCOUNTS = 'FAKE_ACCOUNT'
-    FINANCIALS = 'FINANCIAL'
-    IP_INFRINGEMENT = 'IP_INFRINGEMENT'
-    MALICIOUS_APP = 'MALICIOUS_APP'
-    MALICIOUS_NAMESERVER = 'MALICIOUS_NAMESERVER'
-    MALICIOUS_WEBSERVER = 'MALICIOUS_WEBSERVER'
-    MALVERTISING = 'MALVERTISING'
-    MALWARE = 'MALWARE'
-    PASSIVE_DNS = 'PASSIVE_DNS'
-    PHISHING = 'PHISHING'
-    PIRACY = 'PIRACY'
-    PROXY = 'PROXY'
-    SCAM = 'SCAM'
-    SCANNING = 'SCANNING'
-    SCRAPING = 'SCRAPING'
-    SELF_XSS = 'SELF_XSS'
-    SHARE_BAITING = 'SHARE_BAITING'
-    TARGETED = 'TARGETED'
-    TERRORISM = 'TERRORISM'
-    WEAPONS = 'WEAPONS'
-    WEB_APP = 'WEB_APP'
-    UNKNOWN = 'UNKNOWN'
 
 
 class MalwareFamily(object):
@@ -515,42 +471,6 @@ class Status(object):
     NON_MALICIOUS = 'NON_MALICIOUS'
     SUSPICIOUS = 'SUSPICIOUS'
     UNKNOWN = 'UNKNOWN'
-
-
-class ThreatType(object):
-
-    """
-    Vocabulary for the available Threat Types for a Threat Indicator.
-    """
-
-    BAD_ACTOR = 'BAD_ACTOR'
-    COMPROMISED_CREDENTIAL = 'COMPROMISED_CREDENTIAL'
-    COMMAND_EXEC = 'COMMAND_EXEC'
-    HT_VICTIM = 'HT_VICTIM'
-    MALICIOUS_AD = 'MALICIOUS_AD'
-    MALICIOUS_API_KEY = 'MALICIOUS_API_KEY'
-    MALICIOUS_CONTENT = 'MALICIOUS_CONTENT'
-    MALICIOUS_DOMAIN = 'MALICIOUS_DOMAIN'
-    MALICIOUS_INJECT = 'MALICIOUS_INJECT'
-    MALICIOUS_IP = 'MALICIOUS_IP'
-    MALICIOUS_SSL_CERT = 'MALICIOUS_SSL_CERT'
-    MALICIOUS_SUBNET = 'MALICIOUS_SUBNET'
-    MALICIOUS_URL = 'MALICIOUS_URL'
-    MALICIOUS_URL_CHUNK = 'MALICIOUS_URL_CHUNK'
-    MALWARE_ARTIFACTS = 'MALWARE_ARTIFACTS'
-    MALWARE_SAMPLE = 'MALWARE_SAMPLE'
-    MALWARE_SIGNATURE = 'MALWARE_SIGNATURE'
-    MALWARE_VICTIM = 'MALWARE_VICTIM'
-    PROXY_IP = 'PROXY_IP'
-    SIGNATURE = 'SIGNATURE'
-    SINKHOLE_EVENT = 'SINKHOLE_EVENT'
-    SMS_SPAM = 'SMS_SPAM'
-    UNKNOWN = 'UNKNOWN'
-    VICTIM_IP_USAGE = 'VICTIM_IP_USAGE'
-    WEB_REQUEST = 'WEB_REQUEST'
-    WHITELIST_DOMAIN = 'WHITELIST_DOMAIN'
-    WHITELIST_IP = 'WHITELIST_IP'
-    WHITELIST_URL = 'WHITELIST_URL'
 
 
 class Types(object):

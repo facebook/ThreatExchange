@@ -126,7 +126,7 @@ classes like so:
 
    results = ThreatDescriptor.objects(text='www.facebook.com')
    for result in results:
-       print result.get(td.THREAT_TYPES)
+       print result.get(td.CONFIDENCE)
 
    # type is type_ because type is a reserved word.
    results = ThreatDescriptor.objects(type_=t.IP_ADDRESS,

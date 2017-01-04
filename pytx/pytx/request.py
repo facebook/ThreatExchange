@@ -159,7 +159,6 @@ class Broker(object):
                              text=None,
                              strict_text=None,
                              type_=None,
-                             threat_type=None,
                              sample_type=None,
                              fields=None,
                              limit=None,
@@ -183,8 +182,6 @@ class Broker(object):
         :type strict_text: bool, str, int
         :param type_: The Indicator type to limit to.
         :type type_: str
-        :param threat_type: The Threat type to limit to.
-        :type threat_type: str
         :param sample_type: The Sample type to limit to.
         :type sample_type: str
         :param fields: Select specific fields to pull
@@ -227,8 +224,6 @@ class Broker(object):
             params[t.STRICT_TEXT] = strict
         if type_:
             params[t.TYPE] = type_
-        if threat_type:
-            params[t.THREAT_TYPE] = threat_type
         if fields:
             params[t.FIELDS] = ','.join(fields) if isinstance(fields, list) else fields
         if limit:
