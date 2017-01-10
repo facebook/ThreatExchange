@@ -44,7 +44,7 @@ Quick Example
    access_token('<app-id>', '<app-secret>')
    results = ThreatDescriptor.objects(text='www.facebook.com')
    for result in results:
-       print result.get(td.THREAT_TYPE)
+       print result.get(td.CONFIDENCE)
 
    # type is type_ because type is a reserved word.
    results = ThreatDescriptor.objects(type_='IP_ADDRESS',
