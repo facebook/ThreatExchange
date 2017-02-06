@@ -45,8 +45,6 @@ class ThreatDescriptor(Common):
         td.MY_REACTIONS,
         td.OWNER,
         td.PRECISION,
-        td.PRIVACY_MEMBERS,
-        td.PRIVACY_TYPE,
         td.RAW_INDICATOR,
         td.REVIEW_STATUS,
         td.SEVERITY,

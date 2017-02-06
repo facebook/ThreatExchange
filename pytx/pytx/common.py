@@ -222,6 +222,8 @@ class Common(object):
         :returns: Generator, dict (using json.loads()), str
         """
 
+        if fields is None:
+            fields = cls._default_fields
         if __raw__:
             if isinstance(__raw__, dict):
                 params = __raw__
@@ -328,6 +330,8 @@ class Common(object):
         else:
             url = cls_or_self._DETAILS
         params = Broker.build_get_parameters()
+        if fields is None:
+            fields = cls_or_self._fields
         if isinstance(fields, basestring):
             fields = fields.split(',')
         if fields is not None and not isinstance(fields, list):

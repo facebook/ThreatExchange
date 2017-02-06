@@ -74,11 +74,13 @@ http://docs.python-requests.org/en/latest/api/#requests.request
 pytx uses classes as the primary method for developer interaction with the
 ThreatExchange API. There are several main classes:
 
-   - ThreatDescriptor
-   - ThreatIndicator
    - Malware
    - MalwareFamily
+   - ThreatDescriptor
    - ThreatExchangeMember
+   - ThreatIndicator
+   - ThreatPrivacyGroup
+   - ThreatTag
 
 ThreatExchange allows you to upload new ThreatDescriptors. There are several
 ways to do so:
