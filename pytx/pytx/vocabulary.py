@@ -339,6 +339,65 @@ class ThreatTag(object):
     TYPE = 'type'
 
 
+class PopularTags(object):
+
+    """
+    Vocabulary which outlines popular tags that are used with ThreatExchange.
+    """
+
+    ACCESS_TOKEN_THEFT = 'access_token_theft'
+    BAD_ACTOR = 'bad_actor'
+    BOGON = 'bogon'
+    BOT = 'bot'
+    BRUTE_FORCE = 'brute_force'
+    CLICKJACKING = 'clickjacking'
+    COMPROMISED = 'compromised'
+    COMPROMISED_CREDENTIAL = 'compromised_credential'
+    CREEPER = 'creeper'
+    DRUGS = 'drugs'
+    EMAIL_SPAM = 'email_spam'
+    EXPLICIT_CONTENT = 'explicit_content'
+    EXPLOIT_KIT = 'exploit_kit'
+    FAKE_ACCOUNT = 'fake_account'
+    FINANCIAL = 'financial'
+    HT_VICTIM = 'ht_victim'
+    IP_INFRINGEMENT = 'ip_infringement'
+    MALICIOUS_AD = 'malicious_ad'
+    MALICIOUS_API_KEY = 'malicious_api_key'
+    MALICIOUS_APP = 'malicious_app'
+    MALICIOUS_CONTENT = 'malicious_content'
+    MALICIOUS_DOMAIN = 'malicious_domain'
+    MALICIOUS_INJECT = 'malicious_inject'
+    MALICIOUS_IP = 'malicious_ip'
+    MALICIOUS_NAMESERVER = 'malicious_nameserver'
+    MALICIOUS_SUBNET = 'malicious_subnet'
+    MALICIOUS_SSL_CERT = 'malicious_ssl_cert'
+    MALICIOUS_WEBSERVER = 'malicious_webserver'
+    MALWARE_SAMPLE = 'malware_sample'
+    MALWARE_VICTIM = 'malware_victim'
+    MALVERTISING = 'malvertising'
+    MALWARE = 'malware'
+    PASSIVE_DNS = 'passive_dns'
+    PHISHING = 'phishing'
+    PIRACY = 'piracy'
+    PROXY = 'proxy'
+    PROXY_IP = 'proxy_ip'
+    SCAM = 'scam'
+    SCANNING = 'scanning'
+    SCRAPING = 'scraping'
+    SELF_XSS = 'self_xss'
+    SHARE_BAITING = 'share_baiting'
+    SIGNATURE = 'signature'
+    TARGETED = 'targeted'
+    TERRORISM = 'terrorism'
+    WEAPONS = 'weapons'
+    WEB_APP = 'web_app'
+    WEB_REQUEST = 'web_request'
+    WHITELIST_DOMAIN = 'whitelist_domain'
+    WHITELIST_IP = 'whitelist_ip'
+    WHITELIST_URL = 'whitelist_url'
+
+
 class MalwareFamily(object):
 
     """

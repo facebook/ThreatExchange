@@ -21,6 +21,14 @@ class ThreatPrivacyGroup(Common):
         tpg.MEMBERS_CAN_USE,
     ]
 
+    _default_fields = [
+        tpg.ID,
+        tpg.NAME,
+        tpg.DESCRIPTION,
+        tpg.MEMBERS_CAN_SEE,
+        tpg.MEMBERS_CAN_USE,
+    ]
+
     _connections = [
         c.MEMBERS,
     ]
