@@ -113,6 +113,7 @@ class Connection(object):
     MALWARE_ANALYSES = 'malware_analyses'
     MEMBERS = 'members'
     RELATED = 'related'
+    SIMILAR_MALWARE = 'similar_malware'
     STATUS = Common.STATUS
     TAGGED_OBJECTS = 'tagged_objects'
     THREAT_INDICATORS = 'threat_indicators'
