@@ -464,6 +464,7 @@ class Common(object):
                 conn.MALWARE_ANALYSES: Malware,
                 conn.MEMBERS: ThreatExchangeMember,
                 conn.RELATED: ThreatIndicator,
+                conn.SIMILAR_MALWARE: Malware,
                 conn.TAGGED_OBJECTS: ThreatTag,
                 conn.THREAT_INDICATORS: ThreatIndicator,
                 conn.VARIANTS: Malware,
