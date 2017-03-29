@@ -1,3 +1,5 @@
+from sys import version_info
+
 from .request import Broker
 
 from .vocabulary import Common as c
@@ -10,6 +12,11 @@ from .errors import (
     pytxAttributeError,
     pytxValueError
 )
+
+
+#  Python 3 comparability hack
+if version_info[0] >= 3:
+    basestring = str
 
 
 class class_or_instance_method(object):
