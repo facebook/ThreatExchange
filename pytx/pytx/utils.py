@@ -1,5 +1,10 @@
+from sys import version_info
 import dateutil.parser
 import datetime
+
+#  Python 3 comparability hack
+if version_info[0] >= 3:
+    basestring = str
 
 
 def convert_to_header(field):
