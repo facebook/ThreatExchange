@@ -27,7 +27,7 @@ else:
 
 setup(
     name='pytx',
-    version='0.5.5',
+    version='0.5.6',
     description='Python Library for Facebook ThreatExchange',
     long_description=long_description,
     author='Mike Goffin',
