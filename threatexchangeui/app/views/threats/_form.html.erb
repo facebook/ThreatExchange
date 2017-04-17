@@ -1,0 +1,48 @@
+<%= simple_form_for :threat, url: threats_path, method: :post do |f| %>
+	<div class="form-group">
+		<div class="row">
+			<div class="col-xs-12 col-sm-12">
+				<div class="form-group">
+					<%= f.input :indicator, autocomplete: :on, placeholder: "Add threat indicator", label: "Threat Indicator", required: false, class: "form-control" %>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-sm-12">
+				<%= f.input :description, autocomplete: :on, as: :text, placeholder: "Add description", label: "Description", required: false, class: "form-control"   %>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-sm-4">
+				<%= f.input :indicator_type, collection: IndicatorType.all.order("name"), value_method: :name, label: "Indicator Type", required: false, class: "form-control"   %>
+			</div>
+			<div class="col-xs-12 col-sm-4">
+				<%= f.input :threat, collection: ThreatType.all.order("name"), value_method: :name, label: "Threat", required: false,  class: "form-control"   %>
+			</div>
+			<div class="col-xs-12 col-sm-4">
+				<%= f.input :status, collection: Status.all.order("name"), value_method: :name, label: "Status", required: false,  class: "form-control"   %>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-sm-4">
+				<%= f.input :confidence, collection: (0..100).step(10), label: "Confidence", required: false, class: "form-control"   %>
+			</div>
+			<div class="col-xs-12 col-sm-4">
+				<%= f.input :severity, collection: SeverityType.all.order("name"), value_method: :name, label: "Severity", required: false, class: "form-control"   %>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-sm-4">
+				<%= f.input :privacy, collection: PrivacyType.all.order("name"), value_method: :name, label: "Privacy", required: false, class: "form-control"   %>
+			</div>
+			<div class="col-xs-12 col-sm-4">
+				<%= f.input :share_level, collection: ShareLevelType.all.order("name"), value_method: :name, label: "Share Level", required: false, class: "form-control"   %>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-sm-2">
+				<%= f.submit "Submit", name: nil, class: "btn btn-primary btn-block" %>
+			</div>
+		</div>
+	</div>
+<% end %>

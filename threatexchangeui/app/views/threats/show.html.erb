@@ -1,0 +1,132 @@
+<div class="page-header">
+	<h2>Threat Descriptor</h2>
+</div>
+<hr>
+<% if @threat_descriptors.nil? %>
+	<div class="row">
+		<div class="col-xs-12">
+			<%= "No descriptors for threat indicator." %>
+		</div>
+	</div>
+<% else %>
+	<div class="row">
+		<div class="col-xs-12">
+			<div class="panel panel-primary">
+	            <div class="panel-heading">Threat Descriptor</div>
+	            <div class="panel-body panel-height">
+	            	<div class="highlight">Threat descriptor is subjective opinions on indicators of compromise stored in Facebook ThreatExchange.</div>
+	            	<br><br>
+					<% @threat_descriptors.each do |threat_descriptor| %>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Indicator:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["raw_indicator"] %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Type:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["type"].humanize %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Threat Type:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["threat_type"].humanize %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Severity:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["severity"].humanize %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Status:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["status"].humanize %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Confidence:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["confidence"].to_s %>&nbsp;/ 100
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Privacy:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["privacy_type"].humanize %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Share Level:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["share_level"].humanize %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Description:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["description"] %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Owner:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["owner"]["name"] %>&nbsp;(<%= threat_descriptor["owner"]["email"] %>)
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Review Status:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["review_status"].humanize %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Added On:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["added_on"].to_date.strftime("%d %b %Y") %>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xs-4 col-sm-2">
+								Last updated:
+							</div>
+							<div class="col-xs-8 col-sm-10">
+								<%= threat_descriptor["last_updated"].to_date.strftime("%d %b %Y") %>
+							</div>
+						</div>
+						<hr>
+					<% end %>
+				</div>
+			</div>
+		</div>
+	</div>
+<% end %>
+<br>
+<br>

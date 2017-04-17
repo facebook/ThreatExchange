@@ -1,0 +1,358 @@
+@import url(https://fonts.googleapis.com/css?family=Raleway);
+html {
+  height: 100%;
+}
+body {
+  font-family: Raleway, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 300;
+  color: #000;
+  background: #f4f4f4;
+  height: 100%;
+}
+a {
+  color: #000;
+  -webkit-transition: all 300ms ease;
+  transition: all 300ms ease;
+}
+a:hover,
+a:focus {
+  color: #db700d;
+  text-decoration: none;
+}
+/* Site Layout
+--------------------------------------- */
+.features {
+  background: #555555;
+  border-top: 1px solid rgba(255, 255, 255, 0.54);
+  color: #fff;
+  padding: 20px 0;
+}
+.features .feature {
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 20px 10px;
+}
+.features2 {
+  background: #f4f4f4;
+  border-top: 1px solid rgba(255, 255, 255, 0.54);
+  color: #000;
+  padding: 40px 0;
+}
+.features2 .feature2 {
+  border-right: 1px solid rgba(255, 255, 255, 0.3);
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 20px 10px;
+}
+.header-description {
+  padding: 30px 0 10px 0;
+}
+.header-description h1 {
+  font-weight: 100;
+  font-size: 48px;
+  color: #fff;
+}
+.header-description h4 {
+  font-weight: 100;
+  font-size: 24px;
+  color: #fff;
+}
+.header-description small {
+  font-size: 14px;
+}
+.impact {
+  font-size: 20px;
+  line-height: 38px;
+}
+/* Bootstrap Overide
+--------------------------------------- */
+.page-header {
+  margin: 0px 0 20px;
+  border-bottom: 0px solid #eee;
+}
+hr {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  border: 0;
+  border-top: 1px solid #ccc;
+}
+.navbar-brand {
+  float: left;
+  height: 40px;
+  padding: 15px 15px;
+  font-size: 18px;
+  line-height: 20px;
+}
+.navbar {
+  position: relative;
+  min-height: 40px;
+  margin-bottom: 0px;
+  border: 1px solid transparent;
+}
+.glyphicon {
+  font-size: 1.0em;
+}
+.alert {
+  padding: 20px 35px 20px 14px;
+  margin-bottom: 18px;
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  background-color: #db700d;
+  border: 1px solid #fff;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+}
+.alert:empty {
+  display: none;
+}
+.alert-error {
+  background-color: #db700d;
+  border-color: #fff;
+  color: #fff;
+  text-align: left;
+  font-size: 15px;
+}
+.alert .close {
+  position: relative;
+  top: -2px;
+  right: -21px;
+  line-height: 18px;
+  color: #fff;
+}
+.navbar-custom {
+  background-color:#0070ca;
+  color:#ffffff;
+  border-radius:0;
+}
+.navbar-custom .navbar-nav > li > a {
+    color: #fff;
+}
+.navbar-custom .navbar-nav > li > a:hover,
+.navbar-custom .navbar-nav > li > a:focus {
+    color: #000;
+}
+/* Bootstrap Overide Ends
+--------------------------------------- */
+/* Session Forms
+--------------------------------------- */
+.session .form-wrap {
+  padding: 50px 20px 10px 20px;
+}
+.session .form-control:focus {
+  border: 3px solid #000;
+}
+.session .form-control2:focus {
+  border: 3px solid #000;
+  outline: 0;
+}
+.session input[type="text"],
+.session input[type="password"],
+.session input[type="email"],
+.session input[type="checkbox"] {
+  box-shadow: none;
+  border-radius: 10;
+  margin-bottom: 20px;
+  color: #000;
+}
+.session .glyphicon {
+  font-size: 1.0em;
+}
+.session .links{
+  color: #000000;
+  padding-top: 10px;
+  font-size: 90%
+}
+/* Session Forms End
+--------------------------------------- */
+/* Form separator
+--------------------------------------- */
+.separator {
+  .desktop-only {
+    padding: 20px 15px 20px;
+    margin: 0 auto 20px;
+    margin-left: 15px;
+    background-color: #fff;
+    border: 1px solid #b5b5b5;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    -webkit-box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    -moz-box-shadow: 0 1px 2px rgba(0,0,0,.05);
+    box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  }
+}
+.form-control-inline {
+  width: 70%;
+  height: 34px;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  color: #555;
+  background-color: #fff;
+  background-image: none;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);
+  -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
+       -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+          transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+}
+/* Form separator Ends
+--------------------------------------- */
+/* Footer
+--------------------------------------- */
+.wrapper {
+  min-height: 100%;
+  height: auto !important;
+  height: 100%;
+  margin: 0 auto -50px; /* the bottom margin is the negative value of the footer's height */
+}
+.footer{
+  min-height: 50px; /* .push must be the same height as .footer */
+  background: #000;
+  padding: 15px;
+}
+.push {
+  height: 50px; /* .push must be the same height as .footer */
+}
+.footer .footer-title a:hover,
+.footer .footer-title a:focus {
+  text-decoration: none;
+}
+footer .copyright {
+  color: #f4f4f4;
+  font-size: 90%
+}
+.footer .copyright-orange {
+  color: #db700d;
+  font-size: 90%
+}
+.footer .copyright-orange a {
+  color: #db700d;
+  -webkit-transition: all 300ms ease;
+  transition: all 300ms ease;
+}
+.footer .copyright-orange a:hover,
+.footer .copyright-orange a:focus {
+  color: #fff;
+  text-decoration: none;
+}
+/* Footer Ends
+--------------------------------------- */
+/* Tos + Legal
+--------------------------------------- */
+.tos-acceptance {
+  font-size: 14px;
+  line-height: 22px;
+  padding-bottom: 20px;
+}
+.tos-acceptance a {
+  color: #db700d;
+  -webkit-transition: all 300ms ease;
+  transition: all 300ms ease;
+}
+.tos-acceptance a:hover,
+.tos-acceptance a:focus {
+  color: #fff;
+  text-decoration: none;
+}
+.img-map {
+  border: 2px solid #000;
+}
+/* Tos Ends
+--------------------------------------- */
+/* Pagination Ends
+--------------------------------------- */
+digg_pagination {
+  background: white;
+  cursor: default;
+  /* self-clearing method: */ }
+  .digg_pagination a, .digg_pagination span, .digg_pagination em {
+    padding: 0.2em 0.5em;
+    display: block;
+    float: left;
+    margin-right: 1px; }
+  .digg_pagination .disabled {
+    color: #999999;
+    border: 1px solid #dddddd; }
+  .digg_pagination .current {
+    font-style: normal;
+    font-weight: bold;
+    background: #2e6ab1;
+    color: white;
+    border: 1px solid #2e6ab1; }
+  .digg_pagination a {
+    text-decoration: none;
+    color: #105cb6;
+    border: 1px solid #9aafe5; }
+    .digg_pagination a:hover, .digg_pagination a:focus {
+      color: #000033;
+      border-color: #000033; }
+  .digg_pagination .page_info {
+    background: #2e6ab1;
+    color: white;
+    padding: 0.4em 0.6em;
+    width: 22em;
+    margin-bottom: 0.3em;
+    text-align: center; }
+    .digg_pagination .page_info b {
+      color: #000033;
+      background: #6aa6ed;
+      padding: 0.1em 0.25em; }
+  .digg_pagination:after {
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden; }
+  * html .digg_pagination {
+    height: 1%; }
+  *:first-child + html .digg_pagination {
+    overflow: hidden; }
+/* Pagination Ends
+--------------------------------------- */
+/* Others
+--------------------------------------- */
+.btn {
+  border: 2px solid #fff;
+}
+.btn-signup {
+  margin-top: 50px;
+  margin-bottom: 10px;
+  padding: 10px 15px;
+}
+.signup-normal {
+  font-size: 80%;
+  padding-top: 0px;
+}
+.highlight {
+  color: #ce4843
+}
+/* Others Ends
+--------------------------------------- */
+@media (max-width: 400px) {
+  .header-description {
+    padding: 0px 0 10px 0;
+  }
+  .header-description h1 {
+    font-weight: 100;
+    font-size: 32px;
+    color: #fff;
+  }
+  .impact {
+    font-size: 16px;
+    line-height: 20px;
+  }
+  .header-description h4 {
+    font-weight: 100;
+    font-size: 16px;
+    color: #fff;
+  }
+  .btn-signup {
+    margin-top: 50px;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+  }
+}

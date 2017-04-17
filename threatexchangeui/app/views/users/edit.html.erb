@@ -1,0 +1,46 @@
+<%- model_class = User -%>
+<div class="page-header">
+</div>
+
+<div class="row">
+	<div class="col-sm-12">
+		<%= simple_form_for @user, :html => { :class => 'separator' } do |f| %>
+			<% if @user.errors.any? %>
+				<% for message in @user.errors.full_messages %>
+					<% flash.now[:alert] = message %>
+				<% end %>
+			<% end %>
+			<div class="row">
+				<div class="col-sm-12">
+					<h1><%= @user.full_name %></h1>(<%= @user.email %>)
+					<% if !current_user.last_sign_in_at.nil? && !current_user.last_sign_in_ip.nil? %>
+						<br><br>Last sign-in information:<br><%= current_user.last_sign_in_at.strftime("%d %b %Y %H:%M %Z") %>&nbsp;<%= current_user.last_sign_in_ip %>
+					<% end %>
+					<br><br>
+				</div>
+			</div>
+			<br>
+			<div class="row">
+				<div class="col-sm-12">
+					<div class="highlight">Your Facebook ThreatExchnage approved App ID and App Secret are needed to create an access token that allows you to query ThreatExchange.</div>
+				</div>
+			</div>
+			<br>
+			<div class="row">
+				<div class="col-sm-12">
+					<%= f.input :app_id, autofocus: true, label: false, placeholder: "Enter App ID", input_html: { class: 'form-control', :maxlength => 50 } %>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-12">
+					<%= f.input :app_secret, label: false, placeholder: "Enter App Secret", input_html: { class: 'form-control', :maxlength => 50 } %>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-12">
+					<%= f.submit "Update Profile", :class => "btn btn-primary btn-block" %>
+				</div>
+			</div>
+		<% end %>
+	</div>
+</div>

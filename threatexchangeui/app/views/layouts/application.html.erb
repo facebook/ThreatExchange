@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang=en>
+	<head>
+  		<title>ThreatExchange UI</title>
+
+  		<meta charset="utf-8">
+    	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    	<meta name="keywords" content="rentme, rent item">
+        <meta name="description" content="User interface for Facebook Threat Exchange">
+        
+        <%= favicon_link_tag "favicon.ico", :rel => "shortcut icon" %>
+
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
+        <!-- Bootstrap -->
+	    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+  		<%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+	  	<%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+	  	<script src='https://www.google.com/jsapi'></script>
+	  	<%= csrf_meta_tags %>
+
+	  	<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    	<!--[if lt IE 9]>
+      		<script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      		<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    	<![endif]-->
+	</head>
+	<body>
+		<div class="wrapper">
+			<nav class="navbar navbar-default navbar-inverse navbar-static-top">
+	 			<div class="container">
+		    		<!-- Brand and toggle get grouped for better mobile display -->
+				    <div class="navbar-header">
+				      	<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+				        	<span class="sr-only">Toggle navigation</span>
+				        	<span class="icon-bar"></span>
+				        	<span class="icon-bar"></span>
+				        	<span class="icon-bar"></span>
+				      	</button>
+				      	<a class="navbar-brand" href="/">ThreatExchangeUI</a>
+				    </div>
+
+				    <!-- Collect the nav links, forms, and other content for toggling -->
+				    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+				    	<% if user_signed_in? %>
+					      	<ul class="nav navbar-nav navbar-right">
+					      		<li><%= link_to '<center><i class="glyphicon glyphicon-home"></i><br>Home</center>'.html_safe, home_path %></li>
+					      		<li><%= link_to '<center><i class="glyphicon glyphicon-save"></i><br>Submit</center>'.html_safe, new_threat_path %></li>
+					      		<li><%= link_to '<center><i class="glyphicon glyphicon-cog"></i><br>Profile</center>'.html_safe, profile_path %></li>
+					        	<li><%= link_to '<center><i class="glyphicon glyphicon-log-in"></i><br>Log out</center>'.html_safe, destroy_user_session_path, method: :delete %></li>
+					      	</ul>
+					    <% else %>
+					    	<ul class="nav navbar-nav navbar-right">
+					        	<li><%= link_to '<center><i class="glyphicon glyphicon-log-out"></i><br>Log in</center>'.html_safe, root_path %></li>
+					      	</ul>
+					    <% end %>
+				    </div><!-- /.navbar-collapse -->
+				</div><!-- /.container -->
+			</nav>
+
+			<% if (params[:controller].downcase == "welcome") and ((controller.action_name.downcase == "faq") or (controller.action_name.downcase == "contact")) %>
+				<%= yield %>
+			<% elsif !user_signed_in? and ((params[:controller].downcase == "devise/sessions") or (params[:controller].downcase == "devise/passwords") or (params[:controller].downcase == "users/registrations") or (params[:controller].downcase == "users/sessions")) %>
+				<section id="" class="features">
+			        <div class="container">
+		                <div class="row">
+		                	<div id="notice" class="notice">
+						        <% flash.each do |name, msg| %>
+							        <% if (name != "timedout") or (msg == "Your session expired. Please sign in again to continue.") or (msg == "Your session expired. Please sign in again to continue.") %>
+								        <div class="alert alert-dismissable alert-<%= name == :notice ? "success" : "danger" %>">
+								        	<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+								        	<%= content_tag :div, msg, :id => "flash_#{name}" %>
+								    	</div>
+								    <% end %>
+							    <% end %>
+						    </div>
+		                    <div class="impact header-description">
+		                      	<div class="col-xs-12 col-md-6 col-md-offset-1">
+									<div class="">
+								        <h1>ThreatExchangeUI</h1>
+								        <p>Easily query and share share threat indicators using Facebook Threat Exchange</p>
+								        <br/>
+								    </div>
+							    </div>
+							    <div class="col-xs-12 col-md-1">
+							    	<div class="horizontal-divider"></div>				        
+								</div>
+							    <div class="col-xs-12 col-md-4">
+									<%= yield %>
+								</div>
+		                    </div>
+			            </div>
+			        </div><!-- /container -->
+			    </section> 
+		    <% else %>
+		    	<div class="container">
+			    	<div class="row">
+			    		<div class="col-xs-12">
+			    			<div id="notice" class="notice">
+							    <% flash.each do |name, msg| %>
+							   		<% if (name != "timedout") or (msg == "Your session expired. Please sign in again to continue.") or (msg == "Your session expired. Please sign in again to continue.") %>
+								        <div class="alert alert-dismissable alert-<%= name == :notice ? "success" : "danger" %>">
+								        	<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+								        	<%= content_tag :div, msg, :id => "flash_#{name}" %>
+								    	</div>
+								    <% end %>
+							    <% end %>
+						    </div>
+			    			<%= yield %>
+			    		</div>
+			    	</div>
+			    </div>
+		    <% end %>
+	    	<div class="push"></div>
+	    </div>
+
+		<div class="footer">
+            <div class="container">
+                <div class="row">
+                    <div class="col-xs-12">
+                        <p class="pull-left copyright-orange"><%= link_to "Terms of Service", terms_path %></p>
+                        <p class="pull-right copyright-orange"> &copy; 2015 SevenTwentyNine Inc. All rights reserved.</p>
+                    </div>
+                </div>
+            </div>
+        </div> 
+
+        <script type="text/javascript">
+        	setTimeout(function() {
+			    $('#notice').hide();
+			}, 4000); // <-- time in milliseconds
+		</script>
+
+		<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    	<!-- Include all compiled plugins (below), or include individual files as needed -->
+    	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+    	<!-- render "shared/ganalytics" -->
+	</body>
+</html>

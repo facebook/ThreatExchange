@@ -1,0 +1,25 @@
+<div class="row form-wrap">
+    <div class="col-xs-12">
+        <h4>Log in</h4>
+            <div class="session">
+                <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
+                <div class="form-group">
+                    <%= f.email_field :email, autofocus: true, :class => 'form-control', :placeholder => 'email address', autocomplete: 'off' %>
+                    <%= f.password_field :password, :class => 'form-control', :placeholder => 'password', autocomplete: "off" %>
+                </div>
+                <% if params[:next] %>
+                    <%= f.hidden_field :next, :value => params[:next] %>
+                <% end %>
+                <div>
+                    <%= f.submit "Sign in", :class => 'btn btn-lg btn-primary btn-block' %>
+                </div>
+            <% end %>
+        </div>  
+    </div>
+</div>
+<br/><br/>
+<div class="row">
+  <div class="col-xs-12">
+    <%= link_to new_user_registration_path, :target => "_self", :class => "btn btn-lg btn-block btn-danger btn-signup" do %>Join Now<% end %> 
+  </div>
+</div>

@@ -1,0 +1,31 @@
+<div class="row form-wrap">
+    <div class="col-sm-12">
+        <h4>Sign up</h4>
+        <div class="session">
+            <%= simple_form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
+                <div class="alert-devise"><%= devise_error_messages! %></div>
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <%= f.text_field :first_name, autofocus: true, :class => 'form-control', :placeholder => 'first name', autocomplete: 'off' %>
+                        </div>
+                        <div class="col-sm-6">
+                            <%= f.text_field :last_name, :class => 'form-control', :placeholder => 'last name', autocomplete: 'off' %>
+                        </div>
+                        <div class="col-sm-12">
+                            <%= f.email_field :email, :class => 'form-control', :placeholder => 'email address', autocomplete: 'off' %>
+                            <%= f.password_field :password, :class => 'form-control', :placeholder => 'password', autocomplete: "off" %>
+                            <%= f.password_field :password_confirmation, :class => 'form-control', :placeholder => 'confirm password', autocomplete: "off" %>
+                        </div>
+                    </div>
+                </div>
+                <div class="tos-acceptance">
+                    By clicking Sign up, you agree to our <strong><%= link_to "Terms of Service", terms_path %></strong>.
+                </div>
+                <div>
+                    <%= f.submit "Join Now", :class => 'btn btn-success btn-lg btn-block' %>
+                </div>
+            <% end %>
+        </div>  
+    </div>
+</div>
