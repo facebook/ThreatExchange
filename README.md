@@ -8,7 +8,7 @@ This repository contains example code for using the API.
 Full details on the ThreatExchange API, data formats, and best practices are available at  [https://developers.facebook.com/docs/threat-exchange/](https://developers.facebook.com/docs/threat-exchange/)
 
 ## Example Code
-This project offers example code in Python, PHP and Ruby.  There is also a reference user interface to ThreatExchanage, which is fully client-side, and written in Javascript!
+This project offers example code in Python, PHP and Ruby.  There is also a reference user interface to ThreatExchange, which is fully client-side, and written in Javascript!
 
 ## Get all available data
 
