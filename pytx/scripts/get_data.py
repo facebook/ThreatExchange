@@ -16,7 +16,7 @@ Sample usage:
 
     python scripts/fetch_data.py -o exchange_member -O /dev/stdout
     
-    python scripts/fetch_data.py -o threat_description -O /dev/stdout -t smarturl
+    python scripts/fetch_data.py -o threat_descriptor -O /dev/stdout -t smarturl
   
 """
 
@@ -61,8 +61,8 @@ def main():
         args.output = 'malware_families.csv'
         query(args)
 
-        args.object = 'threat_description'
-        args.output = 'threat_descriptions.csv'
+        args.object = 'threat_descriptor'
+        args.output = 'threat_descriptors.csv'
         query(args)
 
         args.object = 'threat_indicator'
@@ -168,7 +168,7 @@ def query(args):
                     until=until_str
                 )
 
-            elif args.object == 'threat_description':
+            elif args.object == 'threat_descriptor':
 
                 engine = ThreatDescriptor
 

@@ -16,7 +16,7 @@ from .rtu import RTUListener
 
 
 __title__ = 'pytx'
-__version__ = '0.5.6'
+__version__ = '0.5.7'
 __author__ = 'Mike Goffin'
 __license__ = 'BSD'
 __copyright__ = 'Copyright 2017 Mike Goffin'
