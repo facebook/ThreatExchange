@@ -27,7 +27,7 @@ else:
 
 setup(
     name='pytx',
-    version='0.5.6',
+    version='0.5.7',
     description='Python Library for Facebook ThreatExchange',
     long_description=long_description,
     author='Mike Goffin',
@@ -44,9 +44,6 @@ setup(
     url='https://www.github.com/facebook/ThreatExchange',
     packages=find_packages(exclude=['docs', 'tests']),
     install_requires=install_requires,
-    scripts=['scripts/get_compromised_credentials.py',
-             'scripts/get_indicators.py',
-             'scripts/get_members.py',
-             'scripts/malware_api.py',
-             'scripts/malware_grabber.py'],
+    scripts=['scripts/get_data.py',
+             'scripts/post_data.py'],
 )
