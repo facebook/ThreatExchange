@@ -307,8 +307,10 @@ class ThreatDescriptor(object):
     CONFIDENCE = 'confidence'
     DESCRIPTION = 'description'
     EXPIRED_ON = 'expired_on'
+    FIRST_ACTIVE = 'first_active'
     ID = Common.ID
     INDICATOR = 'indicator'
+    LAST_ACTIVE = 'last_active'
     LAST_UPDATED = 'last_updated'
     METADATA = Common.METADATA
     MY_REACTIONS = Common.MY_REACTIONS
