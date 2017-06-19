@@ -144,6 +144,7 @@ class Malware(object):
     SAMPLE_TYPE = 'sample_type'
     SHA1 = 'sha1'
     SHA256 = 'sha256'
+    SHA3_384 = 'sha3_384'
     SHARE_LEVEL = Common.SHARE_LEVEL
     SSDEEP = 'ssdeep'
     STATUS = Common.STATUS
