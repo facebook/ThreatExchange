@@ -167,6 +167,7 @@ class Common(object):
                 request_dict=False,
                 retries=None,
                 headers=None,
+                tags=None,
                 proxies=None,
                 verify=None):
         """
@@ -186,6 +187,8 @@ class Common(object):
         :type limit: int, str
         :param since: The timestamp to limit the beginning of the search.
         :type since: str
+        :param tags: The threat tags you want to filter by.
+        :type tags: str, list
         :param until: The timestamp to limit the end of the search.
         :type until: str
         :param include_expired: Include expired content in your results.
