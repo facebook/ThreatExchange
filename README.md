@@ -12,12 +12,11 @@ This project offers example code in Python, PHP and Ruby.  There is also a refer
 
 ## Get all available data
 
-To get ALL the data in ThreatExchange, use our scripts in the get_all_data
-folder. For example, to get all the threat indicators uploaded to ThreatExchange
-over the last 10 days with the text "facebook", run the following command:
+To get all the data in ThreatExchange, use our scripts in the pytx/scripts
+folder. For example, to get threat descriptors uploaded to ThreatExchange 
+run the following command:
 
-   $ python ./get_all_data/get_threat_indicators.py --text="facebook"
-     --days_back=10
+   $ python pytx/scripts/get_data.py -o threat_descriptor
 
 ## Blog
 You can get details on the ThreatExchange platform, new features and other updates via our blog at [https://www.facebook.com/threatexchange](https://www.facebook.com/threatexchange).

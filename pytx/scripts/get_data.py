@@ -14,9 +14,9 @@ If no value is supplied for --object:
 
 Sample usage:
 
-    python scripts/fetch_data.py -o exchange_member -O /dev/stdout
+    python scripts/get_data.py -o exchange_member -O /dev/stdout
     
-    python scripts/fetch_data.py -o threat_descriptor -O /dev/stdout -t smarturl
+    python scripts/get_data.py -o threat_descriptor -O /dev/stdout -t smarturl
   
 """
 
