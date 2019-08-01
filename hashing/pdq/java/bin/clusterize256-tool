@@ -1,0 +1,15 @@
+#!/bin/bash
+
+ourdir=$(dirname $0)
+# Absolutize
+if [ "$ourdir" = "." ]; then
+    ourdir=$(pwd)
+elif [ "${ourdir:0:1}" != "/" ]; then
+    ourdir="$(pwd)/$ourdir";
+fi
+PDQJAR=$ourdir/../pdq.jar
+if [ ! -f "$PDQJAR" ]; then
+  echo "$0: could not find $PDQJAR." 1>&2
+  exit 1
+fi
+java -cp $ourdir/../pdq.jar -Djava.awt.headless=true pdqhashing.tools.Clusterize256Tool "$@"

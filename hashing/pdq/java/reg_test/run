@@ -1,0 +1,242 @@
+#!/bin/sh
+
+# ================================================================
+# Run this regression script from its parent directory
+# ================================================================
+set -e
+
+ourdir=`dirname $0`
+pwd=`pwd`
+
+path_to_hash256tool=./bin/hash256tool
+if [ ! -x "$path_to_hash256tool" ]; then
+  echo "$0: Could not find path to hashtool256 executable $path_to_hash256tool." 1>&2
+  exit 1
+fi
+path_to_pdq_photo_hasher_tool=./bin/pdq-photo-hasher-tool
+if [ ! -x "$path_to_pdq_photo_hasher_tool" ]; then
+  echo "$0: Could not find path to pdq-photo-hasher executable $path_to_pdq_photo_hasher_tool." 1>&2
+  exit 1
+fi
+path_to_clusterize256_tool=./bin/clusterize256-tool
+if [ ! -x "$path_to_clusterize256_tool" ]; then
+  echo "$0: Could not find path to clusterize256 executable $path_to_clusterize256_tool." 1>&2
+  exit 1
+fi
+path_to_clusterize256x_tool=./bin/clusterize256x-tool
+if [ ! -x "$path_to_clusterize256x_tool" ]; then
+  echo "$0: Could not find path to clusterize256x executable $path_to_clusterize256x_tool." 1>&2
+  exit 1
+fi
+
+indir=$ourdir/../../data/reg-test-input
+expdir=$ourdir/expected
+outdir=$pwd/output-regtest
+reloutdir=./output-regtest
+outfile=$outdir/out
+expfile=$expdir/out
+mkdir -p $outdir
+
+rm -rf $outdir
+mkdir -p $outdir
+touch $outfile
+echo
+
+num_completed=0
+
+announce() {
+  echo >> $outfile
+  echo "================================================================" >> $outfile
+  echo "$@" >> $outfile
+  echo >> $outfile
+}
+
+mention() {
+  echo >> $outfile
+  echo ---------------------------------------------------------------- "$@" >> $outfile
+}
+
+# A key feature of this regression script is that it can be invoked from any
+# directory. Depending on the directory it's invoked from, the path to the
+# executables may vary.  Nonetheless for debugging it's crucial that we echo out
+# each command being executed. See also diff -I below.
+
+run_hashtool256() {
+  # Use just "hashtool256" for info messages
+  echo "RUNNING"
+  echo hashtool256 "$@"
+  echo ""
+  echo RUNNING >> $outfile
+  echo hashtool256 "$@" >> $outfile
+  echo "" >> $outfile
+  # Use path to hashtool256 for invoking the command
+  $path_to_hash256tool "$@" >> $outfile
+  echo >> $outfile
+  # since set -e
+  num_completed=`expr $num_completed + 1`
+}
+
+run_pdq_photo_hasher() {
+  # Use just "pdq-photo-hasher" for info messages
+  echo "RUNNING"
+  echo pdq-photo-hasher-tool "$@"
+  echo ""
+  echo RUNNING >> $outfile
+  echo pdq-photo-hasher-tool "$@" >> $outfile
+  echo "" >> $outfile
+  # Use path to pdq-photo-hasher for invoking the command
+  $path_to_pdq_photo_hasher_tool "$@" >> $outfile
+  echo >> $outfile
+  # since set -e
+  num_completed=`expr $num_completed + 1`
+}
+
+run_clusterize256() {
+  # Use just "clusterize256" for info messages
+  echo "RUNNING"
+  echo clusterize256 "$@"
+  echo ""
+  echo RUNNING >> $outfile
+  echo clusterize256 "$@" >> $outfile
+  echo "" >> $outfile
+  # Use path to clusterize256 for invoking the command
+  $path_to_clusterize256_tool "$@" >> $outfile
+  echo >> $outfile
+  # since set -e
+  num_completed=`expr $num_completed + 1`
+}
+
+run_clusterize256x() {
+  # Use just "clusterize256x" for info messages
+  echo "RUNNING"
+  echo clusterize256x "$@"
+  echo ""
+  echo RUNNING >> $outfile
+  echo clusterize256x "$@" >> $outfile
+  echo "" >> $outfile
+  # Use path to clusterize256x for invoking the command
+  $path_to_clusterize256x_tool "$@" >> $outfile
+  echo >> $outfile
+  # since set -e
+  num_completed=`expr $num_completed + 1`
+}
+
+hashtool256_expect_fail() {
+  # Use just "hashtool256" for info messages
+  echo "RUNNING"
+  echo hashtool256 "$@"
+  echo ""
+  echo RUNNING >> $outfile
+  echo hashtool256 "$@" >> $outfile
+  echo "" >> $outfile
+  # Use path to hashtool256 for invoking the command
+  set +e
+  $path_to_hash256tool "$@" >> $outfile 2>&1
+  status=$?
+  if [ $status -ne 1 ]; then
+    echo "Exit status was $status; expected 1."
+    echo "Exit status was $status; expected 1." >> $outfile
+  fi
+  set -e
+  echo >> $outfile
+  test $status -eq 1
+  # since set -e
+  num_completed=`expr $num_completed + 1`
+}
+
+# ================================================================
+announce PHOTO-HASHING REGRESSION TESTS
+
+run_pdq_photo_hasher $indir/dih/bridge*.jpg
+run_pdq_photo_hasher --details --no-timings $indir/dih/bridge*.jpg
+
+run_pdq_photo_hasher           --no-timings $indir/dih/bridge-1-original.jpg
+run_pdq_photo_hasher --details --no-timings $indir/dih/bridge-1-original.jpg
+
+run_pdq_photo_hasher --pdqdih           --no-timings $indir/dih/bridge-1-original.jpg
+run_pdq_photo_hasher --pdqdih --details --no-timings $indir/dih/bridge-1-original.jpg
+
+run_pdq_photo_hasher --pdqdih-across           --no-timings $indir/dih/bridge-1-original.jpg
+run_pdq_photo_hasher --pdqdih-across --details --no-timings $indir/dih/bridge-1-original.jpg
+
+# ================================================================
+announce 256-BIT TOOL TESTS
+
+run_hashtool256 norms      < $indir/short256.dat
+run_hashtool256 slotnorms  < $indir/short256.dat
+run_hashtool256 deltas     < $indir/short256.dat
+run_hashtool256 axors      < $indir/short256.dat
+run_hashtool256 fxors      < $indir/short256.dat
+run_hashtool256 matrix     < $indir/short256.dat
+run_hashtool256 cij        < $indir/short256.dat
+run_hashtool256 bits       < $indir/short256.dat
+run_hashtool256 words      < $indir/short256.dat
+run_hashtool256 int64      < $indir/short256.dat
+run_hashtool256 int64      < $indir/order256.dat
+
+run_hashtool256 norms      $indir/short256.dat
+run_hashtool256 slotnorms  $indir/short256.dat
+run_hashtool256 deltas     $indir/short256.dat
+run_hashtool256 axors      $indir/short256.dat
+run_hashtool256 fxors      $indir/short256.dat
+run_hashtool256 matrix     $indir/short256.dat
+run_hashtool256 cij        $indir/short256.dat
+run_hashtool256 bits       $indir/short256.dat
+run_hashtool256 words      $indir/short256.dat
+run_hashtool256 int64      $indir/short256.dat
+run_hashtool256 int64      $indir/order256.dat
+
+# ================================================================
+announce MIH REGRESSION TESTS
+
+# Use -b (brute-force) for higher distances since the MIH implementation chooses
+# to stop at d=47, due to memory usage for the slotwise-nearest-neighbors array.
+# xxx mlr dep ...
+run_clusterize256    -d  0 $indir/haystack.txt
+run_clusterize256    -d 32 $indir/haystack.txt
+run_clusterize256 -b -d 64 $indir/haystack.txt
+run_clusterize256 -b -d 96 $indir/haystack.txt
+
+run_clusterize256    -d  0 --non-snowball $indir/haystack.txt
+run_clusterize256    -d 32 --non-snowball $indir/haystack.txt
+run_clusterize256 -b -d 64 --non-snowball $indir/haystack.txt
+run_clusterize256 -b -d 96 --non-snowball $indir/haystack.txt
+
+run_clusterize256x    -d  0 $indir/haystack.txt
+run_clusterize256x    -d 32 $indir/haystack.txt
+run_clusterize256x -b -d 64 $indir/haystack.txt
+run_clusterize256x -b -d 96 $indir/haystack.txt
+
+# ================================================================
+# A key feature of this regression script is that it can be invoked from any
+# directory. Depending on the directory it's invoked from, the path to $outdir
+# may vary. Nonetheless for debugging it's crucial that we echo out each
+# command being executed -- here we use diff -I to skip the info lines and
+# focus the test on program output per se.
+
+echo
+echo ================================================================
+echo "Differences between $expfile and $outfile:"
+
+# We run with 'set -e' all the way through this script, to die on error -- but
+# for the diff command we want to trap the error and die with a message, especially
+# when the diff is long.
+
+set +e
+diff -I '^hashtool' -C5 $expfile $outfile
+status=$?
+
+if [ $status -eq 0 ]; then
+  echo "No differences were found between $expfile and $outfile"
+  echo ================================================================
+  echo
+  echo ALL REGRESSION TESTS PASSED
+  echo Tests completed: $num_completed
+  exit 0
+else
+  echo
+  echo "Differences were found between $expfile and $outfile !"
+  echo
+  echo Tests completed: $num_completed
+  exit 1
+fi
