@@ -24,6 +24,8 @@ float* loadFloatLumaFromCImg(
   int& numCols
 );
 
+void showDecoderInfo();
+
 bool pdqHash256FromFile(
   const char* filename,
   Hash256& hash,
