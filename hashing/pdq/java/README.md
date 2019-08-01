@@ -17,6 +17,13 @@ This is Java code which we've tried to make non-clever. If people want another i
 
 As of 2017-11-08 there is also a **pure-PHP** implementation for the hasher, but not yet for the hash-lookup (MIH) logic; the **C++** and **Java** implementations are complete.
 
+##
+
+Building using bazel:
+https://bazel.build/
+bazel build //...
+bazel run //src/main/java/tools:ToolName
+
 ## Portability concerns
 
 The regression script invoked by the Makefile invokes a clusterizer which depends on iteration order through hash maps. This means that if you run it on the same machine/platform you should get the same results; this is good for checking if you recently broke something.
