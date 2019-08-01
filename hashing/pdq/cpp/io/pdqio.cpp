@@ -19,6 +19,11 @@ namespace hashing {
 const int DOWNSAMPLE_DIMS = 512;
 
 // ----------------------------------------------------------------
+void showDecoderInfo() {
+  cimg_library::cimg::info();
+}
+
+// ----------------------------------------------------------------
 // Returns matrix as num_rows x num_cols in row-major order.
 // The caller must free the return value.
 float* loadFloatLumaFromCImg(CImg<uint8_t>& img, int& numRows, int& numCols) {

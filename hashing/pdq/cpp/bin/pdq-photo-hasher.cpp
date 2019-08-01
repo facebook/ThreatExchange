@@ -43,6 +43,7 @@ static void usage(char* argv0, int rc) {
       fp,
       "-k: Continue to next image after image errors, but still exit "
       "1 afterward.\n");
+  fprintf(fp, "--info: show information about the image-decoder library.\n");
   exit(rc);
 }
 
@@ -68,6 +69,10 @@ int main(int argc, char* argv[]) {
       usage(argv[0], 0);
     } else if (!strcmp(argv[argi], "--help")) {
       usage(argv[0], 0);
+
+    } else if (!strcmp(argv[argi], "--info")) {
+      showDecoderInfo();
+      exit(0);
 
     } else if (
         !strcmp(argv[argi], "-i") || !strcmp(argv[argi], "--files-on-stdin")) {
