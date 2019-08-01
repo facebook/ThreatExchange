@@ -5,7 +5,7 @@ produced in conjunction with Facebook AI Research ('FAIR').
 
 * Full details are located in the [hashing.pdf](https://github.com/facebook/ThreatExchange/blob/master/hashing/hashing.pdf) document.
 
-* See https://newsroom.fb.com/news/2019/08/to-do-add-this-link-once-published for context.
+* See https://newsroom.fb.com/news/2019/08/open-source-photo-video-matching for context.
 
 * Researchers in video copy-detection algorithms may also be interested in
   https://github.com/facebookresearch/videoalignment for a research version of
