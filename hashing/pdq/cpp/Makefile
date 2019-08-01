@@ -73,11 +73,12 @@ test-hamming: bin/test-hamming.cpp $(LIBSRCS) $(LIBHDRS)
 
 pdq-photo-hasher: bin/pdq-photo-hasher.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/pdq-photo-hasher.cpp $(LIBSRCS) -o pdq-photo-hasher $(LFLAGS)
+
 # Profile version. Usage:
 # * make pdq-photo-hasher-prof
 # * pdq-photo-hasher-prof {arguments>
 # * gprof pdq-photo-hasher-prof gmon.out > myfile.txt
-# Note: works on Linux; not on OSX.
+# Note: this profiler command works on Linux; not on OSX.
 pdq-photo-hasher-prof: bin/pdq-photo-hasher.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) -pg bin/pdq-photo-hasher.cpp $(LIBSRCS) -o pdq-photo-hasher-prof $(LFLAGS) -lpthread
 
