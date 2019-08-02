@@ -3,6 +3,7 @@
 
 #include <pdq/cpp/io/pdqio.h>
 #include <pdq/cpp/hashing/pdqhashing.h>
+#include <pdq/cpp/hashing/torben.h>
 #include <pdq/cpp/downscaling/downscaling.h>
 
 #include <stdlib.h>
@@ -124,6 +125,11 @@ int main(int argc, char* argv[]) {
     snprintf(tapName, tapbuflen, "7-dct-%s", filename);
     floatMatrixToCImgOrDump(&buffer16x16[0][0], 16, 16, tapName, gfmt, do_dump);
 
+    if (do_dump) {
+      float dct_median = torben(&buffer16x16[0][0], 16 * 16);
+      printf("Median: %.4f\n", dct_median);
+      printf("\n");
+    }
 
     dct16OriginalToRotate90(buffer16x16, buffer16x16Aux);
     snprintf(tapName, tapbuflen, "7-dct-r90-%s", filename);
