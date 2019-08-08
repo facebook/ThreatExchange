@@ -17,7 +17,7 @@ lot.
 # Compiling the code
 
 ```
-javac TETagQuery.java
+javac com/facebook/threatexchange/TETagQuery.java
 ```
 
 # Running the code
@@ -25,11 +25,11 @@ javac TETagQuery.java
 Examples:
 
 ```
-java TETagQuery --help
-java TETagQuery --pdq -q tag-to-details media_type_photo
-java TETagQuery --photodna -q tag-to-details media_type_photo
-java TETagQuery --md5 tag-to-details media_type_video
-java TETagQuery tag-to-details --page-size 10 --hash-dir ./tmk-hash-dir --hash-type tmk media_priority_test
+java com.facebook.threatexchange.TETagQuery --help
+java com.facebook.threatexchange.TETagQuery --pdq -q tag-to-details media_type_photo
+java com.facebook.threatexchange.TETagQuery --photodna -q tag-to-details media_type_photo
+java com.facebook.threatexchange.TETagQuery --md5 tag-to-details media_type_video
+java com.facebook.threatexchange.TETagQuery tag-to-details --page-size 10 --hash-dir ./tmk-hash-dir --hash-type tmk media_priority_test
 ```
 
 # Contact

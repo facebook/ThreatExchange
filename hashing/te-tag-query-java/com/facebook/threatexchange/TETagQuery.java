@@ -1,3 +1,4 @@
+package com.facebook.threatexchange;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
