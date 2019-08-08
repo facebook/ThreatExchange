@@ -174,6 +174,7 @@ public class TETagQuery {
     private static final String TAG_TO_DETAILS = "tag-to-details";
     private static final String INCREMENTAL = "incremental";
     private static final String PAGINATE = "paginate";
+    private static final String SUBMIT = "submit";
 
     public static CommandHandler create(String verb) {
       switch(verb) {
@@ -189,6 +190,8 @@ public class TETagQuery {
         return new IncrementalHandler(verb);
       case PAGINATE:
         return new PaginateHandler(verb);
+      case SUBMIT:
+        return new SubmitHandler(verb);
       default:
         return null;
       }
@@ -919,6 +922,170 @@ public class TETagQuery {
         }
       } while (nextURL != null);
     }
+  }
+
+  // ----------------------------------------------------------------
+  public static class SubmitHandler extends CommandHandler {
+    public SubmitHandler(String verb) {
+      super(verb);
+    }
+
+    @Override
+    public void usage(int exitCode) {
+      PrintStream o = Utils.getPrintStream(exitCode);
+      o.printf("Usage: %s %s xxx type me up\n", PROGNAME, _verb);
+      o.printf("xxx type me up.\n");
+      System.exit(exitCode);
+    }
+
+    // https://developers.facebook.com/docs/threat-exchange/reference/submitting
+    //
+    // Required:
+    //
+    // * indicator text & indicator type
+    // * description
+    // * privacy type / visibility
+    //   - privacy_members / how PG ?!?
+    // * share level
+    // * status
+    //
+    // Optional with defaults:
+    //
+    // * confidence, precision, review_status, severity
+    // * expired_on, first_active, last_active
+    // * tags / add_tags / remove_tags
+
+    @Override
+    public void handle(
+      String[] args,
+      int numIDsPerQuery,
+      boolean verbose,
+      boolean showURLs,
+      HashFormatter hashFormatter
+    ) {
+      boolean dryRun = false;
+      DescriptorPostParameters  params = new DescriptorPostParameters();
+
+      while (args.length > 0 && args[0].startsWith("-")) {
+        String option = args[0];
+        args = Arrays.copyOfRange(args, 1, args.length);
+
+        if (option.equals("-h") || option.equals("--help")) {
+          usage(0);
+
+        } else if (option.equals("--dry-run")) {
+          dryRun = true;
+
+        } else if (option.equals("-i") || option.equals("--indicator")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setIndicatorText(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-t") || option.equals("--type")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setIndicatorType(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-d") || option.equals("--description")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setDescription(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-l") || option.equals("--share-level")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setShareLevel(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-s") || option.equals("--status")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setStatus(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-p") || option.equals("--privacy-type")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setPrivacyType(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-m") || option.equals("--privacy-members")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setPrivacyMembers(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--tags")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setTagsToSet(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--add-tags")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setTagsToAdd(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--remove-tags")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setTagsToRemove(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--confidence")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setConfidence(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--precision")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setPrecision(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--first-active")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setFirstActive(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--last-active")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setLastActive(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else {
+          System.err.printf("%s %s: Unrecognized option \"%s\".\n",
+            PROGNAME, _verb, option);
+          usage(1);
+        }
+      }
+      if (args.length > 0) {
+        System.err.printf("Extraneous argument \"%s\"\n", args[0]);
+        usage(1);
+      }
+
+      if (!params.validateWithReport(System.err)) {
+        usage(1);
+      }
+
+      // xxx tmk-from-file ...
+      // xxx indicators-from-file loop options:
+      // * for non-tmk, one hash per line
+      // * for tmk, one .tmk filename per line
+
+      Net.postThreatDescriptor(params, showURLs, dryRun);
+    }
+
   }
 
 }

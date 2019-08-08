@@ -17,7 +17,7 @@ lot.
 # Compiling the code
 
 ```
-javac com/facebook/threatexchange/TETagQuery.java
+javac com/facebook/threatexchange/*.java
 ```
 
 # Running the code

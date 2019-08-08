@@ -6,6 +6,7 @@ import org.json.simple.parser.JSONParser;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.IOException;
 import java.lang.NumberFormatException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -466,6 +467,110 @@ class Net {
     } while (nextURL != null);
 
     return sharedHashes;
+  }
+
+  /**
+   * xxx to do
+   */
+  public static void postThreatDescriptor(
+    DescriptorPostParameters params,
+    boolean showURLs,
+    boolean dryRun
+  ) {
+
+    String urlString = Constants.TE_BASE_URL
+      + "/threat_descriptors"
+      + "/?access_token=" + APP_TOKEN;
+
+    if (showURLs) {
+      System.out.println();
+      System.out.println("URL:");
+      System.out.println(urlString);
+    }
+
+    URL url = null;
+    try {
+      url = new URL(urlString);
+    } catch (java.net.MalformedURLException e) {
+      System.err.println("A malformed URL was constructed:");
+      System.err.println(urlString);
+      System.exit(1);
+    }
+
+    // xxx unq
+    java.net.HttpURLConnection connection = null;
+    try {
+      connection = (java.net.HttpURLConnection) url.openConnection();
+    } catch (IOException e) {
+      System.err.println("A malformed URL was constructed:");
+      System.err.println(urlString);
+      System.exit(1);
+    }
+    connection.setDoOutput(true); // since there is a POST body
+
+    connection.setInstanceFollowRedirects(false);
+    try {
+      connection.setRequestMethod("POST");
+    } catch (java.net.ProtocolException e) {
+      System.err.println("Unable to set request method to POST.");
+      System.err.println(urlString);
+      System.exit(1);
+    }
+    connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+    connection.setRequestProperty("charset", "utf-8");
+
+    String postDataString = params.getPostDataString();
+    if (showURLs) {
+      System.out.println();
+      System.out.println("POST DATA:");
+      System.out.println(postDataString);
+    }
+
+    byte[] postDataBytes = Utils.getBytesUTF8(postDataString);
+    connection.setRequestProperty("Content-Length", Integer.toString(postDataBytes.length));
+
+    if (dryRun) {
+      System.out.println("Not doing POST since --dry-run.");
+    } else {
+      try {
+        connection.getOutputStream().write(postDataBytes);
+      } catch (java.io.IOException e) {
+        System.err.println();
+        System.err.printf("POST failure.\n");
+        System.err.printf("\n");
+        e.printStackTrace(System.err);
+        System.exit(1);
+      }
+
+      try (InputStream response = connection.getInputStream()) {
+
+        JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
+        System.out.println(object);
+      } catch (Exception e) {
+        try {
+          InputStream response = connection.getErrorStream();
+          JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
+
+          System.err.println();
+          System.out.println("ERROR STREAM:");
+          System.out.println(object);
+        } catch (IOException e2) {
+          System.err.println("IOException trying to print the error stream :(");
+        } catch (org.json.simple.parser.ParseException e2) {
+          System.err.println("ParseException trying to print the error stream :(");
+        }
+
+        System.err.println();
+        System.err.println("EXCEPTION MESSAGE:");
+        System.err.println(e.getMessage());
+
+        System.err.println();
+        System.err.println("EXCEPTION STACK TRACE:");
+        e.printStackTrace(System.err);
+
+        System.exit(1);
+      }
+    }
   }
 
 } // Net

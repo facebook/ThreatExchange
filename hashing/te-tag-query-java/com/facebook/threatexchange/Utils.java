@@ -2,6 +2,7 @@ package com.facebook.threatexchange;
 
 import java.io.PrintStream;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +49,30 @@ class Utils {
     }
 
     return chunks;
+  }
+
+  // Try-catches an annoying should-never-happen unsupported-encoding exception
+  public static String urlEncodeUTF8(String input) {
+    String retval = null;
+    try {
+      retval = URLEncoder.encode(input, "UTF-8");
+    } catch (java.io.UnsupportedEncodingException e) {
+      System.err.printf("Internal coding error in data encoder.\n");
+      System.exit(1);
+    }
+    return retval;
+  }
+
+  // Try-catches an annoying should-never-happen unsupported-encoding exception
+  public static byte[] getBytesUTF8(String input) {
+    byte[] retval = null;
+    try {
+      retval = input.toString().getBytes("UTF-8");
+    } catch (java.io.UnsupportedEncodingException e) {
+      System.err.printf("Internal coding error in data encoder.\n");
+      System.exit(1);
+    }
+    return retval;
   }
 
 } // class Utils
