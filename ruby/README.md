@@ -41,7 +41,10 @@ result = TE.threat_indicators(query)
 The result will return either a string, a singular hash or an array of hashes and then from there you can manipulate the data as you like.
 If you would like to see examples of each type of query take a look at the script in the example directory.
 
+## Testing
+  To run tests just invoke rake. 
 
+    rake
 
 ## Contributing
 
