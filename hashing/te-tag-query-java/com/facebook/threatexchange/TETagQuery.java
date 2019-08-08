@@ -4,7 +4,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,26 +13,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.NumberFormatException;
-import java.lang.StringBuilder;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Stream;
-
-import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Example technique for retrieving all hashes with a given tag from ThreatExchange.
@@ -44,44 +30,14 @@ import static java.util.stream.Collectors.toList;
  * * Then for each resulting hash ID we do a query for all fields associated with that
  *   ID. This is relatively slow, but batching multiple IDs per query helps a lot.
  *
- * Examples:
- *   javac TETagQuery.java
- *   java TETagQuery --pdq -q tag-to-details media_type_photo
- *   java TETagQuery --photodna -q tag-to-details media_type_photo
- *   java TETagQuery --md5 tag-to-details media_type_video
+ * Please see README.md for example usages.
  */
 public class TETagQuery {
   private static final String PROGNAME = "TETagQuery";
-  private static String APP_TOKEN = null;
   private static final String DEFAULT_APP_TOKEN_ENV_NAME = "TX_ACCESS_TOKEN";
 
   // https://developers.facebook.com/docs/threat-exchange/best-practices#batching
   private static final int MAX_IDS_PER_QUERY = 50;
-
-  private static final String TE_BASE_URL = "https://graph.facebook.com/v3.1";
-
-  // These are all conventions for hash-sharing over ThreatExchange.
-  private static final String HASH_TYPE_PHOTODNA = "HASH_PHOTODNA";
-  private static final String HASH_TYPE_PDQ = "HASH_PDQ";
-  private static final String HASH_TYPE_MD5 = "HASH_MD5";
-  private static final String HASH_TYPE_TMK = "HASH_TMK";
-
-  private static final String THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR";
-
-  private static final String TAG_PREFIX_MEDIA_TYPE = "media_type_";
-  private static final String TAG_MEDIA_TYPE_PHOTO = "media_type_photo";
-  private static final String TAG_MEDIA_TYPE_VIDEO = "media_type_video";
-  private static final String TAG_MEDIA_TYPE_LONG_HASH_VIDEO = "media_type_long_hash_video";
-
-  private static final String TAG_PREFIX_MEDIA_PRIORITY = "media_priority_";
-  private static final String TAG_MEDIA_PRIORITY_S0 = "media_priority_s0";
-  private static final String TAG_MEDIA_PRIORITY_S1 = "media_priority_s1";
-  private static final String TAG_MEDIA_PRIORITY_S2 = "media_priority_s2";
-  private static final String TAG_MEDIA_PRIORITY_S3 = "media_priority_s3";
-  private static final String TAG_MEDIA_PRIORITY_T0 = "media_priority_t0";
-  private static final String TAG_MEDIA_PRIORITY_T1 = "media_priority_t1";
-  private static final String TAG_MEDIA_PRIORITY_T2 = "media_priority_t2";
-  private static final String TAG_MEDIA_PRIORITY_T3 = "media_priority_t3";
 
   // ================================================================
   // MAIN COMMAND-LINE ENTRY POINT
@@ -142,17 +98,17 @@ public class TETagQuery {
         System.exit(0);
 
       } else if (option.equals("--list-tags")) {
-        System.out.println(TAG_MEDIA_TYPE_PHOTO);
-        System.out.println(TAG_MEDIA_TYPE_VIDEO);
-        System.out.println(TAG_MEDIA_TYPE_LONG_HASH_VIDEO);
-        System.out.println(TAG_MEDIA_PRIORITY_S0);
-        System.out.println(TAG_MEDIA_PRIORITY_S1);
-        System.out.println(TAG_MEDIA_PRIORITY_S2);
-        System.out.println(TAG_MEDIA_PRIORITY_S3);
-        System.out.println(TAG_MEDIA_PRIORITY_T0);
-        System.out.println(TAG_MEDIA_PRIORITY_T1);
-        System.out.println(TAG_MEDIA_PRIORITY_T2);
-        System.out.println(TAG_MEDIA_PRIORITY_T3);
+        System.out.println(Constants.TAG_MEDIA_TYPE_PHOTO);
+        System.out.println(Constants.TAG_MEDIA_TYPE_VIDEO);
+        System.out.println(Constants.TAG_MEDIA_TYPE_LONG_HASH_VIDEO);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_S0);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_S1);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_S2);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_S3);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_T0);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_T1);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_T2);
+        System.out.println(Constants.TAG_MEDIA_PRIORITY_T3);
         System.exit(0);
 
       } else if (option.equals("--ids-per-query")) {
@@ -187,7 +143,7 @@ public class TETagQuery {
       }
     }
 
-    setAppToken(appTokenEnvName);
+    Net.setAppToken(appTokenEnvName);
 
     if (args.length < 1) {
       usage(1);
@@ -202,22 +158,6 @@ public class TETagQuery {
     }
     commandHandler.handle(args, numIDsPerQuery, verbose, showURLs,
       hashFormatter);
-  }
-
-  /**
-   * Gets the ThreatExchange app token from an environment variable.
-   * Feel free to replace the app-token discovery method here with whatever
-   * is most convenient for your project. However, be aware that app tokens
-   * are like passwords and shouldn't be stored in the open.
-   */
-  private static void setAppToken(String appTokenEnvName) {
-    String value = System.getenv().get(appTokenEnvName);
-    if (value == null) {
-      System.out.printf("Must set %s environment variable in format %s.\n",
-        appTokenEnvName, "999999999999999|xxxx-xxxxxxxxx-xxxxxxxxxxxx");
-      System.exit(1);
-    }
-    APP_TOKEN = value;
   }
 
   // ================================================================
@@ -728,16 +668,16 @@ public class TETagQuery {
   public static String hashTypeToFileSuffix(String hashType) {
     String suffix = ".hsh";
     switch (hashType) {
-    case HASH_TYPE_PHOTODNA:
+    case Constants.HASH_TYPE_PHOTODNA:
       suffix = ".pdna";
       break;
-    case HASH_TYPE_PDQ:
+    case Constants.HASH_TYPE_PDQ:
       suffix = ".pdq";
       break;
-    case HASH_TYPE_MD5:
+    case Constants.HASH_TYPE_MD5:
       suffix = ".md5";
       break;
-    case HASH_TYPE_TMK:
+    case Constants.HASH_TYPE_TMK:
       suffix = ".tmk";
       break;
     }
@@ -750,7 +690,7 @@ public class TETagQuery {
     boolean verbose)
       throws FileNotFoundException, IOException
   {
-    if (sharedHash.hashType.equals(HASH_TYPE_TMK)) {
+    if (sharedHash.hashType.equals(Constants.HASH_TYPE_TMK)) {
       outputTMKHashToFile(sharedHash, path, verbose);
     } else {
       outputNonTMKHashToFile(sharedHash, path, verbose);
@@ -978,726 +918,6 @@ public class TETagQuery {
           System.exit(1);
         }
       } while (nextURL != null);
-    }
-  }
-
-  // ================================================================
-  // UTILITY METHODS
-  // ================================================================
-
-  private static class Utils {
-
-    /**
-     * Supports the paradigm that usage-functions should print to stdout and
-     * exit 0 when asked for via --help, and print to stderr and exit 1
-     * when unacceptable command-line syntax is encountered.
-     */
-    private static PrintStream getPrintStream(int exitCode) {
-      return exitCode == 0
-        ? System.out
-        : System.err;
-    }
-
-    /**
-     * Splits a list of strings into chunks of a given max length.
-     * General-purpose, but for this application, intended to satisfy
-     * the max-IDs-per-request for the ThreatExchange IDs-to-details URL.
-     */
-    public static List<List<String>> chunkify(List<String> stringList, int numPerChunk) {
-      List<List<String>> chunks = new ArrayList<List<String>>();
-      int n = stringList.size();
-      String[] stringArray = new String[n];
-      int k = 0;
-      for (String s : stringList) {
-        stringArray[k++] = s;
-      }
-
-      for (int i = 0; i < n; i += numPerChunk) {
-        int j = i + numPerChunk;
-        if (j > n) {
-          j = n;
-        }
-        String[] subArray = Arrays.copyOfRange(stringArray, i, j);
-        chunks.add(Arrays.asList(subArray));
-      }
-
-      return chunks;
-    }
-
-  } // class Utils
-
-  // ================================================================
-  // HTTP-wrapper methods
-  // ================================================================
-
-  private static class Net {
-
-    /**
-     * Looks up the internal ID for a given tag.
-     */
-    public static String getTagIDFromName(String tagName, boolean showURLs) {
-      String url = TE_BASE_URL
-        + "/threat_tags"
-        + "/?access_token=" + APP_TOKEN
-        + "&text=" + java.net.URLEncoder.encode(tagName); // since user-supplied string
-      if (showURLs) {
-        System.out.println("URL:");
-        System.out.println(url);
-      }
-      try (InputStream response = new URL(url).openConnection().getInputStream()) {
-
-        // The lookup will get everything that has this as a prefix.
-        // So we need to filter the results. This loop also handles the
-        // case when the results array is empty.
-
-        // Example: when querying for "media_type_video", we want the 2nd one:
-        // { "data": [
-        //   { "id": "9999338563303771", "text": "media_type_video_long_hash" },
-        //   { "id": "9999474908560728", "text": "media_type_video" },
-        //   { "id": "9889872714202918", "text": "media_type_video_hash_long" }
-        //   ], ...
-        // }
-
-        JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
-        JSONArray idAndTextArray = (JSONArray) object.get("data");
-
-        for (Object idAndTextObj : idAndTextArray) {
-          JSONObject idAndText = (JSONObject)idAndTextObj;
-          String id = (String)idAndText.get("id");
-          String text = (String)idAndText.get("text");
-          if (text != null && text.equals(tagName)) {
-            return id;
-          }
-        }
-        return null;
-      } catch (Exception e) {
-        e.printStackTrace(System.err);
-        System.exit(1);
-      }
-      return null;
-    }
-
-    /**
-     * Looks up all descriptors with a given tag. Returns only the IDs. Details must be
-     * sought one ID at a time.
-     */
-    public static List<String> getHashIDsByTagID(
-      String tagID,
-      boolean verbose,
-      boolean showURLs,
-      HashFilterer hashFilterer,
-      String since, // maybe null
-      String until, // maybe null
-      int pageSize,
-      boolean printHashString
-    ) {
-      List<String> hashIDs = new ArrayList<String>();
-
-      String pageLimit = Integer.toString(pageSize);
-      String startURL = TE_BASE_URL
-        + "/" + tagID + "/tagged_objects"
-        + "/?access_token=" + APP_TOKEN
-        + "&limit=" + pageLimit;
-      if (since != null) {
-        startURL += "&tagged_since=" + since;
-      }
-      if (until != null) {
-        startURL += "&tagged_until=" + until;
-      }
-
-      String nextURL = startURL;
-
-      int pageIndex = 0;
-      do {
-        if (showURLs) {
-          System.out.println("URL:");
-          System.out.println(nextURL);
-        }
-        try (InputStream response = new URL(nextURL).openConnection().getInputStream()) {
-
-          // Format we're parsing:
-          // {
-          //   "data": [
-          //     {
-          //       "id": "9915337796604770",
-          //       "type": "THREAT_DESCRIPTOR",
-          //       "name": "7ef5...aa97"
-          //     }
-          //     ...
-          //   ],
-          //   "paging": {
-          //     "cursors": {
-          //       "before": "XYZIU...NjQ0h3Unh3",
-          //       "after": "XYZIUk...FXNzVNd1Jn"
-          //     },
-          //     "next": "https://graph.facebook.com/v3.1/9999338387644295/tagged_objects?access_token=..."
-          //   }
-          // }
-
-          JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
-          JSONArray data = (JSONArray) object.get("data");
-          JSONObject paging = (JSONObject) object.get("paging");
-          if (paging == null) {
-            nextURL = null;
-          } else {
-            nextURL = (String) paging.get("next");
-          }
-
-          int numItems = data.size();
-          if (verbose) {
-            SimpleJSONWriter w = new SimpleJSONWriter();
-            w.add("page_index", pageIndex);
-            w.add("num_items", numItems);
-            System.out.println(w.format());
-            System.out.flush();
-          }
-
-          for (int i = 0; i < numItems; i++) {
-            JSONObject item = (JSONObject) data.get(i);
-
-            String itemID = (String) item.get("id");
-            String itemType = (String) item.get("type");
-            String itemText = (String) item.get("name");
-            if (!itemType.equals(THREAT_DESCRIPTOR)) {
-              continue;
-            }
-            if (!hashFilterer.accept(itemText)) {
-              continue;
-            }
-
-            if (verbose) {
-              SimpleJSONWriter w = new SimpleJSONWriter();
-              w.add("id", itemID);
-              w.add("type", itemType);
-              if (printHashString) {
-                w.add("hash", itemText);
-              }
-
-              System.out.println(w.format());
-              System.out.flush();
-            }
-            hashIDs.add(itemID);
-          }
-
-          pageIndex++;
-        } catch (Exception e) {
-          e.printStackTrace(System.err);
-          System.exit(1);
-        }
-      } while (nextURL != null);
-      return hashIDs;
-    }
-
-    /**
-     * Looks up all metadata for given ID.
-     */
-    public static List<SharedHash> getInfoForIDs(
-      List<String> hashIDs,
-      boolean verbose,
-      boolean showURLs,
-      boolean printHashString
-    ) {
-
-      // Check well-formattedness of hash IDs (which may have come from
-      // arbitrary data on stdin).
-      for(String hashID : hashIDs) {
-        try {
-          Long.valueOf(hashID);
-        } catch (NumberFormatException e) {
-          System.err.printf("Malformed hash ID \"%s\"\n", hashID);
-          System.exit(1);
-        }
-      }
-
-      String url = TE_BASE_URL
-        + "/?access_token=" + APP_TOKEN
-        + "&ids=%5B" + String.join(",", hashIDs) + "%5D"
-        + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,severity,share_level,tags";
-      if (showURLs) {
-        System.out.println("URL:");
-        System.out.println(url);
-      }
-
-      List<SharedHash> sharedHashes = new ArrayList<SharedHash>();
-      try (InputStream response = new URL(url).openConnection().getInputStream()) {
-        // {
-        //    "990927953l366387": {
-        //       "raw_indicator": "87f4b261064696075fffceee39471952",
-        //       "type": "HASH_MD5",
-        //       "added_on": "2018-03-21T18:47:23+0000",
-        //       "confidence": 100,
-        //       "owner": {
-        //          "id": "788842735455502",
-        //          "email": "contactemail\u0040companyname.com",
-        //          "name": "Name of App"
-        //       },
-        //       "review_status": "REVIEWED_AUTOMATICALLY",
-        //       "severity": "WARNING",
-        //       "share_level": "AMBER",
-        //       "tags": {
-        //          "data": [
-        //             {
-        //                "id": "8995447960580728",
-        //                "text": "media_type_video"
-        //             },
-        //             {
-        //                "id": "6000177b99449380",
-        //                "text": "media_priority_test"
-        //             }
-        //          ]
-        //       },
-        //       "id": "4019972332766623"
-        //    },
-        //    ...
-        //  }
-
-        JSONObject outer = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
-
-        for (Iterator iterator = outer.keySet().iterator(); iterator.hasNext();) {
-          String key = (String) iterator.next();
-          JSONObject item = (JSONObject) outer.get(key);
-
-          if (verbose) {
-            System.out.println(item.toString());
-          }
-
-          JSONObject owner = (JSONObject)item.get("owner");
-          JSONObject tags = (JSONObject)item.get("tags");
-          JSONArray tag_data = (JSONArray)tags.get("data");
-          int n = tag_data.size();
-          String mediaType = "not_found";
-          String mediaPriority = "not_found";
-          int numMediaType = 0;
-          int numMediaPriority = 0;
-          for (int j = 0; j < n; j++) {
-            JSONObject tag = (JSONObject) tag_data.get(j);
-            String tag_text = (String)tag.get("text");
-            if (tag_text.startsWith(TAG_PREFIX_MEDIA_TYPE)) {
-              mediaType = tag_text.replace(TAG_PREFIX_MEDIA_TYPE, "").toUpperCase();
-              numMediaType++;
-            } else if (tag_text.startsWith(TAG_PREFIX_MEDIA_PRIORITY)) {
-              mediaPriority = tag_text.replace(TAG_PREFIX_MEDIA_PRIORITY, "").toUpperCase();
-              numMediaPriority++;
-            }
-          }
-
-          if (verbose) {
-            if (numMediaType != 1 || numMediaPriority != 1) {
-              SimpleJSONWriter w = new SimpleJSONWriter();
-              w.add("hash_id", (String)item.get("id"));
-              w.add("num_media_type", numMediaType);
-              w.add("num_media_priority", numMediaPriority);
-              System.out.println(w.format());
-            }
-          }
-
-          SharedHash sharedHash = new SharedHash(
-            (String)item.get("id"),
-            (String)item.get("raw_indicator"),
-            (String)item.get("type"),
-            (String)item.get("added_on"),
-            Long.toString((Long)item.get("confidence")),
-            (String)owner.get("id"),
-            (String)owner.get("email"),
-            (String)owner.get("name"),
-            mediaType,
-            mediaPriority);
-
-          sharedHashes.add(sharedHash);
-        }
-      } catch (Exception e) {
-        e.printStackTrace(System.err);
-        System.exit(1);
-      }
-      return sharedHashes;
-    }
-
-    /**
-     * Looks up all descriptors with a given tag (or tag-prefix), optional
-     * hash-type filter, and TE 'since' parameter. Warning: often infinite-loopy!
-     * There are many queries for which the 'next' paging parameter will remain
-     * non-null on every next-page request.
-     */
-    public static List<SharedHash> getIncremental(
-      String tagName,
-      String hashType,
-      String since,
-      int pageSize,
-      boolean verbose,
-      boolean showURLs
-    ) {
-      List<SharedHash> sharedHashes = new ArrayList<SharedHash>();
-
-      String pageLimit = Integer.toString(pageSize);
-      String startURL = TE_BASE_URL
-        + "/threat_descriptors"
-        + "/?access_token=" + APP_TOKEN
-        + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,severity,share_level,tags"
-        + "&limit=" + pageLimit
-        + "&tags=" + tagName
-        + "&since=" + since;
-      if (hashType != null) {
-        startURL = startURL + "&type=" + hashType;
-      }
-
-      String nextURL = startURL;
-
-      int pageIndex = 0;
-      do {
-        if (showURLs) {
-          System.out.println("URL:");
-          System.out.println(nextURL);
-        }
-        try (InputStream response = new URL(nextURL).openConnection().getInputStream()) {
-
-          // {
-          //    "data": [
-          //     {
-          //        "added_on": "2018-02-15T10:01:38+0000",
-          //        "confidence": 50,
-          //        "description": "Description goes here",
-          //        "id": "9998888887828886",
-          //        "indicator": {
-          //           "id": "8858889164495553",
-          //           "indicator": "0096f7ffffb07f385630008f495b59ff",
-          //           "type": "HASH_MD5"
-          //        },
-          //        "last_updated": "2018-02-15T10:01:39+0000",
-          //        "owner": {
-          //           "id": "9977777020662433",
-          //           "email": "username\u0040companyname.com",
-          //           "name": "Name of App"
-          //        },
-          //        "precision": "UNKNOWN",
-          //        "privacy_type": "HAS_PRIVACY_GROUP",
-          //        "raw_indicator": "0096f7ffffb07f385630008f495b59ff",
-          //        "review_status": "REVIEWED_MANUALLY",
-          //        "severity": "WARNING",
-          //        "share_level": "AMBER",
-          //        "status": "MALICIOUS",
-          //        "type": "HASH_MD5"
-          //     },
-          //    "paging": {
-          //       "cursors": {
-          //          "before": "MAZDZD",
-          //          "after": "MQZDZD"
-          //       }
-          //    }
-          // }
-
-          JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
-          JSONArray data = (JSONArray) object.get("data");
-          JSONObject paging = (JSONObject) object.get("paging");
-          if (paging == null) {
-            nextURL = null;
-          } else {
-            nextURL = (String) paging.get("next");
-          }
-
-          int numItems = data.size();
-          if (verbose) {
-            SimpleJSONWriter w = new SimpleJSONWriter();
-            w.add("page_index", pageIndex);
-            w.add("num_items", numItems);
-            System.out.println(w.format());
-            System.out.flush();
-          }
-
-          for (int i = 0; i < numItems; i++) {
-            JSONObject item = (JSONObject) data.get(i);
-
-            String itemID = (String) item.get("id");
-            String itemType = (String) item.get("type");
-            String itemText = (String) item.get("raw_indicator");
-
-            if (verbose) {
-              SimpleJSONWriter w = new SimpleJSONWriter();
-              w.add("id", itemID);
-              w.add("type", itemType);
-              w.add("hash", itemText);
-              System.out.println(w.format());
-              System.out.flush();
-            }
-
-            JSONObject owner = (JSONObject)item.get("owner");
-
-            JSONObject tags = (JSONObject)item.get("tags");
-            JSONArray tag_data = (JSONArray)tags.get("data");
-            int n = tag_data.size();
-            String mediaType = "not_found";
-            String mediaPriority = "not_found";
-            int numMediaType = 0;
-            int numMediaPriority = 0;
-            for (int j = 0; j < n; j++) {
-              JSONObject tag = (JSONObject) tag_data.get(j);
-              String tag_text = (String)tag.get("text");
-              if (tag_text.startsWith(TAG_PREFIX_MEDIA_TYPE)) {
-                mediaType = tag_text.replace(TAG_PREFIX_MEDIA_TYPE, "").toUpperCase();
-                numMediaType++;
-              } else if (tag_text.startsWith(TAG_PREFIX_MEDIA_PRIORITY)) {
-                mediaPriority = tag_text.replace(TAG_PREFIX_MEDIA_PRIORITY, "").toUpperCase();
-                numMediaPriority++;
-              }
-            }
-
-            SharedHash sharedHash = new SharedHash(
-              itemID,
-              itemText,
-              itemType,
-              (String)item.get("added_on"),
-              Long.toString((Long)item.get("confidence")),
-              (String)owner.get("id"),
-              (String)owner.get("email"),
-              (String)owner.get("name"),
-              mediaType,
-              mediaPriority);
-
-          }
-          pageIndex++;
-        } catch (Exception e) {
-          e.printStackTrace(System.err);
-          System.exit(1);
-        }
-      } while (nextURL != null);
-
-      return sharedHashes;
-    }
-
-  } // Net
-
-  // ================================================================
-  // Hash-filterer, using hash-text rather than ThreatExchange 'type'
-  // field, since it's far more performant to filter on the former
-  // than the latter.
-  // ================================================================
-
-  public static class HashFiltererFactory {
-    private static final String OPTION_PHOTODNA = "photodna";
-    private static final String OPTION_PDQ      = "pdq";
-    private static final String OPTION_MD5      = "md5";
-    private static final String OPTION_TMK      = "tmk";
-    private static final String OPTION_ALL      = "all";
-
-    public static void list(PrintStream o) {
-      o.printf("Hash-type filters:\n");
-      o.printf("  %s\n", OPTION_PHOTODNA);
-      o.printf("  %s\n", OPTION_PDQ);
-      o.printf("  %s\n", OPTION_MD5);
-      o.printf("  %s\n", OPTION_TMK);
-      o.printf("  %s\n", OPTION_ALL);
-    }
-
-    public static HashFilterer create(String name) {
-      if (name.equals(OPTION_PHOTODNA)) {
-        return new PhotoDNAHashFilterer();
-      } else if (name.equals(OPTION_PDQ)) {
-        return new PDQHashFilterer();
-      } else if (name.equals(OPTION_MD5)) {
-        return new MD5HashFilterer();
-      } else if (name.equals(OPTION_TMK)) {
-        return new TMKHashFilterer();
-      } else if (name.equals(OPTION_ALL)) {
-        return new AllHashFilterer();
-      } else {
-        return null;
-      }
-    }
-  }
-
-  public interface HashFilterer {
-    public abstract boolean accept(String hash);
-    public abstract String getTEName();
-  }
-
-  /**
-   * Filters for any hash-type
-   */
-  public static class AllHashFilterer implements HashFilterer {
-    @Override
-    public boolean accept(String hash) {
-      return true;
-    }
-    @Override
-    public String getTEName() {
-      return null;
-    }
-  }
-
-  /**
-   * Filters ideally for comma-delimited decimal, 144 slots.
-   * Only does the minimal check to differentiate from other hash-types
-   * we support.
-   */
-  public static class PhotoDNAHashFilterer implements HashFilterer {
-    @Override
-    public boolean accept(String hash) {
-      if (hash.length() < 287) { // Shortest: 0,0,0,...,0,0,0
-        return false;
-      }
-      return true;
-    }
-    @Override
-    public String getTEName() {
-      return "HASH_PHOTODNA";
-    }
-  }
-
-  /**
-   * Filters ideally for 64 hex digits.
-   * Only does the minimal check to differentiate from other hash-types
-   * we support.
-   */
-  public static class PDQHashFilterer implements HashFilterer {
-    @Override
-    public boolean accept(String hash) {
-      if (hash.length() != 64) {
-        return false;
-      }
-      return true;
-    }
-    @Override
-    public String getTEName() {
-      return "HASH_PDQ";
-    }
-  }
-
-  /**
-   * Filters ideally for 32 hex digits
-   * Only does the minimal check to differentiate from other hash-types
-   * we support.
-   */
-  public static class MD5HashFilterer implements HashFilterer {
-    @Override
-    public boolean accept(String hash) {
-      if (hash.length() != 32) {
-        return false;
-      }
-      return true;
-    }
-    @Override
-    public String getTEName() {
-      return "HASH_MD5";
-    }
-  }
-
-  /**
-   * Filters ideally for very long (256KB-ish)
-   * Only does the minimal check to differentiate from other hash-types
-   * we support.
-   */
-  public static class TMKHashFilterer implements HashFilterer {
-    @Override
-    public boolean accept(String hash) {
-      return hash.length() >= 100000;
-    }
-    @Override
-    public String getTEName() {
-      return "HASH_TMK";
-    }
-  }
-
-  // ================================================================
-  // CONTAINER CLASS FOR HASHES AND METADATA
-  // ================================================================
-
-  /**
-   * Helper container class for parsed results back from ThreatExchange.
-   */
-  public static class SharedHash {
-    public final String hashID;
-    public final String hashValue;
-    public final String hashType;
-    public final String addedOn;
-    public final String confidence;
-    public final String ownerID;
-    public final String ownerEmail;
-    public final String ownerName;
-    public final String mediaType;
-    public final String mediaPriority;
-
-    public SharedHash(
-      String hashID_,
-      String hashValue_,
-      String hashType_,
-      String addedOn_,
-      String confidence_,
-      String ownerID_,
-      String ownerEmail_,
-      String ownerName_,
-      String mediaType_,
-      String mediaPriority_
-    ) {
-      hashID = hashID_;
-      hashValue = hashValue_;
-      hashType = hashType_;
-      addedOn = addedOn_;
-      confidence = confidence_;
-      ownerID = ownerID_;
-      ownerEmail = ownerEmail_;
-      ownerName = ownerName_;
-      mediaType = mediaType_;
-      mediaPriority = mediaPriority_;
-    }
-  }
-
-  // ================================================================
-  // SIMPLE JSON OUTPUT
-  // ================================================================
-  public static class SimpleJSONWriter {
-    LinkedHashMap<String,String> _pairs;
-
-    public SimpleJSONWriter() {
-      _pairs = new LinkedHashMap<String,String>();
-    }
-    public void add(String k, String v) {
-      _pairs.put(k, v);
-    }
-    public void add(String k, int v) {
-      _pairs.put(k, Integer.toString(v));
-    }
-    public String format() {
-      StringBuffer sb = new StringBuffer();
-      sb.append("{");
-      int i = 0;
-      for (Map.Entry<String,String> pair : _pairs.entrySet()) {
-        if (i > 0) {
-          sb.append(",");
-        }
-        sb.append("\"").append(pair.getKey()).append("\"");
-        sb.append(":");
-        sb.append("\"").append(pair.getValue()).append("\"");
-        i++;
-      }
-      sb.append("}");
-      return sb.toString();
-    }
-  }
-
-  // ================================================================
-  // HASH OUTPUT-FORMATTER
-  // ================================================================
-
-  public interface HashFormatter {
-    public String format(SharedHash sharedHash, boolean printHashString);
-  }
-
-  public static class JSONHashFormatter implements HashFormatter {
-    @Override
-    public String format(SharedHash sharedHash, boolean printHashString) {
-      SimpleJSONWriter w = new SimpleJSONWriter();
-      w.add("hash_id", sharedHash.hashID);
-      if (printHashString) {
-        w.add("hash_value", sharedHash.hashValue);
-      }
-      w.add("hash_type", sharedHash.hashType);
-      w.add("added_on", sharedHash.addedOn);
-      w.add("confidence", sharedHash.confidence);
-      w.add("owner_id", sharedHash.ownerID);
-      w.add("owner_email", sharedHash.ownerEmail);
-      w.add("owner_name", sharedHash.ownerName);
-      w.add("media_type", sharedHash.mediaType);
-      w.add("media_priority", sharedHash.mediaPriority);
-      return w.format();
     }
   }
 
