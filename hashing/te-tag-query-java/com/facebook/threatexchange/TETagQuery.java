@@ -925,6 +925,13 @@ public class TETagQuery {
   }
 
   // ----------------------------------------------------------------
+
+  // TODO:
+  // * tmk-from-file ...
+  // * indicators-from-file loop options:
+  //   - for non-tmk, one hash per line
+  //   - for tmk, one .tmk filename per line
+
   public static class SubmitHandler extends CommandHandler {
     public SubmitHandler(String verb) {
       super(verb);
@@ -933,27 +940,39 @@ public class TETagQuery {
     @Override
     public void usage(int exitCode) {
       PrintStream o = Utils.getPrintStream(exitCode);
-      o.printf("Usage: %s %s xxx type me up\n", PROGNAME, _verb);
-      o.printf("xxx type me up.\n");
+      o.printf("Usage: %s %s [options]\n", PROGNAME, _verb);
+      o.printf("Uploads a threat descriptor with the specified values.\n");
+      o.printf("On repost (with same indicator text/type and app ID), updates changed fields.\n");
+      o.printf("\n");
+      o.printf("Required:\n");
+      o.printf("-i|--indicator {...}   If indicator type is HASH_TMK this must be the\n");
+      o.printf("                       path to a .tmk file, else the indicator text.\n");
+      o.printf("-t|--type {...}\n");
+      o.printf("-d|--description {...}\n");
+      o.printf("-l|--share-level {...}\n");
+      o.printf("-s|--status {...}\n");
+      o.printf("-p|--privacy-type {...}\n");
+      o.printf("\n");
+      o.printf("Optional:\n");
+      o.printf("-h|--help\n");
+      o.printf("--dry-run\n");
+      o.printf("-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be\n");
+      o.printf("                       comma-delimited app IDs. If privacy-type is\n");
+      o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
+      o.printf("                       privacy-group IDs.\n");
+      o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
+      o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
+      o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
+      o.printf("--confidence {...}\n");
+      o.printf("--precision {...}\n");
+      o.printf("--first-active {...}\n");
+      o.printf("--last-active {...}\n");
+      o.printf("--expired-on {...}\n");
+      o.printf("\n");
+      o.printf("Please see the following for allowed values in all enumerated types:\n");
+      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/submitting\n");
       System.exit(exitCode);
     }
-
-    // https://developers.facebook.com/docs/threat-exchange/reference/submitting
-    //
-    // Required:
-    //
-    // * indicator text & indicator type
-    // * description
-    // * privacy type / visibility
-    //   - privacy_members / how PG ?!?
-    // * share level
-    // * status
-    //
-    // Optional with defaults:
-    //
-    // * confidence, precision, review_status, severity
-    // * expired_on, first_active, last_active
-    // * tags / add_tags / remove_tags
 
     @Override
     public void handle(
@@ -1062,6 +1081,12 @@ public class TETagQuery {
           }
           params.setLastActive(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--expired-on")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setExpiredOn(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
 
         } else {
           System.err.printf("%s %s: Unrecognized option \"%s\".\n",
@@ -1078,14 +1103,7 @@ public class TETagQuery {
         usage(1);
       }
 
-      // xxx tmk-from-file ...
-      // xxx indicators-from-file loop options:
-      // * for non-tmk, one hash per line
-      // * for tmk, one .tmk filename per line
-
       Net.postThreatDescriptor(params, showURLs, dryRun);
     }
-
   }
-
 }

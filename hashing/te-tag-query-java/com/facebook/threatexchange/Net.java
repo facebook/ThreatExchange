@@ -473,7 +473,8 @@ class Net {
   }
 
   /**
-   * Does a single POST to the threat_descriptors endpoint.
+   * Does a single POST to the threat_descriptors endpoint.  See also
+   * https://developers.facebook.com/docs/threat-exchange/reference/submitting
    */
   public static void postThreatDescriptor(
     DescriptorPostParameters params,
