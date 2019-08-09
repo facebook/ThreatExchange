@@ -87,10 +87,10 @@ class Net {
   }
 
   /**
-   * Looks up all descriptors with a given tag. Returns only the IDs. Details must be
-   * sought one ID at a time.
+   * Looks up all descriptors with a given tag. Invokes a specified callback on
+   * each page of IDs.
    */
-  public static List<String> getHashIDsByTagID(
+  public static void getHashIDsByTagID(
     String tagID,
     boolean verbose,
     boolean showURLs,
@@ -98,10 +98,9 @@ class Net {
     String since, // maybe null
     String until, // maybe null
     int pageSize,
-    boolean printHashString
+    boolean printHashString,
+    IDProcessor idProcessor
   ) {
-    List<String> hashIDs = new ArrayList<String>();
-
     String pageLimit = Integer.toString(pageSize);
     String startURL = Constants.TE_BASE_URL
       + "/" + tagID + "/tagged_objects"
@@ -153,14 +152,8 @@ class Net {
         }
 
         int numItems = data.size();
-        if (verbose) {
-          SimpleJSONWriter w = new SimpleJSONWriter();
-          w.add("page_index", pageIndex);
-          w.add("num_items", numItems);
-          System.out.println(w.format());
-          System.out.flush();
-        }
 
+        List<String> hashIDs = new ArrayList<String>();
         for (int i = 0; i < numItems; i++) {
           JSONObject item = (JSONObject) data.get(i);
 
@@ -188,13 +181,23 @@ class Net {
           hashIDs.add(itemID);
         }
 
+        if (verbose) {
+          SimpleJSONWriter w = new SimpleJSONWriter();
+          w.add("page_index", pageIndex);
+          w.add("num_items_pre_filter", numItems);
+          w.add("num_items_post_filter", hashIDs.size());
+          System.out.println(w.format());
+          System.out.flush();
+        }
+
+        idProcessor.processIDs(hashIDs);
+
         pageIndex++;
       } catch (Exception e) {
         e.printStackTrace(System.err);
         System.exit(1);
       }
     } while (nextURL != null);
-    return hashIDs;
   }
 
   /**
@@ -206,7 +209,6 @@ class Net {
     boolean showURLs,
     boolean printHashString
   ) {
-
     // Check well-formattedness of hash IDs (which may have come from
     // arbitrary data on stdin).
     for(String hashID : hashIDs) {
