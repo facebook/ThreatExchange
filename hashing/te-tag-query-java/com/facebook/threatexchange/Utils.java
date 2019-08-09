@@ -1,11 +1,14 @@
 package com.facebook.threatexchange;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -166,6 +169,39 @@ class Utils {
     }
 
     fos.close();
+  }
+
+  // TMK hashes are binary data with data strucure in the TMK package's
+  // tmktypes.h. The string attributes are not 8-bit clean in the
+  // ThreatExchange API so the hashValue attribute is stored as base64-encoded,
+  // with one caveat: the first 12 bytes (which are ASCII) are stored as
+  // such, followed by a pipe delimiter, then the rest of the binary file
+  // base64-encdoed. Here we undo that encoding.
+  public static String readTMKHashFromFile(String pathAsString, boolean verbose)
+    throws FileNotFoundException, IOException
+  {
+    File file = new java.io.File(pathAsString);
+    byte[] binaryContents = Files.readAllBytes(file.toPath());
+    int blen = binaryContents.length;
+    if (blen < 12) {
+      throw new IOException(".tmk file \"" + pathAsString + "\" is too small");
+    }
+
+    byte[] binaryFirst = Arrays.copyOfRange(binaryContents, 0, 12);
+    byte[] binaryRest = Arrays.copyOfRange(binaryContents, 12, blen);
+    byte[] base64Rest = Base64.getEncoder().encode(binaryRest);
+
+    String encoded = (new String(binaryFirst)) + "|" + (new String(base64Rest));
+
+    if (verbose) {
+      SimpleJSONWriter w = new SimpleJSONWriter();
+      w.add("path", pathAsString);
+      w.add("binary_length", blen);
+      w.add("encoded_length", encoded.length());
+      System.out.println(w.format());
+      System.out.flush();
+    }
+    return encoded;
   }
 
 } // class Utils

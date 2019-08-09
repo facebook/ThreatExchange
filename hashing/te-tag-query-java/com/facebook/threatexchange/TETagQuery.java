@@ -1013,6 +1013,22 @@ public class TETagQuery {
         usage(1);
       }
 
+      if (params.getIndicatorType().equals(Constants.HASH_TYPE_TMK)) {
+        String filename = params.getIndicatorText();
+        String contents = null;
+        try {
+          contents = Utils.readTMKHashFromFile(filename, verbose);
+        } catch (FileNotFoundException e) {
+          System.err.printf("%s %s: cannot find \"%s\".\n",
+            PROGNAME, _verb, filename);
+        } catch (IOException e) {
+          System.err.printf("%s %s: cannot load \"%s\".\n",
+            PROGNAME, _verb, filename);
+          e.printStackTrace(System.err);
+        }
+        params.setIndicatorText(contents);
+      }
+
       Net.postThreatDescriptor(params, showURLs, dryRun);
     }
   }
