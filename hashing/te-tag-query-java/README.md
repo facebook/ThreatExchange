@@ -37,7 +37,7 @@ java com.facebook.threatexchange.TETagQuery tag-to-details \
   --page-size 10 \
   --hash-dir ./tmk-hash-dir \
   --hash-type tmk \
-  media_priority_test
+  media_type_long_hash_video
 ```
 
 # Contact
