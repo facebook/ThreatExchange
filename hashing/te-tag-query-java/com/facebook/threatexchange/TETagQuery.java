@@ -7,7 +7,6 @@ import org.json.simple.parser.JSONParser;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -16,7 +15,6 @@ import java.lang.NumberFormatException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -654,10 +652,10 @@ public class TETagQuery {
         System.out.println(hashFormatter.format(sharedHash, printHashString));
 
         if (hashDir != null) {
-          String path = hashDir + File.separator + sharedHash.hashID + hashTypeToFileSuffix(sharedHash.hashType);
+          String path = hashDir + File.separator + sharedHash.hashID + Utils.hashTypeToFileSuffix(sharedHash.hashType);
 
           try {
-            outputHashToFile(sharedHash, path, verbose);
+            Utils.outputHashToFile(sharedHash, path, verbose);
           } catch (FileNotFoundException e) {
             System.err.printf("FileNotFoundException: \"%s\".\n", path);
           } catch (IOException e) {
@@ -666,95 +664,6 @@ public class TETagQuery {
         }
       }
     }
-  }
-
-  public static String hashTypeToFileSuffix(String hashType) {
-    String suffix = ".hsh";
-    switch (hashType) {
-    case Constants.HASH_TYPE_PHOTODNA:
-      suffix = ".pdna";
-      break;
-    case Constants.HASH_TYPE_PDQ:
-      suffix = ".pdq";
-      break;
-    case Constants.HASH_TYPE_MD5:
-      suffix = ".md5";
-      break;
-    case Constants.HASH_TYPE_TMK:
-      suffix = ".tmk";
-      break;
-    }
-    return suffix;
-  }
-
-  public static void outputHashToFile(
-    SharedHash sharedHash,
-    String path,
-    boolean verbose)
-      throws FileNotFoundException, IOException
-  {
-    if (sharedHash.hashType.equals(Constants.HASH_TYPE_TMK)) {
-      outputTMKHashToFile(sharedHash, path, verbose);
-    } else {
-      outputNonTMKHashToFile(sharedHash, path, verbose);
-    }
-  }
-
-  // TMK hashes are binary data with data strucure in the TMK package's
-  // tmktypes.h. The string attributes are not 8-bit clean in the
-  // ThreatExchange API so the hashValue attribute is stored as base64-encoded,
-  // with one caveat: the first 12 bytes (which are ASCII) are stored as
-  // such, followed by a pipe delimiter, then the rest of the binary file
-  // base64-encdoed. Here we undo that encoding.
-  public static void outputTMKHashToFile(
-    SharedHash sharedHash,
-    String path,
-    boolean verbose)
-      throws FileNotFoundException, IOException
-  {
-    FileOutputStream fos = new FileOutputStream(path);
-    int hlen = sharedHash.hashValue.length();
-
-    String base64EncodedHash = sharedHash.hashValue;
-
-    byte[] bytes = base64EncodedHash.getBytes();
-    byte[] first = Arrays.copyOfRange(bytes, 0, 12);
-    byte[] rest = Base64.getDecoder().decode(Arrays.copyOfRange(bytes, 13, hlen));
-    fos.write(first);
-    fos.write(rest);
-    if (verbose) {
-      SimpleJSONWriter w = new SimpleJSONWriter();
-      w.add("path", path);
-      w.add("hash_type", sharedHash.hashType);
-      w.add("encoded_length", sharedHash.hashValue.length());
-      w.add("binary_length", first.length + rest.length);
-      System.out.println(w.format());
-      System.out.flush();
-    }
-    fos.close();
-  }
-
-  // Just write PhotoDNA, PDQ, MD5, etc. hash-data to the file contents.
-  public static void outputNonTMKHashToFile(
-    SharedHash sharedHash,
-    String path,
-    boolean verbose)
-      throws FileNotFoundException, IOException
-  {
-    FileOutputStream fos = new FileOutputStream(path);
-
-    byte[] bytes = sharedHash.hashValue.getBytes();
-    fos.write(bytes);
-    if (verbose) {
-      SimpleJSONWriter w = new SimpleJSONWriter();
-      w.add("path", path);
-      w.add("hash_type", sharedHash.hashType);
-      w.add("hash_length", sharedHash.hashValue.length());
-      System.out.println(w.format());
-      System.out.flush();
-    }
-
-    fos.close();
   }
 
   // ----------------------------------------------------------------
@@ -933,27 +842,42 @@ public class TETagQuery {
     @Override
     public void usage(int exitCode) {
       PrintStream o = Utils.getPrintStream(exitCode);
-      o.printf("Usage: %s %s xxx type me up\n", PROGNAME, _verb);
-      o.printf("xxx type me up.\n");
+      o.printf("Usage: %s %s [options]\n", PROGNAME, _verb);
+      o.printf("Uploads a threat descriptor with the specified values.\n");
+      o.printf("On repost (with same indicator text/type and app ID), updates changed fields.\n");
+      o.printf("\n");
+      o.printf("Required:\n");
+      o.printf("-i|--indicator {...}   If indicator type is HASH_TMK this must be the\n");
+      o.printf("                       path to a .tmk file, else the indicator text.\n");
+      o.printf("                       (This is under construction.)\n");
+      o.printf("-I                     Take indicator text from standard input, one per line.\n");
+      o.printf("Exactly one of -i or -I is required.\n");
+      o.printf("-t|--type {...}\n");
+      o.printf("-d|--description {...}\n");
+      o.printf("-l|--share-level {...}\n");
+      o.printf("-s|--status {...}\n");
+      o.printf("-p|--privacy-type {...}\n");
+      o.printf("\n");
+      o.printf("Optional:\n");
+      o.printf("-h|--help\n");
+      o.printf("--dry-run\n");
+      o.printf("-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be\n");
+      o.printf("                       comma-delimited app IDs. If privacy-type is\n");
+      o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
+      o.printf("                       privacy-group IDs.\n");
+      o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
+      o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
+      o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
+      o.printf("--confidence {...}\n");
+      o.printf("--precision {...}\n");
+      o.printf("--first-active {...}\n");
+      o.printf("--last-active {...}\n");
+      o.printf("--expired-on {...}\n");
+      o.printf("\n");
+      o.printf("Please see the following for allowed values in all enumerated types:\n");
+      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/submitting\n");
       System.exit(exitCode);
     }
-
-    // https://developers.facebook.com/docs/threat-exchange/reference/submitting
-    //
-    // Required:
-    //
-    // * indicator text & indicator type
-    // * description
-    // * privacy type / visibility
-    //   - privacy_members / how PG ?!?
-    // * share level
-    // * status
-    //
-    // Optional with defaults:
-    //
-    // * confidence, precision, review_status, severity
-    // * expired_on, first_active, last_active
-    // * tags / add_tags / remove_tags
 
     @Override
     public void handle(
@@ -964,6 +888,7 @@ public class TETagQuery {
       HashFormatter hashFormatter
     ) {
       boolean dryRun = false;
+      boolean indicatorTextFromStdin = false;
       DescriptorPostParameters  params = new DescriptorPostParameters();
 
       while (args.length > 0 && args[0].startsWith("-")) {
@@ -976,6 +901,11 @@ public class TETagQuery {
         } else if (option.equals("--dry-run")) {
           dryRun = true;
 
+        } else if (option.equals("-I")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          indicatorTextFromStdin = true;
         } else if (option.equals("-i") || option.equals("--indicator")) {
           if (args.length < 1) {
             usage(1);
@@ -1062,6 +992,12 @@ public class TETagQuery {
           }
           params.setLastActive(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--expired-on")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setExpiredOn(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
 
         } else {
           System.err.printf("%s %s: Unrecognized option \"%s\".\n",
@@ -1074,18 +1010,65 @@ public class TETagQuery {
         usage(1);
       }
 
+      if (indicatorTextFromStdin) {
+        if (params.getIndicatorText() != null) {
+          System.err.printf("%s %s: only one of -I and -i must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        int lno = 1;
+        try {
+          while ((line = reader.readLine()) != null) {
+            lno++;
+            // In Java, line-terminators already stripped for us
+            params.setIndicatorText(line);
+            submitSingle(params, verbose, showURLs, dryRun);
+          }
+        } catch (IOException e) {
+          System.err.printf("Couldn't read line %d of standard input.\n", lno);
+          System.exit(1);
+        }
+      } else {
+        if (params.getIndicatorText() == null) {
+          System.err.printf("%s %s: at least one of -I and -i must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+        submitSingle(params, verbose, showURLs, dryRun);
+      }
+    }
+
+    private void submitSingle(
+      DescriptorPostParameters params,
+      boolean verbose,
+      boolean showURLs,
+      boolean dryRun
+    ) {
       if (!params.validateWithReport(System.err)) {
         usage(1);
       }
 
-      // xxx tmk-from-file ...
-      // xxx indicators-from-file loop options:
-      // * for non-tmk, one hash per line
-      // * for tmk, one .tmk filename per line
+      if (params.getIndicatorType().equals(Constants.HASH_TYPE_TMK)) {
+        String filename = params.getIndicatorText();
+        String contents = null;
+        try {
+          contents = Utils.readTMKHashFromFile(filename, verbose);
+        } catch (FileNotFoundException e) {
+          System.err.printf("%s %s: cannot find \"%s\".\n",
+            PROGNAME, _verb, filename);
+        } catch (IOException e) {
+          System.err.printf("%s %s: cannot load \"%s\".\n",
+            PROGNAME, _verb, filename);
+          e.printStackTrace(System.err);
+        }
+        params.setIndicatorText(contents);
+      }
 
       Net.postThreatDescriptor(params, showURLs, dryRun);
     }
 
   }
-
 }

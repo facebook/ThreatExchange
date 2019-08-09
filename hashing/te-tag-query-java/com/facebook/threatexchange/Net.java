@@ -4,10 +4,13 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.IOException;
 import java.lang.NumberFormatException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -45,7 +48,7 @@ class Net {
     String url = Constants.TE_BASE_URL
       + "/threat_tags"
       + "/?access_token=" + APP_TOKEN
-      + "&text=" + java.net.URLEncoder.encode(tagName); // since user-supplied string
+      + "&text=" + URLEncoder.encode(tagName); // since user-supplied string
     if (showURLs) {
       System.out.println("URL:");
       System.out.println(url);
@@ -470,7 +473,8 @@ class Net {
   }
 
   /**
-   * xxx to do
+   * Does a single POST to the threat_descriptors endpoint.  See also
+   * https://developers.facebook.com/docs/threat-exchange/reference/submitting
    */
   public static void postThreatDescriptor(
     DescriptorPostParameters params,
@@ -491,16 +495,15 @@ class Net {
     URL url = null;
     try {
       url = new URL(urlString);
-    } catch (java.net.MalformedURLException e) {
+    } catch (MalformedURLException e) {
       System.err.println("A malformed URL was constructed:");
       System.err.println(urlString);
       System.exit(1);
     }
 
-    // xxx unq
-    java.net.HttpURLConnection connection = null;
+    HttpURLConnection connection = null;
     try {
-      connection = (java.net.HttpURLConnection) url.openConnection();
+      connection = (HttpURLConnection) url.openConnection();
     } catch (IOException e) {
       System.err.println("A malformed URL was constructed:");
       System.err.println(urlString);
@@ -511,7 +514,7 @@ class Net {
     connection.setInstanceFollowRedirects(false);
     try {
       connection.setRequestMethod("POST");
-    } catch (java.net.ProtocolException e) {
+    } catch (ProtocolException e) {
       System.err.println("Unable to set request method to POST.");
       System.err.println(urlString);
       System.exit(1);
@@ -534,7 +537,7 @@ class Net {
     } else {
       try {
         connection.getOutputStream().write(postDataBytes);
-      } catch (java.io.IOException e) {
+      } catch (IOException e) {
         System.err.println();
         System.err.printf("POST failure.\n");
         System.err.printf("\n");
