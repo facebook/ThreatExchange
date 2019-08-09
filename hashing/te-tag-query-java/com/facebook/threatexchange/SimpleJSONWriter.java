@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// ================================================================
-// SIMPLE JSON OUTPUT
-// ================================================================
+/**
+ * Simple JSON output
+ */
 public class SimpleJSONWriter {
   LinkedHashMap<String,String> _pairs;
 

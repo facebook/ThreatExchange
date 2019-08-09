@@ -18,10 +18,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-// ================================================================
-// HTTP-wrapper methods
-// ================================================================
-
+/**
+ * HTTP-wrapper methods
+ * See also https://developers.facebook.com/docs/threat-exchange
+ */
 class Net {
   private static String APP_TOKEN = null;
 

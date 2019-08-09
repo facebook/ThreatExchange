@@ -1,9 +1,5 @@
 package com.facebook.threatexchange;
 
-// ================================================================
-// CONTAINER CLASS FOR HASHES AND METADATA
-// ================================================================
-
 /**
  * Helper container class for parsed results back from ThreatExchange.
  */
