@@ -206,8 +206,10 @@ clidx=9,clusz=1,filename=pattern-sd-with-small-logo-bar.tmk
 OK, now that we've sanity-checked a few sample videos from the repo, now let's
 broaden our scope. Here we can look at shared hashes -- no videos, only hashes
 -- which are delivered separately depending on with whom you're sharing hashes.
-Then you can compute hashes of some of your own videos. Then, look to see what
-(if anything) is in common.
+(See
+https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-java/README.md
+for example.) Then you can compute hashes of some of your own videos. Then,
+look to see what (if anything) is in common.
 
 ## Get shared hashes
 
