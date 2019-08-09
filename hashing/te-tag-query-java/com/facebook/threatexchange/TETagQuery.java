@@ -850,6 +850,8 @@ public class TETagQuery {
       o.printf("-i|--indicator {...}   If indicator type is HASH_TMK this must be the\n");
       o.printf("                       path to a .tmk file, else the indicator text.\n");
       o.printf("                       (This is under construction.)\n");
+      o.printf("-I                     Take indicator text from standard input, one per line.\n");
+      o.printf("Exactly one of -i or -I is required.\n");
       o.printf("-t|--type {...}\n");
       o.printf("-d|--description {...}\n");
       o.printf("-l|--share-level {...}\n");
@@ -1010,7 +1012,8 @@ public class TETagQuery {
 
       if (indicatorTextFromStdin) {
         if (params.getIndicatorText() != null) {
-          System.err.printf("%s %s: only one of -I and -i must be supplied.\n");
+          System.err.printf("%s %s: only one of -I and -i must be supplied.\n",
+            PROGNAME, _verb);
           System.exit(1);
         }
 
@@ -1030,7 +1033,8 @@ public class TETagQuery {
         }
       } else {
         if (params.getIndicatorText() == null) {
-          System.err.printf("%s %s: at least one of -I and -i must be supplied.\n");
+          System.err.printf("%s %s: at least one of -I and -i must be supplied.\n",
+            PROGNAME, _verb);
           System.exit(1);
         }
         submitSingle(params, verbose, showURLs, dryRun);
