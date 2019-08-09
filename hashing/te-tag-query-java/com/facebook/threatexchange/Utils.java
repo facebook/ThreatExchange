@@ -63,8 +63,7 @@ class Utils {
     try {
       retval = URLEncoder.encode(input, "UTF-8");
     } catch (java.io.UnsupportedEncodingException e) {
-      System.err.printf("Internal coding error in data encoder.\n");
-      System.exit(1);
+      throw new RuntimeException("Internal coding error in data encoder.\n");
     }
     return retval;
   }
@@ -75,8 +74,7 @@ class Utils {
     try {
       retval = input.toString().getBytes("UTF-8");
     } catch (java.io.UnsupportedEncodingException e) {
-      System.err.printf("Internal coding error in data encoder.\n");
-      System.exit(1);
+      throw new RuntimeException("Internal coding error in data encoder.\n");
     }
     return retval;
   }
