@@ -472,6 +472,12 @@ public class TETagQuery {
         }
       }
 
+      if (args.length > 0) {
+        System.err.printf("%s %s: extraneous arguments.\n", PROGNAME, _verb);
+        System.err.printf("IDs must be provided on standard input, one per line.\n");
+        usage(1);
+      }
+
       if (hashDir != null) {
         File handle = new File(hashDir);
         boolean ok = handle.exists() || handle.mkdirs();
