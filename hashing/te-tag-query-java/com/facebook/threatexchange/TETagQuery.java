@@ -834,13 +834,6 @@ public class TETagQuery {
   }
 
   // ----------------------------------------------------------------
-
-  // TODO:
-  // * tmk-from-file ...
-  // * indicators-from-file loop options:
-  //   - for non-tmk, one hash per line
-  //   - for tmk, one .tmk filename per line
-
   public static class SubmitHandler extends CommandHandler {
     public SubmitHandler(String verb) {
       super(verb);
@@ -893,6 +886,7 @@ public class TETagQuery {
       HashFormatter hashFormatter
     ) {
       boolean dryRun = false;
+      boolean indicatorTextFromStdin = false;
       DescriptorPostParameters  params = new DescriptorPostParameters();
 
       while (args.length > 0 && args[0].startsWith("-")) {
@@ -905,6 +899,11 @@ public class TETagQuery {
         } else if (option.equals("--dry-run")) {
           dryRun = true;
 
+        } else if (option.equals("-I")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          indicatorTextFromStdin = true;
         } else if (option.equals("-i") || option.equals("--indicator")) {
           if (args.length < 1) {
             usage(1);
@@ -1009,6 +1008,41 @@ public class TETagQuery {
         usage(1);
       }
 
+      if (indicatorTextFromStdin) {
+        if (params.getIndicatorText() != null) {
+          System.err.printf("%s %s: only one of -I and -i must be supplied.\n");
+          System.exit(1);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        int lno = 1;
+        try {
+          while ((line = reader.readLine()) != null) {
+            lno++;
+            // In Java, line-terminators already stripped for us
+            params.setIndicatorText(line);
+            submitSingle(params, verbose, showURLs, dryRun);
+          }
+        } catch (IOException e) {
+          System.err.printf("Couldn't read line %d of standard input.\n", lno);
+          System.exit(1);
+        }
+      } else {
+        if (params.getIndicatorText() == null) {
+          System.err.printf("%s %s: at least one of -I and -i must be supplied.\n");
+          System.exit(1);
+        }
+        submitSingle(params, verbose, showURLs, dryRun);
+      }
+    }
+
+    private void submitSingle(
+      DescriptorPostParameters params,
+      boolean verbose,
+      boolean showURLs,
+      boolean dryRun
+    ) {
       if (!params.validateWithReport(System.err)) {
         usage(1);
       }
@@ -1031,5 +1065,6 @@ public class TETagQuery {
 
       Net.postThreatDescriptor(params, showURLs, dryRun);
     }
+
   }
 }
