@@ -7,10 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-// ================================================================
-// CONTAINER CLASS FOR DESCRIPTOR-POST
-// ================================================================
-
 /**
  * Helper container class for posting threat descriptors to ThreatExchange.
  */

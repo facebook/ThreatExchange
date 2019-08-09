@@ -69,7 +69,7 @@ public class TETagQuery {
 
     // Set defaults
     String appTokenEnvName = DEFAULT_APP_TOKEN_ENV_NAME;
-    boolean verbose = true;
+    boolean verbose = false;
     boolean showURLs = false;
     int numIDsPerQuery = MAX_IDS_PER_QUERY;
     HashFormatter hashFormatter = new JSONHashFormatter();
@@ -279,7 +279,7 @@ public class TETagQuery {
       o.printf("--until {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("--hash-type {x}\n");
-      o.printf("--no-hash -- Don't print the hash to the terminal\n");
+      o.printf("--no-print-hash -- Don't print the hash to the terminal\n");
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
       o.printf("Hash types:\n");
@@ -343,7 +343,7 @@ public class TETagQuery {
 
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-hash")) {
+        } else if (option.equals("--no-print-hash")) {
           printHashString = false;
 
         } else {
@@ -377,10 +377,25 @@ public class TETagQuery {
       // gives back only ID code, hash text, and the uninformative label
       // "THREAT_DESCRIPTOR". From this we can dive in on each item, though, and
       // query for its details one ID at a time.
-      List<String> hashIDs = Net.getHashIDsByTagID(tagID, verbose, showURLs,
-        hashFilterer, since, until, pageSize, printHashString);
+      Net.getHashIDsByTagID(tagID, verbose, showURLs,
+        hashFilterer, since, until, pageSize, printHashString,
+        new IDPrinterProcessor(verbose));
+    }
+  }
 
-      if (verbose) {
+  /**
+   * Callback for TagToIDsHandler: what we want done with every batch of
+   * threat-descriptor IDs.
+   */
+  private static class IDPrinterProcessor implements IDProcessor {
+    private final boolean _verbose;
+
+    public IDPrinterProcessor(boolean verbose) {
+      _verbose = verbose;
+    }
+
+    public void processIDs(List<String> hashIDs) {
+      if (_verbose) {
         SimpleJSONWriter w = new SimpleJSONWriter();
         w.add("hash_count", hashIDs.size());
         System.out.println(w.format());
@@ -396,7 +411,7 @@ public class TETagQuery {
           i++;
         }
       } else {
-        for (String hashID : hashIDs) {
+        for (String hashID: hashIDs) {
           System.out.println(hashID);
           System.out.flush();
         }
@@ -416,7 +431,7 @@ public class TETagQuery {
       o.printf("Usage: %s %s [options]\n",
         PROGNAME, _verb);
       o.printf("Options:\n");
-      o.printf("--no-hash -- Don't print the hash to the terminal\n");
+      o.printf("--no-print-hash -- Don't print the hash to the terminal\n");
       o.printf("--hash-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
       o.printf("Please supply IDs one line at a time on standard input.\n");
       System.exit(exitCode);
@@ -447,7 +462,7 @@ public class TETagQuery {
           hashDir = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-hash")) {
+        } else if (option.equals("--no-print-hash")) {
           printHashString = false;
 
         } else {
@@ -455,6 +470,12 @@ public class TETagQuery {
             PROGNAME, _verb, option);
           usage(1);
         }
+      }
+
+      if (args.length > 0) {
+        System.err.printf("%s %s: extraneous arguments.\n", PROGNAME, _verb);
+        System.err.printf("IDs must be provided on standard input, one per line.\n");
+        usage(1);
       }
 
       if (hashDir != null) {
@@ -504,7 +525,7 @@ public class TETagQuery {
       o.printf("--until {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("--hash-type {x}\n");
-      o.printf("--no-hash -- Don't print the hash\n");
+      o.printf("--no-print-hash -- Don't print the hash\n");
       o.printf("--hash-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
@@ -577,7 +598,7 @@ public class TETagQuery {
 
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-hash")) {
+        } else if (option.equals("--no-print-hash")) {
           printHashString = false;
 
         } else {
@@ -620,11 +641,45 @@ public class TETagQuery {
       // gives back only ID code, hash text, and the uninformative label
       // "THREAT_DESCRIPTOR". From this we can dive in on each item, though, and
       // query for its details one ID at a time.
-      List<String> hashIDs = Net.getHashIDsByTagID(tagID, verbose, showURLs,
-        hashFilterer, since, until, pageSize, printHashString);
+      IDProcessor processor = new IDDetailsProcessor(numIDsPerQuery, verbose,
+        showURLs, printHashString, hashDir, hashFormatter);
+      Net.getHashIDsByTagID(tagID, verbose, showURLs,
+        hashFilterer, since, until, pageSize, printHashString, processor);
+    }
+  }
 
-      outputDetails(hashIDs, numIDsPerQuery, verbose, showURLs, printHashString,
-        hashDir, hashFormatter);
+  /**
+   * Callback for TagToDetailsHandler: what we want done with every batch of
+   * threat-descriptor IDs.
+   */
+
+  private static class IDDetailsProcessor implements IDProcessor {
+    private final int _numIDsPerQuery;
+    private final boolean _verbose;
+    private final boolean _showURLs;
+    private final boolean _printHashString;
+    private final String _hashDir;
+    private final HashFormatter _hashFormatter;
+
+    public IDDetailsProcessor(
+      int numIDsPerQuery,
+      boolean verbose,
+      boolean showURLs,
+      boolean printHashString,
+      String hashDir,
+      HashFormatter hashFormatter
+    ) {
+      _numIDsPerQuery = numIDsPerQuery;
+      _verbose = verbose;
+      _showURLs = showURLs;
+      _printHashString = printHashString;
+      _hashDir = hashDir;
+      _hashFormatter = hashFormatter;
+    }
+
+    public void processIDs(List<String> hashIDs) {
+      outputDetails(hashIDs, _numIDsPerQuery, _verbose, _showURLs, _printHashString,
+        _hashDir, _hashFormatter);
     }
   }
 
@@ -649,10 +704,15 @@ public class TETagQuery {
         printHashString);
       for (SharedHash sharedHash : sharedHashes) {
 
-        System.out.println(hashFormatter.format(sharedHash, printHashString));
-
-        if (hashDir != null) {
+        if (hashDir == null) {
+          System.out.println(hashFormatter.format(sharedHash, printHashString));
+        } else {
           String path = hashDir + File.separator + sharedHash.hashID + Utils.hashTypeToFileSuffix(sharedHash.hashType);
+
+          SimpleJSONWriter w = new SimpleJSONWriter();
+          w.add("path", path);
+          System.out.println(w.format());
+          System.out.flush();
 
           try {
             Utils.outputHashToFile(sharedHash, path, verbose);
@@ -746,7 +806,7 @@ public class TETagQuery {
 
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-hash")) {
+        } else if (option.equals("--no-print-hash")) {
           printHashString = false;
 
         } else {

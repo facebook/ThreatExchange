@@ -15,10 +15,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Stream;
 
-// ================================================================
-// UTILITY METHODS
-// ================================================================
-
+/**
+ * Utility methods
+ */
 class Utils {
 
   /**

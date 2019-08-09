@@ -27,10 +27,17 @@ Examples:
 ```
 java com.facebook.threatexchange.TETagQuery --help
 
-java com.facebook.threatexchange.TETagQuery    tag-to-details --hash-type pdq media_type_photo
-java com.facebook.threatexchange.TETagQuery -q tag-to-details --hash-type pdq media_type_photo
-java com.facebook.threatexchange.TETagQuery    tag-to-details --hash-type md5 media_type_video
-java com.facebook.threatexchange.TETagQuery    tag-to-details --page-size 10 --hash-dir ./tmk-hash-dir --hash-type tmk media_priority_test
+java com.facebook.threatexchange.TETagQuery tag-to-details --hash-type pdq media_type_photo
+
+java com.facebook.threatexchange.TETagQuery -v tag-to-details --hash-type pdq media_type_photo
+
+java com.facebook.threatexchange.TETagQuery tag-to-details --hash-type md5 media_type_video
+
+java com.facebook.threatexchange.TETagQuery tag-to-details \
+  --page-size 10 \
+  --hash-dir ./tmk-hash-dir \
+  --hash-type tmk \
+  media_type_long_hash_video
 ```
 
 # Contact

@@ -1,9 +1,8 @@
 package com.facebook.threatexchange;
 
-// ================================================================
-// HASH OUTPUT-FORMATTER
-// ================================================================
-
+/**
+ * Hash output-formatter
+ */
 interface HashFormatter {
   public String format(SharedHash sharedHash, boolean printHashString);
 }

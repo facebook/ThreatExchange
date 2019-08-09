@@ -3,12 +3,11 @@ package com.facebook.threatexchange;
 import java.io.PrintStream;
 import java.util.stream.Stream;
 
-// ================================================================
-// Hash-filterer, using hash-text rather than ThreatExchange 'type'
-// field, since it's far more performant to filter on the former
-// than the latter.
-// ================================================================
-
+/**
+ * Hash-filterer, using hash-text rather than ThreatExchange 'type'
+ * field, since it's far more performant to filter on the former
+ * than the latter.
+ */
 class HashFiltererFactory {
   private static final String OPTION_PHOTODNA = "photodna";
   private static final String OPTION_PDQ      = "pdq";
