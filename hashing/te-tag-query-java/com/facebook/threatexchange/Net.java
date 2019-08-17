@@ -24,6 +24,11 @@ import java.util.stream.Stream;
  */
 class Net {
   private static String APP_TOKEN = null;
+  private static String TE_BASE_URL = Constants.DEFAULT_TE_BASE_URL;
+
+  public static void setTEBaseURL(String TEBaseURL) {
+    TE_BASE_URL = TEBaseURL;
+  }
 
   /**
    * Gets the ThreatExchange app token from an environment variable.
@@ -45,7 +50,7 @@ class Net {
    * Looks up the internal ID for a given tag.
    */
   public static String getTagIDFromName(String tagName, boolean showURLs) {
-    String url = Constants.TE_BASE_URL
+    String url = TE_BASE_URL
       + "/threat_tags"
       + "/?access_token=" + APP_TOKEN
       + "&text=" + URLEncoder.encode(tagName); // since user-supplied string
@@ -102,7 +107,7 @@ class Net {
     IDProcessor idProcessor
   ) {
     String pageLimit = Integer.toString(pageSize);
-    String startURL = Constants.TE_BASE_URL
+    String startURL = TE_BASE_URL
       + "/" + tagID + "/tagged_objects"
       + "/?access_token=" + APP_TOKEN
       + "&limit=" + pageLimit;
@@ -220,7 +225,7 @@ class Net {
       }
     }
 
-    String url = Constants.TE_BASE_URL
+    String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
       + "&ids=%5B" + String.join(",", hashIDs) + "%5D"
       + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,severity,share_level,tags";
@@ -340,7 +345,7 @@ class Net {
     List<SharedHash> sharedHashes = new ArrayList<SharedHash>();
 
     String pageLimit = Integer.toString(pageSize);
-    String startURL = Constants.TE_BASE_URL
+    String startURL = TE_BASE_URL
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN
       + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,severity,share_level,tags"
@@ -484,7 +489,7 @@ class Net {
     boolean dryRun
   ) {
 
-    String urlString = Constants.TE_BASE_URL
+    String urlString = TE_BASE_URL
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN;
 

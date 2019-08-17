@@ -3,7 +3,7 @@ package com.facebook.threatexchange;
 import java.net.URL;
 
 class Constants {
-  public static final String TE_BASE_URL = "https://graph.facebook.com/v4.0";
+  public static final String DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v4.0";
 
   // These are all conventions for hash-sharing over ThreatExchange.
   public static final String HASH_TYPE_PHOTODNA = "HASH_PHOTODNA";

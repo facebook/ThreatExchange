@@ -58,6 +58,7 @@ public class TETagQuery {
     o.printf("  -s|--show-urls Print URLs used for queries, before executing them.\n");
     o.printf("  -a|--app-token-env-name {...} Name of app-token environment variable.\n");
     o.printf("                 Defaults to \"%s\".\n", DEFAULT_APP_TOKEN_ENV_NAME);
+    o.printf("  -b|--te-base-url {...} Defaults to \"%s\"\n", Constants.DEFAULT_TE_BASE_URL);
     CommandHandlerFactory.list(o);
     System.exit(exitCode);
   }
@@ -133,6 +134,13 @@ public class TETagQuery {
           usage(1);
         }
         appTokenEnvName = args[0];
+        args = Arrays.copyOfRange(args, 1, args.length);
+
+      } else if (option.equals("-b") || option.equals("--te-base-url")) {
+        if (args.length < 1) {
+          usage(1);
+        }
+        Net.setTEBaseURL(args[0]);
         args = Arrays.copyOfRange(args, 1, args.length);
 
       } else {
