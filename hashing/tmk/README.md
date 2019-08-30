@@ -150,7 +150,7 @@ Here we see, as expected and in a different way, the variants being matched up
 -- as discussed in more detail in `../../hashing.pdf`.
 
 ```
-$ tmk-clusterize --c1 0.7 --c2 0.7 -s *.tmk
+$ ./tmk-clusterize --c1 0.7 --c2 0.7 -s *.tmk
 clidx=1,clusz=8,filename=chair-19-sd-bar.tmk
 clidx=1,clusz=8,filename=chair-20-sd-bar.tmk
 clidx=1,clusz=8,filename=chair-22-sd-grey-bar.tmk
@@ -175,7 +175,7 @@ clidx=5,clusz=1,filename=pattern-sd-with-large-logo-bar.tmk
 Using a more conservative tolerance:
 
 ```
-$ tmk-clusterize --c1 0.95 --c2 0.95 -s *.tmk
+$ ./tmk-clusterize --c1 0.95 --c2 0.95 -s *.tmk
 clidx=1,clusz=5,filename=chair-19-sd-bar.tmk
 clidx=1,clusz=5,filename=chair-20-sd-bar.tmk
 clidx=1,clusz=5,filename=chair-22-sd-grey-bar.tmk
