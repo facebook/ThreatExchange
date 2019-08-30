@@ -16,8 +16,8 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 ./tmk-query-with-faiss needles.txt haystack.txt
 ---------------------------------------------------------------- */
 
-#include <tmk/algo/tmkfv.h>
-#include <tmk/io/tmkio.h>
+#include <tmk/cpp/algo/tmkfv.h>
+#include <tmk/cpp/io/tmkio.h>
 
 #include <IndexIVFPQ.h>
 #include <IndexFlat.h>
