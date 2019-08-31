@@ -115,6 +115,23 @@ Options:
 --c2 {y}: Level-2 threshold: default 0.000.
 ```
 
+## tmk-query-with-faiss
+
+This is very similar to `tmk-query` but uses [faiss](https://github.com/facebookresearch/faiss) to run queries efficiently. faiss is a Facebook library for efficient similarity search and clustering of dense vectors.
+
+```
+$ tmk-query-with-faiss -h
+Usage: tmk-query-with-faiss [options] [needles file name] {haystack file name}
+Needles file and haystack file should each contain .tmk file names,
+one per line. Then the haystack .tmk files are loaded into memory.
+Then each needle .tmk file is queried against the haystack, and all
+matches within specified level-1/level-2 thresholds are printed.
+Options:
+-v|--verbose: Be more verbose.
+--c1 {x}: Level-1 threshold: default -1.000.
+--c2 {y}: Level-2 threshold: default 0.000.
+```
+
 # Less important executables
 
 ## vstr2feat and feat2tmk
