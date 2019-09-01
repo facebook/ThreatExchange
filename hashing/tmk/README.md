@@ -260,6 +260,8 @@ $ tmk-query --c1 0.7 --c2 0.7 needles.txt haystack.txt | sort -n
 1.000000 1.000000 chair-orig-22-hd-no-bar.tmk chair-orig-22-hd-no-bar.tmk
 ```
 
+There is another query tool called `tmk-query-with-faiss` which is more efficient than `tmk-query` and uses [faiss](https://github.com/facebookresearch/faiss) for running queries efficiently. See [README-more.md](https://github.com/facebook/ThreatExchange/blob/master/hashing/tmk/README-more.md)
+
 ## Look for duplicates within your own hashes
 
 Use `--min 2` to only show similarity clusters of size greater than 1.
