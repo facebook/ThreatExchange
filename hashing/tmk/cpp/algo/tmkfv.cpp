@@ -699,22 +699,17 @@ bool TMKFeatureVectors::compare(
     const TMKFeatureVectors& fva,
     const TMKFeatureVectors& fvb,
     float tolerance) {
-    printf("TROLLLLLLLL %.4f\n", tolerance);
   if (TMKFeatureVectors::areCompatible(fva, fvb)) {
-    printf("AAA\n");
     if (facebook::tmk::libvec::compareVectors(
             fva._pureAverageFeature, fvb._pureAverageFeature, tolerance)) {
       bool cos_equal = facebook::tmk::libvec::compareVectorsRank3(
           fva._cosFeatures, fvb._cosFeatures, tolerance);
-    printf("BBB\n");
       bool sin_equal = facebook::tmk::libvec::compareVectorsRank3(
           fva._sinFeatures, fvb._sinFeatures, tolerance);
-    printf("CCC\n");
       return cos_equal && sin_equal;
     }
     return false;
   }
-  printf("INCOMPAT\n");
   return false;
 }
 
