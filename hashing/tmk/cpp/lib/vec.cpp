@@ -79,6 +79,20 @@ bool distanceSquaredLE(
 }
 
 // ----------------------------------------------------------------
+float computeDistance(
+    const std::vector<float>& u,
+    const std::vector<float>& v
+) {
+  float dsq = 0.0;
+  int n = u.size();
+  for (int i = 0; i < n; i++) {
+    float diff = u[i] - v[i];
+    dsq += diff * diff;
+  }
+  return std::sqrt(dsq);
+}
+
+// ----------------------------------------------------------------
 float computeDot(const std::vector<float>& u, const std::vector<float>& v) {
   float sum = 0.0;
   int n = u.size();
