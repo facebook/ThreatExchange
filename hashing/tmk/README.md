@@ -219,6 +219,10 @@ Put hash-file names into a text file:
 $ find /path/to/hashes -name '*.tmk' > needles.txt
 ```
 
+Be sure to use absolute paths here. If you don't, then use paths relative to whatever directory
+you'll be cd'ed into when you run the `tmk-query` command below: it will simply be reading
+filenames out of the `.txt` files.
+
 ## Compute local hashes
 
 This step depends on what you have locally. Here we compute hashes for all the
