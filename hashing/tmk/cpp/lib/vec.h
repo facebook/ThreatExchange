@@ -32,6 +32,11 @@ bool distanceSquaredLE(
     float& dsq // Contains full distance-squared if return value is true.
 );
 
+float computeDistance(
+    const std::vector<float>& u,
+    const std::vector<float>& v
+);
+
 float computeDot(const std::vector<float>& u, const std::vector<float>& v);
 
 float computeCosSim(const std::vector<float>& u, const std::vector<float>& v);
