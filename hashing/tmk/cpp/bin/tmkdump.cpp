@@ -1,4 +1,6 @@
-// Copyright 2004-present Facebook. All Rights Reserved.
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
 
 // ================================================================
 // Ops tool for visualizing output of step 3 of the TMK 3-stage

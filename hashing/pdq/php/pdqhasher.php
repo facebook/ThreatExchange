@@ -1,6 +1,10 @@
 <?php
 
 // ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
+// ================================================================
 // This file is bottom-up: more detailed methods at the top, main
 // entry points at the bottom. Namely:
 //

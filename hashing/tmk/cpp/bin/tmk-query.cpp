@@ -1,4 +1,6 @@
-// Copyright 2004-present Facebook. All Rights Reserved.
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
 
 #include <tmk/cpp/algo/tmkfv.h>
 #include <tmk/cpp/io/tmkio.h>

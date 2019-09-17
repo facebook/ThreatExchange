@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 #include <pdq/cpp/io/pdqio.h>
 #include <stdlib.h>
 #include <string.h>

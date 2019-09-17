@@ -1,4 +1,6 @@
-// Copyright 2004-present Facebook. All Rights Reserved.
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
 
 // ================================================================
 // These allow us to resample videos at a constant rate, be it slower than,

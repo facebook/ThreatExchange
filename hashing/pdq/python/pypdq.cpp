@@ -1,6 +1,8 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 /*
- * Copyright 2004-present Facebook. All Rights Reserved.
- *
  * Wraps the PDQ hashing algorithm so that it can be accessed from Python.
  * See `pdq_test.py` for example usage from Python.
  */

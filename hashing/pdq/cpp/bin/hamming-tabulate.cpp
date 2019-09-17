@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 #include <pdq/cpp/common/pdqbasetypes.h>
 #include <pdq/cpp/common/pdqhamming.h>
 

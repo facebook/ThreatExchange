@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 #ifndef PDQTYPES_H
 #define PDQTYPES_H
 #include <stdio.h>
