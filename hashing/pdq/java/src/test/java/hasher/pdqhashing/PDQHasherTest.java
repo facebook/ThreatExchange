@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 package hasher.pdqhashing;
 
 import org.testng.Assert;

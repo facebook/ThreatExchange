@@ -1,5 +1,9 @@
 <?php
 
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 require 'pdqhasher.php';
 
 $filenames = array_slice($argv, 1);

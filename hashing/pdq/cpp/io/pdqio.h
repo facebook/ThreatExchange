@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 #ifndef PDQIO_H
 #define PDQIO_H
 

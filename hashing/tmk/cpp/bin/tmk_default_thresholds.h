@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 #ifndef TMK_DEFAULT_THRESHOLDS_H
 #define TMK_DEFAULT_THRESHOLDS_H
 

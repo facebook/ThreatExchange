@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 #include <pdq/cpp/common/pdqhashtypes.h>
 
 #include <stdio.h>

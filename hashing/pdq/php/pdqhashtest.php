@@ -1,4 +1,9 @@
 <?php
+
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 require 'pdqhash.php';
 
 if (count($argv) > 1) {

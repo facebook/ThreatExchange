@@ -1,4 +1,6 @@
-// Copyright 2004-present Facebook. All Rights Reserved.
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
 
 /* ----------------------------------------------------------------
 java TETagQuery tag-to-details --page-size 10 --hash-dir ./tetmk media_type_long_hash_video

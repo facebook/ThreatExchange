@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif

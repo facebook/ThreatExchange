@@ -1,5 +1,9 @@
 <?php
 
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 /**
  * A PDQ hash is simply 256 bits. The only string representation is 64 hex
  * digits. Bit-ordering is a concern, but is a non-issue as long as the

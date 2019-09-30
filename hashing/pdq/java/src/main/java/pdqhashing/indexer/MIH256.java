@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// ================================================================
+
 package pdqhashing.indexer;
 
 import pdqhashing.types.Hash256;
