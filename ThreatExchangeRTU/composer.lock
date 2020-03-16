@@ -187,7 +187,7 @@
                 "php": ">=5.3.9",
                 "pimple/pimple": "~1.0",
                 "symfony/event-dispatcher": "~2.3|3.0.*",
-                "symfony/http-foundation": "~2.3|3.0.*",
+                "symfony/http-foundation": "~|3.4.*",
                 "symfony/http-kernel": "~2.3|3.0.*",
                 "symfony/routing": "~2.3|3.0.*"
             },
@@ -365,7 +365,7 @@
         },
         {
             "name": "symfony/http-foundation",
-            "version": "v3.0.8",
+            "version": "v3.4.26",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/http-foundation.git",
@@ -435,7 +435,7 @@
                 "psr/log": "~1.0",
                 "symfony/debug": "~2.8|~3.0",
                 "symfony/event-dispatcher": "~2.8|~3.0",
-                "symfony/http-foundation": "~2.8.8|~3.0.8|~3.1.2|~3.2"
+                "symfony/http-foundation": "~3.4"
             },
             "conflict": {
                 "symfony/config": "<2.8"
@@ -583,7 +583,7 @@
                 "psr/log": "~1.0",
                 "symfony/config": "~2.8|~3.0",
                 "symfony/expression-language": "~2.8|~3.0",
-                "symfony/http-foundation": "~2.8|~3.0",
+                "symfony/http-foundation": "~3.4",
                 "symfony/yaml": "~2.8|~3.0"
             },
             "suggest": {
