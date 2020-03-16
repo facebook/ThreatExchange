@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 
 This script demonstrates using pytx to publish data to the ThreatExchange API. 

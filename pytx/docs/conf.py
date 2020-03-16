@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 #
 # pytx documentation build configuration file, created by
 # sphinx-quickstart on Thu Apr  2 10:00:44 2015.

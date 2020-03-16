@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from .request import Broker
 
 from .vocabulary import ThreatExchange as t

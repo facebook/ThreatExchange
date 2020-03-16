@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from sys import version_info
 import dateutil.parser
 import datetime

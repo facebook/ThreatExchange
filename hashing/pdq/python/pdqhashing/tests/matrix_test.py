@@ -1,4 +1,5 @@
 # pyre-strict
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from pdqhashing.utils.matrix import MatrixUtil
 import unittest
 

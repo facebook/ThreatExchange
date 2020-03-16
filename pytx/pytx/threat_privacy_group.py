@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from .access_token import get_app_id
 from .common import Common
 from .request import Broker

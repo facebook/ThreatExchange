@@ -1,4 +1,5 @@
 # pyre-strict
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from pdqhashing.types.exceptions import PDQHashFormatException
 from pdqhashing.types.hash256 import Hash256
 import unittest

@@ -1,4 +1,5 @@
 import os
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 from pdqhashing.hasher.pdq_hasher import PDQHasher
 from pdqhashing.types.hash256 import Hash256

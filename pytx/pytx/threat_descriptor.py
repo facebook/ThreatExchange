@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from .common import Common
 from .vocabulary import ThreatDescriptor as td
 from .vocabulary import ThreatExchange as t
