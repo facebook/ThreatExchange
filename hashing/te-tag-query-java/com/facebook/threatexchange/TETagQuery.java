@@ -1,3 +1,5 @@
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 package com.facebook.threatexchange;
 
 import org.json.simple.JSONArray;
