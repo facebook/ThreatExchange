@@ -1,3 +1,4 @@
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 var mocha = require('mocha');
 var assert = require('assert');
 var should = require('chai').should;

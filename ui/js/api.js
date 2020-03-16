@@ -1,3 +1,4 @@
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 function set_searches() {
     /**
      * Set the search list in local storage.

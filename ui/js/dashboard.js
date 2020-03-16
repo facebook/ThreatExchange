@@ -1,3 +1,4 @@
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 function check_token() {
     /**
      * Keeps track of the global access_token variable. Present the user with

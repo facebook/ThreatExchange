@@ -1,3 +1,4 @@
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 exports.v_ThreatExchange = {
     URL             : "https://graph.facebook.com/",
     VERSION         : "v2.3/",

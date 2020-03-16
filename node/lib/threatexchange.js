@@ -1,3 +1,4 @@
+// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 var request = require('request');
 var vocabulary = require('./vocabulary');
 

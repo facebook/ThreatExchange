@@ -1,4 +1,5 @@
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  * These are globals used by other JS files. Some are constants while others are
  * used to keep state or track content.
  */
