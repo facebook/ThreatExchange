@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 def parse(dataset)
   printf "\nResults: \n"
   if dataset.kind_of?(String)

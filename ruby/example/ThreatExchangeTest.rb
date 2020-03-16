@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 # ThreatExchange example script.
 require 'ThreatExchange'
 require_relative 'lib/example'

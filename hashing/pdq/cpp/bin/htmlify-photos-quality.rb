@@ -1,4 +1,6 @@
 #!/usr/bin/ruby
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 # See README.md for context.
 
 # ----------------------------------------------------------------

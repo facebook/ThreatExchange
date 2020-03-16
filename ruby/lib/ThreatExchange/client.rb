@@ -1,3 +1,4 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 require "ThreatExchange/http_methods"
 require "logger"
 
