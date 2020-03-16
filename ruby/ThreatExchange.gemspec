@@ -1,4 +1,5 @@
 # coding: utf-8
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'ThreatExchange/version'
