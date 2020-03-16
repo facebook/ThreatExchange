@@ -23,3 +23,7 @@ You can get details on the ThreatExchange platform, new features and other updat
 
 ## Getting Access
 To request access to ThreatExchange, please submit an application via [https://developers.facebook.com/products/threat-exchange/](https://developers.facebook.com/products/threat-exchange/).
+
+## License
+
+Please see `./LICENSE`.
