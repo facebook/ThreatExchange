@@ -274,7 +274,7 @@ public class TETagQuery {
       o.printf("--since {x}\n");
       o.printf("--until {x}\n");
       o.printf("--page-size {x}\n");
-      o.printf("--hash-type {x}\n");
+      o.printf("--indicator-type {x}\n");
       o.printf("--no-print-hash -- Don't print the hash to the terminal\n");
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
@@ -325,7 +325,7 @@ public class TETagQuery {
           pageSize = Integer.valueOf(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--hash-type")) {
+        } else if (option.equals("--indicator-type")) {
           if (args.length < 1) {
             usage(1);
           }
@@ -428,7 +428,7 @@ public class TETagQuery {
         PROGNAME, _verb);
       o.printf("Options:\n");
       o.printf("--no-print-hash -- Don't print the hash to the terminal\n");
-      o.printf("--hash-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
+      o.printf("--data-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
       o.printf("Please supply IDs one line at a time on standard input.\n");
       System.exit(exitCode);
     }
@@ -442,7 +442,7 @@ public class TETagQuery {
       HashFormatter hashFormatter
     ) {
       boolean printHashString = true;
-      String hashDir = null;
+      String dataDir = null;
 
       while (args.length > 0 && args[0].startsWith("-")) {
         String option = args[0];
@@ -451,11 +451,11 @@ public class TETagQuery {
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
 
-        } else if (option.equals("--hash-dir")) {
+        } else if (option.equals("--data-dir")) {
           if (args.length < 1) {
             usage(1);
           }
-          hashDir = args[0];
+          dataDir = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--no-print-hash")) {
@@ -474,12 +474,12 @@ public class TETagQuery {
         usage(1);
       }
 
-      if (hashDir != null) {
-        File handle = new File(hashDir);
+      if (dataDir != null) {
+        File handle = new File(dataDir);
         boolean ok = handle.exists() || handle.mkdirs();
         if (!ok) {
           System.err.printf("%s: could not create output directory \"%s\"\n",
-            PROGNAME, hashDir);
+            PROGNAME, dataDir);
           System.exit(1);
         }
       }
@@ -501,7 +501,7 @@ public class TETagQuery {
       }
 
       outputDetails(ids, numIDsPerQuery, verbose, showURLs, printHashString,
-        hashDir, hashFormatter);
+        dataDir, hashFormatter);
     }
   }
 
@@ -520,9 +520,9 @@ public class TETagQuery {
       o.printf("--since {x}\n");
       o.printf("--until {x}\n");
       o.printf("--page-size {x}\n");
-      o.printf("--hash-type {x}\n");
+      o.printf("--indicator-type {x}\n");
       o.printf("--no-print-hash -- Don't print the hash\n");
-      o.printf("--hash-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
+      o.printf("--data-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
       o.printf("Hash types:\n");
@@ -543,7 +543,7 @@ public class TETagQuery {
       String since = null;
       String until = null;
       boolean printHashString = true;
-      String hashDir = null;
+      String dataDir = null;
 
       while (args.length > 0 && args[0].startsWith("-")) {
         String option = args[0];
@@ -552,11 +552,11 @@ public class TETagQuery {
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
 
-        } else if (option.equals("--hash-dir")) {
+        } else if (option.equals("--data-dir")) {
           if (args.length < 1) {
             usage(1);
           }
-          hashDir = args[0];
+          dataDir = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--since")) {
@@ -580,7 +580,7 @@ public class TETagQuery {
           pageSize = Integer.valueOf(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--hash-type")) {
+        } else if (option.equals("--indicator-type")) {
           if (args.length < 1) {
             usage(1);
           }
@@ -609,12 +609,12 @@ public class TETagQuery {
       }
       String tagName = args[0];
 
-      if (hashDir != null) {
-        File handle = new File(hashDir);
+      if (dataDir != null) {
+        File handle = new File(dataDir);
         boolean ok = handle.exists() || handle.mkdirs();
         if (!ok) {
           System.err.printf("%s: could not create output directory \"%s\"\n",
-            PROGNAME, hashDir);
+            PROGNAME, dataDir);
           System.exit(1);
         }
       }
@@ -638,7 +638,7 @@ public class TETagQuery {
       // "THREAT_DESCRIPTOR". From this we can dive in on each item, though, and
       // query for its details one ID at a time.
       IDProcessor processor = new IDDetailsProcessor(numIDsPerQuery, verbose,
-        showURLs, printHashString, hashDir, hashFormatter);
+        showURLs, printHashString, dataDir, hashFormatter);
       Net.getHashIDsByTagID(tagID, verbose, showURLs,
         hashFilterer, since, until, pageSize, printHashString, processor);
     }
@@ -662,14 +662,14 @@ public class TETagQuery {
       boolean verbose,
       boolean showURLs,
       boolean printHashString,
-      String hashDir,
+      String dataDir,
       HashFormatter hashFormatter
     ) {
       _numIDsPerQuery = numIDsPerQuery;
       _verbose = verbose;
       _showURLs = showURLs;
       _printHashString = printHashString;
-      _hashDir = hashDir;
+      _hashDir = dataDir;
       _hashFormatter = hashFormatter;
     }
 
@@ -689,7 +689,7 @@ public class TETagQuery {
     boolean verbose,
     boolean showURLs,
     boolean printHashString,
-    String hashDir,
+    String dataDir,
     HashFormatter hashFormatter)
   {
     List<List<String>> chunks = Utils.chunkify(ids, numIDsPerQuery);
@@ -700,10 +700,13 @@ public class TETagQuery {
         printHashString);
       for (SharedHash sharedHash : sharedHashes) {
 
-        if (hashDir == null) {
+        if (dataDir == null) {
           System.out.println(hashFormatter.format(sharedHash, printHashString));
         } else {
-          String path = hashDir + File.separator + sharedHash.id + Utils.td_indicator_typeToFileSuffix(sharedHash.td_indicator_type);
+          String path = dataDir
+            + File.separator
+            + sharedHash.id
+            + Utils.td_indicator_typeToFileSuffix(sharedHash.td_indicator_type);
 
           SimpleJSONWriter w = new SimpleJSONWriter();
           w.add("path", path);
@@ -737,7 +740,7 @@ public class TETagQuery {
         PROGNAME, _verb);
       o.printf("Options:\n");
       o.printf("--since {x}\n");
-      o.printf("--hash-type {x}\n");
+      o.printf("--indicator-type {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("The \"since\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
@@ -788,7 +791,7 @@ public class TETagQuery {
           pageSize = Integer.valueOf(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--hash-type")) {
+        } else if (option.equals("--indicator-type")) {
           if (args.length < 1) {
             usage(1);
           }
@@ -1107,7 +1110,7 @@ public class TETagQuery {
         usage(1);
       }
 
-      if (params.getIndicatorType().equals(Constants.HASH_TYPE_TMK)) {
+      if (params.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
         String filename = params.getIndicatorText();
         String contents = null;
         try {

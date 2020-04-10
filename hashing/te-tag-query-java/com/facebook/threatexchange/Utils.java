@@ -86,16 +86,16 @@ class Utils {
   public static String td_indicator_typeToFileSuffix(String td_indicator_type) {
     String suffix = ".hsh";
     switch (td_indicator_type) {
-    case Constants.HASH_TYPE_PHOTODNA:
+    case Constants.INDICATOR_TYPE_PHOTODNA:
       suffix = ".pdna";
       break;
-    case Constants.HASH_TYPE_PDQ:
+    case Constants.INDICATOR_TYPE_PDQ:
       suffix = ".pdq";
       break;
-    case Constants.HASH_TYPE_MD5:
+    case Constants.INDICATOR_TYPE_MD5:
       suffix = ".md5";
       break;
-    case Constants.HASH_TYPE_TMK:
+    case Constants.INDICATOR_TYPE_TMK:
       suffix = ".tmk";
       break;
     }
@@ -108,7 +108,7 @@ class Utils {
     boolean verbose)
       throws FileNotFoundException, IOException
   {
-    if (sharedHash.td_indicator_type.equals(Constants.HASH_TYPE_TMK)) {
+    if (sharedHash.td_indicator_type.equals(Constants.INDICATOR_TYPE_TMK)) {
       outputTMKHashToFile(sharedHash, path, verbose);
     } else {
       outputNonTMKHashToFile(sharedHash, path, verbose);
@@ -140,7 +140,7 @@ class Utils {
     if (verbose) {
       SimpleJSONWriter w = new SimpleJSONWriter();
       w.add("path", path);
-      w.add("hash_type", sharedHash.td_indicator_type);
+      w.add("td_indicator_type", sharedHash.td_indicator_type);
       w.add("encoded_length", sharedHash.td_raw_indicator.length());
       w.add("binary_length", first.length + rest.length);
       System.out.println(w.format());
@@ -163,8 +163,8 @@ class Utils {
     if (verbose) {
       SimpleJSONWriter w = new SimpleJSONWriter();
       w.add("path", path);
-      w.add("hash_type", sharedHash.td_indicator_type);
-      w.add("hash_length", sharedHash.td_raw_indicator.length());
+      w.add("td_indicator", sharedHash.td_indicator_type);
+      w.add("indicator_length", sharedHash.td_raw_indicator.length());
       System.out.println(w.format());
       System.out.flush();
     }

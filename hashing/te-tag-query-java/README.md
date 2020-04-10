@@ -29,29 +29,29 @@ java com.facebook.threatexchange.TETagQuery --help
 
 Querying for all hashes of a given type:
 ```
-java com.facebook.threatexchange.TETagQuery tag-to-details --hash-type pdq media_type_photo
+java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type pdq media_type_photo
 
-java com.facebook.threatexchange.TETagQuery -v tag-to-details --hash-type pdq media_type_photo
+java com.facebook.threatexchange.TETagQuery -v tag-to-details --indicator-type pdq media_type_photo
 
-java com.facebook.threatexchange.TETagQuery tag-to-details --hash-type md5 media_type_video
+java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 media_type_video
 
 java com.facebook.threatexchange.TETagQuery tag-to-details \
   --page-size 10 \
-  --hash-dir ./tmk-hash-dir \
-  --hash-type tmk \
+  --data-dir ./tmk-hash-dir \
+  --indicator-type tmk \
   media_type_long_hash_video
 ```
 
 Querying for some hashes of a given type:
 ```
-java com.facebook.threatexchange.TETagQuery tag-to-details --hash-type pdq --since -1day media_type_photo
+java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type pdq --since -1day media_type_photo
 
-java com.facebook.threatexchange.TETagQuery tag-to-details --hash-type md5 --since -1week media_type_video
+java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 --since -1week media_type_video
 
 java com.facebook.threatexchange.TETagQuery tag-to-details \
   --page-size 10 \
-  --hash-dir ./tmk-hash-dir \
-  --hash-type tmk \
+  --data-dir ./tmk-hash-dir \
+  --indicator-type tmk \
   --since -1week \
   media_type_long_hash_video
 ```
