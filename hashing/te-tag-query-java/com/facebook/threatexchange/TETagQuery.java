@@ -198,6 +198,7 @@ public class TETagQuery {
       o.printf("  %s\n", TAG_TO_DETAILS);
       o.printf("  %s\n", INCREMENTAL);
       o.printf("  %s\n", PAGINATE);
+      o.printf("  %s\n", SUBMIT);
     }
   }
 
