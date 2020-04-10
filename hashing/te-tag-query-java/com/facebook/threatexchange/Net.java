@@ -18,6 +18,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -285,31 +286,13 @@ class Net {
         JSONObject tags = (JSONObject)item.get("tags");
         JSONArray tag_data = (JSONArray)tags.get("data");
         int n = tag_data.size();
-        String mediaType = "not_found";
-        String mediaPriority = "not_found";
-        int numMediaType = 0;
-        int numMediaPriority = 0;
+        List<String> tagTexts = new ArrayList<String>();
         for (int j = 0; j < n; j++) {
           JSONObject tag = (JSONObject) tag_data.get(j);
-          String tag_text = (String)tag.get("text");
-          if (tag_text.startsWith(Constants.TAG_PREFIX_MEDIA_TYPE)) {
-            mediaType = tag_text.replace(Constants.TAG_PREFIX_MEDIA_TYPE, "").toUpperCase();
-            numMediaType++;
-          } else if (tag_text.startsWith(Constants.TAG_PREFIX_MEDIA_PRIORITY)) {
-            mediaPriority = tag_text.replace(Constants.TAG_PREFIX_MEDIA_PRIORITY, "").toUpperCase();
-            numMediaPriority++;
-          }
+          String tagText = (String)tag.get("text");
+          tagTexts.add(tagText);
         }
-
-        if (verbose) {
-          if (numMediaType != 1 || numMediaPriority != 1) {
-            SimpleJSONWriter w = new SimpleJSONWriter();
-            w.add("hash_id", (String)item.get("id"));
-            w.add("num_media_type", numMediaType);
-            w.add("num_media_priority", numMediaPriority);
-            System.out.println(w.format());
-          }
-        }
+        Collections.sort(tagTexts); // canonicalize
 
         SharedHash sharedHash = new SharedHash(
           (String)item.get("id"),
@@ -320,8 +303,8 @@ class Net {
           (String)owner.get("id"),
           (String)owner.get("email"),
           (String)owner.get("name"),
-          mediaType,
-          mediaPriority);
+          tagTexts
+        );
 
         sharedHashes.add(sharedHash);
       }
@@ -444,21 +427,13 @@ class Net {
           JSONObject tags = (JSONObject)item.get("tags");
           JSONArray tag_data = (JSONArray)tags.get("data");
           int n = tag_data.size();
-          String mediaType = "not_found";
-          String mediaPriority = "not_found";
-          int numMediaType = 0;
-          int numMediaPriority = 0;
+          List<String> tagTexts = new ArrayList<String>();
           for (int j = 0; j < n; j++) {
             JSONObject tag = (JSONObject) tag_data.get(j);
-            String tag_text = (String)tag.get("text");
-            if (tag_text.startsWith(Constants.TAG_PREFIX_MEDIA_TYPE)) {
-              mediaType = tag_text.replace(Constants.TAG_PREFIX_MEDIA_TYPE, "").toUpperCase();
-              numMediaType++;
-            } else if (tag_text.startsWith(Constants.TAG_PREFIX_MEDIA_PRIORITY)) {
-              mediaPriority = tag_text.replace(Constants.TAG_PREFIX_MEDIA_PRIORITY, "").toUpperCase();
-              numMediaPriority++;
-            }
+            String tagText = (String)tag.get("text");
+            tagTexts.add(tagText);
           }
+          Collections.sort(tagTexts); // canonicalize
 
           SharedHash sharedHash = new SharedHash(
             itemID,
@@ -469,9 +444,8 @@ class Net {
             (String)owner.get("id"),
             (String)owner.get("email"),
             (String)owner.get("name"),
-            mediaType,
-            mediaPriority);
-
+            tagTexts
+          );
         }
         pageIndex++;
       } catch (Exception e) {
