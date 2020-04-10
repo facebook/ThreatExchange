@@ -921,9 +921,9 @@ public class TETagQuery {
       o.printf("                       comma-delimited app IDs. If privacy-type is\n");
       o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
       o.printf("                       privacy-group IDs.\n");
-      o.printf("--td_subjective_tags {...}           Comma-delimited. Overwrites on repost.\n");
-      o.printf("--add-td_subjective_tags {...}       Comma-delimited. Adds these on repost.\n");
-      o.printf("--remove-td_subjective_tags {...}    Comma-delimited. Removes these on repost.\n");
+      o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
+      o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
+      o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
       o.printf("--confidence {...}\n");
       o.printf("--precision {...}\n");
       o.printf("--first-active {...}\n");
@@ -1005,19 +1005,19 @@ public class TETagQuery {
           params.setPrivacyMembers(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--td_subjective_tags")) {
+        } else if (option.equals("--tags")) {
           if (args.length < 1) {
             usage(1);
           }
           params.setTagsToSet(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--add-td_subjective_tags")) {
+        } else if (option.equals("--add-tags")) {
           if (args.length < 1) {
             usage(1);
           }
           params.setTagsToAdd(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--remove-td_subjective_tags")) {
+        } else if (option.equals("--remove-tags")) {
           if (args.length < 1) {
             usage(1);
           }
