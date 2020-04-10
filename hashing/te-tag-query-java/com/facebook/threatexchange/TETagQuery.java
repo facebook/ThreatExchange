@@ -390,25 +390,25 @@ public class TETagQuery {
       _verbose = verbose;
     }
 
-    public void processIDs(List<String> hashIDs) {
+    public void processIDs(List<String> ids) {
       if (_verbose) {
         SimpleJSONWriter w = new SimpleJSONWriter();
-        w.add("hash_count", hashIDs.size());
+        w.add("hash_count", ids.size());
         System.out.println(w.format());
         System.out.flush();
 
         int i = 0;
-        for (String hashID : hashIDs) {
+        for (String id : ids) {
           w = new SimpleJSONWriter();
           w.add("i", i);
-          w.add("hash_id", hashID);
+          w.add("hash_id", id);
           System.out.println(w.format());
           System.out.flush();
           i++;
         }
       } else {
-        for (String hashID: hashIDs) {
-          System.out.println(hashID);
+        for (String id: ids) {
+          System.out.println(id);
           System.out.flush();
         }
       }
@@ -484,7 +484,7 @@ public class TETagQuery {
         }
       }
 
-      List<String> hashIDs = new ArrayList<String>();
+      List<String> ids = new ArrayList<String>();
 
       BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
       String line;
@@ -493,14 +493,14 @@ public class TETagQuery {
         while ((line = reader.readLine()) != null) {
           lno++;
           // In Java, line-terminators already stripped for us
-          hashIDs.add(line);
+          ids.add(line);
         }
       } catch (IOException e) {
         System.err.printf("Couldn't read line %d of standard input.\n", lno);
         System.exit(1);
       }
 
-      outputDetails(hashIDs, numIDsPerQuery, verbose, showURLs, printHashString,
+      outputDetails(ids, numIDsPerQuery, verbose, showURLs, printHashString,
         hashDir, hashFormatter);
     }
   }
@@ -673,8 +673,8 @@ public class TETagQuery {
       _hashFormatter = hashFormatter;
     }
 
-    public void processIDs(List<String> hashIDs) {
-      outputDetails(hashIDs, _numIDsPerQuery, _verbose, _showURLs, _printHashString,
+    public void processIDs(List<String> ids) {
+      outputDetails(ids, _numIDsPerQuery, _verbose, _showURLs, _printHashString,
         _hashDir, _hashFormatter);
     }
   }
@@ -684,7 +684,7 @@ public class TETagQuery {
    * and IDs-to-details handlers.
    */
   public static void outputDetails(
-    List<String> hashIDs,
+    List<String> ids,
     int numIDsPerQuery,
     boolean verbose,
     boolean showURLs,
@@ -692,7 +692,7 @@ public class TETagQuery {
     String hashDir,
     HashFormatter hashFormatter)
   {
-    List<List<String>> chunks = Utils.chunkify(hashIDs, numIDsPerQuery);
+    List<List<String>> chunks = Utils.chunkify(ids, numIDsPerQuery);
 
     // Now look up details for each ID.
     for (List<String> chunk: chunks) {
@@ -703,7 +703,7 @@ public class TETagQuery {
         if (hashDir == null) {
           System.out.println(hashFormatter.format(sharedHash, printHashString));
         } else {
-          String path = hashDir + File.separator + sharedHash.hashID + Utils.hashTypeToFileSuffix(sharedHash.hashType);
+          String path = hashDir + File.separator + sharedHash.id + Utils.td_indicator_typeToFileSuffix(sharedHash.td_indicator_type);
 
           SimpleJSONWriter w = new SimpleJSONWriter();
           w.add("path", path);
@@ -822,9 +822,9 @@ public class TETagQuery {
       }
       String tagName = args[0];
 
-      String hashTypeForTE = hashFilterer.getTEName();
+      String td_indicator_typeForTE = hashFilterer.getTEName();
 
-      List<SharedHash> sharedHashes = Net.getIncremental(tagName, hashTypeForTE, since,
+      List<SharedHash> sharedHashes = Net.getIncremental(tagName, td_indicator_typeForTE, since,
         pageSize, verbose, showURLs);
 
       for (SharedHash sharedHash : sharedHashes) {
@@ -921,9 +921,9 @@ public class TETagQuery {
       o.printf("                       comma-delimited app IDs. If privacy-type is\n");
       o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
       o.printf("                       privacy-group IDs.\n");
-      o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
-      o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
-      o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
+      o.printf("--td_subjective_tags {...}           Comma-delimited. Overwrites on repost.\n");
+      o.printf("--add-td_subjective_tags {...}       Comma-delimited. Adds these on repost.\n");
+      o.printf("--remove-td_subjective_tags {...}    Comma-delimited. Removes these on repost.\n");
       o.printf("--confidence {...}\n");
       o.printf("--precision {...}\n");
       o.printf("--first-active {...}\n");
@@ -1005,19 +1005,19 @@ public class TETagQuery {
           params.setPrivacyMembers(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--tags")) {
+        } else if (option.equals("--td_subjective_tags")) {
           if (args.length < 1) {
             usage(1);
           }
           params.setTagsToSet(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--add-tags")) {
+        } else if (option.equals("--add-td_subjective_tags")) {
           if (args.length < 1) {
             usage(1);
           }
           params.setTagsToAdd(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--remove-tags")) {
+        } else if (option.equals("--remove-td_subjective_tags")) {
           if (args.length < 1) {
             usage(1);
           }

@@ -11,5 +11,5 @@ import java.util.List;
  * page of threat-descriptor-ID results.
  */
 interface IDProcessor {
-  public void processIDs(List<String> hashIDs);
+  public void processIDs(List<String> ids);
 }
