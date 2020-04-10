@@ -8,24 +8,28 @@ package com.facebook.threatexchange;
  * Hash output-formatter
  */
 interface HashFormatter {
-  public String format(SharedHash sharedHash, boolean printHashString);
+  public String format(ThreatDescriptor threatDescriptor, boolean printHashString);
 }
 
 class JSONHashFormatter implements HashFormatter {
   @Override
-  public String format(SharedHash sharedHash, boolean printHashString) {
+  public String format(ThreatDescriptor threatDescriptor, boolean printHashString) {
     SimpleJSONWriter w = new SimpleJSONWriter();
-    w.add("hash_id", sharedHash.hashID);
+    w.add("id", threatDescriptor.id);
     if (printHashString) {
-      w.add("hash_value", sharedHash.hashValue);
+      w.add("td_raw_indicator", threatDescriptor.td_raw_indicator);
     }
-    w.add("hash_type", sharedHash.hashType);
-    w.add("added_on", sharedHash.addedOn);
-    w.add("confidence", sharedHash.confidence);
-    w.add("owner_id", sharedHash.ownerID);
-    w.add("owner_email", sharedHash.ownerEmail);
-    w.add("owner_name", sharedHash.ownerName);
-    w.add("tags", String.join(",", sharedHash.tags));
+    w.add("td_indicator_type", threatDescriptor.td_indicator_type);
+    w.add("added_on", threatDescriptor.added_on);
+    w.add("td_confidence", threatDescriptor.td_confidence);
+    w.add("td_owner_id", threatDescriptor.td_owner_id);
+    w.add("td_owner_email", threatDescriptor.td_owner_email);
+    w.add("td_owner_name", threatDescriptor.td_owner_name);
+    w.add("td_visibility", threatDescriptor.td_visibility);
+    w.add("td_status", threatDescriptor.td_status);
+    w.add("td_severity", threatDescriptor.td_severity);
+    w.add("td_share_level", threatDescriptor.td_share_level);
+    w.add("td_subjective_tags", String.join(",", threatDescriptor.td_subjective_tags));
     return w.format();
   }
 }

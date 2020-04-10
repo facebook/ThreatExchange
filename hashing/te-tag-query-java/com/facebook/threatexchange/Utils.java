@@ -83,19 +83,19 @@ class Utils {
     return retval;
   }
 
-  public static String hashTypeToFileSuffix(String hashType) {
+  public static String td_indicator_typeToFileSuffix(String td_indicator_type) {
     String suffix = ".hsh";
-    switch (hashType) {
-    case Constants.HASH_TYPE_PHOTODNA:
+    switch (td_indicator_type) {
+    case Constants.INDICATOR_TYPE_PHOTODNA:
       suffix = ".pdna";
       break;
-    case Constants.HASH_TYPE_PDQ:
+    case Constants.INDICATOR_TYPE_PDQ:
       suffix = ".pdq";
       break;
-    case Constants.HASH_TYPE_MD5:
+    case Constants.INDICATOR_TYPE_MD5:
       suffix = ".md5";
       break;
-    case Constants.HASH_TYPE_TMK:
+    case Constants.INDICATOR_TYPE_TMK:
       suffix = ".tmk";
       break;
     }
@@ -103,34 +103,34 @@ class Utils {
   }
 
   public static void outputHashToFile(
-    SharedHash sharedHash,
+    ThreatDescriptor threatDescriptor,
     String path,
     boolean verbose)
       throws FileNotFoundException, IOException
   {
-    if (sharedHash.hashType.equals(Constants.HASH_TYPE_TMK)) {
-      outputTMKHashToFile(sharedHash, path, verbose);
+    if (threatDescriptor.td_indicator_type.equals(Constants.INDICATOR_TYPE_TMK)) {
+      outputTMKHashToFile(threatDescriptor, path, verbose);
     } else {
-      outputNonTMKHashToFile(sharedHash, path, verbose);
+      outputNonTMKHashToFile(threatDescriptor, path, verbose);
     }
   }
 
   // TMK hashes are binary data with data strucure in the TMK package's
   // tmktypes.h. The string attributes are not 8-bit clean in the
-  // ThreatExchange API so the hashValue attribute is stored as base64-encoded,
+  // ThreatExchange API so the td_raw_indicator attribute is stored as base64-encoded,
   // with one caveat: the first 12 bytes (which are ASCII) are stored as
   // such, followed by a pipe delimiter, then the rest of the binary file
   // base64-encdoed. Here we undo that encoding.
   public static void outputTMKHashToFile(
-    SharedHash sharedHash,
+    ThreatDescriptor threatDescriptor,
     String path,
     boolean verbose)
       throws FileNotFoundException, IOException
   {
     FileOutputStream fos = new FileOutputStream(path);
-    int hlen = sharedHash.hashValue.length();
+    int hlen = threatDescriptor.td_raw_indicator.length();
 
-    String base64EncodedHash = sharedHash.hashValue;
+    String base64EncodedHash = threatDescriptor.td_raw_indicator;
 
     byte[] bytes = base64EncodedHash.getBytes();
     byte[] first = Arrays.copyOfRange(bytes, 0, 12);
@@ -140,8 +140,8 @@ class Utils {
     if (verbose) {
       SimpleJSONWriter w = new SimpleJSONWriter();
       w.add("path", path);
-      w.add("hash_type", sharedHash.hashType);
-      w.add("encoded_length", sharedHash.hashValue.length());
+      w.add("td_indicator_type", threatDescriptor.td_indicator_type);
+      w.add("encoded_length", threatDescriptor.td_raw_indicator.length());
       w.add("binary_length", first.length + rest.length);
       System.out.println(w.format());
       System.out.flush();
@@ -151,20 +151,20 @@ class Utils {
 
   // Just write PhotoDNA, PDQ, MD5, etc. hash-data to the file contents.
   public static void outputNonTMKHashToFile(
-    SharedHash sharedHash,
+    ThreatDescriptor threatDescriptor,
     String path,
     boolean verbose)
       throws FileNotFoundException, IOException
   {
     FileOutputStream fos = new FileOutputStream(path);
 
-    byte[] bytes = sharedHash.hashValue.getBytes();
+    byte[] bytes = threatDescriptor.td_raw_indicator.getBytes();
     fos.write(bytes);
     if (verbose) {
       SimpleJSONWriter w = new SimpleJSONWriter();
       w.add("path", path);
-      w.add("hash_type", sharedHash.hashType);
-      w.add("hash_length", sharedHash.hashValue.length());
+      w.add("td_indicator", threatDescriptor.td_indicator_type);
+      w.add("indicator_length", threatDescriptor.td_raw_indicator.length());
       System.out.println(w.format());
       System.out.flush();
     }
@@ -174,7 +174,7 @@ class Utils {
 
   // TMK hashes are binary data with data strucure in the TMK package's
   // tmktypes.h. The string attributes are not 8-bit clean in the
-  // ThreatExchange API so the hashValue attribute is stored as base64-encoded,
+  // ThreatExchange API so the td_raw_indicator attribute is stored as base64-encoded,
   // with one caveat: the first 12 bytes (which are ASCII) are stored as
   // such, followed by a pipe delimiter, then the rest of the binary file
   // base64-encdoed. Here we undo that encoding.

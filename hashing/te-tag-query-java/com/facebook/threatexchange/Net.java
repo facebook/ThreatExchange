@@ -163,7 +163,7 @@ class Net {
 
         int numItems = data.size();
 
-        List<String> hashIDs = new ArrayList<String>();
+        List<String> ids = new ArrayList<String>();
         for (int i = 0; i < numItems; i++) {
           JSONObject item = (JSONObject) data.get(i);
 
@@ -188,19 +188,19 @@ class Net {
             System.out.println(w.format());
             System.out.flush();
           }
-          hashIDs.add(itemID);
+          ids.add(itemID);
         }
 
         if (verbose) {
           SimpleJSONWriter w = new SimpleJSONWriter();
           w.add("page_index", pageIndex);
           w.add("num_items_pre_filter", numItems);
-          w.add("num_items_post_filter", hashIDs.size());
+          w.add("num_items_post_filter", ids.size());
           System.out.println(w.format());
           System.out.flush();
         }
 
-        idProcessor.processIDs(hashIDs);
+        idProcessor.processIDs(ids);
 
         pageIndex++;
       } catch (Exception e) {
@@ -213,33 +213,33 @@ class Net {
   /**
    * Looks up all metadata for given ID.
    */
-  public static List<SharedHash> getInfoForIDs(
-    List<String> hashIDs,
+  public static List<ThreatDescriptor> getInfoForIDs(
+    List<String> ids,
     boolean verbose,
     boolean showURLs,
     boolean printHashString
   ) {
     // Check well-formattedness of hash IDs (which may have come from
     // arbitrary data on stdin).
-    for(String hashID : hashIDs) {
+    for(String id : ids) {
       try {
-        Long.valueOf(hashID);
+        Long.valueOf(id);
       } catch (NumberFormatException e) {
-        System.err.printf("Malformed hash ID \"%s\"\n", hashID);
+        System.err.printf("Malformed hash ID \"%s\"\n", id);
         System.exit(1);
       }
     }
 
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
-      + "&ids=%5B" + String.join(",", hashIDs) + "%5D"
-      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,severity,share_level,tags";
+      + "&ids=%5B" + String.join(",", ids) + "%5D"
+      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,privacy_type,status,severity,share_level,tags";
     if (showURLs) {
       System.out.println("URL:");
       System.out.println(url);
     }
 
-    List<SharedHash> sharedHashes = new ArrayList<SharedHash>();
+    List<ThreatDescriptor> threatDescriptores = new ArrayList<ThreatDescriptor>();
     try (InputStream response = new URL(url).openConnection().getInputStream()) {
       // {
       //    "990927953l366387": {
@@ -283,8 +283,8 @@ class Net {
         }
 
         JSONObject owner = (JSONObject)item.get("owner");
-        JSONObject tags = (JSONObject)item.get("tags");
-        JSONArray tag_data = (JSONArray)tags.get("data");
+        JSONObject td_subjective_tags = (JSONObject)item.get("tags");
+        JSONArray tag_data = (JSONArray)td_subjective_tags.get("data");
         int n = tag_data.size();
         List<String> tagTexts = new ArrayList<String>();
         for (int j = 0; j < n; j++) {
@@ -294,7 +294,7 @@ class Net {
         }
         Collections.sort(tagTexts); // canonicalize
 
-        SharedHash sharedHash = new SharedHash(
+        ThreatDescriptor threatDescriptor = new ThreatDescriptor(
           (String)item.get("id"),
           (String)item.get("raw_indicator"),
           (String)item.get("type"),
@@ -303,16 +303,20 @@ class Net {
           (String)owner.get("id"),
           (String)owner.get("email"),
           (String)owner.get("name"),
+          (String)item.get("privacy_type"),
+          (String)item.get("status"),
+          (String)item.get("severity"),
+          (String)item.get("share_level"),
           tagTexts
         );
 
-        sharedHashes.add(sharedHash);
+        threatDescriptores.add(threatDescriptor);
       }
     } catch (Exception e) {
       e.printStackTrace(System.err);
       System.exit(1);
     }
-    return sharedHashes;
+    return threatDescriptores;
   }
 
   /**
@@ -321,26 +325,26 @@ class Net {
    * There are many queries for which the 'next' paging parameter will remain
    * non-null on every next-page request.
    */
-  public static List<SharedHash> getIncremental(
+  public static List<ThreatDescriptor> getIncremental(
     String tagName,
-    String hashType,
+    String td_indicator_type,
     String since,
     int pageSize,
     boolean verbose,
     boolean showURLs
   ) {
-    List<SharedHash> sharedHashes = new ArrayList<SharedHash>();
+    List<ThreatDescriptor> threatDescriptores = new ArrayList<ThreatDescriptor>();
 
     String pageLimit = Integer.toString(pageSize);
     String startURL = TE_BASE_URL
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN
-      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,severity,share_level,tags"
+      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,privacy_type,status,severity,share_level,tags"
       + "&limit=" + pageLimit
       + "&tags=" + tagName
       + "&since=" + since;
-    if (hashType != null) {
-      startURL = startURL + "&type=" + hashType;
+    if (td_indicator_type != null) {
+      startURL = startURL + "&type=" + td_indicator_type;
     }
 
     String nextURL = startURL;
@@ -424,8 +428,8 @@ class Net {
 
           JSONObject owner = (JSONObject)item.get("owner");
 
-          JSONObject tags = (JSONObject)item.get("tags");
-          JSONArray tag_data = (JSONArray)tags.get("data");
+          JSONObject td_subjective_tags = (JSONObject)item.get("tags");
+          JSONArray tag_data = (JSONArray)td_subjective_tags.get("data");
           int n = tag_data.size();
           List<String> tagTexts = new ArrayList<String>();
           for (int j = 0; j < n; j++) {
@@ -435,7 +439,7 @@ class Net {
           }
           Collections.sort(tagTexts); // canonicalize
 
-          SharedHash sharedHash = new SharedHash(
+          ThreatDescriptor threatDescriptor = new ThreatDescriptor(
             itemID,
             itemText,
             itemType,
@@ -444,6 +448,10 @@ class Net {
             (String)owner.get("id"),
             (String)owner.get("email"),
             (String)owner.get("name"),
+            (String)item.get("privacy_type"),
+            (String)item.get("status"),
+            (String)item.get("severity"),
+            (String)item.get("share_level"),
             tagTexts
           );
         }
@@ -454,7 +462,7 @@ class Net {
       }
     } while (nextURL != null);
 
-    return sharedHashes;
+    return threatDescriptores;
   }
 
   /**
