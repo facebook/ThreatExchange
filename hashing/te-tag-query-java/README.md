@@ -37,7 +37,7 @@ java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 
 
 java com.facebook.threatexchange.TETagQuery tag-to-details \
   --page-size 10 \
-  --data-dir ./tmk-hash-dir \
+  --data-dir ./tmk-data-dir \
   --indicator-type tmk \
   media_type_long_hash_video
 ```
@@ -50,7 +50,7 @@ java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 
 
 java com.facebook.threatexchange.TETagQuery tag-to-details \
   --page-size 10 \
-  --data-dir ./tmk-hash-dir \
+  --data-dir ./tmk-data-dir \
   --indicator-type tmk \
   --since -1week \
   media_type_long_hash_video
