@@ -25,8 +25,7 @@ class JSONHashFormatter implements HashFormatter {
     w.add("owner_id", sharedHash.ownerID);
     w.add("owner_email", sharedHash.ownerEmail);
     w.add("owner_name", sharedHash.ownerName);
-    w.add("media_type", sharedHash.mediaType);
-    w.add("media_priority", sharedHash.mediaPriority);
+    w.add("tags", String.join(",", sharedHash.tags));
     return w.format();
   }
 }
