@@ -54,7 +54,6 @@ public class TETagQuery {
     o.printf("Options:\n");
     o.printf("  -h|--help      Show detailed help.\n");
     o.printf("  --list-verbs   Show a list of supported verbs.\n", PROGNAME);
-    o.printf("  --list-tags    Show a list of supported tags.\n", PROGNAME);
     o.printf("  -q|--quiet     Only print IDs/hashes output with no narrative.\n");
     o.printf("  -v|--verbose   Print IDs/hashes output along with narrative.\n");
     o.printf("  -s|--show-urls Print URLs used for queries, before executing them.\n");
@@ -96,20 +95,6 @@ public class TETagQuery {
 
       } else if (option.equals("--list-verbs")) {
         CommandHandlerFactory.list(System.out);
-        System.exit(0);
-
-      } else if (option.equals("--list-tags")) {
-        System.out.println(Constants.TAG_MEDIA_TYPE_PHOTO);
-        System.out.println(Constants.TAG_MEDIA_TYPE_VIDEO);
-        System.out.println(Constants.TAG_MEDIA_TYPE_LONG_HASH_VIDEO);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_S0);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_S1);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_S2);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_S3);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_T0);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_T1);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_T2);
-        System.out.println(Constants.TAG_MEDIA_PRIORITY_T3);
         System.exit(0);
 
       } else if (option.equals("--ids-per-query")) {

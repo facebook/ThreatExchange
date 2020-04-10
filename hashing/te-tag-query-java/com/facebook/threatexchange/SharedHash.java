@@ -3,6 +3,8 @@
 // ================================================================
 
 package com.facebook.threatexchange;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Helper container class for parsed results back from ThreatExchange.
@@ -16,8 +18,7 @@ public class SharedHash {
   public final String ownerID;
   public final String ownerEmail;
   public final String ownerName;
-  public final String mediaType;
-  public final String mediaPriority;
+  public final List<String> tags;
 
   public SharedHash(
     String hashID_,
@@ -28,8 +29,7 @@ public class SharedHash {
     String ownerID_,
     String ownerEmail_,
     String ownerName_,
-    String mediaType_,
-    String mediaPriority_
+    List<String> tags_
   ) {
     hashID = hashID_;
     hashValue = hashValue_;
@@ -39,7 +39,6 @@ public class SharedHash {
     ownerID = ownerID_;
     ownerEmail = ownerEmail_;
     ownerName = ownerName_;
-    mediaType = mediaType_;
-    mediaPriority = mediaPriority_;
+    tags = new ArrayList(tags_);
   }
 }
