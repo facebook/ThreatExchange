@@ -213,7 +213,7 @@ class Net {
   /**
    * Looks up all metadata for given ID.
    */
-  public static List<SharedHash> getInfoForIDs(
+  public static List<ThreatDescriptor> getInfoForIDs(
     List<String> ids,
     boolean verbose,
     boolean showURLs,
@@ -239,7 +239,7 @@ class Net {
       System.out.println(url);
     }
 
-    List<SharedHash> sharedHashes = new ArrayList<SharedHash>();
+    List<ThreatDescriptor> threatDescriptores = new ArrayList<ThreatDescriptor>();
     try (InputStream response = new URL(url).openConnection().getInputStream()) {
       // {
       //    "990927953l366387": {
@@ -294,7 +294,7 @@ class Net {
         }
         Collections.sort(tagTexts); // canonicalize
 
-        SharedHash sharedHash = new SharedHash(
+        ThreatDescriptor threatDescriptor = new ThreatDescriptor(
           (String)item.get("id"),
           (String)item.get("raw_indicator"),
           (String)item.get("type"),
@@ -310,13 +310,13 @@ class Net {
           tagTexts
         );
 
-        sharedHashes.add(sharedHash);
+        threatDescriptores.add(threatDescriptor);
       }
     } catch (Exception e) {
       e.printStackTrace(System.err);
       System.exit(1);
     }
-    return sharedHashes;
+    return threatDescriptores;
   }
 
   /**
@@ -325,7 +325,7 @@ class Net {
    * There are many queries for which the 'next' paging parameter will remain
    * non-null on every next-page request.
    */
-  public static List<SharedHash> getIncremental(
+  public static List<ThreatDescriptor> getIncremental(
     String tagName,
     String td_indicator_type,
     String since,
@@ -333,7 +333,7 @@ class Net {
     boolean verbose,
     boolean showURLs
   ) {
-    List<SharedHash> sharedHashes = new ArrayList<SharedHash>();
+    List<ThreatDescriptor> threatDescriptores = new ArrayList<ThreatDescriptor>();
 
     String pageLimit = Integer.toString(pageSize);
     String startURL = TE_BASE_URL
@@ -439,7 +439,7 @@ class Net {
           }
           Collections.sort(tagTexts); // canonicalize
 
-          SharedHash sharedHash = new SharedHash(
+          ThreatDescriptor threatDescriptor = new ThreatDescriptor(
             itemID,
             itemText,
             itemType,
@@ -462,7 +462,7 @@ class Net {
       }
     } while (nextURL != null);
 
-    return sharedHashes;
+    return threatDescriptores;
   }
 
   /**

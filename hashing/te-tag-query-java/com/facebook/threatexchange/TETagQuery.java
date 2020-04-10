@@ -696,17 +696,17 @@ public class TETagQuery {
 
     // Now look up details for each ID.
     for (List<String> chunk: chunks) {
-      List<SharedHash> sharedHashes = Net.getInfoForIDs(chunk, verbose, showURLs,
+      List<ThreatDescriptor> threatDescriptores = Net.getInfoForIDs(chunk, verbose, showURLs,
         printHashString);
-      for (SharedHash sharedHash : sharedHashes) {
+      for (ThreatDescriptor threatDescriptor : threatDescriptores) {
 
         if (dataDir == null) {
-          System.out.println(hashFormatter.format(sharedHash, printHashString));
+          System.out.println(hashFormatter.format(threatDescriptor, printHashString));
         } else {
           String path = dataDir
             + File.separator
-            + sharedHash.id
-            + Utils.td_indicator_typeToFileSuffix(sharedHash.td_indicator_type);
+            + threatDescriptor.id
+            + Utils.td_indicator_typeToFileSuffix(threatDescriptor.td_indicator_type);
 
           SimpleJSONWriter w = new SimpleJSONWriter();
           w.add("path", path);
@@ -714,7 +714,7 @@ public class TETagQuery {
           System.out.flush();
 
           try {
-            Utils.outputHashToFile(sharedHash, path, verbose);
+            Utils.outputHashToFile(threatDescriptor, path, verbose);
           } catch (FileNotFoundException e) {
             System.err.printf("FileNotFoundException: \"%s\".\n", path);
           } catch (IOException e) {
@@ -827,11 +827,11 @@ public class TETagQuery {
 
       String td_indicator_typeForTE = hashFilterer.getTEName();
 
-      List<SharedHash> sharedHashes = Net.getIncremental(tagName, td_indicator_typeForTE, since,
+      List<ThreatDescriptor> threatDescriptores = Net.getIncremental(tagName, td_indicator_typeForTE, since,
         pageSize, verbose, showURLs);
 
-      for (SharedHash sharedHash : sharedHashes) {
-        System.out.println(hashFormatter.format(sharedHash, printHashString));
+      for (ThreatDescriptor threatDescriptor : threatDescriptores) {
+        System.out.println(hashFormatter.format(threatDescriptor, printHashString));
       }
     }
   }

@@ -60,7 +60,7 @@ import java.util.List;
 /**
  * Helper container class for parsed results back from ThreatExchange.
  */
-public class SharedHash {
+public class ThreatDescriptor {
   public final String id;
   public final String td_raw_indicator;
   public final String td_indicator_type;
@@ -75,7 +75,7 @@ public class SharedHash {
   public final String td_share_level;
   public final List<String> td_subjective_tags;
 
-  public SharedHash(
+  public ThreatDescriptor(
     String id_,
     String td_raw_indicator_,
     String td_indicator_type_,

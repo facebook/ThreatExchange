@@ -103,15 +103,15 @@ class Utils {
   }
 
   public static void outputHashToFile(
-    SharedHash sharedHash,
+    ThreatDescriptor threatDescriptor,
     String path,
     boolean verbose)
       throws FileNotFoundException, IOException
   {
-    if (sharedHash.td_indicator_type.equals(Constants.INDICATOR_TYPE_TMK)) {
-      outputTMKHashToFile(sharedHash, path, verbose);
+    if (threatDescriptor.td_indicator_type.equals(Constants.INDICATOR_TYPE_TMK)) {
+      outputTMKHashToFile(threatDescriptor, path, verbose);
     } else {
-      outputNonTMKHashToFile(sharedHash, path, verbose);
+      outputNonTMKHashToFile(threatDescriptor, path, verbose);
     }
   }
 
@@ -122,15 +122,15 @@ class Utils {
   // such, followed by a pipe delimiter, then the rest of the binary file
   // base64-encdoed. Here we undo that encoding.
   public static void outputTMKHashToFile(
-    SharedHash sharedHash,
+    ThreatDescriptor threatDescriptor,
     String path,
     boolean verbose)
       throws FileNotFoundException, IOException
   {
     FileOutputStream fos = new FileOutputStream(path);
-    int hlen = sharedHash.td_raw_indicator.length();
+    int hlen = threatDescriptor.td_raw_indicator.length();
 
-    String base64EncodedHash = sharedHash.td_raw_indicator;
+    String base64EncodedHash = threatDescriptor.td_raw_indicator;
 
     byte[] bytes = base64EncodedHash.getBytes();
     byte[] first = Arrays.copyOfRange(bytes, 0, 12);
@@ -140,8 +140,8 @@ class Utils {
     if (verbose) {
       SimpleJSONWriter w = new SimpleJSONWriter();
       w.add("path", path);
-      w.add("td_indicator_type", sharedHash.td_indicator_type);
-      w.add("encoded_length", sharedHash.td_raw_indicator.length());
+      w.add("td_indicator_type", threatDescriptor.td_indicator_type);
+      w.add("encoded_length", threatDescriptor.td_raw_indicator.length());
       w.add("binary_length", first.length + rest.length);
       System.out.println(w.format());
       System.out.flush();
@@ -151,20 +151,20 @@ class Utils {
 
   // Just write PhotoDNA, PDQ, MD5, etc. hash-data to the file contents.
   public static void outputNonTMKHashToFile(
-    SharedHash sharedHash,
+    ThreatDescriptor threatDescriptor,
     String path,
     boolean verbose)
       throws FileNotFoundException, IOException
   {
     FileOutputStream fos = new FileOutputStream(path);
 
-    byte[] bytes = sharedHash.td_raw_indicator.getBytes();
+    byte[] bytes = threatDescriptor.td_raw_indicator.getBytes();
     fos.write(bytes);
     if (verbose) {
       SimpleJSONWriter w = new SimpleJSONWriter();
       w.add("path", path);
-      w.add("td_indicator", sharedHash.td_indicator_type);
-      w.add("indicator_length", sharedHash.td_raw_indicator.length());
+      w.add("td_indicator", threatDescriptor.td_indicator_type);
+      w.add("indicator_length", threatDescriptor.td_raw_indicator.length());
       System.out.println(w.format());
       System.out.flush();
     }
