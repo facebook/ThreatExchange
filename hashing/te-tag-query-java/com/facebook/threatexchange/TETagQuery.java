@@ -696,9 +696,9 @@ public class TETagQuery {
 
     // Now look up details for each ID.
     for (List<String> chunk: chunks) {
-      List<ThreatDescriptor> threatDescriptores = Net.getInfoForIDs(chunk, verbose, showURLs,
+      List<ThreatDescriptor> threatDescriptors = Net.getInfoForIDs(chunk, verbose, showURLs,
         printHashString);
-      for (ThreatDescriptor threatDescriptor : threatDescriptores) {
+      for (ThreatDescriptor threatDescriptor : threatDescriptors) {
 
         if (dataDir == null) {
           System.out.println(hashFormatter.format(threatDescriptor, printHashString));
@@ -827,10 +827,10 @@ public class TETagQuery {
 
       String td_indicator_typeForTE = hashFilterer.getTEName();
 
-      List<ThreatDescriptor> threatDescriptores = Net.getIncremental(tagName, td_indicator_typeForTE, since,
+      List<ThreatDescriptor> threatDescriptors = Net.getIncremental(tagName, td_indicator_typeForTE, since,
         pageSize, verbose, showURLs);
 
-      for (ThreatDescriptor threatDescriptor : threatDescriptores) {
+      for (ThreatDescriptor threatDescriptor : threatDescriptors) {
         System.out.println(hashFormatter.format(threatDescriptor, printHashString));
       }
     }
