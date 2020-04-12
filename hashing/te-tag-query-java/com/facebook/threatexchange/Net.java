@@ -239,7 +239,7 @@ class Net {
       System.out.println(url);
     }
 
-    List<ThreatDescriptor> threatDescriptores = new ArrayList<ThreatDescriptor>();
+    List<ThreatDescriptor> threatDescriptors = new ArrayList<ThreatDescriptor>();
     try (InputStream response = new URL(url).openConnection().getInputStream()) {
       // {
       //    "990927953l366387": {
@@ -310,13 +310,13 @@ class Net {
           tagTexts
         );
 
-        threatDescriptores.add(threatDescriptor);
+        threatDescriptors.add(threatDescriptor);
       }
     } catch (Exception e) {
       e.printStackTrace(System.err);
       System.exit(1);
     }
-    return threatDescriptores;
+    return threatDescriptors;
   }
 
   /**
@@ -333,7 +333,7 @@ class Net {
     boolean verbose,
     boolean showURLs
   ) {
-    List<ThreatDescriptor> threatDescriptores = new ArrayList<ThreatDescriptor>();
+    List<ThreatDescriptor> threatDescriptors = new ArrayList<ThreatDescriptor>();
 
     String pageLimit = Integer.toString(pageSize);
     String startURL = TE_BASE_URL
@@ -462,7 +462,7 @@ class Net {
       }
     } while (nextURL != null);
 
-    return threatDescriptores;
+    return threatDescriptors;
   }
 
   /**
