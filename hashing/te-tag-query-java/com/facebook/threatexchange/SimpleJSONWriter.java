@@ -28,12 +28,29 @@ public class SimpleJSONWriter {
     sb.append("{");
     int i = 0;
     for (Map.Entry<String,String> pair : _pairs.entrySet()) {
+      String key = pair.getKey();
+      String value = pair.getValue();
+      // JSON string values are wrapped in double quotes.
+      // Any double quotes inside need to be escaped via " -> \".
+      // But any *already* escaped \" needs to go to \\\".
+      //
+      // (This might also be solved by using Jackson or somesuch, but I want
+      // to solve this problem without taking a dependency unless I must --
+      // dependency complications are the bane of uptake for open-source
+      // projects and I want to keep this project simple to install.)
+      String escValue = value
+        .replace("\\\"", "\001\002\003")
+        .replace("\"", "\\\"")
+        .replace("\001\002\003", "\\\\\\\"");
+
       if (i > 0) {
         sb.append(",");
       }
-      sb.append("\"").append(pair.getKey()).append("\"");
+      sb.append("\"").append(key).append("\"");
       sb.append(":");
-      sb.append("\"").append(pair.getValue()).append("\"");
+      sb.append("\"");
+      sb.append(escValue);
+      sb.append("\"");
       i++;
     }
     sb.append("}");
