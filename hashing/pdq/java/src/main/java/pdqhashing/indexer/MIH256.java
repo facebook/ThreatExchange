@@ -17,8 +17,8 @@ import java.util.Set;
 import java.util.Vector;
 
 /**
- * See cpp/README-MIH.md for important information regarding parameter
- * selection and performance.
+ * See hashing/pdq/README-MIH.md in this repo for important information
+ * regarding parameter selection and performance.
  */
 public class MIH256<Metadata> {
   private static final int MIH_MAX_D = 63;

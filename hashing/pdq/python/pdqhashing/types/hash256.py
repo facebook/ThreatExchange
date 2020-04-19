@@ -10,7 +10,7 @@ class Hash256:
     """ 256-bit hashes with Hamming distance """
 
     # 16 slots of 16 bits each.
-    # See https://fburl.com/pdq-hashing-mih for why not 8x32 or 32x8, etc.
+    # See hashing/pdq/README-MIH.md in this repo for why not 8x32 or 32x8, etc.
     HASH256_NUM_SLOTS = 16
 
     HASH256_HEX_NUM_NYBBLES = 4 * HASH256_NUM_SLOTS

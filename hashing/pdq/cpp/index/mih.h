@@ -33,8 +33,8 @@ namespace index {
 // MIH_MAX_SLOTWISE_D.
 //
 // The reason, in turn, for this is the expense of finding all hamming-distance
-// nearest neighbors. For more information please see
-// https://github.com/facebookexternal/ThreatExchange-PDQ/blob/master/cpp/README-MIH.md
+// nearest neighbors. For more information please see hashing/pdq/README-MIH.md
+// in this repo.
 // ================================================================
 
 const int MIH_MAX_D = 63;
