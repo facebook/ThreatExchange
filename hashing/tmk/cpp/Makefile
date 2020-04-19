@@ -52,8 +52,10 @@ EXE= \
  tmk-show-pair-offsets \
  tmk-clusterize \
  tmk-query \
- tmk-query-with-faiss \
  tmk-two-level-score
+
+# Pending https://github.com/facebook/ThreatExchange/issues/197:
+# tmk-query-with-faiss \
 
 # ================================================================
 all: $(EXE) regtest
