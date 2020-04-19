@@ -178,7 +178,7 @@ bool hashVideoFile(
   //     -s ${output_width}:${output_height} -an -f rawvideo -c:v rawvideo \
   //     -pix_fmt rgb24 -r $output_fps pipe:1
 
-  std::string command = ffmpegPath + " -i " + inputVideoFileName + " -s " +
+  std::string command = ffmpegPath + " -nostdin -i " + inputVideoFileName + " -s " +
       std::to_string(downsampleFrameDimension) + ":" +
       std::to_string(downsampleFrameDimension) +
       " -an -f rawvideo -c:v rawvideo -pix_fmt rgb24 -r " +
