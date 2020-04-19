@@ -45,7 +45,7 @@ Optional:
 Sees if two `.tmk` files are the same, within roundoff error anyway. This is
 **not** intended for video-matching between potential variations of a video --
 see `tmk-query` for that. Rather, this program is intended for comparing hashes
-of the **exact same video** on two different platforms.
+of the **exact same video**, for regression or portability concerns.
 
 Here we compare a hash to itself -- it should be equal:
 ```

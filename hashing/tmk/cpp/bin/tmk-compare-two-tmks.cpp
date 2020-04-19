@@ -6,6 +6,12 @@
 // Given a pair of `.tmk` files (see section below on file formats), uses
 // tmk compare tmks to see if the .tmk files are the same to a certain
 // relative error.
+//
+// This sees if two `.tmk` files are the same, within roundoff error anyway.
+// This is **not** intended for video-matching between potential variations of
+// a video -- see `tmk-query` for that. Rather, this program is intended for
+// comparing hashes of the **exact same video**, for regression or portability
+// concerns.
 // ================================================================
 
 #include <tmk/cpp/algo/tmkfv.h>
