@@ -1024,6 +1024,13 @@ public class TETagQuery {
           params.setPrivacyMembers(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
+        } else if (option.equals("--related-ids-for-upload")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setRelatedIDsForUpload(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
         } else if (option.equals("--tags")) {
           if (args.length < 1) {
             usage(1);
