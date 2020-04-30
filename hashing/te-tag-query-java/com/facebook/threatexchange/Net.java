@@ -233,7 +233,7 @@ class Net {
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
       + "&ids=%5B" + String.join(",", ids) + "%5D"
-      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,review_status,privacy_type,status,severity,share_level,tags";
+      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags";
     if (showURLs) {
       System.out.println("URL:");
       System.out.println(url);
@@ -305,6 +305,7 @@ class Net {
           (String)owner.get("email"),
           (String)owner.get("name"),
           (String)item.get("privacy_type"),
+          (String)item.get("review_status"),
           (String)item.get("status"),
           (String)item.get("severity"),
           (String)item.get("share_level"),
@@ -452,6 +453,7 @@ class Net {
             (String)owner.get("email"),
             (String)owner.get("name"),
             (String)item.get("privacy_type"),
+            (String)item.get("review_status"),
             (String)item.get("status"),
             (String)item.get("severity"),
             (String)item.get("share_level"),

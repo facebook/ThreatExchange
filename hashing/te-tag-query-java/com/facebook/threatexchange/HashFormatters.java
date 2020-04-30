@@ -29,6 +29,7 @@ class JSONHashFormatter implements HashFormatter {
     w.add("td_owner_email", threatDescriptor.td_owner_email);
     w.add("td_owner_name", threatDescriptor.td_owner_name);
     w.add("td_visibility", threatDescriptor.td_visibility);
+    w.add("td_review_status", threatDescriptor.td_review_status);
     w.add("td_status", threatDescriptor.td_status);
     w.add("td_severity", threatDescriptor.td_severity);
     w.add("td_share_level", threatDescriptor.td_share_level);

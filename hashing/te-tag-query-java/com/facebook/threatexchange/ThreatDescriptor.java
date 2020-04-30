@@ -72,6 +72,7 @@ public class ThreatDescriptor {
   public final String td_owner_email;
   public final String td_owner_name;
   public final String td_visibility;
+  public final String td_review_status;
   public final String td_status;
   public final String td_severity;
   public final String td_share_level;
@@ -88,6 +89,7 @@ public class ThreatDescriptor {
     String td_owner_email_,
     String td_owner_name_,
     String td_visibility_,
+    String td_review_status_,
     String td_status_,
     String td_severity_,
     String td_share_level_,
@@ -103,6 +105,7 @@ public class ThreatDescriptor {
     td_owner_email = td_owner_email_;
     td_owner_name = td_owner_name_;
     td_visibility = td_visibility_;
+    td_review_status = td_review_status_;
     td_status = td_status_;
     td_severity = td_severity_;
     td_share_level = td_share_level_;
