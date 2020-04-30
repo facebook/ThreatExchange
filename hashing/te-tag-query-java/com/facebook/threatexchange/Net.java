@@ -233,7 +233,7 @@ class Net {
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
       + "&ids=%5B" + String.join(",", ids) + "%5D"
-      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,privacy_type,status,severity,share_level,tags";
+      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,review_status,privacy_type,status,severity,share_level,tags";
     if (showURLs) {
       System.out.println("URL:");
       System.out.println(url);
@@ -299,6 +299,7 @@ class Net {
           (String)item.get("raw_indicator"),
           (String)item.get("type"),
           (String)item.get("added_on"),
+          (String)item.get("last_updated"),
           Long.toString((Long)item.get("confidence")),
           (String)owner.get("id"),
           (String)owner.get("email"),
@@ -339,7 +340,7 @@ class Net {
     String startURL = TE_BASE_URL
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN
-      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,privacy_type,status,severity,share_level,tags"
+      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,review_status,privacy_type,status,severity,share_level,tags"
       + "&limit=" + pageLimit
       + "&tags=" + tagName
       + "&since=" + since;
@@ -361,6 +362,7 @@ class Net {
         //    "data": [
         //     {
         //        "added_on": "2018-02-15T10:01:38+0000",
+        //        "last_updated": "2018-02-15T10:01:38+0000",
         //        "confidence": 50,
         //        "description": "Description goes here",
         //        "id": "9998888887828886",
@@ -444,6 +446,7 @@ class Net {
             itemText,
             itemType,
             (String)item.get("added_on"),
+            (String)item.get("last_updated"),
             Long.toString((Long)item.get("confidence")),
             (String)owner.get("id"),
             (String)owner.get("email"),

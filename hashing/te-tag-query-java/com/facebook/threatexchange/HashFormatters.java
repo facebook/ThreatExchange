@@ -13,6 +13,8 @@ interface HashFormatter {
 
 class JSONHashFormatter implements HashFormatter {
   @Override
+  // See also
+  // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
   public String format(ThreatDescriptor threatDescriptor, boolean printHashString) {
     SimpleJSONWriter w = new SimpleJSONWriter();
     w.add("id", threatDescriptor.id);
@@ -21,6 +23,7 @@ class JSONHashFormatter implements HashFormatter {
     }
     w.add("td_indicator_type", threatDescriptor.td_indicator_type);
     w.add("added_on", threatDescriptor.added_on);
+    w.add("last_updated", threatDescriptor.last_updated);
     w.add("td_confidence", threatDescriptor.td_confidence);
     w.add("td_owner_id", threatDescriptor.td_owner_id);
     w.add("td_owner_email", threatDescriptor.td_owner_email);

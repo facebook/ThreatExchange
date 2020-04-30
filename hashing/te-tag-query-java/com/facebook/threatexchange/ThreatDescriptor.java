@@ -35,6 +35,7 @@ import java.util.List;
 // AVAILABLE WITHIN THE GRAPH API, BEING USED:
 // * id
 // * added_on
+// * last_updated
 // * confidence
 // * owner
 // * raw_indicator
@@ -65,6 +66,7 @@ public class ThreatDescriptor {
   public final String td_raw_indicator;
   public final String td_indicator_type;
   public final String added_on;
+  public final String last_updated;
   public final String td_confidence;
   public final String td_owner_id;
   public final String td_owner_email;
@@ -80,6 +82,7 @@ public class ThreatDescriptor {
     String td_raw_indicator_,
     String td_indicator_type_,
     String added_on_,
+    String last_updated_,
     String td_confidence_,
     String td_owner_id_,
     String td_owner_email_,
@@ -94,6 +97,7 @@ public class ThreatDescriptor {
     td_raw_indicator = td_raw_indicator_;
     td_indicator_type = td_indicator_type_;
     added_on = added_on_;
+    last_updated = last_updated_;
     td_confidence = td_confidence_;
     td_owner_id = td_owner_id_;
     td_owner_email = td_owner_email_;
