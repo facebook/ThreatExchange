@@ -8,11 +8,11 @@ import java.io.PrintStream;
 import java.util.stream.Stream;
 
 /**
- * Descriptor-filterer, using indicator-text rather than ThreatExchange 'type'
- * field, since it's far more performant to filter on the former than the
- * latter.
+ * Indicator-type filterer, using indicator-text rather than ThreatExchange
+ * 'type' field since it's far more performant to filter on the former than
+ * the latter.
  */
-class DescriptorFiltererFactory {
+class IndicatorTypeFiltererFactory {
   private static final String OPTION_PHOTODNA = "photodna";
   private static final String OPTION_PDQ      = "pdq";
   private static final String OPTION_MD5      = "md5";
@@ -28,24 +28,24 @@ class DescriptorFiltererFactory {
     o.printf("  %s\n", OPTION_ALL);
   }
 
-  public static DescriptorFilterer create(String name) {
+  public static IndicatorTypeFilterer create(String name) {
     if (name.equals(OPTION_PHOTODNA)) {
-      return new PhotoDNADescriptorFilterer();
+      return new PhotoDNAIndicatorTypeFilterer();
     } else if (name.equals(OPTION_PDQ)) {
-      return new PDQDescriptorFilterer();
+      return new PDQIndicatorTypeFilterer();
     } else if (name.equals(OPTION_MD5)) {
-      return new MD5DescriptorFilterer();
+      return new MD5IndicatorTypeFilterer();
     } else if (name.equals(OPTION_TMK)) {
-      return new TMKDescriptorFilterer();
+      return new TMKIndicatorTypeFilterer();
     } else if (name.equals(OPTION_ALL)) {
-      return new AllDescriptorFilterer();
+      return new AllIndicatorTypeFilterer();
     } else {
       return null;
     }
   }
 }
 
-interface DescriptorFilterer {
+interface IndicatorTypeFilterer {
   public abstract boolean accept(String indicatorText);
   public abstract String getTEName();
 }
@@ -53,7 +53,7 @@ interface DescriptorFilterer {
 /**
  * Filters for any indicator-type
  */
-class AllDescriptorFilterer implements DescriptorFilterer {
+class AllIndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
   public boolean accept(String indicatorType) {
     return true;
@@ -69,7 +69,7 @@ class AllDescriptorFilterer implements DescriptorFilterer {
  * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class PhotoDNADescriptorFilterer implements DescriptorFilterer {
+class PhotoDNAIndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
   public boolean accept(String indicator) {
     if (indicator.length() < 287) { // Shortest: 0,0,0,...,0,0,0
@@ -88,7 +88,7 @@ class PhotoDNADescriptorFilterer implements DescriptorFilterer {
  * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class PDQDescriptorFilterer implements DescriptorFilterer {
+class PDQIndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
   public boolean accept(String indicator) {
     if (indicator.length() != 64) {
@@ -107,7 +107,7 @@ class PDQDescriptorFilterer implements DescriptorFilterer {
  * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class MD5DescriptorFilterer implements DescriptorFilterer {
+class MD5IndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
   public boolean accept(String indicator) {
     if (indicator.length() != 32) {
@@ -126,7 +126,7 @@ class MD5DescriptorFilterer implements DescriptorFilterer {
  * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class TMKDescriptorFilterer implements DescriptorFilterer {
+class TMKIndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
   public boolean accept(String indicator) {
     return indicator.length() >= 100000;

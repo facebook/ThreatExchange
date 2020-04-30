@@ -65,7 +65,7 @@ java com.facebook.threatexchange.TETagQuery \
     -t HASH_TMK \
     -d "testing te-tag-query with post" \
     -l AMBER \
-    -s MALICIOUS \
+    -s NON_MALICIOUS \
     -p HAS_WHITELIST \
     --privacy-members 1064060413755420 \
     --tags testing_java_post
