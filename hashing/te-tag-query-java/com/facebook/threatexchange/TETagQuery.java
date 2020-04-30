@@ -914,8 +914,8 @@ public class TETagQuery {
       o.printf("-t|--type {...}\n");
       o.printf("-d|--description {...}\n");
       o.printf("-l|--share-level {...}\n");
-      o.printf("-s|--status {...}\n");
       o.printf("-p|--privacy-type {...}\n");
+      o.printf("-y|--severity {...}\n");
       o.printf("\n");
       o.printf("Optional:\n");
       o.printf("-h|--help\n");
@@ -927,7 +927,11 @@ public class TETagQuery {
       o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
       o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
       o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
+      o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");
+      o.printf("                       already exist) to relate the new descriptor to.\n");
       o.printf("--confidence {...}\n");
+      o.printf("-s|--status {...}\n");
+      o.printf("-r|--review-status {...}\n");
       o.printf("--precision {...}\n");
       o.printf("--first-active {...}\n");
       o.printf("--last-active {...}\n");
@@ -989,12 +993,26 @@ public class TETagQuery {
           }
           params.setShareLevel(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
+
         } else if (option.equals("-s") || option.equals("--status")) {
           if (args.length < 1) {
             usage(1);
           }
           params.setStatus(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-r") || option.equals("--review-status")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setReviewStatus(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-y") || option.equals("--severity")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setSeverity(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
         } else if (option.equals("-p") || option.equals("--privacy-type")) {
           if (args.length < 1) {
             usage(1);
@@ -1006,6 +1024,13 @@ public class TETagQuery {
             usage(1);
           }
           params.setPrivacyMembers(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--related-ids-for-upload")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setRelatedIDsForUpload(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--tags")) {

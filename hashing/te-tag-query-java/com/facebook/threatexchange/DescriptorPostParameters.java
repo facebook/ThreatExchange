@@ -35,6 +35,7 @@ class DescriptorPostParameters {
   private String _tagsToSet;
   private String _tagsToAdd;
   private String _tagsToRemove;
+  private String _relatedIDsForUpload;
 
   public DescriptorPostParameters setIndicatorText(String indicatorText) {
     this._indicatorText = indicatorText;
@@ -104,6 +105,10 @@ class DescriptorPostParameters {
     this._tagsToRemove = tagsToRemove;
     return this;
   }
+  public DescriptorPostParameters setRelatedIDsForUpload(String relatedIDsForUpload) {
+    this._relatedIDsForUpload = relatedIDsForUpload;
+    return this;
+  }
 
   public String getIndicatorText() {
     return this._indicatorText;
@@ -155,6 +160,9 @@ class DescriptorPostParameters {
   }
   public String getTagsToRemove() {
     return this._tagsToRemove;
+  }
+  public String getRelatedIDsForUpload() {
+    return this._relatedIDsForUpload;
   }
 
   public boolean validateWithReport(PrintStream o) {
@@ -226,6 +234,9 @@ class DescriptorPostParameters {
     }
     if (this._lastActive != null) {
       sb.append("&last_active=").append(Utils.urlEncodeUTF8(this._tagsToRemove));
+    }
+    if (this._relatedIDsForUpload != null) {
+      sb.append("&related_ids_for_upload=").append(Utils.urlEncodeUTF8(this._relatedIDsForUpload));
     }
     // Put indicator last in case it's long (e.g. TMK) for human readability
     sb.append("&indicator=").append(Utils.urlEncodeUTF8(this._indicatorText));
