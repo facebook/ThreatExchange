@@ -22,13 +22,18 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 /**
- * Example technique for retrieving all hashes with a given tag from ThreatExchange.
+ * Example technique for retrieving all descriptors with a given tag from
+ * ThreatExchange.
+ *
  * Notes:
- * * We use the tagged_objects endpoint to fetch IDs of all hashes. This endpoint
- *   doesn't return all desired metadata fields, so we use it as a quick map from
- *   tag ID to list of hash IDs. This is relatively quick.
- * * Then for each resulting hash ID we do a query for all fields associated with that
- *   ID. This is relatively slow, but batching multiple IDs per query helps a lot.
+ *
+ * * We use the tagged_objects endpoint to fetch IDs of all descriptors. This
+ *   endpoint doesn't return all desired metadata fields, so we use it as a
+ *   quick map from tag ID to list of descriptor IDs. This is relatively quick.
+ *
+ * * Then for each resulting descriptor ID we do a query for all fields
+ *   associated with that ID. This is relatively slow, but batching multiple
+ *   IDs per query helps a lot.
  *
  * Please see README.md for example usages.
  */
@@ -49,13 +54,13 @@ public class TETagQuery {
   private static void usage(int exitCode) {
     PrintStream o = Utils.getPrintStream(exitCode);
     o.printf("Usage: %s [options] {verb} {verb arguments}\n", PROGNAME);
-    o.printf("Downloads photo/video hashes in bulk from ThreatExchange, given\n");
+    o.printf("Downloads descriptors in bulk from ThreatExchange, given\n");
     o.printf("either a tag name or a list of IDs one per line on standard input.\n");
     o.printf("Options:\n");
     o.printf("  -h|--help      Show detailed help.\n");
     o.printf("  --list-verbs   Show a list of supported verbs.\n", PROGNAME);
-    o.printf("  -q|--quiet     Only print IDs/hashes output with no narrative.\n");
-    o.printf("  -v|--verbose   Print IDs/hashes output along with narrative.\n");
+    o.printf("  -q|--quiet     Only print IDs/descriptors output with no narrative.\n");
+    o.printf("  -v|--verbose   Print IDs/descriptors output along with narrative.\n");
     o.printf("  -s|--show-urls Print URLs used for queries, before executing them.\n");
     o.printf("  -a|--app-token-env-name {...} Name of app-token environment variable.\n");
     o.printf("                 Defaults to \"%s\".\n", DEFAULT_APP_TOKEN_ENV_NAME);
@@ -74,7 +79,7 @@ public class TETagQuery {
     boolean verbose = false;
     boolean showURLs = false;
     int numIDsPerQuery = MAX_IDS_PER_QUERY;
-    HashFormatter hashFormatter = new JSONHashFormatter();
+    DescriptorFormatter descriptorFormatter = new JSONDescriptorFormatter();
 
     // Override defaults
     while (args.length > 0 && args[0].startsWith("-")) {
@@ -150,7 +155,7 @@ public class TETagQuery {
       System.exit(1);
     }
     commandHandler.handle(args, numIDsPerQuery, verbose, showURLs,
-      hashFormatter);
+      descriptorFormatter);
   }
 
   // ================================================================
@@ -216,7 +221,7 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     );
   }
 
@@ -240,9 +245,9 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
-      HashFilterer hashFilterer = new AllHashFilterer();
+      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
 
       if (args.length < 1) {
         usage(1);
@@ -275,11 +280,11 @@ public class TETagQuery {
       o.printf("--until {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("--indicator-type {x}\n");
-      o.printf("--no-print-hash -- Don't print the hash to the terminal\n");
+      o.printf("--no-print-indicator -- Don't print the indicator to the terminal\n");
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
-      o.printf("Hash types:\n");
-      HashFiltererFactory.list(o);
+      o.printf("Descriptor types:\n");
+      DescriptorFiltererFactory.list(o);
       System.exit(exitCode);
     }
 
@@ -289,11 +294,11 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
-      HashFilterer hashFilterer = new AllHashFilterer();
+      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
       int pageSize = 1000;
-      boolean printHashString = true;
+      boolean includeIndicatorInOutput = true;
       String since = null;
       String until = null;
 
@@ -330,17 +335,17 @@ public class TETagQuery {
             usage(1);
           }
 
-          hashFilterer = HashFiltererFactory.create(args[0]);
-          if (hashFilterer == null) {
-            System.err.printf("%s %s: unrecognized hash filter \"%s\".\n",
+          descriptorFilterer = DescriptorFiltererFactory.create(args[0]);
+          if (descriptorFilterer == null) {
+            System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
               PROGNAME, _verb, args[1]);
             usage(1);
           }
 
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-print-hash")) {
-          printHashString = false;
+        } else if (option.equals("--no-print-indicator")) {
+          includeIndicatorInOutput = false;
 
         } else {
           System.err.printf("%s %s: unrecognized option \"%s\".\n",
@@ -369,12 +374,12 @@ public class TETagQuery {
         System.out.flush();
       }
 
-      // Returns IDs for all photo hashes. The return from this bulk-query call
-      // gives back only ID code, hash text, and the uninformative label
-      // "THREAT_DESCRIPTOR". From this we can dive in on each item, though, and
-      // query for its details one ID at a time.
-      Net.getHashIDsByTagID(tagID, verbose, showURLs,
-        hashFilterer, since, until, pageSize, printHashString,
+      // Returns IDs for all descriptors. The return from this bulk-query call
+      // gives back only ID code, indicator text, and the uninformative label
+      // "THREAT_DESCRIPTOR". From this we can dive in on each item, though,
+      // and query for its details one ID at a time.
+      Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
+        descriptorFilterer, since, until, pageSize, includeIndicatorInOutput,
         new IDPrinterProcessor(verbose));
     }
   }
@@ -393,7 +398,7 @@ public class TETagQuery {
     public void processIDs(List<String> ids) {
       if (_verbose) {
         SimpleJSONWriter w = new SimpleJSONWriter();
-        w.add("hash_count", ids.size());
+        w.add("descriptor_count", ids.size());
         System.out.println(w.format());
         System.out.flush();
 
@@ -401,7 +406,7 @@ public class TETagQuery {
         for (String id : ids) {
           w = new SimpleJSONWriter();
           w.add("i", i);
-          w.add("hash_id", id);
+          w.add("descriptor_id", id);
           System.out.println(w.format());
           System.out.flush();
           i++;
@@ -427,8 +432,8 @@ public class TETagQuery {
       o.printf("Usage: %s %s [options]\n",
         PROGNAME, _verb);
       o.printf("Options:\n");
-      o.printf("--no-print-hash -- Don't print the hash to the terminal\n");
-      o.printf("--data-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
+      o.printf("--no-print-indicator -- Don't print the indicator to the terminal\n");
+      o.printf("--data-dir {d} -- Write descriptors as {ID}.{extension} files in directory named {d}\n");
       o.printf("Please supply IDs one line at a time on standard input.\n");
       System.exit(exitCode);
     }
@@ -439,9 +444,9 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
-      boolean printHashString = true;
+      boolean includeIndicatorInOutput = true;
       String dataDir = null;
 
       while (args.length > 0 && args[0].startsWith("-")) {
@@ -458,8 +463,8 @@ public class TETagQuery {
           dataDir = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-print-hash")) {
-          printHashString = false;
+        } else if (option.equals("--no-print-indicator")) {
+          includeIndicatorInOutput = false;
 
         } else {
           System.err.printf("%s %s: unrecognized option \"%s\".\n",
@@ -500,8 +505,8 @@ public class TETagQuery {
         System.exit(1);
       }
 
-      outputDetails(ids, numIDsPerQuery, verbose, showURLs, printHashString,
-        dataDir, hashFormatter);
+      outputDetails(ids, numIDsPerQuery, verbose, showURLs, includeIndicatorInOutput,
+        dataDir, descriptorFormatter);
     }
   }
 
@@ -521,12 +526,12 @@ public class TETagQuery {
       o.printf("--until {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("--indicator-type {x}\n");
-      o.printf("--no-print-hash -- Don't print the hash\n");
-      o.printf("--data-dir {d} -- Write hashes as {ID}.{extension} files in directory named {d}\n");
+      o.printf("--no-print-indicator -- Don't print the indicator\n");
+      o.printf("--data-dir {d} -- Write descriptors as {ID}.{extension} files in directory named {d}\n");
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
-      o.printf("Hash types:\n");
-      HashFiltererFactory.list(o);
+      o.printf("Indicator types:\n");
+      DescriptorFiltererFactory.list(o);
       System.exit(exitCode);
     }
 
@@ -536,13 +541,13 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
-      HashFilterer hashFilterer = new AllHashFilterer();
+      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
       int pageSize = 1000;
       String since = null;
       String until = null;
-      boolean printHashString = true;
+      boolean includeIndicatorInOutput = true;
       String dataDir = null;
 
       while (args.length > 0 && args[0].startsWith("-")) {
@@ -585,17 +590,17 @@ public class TETagQuery {
             usage(1);
           }
 
-          hashFilterer = HashFiltererFactory.create(args[0]);
-          if (hashFilterer == null) {
-            System.err.printf("%s %s: unrecognized hash filter \"%s\".\n",
+          descriptorFilterer = DescriptorFiltererFactory.create(args[0]);
+          if (descriptorFilterer == null) {
+            System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
               PROGNAME, _verb, args[1]);
             usage(1);
           }
 
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-print-hash")) {
-          printHashString = false;
+        } else if (option.equals("--no-print-indicator")) {
+          includeIndicatorInOutput = false;
 
         } else {
           System.err.printf("%s %s: unrecognized option \"%s\".\n",
@@ -633,14 +638,14 @@ public class TETagQuery {
         System.out.flush();
       }
 
-      // Returns IDs for all photo hashes. The return from this bulk-query call
-      // gives back only ID code, hash text, and the uninformative label
-      // "THREAT_DESCRIPTOR". From this we can dive in on each item, though, and
-      // query for its details one ID at a time.
+      // Returns IDs for all descriptors. The return from this bulk-query call
+      // gives back only ID code, indicator text, and the uninformative label
+      // "THREAT_DESCRIPTOR". From this we can dive in on each item, though,
+      // and query for its details one ID at a time.
       IDProcessor processor = new IDDetailsProcessor(numIDsPerQuery, verbose,
-        showURLs, printHashString, dataDir, hashFormatter);
-      Net.getHashIDsByTagID(tagID, verbose, showURLs,
-        hashFilterer, since, until, pageSize, printHashString, processor);
+        showURLs, includeIndicatorInOutput, dataDir, descriptorFormatter);
+      Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
+        descriptorFilterer, since, until, pageSize, includeIndicatorInOutput, processor);
     }
   }
 
@@ -653,55 +658,55 @@ public class TETagQuery {
     private final int _numIDsPerQuery;
     private final boolean _verbose;
     private final boolean _showURLs;
-    private final boolean _printHashString;
-    private final String _hashDir;
-    private final HashFormatter _hashFormatter;
+    private final boolean _includeIndicatorInOutput;
+    private final String _dataDir;
+    private final DescriptorFormatter _descriptorFormatter;
 
     public IDDetailsProcessor(
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      boolean printHashString,
+      boolean includeIndicatorInOutput,
       String dataDir,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
       _numIDsPerQuery = numIDsPerQuery;
       _verbose = verbose;
       _showURLs = showURLs;
-      _printHashString = printHashString;
-      _hashDir = dataDir;
-      _hashFormatter = hashFormatter;
+      _includeIndicatorInOutput = includeIndicatorInOutput;
+      _dataDir = dataDir;
+      _descriptorFormatter = descriptorFormatter;
     }
 
     public void processIDs(List<String> ids) {
-      outputDetails(ids, _numIDsPerQuery, _verbose, _showURLs, _printHashString,
-        _hashDir, _hashFormatter);
+      outputDetails(ids, _numIDsPerQuery, _verbose, _showURLs, _includeIndicatorInOutput,
+        _dataDir, _descriptorFormatter);
     }
   }
 
   /**
-   * Print details for each hash ID. Shared code between the tag-to-details
-   * and IDs-to-details handlers.
+   * Print details for each descriptor ID. Shared code between the
+   * tag-to-details and IDs-to-details handlers.
    */
   public static void outputDetails(
     List<String> ids,
     int numIDsPerQuery,
     boolean verbose,
     boolean showURLs,
-    boolean printHashString,
+    boolean includeIndicatorInOutput,
     String dataDir,
-    HashFormatter hashFormatter)
+    DescriptorFormatter descriptorFormatter)
   {
     List<List<String>> chunks = Utils.chunkify(ids, numIDsPerQuery);
 
     // Now look up details for each ID.
     for (List<String> chunk: chunks) {
       List<ThreatDescriptor> threatDescriptors = Net.getInfoForIDs(chunk, verbose, showURLs,
-        printHashString);
+        includeIndicatorInOutput);
       for (ThreatDescriptor threatDescriptor : threatDescriptors) {
 
         if (dataDir == null) {
-          System.out.println(hashFormatter.format(threatDescriptor, printHashString));
+          System.out.println(descriptorFormatter.format(threatDescriptor, includeIndicatorInOutput));
         } else {
           String path = dataDir
             + File.separator
@@ -714,7 +719,7 @@ public class TETagQuery {
           System.out.flush();
 
           try {
-            Utils.outputHashToFile(threatDescriptor, path, verbose);
+            Utils.outputIndicatorToFile(threatDescriptor, path, verbose);
           } catch (FileNotFoundException e) {
             System.err.printf("FileNotFoundException: \"%s\".\n", path);
           } catch (IOException e) {
@@ -744,8 +749,8 @@ public class TETagQuery {
       o.printf("--page-size {x}\n");
       o.printf("The \"since\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
-      o.printf("Hash types:\n");
-      HashFiltererFactory.list(o);
+      o.printf("Indicator types:\n");
+      DescriptorFiltererFactory.list(o);
       System.exit(exitCode);
     }
 
@@ -755,13 +760,13 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
-      HashFilterer hashFilterer = new AllHashFilterer();
+      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
       int pageSize = 1000;
       String since = null;
       String until = null;
-      boolean printHashString = true;
+      boolean includeIndicatorInOutput = true;
 
       while (args.length > 0 && args[0].startsWith("-")) {
         String option = args[0];
@@ -796,17 +801,17 @@ public class TETagQuery {
             usage(1);
           }
 
-          hashFilterer = HashFiltererFactory.create(args[0]);
-          if (hashFilterer == null) {
-            System.err.printf("%s %s: unrecognized hash filter \"%s\".\n",
+          descriptorFilterer = DescriptorFiltererFactory.create(args[0]);
+          if (descriptorFilterer == null) {
+            System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
               PROGNAME, _verb, args[1]);
             usage(1);
           }
 
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--no-print-hash")) {
-          printHashString = false;
+        } else if (option.equals("--no-print-indicator")) {
+          includeIndicatorInOutput = false;
 
         } else {
           System.err.printf("%s %s: unrecognized option \"%s\".\n",
@@ -825,13 +830,13 @@ public class TETagQuery {
       }
       String tagName = args[0];
 
-      String td_indicator_typeForTE = hashFilterer.getTEName();
+      String td_indicator_typeForTE = descriptorFilterer.getTEName();
 
       List<ThreatDescriptor> threatDescriptors = Net.getIncremental(tagName, td_indicator_typeForTE, since,
         pageSize, verbose, showURLs);
 
       for (ThreatDescriptor threatDescriptor : threatDescriptors) {
-        System.out.println(hashFormatter.format(threatDescriptor, printHashString));
+        System.out.println(descriptorFormatter.format(threatDescriptor, includeIndicatorInOutput));
       }
     }
   }
@@ -857,7 +862,7 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
       if (args.length != 1) {
         usage(1);
@@ -948,7 +953,7 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
-      HashFormatter hashFormatter
+      DescriptorFormatter descriptorFormatter
     ) {
       boolean dryRun = false;
       boolean indicatorTextFromStdin = false;

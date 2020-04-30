@@ -100,15 +100,15 @@ class Net {
    * Looks up all descriptors with a given tag. Invokes a specified callback on
    * each page of IDs.
    */
-  public static void getHashIDsByTagID(
+  public static void getDescriptorIDsByTagID(
     String tagID,
     boolean verbose,
     boolean showURLs,
-    HashFilterer hashFilterer,
+    DescriptorFilterer descriptorFilterer,
     String since, // maybe null
     String until, // maybe null
     int pageSize,
-    boolean printHashString,
+    boolean includeIndicatorInOutput,
     IDProcessor idProcessor
   ) {
     String pageLimit = Integer.toString(pageSize);
@@ -173,7 +173,7 @@ class Net {
           if (!itemType.equals(Constants.THREAT_DESCRIPTOR)) {
             continue;
           }
-          if (!hashFilterer.accept(itemText)) {
+          if (!descriptorFilterer.accept(itemText)) {
             continue;
           }
 
@@ -181,8 +181,8 @@ class Net {
             SimpleJSONWriter w = new SimpleJSONWriter();
             w.add("id", itemID);
             w.add("type", itemType);
-            if (printHashString) {
-              w.add("hash", itemText);
+            if (includeIndicatorInOutput) {
+              w.add("indicator", itemText);
             }
 
             System.out.println(w.format());
@@ -217,15 +217,15 @@ class Net {
     List<String> ids,
     boolean verbose,
     boolean showURLs,
-    boolean printHashString
+    boolean includeIndicatorInOutput
   ) {
-    // Check well-formattedness of hash IDs (which may have come from
+    // Check well-formattedness of descriptor IDs (which may have come from
     // arbitrary data on stdin).
     for(String id : ids) {
       try {
         Long.valueOf(id);
       } catch (NumberFormatException e) {
-        System.err.printf("Malformed hash ID \"%s\"\n", id);
+        System.err.printf("Malformed descriptor ID \"%s\"\n", id);
         System.exit(1);
       }
     }
@@ -332,9 +332,9 @@ class Net {
 
   /**
    * Looks up all descriptors with a given tag (or tag-prefix), optional
-   * hash-type filter, and TE 'since' parameter. Warning: often infinite-loopy!
-   * There are many queries for which the 'next' paging parameter will remain
-   * non-null on every next-page request.
+   * descriptor-type filter, and TE 'since' parameter. Warning: often
+   * infinite-loopy!  There are many queries for which the 'next' paging
+   * parameter will remain non-null on every next-page request.
    */
   public static List<ThreatDescriptor> getIncremental(
     String tagName,
@@ -436,7 +436,7 @@ class Net {
             SimpleJSONWriter w = new SimpleJSONWriter();
             w.add("id", itemID);
             w.add("type", itemType);
-            w.add("hash", itemText);
+            w.add("indicator", itemText);
             System.out.println(w.format());
             System.out.flush();
           }

@@ -5,20 +5,20 @@
 package com.facebook.threatexchange;
 
 /**
- * Hash output-formatter
+ * Descriptor output-formatter
  */
-interface HashFormatter {
-  public String format(ThreatDescriptor threatDescriptor, boolean printHashString);
+interface DescriptorFormatter {
+  public String format(ThreatDescriptor threatDescriptor, boolean includeIndicatorInOutput);
 }
 
-class JSONHashFormatter implements HashFormatter {
+class JSONDescriptorFormatter implements DescriptorFormatter {
   @Override
   // See also
   // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
-  public String format(ThreatDescriptor threatDescriptor, boolean printHashString) {
+  public String format(ThreatDescriptor threatDescriptor, boolean includeIndicatorInOutput) {
     SimpleJSONWriter w = new SimpleJSONWriter();
     w.add("id", threatDescriptor.id);
-    if (printHashString) {
+    if (includeIndicatorInOutput) {
       w.add("td_raw_indicator", threatDescriptor.td_raw_indicator);
     }
     w.add("td_indicator_type", threatDescriptor.td_indicator_type);

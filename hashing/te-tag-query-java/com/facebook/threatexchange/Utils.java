@@ -102,7 +102,7 @@ class Utils {
     return suffix;
   }
 
-  public static void outputHashToFile(
+  public static void outputIndicatorToFile(
     ThreatDescriptor threatDescriptor,
     String path,
     boolean verbose)
