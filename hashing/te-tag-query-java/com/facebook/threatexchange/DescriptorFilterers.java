@@ -8,11 +8,11 @@ import java.io.PrintStream;
 import java.util.stream.Stream;
 
 /**
- * Hash-filterer, using hash-text rather than ThreatExchange 'type'
- * field, since it's far more performant to filter on the former
- * than the latter.
+ * Descriptor-filterer, using indicator-text rather than ThreatExchange 'type'
+ * field, since it's far more performant to filter on the former than the
+ * latter.
  */
-class HashFiltererFactory {
+class DescriptorFiltererFactory {
   private static final String OPTION_PHOTODNA = "photodna";
   private static final String OPTION_PDQ      = "pdq";
   private static final String OPTION_MD5      = "md5";
@@ -20,7 +20,7 @@ class HashFiltererFactory {
   private static final String OPTION_ALL      = "all";
 
   public static void list(PrintStream o) {
-    o.printf("Hash-type filters:\n");
+    o.printf("Indicator-type filters:\n");
     o.printf("  %s\n", OPTION_PHOTODNA);
     o.printf("  %s\n", OPTION_PDQ);
     o.printf("  %s\n", OPTION_MD5);
@@ -28,34 +28,34 @@ class HashFiltererFactory {
     o.printf("  %s\n", OPTION_ALL);
   }
 
-  public static HashFilterer create(String name) {
+  public static DescriptorFilterer create(String name) {
     if (name.equals(OPTION_PHOTODNA)) {
-      return new PhotoDNAHashFilterer();
+      return new PhotoDNADescriptorFilterer();
     } else if (name.equals(OPTION_PDQ)) {
-      return new PDQHashFilterer();
+      return new PDQDescriptorFilterer();
     } else if (name.equals(OPTION_MD5)) {
-      return new MD5HashFilterer();
+      return new MD5DescriptorFilterer();
     } else if (name.equals(OPTION_TMK)) {
-      return new TMKHashFilterer();
+      return new TMKDescriptorFilterer();
     } else if (name.equals(OPTION_ALL)) {
-      return new AllHashFilterer();
+      return new AllDescriptorFilterer();
     } else {
       return null;
     }
   }
 }
 
-interface HashFilterer {
-  public abstract boolean accept(String hash);
+interface DescriptorFilterer {
+  public abstract boolean accept(String indicatorText);
   public abstract String getTEName();
 }
 
 /**
- * Filters for any hash-type
+ * Filters for any indicator-type
  */
-class AllHashFilterer implements HashFilterer {
+class AllDescriptorFilterer implements DescriptorFilterer {
   @Override
-  public boolean accept(String hash) {
+  public boolean accept(String indicatorType) {
     return true;
   }
   @Override
@@ -66,13 +66,13 @@ class AllHashFilterer implements HashFilterer {
 
 /**
  * Filters ideally for comma-delimited decimal, 144 slots.
- * Only does the minimal check to differentiate from other hash-types
+ * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class PhotoDNAHashFilterer implements HashFilterer {
+class PhotoDNADescriptorFilterer implements DescriptorFilterer {
   @Override
-  public boolean accept(String hash) {
-    if (hash.length() < 287) { // Shortest: 0,0,0,...,0,0,0
+  public boolean accept(String indicator) {
+    if (indicator.length() < 287) { // Shortest: 0,0,0,...,0,0,0
       return false;
     }
     return true;
@@ -85,13 +85,13 @@ class PhotoDNAHashFilterer implements HashFilterer {
 
 /**
  * Filters ideally for 64 hex digits.
- * Only does the minimal check to differentiate from other hash-types
+ * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class PDQHashFilterer implements HashFilterer {
+class PDQDescriptorFilterer implements DescriptorFilterer {
   @Override
-  public boolean accept(String hash) {
-    if (hash.length() != 64) {
+  public boolean accept(String indicator) {
+    if (indicator.length() != 64) {
       return false;
     }
     return true;
@@ -104,13 +104,13 @@ class PDQHashFilterer implements HashFilterer {
 
 /**
  * Filters ideally for 32 hex digits
- * Only does the minimal check to differentiate from other hash-types
+ * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class MD5HashFilterer implements HashFilterer {
+class MD5DescriptorFilterer implements DescriptorFilterer {
   @Override
-  public boolean accept(String hash) {
-    if (hash.length() != 32) {
+  public boolean accept(String indicator) {
+    if (indicator.length() != 32) {
       return false;
     }
     return true;
@@ -123,13 +123,13 @@ class MD5HashFilterer implements HashFilterer {
 
 /**
  * Filters ideally for very long (256KB-ish)
- * Only does the minimal check to differentiate from other hash-types
+ * Only does the minimal check to differentiate from other indicator-types
  * we support.
  */
-class TMKHashFilterer implements HashFilterer {
+class TMKDescriptorFilterer implements DescriptorFilterer {
   @Override
-  public boolean accept(String hash) {
-    return hash.length() >= 100000;
+  public boolean accept(String indicator) {
+    return indicator.length() >= 100000;
   }
   @Override
   public String getTEName() {

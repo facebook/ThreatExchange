@@ -100,15 +100,15 @@ class Net {
    * Looks up all descriptors with a given tag. Invokes a specified callback on
    * each page of IDs.
    */
-  public static void getHashIDsByTagID(
+  public static void getDescriptorIDsByTagID(
     String tagID,
     boolean verbose,
     boolean showURLs,
-    HashFilterer hashFilterer,
+    DescriptorFilterer descriptorFilterer,
     String since, // maybe null
     String until, // maybe null
     int pageSize,
-    boolean printHashString,
+    boolean includeIndicatorInOutput,
     IDProcessor idProcessor
   ) {
     String pageLimit = Integer.toString(pageSize);
@@ -173,7 +173,7 @@ class Net {
           if (!itemType.equals(Constants.THREAT_DESCRIPTOR)) {
             continue;
           }
-          if (!hashFilterer.accept(itemText)) {
+          if (!descriptorFilterer.accept(itemText)) {
             continue;
           }
 
@@ -181,8 +181,8 @@ class Net {
             SimpleJSONWriter w = new SimpleJSONWriter();
             w.add("id", itemID);
             w.add("type", itemType);
-            if (printHashString) {
-              w.add("hash", itemText);
+            if (includeIndicatorInOutput) {
+              w.add("indicator", itemText);
             }
 
             System.out.println(w.format());
@@ -217,23 +217,26 @@ class Net {
     List<String> ids,
     boolean verbose,
     boolean showURLs,
-    boolean printHashString
+    boolean includeIndicatorInOutput
   ) {
-    // Check well-formattedness of hash IDs (which may have come from
+    // Check well-formattedness of descriptor IDs (which may have come from
     // arbitrary data on stdin).
     for(String id : ids) {
       try {
         Long.valueOf(id);
       } catch (NumberFormatException e) {
-        System.err.printf("Malformed hash ID \"%s\"\n", id);
+        System.err.printf("Malformed descriptor ID \"%s\"\n", id);
         System.exit(1);
       }
     }
 
+    // See also
+    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+    // for available fields
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
       + "&ids=%5B" + String.join(",", ids) + "%5D"
-      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,privacy_type,status,severity,share_level,tags";
+      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description";
     if (showURLs) {
       System.out.println("URL:");
       System.out.println(url);
@@ -294,20 +297,28 @@ class Net {
         }
         Collections.sort(tagTexts); // canonicalize
 
+        String description = (String)item.get("description");
+        if (description == null) {
+          description = "";
+        }
+
         ThreatDescriptor threatDescriptor = new ThreatDescriptor(
           (String)item.get("id"),
           (String)item.get("raw_indicator"),
           (String)item.get("type"),
           (String)item.get("added_on"),
+          (String)item.get("last_updated"),
           Long.toString((Long)item.get("confidence")),
           (String)owner.get("id"),
           (String)owner.get("email"),
           (String)owner.get("name"),
           (String)item.get("privacy_type"),
+          (String)item.get("review_status"),
           (String)item.get("status"),
           (String)item.get("severity"),
           (String)item.get("share_level"),
-          tagTexts
+          tagTexts,
+          description
         );
 
         threatDescriptors.add(threatDescriptor);
@@ -321,9 +332,9 @@ class Net {
 
   /**
    * Looks up all descriptors with a given tag (or tag-prefix), optional
-   * hash-type filter, and TE 'since' parameter. Warning: often infinite-loopy!
-   * There are many queries for which the 'next' paging parameter will remain
-   * non-null on every next-page request.
+   * descriptor-type filter, and TE 'since' parameter. Warning: often
+   * infinite-loopy!  There are many queries for which the 'next' paging
+   * parameter will remain non-null on every next-page request.
    */
   public static List<ThreatDescriptor> getIncremental(
     String tagName,
@@ -335,11 +346,14 @@ class Net {
   ) {
     List<ThreatDescriptor> threatDescriptors = new ArrayList<ThreatDescriptor>();
 
+    // See also
+    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+    // for available fields
     String pageLimit = Integer.toString(pageSize);
     String startURL = TE_BASE_URL
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN
-      + "&fields=raw_indicator,type,added_on,confidence,owner,review_status,privacy_type,status,severity,share_level,tags"
+      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,review_status,privacy_type,status,severity,share_level,tags,description"
       + "&limit=" + pageLimit
       + "&tags=" + tagName
       + "&since=" + since;
@@ -361,6 +375,7 @@ class Net {
         //    "data": [
         //     {
         //        "added_on": "2018-02-15T10:01:38+0000",
+        //        "last_updated": "2018-02-15T10:01:38+0000",
         //        "confidence": 50,
         //        "description": "Description goes here",
         //        "id": "9998888887828886",
@@ -421,7 +436,7 @@ class Net {
             SimpleJSONWriter w = new SimpleJSONWriter();
             w.add("id", itemID);
             w.add("type", itemType);
-            w.add("hash", itemText);
+            w.add("indicator", itemText);
             System.out.println(w.format());
             System.out.flush();
           }
@@ -439,20 +454,28 @@ class Net {
           }
           Collections.sort(tagTexts); // canonicalize
 
+          String description = (String)item.get("description");
+          if (description == null) {
+            description = "";
+          }
+
           ThreatDescriptor threatDescriptor = new ThreatDescriptor(
             itemID,
             itemText,
             itemType,
             (String)item.get("added_on"),
+            (String)item.get("last_updated"),
             Long.toString((Long)item.get("confidence")),
             (String)owner.get("id"),
             (String)owner.get("email"),
             (String)owner.get("name"),
             (String)item.get("privacy_type"),
+            (String)item.get("review_status"),
             (String)item.get("status"),
             (String)item.get("severity"),
             (String)item.get("share_level"),
-            tagTexts
+            tagTexts,
+            description
           );
         }
         pageIndex++;
