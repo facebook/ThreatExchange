@@ -927,6 +927,8 @@ public class TETagQuery {
       o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
       o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
       o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
+      o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");
+      o.printf("                       already exist) to relate the new descriptor to.\n");
       o.printf("--confidence {...}\n");
       o.printf("-s|--status {...}\n");
       o.printf("-r|--review-status {...}\n");
