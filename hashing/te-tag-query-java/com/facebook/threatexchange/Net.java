@@ -230,6 +230,9 @@ class Net {
       }
     }
 
+    // See also
+    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+    // for available fields
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
       + "&ids=%5B" + String.join(",", ids) + "%5D"
@@ -343,6 +346,9 @@ class Net {
   ) {
     List<ThreatDescriptor> threatDescriptors = new ArrayList<ThreatDescriptor>();
 
+    // See also
+    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+    // for available fields
     String pageLimit = Integer.toString(pageSize);
     String startURL = TE_BASE_URL
       + "/threat_descriptors"
