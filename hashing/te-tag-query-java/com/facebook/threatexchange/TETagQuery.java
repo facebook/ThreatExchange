@@ -247,7 +247,7 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
+      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
 
       if (args.length < 1) {
         usage(1);
@@ -284,7 +284,7 @@ public class TETagQuery {
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
       o.printf("Descriptor types:\n");
-      DescriptorFiltererFactory.list(o);
+      IndicatorTypeFiltererFactory.list(o);
       System.exit(exitCode);
     }
 
@@ -296,7 +296,7 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
+      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
       int pageSize = 1000;
       boolean includeIndicatorInOutput = true;
       String since = null;
@@ -335,8 +335,8 @@ public class TETagQuery {
             usage(1);
           }
 
-          descriptorFilterer = DescriptorFiltererFactory.create(args[0]);
-          if (descriptorFilterer == null) {
+          indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
+          if (indicatorTypeFilterer == null) {
             System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
               PROGNAME, _verb, args[1]);
             usage(1);
@@ -379,7 +379,7 @@ public class TETagQuery {
       // "THREAT_DESCRIPTOR". From this we can dive in on each item, though,
       // and query for its details one ID at a time.
       Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
-        descriptorFilterer, since, until, pageSize, includeIndicatorInOutput,
+        indicatorTypeFilterer, since, until, pageSize, includeIndicatorInOutput,
         new IDPrinterProcessor(verbose));
     }
   }
@@ -531,7 +531,7 @@ public class TETagQuery {
       o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
       o.printf("Indicator types:\n");
-      DescriptorFiltererFactory.list(o);
+      IndicatorTypeFiltererFactory.list(o);
       System.exit(exitCode);
     }
 
@@ -543,7 +543,7 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
+      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
       int pageSize = 1000;
       String since = null;
       String until = null;
@@ -590,8 +590,8 @@ public class TETagQuery {
             usage(1);
           }
 
-          descriptorFilterer = DescriptorFiltererFactory.create(args[0]);
-          if (descriptorFilterer == null) {
+          indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
+          if (indicatorTypeFilterer == null) {
             System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
               PROGNAME, _verb, args[1]);
             usage(1);
@@ -645,7 +645,7 @@ public class TETagQuery {
       IDProcessor processor = new IDDetailsProcessor(numIDsPerQuery, verbose,
         showURLs, includeIndicatorInOutput, dataDir, descriptorFormatter);
       Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
-        descriptorFilterer, since, until, pageSize, includeIndicatorInOutput, processor);
+        indicatorTypeFilterer, since, until, pageSize, includeIndicatorInOutput, processor);
     }
   }
 
@@ -750,7 +750,7 @@ public class TETagQuery {
       o.printf("The \"since\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
       o.printf("Indicator types:\n");
-      DescriptorFiltererFactory.list(o);
+      IndicatorTypeFiltererFactory.list(o);
       System.exit(exitCode);
     }
 
@@ -762,7 +762,7 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      DescriptorFilterer descriptorFilterer = new AllDescriptorFilterer();
+      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
       int pageSize = 1000;
       String since = null;
       String until = null;
@@ -801,8 +801,8 @@ public class TETagQuery {
             usage(1);
           }
 
-          descriptorFilterer = DescriptorFiltererFactory.create(args[0]);
-          if (descriptorFilterer == null) {
+          indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
+          if (indicatorTypeFilterer == null) {
             System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
               PROGNAME, _verb, args[1]);
             usage(1);
@@ -830,7 +830,7 @@ public class TETagQuery {
       }
       String tagName = args[0];
 
-      String td_indicator_typeForTE = descriptorFilterer.getTEName();
+      String td_indicator_typeForTE = indicatorTypeFilterer.getTEName();
 
       List<ThreatDescriptor> threatDescriptors = Net.getIncremental(tagName, td_indicator_typeForTE, since,
         pageSize, verbose, showURLs);
