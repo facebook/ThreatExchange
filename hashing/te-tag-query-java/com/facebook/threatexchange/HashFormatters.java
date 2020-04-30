@@ -34,6 +34,7 @@ class JSONHashFormatter implements HashFormatter {
     w.add("td_severity", threatDescriptor.td_severity);
     w.add("td_share_level", threatDescriptor.td_share_level);
     w.add("td_subjective_tags", String.join(",", threatDescriptor.td_subjective_tags));
+    w.add("td_description", threatDescriptor.td_description);
     return w.format();
   }
 }

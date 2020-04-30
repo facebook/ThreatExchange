@@ -35,19 +35,17 @@ import java.util.List;
 // AVAILABLE WITHIN THE GRAPH API, BEING USED:
 // * id
 // * added_on
-// * last_updated
 // * confidence
+// * description -- be sure to escape embedded double-quotes for the JSON.
+// * last_updated
 // * owner
+// * privacy_type
 // * raw_indicator
-// * type
+// * review_status
 // * severity
 // * share_level
-// * privacy_type
 // * status
-
-// AVAILABLE WITHIN THE GRAPH API, TO BE USED:
-// * description -- be sure to escape embedded double-quotes for the JSON ...
-// * review_status
+// * type
 
 // AVAILABLE WITHIN THE GRAPH API, MAYBE USE:
 // ? indicator (to get the id ...) -- only useful for relation-edge-following
@@ -77,6 +75,7 @@ public class ThreatDescriptor {
   public final String td_severity;
   public final String td_share_level;
   public final List<String> td_subjective_tags;
+  public final String td_description;
 
   public ThreatDescriptor(
     String id_,
@@ -93,7 +92,8 @@ public class ThreatDescriptor {
     String td_status_,
     String td_severity_,
     String td_share_level_,
-    List<String> td_subjective_tags_
+    List<String> td_subjective_tags_,
+    String td_description_
   ) {
     id = id_;
     td_raw_indicator = td_raw_indicator_;
@@ -111,5 +111,6 @@ public class ThreatDescriptor {
     td_share_level = td_share_level_;
 
     td_subjective_tags = new ArrayList(td_subjective_tags_);
+    td_description = td_description_;
   }
 }

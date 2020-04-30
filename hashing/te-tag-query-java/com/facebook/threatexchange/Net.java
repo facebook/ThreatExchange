@@ -233,7 +233,7 @@ class Net {
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
       + "&ids=%5B" + String.join(",", ids) + "%5D"
-      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags";
+      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description";
     if (showURLs) {
       System.out.println("URL:");
       System.out.println(url);
@@ -294,6 +294,11 @@ class Net {
         }
         Collections.sort(tagTexts); // canonicalize
 
+        String description = (String)item.get("description");
+        if (description == null) {
+          description = "";
+        }
+
         ThreatDescriptor threatDescriptor = new ThreatDescriptor(
           (String)item.get("id"),
           (String)item.get("raw_indicator"),
@@ -309,7 +314,8 @@ class Net {
           (String)item.get("status"),
           (String)item.get("severity"),
           (String)item.get("share_level"),
-          tagTexts
+          tagTexts,
+          description
         );
 
         threatDescriptors.add(threatDescriptor);
@@ -341,7 +347,7 @@ class Net {
     String startURL = TE_BASE_URL
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN
-      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,review_status,privacy_type,status,severity,share_level,tags"
+      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,review_status,privacy_type,status,severity,share_level,tags,description"
       + "&limit=" + pageLimit
       + "&tags=" + tagName
       + "&since=" + since;
@@ -442,6 +448,11 @@ class Net {
           }
           Collections.sort(tagTexts); // canonicalize
 
+          String description = (String)item.get("description");
+          if (description == null) {
+            description = "";
+          }
+
           ThreatDescriptor threatDescriptor = new ThreatDescriptor(
             itemID,
             itemText,
@@ -457,7 +468,8 @@ class Net {
             (String)item.get("status"),
             (String)item.get("severity"),
             (String)item.get("share_level"),
-            tagTexts
+            tagTexts,
+            description
           );
         }
         pageIndex++;
