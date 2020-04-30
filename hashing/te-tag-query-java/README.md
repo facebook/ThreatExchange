@@ -56,6 +56,20 @@ java com.facebook.threatexchange.TETagQuery tag-to-details \
   media_type_long_hash_video
 ```
 
+Post a new SHA1 hash:
+
+```
+java com.facebook.threatexchange.TETagQuery submit \
+  -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec00e \
+  -t HASH_SHA1 \
+  -d "testing te-tag-query with post" \
+  -l AMBER \
+  -s NON_MALICIOUS \
+  -p HAS_WHITELIST \
+  --privacy-members 1064060413755420 \
+  --tags testing_java_post
+```
+
 Post a new TMK hash:
 
 ```
