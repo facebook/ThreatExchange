@@ -44,15 +44,15 @@ java com.facebook.threatexchange.TETagQuery tag-to-details \
 
 Querying for some hashes of a given type:
 ```
-java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type pdq --since -1day media_type_photo
+java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type pdq --tagged-since -1day media_type_photo
 
-java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 --since -1week media_type_video
+java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 --tagged-since -1week media_type_video
 
 java com.facebook.threatexchange.TETagQuery tag-to-details \
   --page-size 10 \
   --data-dir ./tmk-data-dir \
   --indicator-type tmk \
-  --since -1week \
+  --tagged-since -1week \
   media_type_long_hash_video
 ```
 

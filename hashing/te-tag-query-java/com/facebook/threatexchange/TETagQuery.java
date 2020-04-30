@@ -276,12 +276,12 @@ public class TETagQuery {
       o.printf("Usage: %s %s [options] {tag name}\n",
         PROGNAME, _verb);
       o.printf("Options:\n");
-      o.printf("--since {x}\n");
-      o.printf("--until {x}\n");
+      o.printf("--tagged-since {x}\n");
+      o.printf("--tagged-until {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("--indicator-type {x}\n");
       o.printf("--no-print-indicator -- Don't print the indicator to the terminal\n");
-      o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
+      o.printf("The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
       o.printf("Descriptor types:\n");
       IndicatorTypeFiltererFactory.list(o);
@@ -299,8 +299,8 @@ public class TETagQuery {
       IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
       int pageSize = 1000;
       boolean includeIndicatorInOutput = true;
-      String since = null;
-      String until = null;
+      String taggedSince = null;
+      String taggedUntil = null;
 
       while (args.length > 0 && args[0].startsWith("-")) {
         String option = args[0];
@@ -309,18 +309,18 @@ public class TETagQuery {
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
 
-        } else if (option.equals("--since")) {
+        } else if (option.equals("--tagged-since")) {
           if (args.length < 1) {
             usage(1);
           }
-          since = args[0];
+          taggedSince = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--until")) {
+        } else if (option.equals("--tagged-until")) {
           if (args.length < 1) {
             usage(1);
           }
-          until = args[0];
+          taggedUntil = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--page-size")) {
@@ -379,7 +379,7 @@ public class TETagQuery {
       // "THREAT_DESCRIPTOR". From this we can dive in on each item, though,
       // and query for its details one ID at a time.
       Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
-        indicatorTypeFilterer, since, until, pageSize, includeIndicatorInOutput,
+        indicatorTypeFilterer, taggedSince, taggedUntil, pageSize, includeIndicatorInOutput,
         new IDPrinterProcessor(verbose));
     }
   }
@@ -522,13 +522,13 @@ public class TETagQuery {
       o.printf("Usage: %s %s [options] {tag name}\n",
         PROGNAME, _verb);
       o.printf("Options:\n");
-      o.printf("--since {x}\n");
-      o.printf("--until {x}\n");
+      o.printf("--tagged-since {x}\n");
+      o.printf("--tagged-until {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("--indicator-type {x}\n");
       o.printf("--no-print-indicator -- Don't print the indicator\n");
       o.printf("--data-dir {d} -- Write descriptors as {ID}.{extension} files in directory named {d}\n");
-      o.printf("The \"since\" or \"until\" parameter is any supported by ThreatExchange,\n");
+      o.printf("The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch.\n");
       o.printf("Indicator types:\n");
       IndicatorTypeFiltererFactory.list(o);
@@ -545,8 +545,8 @@ public class TETagQuery {
     ) {
       IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
       int pageSize = 1000;
-      String since = null;
-      String until = null;
+      String taggedSince = null;
+      String taggedUntil = null;
       boolean includeIndicatorInOutput = true;
       String dataDir = null;
 
@@ -564,18 +564,18 @@ public class TETagQuery {
           dataDir = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--since")) {
+        } else if (option.equals("--tagged-since")) {
           if (args.length < 1) {
             usage(1);
           }
-          since = args[0];
+          taggedSince = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--until")) {
+        } else if (option.equals("--tagged-until")) {
           if (args.length < 1) {
             usage(1);
           }
-          until = args[0];
+          taggedUntil = args[0];
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--page-size")) {
@@ -645,7 +645,8 @@ public class TETagQuery {
       IDProcessor processor = new IDDetailsProcessor(numIDsPerQuery, verbose,
         showURLs, includeIndicatorInOutput, dataDir, descriptorFormatter);
       Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
-        indicatorTypeFilterer, since, until, pageSize, includeIndicatorInOutput, processor);
+        indicatorTypeFilterer, taggedSince, taggedUntil, pageSize, includeIndicatorInOutput,
+        processor);
     }
   }
 
@@ -704,6 +705,8 @@ public class TETagQuery {
       List<ThreatDescriptor> threatDescriptors = Net.getInfoForIDs(chunk, verbose, showURLs,
         includeIndicatorInOutput);
       for (ThreatDescriptor threatDescriptor : threatDescriptors) {
+
+        // TODO: create-time/update-time filters go here ...
 
         if (dataDir == null) {
           System.out.println(descriptorFormatter.format(threatDescriptor, includeIndicatorInOutput));
