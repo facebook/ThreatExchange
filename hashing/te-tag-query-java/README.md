@@ -24,6 +24,14 @@ threatexchange@fb.com
 javac com/facebook/threatexchange/*.java
 ```
 
+# Setup
+
+* Find your app's access token at https://developers.facebook.com/tools/accesstoken/
+
+* Put this into `~/.txtoken` and `chmod 600 ~/.txtoken`
+
+* `export TX_ACCESS_TOKEN=$(cat ~/.txtoken)` in your shell's init file
+
 # Examples of using the code for queries
 
 On-line help:
@@ -105,14 +113,6 @@ java com.facebook.threatexchange.TETagQuery \
     --privacy-members 1064060413755420 \
     --tags testing_java_post
 ```
-
-# Setup
-
-* Find your app's access token at https://developers.facebook.com/tools/accesstoken/
-
-* Put this into `~/.txtoken` and `chmod 600 ~/.txtoken`
-
-* `export TX_ACCESS_TOKEN=$(cat ~/.txtoken)` in your shell's init file
 
 # URL-generation notes
 
