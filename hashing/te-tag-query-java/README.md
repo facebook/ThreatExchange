@@ -70,6 +70,21 @@ java com.facebook.threatexchange.TETagQuery submit \
   --tags testing_java_post
 ```
 
+Post another with relation to the first one:
+
+```
+java com.facebook.threatexchange.TETagQuery submit \
+  -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec00f \
+  -t HASH_SHA1 \
+  -d "testing te-tag-query with post" \
+  -l AMBER \
+  -s NON_MALICIOUS \
+  -p HAS_WHITELIST \
+  --privacy-members 1064060413755420 \
+  --tags testing_java_post \
+  --related-triples-for-upload-as-json '[{"owner_app_id":494491891138576,"td_indicator_type":"HASH_SHA1","td_raw_indicator":"dabbad00f00dfeed5ca1ab1ebeefca11ab1ec00e"}]'
+```
+
 Post a new TMK hash:
 
 ```

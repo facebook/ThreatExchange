@@ -36,6 +36,7 @@ class DescriptorPostParameters {
   private String _tagsToAdd;
   private String _tagsToRemove;
   private String _relatedIDsForUpload;
+  private String _relatedTriplesForUploadAsJSON;
 
   public DescriptorPostParameters setIndicatorText(String indicatorText) {
     this._indicatorText = indicatorText;
@@ -109,6 +110,10 @@ class DescriptorPostParameters {
     this._relatedIDsForUpload = relatedIDsForUpload;
     return this;
   }
+  public DescriptorPostParameters setRelatedTriplesForUploadAsJSON(String relatedTriplesForUploadAsJSON) {
+    this._relatedTriplesForUploadAsJSON = relatedTriplesForUploadAsJSON;
+    return this;
+  }
 
   public String getIndicatorText() {
     return this._indicatorText;
@@ -163,6 +168,9 @@ class DescriptorPostParameters {
   }
   public String getRelatedIDsForUpload() {
     return this._relatedIDsForUpload;
+  }
+  public String getRelatedTriplesForUploadAsJSON() {
+    return this._relatedTriplesForUploadAsJSON;
   }
 
   public boolean validateWithReport(PrintStream o) {
@@ -237,6 +245,9 @@ class DescriptorPostParameters {
     }
     if (this._relatedIDsForUpload != null) {
       sb.append("&related_ids_for_upload=").append(Utils.urlEncodeUTF8(this._relatedIDsForUpload));
+    }
+    if (this._relatedTriplesForUploadAsJSON != null) {
+      sb.append("&related_triples_for_upload_as_json=").append(Utils.urlEncodeUTF8(this._relatedTriplesForUploadAsJSON));
     }
     // Put indicator last in case it's long (e.g. TMK) for human readability
     sb.append("&indicator=").append(Utils.urlEncodeUTF8(this._indicatorText));

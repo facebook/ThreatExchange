@@ -937,6 +937,10 @@ public class TETagQuery {
       o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
       o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");
       o.printf("                       already exist) to relate the new descriptor to.\n");
+      o.printf("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.\n");
+      o.printf("                       Here you can uniquely the relate-to descriptors by their\n");
+      o.printf("                       owner ID / indicator-type / indicator-text, rather than\n");
+      o.printf("                       by their IDs. See README.md for an example.\n");
       o.printf("--confidence {...}\n");
       o.printf("-s|--status {...}\n");
       o.printf("-r|--review-status {...}\n");
@@ -1039,6 +1043,12 @@ public class TETagQuery {
             usage(1);
           }
           params.setRelatedIDsForUpload(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--related-triples-for-upload-as-json")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setRelatedTriplesForUploadAsJSON(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--tags")) {
