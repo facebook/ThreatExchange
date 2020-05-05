@@ -164,7 +164,8 @@ HTTP query:
 
 ```
 https://graph.facebook.com/v4.0/1283621968426798/tagged_objects/
-  ?access_token=REDACTED&limit=1000
+  ?access_token=REDACTED
+  &limit=1000
 ```
 
 JSON response:
@@ -189,7 +190,7 @@ JSON response:
       "before": "REDACTED",
       "after": "REDACTED"
     },
-   "next": "https://graph.facebook.com/v6.0/2733125556794397/tagged_objects?access_token=REDACTED&&limit=1000&after=..."
+   "next": "https://graph.facebook.com/v6.0/2733125556794397/tagged_objects?access_token=REDACTED&limit=1000&after=..."
   }
 }
 ```
@@ -250,7 +251,6 @@ JSON response:
    },
   ...
 }
-...
 ```
 
 Here there is no next page since the details are from a list of IDs specified in the HTTP query.
