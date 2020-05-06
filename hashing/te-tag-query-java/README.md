@@ -114,7 +114,7 @@ java com.facebook.threatexchange.TETagQuery \
     --tags testing_java_post
 ```
 
-# URL-generation notes
+# Bare-curl notes
 
 As noted at the top of this document, the `TETagQuery` program is intended to be a reference design -- for you to use as-is, or to help you write tooling in other languages.
 
