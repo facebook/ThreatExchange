@@ -43,6 +43,8 @@ public class SimpleJSONWriter {
         .replace("\"", "\\\"")
         .replace("\001\002\003", "\\\\\\\"");
 
+      escValue = escValue.replace("\n", "\\n");
+
       if (i > 0) {
         sb.append(",");
       }
