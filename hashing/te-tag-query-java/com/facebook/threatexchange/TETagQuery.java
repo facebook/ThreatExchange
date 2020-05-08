@@ -706,6 +706,8 @@ public class TETagQuery {
         includeIndicatorInOutput);
       for (ThreatDescriptor threatDescriptor : threatDescriptors) {
 
+        // TODO: pull out body to method here and re-use for getIncremental
+
         // TODO: create-time/update-time filters go here ...
 
         if (dataDir == null) {
@@ -835,12 +837,8 @@ public class TETagQuery {
 
       String td_indicator_typeForTE = indicatorTypeFilterer.getTEName();
 
-      List<ThreatDescriptor> threatDescriptors = Net.getIncremental(tagName, td_indicator_typeForTE, since,
-        pageSize, verbose, showURLs);
-
-      for (ThreatDescriptor threatDescriptor : threatDescriptors) {
-        System.out.println(descriptorFormatter.format(threatDescriptor, includeIndicatorInOutput));
-      }
+      Net.getIncremental(tagName, td_indicator_typeForTE, since,
+        pageSize, verbose, showURLs, descriptorFormatter, includeIndicatorInOutput);
     }
   }
 

@@ -336,16 +336,16 @@ class Net {
    * infinite-loopy!  There are many queries for which the 'next' paging
    * parameter will remain non-null on every next-page request.
    */
-  public static List<ThreatDescriptor> getIncremental(
+  public static void getIncremental(
     String tagName,
     String td_indicator_type,
     String since,
     int pageSize,
     boolean verbose,
-    boolean showURLs
+    boolean showURLs,
+    DescriptorFormatter descriptorFormatter,
+    boolean includeIndicatorInOutput
   ) {
-    List<ThreatDescriptor> threatDescriptors = new ArrayList<ThreatDescriptor>();
-
     // See also
     // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
     // for available fields
@@ -479,16 +479,17 @@ class Net {
             tagTexts,
             description
           );
-          threatDescriptors.add(threatDescriptor);
+
+          // To do: move the printing to the caller via a callback.
+          System.out.println(descriptorFormatter.format(threatDescriptor, includeIndicatorInOutput));
         }
+
         pageIndex++;
       } catch (Exception e) {
         e.printStackTrace(System.err);
         System.exit(1);
       }
     } while (nextURL != null);
-
-    return threatDescriptors;
   }
 
   /**
