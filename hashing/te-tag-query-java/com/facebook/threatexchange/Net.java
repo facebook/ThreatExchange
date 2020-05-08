@@ -443,16 +443,18 @@ class Net {
 
           JSONObject owner = (JSONObject)item.get("owner");
 
-          JSONObject td_subjective_tags = (JSONObject)item.get("tags");
-          JSONArray tag_data = (JSONArray)td_subjective_tags.get("data");
-          int n = tag_data.size();
           List<String> tagTexts = new ArrayList<String>();
-          for (int j = 0; j < n; j++) {
-            JSONObject tag = (JSONObject) tag_data.get(j);
-            String tagText = (String)tag.get("text");
-            tagTexts.add(tagText);
+          JSONObject td_subjective_tags = (JSONObject)item.get("tags");
+          if (td_subjective_tags != null) {
+            JSONArray tag_data = (JSONArray)td_subjective_tags.get("data");
+            int n = tag_data.size();
+            for (int j = 0; j < n; j++) {
+              JSONObject tag = (JSONObject) tag_data.get(j);
+              String tagText = (String)tag.get("text");
+              tagTexts.add(tagText);
+            }
+            Collections.sort(tagTexts); // canonicalize
           }
-          Collections.sort(tagTexts); // canonicalize
 
           String description = (String)item.get("description");
           if (description == null) {
