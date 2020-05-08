@@ -477,6 +477,7 @@ class Net {
             tagTexts,
             description
           );
+          threatDescriptors.add(threatDescriptor);
         }
         pageIndex++;
       } catch (Exception e) {
