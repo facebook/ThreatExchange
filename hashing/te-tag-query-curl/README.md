@@ -170,7 +170,7 @@ Here we post to the `threat_descriptors` endpoint.
 
 See also https://developers.facebook.com/docs/threat-exchange/reference/submitting
 
-HTTP query:
+HTTP query for post:
 
 ```
 curl -s -X POST \
@@ -189,6 +189,49 @@ JSON response:
 
 ```
 {"success":true,"id":"3047058802049882"}
+```
+
+HTTP query for read-back:
+
+```
+curl -s \
+'https://graph.facebook.com/v4.0/?access_token=REDACTED'\
+'&ids=%5B3047058802049882%5D'\
+'&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description'
+```
+
+JSON response for read-back:
+
+```
+{
+  "3047058802049882": {
+    "raw_indicator": "85fc2d2a3764089191e57cd55260127800005c46",
+    "type": "HASH_SHA1",
+    "added_on": "2020-05-12T16:38:37+0000",
+    "last_updated": "2020-05-12T16:52:43+0000",
+    "confidence": 50,
+    "owner": {
+      "id": "494491891138576",
+      "email": "redacted@redacted.com",
+      "name": "Media Hash Sharing RF Test"
+    },
+    "privacy_type": "HAS_WHITELIST",
+    "review_status": "UNREVIEWED",
+    "status": "NON_MALICIOUS",
+    "severity": "INFO",
+    "share_level": "AMBER",
+    "tags": {
+      "data": [
+        {
+          "id": "2911371008904239",
+          "text": "testing_java_post"
+        }
+      ]
+    },
+    "description": "API testing",
+    "id": "3047058802049882"
+  }
+}
 ```
 
 # Edit an existing threat descriptor
@@ -211,4 +254,47 @@ JSON response:
 
 ```
 {"success":true}
+```
+
+HTTP query for read-back:
+
+```
+curl -s \
+'https://graph.facebook.com/v4.0/?access_token=REDACTED'\
+'&ids=%5B3047058802049882%5D'\
+'&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description'
+```
+
+JSON response for read-back:
+
+```
+{
+  "3047058802049882": {
+    "raw_indicator": "85fc2d2a3764089191e57cd55260127800005c46",
+    "type": "HASH_SHA1",
+    "added_on": "2020-05-12T16:38:37+0000",
+    "last_updated": "2020-05-12T16:52:43+0000",
+    "confidence": 50,
+    "owner": {
+      "id": "494491891138576",
+      "email": "redacted@redacted.com",
+      "name": "Media Hash Sharing RF Test"
+    },
+    "privacy_type": "HAS_WHITELIST",
+    "review_status": "UNREVIEWED",
+    "status": "NON_MALICIOUS",
+    "severity": "INFO",
+    "share_level": "AMBER",
+    "tags": {
+      "data": [
+        {
+          "id": "2911371008904239",
+          "text": "testing_java_post"
+        }
+      ]
+    },
+    "description": "Updating description",
+    "id": "3047058802049882"
+  }
+}
 ```
