@@ -58,7 +58,7 @@ public class TETagQuery {
     o.printf("either a tag name or a list of IDs one per line on standard input.\n");
     o.printf("Options:\n");
     o.printf("  -h|--help      Show detailed help.\n");
-    o.printf("  --list-verbs   Show a list of supported verbs.\n", PROGNAME);
+    o.printf("  -l|--list-verbs   Show a list of supported verbs.\n", PROGNAME);
     o.printf("  -q|--quiet     Only print IDs/descriptors output with no narrative.\n");
     o.printf("  -v|--verbose   Print IDs/descriptors output along with narrative.\n");
     o.printf("  -s|--show-urls Print URLs used for queries, before executing them.\n");
@@ -98,7 +98,7 @@ public class TETagQuery {
       } else if (option.equals("-s") || option.equals("--show-urls")) {
         showURLs = true;
 
-      } else if (option.equals("--list-verbs")) {
+      } else if (option.equals("-l") || option.equals("--list-verbs")) {
         CommandHandlerFactory.list(System.out);
         System.exit(0);
 
@@ -282,7 +282,7 @@ public class TETagQuery {
       o.printf("--indicator-type {x}\n");
       o.printf("--no-print-indicator -- Don't print the indicator to the terminal\n");
       o.printf("The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,\n");
-      o.printf("e.g. seconds since the epoch.\n");
+      o.printf("e.g. seconds since the epoch, or \"-1hour\", or \"-1day\", etc.\n");
       o.printf("Descriptor types:\n");
       IndicatorTypeFiltererFactory.list(o);
       System.exit(exitCode);
@@ -529,7 +529,7 @@ public class TETagQuery {
       o.printf("--no-print-indicator -- Don't print the indicator\n");
       o.printf("--data-dir {d} -- Write descriptors as {ID}.{extension} files in directory named {d}\n");
       o.printf("The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,\n");
-      o.printf("e.g. seconds since the epoch.\n");
+      o.printf("e.g. seconds since the epoch, or \"-1hour\", or \"-1day\", etc.\n");
       o.printf("Indicator types:\n");
       IndicatorTypeFiltererFactory.list(o);
       System.exit(exitCode);
@@ -706,6 +706,8 @@ public class TETagQuery {
         includeIndicatorInOutput);
       for (ThreatDescriptor threatDescriptor : threatDescriptors) {
 
+        // TODO: pull out body to method here and re-use for getIncremental
+
         // TODO: create-time/update-time filters go here ...
 
         if (dataDir == null) {
@@ -751,7 +753,7 @@ public class TETagQuery {
       o.printf("--indicator-type {x}\n");
       o.printf("--page-size {x}\n");
       o.printf("The \"since\" parameter is any supported by ThreatExchange,\n");
-      o.printf("e.g. seconds since the epoch.\n");
+      o.printf("e.g. seconds since the epoch, or \"-1hour\", or \"-1day\", etc.\n");
       o.printf("Indicator types:\n");
       IndicatorTypeFiltererFactory.list(o);
       System.exit(exitCode);
@@ -835,12 +837,8 @@ public class TETagQuery {
 
       String td_indicator_typeForTE = indicatorTypeFilterer.getTEName();
 
-      List<ThreatDescriptor> threatDescriptors = Net.getIncremental(tagName, td_indicator_typeForTE, since,
-        pageSize, verbose, showURLs);
-
-      for (ThreatDescriptor threatDescriptor : threatDescriptors) {
-        System.out.println(descriptorFormatter.format(threatDescriptor, includeIndicatorInOutput));
-      }
+      Net.getIncremental(tagName, td_indicator_typeForTE, since,
+        pageSize, verbose, showURLs, descriptorFormatter, includeIndicatorInOutput);
     }
   }
 
@@ -916,7 +914,6 @@ public class TETagQuery {
       o.printf("Required:\n");
       o.printf("-i|--indicator {...}   If indicator type is HASH_TMK this must be the\n");
       o.printf("                       path to a .tmk file, else the indicator text.\n");
-      o.printf("                       (This is under construction.)\n");
       o.printf("-I                     Take indicator text from standard input, one per line.\n");
       o.printf("Exactly one of -i or -I is required.\n");
       o.printf("-t|--type {...}\n");
@@ -941,7 +938,7 @@ public class TETagQuery {
       o.printf("                       Here you can uniquely the relate-to descriptors by their\n");
       o.printf("                       owner ID / indicator-type / indicator-text, rather than\n");
       o.printf("                       by their IDs. See README.md for an example.\n");
-      o.printf("--confidence {...}\n");
+      o.printf("-c|--confidence {...}\n");
       o.printf("-s|--status {...}\n");
       o.printf("-r|--review-status {...}\n");
       o.printf("--precision {...}\n");
@@ -1005,6 +1002,18 @@ public class TETagQuery {
           }
           params.setShareLevel(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-p") || option.equals("--privacy-type")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setPrivacyType(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-m") || option.equals("--privacy-members")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setPrivacyMembers(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("-s") || option.equals("--status")) {
           if (args.length < 1) {
@@ -1023,19 +1032,6 @@ public class TETagQuery {
             usage(1);
           }
           params.setSeverity(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("-p") || option.equals("--privacy-type")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setPrivacyType(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-m") || option.equals("--privacy-members")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setPrivacyMembers(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--related-ids-for-upload")) {
@@ -1070,18 +1066,13 @@ public class TETagQuery {
           params.setTagsToRemove(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
-        } else if (option.equals("--confidence")) {
+        } else if (option.equals("-c") || option.equals("--confidence")) {
           if (args.length < 1) {
             usage(1);
           }
           params.setConfidence(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--precision")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setPrecision(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+
         } else if (option.equals("--first-active")) {
           if (args.length < 1) {
             usage(1);
@@ -1114,7 +1105,7 @@ public class TETagQuery {
 
       if (indicatorTextFromStdin) {
         if (params.getIndicatorText() != null) {
-          System.err.printf("%s %s: only one of -I and -i must be supplied.\n",
+          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
         }
@@ -1135,7 +1126,7 @@ public class TETagQuery {
         }
       } else {
         if (params.getIndicatorText() == null) {
-          System.err.printf("%s %s: at least one of -I and -i must be supplied.\n",
+          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
         }

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+ourdir=`dirname $0`
+
+# Set up the Ruby path so this Ruby program can be invoked from anywhere.
+exec ruby -I $ourdir $ourdir/TETagQuery.rb "$@"
