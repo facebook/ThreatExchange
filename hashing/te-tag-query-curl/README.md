@@ -11,6 +11,8 @@ Construting URLs by hand is tedious and error-prone; hence we recommend
 
 Nonetheless, for those wanting to use curls directly, the URLs in this document were prepared using the `-s` output from the Java reference design, and those URLs were dropped into a browser to obtain the raw JSON responses shown below.
 
+See also https://developers.facebook.com/docs/threat-exchange/reference/apis
+
 # Query mechanism
 
 * We use the `tagged_objects` endpoint to fetch IDs of all hashes. This
@@ -161,3 +163,52 @@ JSON response:
 ```
 
 Here there is no next page since the details are from a list of IDs specified in the HTTP query.
+
+# Submit a new threat descriptor
+
+Here we post to the `threat_descriptors` endpoint.
+
+See also https://developers.facebook.com/docs/threat-exchange/reference/submitting
+
+HTTP query:
+
+```
+curl -s -X POST \
+'https://graph.facebook.com/v4.0/threat_descriptors/?access_token=REDACTED'\
+'&type=HASH_SHA1'\
+'&description=API+testing'\
+'&share_level=AMBER'\
+'&status=NON_MALICIOUS'\
+'&privacy_type=HAS_WHITELIST'\
+'&privacy_members=1064060413755420'\
+'&tags=testing_java_post'\
+'&indicator=85fc2d2a3764089191e57cd55260127800005c46'
+```
+
+JSON response:
+
+```
+{"success":true,"id":"3047058802049882"}
+```
+
+# Edit an existing threat descriptor
+
+Here we post to a `threat_descriptor` endpoint which is spelled, not
+`threat_descriptor`, but instead simply using the ID of our just-created
+descriptor from the previous example.
+
+See also https://developers.facebook.com/docs/threat-exchange/reference/editing
+
+HTTP query:
+
+```
+curl -s -X POST \
+'https://graph.facebook.com/v4.0/3047058802049882/?access_token=REDACTED'\
+'&description=Updating+description'
+```
+
+JSON response:
+
+```
+{"success":true}
+```
