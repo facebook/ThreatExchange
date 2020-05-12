@@ -72,7 +72,7 @@ HTTP query:
 ```
 https://graph.facebook.com/v4.0/1283621968426798/tagged_objects/
   ?access_token=REDACTED
-  &limit=1000
+  &limit=100
 ```
 
 JSON response:
