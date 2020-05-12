@@ -429,12 +429,13 @@ public class TETagQuery {
     @Override
     public void usage(int exitCode) {
       PrintStream o = Utils.getPrintStream(exitCode);
-      o.printf("Usage: %s %s [options]\n",
+      o.printf("Usage: %s %s [options] [IDs]\n",
         PROGNAME, _verb);
       o.printf("Options:\n");
       o.printf("--no-print-indicator -- Don't print the indicator to the terminal\n");
       o.printf("--data-dir {d} -- Write descriptors as {ID}.{extension} files in directory named {d}\n");
-      o.printf("Please supply IDs one line at a time on standard input.\n");
+      o.printf("Please supply IDs either one line at a time on standard input, or on the command line\n");
+      o.printf("after the options.\n");
       System.exit(exitCode);
     }
 
@@ -473,12 +474,6 @@ public class TETagQuery {
         }
       }
 
-      if (args.length > 0) {
-        System.err.printf("%s %s: extraneous arguments.\n", PROGNAME, _verb);
-        System.err.printf("IDs must be provided on standard input, one per line.\n");
-        usage(1);
-      }
-
       if (dataDir != null) {
         File handle = new File(dataDir);
         boolean ok = handle.exists() || handle.mkdirs();
@@ -491,18 +486,24 @@ public class TETagQuery {
 
       List<String> ids = new ArrayList<String>();
 
-      BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-      String line;
-      int lno = 1;
-      try {
-        while ((line = reader.readLine()) != null) {
-          lno++;
-          // In Java, line-terminators already stripped for us
-          ids.add(line);
+      if (args.length > 0) {
+        for (String arg: args) {
+          ids.add(arg);
         }
-      } catch (IOException e) {
-        System.err.printf("Couldn't read line %d of standard input.\n", lno);
-        System.exit(1);
+      } else {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        int lno = 1;
+        try {
+          while ((line = reader.readLine()) != null) {
+            lno++;
+            // In Java, line-terminators already stripped for us
+            ids.add(line);
+          }
+        } catch (IOException e) {
+          System.err.printf("Couldn't read line %d of standard input.\n", lno);
+          System.exit(1);
+        }
       }
 
       outputDetails(ids, numIDsPerQuery, verbose, showURLs, includeIndicatorInOutput,
