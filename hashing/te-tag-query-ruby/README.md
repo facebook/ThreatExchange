@@ -102,8 +102,6 @@ te-tag-query-ruby submit \
 
 As noted at the top of this document, the `TETagQuery` program is intended to be a reference design -- for you to use as-is, or to help you write tooling in other languages.
 
-As noted above, the `TETagQuery` program uses a three-step process: tag text to tag ID; tag ID to tagged objects (with pagination); each page of tagged-object IDs to their details.
-
 For reference, we show what those bare-curl commands look like if you're not using the Ruby code:
 
 https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-java/README.md
