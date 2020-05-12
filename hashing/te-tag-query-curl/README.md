@@ -208,7 +208,7 @@ JSON response for read-back:
     "raw_indicator": "85fc2d2a3764089191e57cd55260127800005c46",
     "type": "HASH_SHA1",
     "added_on": "2020-05-12T16:38:37+0000",
-    "last_updated": "2020-05-12T16:52:43+0000",
+    "last_updated": "2020-05-12T17:41:16+0000",
     "confidence": 50,
     "owner": {
       "id": "494491891138576",
@@ -273,7 +273,7 @@ JSON response for read-back:
     "raw_indicator": "85fc2d2a3764089191e57cd55260127800005c46",
     "type": "HASH_SHA1",
     "added_on": "2020-05-12T16:38:37+0000",
-    "last_updated": "2020-05-12T16:52:43+0000",
+    "last_updated": "2020-05-12T17:41:53+0000",
     "confidence": 50,
     "owner": {
       "id": "494491891138576",
