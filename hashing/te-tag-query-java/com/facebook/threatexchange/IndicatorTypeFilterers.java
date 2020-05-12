@@ -67,12 +67,15 @@ class AllIndicatorTypeFilterer implements IndicatorTypeFilterer {
 /**
  * Filters ideally for comma-delimited decimal, 144 slots.
  * Only does the minimal check to differentiate from other indicator-types
- * we support.
+ * we care about.
  */
 class PhotoDNAIndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
   public boolean accept(String indicator) {
     if (indicator.length() < 287) { // Shortest: 0,0,0,...,0,0,0
+      return false;
+    }
+    if (indicator.length() > 575) { // Longest: 255,255,...,255,255
       return false;
     }
     return true;
@@ -86,7 +89,7 @@ class PhotoDNAIndicatorTypeFilterer implements IndicatorTypeFilterer {
 /**
  * Filters ideally for 64 hex digits.
  * Only does the minimal check to differentiate from other indicator-types
- * we support.
+ * we care care about.
  */
 class PDQIndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
@@ -105,7 +108,7 @@ class PDQIndicatorTypeFilterer implements IndicatorTypeFilterer {
 /**
  * Filters ideally for 32 hex digits
  * Only does the minimal check to differentiate from other indicator-types
- * we support.
+ * we care about.
  */
 class MD5IndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
@@ -124,7 +127,7 @@ class MD5IndicatorTypeFilterer implements IndicatorTypeFilterer {
 /**
  * Filters ideally for very long (256KB-ish)
  * Only does the minimal check to differentiate from other indicator-types
- * we support.
+ * we care about.
  */
 class TMKIndicatorTypeFilterer implements IndicatorTypeFilterer {
   @Override
