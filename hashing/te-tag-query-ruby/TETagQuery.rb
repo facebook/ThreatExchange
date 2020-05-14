@@ -324,11 +324,11 @@ class IDsToDetailsHandler < SubcommandHandler
   def usage(exitCode)
     stream =  exitCode == 0 ? $stdout : $stderr
     output = <<-EOF
-Usage: #{$0} #{@verbName} [options] {tag name}
+Usage: #{$0} #{@verbName} [options] [IDs]
 Options:
 --no-print-indicator -- Don't print the indicator to the terminal
-The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,
-e.g. seconds since the epoch, or "-1hour", or "-1day", etc.
+Please supply IDs either one line at a time on standard input, or on the command line
+after the options.
 EOF
     stream.puts output
     exit(exitCode)
@@ -368,12 +368,17 @@ EOF
       end
     end
 
-    if args.length != 0
-      self.usage(1)
+    ids = []
+    if args.length > 0
+      ids = args
+    else
+      $stdin.readlines.each do |line|
+        id = line.chomp
+        ids.append(id)
+      end
     end
 
-    $stdin.readlines.each do |line|
-      id = line.chomp
+    ids.each do |id|
       idBatch = [id]
       descriptors = ThreatExchange::TENet.getInfoForIDs(
         ids: idBatch,
@@ -385,6 +390,7 @@ EOF
         puts descriptor.to_json
       end
     end
+
   end
 end
 
