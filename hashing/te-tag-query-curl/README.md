@@ -30,6 +30,8 @@ threatexchange@fb.com
 # Setup
 
 * Find your app's access token at https://developers.facebook.com/tools/accesstoken/
+* Put this into `~/.txtoken` and `chmod 600 ~/.txtoken`
+* `export TX_ACCESS_TOKEN=$(cat ~/.txtoken)` in your shell's init file
 
 # Three-step paginated query
 
@@ -38,8 +40,9 @@ threatexchange@fb.com
 HTTP query:
 
 ```
-https://graph.facebook.com/v4.0/threat_tags/
-  ?access_token=REDACTED&text=pwny
+curl -s 'https://graph.facebook.com/v4.0/threat_tags/'\
+"?access_token=$TX_ACCESS_TOKEN"\
+'&text=pwny'
 ```
 
 JSON response:
@@ -72,9 +75,9 @@ This does a prefix-match so select and retain the ID for the exact match `pwny`.
 HTTP query:
 
 ```
-https://graph.facebook.com/v4.0/1283621968426798/tagged_objects/
-  ?access_token=REDACTED
-  &limit=100
+curl -s 'https://graph.facebook.com/v4.0/1283621968426798/tagged_objects/'\
+"?access_token=$TX_ACCESS_TOKEN"\
+'&limit=100'
 ```
 
 JSON response:
@@ -113,10 +116,10 @@ Here we collect the IDs from the above single-page JSON response and get details
 HTTP query:
 
 ```
-https://graph.facebook.com/v4.0/
-  ?access_token=REDACTED
-  &ids=%5B 2556006484495859,2356527701137016,...%5D
-  &fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description
+curl -s 'https://graph.facebook.com/v4.0/'\
+"?access_token=$TX_ACCESS_TOKEN"\
+'&ids=%5B2556006484495859,2356527701137016%5D'\
+'&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description'
 ```
 
 JSON response:
