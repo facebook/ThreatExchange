@@ -740,12 +740,6 @@ EOF
     showURLs: false,
     dryRun: false)
 
-    errorMessage = ThreatExchange::TENet.validatePostPararms(postParams)
-    unless errorMessage.nil?
-      $stderr.puts errorMessage
-      exit 1
-    end
-
     # TO DO: port this over from Java, pending demand for people posting TMK hashes.
 
     # if (postParams.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
@@ -764,10 +758,15 @@ EOF
     #   postParams.setIndicatorText(contents);
     # }
 
-    response_body, response_code = ThreatExchange::TENet::submitThreatDescriptor(
+    validationErrorMessage, response_body, response_code = ThreatExchange::TENet::submitThreatDescriptor(
       postParams: postParams,
       showURLs: showURLs,
       dryRun: dryRun)
+
+    unless validationErrorMessage.nil?
+      $stderr.puts errorMessage
+      exit 1
+    end
 
     puts response_body
 

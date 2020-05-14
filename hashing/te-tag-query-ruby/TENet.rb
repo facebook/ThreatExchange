@@ -363,6 +363,11 @@ def TENet.submitThreatDescriptor(
   showURLs: false, # boolean,
   dryRun: false) # boolean,
 
+  errorMessage = ThreatExchange::TENet.validatePostPararms(postParams)
+  unless errorMessage.nil?
+    return [errorMessage, nil, nil]
+  end
+
   urlString = @@TE_BASE_URL +
     "/threat_descriptors" +
     "/?access_token=" + @@APP_TOKEN
@@ -392,7 +397,7 @@ def TENet.submitThreatDescriptor(
 
     response = http.request(request)
 
-    return [response.body, response.code]
+    return [nil, response.body, response.code]
   end
 
 end # TENet.submitThreatDescriptor
