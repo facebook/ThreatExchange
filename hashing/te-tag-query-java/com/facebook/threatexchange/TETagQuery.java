@@ -939,8 +939,6 @@ public class TETagQuery {
       o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
       o.printf("                       privacy-group IDs.\n");
       o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
-      o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
-      o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
       o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");
       o.printf("                       already exist) to relate the new descriptor to.\n");
       o.printf("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.\n");
@@ -1060,18 +1058,6 @@ public class TETagQuery {
             usage(1);
           }
           params.setTagsToSet(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--add-tags")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setTagsToAdd(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--remove-tags")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setTagsToRemove(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("-c") || option.equals("--confidence")) {
@@ -1193,8 +1179,6 @@ public class TETagQuery {
       o.printf("-i {...}               ID of descriptor to be edited. Must already exist.\n");
       o.printf("-I                     Take descriptor IDs from standard input, one per line.\n");
       o.printf("Exactly one of -i or -I is required.\n");
-      // xxx not for update
-      o.printf("-t|--type {...}\n");
       o.printf("-d|--description {...}\n");
       o.printf("-l|--share-level {...}\n");
       o.printf("-p|--privacy-type {...}\n");
@@ -1208,7 +1192,6 @@ public class TETagQuery {
       o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
       o.printf("                       privacy-group IDs.\n");
       o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
-      // xxxx not for submit :(
       o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
       o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
       o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");

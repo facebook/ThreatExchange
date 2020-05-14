@@ -585,8 +585,6 @@ Optional:
                        HAS_PRIVACY_GROUP these must be comma-delimited
                        privacy-group IDs.
 --tags {...}           Comma-delimited. Overwrites on repost.
---add-tags {...}       Comma-delimited. Adds these on repost.
---remove-tags {...}    Comma-delimited. Removes these on repost.
 --related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
                        already exist) to relate the new descriptor to.
 --related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
@@ -680,13 +678,6 @@ EOF
       elsif option == '--tags'
         self.usage(1) unless args.length >= 1
         postParams[names[:tags]] = args.shift;
-
-      elsif option == '--add-tags'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:add_tags]] = args.shift;
-      elsif option == '--remove-tags'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:remove_tags]] = args.shift;
 
       elsif option == '--first-active'
         self.usage(1) unless args.length >= 1
