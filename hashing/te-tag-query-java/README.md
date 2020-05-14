@@ -84,6 +84,17 @@ java com.facebook.threatexchange.TETagQuery submit \
   --tags testing_java_post
 ```
 
+Suppose that prints `{"success":true,"id":"2964083130339380"}`.
+
+Update it, using that ID:
+
+```
+java com.facebook.threatexchange.TETagQuery update \
+  -i 2964083130339380 \
+  -s UNKNOWN \
+  --add-tags testing_java_update
+```
+
 Post another with relation to the first one:
 
 ```

@@ -82,6 +82,17 @@ te-tag-query-ruby submit \
   --tags testing_ruby_post
 ```
 
+Suppose that prints `{"success":true,"id":"3546989395318416"}`.
+
+Update it, using that ID:
+
+```
+te-tag-query-ruby update \
+  -i 3546989395318416 \
+  -s UNKNOWN \
+  --add-tags testing_ruby_update
+```
+
 Post another with relation to the first one:
 
 ```

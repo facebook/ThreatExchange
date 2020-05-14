@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 class DescriptorPostParameters {
   private String _indicatorText; // Required for submit
   private String _indicatorType; // Required for submit
-  private String _indicatorID;   // Required for update
+  private String _descriptorID;  // Required for update
   private String _description;
   private String _shareLevel;
   private String _status;
@@ -47,8 +47,8 @@ class DescriptorPostParameters {
     this._indicatorType = indicatorType;
     return this;
   }
-  public DescriptorPostParameters setIndicatorID(String indicatorID) {
-    this._indicatorID = indicatorID;
+  public DescriptorPostParameters setDescriptorID(String descriptorID) {
+    this._descriptorID = descriptorID;
     return this;
   }
   public DescriptorPostParameters setDescription(String description) {
@@ -126,8 +126,8 @@ class DescriptorPostParameters {
   public String getIndicatorType() {
     return this._indicatorType;
   }
-  public String getIndicatorID() {
-    return this._indicatorID;
+  public String getDescriptorID() {
+    return this._descriptorID;
   }
   public String getDescription() {
     return this._description;
@@ -182,8 +182,8 @@ class DescriptorPostParameters {
   }
 
   public boolean validateForSubmitWithReport(PrintStream o) {
-    if (this._indicatorID != null) {
-      System.err.println("Indicator ID must not be specified for submit.\n");
+    if (this._descriptorID != null) {
+      System.err.println("Descriptor ID must not be specified for submit.\n");
       return false;
     }
     if (this._indicatorText == null) {
@@ -213,15 +213,41 @@ class DescriptorPostParameters {
     return true;
   }
 
+  public boolean validateForUpdateWithReport(PrintStream o) {
+    if (this._descriptorID == null) {
+      System.err.println("Descriptor ID must be specified for update.\n");
+      return false;
+    }
+    if (this._indicatorText != null) {
+      System.err.println("Indicator text must not be specified for update.\n");
+      return false;
+    }
+    if (this._indicatorType != null) {
+      System.err.println("Indicator type must not be specified for update.\n");
+      return false;
+    }
+    return true;
+  }
+
   // URL-encode since data is user-provided.
   // Assumes the input is already validated (non-null indicator text/type etc.)
   public String getPostDataString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("type=").append(Utils.urlEncodeUTF8(this._indicatorType));
-    sb.append("&description=").append(Utils.urlEncodeUTF8(this._description));
-    sb.append("&share_level=").append(Utils.urlEncodeUTF8(this._shareLevel));
-    sb.append("&status=").append(Utils.urlEncodeUTF8(this._status));
-    sb.append("&privacy_type=").append(Utils.urlEncodeUTF8(this._privacyType));
+    if (this._indicatorType != null) {
+      sb.append("type=").append(Utils.urlEncodeUTF8(this._indicatorType));
+    }
+    if (this._description != null) {
+      sb.append("&description=").append(Utils.urlEncodeUTF8(this._description));
+    }
+    if (this._shareLevel != null) {
+      sb.append("&share_level=").append(Utils.urlEncodeUTF8(this._shareLevel));
+    }
+    if (this._status != null) {
+      sb.append("&status=").append(Utils.urlEncodeUTF8(this._status));
+    }
+    if (this._privacyType != null) {
+      sb.append("&privacy_type=").append(Utils.urlEncodeUTF8(this._privacyType));
+    }
     if (this._privacyMembers != null) {
       sb.append("&privacy_members=").append(Utils.urlEncodeUTF8(this._privacyMembers));
     }
@@ -262,7 +288,9 @@ class DescriptorPostParameters {
       sb.append("&related_triples_for_upload_as_json=").append(Utils.urlEncodeUTF8(this._relatedTriplesForUploadAsJSON));
     }
     // Put indicator last in case it's long (e.g. TMK) for human readability
-    sb.append("&indicator=").append(Utils.urlEncodeUTF8(this._indicatorText));
+    if (this._indicatorText != null) {
+      sb.append("&indicator=").append(Utils.urlEncodeUTF8(this._indicatorText));
+    }
     return sb.toString();
   }
 }

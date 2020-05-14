@@ -509,6 +509,38 @@ class Net {
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN;
 
+    return postThreatDescriptor(urlString, params, showURLs, dryRun);
+  }
+
+  /**
+   * Does a single POST to the threat_descriptor ID endpoint.  See also
+   * https://developers.facebook.com/docs/threat-exchange/reference/editing
+   */
+  public static boolean updateThreatDescriptor(
+    DescriptorPostParameters params,
+    boolean showURLs,
+    boolean dryRun
+  ) {
+    if (!params.validateForUpdateWithReport(System.err)) {
+      return false;
+    }
+
+    String urlString = TE_BASE_URL
+      + "/" + params.getDescriptorID()
+      + "/?access_token=" + APP_TOKEN;
+
+    return postThreatDescriptor(urlString, params, showURLs, dryRun);
+  }
+
+  /**
+   * Code-reuse method for submit and update.
+   */
+  private static boolean postThreatDescriptor(
+    String urlString,
+    DescriptorPostParameters params,
+    boolean showURLs,
+    boolean dryRun
+  ) {
     if (showURLs) {
       System.out.println();
       System.out.println("URL:");
@@ -601,4 +633,3 @@ class Net {
   }
 
 } // Net
-

@@ -20,8 +20,10 @@ THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR";
 # This is just a keystroke-saver / error-avoider for passing around
 # post-parameter field names.
 POST_PARAM_NAMES = {
-  :indicator                          => "indicator",
-  :type                               => "type",
+  :indicator                          => "indicator",    # For submit
+  :type                               => "type",         # For submit
+  :descriptor_id                      => "descriptor_id", # For update
+
   :description                        => "description",
   :share_level                        => "share_level",
   :status                             => "status",
@@ -330,8 +332,8 @@ end
 # Returns error message or nil.
 # This simply checks to see (client-side) if required fields aren't provided.
 def TENet.validatePostPararmsForSubmit(postParams)
-  unless postParams[:indicator_id].nil?
-    return "indicator_id must not be specified for submit."
+  unless postParams[POST_PARAM_NAMES[:descriptor_id]].nil?
+    return "descriptor_id must not be specified for submit."
   end
 
   requiredFields = [
@@ -360,6 +362,22 @@ def TENet.validatePostPararmsForSubmit(postParams)
 end
 
 # ----------------------------------------------------------------
+# Returns error message or nil.
+# This simply checks to see (client-side) if required fields aren't provided.
+def TENet.validatePostPararmsForUpdate(postParams)
+  if postParams[POST_PARAM_NAMES[:descriptor_id]].nil?
+    return "Descriptor ID must be specified for update."
+  end
+  unless postParams[POST_PARAM_NAMES[:indicator]].nil?
+    return "indicator must not be specified for update."
+  end
+  unless postParams[POST_PARAM_NAMES[:type]].nil?
+    return "type must not be specified for update."
+  end
+  return nil
+end
+
+# ----------------------------------------------------------------
 # Does a single POST to the threat_descriptors endpoint.  See also
 # https://developers.facebook.com/docs/threat-exchange/reference/submitting
 def TENet.submitThreatDescriptor(
@@ -375,6 +393,49 @@ def TENet.submitThreatDescriptor(
   urlString = @@TE_BASE_URL +
     "/threat_descriptors" +
     "/?access_token=" + @@APP_TOKEN
+
+  return TENet._postThreatDescriptor(
+    urlString: urlString,
+    postParams: postParams,
+    showURLs: showURLs,
+    dryRun: dryRun
+  )
+end
+
+# ----------------------------------------------------------------
+# Does a single POST to the threat_descriptor ID endpoint.  See also
+# https://developers.facebook.com/docs/threat-exchange/reference/editing
+def TENet.updateThreatDescriptor(
+  postParams:,
+  showURLs: false, # boolean,
+  dryRun: false) # boolean,
+
+  errorMessage = ThreatExchange::TENet.validatePostPararmsForUpdate(postParams)
+  unless errorMessage.nil?
+    return [errorMessage, nil, nil]
+  end
+
+  urlString = @@TE_BASE_URL +
+    "/" + postParams[POST_PARAM_NAMES[:descriptor_id]] +
+    "/?access_token=" + @@APP_TOKEN
+
+  return TENet._postThreatDescriptor(
+    urlString: urlString,
+    postParams: postParams,
+    showURLs: showURLs,
+    dryRun: dryRun
+  )
+end
+
+# ----------------------------------------------------------------
+# Code-reuse for submit and update
+def TENet._postThreatDescriptor(
+  urlString:,
+  postParams:,
+  showURLs: false, # boolean,
+  dryRun: false) # boolean,
+
+
   postParams.each do |key, value|
     urlString += "&#{key}=" + CGI.escape(value)
   end

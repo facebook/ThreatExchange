@@ -173,6 +173,7 @@ public class TETagQuery {
     private static final String INCREMENTAL = "incremental";
     private static final String PAGINATE = "paginate";
     private static final String SUBMIT = "submit";
+    private static final String UPDATE = "update";
 
     public static CommandHandler create(String verb) {
       switch(verb) {
@@ -190,6 +191,8 @@ public class TETagQuery {
         return new PaginateHandler(verb);
       case SUBMIT:
         return new SubmitHandler(verb);
+      case UPDATE:
+        return new UpdateHandler(verb);
       default:
         return null;
       }
@@ -204,6 +207,7 @@ public class TETagQuery {
       o.printf("  %s\n", INCREMENTAL);
       o.printf("  %s\n", PAGINATE);
       o.printf("  %s\n", SUBMIT);
+      o.printf("  %s\n", UPDATE);
     }
   }
 
@@ -900,6 +904,10 @@ public class TETagQuery {
   }
 
   // ----------------------------------------------------------------
+  // NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
+  // several differences. I found it simpler (albeit more verbose) to duplicate
+  // rather than do an abstract-and-override refactor.
+
   public static class SubmitHandler extends CommandHandler {
     public SubmitHandler(String verb) {
       super(verb);
@@ -942,7 +950,6 @@ public class TETagQuery {
       o.printf("-c|--confidence {...}\n");
       o.printf("-s|--status {...}\n");
       o.printf("-r|--review-status {...}\n");
-      o.printf("--precision {...}\n");
       o.printf("--first-active {...}\n");
       o.printf("--last-active {...}\n");
       o.printf("--expired-on {...}\n");
@@ -1164,5 +1171,254 @@ public class TETagQuery {
       }
     }
 
-  }
+  } // class SubmitHandler
+
+  // ----------------------------------------------------------------
+  // NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
+  // several differences. I found it simpler (albeit more verbose) to duplicate
+  // rather than do an abstract-and-override refactor.
+
+  public static class UpdateHandler extends CommandHandler {
+    public UpdateHandler(String verb) {
+      super(verb);
+    }
+
+    @Override
+    public void usage(int exitCode) {
+      PrintStream o = Utils.getPrintStream(exitCode);
+      o.printf("Usage: %s %s [options]\n", PROGNAME, _verb);
+      o.printf("Updates specified attributes on an existing threat descriptor.\n");
+      o.printf("\n");
+      o.printf("Required:\n");
+      o.printf("-i {...}               ID of descriptor to be edited. Must already exist.\n");
+      o.printf("-I                     Take descriptor IDs from standard input, one per line.\n");
+      o.printf("Exactly one of -i or -I is required.\n");
+      // xxx not for update
+      o.printf("-t|--type {...}\n");
+      o.printf("-d|--description {...}\n");
+      o.printf("-l|--share-level {...}\n");
+      o.printf("-p|--privacy-type {...}\n");
+      o.printf("-y|--severity {...}\n");
+      o.printf("\n");
+      o.printf("Optional:\n");
+      o.printf("-h|--help\n");
+      o.printf("--dry-run\n");
+      o.printf("-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be\n");
+      o.printf("                       comma-delimited app IDs. If privacy-type is\n");
+      o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
+      o.printf("                       privacy-group IDs.\n");
+      o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
+      // xxxx not for submit :(
+      o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
+      o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
+      o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");
+      o.printf("                       already exist) to relate the new descriptor to.\n");
+      o.printf("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.\n");
+      o.printf("                       Here you can uniquely the relate-to descriptors by their\n");
+      o.printf("                       owner ID / indicator-type / indicator-text, rather than\n");
+      o.printf("                       by their IDs. See README.md for an example.\n");
+      o.printf("-c|--confidence {...}\n");
+      o.printf("-s|--status {...}\n");
+      o.printf("-r|--review-status {...}\n");
+      o.printf("--first-active {...}\n");
+      o.printf("--last-active {...}\n");
+      o.printf("--expired-on {...}\n");
+      o.printf("\n");
+      o.printf("Please see the following for allowed values in all enumerated types:\n");
+      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/editing\n");
+      System.exit(exitCode);
+    }
+
+    @Override
+    public void handle(
+      String[] args,
+      int numIDsPerQuery,
+      boolean verbose,
+      boolean showURLs,
+      DescriptorFormatter descriptorFormatter
+    ) {
+      boolean dryRun = false;
+      boolean descriptorIDsFromStdin = false;
+      DescriptorPostParameters  params = new DescriptorPostParameters();
+
+      while (args.length > 0 && args[0].startsWith("-")) {
+        String option = args[0];
+        args = Arrays.copyOfRange(args, 1, args.length);
+
+        if (option.equals("-h") || option.equals("--help")) {
+          usage(0);
+
+        } else if (option.equals("--dry-run")) {
+          dryRun = true;
+
+        } else if (option.equals("-I")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          descriptorIDsFromStdin = true;
+        } else if (option.equals("-i")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setDescriptorID(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-d") || option.equals("--description")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setDescription(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-l") || option.equals("--share-level")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setShareLevel(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-p") || option.equals("--privacy-type")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setPrivacyType(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-m") || option.equals("--privacy-members")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setPrivacyMembers(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("-s") || option.equals("--status")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setStatus(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-r") || option.equals("--review-status")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setReviewStatus(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("-y") || option.equals("--severity")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setSeverity(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--related-ids-for-upload")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setRelatedIDsForUpload(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--related-triples-for-upload-as-json")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setRelatedTriplesForUploadAsJSON(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--tags")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setTagsToSet(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--add-tags")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setTagsToAdd(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--remove-tags")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setTagsToRemove(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("-c") || option.equals("--confidence")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setConfidence(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--first-active")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setFirstActive(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--last-active")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setLastActive(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--expired-on")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setExpiredOn(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else {
+          System.err.printf("%s %s: Unrecognized option \"%s\".\n",
+            PROGNAME, _verb, option);
+          usage(1);
+        }
+      }
+      if (args.length > 0) {
+        System.err.printf("Extraneous argument \"%s\"\n", args[0]);
+        usage(1);
+      }
+
+      if (descriptorIDsFromStdin) {
+        if (params.getDescriptorID() != null) {
+          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        int lno = 1;
+        try {
+          while ((line = reader.readLine()) != null) {
+            lno++;
+            // In Java, line-terminators already stripped for us
+            params.setDescriptorID(line);
+            updateSingle(params, verbose, showURLs, dryRun);
+          }
+        } catch (IOException e) {
+          System.err.printf("Couldn't read line %d of standard input.\n", lno);
+          System.exit(1);
+        }
+      } else {
+        if (params.getDescriptorID() == null) {
+          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+        updateSingle(params, verbose, showURLs, dryRun);
+      }
+    }
+
+    private void updateSingle(
+      DescriptorPostParameters params,
+      boolean verbose,
+      boolean showURLs,
+      boolean dryRun
+    ) {
+      boolean ok = Net.updateThreatDescriptor(params, showURLs, dryRun);
+      if (!ok) {
+        // Error message already printed out
+        System.exit(1);
+      }
+    }
+
+  } // class UpdateHandler
+
 }
