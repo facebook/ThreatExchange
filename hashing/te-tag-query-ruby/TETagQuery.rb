@@ -154,6 +154,7 @@ class SubcommandHandlerFactory
     'tag-to-details' => 'tag-to-details',
     'paginate'       => 'paginate',
     'submit'         => 'submit',
+    'update'         => 'update',
   }
 
   # Static method
@@ -177,6 +178,8 @@ class SubcommandHandlerFactory
       return PaginateHandler.new(verbName)
     elsif verbName == VERB_NAMES['submit']
       return SubmitHandler.new(verbName)
+    elsif verbName == VERB_NAMES['update']
+      return UpdateHandler.new(verbName)
     else
       return nil
     end
@@ -545,6 +548,10 @@ EOF
 end
 
 # ================================================================
+# NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
+# several differences. I found it simpler (albeit more verbose) to duplicate
+# rather than do an abstract-and-override refactor.
+
 class SubmitHandler < SubcommandHandler
   # ----------------------------------------------------------------
   def initialize(verbName)
@@ -578,8 +585,6 @@ Optional:
                        HAS_PRIVACY_GROUP these must be comma-delimited
                        privacy-group IDs.
 --tags {...}           Comma-delimited. Overwrites on repost.
---add-tags {...}       Comma-delimited. Adds these on repost.
---remove-tags {...}    Comma-delimited. Removes these on repost.
 --related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
                        already exist) to relate the new descriptor to.
 --related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
@@ -589,7 +594,6 @@ Optional:
 --confidence {...}
 -s|--status {...}
 -r|--review-status {...}
---precision {...}
 --first-active {...}
 --last-active {...}
 --expired-on {...}
@@ -675,13 +679,6 @@ EOF
         self.usage(1) unless args.length >= 1
         postParams[names[:tags]] = args.shift;
 
-      elsif option == '--add-tags'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:add-tags]] = args.shift;
-      elsif option == '--remove-tags'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:remove-tags]] = args.shift;
-
       elsif option == '--first-active'
         self.usage(1) unless args.length >= 1
         postParams[names[:first_active]] = args.shift;
@@ -740,11 +737,232 @@ EOF
     showURLs: false,
     dryRun: false)
 
-    errorMessage = ThreatExchange::TENet.validatePostPararms(postParams)
-    unless errorMessage.nil?
+    # TO DO: port this over from Java, pending demand for people posting TMK hashes.
+
+    # if (postParams.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
+    #   String filename = postParams.getIndicatorText();
+    #   String contents = null;
+    #   try {
+    #     contents = Utils.readTMKHashFromFile(filename, verbose);
+    #   } catch (FileNotFoundException e) {
+    #     System.err.printf("%s %s: cannot find \"%s\".\n",
+    #       PROGNAME, _verb, filename);
+    #   } catch (IOException e) {
+    #     System.err.printf("%s %s: cannot load \"%s\".\n",
+    #       PROGNAME, _verb, filename);
+    #     e.printStackTrace(System.err);
+    #   }
+    #   postParams.setIndicatorText(contents);
+    # }
+
+    validationErrorMessage, response_body, response_code = ThreatExchange::TENet::submitThreatDescriptor(
+      postParams: postParams,
+      showURLs: showURLs,
+      dryRun: dryRun)
+
+    unless validationErrorMessage.nil?
       $stderr.puts errorMessage
       exit 1
     end
+
+    puts response_body
+
+    if response_code != 200
+      exit 1
+    end
+  end # SubmitHandler.submitSingle
+end # class SubmitHandler
+
+# ================================================================
+# NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
+# several differences. I found it simpler (albeit more verbose) to duplicate
+# rather than do an abstract-and-override refactor.
+
+class UpdateHandler < SubcommandHandler
+  # ----------------------------------------------------------------
+  def initialize(verbName)
+    super(verbName)
+  end
+
+  # ----------------------------------------------------------------
+  def usage(exitCode)
+    stream =  exitCode == 0 ? $stdout : $stderr
+  output = <<-EOF
+Usage: #{$0} #{@verbName} [options]
+Updates specified attributes on an existing threat descriptor.
+
+Required:
+-i {...}               ID of descriptor to be edited. Must already exist.
+-I                     Take descriptor IDs from standard input, one per line.
+Exactly one of -i or -I is required.
+-d|--description {...}
+-l|--share-level {...}
+-p|--privacy-type {...}
+-y|--severity {...}
+
+Optional:
+-h|--help
+--dry-run
+-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be
+                       comma-delimited app IDs. If privacy-type is
+                       HAS_PRIVACY_GROUP these must be comma-delimited
+                       privacy-group IDs.
+--tags {...}           Comma-delimited. Overwrites on repost.
+--add-tags {...}       Comma-delimited. Adds these on repost.
+--remove-tags {...}    Comma-delimited. Removes these on repost.
+--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
+                       already exist) to relate the new descriptor to.
+--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
+                       Here you can uniquely the relate-to descriptors by their
+                       owner ID / indicator-type / indicator-text, rather than
+                       by their IDs. See README.md for an example.
+--confidence {...}
+-s|--status {...}
+-r|--review-status {...}
+--first-active {...}
+--last-active {...}
+--expired-on {...}
+
+Please see the following for allowed values in all enumerated types:
+https://developers.facebook.com/docs/threat-exchange/reference/editing
+
+EOF
+    stream.puts output
+
+    exit(exitCode)
+  end
+
+  # ----------------------------------------------------------------
+  def handle(args, options)
+
+    options['dryRun'] = false;
+    options['indicatorTextFromStdin'] = false;
+
+    postParams = {}
+
+    # Local keystroke-saver for this enum
+    names = ThreatExchange::TENet::POST_PARAM_NAMES
+
+    loop do
+      break if args.length == 0
+      break unless args[0][0] == '-'
+      option = args.shift
+
+      if option == '-h'
+        self.usage(0)
+      elsif option == '--help'
+        self.usage(0)
+
+      elsif option == '--dry-run'
+        options['dryRun'] = true
+
+      elsif option == '-I'
+        options['descriptorIDsFromStdin'] = true;
+      elsif option == '-i'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:descriptor_id]] = args.shift;
+
+      elsif option == '-d' || option == '--description'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:description]] = args.shift;
+
+      elsif option == '-l' || option == '--share-level'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:share_level]] = args.shift;
+      elsif option == '-p' || option == '--privacy-type'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:privacy_type]] = args.shift;
+      elsif option == '-m' || option == '--privacy-members'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:privacy_members]] = args.shift;
+
+      elsif option == '-s' || option == '--status'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:status]] = args.shift;
+      elsif option == '-r' || option == '--review-status'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:review_status]] = args.shift;
+      elsif option == '-y' || option == '--severity'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:severity]] = args.shift;
+      elsif option == '-c' || option == '--confidence'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:confidence]] = args.shift;
+
+      elsif option == '--related-ids-for-upload'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:related_ids_for_upload]] = args.shift;
+      elsif option == '--related-triples-for-upload-as-json'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:related_triples_for_upload_as_json]] = args.shift;
+
+      elsif option == '--tags'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:tags]] = args.shift;
+
+      elsif option == '--add-tags'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:add_tags]] = args.shift;
+      elsif option == '--remove-tags'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:remove_tags]] = args.shift;
+
+      elsif option == '--first-active'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:first_active]] = args.shift;
+      elsif option == '--last-active'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:last]] = args.shift;
+      elsif option == '--expired-on'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:expired_on]] = args.shift;
+
+      else
+        $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
+        exit 1
+      end
+    end
+
+    if args.length > 0
+      $stderr.puts "#{$0} #{@verbName}: extraneous argument(s) \"#{args.join(' ')}\"."
+      exit 1
+    end
+
+    if options['descriptorIDsFromStdin']
+      unless postParams[names[:descriptor_id]].nil?
+        $stderr.puts "#{$0} #{@verbName}: only one of -I and -i must be supplied."
+        exit 1
+      end
+
+      $stdin.readlines.each do |line|
+        postParams[names[:descriptor_id]] = line.chomp
+        self.updateSingle(
+          postParams: postParams,
+          verbose: options['verbose'],
+          showURLs: options['showURLs'],
+          dryRun: options['dryRun'],
+        )
+      end
+    else
+      if postParams[names[:descriptor_id]].nil?
+        $stderr.puts "#{$0} #{@verbName}: exactly one of -I and -i must be supplied."
+        exit 1
+      end
+      self.updateSingle(
+        postParams: postParams,
+        verbose: options['verbose'],
+        showURLs: options['showURLs'],
+        dryRun: options['dryRun'],
+      )
+    end
+  end # UpdateHandler.handle
+
+  # ----------------------------------------------------------------
+  def updateSingle(
+    postParams:,
+    verbose: false,
+    showURLs: false,
+    dryRun: false)
 
     # TO DO: port this over from Java, pending demand for people posting TMK hashes.
 
@@ -764,24 +982,30 @@ EOF
     #   postParams.setIndicatorText(contents);
     # }
 
-    response_body, response_code = ThreatExchange::TENet::postThreatDescriptor(
+    validationErrorMessage, response_body, response_code = ThreatExchange::TENet::updateThreatDescriptor(
       postParams: postParams,
       showURLs: showURLs,
       dryRun: dryRun)
 
-    puts response_body
-
-    if response_code != 200
+    unless validationErrorMessage.nil?
+      $stderr.puts validationErrorMessage
       exit 1
     end
-  end # SubmitHandler.submitSingle
-end # class SubmitHandler
+
+    puts response_body
+
+    if response_code != "200"
+      exit 1
+    end
+  end # UpdateHandler.updateSingle
+end # class UpdateHandler
 
 # ----------------------------------------------------------------
 # Top-down programming style, please :)
 
 begin
   MainHandler.new.handle(ARGV)
+  exit 0
 rescue Interrupt => e # Control-C handling
   exit 1
 end
