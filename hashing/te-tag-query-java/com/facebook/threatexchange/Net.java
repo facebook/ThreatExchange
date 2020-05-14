@@ -501,7 +501,7 @@ class Net {
     boolean showURLs,
     boolean dryRun
   ) {
-    if (!params.validateWithReport(System.err)) {
+    if (!params.validateForSubmitWithReport(System.err)) {
       return false;
     }
 

@@ -15,8 +15,9 @@ import java.util.stream.Stream;
  * Helper container class for posting threat descriptors to ThreatExchange.
  */
 class DescriptorPostParameters {
-  private String _indicatorText;
-  private String _indicatorType;
+  private String _indicatorText; // Required for submit
+  private String _indicatorType; // Required for submit
+  private String _indicatorID;   // Required for update
   private String _description;
   private String _shareLevel;
   private String _status;
@@ -44,6 +45,10 @@ class DescriptorPostParameters {
   }
   public DescriptorPostParameters setIndicatorType(String indicatorType) {
     this._indicatorType = indicatorType;
+    return this;
+  }
+  public DescriptorPostParameters setIndicatorID(String indicatorID) {
+    this._indicatorID = indicatorID;
     return this;
   }
   public DescriptorPostParameters setDescription(String description) {
@@ -121,6 +126,9 @@ class DescriptorPostParameters {
   public String getIndicatorType() {
     return this._indicatorType;
   }
+  public String getIndicatorID() {
+    return this._indicatorID;
+  }
   public String getDescription() {
     return this._description;
   }
@@ -173,7 +181,11 @@ class DescriptorPostParameters {
     return this._relatedTriplesForUploadAsJSON;
   }
 
-  public boolean validateWithReport(PrintStream o) {
+  public boolean validateForSubmitWithReport(PrintStream o) {
+    if (this._indicatorID != null) {
+      System.err.println("Indicator ID must not be specified for submit.\n");
+      return false;
+    }
     if (this._indicatorText == null) {
       System.err.println("Indicator text is missing.\n");
       return false;

@@ -329,7 +329,11 @@ end
 # ----------------------------------------------------------------
 # Returns error message or nil.
 # This simply checks to see (client-side) if required fields aren't provided.
-def TENet.validatePostPararms(postParams)
+def TENet.validatePostPararmsForSubmit(postParams)
+  unless postParams[:indicator_id].nil?
+    return "indicator_id must not be specified for submit."
+  end
+
   requiredFields = [
     POST_PARAM_NAMES[:indicator],
     POST_PARAM_NAMES[:type],
@@ -363,7 +367,7 @@ def TENet.submitThreatDescriptor(
   showURLs: false, # boolean,
   dryRun: false) # boolean,
 
-  errorMessage = ThreatExchange::TENet.validatePostPararms(postParams)
+  errorMessage = ThreatExchange::TENet.validatePostPararmsForSubmit(postParams)
   unless errorMessage.nil?
     return [errorMessage, nil, nil]
   end
