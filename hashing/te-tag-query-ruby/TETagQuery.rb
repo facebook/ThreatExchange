@@ -764,7 +764,7 @@ EOF
     #   postParams.setIndicatorText(contents);
     # }
 
-    response_body, response_code = ThreatExchange::TENet::postThreatDescriptor(
+    response_body, response_code = ThreatExchange::TENet::submitThreatDescriptor(
       postParams: postParams,
       showURLs: showURLs,
       dryRun: dryRun)

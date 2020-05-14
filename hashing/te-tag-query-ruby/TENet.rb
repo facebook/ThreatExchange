@@ -358,7 +358,7 @@ end
 # ----------------------------------------------------------------
 # Does a single POST to the threat_descriptors endpoint.  See also
 # https://developers.facebook.com/docs/threat-exchange/reference/submitting
-def TENet.postThreatDescriptor(
+def TENet.submitThreatDescriptor(
   postParams:,
   showURLs: false, # boolean,
   dryRun: false) # boolean,
@@ -395,7 +395,7 @@ def TENet.postThreatDescriptor(
     return [response.body, response.code]
   end
 
-end # TENet.postThreatDescriptor
+end # TENet.submitThreatDescriptor
 
 end # module TENet
 end # module ThreatExchange

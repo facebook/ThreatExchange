@@ -80,7 +80,6 @@ te-tag-query-ruby submit \
   -p HAS_WHITELIST \
   --privacy-members 1064060413755420 \
   --tags testing_ruby_post
-
 ```
 
 Post another with relation to the first one:

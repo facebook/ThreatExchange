@@ -496,11 +496,14 @@ class Net {
    * Does a single POST to the threat_descriptors endpoint.  See also
    * https://developers.facebook.com/docs/threat-exchange/reference/submitting
    */
-  public static void postThreatDescriptor(
+  public static boolean submitThreatDescriptor(
     DescriptorPostParameters params,
     boolean showURLs,
     boolean dryRun
   ) {
+    if (!params.validateWithReport(System.err)) {
+      return false;
+    }
 
     String urlString = TE_BASE_URL
       + "/threat_descriptors"
@@ -518,7 +521,7 @@ class Net {
     } catch (MalformedURLException e) {
       System.err.println("A malformed URL was constructed:");
       System.err.println(urlString);
-      System.exit(1);
+      return false;
     }
 
     HttpURLConnection connection = null;
@@ -527,7 +530,7 @@ class Net {
     } catch (IOException e) {
       System.err.println("A malformed URL was constructed:");
       System.err.println(urlString);
-      System.exit(1);
+      return false;
     }
     connection.setDoOutput(true); // since there is a POST body
 
@@ -537,7 +540,7 @@ class Net {
     } catch (ProtocolException e) {
       System.err.println("Unable to set request method to POST.");
       System.err.println(urlString);
-      System.exit(1);
+      return false;
     }
     connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
     connection.setRequestProperty("charset", "utf-8");
@@ -562,7 +565,7 @@ class Net {
         System.err.printf("POST failure.\n");
         System.err.printf("\n");
         e.printStackTrace(System.err);
-        System.exit(1);
+        return false;
       }
 
       try (InputStream response = connection.getInputStream()) {
@@ -591,9 +594,10 @@ class Net {
         System.err.println("EXCEPTION STACK TRACE:");
         e.printStackTrace(System.err);
 
-        System.exit(1);
+        return false;
       }
     }
+    return true;
   }
 
 } // Net

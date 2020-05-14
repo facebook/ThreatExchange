@@ -1141,10 +1141,6 @@ public class TETagQuery {
       boolean showURLs,
       boolean dryRun
     ) {
-      if (!params.validateWithReport(System.err)) {
-        usage(1);
-      }
-
       if (params.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
         String filename = params.getIndicatorText();
         String contents = null;
@@ -1161,7 +1157,11 @@ public class TETagQuery {
         params.setIndicatorText(contents);
       }
 
-      Net.postThreatDescriptor(params, showURLs, dryRun);
+      boolean ok = Net.submitThreatDescriptor(params, showURLs, dryRun);
+      if (!ok) {
+        // Error message already printed out
+        System.exit(1);
+      }
     }
 
   }
