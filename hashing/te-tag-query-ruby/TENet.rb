@@ -252,7 +252,7 @@ def TENet.getInfoForIDs(
   startURL = @@TE_BASE_URL +
     "/?access_token=" + @@APP_TOKEN +
     "&ids=" + CGI.escape(ids.join(',')) +
-    "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description"
+    "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description,reactions,my_reactions"
 
   if showURLs
     puts "URL:"
