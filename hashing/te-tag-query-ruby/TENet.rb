@@ -41,6 +41,9 @@ POST_PARAM_NAMES = {
   :last_active                        => "last_active",
   :related_ids_for_upload             => "related_ids_for_upload",
   :related_triples_for_upload_as_json => "related_triples_for_upload_as_json",
+  # Legacy: should have been named reactions_to_add, but isn't. :(
+  :reactions                          => "reactions",
+  :reactions_to_remove                => "reactions_to_remove",
 }
 POST_PARAM_NAMES.default_proc = -> (h, k) { raise KeyError, "POST_PARAM_NAMES[#{k}] is not defined." }
 
