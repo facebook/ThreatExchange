@@ -945,6 +945,8 @@ public class TETagQuery {
       o.printf("                       Here you can uniquely the relate-to descriptors by their\n");
       o.printf("                       owner ID / indicator-type / indicator-text, rather than\n");
       o.printf("                       by their IDs. See README.md for an example.\n");
+      o.printf("--reactions-to-add {...} Example for add/remove: INGESTED,IN_REVIEW\n");
+      o.printf("--reactions-to-remove {...}\n");
       o.printf("-c|--confidence {...}\n");
       o.printf("-s|--status {...}\n");
       o.printf("-r|--review-status {...}\n");
@@ -952,8 +954,10 @@ public class TETagQuery {
       o.printf("--last-active {...}\n");
       o.printf("--expired-on {...}\n");
       o.printf("\n");
-      o.printf("Please see the following for allowed values in all enumerated types:\n");
+      o.printf("Please see the following for allowed values in all enumerated types except reactions:\n");
       o.printf("https://developers.facebook.com/docs/threat-exchange/reference/submitting\n");
+      o.printf("Please see the following for allowed values in all enumerated types in reactions:\n");
+      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/reacting\n");
       System.exit(exitCode);
     }
 
@@ -1051,6 +1055,19 @@ public class TETagQuery {
             usage(1);
           }
           params.setRelatedTriplesForUploadAsJSON(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--reactions-to-add")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setReactionsToAdd(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--reactions-to-remove")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setReactionsToRemove(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--tags")) {
@@ -1200,6 +1217,8 @@ public class TETagQuery {
       o.printf("                       Here you can uniquely the relate-to descriptors by their\n");
       o.printf("                       owner ID / indicator-type / indicator-text, rather than\n");
       o.printf("                       by their IDs. See README.md for an example.\n");
+      o.printf("--reactions-to-add {...} Example for add/remove: INGESTED,IN_REVIEW\n");
+      o.printf("--reactions-to-remove {...}\n");
       o.printf("-c|--confidence {...}\n");
       o.printf("-s|--status {...}\n");
       o.printf("-r|--review-status {...}\n");
@@ -1207,8 +1226,10 @@ public class TETagQuery {
       o.printf("--last-active {...}\n");
       o.printf("--expired-on {...}\n");
       o.printf("\n");
-      o.printf("Please see the following for allowed values in all enumerated types:\n");
-      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/editing\n");
+      o.printf("Please see the following for allowed values in all enumerated types except reactions:\n");
+      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/submitting\n");
+      o.printf("Please see the following for allowed values in all enumerated types in reactions:\n");
+      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/reacting\n");
       System.exit(exitCode);
     }
 
@@ -1319,6 +1340,19 @@ public class TETagQuery {
             usage(1);
           }
           params.setTagsToRemove(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+
+        } else if (option.equals("--reactions-to-add")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setReactionsToAdd(args[0]);
+          args = Arrays.copyOfRange(args, 1, args.length);
+        } else if (option.equals("--reactions-to-remove")) {
+          if (args.length < 1) {
+            usage(1);
+          }
+          params.setReactionsToRemove(args[0]);
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("-c") || option.equals("--confidence")) {

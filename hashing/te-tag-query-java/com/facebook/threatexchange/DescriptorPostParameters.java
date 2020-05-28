@@ -38,6 +38,8 @@ class DescriptorPostParameters {
   private String _tagsToRemove;
   private String _relatedIDsForUpload;
   private String _relatedTriplesForUploadAsJSON;
+  private String _reactionsToAdd;
+  private String _reactionsToRemove;
 
   public DescriptorPostParameters setIndicatorText(String indicatorText) {
     this._indicatorText = indicatorText;
@@ -119,6 +121,14 @@ class DescriptorPostParameters {
     this._relatedTriplesForUploadAsJSON = relatedTriplesForUploadAsJSON;
     return this;
   }
+  public DescriptorPostParameters setReactionsToAdd(String reactionsToAdd) {
+    this._reactionsToAdd = reactionsToAdd;
+    return this;
+  }
+  public DescriptorPostParameters setReactionsToRemove(String reactionsToRemove) {
+    this._reactionsToRemove = reactionsToRemove;
+    return this;
+  }
 
   public String getIndicatorText() {
     return this._indicatorText;
@@ -179,6 +189,12 @@ class DescriptorPostParameters {
   }
   public String getRelatedTriplesForUploadAsJSON() {
     return this._relatedTriplesForUploadAsJSON;
+  }
+  public String getReactionsToAdd() {
+    return this._reactionsToAdd;
+  }
+  public String getReactionsToRemove() {
+    return this._reactionsToRemove;
   }
 
   public boolean validateForSubmitWithReport(PrintStream o) {
@@ -285,7 +301,14 @@ class DescriptorPostParameters {
       sb.append("&related_ids_for_upload=").append(Utils.urlEncodeUTF8(this._relatedIDsForUpload));
     }
     if (this._relatedTriplesForUploadAsJSON != null) {
-      sb.append("&related_triples_for_upload_as_json=").append(Utils.urlEncodeUTF8(this._relatedTriplesForUploadAsJSON));
+      sb.append("&related_triples_for_upload_as_json=")
+        .append(Utils.urlEncodeUTF8(this._relatedTriplesForUploadAsJSON));
+    }
+    if (this._reactionsToAdd != null) {
+      sb.append("&reactions=").append(Utils.urlEncodeUTF8(this._reactionsToAdd));
+    }
+    if (this._reactionsToRemove != null) {
+      sb.append("&reactions_to_remove=").append(Utils.urlEncodeUTF8(this._reactionsToRemove));
     }
     // Put indicator last in case it's long (e.g. TMK) for human readability
     if (this._indicatorText != null) {
