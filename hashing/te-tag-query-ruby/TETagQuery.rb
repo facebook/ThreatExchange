@@ -585,12 +585,17 @@ Optional:
                        HAS_PRIVACY_GROUP these must be comma-delimited
                        privacy-group IDs.
 --tags {...}           Comma-delimited. Overwrites on repost.
+
 --related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
                        already exist) to relate the new descriptor to.
 --related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
                        Here you can uniquely the relate-to descriptors by their
                        owner ID / indicator-type / indicator-text, rather than
                        by their IDs. See README.md for an example.
+
+--reactions-to-add {...}    Example for add/remove: INGESTED,IN_REVIEW
+--reactions-to-remove {...}
+
 --confidence {...}
 -s|--status {...}
 -r|--review-status {...}
@@ -598,8 +603,13 @@ Optional:
 --last-active {...}
 --expired-on {...}
 
-Please see the following for allowed values in all enumerated types:
+Please see the following for allowed values in all enumerated types except reactions:
 https://developers.facebook.com/docs/threat-exchange/reference/submitting
+
+Please see the following for enumerated types in reactions:
+See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
+
+xxx reactions too
 
 EOF
     stream.puts output
@@ -674,6 +684,13 @@ EOF
       elsif option == '--related-triples-for-upload-as-json'
         self.usage(1) unless args.length >= 1
         postParams[names[:related_triples_for_upload_as_json]] = args.shift;
+
+      elsif option == '--reactions-to-add'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:reactions]] = args.shift;
+      elsif option == '--reactions-to-remove'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:reactions_to_remove]] = args.shift;
 
       elsif option == '--tags'
         self.usage(1) unless args.length >= 1
@@ -810,12 +827,14 @@ Optional:
 --tags {...}           Comma-delimited. Overwrites on repost.
 --add-tags {...}       Comma-delimited. Adds these on repost.
 --remove-tags {...}    Comma-delimited. Removes these on repost.
+
 --related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
                        already exist) to relate the new descriptor to.
 --related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
                        Here you can uniquely the relate-to descriptors by their
                        owner ID / indicator-type / indicator-text, rather than
                        by their IDs. See README.md for an example.
+
 --confidence {...}
 -s|--status {...}
 -r|--review-status {...}
@@ -825,6 +844,9 @@ Optional:
 
 Please see the following for allowed values in all enumerated types:
 https://developers.facebook.com/docs/threat-exchange/reference/editing
+
+Please see the following for enumerated types in reactions:
+See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
 
 EOF
     stream.puts output
@@ -895,6 +917,13 @@ EOF
       elsif option == '--related-triples-for-upload-as-json'
         self.usage(1) unless args.length >= 1
         postParams[names[:related_triples_for_upload_as_json]] = args.shift;
+
+      elsif option == '--reactions-to-add'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:reactions]] = args.shift;
+      elsif option == '--reactions-to-remove'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:reactions_to_remove]] = args.shift;
 
       elsif option == '--tags'
         self.usage(1) unless args.length >= 1

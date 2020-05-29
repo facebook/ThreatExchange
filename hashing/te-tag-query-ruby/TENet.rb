@@ -41,6 +41,9 @@ POST_PARAM_NAMES = {
   :last_active                        => "last_active",
   :related_ids_for_upload             => "related_ids_for_upload",
   :related_triples_for_upload_as_json => "related_triples_for_upload_as_json",
+  # Legacy: should have been named reactions_to_add, but isn't. :(
+  :reactions                          => "reactions",
+  :reactions_to_remove                => "reactions_to_remove",
 }
 POST_PARAM_NAMES.default_proc = -> (h, k) { raise KeyError, "POST_PARAM_NAMES[#{k}] is not defined." }
 
@@ -252,7 +255,7 @@ def TENet.getInfoForIDs(
   startURL = @@TE_BASE_URL +
     "/?access_token=" + @@APP_TOKEN +
     "&ids=" + CGI.escape(ids.join(',')) +
-    "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description"
+    "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description,reactions,my_reactions"
 
   if showURLs
     puts "URL:"
