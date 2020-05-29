@@ -608,9 +608,6 @@ https://developers.facebook.com/docs/threat-exchange/reference/submitting
 
 Please see the following for enumerated types in reactions:
 See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
-
-xxx reactions too
-
 EOF
     stream.puts output
 
