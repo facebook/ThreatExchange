@@ -1,0 +1,9 @@
+#!/bin/bash
+
+ourdir=`dirname $0`
+
+# Set up the Python path so this Python program can be invoked from anywhere.
+
+# Must be python3
+#xxx python -I $ourdir $ourdir/TETagQuery.py "$@"
+python3 $ourdir/TETagQuery.py "$@"

@@ -451,7 +451,7 @@ def TENet._postThreatDescriptor(
 
   if (dryRun)
     puts "Not doing POST since --dry-run."
-    return ['', 0]
+    return [nil, '', nil]
   else
     header = {
       'Content-Type':  'text/json',
