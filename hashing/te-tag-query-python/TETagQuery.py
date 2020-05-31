@@ -533,26 +533,48 @@ the next-page URL and repeats until there are no more pages.
 
 
 # ================================================================
-# NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
-# several differences. I found it simpler (albeit more verbose) to duplicate
-# rather than do an abstract-and-override refactor.
+# Some code-reuse for all subcommand handlers that do POSTs.
+class AbstractPostSubcommandHandler(SubcommandHandler):
+  # These allow us to customize the mostly-overlapping usage() method
+  POSTER_NAME_SUBMIT = 'submit'
+  POSTER_NAME_UPDATE = 'update'
+  POSTER_NAME_COPY = 'copy'
 
-class SubmitHandler(SubcommandHandler):
   def __init__(self, progName, verbName):
-    super(__class__, self).__init__(progName, verbName)
+    self.progName = progName
+    self.verbName = verbName
 
-  def usage(self, exitCode):
+
+  # ----------------------------------------------------------------
+  def commonPosterUsage(self, exitCode, posterName):
     stream =  sys.stdout if exitCode == 0 else sys.stderr
-    output = """Usage: %s %s [options]
+
+    output1 = """Usage: %s %s [options]
+""" % (self.progName, self.verbName)
+
+    output2 = None
+    if posterName == self.POSTER_NAME_SUBMIT:
+      output2="""
 Uploads a threat descriptor with the specified values.
 On repost (with same indicator text/type and app ID), updates changed fields.
 
 Required:
--i|--indicator {...}   If indicator type is HASH_TMK this must be the
-                       path to a .tmk file, else the indicator text.
+-i|--indicator {...}   The indicator text: hash/URL/etc.
 -I                     Take indicator text from standard input, one per line.
 Exactly one of -i or -I is required.
 -t|--type {...}
+"""
+    if posterName == self.POSTER_NAME_UPDATE:
+      output2="""
+Updates specified attributes on an existing threat descriptor.
+
+Required:
+-i {...}               ID of descriptor to be edited. Must already exist.
+-I                     Take descriptor IDs from standard input, one per line.
+Exactly one of -i or -I is required.
+"""
+
+    output3="""
 -d|--description {...}
 -l|--share-level {...}
 -p|--privacy-type {...}
@@ -566,7 +588,16 @@ Optional:
                        HAS_PRIVACY_GROUP these must be comma-delimited
                        privacy-group IDs.
 --tags {...}           Comma-delimited. Overwrites on repost.
+"""
 
+    output4=None
+    if posterName == self.POSTER_NAME_UPATE:
+      output4="""
+--add-tags {...}       Comma-delimited. Adds these on repost.
+--remove-tags {...}    Comma-delimited. Removes these on repost.
+"""
+
+    output5="""
 --related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
                        already exist) to relate the new descriptor to.
 --related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
@@ -587,53 +618,46 @@ Optional:
 Please see the following for allowed values in all enumerated types except reactions:
 https://developers.facebook.com/docs/threat-exchange/reference/submitting
 
+Please also see:
+https://developers.facebook.com/docs/threat-exchange/reference/editing
+
 Please see the following for enumerated types in reactions:
 See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
+"""
 
-""" % (self.progName, self.verbName)
-    stream.write(output + "\n")
+    stream.write(output1 + "\n")
+    if output2 != None:
+      stream.write(output2 + "\n")
+    stream.write(output3 + "\n")
+    if output4 != None:
+      stream.write(output4 + "\n")
+    stream.write(output5 + "\n")
+
     sys.exit(exitCode)
 
 
-  def handle(self, args, options):
-    options['dryRun'] = False;
-    options['indicatorTextFromStdin'] = False;
+  # ----------------------------------------------------------------
+  # For CLI-parsing
+  #
+  # Input:
+  # * option such as '-d'
+  # * remaining args as string-list
+  # * postParams dict
+  #
+  # Output:
+  # * boolean whether the option was recognized
+  # * args may be shifted if the option was recognized and successfully handled
+  #
+  # Modified by reference:
+  # * postParams dict modified by reference if the option was recognized and
+  #   successfully handled
+  def commonPosterOptionCheck(self, option, args, postParams):
+      # Local keystroke-saver for this enum
+      names = TE.Net.POST_PARAM_NAMES
 
-    postParams = {}
-    # Local keystroke-saver for this enum
-    names = TE.Net.POST_PARAM_NAMES
+      handled = True
 
-    while True:
-      if len(args) == 0:
-        break
-      if args[0][0] != '-':
-        break
-      option = args[0]
-      args = args[1:]
-
-      if option == '-h':
-        self.usage(0)
-      elif option == '--help':
-        self.usage(0)
-
-      elif option == '--dry-run':
-        options['dryRun'] = True
-
-      elif option == '-I':
-        options['indicatorTextFromStdin'] = True;
-      elif option == '-i' or option == '--indicator':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['indicator']] = args[0]
-        args = args[1:]
-
-      elif option == '-t' or option == '--type':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['type']] = args[0]
-        args = args[1:]
-
-      elif option == '-d' or option == '--description':
+      if option == '-d' or option == '--description':
         if len(args) < 1:
           self.usage(1)
         postParams[names['description']] = args[0]
@@ -698,12 +722,6 @@ See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
         postParams[names['reactions_to_remove']] = args[0]
         args = args[1:]
 
-      elif option == '--tags':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['tags']] = args[0]
-        args = args[1:]
-
       elif option == '--first-active':
         if len(args) < 1:
           self.usage(1)
@@ -721,8 +739,69 @@ See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
         args = args[1:]
 
       else:
-        eprint("%s %s: unrecognized  option %s" % (self.progName, self.verbName, option))
-        sys.exit(1)
+        handled = False
+
+      return [handled, args]
+
+
+# ================================================================
+class SubmitHandler(AbstractPostSubcommandHandler):
+  def __init__(self, progName, verbName):
+    super(__class__, self).__init__(progName, verbName)
+
+  def usage(self, exitCode):
+    self.commonPosterUsage(exitCode, self.POSTER_NAME_SUBMIT)
+
+
+  def handle(self, args, options):
+    options['dryRun'] = False;
+    options['indicatorTextFromStdin'] = False;
+
+    postParams = {}
+    # Local keystroke-saver for this enum
+    names = TE.Net.POST_PARAM_NAMES
+
+    while True:
+      if len(args) == 0:
+        break
+      if args[0][0] != '-':
+        break
+      option = args[0]
+      args = args[1:]
+
+      if option == '-h':
+        self.usage(0)
+      elif option == '--help':
+        self.usage(0)
+
+      elif option == '--dry-run':
+        options['dryRun'] = True
+
+      elif option == '-I':
+        options['indicatorTextFromStdin'] = True;
+      elif option == '-i' or option == '--indicator':
+        if len(args) < 1:
+          self.usage(1)
+        postParams[names['indicator']] = args[0]
+        args = args[1:]
+
+      elif option == '-t' or option == '--type':
+        if len(args) < 1:
+          self.usage(1)
+        postParams[names['type']] = args[0]
+        args = args[1:]
+
+      elif option == '--tags':
+        if len(args) < 1:
+          self.usage(1)
+        postParams[names['tags']] = args[0]
+        args = args[1:]
+
+      else:
+        handled, args = self.commonPosterOptionCheck(option, args, postParams)
+        if not handled:
+          eprint("%s %s: unrecognized  option %s" % (self.progName, self.verbName, option))
+          sys.exit(1)
 
     if len(args) > 0:
       eprint("%s %s: extraneous argument(s) \"%s\"" %
@@ -775,64 +854,14 @@ See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
 
     print(json.dumps(responseBody))
 
-# ================================================================
-# NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
-# several differences. I found it simpler (albeit more verbose) to duplicate
-# rather than do an abstract-and-override refactor.
 
-class UpdateHandler(SubcommandHandler):
+# ================================================================
+class UpdateHandler(AbstractPostSubcommandHandler):
   def __init__(self, progName, verbName):
     super(__class__, self).__init__(progName, verbName)
 
-
-  # ----------------------------------------------------------------
   def usage(self, exitCode):
-    stream =  sys.stdout if exitCode == 0 else sys.stderr
-    output = """Usage: %s %s [options]
-Updates specified attributes on an existing threat descriptor.
-
-Required:
--i {...}               ID of descriptor to be edited. Must already exist.
--I                     Take descriptor IDs from standard input, one per line.
-Exactly one of -i or -I is required.
--d|--description {...}
--l|--share-level {...}
--p|--privacy-type {...}
--y|--severity {...}
-
-Optional:
--h|--help
---dry-run
--m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be
-                       comma-delimited app IDs. If privacy-type is
-                       HAS_PRIVACY_GROUP these must be comma-delimited
-                       privacy-group IDs.
---tags {...}           Comma-delimited. Overwrites on repost.
---add-tags {...}       Comma-delimited. Adds these on repost.
---remove-tags {...}    Comma-delimited. Removes these on repost.
-
---related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
-                       already exist) to relate the new descriptor to.
---related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
-                       Here you can uniquely the relate-to descriptors by their
-                       owner ID / indicator-type / indicator-text, rather than
-                       by their IDs. See README.md for an example.
-
---confidence {...}
--s|--status {...}
--r|--review-status {...}
---first-active {...}
---last-active {...}
---expired-on {...}
-
-Please see the following for allowed values in all enumerated types:
-https://developers.facebook.com/docs/threat-exchange/reference/editing
-
-Please see the following for enumerated types in reactions:
-See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
-""" % (self.progName, self.verbName)
-    stream.write(output + "\n")
-    sys.exit(exitCode)
+    self.commonPosterUsage(exitCode, self.POSTER_NAME_UPDATE)
 
 
   # ----------------------------------------------------------------
@@ -870,77 +899,11 @@ See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
         postParams[names['descriptor_id']] = args[0]
         args = args[1:]
 
-      elif option == '-d' or option == '--description':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['description']] = args[0]
-        args = args[1:]
-
-      elif option == '-l' or option == '--share-level':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['share_level']] = args[0]
-        args = args[1:]
-      elif option == '-p' or option == '--privacy-type':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['privacy_type']] = args[0]
-        args = args[1:]
-      elif option == '-m' or option == '--privacy-members':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['privacy_members']] = args[0]
-        args = args[1:]
-
-      elif option == '-s' or option == '--status':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['status']] = args[0]
-        args = args[1:]
-      elif option == '-r' or option == '--review-status':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['review_status']] = args[0]
-        args = args[1:]
-      elif option == '-y' or option == '--severity':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['severity']] = args[0]
-        args = args[1:]
-      elif option == '-c' or option == '--confidence':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['confidence']] = args[0]
-        args = args[1:]
-
-      elif option == '--related-ids-for-upload':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['related_ids_for_upload']] = args[0]
-        args = args[1:]
-      elif option == '--related-triples-for-upload-as-json':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['related_triples_for_upload_as_json']] = args[0]
-        args = args[1:]
-
-      elif option == '--reactions-to-add':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['reactions']] = args[0]
-        args = args[1:]
-      elif option == '--reactions-to-remove':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['reactions_to_remove']] = args[0]
-        args = args[1:]
-
       elif option == '--tags':
         if len(args) < 1:
           self.usage(1)
         postParams[names['tags']] = args[0]
         args = args[1:]
-
       elif option == '--add-tags':
         if len(args) < 1:
           self.usage(1)
@@ -952,26 +915,11 @@ See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
         postParams[names['remove_tags']] = args[0]
         args = args[1:]
 
-      elif option == '--first-active':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['first_active']] = args[0]
-        args = args[1:]
-      elif option == '--last-active':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['last']] = args[0]
-        args = args[1:]
-      elif option == '--expired-on':
-        if len(args) < 1:
-          self.usage(1)
-        postParams[names['expired_on']] = args[0]
-        args = args[1:]
-
       else:
-        eprint("%s %s: unrecognized  option %s" %
-          (self.progName, self.verbName, option))
-        sys.exit(1)
+        handled, args = self.commonPosterOptionCheck(option, args, postParams)
+        if not handled:
+          eprint("%s %s: unrecognized  option %s" % (self.progName, self.verbName, option))
+          sys.exit(1)
 
     if len(args) > 0:
       eprint("%s %s: extraneous argument(s) \"%s\"" %
