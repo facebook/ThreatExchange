@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import json
+import copy
 
 # ================================================================
 # HTTP-wrapper methods
@@ -246,7 +247,7 @@ class Net:
       if verbose:
         print(json.dumps(descriptor))
 
-      tags = descriptor['tags']
+      tags = descriptor.get('tags', None)
       if tags is None:
         tags = []
       else:
@@ -307,6 +308,15 @@ class Net:
       return "Type must not be specified for update."
     return None
 
+  # ----------------------------------------------------------------
+  # Returns error message or None.
+  # This simply checks to see (client-side) if required fields aren't provided.
+  @classmethod
+  def validatePostPararmsForCopy(self, postParams):
+    if postParams.get(self.POST_PARAM_NAMES['descriptor_id']) == None:
+      return "Source-descriptor ID must be specified for update."
+    return None
+
 
   # ----------------------------------------------------------------
   # Does a single POST to the threat_descriptors endpoint.  See also
@@ -338,13 +348,62 @@ class Net:
 
     return self._postThreatDescriptor(url, postParams, showURLs, dryRun)
 
+  # ----------------------------------------------------------------
+  # xxx
+  @classmethod
+  def copyThreatDescriptor(self, postParams, showURLs, dryRun):
+    errorMessage = self.validatePostPararmsForCopy(postParams)
+    if errorMessage != None:
+      return [errorMessage, None, None]
+
+    # Get source descriptor
+    sourceID = postParams['descriptor_id']
+    del postParams['descriptor_id']
+    sourceDescriptor = self.getInfoForIDs([sourceID], showURLs=showURLs)
+    sourceDescriptor = sourceDescriptor[0]
+    # xxx check for non-null/whatever ... try/catch maybe ...
+
+    # Mutate necessary fields
+    # xxx transmogrify -- raw_indicator -> indicator -- what else?
+    newDescriptor = copy.deepcopy(sourceDescriptor)
+    newDescriptor['indicator'] = sourceDescriptor['raw_indicator']
+    del newDescriptor['raw_indicator']
+    if 'tags' in newDescriptor and newDescriptor['tags'] is None:
+      del newDescriptor['tags']
+
+
+    # Take the source-descriptor values and overwrite any post-params fields
+    # supplied by the caller. Note: Python's dict-update method keeps the old
+    # value for a given field name when both old and new are present so we
+    # invoke it seemingly 'backward'.
+    #
+    # Example:
+    # * x = {'a': 1, 'b': 2, 'c': 3}
+    # * y = {'a': 1, 'b': 9, 'd': 12}
+    # * After y.update(x) then x is unchanged and y is
+    #       {'a': 1, 'b': 2, 'd': 12, 'c': 3}
+    #
+    # This means we want newDescriptor.update(postParams)
+    newDescriptor.update(postParams)
+
+    # Get rid of fields like last_upated from the source descriptor which
+    # aren't valid for post
+    postParams = {}
+    for key, value in newDescriptor.items():
+      if self.POST_PARAM_NAMES.get(key) != None:
+        postParams[key] = value
+
+    # xxx privacy_members -- underdiff
+
+    return self.submitThreatDescriptor(postParams, showURLs, dryRun)
+
 
   # ----------------------------------------------------------------
   # Code-reuse for submit and update
   @classmethod
   def _postThreatDescriptor(self, url, postParams, showURLs, dryRun):
     for key, value in postParams.items():
-      url += ("&%s=%s" % (key, urllib.parse.quote(value)))
+      url += ("&%s=%s" % (key, urllib.parse.quote(str(value))))
     if showURLs:
       print()
       print("URL:")
@@ -377,6 +436,7 @@ class Net:
 
       return [None, None, responseBody]
 
-
+    # xxx code ...
     except urllib.error.HTTPError as e:
-      return [None, e, None]
+      responseBody = json.loads(e.read().decode("utf-8"))
+      return [None, e, responseBody]

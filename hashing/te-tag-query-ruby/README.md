@@ -108,6 +108,66 @@ te-tag-query-ruby submit \
   --related-triples-for-upload-as-json '[{"owner_app_id":494491891138576,"td_indicator_type":"HASH_SHA1","td_raw_indicator":"dabbad00f00dfeed5ca1ab1ebeefca11ab1ec10e"}]'
 ```
 
+Make copies of a set of descriptors, e.g. from a data-sharing partner:
+
+```
+$ jq '.id | tonumber' partner-data.json
+1548810399019426
+1638880316185816
+1934838869863501
+1508037889310099
+1560856918869301
+1590064801887298
+1661005877388540
+1670668732978808
+1788683904488807
+1811154288888224
+```
+
+Here you copy all descriptor data from the query output, only modifying your own values.
+Note, however, that for the present you must explicitly set `--privacy-members`.
+
+```
+$ jq '.id | tonumber' partner-data.json \
+| te-tag-query-ruby copy -N \
+  --description 'our copies' \
+  --privacy-type HAS_PRIVACY_GROUP --privacy-members 781588512307315
+{"success":true,"id":"3216884688390703"}
+{"success":true,"id":"3039118856170891"}
+{"success":true,"id":"3049939888083721"}
+{"success":true,"id":"3180176808832725"}
+{"success":true,"id":"3280047872888160"}
+{"success":true,"id":"3415103841888795"}
+{"success":true,"id":"2912237555558894"}
+{"success":true,"id":"4163069720400887"}
+{"success":true,"id":"3080705925329880"}
+{"success":true,"id":"3046896738736542"}
+```
+
+```
+$ te-tag-query-ruby ids-to-details 3046896738736542 | jq .
+{
+  "raw_indicator": "c7dfd847207cbd54a8bb292525fc111d",
+  "type": "HASH_MD5",
+  "added_on": "2020-06-03T01:38:01+0000",
+  "last_updated": "2020-06-03T01:38:02+0000",
+  "confidence": 100,
+  "owner": {
+    "id": "494491891138576",
+    "email": "threatexchange@fb.com",
+    "name": "Media Hash Sharing RF Test"
+  },
+  "privacy_type": "HAS_PRIVACY_GROUP",
+  "review_status": "REVIEWED_AUTOMATICALLY",
+  "status": "MALICIOUS",
+  "severity": "WARNING",
+  "share_level": "AMBER",
+  "description": "our copies",
+  "id": "3046896738736542",
+  "tags": []
+}
+```
+
 # Bare-curl notes
 
 As noted at the top of this document, the `TETagQuery` program is intended to be a reference design -- for you to use as-is, or to help you write tooling in other languages.

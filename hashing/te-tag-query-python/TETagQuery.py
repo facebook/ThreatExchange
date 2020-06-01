@@ -160,6 +160,7 @@ class SubcommandHandlerFactory:
     'paginate'       : 'paginate',
     'submit'         : 'submit',
     'update'         : 'update',
+    'copy'           : 'copy',
   }
 
   # Static method
@@ -185,6 +186,8 @@ class SubcommandHandlerFactory:
       return SubmitHandler(progName, verbName)
     elif verbName == self.VERB_NAMES['update']:
       return UpdateHandler(progName, verbName)
+    elif verbName == self.VERB_NAMES['copy']:
+      return CopyHandler(progName, verbName)
     else:
       return None
 
@@ -569,9 +572,9 @@ Exactly one of -i or -I is required.
 Updates specified attributes on an existing threat descriptor.
 
 Required:
--i {...}               ID of descriptor to be edited. Must already exist.
--I                     Take descriptor IDs from standard input, one per line.
-Exactly one of -i or -I is required.
+-n {...}               ID of descriptor to be edited. Must already exist.
+-N                     Take descriptor IDs from standard input, one per line.
+Exactly one of -n or -N is required.
 """
 
     output3="""
@@ -591,7 +594,7 @@ Optional:
 """
 
     output4=None
-    if posterName == self.POSTER_NAME_UPATE:
+    if posterName == self.POSTER_NAME_UPDATE:
       output4="""
 --add-tags {...}       Comma-delimited. Adds these on repost.
 --remove-tags {...}    Comma-delimited. Removes these on repost.
@@ -850,6 +853,7 @@ class SubmitHandler(AbstractPostSubcommandHandler):
 
     if serverSideError != None:
       eprint(str(serverSideError))
+      print(json.dumps(responseBody))
       sys.exit(1)
 
     print(json.dumps(responseBody))
@@ -891,9 +895,9 @@ class UpdateHandler(AbstractPostSubcommandHandler):
       elif option == '--dry-run':
         options['dryRun'] = True
 
-      elif option == '-I':
+      elif option == '-N':
         options['descriptorIDsFromStdin'] = True;
-      elif option == '-i':
+      elif option == '-n':
         if len(args) < 1:
           self.usage(1)
         postParams[names['descriptor_id']] = args[0]
@@ -928,7 +932,7 @@ class UpdateHandler(AbstractPostSubcommandHandler):
 
     if options['descriptorIDsFromStdin']:
       if postParams.get(names['descriptor_id'], None) != None:
-        eprint("%s %s: only one of -I and -i must be supplied." %
+        eprint("%s %s: only one of -N and -n must be supplied." %
           (self.progName, self.verbName))
         sys.exit(1)
       while True:
@@ -946,7 +950,7 @@ class UpdateHandler(AbstractPostSubcommandHandler):
         )
     else:
       if postParams.get(names['descriptor_id'], None) == None:
-        eprint("%s %s: only one of -I and -i must be supplied." %
+        eprint("%s %s: only one of -N and -n must be supplied." %
           (self.progName, self.verbName))
         sys.exit(1)
       self.updateSingle(
@@ -967,6 +971,126 @@ class UpdateHandler(AbstractPostSubcommandHandler):
 
     if serverSideError != None:
       eprint(str(serverSideError))
+      print(json.dumps(responseBody))
+      sys.exit(1)
+
+    print(json.dumps(responseBody))
+
+# ================================================================
+class CopyHandler(AbstractPostSubcommandHandler):
+  def __init__(self, progName, verbName):
+    super(__class__, self).__init__(progName, verbName)
+
+  def usage(self, exitCode):
+    self.commonPosterUsage(exitCode, self.POSTER_NAME_COPY)
+
+
+  # ----------------------------------------------------------------
+  def handle(self, args, options):
+
+    options['dryRun'] = False;
+    options['descriptorIDsFromStdin'] = False;
+
+    postParams = {}
+
+    # Local keystroke-saver for this enum
+    names = TE.Net.POST_PARAM_NAMES
+
+    while True:
+      if len(args) == 0:
+        break
+      if args[0][0] != '-':
+        break
+      option = args[0]
+      args = args[1:]
+
+      if option == '-h':
+        self.usage(0)
+      elif option == '--help':
+        self.usage(0)
+
+      elif option == '--dry-run':
+        options['dryRun'] = True
+
+      elif option == '-N':
+        options['descriptorIDsFromStdin'] = True;
+      elif option == '-n':
+        if len(args) < 1:
+          self.usage(1)
+        postParams[names['descriptor_id']] = args[0]
+        args = args[1:]
+
+      elif option == '-i' or option == '--indicator':
+        if len(args) < 1:
+          self.usage(1)
+        postParams[names['indicator']] = args[0]
+        args = args[1:]
+
+      elif option == '-t' or option == '--type':
+        if len(args) < 1:
+          self.usage(1)
+        postParams[names['type']] = args[0]
+        args = args[1:]
+
+      elif option == '--tags':
+        if len(args) < 1:
+          self.usage(1)
+        postParams[names['tags']] = args[0]
+        args = args[1:]
+
+      else:
+        handled, args = self.commonPosterOptionCheck(option, args, postParams)
+        if not handled:
+          eprint("%s %s: unrecognized  option %s" % (self.progName, self.verbName, option))
+          sys.exit(1)
+
+    if len(args) > 0:
+      eprint("%s %s: extraneous argument(s) \"%s\"" %
+        (self.progName, self.verbName, ' '.join(args)))
+      sys.exit(1)
+
+    if options['descriptorIDsFromStdin']:
+      if postParams.get(names['descriptor_id'], None) != None:
+        eprint("%s %s: only one of -N and -n must be supplied." %
+          (self.progName, self.verbName))
+        sys.exit(1)
+      while True:
+        # Python line-reader returns the trailing newlines so
+        # we need to right-strip the lines
+        line = sys.stdin.readline()
+        if line == '':
+          break
+        postParams[names['descriptor_id']] = line.rstrip()
+        self.copySingle(
+          postParams,
+          options['verbose'],
+          options['showURLs'],
+          options['dryRun'],
+        )
+    else:
+      if postParams.get(names['descriptor_id'], None) == None:
+        eprint("%s %s: only one of -N and -n must be supplied." %
+          (self.progName, self.verbName))
+        sys.exit(1)
+      self.copySingle(
+        postParams,
+        options['verbose'],
+        options['showURLs'],
+        options['dryRun'],
+      )
+
+  # ----------------------------------------------------------------
+  def copySingle(self, postParams, verbose, showURLs, dryRun):
+    validationErrorMessage, serverSideError, responseBody = TE.Net.copyThreatDescriptor(
+      postParams, showURLs, dryRun)
+
+    if validationErrorMessage != None:
+      eprint(validationErrorMessage)
+      sys.exit(1)
+
+    if serverSideError != None:
+      eprint(str(serverSideError))
+      print(json.dumps(responseBody))
       sys.exit(1)
 
     print(json.dumps(responseBody))

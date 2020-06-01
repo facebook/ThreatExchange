@@ -155,6 +155,7 @@ class SubcommandHandlerFactory
     'paginate'       => 'paginate',
     'submit'         => 'submit',
     'update'         => 'update',
+    'copy'           => 'copy',
   }
 
   # Static method
@@ -180,6 +181,8 @@ class SubcommandHandlerFactory
       return SubmitHandler.new(verbName)
     elsif verbName == VERB_NAMES['update']
       return UpdateHandler.new(verbName)
+    elsif verbName == VERB_NAMES['copy']
+      return CopyHandler.new(verbName)
     else
       return nil
     end
@@ -596,9 +599,9 @@ EOF2s
 Updates specified attributes on an existing threat descriptor.
 
 Required:
--i {...}               ID of descriptor to be edited. Must already exist.
--I                     Take descriptor IDs from standard input, one per line.
-Exactly one of -i or -I is required.
+-n {...}               ID of descriptor to be edited. Must already exist.
+-N                     Take descriptor IDs from standard input, one per line.
+Exactly one of -n or -N is required.
 EOF2u
     end
 
@@ -883,7 +886,7 @@ class UpdateHandler < AbstractPostSubcommandHandler
   def handle(args, options)
 
     options['dryRun'] = false;
-    options['indicatorTextFromStdin'] = false;
+    options['descriptorIDsFromStdin'] = false;
 
     postParams = {}
 
@@ -903,9 +906,9 @@ class UpdateHandler < AbstractPostSubcommandHandler
       elsif option == '--dry-run'
         options['dryRun'] = true
 
-      elsif option == '-I'
+      elsif option == '-N'
         options['descriptorIDsFromStdin'] = true;
-      elsif option == '-i'
+      elsif option == '-n'
         self.usage(1) unless args.length >= 1
         postParams[names[:descriptor_id]] = args.shift;
 
@@ -935,7 +938,7 @@ class UpdateHandler < AbstractPostSubcommandHandler
 
     if options['descriptorIDsFromStdin']
       unless postParams[names[:descriptor_id]].nil?
-        $stderr.puts "#{$0} #{@verbName}: only one of -I and -i must be supplied."
+        $stderr.puts "#{$0} #{@verbName}: only one of -N and -n must be supplied."
         exit 1
       end
 
@@ -950,7 +953,7 @@ class UpdateHandler < AbstractPostSubcommandHandler
       end
     else
       if postParams[names[:descriptor_id]].nil?
-        $stderr.puts "#{$0} #{@verbName}: exactly one of -I and -i must be supplied."
+        $stderr.puts "#{$0} #{@verbName}: exactly one of -N and -n must be supplied."
         exit 1
       end
       self.updateSingle(
@@ -986,6 +989,128 @@ class UpdateHandler < AbstractPostSubcommandHandler
     end
   end # UpdateHandler.updateSingle
 end # class UpdateHandler
+
+# ----------------------------------------------------------------
+class CopyHandler < AbstractPostSubcommandHandler
+  # ----------------------------------------------------------------
+  def initialize(verbName)
+    super(verbName)
+  end
+
+  # ----------------------------------------------------------------
+  def usage(exitCode)
+    self.commonPosterUsage(exitCode, POSTER_NAME_COPY)
+  end
+
+  # ----------------------------------------------------------------
+  def handle(args, options)
+
+    options['dryRun'] = false;
+    options['descriptorIDsFromStdin'] = false;
+
+    postParams = {}
+
+    # Local keystroke-saver for this enum
+    names = ThreatExchange::TENet::POST_PARAM_NAMES
+
+    loop do
+      break if args.length == 0
+      break unless args[0][0] == '-'
+      option = args.shift
+
+      if option == '-h'
+        self.usage(0)
+      elsif option == '--help'
+        self.usage(0)
+
+      elsif option == '--dry-run'
+        options['dryRun'] = true
+
+      elsif option == '-N'
+        options['descriptorIDsFromStdin'] = true;
+      elsif option == '-n'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:descriptor_id]] = args.shift;
+
+      elsif option == '-i' || option == '--indicator'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:indicator]] = args.shift;
+
+      elsif option == '-t' || option == '--type'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:type]] = args.shift;
+
+      elsif option == '--tags'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:tags]] = args.shift;
+
+      else
+        handled, args = self.commonPosterOptionCheck(option, args, postParams)
+        if not handled
+          $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
+          exit 1
+        end
+      end
+    end
+
+    if args.length > 0
+      $stderr.puts "#{$0} #{@verbName}: extraneous argument(s) \"#{args.join(' ')}\"."
+      exit 1
+    end
+
+    if options['descriptorIDsFromStdin']
+      unless postParams[names[:descriptor_id]].nil?
+        $stderr.puts "#{$0} #{@verbName}: only one of -N and -n must be supplied."
+        exit 1
+      end
+
+      $stdin.readlines.each do |line|
+        postParams[names[:descriptor_id]] = line.chomp
+        self.copySingle(
+          postParams: postParams,
+          verbose: options['verbose'],
+          showURLs: options['showURLs'],
+          dryRun: options['dryRun'],
+        )
+      end
+    else
+      if postParams[names[:descriptor_id]].nil?
+        $stderr.puts "#{$0} #{@verbName}: exactly one of -N and -n must be supplied."
+        exit 1
+      end
+      self.copySingle(
+        postParams: postParams,
+        verbose: options['verbose'],
+        showURLs: options['showURLs'],
+        dryRun: options['dryRun'],
+      )
+    end
+  end # CopyHandler.handle
+
+  # ----------------------------------------------------------------
+  def copySingle(
+    postParams:,
+    verbose: false,
+    showURLs: false,
+    dryRun: false)
+
+    validationErrorMessage, response_body, response_code = ThreatExchange::TENet::copyThreatDescriptor(
+      postParams: postParams,
+      showURLs: showURLs,
+      dryRun: dryRun)
+
+    unless validationErrorMessage.nil?
+      $stderr.puts validationErrorMessage
+      exit 1
+    end
+
+    puts response_body
+
+    if response_code != "200"
+      exit 1
+    end
+  end # CopyHandler.copySingle
+end # class CopyHandler
 
 # ----------------------------------------------------------------
 # Top-down programming style, please :)

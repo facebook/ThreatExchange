@@ -47,6 +47,34 @@ POST_PARAM_NAMES = {
 }
 POST_PARAM_NAMES.default_proc = -> (h, k) { raise KeyError, "POST_PARAM_NAMES[#{k}] is not defined." }
 
+# xxx comment
+FOO_POST_PARAM_NAMES = {
+  'indicator'                         => "indicator",    # For submit
+  'type'                              => "type",         # For submit
+  'descriptor_id'                     => "descriptor_id", # For update
+
+  'description'                       => "description",
+  'share_level'                       => "share_level",
+  'status'                            => "status",
+  'privacy_type'                      => "privacy_type",
+  'privacy_members'                   => "privacy_members",
+  'tags'                              => "tags",
+  'add_tags'                          => "add_tags",
+  'remove_tags'                       => "remove_tags",
+  'confidence'                        => "confidence",
+  'precision'                         => "precision",
+  'review_status'                     => "review_status",
+  'severity'                          => "severity",
+  'expired_on'                        => "expired_on",
+  'first_active'                      => "first_active",
+  'last_active'                       => "last_active",
+  'related_ids_for_upload'            => "related_ids_for_upload",
+  'related_triples_for_upload_as_json' => "related_triples_for_upload_as_json",
+  # Legacy: should have been named reactions_to_add, but isn't. :(
+  'reactions'                         => "reactions",
+  'reactions_to_remove'               => "reactions_to_remove",
+}
+
 @@TE_BASE_URL = ThreatExchange::TENet::DEFAULT_TE_BASE_URL
 @@APP_TOKEN = nil
 
@@ -381,6 +409,16 @@ def TENet.validatePostPararmsForUpdate(postParams)
 end
 
 # ----------------------------------------------------------------
+# Returns error message or nil.
+# This simply checks to see (client-side) if required fields aren't provided.
+def TENet.validatePostPararmsForCopy(postParams)
+  if postParams[POST_PARAM_NAMES[:descriptor_id]].nil?
+    return "Source-descriptor ID must be specified for copy."
+  end
+  return nil
+end
+
+# ----------------------------------------------------------------
 # Does a single POST to the threat_descriptors endpoint.  See also
 # https://developers.facebook.com/docs/threat-exchange/reference/submitting
 def TENet.submitThreatDescriptor(
@@ -431,6 +469,62 @@ def TENet.updateThreatDescriptor(
 end
 
 # ----------------------------------------------------------------
+# xxx comment
+def TENet.copyThreatDescriptor(
+  postParams:,
+  showURLs: false, # boolean,
+  dryRun: false) # boolean,
+
+  errorMessage = ThreatExchange::TENet.validatePostPararmsForCopy(postParams)
+  unless errorMessage.nil?
+    return [errorMessage, nil, nil]
+  end
+
+  # Get source descriptor
+  sourceID = postParams[POST_PARAM_NAMES[:descriptor_id]]
+  postParams.delete(POST_PARAM_NAMES[:descriptor_id])
+  sourceDescriptor = TENet.getInfoForIDs(ids: [sourceID], showURLs:showURLs)
+  sourceDescriptor = sourceDescriptor[0]
+  # xxx check for non-null/whatever ... try/catch maybe ...
+
+  # Mutate necessary fields
+  # xxx transmogrify -- raw_indicator -> indicator -- what else?
+  newDescriptor = Marshal.load(Marshal.dump(sourceDescriptor)) # deepcopy
+  newDescriptor['indicator'] = sourceDescriptor['raw_indicator']
+  newDescriptor.delete('raw_indicator')
+  if newDescriptor['tags'] != nil
+    newDescriptor.delete('tags')
+  end
+
+  # Take the source-descriptor values and overwrite any post-params fields
+  # supplied by the caller. Note: Ruby's hash-merge method keeps the old
+  # value for a given field name when both old and new are present so we
+  # invoke it seemingly 'backward'.
+  #
+  # Example:
+  # * x = {'a' => 1, 'b' => 2, 'c' => 3}
+  # * y = {'a' => 1, 'b' => 9, 'd' => 12}
+  # * z = y.merge(x)
+  # * z = {"a"=>1, "b"=>2, "d"=>12, "c"=>3}
+  #
+  # This means we want newDescriptor.merge(postParams)
+  newDescriptor = newDescriptor.merge(postParams)
+
+  # Get rid of fields like last_upated from the source descriptor which
+  # aren't valid for post
+  postParams = {}
+  newDescriptor.each do |key, value|
+    if FOO_POST_PARAM_NAMES[key] != nil
+      postParams[key] = value
+    end
+  end
+  # xxx privacy_members -- underdiff
+
+  return self.submitThreatDescriptor(postParams:postParams, showURLs:showURLs, dryRun:dryRun)
+end
+
+
+# ----------------------------------------------------------------
 # Code-reuse for submit and update
 def TENet._postThreatDescriptor(
   urlString:,
@@ -440,7 +534,7 @@ def TENet._postThreatDescriptor(
 
 
   postParams.each do |key, value|
-    urlString += "&#{key}=" + CGI.escape(value)
+    urlString += "&#{key}=" + CGI.escape(value.to_s)
   end
 
   if showURLs
