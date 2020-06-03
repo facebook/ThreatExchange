@@ -6,7 +6,7 @@ This repository contains example code for using the API.
 
 ## Documentation
 
-Full details on the ThreatExchange API, data formats, and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
+Full details on the ThreatExchange API and UI, data formats, and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
 
 ## New tools for a new generation (2019 and beyond)
 
