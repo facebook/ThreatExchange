@@ -59,3 +59,12 @@ For more information you can find documentation in the 'docs' directory, check
 the Github wiki, or readthedocs_.
 
 .. _readthedocs: https://pytx.readthedocs.org
+
+See Also
+-------------
+
+We now offer tag-based, descriptor-focused reference designs in
+
+* **Python**: <https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-python>
+* **Ruby**: <https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-ruby>
+* **Java**: <https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-java>
