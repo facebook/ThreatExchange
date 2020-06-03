@@ -349,7 +349,6 @@ class Net:
     return self._postThreatDescriptor(url, postParams, showURLs, dryRun)
 
   # ----------------------------------------------------------------
-  # xxx
   @classmethod
   def copyThreatDescriptor(self, postParams, showURLs, dryRun):
     errorMessage = self.validatePostPararmsForCopy(postParams)
@@ -361,10 +360,8 @@ class Net:
     del postParams['descriptor_id']
     sourceDescriptor = self.getInfoForIDs([sourceID], showURLs=showURLs)
     sourceDescriptor = sourceDescriptor[0]
-    # xxx check for non-null/whatever ... try/catch maybe ...
 
     # Mutate necessary fields
-    # xxx transmogrify -- raw_indicator -> indicator -- what else?
     newDescriptor = copy.deepcopy(sourceDescriptor)
     newDescriptor['indicator'] = sourceDescriptor['raw_indicator']
     del newDescriptor['raw_indicator']
@@ -393,7 +390,6 @@ class Net:
       if self.POST_PARAM_NAMES.get(key) != None:
         postParams[key] = value
 
-    # xxx privacy_members -- underdiff
 
     return self.submitThreatDescriptor(postParams, showURLs, dryRun)
 
@@ -436,7 +432,6 @@ class Net:
 
       return [None, None, responseBody]
 
-    # xxx code ...
     except urllib.error.HTTPError as e:
       responseBody = json.loads(e.read().decode("utf-8"))
       return [None, e, responseBody]

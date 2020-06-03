@@ -47,8 +47,7 @@ POST_PARAM_NAMES = {
 }
 POST_PARAM_NAMES.default_proc = -> (h, k) { raise KeyError, "POST_PARAM_NAMES[#{k}] is not defined." }
 
-# xxx comment
-FOO_POST_PARAM_NAMES = {
+STRING_POST_PARAM_NAMES = {
   'indicator'                         => "indicator",    # For submit
   'type'                              => "type",         # For submit
   'descriptor_id'                     => "descriptor_id", # For update
@@ -469,7 +468,6 @@ def TENet.updateThreatDescriptor(
 end
 
 # ----------------------------------------------------------------
-# xxx comment
 def TENet.copyThreatDescriptor(
   postParams:,
   showURLs: false, # boolean,
@@ -485,10 +483,8 @@ def TENet.copyThreatDescriptor(
   postParams.delete(POST_PARAM_NAMES[:descriptor_id])
   sourceDescriptor = TENet.getInfoForIDs(ids: [sourceID], showURLs:showURLs)
   sourceDescriptor = sourceDescriptor[0]
-  # xxx check for non-null/whatever ... try/catch maybe ...
 
   # Mutate necessary fields
-  # xxx transmogrify -- raw_indicator -> indicator -- what else?
   newDescriptor = Marshal.load(Marshal.dump(sourceDescriptor)) # deepcopy
   newDescriptor['indicator'] = sourceDescriptor['raw_indicator']
   newDescriptor.delete('raw_indicator')
@@ -514,11 +510,10 @@ def TENet.copyThreatDescriptor(
   # aren't valid for post
   postParams = {}
   newDescriptor.each do |key, value|
-    if FOO_POST_PARAM_NAMES[key] != nil
+    if STRING_POST_PARAM_NAMES[key] != nil
       postParams[key] = value
     end
   end
-  # xxx privacy_members -- underdiff
 
   return self.submitThreatDescriptor(postParams:postParams, showURLs:showURLs, dryRun:dryRun)
 end
