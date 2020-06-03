@@ -155,6 +155,7 @@ class SubcommandHandlerFactory
     'paginate'       => 'paginate',
     'submit'         => 'submit',
     'update'         => 'update',
+    'copy'           => 'copy',
   }
 
   # Static method
@@ -180,6 +181,8 @@ class SubcommandHandlerFactory
       return SubmitHandler.new(verbName)
     elsif verbName == VERB_NAMES['update']
       return UpdateHandler.new(verbName)
+    elsif verbName == VERB_NAMES['copy']
+      return CopyHandler.new(verbName)
     else
       return nil
     end
@@ -548,30 +551,61 @@ EOF
 end
 
 # ================================================================
-# NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
-# several differences. I found it simpler (albeit more verbose) to duplicate
-# rather than do an abstract-and-override refactor.
+# Some code-reuse for all subcommand handlers that do POSTs.
+class AbstractPostSubcommandHandler < SubcommandHandler
+  # These allow us to customize the mostly-overlapping usage() method
+  POSTER_NAME_SUBMIT = 'submit'
+  POSTER_NAME_UPDATE = 'update'
+  POSTER_NAME_COPY   = 'copy'
+  attr_accessor :POSTER_NAME_SUBMIT, :POSTER_NAME_UPDATE, :POSTER_NAME_COPY
 
-class SubmitHandler < SubcommandHandler
   # ----------------------------------------------------------------
   def initialize(verbName)
     super(verbName)
   end
 
   # ----------------------------------------------------------------
-  def usage(exitCode)
+  protected
+  def commonPosterUsage(exitCode, posterName)
+    if posterName.nil?
+      raise "#{$0}: internal coding error in commonPosterUsage"
+    end
+
     stream =  exitCode == 0 ? $stdout : $stderr
-  output = <<-EOF
+    output1 = <<-EOF1
 Usage: #{$0} #{@verbName} [options]
+EOF1
+
+    output2 = nil
+    output3 = nil
+    output4 = nil
+    output5 = nil
+
+    output2 = nil
+    if posterName == POSTER_NAME_SUBMIT
+      output2 = <<-EOF2s
 Uploads a threat descriptor with the specified values.
 On repost (with same indicator text/type and app ID), updates changed fields.
 
 Required:
--i|--indicator {...}   If indicator type is HASH_TMK this must be the
-                       path to a .tmk file, else the indicator text.
+-i|--indicator {...}   The indicator text: hash/URL/etc.
 -I                     Take indicator text from standard input, one per line.
 Exactly one of -i or -I is required.
 -t|--type {...}
+EOF2s
+    end
+    if posterName == POSTER_NAME_UPDATE
+      output2 = <<-EOF2u
+Updates specified attributes on an existing threat descriptor.
+
+Required:
+-n {...}               ID of descriptor to be edited. Must already exist.
+-N                     Take descriptor IDs from standard input, one per line.
+Exactly one of -n or -N is required.
+EOF2u
+    end
+
+    output3 = <<-EOF3
 -d|--description {...}
 -l|--share-level {...}
 -p|--privacy-type {...}
@@ -585,7 +619,17 @@ Optional:
                        HAS_PRIVACY_GROUP these must be comma-delimited
                        privacy-group IDs.
 --tags {...}           Comma-delimited. Overwrites on repost.
+EOF3
 
+    output4=nil
+    if posterName == POSTER_NAME_UPDATE
+      output3 = <<-EOF4u
+--add-tags {...}       Comma-delimited. Adds these on repost.
+--remove-tags {...}    Comma-delimited. Removes these on repost.
+EOF4u
+    end
+
+    output5 = <<-EOF5
 --related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
                        already exist) to relate the new descriptor to.
 --related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
@@ -606,12 +650,113 @@ Optional:
 Please see the following for allowed values in all enumerated types except reactions:
 https://developers.facebook.com/docs/threat-exchange/reference/submitting
 
+Please also see:
+https://developers.facebook.com/docs/threat-exchange/reference/editing
+
 Please see the following for enumerated types in reactions:
 See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
-EOF
-    stream.puts output
+EOF5
+
+    stream.puts(output1)
+    stream.puts(output2) unless output2.nil?
+    stream.puts(output3)
+    stream.puts(output4) unless output4.nil?
+    stream.puts(output5)
 
     exit(exitCode)
+  end
+
+
+  # ----------------------------------------------------------------
+  # For CLI-parsing
+  #
+  # Input:
+  # * option such as '-d'
+  # * remaining args as string-list
+  # * postParams dict
+  #
+  # Output:
+  # * boolean whether the option was recognized
+  # * args may be shifted if the option was recognized and successfully handled
+  #
+  # Modified by reference:
+  # * postParams dict modified by reference if the option was recognized and
+  #   successfully handled
+  def commonPosterOptionCheck(option, args, postParams)
+    # Local keystroke-saver for this enum
+    names = ThreatExchange::TENet::POST_PARAM_NAMES
+
+    handled = true
+
+    if option == '-d' || option == '--description'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:description]] = args.shift;
+
+    elsif option == '-l' || option == '--share-level'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:share_level]] = args.shift;
+    elsif option == '-p' || option == '--privacy-type'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:privacy_type]] = args.shift;
+    elsif option == '-m' || option == '--privacy-members'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:privacy_members]] = args.shift;
+
+    elsif option == '-s' || option == '--status'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:status]] = args.shift;
+    elsif option == '-r' || option == '--review-status'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:review_status]] = args.shift;
+    elsif option == '-y' || option == '--severity'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:severity]] = args.shift;
+    elsif option == '-c' || option == '--confidence'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:confidence]] = args.shift;
+
+    elsif option == '--related-ids-for-upload'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:related_ids_for_upload]] = args.shift;
+    elsif option == '--related-triples-for-upload-as-json'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:related_triples_for_upload_as_json]] = args.shift;
+
+    elsif option == '--reactions-to-add'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:reactions]] = args.shift;
+    elsif option == '--reactions-to-remove'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:reactions_to_remove]] = args.shift;
+
+    elsif option == '--first-active'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:first_active]] = args.shift;
+    elsif option == '--last-active'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:last]] = args.shift;
+    elsif option == '--expired-on'
+      self.usage(1) unless args.length >= 1
+      postParams[names[:expired_on]] = args.shift;
+
+    else
+      handled = false
+    end
+
+    return [handled, args]
+  end
+end
+
+# ================================================================
+class SubmitHandler < AbstractPostSubcommandHandler
+  # ----------------------------------------------------------------
+  def initialize(verbName)
+    super(verbName)
+  end
+
+  # ----------------------------------------------------------------
+  def usage(exitCode)
+    self.commonPosterUsage(exitCode, POSTER_NAME_SUBMIT)
   end
 
   # ----------------------------------------------------------------
@@ -648,64 +793,16 @@ EOF
         self.usage(1) unless args.length >= 1
         postParams[names[:type]] = args.shift;
 
-      elsif option == '-d' || option == '--description'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:description]] = args.shift;
-
-      elsif option == '-l' || option == '--share-level'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:share_level]] = args.shift;
-      elsif option == '-p' || option == '--privacy-type'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:privacy_type]] = args.shift;
-      elsif option == '-m' || option == '--privacy-members'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:privacy_members]] = args.shift;
-
-      elsif option == '-s' || option == '--status'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:status]] = args.shift;
-      elsif option == '-r' || option == '--review-status'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:review_status]] = args.shift;
-      elsif option == '-y' || option == '--severity'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:severity]] = args.shift;
-      elsif option == '-c' || option == '--confidence'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:confidence]] = args.shift;
-
-      elsif option == '--related-ids-for-upload'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:related_ids_for_upload]] = args.shift;
-      elsif option == '--related-triples-for-upload-as-json'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:related_triples_for_upload_as_json]] = args.shift;
-
-      elsif option == '--reactions-to-add'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:reactions]] = args.shift;
-      elsif option == '--reactions-to-remove'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:reactions_to_remove]] = args.shift;
-
       elsif option == '--tags'
         self.usage(1) unless args.length >= 1
         postParams[names[:tags]] = args.shift;
 
-      elsif option == '--first-active'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:first_active]] = args.shift;
-      elsif option == '--last-active'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:last]] = args.shift;
-      elsif option == '--expired-on'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:expired_on]] = args.shift;
-
       else
-        $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
-        exit 1
+        handled, args = self.commonPosterOptionCheck(option, args, postParams)
+        if not handled
+          $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
+          exit 1
+        end
       end
     end
 
@@ -751,24 +848,6 @@ EOF
     showURLs: false,
     dryRun: false)
 
-    # TO DO: port this over from Java, pending demand for people posting TMK hashes.
-
-    # if (postParams.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
-    #   String filename = postParams.getIndicatorText();
-    #   String contents = null;
-    #   try {
-    #     contents = Utils.readTMKHashFromFile(filename, verbose);
-    #   } catch (FileNotFoundException e) {
-    #     System.err.printf("%s %s: cannot find \"%s\".\n",
-    #       PROGNAME, _verb, filename);
-    #   } catch (IOException e) {
-    #     System.err.printf("%s %s: cannot load \"%s\".\n",
-    #       PROGNAME, _verb, filename);
-    #     e.printStackTrace(System.err);
-    #   }
-    #   postParams.setIndicatorText(contents);
-    # }
-
     validationErrorMessage, response_body, response_code = ThreatExchange::TENet::submitThreatDescriptor(
       postParams: postParams,
       showURLs: showURLs,
@@ -792,7 +871,7 @@ end # class SubmitHandler
 # several differences. I found it simpler (albeit more verbose) to duplicate
 # rather than do an abstract-and-override refactor.
 
-class UpdateHandler < SubcommandHandler
+class UpdateHandler < AbstractPostSubcommandHandler
   # ----------------------------------------------------------------
   def initialize(verbName)
     super(verbName)
@@ -800,62 +879,14 @@ class UpdateHandler < SubcommandHandler
 
   # ----------------------------------------------------------------
   def usage(exitCode)
-    stream =  exitCode == 0 ? $stdout : $stderr
-  output = <<-EOF
-Usage: #{$0} #{@verbName} [options]
-Updates specified attributes on an existing threat descriptor.
-
-Required:
--i {...}               ID of descriptor to be edited. Must already exist.
--I                     Take descriptor IDs from standard input, one per line.
-Exactly one of -i or -I is required.
--d|--description {...}
--l|--share-level {...}
--p|--privacy-type {...}
--y|--severity {...}
-
-Optional:
--h|--help
---dry-run
--m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be
-                       comma-delimited app IDs. If privacy-type is
-                       HAS_PRIVACY_GROUP these must be comma-delimited
-                       privacy-group IDs.
---tags {...}           Comma-delimited. Overwrites on repost.
---add-tags {...}       Comma-delimited. Adds these on repost.
---remove-tags {...}    Comma-delimited. Removes these on repost.
-
---related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must
-                       already exist) to relate the new descriptor to.
---related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.
-                       Here you can uniquely the relate-to descriptors by their
-                       owner ID / indicator-type / indicator-text, rather than
-                       by their IDs. See README.md for an example.
-
---confidence {...}
--s|--status {...}
--r|--review-status {...}
---first-active {...}
---last-active {...}
---expired-on {...}
-
-Please see the following for allowed values in all enumerated types:
-https://developers.facebook.com/docs/threat-exchange/reference/editing
-
-Please see the following for enumerated types in reactions:
-See also https://developers.facebook.com/docs/threat-exchange/reference/reacting
-
-EOF
-    stream.puts output
-
-    exit(exitCode)
+    self.commonPosterUsage(exitCode, POSTER_NAME_UPDATE)
   end
 
   # ----------------------------------------------------------------
   def handle(args, options)
 
     options['dryRun'] = false;
-    options['indicatorTextFromStdin'] = false;
+    options['descriptorIDsFromStdin'] = false;
 
     postParams = {}
 
@@ -875,57 +906,15 @@ EOF
       elsif option == '--dry-run'
         options['dryRun'] = true
 
-      elsif option == '-I'
+      elsif option == '-N'
         options['descriptorIDsFromStdin'] = true;
-      elsif option == '-i'
+      elsif option == '-n'
         self.usage(1) unless args.length >= 1
         postParams[names[:descriptor_id]] = args.shift;
-
-      elsif option == '-d' || option == '--description'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:description]] = args.shift;
-
-      elsif option == '-l' || option == '--share-level'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:share_level]] = args.shift;
-      elsif option == '-p' || option == '--privacy-type'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:privacy_type]] = args.shift;
-      elsif option == '-m' || option == '--privacy-members'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:privacy_members]] = args.shift;
-
-      elsif option == '-s' || option == '--status'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:status]] = args.shift;
-      elsif option == '-r' || option == '--review-status'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:review_status]] = args.shift;
-      elsif option == '-y' || option == '--severity'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:severity]] = args.shift;
-      elsif option == '-c' || option == '--confidence'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:confidence]] = args.shift;
-
-      elsif option == '--related-ids-for-upload'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:related_ids_for_upload]] = args.shift;
-      elsif option == '--related-triples-for-upload-as-json'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:related_triples_for_upload_as_json]] = args.shift;
-
-      elsif option == '--reactions-to-add'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:reactions]] = args.shift;
-      elsif option == '--reactions-to-remove'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:reactions_to_remove]] = args.shift;
 
       elsif option == '--tags'
         self.usage(1) unless args.length >= 1
         postParams[names[:tags]] = args.shift;
-
       elsif option == '--add-tags'
         self.usage(1) unless args.length >= 1
         postParams[names[:add_tags]] = args.shift;
@@ -933,19 +922,12 @@ EOF
         self.usage(1) unless args.length >= 1
         postParams[names[:remove_tags]] = args.shift;
 
-      elsif option == '--first-active'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:first_active]] = args.shift;
-      elsif option == '--last-active'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:last]] = args.shift;
-      elsif option == '--expired-on'
-        self.usage(1) unless args.length >= 1
-        postParams[names[:expired_on]] = args.shift;
-
       else
-        $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
-        exit 1
+        handled, args = self.commonPosterOptionCheck(option, args, postParams)
+        if not handled
+          $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
+          exit 1
+        end
       end
     end
 
@@ -956,7 +938,7 @@ EOF
 
     if options['descriptorIDsFromStdin']
       unless postParams[names[:descriptor_id]].nil?
-        $stderr.puts "#{$0} #{@verbName}: only one of -I and -i must be supplied."
+        $stderr.puts "#{$0} #{@verbName}: only one of -N and -n must be supplied."
         exit 1
       end
 
@@ -971,7 +953,7 @@ EOF
       end
     else
       if postParams[names[:descriptor_id]].nil?
-        $stderr.puts "#{$0} #{@verbName}: exactly one of -I and -i must be supplied."
+        $stderr.puts "#{$0} #{@verbName}: exactly one of -N and -n must be supplied."
         exit 1
       end
       self.updateSingle(
@@ -990,24 +972,6 @@ EOF
     showURLs: false,
     dryRun: false)
 
-    # TO DO: port this over from Java, pending demand for people posting TMK hashes.
-
-    # if (postParams.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
-    #   String filename = postParams.getIndicatorText();
-    #   String contents = null;
-    #   try {
-    #     contents = Utils.readTMKHashFromFile(filename, verbose);
-    #   } catch (FileNotFoundException e) {
-    #     System.err.printf("%s %s: cannot find \"%s\".\n",
-    #       PROGNAME, _verb, filename);
-    #   } catch (IOException e) {
-    #     System.err.printf("%s %s: cannot load \"%s\".\n",
-    #       PROGNAME, _verb, filename);
-    #     e.printStackTrace(System.err);
-    #   }
-    #   postParams.setIndicatorText(contents);
-    # }
-
     validationErrorMessage, response_body, response_code = ThreatExchange::TENet::updateThreatDescriptor(
       postParams: postParams,
       showURLs: showURLs,
@@ -1025,6 +989,128 @@ EOF
     end
   end # UpdateHandler.updateSingle
 end # class UpdateHandler
+
+# ----------------------------------------------------------------
+class CopyHandler < AbstractPostSubcommandHandler
+  # ----------------------------------------------------------------
+  def initialize(verbName)
+    super(verbName)
+  end
+
+  # ----------------------------------------------------------------
+  def usage(exitCode)
+    self.commonPosterUsage(exitCode, POSTER_NAME_COPY)
+  end
+
+  # ----------------------------------------------------------------
+  def handle(args, options)
+
+    options['dryRun'] = false;
+    options['descriptorIDsFromStdin'] = false;
+
+    postParams = {}
+
+    # Local keystroke-saver for this enum
+    names = ThreatExchange::TENet::POST_PARAM_NAMES
+
+    loop do
+      break if args.length == 0
+      break unless args[0][0] == '-'
+      option = args.shift
+
+      if option == '-h'
+        self.usage(0)
+      elsif option == '--help'
+        self.usage(0)
+
+      elsif option == '--dry-run'
+        options['dryRun'] = true
+
+      elsif option == '-N'
+        options['descriptorIDsFromStdin'] = true;
+      elsif option == '-n'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:descriptor_id]] = args.shift;
+
+      elsif option == '-i' || option == '--indicator'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:indicator]] = args.shift;
+
+      elsif option == '-t' || option == '--type'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:type]] = args.shift;
+
+      elsif option == '--tags'
+        self.usage(1) unless args.length >= 1
+        postParams[names[:tags]] = args.shift;
+
+      else
+        handled, args = self.commonPosterOptionCheck(option, args, postParams)
+        if not handled
+          $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
+          exit 1
+        end
+      end
+    end
+
+    if args.length > 0
+      $stderr.puts "#{$0} #{@verbName}: extraneous argument(s) \"#{args.join(' ')}\"."
+      exit 1
+    end
+
+    if options['descriptorIDsFromStdin']
+      unless postParams[names[:descriptor_id]].nil?
+        $stderr.puts "#{$0} #{@verbName}: only one of -N and -n must be supplied."
+        exit 1
+      end
+
+      $stdin.readlines.each do |line|
+        postParams[names[:descriptor_id]] = line.chomp
+        self.copySingle(
+          postParams: postParams,
+          verbose: options['verbose'],
+          showURLs: options['showURLs'],
+          dryRun: options['dryRun'],
+        )
+      end
+    else
+      if postParams[names[:descriptor_id]].nil?
+        $stderr.puts "#{$0} #{@verbName}: exactly one of -N and -n must be supplied."
+        exit 1
+      end
+      self.copySingle(
+        postParams: postParams,
+        verbose: options['verbose'],
+        showURLs: options['showURLs'],
+        dryRun: options['dryRun'],
+      )
+    end
+  end # CopyHandler.handle
+
+  # ----------------------------------------------------------------
+  def copySingle(
+    postParams:,
+    verbose: false,
+    showURLs: false,
+    dryRun: false)
+
+    validationErrorMessage, response_body, response_code = ThreatExchange::TENet::copyThreatDescriptor(
+      postParams: postParams,
+      showURLs: showURLs,
+      dryRun: dryRun)
+
+    unless validationErrorMessage.nil?
+      $stderr.puts validationErrorMessage
+      exit 1
+    end
+
+    puts response_body
+
+    if response_code != "200"
+      exit 1
+    end
+  end # CopyHandler.copySingle
+end # class CopyHandler
 
 # ----------------------------------------------------------------
 # Top-down programming style, please :)

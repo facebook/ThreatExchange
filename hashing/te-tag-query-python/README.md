@@ -2,7 +2,7 @@ Example technique for retrieving hashes with a given tag from ThreatExchange, as
 
 # Purpose of this code
 
-You can use this for downloading/uploading hashes from/to ThreatExchange, found by tag. You can use the Ruby code as-is, or use it to illuminate tooling in other languages. Note that `te-tag-query-ruby -s ...` will print the URLs this tool constructs for you, to help make clear how to access ThreatExchange via URLs.
+You can use this for downloading/uploading hashes from/to ThreatExchange, found by tag. You can use the Python code as-is, or use it to illuminate tooling in other languages. Note that `te-tag-query-python -s ...` will print the URLs this tool constructs for you, to help make clear how to access ThreatExchange via URLs.
 
 # Query mechanism
 
@@ -22,18 +22,19 @@ threatexchange@fb.com
 
 There are three.
 
-1. The `te-tag-query-ruby` wrapper script sets the Ruby path and invokes the main Ruby method in `TETagQuery.rb`.
+1. The `te-tag-query-python` wrapper script sets the Python path and invokes the main Python method in `TETagQuery.py`.
 
 ```
 #!/bin/bash
 ourdir=`dirname $0`
-# Set up the Ruby path so this Ruby program can be invoked from anywhere.
-exec ruby -I $ourdir $ourdir/TETagQuery.rb "$@"
+# Set up the Python path so this Python program can be invoked from anywhere.
+# Must be python3
+python3 $ourdir/TETagQuery.py "$@"
 ```
 
-2. `TETagQuery.rb` contains command-line parsing and invokes the library methods in `TENet.rb`.
+2. `TETagQuery.py` contains command-line parsing and invokes the library methods in `TE.py`.
 
-3. `TENet.rb` contains the library methods.
+3. `TE.py` contains the library methods.
 
 # Setup
 
@@ -47,23 +48,23 @@ exec ruby -I $ourdir $ourdir/TETagQuery.rb "$@"
 
 On-line help:
 ```
-te-tag-query-ruby --help
+te-tag-query-python --help
 ```
 
 Querying for all hashes of a given type:
 ```
-te-tag-query-ruby tag-to-details media_type_photo
+te-tag-query-python tag-to-details media_type_photo
 
-te-tag-query-ruby -v tag-to-details media_type_photo
+te-tag-query-python -v tag-to-details media_type_photo
 
-te-tag-query-ruby tag-to-details media_type_video
+te-tag-query-python tag-to-details media_type_video
 ```
 
 Querying for some hashes of a given type:
 ```
-te-tag-query-ruby tag-to-details --tagged-since -1day media_type_photo
+te-tag-query-python tag-to-details --tagged-since -1day media_type_photo
 
-te-tag-query-ruby tag-to-details --tagged-since -1week media_type_video
+te-tag-query-python tag-to-details --tagged-since -1week media_type_video
 ```
 
 # Examples of using the code for posts
@@ -71,41 +72,41 @@ te-tag-query-ruby tag-to-details --tagged-since -1week media_type_video
 Post a new SHA1 hash:
 
 ```
-te-tag-query-ruby submit \
-  -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec10e \
+te-tag-query-python submit \
+  -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec20e \
   -t HASH_SHA1 \
-  -d "testing te-tag-query with post" \
+  -d "testing te-tag-query-python post" \
   -l AMBER \
   -s NON_MALICIOUS \
   -p HAS_WHITELIST \
   --privacy-members 1064060413755420 \
-  --tags testing_ruby_post
+  --tags testing_python_post
 ```
 
-Suppose that prints `{"success":true,"id":"3546989395318416"}`.
+{"success": true, "id": "2920637101389201"}
 
 Update it, using that ID:
 
 ```
-te-tag-query-ruby update \
+te-tag-query-python update \
   -i 3546989395318416 \
   -s UNKNOWN \
-  --add-tags testing_ruby_update
+  --add-tags testing_python_update
 ```
 
 Post another with relation to the first one:
 
 ```
-te-tag-query-ruby submit \
-  -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec10f \
+te-tag-query-python submit \
+  -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec20f \
   -t HASH_SHA1 \
-  -d "testing te-tag-query with post" \
+  -d "testing te-tag-query-python post" \
   -l AMBER \
   -s NON_MALICIOUS \
   -p HAS_WHITELIST \
   --privacy-members 1064060413755420 \
-  --tags testing_ruby_post \
-  --related-triples-for-upload-as-json '[{"owner_app_id":494491891138576,"td_indicator_type":"HASH_SHA1","td_raw_indicator":"dabbad00f00dfeed5ca1ab1ebeefca11ab1ec10e"}]'
+  --tags testing_python_post \
+  --related-triples-for-upload-as-json '[{"owner_app_id":494491891138576,"td_indicator_type":"HASH_SHA1","td_raw_indicator":"dabbad00f00dfeed5ca1ab1ebeefca11ab1ec20e"}]'
 ```
 
 Make copies of a set of descriptors, e.g. from a data-sharing partner:
@@ -129,7 +130,7 @@ Note, however, that for the present you must explicitly set `--privacy-members`.
 
 ```
 $ jq '.id | tonumber' partner-data.json \
-| te-tag-query-ruby copy -N \
+| te-tag-query-python copy -N \
   --description 'our copies' \
   --privacy-type HAS_PRIVACY_GROUP --privacy-members 781588512307315
 {"success":true,"id":"3216884688390703"}
@@ -145,7 +146,7 @@ $ jq '.id | tonumber' partner-data.json \
 ```
 
 ```
-$ te-tag-query-ruby ids-to-details 3046896738736542 | jq .
+$ te-tag-query-python ids-to-details 3046896738736542 | jq .
 {
   "raw_indicator": "c7dfd847207cbd54a8bb292525fc111d",
   "type": "HASH_MD5",
@@ -164,7 +165,7 @@ $ te-tag-query-ruby ids-to-details 3046896738736542 | jq .
   "share_level": "AMBER",
   "description": "our copies",
   "id": "3046896738736542",
-  "tags": []
+  "tags": null
 }
 ```
 
@@ -172,6 +173,6 @@ $ te-tag-query-ruby ids-to-details 3046896738736542 | jq .
 
 As noted at the top of this document, the `TETagQuery` program is intended to be a reference design -- for you to use as-is, or to help you write tooling in other languages.
 
-For reference, we show what those bare-curl commands look like if you're not using the Ruby code:
+For reference, we show what those bare-curl commands look like if you're not using the Python code:
 
 https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-curl/README.md
