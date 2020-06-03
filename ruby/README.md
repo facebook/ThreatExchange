@@ -53,3 +53,7 @@ If you would like to see examples of each type of query take a look at the scrip
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
+
+## See Also
+
+We now offer tag-based, descriptor-focused reference designs in [**Python**](https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-python), [**Ruby**](https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-ruby), and [**Java**](https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-java).
