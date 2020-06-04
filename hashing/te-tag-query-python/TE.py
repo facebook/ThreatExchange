@@ -83,13 +83,28 @@ class Net:
   # Helper method for issuing a GET and returning the JSON payload.
   @classmethod
   def getJSONFromURL(self, url):
-    # The timeout is a heuristic
-    response = urllib.request.urlopen(url, None, 60)
-    # This is a Python 'bytes'
-    response = response.read()
-    # Now make it a string
-    response = response.decode("utf-8")
-    return json.loads(response)
+    numTries = 0
+    while True:
+      numTries += 1
+      [response, error] = self.tryGET(url)
+      if response != None:
+        response = response.read()
+        # Now make it a string
+        response = response.decode("utf-8")
+        return json.loads(response)
+      elif error.code < 500 or error.code >= 600:
+        raise error
+      elif numTries > 4:
+        raise error
+
+  @classmethod
+  def tryGET(self, url):
+    try:
+      # The timeout is a heuristic
+      response = urllib.request.urlopen(url, None, 60)
+      return [response, None]
+    except urllib.error.HTTPError as e:
+      return [None, e]
 
   # ----------------------------------------------------------------
   # Looks up the "objective tag" ID for a given tag. This is suitable input for the /threat_tags endpoint.
