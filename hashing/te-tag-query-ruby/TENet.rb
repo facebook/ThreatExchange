@@ -325,7 +325,13 @@ def TENet.getInfoForIDs(
   #  }
 
   responseString = Net::HTTP.get(URI(startURL))
+  if responseString.nil?
+    raise protocolErrorString
+  end
   responseObject = JSON.parse(responseString)
+  if responseObject.nil?
+    raise protocolErrorString
+  end
 
   descriptors = []
   responseObject.each do |id, descriptor|
