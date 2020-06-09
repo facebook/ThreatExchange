@@ -501,7 +501,7 @@ EOF
         $stderr.puts "#{$0} #{@verbName}: Please specify at most one of --tagged-until and --created-until."
         exit 1
       end
-      options['taggedUntil'] = nil
+      # keep options['taggedUntil'] = nil
       options['createdUntilEpochSeconds'] = ThreatExchange::TENet::parseTimeStringToEpochSeconds(options['createdUntil'])
     end
 

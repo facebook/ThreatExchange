@@ -507,7 +507,7 @@ Options:
         eprint("%s %s: Please specify at most one of --tagged-until and --created-until." %
           (self.progName, self.verbName))
         sys.exit(1)
-      options['taggedUntil'] = None
+      # keep options['taggedUntil'] = None
       options['createdUntilEpochSeconds'] = TE.Net.parseTimeStringToEpochSeconds(options['createdUntil'])
 
     # Step 1: tag text to ID
