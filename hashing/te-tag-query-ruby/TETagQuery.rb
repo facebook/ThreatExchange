@@ -414,6 +414,16 @@ Usage: #{$0} #{@verbName} [options] {tag name}
 Options:
 --tagged-since {x}
 --tagged-until {x}
+--created-since {x}
+--created-until {x}
+
+  Timestamp options for all four are epoch seconds, various datetime formats
+  including "2020-12-34T56:07:08+0900", and time-deltas like "-5minutes",
+  "-3hours", "-1week".
+
+  At most one of --tagged-since and --created-since can be specified; likewise
+  --tagged-until and --created-until.
+
 --page-size {x}
 --no-print-indicator -- Don't print the indicator to the terminal
 The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,
@@ -444,6 +454,13 @@ EOF
         self.usage(1) unless args.length >= 1
         options['taggedUntil'] = args.shift;
 
+      elsif option == '--created-since'
+        self.usage(1) unless args.length >= 1
+        options['createdSince'] = args.shift;
+      elsif option == '--created-until'
+        self.usage(1) unless args.length >= 1
+        options['createdUntil'] = args.shift;
+
       elsif option == '--page-size'
         self.usage(1) unless args.length >= 1
         options['pageSize'] = args.shift;
@@ -455,6 +472,37 @@ EOF
         $stderr.puts "#{$0} #{@verbName}: unrecognized  option #{option}"
         exit 1
       end
+    end
+
+    # Tagged-at filtering is done server-side -- the TE /tagged_objects
+    # endpoint filters by tagged-at timestamps on the graph edges from tag to
+    # descriptor ID. An implementation detail of /tagged_objects is that it
+    # only yields abstract IDs; descriptor IDs to details are a separate pass
+    # in this design.
+    #
+    # This means that if the user wants to filter on created-at:
+    # * We have the invariants that created-at <= tagged-at, and tagged-at <= now.
+    # * If they ask for created-since t, we query the server for tagged-since t
+    #   (which overfetches) and then we filter client-side.
+    # * If they as for created-until t, we query the server for tagged-until now
+    #   (which overfetches) and then we filter client-side.
+    options['createdSinceEpochSeconds'] = nil
+    options['createdUntilEpochSeconds'] = nil
+    if options['createdSince'] != nil
+      if options['taggedSince'] != nil
+        $stderr.puts "#{$0} #{@verbName}: Please specify at most one of --tagged-since and --created-since."
+        exit 1
+      end
+      options['taggedSince'] = options['createdSince']
+      options['createdSinceEpochSeconds'] = ThreatExchange::TENet::parseTimeStringToEpochSeconds(options['createdSince'])
+    end
+    if options['createdUntil'] != nil
+      if options['taggedUntil'] != nil
+        $stderr.puts "#{$0} #{@verbName}: Please specify at most one of --tagged-until and --created-until."
+        exit 1
+      end
+      # keep options['taggedUntil'] = nil
+      options['createdUntilEpochSeconds'] = ThreatExchange::TENet::parseTimeStringToEpochSeconds(options['createdUntil'])
     end
 
     if args.length != 1
@@ -477,7 +525,29 @@ EOF
         verbose: options['verbose'],
         showURLs: options['showURLs'],
         includeIndicatorInOutput: options['includeIndicatorInOutput'])
+
+      createdSinceEpochSeconds = options['createdSinceEpochSeconds']
+      createdUntilEpochSeconds = options['createdUntilEpochSeconds']
+
       descriptors.each do |descriptor|
+        added_on = descriptor['added_on']
+        if added_on.nil?
+          puts("WTFA")
+          puts(descriptor)
+          puts("WTFB")
+        end
+        descriptorCreatedAtEpochSeconds = ThreatExchange::TENet::parseTimeStringToEpochSeconds(added_on)
+        if createdSinceEpochSeconds != nil
+          if descriptorCreatedAtEpochSeconds < createdSinceEpochSeconds
+            next
+          end
+        end
+        if createdUntilEpochSeconds != nil
+          if descriptorCreatedAtEpochSeconds > createdUntilEpochSeconds
+            next
+          end
+        end
+
         # Stub processing -- one would perhaps integrate with one's own system
         puts descriptor.to_json
       end

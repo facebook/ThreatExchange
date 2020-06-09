@@ -7,6 +7,7 @@ require 'CGI' # for URL-encoding
 require 'net/http'
 require 'uri'
 require 'json'
+require 'date'
 
 # ================================================================
 # HTTP-wrapper methods
@@ -170,10 +171,10 @@ def TENet.processDescriptorIDsByTagID(
     "/?access_token=" + @@APP_TOKEN +
     "&limit=" + pageSize.to_s
   unless taggedSince.nil?
-    startURL += "&tagged_since=" + taggedSince
+    startURL += "&tagged_since=" + CGI.escape(taggedSince)
   end
   unless taggedUntil.nil?
-    startURL += "&tagged_until=" + taggedUntil
+    startURL += "&tagged_until=" + CGI.escape(taggedUntil)
   end
 
   nextURL = startURL
@@ -185,7 +186,7 @@ def TENet.processDescriptorIDsByTagID(
       puts nextURL
     end
 
-    protocolErrorString = "ThreatExchange::TENet::getDescriptorIDsByTagID: protocol error finding \"#{tagID}\""
+    protocolErrorString = "ThreatExchange::TENet::getDescriptorIDsByTagID: protocol error finding descriptors for tag ID \"#{tagID}\""
 
     # Format we're parsing:
     # {
@@ -211,6 +212,7 @@ def TENet.processDescriptorIDsByTagID(
 
     dataObject = responseObject['data']
     if dataObject.nil?
+      $stderr.puts(responseObject)
       raise protocolErrorString
     end
     pagingObject = responseObject['paging']
@@ -565,5 +567,144 @@ def TENet._postThreatDescriptor(
 
 end # TENet.submitThreatDescriptor
 
+# ----------------------------------------------------------------
+# This is for client-side creation-time filtering. We accept the same
+# command-line values as for tagged-time filtering which is done server-side
+# using PHP\strtotime which takes various epoch-seconds timestamps, various
+# format strings, and time-deltas like "-3hours" and "-1week".  Here we
+# re-invent some of PHP\strtotime.
+def TENet.parseTimeStringToEpochSeconds(mixedString)
+  retval = TENet._parseIntStringToEpochSeconds(mixedString)
+  return retval unless retval.nil?
+
+  retval = TENet._parseDateTimeStringToEpochSeconds(mixedString)
+  return retval unless retval.nil?
+
+  retval = TENet._parseRelativeStringToEpochSeconds(mixedString)
+  return retval unless retval.nil?
+  return nil
+end # TENet.parseTimeStringToEpochSeconds
+
+# Helper for parseTimeStringToEpochSeconds to try epoch-seconds timestamps
+def TENet._parseIntStringToEpochSeconds(mixedString)
+  begin
+    return Integer(mixedString)
+  rescue ArgumentError
+    return nil
+  end
+end
+
+DATETIME_FORMATS = [
+  '%Y-%m-%dT%H:%M:%S%z', # TE server-side date format -- try first
+  '%Y-%m-%d %H:%M:%S',
+  '%Y/%m/%d %H:%M:%S',
+  '%Y-%m-%dT%H:%M:%S',
+  '%Y-%m-%dT%H:%M:%SZ',
+]
+
+# Helper for parseTimeStringToEpochSeconds to try various format-string
+# timestamps
+def TENet._parseDateTimeStringToEpochSeconds(mixedString)
+  DATETIME_FORMATS.each do |formatString|
+    begin
+      return DateTime.strptime(mixedString, formatString).to_time.to_i
+    rescue ArgumentError
+      return nil
+    end
+  end
+   return nil
+ end
+
+# Helper for parseTimeStringToEpochSeconds to try various relative-time
+# indications.
+def TENet._parseRelativeStringToEpochSeconds(mixedString)
+  retval = TENet._parseRelativeStringMinute(mixedString)
+  return retval unless retval.nil?
+  retval = TENet._parseRelativeStringHour(mixedString)
+  return retval unless retval.nil?
+  retval = TENet._parseRelativeStringDay(mixedString)
+  return retval unless retval.nil?
+  retval = TENet._parseRelativeStringWeek(mixedString)
+  return retval unless retval.nil?
+  return nil
+end
+
+# Helper for parseTimeStringToEpochSeconds to try particular relative-time
+# indications.
+def TENet._parseRelativeStringMinute(mixedString)
+  output = mixedString.match("^-([0-9]+)minutes?$")
+  if output != nil
+    count = Integer(output[1])
+    return DateTime.now.to_time.to_i - count * 60 # timezone-unsafe
+  else
+    return nil
+  end
+end
+
+# Helper for parseTimeStringToEpochSeconds to try particular relative-time
+# indications.
+def TENet._parseRelativeStringHour(mixedString)
+  output = mixedString.match("^-([0-9]+)hours?$")
+  if output != nil
+    count = Integer(output[1])
+    return DateTime.now.to_time.to_i - count * 60 * 60 # timezone-unsafe
+  else
+    return nil
+  end
+end
+
+# Helper for parseTimeStringToEpochSeconds to try particular relative-time
+# indications.
+def TENet._parseRelativeStringDay(mixedString)
+  output = mixedString.match("^-([0-9]+)days?$")
+  if output != nil
+    count = Integer(output[1])
+    return DateTime.now.to_time.to_i - count * 24 * 60 * 60 # timezone-unsafe
+  else
+    return nil
+  end
+end
+
+# Helper for parseTimeStringToEpochSeconds to try particular relative-time
+# indications.
+def TENet._parseRelativeStringWeek(mixedString)
+  output = mixedString.match("^-([0-9]+)weeks?$")
+  if output != nil
+    count = Integer(output[1])
+    return DateTime.now.to_time.to_i - count * 7 * 24 * 60 * 60 # timezone-unsafe
+  else
+    return nil
+  end
+end
+
 end # module TENet
 end # module ThreatExchange
+
+# ================================================================
+# Validator for client-side creation-time datetime parsing. Not written as unit
+# tests per se since "-1week" et al. are dynamic things. Invoke via "ruby TENet.rb".
+if __FILE__ == $0
+  def showParseTimeStringToEpochSeconds(mixedString)
+    retval = ThreatExchange::TENet::parseTimeStringToEpochSeconds(mixedString)
+    readable = 'nil'
+    if retval != nil
+      readable = Time.at(retval).to_datetime.strftime('%Y-%m-%dT%H:%M:%S%z')
+    end
+    puts("#{mixedString.ljust(30)} #{retval.to_s.ljust(30)} #{readable}")
+  end
+
+  showParseTimeStringToEpochSeconds("1591626448")
+  showParseTimeStringToEpochSeconds("2020-06-08T14:27:53Z")
+  showParseTimeStringToEpochSeconds("2020-06-08T14:27:53+0400")
+  showParseTimeStringToEpochSeconds("2020-06-08T14:27:53-0400")
+  showParseTimeStringToEpochSeconds("2020-05-01T07:02:25+0000")
+  showParseTimeStringToEpochSeconds("-1minute")
+  showParseTimeStringToEpochSeconds("-3minutes")
+  showParseTimeStringToEpochSeconds("-1hour")
+  showParseTimeStringToEpochSeconds("-3hours")
+  showParseTimeStringToEpochSeconds("-1day")
+  showParseTimeStringToEpochSeconds("-3day")
+  showParseTimeStringToEpochSeconds("-1week")
+  showParseTimeStringToEpochSeconds("-3weeks")
+  showParseTimeStringToEpochSeconds("nonesuch")
+end

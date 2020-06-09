@@ -10,6 +10,8 @@ import urllib.request
 import urllib.error
 import json
 import copy
+import datetime
+import re
 
 # ================================================================
 # HTTP-wrapper methods
@@ -159,9 +161,9 @@ class Net:
       "&limit=" + str(pageSize)
 
     if taggedSince != None:
-      startURL += "&tagged_since=" + taggedSince
+      startURL += "&tagged_since=" + urllib.parse.quote(taggedSince)
     if taggedUntil != None:
-      startURL += "&tagged_until=" + taggedUntil
+      startURL += "&tagged_until=" + urllib.parse.quote(taggedUntil)
 
     nextURL = startURL
     pageIndex = 0;
@@ -450,3 +452,148 @@ class Net:
     except urllib.error.HTTPError as e:
       responseBody = json.loads(e.read().decode("utf-8"))
       return [None, e, responseBody]
+
+  # ----------------------------------------------------------------
+  # This is for client-side creation-time filtering. We accept the same
+  # command-line values as for tagged-time filtering which is done server-side
+  # using PHP\strtotime which takes various epoch-seconds timestamps, various
+  # format strings, and time-deltas like "-3hours" and "-1week".  Here we
+  # re-invent some of PHP\strtotime.
+  @classmethod
+  def parseTimeStringToEpochSeconds(self, mixedString):
+    retval = self._parseIntStringToEpochSeconds(mixedString)
+    if retval != None:
+      return retval
+
+    retval = self._parseDateTimeStringToEpochSeconds(mixedString)
+    if retval != None:
+      return retval
+
+    retval = self._parseRelativeStringToEpochSeconds(mixedString)
+    if retval != None:
+      return retval
+
+    return None
+
+  # Helper for parseTimeStringToEpochSeconds to try epoch-seconds timestamps
+  @classmethod
+  def _parseIntStringToEpochSeconds(self, mixedString):
+    try:
+      return int(mixedString)
+    except ValueError:
+      return None
+
+  DATETIME_FORMATS = [
+    '%Y-%m-%dT%H:%M:%S%z', # TE server-side date format -- try first
+    '%Y-%m-%d %H:%M:%S',
+    '%Y/%m/%d %H:%M:%S',
+    '%Y-%m-%dT%H:%M:%S',
+    '%Y-%m-%dT%H:%M:%SZ',
+  ]
+
+  # Helper for parseTimeStringToEpochSeconds to try various format-string
+  # timestamps
+  @classmethod
+  def _parseDateTimeStringToEpochSeconds(self, mixedString):
+    for formatString in self.DATETIME_FORMATS:
+      retval = self._parseDateTimeStringSingleFormat(mixedString, formatString)
+      if retval != None:
+        return retval
+    return None
+
+  # Helper for parseTimeStringToEpochSeconds to try a particular format-string
+  # timestamp
+  @classmethod
+  def _parseDateTimeStringSingleFormat(self, mixedString, formatString):
+    try:
+      return int(datetime.datetime.strptime(mixedString, formatString).timestamp())
+    except ValueError:
+      return None
+
+  # Helper for parseTimeStringToEpochSeconds to try various relative-time
+  # indications
+  @classmethod
+  def _parseRelativeStringToEpochSeconds(self, mixedString):
+    retval = self._parseRelativeStringMinute(mixedString)
+    if retval != None:
+      return retval
+    retval = self._parseRelativeStringHour(mixedString)
+    if retval != None:
+      return retval
+    retval = self._parseRelativeStringDay(mixedString)
+    if retval != None:
+      return retval
+    retval = self._parseRelativeStringWeek(mixedString)
+    if retval != None:
+      return retval
+    return None
+
+  # Helper for parseTimeStringToEpochSeconds to try particular relative-time
+  # indications.
+  @classmethod
+  def _parseRelativeStringMinute(self, mixedString):
+    pattern = re.compile("^-([0-9]+)minutes?$")
+    output = pattern.match(mixedString)
+    if output != None:
+      count = int(output.group(1))
+      return int((datetime.datetime.today() - datetime.timedelta(minutes=count)).timestamp())
+    return None
+
+  # Helper for parseTimeStringToEpochSeconds to try particular relative-time
+  # indications.
+  @classmethod
+  def _parseRelativeStringHour(self, mixedString):
+    pattern = re.compile("^-([0-9]+)hours?$")
+    output = pattern.match(mixedString)
+    if output != None:
+      count = int(output.group(1))
+      return int((datetime.datetime.today() - datetime.timedelta(hours=count)).timestamp())
+    return None
+
+  # Helper for parseTimeStringToEpochSeconds to try particular relative-time
+  # indications.
+  @classmethod
+  def _parseRelativeStringDay(self, mixedString):
+    pattern = re.compile("^-([0-9]+)days?$")
+    output = pattern.match(mixedString)
+    if output != None:
+      count = int(output.group(1))
+      return int((datetime.datetime.today() - datetime.timedelta(days=count)).timestamp())
+    return None
+
+  # Helper for parseTimeStringToEpochSeconds to try particular relative-time
+  # indications.
+  @classmethod
+  def _parseRelativeStringWeek(self, mixedString):
+    pattern = re.compile("^-([0-9]+)weeks?$")
+    output = pattern.match(mixedString)
+    if output != None:
+      count = int(output.group(1))
+      return int((datetime.datetime.today() - datetime.timedelta(weeks=count)).timestamp())
+    return None
+
+
+# ================================================================
+# Validator for client-side creation-time datetime parsing. Not written as unit
+# tests per se since "-1week" et al. are dynamic things. Invoke via "python TE.py".
+if __name__ == "__main__":
+  def showParseTimeStringToEpochSeconds(mixedString):
+    retval = Net.parseTimeStringToEpochSeconds(mixedString)
+    readable = None if retval is None else datetime.datetime.utcfromtimestamp(retval).strftime('%Y-%m-%dT%H:%M:%SZ')
+    print("%-30s %-30s %s" % (mixedString, retval, readable))
+
+  showParseTimeStringToEpochSeconds("1591626448")
+  showParseTimeStringToEpochSeconds("2020-06-08T14:27:53")
+  showParseTimeStringToEpochSeconds("2020-06-08T14:27:53Z")
+  showParseTimeStringToEpochSeconds("2020-06-08T14:27:53+0400")
+  showParseTimeStringToEpochSeconds("2020-06-08T14:27:53-0400")
+  showParseTimeStringToEpochSeconds("2020-05-01T07:02:25+0000")
+  showParseTimeStringToEpochSeconds("-1minute")
+  showParseTimeStringToEpochSeconds("-3minutes")
+  showParseTimeStringToEpochSeconds("-1hour")
+  showParseTimeStringToEpochSeconds("-3hours")
+  showParseTimeStringToEpochSeconds("-1day")
+  showParseTimeStringToEpochSeconds("-3day")
+  showParseTimeStringToEpochSeconds("-1week")
+  showParseTimeStringToEpochSeconds("-3weeks")
+  showParseTimeStringToEpochSeconds("nonesuch")
