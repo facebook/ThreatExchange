@@ -212,7 +212,7 @@ def TENet.processDescriptorIDsByTagID(
 
     dataObject = responseObject['data']
     if dataObject.nil?
-      $stderr.puts(responseString)
+      $stderr.puts(responseObject)
       raise protocolErrorString
     end
     pagingObject = responseObject['paging']
