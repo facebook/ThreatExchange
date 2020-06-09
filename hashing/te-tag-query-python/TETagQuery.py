@@ -240,9 +240,10 @@ class TagToIDsHandler(SubcommandHandler):
 Options:
 --tagged-since {x}
 --tagged-until {x}
+  Timestamp options for both are epoch seconds, various datetime formats
+  including "2020-12-34T56:07:08+0900", and time-deltas like "-5minutes",
+  "-3hours", "-1week".
 --page-size {x}
-The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,
-e.g. seconds since the epoch, or "-1hour", or "-1day", etc.
 """ % (self.progName, self.verbName)
     stream.write(output + "\n")
     sys.exit(exitCode)
@@ -406,10 +407,18 @@ class TagToDetailsHandler(SubcommandHandler):
 Options:
 --tagged-since {x}
 --tagged-until {x}
+--created-since {x}
+--created-until {x}
+
+  Timestamp options for all four are epoch seconds, various datetime formats
+  including "2020-12-34T56:07:08+0900", and time-deltas like "-5minutes",
+  "-3hours", "-1week".
+
+  At most one of --tagged-since and --created-since can be specified; likewise
+  --tagged-until and --created-until.
+
 --page-size {x}
 --no-print-indicator -- Don't print the indicator to the terminal
-The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,
-e.g. seconds since the epoch, or "-1hour", or "-1day", etc.
 """ % (self.progName, self.verbName)
     stream.write(output + "\n")
     sys.exit(exitCode)
@@ -442,6 +451,17 @@ e.g. seconds since the epoch, or "-1hour", or "-1day", etc.
         options['taggedUntil'] = args[0]
         args = args[1:]
 
+      elif option == '--created-since':
+        if len(args) < 1:
+          self.usage(1)
+        options['createdSince'] = args[0]
+        args = args[1:]
+      elif option == '--created-until':
+        if len(args) < 1:
+          self.usage(1)
+        options['createdUntil'] = args[0]
+        args = args[1:]
+
       elif option == '--page-size':
         if len(args) < 1:
           self.usage(1)
@@ -460,6 +480,36 @@ e.g. seconds since the epoch, or "-1hour", or "-1day", etc.
       self.usage(1)
     tagName = args[0]
 
+    # Tagged-at filtering is done server-side -- the TE /tagged_objects
+    # endpoint filters by tagged-at timestamps on the graph edges from tag to
+    # descriptor ID. An implementation detail of /tagged_objects is that it
+    # only yields abstract IDs; descriptor IDs to details are a separate pass
+    # in this design.
+    #
+    # This means that if the user wants to filter on created-at:
+    # * We have the invariants that created-at <= tagged-at, and tagged-at <= now.
+    # * If they ask for created-since t, we query the server for tagged-since t
+    #   (which overfetches) and then we filter client-side.
+    # * If they as for created-until t, we query the server for tagged-until now
+    #   (which overfetches) and then we filter client-side.
+
+    options['createdSinceEpochSeconds'] = None
+    options['createdUntilEpochSeconds'] = None
+    if options.get('createdSince') != None:
+      if options.get('taggedSince') != None:
+        eprint("%s %s: Please specify at most one of --tagged-since and --created-since." %
+          (self.progName, self.verbName))
+        sys.exit(1)
+      options['taggedSince'] = options['createdSince']
+      options['createdSinceEpochSeconds'] = TE.Net.parseTimeStringToEpochSeconds(options['createdSince'])
+    if options.get('createdUntil') != None:
+      if options.get('taggedUntil') != None:
+        eprint("%s %s: Please specify at most one of --tagged-until and --created-until." %
+          (self.progName, self.verbName))
+        sys.exit(1)
+      options['taggedUntil'] = None
+      options['createdUntilEpochSeconds'] = TE.Net.parseTimeStringToEpochSeconds(options['createdUntil'])
+
     # Step 1: tag text to ID
     # Step 2: tag ID to descriptor IDs, paginated
     # Step 3: descriptor IDs to descriptor details, paginated
@@ -469,9 +519,6 @@ e.g. seconds since the epoch, or "-1hour", or "-1day", etc.
       eprint("Tag \"%s\" not found." % tagName)
       sys.exit(1)
 
-    # Step 1: tag text to ID
-    # Step 2: tag ID to descriptor IDs, paginated
-    # Step 3: descriptor IDs to descriptor details, paginated
     idProcessor = lambda idBatch : self.IDProcessor(idBatch, options)
 
     TE.Net.processDescriptorIDsByTagID(tag_id, idProcessor,
@@ -488,7 +535,21 @@ e.g. seconds since the epoch, or "-1hour", or "-1day", etc.
       verbose=options['verbose'],
       showURLs=options['showURLs'],
       includeIndicatorInOutput=options['includeIndicatorInOutput'])
+
+    # See comments above regarding tagged-at filtering being done server-side
+    # and created-at filtering being done client-side (i.e. right here).
+    createdSinceEpochSeconds = options.get('createdSinceEpochSeconds')
+    createdUntilEpochSeconds = options.get('createdUntilEpochSeconds')
+
     for descriptor in descriptors:
+      descriptorCreatedAtEpochSeconds = TE.Net.parseTimeStringToEpochSeconds(descriptor['added_on'])
+      if createdSinceEpochSeconds != None:
+        if descriptorCreatedAtEpochSeconds < createdSinceEpochSeconds:
+          continue
+      if createdUntilEpochSeconds != None:
+        if descriptorCreatedAtEpochSeconds > createdUntilEpochSeconds:
+          continue
+
       # Stub processing -- one would perhaps integrate with one's own system
       print(json.dumps(descriptor))
 
