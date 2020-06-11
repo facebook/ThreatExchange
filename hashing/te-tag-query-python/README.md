@@ -94,6 +94,13 @@ te-tag-query-python update \
   --add-tags testing_python_update
 ```
 
+React to another app's descriptor:
+
+```
+$ te-tag-query-python update -n 2589692907727086 --reactions-to-add INGESTED,IN_REVIEW
+{"success": true}
+```
+
 Post another with relation to the first one:
 
 ```

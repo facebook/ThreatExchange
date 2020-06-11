@@ -93,6 +93,13 @@ te-tag-query-ruby update \
   --add-tags testing_ruby_update
 ```
 
+React to another app's descriptor:
+
+```
+te-tag-query-ruby update -n 2589692907727086 --reactions-to-add INGESTED,IN_REVIEW
+{"success": true}
+```
+
 Post another with relation to the first one:
 
 ```

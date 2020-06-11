@@ -305,3 +305,17 @@ JSON response for read-back:
   }
 }
 ```
+
+React to another app's descriptor:
+
+```
+curl -s -X POST \
+'https://graph.facebook.com/v6.0/2589692907727086/'\
+"?access_token=$TX_ACCESS_TOKEN"\
+'&reactions=HELPFUL,SAW_THIS_TOO' \
+| jq .
+
+{
+  "success": true
+}
+```
