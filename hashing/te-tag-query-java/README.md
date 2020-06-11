@@ -24,6 +24,10 @@ threatexchange@fb.com
 javac com/facebook/threatexchange/*.java
 ```
 
+# Running the code
+
+The `te-tag-query-java` wrapper script sets the Java classpath and invokes the main Java method in `com/facebook/threatexchange/TETagQuery.java`.
+
 # Setup
 
 * Find your app's access token at https://developers.facebook.com/tools/accesstoken/
@@ -36,18 +40,18 @@ javac com/facebook/threatexchange/*.java
 
 On-line help:
 ```
-java com.facebook.threatexchange.TETagQuery --help
+te-tag-query-java --help
 ```
 
 Querying for all hashes of a given type:
 ```
-java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type pdq media_type_photo
+te-tag-query-java tag-to-details --indicator-type pdq media_type_photo
 
-java com.facebook.threatexchange.TETagQuery -v tag-to-details --indicator-type pdq media_type_photo
+te-tag-query-java -v tag-to-details --indicator-type pdq media_type_photo
 
-java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 media_type_video
+te-tag-query-java tag-to-details --indicator-type md5 media_type_video
 
-java com.facebook.threatexchange.TETagQuery tag-to-details \
+te-tag-query-java tag-to-details \
   --page-size 10 \
   --data-dir ./tmk-data-dir \
   --indicator-type tmk \
@@ -56,11 +60,11 @@ java com.facebook.threatexchange.TETagQuery tag-to-details \
 
 Querying for some hashes of a given type:
 ```
-java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type pdq --tagged-since -1day media_type_photo
+te-tag-query-java tag-to-details --indicator-type pdq --tagged-since -1day media_type_photo
 
-java com.facebook.threatexchange.TETagQuery tag-to-details --indicator-type md5 --tagged-since -1week media_type_video
+te-tag-query-java tag-to-details --indicator-type md5 --tagged-since -1week media_type_video
 
-java com.facebook.threatexchange.TETagQuery tag-to-details \
+te-tag-query-java tag-to-details \
   --page-size 10 \
   --data-dir ./tmk-data-dir \
   --indicator-type tmk \
@@ -73,7 +77,7 @@ java com.facebook.threatexchange.TETagQuery tag-to-details \
 Post a new SHA1 hash:
 
 ```
-java com.facebook.threatexchange.TETagQuery submit \
+te-tag-query-java submit \
   -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec00e \
   -t HASH_SHA1 \
   -d "testing te-tag-query with post" \
@@ -89,7 +93,7 @@ Suppose that prints `{"success":true,"id":"2964083130339380"}`.
 Update it, using that ID:
 
 ```
-java com.facebook.threatexchange.TETagQuery update \
+te-tag-query-java update \
   -i 2964083130339380 \
   -s UNKNOWN \
   --add-tags testing_java_update
@@ -98,7 +102,7 @@ java com.facebook.threatexchange.TETagQuery update \
 Post another with relation to the first one:
 
 ```
-java com.facebook.threatexchange.TETagQuery submit \
+te-tag-query-java submit \
   -i dabbad00f00dfeed5ca1ab1ebeefca11ab1ec00f \
   -t HASH_SHA1 \
   -d "testing te-tag-query with post" \
@@ -113,7 +117,7 @@ java com.facebook.threatexchange.TETagQuery submit \
 Post a new TMK hash:
 
 ```
-java com.facebook.threatexchange.TETagQuery \
+te-tag-query-java \
   submit \
     -i ../tmk/sample-hashes/chair-22-sd-sepia-bar.tmk \
     -t HASH_TMK \
