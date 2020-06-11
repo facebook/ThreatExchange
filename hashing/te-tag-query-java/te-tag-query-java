@@ -1,0 +1,6 @@
+#!/bin/bash
+
+ourdir=`dirname $0`
+
+# Set up the Java classpath so this Java program can be invoked from anywhere.
+java -cp $ourdir com.facebook.threatexchange.TETagQuery "$@"
