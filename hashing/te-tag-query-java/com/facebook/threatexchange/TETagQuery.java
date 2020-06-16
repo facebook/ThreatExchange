@@ -301,7 +301,7 @@ public class TETagQuery {
       DescriptorFormatter descriptorFormatter
     ) {
       IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
-      int pageSize = 1000;
+      int pageSize = 10;
       boolean includeIndicatorInOutput = true;
       String taggedSince = null;
       String taggedUntil = null;
