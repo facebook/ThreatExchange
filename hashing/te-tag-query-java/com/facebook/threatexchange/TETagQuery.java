@@ -751,8 +751,7 @@ public class TETagQuery {
       o.printf("--page-size {x}\n");
       o.printf("The \"since\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch, or \"-1hour\", or \"-1day\", etc.\n");
-      o.printf("Indicator types:\n");
-      IndicatorTypeFilterer.list(o);
+      o.printf("--list   Print valid indicator-types and exit.\n");
       System.exit(exitCode);
     }
 
@@ -776,6 +775,10 @@ public class TETagQuery {
 
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
+
+        } else if (option.equals("--list")) {
+          IndicatorTypeFilterer.list(System.out);
+          System.exit(0);
 
         } else if (option.equals("--since")) {
           if (args.length < 1) {
