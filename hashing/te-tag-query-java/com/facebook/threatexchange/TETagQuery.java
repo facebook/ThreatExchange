@@ -342,7 +342,7 @@ public class TETagQuery {
           indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
           if (indicatorTypeFilterer == null) {
             System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
-              PROGNAME, _verb, args[1]);
+              PROGNAME, _verb, args[0]);
             usage(1);
           }
 
@@ -598,7 +598,7 @@ public class TETagQuery {
           indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
           if (indicatorTypeFilterer == null) {
             System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
-              PROGNAME, _verb, args[1]);
+              PROGNAME, _verb, args[0]);
             usage(1);
           }
 
@@ -814,7 +814,7 @@ public class TETagQuery {
           indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
           if (indicatorTypeFilterer == null) {
             System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
-              PROGNAME, _verb, args[1]);
+              PROGNAME, _verb, args[0]);
             usage(1);
           }
 
