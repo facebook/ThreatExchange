@@ -104,7 +104,6 @@ class Net {
     String tagID,
     boolean verbose,
     boolean showURLs,
-    IndicatorTypeFilterer indicatorTypeFilterer,
     String since, // maybe null
     String until, // maybe null
     int pageSize,
@@ -171,9 +170,6 @@ class Net {
           String itemType = (String) item.get("type");
           String itemText = (String) item.get("name");
           if (!itemType.equals(Constants.THREAT_DESCRIPTOR)) {
-            continue;
-          }
-          if (!indicatorTypeFilterer.accept(itemText)) {
             continue;
           }
 

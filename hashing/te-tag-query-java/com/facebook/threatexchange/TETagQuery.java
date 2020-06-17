@@ -251,8 +251,6 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
-
       if (args.length < 1) {
         usage(1);
       }
@@ -283,12 +281,9 @@ public class TETagQuery {
       o.printf("--tagged-since {x}\n");
       o.printf("--tagged-until {x}\n");
       o.printf("--page-size {x}\n");
-      o.printf("--indicator-type {x}\n");
       o.printf("--no-print-indicator -- Don't print the indicator to the terminal\n");
       o.printf("The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch, or \"-1hour\", or \"-1day\", etc.\n");
-      o.printf("Descriptor types:\n");
-      IndicatorTypeFiltererFactory.list(o);
       System.exit(exitCode);
     }
 
@@ -300,7 +295,6 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
       int pageSize = 10;
       boolean includeIndicatorInOutput = true;
       String taggedSince = null;
@@ -332,20 +326,6 @@ public class TETagQuery {
             usage(1);
           }
           pageSize = Integer.valueOf(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("--indicator-type")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-
-          indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
-          if (indicatorTypeFilterer == null) {
-            System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
-              PROGNAME, _verb, args[0]);
-            usage(1);
-          }
-
           args = Arrays.copyOfRange(args, 1, args.length);
 
         } else if (option.equals("--no-print-indicator")) {
@@ -383,7 +363,7 @@ public class TETagQuery {
       // "THREAT_DESCRIPTOR". From this we can dive in on each item, though,
       // and query for its details one ID at a time.
       Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
-        indicatorTypeFilterer, taggedSince, taggedUntil, pageSize, includeIndicatorInOutput,
+        taggedSince, taggedUntil, pageSize, includeIndicatorInOutput,
         new IDPrinterProcessor(verbose));
     }
   }
@@ -510,7 +490,8 @@ public class TETagQuery {
         }
       }
 
-      outputDetails(ids, numIDsPerQuery, verbose, showURLs, includeIndicatorInOutput,
+      outputDetails(ids, numIDsPerQuery, verbose, showURLs,
+        IndicatorTypeFilterer.createAllFilterer(), includeIndicatorInOutput,
         dataDir, descriptorFormatter);
     }
   }
@@ -535,8 +516,7 @@ public class TETagQuery {
       o.printf("--data-dir {d} -- Write descriptors as {ID}.{extension} files in directory named {d}\n");
       o.printf("The \"tagged-since\" or \"tagged-until\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch, or \"-1hour\", or \"-1day\", etc.\n");
-      o.printf("Indicator types:\n");
-      IndicatorTypeFiltererFactory.list(o);
+      o.printf("--list   Print valid indicator-types and exit.\n");
       System.exit(exitCode);
     }
 
@@ -548,7 +528,7 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
+      IndicatorTypeFilterer indicatorTypeFilterer = IndicatorTypeFilterer.createAllFilterer();
       int pageSize = 1000;
       String taggedSince = null;
       String taggedUntil = null;
@@ -562,6 +542,9 @@ public class TETagQuery {
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
 
+        } else if (option.equals("--list")) {
+          IndicatorTypeFilterer.list(System.out);
+          System.exit(0);
         } else if (option.equals("--data-dir")) {
           if (args.length < 1) {
             usage(1);
@@ -595,9 +578,9 @@ public class TETagQuery {
             usage(1);
           }
 
-          indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
+          indicatorTypeFilterer = IndicatorTypeFilterer.create(args[0]);
           if (indicatorTypeFilterer == null) {
-            System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
+            System.err.printf("%s %s: unrecognized indicator-type filter \"%s\".\n",
               PROGNAME, _verb, args[0]);
             usage(1);
           }
@@ -648,9 +631,10 @@ public class TETagQuery {
       // "THREAT_DESCRIPTOR". From this we can dive in on each item, though,
       // and query for its details one ID at a time.
       IDProcessor processor = new IDDetailsProcessor(numIDsPerQuery, verbose,
-        showURLs, includeIndicatorInOutput, dataDir, descriptorFormatter);
+        showURLs, indicatorTypeFilterer, includeIndicatorInOutput,
+        dataDir, descriptorFormatter);
       Net.getDescriptorIDsByTagID(tagID, verbose, showURLs,
-        indicatorTypeFilterer, taggedSince, taggedUntil, pageSize, includeIndicatorInOutput,
+        taggedSince, taggedUntil, pageSize, includeIndicatorInOutput,
         processor);
     }
   }
@@ -664,6 +648,7 @@ public class TETagQuery {
     private final int _numIDsPerQuery;
     private final boolean _verbose;
     private final boolean _showURLs;
+    private final IndicatorTypeFilterer _indicatorTypeFilterer;
     private final boolean _includeIndicatorInOutput;
     private final String _dataDir;
     private final DescriptorFormatter _descriptorFormatter;
@@ -672,6 +657,7 @@ public class TETagQuery {
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
+      IndicatorTypeFilterer indicatorTypeFilterer,
       boolean includeIndicatorInOutput,
       String dataDir,
       DescriptorFormatter descriptorFormatter
@@ -679,13 +665,15 @@ public class TETagQuery {
       _numIDsPerQuery = numIDsPerQuery;
       _verbose = verbose;
       _showURLs = showURLs;
+      _indicatorTypeFilterer = indicatorTypeFilterer;
       _includeIndicatorInOutput = includeIndicatorInOutput;
       _dataDir = dataDir;
       _descriptorFormatter = descriptorFormatter;
     }
 
     public void processIDs(List<String> ids) {
-      outputDetails(ids, _numIDsPerQuery, _verbose, _showURLs, _includeIndicatorInOutput,
+      outputDetails(ids, _numIDsPerQuery, _verbose, _showURLs,
+        _indicatorTypeFilterer, _includeIndicatorInOutput,
         _dataDir, _descriptorFormatter);
     }
   }
@@ -699,6 +687,7 @@ public class TETagQuery {
     int numIDsPerQuery,
     boolean verbose,
     boolean showURLs,
+    IndicatorTypeFilterer indicatorTypeFilterer,
     boolean includeIndicatorInOutput,
     String dataDir,
     DescriptorFormatter descriptorFormatter)
@@ -710,6 +699,9 @@ public class TETagQuery {
       List<ThreatDescriptor> threatDescriptors = Net.getInfoForIDs(chunk, verbose, showURLs,
         includeIndicatorInOutput);
       for (ThreatDescriptor threatDescriptor : threatDescriptors) {
+        if (!indicatorTypeFilterer.accept(threatDescriptor.td_indicator_type)) {
+          continue;
+        }
 
         // TODO: pull out body to method here and re-use for getIncremental
 
@@ -760,7 +752,7 @@ public class TETagQuery {
       o.printf("The \"since\" parameter is any supported by ThreatExchange,\n");
       o.printf("e.g. seconds since the epoch, or \"-1hour\", or \"-1day\", etc.\n");
       o.printf("Indicator types:\n");
-      IndicatorTypeFiltererFactory.list(o);
+      IndicatorTypeFilterer.list(o);
       System.exit(exitCode);
     }
 
@@ -772,7 +764,7 @@ public class TETagQuery {
       boolean showURLs,
       DescriptorFormatter descriptorFormatter
     ) {
-      IndicatorTypeFilterer indicatorTypeFilterer = new AllIndicatorTypeFilterer();
+      IndicatorTypeFilterer indicatorTypeFilterer = IndicatorTypeFilterer.createAllFilterer();
       int pageSize = 1000;
       String since = null;
       String until = null;
@@ -811,7 +803,7 @@ public class TETagQuery {
             usage(1);
           }
 
-          indicatorTypeFilterer = IndicatorTypeFiltererFactory.create(args[0]);
+          indicatorTypeFilterer = IndicatorTypeFilterer.create(args[0]);
           if (indicatorTypeFilterer == null) {
             System.err.printf("%s %s: unrecognized descriptor filter \"%s\".\n",
               PROGNAME, _verb, args[0]);
@@ -840,9 +832,11 @@ public class TETagQuery {
       }
       String tagName = args[0];
 
-      String td_indicator_typeForTE = indicatorTypeFilterer.getTEName();
+      // The 'type' field coming back from TE API requests has 'HASH_MD5' not
+      // 'md5', etc.
+      String uppercaseName = indicatorTypeFilterer.getUppercaseName();
 
-      Net.getIncremental(tagName, td_indicator_typeForTE, since,
+      Net.getIncremental(tagName, uppercaseName, since,
         pageSize, verbose, showURLs, descriptorFormatter, includeIndicatorInOutput);
     }
   }
