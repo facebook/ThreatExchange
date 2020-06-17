@@ -28,6 +28,7 @@ class IndicatorTypeFilterer {
     {"COOKIE_NAME", "cookie"},
     {"CRX", "crx"},
     {"DEBUG_STRING", "dbgstr"},
+    {"DEBUG_STRING", "debug_string"},
     {"DEST_PORT", "dst_port"},
     {"DIRECTORY_QUERIED", "directoryQueried"},
     {"DOMAIN", "domain"},
