@@ -42,7 +42,7 @@ HTTP query:
 ```
 curl -s 'https://graph.facebook.com/v4.0/threat_tags/'\
 "?access_token=$TX_ACCESS_TOKEN"\
-'&text=pwny'
+'&text=pwny&limit=10'
 ```
 
 JSON response:
