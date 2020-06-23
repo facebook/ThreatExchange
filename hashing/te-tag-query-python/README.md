@@ -81,9 +81,9 @@ te-tag-query-python submit \
   -p HAS_WHITELIST \
   --privacy-members 1064060413755420 \
   --tags testing_python_post
-```
 
 {"success": true, "id": "2920637101389201"}
+```
 
 Update it, using that ID:
 
