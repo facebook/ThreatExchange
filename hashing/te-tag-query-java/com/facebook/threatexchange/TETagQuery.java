@@ -1002,112 +1002,132 @@ public class TETagQuery {
 
     protected boolean commonPosterOptionCheck(
       String option,
-      String[] args,
+      ArrayList<String> args, // modified by reference, must be list not array
       DescriptorPostParameters postParams
     ) {
       boolean handled = true;
 
       if (option.equals("-d") || option.equals("--description")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setDescription(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setDescription(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("-l") || option.equals("--share-level")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setShareLevel(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setShareLevel(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("-p") || option.equals("--privacy-type")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setPrivacyType(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setPrivacyType(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("-m") || option.equals("--privacy-members")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setPrivacyMembers(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setPrivacyMembers(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("-s") || option.equals("--status")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setStatus(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setStatus(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("-r") || option.equals("--review-status")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setReviewStatus(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setReviewStatus(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("-y") || option.equals("--severity")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setSeverity(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setSeverity(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("-c") || option.equals("--confidence")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setConfidence(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setConfidence(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("--related-ids-for-upload")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setRelatedIDsForUpload(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setRelatedIDsForUpload(args.get(0));
+        args.remove(0);
       } else if (option.equals("--related-triples-for-upload-as-json")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setRelatedTriplesForUploadAsJSON(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setRelatedTriplesForUploadAsJSON(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("--tags")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        params.setTagsToSet(args[0]);
+        args.remove(0);
+
+      } else if (option.equals("--add-tags")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        params.setTagsToAdd(args[0]);
+        args.remove(0);
+      } else if (option.equals("--remove-tags")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        params.setTagsToRemove(args[0]);
+        args.remove(0);
 
       } else if (option.equals("--reactions-to-add")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setReactionsToAdd(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setReactionsToAdd(args.get(0));
+        args.remove(0);
       } else if (option.equals("--reactions-to-remove")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setReactionsToRemove(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setReactionsToRemove(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("--first-active")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setFirstActive(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setFirstActive(args.get(0));
+        args.remove(0);
       } else if (option.equals("--last-active")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setLastActive(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setLastActive(args.get(0));
+        args.remove(0);
 
       } else if (option.equals("--expired-on")) {
-        if (args.length < 1) {
+        if (args.size() < 1) {
           usage(1);
         }
-        postParams.setExpiredOn(args[0]);
-        args = Arrays.copyOfRange(args, 1, args.length);
+        postParams.setExpiredOn(args.get(0));
+        args.remove(0);
 
       } else {
         handled = false;
@@ -1130,7 +1150,7 @@ public class TETagQuery {
 
     @Override
     public void handle(
-      String[] args,
+      String[] argsAsArray,
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
@@ -1139,10 +1159,11 @@ public class TETagQuery {
       boolean dryRun = false;
       boolean indicatorTextFromStdin = false;
       DescriptorPostParameters postParams = new DescriptorPostParameters();
+      ArrayList<String> args = new ArrayList<String>(Arrays.asList(argsAsArray));
 
-      while (args.length > 0 && args[0].startsWith("-")) {
-        String option = args[0];
-        args = Arrays.copyOfRange(args, 1, args.length);
+      while (args.size() > 0 && args.get(0).startsWith("-")) {
+        String option = args.get(0);
+        args.remove(0);
 
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
@@ -1151,16 +1172,22 @@ public class TETagQuery {
           dryRun = true;
 
         } else if (option.equals("-I")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
           indicatorTextFromStdin = true;
         } else if (option.equals("-i") || option.equals("--indicator")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
-          postParams.setIndicatorText(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setIndicatorText(args.get(0));
+          args.remove(0);
+        } else if (option.equals("-t") || option.equals("--type")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          postParams.setIndicatorType(args.get(0));
+          args.remove(0);
 
         } else {
           boolean handled = this.commonPosterOptionCheck(option, args, postParams);
@@ -1171,8 +1198,8 @@ public class TETagQuery {
           }
         }
       }
-      if (args.length > 0) {
-        System.err.printf("Extraneous argument \"%s\"\n", args[0]);
+      if (args.size() > 0) {
+        System.err.printf("Extraneous argument \"%s\"\n", args.get(0));
         usage(1);
       }
 
@@ -1255,7 +1282,7 @@ public class TETagQuery {
 
     @Override
     public void handle(
-      String[] args,
+      String[] argsAsArray,
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
@@ -1264,10 +1291,11 @@ public class TETagQuery {
       boolean dryRun = false;
       boolean descriptorIDsFromStdin = false;
       DescriptorPostParameters  postParams = new DescriptorPostParameters();
+      ArrayList<String> args = new ArrayList<String>(Arrays.asList(argsAsArray));
 
-      while (args.length > 0 && args[0].startsWith("-")) {
-        String option = args[0];
-        args = Arrays.copyOfRange(args, 1, args.length);
+      while (args.size() > 0 && args.get(0).startsWith("-")) {
+        String option = args.get(0);
+        args.remove(0);
 
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
@@ -1276,16 +1304,16 @@ public class TETagQuery {
           dryRun = true;
 
         } else if (option.equals("-I")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
           descriptorIDsFromStdin = true;
         } else if (option.equals("-i")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
-          postParams.setDescriptorID(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setDescriptorID(args.get(0));
+          args.remove(0);
 
         } else {
           boolean handled = this.commonPosterOptionCheck(option, args, postParams);
@@ -1297,8 +1325,8 @@ public class TETagQuery {
         }
       }
 
-      if (args.length > 0) {
-        System.err.printf("Extraneous argument \"%s\"\n", args[0]);
+      if (args.size() > 0) {
+        System.err.printf("Extraneous argument \"%s\"\n", args.get(0));
         usage(1);
       }
 
