@@ -870,6 +870,9 @@ public class TETagQuery {
       if (args.length != 1) {
         usage(1);
       }
+      if (args[0].equals("-h") || args[0].equals("--help")) {
+        usage(0);
+      }
       String startURL = args[0];
       String nextURL = startURL;
 
