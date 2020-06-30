@@ -227,7 +227,7 @@ EOF
 
     tagName = args[0]
     tag_id = ThreatExchange::TENet::getTagIDFromName(
-      tagName: tagName,
+      tagName,
       showURLs: options['showURLs'],
     )
     puts tag_id
@@ -298,7 +298,7 @@ EOF
     # Step 3: descriptor IDs to descriptor details, paginated
 
     tag_id = ThreatExchange::TENet::getTagIDFromName(
-      tagName: tagName,
+      tagName,
       showURLs: options['showURLs'],
     )
 
@@ -309,7 +309,7 @@ EOF
     end
 
     ThreatExchange::TENet::processDescriptorIDsByTagID(
-      tagID: tag_id,
+      tag_id,
       verbose: options['verbose'],
       showURLs: options['showURLs'],
       taggedSince: options['taggedSince'],
@@ -380,14 +380,14 @@ EOF
     else
       $stdin.readlines.each do |line|
         id = line.chomp
-        ids.append(id)
+        ids.push(id)
       end
     end
 
     ids.each do |id|
       idBatch = [id]
       descriptors = ThreatExchange::TENet.getInfoForIDs(
-        ids: idBatch,
+        idBatch,
         verbose: options['verbose'],
         showURLs: options['showURLs'],
         includeIndicatorInOutput: options['includeIndicatorInOutput'])
@@ -514,14 +514,15 @@ EOF
     # Step 2: tag ID to descriptor IDs, paginated
     # Step 3: descriptor IDs to descriptor details, paginated
 
+    puts("TAG_NAME=#{tagName}")
     tag_id = ThreatExchange::TENet::getTagIDFromName(
-      tagName: tagName,
+      tagName,
       showURLs: options['showURLs'],
     )
 
     idProcessor = lambda do |idBatch|
       descriptors = ThreatExchange::TENet.getInfoForIDs(
-        ids: idBatch,
+        idBatch,
         verbose: options['verbose'],
         showURLs: options['showURLs'],
         includeIndicatorInOutput: options['includeIndicatorInOutput'])
@@ -554,7 +555,7 @@ EOF
     end
 
     ThreatExchange::TENet::processDescriptorIDsByTagID(
-      tagID: tag_id,
+      tag_id,
       verbose: options['verbose'],
       showURLs: options['showURLs'],
       taggedSince: options['taggedSince'],
@@ -890,7 +891,7 @@ class SubmitHandler < AbstractPostSubcommandHandler
       $stdin.readlines.each do |line|
         postParams[names[:indicator]] = line.chomp
         self.submitSingle(
-          postParams: postParams,
+          postParams,
           verbose: options['verbose'],
           showURLs: options['showURLs'],
           dryRun: options['dryRun'],
@@ -902,7 +903,7 @@ class SubmitHandler < AbstractPostSubcommandHandler
         exit 1
       end
       self.submitSingle(
-        postParams: postParams,
+        postParams,
         verbose: options['verbose'],
         showURLs: options['showURLs'],
         dryRun: options['dryRun'],
@@ -913,13 +914,13 @@ class SubmitHandler < AbstractPostSubcommandHandler
 
   # ----------------------------------------------------------------
   def submitSingle(
-    postParams:,
+    postParams,
     verbose: false,
     showURLs: false,
     dryRun: false)
 
     validationErrorMessage, response_body, response_code = ThreatExchange::TENet::submitThreatDescriptor(
-      postParams: postParams,
+      postParams,
       showURLs: showURLs,
       dryRun: dryRun)
 
@@ -1015,7 +1016,7 @@ class UpdateHandler < AbstractPostSubcommandHandler
       $stdin.readlines.each do |line|
         postParams[names[:descriptor_id]] = line.chomp
         self.updateSingle(
-          postParams: postParams,
+          postParams,
           verbose: options['verbose'],
           showURLs: options['showURLs'],
           dryRun: options['dryRun'],
@@ -1027,7 +1028,7 @@ class UpdateHandler < AbstractPostSubcommandHandler
         exit 1
       end
       self.updateSingle(
-        postParams: postParams,
+        postParams,
         verbose: options['verbose'],
         showURLs: options['showURLs'],
         dryRun: options['dryRun'],
@@ -1037,13 +1038,13 @@ class UpdateHandler < AbstractPostSubcommandHandler
 
   # ----------------------------------------------------------------
   def updateSingle(
-    postParams:,
+    postParams,
     verbose: false,
     showURLs: false,
     dryRun: false)
 
     validationErrorMessage, response_body, response_code = ThreatExchange::TENet::updateThreatDescriptor(
-      postParams: postParams,
+      postParams,
       showURLs: showURLs,
       dryRun: dryRun)
 
@@ -1137,7 +1138,7 @@ class CopyHandler < AbstractPostSubcommandHandler
       $stdin.readlines.each do |line|
         postParams[names[:descriptor_id]] = line.chomp
         self.copySingle(
-          postParams: postParams,
+          postParams,
           verbose: options['verbose'],
           showURLs: options['showURLs'],
           dryRun: options['dryRun'],
@@ -1149,7 +1150,7 @@ class CopyHandler < AbstractPostSubcommandHandler
         exit 1
       end
       self.copySingle(
-        postParams: postParams,
+        postParams,
         verbose: options['verbose'],
         showURLs: options['showURLs'],
         dryRun: options['dryRun'],
@@ -1159,13 +1160,13 @@ class CopyHandler < AbstractPostSubcommandHandler
 
   # ----------------------------------------------------------------
   def copySingle(
-    postParams:,
+    postParams,
     verbose: false,
     showURLs: false,
     dryRun: false)
 
     validationErrorMessage, response_body, response_code = ThreatExchange::TENet::copyThreatDescriptor(
-      postParams: postParams,
+      postParams,
       showURLs: showURLs,
       dryRun: dryRun)
 
