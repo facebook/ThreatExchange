@@ -4,6 +4,10 @@ Example technique for retrieving hashes with a given tag from ThreatExchange, as
 
 You can use this for downloading/uploading hashes from/to ThreatExchange, found by tag. You can use the Python code as-is, or use it to illuminate tooling in other languages. Note that `te-tag-query-python -s ...` will print the URLs this tool constructs for you, to help make clear how to access ThreatExchange via URLs.
 
+# Dependencies
+
+Python standard libraries. Requires Python 3. Tested on Python 3.7.5.
+
 # Query mechanism
 
 * We use the `tagged_objects` endpoint to fetch IDs of all hashes. This
