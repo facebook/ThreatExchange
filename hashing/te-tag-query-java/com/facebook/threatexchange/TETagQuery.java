@@ -1080,20 +1080,20 @@ public class TETagQuery {
         if (args.size() < 1) {
           usage(1);
         }
-        params.setTagsToSet(args[0]);
+        postParams.setTagsToSet(args.get(0));
         args.remove(0);
 
       } else if (option.equals("--add-tags")) {
         if (args.size() < 1) {
           usage(1);
         }
-        params.setTagsToAdd(args[0]);
+        postParams.setTagsToAdd(args.get(0));
         args.remove(0);
       } else if (option.equals("--remove-tags")) {
         if (args.size() < 1) {
           usage(1);
         }
-        params.setTagsToRemove(args[0]);
+        postParams.setTagsToRemove(args.get(0));
         args.remove(0);
 
       } else if (option.equals("--reactions-to-add")) {
