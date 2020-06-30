@@ -870,6 +870,9 @@ public class TETagQuery {
       if (args.length != 1) {
         usage(1);
       }
+      if (args[0].equals("-h") || args[0].equals("--help")) {
+        usage(0);
+      }
       String startURL = args[0];
       String nextURL = startURL;
 
@@ -1303,12 +1306,12 @@ public class TETagQuery {
         } else if (option.equals("--dry-run")) {
           dryRun = true;
 
-        } else if (option.equals("-I")) {
+        } else if (option.equals("-N")) {
           if (args.size() < 1) {
             usage(1);
           }
           descriptorIDsFromStdin = true;
-        } else if (option.equals("-i")) {
+        } else if (option.equals("-n")) {
           if (args.size() < 1) {
             usage(1);
           }
@@ -1332,7 +1335,7 @@ public class TETagQuery {
 
       if (descriptorIDsFromStdin) {
         if (postParams.getDescriptorID() != null) {
-          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
         }
@@ -1353,7 +1356,7 @@ public class TETagQuery {
         }
       } else {
         if (postParams.getDescriptorID() == null) {
-          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
         }
