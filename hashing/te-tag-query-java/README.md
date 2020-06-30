@@ -94,7 +94,7 @@ Update it, using that ID:
 
 ```
 te-tag-query-java update \
-  -i 2964083130339380 \
+  -n 2964083130339380 \
   -s UNKNOWN \
   --add-tags testing_java_update
 ```
