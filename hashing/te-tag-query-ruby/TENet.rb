@@ -3,7 +3,7 @@
 # ================================================================
 
 # General Ruby dependencies
-require 'CGI' # for URL-encoding
+require 'cgi' # for URL-encoding
 require 'net/http'
 require 'uri'
 require 'json'
@@ -107,11 +107,11 @@ end
 # ----------------------------------------------------------------
 # Looks up the "objective tag" ID for a given tag. This is suitable input for the /threat_tags endpoint.
 
-def TENet.getTagIDFromName(tagName:, showURLs: false)
+def TENet.getTagIDFromName(tagName, showURLs: false)
   url = @@TE_BASE_URL +
       "/threat_tags" +
-      "/?access_token=" + @@APP_TOKEN +
-      "&text=" + CGI.escape(tagName)
+      "/?access_token=" + CGI::escape(@@APP_TOKEN) +
+      "&text=" + CGI::escape(tagName)
 
   if showURLs
     puts "URL:"
@@ -157,24 +157,24 @@ end
 # each page of IDs.
 
 def TENet.processDescriptorIDsByTagID(
-  tagID:,    # string
+  tagID,    # string
   verbose: false,  # boolean
   showURLs: false, # verbose
   taggedSince: nil,   # nullable string
   taggedUntil: nil,   # nullable string
   pageSize: 10, # int
   includeIndicatorInOutput: true,
-  idProcessor:)# IDProcessor callback-class instance
+  idProcessor: nil)# IDProcessor callback-class instance
 
   startURL = @@TE_BASE_URL +
     "/" + tagID + "/tagged_objects" +
-    "/?access_token=" + @@APP_TOKEN +
+    "/?access_token=" + CGI::escape(@@APP_TOKEN) +
     "&limit=" + pageSize.to_s
   unless taggedSince.nil?
-    startURL += "&tagged_since=" + CGI.escape(taggedSince)
+    startURL += "&tagged_since=" + CGI::escape(taggedSince)
   end
   unless taggedUntil.nil?
-    startURL += "&tagged_until=" + CGI.escape(taggedUntil)
+    startURL += "&tagged_until=" + CGI::escape(taggedUntil)
   end
 
   nextURL = startURL
@@ -240,7 +240,7 @@ def TENet.processDescriptorIDsByTagID(
         puts item.to_json
       end
 
-      ids.append(itemID)
+      ids.push(itemID)
     end
 
     if verbose
@@ -262,7 +262,7 @@ end
 # ----------------------------------------------------------------
 # Looks up all metadata for given IDs.
 def TENet.getInfoForIDs(
-  ids:, # list of string
+  ids, # list of string
   verbose: false, # boolean,
   showURLs: false, # boolean,
   includeIndicatorInOutput: true) # boolean
@@ -282,8 +282,8 @@ def TENet.getInfoForIDs(
   # for available fields
 
   startURL = @@TE_BASE_URL +
-    "/?access_token=" + @@APP_TOKEN +
-    "&ids=" + CGI.escape(ids.join(',')) +
+    "/?access_token=" + CGI::escape(@@APP_TOKEN) +
+    "&ids=" + CGI::escape(ids.join(',')) +
     "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description,reactions,my_reactions"
 
   if showURLs
@@ -360,7 +360,7 @@ def TENet.getInfoForIDs(
       descriptor['description'] = ""
     end
 
-    descriptors.append(descriptor)
+    descriptors.push(descriptor)
   end
 
   return descriptors
@@ -386,7 +386,7 @@ def TENet.validatePostPararmsForSubmit(postParams)
   missingFields = requiredFields.map do |fieldName|
     postParams[fieldName].nil? ? fieldName : nil
   end
-  missingFields = missingFields.filter do |fieldName|
+  missingFields = missingFields.select do |fieldName|
     fieldName != nil
   end
 
@@ -429,7 +429,7 @@ end
 # Does a single POST to the threat_descriptors endpoint.  See also
 # https://developers.facebook.com/docs/threat-exchange/reference/submitting
 def TENet.submitThreatDescriptor(
-  postParams:,
+  postParams,
   showURLs: false, # boolean,
   dryRun: false) # boolean,
 
@@ -440,11 +440,11 @@ def TENet.submitThreatDescriptor(
 
   urlString = @@TE_BASE_URL +
     "/threat_descriptors" +
-    "/?access_token=" + @@APP_TOKEN
+    "/?access_token=" + CGI::escape(@@APP_TOKEN)
 
   return TENet._postThreatDescriptor(
-    urlString: urlString,
-    postParams: postParams,
+    urlString,
+    postParams,
     showURLs: showURLs,
     dryRun: dryRun
   )
@@ -454,7 +454,7 @@ end
 # Does a single POST to the threat_descriptor ID endpoint.  See also
 # https://developers.facebook.com/docs/threat-exchange/reference/editing
 def TENet.updateThreatDescriptor(
-  postParams:,
+  postParams,
   showURLs: false, # boolean,
   dryRun: false) # boolean,
 
@@ -465,11 +465,11 @@ def TENet.updateThreatDescriptor(
 
   urlString = @@TE_BASE_URL +
     "/" + postParams[POST_PARAM_NAMES[:descriptor_id]] +
-    "/?access_token=" + @@APP_TOKEN
+    "/?access_token=" + CGI::escape(@@APP_TOKEN)
 
   return TENet._postThreatDescriptor(
-    urlString: urlString,
-    postParams: postParams,
+    urlString,
+    postParams,
     showURLs: showURLs,
     dryRun: dryRun
   )
@@ -477,7 +477,7 @@ end
 
 # ----------------------------------------------------------------
 def TENet.copyThreatDescriptor(
-  postParams:,
+  postParams,
   showURLs: false, # boolean,
   dryRun: false) # boolean,
 
@@ -489,7 +489,7 @@ def TENet.copyThreatDescriptor(
   # Get source descriptor
   sourceID = postParams[POST_PARAM_NAMES[:descriptor_id]]
   postParams.delete(POST_PARAM_NAMES[:descriptor_id])
-  sourceDescriptor = TENet.getInfoForIDs(ids: [sourceID], showURLs:showURLs)
+  sourceDescriptor = TENet.getInfoForIDs([sourceID], showURLs:showURLs)
   sourceDescriptor = sourceDescriptor[0]
 
   # Mutate necessary fields
@@ -523,21 +523,21 @@ def TENet.copyThreatDescriptor(
     end
   end
 
-  return self.submitThreatDescriptor(postParams:postParams, showURLs:showURLs, dryRun:dryRun)
+  return self.submitThreatDescriptor(postParams, showURLs:showURLs, dryRun:dryRun)
 end
 
 
 # ----------------------------------------------------------------
 # Code-reuse for submit and update
 def TENet._postThreatDescriptor(
-  urlString:,
-  postParams:,
+  urlString,
+  postParams,
   showURLs: false, # boolean,
   dryRun: false) # boolean,
 
 
   postParams.each do |key, value|
-    urlString += "&#{key}=" + CGI.escape(value.to_s)
+    urlString += "&#{key}=" + CGI::escape(value.to_s)
   end
 
   if showURLs
@@ -551,8 +551,8 @@ def TENet._postThreatDescriptor(
     return [nil, '', nil]
   else
     header = {
-      'Content-Type':  'text/json',
-      'charset': 'utf-8',
+      'Content-Type' =>  'text/json',
+      'charset' => 'utf-8',
     }
     uri = URI.parse(urlString)
     http = Net::HTTP.new(uri.host, uri.port)
