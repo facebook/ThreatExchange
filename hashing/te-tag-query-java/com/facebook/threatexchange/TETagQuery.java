@@ -174,6 +174,7 @@ public class TETagQuery {
     private static final String PAGINATE = "paginate";
     private static final String SUBMIT = "submit";
     private static final String UPDATE = "update";
+    private static final String COPY = "copy";
 
     public static CommandHandler create(String verb) {
       switch(verb) {
@@ -193,6 +194,8 @@ public class TETagQuery {
         return new SubmitHandler(verb);
       case UPDATE:
         return new UpdateHandler(verb);
+      case COPY:
+        return new CopyHandler(verb);
       default:
         return null;
       }
@@ -208,6 +211,7 @@ public class TETagQuery {
       o.printf("  %s\n", PAGINATE);
       o.printf("  %s\n", SUBMIT);
       o.printf("  %s\n", UPDATE);
+      o.printf("  %s\n", COPY);
     }
   }
 
@@ -1189,7 +1193,7 @@ public class TETagQuery {
         }
       }
       if (args.size() > 0) {
-        System.err.printf("Extraneous argument \"%s\"\n", args.get(0));
+        System.err.printf("%s %s: Extraneous argument \"%s\"\n", PROGNAME, self._verb, args.get(0));
         usage(1);
       }
 
@@ -1256,10 +1260,6 @@ public class TETagQuery {
   } // class SubmitHandler
 
   // ----------------------------------------------------------------
-  // NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
-  // several differences. I found it simpler (albeit more verbose) to duplicate
-  // rather than do an abstract-and-override refactor.
-
   public static class UpdateHandler extends AbstractPostSubcommandHandler {
     public UpdateHandler(String verb) {
       super(verb);
@@ -1330,7 +1330,7 @@ public class TETagQuery {
       }
 
       if (args.size() > 0) {
-        System.err.printf("Extraneous argument \"%s\"\n", args.get(0));
+        System.err.printf("%s %s: Extraneous argument \"%s\"\n", PROGNAME, self._verb, args.get(0));
         usage(1);
       }
 
@@ -1380,4 +1380,116 @@ public class TETagQuery {
 
   } // class UpdateHandler
 
+  // ----------------------------------------------------------------
+  public static class CopyHandler extends AbstractPostSubcommandHandler {
+    public CopyHandler(String verb) {
+      super(verb);
+    }
+
+    @Override
+    public void usage(int exitCode) {
+      this.commonPosterUsage(exitCode, POSTER_NAME_Copy);
+    }
+
+    @Override
+    public void handle(
+      String[] argsAsArray,
+      int numIDsPerQuery,
+      boolean verbose,
+      boolean showURLs,
+      DescriptorFormatter descriptorFormatter
+    ) {
+      boolean dryRun = false;
+      boolean descriptorIDsFromStdin = false;
+      DescriptorPostParameters  postParams = new DescriptorPostParameters();
+      ArrayList<String> args = new ArrayList<String>(Arrays.asList(argsAsArray));
+
+      while (args.size() > 0 && args.get(0).startsWith("-")) {
+        String option = args.get(0);
+        args.remove(0);
+
+        if (option.equals("-h") || option.equals("--help")) {
+          usage(0);
+
+        } else if (option.equals("--dry-run")) {
+          dryRun = true;
+
+        } else if (option.equals("-N")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          descriptorIDsFromStdin = true;
+        } else if (option.equals("-n")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          postParams.setDescriptorID(args.get(0));
+          args.remove(0);
+
+        xxx indicator
+        xxx type
+        xxx tags but included in common
+
+        } else {
+          boolean handled = this.commonPosterOptionCheck(option, args, postParams);
+          if (!handled) {
+            System.err.printf("%s %s: Unrecognized option \"%s\".\n",
+              PROGNAME, _verb, option);
+            usage(1);
+          }
+        }
+      }
+
+      if (args.size() > 0) {
+        System.err.printf("%s %s: Extraneous argument \"%s\"\n", PROGNAME, self._verb, args.get(0));
+        usage(1);
+      }
+
+      if (descriptorIDsFromStdin) {
+        if (postParams.getDescriptorID() != null) {
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        int lno = 1;
+        try {
+          while ((line = reader.readLine()) != null) {
+            lno++;
+            // In Java, line-terminators already stripped for us
+            postParams.setDescriptorID(line);
+            CopySingle(postParams, verbose, showURLs, dryRun);
+          }
+        } catch (IOException e) {
+          System.err.printf("Couldn't read line %d of standard input.\n", lno);
+          System.exit(1);
+        }
+      } else {
+        if (postParams.getDescriptorID() == null) {
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+        CopySingle(postParams, verbose, showURLs, dryRun);
+      }
+    }
+
+    private void CopySingle(
+      DescriptorPostParameters postParams,
+      boolean verbose,
+      boolean showURLs,
+      boolean dryRun
+    ) {
+      boolean ok = Net.copyThreatDescriptor(postParams, showURLs, dryRun);
+      if (!ok) {
+        // Error message already printed out
+        System.exit(1);
+      }
+    }
+
+  } // class CopyHandler
+
 }
+
