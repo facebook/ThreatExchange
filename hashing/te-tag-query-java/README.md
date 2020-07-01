@@ -114,6 +114,58 @@ te-tag-query-java submit \
   --related-triples-for-upload-as-json '[{"owner_app_id":494491891138576,"td_indicator_type":"HASH_SHA1","td_raw_indicator":"dabbad00f00dfeed5ca1ab1ebeefca11ab1ec00e"}]'
 ```
 
+Make copies of a set of descriptors, e.g. from a data-sharing partner:
+
+```
+$ jq '.id | tonumber' partner-data.json
+1791017857689049
+3061881580561662
+3186579388076637
+2927363690632863
+4036655176350945
+2920637101389201
+2519477894818399
+```
+
+Here you copy all descriptor data from the query output, only modifying your own values.
+Note, however, that for the present you must explicitly set `--privacy-members`.
+
+```
+$ jq '.id | tonumber' partner-data.json \
+| te-tag-query-java copy -N \
+  --description 'our copies' \
+  --privacy-type HAS_PRIVACY_GROUP --privacy-members 781588512307315
+{"success":true,"id":"1791017857689049"}
+{"success":true,"id":"3061881580561662"}
+{"success":true,"id":"3186579388076637"}
+{"success":true,"id":"2927363690632863"}
+{"success":true,"id":"4036655176350945"}
+{"success":true,"id":"2920637101389201"}
+{"success":true,"id":"2519477894818399"}
+```
+
+```
+$ te-tag-query-java ids-to-details 1791017857689049 | jq .
+{
+  "id": "1791017857689049",
+  "td_raw_indicator": "dabbad00f00dfeed5ca1ab1ebeefca11ab1ec0cf",
+  "td_indicator_type": "HASH_SHA1",
+  "added_on": "2020-07-02T19:56:05+0000",
+  "last_updated": "2020-07-02T21:08:31+0000",
+  "td_confidence": "100",
+  "td_owner_id": "494491891138576",
+  "td_owner_email": "threatexchange@fb.com",
+  "td_owner_name": "Media Hash Sharing RF Test",
+  "td_visibility": "HAS_PRIVACY_GROUP",
+  "td_review_status": "REVIEWED_AUTOMATICALLY",
+  "td_status": "NON_MALICIOUS",
+  "td_severity": "INFO",
+  "td_share_level": "AMBER",
+  "td_subjective_tags": "pwny,testing",
+  "td_description": "our copies"
+}
+```
+
 Post a new TMK hash:
 
 ```
