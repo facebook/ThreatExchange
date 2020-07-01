@@ -904,66 +904,235 @@ public class TETagQuery {
   }
 
   // ----------------------------------------------------------------
-  // NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
-  // several differences. I found it simpler (albeit more verbose) to duplicate
-  // rather than do an abstract-and-override refactor.
+  // Some code-reuse for all subcommand handlers that do POSTs.
+  public static abstract class AbstractPostSubcommandHandler extends CommandHandler {
+    public static final String POSTER_NAME_SUBMIT = "submit";
+    public static final String POSTER_NAME_UPDATE = "update";
 
-  public static class SubmitHandler extends CommandHandler {
+    public AbstractPostSubcommandHandler(String verb) {
+      super(verb);
+    }
+
+    protected void commonPosterUsage(int exitCode, String posterName) {
+      PrintStream o = Utils.getPrintStream(exitCode);
+
+      o.printf("Usage: %s %s [options]\n", PROGNAME, this._verb);
+
+      if (posterName.equals(POSTER_NAME_SUBMIT)) {
+        o.println("Uploads a threat descriptor with the specified values.");
+        o.println("On repost (with same indicator text/type and app ID), updates changed fields.");
+        o.println("");
+        o.println("Required:");
+        o.println("-i|--indicator {...}   The indicator text: hash/URL/etc.");
+        o.println("-I                     Take indicator text from standard input, one per line.");
+        o.println("Exactly one of -i or -I is required.");
+        o.println("-t|--type {...}");
+        o.println("");
+      }
+      if (posterName.equals(POSTER_NAME_UPDATE)) {
+        o.println("Updates specified attributes on an existing threat descriptor.");
+        o.println("");
+        o.println("Required:");
+        o.println("-n {...}               ID of descriptor to be edited. Must already exist.");
+        o.println("-N                     Take descriptor IDs from standard input, one per line.");
+        o.println("Exactly one of -n or -N is required.");
+      }
+
+      o.println("-d|--description {...}");
+      o.println("-l|--share-level {...}");
+      o.println("-p|--privacy-type {...}");
+      o.println("-y|--severity {...}");
+      o.println("");
+      o.println("Optional:");
+      o.println("-h|--help");
+      o.println("--dry-run");
+      o.println("-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be");
+      o.println("                           comma-delimited app IDs. If privacy-type is");
+      o.println("                           HAS_PRIVACY_GROUP these must be comma-delimited");
+      o.println("                           privacy-group IDs.");
+      o.println("--tags {...}           Comma-delimited. Overwrites on repost.");
+
+      if (posterName.equals(POSTER_NAME_UPDATE)) {
+        o.println("--add-tags {...}       Comma-delimited. Adds these on repost.");
+        o.println("--remove-tags {...}    Comma-delimited. Removes these on repost.");
+      }
+
+      o.println("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must");
+      o.println("                       already exist) to relate the new descriptor to.");
+      o.println("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.");
+      o.println("                       Here you can uniquely the relate-to descriptors by their");
+      o.println("                       owner ID / indicator-type / indicator-text, rather than");
+      o.println("                       by their IDs. See README.md for an example.");
+      o.println("");
+      o.println("--reactions-to-add {...}    Example for add/remove: INGESTED,IN_REVIEW");
+      o.println("--reactions-to-remove {...}");
+      o.println("");
+      o.println("--confidence {...}");
+      o.println("-s|--status {...}");
+      o.println("-r|--review-status {...}");
+      o.println("--first-active {...}");
+      o.println("--last-active {...}");
+      o.println("--expired-on {...}");
+      o.println("");
+      o.println("Please see the following for allowed values in all enumerated types except reactions:");
+      o.println("https://developers.facebook.com/docs/threat-exchange/reference/submitting");
+      o.println("");
+      o.println("Please also see:");
+      o.println("https://developers.facebook.com/docs/threat-exchange/reference/editing");
+      o.println("");
+      o.println("Please see the following for enumerated types in reactions:");
+      o.println("See also https://developers.facebook.com/docs/threat-exchange/reference/reacting");
+
+      System.exit(exitCode);
+    }
+
+    // ----------------------------------------------------------------
+    // For CLI-parsing
+    //
+    // Input:
+    // * option such as '-d'
+    // * remaining args as string-list
+    // * postParams dict
+    //
+    // Output:
+    // * boolean whether the option was recognized
+    // * args may be shifted if the option was recognized and successfully handled
+    //
+    // Modified by reference:
+    // * postParams dict modified by reference if the option was recognized and
+    //   successfully handled
+
+    protected boolean commonPosterOptionCheck(
+      String option,
+      ArrayList<String> args, // modified by reference, must be list not array
+      DescriptorPostParameters postParams
+    ) {
+      boolean handled = true;
+
+      if (option.equals("-d") || option.equals("--description")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setDescription(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("-l") || option.equals("--share-level")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setShareLevel(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("-p") || option.equals("--privacy-type")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setPrivacyType(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("-m") || option.equals("--privacy-members")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setPrivacyMembers(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("-s") || option.equals("--status")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setStatus(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("-r") || option.equals("--review-status")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setReviewStatus(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("-y") || option.equals("--severity")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setSeverity(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("-c") || option.equals("--confidence")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setConfidence(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("--related-ids-for-upload")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setRelatedIDsForUpload(args.get(0));
+        args.remove(0);
+      } else if (option.equals("--related-triples-for-upload-as-json")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setRelatedTriplesForUploadAsJSON(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("--reactions-to-add")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setReactionsToAdd(args.get(0));
+        args.remove(0);
+      } else if (option.equals("--reactions-to-remove")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setReactionsToRemove(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("--first-active")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setFirstActive(args.get(0));
+        args.remove(0);
+      } else if (option.equals("--last-active")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setLastActive(args.get(0));
+        args.remove(0);
+
+      } else if (option.equals("--expired-on")) {
+        if (args.size() < 1) {
+          usage(1);
+        }
+        postParams.setExpiredOn(args.get(0));
+        args.remove(0);
+
+      } else {
+        handled = false;
+      }
+
+      return handled;
+    }
+  }
+
+  // ----------------------------------------------------------------
+  public static class SubmitHandler extends AbstractPostSubcommandHandler {
     public SubmitHandler(String verb) {
       super(verb);
     }
 
     @Override
     public void usage(int exitCode) {
-      PrintStream o = Utils.getPrintStream(exitCode);
-      o.printf("Usage: %s %s [options]\n", PROGNAME, _verb);
-      o.printf("Uploads a threat descriptor with the specified values.\n");
-      o.printf("On repost (with same indicator text/type and app ID), updates changed fields.\n");
-      o.printf("\n");
-      o.printf("Required:\n");
-      o.printf("-i|--indicator {...}   If indicator type is HASH_TMK this must be the\n");
-      o.printf("                       path to a .tmk file, else the indicator text.\n");
-      o.printf("-I                     Take indicator text from standard input, one per line.\n");
-      o.printf("Exactly one of -i or -I is required.\n");
-      o.printf("-t|--type {...}\n");
-      o.printf("-d|--description {...}\n");
-      o.printf("-l|--share-level {...}\n");
-      o.printf("-p|--privacy-type {...}\n");
-      o.printf("-y|--severity {...}\n");
-      o.printf("\n");
-      o.printf("Optional:\n");
-      o.printf("-h|--help\n");
-      o.printf("--dry-run\n");
-      o.printf("-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be\n");
-      o.printf("                       comma-delimited app IDs. If privacy-type is\n");
-      o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
-      o.printf("                       privacy-group IDs.\n");
-      o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
-      o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");
-      o.printf("                       already exist) to relate the new descriptor to.\n");
-      o.printf("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.\n");
-      o.printf("                       Here you can uniquely the relate-to descriptors by their\n");
-      o.printf("                       owner ID / indicator-type / indicator-text, rather than\n");
-      o.printf("                       by their IDs. See README.md for an example.\n");
-      o.printf("--reactions-to-add {...} Example for add/remove: INGESTED,IN_REVIEW\n");
-      o.printf("--reactions-to-remove {...}\n");
-      o.printf("-c|--confidence {...}\n");
-      o.printf("-s|--status {...}\n");
-      o.printf("-r|--review-status {...}\n");
-      o.printf("--first-active {...}\n");
-      o.printf("--last-active {...}\n");
-      o.printf("--expired-on {...}\n");
-      o.printf("\n");
-      o.printf("Please see the following for allowed values in all enumerated types except reactions:\n");
-      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/submitting\n");
-      o.printf("Please see the following for allowed values in all enumerated types in reactions:\n");
-      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/reacting\n");
-      System.exit(exitCode);
+      this.commonPosterUsage(exitCode, POSTER_NAME_SUBMIT);
     }
 
     @Override
     public void handle(
-      String[] args,
+      String[] argsAsArray,
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
@@ -971,11 +1140,12 @@ public class TETagQuery {
     ) {
       boolean dryRun = false;
       boolean indicatorTextFromStdin = false;
-      DescriptorPostParameters  params = new DescriptorPostParameters();
+      DescriptorPostParameters postParams = new DescriptorPostParameters();
+      ArrayList<String> args = new ArrayList<String>(Arrays.asList(argsAsArray));
 
-      while (args.length > 0 && args[0].startsWith("-")) {
-        String option = args[0];
-        args = Arrays.copyOfRange(args, 1, args.length);
+      while (args.size() > 0 && args.get(0).startsWith("-")) {
+        String option = args.get(0);
+        args.remove(0);
 
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
@@ -984,138 +1154,46 @@ public class TETagQuery {
           dryRun = true;
 
         } else if (option.equals("-I")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
           indicatorTextFromStdin = true;
         } else if (option.equals("-i") || option.equals("--indicator")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
-          params.setIndicatorText(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setIndicatorText(args.get(0));
+          args.remove(0);
         } else if (option.equals("-t") || option.equals("--type")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
-          params.setIndicatorType(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-d") || option.equals("--description")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setDescription(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-l") || option.equals("--share-level")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setShareLevel(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-p") || option.equals("--privacy-type")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setPrivacyType(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-m") || option.equals("--privacy-members")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setPrivacyMembers(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("-s") || option.equals("--status")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setStatus(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-r") || option.equals("--review-status")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setReviewStatus(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-y") || option.equals("--severity")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setSeverity(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("--related-ids-for-upload")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setRelatedIDsForUpload(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--related-triples-for-upload-as-json")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setRelatedTriplesForUploadAsJSON(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("--reactions-to-add")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setReactionsToAdd(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--reactions-to-remove")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setReactionsToRemove(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setIndicatorType(args.get(0));
+          args.remove(0);
 
         } else if (option.equals("--tags")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
-          params.setTagsToSet(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("-c") || option.equals("--confidence")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setConfidence(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("--first-active")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setFirstActive(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--last-active")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setLastActive(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--expired-on")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setExpiredOn(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setTagsToSet(args.get(0));
+          args.remove(0);
 
         } else {
-          System.err.printf("%s %s: Unrecognized option \"%s\".\n",
-            PROGNAME, _verb, option);
-          usage(1);
+          boolean handled = this.commonPosterOptionCheck(option, args, postParams);
+          if (!handled) {
+            System.err.printf("%s %s: Unrecognized option \"%s\".\n",
+              PROGNAME, _verb, option);
+            usage(1);
+          }
         }
       }
-      if (args.length > 0) {
-        System.err.printf("Extraneous argument \"%s\"\n", args[0]);
+      if (args.size() > 0) {
+        System.err.printf("%s %s: Extraneous argument \"%s\"\n", PROGNAME, this._verb, args.get(0));
         usage(1);
       }
 
       if (indicatorTextFromStdin) {
-        if (params.getIndicatorText() != null) {
+        if (postParams.getIndicatorText() != null) {
           System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
@@ -1128,31 +1206,31 @@ public class TETagQuery {
           while ((line = reader.readLine()) != null) {
             lno++;
             // In Java, line-terminators already stripped for us
-            params.setIndicatorText(line);
-            submitSingle(params, verbose, showURLs, dryRun);
+            postParams.setIndicatorText(line);
+            submitSingle(postParams, verbose, showURLs, dryRun);
           }
         } catch (IOException e) {
           System.err.printf("Couldn't read line %d of standard input.\n", lno);
           System.exit(1);
         }
       } else {
-        if (params.getIndicatorText() == null) {
+        if (postParams.getIndicatorText() == null) {
           System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
         }
-        submitSingle(params, verbose, showURLs, dryRun);
+        submitSingle(postParams, verbose, showURLs, dryRun);
       }
     }
 
     private void submitSingle(
-      DescriptorPostParameters params,
+      DescriptorPostParameters postParams,
       boolean verbose,
       boolean showURLs,
       boolean dryRun
     ) {
-      if (params.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
-        String filename = params.getIndicatorText();
+      if (postParams.getIndicatorType().equals(Constants.INDICATOR_TYPE_TMK)) {
+        String filename = postParams.getIndicatorText();
         String contents = null;
         try {
           contents = Utils.readTMKHashFromFile(filename, verbose);
@@ -1164,10 +1242,10 @@ public class TETagQuery {
             PROGNAME, _verb, filename);
           e.printStackTrace(System.err);
         }
-        params.setIndicatorText(contents);
+        postParams.setIndicatorText(contents);
       }
 
-      boolean ok = Net.submitThreatDescriptor(params, showURLs, dryRun);
+      boolean ok = Net.submitThreatDescriptor(postParams, showURLs, dryRun);
       if (!ok) {
         // Error message already printed out
         System.exit(1);
@@ -1177,65 +1255,19 @@ public class TETagQuery {
   } // class SubmitHandler
 
   // ----------------------------------------------------------------
-  // NOTE: SubmitHandler and UpdateHandler have a lot of the same code but also
-  // several differences. I found it simpler (albeit more verbose) to duplicate
-  // rather than do an abstract-and-override refactor.
-
-  public static class UpdateHandler extends CommandHandler {
+  public static class UpdateHandler extends AbstractPostSubcommandHandler {
     public UpdateHandler(String verb) {
       super(verb);
     }
 
     @Override
     public void usage(int exitCode) {
-      PrintStream o = Utils.getPrintStream(exitCode);
-      o.printf("Usage: %s %s [options]\n", PROGNAME, _verb);
-      o.printf("Updates specified attributes on an existing threat descriptor.\n");
-      o.printf("\n");
-      o.printf("Required:\n");
-      o.printf("-i {...}               ID of descriptor to be edited. Must already exist.\n");
-      o.printf("-I                     Take descriptor IDs from standard input, one per line.\n");
-      o.printf("Exactly one of -i or -I is required.\n");
-      o.printf("-d|--description {...}\n");
-      o.printf("-l|--share-level {...}\n");
-      o.printf("-p|--privacy-type {...}\n");
-      o.printf("-y|--severity {...}\n");
-      o.printf("\n");
-      o.printf("Optional:\n");
-      o.printf("-h|--help\n");
-      o.printf("--dry-run\n");
-      o.printf("-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be\n");
-      o.printf("                       comma-delimited app IDs. If privacy-type is\n");
-      o.printf("                       HAS_PRIVACY_GROUP these must be comma-delimited\n");
-      o.printf("                       privacy-group IDs.\n");
-      o.printf("--tags {...}           Comma-delimited. Overwrites on repost.\n");
-      o.printf("--add-tags {...}       Comma-delimited. Adds these on repost.\n");
-      o.printf("--remove-tags {...}    Comma-delimited. Removes these on repost.\n");
-      o.printf("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must\n");
-      o.printf("                       already exist) to relate the new descriptor to.\n");
-      o.printf("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.\n");
-      o.printf("                       Here you can uniquely the relate-to descriptors by their\n");
-      o.printf("                       owner ID / indicator-type / indicator-text, rather than\n");
-      o.printf("                       by their IDs. See README.md for an example.\n");
-      o.printf("--reactions-to-add {...} Example for add/remove: INGESTED,IN_REVIEW\n");
-      o.printf("--reactions-to-remove {...}\n");
-      o.printf("-c|--confidence {...}\n");
-      o.printf("-s|--status {...}\n");
-      o.printf("-r|--review-status {...}\n");
-      o.printf("--first-active {...}\n");
-      o.printf("--last-active {...}\n");
-      o.printf("--expired-on {...}\n");
-      o.printf("\n");
-      o.printf("Please see the following for allowed values in all enumerated types except reactions:\n");
-      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/submitting\n");
-      o.printf("Please see the following for allowed values in all enumerated types in reactions:\n");
-      o.printf("https://developers.facebook.com/docs/threat-exchange/reference/reacting\n");
-      System.exit(exitCode);
+      this.commonPosterUsage(exitCode, POSTER_NAME_UPDATE);
     }
 
     @Override
     public void handle(
-      String[] args,
+      String[] argsAsArray,
       int numIDsPerQuery,
       boolean verbose,
       boolean showURLs,
@@ -1243,11 +1275,12 @@ public class TETagQuery {
     ) {
       boolean dryRun = false;
       boolean descriptorIDsFromStdin = false;
-      DescriptorPostParameters  params = new DescriptorPostParameters();
+      DescriptorPostParameters  postParams = new DescriptorPostParameters();
+      ArrayList<String> args = new ArrayList<String>(Arrays.asList(argsAsArray));
 
-      while (args.length > 0 && args[0].startsWith("-")) {
-        String option = args[0];
-        args = Arrays.copyOfRange(args, 1, args.length);
+      while (args.size() > 0 && args.get(0).startsWith("-")) {
+        String option = args.get(0);
+        args.remove(0);
 
         if (option.equals("-h") || option.equals("--help")) {
           usage(0);
@@ -1255,146 +1288,57 @@ public class TETagQuery {
         } else if (option.equals("--dry-run")) {
           dryRun = true;
 
-        } else if (option.equals("-I")) {
-          if (args.length < 1) {
+        } else if (option.equals("-N")) {
+          if (args.size() < 1) {
             usage(1);
           }
           descriptorIDsFromStdin = true;
-        } else if (option.equals("-i")) {
-          if (args.length < 1) {
+        } else if (option.equals("-n")) {
+          if (args.size() < 1) {
             usage(1);
           }
-          params.setDescriptorID(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-d") || option.equals("--description")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setDescription(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-l") || option.equals("--share-level")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setShareLevel(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-p") || option.equals("--privacy-type")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setPrivacyType(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-m") || option.equals("--privacy-members")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setPrivacyMembers(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setDescriptorID(args.get(0));
+          args.remove(0);
 
-        } else if (option.equals("-s") || option.equals("--status")) {
-          if (args.length < 1) {
+        } else if (option.equals("--add-tags")) {
+          if (args.size() < 1) {
             usage(1);
           }
-          params.setStatus(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-r") || option.equals("--review-status")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setReviewStatus(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("-y") || option.equals("--severity")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setSeverity(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setTagsToAdd(args.get(0));
+          args.remove(0);
 
-        } else if (option.equals("--related-ids-for-upload")) {
-          if (args.length < 1) {
+        } else if (option.equals("--remove-tags")) {
+          if (args.size() < 1) {
             usage(1);
           }
-          params.setRelatedIDsForUpload(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--related-triples-for-upload-as-json")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setRelatedTriplesForUploadAsJSON(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setTagsToRemove(args.get(0));
+          args.remove(0);
 
         } else if (option.equals("--tags")) {
-          if (args.length < 1) {
+          if (args.size() < 1) {
             usage(1);
           }
-          params.setTagsToSet(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--add-tags")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setTagsToAdd(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--remove-tags")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setTagsToRemove(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("--reactions-to-add")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setReactionsToAdd(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--reactions-to-remove")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setReactionsToRemove(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("-c") || option.equals("--confidence")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setConfidence(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-
-        } else if (option.equals("--first-active")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setFirstActive(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--last-active")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setLastActive(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
-        } else if (option.equals("--expired-on")) {
-          if (args.length < 1) {
-            usage(1);
-          }
-          params.setExpiredOn(args[0]);
-          args = Arrays.copyOfRange(args, 1, args.length);
+          postParams.setTagsToSet(args.get(0));
+          args.remove(0);
 
         } else {
-          System.err.printf("%s %s: Unrecognized option \"%s\".\n",
-            PROGNAME, _verb, option);
-          usage(1);
+          boolean handled = this.commonPosterOptionCheck(option, args, postParams);
+          if (!handled) {
+            System.err.printf("%s %s: Unrecognized option \"%s\".\n",
+              PROGNAME, _verb, option);
+            usage(1);
+          }
         }
       }
-      if (args.length > 0) {
-        System.err.printf("Extraneous argument \"%s\"\n", args[0]);
+
+      if (args.size() > 0) {
+        System.err.printf("%s %s: Extraneous argument \"%s\"\n", PROGNAME, this._verb, args.get(0));
         usage(1);
       }
 
       if (descriptorIDsFromStdin) {
-        if (params.getDescriptorID() != null) {
-          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
+        if (postParams.getDescriptorID() != null) {
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
         }
@@ -1406,30 +1350,30 @@ public class TETagQuery {
           while ((line = reader.readLine()) != null) {
             lno++;
             // In Java, line-terminators already stripped for us
-            params.setDescriptorID(line);
-            updateSingle(params, verbose, showURLs, dryRun);
+            postParams.setDescriptorID(line);
+            updateSingle(postParams, verbose, showURLs, dryRun);
           }
         } catch (IOException e) {
           System.err.printf("Couldn't read line %d of standard input.\n", lno);
           System.exit(1);
         }
       } else {
-        if (params.getDescriptorID() == null) {
-          System.err.printf("%s %s: exactly one of -I and -i must be supplied.\n",
+        if (postParams.getDescriptorID() == null) {
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
             PROGNAME, _verb);
           System.exit(1);
         }
-        updateSingle(params, verbose, showURLs, dryRun);
+        updateSingle(postParams, verbose, showURLs, dryRun);
       }
     }
 
     private void updateSingle(
-      DescriptorPostParameters params,
+      DescriptorPostParameters postParams,
       boolean verbose,
       boolean showURLs,
       boolean dryRun
     ) {
-      boolean ok = Net.updateThreatDescriptor(params, showURLs, dryRun);
+      boolean ok = Net.updateThreatDescriptor(postParams, showURLs, dryRun);
       if (!ok) {
         // Error message already printed out
         System.exit(1);
@@ -1439,3 +1383,4 @@ public class TETagQuery {
   } // class UpdateHandler
 
 }
+
