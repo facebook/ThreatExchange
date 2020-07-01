@@ -174,6 +174,7 @@ public class TETagQuery {
     private static final String PAGINATE = "paginate";
     private static final String SUBMIT = "submit";
     private static final String UPDATE = "update";
+    private static final String COPY = "copy";
 
     public static CommandHandler create(String verb) {
       switch(verb) {
@@ -193,6 +194,8 @@ public class TETagQuery {
         return new SubmitHandler(verb);
       case UPDATE:
         return new UpdateHandler(verb);
+      case COPY:
+        return new CopyHandler(verb);
       default:
         return null;
       }
@@ -208,6 +211,7 @@ public class TETagQuery {
       o.printf("  %s\n", PAGINATE);
       o.printf("  %s\n", SUBMIT);
       o.printf("  %s\n", UPDATE);
+      o.printf("  %s\n", COPY);
     }
   }
 
@@ -908,6 +912,7 @@ public class TETagQuery {
   public static abstract class AbstractPostSubcommandHandler extends CommandHandler {
     public static final String POSTER_NAME_SUBMIT = "submit";
     public static final String POSTER_NAME_UPDATE = "update";
+    public static final String POSTER_NAME_COPY = "copy";
 
     public AbstractPostSubcommandHandler(String verb) {
       super(verb);
@@ -950,6 +955,9 @@ public class TETagQuery {
       o.println("                           comma-delimited app IDs. If privacy-type is");
       o.println("                           HAS_PRIVACY_GROUP these must be comma-delimited");
       o.println("                           privacy-group IDs.");
+      if (posterName.equals(POSTER_NAME_COPY)) {
+        o.println("                       Must be explicitly specified for copy; not available from the source descriptor.");
+      }
       o.println("--tags {...}           Comma-delimited. Overwrites on repost.");
 
       if (posterName.equals(POSTER_NAME_UPDATE)) {
@@ -959,10 +967,16 @@ public class TETagQuery {
 
       o.println("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must");
       o.println("                       already exist) to relate the new descriptor to.");
+      if (posterName.equals(POSTER_NAME_COPY)) {
+        o.println("                       Must be explicitly specified for copy; not available from the source descriptor.");
+      }
       o.println("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.");
       o.println("                       Here you can uniquely the relate-to descriptors by their");
       o.println("                       owner ID / indicator-type / indicator-text, rather than");
       o.println("                       by their IDs. See README.md for an example.");
+      if (posterName.equals(POSTER_NAME_COPY)) {
+        o.println("                       Must be explicitly specified for copy; not available from the source descriptor.");
+      }
       o.println("");
       o.println("--reactions-to-add {...}    Example for add/remove: INGESTED,IN_REVIEW");
       o.println("--reactions-to-remove {...}");
@@ -1314,13 +1328,6 @@ public class TETagQuery {
           postParams.setTagsToRemove(args.get(0));
           args.remove(0);
 
-        } else if (option.equals("--tags")) {
-          if (args.size() < 1) {
-            usage(1);
-          }
-          postParams.setTagsToSet(args.get(0));
-          args.remove(0);
-
         } else {
           boolean handled = this.commonPosterOptionCheck(option, args, postParams);
           if (!handled) {
@@ -1381,6 +1388,133 @@ public class TETagQuery {
     }
 
   } // class UpdateHandler
+
+  // ----------------------------------------------------------------
+  public static class CopyHandler extends AbstractPostSubcommandHandler {
+    public CopyHandler(String verb) {
+      super(verb);
+    }
+
+    @Override
+    public void usage(int exitCode) {
+      this.commonPosterUsage(exitCode, POSTER_NAME_COPY);
+    }
+
+    @Override
+    public void handle(
+      String[] argsAsArray,
+      int numIDsPerQuery,
+      boolean verbose,
+      boolean showURLs,
+      DescriptorFormatter descriptorFormatter
+    ) {
+      boolean dryRun = false;
+      boolean descriptorIDsFromStdin = false;
+      DescriptorPostParameters  postParams = new DescriptorPostParameters();
+      ArrayList<String> args = new ArrayList<String>(Arrays.asList(argsAsArray));
+
+      while (args.size() > 0 && args.get(0).startsWith("-")) {
+        String option = args.get(0);
+        args.remove(0);
+
+        if (option.equals("-h") || option.equals("--help")) {
+          usage(0);
+
+        } else if (option.equals("--dry-run")) {
+          dryRun = true;
+
+        } else if (option.equals("-N")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          descriptorIDsFromStdin = true;
+        } else if (option.equals("-n")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          postParams.setDescriptorID(args.get(0));
+          args.remove(0);
+
+        } else if (option.equals("-i") || option.equals("--indicator")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          postParams.setIndicatorText(args.get(0));
+          args.remove(0);
+        } else if (option.equals("-t") || option.equals("--type")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          postParams.setIndicatorType(args.get(0));
+          args.remove(0);
+
+        } else if (option.equals("--tags")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          postParams.setTagsToSet(args.get(0));
+          args.remove(0);
+
+        } else {
+          boolean handled = this.commonPosterOptionCheck(option, args, postParams);
+          if (!handled) {
+            System.err.printf("%s %s: Unrecognized option \"%s\".\n",
+              PROGNAME, _verb, option);
+            usage(1);
+          }
+        }
+      }
+
+      if (args.size() > 0) {
+        System.err.printf("%s %s: Extraneous argument \"%s\"\n", PROGNAME, this._verb, args.get(0));
+        usage(1);
+      }
+
+      if (descriptorIDsFromStdin) {
+        if (postParams.getDescriptorID() != null) {
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        String line;
+        int lno = 1;
+        try {
+          while ((line = reader.readLine()) != null) {
+            lno++;
+            // In Java, line-terminators already stripped for us
+            postParams.setDescriptorID(line);
+            CopySingle(postParams, verbose, showURLs, dryRun);
+          }
+        } catch (IOException e) {
+          System.err.printf("Couldn't read line %d of standard input.\n", lno);
+          System.exit(1);
+        }
+      } else {
+        if (postParams.getDescriptorID() == null) {
+          System.err.printf("%s %s: exactly one of -N and -n must be supplied.\n",
+            PROGNAME, _verb);
+          System.exit(1);
+        }
+        CopySingle(postParams, verbose, showURLs, dryRun);
+      }
+    }
+
+    private void CopySingle(
+      DescriptorPostParameters postParams,
+      boolean verbose,
+      boolean showURLs,
+      boolean dryRun
+    ) {
+      boolean ok = Net.copyThreatDescriptor(postParams, verbose, showURLs, dryRun);
+      if (!ok) {
+        // Error message already printed out
+        System.exit(1);
+      }
+    }
+
+  } // class CopyHandler
 
 }
 
