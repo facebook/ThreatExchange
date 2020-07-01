@@ -209,6 +209,28 @@ class Net {
   /**
    * Looks up all metadata for given ID.
    */
+  public static ThreatDescriptor getInfoForID(
+    String id,
+    boolean verbose,
+    boolean showURLs,
+    boolean includeIndicatorInOutput
+  ) {
+    List<ThreatDescriptor> list = getInfoForIDs(
+      Collections.singletonList(id),
+      verbose,
+      showURLs,
+      includeIndicatorInOutput
+    );
+    if (list.size() == 1) {
+      return list.get(0);
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * Looks up all metadata for given IDs.
+   */
   public static List<ThreatDescriptor> getInfoForIDs(
     List<String> ids,
     boolean verbose,
@@ -217,7 +239,7 @@ class Net {
   ) {
     // Check well-formattedness of descriptor IDs (which may have come from
     // arbitrary data on stdin).
-    for(String id : ids) {
+    for (String id : ids) {
       try {
         Long.valueOf(id);
       } catch (NumberFormatException e) {
@@ -232,7 +254,7 @@ class Net {
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
       + "&ids=%5B" + String.join(",", ids) + "%5D"
-      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description";
+      + "&fields=raw_indicator,type,added_on,last_updated,first_active,last_active,expired_on,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description";
     if (showURLs) {
       System.out.println("URL:");
       System.out.println(url);
@@ -282,16 +304,19 @@ class Net {
         }
 
         JSONObject owner = (JSONObject)item.get("owner");
+
         JSONObject td_subjective_tags = (JSONObject)item.get("tags");
-        JSONArray tag_data = (JSONArray)td_subjective_tags.get("data");
-        int n = tag_data.size();
         List<String> tagTexts = new ArrayList<String>();
-        for (int j = 0; j < n; j++) {
-          JSONObject tag = (JSONObject) tag_data.get(j);
-          String tagText = (String)tag.get("text");
-          tagTexts.add(tagText);
+        if (td_subjective_tags != null) {
+          JSONArray tag_data = (JSONArray)td_subjective_tags.get("data");
+          int n = tag_data.size();
+          for (int j = 0; j < n; j++) {
+            JSONObject tag = (JSONObject) tag_data.get(j);
+            String tagText = (String)tag.get("text");
+            tagTexts.add(tagText);
+          }
+          Collections.sort(tagTexts); // canonicalize
         }
-        Collections.sort(tagTexts); // canonicalize
 
         String description = (String)item.get("description");
         if (description == null) {
@@ -304,6 +329,9 @@ class Net {
           (String)item.get("type"),
           (String)item.get("added_on"),
           (String)item.get("last_updated"),
+          (String)item.get("first_active"), // may be null
+          (String)item.get("last_active"), // may be null
+          (String)item.get("expired_on"), // may be null
           Long.toString((Long)item.get("confidence")),
           (String)owner.get("id"),
           (String)owner.get("email"),
@@ -349,7 +377,7 @@ class Net {
     String startURL = TE_BASE_URL
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN
-      + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,review_status,privacy_type,status,severity,share_level,tags,description"
+      + "&fields=raw_indicator,type,added_on,last_updated,first_active,last_active,expired_on,confidence,owner,review_status,privacy_type,status,severity,share_level,tags,description"
       + "&limit=" + pageLimit
       + "&tags=" + tagName
       + "&since=" + since;
@@ -463,6 +491,9 @@ class Net {
             itemType,
             (String)item.get("added_on"),
             (String)item.get("last_updated"),
+            (String)item.get("first_active"),
+            (String)item.get("last_active"),
+            (String)item.get("expired_on"),
             Long.toString((Long)item.get("confidence")),
             (String)owner.get("id"),
             (String)owner.get("email"),
@@ -493,11 +524,11 @@ class Net {
    * https://developers.facebook.com/docs/threat-exchange/reference/submitting
    */
   public static boolean submitThreatDescriptor(
-    DescriptorPostParameters params,
+    DescriptorPostParameters postParams,
     boolean showURLs,
     boolean dryRun
   ) {
-    if (!params.validateForSubmitWithReport(System.err)) {
+    if (!postParams.validateForSubmitWithReport(System.err)) {
       return false;
     }
 
@@ -505,7 +536,7 @@ class Net {
       + "/threat_descriptors"
       + "/?access_token=" + APP_TOKEN;
 
-    return postThreatDescriptor(urlString, params, showURLs, dryRun);
+    return postThreatDescriptor(urlString, postParams, showURLs, dryRun);
   }
 
   /**
@@ -513,19 +544,94 @@ class Net {
    * https://developers.facebook.com/docs/threat-exchange/reference/editing
    */
   public static boolean updateThreatDescriptor(
-    DescriptorPostParameters params,
+    DescriptorPostParameters postParams,
     boolean showURLs,
     boolean dryRun
   ) {
-    if (!params.validateForUpdateWithReport(System.err)) {
+    if (!postParams.validateForUpdateWithReport(System.err)) {
       return false;
     }
 
     String urlString = TE_BASE_URL
-      + "/" + params.getDescriptorID()
+      + "/" + postParams.getDescriptorID()
       + "/?access_token=" + APP_TOKEN;
 
-    return postThreatDescriptor(urlString, params, showURLs, dryRun);
+    return postThreatDescriptor(urlString, postParams, showURLs, dryRun);
+  }
+
+  /**
+   * Variant of submit, with template-input data and overrides.
+   * See also
+   * https://developers.facebook.com/docs/threat-exchange/reference/editing
+   */
+  public static boolean copyThreatDescriptor(
+    DescriptorPostParameters overrideParams,
+    boolean verbose,
+    boolean showURLs,
+    boolean dryRun
+  ) {
+    if (!overrideParams.validateForCopyWithReport(System.err)) {
+      return false;
+    }
+
+    // Get source descriptor
+    String sourceID = overrideParams.getDescriptorID();
+    ThreatDescriptor sourceDescriptor = getInfoForID(sourceID, verbose, showURLs, false);
+    if (sourceDescriptor == null) {
+      System.err.printf("Could not load copy-from descriptor with ID \"%s\".\n", sourceID);
+      return false;
+    }
+
+    // Take the source-descriptor values and overwrite any post-params fields
+    // supplied by the caller.
+    DescriptorPostParameters postParams = new DescriptorPostParameters();
+
+    // Copy source-descriptor values to the post-params.
+    postParams.setIndicatorText(sourceDescriptor.td_raw_indicator);
+    postParams.setIndicatorType(sourceDescriptor.td_indicator_type);
+    postParams.setDescription(sourceDescriptor.td_description);
+    postParams.setShareLevel(sourceDescriptor.td_share_level);
+    postParams.setStatus(sourceDescriptor.td_status);
+    // The following are not currently retrievable in the Graph API from the source descriptor:
+    // postParams.setPrivacyType(sourceDescriptor.td_visibility);
+    // postParams.setPrivacyMembers(sourceDescriptor.td_privacy_members);
+    postParams.setConfidence(sourceDescriptor.td_confidence);
+    postParams.setReviewStatus(sourceDescriptor.td_review_status);
+    postParams.setSeverity(sourceDescriptor.td_severity);
+    postParams.ifNotNullSetFirstActive(sourceDescriptor.td_first_active);
+    postParams.ifNotNullSetLastActive(sourceDescriptor.td_last_active);
+    postParams.ifNotNullSetExpiredOn(sourceDescriptor.td_expired_on);
+    if (sourceDescriptor.td_subjective_tags != null && sourceDescriptor.td_subjective_tags.size() > 0) {
+      postParams.setTagsToSet(String.join(",", sourceDescriptor.td_subjective_tags));
+    }
+    // The following are not currently retrievable in the Graph API from the source descriptor:
+    // postParams.setRelatedIDsForUpload(sourceDescriptor.xxx);
+    // postParams.setRelatedTriplesForUploadAsJSON(sourceDescriptor.xxx);
+
+    // Overwrite override values to the post-params.
+    postParams.ifNotNullSetIndicatorText(overrideParams.getIndicatorText());
+    postParams.ifNotNullSetIndicatorType(overrideParams.getIndicatorType());
+    postParams.ifNotNullSetDescription(overrideParams.getDescription());
+    postParams.ifNotNullSetShareLevel(overrideParams.getShareLevel());
+    postParams.ifNotNullSetStatus(overrideParams.getStatus());
+    postParams.ifNotNullSetPrivacyType(overrideParams.getPrivacyType());
+    postParams.ifNotNullSetPrivacyMembers(overrideParams.getPrivacyMembers());
+    postParams.ifNotNullSetConfidence(overrideParams.getConfidence());
+    postParams.ifNotNullSetReviewStatus(overrideParams.getReviewStatus());
+    postParams.ifNotNullSetSeverity(overrideParams.getSeverity());
+    postParams.ifNotNullSetExpiredOn(overrideParams.getExpiredOn());
+    postParams.ifNotNullSetFirstActive(overrideParams.getFirstActive());
+    postParams.ifNotNullSetLastActive(overrideParams.getLastActive());
+    postParams.ifNotNullSetTagsToSet(overrideParams.getTagsToSet());
+    postParams.ifNotNullSetRelatedIDsForUpload(overrideParams.getRelatedIDsForUpload());
+    postParams.ifNotNullSetRelatedTriplesForUploadAsJSON(overrideParams.getRelatedTriplesForUploadAsJSON());
+
+    // Post the new descriptor
+    String urlString = TE_BASE_URL
+      + "/threat_descriptors"
+      + "/?access_token=" + APP_TOKEN;
+
+    return postThreatDescriptor(urlString, postParams, showURLs, dryRun);
   }
 
   /**
@@ -533,7 +639,7 @@ class Net {
    */
   private static boolean postThreatDescriptor(
     String urlString,
-    DescriptorPostParameters params,
+    DescriptorPostParameters postParams,
     boolean showURLs,
     boolean dryRun
   ) {
@@ -573,7 +679,7 @@ class Net {
     connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
     connection.setRequestProperty("charset", "utf-8");
 
-    String postDataString = params.getPostDataString();
+    String postDataString = postParams.getPostDataString();
     if (showURLs) {
       System.out.println();
       System.out.println("POST DATA:");
