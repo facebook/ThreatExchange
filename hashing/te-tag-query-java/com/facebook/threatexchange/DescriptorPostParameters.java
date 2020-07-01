@@ -130,6 +130,139 @@ class DescriptorPostParameters {
     return this;
   }
 
+  public DescriptorPostParameters ifNotNullSetIndicatorText(String indicatorText) {
+    if (indicatorText != null) {
+      return setIndicatorText(indicatorText);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetIndicatorType(String indicatorType) {
+    if (indicatorType != null) {
+      return setIndicatorType(indicatorType);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetDescriptorID(String descriptorID) {
+    if (descriptorID != null) {
+      return setDescriptorID(descriptorID);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetDescription(String description) {
+    if (description != null) {
+      return setDescription(description);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetShareLevel(String shareLevel) {
+    if (shareLevel != null) {
+      return setShareLevel(shareLevel);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetStatus(String status) {
+    if (status != null) {
+      return setStatus(status);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetPrivacyType(String privacyType) {
+    if (privacyType != null) {
+      return setPrivacyType(privacyType);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetPrivacyMembers(String privacyMembers) {
+    if (privacyMembers != null) {
+      return setPrivacyMembers(privacyMembers);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetConfidence(String confidence) {
+    if (confidence != null) {
+      return setConfidence(confidence);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetPrecision(String precision) {
+    if (precision != null) {
+      return setPrecision(precision);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetReviewStatus(String reviewStatus) {
+    if (reviewStatus != null) {
+      return setReviewStatus(reviewStatus);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetSeverity(String severity) {
+    if (severity != null) {
+      return setSeverity(severity);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetExpiredOn(String expiredOn) {
+    if (expiredOn != null) {
+      return setExpiredOn(expiredOn);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetFirstActive(String firstActive) {
+    if (firstActive != null) {
+      return setFirstActive(firstActive);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetLastActive(String lastActive) {
+    if (lastActive != null) {
+      return setLastActive(lastActive);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetTagsToSet(String tagsToSet) {
+    if (tagsToSet != null) {
+      return setTagsToSet(tagsToSet);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetTagsToAdd(String tagsToAdd) {
+    if (tagsToAdd != null) {
+      return setTagsToAdd(tagsToAdd);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetTagsToRemove(String tagsToRemove) {
+    if (tagsToRemove != null) {
+      return setTagsToRemove(tagsToRemove);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetRelatedIDsForUpload(String relatedIDsForUpload) {
+    if (relatedIDsForUpload != null) {
+      return setRelatedIDsForUpload(relatedIDsForUpload);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetRelatedTriplesForUploadAsJSON(String relatedTriplesForUploadAsJSON) {
+    if (relatedTriplesForUploadAsJSON != null) {
+      return setRelatedTriplesForUploadAsJSON(relatedTriplesForUploadAsJSON);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetReactionsToAdd(String reactionsToAdd) {
+    if (reactionsToAdd != null) {
+      return setReactionsToAdd(reactionsToAdd);
+    }
+    return this;
+  }
+  public DescriptorPostParameters ifNotNullSetReactionsToRemove(String reactionsToRemove) {
+    if (reactionsToRemove != null) {
+      return setReactionsToRemove(reactionsToRemove);
+    }
+    return this;
+  }
+
   public String getIndicatorText() {
     return this._indicatorText;
   }
@@ -240,6 +373,14 @@ class DescriptorPostParameters {
     }
     if (this._indicatorType != null) {
       System.err.println("Indicator type must not be specified for update.\n");
+      return false;
+    }
+    return true;
+  }
+
+  public boolean validateForCopyWithReport(PrintStream o) {
+    if (this._descriptorID == null) {
+      System.err.println("Descriptor ID must be specified for copy.\n");
       return false;
     }
     return true;
