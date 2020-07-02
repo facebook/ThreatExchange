@@ -1162,4 +1162,5 @@ class CopyHandler(AbstractPostSubcommandHandler):
 
 # Rememmber that sys.argv includes the program name in Python,
 # like C/C++/Go and unlike Java or Ruby.
-MainHandler(sys.argv[0]).handle(sys.argv[1:])
+if __name__ == '__main__':
+  MainHandler(sys.argv[0]).handle(sys.argv[1:])
