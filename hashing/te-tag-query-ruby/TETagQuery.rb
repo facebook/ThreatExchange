@@ -1186,9 +1186,11 @@ end # class CopyHandler
 # ----------------------------------------------------------------
 # Top-down programming style, please :)
 
-begin
-  MainHandler.new.handle(ARGV)
-  exit 0
-rescue Interrupt => e # Control-C handling
-  exit 1
+if __FILE__ == $0
+  begin
+    MainHandler.new.handle(ARGV)
+    exit 0
+  rescue Interrupt => e # Control-C handling
+    exit 1
+  end
 end
