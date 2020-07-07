@@ -915,12 +915,11 @@ public class TETagQuery {
       super(verb);
     }
 
-    protected void commonPosterUsage(int exitCode, String posterName) {
-
     // Not the same for submit/update/copy.
     protected abstract void usageDescription(PrintStream o);
     protected abstract void usageDashIDashN(PrintStream o);
     protected abstract void usageAddRemoveTags(PrintStream o);
+    protected abstract void usageNotCopied(PrintStream o);
 
     protected void commonPosterUsage(int exitCode) {
       PrintStream o = Utils.getPrintStream(exitCode);
@@ -942,19 +941,19 @@ public class TETagQuery {
       o.println("                           comma-delimited app IDs. If privacy-type is");
       o.println("                           HAS_PRIVACY_GROUP these must be comma-delimited");
       o.println("                           privacy-group IDs.");
+      usageNotCopied(o);
 
-      o.println("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must");
-      o.println("                       already exist) to relate the new descriptor to.");
       o.println("--tags {...}           Comma-delimited. Overwrites on repost.");
-
       usageAddRemoveTags(o);
 
       o.println("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must");
       o.println("                       already exist) to relate the new descriptor to.");
+      usageNotCopied(o);
       o.println("--related-triples-json-for-upload {...} Alternate to --related-ids-for-upload.");
       o.println("                       Here you can uniquely the relate-to descriptors by their");
       o.println("                       owner ID / indicator-type / indicator-text, rather than");
       o.println("                       by their IDs. See README.md for an example.");
+      usageNotCopied(o);
       o.println("");
       o.println("--reactions-to-add {...}    Example for add/remove: INGESTED,IN_REVIEW");
       o.println("--reactions-to-remove {...}");
@@ -1145,6 +1144,11 @@ public class TETagQuery {
     }
 
     @Override
+    protected void usageNotCopied(PrintStream o) {
+      // Nothing extra here
+    }
+
+    @Override
     public void handle(
       String[] argsAsArray,
       int numIDsPerQuery,
@@ -1297,6 +1301,11 @@ public class TETagQuery {
     }
 
     @Override
+    protected void usageNotCopied(PrintStream o) {
+      // Nothing extra here
+    }
+
+    @Override
     public void handle(
       String[] argsAsArray,
       int numIDsPerQuery,
@@ -1343,6 +1352,13 @@ public class TETagQuery {
             usage(1);
           }
           postParams.setTagsToRemove(args.get(0));
+          args.remove(0);
+
+        } else if (option.equals("--tags")) {
+          if (args.size() < 1) {
+            usage(1);
+          }
+          postParams.setTagsToSet(args.get(0));
           args.remove(0);
 
         } else {
@@ -1414,7 +1430,34 @@ public class TETagQuery {
 
     @Override
     public void usage(int exitCode) {
-      this.commonPosterUsage(exitCode, POSTER_NAME_COPY);
+      this.commonPosterUsage(exitCode);
+    }
+
+    @Override
+    protected void usageDescription(PrintStream o) {
+      o.println("Copies threat descriptors to others, with optional overrides..");
+      o.println("");
+    }
+
+    @Override
+    protected void usageDashIDashN(PrintStream o) {
+      o.println("Required:");
+      o.println("-n {...}               ID of descriptor to be edited. Must already exist.");
+      o.println("-N                     Take descriptor IDs from standard input, one per line.");
+      o.println("Exactly one of -n or -N is required.");
+    }
+
+// xxx optional -i|--indicator ...
+
+    @Override
+    protected void usageAddRemoveTags(PrintStream o) {
+      o.println("--add-tags {...}       Comma-delimited. Adds these on repost.");
+      o.println("--remove-tags {...}    Comma-delimited. Removes these on repost.");
+    }
+
+    @Override
+    protected void usageNotCopied(PrintStream o) {
+      o.println("                       Must be explicitly specified for copy; not available from the source descriptor.");
     }
 
     @Override
@@ -1441,9 +1484,6 @@ public class TETagQuery {
           dryRun = true;
 
         } else if (option.equals("-N")) {
-          if (args.size() < 1) {
-            usage(1);
-          }
           descriptorIDsFromStdin = true;
         } else if (option.equals("-n")) {
           if (args.size() < 1) {
@@ -1462,21 +1502,7 @@ public class TETagQuery {
           if (args.size() < 1) {
             usage(1);
           }
-          postParams.setDescriptorID(args.get(0));
-          args.remove(0);
-
-        } else if (option.equals("--add-tags")) {
-          if (args.size() < 1) {
-            usage(1);
-          }
-          postParams.setTagsToAdd(args.get(0));
-          args.remove(0);
-
-        } else if (option.equals("--remove-tags")) {
-          if (args.size() < 1) {
-            usage(1);
-          }
-          postParams.setTagsToRemove(args.get(0));
+          postParams.setIndicatorType(args.get(0));
           args.remove(0);
 
         } else if (option.equals("--tags")) {
@@ -1516,7 +1542,7 @@ public class TETagQuery {
             lno++;
             // In Java, line-terminators already stripped for us
             postParams.setDescriptorID(line);
-            copySingle(postParams, verbose, showURLs, dryRun);
+            CopySingle(postParams, verbose, showURLs, dryRun);
           }
         } catch (IOException e) {
           System.err.printf("Couldn't read line %d of standard input.\n", lno);
@@ -1528,11 +1554,11 @@ public class TETagQuery {
             PROGNAME, _verb);
           System.exit(1);
         }
-        copySingle(postParams, verbose, showURLs, dryRun);
+        CopySingle(postParams, verbose, showURLs, dryRun);
       }
     }
 
-    private void copySingle(
+    private void CopySingle(
       DescriptorPostParameters postParams,
       boolean verbose,
       boolean showURLs,
