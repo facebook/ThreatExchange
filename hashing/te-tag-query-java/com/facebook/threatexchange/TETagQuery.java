@@ -1154,9 +1154,6 @@ public class TETagQuery {
           dryRun = true;
 
         } else if (option.equals("-I")) {
-          if (args.size() < 1) {
-            usage(1);
-          }
           indicatorTextFromStdin = true;
         } else if (option.equals("-i") || option.equals("--indicator")) {
           if (args.size() < 1) {
