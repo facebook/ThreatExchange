@@ -906,37 +906,23 @@ public class TETagQuery {
   // ----------------------------------------------------------------
   // Some code-reuse for all subcommand handlers that do POSTs.
   public static abstract class AbstractPostSubcommandHandler extends CommandHandler {
-    public static final String POSTER_NAME_SUBMIT = "submit";
-    public static final String POSTER_NAME_UPDATE = "update";
 
     public AbstractPostSubcommandHandler(String verb) {
       super(verb);
     }
 
-    protected void commonPosterUsage(int exitCode, String posterName) {
+    // Not the same for submit/update/copy.
+    protected abstract void usageDescription(PrintStream o);
+    protected abstract void usageDashIDashN(PrintStream o);
+    protected abstract void usageAddRemoveTags(PrintStream o);
+
+    protected void commonPosterUsage(int exitCode) {
       PrintStream o = Utils.getPrintStream(exitCode);
 
       o.printf("Usage: %s %s [options]\n", PROGNAME, this._verb);
 
-      if (posterName.equals(POSTER_NAME_SUBMIT)) {
-        o.println("Uploads a threat descriptor with the specified values.");
-        o.println("On repost (with same indicator text/type and app ID), updates changed fields.");
-        o.println("");
-        o.println("Required:");
-        o.println("-i|--indicator {...}   The indicator text: hash/URL/etc.");
-        o.println("-I                     Take indicator text from standard input, one per line.");
-        o.println("Exactly one of -i or -I is required.");
-        o.println("-t|--type {...}");
-        o.println("");
-      }
-      if (posterName.equals(POSTER_NAME_UPDATE)) {
-        o.println("Updates specified attributes on an existing threat descriptor.");
-        o.println("");
-        o.println("Required:");
-        o.println("-n {...}               ID of descriptor to be edited. Must already exist.");
-        o.println("-N                     Take descriptor IDs from standard input, one per line.");
-        o.println("Exactly one of -n or -N is required.");
-      }
+      usageDescription(o);
+      usageDashIDashN(o);
 
       o.println("-d|--description {...}");
       o.println("-l|--share-level {...}");
@@ -952,10 +938,7 @@ public class TETagQuery {
       o.println("                           privacy-group IDs.");
       o.println("--tags {...}           Comma-delimited. Overwrites on repost.");
 
-      if (posterName.equals(POSTER_NAME_UPDATE)) {
-        o.println("--add-tags {...}       Comma-delimited. Adds these on repost.");
-        o.println("--remove-tags {...}    Comma-delimited. Removes these on repost.");
-      }
+      usageAddRemoveTags(o);
 
       o.println("--related-ids-for-upload {...} Comma-delimited. IDs of descriptors (which must");
       o.println("                       already exist) to relate the new descriptor to.");
@@ -1127,7 +1110,29 @@ public class TETagQuery {
 
     @Override
     public void usage(int exitCode) {
-      this.commonPosterUsage(exitCode, POSTER_NAME_SUBMIT);
+      this.commonPosterUsage(exitCode);
+    }
+
+    @Override
+    protected void usageDescription(PrintStream o) {
+      o.println("Uploads a threat descriptor with the specified values.");
+      o.println("On repost (with same indicator text/type and app ID), updates changed fields.");
+      o.println("");
+    }
+
+    @Override
+    protected void usageDashIDashN(PrintStream o) {
+      o.println("Required:");
+      o.println("-i|--indicator {...}   The indicator text: hash/URL/etc.");
+      o.println("-I                     Take indicator text from standard input, one per line.");
+      o.println("Exactly one of -i or -I is required.");
+      o.println("-t|--type {...}");
+      o.println("");
+    }
+
+    @Override
+    protected void usageAddRemoveTags(PrintStream o) {
+      // Nothing extra here
     }
 
     @Override
@@ -1259,7 +1264,27 @@ public class TETagQuery {
 
     @Override
     public void usage(int exitCode) {
-      this.commonPosterUsage(exitCode, POSTER_NAME_UPDATE);
+      this.commonPosterUsage(exitCode);
+    }
+
+    @Override
+    protected void usageDescription(PrintStream o) {
+      o.println("Updates specified attributes on an existing threat descriptor.");
+      o.println("");
+    }
+
+    @Override
+    protected void usageDashIDashN(PrintStream o) {
+      o.println("Required:");
+      o.println("-n {...}               ID of descriptor to be edited. Must already exist.");
+      o.println("-N                     Take descriptor IDs from standard input, one per line.");
+      o.println("Exactly one of -n or -N is required.");
+    }
+
+    @Override
+    protected void usageAddRemoveTags(PrintStream o) {
+      o.println("--add-tags {...}       Comma-delimited. Adds these on repost.");
+      o.println("--remove-tags {...}    Comma-delimited. Removes these on repost.");
     }
 
     @Override
