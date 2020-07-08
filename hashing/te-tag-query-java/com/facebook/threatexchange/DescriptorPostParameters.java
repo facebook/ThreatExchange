@@ -332,31 +332,31 @@ class DescriptorPostParameters {
 
   public boolean validateForSubmitWithReport(PrintStream o) {
     if (this._descriptorID != null) {
-      System.err.println("Descriptor ID must not be specified for submit.\n");
+      o.println("Descriptor ID must not be specified for submit.\n");
       return false;
     }
     if (this._indicatorText == null) {
-      System.err.println("Indicator text is missing.\n");
+      o.println("Indicator text is missing.\n");
       return false;
     }
     if (this._indicatorType == null) {
-      System.err.println("Indicator type is missing.\n");
+      o.println("Indicator type is missing.\n");
       return false;
     }
     if (this._description == null) {
-      System.err.println("Description is missing.\n");
+      o.println("Description is missing.\n");
       return false;
     }
     if (this._shareLevel == null) {
-      System.err.println("Share level is missing.\n");
+      o.println("Share level is missing.\n");
       return false;
     }
     if (this._status == null) {
-      System.err.println("Status is missing.\n");
+      o.println("Status is missing.\n");
       return false;
     }
     if (this._privacyType == null) {
-      System.err.println("Privacy type is missing.\n");
+      o.println("Privacy type is missing.\n");
       return false;
     }
     return true;
@@ -364,15 +364,15 @@ class DescriptorPostParameters {
 
   public boolean validateForUpdateWithReport(PrintStream o) {
     if (this._descriptorID == null) {
-      System.err.println("Descriptor ID must be specified for update.\n");
+      o.println("Descriptor ID must be specified for update.\n");
       return false;
     }
     if (this._indicatorText != null) {
-      System.err.println("Indicator text must not be specified for update.\n");
+      o.println("Indicator text must not be specified for update.\n");
       return false;
     }
     if (this._indicatorType != null) {
-      System.err.println("Indicator type must not be specified for update.\n");
+      o.println("Indicator type must not be specified for update.\n");
       return false;
     }
     return true;
@@ -380,7 +380,7 @@ class DescriptorPostParameters {
 
   public boolean validateForCopyWithReport(PrintStream o) {
     if (this._descriptorID == null) {
-      System.err.println("Descriptor ID must be specified for copy.\n");
+      o.println("Descriptor ID must be specified for copy.\n");
       return false;
     }
     return true;

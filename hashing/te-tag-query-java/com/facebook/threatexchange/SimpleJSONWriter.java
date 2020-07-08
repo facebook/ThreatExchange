@@ -20,7 +20,7 @@ public class SimpleJSONWriter {
   public void add(String k, String v) {
     _pairs.put(k, v);
   }
-  public void ifNotNullAdd(String k, String v) {
+  public void ifValudNotNullAdd(String k, String v) {
     if (v != null) {
       _pairs.put(k, v);
     }
