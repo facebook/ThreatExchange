@@ -920,6 +920,7 @@ public class TETagQuery {
     protected abstract void usageDashIDashN(PrintStream o);
     protected abstract void usageAddRemoveTags(PrintStream o);
     protected abstract void usageNotCopied(PrintStream o);
+    protected abstract void usageOptional(PrintStream o);
 
     protected void commonPosterUsage(int exitCode) {
       PrintStream o = Utils.getPrintStream(exitCode);
@@ -937,10 +938,11 @@ public class TETagQuery {
       o.println("Optional:");
       o.println("-h|--help");
       o.println("--dry-run");
+      usageOptional(o);
       o.println("-m|--privacy-members {...} If privacy-type is HAS_WHITELIST these must be");
-      o.println("                           comma-delimited app IDs. If privacy-type is");
-      o.println("                           HAS_PRIVACY_GROUP these must be comma-delimited");
-      o.println("                           privacy-group IDs.");
+      o.println("                       comma-delimited app IDs. If privacy-type is");
+      o.println("                       HAS_PRIVACY_GROUP these must be comma-delimited");
+      o.println("                       privacy-group IDs.");
       usageNotCopied(o);
 
       o.println("--tags {...}           Comma-delimited. Overwrites on repost.");
@@ -1149,6 +1151,11 @@ public class TETagQuery {
     }
 
     @Override
+    protected void usageOptional(PrintStream o) {
+      // Nothing extra here
+    }
+
+    @Override
     public void handle(
       String[] argsAsArray,
       int numIDsPerQuery,
@@ -1306,6 +1313,11 @@ public class TETagQuery {
     }
 
     @Override
+    protected void usageOptional(PrintStream o) {
+      // Nothing extra here
+    }
+
+    @Override
     public void handle(
       String[] argsAsArray,
       int numIDsPerQuery,
@@ -1435,7 +1447,7 @@ public class TETagQuery {
 
     @Override
     protected void usageDescription(PrintStream o) {
-      o.println("Copies threat descriptors to others, with optional overrides..");
+      o.println("Copies threat descriptors to others, with optional overrides.");
       o.println("");
     }
 
@@ -1447,8 +1459,6 @@ public class TETagQuery {
       o.println("Exactly one of -n or -N is required.");
     }
 
-// xxx optional -i|--indicator ...
-
     @Override
     protected void usageAddRemoveTags(PrintStream o) {
       o.println("--add-tags {...}       Comma-delimited. Adds these on repost.");
@@ -1458,6 +1468,11 @@ public class TETagQuery {
     @Override
     protected void usageNotCopied(PrintStream o) {
       o.println("                       Must be explicitly specified for copy; not available from the source descriptor.");
+    }
+
+    @Override
+    protected void usageOptional(PrintStream o) {
+      o.println("-i|--indicator {...}   Indicator value to overwrite for copy.");
     }
 
     @Override
