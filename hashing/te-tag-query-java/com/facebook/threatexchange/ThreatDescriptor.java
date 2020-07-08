@@ -38,6 +38,9 @@ import java.util.List;
 // * confidence
 // * description -- be sure to escape embedded double-quotes for the JSON.
 // * last_updated
+// * first_active
+// * last_active
+// * expired_on
 // * owner
 // * privacy_type
 // * raw_indicator
@@ -49,10 +52,6 @@ import java.util.List;
 
 // AVAILABLE WITHIN THE GRAPH API, MAYBE USE:
 // ? indicator (to get the id ...) -- only useful for relation-edge-following
-// ? expired_on
-// ? first_active
-// ? last_active
-// ? last_updated
 // ? my_reactions
 // ? reactions
 
@@ -65,6 +64,9 @@ public class ThreatDescriptor {
   public final String td_indicator_type;
   public final String added_on;
   public final String last_updated;
+  public final String td_first_active;
+  public final String td_last_active;
+  public final String td_expired_on;
   public final String td_confidence;
   public final String td_owner_id;
   public final String td_owner_email;
@@ -83,6 +85,9 @@ public class ThreatDescriptor {
     String td_indicator_type_,
     String added_on_,
     String last_updated_,
+    String td_first_active_,
+    String td_last_active_,
+    String td_expired_on_,
     String td_confidence_,
     String td_owner_id_,
     String td_owner_email_,
@@ -100,6 +105,9 @@ public class ThreatDescriptor {
     td_indicator_type = td_indicator_type_;
     added_on = added_on_;
     last_updated = last_updated_;
+    td_first_active = td_first_active_;
+    td_last_active = td_last_active_;
+    td_expired_on = td_expired_on_;
     td_confidence = td_confidence_;
     td_owner_id = td_owner_id_;
     td_owner_email = td_owner_email_;

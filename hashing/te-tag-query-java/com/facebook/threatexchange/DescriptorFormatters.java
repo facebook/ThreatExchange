@@ -24,6 +24,9 @@ class JSONDescriptorFormatter implements DescriptorFormatter {
     w.add("td_indicator_type", threatDescriptor.td_indicator_type);
     w.add("added_on", threatDescriptor.added_on);
     w.add("last_updated", threatDescriptor.last_updated);
+    w.ifValudNotNullAdd("td_first_active", threatDescriptor.td_first_active);
+    w.ifValudNotNullAdd("td_last_active", threatDescriptor.td_last_active);
+    w.ifValudNotNullAdd("td_expired_on", threatDescriptor.td_expired_on);
     w.add("td_confidence", threatDescriptor.td_confidence);
     w.add("td_owner_id", threatDescriptor.td_owner_id);
     w.add("td_owner_email", threatDescriptor.td_owner_email);
