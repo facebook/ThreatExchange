@@ -23,7 +23,7 @@ postParams = {
   # specified explicitly here.
   'indicator' => 'dabbad00f00dfeed5ca1ab1ebeefca11ab1ec21b',
   'privacy_type' => 'HAS_PRIVACY_GROUP',
-  'privacy_members' => '781588512307315',
+  'privacy_members' => '781588512307315', # Comma-delimited if there are multiples
 }
 
 showURLs = false

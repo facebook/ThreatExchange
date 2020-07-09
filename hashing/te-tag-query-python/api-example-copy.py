@@ -26,7 +26,7 @@ postParams = {
   # copy-from descriptor unless we already own it, so this needs to be
   # specified explicitly here.
   'privacy_type': 'HAS_PRIVACY_GROUP',
-  'privacy_members': '781588512307315',
+  'privacy_members': '781588512307315', # Comma-delimited if there are multiples
 }
 
 showURLs = True

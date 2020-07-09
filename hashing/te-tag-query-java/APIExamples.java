@@ -96,7 +96,7 @@ public class APIExamples {
     // Note: in the TEAPI at present we can't read the privacy-members of a
     // copy-from descriptor unless we already own it, so this needs to be
     // specified explicitly here.
-    postParams.setPrivacyMembers("781588512307315");
+    postParams.setPrivacyMembers("781588512307315"); // Comma-delimited if there are multiples
     postParams.setPrivacyType("HAS_PRIVACY_GROUP");
 
     postParams.setTagsToAdd("testing-copy");
