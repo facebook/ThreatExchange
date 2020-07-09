@@ -336,22 +336,22 @@ public class DescriptorPostParameters {
       return "Descriptor ID must not be specified for submit.";
     }
     if (this._indicatorText == null) {
-      return "Indicator text is missing.";
+      return "Indicator text must be specified for submit.";
     }
     if (this._indicatorType == null) {
-      return "Indicator type is missing.";
+      return "Indicator type must be specified for submit.";
     }
     if (this._description == null) {
-      return "Description is missing.";
+      return "Description must be specified for submit.";
     }
     if (this._shareLevel == null) {
-      return "Share level is missing.\n";
+      return "Share level must be specified for submit.\n";
     }
     if (this._status == null) {
-      return "Status is missing.\n";
+      return "Status must be specified for submit.\n";
     }
     if (this._privacyType == null) {
-      return "Privacy type is missing.\n";
+      return "Privacy type must be specified for submit.\n";
     }
     return null;
   }
@@ -376,10 +376,10 @@ public class DescriptorPostParameters {
       return "Descriptor ID must be specified for copy.";
     }
     if (this._privacyMembers == null) {
-      return "Privacy members is missing.";
+      return "Privacy members must be specified for copy.";
     }
     if (this._privacyType == null) {
-      return "Privacy type is missing.";
+      return "Privacy type must be specified for copy.";
     }
     return null;
   }
