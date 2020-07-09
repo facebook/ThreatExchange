@@ -1557,7 +1557,7 @@ public class TETagQuery {
             lno++;
             // In Java, line-terminators already stripped for us
             postParams.setDescriptorID(line);
-            CopySingle(postParams, verbose, showURLs, dryRun);
+            copySingle(postParams, verbose, showURLs, dryRun);
           }
         } catch (IOException e) {
           System.err.printf("Couldn't read line %d of standard input.\n", lno);
@@ -1569,11 +1569,11 @@ public class TETagQuery {
             PROGNAME, _verb);
           System.exit(1);
         }
-        CopySingle(postParams, verbose, showURLs, dryRun);
+        copySingle(postParams, verbose, showURLs, dryRun);
       }
     }
 
-    private void CopySingle(
+    private void copySingle(
       DescriptorPostParameters postParams,
       boolean verbose,
       boolean showURLs,
