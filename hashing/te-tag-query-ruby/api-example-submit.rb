@@ -1,4 +1,4 @@
-##!/usr/bin/env ruby
+#!/usr/bin/env ruby
 
 # ================================================================
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
