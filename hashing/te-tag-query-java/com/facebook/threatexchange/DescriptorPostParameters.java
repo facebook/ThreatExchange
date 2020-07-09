@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 /**
  * Helper container class for posting threat descriptors to ThreatExchange.
  */
-class DescriptorPostParameters {
+public class DescriptorPostParameters {
   private String _indicatorText; // Required for submit
   private String _indicatorType; // Required for submit
   private String _descriptorID;  // Required for update

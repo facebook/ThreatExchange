@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * HTTP-wrapper methods
  * See also https://developers.facebook.com/docs/threat-exchange
  */
-class Net {
+public class Net {
   private static String APP_TOKEN = null;
   private static String TE_BASE_URL = Constants.DEFAULT_TE_BASE_URL;
 
