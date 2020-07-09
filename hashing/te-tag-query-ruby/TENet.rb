@@ -422,6 +422,12 @@ def TENet.validatePostPararmsForCopy(postParams)
   if postParams[POST_PARAM_NAMES[:descriptor_id]].nil?
     return "Source-descriptor ID must be specified for copy."
   end
+  if postParams[POST_PARAM_NAMES[:privacy_type]].nil?
+    return "Privacy type must be specified for copy."
+  end
+  if postParams[POST_PARAM_NAMES[:privacy_members]].nil?
+    return "Privacy type must be specified for copy."
+  end
   return nil
 end
 
@@ -498,6 +504,13 @@ def TENet.copyThreatDescriptor(
   newDescriptor.delete('raw_indicator')
   if newDescriptor['tags'] != nil
     newDescriptor.delete('tags')
+  end
+
+  # The shape is different between the copy-from data (mapping app IDs to
+  # reactions) and the post data (just a comma-delimited string of owner-app
+  # reactions).
+  if newDescriptor['reactions'] != nil
+    newDescriptor.delete('reactions')
   end
 
   # Take the source-descriptor values and overwrite any post-params fields

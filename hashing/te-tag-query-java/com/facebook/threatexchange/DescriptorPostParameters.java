@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 /**
  * Helper container class for posting threat descriptors to ThreatExchange.
  */
-class DescriptorPostParameters {
+public class DescriptorPostParameters {
   private String _indicatorText; // Required for submit
   private String _indicatorType; // Required for submit
   private String _descriptorID;  // Required for update
@@ -330,60 +330,58 @@ class DescriptorPostParameters {
     return this._reactionsToRemove;
   }
 
-  public boolean validateForSubmitWithReport(PrintStream o) {
+  // Returns null if no errors, non-null for error.
+  public String validateForSubmitWithReport() {
     if (this._descriptorID != null) {
-      o.println("Descriptor ID must not be specified for submit.\n");
-      return false;
+      return "Descriptor ID must not be specified for submit.";
     }
     if (this._indicatorText == null) {
-      o.println("Indicator text is missing.\n");
-      return false;
+      return "Indicator text must be specified for submit.";
     }
     if (this._indicatorType == null) {
-      o.println("Indicator type is missing.\n");
-      return false;
+      return "Indicator type must be specified for submit.";
     }
     if (this._description == null) {
-      o.println("Description is missing.\n");
-      return false;
+      return "Description must be specified for submit.";
     }
     if (this._shareLevel == null) {
-      o.println("Share level is missing.\n");
-      return false;
+      return "Share level must be specified for submit.\n";
     }
     if (this._status == null) {
-      o.println("Status is missing.\n");
-      return false;
+      return "Status must be specified for submit.\n";
     }
     if (this._privacyType == null) {
-      o.println("Privacy type is missing.\n");
-      return false;
+      return "Privacy type must be specified for submit.\n";
     }
-    return true;
+    return null;
   }
 
-  public boolean validateForUpdateWithReport(PrintStream o) {
+  // Returns null if no errors, non-null for error.
+  public String validateForUpdateWithReport() {
     if (this._descriptorID == null) {
-      o.println("Descriptor ID must be specified for update.\n");
-      return false;
+      return "Descriptor ID must be specified for update.";
     }
     if (this._indicatorText != null) {
-      o.println("Indicator text must not be specified for update.\n");
-      return false;
+      return "Indicator text must not be specified for update.";
     }
     if (this._indicatorType != null) {
-      o.println("Indicator type must not be specified for update.\n");
-      return false;
+      return "Indicator type must not be specified for update.";
     }
-    return true;
+    return null;
   }
 
-  public boolean validateForCopyWithReport(PrintStream o) {
+  // Returns null if no errors, non-null for error.
+  public String validateForCopyWithReport() {
     if (this._descriptorID == null) {
-      o.println("Descriptor ID must be specified for copy.\n");
-      return false;
+      return "Descriptor ID must be specified for copy.";
     }
-    return true;
+    if (this._privacyMembers == null) {
+      return "Privacy members must be specified for copy.";
+    }
+    if (this._privacyType == null) {
+      return "Privacy type must be specified for copy.";
+    }
+    return null;
   }
 
   // URL-encode since data is user-provided.

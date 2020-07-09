@@ -914,7 +914,7 @@ class SubmitHandler(AbstractPostSubcommandHandler):
 
     if serverSideError != None:
       eprint(str(serverSideError))
-      print(json.dumps(responseBody))
+      eprint(json.dumps(responseBody))
       sys.exit(1)
 
     print(json.dumps(responseBody))
@@ -1032,7 +1032,7 @@ class UpdateHandler(AbstractPostSubcommandHandler):
 
     if serverSideError != None:
       eprint(str(serverSideError))
-      print(json.dumps(responseBody))
+      eprint(json.dumps(responseBody))
       sys.exit(1)
 
     print(json.dumps(responseBody))
@@ -1151,7 +1151,7 @@ class CopyHandler(AbstractPostSubcommandHandler):
 
     if serverSideError != None:
       eprint(str(serverSideError))
-      print(json.dumps(responseBody))
+      eprint(json.dumps(responseBody))
       sys.exit(1)
 
     print(json.dumps(responseBody))

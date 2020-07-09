@@ -925,7 +925,7 @@ class SubmitHandler < AbstractPostSubcommandHandler
       dryRun: dryRun)
 
     unless validationErrorMessage.nil?
-      $stderr.puts errorMessage
+      $stderr.puts validationErrorMessage
       exit 1
     end
 

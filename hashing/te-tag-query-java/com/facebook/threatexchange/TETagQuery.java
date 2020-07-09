@@ -1267,10 +1267,12 @@ public class TETagQuery {
         postParams.setIndicatorText(contents);
       }
 
-      boolean ok = Net.submitThreatDescriptor(postParams, showURLs, dryRun);
-      if (!ok) {
-        // Error message already printed out
+      Net.PostResult postResult = Net.submitThreatDescriptor(postParams, showURLs, dryRun);
+      if (!postResult.ok) {
+        System.err.println(postResult.errorMessage);
         System.exit(1);
+      } else {
+        System.out.println(postResult.responseMessage);
       }
     }
 
@@ -1425,10 +1427,12 @@ public class TETagQuery {
       boolean showURLs,
       boolean dryRun
     ) {
-      boolean ok = Net.updateThreatDescriptor(postParams, showURLs, dryRun);
-      if (!ok) {
-        // Error message already printed out
+      Net.PostResult postResult = Net.updateThreatDescriptor(postParams, showURLs, dryRun);
+      if (!postResult.ok) {
+        System.err.println(postResult.errorMessage);
         System.exit(1);
+      } else {
+        System.out.println(postResult.responseMessage);
       }
     }
 
@@ -1557,7 +1561,7 @@ public class TETagQuery {
             lno++;
             // In Java, line-terminators already stripped for us
             postParams.setDescriptorID(line);
-            CopySingle(postParams, verbose, showURLs, dryRun);
+            copySingle(postParams, verbose, showURLs, dryRun);
           }
         } catch (IOException e) {
           System.err.printf("Couldn't read line %d of standard input.\n", lno);
@@ -1569,20 +1573,22 @@ public class TETagQuery {
             PROGNAME, _verb);
           System.exit(1);
         }
-        CopySingle(postParams, verbose, showURLs, dryRun);
+        copySingle(postParams, verbose, showURLs, dryRun);
       }
     }
 
-    private void CopySingle(
+    private void copySingle(
       DescriptorPostParameters postParams,
       boolean verbose,
       boolean showURLs,
       boolean dryRun
     ) {
-      boolean ok = Net.copyThreatDescriptor(postParams, verbose, showURLs, dryRun);
-      if (!ok) {
-        // Error message already printed out
+      Net.PostResult postResult = Net.copyThreatDescriptor(postParams, verbose, showURLs, dryRun);
+      if (!postResult.ok) {
+        System.err.println(postResult.errorMessage);
         System.exit(1);
+      } else {
+        System.out.println(postResult.responseMessage);
       }
     }
 
