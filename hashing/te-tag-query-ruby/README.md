@@ -179,6 +179,16 @@ $ te-tag-query-ruby ids-to-details 3046896738736542 | jq .
 }
 ```
 
+# Examples of using the API wrappers
+
+The above examples use the `te-tag-query-ruby` script. However, if you'd like more easily copyable examples of using the API, you can do
+
+```
+ruby api-example-submit.rb
+ruby api-example-update.rb
+ruby api-example-copy.rb
+```
+
 # Bare-curl notes
 
 As noted at the top of this document, the `TETagQuery` program is intended to be a reference design -- for you to use as-is, or to help you write tooling in other languages.
