@@ -717,6 +717,12 @@ public class Net {
       JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
       return new PostResult(true, object.toString(), null);
     } catch (Exception e) {
+      // There is perhaps some value in e.getMessage() and
+      // e.printStackTrace(System.err).  However, in practice we find that the
+      // connection.getErrorStream() JSON has the necessary information for
+      // diagnosing issues. As well, that's what's passed back to the caller in
+      // the Python and Ruby impls, so we stick with just that, for
+      // consistency.
       try {
         InputStream response = connection.getErrorStream();
         JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
