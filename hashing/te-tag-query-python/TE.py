@@ -331,7 +331,11 @@ class Net:
   @classmethod
   def validatePostPararmsForCopy(self, postParams):
     if postParams.get(self.POST_PARAM_NAMES['descriptor_id']) == None:
-      return "Source-descriptor ID must be specified for update."
+      return "Source-descriptor ID must be specified for copy."
+    if postParams.get(self.POST_PARAM_NAMES['privacy_type']) == None:
+      return "Privacy type must be specified for copy."
+    if postParams.get(self.POST_PARAM_NAMES['privacy_members']) == None:
+      return "Privacy members must be specified for copy."
     return None
 
 
