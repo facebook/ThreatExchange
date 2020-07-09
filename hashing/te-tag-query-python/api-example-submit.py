@@ -17,7 +17,7 @@ postParams = {
   'share_level': 'AMBER',
   'status': 'NON_MALICIOUS',
   'privacy_type': 'HAS_WHITELIST',
-  'privacy_members': '1064060413755420',
+  'privacy_members': '1064060413755420', # This is the ID of another test app
   'tags': 'testing_python_post'
 }
 

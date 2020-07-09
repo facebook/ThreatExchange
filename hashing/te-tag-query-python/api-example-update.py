@@ -11,7 +11,7 @@ import TE
 TE.Net.setAppTokenFromEnvName('TX_ACCESS_TOKEN')
 
 postParams = {
-  'descriptor_id': '4036655176350945',
+  'descriptor_id': '4036655176350945', # ID of the descriptor to be updated
   'reactions': 'INGESTED,IN_REVIEW'
 }
 

@@ -677,7 +677,7 @@ public class Net {
     try {
       connection = (HttpURLConnection) url.openConnection();
     } catch (IOException e) {
-      return new PostResult(false, null, "A malformed URL was constructed: " + urlString);
+      return new PostResult(false, null, "The connection could not be opened: " + urlString);
     }
     connection.setDoOutput(true); // since there is a POST body
 

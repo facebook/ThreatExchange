@@ -8,9 +8,8 @@ require './TENet.rb'
 
 ThreatExchange::TENet::setAppTokenFromEnvName('TX_ACCESS_TOKEN')
 postParams = {
-  'descriptor_id' => '3546989395318416',
-  'status' => 'UNKNOWN',
-  'add_tags' => 'testing_ruby_update',
+  'descriptor_id' => '3546989395318416', # ID of the descriptor to be updated
+  'reactions': 'INGESTED,IN_REVIEW'
 }
 
 showURLs = false
