@@ -1267,10 +1267,12 @@ public class TETagQuery {
         postParams.setIndicatorText(contents);
       }
 
-      boolean ok = Net.submitThreatDescriptor(postParams, showURLs, dryRun);
-      if (!ok) {
-        // Error message already printed out
+      Net.PostResult postResult = Net.submitThreatDescriptor(postParams, showURLs, dryRun);
+      if (!postResult.ok) {
+        System.err.println(postResult.errorMessage);
         System.exit(1);
+      } else {
+        System.out.println(postResult.responseMessage);
       }
     }
 
@@ -1425,10 +1427,12 @@ public class TETagQuery {
       boolean showURLs,
       boolean dryRun
     ) {
-      boolean ok = Net.updateThreatDescriptor(postParams, showURLs, dryRun);
-      if (!ok) {
-        // Error message already printed out
+      Net.PostResult postResult = Net.updateThreatDescriptor(postParams, showURLs, dryRun);
+      if (!postResult.ok) {
+        System.err.println(postResult.errorMessage);
         System.exit(1);
+      } else {
+        System.out.println(postResult.responseMessage);
       }
     }
 
@@ -1579,10 +1583,12 @@ public class TETagQuery {
       boolean showURLs,
       boolean dryRun
     ) {
-      boolean ok = Net.copyThreatDescriptor(postParams, verbose, showURLs, dryRun);
-      if (!ok) {
-        // Error message already printed out
+      Net.PostResult postResult = Net.copyThreatDescriptor(postParams, verbose, showURLs, dryRun);
+      if (!postResult.ok) {
+        System.err.println(postResult.errorMessage);
         System.exit(1);
+      } else {
+        System.out.println(postResult.responseMessage);
       }
     }
 

@@ -520,16 +520,32 @@ public class Net {
   }
 
   /**
+   * In Python/Ruby/etc you can return tuples. For Java we define a simple
+   * class containing the results of a POST.
+   */
+  public static class PostResult {
+    public final boolean ok;
+    public final String responseMessage;
+    public final String errorMessage;
+    public PostResult(boolean ok_, String responseMessage_, String errorMessage_) {
+      this.ok = ok_;
+      this.responseMessage = responseMessage_;
+      this.errorMessage = errorMessage_;
+    }
+  }
+
+  /**
    * Does a single POST to the threat_descriptors endpoint.  See also
    * https://developers.facebook.com/docs/threat-exchange/reference/submitting
    */
-  public static boolean submitThreatDescriptor(
+  public static PostResult submitThreatDescriptor(
     DescriptorPostParameters postParams,
     boolean showURLs,
     boolean dryRun
   ) {
-    if (!postParams.validateForSubmitWithReport(System.err)) {
-      return false;
+    String validationErrorMessage = postParams.validateForSubmitWithReport();
+    if (validationErrorMessage != null) {
+      return new PostResult(false, null, validationErrorMessage);
     }
 
     String urlString = TE_BASE_URL
@@ -543,13 +559,14 @@ public class Net {
    * Does a single POST to the threat_descriptor ID endpoint.  See also
    * https://developers.facebook.com/docs/threat-exchange/reference/editing
    */
-  public static boolean updateThreatDescriptor(
+  public static PostResult updateThreatDescriptor(
     DescriptorPostParameters postParams,
     boolean showURLs,
     boolean dryRun
   ) {
-    if (!postParams.validateForUpdateWithReport(System.err)) {
-      return false;
+    String validationErrorMessage = postParams.validateForUpdateWithReport();
+    if (validationErrorMessage != null) {
+      return new PostResult(false, null, validationErrorMessage);
     }
 
     String urlString = TE_BASE_URL
@@ -564,22 +581,22 @@ public class Net {
    * See also
    * https://developers.facebook.com/docs/threat-exchange/reference/editing
    */
-  public static boolean copyThreatDescriptor(
+  public static PostResult copyThreatDescriptor(
     DescriptorPostParameters overrideParams,
     boolean verbose,
     boolean showURLs,
     boolean dryRun
   ) {
-    if (!overrideParams.validateForCopyWithReport(System.err)) {
-      return false;
+    String validationErrorMessage = overrideParams.validateForCopyWithReport();
+    if (validationErrorMessage != null) {
+      return new PostResult(false, null, validationErrorMessage);
     }
 
     // Get source descriptor
     String sourceID = overrideParams.getDescriptorID();
     ThreatDescriptor sourceDescriptor = getInfoForID(sourceID, verbose, showURLs, false);
     if (sourceDescriptor == null) {
-      System.err.printf("Could not load copy-from descriptor with ID \"%s\".\n", sourceID);
-      return false;
+      return new PostResult(false, null, "Could not load copy-from descriptor with ID \"" + sourceID + "\".");
     }
 
     // Take the source-descriptor values and overwrite any post-params fields
@@ -637,7 +654,7 @@ public class Net {
   /**
    * Code-reuse method for submit and update.
    */
-  private static boolean postThreatDescriptor(
+  private static PostResult postThreatDescriptor(
     String urlString,
     DescriptorPostParameters postParams,
     boolean showURLs,
@@ -653,18 +670,14 @@ public class Net {
     try {
       url = new URL(urlString);
     } catch (MalformedURLException e) {
-      System.err.println("A malformed URL was constructed:");
-      System.err.println(urlString);
-      return false;
+      return new PostResult(false, null, "A malformed URL was constructed: " + urlString);
     }
 
     HttpURLConnection connection = null;
     try {
       connection = (HttpURLConnection) url.openConnection();
     } catch (IOException e) {
-      System.err.println("A malformed URL was constructed:");
-      System.err.println(urlString);
-      return false;
+      return new PostResult(false, null, "A malformed URL was constructed: " + urlString);
     }
     connection.setDoOutput(true); // since there is a POST body
 
@@ -672,9 +685,7 @@ public class Net {
     try {
       connection.setRequestMethod("POST");
     } catch (ProtocolException e) {
-      System.err.println("Unable to set request method to POST.");
-      System.err.println(urlString);
-      return false;
+      return new PostResult(false, null, "Unable to set request method to POST: " + urlString);
     }
     connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
     connection.setRequestProperty("charset", "utf-8");
@@ -690,48 +701,32 @@ public class Net {
     connection.setRequestProperty("Content-Length", Integer.toString(postDataBytes.length));
 
     if (dryRun) {
-      System.out.println("Not doing POST since --dry-run.");
-    } else {
+      return new PostResult(false, null, "Not doing POST since --dry-run.");
+    }
+
+    try {
+      connection.getOutputStream().write(postDataBytes);
+    } catch (IOException e) {
+      System.err.println();
+      e.printStackTrace(System.err);
+      System.err.println();
+      return new PostResult(false, null, "POST failure");
+    }
+
+    try (InputStream response = connection.getInputStream()) {
+      JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
+      return new PostResult(true, object.toString(), null);
+    } catch (Exception e) {
       try {
-        connection.getOutputStream().write(postDataBytes);
-      } catch (IOException e) {
-        System.err.println();
-        System.err.printf("POST failure.\n");
-        System.err.printf("\n");
-        e.printStackTrace(System.err);
-        return false;
-      }
-
-      try (InputStream response = connection.getInputStream()) {
-
+        InputStream response = connection.getErrorStream();
         JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
-        System.out.println(object);
-      } catch (Exception e) {
-        try {
-          InputStream response = connection.getErrorStream();
-          JSONObject object = (JSONObject) new JSONParser().parse(new InputStreamReader(response));
-
-          System.err.println();
-          System.out.println("ERROR STREAM:");
-          System.out.println(object);
-        } catch (IOException e2) {
-          System.err.println("IOException trying to print the error stream :(");
-        } catch (org.json.simple.parser.ParseException e2) {
-          System.err.println("ParseException trying to print the error stream :(");
-        }
-
-        System.err.println();
-        System.err.println("EXCEPTION MESSAGE:");
-        System.err.println(e.getMessage());
-
-        System.err.println();
-        System.err.println("EXCEPTION STACK TRACE:");
-        e.printStackTrace(System.err);
-
-        return false;
+        return new PostResult(false, null, object.toString());
+      } catch (IOException e2) {
+        return new PostResult(false, null, "IOException trying to print the error stream :(");
+      } catch (org.json.simple.parser.ParseException e2) {
+        return new PostResult(false, null, "ParseException trying to print the error stream :(");
       }
     }
-    return true;
   }
 
 } // Net

@@ -330,60 +330,58 @@ public class DescriptorPostParameters {
     return this._reactionsToRemove;
   }
 
-  public boolean validateForSubmitWithReport(PrintStream o) {
+  // Returns null if no errors, non-null for error.
+  public String validateForSubmitWithReport() {
     if (this._descriptorID != null) {
-      o.println("Descriptor ID must not be specified for submit.\n");
-      return false;
+      return "Descriptor ID must not be specified for submit.";
     }
     if (this._indicatorText == null) {
-      o.println("Indicator text is missing.\n");
-      return false;
+      return "Indicator text is missing.";
     }
     if (this._indicatorType == null) {
-      o.println("Indicator type is missing.\n");
-      return false;
+      return "Indicator type is missing.";
     }
     if (this._description == null) {
-      o.println("Description is missing.\n");
-      return false;
+      return "Description is missing.";
     }
     if (this._shareLevel == null) {
-      o.println("Share level is missing.\n");
-      return false;
+      return "Share level is missing.\n";
     }
     if (this._status == null) {
-      o.println("Status is missing.\n");
-      return false;
+      return "Status is missing.\n";
     }
     if (this._privacyType == null) {
-      o.println("Privacy type is missing.\n");
-      return false;
+      return "Privacy type is missing.\n";
     }
-    return true;
+    return null;
   }
 
-  public boolean validateForUpdateWithReport(PrintStream o) {
+  // Returns null if no errors, non-null for error.
+  public String validateForUpdateWithReport() {
     if (this._descriptorID == null) {
-      o.println("Descriptor ID must be specified for update.\n");
-      return false;
+      return "Descriptor ID must be specified for update.";
     }
     if (this._indicatorText != null) {
-      o.println("Indicator text must not be specified for update.\n");
-      return false;
+      return "Indicator text must not be specified for update.";
     }
     if (this._indicatorType != null) {
-      o.println("Indicator type must not be specified for update.\n");
-      return false;
+      return "Indicator type must not be specified for update.";
     }
-    return true;
+    return null;
   }
 
-  public boolean validateForCopyWithReport(PrintStream o) {
+  // Returns null if no errors, non-null for error.
+  public String validateForCopyWithReport() {
     if (this._descriptorID == null) {
-      o.println("Descriptor ID must be specified for copy.\n");
-      return false;
+      return "Descriptor ID must be specified for copy.";
     }
-    return true;
+    if (this._privacyMembers == null) {
+      return "Privacy members is missing.";
+    }
+    if (this._privacyType == null) {
+      return "Privacy type is missing.";
+    }
+    return null;
   }
 
   // URL-encode since data is user-provided.
