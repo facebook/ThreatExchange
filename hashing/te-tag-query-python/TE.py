@@ -374,6 +374,7 @@ class Net:
 
     # Get source descriptor
     sourceID = postParams['descriptor_id']
+    # Not valid for posting a new descriptor
     del postParams['descriptor_id']
     sourceDescriptor = self.getInfoForIDs([sourceID], showURLs=showURLs)
     sourceDescriptor = sourceDescriptor[0]
@@ -385,6 +386,11 @@ class Net:
     if 'tags' in newDescriptor and newDescriptor['tags'] is None:
       del newDescriptor['tags']
 
+    # The shape is different between the copy-from data (mapping app IDs to
+    # reactions) and the post data (just a comma-delimited string of owner-app
+    # reactions).
+    if 'reactions' in newDescriptor:
+      del newDescriptor['reactions']
 
     # Take the source-descriptor values and overwrite any post-params fields
     # supplied by the caller. Note: Python's dict-update method keeps the old

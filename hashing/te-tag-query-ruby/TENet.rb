@@ -500,6 +500,13 @@ def TENet.copyThreatDescriptor(
     newDescriptor.delete('tags')
   end
 
+  # The shape is different between the copy-from data (mapping app IDs to
+  # reactions) and the post data (just a comma-delimited string of owner-app
+  # reactions).
+  if newDescriptor['reactions'] != nil
+    newDescriptor.delete('reactions')
+  end
+
   # Take the source-descriptor values and overwrite any post-params fields
   # supplied by the caller. Note: Ruby's hash-merge method keeps the old
   # value for a given field name when both old and new are present so we
