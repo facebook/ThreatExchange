@@ -284,7 +284,7 @@ class Net:
 
             # Canonicalize the tag ordering and simplify the
             # structure to simply an array of tag-texts
-            descriptor["tags"] = [tag["text"] for tag in tags].sort()
+            descriptor["tags"] = sorted(tag["text"] for tag in tags)
 
             if descriptor.get("description") is None:
                 descriptor["description"] = ""
