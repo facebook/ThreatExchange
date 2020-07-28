@@ -158,6 +158,7 @@ class SubcommandHandlerFactory:
         "tag-to-ids": "tag-to-ids",
         "ids-to-details": "ids-to-details",
         "tag-to-details": "tag-to-details",
+        "power-search": "power-search",
         "paginate": "paginate",
         "submit": "submit",
         "update": "update",
@@ -181,6 +182,8 @@ class SubcommandHandlerFactory:
             return IDsToDetailsHandler(progName, verbName)
         elif verbName == self.VERB_NAMES["tag-to-details"]:
             return TagToDetailsHandler(progName, verbName)
+        elif verbName == self.VERB_NAMES["power-search"]:
+            return PowerSearchHandler(progName, verbName)
         elif verbName == self.VERB_NAMES["paginate"]:
             return PaginateHandler(progName, verbName)
         elif verbName == self.VERB_NAMES["submit"]:
@@ -590,6 +593,175 @@ Options:
             # Stub processing -- one would perhaps integrate with one's own system
             print(json.dumps(descriptor))
 
+
+# ================================================================
+class PowerSearchHandler(SubcommandHandler):
+    def __init__(self, progName, verbName):
+        super(__class__, self).__init__(progName, verbName)
+
+    def usage(self, exitCode):
+        stream = sys.stdout if exitCode == 0 else sys.stderr
+        output = """Usage: %s %s [options]
+Options:
+--limit {n} or --page-size {n}  Defines the maximum size of a page of results. The maximum is 1,000.
+--max-confidence {n}            Defines the maximum allowed confidence value for the data returned.
+--min-confidence {n}            Defines the minimum allowed confidence value for the data returned.
+--owner {x}                     Comma-separated list of AppIDs of the person who submitted the data.
+--review-status {x}             A given ReviewStatusType
+--severity {x}                  A given SeverityWType
+--share-level {x}               A given ShareLevelType
+--since {x}                     Returns descriptors collected after a timestamp
+--status {x}                    A given StatusType
+--strict-text                   When provided, the API will not do approximate
+                                matching on the value in the text field
+--tags {a,b,c}                  Comma-separated list of tags to filter results,
+                                ORed together unless --tags-are-anded is used
+--tags-are-anded                If provided, tags are ANDed together
+--text {x}                      Freeform text field with a value to search for.
+                                This can be an indicator text or a string found in other fields of the objects.
+--type or --indicator-type {x}  The type of descriptor to search for (see IndicatorTypes)
+--until {x}                     Returns descriptors collected before a timestamp
+
+Timestamp options for --since and --until are epoch seconds, various datetime
+formats including "2020-12-34T56:07:08+0900", and time-deltas like "-5minutes",
+"-3hours", "-1week".
+
+NOTE: THIS IS KNOWN TO NOT CORRECTLY HANDLE PAGINATION.  Please use
+tagged_objects with tagged_since in the TE API, which is wrapped by
+tag-to-details in this tool.
+
+See also
+https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptors
+""" % (
+            self.progName,
+            self.verbName,
+        )
+        stream.write(output + "\n")
+        sys.exit(exitCode)
+
+    def handle(self, args, options):
+        urlParams = {}
+
+        while True:
+            if len(args) == 0:
+                break
+            if args[0][0] != "-":
+                break
+            option = args[0]
+            args = args[1:]
+
+            if option == "-h":
+                self.usage(0)
+            elif option == "--help":
+                self.usage(0)
+
+            elif option == "--limit" or option == 'page-size':
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["limit"] = args[0]
+                args = args[1:]
+
+            elif option == "--max-confidence":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["max_confidence"] = args[0]
+                args = args[1:]
+
+            elif option == "--min-confidence":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["min_confidence"] = args[0]
+                args = args[1:]
+
+            elif option == "--owner":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["owner"] = args[0]
+                args = args[1:]
+
+            elif option == "--review-status":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["review_status"] = args[0]
+                args = args[1:]
+
+            elif option == "--severity":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["severity"] = args[0]
+                args = args[1:]
+
+            elif option == "--share-level":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["share_level"] = args[0]
+                args = args[1:]
+
+            elif option == "--since":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["since"] = args[0]
+                args = args[1:]
+
+            elif option == "--status":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["status"] = args[0]
+                args = args[1:]
+
+            elif option == "--strict-text":
+                urlParams["strict_text"] = 'true'
+
+            elif option == "--tag" or option == "--tags":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["tags"] = args[0]
+                args = args[1:]
+
+            elif option == "--tags-are-anded":
+                urlParams["tags_are_anded"] = 'true'
+
+            elif option == "--text":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["text"] = args[0]
+                args = args[1:]
+
+            elif option == "--type" or option == "--indicator-type":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["type"] = args[0]
+                args = args[1:]
+
+            elif option == "--until":
+                if len(args) < 1:
+                    self.usage(1)
+                urlParams["until"] = args[0]
+                args = args[1:]
+
+            else:
+                eprint(
+                    "%s %s: unrecognized  option %s"
+                    % (self.progName, self.verbName, option)
+                )
+                sys.exit(1)
+
+        if urlParams['since'] is None:
+            eprint("%s %s: --since is required" % (self.progName, self.verbName))
+            self.usage(1)
+        if len(args) > 0:
+            eprint("%s %s: extraneous argument(s) %s" % (self.progName, self.verbName, ", ".join(args)))
+            self.usage(1)
+
+        descriptorBatchProcessor = lambda descriptorBatch: self.DescriptorBatchProcessor(descriptorBatch, options)
+
+        TE.Net.doPowerSearch(descriptorBatchProcessor, urlParams, options)
+
+
+    def DescriptorBatchProcessor(self, descriptorBatch, options):
+        for descriptor in descriptorBatch:
+            # Stub processing -- one would perhaps integrate with one's own system
+            print(json.dumps(descriptor))
 
 # ================================================================
 class PaginateHandler(SubcommandHandler):

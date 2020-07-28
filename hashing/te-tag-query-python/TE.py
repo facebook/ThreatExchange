@@ -294,6 +294,77 @@ class Net:
         return descriptors
 
     # ----------------------------------------------------------------
+    # See also https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptors
+    #
+    # NOTE: THIS IS KNOWN TO NOT CORRECTLY HANDLE PAGINATION.  Please use the
+    # tagged_objects endpoint as detailed above.
+
+    @classmethod
+    def doPowerSearch(self, descriptorBatchProcessorCallback, urlParams, options):
+        verbose = options.get("verbose", False)
+        showURLs = options.get("showURLs", False)
+        includeIndicatorInOutput = options.get("includeIndicatorInOutput", True)
+
+        startURL = (
+            self.TE_BASE_URL
+            + "/threat_descriptors"
+            + "/?access_token="
+            + self.APP_TOKEN
+            + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description,reactions,my_reactions"
+        )
+
+        for key, value in urlParams.items():
+            startURL += "&" + key + "=" + urllib.parse.quote(value)
+
+        nextURL = startURL
+        pageIndex = 0
+
+        while nextURL is not None:
+            if showURLs:
+                print("URL:")
+                print(nextURL)
+
+            response = self.getJSONFromURL(nextURL)
+
+            data = response["data"]
+
+            nextURL = None
+            if "paging" in response:
+                paging = response["paging"]
+                if "next" in paging:
+                    nextURL = paging["next"]
+
+            descriptors = []
+            for descriptor in data:
+                if not includeIndicatorInOutput:
+                    del descriptor["name"]
+
+                # Canonicalize the tag ordering and simplify the
+                # structure to simply an array of tag-texts
+                tags = descriptor.get("tags", None)
+                if tags is None:
+                    tags = []
+                else:
+                    tags = tags["data"]
+                descriptor["tags"] = [tag["text"] for tag in tags].sort()
+
+                if descriptor.get("description") is None:
+                    descriptor["description"] = ""
+
+                descriptors.append(descriptor)
+
+            if verbose:
+                info = {}
+                info["page_index"] = pageIndex
+                info["num_items"] = len(data)
+                print(json.dumps(info))
+
+            descriptorBatchProcessorCallback(descriptors)
+
+            pageIndex += 1
+
+
+    # ----------------------------------------------------------------
     # Returns error message or None.
     # This simply checks to see (client-side) if required fields aren't provided.
     @classmethod
