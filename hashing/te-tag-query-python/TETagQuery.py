@@ -746,7 +746,7 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descr
                 )
                 sys.exit(1)
 
-        if urlParams['since'] is None:
+        if urlParams.get('since') is None:
             eprint("%s %s: --since is required" % (self.progName, self.verbName))
             self.usage(1)
         if len(args) > 0:
