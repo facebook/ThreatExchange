@@ -17,7 +17,7 @@ GEM
     hashdiff (1.0.0)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
-    json (2.2.0)
+    json (2.3.1)
     mime-types (3.2.2)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2019.0331)
