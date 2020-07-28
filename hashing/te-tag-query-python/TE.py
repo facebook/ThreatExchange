@@ -64,7 +64,7 @@ class Net:
     #   https://graph.facebook.com/v{x}.{y}
     @classmethod
     def setTEBaseURL(self, baseURL):
-        self.DEFAULT_TE_BASE_URL = baseURL
+        self.TE_BASE_URL = baseURL
 
     # ----------------------------------------------------------------
     # Gets the ThreatExchange app token from an environment variable.  Feel
