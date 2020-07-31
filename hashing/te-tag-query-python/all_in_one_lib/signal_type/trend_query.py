@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+
+"""
+Wrapper around the Trend Query (keywords and regexes) content type.
+"""
+
+import csv
+import json
+import pathlib
+import re
+import typing as t
+
+from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
+from . import base
+
+
+class TrendQuery:
+    """
+    A parsed trend query, based on regexes.
+    """
+
+    REGEX_PREFIX = "regex-"
+
+    def __init__(self, query_json: t.Dict[str, t.Any]) -> None:
+        self.and_terms: t.List[t.List[re.Pattern]] = [
+            [self._parse_term(t) for t in and_["or"]] for and_ in query_json["and"]
+        ]
+        self.not_terms: t.List[re.Pattern] = [
+            self._parse_term(t) for t in query_json["not"]
+        ]
+
+    def _parse_term(self, t) -> re.Pattern:
+        if t.startswith(self.REGEX_PREFIX):
+            return re.compile(t[len(self.REGEX_PREFIX) + 1 : -1])
+        return re.compile(f"\\b{re.escape(t)}\\b")
+
+    def _match_term(self, t: t.Union[str, re.Pattern], text: str) -> bool:
+        return bool()
+
+    def matches(self, text: str) -> bool:
+        for or_ in self.and_terms:
+            if not any(t.search(text) for t in or_):
+                break
+        else:
+            return not any(t.search(text) for t in self.not_terms)
+        return False
+
+
+class TrendQuerySignal(base.SignalType, base.StrMatcher):
+    """
+    Trend Queries are a combination of and/or/not regexes.
+
+    Based off a system effective for grouping content at Facebook, Trend Queries
+    can potentially help you sift though large sets of content to quickly flag
+    ones that might be interesting to you.
+
+    They have high "recall" but potentially low "precision".
+    """
+
+    def __init__(self) -> None:
+        self.state: t.Dict[str, (TrendQuery, SimpleDescriptorRollup)] = {}
+
+    def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
+        """
+        Add ThreatDescriptor to the state of this type, if it is for this type
+
+        Return true if the true if the descriptor was used.
+        """
+        if (
+            descriptor.indicator_type != "DEBUG_STRING"
+            or "media_type_trend_query" not in descriptor.tags
+        ):
+            return False
+        old_val = self.state.get(descriptor.raw_indicator)
+        query_json = json.loads(descriptor.raw_indicator)
+
+        if old_val is None:
+            self.state[descriptor.raw_indicator] = (
+                TrendQuery(query_json),
+                SimpleDescriptorRollup(
+                    descriptor.id, descriptor.added_on, descriptor.tags
+                ),
+            )
+        else:
+            old_val[1].merge(descriptor)
+        return True
+
+    def match(self, content: str) -> t.List[base.SignalMatch]:
+        return [
+            base.SignalMatch(rollup.labels, rollup.first_descriptor_id)
+            for query, rollup in self.state.values()
+            if query.matches(content)
+        ]
+
+    def load(self, path: pathlib.Path) -> None:
+        self.state.clear()
+        csv.field_size_limit(path.stat().st_size)  # dodge field size problems
+        with path.open("r", newline="") as f:
+            for row in csv.reader(f, dialect="excel-tab"):
+                raw_indicator = row[0]
+                query_json = json.loads(raw_indicator)
+                self.state[raw_indicator] = (
+                    TrendQuery(query_json),
+                    SimpleDescriptorRollup.from_row(row[1:]),
+                )
+
+    def store(self, path: pathlib.Path) -> None:
+        with path.open("w+", newline="") as f:
+            writer = csv.writer(f, dialect="excel-tab")
+            for k, v in self.state.items():
+                writer.writerow((k,) + v[1].as_row())
