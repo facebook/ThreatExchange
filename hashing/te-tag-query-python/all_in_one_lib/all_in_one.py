@@ -1,4 +1,4 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
 
 """
 A wrapper around multi-stage ThreatExchange operations.
@@ -12,6 +12,7 @@ between stages, and a state file to store hashes.
 """
 
 import argparse
+import inspect
 import os
 import os.path
 import pathlib
@@ -21,12 +22,12 @@ import typing as t
 import TE
 
 from .collab_config import CollaborationConfig
+from .commands import base, fetch, label, match
 from .dataset import Dataset
-from .commands import base, label, match, fetch
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
-    return [label.LabelCommand, match.MatchCommand, fetch.FetchCommand]
+    return [fetch.FetchCommand, match.MatchCommand, label.LabelCommand]
 
 
 def get_argparse() -> argparse.ArgumentParser:
@@ -36,7 +37,7 @@ def get_argparse() -> argparse.ArgumentParser:
     ap.add_argument(
         "--config",
         "-c",
-        type=argparse.FileType,
+        type=argparse.FileType("r"),
         help="a ThreatExchange collaboration config",
     )
     ap.add_argument(
@@ -69,7 +70,12 @@ def execute_command(namespace) -> None:
         cfg = init_config_file(namespace.config)
         # "Init" dataset
         dataset = Dataset(cfg, namespace.state_dir)
-        command = command_cls.init_from_namespace(namespace)
+        command_argspec = inspect.getfullargspec(command_cls.__init__)
+        arg_names = set(command_argspec[0])
+        # Since we didn't import click, use hard-to-debug magic to init the command
+        command = command_cls(
+            **{k: v for k, v in namespace.__dict__.items() if k in arg_names}
+        )
         command.execute(dataset)
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
@@ -107,16 +113,16 @@ def init_config_file(cli_provided: t.IO = None) -> CollaborationConfig:
         if path.exists():
             break
     else:
-        raise base.CommandError(
+        print(
             (
-                "Can't find collaboration config - pass as an argument"
-                f", or in a file named {' or '.join(path_order)}"
+                "Looks like you haven't set up a collaboration config, "
+                "so using the sample one against public data"
             ),
-            2,
+            file=sys.stderr,
         )
+        return CollaborationConfig.get_example_config()
     with path.open() as f:
         return CollaborationConfig.load(f)
-
 
 
 def _verify_directory(raw: str) -> pathlib.Path:

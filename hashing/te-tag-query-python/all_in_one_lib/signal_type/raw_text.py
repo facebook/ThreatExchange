@@ -1,7 +1,7 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
 
 """
-Wrapper around the raw text content type.
+Wrapper around the raw text signal type.
 """
 
 import typing as t
@@ -12,6 +12,13 @@ from . import base
 
 
 class RawTextSignal(base.SimpleSignalType, base.StrMatcher):
+    """
+    Raw text signal is the same as raw text content: the exact text content.
+
+    Unlike other formats like photos or videos, it is difficult to come
+    up with non-reversable hashes of text information which are also effective
+    at detecting similar content.
+    """
 
     INDICATOR_TYPE = "DEBUG_STRING"
     TYPE_TAG = "media_type_text"

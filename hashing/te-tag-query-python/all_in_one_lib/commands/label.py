@@ -1,4 +1,8 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
+
+"""
+Label command for uploading opinions (ThreatDescriptors) or reactions.
+"""
 
 import typing as t
 
@@ -15,12 +19,11 @@ class LabelCommand(base.Command):
     Apply labels to items in ThreatExchange.
 
     Examples:
+      # Label text
+      $ all-in-one -c te.cfg label violating_label_from_config,other_label text "this is an example bad text"
 
-    Label text
-      all-in-one -c te.cfg label violating_label_from_config,other_label text "this is an example bad text"
-
-    Label descriptor
-      all-in-one -c te.cfg label false-positive descriptor 12345
+      # Label descriptor
+      $ all-in-one -c te.cfg label false-positive descriptor 12345
     """
 
     FALSE_POSITIVE = "false_positive"
@@ -30,17 +33,10 @@ class LabelCommand(base.Command):
         ap.add_argument(
             "labels",
             type=lambda s: s.strip().split(","),
-            metavar="C  SV",
+            metavar="CSV",
             help="labels to apply to item",
         )
-        ap.add_argument(
-            "content_type", choices=["descriptor"], help="what content type to label"
-        )
         ap.add_argument("descriptor_id", help="the id of a descriptor to label")
-
-    @classmethod
-    def init_from_namespace(cls, ns) -> "LabelCommand":
-        return cls(ns.descriptor_id, ns.labels)
 
     def __init__(self, descriptor_id: int, labels: t.List[str]) -> None:
         self.descriptor_id = descriptor_id
@@ -53,6 +49,8 @@ class LabelCommand(base.Command):
                 self.false_positive = True
 
     def execute(self, dataset: Dataset) -> None:
+        raise NotImplementedError
+        # Everything below is untested and leftover from a previous attempt
         params = {
             "descriptor_id": self.descriptor_id,
             "privacy_type": "HAS_PRIVACY_GROUP",
@@ -60,18 +58,19 @@ class LabelCommand(base.Command):
         }
 
         if self.false_positive:
-            params["reactions"] = "DISAGREE_WITH_TAGS"
+            # TODO reacc
+            raise NotImplementedError
         else:
             params["tags"] = self.labels
         # TODO: Handle gracefully target doesn't exist
         # TODO: Handle already labeled (merge don't stomp)
-        err_message, ex, response = TE.Net.copyThreatDescriptor(params, showURLs=True, dryRun=False)
+        err_message, ex, response = TE.Net.copyThreatDescriptor(
+            params, showURLs=True, dryRun=False
+        )
         if ex:
             raise ex
         if err_message:
             raise base.CommandError(err_message)
         if not response:
             raise base.CommandError("Mystery error - empty response")
-
-
         print(response["descriptor_id"])

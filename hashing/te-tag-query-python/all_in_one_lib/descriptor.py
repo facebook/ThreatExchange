@@ -1,4 +1,8 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
+
+"""
+Wrappers for the json returned by the ThreatExchange API to typed objects.
+"""
 
 import typing as t
 
@@ -71,12 +75,12 @@ class SimpleDescriptorRollup:
         self.labels.union(descriptor.tags)
 
     def as_row(self) -> t.Tuple[int, str, str]:
-        """Simple conversion to csv row"""
+        """Simple conversion to CSV row"""
         return self.first_descriptor_id, self.added_on, " ".join(self.labels)
 
     @classmethod
     def from_row(cls, row: t.Iterable) -> "SimpleDescriptorRollup":
-        """Simple conversion from csv row"""
+        """Simple conversion from CSV row"""
         labels = []
         if row[2]:
             labels = row[2].split(" ")

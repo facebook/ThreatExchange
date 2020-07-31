@@ -1,4 +1,4 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
 
 """
 A place to put simple helpers that don't seem like they go anywhere else.
@@ -10,9 +10,9 @@ import re
 
 
 def class_name_to_human_name(name: str, suffix: str) -> str:
-    """Helper to make human friendly names using a class name as a template"""
+    """Helper to make human-friendly names using a class name as a template"""
     if name.endswith(suffix):
-        name = name[:-len(suffix)]
+        name = name[: -len(suffix)]
     return camel_case_to_underscore(name)
 
 

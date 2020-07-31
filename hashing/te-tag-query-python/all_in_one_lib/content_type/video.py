@@ -1,4 +1,4 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
 
 """
 Wrapper around the video content type.
@@ -11,6 +11,15 @@ from .base import ContentType
 
 
 class VideoContent(ContentType):
+    """
+    Content representing a sequence of images, giving the illusion of motion.
+
+    Examples might be:
+    * mp4
+    * avi
+    * gif animations
+    """
+
     @classmethod
     def get_signal_types(cls) -> t.List[t.Type[SignalType]]:
         return [md5.VideoMD5Signal, video_tmk_pdqf.VideoTmkPdqfSignal]

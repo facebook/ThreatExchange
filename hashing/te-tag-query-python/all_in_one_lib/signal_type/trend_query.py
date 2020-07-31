@@ -1,4 +1,4 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
 
 """
 Wrapper around the Trend Query (keywords and regexes) content type.
@@ -15,6 +15,9 @@ from . import base
 
 
 class TrendQuery:
+    """
+    A parsed trend query, based on regexes.
+    """
 
     REGEX_PREFIX = "regex-"
 
@@ -44,6 +47,16 @@ class TrendQuery:
 
 
 class TrendQuerySignal(base.SignalType, base.StrMatcher):
+    """
+    Trend Queries are a combination of and/or/not regexes.
+
+    Based off a system effective for grouping content at Facebook, Trend Queries
+    can potentially help you sift though large sets of content to quickly flag
+    ones that might be interesting to you.
+
+    They have high "recall" but potentially low "precision".
+    """
+
     def __init__(self) -> None:
         self.state: t.Dict[str, (TrendQuery, SimpleDescriptorRollup)] = {}
 

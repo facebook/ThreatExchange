@@ -1,4 +1,8 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
+
+"""
+Match command for parsing simple data sources against the dataset.
+"""
 
 import argparse
 import pathlib
@@ -6,14 +10,33 @@ import sys
 import typing as t
 
 from ..content_type import meta
-from ..signal_type.base import FileMatcher, StrMatcher, HashMatcher
 from ..dataset import Dataset
+from ..signal_type.base import FileMatcher, HashMatcher, StrMatcher
 from . import base, fetch
 
 
 class MatchCommand(base.Command):
     """
     Match content to items in ThreatExchange.
+
+    Using the dataset from the fetch command, try to match content. Not all
+    content and hashing types are implemented, so it's possible that you
+    can download signals, but not match them via this command. In some cases
+    the implementation in this package is sub-optimal, either in completeness
+    (i.e. only matching exact when near-matching is supported), or in runtime
+    (i.e. using a linear implementation when a sublinear implementation exists)
+
+    The output of this command is in the following format:
+
+      <matched descriptor id> <signal type> <label1> <label2...>
+
+    If tying this into your own integrity systems, if the result of this match
+    is human review, you'll want to store the matched descriptor id and make
+    a call to
+
+      all_in_one label descriptor <matched descriptor id>
+
+    with the results of that review.
     """
 
     USE_STDIN = "-"
@@ -53,24 +76,14 @@ class MatchCommand(base.Command):
             ),
         )
 
-    @classmethod
-    def init_from_namespace(cls, ns) -> "MatchCommand":
-        return cls(ns.content_type, ns.hashes, ns.as_text, ns.content)
-
     def __init__(
-        self,
-        content_type: str,
-        input_is_hashes: bool,
-        force_input_to_text: bool,
-        input_: t.List[str],
+        self, content_type: str, hashes: bool, as_text: bool, content: t.List[str]
     ) -> None:
         self.content_type = [
             c for c in meta.get_all_content_types() if c.get_name() == content_type
         ][0]
-        self.input_generator = self.parse_input(
-            input_, input_is_hashes, force_input_to_text
-        )
-        self.as_hashes = input_is_hashes
+        self.input_generator = self.parse_input(content, hashes, as_text)
+        self.as_hashes = hashes
 
     def parse_input(
         self,
@@ -109,7 +122,9 @@ class MatchCommand(base.Command):
 
     def execute(self, dataset: Dataset) -> None:
         if dataset.is_cache_empty:
-            self.stderr("Looks like you are running this for the first time. Fetching some sample data.")
+            self.stderr(
+                "Looks like you are running this for the first time. Fetching some sample data."
+            )
             fetch.FetchCommand(sample=True).execute(dataset)
 
         all_signal_types = dataset.load_cache(
@@ -136,4 +151,14 @@ class MatchCommand(base.Command):
                 for match in match_fn(signal_type, inp):
                     if match.primary_descriptor_id not in seen:
                         seen.add(match.primary_descriptor_id)
-                        print(match.primary_descriptor_id, signal_type.get_name(), " ".join(match.labels))
+                        print(
+                            match.primary_descriptor_id,
+                            signal_type.get_name(),
+                            " ".join(
+                                sorted(
+                                    l
+                                    for l in match.labels
+                                    if l in dataset.config.labels
+                                )
+                            ),
+                        )

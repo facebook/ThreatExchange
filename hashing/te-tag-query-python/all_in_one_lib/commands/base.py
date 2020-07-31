@@ -46,13 +46,13 @@ class Command:
 
     @classmethod
     def init_argparse(cls, argparse: argparse.ArgumentParser) -> None:
-        """Program the command subparser for initFromNamespace"""
-        pass
+        """
+        Program the command subparser for __init__
 
-    @classmethod
-    def init_from_namespace(cls, ns) -> "Command":
-        """Create instance from argparse namespace"""
-        return cls()
+        Your argument names should match the argument names in __init__.
+        Be careful of collisions with the top level arg names from all_in_one.py
+        """
+        pass
 
     @classmethod
     def get_name(cls) -> str:

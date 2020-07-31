@@ -1,4 +1,4 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
 
 """
 A wrapper around fetching, storing, and recovering the state from TE.
@@ -33,7 +33,7 @@ class Dataset:
     @property
     def is_cache_empty(self) -> bool:
         return not (
-            self.state_dir.exists() and self.state_dir.glob(f"*.{self.EXTENSION}")
+            self.state_dir.exists() and any(self.state_dir.glob(f"*{self.EXTENSION}"))
         )
 
     def clear_cache(self) -> None:

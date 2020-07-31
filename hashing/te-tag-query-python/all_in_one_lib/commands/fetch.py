@@ -1,9 +1,14 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
+
+"""
+A command to fetch datasets from ThreatExchange based on the collab config
+"""
 
 import argparse
 import collections
 import pathlib
 import typing as t
+import inspect
 import urllib.parse
 
 import TE
@@ -17,7 +22,21 @@ from . import base
 
 class FetchCommand(base.Command):
     """
-    Download content to save time on future matching.
+    Download content from ThreatExchange to disk.
+
+    Using the CollaborationConfig, identify ThreatDescriptors that
+    correspond to a single collaboration, and store them in the state
+    directory.
+
+    You can then use the match command to search against this directory for
+    the simple content, or you can use the produced files (which by default
+    live in your home directory with a name based on the collaboration, but
+    can be overridden with the --state-dir argument) to load into your own
+    infrastructure to more efficiently match against the downloaded hashes.
+
+    The exact format of each file is determined by the implementation of the
+    signal types, but or usually optimized for easy re-use, such as .csv or
+    .tsv.
     """
 
     @classmethod
@@ -27,18 +46,33 @@ class FetchCommand(base.Command):
             action="store_true",
             help="Only fetch a sample of data instead of the whole dataset",
         )
+        ap.add_argument(
+            "--clear",
+            action="store_true",
+            help="Don't fetch anything, just clear the dataset",
+        )
 
-    @classmethod
-    def init_from_namespace(cls, ns) -> "FetchCommand":
-        return cls(ns.sample)
-
-    def __init__(self, sample: bool) -> None:
+    def __init__(self, sample: bool, clear: bool = False) -> None:
+        """Has default arguments because it's called by match command"""
         self.sample = sample
+        self.clear = clear
 
     def execute(self, dataset: Dataset) -> None:
+        if self.clear:
+            dataset.clear_cache()
+            return
         signal_types = {clss.get_name(): clss() for clss in meta.get_all_signal_types()}
 
         counts = collections.Counter()
+
+        tags_to_fetch = dataset.config.labels
+        only_first_fetch = False
+
+        if self.sample:
+            if dataset.config.sample_tag:
+                tags_to_fetch = [dataset.config.sample_tag]
+            else:
+                only_first_fetch = True
 
         for tag_name in dataset.config.labels:
             tag_id = TE.Net.getTagIDFromName(tag_name)
@@ -60,7 +94,7 @@ class FetchCommand(base.Command):
                     for signal_name, signal_type in signal_types.items():
                         if signal_type.process_descriptor(descriptor):
                             counts[signal_name] += 1
-                if self.sample:
+                if only_first_fetch:
                     break
         if not counts:
             raise base.CommandError("No items fetched! Something wrong?", returncode=3)
