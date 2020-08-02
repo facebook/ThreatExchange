@@ -346,7 +346,9 @@ class Net:
                     tags = []
                 else:
                     tags = tags["data"]
-                descriptor["tags"] = [tag["text"] for tag in tags].sort()
+                tags = [tag["text"] for tag in tags]
+                tags.sort()
+                descriptor["tags"] = tags
 
                 if descriptor.get("description") is None:
                     descriptor["description"] = ""
