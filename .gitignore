@@ -2,8 +2,10 @@
 *.pyc
 pytx/build
 pytx/dist
-pytx/pytx.egg-info
 pytx/docs/_build
+pytx3/build/
+pytx3/dist/
+*.egg-info/
 .DS_Store
 .tox/
 .coverage
