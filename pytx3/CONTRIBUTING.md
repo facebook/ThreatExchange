@@ -22,12 +22,21 @@ messages and update documentation accordingly (see the next section).
 [wf]: https://github.com/erlang/otp/wiki/Writing-good-commit-messages
 
 ### Running Tests
-pytx3 is a bit short on tests, but you could help fix that. 
+pytx3 is a bit short on tests, but you could help fix that.
 To run the tests `make test`
+
+### Installing Locally
+A quick way to iterate on the script is to simply install it locally. The
+fastest way to do this is
+
+    cd ThreatExchange/pytx3
+    make package
+    make local_install
+    pytx3 --help
 
 ## Documenting Changes
 It is important to keep documentation up-to-date. Make sure to add and update
-docstrings where appropriate. 
+docstrings where appropriate.
 
 ## Submit a PR
 Once you are happy with your changes and ready for a PR, you can submit a PR to

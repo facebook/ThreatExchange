@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# Must be python3
-python3 -m all_in_one_lib.all_in_one "$@"

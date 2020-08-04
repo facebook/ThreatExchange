@@ -21,20 +21,19 @@ class TrendQuery:
 
     REGEX_PREFIX = "regex-"
 
+    # re.pattern is not in 3.6, which is what we are targeting right now
     def __init__(self, query_json: t.Dict[str, t.Any]) -> None:
-        self.and_terms: t.List[t.List[re.Pattern]] = [
+        self.and_terms: t.List[t.List[t.Any]] = [
             [self._parse_term(t) for t in and_["or"]] for and_ in query_json["and"]
         ]
-        self.not_terms: t.List[re.Pattern] = [
-            self._parse_term(t) for t in query_json["not"]
-        ]
+        self.not_terms: t.List[t.Any] = [self._parse_term(t) for t in query_json["not"]]
 
-    def _parse_term(self, t) -> re.Pattern:
+    def _parse_term(self, t) -> t.Any:
         if t.startswith(self.REGEX_PREFIX):
             return re.compile(t[len(self.REGEX_PREFIX) + 1 : -1])
         return re.compile(f"\\b{re.escape(t)}\\b")
 
-    def _match_term(self, t: t.Union[str, re.Pattern], text: str) -> bool:
+    def _match_term(self, t: t.Union[str, t.Any], text: str) -> bool:
         return bool()
 
     def matches(self, text: str) -> bool:

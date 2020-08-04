@@ -21,12 +21,15 @@ Build Status
 .. image:: https://img.shields.io/pypi/l/pytx3.svg
     :target: https://pypi.python.org/pypi/pytx3/
 
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+    :target: https://github.com/psf/black
+
 Installation
 ------------
 
-Use pip to install or upgrade pytx::
+Use pip to install or upgrade pytx3 ::
 
-    $ pip install pytx3 [--upgrade]
+    $ python3 -m pip install --index-url https://test.pypi.org/simple/ pytx3 [--upgrade]
 
 Quick Example
 -------------
@@ -44,7 +47,7 @@ Hopefully the classes are well-documented with docstrings.
 See Also
 -------------
 
-There are simpler straightforward examples of directly using the ThreatExchange 
+There are simpler straightforward examples of directly using the ThreatExchange
 API that can be found below:
 
 * **Python**: <https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-python>

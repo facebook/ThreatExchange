@@ -6,13 +6,12 @@ A command to fetch datasets from ThreatExchange based on the collab config
 
 import argparse
 import collections
+import inspect
 import pathlib
 import typing as t
-import inspect
 import urllib.parse
 
-import TE
-
+from .. import TE
 from ..collab_config import CollaborationConfig
 from ..content_type import meta
 from ..dataset import Dataset

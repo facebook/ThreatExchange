@@ -8,9 +8,7 @@ import json
 import pathlib
 import typing as t
 
-import TE
-
-from . import collab_config
+from . import TE, collab_config
 from .content_type import meta
 from .signal_type import base as signal_base
 
