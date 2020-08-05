@@ -17,7 +17,7 @@ with open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
 
 setup(
     name="pytx3",
-    version="0.0.6",
+    version="0.0.7",
     description="Python Library for Facebook ThreatExchange",
     long_description=long_description,
     author="Facebook",

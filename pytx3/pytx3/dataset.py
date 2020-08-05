@@ -13,6 +13,26 @@ from .content_type import meta
 from .signal_type import signal_base
 
 
+class FetchCheckpoint(t.NamedTuple):
+    last_full_fetch: float
+    last_fetch: float
+
+    def next(self, fetch_start_time: float, full_fetch: bool) -> "FetchCheckpoint":
+        full_fetch = full_fetch or not self.last_full_fetch
+        return FetchCheckpoint(
+            fetch_start_time if full_fetch else self.last_full_fetch,
+            fetch_start_time
+        )
+
+    def serialize(self) -> str:
+        return f"{self.last_full_fetch} {self.last_fetch}"
+
+    @classmethod
+    def deserialize(cls, s: str) -> "FetchCheckpoint":
+        last_full, _, last = s.partition(" ")
+        return cls(float(last_full), float(last))
+
+
 class Dataset:
 
     EXTENSION = ".te"
@@ -34,10 +54,27 @@ class Dataset:
             self.state_dir.exists() and any(self.state_dir.glob(f"*{self.EXTENSION}"))
         )
 
+    @property
+    def _fetch_checkpoint_path(self) -> pathlib.Path:
+        return self.state_dir / f"fetch_checkpoint{self.EXTENSION}"
+
     def clear_cache(self) -> None:
         for p in self.state_dir.iterdir():
             if p.suffix == self.EXTENSION:
                 p.unlink()
+
+    def record_fetch_checkpoint(
+        self, fetch_started_timestamp: float, full_fetch: bool
+    ) -> None:
+        prev = self.get_fetch_checkpoint()
+        with self._fetch_checkpoint_path.open("w+") as f:
+            f.write(prev.next(fetch_started_timestamp, full_fetch).serialize())
+
+    def get_fetch_checkpoint(self) -> FetchCheckpoint:
+        checkpoint = self._fetch_checkpoint_path
+        if not checkpoint.exists():
+            return FetchCheckpoint(0, 0)
+        return FetchCheckpoint.deserialize(checkpoint.read_text())
 
     def _signal_state_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
         return self.state_dir / f"{signal_type.get_name()}{self.EXTENSION}"
