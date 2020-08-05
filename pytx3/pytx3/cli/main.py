@@ -19,10 +19,10 @@ import pathlib
 import sys
 import typing as t
 
-from . import TE
-from .collab_config import CollaborationConfig
-from .commands import base, fetch, label, match
-from .dataset import Dataset
+from .. import TE
+from . import command_base as base, fetch, label, match
+from ..collab_config import CollaborationConfig
+from ..dataset import Dataset
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:

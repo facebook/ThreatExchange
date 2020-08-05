@@ -11,7 +11,7 @@ import re
 import typing as t
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from . import base
+from . import signal_base
 
 
 class TrendQuery:
@@ -45,7 +45,7 @@ class TrendQuery:
         return False
 
 
-class TrendQuerySignal(base.SignalType, base.StrMatcher):
+class TrendQuerySignal(signal_base.SignalType, signal_base.StrMatcher):
     """
     Trend Queries are a combination of and/or/not regexes.
 
@@ -84,9 +84,9 @@ class TrendQuerySignal(base.SignalType, base.StrMatcher):
             old_val[1].merge(descriptor)
         return True
 
-    def match(self, content: str) -> t.List[base.SignalMatch]:
+    def match(self, content: str) -> t.List[signal_base.SignalMatch]:
         return [
-            base.SignalMatch(rollup.labels, rollup.first_descriptor_id)
+            signal_base.SignalMatch(rollup.labels, rollup.first_descriptor_id)
             for query, rollup in self.state.values()
             if query.matches(content)
         ]

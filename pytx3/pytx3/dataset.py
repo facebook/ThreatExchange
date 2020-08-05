@@ -10,7 +10,7 @@ import typing as t
 
 from . import TE, collab_config
 from .content_type import meta
-from .signal_type import base as signal_base
+from .signal_type import signal_base
 
 
 class Dataset:

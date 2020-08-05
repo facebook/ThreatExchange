@@ -10,10 +10,10 @@ from .. import TE
 from ..collab_config import CollaborationConfig
 from ..content_type import meta, text
 from ..dataset import Dataset
-from . import base
+from . import command_base
 
 
-class LabelCommand(base.Command):
+class LabelCommand(command_base.Command):
     """
     Apply labels to items in ThreatExchange.
 
@@ -69,7 +69,7 @@ class LabelCommand(base.Command):
         if ex:
             raise ex
         if err_message:
-            raise base.CommandError(err_message)
+            raise command_base.CommandError(err_message)
         if not response:
-            raise base.CommandError("Mystery error - empty response")
+            raise command_base.CommandError("Mystery error - empty response")
         print(response["descriptor_id"])

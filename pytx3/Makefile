@@ -5,7 +5,7 @@ package:
 	python3 ./setup.py sdist bdist_wheel
 
 local_install:
-	python3 -m pip install .
+	python3 -m pip install -e .
 
 push:
 	python3 -m twine upload --repository testpypi dist/*

@@ -7,10 +7,10 @@ Wrapper around the Photo PDQ signal type.
 import typing as t
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from . import base
+from . import signal_base
 
 
-class PdqSignal(base.SimpleSignalType):
+class PdqSignal(signal_base.SimpleSignalType):
     """
     PDQ is an open source photo similarity algorithm.
 
