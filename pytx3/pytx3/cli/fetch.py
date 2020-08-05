@@ -7,6 +7,7 @@ A command to fetch datasets from ThreatExchange based on the collab config
 import argparse
 import collections
 import concurrent.futures
+import datetime
 import inspect
 import pathlib
 import time
@@ -16,9 +17,33 @@ import urllib.parse
 from .. import TE
 from ..collab_config import CollaborationConfig
 from ..content_type import meta
-from ..dataset import Dataset
+from ..dataset import Dataset, FetchCheckpoint
 from ..descriptor import ThreatDescriptor
+from ..signal_type import signal_base
 from . import command_base
+
+
+class FetchType:
+    """Typed helper determine_fetch_type."""
+
+    def __init__(self, from_timestamp: float) -> None:
+        self.from_timestamp = from_timestamp
+
+    @property
+    def is_full(self) -> bool:
+        return not self.from_timestamp
+
+    @property
+    def is_incremental(self) -> bool:
+        return not self.is_full
+
+    @classmethod
+    def Full(cls) -> "FetchType":
+        return cls(0.0)
+
+    @classmethod
+    def Incremental(cls, from_timestamp: float) -> "FetchType":
+        return cls(from_timestamp)
 
 
 class FetchCommand(command_base.Command):
@@ -42,6 +67,8 @@ class FetchCommand(command_base.Command):
 
     # Enforced by the endpoint
     MAX_DESCRIPTOR_FETCH_SIZE = 20
+    DEFAULT_REFETCH_SEC = 3600 * 24 * 7  # 1 week
+    UP_TO_DATE_SEC = 60  # 1 minute
 
     @classmethod
     def init_argparse(cls, ap) -> None:
@@ -55,28 +82,130 @@ class FetchCommand(command_base.Command):
             action="store_true",
             help="Don't fetch anything, just clear the dataset",
         )
+        ap.add_argument(
+            "--full", action="store_true", help="Force a full refresh of data."
+        )
+        ap.add_argument(
+            "--until-timestamp",
+            type=int,
+            default=0,
+            help=(
+                "Instead of fetching all the data, "
+                "incrementally fetch up to this time"
+            ),
+        )
+        ap.add_argument(
+            "--only-signals",
+            "-o",
+            nargs="+",
+            metavar="signal",
+            choices=sorted(meta.get_signal_types_by_name()),
+            help="Only download the specified signal types.",
+        )
+        ap.add_argument(
+            "--not-signals",
+            "-n",
+            nargs="+",
+            metavar="signal",
+            choices=sorted(meta.get_signal_types_by_name()),
+            help="Don't fetch the specified signal types.",
+        )
 
-    def __init__(self, sample: bool, clear: bool = False) -> None:
+    def __init__(
+        self,
+        sample: bool,
+        clear: bool = False,
+        until_timestamp: int = 0,
+        full: bool = False,
+        only_signals: t.Collection[str] = (),
+        not_signals: t.Collection[str] = (),
+    ) -> None:
         """Has default arguments because it's called by match command"""
         self.sample = sample
         self.clear = clear
-        self.last_update_printed = time.time()
+
+        now = time.time()
+        self.until_timestamp = min(float(until_timestamp or now), now)
+        self.force_full = full
+        self.force_incremental = bool(until_timestamp) and not full
+        self.last_update_printed = now
+
+        if only_signals or not_signals:
+            # TODO - this is fixable by storing checkpoints per signal type
+            self.stderr(
+                "Ignoring some signal types will lead to only part of",
+                "the dataset being fetched until fixed with --full.",
+            )
+
+        only_signals = only_signals or meta.get_signal_types_by_name()
+        not_signals = not_signals or ()
+        self.signal_types_by_name = {
+            name: signal()
+            for name, signal in meta.get_signal_types_by_name().items()
+            if name in only_signals and name not in not_signals
+        }
+
+    def determine_fetch_type(self, checkpoint: FetchCheckpoint) -> FetchType:
+        """Based on the checkpoint and options, determine what fetch we are doing"""
+        if self.force_full:
+            return FetchType.Full()
+
+        fetch_from_timestamp = checkpoint.last_fetch
+
+        if not checkpoint.last_fetch:
+            return FetchType.Full()
+
+        if (
+            not self.force_incremental
+            and time.time() - checkpoint.last_full_fetch > self.DEFAULT_REFETCH_SEC
+        ):
+            self.stderr("It's been a long time since a full fetch, forcing one now.")
+            return FetchType.Full()
+
+        return FetchType.Incremental(checkpoint.last_fetch)
 
     def execute(self, dataset: Dataset) -> None:
         if self.clear:
             dataset.clear_cache()
             return
-        if self.sample and not dataset.is_cache_empty:
+        if self.sample and not dataset.is_cache_empty and not self.force_full:
             raise command_base.CommandError(
-                "Already have some data, force a refetch by doing --clear", returncode=2
+                "Already have some data, force a refetch with --full", returncode=2
             )
+
+        fetch_type = self.determine_fetch_type(dataset.get_fetch_checkpoint())
+
+        if fetch_type.is_incremental:
+            if fetch_type.from_timestamp >= self.until_timestamp:
+                self.stderr("Already up-to-date.")
+                return
+            start_time_str = datetime.datetime.utcfromtimestamp(
+                int(fetch_type.from_timestamp)
+            ).strftime("%Y-%m-%d %H:%M:%S")
+            self.stderr(
+                f"Doing an incremental update from {start_time_str}. ",
+                (
+                    "This will miss some updates and deletes of previously fetched data, "
+                    "use --full to force a refetch."
+                ),
+                sep="\n",
+            )
+            # Note that merging into this is error prone - tagging and untagging a descriptor
+            # can move its position in the fetch, leading to the following
+            # 1. Descriptor1 (D1) => Tag1 (T1)
+            # 2. Fetch stores D1: T1
+            # 3. D1 untagged, re-tagged with T2
+            # 4. fetch load D1: T1
+            # 5. fetch finds D1: T2
+            # 6. Naive merge yield D1: T1, T2
+            #
+            # We're relying on full fetching to fix this eventually (as well as deletes)
+            dataset.load_cache(self.signal_types_by_name.values())
 
         # TODO - use in with block
         id_fetch_pool = concurrent.futures.ThreadPoolExecutor(max_workers=100)
 
         seen_td_ids = set()
-
-        signal_types = {clss.get_name(): clss() for clss in meta.get_all_signal_types()}
 
         counts = collections.Counter()
 
@@ -99,7 +228,7 @@ class FetchCommand(command_base.Command):
             descriptors = item.result()
             for descriptor in descriptors:
                 match = False
-                for signal_name, signal_type in signal_types.items():
+                for signal_name, signal_type in self.signal_types_by_name.items():
                     if signal_type.process_descriptor(descriptor):
                         match = True
                         counts[signal_name] += 1
@@ -117,7 +246,9 @@ class FetchCommand(command_base.Command):
                 continue
             pending_futures = collections.deque()
             remainder_td_ids = collections.deque()
-            query = _TagQueryFetchCheckpoint(tag_id)
+            query = _TagQueryFetchCheckpoint(
+                tag_id, fetch_type.from_timestamp, self.until_timestamp
+            )
 
             # Query tags in order on a single thread to prevent overfetching ids
             while query:
@@ -142,24 +273,31 @@ class FetchCommand(command_base.Command):
                     consume_descriptors(pending_futures)
                     # TODO Some kind of checkpointing behavior
             # Submit any stragglers
-            pending_futures.append(
-                id_fetch_pool.submit(self._fetch_descriptors, list(remainder_td_ids))
-            )
+            if remainder_td_ids:
+                pending_futures.append(
+                    id_fetch_pool.submit(
+                        self._fetch_descriptors, list(remainder_td_ids)
+                    )
+                )
             while pending_futures:
                 consume_descriptors(pending_futures)
 
         id_fetch_pool.shutdown()
-        if not counts:
+        if fetch_type.is_full and not counts:
             raise command_base.CommandError(
                 "No items fetched! Something wrong?", returncode=3
             )
         del counts["all"]  # Not useful for final display
 
-        for signal_name, signal_type in signal_types.items():
+        for signal_name, signal_type in self.signal_types_by_name.items():
             if signal_name not in counts:
                 continue
             dataset.store_cache(signal_type)
             print(f"{signal_name}: {counts[signal_name]}")
+        if not self.sample:
+            dataset.record_fetch_checkpoint(
+                self.until_timestamp or self.start_time, fetch_type.is_full
+            )
 
     def _fetch_descriptors(self, td_ids: t.List[int]) -> t.List[ThreatDescriptor]:
         """Do the bulk ThreatDescriptor fetch"""
@@ -178,11 +316,16 @@ class FetchCommand(command_base.Command):
 
 
 class _TagQueryFetchCheckpoint:
-    def __init__(self, tag_id: int) -> None:
-        query = urllib.parse.urlencode(
-            {"access_token": TE.Net.APP_TOKEN, "limit": 1000, "fields": "id,type"}
-        )
-        self._next_url = f"{TE.Net.TE_BASE_URL}/{tag_id}/tagged_objects/?{query}"
+    def __init__(self, tag_id: int, since: float = 0, until: float = 0) -> None:
+        query = {"access_token": TE.Net.APP_TOKEN, "limit": 1000, "fields": "id,type"}
+        # Surprise! The endpoint accepts since/until but then ignores them!
+        # You must know the secret command words are "tagged_since" and "tagged_until"
+        if since:
+            query["tagged_since"] = int(since)
+        if until:
+            query["tagged_until"] = int(until)
+        query_str = urllib.parse.urlencode(query)
+        self._next_url = f"{TE.Net.TE_BASE_URL}/{tag_id}/tagged_objects/?{query_str}"
 
     def __bool__(self) -> bool:
         return bool(self._next_url)
