@@ -9,7 +9,7 @@ This records all the valid signal types for a piece of content.
 import typing as t
 
 from .. import common
-from ..signal_type import base, raw_text, trend_query, url
+from ..signal_type import signal_base, raw_text, trend_query, url
 
 
 class ContentType:
@@ -19,5 +19,5 @@ class ContentType:
         return common.class_name_to_human_name(cls.__name__, "Content")
 
     @classmethod
-    def get_signal_types() -> t.List[t.Type[base.SignalType]]:
+    def get_signal_types() -> t.List[t.Type[signal_base.SignalType]]:
         raise NotImplementedError

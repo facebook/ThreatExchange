@@ -11,11 +11,11 @@ import typing as t
 
 from ..content_type import meta
 from ..dataset import Dataset
-from ..signal_type.base import FileMatcher, HashMatcher, StrMatcher
-from . import base, fetch
+from ..signal_type.signal_base import FileMatcher, HashMatcher, StrMatcher
+from . import command_base, fetch
 
 
-class MatchCommand(base.Command):
+class MatchCommand(command_base.Command):
     """
     Match content to items in ThreatExchange.
 

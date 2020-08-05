@@ -7,10 +7,10 @@ Wrapper around the TMK+PDQF signal type.
 import typing as t
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from . import base
+from . import signal_base
 
 
-class VideoTmkPdqfSignal(base.SimpleSignalType):
+class VideoTmkPdqfSignal(signal_base.SimpleSignalType):
     """
     TMK+PDQF is an open-source, constant length hash for videos.
 

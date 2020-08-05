@@ -2,10 +2,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import sys
-
-from setuptools import setup, find_packages
 from codecs import open
 from os import path
+
+from setuptools import find_packages, setup
 
 
 here = path.abspath(path.dirname(__file__))
@@ -33,5 +33,5 @@ setup(
     url="https://www.github.com/facebook/ThreatExchange",
     packages=find_packages(exclude=["tests"]),
     install_requires=[],
-    entry_points={"console_scripts": ["pytx3 = pytx3.cli_main:main"]},
+    entry_points={"console_scripts": ["pytx3 = pytx3.cli.main:main"]},
 )

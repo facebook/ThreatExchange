@@ -6,8 +6,8 @@ Wrapper around the text content type.
 import typing as t
 
 from ..signal_type import raw_text, trend_query, url
-from ..signal_type.base import SignalType
-from .base import ContentType
+from ..signal_type.signal_base import SignalType
+from .content_base import ContentType
 
 
 class TextContent(ContentType):

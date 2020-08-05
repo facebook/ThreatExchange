@@ -6,11 +6,11 @@ Stores all the content type implementations for lookup
 
 import typing as t
 
-from . import base, text, video, photo
-from ..signal_type import base as signal_base
+from . import content_base, text, video, photo
+from ..signal_type import signal_base
 
 
-def get_all_content_types() -> t.List[t.Type[base.ContentType]]:
+def get_all_content_types() -> t.List[t.Type[content_base.ContentType]]:
     """Returns all content_type implementations for commands"""
     return [text.TextContent, video.VideoContent, photo.PhotoContent]
 

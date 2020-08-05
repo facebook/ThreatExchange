@@ -16,10 +16,10 @@ from ..collab_config import CollaborationConfig
 from ..content_type import meta
 from ..dataset import Dataset
 from ..descriptor import ThreatDescriptor
-from . import base
+from . import command_base
 
 
-class FetchCommand(base.Command):
+class FetchCommand(command_base.Command):
     """
     Download content from ThreatExchange to disk.
 
@@ -96,7 +96,9 @@ class FetchCommand(base.Command):
                 if only_first_fetch:
                     break
         if not counts:
-            raise base.CommandError("No items fetched! Something wrong?", returncode=3)
+            raise command_base.CommandError(
+                "No items fetched! Something wrong?", returncode=3
+            )
 
         for signal_name, signal_type in signal_types.items():
             if signal_name not in counts:

@@ -9,10 +9,10 @@ import pathlib
 import typing as t
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from . import base
+from . import signal_base
 
 
-class VideoMD5Signal(base.SimpleSignalType, base.FileMatcher):
+class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileMatcher):
     """
     Simple signal type for Video MD5s.
 
@@ -27,7 +27,7 @@ class VideoMD5Signal(base.SimpleSignalType, base.FileMatcher):
     INDICATOR_TYPE = "HASH_MD5"
     TYPE_TAG = "media_type_video"
 
-    def match_file(self, file: pathlib.Path) -> t.List[base.SignalMatch]:
+    def match_file(self, file: pathlib.Path) -> t.List[signal_base.SignalMatch]:
         """Simple MD5 file match."""
         file_hash = hashlib.md5()
         blocksize = 8192
