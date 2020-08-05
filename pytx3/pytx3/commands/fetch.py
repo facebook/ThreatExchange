@@ -73,7 +73,7 @@ class FetchCommand(base.Command):
             else:
                 only_first_fetch = True
 
-        for tag_name in dataset.config.labels:
+        for tag_name in tags_to_fetch:
             tag_id = TE.Net.getTagIDFromName(tag_name)
             if not tag_id:
                 continue
