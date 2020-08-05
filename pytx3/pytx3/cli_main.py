@@ -19,8 +19,7 @@ import pathlib
 import sys
 import typing as t
 
-import TE
-
+from . import TE
 from .collab_config import CollaborationConfig
 from .commands import base, fetch, label, match
 from .dataset import Dataset
@@ -132,7 +131,11 @@ def _verify_directory(raw: str) -> pathlib.Path:
     return ret
 
 
-if __name__ == "__main__":
+def main() -> None:
     ap = get_argparse()
     namespace = ap.parse_args()
     execute_command(namespace)
+
+
+if __name__ == "__main__":
+    main()
