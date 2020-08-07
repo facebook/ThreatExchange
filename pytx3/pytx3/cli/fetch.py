@@ -70,6 +70,7 @@ class FetchCommand(command_base.Command):
     MAX_DESCRIPTOR_FETCH_SIZE = 20
     DEFAULT_REFETCH_SEC = 3600 * 24 * 7  # 1 week
     UP_TO_DATE_SEC = 60  # 1 minute
+    PROGRESS_PRINT_INTERVAL_SEC = 30
 
     @classmethod
     def init_argparse(cls, ap) -> None:
@@ -129,7 +130,8 @@ class FetchCommand(command_base.Command):
         self.until_timestamp = min(float(until_timestamp or now), now)
         self.force_full = full
         self.force_incremental = bool(until_timestamp) and not full
-        self.last_update_printed = now
+        # Cause first print to be after ~5 seconds
+        self.last_update_printed = now - self.PROGRESS_PRINT_INTERVAL_SEC + 5
 
         if only_signals or not_signals:
             # TODO - this is fixable by storing checkpoints per signal type
@@ -148,7 +150,7 @@ class FetchCommand(command_base.Command):
 
     def determine_fetch_type(self, checkpoint: FetchCheckpoint) -> FetchType:
         """Based on the checkpoint and options, determine what fetch we are doing"""
-        if self.force_full:
+        if self.force_full or self.sample:
             return FetchType.Full()
 
         fetch_from_timestamp = checkpoint.last_fetch
@@ -169,10 +171,6 @@ class FetchCommand(command_base.Command):
         if self.clear:
             dataset.clear_cache()
             return
-        if self.sample and not dataset.is_cache_empty and not self.force_full:
-            raise command_base.CommandError(
-                "Already have some data, force a refetch with --full", returncode=2
-            )
 
         fetch_type = self.determine_fetch_type(dataset.get_fetch_checkpoint())
 
@@ -203,87 +201,85 @@ class FetchCommand(command_base.Command):
             # We're relying on full fetching to fix this eventually (as well as deletes)
             dataset.load_cache(self.signal_types_by_name.values())
 
-        # TODO - use in with block
-        id_fetch_pool = concurrent.futures.ThreadPoolExecutor(max_workers=100)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as id_fetch_pool:
 
-        seen_td_ids = set()
+            seen_td_ids = set()
 
-        counts = collections.Counter()
+            counts = collections.Counter()
 
-        tags_to_fetch = dataset.config.labels
-        only_first_fetch = False
+            tags_to_fetch = dataset.config.labels
+            only_first_fetch = False
 
-        if self.sample:
-            if dataset.config.sample_tag:
-                tags_to_fetch = [dataset.config.sample_tag]
-            else:
-                only_first_fetch = True
+            if self.sample:
+                if dataset.config.sample_tag:
+                    tags_to_fetch = [dataset.config.sample_tag]
+                else:
+                    only_first_fetch = True
 
-        # TODO - Write a checkpoint file on descriptors, potentially resume from that file
-        #        if we exit
+            # TODO - Write a checkpoint file on descriptors, potentially resume from that file
+            #        if we exit
 
-        def consume_descriptors(dq: collections.deque) -> int:
-            """Process descriptors in order"""
-            item = dq.popleft()
-            # TODO - consider a timeout
-            descriptors = item.result()
-            for descriptor in descriptors:
-                match = False
-                for signal_name, signal_type in self.signal_types_by_name.items():
-                    if signal_type.process_descriptor(descriptor):
-                        match = True
-                        counts[signal_name] += 1
-                if match:
-                    counts["all"] += 1
-            now = time.time()
-            if now - self.last_update_printed >= 30:
-                self.last_update_printed = now
-                self.stderr(f"Processed {counts['all']}...")
-            return len(descriptors)
+            def consume_descriptors(dq: collections.deque) -> int:
+                """Process descriptors in order"""
+                item = dq.popleft()
+                # TODO - consider a timeout
+                descriptors = item.result()
+                for descriptor in descriptors:
+                    match = False
+                    for signal_name, signal_type in self.signal_types_by_name.items():
+                        if signal_type.process_descriptor(descriptor):
+                            match = True
+                            counts[signal_name] += 1
+                    if match:
+                        counts["all"] += 1
+                now = time.time()
+                if now - self.last_update_printed >= self.PROGRESS_PRINT_INTERVAL_SEC:
+                    self.last_update_printed = now
+                    self.stderr(f"Processed {counts['all']}...")
+                return len(descriptors)
 
-        for tag_name in tags_to_fetch:
-            tag_id = TE.Net.getTagIDFromName(tag_name)
-            if not tag_id:
-                continue
-            pending_futures = collections.deque()
-            remainder_td_ids = collections.deque()
-            query = _TagQueryFetchCheckpoint(
-                tag_id, fetch_type.from_timestamp, self.until_timestamp
-            )
-
-            # Query tags in order on a single thread to prevent overfetching ids
-            while query:
-                ids = [i for i in query.next() if i not in seen_td_ids]
-                seen_td_ids.update(ids)
-                remainder_td_ids.extend(ids)
-                while len(remainder_td_ids) >= self.MAX_DESCRIPTOR_FETCH_SIZE:
-                    batch = [
-                        remainder_td_ids.popleft()
-                        for _ in range(self.MAX_DESCRIPTOR_FETCH_SIZE)
-                    ]
-                    pending_futures.append(
-                        id_fetch_pool.submit(self._fetch_descriptors, batch)
-                    )
-                if only_first_fetch:
-                    break
-                # Consume descriptor data as it becomes available, or if we get too far ahead
-                # to try and avoid a memory explosion
-                while pending_futures and (
-                    len(pending_futures) > 200 or pending_futures[0].done()
-                ):
-                    consume_descriptors(pending_futures)
-                    # TODO Some kind of checkpointing behavior
-            # Submit any stragglers
-            if remainder_td_ids:
-                pending_futures.append(
-                    id_fetch_pool.submit(
-                        self._fetch_descriptors, list(remainder_td_ids)
-                    )
+            for tag_name in tags_to_fetch:
+                tag_id = TE.Net.getTagIDFromName(tag_name)
+                if not tag_id:
+                    continue
+                pending_futures = collections.deque()
+                remainder_td_ids = collections.deque()
+                query = _TagQueryFetchCheckpoint(
+                    tag_id, fetch_type.from_timestamp, self.until_timestamp
                 )
-            while pending_futures:
-                consume_descriptors(pending_futures)
 
-        id_fetch_pool.shutdown()
+                # Query tags in order on a single thread to prevent overfetching ids
+                while query:
+                    ids = [i for i in query.next() if i not in seen_td_ids]
+                    seen_td_ids.update(ids)
+                    remainder_td_ids.extend(ids)
+                    while len(remainder_td_ids) >= self.MAX_DESCRIPTOR_FETCH_SIZE:
+                        batch = [
+                            remainder_td_ids.popleft()
+                            for _ in range(self.MAX_DESCRIPTOR_FETCH_SIZE)
+                        ]
+                        pending_futures.append(
+                            id_fetch_pool.submit(self._fetch_descriptors, batch)
+                        )
+                    if only_first_fetch:
+                        break
+                    # Consume descriptor data as it becomes available, or if we get too far ahead
+                    # to try and avoid a memory explosion
+                    while pending_futures and (
+                        len(pending_futures) > 200 or pending_futures[0].done()
+                    ):
+                        consume_descriptors(pending_futures)
+                        # TODO Some kind of checkpointing behavior
+                # Submit any stragglers
+                if remainder_td_ids:
+                    pending_futures.append(
+                        id_fetch_pool.submit(
+                            self._fetch_descriptors, list(remainder_td_ids)
+                        )
+                    )
+                while pending_futures:
+                    consume_descriptors(pending_futures)
+
         if fetch_type.is_full and not counts:
             raise command_base.CommandError(
                 "No items fetched! Something wrong?", returncode=3

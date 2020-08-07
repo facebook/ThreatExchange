@@ -80,6 +80,9 @@ def execute_command(namespace) -> None:
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)
+    except KeyboardInterrupt:
+        # No stack for CTRL+C
+        sys.exit(130)
 
 
 def init_app_token(cli_option: str = None) -> None:
