@@ -17,14 +17,6 @@ import copy
 import datetime
 import re
 
-# ================================================================
-# HTTP-wrapper methods
-# See also https://developers.facebook.com/docs/threat-exchange
-
-# This is a class with all static methods -- no need to instantiate it.  I
-# meant it to be just a module but ran into an implementation detail with
-# updating module-private variables in Python; ended up just making it a class.
-
 
 class Net:
     THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR"
@@ -60,30 +52,6 @@ class Net:
         "reactions": "reactions",
         "reactions_to_remove": "reactions_to_remove",
     }
-
-    # ----------------------------------------------------------------
-    # E.g. for overridiing
-    #   https://graph.facebook.com/v{i}.{j}
-    # to
-    #   https://graph.facebook.com/v{x}.{y}
-    @classmethod
-    def setTEBaseURL(self, baseURL):
-        self.DEFAULT_TE_BASE_URL = baseURL
-
-    # ----------------------------------------------------------------
-    # Gets the ThreatExchange app token from an environment variable.  Feel
-    # free to replace the app-token discovery method here with whatever is
-    # most convenient for your project. However, be aware that app tokens
-    # are like passwords and shouldn't be stored in the open.
-
-    # I like to put export TX_ACCESS_TOKEN=$(cat ~/.txtoken) in my .bashrc where
-    # ~/.txtoken is a mode-600 file.
-    @classmethod
-    def setAppTokenFromEnvName(self, appTokenEnvName):
-        if appTokenEnvName in os.environ:
-            self.APP_TOKEN = os.environ[appTokenEnvName]
-        else:
-            raise Exception("$%s not found in environment." % appTokenEnvName)
 
     # ----------------------------------------------------------------
     # Helper method for issuing a GET and returning the JSON payload.
@@ -148,95 +116,6 @@ class Net:
             return None
         else:
             return desired[0]["id"]
-
-    # ----------------------------------------------------------------
-    # Looks up all descriptors with a given tag. Invokes a specified callback on
-    # each page of IDs.
-
-    @classmethod
-    def processDescriptorIDsByTagID(self, tagID, idProcessorCallback, **kwargs):
-        verbose = kwargs.get("verbose", False)
-        showURLs = kwargs.get("showURLs", False)
-        includeIndicatorInOutput = kwargs.get("includeIndicatorInOutput", True)
-        pageSize = kwargs.get("pageSize", 10)
-        taggedSince = kwargs.get("taggedSince", None)
-        taggedUntil = kwargs.get("taggedUntil", None)
-
-        startURL = (
-            self.TE_BASE_URL
-            + "/"
-            + tagID
-            + "/tagged_objects"
-            + "/?access_token="
-            + self.APP_TOKEN
-            + "&limit="
-            + str(pageSize)
-        )
-
-        if taggedSince != None:
-            startURL += "&tagged_since=" + urllib.parse.quote(taggedSince)
-        if taggedUntil != None:
-            startURL += "&tagged_until=" + urllib.parse.quote(taggedUntil)
-
-        nextURL = startURL
-        pageIndex = 0
-
-        while nextURL != None:
-            if showURLs:
-                print("URL:")
-                print(nextURL)
-
-            # Format we're parsing:
-            # {
-            #   "data": [
-            #     {
-            #       "id": "9915337796604770",
-            #       "type": "THREAT_DESCRIPTOR",
-            #       "name": "7ef5...aa97"
-            #     }
-            #     ...
-            #   ],
-            #   "paging": {
-            #     "cursors": {
-            #       "before": "XYZIU...NjQ0h3Unh3",
-            #       "after": "XYZIUk...FXNzVNd1Jn"
-            #     },
-            #     "next": "https://graph.facebook.com/v3.1/9999338387644295/tagged_objects?access_token=..."
-            #   }
-            # }
-
-            response = self.getJSONFromURL(nextURL)
-
-            data = response["data"]
-
-            nextURL = None
-            if "paging" in response:
-                paging = response["paging"]
-                if "next" in paging:
-                    nextURL = paging["next"]
-            ids = []
-            for item in data:
-                itemID = item["id"]
-                itemType = item["type"]
-                if includeIndicatorInOutput:
-                    itemName = item["name"]
-                else:
-                    del item["name"]
-                if itemType != self.THREAT_DESCRIPTOR:
-                    continue
-                if verbose:
-                    print(json.dumps(item))
-                ids.append(itemID)
-            if verbose:
-                info = {}
-                info["page_index"] = pageIndex
-                info["num_items_pre_filter"] = len(data)
-                info["num_items_post_filter"] = len(ids)
-                print(json.dumps(info))
-
-            idProcessorCallback(ids)
-
-            pageIndex += 1
 
     # ----------------------------------------------------------------
     # Looks up all metadata for given IDs.
@@ -331,19 +210,6 @@ class Net:
     # Returns error message or None.
     # This simply checks to see (client-side) if required fields aren't provided.
     @classmethod
-    def validatePostPararmsForUpdate(self, postParams):
-        if postParams.get(self.POST_PARAM_NAMES["descriptor_id"]) == None:
-            return "Descriptor ID must be specified for update."
-        if postParams.get(self.POST_PARAM_NAMES["indicator"]) != None:
-            return "Indicator must not be specified for update."
-        if postParams.get(self.POST_PARAM_NAMES["type"]) != None:
-            return "Type must not be specified for update."
-        return None
-
-    # ----------------------------------------------------------------
-    # Returns error message or None.
-    # This simply checks to see (client-side) if required fields aren't provided.
-    @classmethod
     def validatePostPararmsForCopy(self, postParams):
         if postParams.get(self.POST_PARAM_NAMES["descriptor_id"]) == None:
             return "Source-descriptor ID must be specified for copy."
@@ -371,26 +237,6 @@ class Net:
 
         return self._postThreatDescriptor(url, postParams, showURLs, dryRun)
 
-    # ----------------------------------------------------------------
-    # Does a single POST to the threat_descriptor ID endpoint.  See also
-    # https://developers.facebook.com/docs/threat-exchange/reference/editing
-    @classmethod
-    def updateThreatDescriptor(self, postParams, showURLs, dryRun):
-        errorMessage = self.validatePostPararmsForUpdate(postParams)
-        if errorMessage != None:
-            return [errorMessage, None, None]
-
-        url = (
-            self.TE_BASE_URL
-            + "/"
-            + postParams[self.POST_PARAM_NAMES["descriptor_id"]]
-            + "/?access_token="
-            + self.APP_TOKEN
-        )
-
-        return self._postThreatDescriptor(url, postParams, showURLs, dryRun)
-
-    # ----------------------------------------------------------------
     @classmethod
     def copyThreatDescriptor(self, postParams, showURLs, dryRun):
         errorMessage = self.validatePostPararmsForCopy(postParams)
@@ -478,171 +324,3 @@ class Net:
         except urllib.error.HTTPError as e:
             responseBody = json.loads(e.read().decode("utf-8"))
             return [None, e, responseBody]
-
-    # ----------------------------------------------------------------
-    # This is for client-side creation-time filtering. We accept the same
-    # command-line values as for tagged-time filtering which is done server-side
-    # using PHP\strtotime which takes various epoch-seconds timestamps, various
-    # format strings, and time-deltas like "-3hours" and "-1week".  Here we
-    # re-invent some of PHP\strtotime.
-    @classmethod
-    def parseTimeStringToEpochSeconds(self, mixedString):
-        retval = self._parseIntStringToEpochSeconds(mixedString)
-        if retval != None:
-            return retval
-
-        retval = self._parseDateTimeStringToEpochSeconds(mixedString)
-        if retval != None:
-            return retval
-
-        retval = self._parseRelativeStringToEpochSeconds(mixedString)
-        if retval != None:
-            return retval
-
-        return None
-
-    # Helper for parseTimeStringToEpochSeconds to try epoch-seconds timestamps
-    @classmethod
-    def _parseIntStringToEpochSeconds(self, mixedString):
-        try:
-            return int(mixedString)
-        except ValueError:
-            return None
-
-    DATETIME_FORMATS = [
-        "%Y-%m-%dT%H:%M:%S%z",  # TE server-side date format -- try first
-        "%Y-%m-%d %H:%M:%S",
-        "%Y/%m/%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M:%SZ",
-    ]
-
-    # Helper for parseTimeStringToEpochSeconds to try various format-string
-    # timestamps
-    @classmethod
-    def _parseDateTimeStringToEpochSeconds(self, mixedString):
-        for formatString in self.DATETIME_FORMATS:
-            retval = self._parseDateTimeStringSingleFormat(mixedString, formatString)
-            if retval != None:
-                return retval
-        return None
-
-    # Helper for parseTimeStringToEpochSeconds to try a particular format-string
-    # timestamp
-    @classmethod
-    def _parseDateTimeStringSingleFormat(self, mixedString, formatString):
-        try:
-            return int(
-                datetime.datetime.strptime(mixedString, formatString).timestamp()
-            )
-        except ValueError:
-            return None
-
-    # Helper for parseTimeStringToEpochSeconds to try various relative-time
-    # indications
-    @classmethod
-    def _parseRelativeStringToEpochSeconds(self, mixedString):
-        retval = self._parseRelativeStringMinute(mixedString)
-        if retval != None:
-            return retval
-        retval = self._parseRelativeStringHour(mixedString)
-        if retval != None:
-            return retval
-        retval = self._parseRelativeStringDay(mixedString)
-        if retval != None:
-            return retval
-        retval = self._parseRelativeStringWeek(mixedString)
-        if retval != None:
-            return retval
-        return None
-
-    # Helper for parseTimeStringToEpochSeconds to try particular relative-time
-    # indications.
-    @classmethod
-    def _parseRelativeStringMinute(self, mixedString):
-        pattern = re.compile("^-([0-9]+)minutes?$")
-        output = pattern.match(mixedString)
-        if output != None:
-            count = int(output.group(1))
-            return int(
-                (
-                    datetime.datetime.today() - datetime.timedelta(minutes=count)
-                ).timestamp()
-            )
-        return None
-
-    # Helper for parseTimeStringToEpochSeconds to try particular relative-time
-    # indications.
-    @classmethod
-    def _parseRelativeStringHour(self, mixedString):
-        pattern = re.compile("^-([0-9]+)hours?$")
-        output = pattern.match(mixedString)
-        if output != None:
-            count = int(output.group(1))
-            return int(
-                (
-                    datetime.datetime.today() - datetime.timedelta(hours=count)
-                ).timestamp()
-            )
-        return None
-
-    # Helper for parseTimeStringToEpochSeconds to try particular relative-time
-    # indications.
-    @classmethod
-    def _parseRelativeStringDay(self, mixedString):
-        pattern = re.compile("^-([0-9]+)days?$")
-        output = pattern.match(mixedString)
-        if output != None:
-            count = int(output.group(1))
-            return int(
-                (datetime.datetime.today() - datetime.timedelta(days=count)).timestamp()
-            )
-        return None
-
-    # Helper for parseTimeStringToEpochSeconds to try particular relative-time
-    # indications.
-    @classmethod
-    def _parseRelativeStringWeek(self, mixedString):
-        pattern = re.compile("^-([0-9]+)weeks?$")
-        output = pattern.match(mixedString)
-        if output != None:
-            count = int(output.group(1))
-            return int(
-                (
-                    datetime.datetime.today() - datetime.timedelta(weeks=count)
-                ).timestamp()
-            )
-        return None
-
-
-# ================================================================
-# Validator for client-side creation-time datetime parsing. Not written as unit
-# tests per se since "-1week" et al. are dynamic things. Invoke via "python TE.py".
-if __name__ == "__main__":
-
-    def showParseTimeStringToEpochSeconds(mixedString):
-        retval = Net.parseTimeStringToEpochSeconds(mixedString)
-        readable = (
-            None
-            if retval is None
-            else datetime.datetime.utcfromtimestamp(retval).strftime(
-                "%Y-%m-%dT%H:%M:%SZ"
-            )
-        )
-        print("%-30s %-30s %s" % (mixedString, retval, readable))
-
-    showParseTimeStringToEpochSeconds("1591626448")
-    showParseTimeStringToEpochSeconds("2020-06-08T14:27:53")
-    showParseTimeStringToEpochSeconds("2020-06-08T14:27:53Z")
-    showParseTimeStringToEpochSeconds("2020-06-08T14:27:53+0400")
-    showParseTimeStringToEpochSeconds("2020-06-08T14:27:53-0400")
-    showParseTimeStringToEpochSeconds("2020-05-01T07:02:25+0000")
-    showParseTimeStringToEpochSeconds("-1minute")
-    showParseTimeStringToEpochSeconds("-3minutes")
-    showParseTimeStringToEpochSeconds("-1hour")
-    showParseTimeStringToEpochSeconds("-3hours")
-    showParseTimeStringToEpochSeconds("-1day")
-    showParseTimeStringToEpochSeconds("-3day")
-    showParseTimeStringToEpochSeconds("-1week")
-    showParseTimeStringToEpochSeconds("-3weeks")
-    showParseTimeStringToEpochSeconds("nonesuch")
