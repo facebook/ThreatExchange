@@ -19,20 +19,17 @@ class CollaborationConfig:
     KEY_PRIVACY_GROUPS = "privacy_groups"
     KEY_LABELS = "labels"
     KEY_SAMPLE_TAG = "sample_tag"
-    KEY_CONTENT_TYPES = "content_types"
 
     def __init__(
         self,
         name: str,
         labels: t.Dict[str, t.Any],
         privacy_groups: t.List[int],
-        content_types: t.Dict[str, t.Dict[str, t.Any]],
         sample_tag: t.Optional[str] = None,
     ):
         self.name = name
         self.privacy_groups = privacy_groups
         self.labels = labels
-        self.content_types = content_types
         self.sample_tag = sample_tag
 
     @property
@@ -43,10 +40,9 @@ class CollaborationConfig:
     def load(cls, file: t.IO):
         content = json.load(file)
         return cls(
-            content[cls.KEY_NAME],
+            content.get(cls.KEY_NAME, "Sample Config"),
             content[cls.KEY_LABELS],
-            content[cls.KEY_PRIVACY_GROUPS],
-            content[cls.KEY_CONTENT_TYPES],
+            content.get(cls.KEY_PRIVACY_GROUPS, []),
             content.get(cls.KEY_SAMPLE_TAG),
         )
 
@@ -56,7 +52,6 @@ class CollaborationConfig:
                 self.KEY_NAME: self.name,
                 self.KEY_LABELS: self.labels,
                 self.KEY_PRIVACY_GROUPS: self.privacy_groups,
-                self.KEY_CONTENT_TYPES: self.content_types,
             }
             if self.sample_tag:
                 out[self.KEY_SAMPLE_TAG] = self.sample_tag
@@ -71,6 +66,5 @@ class CollaborationConfig:
             name="ThreatExchange Samples",
             labels={"media_priority_samples": {}},
             privacy_groups=[],
-            content_types={},
             sample_tag="media_priority_samples",
         )
