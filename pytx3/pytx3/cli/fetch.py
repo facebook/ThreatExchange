@@ -274,11 +274,11 @@ class FetchCommand(command_base.Command):
                 if remainder_td_ids:
                     pending_futures.append(
                         id_fetch_pool.submit(
-                            self._fetch_descriptors, list(remainder_td_ids)
+                            self._fetch_descriptors,
+                            list(remainder_td_ids),
+                            dataset.config.labels,
                         )
                     )
-                while pending_futures:
-                    consume_descriptors(pending_futures)
 
         if fetch_type.is_full and not counts:
             raise command_base.CommandError(
@@ -296,20 +296,56 @@ class FetchCommand(command_base.Command):
                 self.until_timestamp or self.start_time, fetch_type.is_full
             )
 
-    def _fetch_descriptors(self, td_ids: t.List[int]) -> t.List[ThreatDescriptor]:
+    def _fetch_descriptors(
+        self, td_ids: t.List[int], collab_labels: t.List[str]
+    ) -> t.List[ThreatDescriptor]:
         """Do the bulk ThreatDescriptor fetch"""
-        return [
-            ThreatDescriptor(
-                id=int(td["id"]),
-                raw_indicator=td["raw_indicator"],
-                indicator_type=td["type"],
-                owner_id=int(td["owner"]["id"]),
-                tags=td["tags"] or [],
-                status=td["status"],
-                added_on=td["added_on"],
+
+        ret = []
+        for td_json in TE.Net.getInfoForIDs(td_ids):
+            owner_id_str = td_json["owner"]["id"]
+            td = ThreatDescriptor(
+                id=int(td_json["id"]),
+                raw_indicator=td_json["raw_indicator"],
+                indicator_type=td_json["type"],
+                owner_id=int(owner_id_str),
+                tags=[
+                    tag
+                    for tag in (td_json["tags"] or ())
+                    # Did someone peskily add special manually?
+                    if tag not in ThreatDescriptor.SPECIAL_TAGS
+                ],
+                status=td_json["status"],
+                added_on=td_json["added_on"],
             )
-            for td in TE.Net.getInfoForIDs(td_ids)
-        ]
+            # Add special tags
+            # TODO - Consider stripping out collab labels
+            #        from FALSE_POSITIVE & NON_MALICIOUS
+            # Is this my descriptor?
+            if td.is_mine:
+                if td.status == "NON_MALICIOUS":
+                    td.tags.append(ThreatDescriptor.FALSE_POSITIVE)
+                else:
+                    td.tags.append(ThreatDescriptor.TRUE_POSITIVE)
+            # Disputed path #1 - mark as non_malicious
+            elif td.status == "NON_MALICIOUS":
+                # Filter out collaboration tags
+                tags = [t for t in td.tags if t not in collab_labels]
+                # Small brain way of doing td.tags = [] due to td being a tuple
+                td.tags.clear()
+                td.tags.extend(tags)
+                td.tags.append(ThreatDescriptor.DISPUTED)
+            # Disputed path #2 - react with DISAGREE_WITH_TAGS
+            elif "DISAGREE_WITH_TAGS" in td_json.get("my_reactions", ()):
+                td.tags.append(ThreatDescriptor.FALSE_POSITIVE)
+            elif any(
+                t == "DISAGREE_WITH_TAGS"
+                for r in td_json.get("reactions", {}).values()
+                for t in r
+            ):
+                td.tags.append(ThreatDescriptor.DISPUTED)
+            ret.append(td)
+        return ret
 
 
 class _TagQueryFetchCheckpoint:

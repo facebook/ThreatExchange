@@ -12,6 +12,8 @@ import json
 import re
 import typing as t
 
+from . import descriptor
+
 
 class CollaborationConfig:
 
@@ -35,6 +37,12 @@ class CollaborationConfig:
     @property
     def default_state_dir_name(self) -> str:
         return re.sub("\W+", "_", self.name.lower())
+
+    @property
+    def labels_for_collaboration(self) -> t.Set[str]:
+        ret = set(self.labels)
+        ret.update(descriptor.ThreatDescriptor.SPECIAL_TAGS)
+        return ret
 
     @classmethod
     def load(cls, file: t.IO):

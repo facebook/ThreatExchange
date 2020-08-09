@@ -12,6 +12,7 @@ import typing as t
 
 from ..content_type import meta
 from ..dataset import Dataset
+from ..descriptor import ThreatDescriptor
 from ..signal_type.signal_base import FileMatcher, HashMatcher, StrMatcher
 from . import command_base, fetch
 
@@ -77,14 +78,34 @@ class MatchCommand(command_base.Command):
             ),
         )
 
+        ap.add_argument(
+            "--show-false-positives",
+            action="store_true",
+            help="show matches even if you've marked them false_positive",
+        )
+
+        ap.add_argument(
+            "--hide-disputed",
+            action="store_true",
+            help="hide matches if someone has disputed them",
+        )
+
     def __init__(
-        self, content_type: str, hashes: bool, as_text: bool, content: t.List[str]
+        self,
+        content_type: str,
+        hashes: bool,
+        as_text: bool,
+        content: t.List[str],
+        show_false_positives: bool,
+        hide_disputed: bool,
     ) -> None:
         self.content_type = [
             c for c in meta.get_all_content_types() if c.get_name() == content_type
         ][0]
         self.input_generator = self.parse_input(content, hashes, as_text)
         self.as_hashes = hashes
+        self.show_false_positives = show_false_positives
+        self.hide_disputed = hide_disputed
 
     def parse_input(
         self,
@@ -150,16 +171,32 @@ class MatchCommand(command_base.Command):
 
             for signal_type in signal_types:
                 for match in match_fn(signal_type, inp):
-                    if match.primary_descriptor_id not in seen:
-                        seen.add(match.primary_descriptor_id)
-                        print(
-                            match.primary_descriptor_id,
-                            signal_type.get_name(),
-                            " ".join(
-                                sorted(
-                                    l
-                                    for l in match.labels
-                                    if l in dataset.config.labels
-                                )
-                            ),
-                        )
+                    if match.primary_descriptor_id in seen:
+                        continue
+                    seen.add(match.primary_descriptor_id)
+                    labels = sorted(
+                        l
+                        for l in match.labels
+                        if l in dataset.config.labels_for_collaboration
+                    )
+                    # If a lone DISPUTED, this means it is just a lone NON_MALICIOUS
+                    # No one does this intentionally, it means that it was originally
+                    # a disputed descriptor where the original author withdrew later
+                    # If they owner of the dangling NON_MALICIOUS descriptor had
+                    # used a reaction, it would have cleaned itself up, so lets
+                    # just not show it.
+                    if labels == [ThreatDescriptor.DISPUTED]:
+                        continue
+                    if self.hide_disputed and ThreatDescriptor.DISPUTED in labels:
+                        continue
+                    if (
+                        not self.show_false_positives
+                        and ThreatDescriptor.FALSE_POSITIVE in labels
+                    ):
+                        continue
+
+                    print(
+                        match.primary_descriptor_id,
+                        signal_type.get_name(),
+                        " ".join(labels),
+                    )
