@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
 A place to put simple helpers that don't seem like they go anywhere else.

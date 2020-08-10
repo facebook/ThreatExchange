@@ -1,4 +1,5 @@
 ##!/usr/bin/env python
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
 Common helpers and libraries for the all-in-one command.
