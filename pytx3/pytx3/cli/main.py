@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
 A wrapper around multi-stage ThreatExchange operations.
