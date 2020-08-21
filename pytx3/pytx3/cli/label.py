@@ -7,7 +7,7 @@ Label command for uploading opinions (ThreatDescriptors) or reactions.
 
 import typing as t
 
-from .. import TE
+from .. import TE, descriptor
 from ..collab_config import CollaborationConfig
 from ..content_type import meta, text
 from ..dataset import Dataset
@@ -18,15 +18,16 @@ class LabelCommand(command_base.Command):
     """
     Apply labels to items in ThreatExchange.
 
+    Labeling descriptors as false_positive will cause them to stop triggering
+    matches by default in the match command.
+
     Examples:
       # Label text
-      $ all-in-one -c te.cfg label violating_label_from_config,other_label text "this is an example bad text"
+      $ pytx3 -c te.cfg label violating_label_from_config,other_label text "this is an example bad text"
 
       # Label descriptor
-      $ all-in-one -c te.cfg label false-positive descriptor 12345
+      $ pytx3 -c te.cfg label false_positive descriptor 12345
     """
-
-    FALSE_POSITIVE = "false_positive"
 
     @classmethod
     def init_argparse(cls, ap) -> None:
@@ -36,41 +37,35 @@ class LabelCommand(command_base.Command):
             metavar="CSV",
             help="labels to apply to item",
         )
-        ap.add_argument("descriptor_id", help="the id of a descriptor to label")
+
+        # TODO - Put the match command content logic in a common place, re-use it
+        ap.add_argument(
+            "content_type", choices=["descriptor"], help="what kind of content to label"
+        )
+        ap.add_argument("content", help="the content to label")
 
     def __init__(self, descriptor_id: int, labels: t.List[str]) -> None:
         self.descriptor_id = descriptor_id
-        self.labels = labels
-        self.false_positive = False
+        # Remove any of the special tags that someone included for whatever reason
+        self.labels = [
+            l for l in labels if l not in descriptor.ThreatDescriptor.SPECIAL_TAGS
+        ]
+        self.false_positive_reaction = False
         # Only use reaction logic if not also adding true positive labels
-        if self.FALSE_POSITIVE in labels:
-            self.labels.remove(self.FALSE_POSITIVE)
-            if not self.labels:
-                self.false_positive = True
+        if descriptor.ThreatDescriptor.FALSE_POSITIVE in labels and not self.labels:
+            self.false_positive_reaction = True
 
     def execute(self, dataset: Dataset) -> None:
-        raise NotImplementedError
-        # Everything below is untested and leftover from a previous attempt
-        params = {
-            "descriptor_id": self.descriptor_id,
-            "privacy_type": "HAS_PRIVACY_GROUP",
-            "privacy_members": cfg.privacy_groups,
-        }
-
-        if self.false_positive:
-            # TODO reacc
+        if not self.false_positive_reaction:
             raise NotImplementedError
-        else:
-            params["tags"] = self.labels
-        # TODO: Handle gracefully target doesn't exist
-        # TODO: Handle already labeled (merge don't stomp)
-        err_message, ex, response = TE.Net.copyThreatDescriptor(
-            params, showURLs=True, dryRun=False
+        err_message, ex, response = TE.Net.reactToThreatDescriptor(
+            self.descriptor_id, "DISAGREE_WITH_TAGS"
         )
         if ex:
             raise ex
         if err_message:
             raise command_base.CommandError(err_message)
-        if not response:
-            raise command_base.CommandError("Mystery error - empty response")
-        print(response["descriptor_id"])
+        if not response or response.get("success", "true") == "false":
+            raise command_base.CommandError(
+                f"Mystery error - response says: {response}"
+            )

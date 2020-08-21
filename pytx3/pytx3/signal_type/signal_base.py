@@ -140,9 +140,9 @@ class SimpleSignalType(SignalType, HashMatcher):
             return False
         old_val = self.state.get(descriptor.raw_indicator)
         if old_val is None:
-            self.state[descriptor.raw_indicator] = SimpleDescriptorRollup(
-                descriptor.id, descriptor.added_on, descriptor.tags
-            )
+            self.state[
+                descriptor.raw_indicator
+            ] = SimpleDescriptorRollup.from_descriptor(descriptor)
         else:
             old_val.merge(descriptor)
         return True

@@ -21,8 +21,7 @@ class FetchCheckpoint(t.NamedTuple):
     def next(self, fetch_start_time: float, full_fetch: bool) -> "FetchCheckpoint":
         full_fetch = full_fetch or not self.last_full_fetch
         return FetchCheckpoint(
-            fetch_start_time if full_fetch else self.last_full_fetch,
-            fetch_start_time
+            fetch_start_time if full_fetch else self.last_full_fetch, fetch_start_time
         )
 
     def serialize(self) -> str:

@@ -6,16 +6,17 @@ This is an entire copy of a file from ThreatExchange/hashing
 TODO: Slim down to only what we need, and switch to using requests
 """
 
-# General Python dependencies
-import os
-import urllib
-import urllib.parse
-import urllib.request
-import urllib.error
-import json
 import copy
 import datetime
+import json
+
+# General Python dependencies
+import os
 import re
+import urllib
+import urllib.error
+import urllib.parse
+import urllib.request
 
 
 class Net:
@@ -218,6 +219,24 @@ class Net:
         if postParams.get(self.POST_PARAM_NAMES["privacy_members"]) == None:
             return "Privacy members must be specified for copy."
         return None
+
+    @classmethod
+    def reactToThreatDescriptor(
+        cls, descriptor_id, reaction, *, showURLs=False, dryRun=False
+    ):
+        """
+        Does a POST to the reactions API.
+
+        See: https://developers.facebook.com/docs/threat-exchange/reference/reacting
+        """
+        return cls._postThreatDescriptor(
+            "/".join(
+                (cls.TE_BASE_URL, str(descriptor_id), f"?access_token={cls.APP_TOKEN}")
+            ),
+            {"reactions": reaction},
+            showURLs=showURLs,
+            dryRun=dryRun,
+        )
 
     # ----------------------------------------------------------------
     # Does a single POST to the threat_descriptors endpoint.  See also
