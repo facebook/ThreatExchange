@@ -19,7 +19,6 @@ import urllib.parse
 import urllib.request
 
 
-
 class Net:
     THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR"
     DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
