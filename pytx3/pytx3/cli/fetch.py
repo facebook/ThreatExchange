@@ -259,7 +259,9 @@ class FetchCommand(command_base.Command):
                             for _ in range(self.MAX_DESCRIPTOR_FETCH_SIZE)
                         ]
                         pending_futures.append(
-                            id_fetch_pool.submit(self._fetch_descriptors, batch)
+                            id_fetch_pool.submit(
+                                self._fetch_descriptors, batch, dataset.config.labels
+                            )
                         )
                     if only_first_fetch:
                         break
@@ -340,7 +342,7 @@ class FetchCommand(command_base.Command):
                 td.tags.append(ThreatDescriptor.FALSE_POSITIVE)
             elif any(
                 t == "DISAGREE_WITH_TAGS"
-                for r in td_json.get("reactions", {}).values()
+                for r in td_json.get("reactions", [])
                 for t in r
             ):
                 td.tags.append(ThreatDescriptor.DISPUTED)
