@@ -52,29 +52,6 @@ class SignalType:
         """
         return False
 
-    def match(self, content: str) -> t.List[SignalMatch]:
-        """
-        Given a string representation of content, return matches.
-
-        You don't need to implement this if it doesn't make sense for your
-        signal type.
-        """
-        raise NotImplementedError
-
-    def match_file(self, file: pathlib.Path) -> t.List[SignalMatch]:
-        """
-        Given a file containing content, return matches.
-        """
-        raise NotImplementedError
-
-    def match_hash(self, hash: str) -> t.List[SignalMatch]:
-        """
-        Given a representation of this SignalType, return matches.
-
-        Example - PDQ distance comparison, or MD5 exact comparison
-        """
-        raise NotImplementedError
-
     def load(self, path: pathlib.Path) -> None:
         raise NotImplementedError
 
