@@ -11,7 +11,7 @@ import re
 import typing as t
 
 from .. import common
-from ..descriptor import SimpleDescriptorRollup
+from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 
 
 class SignalMatch(t.NamedTuple):
@@ -127,7 +127,7 @@ class SimpleSignalType(SignalType, HashMatcher):
     def __init__(self) -> None:
         self.state: t.Dict[str, SimpleDescriptorRollup] = {}
 
-    def process_descriptor(self, descriptor: t.Dict[str, t.Any]) -> bool:
+    def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
         """
         Add ThreatDescriptor to the state of this type, if it is for this type
 
