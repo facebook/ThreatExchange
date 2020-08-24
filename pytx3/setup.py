@@ -32,6 +32,8 @@ setup(
     keywords="facebook threatexchange",
     url="https://www.github.com/facebook/ThreatExchange",
     packages=find_packages(exclude=["tests"]),
-    install_requires=[],
+    install_requires=[
+        "python-Levenshtein",
+    ],
     entry_points={"console_scripts": ["pytx3 = pytx3.cli.main:main"]},
 )
