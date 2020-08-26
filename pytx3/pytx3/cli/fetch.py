@@ -281,6 +281,8 @@ class FetchCommand(command_base.Command):
                             dataset.config.labels,
                         )
                     )
+                while pending_futures:
+                    consume_descriptors(pending_futures)
 
         if fetch_type.is_full and not counts:
             raise command_base.CommandError(
