@@ -12,7 +12,7 @@ ThreatExchange supports a variety of hashing algorithms for photos and videos. T
 
 ## Get All Available Data
 
-For tag-driven workloads, supporting either bulk download or incremental updates, our currently recommended best practice is a [Java reference design](https://github.com/facebook/ThreatExchange/blob/master/api-reference-examples/java/README.md).
+For tag-driven workloads, supporting either bulk download or incremental updates, our currently recommended best practice is a [Java reference design](https://github.com/facebook/ThreatExchange/blob/master/api-reference-examples/java/te-tag-query/README.md).
 
 You can also explore the dataset using the hosted [ThreatExchange UI](https://developers.facebook.com/docs/threat-exchange/ui)
 
