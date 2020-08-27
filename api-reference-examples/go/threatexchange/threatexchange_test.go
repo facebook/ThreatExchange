@@ -3,12 +3,13 @@ package threatexchange
 
 import (
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
-const (
-	appId     = "" // Fill this to make tests run
-	appSecret = "" // Fill this to make tests run
+var (
+	appId     = os.Getenv("TX_APP_ID")     // Set this for integration tests
+	appSecret = os.Getenv("TX_APP_SECRET") // Set this for integration tests
 )
 
 func TestQueryThreatDescriptorsOfIpsProxy(t *testing.T) {

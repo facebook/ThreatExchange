@@ -95,7 +95,7 @@ type ThreatDescriptor struct {
 	ShareLevel   string          `json:"share_level,omitempty"`
 	AddedOn      string          `json:"added_on,omitempty"`
 	Confidence   int             `json:"confidence,omitempty"`
-	ExpiredOn    int             `json:"expired_on,omitempty"`
+	ExpiredOn    string          `json:"expired_on,omitempty"`
 	LastUpdated  string          `json:"last_updated,omitempty"`
 	SourceUri    string          `json:"source_uri,omitempty"`
 }
