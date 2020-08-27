@@ -10,8 +10,8 @@ pytx3/dist/
 .tox/
 .coverage
 .pytx
-hashing/pdq/java/bazel-bin/
-hashing/pdq/java/bazel-genfiles/
-hashing/pdq/java/bazel-java/
-hashing/pdq/java/bazel-out/
-hashing/pdq/java/bazel-testlogs/
+pdq/java/bazel-bin/
+pdq/java/bazel-genfiles/
+pdq/java/bazel-java/
+pdq/java/bazel-out/
+pdq/java/bazel-testlogs/
