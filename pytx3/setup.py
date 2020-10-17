@@ -35,6 +35,7 @@ setup(
     packages=find_packages(exclude=["tests"]),
     install_requires=[
         "python-Levenshtein",
+        "requests",
     ],
     entry_points={"console_scripts": ["pytx3 = pytx3.cli.main:main"]},
 )
