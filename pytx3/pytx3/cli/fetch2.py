@@ -37,12 +37,12 @@ class Fetch2Command(command_base.Command):
         )
         ap.add_argument(
             "--threat-types",
-            type=t.List[str],
+            nargs="+",
             help="Only fetch updates for indicators of the given type",
         )
         ap.add_argument(
             "--additional-tags",
-            type=t.List[str],
+            nargs="+",
             help="Only fetch updates for indicators that have a descriptor with each of these tags",
         )
 
