@@ -3,9 +3,14 @@
 
 import requests
 import json
+import collections
+import pathlib
+import time
 import typing as t
 from .. import TE
 from ..dataset import Dataset
+from ..indicator import ThreatIndicator
+from ..content_type import meta
 from . import command_base
 
 class Fetch2Command(command_base.Command):
@@ -17,6 +22,7 @@ class Fetch2Command(command_base.Command):
     """
 
     FIELDS = 'id,indicator,type,creation_time,last_updated,is_expired,expire_time,tags,status,applications_with_opinions'
+    PROGRESS_PRINT_INTERVAL_SEC = 30
 
     @classmethod
     def init_argparse(cls, ap) -> None:
@@ -59,16 +65,72 @@ class Fetch2Command(command_base.Command):
         self.owner = owner
         self.threat_types = threat_types
         self.additional_tags = additional_tags
+        self.signal_types_by_name = {
+            name: signal()
+            for name, signal in meta.get_signal_types_by_name().items()
+        }
+        self.last_update_printed = 0
+        self.counts = collections.Counter()
 
     def execute(self, dataset: Dataset) -> None:
-        self._fetch_threat_updates(
-            dataset.config.privacy_groups[0],
-            self.start_time,
-            self.stop_time,
-            self.owner,
-            self.threat_types,
-            self.additional_tags
-        )
+        more_to_fetch = True
+        next_page = None
+
+        while more_to_fetch:
+            result = self._fetch_threat_updates(
+                dataset.config.privacy_groups[0],
+                self.start_time,
+                self.stop_time,
+                self.owner,
+                self.threat_types,
+                self.additional_tags,
+                next_page,
+            )
+            if not result.ok:
+                print(result.json())
+                break
+            result = result.json()
+            if 'data' in result:
+                self._process_indicators(result['data'])
+            more_to_fetch = 'paging' in result and 'next' in result['paging']
+            next_page = result['paging']['next'] if more_to_fetch else None
+
+        for signal_name, signal_type in self.signal_types_by_name.items():
+            if signal_name not in self.counts:
+                continue
+            print(f"{signal_name}: {self.counts[signal_name]}")
+
+    def _process_indicators(
+        self,
+        indicators: list,
+    ) -> None:
+        """Process indicators"""
+        for ti_json in indicators:
+            ti = ThreatIndicator(
+                int(ti_json.get('id')),
+                ti_json.get('indicator'),
+                ti_json.get('type'),
+                int(ti_json.get('creation_time')),
+                int(ti_json.get('last_updated')),
+                ti_json.get('status'),
+                bool(ti_json.get('is_expired')),
+                ti_json.get('tags'),
+                [int(app) for app in ti_json.get('applications_with_opinions')],
+                int(ti_json.get('expire_time')) if 'expire_time' in ti_json else None
+            )
+
+            match = False
+            for signal_name, signal_type in self.signal_types_by_name.items():
+                if signal_type.process_indicator(ti):
+                    match = True
+                    self.counts[signal_name] += 1
+            if match:
+                self.counts["all"] += 1
+
+        now = time.time()
+        if now - self.last_update_printed >= self.PROGRESS_PRINT_INTERVAL_SEC:
+            self.last_update_printed = now
+            self.stderr(f"Processed {self.counts['all']}...")
 
     def _fetch_threat_updates(
         self,
@@ -78,7 +140,11 @@ class Fetch2Command(command_base.Command):
         owner: int,
         threat_types: t.List[str],
         additional_tags: t.List[str],
-    ) -> None:
+        next_page: str
+    ):
+        if next_page is not None:
+            return requests.get(url=next_page)
+
         params={'access_token': TE.Net.APP_TOKEN, 'fields': self.FIELDS}
         if start_time is not None:
             params['start_time'] = start_time
@@ -91,7 +157,7 @@ class Fetch2Command(command_base.Command):
         if additional_tags is not None:
             params['additional_tags'] = additional_tags
 
-        result = requests.get(
+        return requests.get(
             url=(
                 TE.Net.TE_BASE_URL + '/'
                 + str(privacy_group)
@@ -99,5 +165,3 @@ class Fetch2Command(command_base.Command):
             ),
             params=params,
         )
-
-        print(json.dumps(result.json(), indent=2))
