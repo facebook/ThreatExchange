@@ -46,30 +46,6 @@ class ThreatIndicator(t.NamedTuple):
     applications_with_opinions: t.List[int]
     expire_time: int
 
-    # def __init__(
-    #     self,
-    #     id: int,
-    #     indicator: str,
-    #     threat_type: str,
-    #     creation_time: int,
-    #     last_updated: int,
-    #     status: str,
-    #     is_expired: bool,
-    #     tags: t.List[str],
-    #     applications_with_opinions: t.List[int],
-    #     expire_time: int,
-    # ):
-    #     self.id = id
-    #     self.indicator = indicator
-    #     self.threat_type = threat_type
-    #     self.creation_time = creation_time
-    #     self.last_updated = last_updated
-    #     self.status = status
-    #     self.is_expired = is_expired
-    #     self.tags = tags
-    #     self.applications_with_opinions = applications_with_opinions
-    #     self.expire_time = expire_time
-
     def as_row(self) -> t.Tuple[int, str, str, int, int, str, bool, str, str, int]:
         """Simple conversion to CSV row"""
         return (
