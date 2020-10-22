@@ -67,4 +67,4 @@ class ThreatIndicator(t.NamedTuple):
         tags = row[7].split(" ") if row[7] else []
         apps = [int(app) for app in (row[8].split(" ") if row[8] else [])]
         expire_time = int(row[9]) if row[9] else None
-        return ThreatIndicator(int(row[0]), row[1], row[2], int(row[3]), int(row[4]), row[5], bool(row[6]), tags, apps, expire_time)
+        return ThreatIndicator(int(row[0]), row[1], row[2], int(row[3]), int(row[4]), row[5], row[6] == 'True', tags, apps, expire_time)

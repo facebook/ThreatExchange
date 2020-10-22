@@ -120,7 +120,7 @@ class Fetch2Command(command_base.Command):
                 int(ti_json.get('creation_time')),
                 int(ti_json.get('last_updated')),
                 ti_json.get('status'),
-                bool(ti_json.get('is_expired')),
+                ti_json.get('is_expired'),
                 ti_json.get('tags'),
                 [int(app) for app in ti_json.get('applications_with_opinions')],
                 int(ti_json.get('expire_time')) if 'expire_time' in ti_json else None
