@@ -63,8 +63,23 @@ class SignalType:
     def load(self, path: pathlib.Path) -> None:
         raise NotImplementedError
 
+    def load_indicators(self, path: pathlib.Path) -> None:
+        if not path.exists():
+            return
+        csv.field_size_limit(path.stat().st_size)  # dodge field size problems
+        with path.open("r", newline="") as f:
+            for row in csv.reader(f):
+                ti = ThreatIndicator.from_row(row)
+                self.indicator_state[ti.id] = ti
+
     def store(self, path: pathlib.Path) -> None:
         raise NotImplementedError
+
+    def store_indicators(self, path: pathlib.Path) -> None:
+        with path.open("w+", newline="") as f:
+            writer = csv.writer(f)
+            for _, i in self.indicator_state.items():
+                writer.writerow(i.as_row())
 
 
 class HashMatcher:
@@ -162,21 +177,8 @@ class SimpleSignalType(SignalType, HashMatcher):
             for row in csv.reader(f):
                 self.state[row[0]] = SimpleDescriptorRollup.from_row(row[1:])
 
-    def load_indicators(self, path: pathlib.Path) -> None:
-        self.state.clear()
-        csv.field_size_limit(path.stat().st_size)  # dodge field size problems
-        with path.open("r", newline="") as f:
-            for row in csv.reader(f):
-                self.indicator_state[row[0]] = ThreatIndicator.from_row(row)
-
     def store(self, path: pathlib.Path) -> None:
         with path.open("w+", newline="") as f:
             writer = csv.writer(f)
             for k, v in self.state.items():
                 writer.writerow((k,) + v.as_row())
-
-    def store_indicator(self, path: pathlib.Path) -> None:
-        with path.open("w+", newline="") as f:
-            writer = csv.writer(f)
-            for _, i in self.indicator_state.items():
-                writer.writerow(i.as_row())

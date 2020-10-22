@@ -36,6 +36,7 @@ class FetchCheckpoint(t.NamedTuple):
 class Dataset:
 
     EXTENSION = ".te"
+    INDICATOR_SUFFIX = "_indicator"
 
     def __init__(
         self,
@@ -76,8 +77,8 @@ class Dataset:
             return FetchCheckpoint(0, 0)
         return FetchCheckpoint.deserialize(checkpoint.read_text())
 
-    def _signal_state_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
-        return self.state_dir / f"{signal_type.get_name()}{self.EXTENSION}"
+    def _signal_state_file(self, signal_type: signal_base.SignalType, suffix: str = '') -> pathlib.Path:
+        return self.state_dir / f"{signal_type.get_name()}{suffix}{self.EXTENSION}"
 
     def load_cache(
         self, signal_types: t.Optional[t.Iterable[signal_base.SignalType]] = None
@@ -93,7 +94,20 @@ class Dataset:
             ret.append(signal_type)
         return ret
 
+    def load_indicator_cache(
+        self, signal_types: t.Optional[t.Iterable[signal_base.SignalType]] = None
+    ) -> None:
+        """Load indicator files in the state directory and initialize signal types"""
+        signal_types = [s() for s in meta.get_all_signal_types()] if signal_types is None else signal_types
+        for signal_type in signal_types:
+            signal_type.load_indicators(self._signal_state_file(signal_type, self.INDICATOR_SUFFIX))
+
     def store_cache(self, signal_type: signal_base.SignalType) -> None:
         if not self.state_dir.exists():
             self.state_dir.mkdir()
         signal_type.store(self._signal_state_file(signal_type))
+
+    def store_indicator_cache(self, signal_type: signal_base.SignalType) -> None:
+        if not self.state_dir.exists():
+            self.state_dir.mkdir()
+        signal_type.store_indicators(self._signal_state_file(signal_type, self.INDICATOR_SUFFIX))

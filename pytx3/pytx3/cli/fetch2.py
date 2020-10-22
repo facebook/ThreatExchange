@@ -73,6 +73,7 @@ class Fetch2Command(command_base.Command):
         self.counts = collections.Counter()
 
     def execute(self, dataset: Dataset) -> None:
+        dataset.load_indicator_cache(self.signal_types_by_name.values())
         more_to_fetch = True
         next_page = None
 
@@ -98,6 +99,7 @@ class Fetch2Command(command_base.Command):
         for signal_name, signal_type in self.signal_types_by_name.items():
             if signal_name not in self.counts:
                 continue
+            dataset.store_indicator_cache(signal_type)
             print(f"{signal_name}: {self.counts[signal_name]}")
 
     def _process_indicators(
