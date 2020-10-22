@@ -21,13 +21,13 @@ import sys
 import typing as t
 
 from .. import TE
-from . import command_base as base, fetch, fetch2, label, match
+from . import command_base as base, fetch, experimental_fetch, label, match
 from ..collab_config import CollaborationConfig
 from ..dataset import Dataset
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
-    return [fetch.FetchCommand, fetch2.Fetch2Command, match.MatchCommand, label.LabelCommand]
+    return [fetch.FetchCommand, experimental_fetch.ExperimentalFetchCommand, match.MatchCommand, label.LabelCommand]
 
 
 def get_argparse() -> argparse.ArgumentParser:

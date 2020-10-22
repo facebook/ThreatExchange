@@ -11,8 +11,10 @@ from ..indicator import ThreatIndicator
 from ..content_type import meta
 from . import command_base
 
-class Fetch2Command(command_base.Command):
+class ExperimentalFetchCommand(command_base.Command):
     """
+    WARNING: This is experimental, you probably want to use "Fetch" instead.
+
     Download content from ThreatExchange to disk.
 
     Using the CollaborationConfig, identify ThreatPrivacyGroup that
