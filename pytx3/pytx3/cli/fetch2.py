@@ -73,6 +73,9 @@ class Fetch2Command(command_base.Command):
         self.counts = collections.Counter()
 
     def execute(self, dataset: Dataset) -> None:
+        #TODO: [Potential] Force full fetch if it has been 90 days since the last fetch.
+        self.start_time = dataset.get_indicator_checkpoint() if self.start_time is None else self.start_time
+        self.stop_time = int(time.time()) if self.stop_time is None else self.stop_time
         dataset.load_indicator_cache(self.signal_types_by_name.values())
         more_to_fetch = True
         next_page = None
@@ -101,6 +104,8 @@ class Fetch2Command(command_base.Command):
                 continue
             dataset.store_indicator_cache(signal_type)
             print(f"{signal_name}: {self.counts[signal_name]}")
+
+        dataset.record_indicator_checkpoint(self.stop_time)
 
     def _process_indicators(
         self,
