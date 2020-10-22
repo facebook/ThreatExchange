@@ -178,6 +178,32 @@ class Net:
         return descriptors
 
     # ----------------------------------------------------------------
+    # Gets threat updates for the given privacy group.
+    @classmethod
+    def getThreatUpdates(self, privacy_group, **kwargs):
+        if 'next' in kwargs:
+            url = kwargs['next']
+        else:
+            url = (
+                self.TE_BASE_URL + '/'
+                + str(privacy_group)
+                + "/threat_updates/"
+                + "?access_token="
+                + self.APP_TOKEN
+                + '&fields=id,indicator,type,creation_time,last_updated,is_expired,expire_time,tags,status,applications_with_opinions'
+            )
+            for arg in kwargs:
+                if kwargs.get(arg) is not None:
+                    if arg == 'additional_tags':
+                        url = url + '&additional_tags=' + ",".join([str(app) for app in kwargs[arg]])
+                    elif arg == 'threat_type':
+                        url = url + '&threat_types=' + ",".join(kwargs[arg])
+                    else:
+                        url = url + '&' + arg + '=' + str(kwargs[arg])
+        return self.getJSONFromURL(url)
+
+
+    # ----------------------------------------------------------------
     # Returns error message or None.
     # This simply checks to see (client-side) if required fields aren't provided.
     @classmethod

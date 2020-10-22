@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import requests
-import json
 import collections
 import pathlib
 import time
@@ -20,8 +18,6 @@ class Fetch2Command(command_base.Command):
     Using the CollaborationConfig, identify ThreatPrivacyGroup that
     corresponds to a single collaboration and fetch related threat updates.
     """
-
-    FIELDS = 'id,indicator,type,creation_time,last_updated,is_expired,expire_time,tags,status,applications_with_opinions'
     PROGRESS_PRINT_INTERVAL_SEC = 30
 
     @classmethod
@@ -81,19 +77,15 @@ class Fetch2Command(command_base.Command):
         next_page = None
 
         while more_to_fetch:
-            result = self._fetch_threat_updates(
+            result = TE.Net.getThreatUpdates(
                 dataset.config.privacy_groups[0],
-                self.start_time,
-                self.stop_time,
-                self.owner,
-                self.threat_types,
-                self.additional_tags,
-                next_page,
+                start_time=self.start_time,
+                stop_time=self.stop_time,
+                owner=self.owner,
+                threat_type=self.threat_types,
+                additional_tags=self.additional_tags,
+                next_page=next_page,
             )
-            if not result.ok:
-                print(result.json())
-                break
-            result = result.json()
             if 'data' in result:
                 self._process_indicators(result['data'])
             more_to_fetch = 'paging' in result and 'next' in result['paging']
@@ -138,37 +130,3 @@ class Fetch2Command(command_base.Command):
         if now - self.last_update_printed >= self.PROGRESS_PRINT_INTERVAL_SEC:
             self.last_update_printed = now
             self.stderr(f"Processed {self.counts['all']}...")
-
-    def _fetch_threat_updates(
-        self,
-        privacy_group: int,
-        start_time: int,
-        stop_time: int,
-        owner: int,
-        threat_types: t.List[str],
-        additional_tags: t.List[str],
-        next_page: str
-    ):
-        if next_page is not None:
-            return requests.get(url=next_page)
-
-        params={'access_token': TE.Net.APP_TOKEN, 'fields': self.FIELDS}
-        if start_time is not None:
-            params['start_time'] = start_time
-        if stop_time is not None:
-            params['stop_time'] = stop_time
-        if owner is not None:
-            params['owner'] = owner
-        if threat_types is not None:
-            params['threat_types'] = threat_types
-        if additional_tags is not None:
-            params['additional_tags'] = additional_tags
-
-        return requests.get(
-            url=(
-                TE.Net.TE_BASE_URL + '/'
-                + str(privacy_group)
-                + '/threat_updates'
-            ),
-            params=params,
-        )
