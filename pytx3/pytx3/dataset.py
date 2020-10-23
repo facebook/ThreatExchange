@@ -55,7 +55,7 @@ class Dataset:
             self.state_dir.exists() and any(self.state_dir.glob(f"*{self.EXTENSION}"))
         )
 
-    def _fetch_checkpoint_path(self, suffix: str = '') -> pathlib.Path:
+    def _fetch_checkpoint_path(self, suffix: str = "") -> pathlib.Path:
         return self.state_dir / f"fetch_checkpoint{suffix}{self.EXTENSION}"
 
     def clear_cache(self) -> None:
@@ -85,7 +85,9 @@ class Dataset:
     def record_indicator_checkpoint(self, stop_time: int) -> None:
         self._fetch_checkpoint_path(self.INDICATOR_SUFFIX).write_text(str(stop_time))
 
-    def _signal_state_file(self, signal_type: signal_base.SignalType, suffix: str = '') -> pathlib.Path:
+    def _signal_state_file(
+        self, signal_type: signal_base.SignalType, suffix: str = ""
+    ) -> pathlib.Path:
         return self.state_dir / f"{signal_type.get_name()}{suffix}{self.EXTENSION}"
 
     def load_cache(
@@ -106,9 +108,15 @@ class Dataset:
         self, signal_types: t.Optional[t.Iterable[signal_base.SignalType]] = None
     ) -> None:
         """Load indicator files in the state directory and initialize signal types"""
-        signal_types = [s() for s in meta.get_all_signal_types()] if signal_types is None else signal_types
+        signal_types = (
+            [s() for s in meta.get_all_signal_types()]
+            if signal_types is None
+            else signal_types
+        )
         for signal_type in signal_types:
-            signal_type.load_indicators(self._signal_state_file(signal_type, self.INDICATOR_SUFFIX))
+            signal_type.load_indicators(
+                self._signal_state_file(signal_type, self.INDICATOR_SUFFIX)
+            )
 
     def store_cache(self, signal_type: signal_base.SignalType) -> None:
         if not self.state_dir.exists():
@@ -118,4 +126,6 @@ class Dataset:
     def store_indicator_cache(self, signal_type: signal_base.SignalType) -> None:
         if not self.state_dir.exists():
             self.state_dir.mkdir()
-        signal_type.store_indicators(self._signal_state_file(signal_type, self.INDICATOR_SUFFIX))
+        signal_type.store_indicators(
+            self._signal_state_file(signal_type, self.INDICATOR_SUFFIX)
+        )

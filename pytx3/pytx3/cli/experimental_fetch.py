@@ -11,6 +11,7 @@ from ..indicator import ThreatIndicator
 from ..content_type import meta
 from . import command_base
 
+
 class ExperimentalFetchCommand(command_base.Command):
     """
     WARNING: This is experimental, you probably want to use "Fetch" instead.
@@ -20,6 +21,7 @@ class ExperimentalFetchCommand(command_base.Command):
     Using the CollaborationConfig, identify ThreatPrivacyGroup that
     corresponds to a single collaboration and fetch related threat updates.
     """
+
     PROGRESS_PRINT_INTERVAL_SEC = 30
 
     @classmethod
@@ -64,15 +66,18 @@ class ExperimentalFetchCommand(command_base.Command):
         self.threat_types = threat_types
         self.additional_tags = additional_tags
         self.signal_types_by_name = {
-            name: signal()
-            for name, signal in meta.get_signal_types_by_name().items()
+            name: signal() for name, signal in meta.get_signal_types_by_name().items()
         }
         self.last_update_printed = 0
         self.counts = collections.Counter()
 
     def execute(self, dataset: Dataset) -> None:
-        #TODO: [Potential] Force full fetch if it has been 90 days since the last fetch.
-        self.start_time = dataset.get_indicator_checkpoint() if self.start_time is None else self.start_time
+        # TODO: [Potential] Force full fetch if it has been 90 days since the last fetch.
+        self.start_time = (
+            dataset.get_indicator_checkpoint()
+            if self.start_time is None
+            else self.start_time
+        )
         self.stop_time = int(time.time()) if self.stop_time is None else self.stop_time
         dataset.load_indicator_cache(self.signal_types_by_name.values())
         more_to_fetch = True
@@ -88,10 +93,10 @@ class ExperimentalFetchCommand(command_base.Command):
                 additional_tags=self.additional_tags,
                 next_page=next_page,
             )
-            if 'data' in result:
-                self._process_indicators(result['data'])
-            more_to_fetch = 'paging' in result and 'next' in result['paging']
-            next_page = result['paging']['next'] if more_to_fetch else None
+            if "data" in result:
+                self._process_indicators(result["data"])
+            more_to_fetch = "paging" in result and "next" in result["paging"]
+            next_page = result["paging"]["next"] if more_to_fetch else None
 
         for signal_name, signal_type in self.signal_types_by_name.items():
             if signal_name not in self.counts:
@@ -108,16 +113,16 @@ class ExperimentalFetchCommand(command_base.Command):
         """Process indicators"""
         for ti_json in indicators:
             ti = ThreatIndicator(
-                int(ti_json.get('id')),
-                ti_json.get('indicator'),
-                ti_json.get('type'),
-                int(ti_json.get('creation_time')),
-                int(ti_json.get('last_updated')),
-                ti_json.get('status'),
-                ti_json.get('is_expired'),
-                ti_json.get('tags'),
-                [int(app) for app in ti_json.get('applications_with_opinions')],
-                int(ti_json.get('expire_time')) if 'expire_time' in ti_json else None
+                int(ti_json.get("id")),
+                ti_json.get("indicator"),
+                ti_json.get("type"),
+                int(ti_json.get("creation_time")),
+                int(ti_json.get("last_updated")),
+                ti_json.get("status"),
+                ti_json.get("is_expired"),
+                ti_json.get("tags"),
+                [int(app) for app in ti_json.get("applications_with_opinions")],
+                int(ti_json.get("expire_time")) if "expire_time" in ti_json else None,
             )
 
             match = False

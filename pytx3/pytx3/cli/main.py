@@ -27,7 +27,12 @@ from ..dataset import Dataset
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
-    return [fetch.FetchCommand, experimental_fetch.ExperimentalFetchCommand, match.MatchCommand, label.LabelCommand]
+    return [
+        fetch.FetchCommand,
+        experimental_fetch.ExperimentalFetchCommand,
+        match.MatchCommand,
+        label.LabelCommand,
+    ]
 
 
 def get_argparse() -> argparse.ArgumentParser:

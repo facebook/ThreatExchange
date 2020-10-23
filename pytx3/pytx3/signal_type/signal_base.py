@@ -14,6 +14,7 @@ from .. import common
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from ..indicator import ThreatIndicator
 
+
 class SignalMatch(t.NamedTuple):
     # TODO - Labels probably don't belong here, because we just duplicate storage
     #        better to have descriptor lookup with the full labels
