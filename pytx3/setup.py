@@ -15,6 +15,12 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 with open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
     description = f.read()
 
+extras_require = {}
+
+extras_require["test"] = ["pytest"]
+extras_require["lint"] = ["black"]
+extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
+
 setup(
     name="pytx3",
     version="0.0.8",
@@ -36,5 +42,6 @@ setup(
     install_requires=[
         "python-Levenshtein",
     ],
+    extras_require=extras_require,
     entry_points={"console_scripts": ["pytx3 = pytx3.cli.main:main"]},
 )
