@@ -36,5 +36,6 @@ setup(
     install_requires=[
         "python-Levenshtein",
     ],
+    extras_require={"faiss": ["faiss-cpu>=1.6.3", "numpy"]},
     entry_points={"console_scripts": ["pytx3 = pytx3.cli.main:main"]},
 )
