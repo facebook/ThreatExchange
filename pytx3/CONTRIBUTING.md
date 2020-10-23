@@ -21,6 +21,18 @@ messages and update documentation accordingly (see the next section).
 
 [wf]: https://github.com/erlang/otp/wiki/Writing-good-commit-messages
 
+### Code Style
+pytx3 uses [black](https://pypi.org/project/black/) for consistent formatting across
+the projects python source files. After installing black locally, you can automatically
+format all the pytx3 files by running the following command from the repository root.
+
+```shell
+black ./pytx3/
+```
+
+Additionally, your IDE may have support for automatically re-formatting your source files
+using black through your IDE settings.
+
 ### Running Tests
 pytx3 is a bit short on tests, but you could help fix that.
 To run the tests `make test`
