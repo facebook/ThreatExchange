@@ -5,7 +5,10 @@ package:
 	python3 ./setup.py sdist bdist_wheel
 
 local_install:
-	python3 -m pip install -e .
+	python3 -m pip install -e .[all]
+
+test:
+	python3 -m pytest
 
 push:
 	python3 -m twine upload --repository testpypi dist/*
@@ -17,4 +20,4 @@ clean:
 	find . -name '__pycache__' -delete
 
 
-.PHONY: all clean package local_install push clean
+.PHONY: all clean package local_install test push clean
