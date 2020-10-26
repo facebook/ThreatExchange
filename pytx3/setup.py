@@ -15,9 +15,10 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 with open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
     description = f.read()
 
-extras_require = {}
+extras_require = {"faiss": ["faiss-cpu>=1.6.3", "numpy"]}
 
-extras_require["test"] = ["pytest"]
+all_extras = set(sum(extras_require.values(), []))
+extras_require["test"] = sorted({"pytest"} | all_extras)
 extras_require["lint"] = ["black"]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
