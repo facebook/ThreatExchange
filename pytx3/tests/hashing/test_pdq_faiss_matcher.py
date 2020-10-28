@@ -23,6 +23,9 @@ class MixinTests:
             for (r, e) in zip(result, expected):
                 self.assertCountEqual(r, e)
 
+        def test_hash_at(self):
+            assert test_hashes[2] == self.index.hash_at(2)
+
         def test_search_index_for_exact_matches(self):
             query = test_hashes[:1]
             result = self.index.search(query, 0)
@@ -77,9 +80,6 @@ class TestPDQFlatHashIndex(MixinTests.PDQHashIndexSearchCommonTests, unittest.Te
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
 
-        assert self.index.dataset_hashes is not None
-        assert self.index.dataset_hashes == hashes_as_bytes
-
 
 class TestPDQMultiHashIndex(
     MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase
@@ -93,9 +93,6 @@ class TestPDQMultiHashIndex(
 
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
-
-        assert self.index.dataset_hashes is not None
-        assert self.index.dataset_hashes == hashes_as_bytes
 
 
 if __name__ == "__main__":
