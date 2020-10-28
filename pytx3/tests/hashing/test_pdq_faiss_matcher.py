@@ -1,6 +1,5 @@
 import unittest
 import binascii
-import faiss
 
 from pytx3.hashing.pdq_faiss_matcher import PDQFlatHashIndex, PDQMultiHashIndex
 
