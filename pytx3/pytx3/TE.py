@@ -193,18 +193,16 @@ class Net:
                 + self.APP_TOKEN
                 + "&fields=id,indicator,type,creation_time,last_updated,is_expired,expire_time,tags,status,applications_with_opinions"
             )
-            for arg in kwargs:
-                if kwargs.get(arg) is not None:
+            for arg, value in kwargs.items():
+                if value is not None:
                     if arg == "additional_tags":
-                        url = (
-                            url
-                            + "&additional_tags="
-                            + ",".join([str(app) for app in kwargs[arg]])
+                        url += "&additional_tags=" + ",".join(
+                            [str(app) for app in value]
                         )
                     elif arg == "threat_type":
-                        url = url + "&threat_types=" + ",".join(kwargs[arg])
+                        url += "&threat_types=" + ",".join(value)
                     else:
-                        url = url + "&" + arg + "=" + str(kwargs[arg])
+                        url += "&" + arg + "=" + str(value)
         return self.getJSONFromURL(url)
 
     # ----------------------------------------------------------------
