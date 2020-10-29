@@ -1,9 +1,11 @@
-name: "Pull Request Labeler"
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+name: "PR Labels"
 on:
   - pull_request_target
 
 jobs:
-  triage:
+  apply-labels:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/labeler@main
