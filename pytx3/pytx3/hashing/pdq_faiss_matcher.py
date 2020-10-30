@@ -13,12 +13,17 @@ PDQ_HASH_TYPE = t.Union[str, bytes]
 
 class PDQHashIndex(ABC):
     @abstractmethod
-    def __init__(
-        self, faiss_index: faiss.IndexBinary, dataset_hashes: t.Sequence[bytes]
-    ) -> None:
+    def __init__(self, faiss_index: faiss.IndexBinary) -> None:
         self.faiss_index = faiss_index
-        self.dataset_hashes = dataset_hashes
         super().__init__()
+
+    @abstractmethod
+    def hash_at(self, idx: int):
+        """
+        Returns the hash located at the given index. The index order is determined by the initial order of hashes used to
+        create this index.
+        """
+        pass
 
     def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int):
         """
@@ -50,10 +55,7 @@ class PDQHashIndex(ABC):
         qs = numpy.array(query_vectors)
         limits, _, I = self.faiss_index.range_search(qs, threshhold + 1)
         return [
-            [
-                binascii.hexlify(self.dataset_hashes[idx]).decode()
-                for idx in I[limits[i] : limits[i + 1]]
-            ]
+            [self.hash_at(idx.item()) for idx in I[limits[i] : limits[i + 1]]]
             for i in range(len(query_vectors))
         ]
 
@@ -66,10 +68,8 @@ class PDQFlatHashIndex(PDQHashIndex):
     performant when using larger thresholds for PDQ similarity.
     """
 
-    def __init__(
-        self, faiss_index: faiss.IndexBinaryFlat, dataset_hashes: t.Sequence[bytes]
-    ):
-        super().__init__(faiss_index, dataset_hashes)
+    def __init__(self, faiss_index: faiss.IndexBinaryFlat):
+        super().__init__(faiss_index)
 
     @staticmethod
     def create(hashes: t.Iterable[PDQ_HASH_TYPE]) -> "PDQFlatHashIndex":
@@ -82,7 +82,11 @@ class PDQFlatHashIndex(PDQHashIndex):
         )
         index = faiss.index_binary_factory(BITS_IN_PDQ, "BFlat")
         index.add(numpy.array(vectors))
-        return PDQFlatHashIndex(index, hash_bytes)
+        return PDQFlatHashIndex(index)
+
+    def hash_at(self, idx: int):
+        vector = self.faiss_index.reconstruct(idx)
+        return binascii.hexlify(vector.tobytes()).decode()
 
 
 class PDQMultiHashIndex(PDQHashIndex):
@@ -93,10 +97,8 @@ class PDQMultiHashIndex(PDQHashIndex):
     IndexBinaryMultiHash binary index.
     """
 
-    def __init__(
-        self, faiss_index: faiss.IndexBinaryMultiHash, dataset_hashes: t.Sequence[bytes]
-    ):
-        super().__init__(faiss_index, dataset_hashes)
+    def __init__(self, faiss_index: faiss.IndexBinaryMultiHash):
+        super().__init__(faiss_index)
 
     @staticmethod
     def create(
@@ -124,8 +126,12 @@ class PDQMultiHashIndex(PDQHashIndex):
         bits_per_hashmap = BITS_IN_PDQ // nhash
         index = faiss.IndexBinaryMultiHash(BITS_IN_PDQ, nhash, bits_per_hashmap)
         index.add(numpy.array(vectors))
-        return PDQMultiHashIndex(index, hash_bytes)
+        return PDQMultiHashIndex(index)
 
     def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int):
         self.faiss_index.nflip = threshhold // self.faiss_index.nhash
         return super().search(queries, threshhold)
+
+    def hash_at(self, idx: int):
+        vector = self.faiss_index.storage.reconstruct(idx)
+        return binascii.hexlify(vector.tobytes()).decode()
