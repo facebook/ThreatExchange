@@ -59,6 +59,12 @@ class PDQHashIndex(ABC):
             for i in range(len(query_vectors))
         ]
 
+    def __getstate__(self):
+        return faiss.serialize_index_binary(self.faiss_index)
+
+    def __setstate__(self, data):
+        self.faiss_index = faiss.deserialize_index_binary(data)
+
 
 class PDQFlatHashIndex(PDQHashIndex):
     """

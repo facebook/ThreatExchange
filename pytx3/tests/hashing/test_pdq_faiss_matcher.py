@@ -2,6 +2,7 @@
 
 import unittest
 import binascii
+import pickle
 
 from pytx3.hashing.pdq_faiss_matcher import PDQFlatHashIndex, PDQMultiHashIndex
 
@@ -83,11 +84,43 @@ class TestPDQFlatHashIndex(MixinTests.PDQHashIndexSearchCommonTests, unittest.Te
         assert self.index.faiss_index.ntotal == len(test_hashes)
 
 
+class TestReserializedPDQFlatHashIndex(
+    MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase
+):
+    def setUp(self):
+        original_index = PDQFlatHashIndex.create(test_hashes)
+        index_copy = pickle.loads(pickle.dumps(original_index))
+        self.index = index_copy
+
+    def test_create_faiss_index_from_hashes(self):
+        assert type(self.index) is PDQFlatHashIndex
+        hashes_as_bytes = [binascii.unhexlify(h) for h in test_hashes]
+
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == len(test_hashes)
+
+
 class TestPDQMultiHashIndex(
     MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase
 ):
     def setUp(self):
         self.index = PDQMultiHashIndex.create(test_hashes)
+
+    def test_create_faiss_index_from_hashes(self):
+        assert type(self.index) is PDQMultiHashIndex
+        hashes_as_bytes = [binascii.unhexlify(h) for h in test_hashes]
+
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == len(test_hashes)
+
+
+class TestReserializedPDQMultiHashIndex(
+    MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase
+):
+    def setUp(self):
+        original_index = PDQMultiHashIndex.create(test_hashes)
+        index_copy = pickle.loads(pickle.dumps(original_index))
+        self.index = index_copy
 
     def test_create_faiss_index_from_hashes(self):
         assert type(self.index) is PDQMultiHashIndex
