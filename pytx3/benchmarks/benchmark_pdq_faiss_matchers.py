@@ -4,7 +4,7 @@ import argparse
 import binascii
 import os
 import time
-import warnings
+import pickle
 
 import numpy
 import faiss
@@ -116,10 +116,12 @@ dataset = [generate_random_hash() for _ in range(args.dataset_size)]
 
 start_build_flat_hash_index = time.time()
 flat_index = PDQFlatHashIndex.create(dataset)
+serialized_flat_index = pickle.dumps(flat_index)
 end_build_flat_hash_index = time.time()
 
 start_build_multi_hash_index = time.time()
 multi_index = PDQMultiHashIndex.create(dataset)
+serialized_multi_index = pickle.dumps(multi_index)
 end_build_multi_hash_index = time.time()
 
 print("Building Stats:")
@@ -129,8 +131,14 @@ print(
     end_build_flat_hash_index - start_build_flat_hash_index,
 )
 print(
+    f"\tPDQFlatHashIndex: approximate size: {len(serialized_flat_index) // 1024:,d}KB"
+)
+print(
     "\tPDQMultiHashIndex: time to build (s): ",
     end_build_multi_hash_index - start_build_multi_hash_index,
+)
+print(
+    f"\tPDQMultiHashIndex: approximate size: {len(serialized_multi_index) // 1024:,d}KB"
 )
 print("")
 
