@@ -12,6 +12,7 @@ import typing as t
 
 from .. import common
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
+from ..indicator import ThreatIndicator
 
 
 class SignalMatch(t.NamedTuple):
@@ -52,11 +53,34 @@ class SignalType:
         """
         return False
 
+    def process_indicator(self, indicator: t.Dict[int, t.Any]) -> bool:
+        """
+        Add ThreatIndicator to the state of this type, if it is for this type.
+
+        Return true if the indicator was used.
+        """
+        return False
+
     def load(self, path: pathlib.Path) -> None:
         raise NotImplementedError
 
+    def load_indicators(self, path: pathlib.Path) -> None:
+        if not path.exists():
+            return
+        csv.field_size_limit(path.stat().st_size)  # dodge field size problems
+        with path.open("r", newline="") as f:
+            for row in csv.reader(f):
+                ti = ThreatIndicator.from_row(row)
+                self.indicator_state[ti.id] = ti
+
     def store(self, path: pathlib.Path) -> None:
         raise NotImplementedError
+
+    def store_indicators(self, path: pathlib.Path) -> None:
+        with path.open("w+", newline="") as f:
+            writer = csv.writer(f)
+            for _, i in self.indicator_state.items():
+                writer.writerow(i.as_row())
 
 
 class HashMatcher:
@@ -103,6 +127,7 @@ class SimpleSignalType(SignalType, HashMatcher):
 
     def __init__(self) -> None:
         self.state: t.Dict[str, SimpleDescriptorRollup] = {}
+        self.indicator_state: t.Dict[int, ThreatIndicator] = {}
 
     def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
         """
@@ -122,6 +147,22 @@ class SimpleSignalType(SignalType, HashMatcher):
             ] = SimpleDescriptorRollup.from_descriptor(descriptor)
         else:
             old_val.merge(descriptor)
+        return True
+
+    def process_indicator(self, indicator: ThreatIndicator) -> bool:
+        """
+        Add ThreatIndicator to the state of this type, if it is for this type
+
+        Return true if the indicator was used.
+        """
+        if (
+            indicator.threat_type != self.INDICATOR_TYPE
+            or self.TYPE_TAG not in indicator.tags
+        ):
+            return False
+
+        self.indicator_state[indicator.id] = indicator
+
         return True
 
     def match_hash(self, signal_str: str) -> t.List[SignalMatch]:
