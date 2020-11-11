@@ -16,7 +16,7 @@ test_hashes = [
 
 
 class MixinTests:
-    class PDQHashIndexSearchCommonTests(unittest.TestCase):
+    class PDQHashIndexCommonTests(unittest.TestCase):
         index = None
 
         def assertEqualPDQHashSearchResults(self, result, expected):
@@ -25,9 +25,6 @@ class MixinTests:
             )
             for (r, e) in zip(result, expected):
                 self.assertCountEqual(r, e)
-
-        def test_hash_at(self):
-            assert test_hashes[2] == self.index.hash_at(2)
 
         def test_search_index_for_exact_matches(self):
             query = test_hashes[:1]
@@ -71,8 +68,26 @@ class MixinTests:
             result = self.index.search(query, 0)
             self.assertEqualPDQHashSearchResults(result, [[], [], [test_hashes[-1]]])
 
+        def test_supports_pickling(self):
+            pickled_data = pickle.dumps(self.index)
+            assert (
+                pickled_data != None
+            ), "index does not support pickling to a data stream"
 
-class TestPDQFlatHashIndex(MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase):
+            reconstructed_index = pickle.loads(pickled_data)
+            assert (
+                reconstructed_index != None
+            ), "index does not support unpickling from data stream"
+            assert (
+                reconstructed_index.faiss_index != self.index.faiss_index
+            ), "unpickling should create it's own faiss index in memory"
+
+            query = [test_hashes[0]]
+            result = reconstructed_index.search(query, 0)
+            self.assertEqualPDQHashSearchResults(result, [[test_hashes[0]]])
+
+
+class TestPDQFlatHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase):
     def setUp(self):
         self.index = PDQFlatHashIndex.create(test_hashes)
 
@@ -83,26 +98,11 @@ class TestPDQFlatHashIndex(MixinTests.PDQHashIndexSearchCommonTests, unittest.Te
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
 
-
-class TestReserializedPDQFlatHashIndex(
-    MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase
-):
-    def setUp(self):
-        original_index = PDQFlatHashIndex.create(test_hashes)
-        index_copy = pickle.loads(pickle.dumps(original_index))
-        self.index = index_copy
-
-    def test_create_faiss_index_from_hashes(self):
-        assert type(self.index) is PDQFlatHashIndex
-        hashes_as_bytes = [binascii.unhexlify(h) for h in test_hashes]
-
-        assert self.index.faiss_index is not None
-        assert self.index.faiss_index.ntotal == len(test_hashes)
+    def test_hash_at(self):
+        assert test_hashes[2] == self.index.hash_at(2)
 
 
-class TestPDQMultiHashIndex(
-    MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase
-):
+class TestPDQMultiHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase):
     def setUp(self):
         self.index = PDQMultiHashIndex.create(test_hashes)
 
@@ -113,21 +113,8 @@ class TestPDQMultiHashIndex(
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
 
-
-class TestReserializedPDQMultiHashIndex(
-    MixinTests.PDQHashIndexSearchCommonTests, unittest.TestCase
-):
-    def setUp(self):
-        original_index = PDQMultiHashIndex.create(test_hashes)
-        index_copy = pickle.loads(pickle.dumps(original_index))
-        self.index = index_copy
-
-    def test_create_faiss_index_from_hashes(self):
-        assert type(self.index) is PDQMultiHashIndex
-        hashes_as_bytes = [binascii.unhexlify(h) for h in test_hashes]
-
-        assert self.index.faiss_index is not None
-        assert self.index.faiss_index.ntotal == len(test_hashes)
+    def test_hash_at(self):
+        assert test_hashes[2] == self.index.hash_at(2)
 
 
 if __name__ == "__main__":
