@@ -1,0 +1,26 @@
+name: pdq CI - cpp
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "pdq/cpp/**"
+      - ".github/workflows/pdq-ci-cpp.yml"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "pdq/cpp/**"
+      - ".github/workflows/pdq-ci-cpp.yml"
+
+defaults:
+  run:
+    working-directory: pdq/cpp
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: make
+        run: make
