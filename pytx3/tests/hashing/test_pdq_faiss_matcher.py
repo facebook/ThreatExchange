@@ -3,6 +3,7 @@
 import unittest
 import binascii
 import pickle
+import numpy
 
 from pytx3.hashing.pdq_faiss_matcher import PDQFlatHashIndex, PDQMultiHashIndex
 
@@ -13,6 +14,8 @@ test_hashes = [
     "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0",
     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 ]
+
+MAX_UNSIGNED_INT64 = numpy.iinfo(numpy.uint64).max
 
 
 class MixinTests:
@@ -102,6 +105,26 @@ class TestPDQFlatHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase
         assert test_hashes[2] == self.index.hash_at(2)
 
 
+class TestPDQFlatHashIndexWithCustomIds(
+    MixinTests.PDQHashIndexCommonTests, unittest.TestCase
+):
+
+    custom_ids = [MAX_UNSIGNED_INT64 - i for i in range(len(test_hashes))]
+
+    def setUp(self):
+        self.index = PDQFlatHashIndex.create(test_hashes, self.custom_ids)
+
+    def test_create_faiss_index_from_hashes(self):
+        assert type(self.index) is PDQFlatHashIndex
+        hashes_as_bytes = [binascii.unhexlify(h) for h in test_hashes]
+
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == len(test_hashes)
+
+    def test_hash_at(self):
+        assert test_hashes[2] == self.index.hash_at(self.custom_ids[2])
+
+
 class TestPDQMultiHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase):
     def setUp(self):
         self.index = PDQMultiHashIndex.create(test_hashes)
@@ -115,6 +138,25 @@ class TestPDQMultiHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCas
 
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(2)
+
+
+class TestPDQMultiHashIndexWithCustomIds(
+    MixinTests.PDQHashIndexCommonTests, unittest.TestCase
+):
+    custom_ids = [MAX_UNSIGNED_INT64 - i for i in range(len(test_hashes))]
+
+    def setUp(self):
+        self.index = PDQMultiHashIndex.create(test_hashes, custom_ids=self.custom_ids)
+
+    def test_create_faiss_index_from_hashes(self):
+        assert type(self.index) is PDQMultiHashIndex
+        hashes_as_bytes = [binascii.unhexlify(h) for h in test_hashes]
+
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == len(test_hashes)
+
+    def test_hash_at(self):
+        assert test_hashes[2] == self.index.hash_at(self.custom_ids[2])
 
 
 if __name__ == "__main__":
