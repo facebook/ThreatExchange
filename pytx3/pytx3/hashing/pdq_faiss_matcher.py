@@ -11,6 +11,14 @@ BITS_IN_PDQ = 256
 PDQ_HASH_TYPE = t.Union[str, bytes]
 
 
+def uint64_to_int64(as_uint64: int):
+    """
+    Returns the int64 number represented by the same byte representation as the the provided integer if it was understood to
+    be a uint64 value.
+    """
+    return numpy.uint64(as_uint64).astype(numpy.int64).item()
+
+
 class PDQHashIndex(ABC):
     @abstractmethod
     def __init__(self, faiss_index: faiss.IndexBinary) -> None:
@@ -60,7 +68,8 @@ class PDQHashIndex(ABC):
         ]
 
     def __getstate__(self):
-        return faiss.serialize_index_binary(self.faiss_index)
+        data = faiss.serialize_index_binary(self.faiss_index)
+        return data
 
     def __setstate__(self, data):
         self.faiss_index = faiss.deserialize_index_binary(data)
@@ -78,20 +87,43 @@ class PDQFlatHashIndex(PDQHashIndex):
         super().__init__(faiss_index)
 
     @staticmethod
-    def create(hashes: t.Iterable[PDQ_HASH_TYPE]) -> "PDQFlatHashIndex":
+    def create(
+        hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int] = None
+    ) -> "PDQFlatHashIndex":
         """
         Creates a PDQFlatHashIndex for use searching against the provided hashes.
+
+        Parameters
+        ----------
+        hashes: sequence of PDQ Hashes
+            The PDQ hashes to create the index with
+        custom_ids: sequence of custom ids for the PDQ Hashes (optional)
+            Optional sequence of custom id values to use for the PDQ hashes for any
+            method relating to indexes (e.g., hash_at). If provided, the nth item in
+            custom_ids will be used as the id for the nth hash in hashes. If not provided
+            then the ids for the hashes will be assumed to be their respective index
+            in hashes (i.e., the nth hash would have id n, starting from 0).
+
+        Returns
+        -------
+        a PDQFlatHashIndex of these hashes
         """
         hash_bytes = [binascii.unhexlify(hash) for hash in hashes]
         vectors = list(
             map(lambda h: numpy.frombuffer(h, dtype=numpy.uint8), hash_bytes)
         )
         index = faiss.index_binary_factory(BITS_IN_PDQ, "BFlat")
-        index.add(numpy.array(vectors))
+        if custom_ids != None:
+            index = faiss.IndexBinaryIDMap2(index)
+            i64_ids = list(map(uint64_to_int64, custom_ids))
+            index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
+        else:
+            index.add(numpy.array(vectors))
         return PDQFlatHashIndex(index)
 
     def hash_at(self, idx: int):
-        vector = self.faiss_index.reconstruct(idx)
+        i64_id = uint64_to_int64(idx)
+        vector = self.faiss_index.reconstruct(i64_id)
         return binascii.hexlify(vector.tobytes()).decode()
 
 
@@ -105,11 +137,14 @@ class PDQMultiHashIndex(PDQHashIndex):
 
     def __init__(self, faiss_index: faiss.IndexBinaryMultiHash):
         super().__init__(faiss_index)
+        self.__construct_index_rev_map()
 
     @staticmethod
     def create(
-        hashes: t.Iterable[PDQ_HASH_TYPE], nhash: int = 16
-    ) -> "PDQFlatHashIndex":
+        hashes: t.Iterable[PDQ_HASH_TYPE],
+        nhash: int = 16,
+        custom_ids: t.Iterable[int] = None,
+    ) -> "PDQMultiHashIndex":
         """
         Creates a PDQMultiHashIndex for use searching against the provided hashes.
 
@@ -120,10 +155,16 @@ class PDQMultiHashIndex(PDQHashIndex):
         nhash: int (optional)
             Optional number of hashmaps for the underlaying faiss index to use for
             the Multi-Index Hashing lookups.
+        custom_ids: sequence of custom ids for the PDQ Hashes (optional)
+            Optional sequence of custom id values to use for the PDQ hashes for any
+            method relating to indexes (e.g., hash_at). If provided, the nth item in
+            custom_ids will be used as the id for the nth hash in hashes. If not provided
+            then the ids for the hashes will be assumed to be their respective index
+            in hashes (i.e., the nth hash would have id n, starting from 0).
 
         Returns
         -------
-        a PDQFlatHashIndex of these hashes
+        a PDQMultiHashIndex of these hashes
         """
         hash_bytes = [binascii.unhexlify(hash) for hash in hashes]
         vectors = list(
@@ -131,13 +172,52 @@ class PDQMultiHashIndex(PDQHashIndex):
         )
         bits_per_hashmap = BITS_IN_PDQ // nhash
         index = faiss.IndexBinaryMultiHash(BITS_IN_PDQ, nhash, bits_per_hashmap)
-        index.add(numpy.array(vectors))
+        if custom_ids != None:
+            index = faiss.IndexBinaryIDMap2(index)
+            i64_ids = list(map(uint64_to_int64, custom_ids))
+            index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
+        else:
+            index.add(numpy.array(vectors))
         return PDQMultiHashIndex(index)
 
+    @property
+    def mih_index(self):
+        """
+        Convenience accessor for the underlaying faiss.IndexBinaryMultiHash index regardless of if it is wrapped in an ID
+        map or not.
+        """
+        if hasattr(self.faiss_index, "index"):
+            return faiss.downcast_IndexBinary(self.faiss_index.index)
+        return self.faiss_index
+
     def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int):
-        self.faiss_index.nflip = threshhold // self.faiss_index.nhash
+        self.mih_index.nflip = threshhold // self.mih_index.nhash
         return super().search(queries, threshhold)
 
     def hash_at(self, idx: int):
-        vector = self.faiss_index.storage.reconstruct(idx)
+        i64_id = uint64_to_int64(idx)
+        if self.index_rev_map:
+            index_id = self.index_rev_map[i64_id]
+        else:
+            index_id = i64_id
+        vector = self.mih_index.storage.reconstruct(index_id)
         return binascii.hexlify(vector.tobytes()).decode()
+
+    def __construct_index_rev_map(self):
+        """
+        Workaround method for creating an in-memory lookup mapping custom ids to internal index id representations. The
+        rev_map property provided in faiss.IndexBinaryIDMap2 has no accessible `at` or other index lookup methods in swig
+        and the implementation of `reconstruct` in faiss.IndexBinaryIDMap2 requires the underlaying index to directly
+        support `reconstruct`, which faiss.IndexBinaryMultiHash does not. Thus this workaround is needed until either the
+        values in the faiss.IndexBinaryIDMap2 rev_map can be accessed directly or faiss.IndexBinaryMultiHash is directly
+        supports `reconstruct` calls.
+        """
+        if hasattr(self.faiss_index, "id_map"):
+            id_map = self.faiss_index.id_map
+            self.index_rev_map = {id_map.at(i): i for i in range(id_map.size())}
+        else:
+            self.index_rev_map = None
+
+    def __setstate__(self, data):
+        super().__setstate__(data)
+        self.__construct_index_rev_map()
