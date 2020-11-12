@@ -2,3 +2,6 @@
 
 pytx3:
   - pytx3/**/*
+
+pdq:
+  - pdq/**/*
