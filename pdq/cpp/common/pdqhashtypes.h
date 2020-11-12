@@ -157,7 +157,7 @@ struct Hash256 {
   Hash256 fuzz(int numErrorBits);
 
   void dumpBits() {
-    for (int i = 0; i < HASH256_NUM_WORDS; i++) {
+    for (int i = HASH256_NUM_WORDS - 1; i >= 0; i--) {
       Hash16 word = this->w[i];
       for (int j = 15; j >= 0; j--) {
         if (word & (1 << j)) {
@@ -172,12 +172,12 @@ struct Hash256 {
   }
 
   void dumpWords() {
-    for (int i = 0; i < HASH256_NUM_WORDS; i++) {
+    for (int i = HASH256_NUM_WORDS - 1; i >= 0; i--) {
       Hash16 word = this->w[i];
+      printf("%04hx", word);
       if (i > 0) {
         printf(" ");
       }
-      printf("%04hx", word);
     }
     printf("\n");
   }
