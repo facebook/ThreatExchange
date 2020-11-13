@@ -9,7 +9,7 @@ import pickle
 import numpy
 import faiss
 
-from pytx3.hashing.pdq_faiss_matcher import (
+from pytx3.hashing import (
     PDQFlatHashIndex,
     PDQMultiHashIndex,
     BITS_IN_PDQ,
