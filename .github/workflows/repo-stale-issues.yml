@@ -12,13 +12,15 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-before-stale: 90
           days-before-close: 14
-          stale-issue-message: |
+          exempt-issue-labels: do-not-reap
+          stale-issue-message: >
             This issue is being marked as stale because it has no recent activity. It will be closed automatically in 14 days
             unless it becomes active before then. To prevent closing, please comment on the issue before that time. If the 
             issue is no longer relevant, please feel free to close it prior to that time.
 
             Cleaning up stale issues helps redirect focus to the issues top of mind of the community. Thank you for your help
             with this.
-          close-issue-message: |
+          close-issue-message: >
             This issue has been closed due to no recent activity. If you need this issue reopened, please let us know.
+            
             Thanks!
