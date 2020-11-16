@@ -19,6 +19,14 @@ def uint64_to_int64(as_uint64: int):
     return numpy.uint64(as_uint64).astype(numpy.int64).item()
 
 
+def int64_to_uint64(as_int64: int):
+    """
+    Returns the uint64 number represented by the same byte representation as the the provided integer if it was understood to
+    be a int64 value.
+    """
+    return numpy.int64(as_int64).astype(numpy.uint64).item()
+
+
 class PDQHashIndex(ABC):
     @abstractmethod
     def __init__(self, faiss_index: faiss.IndexBinary) -> None:
@@ -33,7 +41,12 @@ class PDQHashIndex(ABC):
         """
         pass
 
-    def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int):
+    def search(
+        self,
+        queries: t.Sequence[PDQ_HASH_TYPE],
+        threshhold: int,
+        return_as_ids: bool = False,
+    ):
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away from the query hashes by
         hamming distance.
@@ -45,15 +58,20 @@ class PDQHashIndex(ABC):
         threshold: int
             Threshold value to use for this search. The hamming distance between the result hashes and the related query will
             be no more than the threshold value. i.e., hamming_dist(q_i,r_i_j) <= threshold.
+        return_as_ids: boolean
+            whether the return values should be the index ids for the matching items. Defaults to false.
 
         Returns
         -------
-        sequence of PDQ matches per query
-            For each query provided in queries, the returned sequence will contain a sequence of PDQ hashes within the index
-            that were within threshold hamming distance of that query. These inner sequences may be empty in the case of no
-            hashes within the index. The same PDQ hash may also appear in more than one inner sequence if it matches multiple
-            query hashes. For example the hash "000000000000000000000000000000000000000000000000000000000000FFFF" would match
-            both "00000000000000000000000000000000000000000000000000000000FFFFFFFF" and
+        sequence of matches per query
+            For each query provided in queries, the returned sequence will contain a sequence of matches within the index
+            that were within threshold hamming distance of that query. These matches will either be a hexstring of the hash
+            by default, or the index ids of the matches if `return_as_ids` is True. The inner sequences may be empty in the
+            case of no hashes within the index. The same PDQ hash may also appear in more than one inner sequence if it
+            matches multiple query hashes.
+
+            For example the hash "000000000000000000000000000000000000000000000000000000000000FFFF" would match both
+            "00000000000000000000000000000000000000000000000000000000FFFFFFFF" and
             "0000000000000000000000000000000000000000000000000000000000000000" for a threshold of 16. Thus it would appear in
             the entry for both the hashes if they were both in the queries list.
         """
@@ -62,8 +80,17 @@ class PDQHashIndex(ABC):
         ]
         qs = numpy.array(query_vectors)
         limits, _, I = self.faiss_index.range_search(qs, threshhold + 1)
+
+        if return_as_ids:
+            # for custom ids, we understood them initially as uint64 numbers and then coerced them internally to be signed
+            # int64s, so we need to reverse this before returning them back to the caller. For non custom ids, this will
+            # effectively return the same result
+            output_fn = int64_to_uint64
+        else:
+            output_fn = self.hash_at
+
         return [
-            [self.hash_at(idx.item()) for idx in I[limits[i] : limits[i + 1]]]
+            [output_fn(idx.item()) for idx in I[limits[i] : limits[i + 1]]]
             for i in range(len(query_vectors))
         ]
 
@@ -190,9 +217,9 @@ class PDQMultiHashIndex(PDQHashIndex):
             return faiss.downcast_IndexBinary(self.faiss_index.index)
         return self.faiss_index
 
-    def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int):
+    def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int, **kwargs):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
-        return super().search(queries, threshhold)
+        return super().search(queries, threshhold, **kwargs)
 
     def hash_at(self, idx: int):
         i64_id = uint64_to_int64(idx)

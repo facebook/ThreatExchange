@@ -104,6 +104,11 @@ class TestPDQFlatHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(2)
 
+    def test_search_index_return_ids(self):
+        query = test_hashes[:2]
+        results = self.index.search(query, 16, return_as_ids=True)
+        self.assertEqualPDQHashSearchResults(results, [[0, 1], [0, 1]])
+
 
 class TestPDQFlatHashIndexWithCustomIds(
     MixinTests.PDQHashIndexCommonTests, unittest.TestCase
@@ -124,6 +129,13 @@ class TestPDQFlatHashIndexWithCustomIds(
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(self.custom_ids[2])
 
+    def test_search_index_return_ids(self):
+        query = test_hashes[:2]
+        results = self.index.search(query, 16, return_as_ids=True)
+        self.assertEqualPDQHashSearchResults(
+            results, [self.custom_ids[:2], self.custom_ids[:2]]
+        )
+
 
 class TestPDQMultiHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase):
     def setUp(self):
@@ -138,6 +150,11 @@ class TestPDQMultiHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCas
 
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(2)
+
+    def test_search_index_return_ids(self):
+        query = test_hashes[:2]
+        results = self.index.search(query, 16, return_as_ids=True)
+        self.assertEqualPDQHashSearchResults(results, [[0, 1], [0, 1]])
 
 
 class TestPDQMultiHashIndexWithCustomIds(
@@ -157,6 +174,13 @@ class TestPDQMultiHashIndexWithCustomIds(
 
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(self.custom_ids[2])
+
+    def test_search_index_return_ids(self):
+        query = test_hashes[:2]
+        results = self.index.search(query, 16, return_as_ids=True)
+        self.assertEqualPDQHashSearchResults(
+            results, [self.custom_ids[:2], self.custom_ids[:2]]
+        )
 
 
 if __name__ == "__main__":
