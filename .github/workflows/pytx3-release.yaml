@@ -1,0 +1,35 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+name: Publish pytx3
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "pytx3/version.txt"
+
+defaults:
+  run:
+    working-directory: pytx3
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.6"
+      - name: Install packaging dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[package]"
+      - name: Package pytx3
+        run: |
+          python ./setup.py sdist bdist_wheel
+      - name: Publish distribution to Test PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.test_pypi_password }}
+          repository_url: https://test.pypi.org/legacy/
