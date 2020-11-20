@@ -15,16 +15,20 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 with open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
     description = f.read()
 
+with open(path.join(here, "version.txt"), encoding="utf-8") as f:
+    version = f.read().strip()
+
 extras_require = {"faiss": ["faiss-cpu>=1.6.3", "numpy"]}
 
 all_extras = set(sum(extras_require.values(), []))
 extras_require["test"] = sorted({"pytest"} | all_extras)
+extras_require["package"] = ["wheel"]
 extras_require["lint"] = ["black"]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 setup(
     name="pytx3",
-    version="0.0.8",
+    version=version,
     description="Python Library for Facebook ThreatExchange",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -39,7 +43,7 @@ setup(
     ],
     keywords="facebook threatexchange",
     url="https://www.github.com/facebook/ThreatExchange",
-    packages=find_packages(exclude=["tests"]),
+    packages=find_packages(exclude=["tests*"]),
     install_requires=[
         "python-Levenshtein",
     ],
