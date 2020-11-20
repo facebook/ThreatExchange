@@ -185,7 +185,9 @@ class MatchCommand(command_base.Command):
                     # If they owner of the dangling NON_MALICIOUS descriptor had
                     # used a reaction, it would have cleaned itself up, so lets
                     # just not show it.
-                    if labels == [ThreatDescriptor.DISPUTED]:
+                    # (This can be overridded in the collab config e.g.
+                    # for sample data we do want to show these descriptor.)
+                    if labels == [ThreatDescriptor.DISPUTED] and not dataset.config.show_safe_list:
                         continue
                     if self.hide_disputed and ThreatDescriptor.DISPUTED in labels:
                         continue
