@@ -28,7 +28,7 @@ class CollaborationConfig:
         labels: t.Dict[str, t.Any],
         privacy_groups: t.List[int],
         sample_tag: t.Optional[str] = None,
-        show_safe_list = False, # (safe_list == signals only listed as NON_MALICIOUS, e.g. sample data)
+        show_safe_list=False,  # (safe_list == signals only listed as NON_MALICIOUS, e.g. sample data)
     ):
         self.name = name
         self.privacy_groups = privacy_groups
@@ -77,5 +77,5 @@ class CollaborationConfig:
             labels={"media_priority_samples": {}},
             privacy_groups=[],
             sample_tag="media_priority_samples",
-            show_safe_list=True # Show sample data (lone NON_MALICIOUS descriptors)
+            show_safe_list=True,  # Show sample data (lone NON_MALICIOUS descriptors)
         )

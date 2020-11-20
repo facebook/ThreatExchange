@@ -187,7 +187,10 @@ class MatchCommand(command_base.Command):
                     # just not show it.
                     # (This can be overridded in the collab config e.g.
                     # for sample data we do want to show these descriptor.)
-                    if labels == [ThreatDescriptor.DISPUTED] and not dataset.config.show_safe_list:
+                    if (
+                        labels == [ThreatDescriptor.DISPUTED]
+                        and not dataset.config.show_safe_list
+                    ):
                         continue
                     if self.hide_disputed and ThreatDescriptor.DISPUTED in labels:
                         continue
