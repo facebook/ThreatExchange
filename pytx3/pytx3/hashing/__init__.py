@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import warnings
 
+from pytx3.hashing.pdq_utils import BITS_IN_PDQ
+
 try:
     from pytx3.hashing.pdq_faiss_matcher import (
         PDQHashIndex,
         PDQFlatHashIndex,
         PDQMultiHashIndex,
-        BITS_IN_PDQ,
     )
 except:
     warnings.warn(
