@@ -3,8 +3,8 @@
 pytx/build
 pytx/dist
 pytx/docs/_build
-pytx3/build/
-pytx3/dist/
+python-threatexchange/build/
+python-threatexchange/dist/
 *.egg-info/
 .DS_Store
 .tox/

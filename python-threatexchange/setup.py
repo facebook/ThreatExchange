@@ -27,7 +27,7 @@ extras_require["lint"] = ["black"]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 setup(
-    name="pytx3",
+    name="threatexchange",
     version=version,
     description="Python Library for Facebook ThreatExchange",
     long_description=long_description,
@@ -48,5 +48,5 @@ setup(
         "python-Levenshtein",
     ],
     extras_require=extras_require,
-    entry_points={"console_scripts": ["pytx3 = pytx3.cli.main:main"]},
+    entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},
 )

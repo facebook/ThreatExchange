@@ -23,10 +23,10 @@ class LabelCommand(command_base.Command):
 
     Examples:
       # Label text
-      $ pytx3 -c te.cfg label violating_label_from_config,other_label text "this is an example bad text"
+      $ threatexchange -c te.cfg label violating_label_from_config,other_label text "this is an example bad text"
 
       # Label descriptor
-      $ pytx3 -c te.cfg label false_positive descriptor 12345
+      $ threatexchange -c te.cfg label false_positive descriptor 12345
     """
 
     @classmethod

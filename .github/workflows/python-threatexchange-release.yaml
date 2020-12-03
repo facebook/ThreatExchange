@@ -1,17 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-name: Publish pytx3
+name: Publish threatexchange to pypi
 
 on:
   push:
     branches:
       - master
     paths:
-      - "pytx3/version.txt"
+      - "python-threatexchange/version.txt"
 
 defaults:
   run:
-    working-directory: pytx3
+    working-directory: python-threatexchange
 
 jobs:
   publish:
@@ -25,7 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[package]"
-      - name: Package pytx3
+      - name: Package threatexchange
         run: |
           python ./setup.py sdist bdist_wheel
       - name: Publish distribution to Test PyPI
@@ -33,4 +33,4 @@ jobs:
         with:
           password: ${{ secrets.test_pypi_password }}
           repository_url: https://test.pypi.org/legacy/
-          packages_dir: pytx3/dist
+          packages_dir: python-threatexchange/dist

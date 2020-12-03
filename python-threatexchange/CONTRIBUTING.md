@@ -1,6 +1,6 @@
 # Contributing
 
-If you would like to contribute to pytx3, you can do the following:
+If you would like to contribute to python-threatexchange, you can do the following:
 
 [Fork][fork] the repo and then [clone][clone] it locally:
 
@@ -22,29 +22,29 @@ messages and update documentation accordingly (see the next section).
 [wf]: https://github.com/erlang/otp/wiki/Writing-good-commit-messages
 
 ### Code Style
-pytx3 uses [black](https://pypi.org/project/black/) for consistent formatting across
+threatexchange uses [black](https://pypi.org/project/black/) for consistent formatting across
 the projects python source files. After installing black locally, you can automatically
-format all the pytx3 files by running the following command from the repository root.
+format all the python-threatexchange files by running the following command from the repository root.
 
 ```shell
-black ./pytx3/
+black ./python-threatexchange/
 ```
 
 Additionally, your IDE may have support for automatically re-formatting your source files
 using black through your IDE settings.
 
 ### Running Tests
-pytx3 is a bit short on tests, but you could help fix that.
+python-threatexchange is a bit short on tests, but you could help fix that.
 To run the tests `make test`
 
 ### Installing Locally
 A quick way to iterate on the script is to simply install it locally. The
 fastest way to do this is
 
-    cd ThreatExchange/pytx3
+    cd ThreatExchange/python-threatexchange
     make package
     make local_install
-    pytx3 --help
+    threatexchange --help
 
 ## Documenting Changes
 It is important to keep documentation up-to-date. Make sure to add and update
