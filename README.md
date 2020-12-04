@@ -10,7 +10,7 @@ The `api-reference-examples` folder contains example implementations in various 
 
 ## python-threatexchange
 
-An all-in-one python Library/CLI tool available on pypi under `threatexchange` which allows basic integration with ThreatExchange including matching on publicly available data.
+An all-in-one python Library/CLI tool available on pypi under `threatexchange` which allows basic integration with ThreatExchange including matching on ThreatExchange data.
 
 ## PDQ and TMK Hashing Technologies
 
