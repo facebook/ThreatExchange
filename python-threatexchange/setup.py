@@ -18,7 +18,13 @@ with open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
 with open(path.join(here, "version.txt"), encoding="utf-8") as f:
     version = f.read().strip()
 
-extras_require = {"faiss": ["faiss-cpu>=1.6.3", "numpy"]}
+extras_require = {
+    "faiss": ["faiss-cpu>=1.6.3", "numpy"],
+    "pdq_hasher": [
+        "pdqhash>=0.2.2",
+        "Pillow",
+    ],
+}
 
 all_extras = set(sum(extras_require.values(), []))
 extras_require["test"] = sorted({"pytest"} | all_extras)
