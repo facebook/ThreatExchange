@@ -62,3 +62,10 @@ a core developer get some eyes on the code and the feature to make sure
 there’s no general issues. They might require you to go back and make some more
 changes (simply edit your local branch and push to the branch associated with
 the PR; it will get updated automagically!) .
+
+## Releasing Changes
+Releases of the library are managed by a [GitHub action](../.github/workflows/python-threatexchange-release.yaml),
+triggered by changes to [version.txt](./version.txt). To create a new release to
+[PyPI](https://pypi.org/project/threatexchange/), update [version.txt](./version.txt)
+to the new release name in a PR. Once the PR is approved and merges, the CI process
+will publish the new version to PyPI, shortly after a test publish to Test PyPI.
