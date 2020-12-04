@@ -26,6 +26,10 @@ You can also explore the dataset using the hosted [ThreatExchange UI](https://de
 
 To request access to ThreatExchange, please submit an application via [https://developers.facebook.com/products/threat-exchange/](https://developers.facebook.com/products/threat-exchange/).
 
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING](https://github.com/facebook/ThreatExchange/blob/master/CONTRIBUTING.md) for details on how to get started, and our [Code of Conduct](https://github.com/facebook/ThreatExchange/blob/master/CODE_OF_CONDUCT.md).
+
 ## License
 
 Please see `./LICENSE`.
