@@ -1,6 +1,6 @@
-# pytx3
+# python-threatexchange
 
-A Python Library for downloading and using datasets stored in ThreatExchange, tentatively named pytx3 (pie-tex).
+A Python Library for downloading and using datasets stored in ThreatExchange.
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -18,14 +18,14 @@ The bundled cli tool of the same name is meant to demonstrate the library, as we
 ## Installation
 
 ```bash
-$ python3 -m pip install --index-url https://test.pypi.org/simple/ pytx3 [--upgrade]
+$ python3 -m pip install threatexchange [--upgrade]
 ```
 
 ## Usage
 This package can be used as a library, but the fastest way to use it is from the CLI
 
 ```bash
-$ pytx3 match text "bball now?"
+$ threatexchange match text "bball now?"
 Looks like you haven't set up a collaboration config, so using the sample one against public data
 Looks like you are running this for the first time. Fetching some sample data.
 video_md5: 2
@@ -38,7 +38,7 @@ trend_query: 1
 3425830734108278 raw_text media_priority_samples
 3261912580534814 trend_query media_priority_samples
 
-$ pytx3 label descriptor 3425830734108278 false_positive
+$ threatexchange label descriptor 3425830734108278 false_positive
 ```
 
 

@@ -1,21 +1,21 @@
-name: pytx3 CI
+name: python-threatexchange CI
 on:
   push:
     branches:
       - master
     paths:
-      - "pytx3/**"
-      - ".github/workflows/pytx3-ci.yaml"
+      - "python-threatexchange/**"
+      - ".github/workflows/python-threatexchange-ci.yaml"
   pull_request:
     branches:
       - master
     paths:
-      - "pytx3/**"
-      - ".github/workflows/pytx3-ci.yaml"
+      - "python-threatexchange/**"
+      - ".github/workflows/python-threatexchange-ci.yaml"
 
 defaults:
   run:
-    working-directory: pytx3
+    working-directory: python-threatexchange
 
 jobs:
   lint:

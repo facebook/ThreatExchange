@@ -2,7 +2,7 @@
 import warnings
 
 try:
-    from pytx3.hashing.pdq_faiss_matcher import (
+    from threatexchange.hashing.pdq_faiss_matcher import (
         PDQHashIndex,
         PDQFlatHashIndex,
         PDQMultiHashIndex,
@@ -10,6 +10,6 @@ try:
     )
 except:
     warnings.warn(
-        "pdq matchers require faiss to be installed; install pytx3 with the [faiss] extra to use them",
+        "pdq matchers require faiss to be installed; install threatexchange with the [faiss] extra to use them",
         category=ImportWarning,
     )

@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-pytx3:
-  - pytx3/**/*
+python-threatexchange:
+  - python-threatexchange/**/*
 
 pdq:
   - pdq/**/*

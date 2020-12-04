@@ -5,7 +5,7 @@ import binascii
 import pickle
 import numpy
 
-from pytx3.hashing.pdq_faiss_matcher import PDQFlatHashIndex, PDQMultiHashIndex
+from threatexchange.hashing.pdq_faiss_matcher import PDQFlatHashIndex, PDQMultiHashIndex
 
 test_hashes = [
     "0000000000000000000000000000000000000000000000000000000000000000",

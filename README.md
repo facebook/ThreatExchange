@@ -8,13 +8,13 @@ For full details on ThreatExchange and best practices are available in the [Thre
 
 The `api-reference-examples` folder contains example implementations in various languages for using the API. These implementations are at various stages of completeness and may not all implement every endpoint availible on the ThreatExchange API. For full details on the ThreatExchange API and UI, data formats, and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
 
-## pytx3
+## python-threatexchange
 
-`pytx3` is an all-in-one python package CLI which allows basic integration with ThreatExchange including matching on publically availible data.
+An all-in-one python Library/CLI tool available on pypi under `threatexchange` which allows basic integration with ThreatExchange including matching on ThreatExchange data.
 
 ## PDQ and TMK Hashing Technologies
 
-ThreatExchange supports a variety of hashing algorithms for photos and videos. Two widely used algorithms are PDQ for photos and TMK for videos. The top-level folders `pdq` and `tmk` includes documentation and  implementation exampels of these algorithms.
+ThreatExchange supports a variety of hashing algorithms for photos and videos. Two widely used algorithms are PDQ for photos and TMK for videos. The top-level folders `pdq` and `tmk` includes documentation and  implementation examples of these algorithms.
 
 ## Get All Available Data
 
