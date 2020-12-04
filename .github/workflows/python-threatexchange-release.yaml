@@ -34,3 +34,8 @@ jobs:
           password: ${{ secrets.test_pypi_password }}
           repository_url: https://test.pypi.org/legacy/
           packages_dir: python-threatexchange/dist
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.pypi_password }}
+          packages_dir: python-threatexchange/dist
