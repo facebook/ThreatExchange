@@ -67,6 +67,9 @@ def get_argparse() -> argparse.ArgumentParser:
 
 
 def execute_command(namespace) -> None:
+    if not hasattr(namespace, "command_cls"):
+        get_argparse().print_help()
+        return
     command_cls = namespace.command_cls
     try:
         # Init TE lib
