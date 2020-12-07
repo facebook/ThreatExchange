@@ -101,12 +101,11 @@ class ExperimentalFetchCommand(command_base.Command):
                 ti_json.get("indicator"),
                 ti_json.get("type"),
                 int(ti_json.get("creation_time")),
-                int(ti_json.get("last_updated")),
+                int(ti_json.get("last_updated")) if "last_updated" in ti_json else None,
                 ti_json.get("status"),
-                ti_json.get("is_expired"),
+                ti_json.get("should_delete"),
                 ti_json.get("tags"),
                 [int(app) for app in ti_json.get("applications_with_opinions")],
-                int(ti_json.get("expire_time")) if "expire_time" in ti_json else None,
             )
 
             match = False
