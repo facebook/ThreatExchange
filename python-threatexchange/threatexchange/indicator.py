@@ -22,7 +22,7 @@ class ThreatIndicator(t.NamedTuple):
       "creation_time": 1601513795,
       "last_updated": 1601513796,
       "status": "MALICIOUS",
-      "is_expired": false,
+      "should_delete": false,
       "tags": [
         "tag1",
         "tag2",
@@ -31,7 +31,6 @@ class ThreatIndicator(t.NamedTuple):
       "applications_with_opinions": [
         "123456789055502"
       ],
-      "expire_time": 9601513796
     }
     """
 
@@ -41,12 +40,11 @@ class ThreatIndicator(t.NamedTuple):
     creation_time: int
     last_updated: int
     status: str
-    is_expired: bool
+    should_delete: bool
     tags: t.List[str]
     applications_with_opinions: t.List[int]
-    expire_time: int
 
-    def as_row(self) -> t.Tuple[int, str, str, int, int, str, bool, str, str, int]:
+    def as_row(self) -> t.Tuple[int, str, str, int, int, str, str, str]:
         """Simple conversion to CSV row"""
         return (
             self.id,
@@ -55,27 +53,26 @@ class ThreatIndicator(t.NamedTuple):
             self.creation_time,
             self.last_updated,
             self.status,
-            self.is_expired,
             " ".join(self.tags),
             " ".join([str(app) for app in self.applications_with_opinions]),
-            self.expire_time,
         )
 
     @classmethod
     def from_row(self, row: t.Iterable) -> "ThreatIndicator":
         """Simple conversion from CSV row"""
-        tags = row[7].split(" ") if row[7] else []
-        apps = [int(app) for app in (row[8].split(" ") if row[8] else [])]
-        expire_time = int(row[9]) if row[9] else None
+        last_updated = int(row[4]) if row[4] else None
+        # should_delete won't be saved to the CSV as if it is true we delete the record
+        should_delete = False
+        tags = row[6].split(" ") if row[6] else []
+        apps = [int(app) for app in (row[7].split(" ") if row[7] else [])]
         return ThreatIndicator(
             int(row[0]),
             row[1],
             row[2],
             int(row[3]),
-            int(row[4]),
+            last_updated
             row[5],
-            row[6] == "True",
+            should_delete,
             tags,
             apps,
-            expire_time,
         )
