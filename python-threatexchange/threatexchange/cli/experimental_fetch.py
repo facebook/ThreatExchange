@@ -37,34 +37,20 @@ class ExperimentalFetchCommand(command_base.Command):
             help="Fetch updates that occured before this timestamp",
         )
         ap.add_argument(
-            "--owner",
-            type=int,
-            help="Only fetch updates for indicators that the given app has a descriptor for",
-        )
-        ap.add_argument(
             "--threat-types",
             nargs="+",
             help="Only fetch updates for indicators of the given type",
-        )
-        ap.add_argument(
-            "--additional-tags",
-            nargs="+",
-            help="Only fetch updates for indicators that have a descriptor with each of these tags",
         )
 
     def __init__(
         self,
         start_time: int,
         stop_time: int,
-        owner: int,
         threat_types: t.List[str],
-        additional_tags: t.List[str],
     ) -> None:
         self.start_time = start_time
         self.stop_time = stop_time
-        self.owner = owner
         self.threat_types = threat_types
-        self.additional_tags = additional_tags
         self.signal_types_by_name = {
             name: signal() for name, signal in meta.get_signal_types_by_name().items()
         }
@@ -88,9 +74,7 @@ class ExperimentalFetchCommand(command_base.Command):
                 dataset.config.privacy_groups[0],
                 start_time=self.start_time,
                 stop_time=self.stop_time,
-                owner=self.owner,
                 threat_type=self.threat_types,
-                additional_tags=self.additional_tags,
                 next_page=next_page,
             )
             if "data" in result:
