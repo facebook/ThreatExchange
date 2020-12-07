@@ -191,15 +191,11 @@ class Net:
                 + "/threat_updates/"
                 + "?access_token="
                 + self.APP_TOKEN
-                + "&fields=id,indicator,type,creation_time,last_updated,is_expired,expire_time,tags,status,applications_with_opinions"
+                + "&fields=id,indicator,type,creation_time,last_updated,should_delete,tags,status,applications_with_opinions"
             )
             for arg, value in kwargs.items():
                 if value is not None:
-                    if arg == "additional_tags":
-                        url += "&additional_tags=" + ",".join(
-                            [str(app) for app in value]
-                        )
-                    elif arg == "threat_type":
+                    if arg == "threat_type":
                         url += "&threat_types=" + ",".join(value)
                     else:
                         url += "&" + arg + "=" + str(value)
