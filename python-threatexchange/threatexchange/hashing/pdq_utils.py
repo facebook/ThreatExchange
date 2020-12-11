@@ -7,11 +7,7 @@ BITS_IN_PDQ = 256
 def simple_distance_binary(bin_a, bin_b):
     assert len(bin_a) == BITS_IN_PDQ
     assert len(bin_b) == BITS_IN_PDQ
-    distance = 0
-    for i in range(BITS_IN_PDQ):
-        if bin_a[i] != bin_b[i]:
-            distance += 1
-    return distance
+    return sum(bin_a[i] != bin_b[i] for i in range(BITS_IN_PDQ))
 
 
 def simple_distance(hex_a, hex_b):

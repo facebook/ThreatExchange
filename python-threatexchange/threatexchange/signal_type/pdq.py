@@ -43,19 +43,15 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
         except:
             warnings.warn(
                 "PDQ from file require Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
-                category=ImportWarning,
+                category=UserWarning,
             )
             return []
         pdq_hash, quality = pdq_from_file(file)
         return self.match_hash(pdq_hash)
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
-        result = []
-        for pdq_hash, signal_attr in self.state.items():
-            if pdq_match(pdq_hash, signal_str, self.PDQ_CONFIDENT_MATCH_THRESHOLD):
-                result.append(
-                    signal_base.SignalMatch(
-                        signal_attr.labels, signal_attr.first_descriptor_id
-                    )
-                )
-        return result
+        return [
+            signal_base.SignalMatch(signal_attr.labels, signal_attr.first_descriptor_id)
+            for pdq_hash, signal_attr in self.state.items()
+            if pdq_match(pdq_hash, signal_str, self.PDQ_CONFIDENT_MATCH_THRESHOLD)
+        ]
