@@ -17,6 +17,10 @@ def pdq_from_file(path: pathlib.Path):
     hash_vector, quality = pdqhash.compute(image)
 
     bin_str = "".join([str(x) for x in hash_vector])
+
+    # binary to hex using format string
+    # '%0*' is for padding up to ceil(num_bits/4),
+    # '%X' create a hex representation from the binary string's integer value
     hex_str = "%0*X" % ((len(bin_str) + 3) // 4, int(bin_str, 2))
     hex_str = hex_str.lower()
 

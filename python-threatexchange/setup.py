@@ -21,6 +21,7 @@ with open(path.join(here, "version.txt"), encoding="utf-8") as f:
 extras_require = {
     "faiss": ["faiss-cpu>=1.6.3", "numpy"],
     "pdq_hasher": [
+        "numpy",
         "pdqhash>=0.2.2",
         "Pillow",
     ],
