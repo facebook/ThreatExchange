@@ -36,7 +36,6 @@ class FetchCheckpoint(t.NamedTuple):
 class Dataset:
 
     EXTENSION = ".te"
-    INDICATOR_SUFFIX = "_indicator"
 
     def __init__(
         self,
@@ -55,8 +54,13 @@ class Dataset:
             self.state_dir.exists() and any(self.state_dir.glob(f"*{self.EXTENSION}"))
         )
 
-    def _fetch_checkpoint_path(self, suffix: str = "") -> pathlib.Path:
-        return self.state_dir / f"fetch_checkpoint{suffix}{self.EXTENSION}"
+    def _fetch_checkpoint_path(self) -> pathlib.Path:
+        return self.state_dir / f"fetch_checkpoint{self.EXTENSION}"
+
+    def _indicator_checkpoint_path(self, privacy_group: int) -> pathlib.Path:
+        return (
+            self.state_dir / f"indicators/{privacy_group}/_checkpoint{self.EXTENSION}"
+        )
 
     def clear_cache(self) -> None:
         for p in self.state_dir.iterdir():
@@ -76,14 +80,23 @@ class Dataset:
             return FetchCheckpoint(0, 0)
         return FetchCheckpoint.deserialize(checkpoint.read_text())
 
-    def get_indicator_checkpoint(self) -> int:
-        checkpoint = self._fetch_checkpoint_path(self.INDICATOR_SUFFIX)
+    def get_indicator_checkpoint(self, privacy_group) -> t.Dict:
+        values = {"last_stop_time": 0, "last_run_time": 0, "url": None}
+        checkpoint = self._indicator_checkpoint_path(privacy_group)
         if not checkpoint.exists():
-            return 0
-        return int(checkpoint.read_text())
+            return values
+        values_list = checkpoint.read_text().split()
+        values["last_stop_time"] = int(values_list[0])
+        values["last_run_time"] = int(values_list[1])
+        values["url"] = values_list[2] if len(values_list) == 3 else None
+        return values
 
-    def record_indicator_checkpoint(self, stop_time: int) -> None:
-        self._fetch_checkpoint_path(self.INDICATOR_SUFFIX).write_text(str(stop_time))
+    def record_indicator_checkpoint(
+        self, privacy_group: int, stop_time: int, request_time: int, url: str = ""
+    ) -> None:
+        self._indicator_checkpoint_path(privacy_group).write_text(
+            f"{stop_time} {request_time} {url}"
+        )
 
     def _signal_state_file(
         self, signal_type: signal_base.SignalType, suffix: str = ""

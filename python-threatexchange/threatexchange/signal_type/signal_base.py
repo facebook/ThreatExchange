@@ -99,7 +99,7 @@ class IndicatorSignals:
         if not path.exists():
             return
 
-        for store in path.glob(f"*{dataset.Dataset.EXTENSION}"):
+        for store in path.glob(f"[!_]*{dataset.Dataset.EXTENSION}"):
             csv.field_size_limit(store.stat().st_size)  # dodge field size problems
             with store.open("r", newline="") as s:
                 for row in csv.reader(s):

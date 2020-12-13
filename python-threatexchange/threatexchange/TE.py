@@ -181,8 +181,8 @@ class Net:
     # Gets threat updates for the given privacy group.
     @classmethod
     def getThreatUpdates(self, privacy_group, **kwargs):
-        if "next" in kwargs:
-            url = kwargs["next"]
+        if "next_page" in kwargs and kwargs["next_page"] is not None:
+            url = kwargs["next_page"]
         else:
             url = (
                 self.TE_BASE_URL
