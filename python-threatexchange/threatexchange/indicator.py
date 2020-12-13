@@ -70,7 +70,7 @@ class ThreatIndicator(t.NamedTuple):
             row[1],
             row[2],
             int(row[3]),
-            last_updated
+            last_updated,
             row[5],
             should_delete,
             tags,
