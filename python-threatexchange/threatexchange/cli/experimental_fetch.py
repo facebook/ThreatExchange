@@ -29,6 +29,11 @@ class ExperimentalFetchCommand(command_base.Command):
     @classmethod
     def init_argparse(cls, ap) -> None:
         ap.add_argument(
+            "--continuation",
+            action="store_true",
+            help="Fetch updates that you are missing, this overrides all other given values (i.e. start-time)",
+        )
+        ap.add_argument(
             "--start-time",
             type=int,
             help="Fetch updates that occured on or after this timestamp",
@@ -46,10 +51,12 @@ class ExperimentalFetchCommand(command_base.Command):
 
     def __init__(
         self,
+        continuation: bool,
         start_time: int,
         stop_time: int,
         threat_types: t.List[str],
     ) -> None:
+        self.continuation = continuation
         self.start_time = start_time
         self.stop_time = stop_time
         self.threat_types = threat_types
@@ -66,19 +73,18 @@ class ExperimentalFetchCommand(command_base.Command):
         dataset.load_indicator_cache(self.indicator_signals)
 
         # TODO: Consider threat_type in checkpoints
-        checkpoint = dataset.get_indicator_checkpoint(privacy_group)
-        self.start_time = (
-            checkpoint["last_stop_time"] if self.start_time is None else self.start_time
-        )
-        next_page = checkpoint["url"]
-        if request_time - checkpoint["last_run_time"] > self.DEFAULT_REFETCH_SEC:
-            print("It's been a long time since a full fetch, forcing one now.")
-            self.start_time = 0
-            next_page = None
         self.stop_time = request_time if self.stop_time is None else self.stop_time
+        next_page = None
+        if self.continuation:
+            checkpoint = dataset.get_indicator_checkpoint(privacy_group)
+            self.start_time = checkpoint["last_stop_time"]
+            next_page = checkpoint["url"]
+            self.stop_time = request_time
+            if request_time - checkpoint["last_run_time"] > self.DEFAULT_REFETCH_SEC:
+                print("It's been a long time since a full fetch, forcing one now.")
+                self.start_time = 0
 
         more_to_fetch = True
-        next_page = None
         remaining_attempts = 5
 
         while more_to_fetch:
@@ -104,7 +110,7 @@ class ExperimentalFetchCommand(command_base.Command):
                     continue
                 else:
                     print(
-                        "5 consecutive errors occured, please re-run the command shortly to try again from the last successful point."
+                        "5 consecutive errors occured, please run 'threatexchange -c {config} experimental-fetch --continue' shortly to try again from the last successful point."
                     )
                     break
             remaining_attempts = 5

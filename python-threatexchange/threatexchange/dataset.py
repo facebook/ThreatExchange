@@ -81,6 +81,7 @@ class Dataset:
         return FetchCheckpoint.deserialize(checkpoint.read_text())
 
     def get_indicator_checkpoint(self, privacy_group) -> t.Dict:
+        # get types by breaking string delimited by -, if --continue command then continue from where left off and override other stuff
         values = {"last_stop_time": 0, "last_run_time": 0, "url": None}
         checkpoint = self._indicator_checkpoint_path(privacy_group)
         if not checkpoint.exists():
@@ -94,6 +95,7 @@ class Dataset:
     def record_indicator_checkpoint(
         self, privacy_group: int, stop_time: int, request_time: int, url: str = ""
     ) -> None:
+        # turn types into string delimited by -
         self._indicator_checkpoint_path(privacy_group).write_text(
             f"{stop_time} {request_time} {url}"
         )
