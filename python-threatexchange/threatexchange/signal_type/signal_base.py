@@ -53,34 +53,52 @@ class SignalType:
         """
         return False
 
-    def process_indicator(self, indicator: t.Dict[int, t.Any]) -> bool:
-        """
-        Add ThreatIndicator to the state of this type, if it is for this type.
-
-        Return true if the indicator was used.
-        """
-        return False
-
     def load(self, path: pathlib.Path) -> None:
         raise NotImplementedError
-
-    def load_indicators(self, path: pathlib.Path) -> None:
-        if not path.exists():
-            return
-        csv.field_size_limit(path.stat().st_size)  # dodge field size problems
-        with path.open("r", newline="") as f:
-            for row in csv.reader(f):
-                ti = ThreatIndicator.from_row(row)
-                self.indicator_state[ti.id] = ti
 
     def store(self, path: pathlib.Path) -> None:
         raise NotImplementedError
 
-    def store_indicators(self, path: pathlib.Path) -> None:
-        with path.open("w+", newline="") as f:
-            writer = csv.writer(f)
-            for _, i in self.indicator_state.items():
-                writer.writerow(i.as_row())
+
+class IndicatorSignals:
+    """
+    A class to load and store ThreatIndicators.
+    """
+
+    def __init__(self, privacy_group) -> None:
+        self.dir = pathlib.Path.home() / 'indicators' / str(privacy_group)
+        self.state: t.Dict[str, t.Dict[int, ThreatIndicator]] = {}
+
+    def process_indicator(self, indicator) -> None:
+        if indicator.threat_type not in self.state:
+            self.state[indicator.threat_type] = {}
+
+        self.state[indicator.threat_type][indicator.id] = indicator
+        if indicator.should_delete:
+            del self.state[indicator.threat_type][indicator.id]
+
+
+    def store_indicators(self) -> None:
+        if not self.dir.exists():
+            self.dir.mkdir()
+
+        for threat_type in self.state:
+            store = self.dir / f"{threat_type}.csv"
+            with store.open("w+", newline="") as s:
+                writer = csv.writer(s)
+                for _, i in self.state[threat_type].items():
+                    writer.writerow(i.as_row())
+
+    def load_indicators(self) -> None:
+        if not self.dir.exists():
+            return
+
+        for store in self.dir.glob('*.csv'):
+            csv.field_size_limit(store.stat().st_size)  # dodge field size problems
+            with store.open("r", newline="") as s:
+                for row in csv.reader(s):
+                    ti = ThreatIndicator.from_row(row)
+                    self.process_indicator(ti)
 
 
 class HashMatcher:
@@ -127,7 +145,6 @@ class SimpleSignalType(SignalType, HashMatcher):
 
     def __init__(self) -> None:
         self.state: t.Dict[str, SimpleDescriptorRollup] = {}
-        self.indicator_state: t.Dict[int, ThreatIndicator] = {}
 
     def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
         """
@@ -147,22 +164,6 @@ class SimpleSignalType(SignalType, HashMatcher):
             ] = SimpleDescriptorRollup.from_descriptor(descriptor)
         else:
             old_val.merge(descriptor)
-        return True
-
-    def process_indicator(self, indicator: ThreatIndicator) -> bool:
-        """
-        Add ThreatIndicator to the state of this type, if it is for this type
-
-        Return true if the indicator was used.
-        """
-        if (
-            indicator.threat_type != self.INDICATOR_TYPE
-            or self.TYPE_TAG not in indicator.tags
-        ):
-            return False
-
-        self.indicator_state[indicator.id] = indicator
-
         return True
 
     def match_hash(self, signal_str: str) -> t.List[SignalMatch]:

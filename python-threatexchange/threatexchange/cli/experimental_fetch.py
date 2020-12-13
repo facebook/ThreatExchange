@@ -7,6 +7,7 @@ import time
 import typing as t
 from .. import TE
 from ..dataset import Dataset
+from ..signal_type import signal_base
 from ..indicator import ThreatIndicator
 from ..content_type import meta
 from . import command_base
@@ -58,20 +59,26 @@ class ExperimentalFetchCommand(command_base.Command):
         self.counts = collections.Counter()
 
     def execute(self, dataset: Dataset) -> None:
+        privacy_group = dataset.config.privacy_groups[0]
+        self.indicator_signals = signal_base.IndicatorSignals(privacy_group)
+        self.indicator_signals.load_indicators()
+
         # TODO: [Potential] Force full fetch if it has been 90 days since the last fetch.
-        self.start_time = (
-            dataset.get_indicator_checkpoint()
-            if self.start_time is None
-            else self.start_time
-        )
-        self.stop_time = int(time.time()) if self.stop_time is None else self.stop_time
-        dataset.load_indicator_cache(self.signal_types_by_name.values())
+        # self.start_time = (
+        #     dataset.get_indicator_checkpoint()
+        #     if self.start_time is None
+        #     else self.start_time
+        # )
+        # self.stop_time = int(time.time()) if self.stop_time is None else self.stop_time
+        start_time = 0
+        stop_time = time.time()
+
         more_to_fetch = True
         next_page = None
 
         while more_to_fetch:
             result = TE.Net.getThreatUpdates(
-                dataset.config.privacy_groups[0],
+                privacy_group,
                 start_time=self.start_time,
                 stop_time=self.stop_time,
                 threat_type=self.threat_types,
@@ -82,13 +89,10 @@ class ExperimentalFetchCommand(command_base.Command):
             more_to_fetch = "paging" in result and "next" in result["paging"]
             next_page = result["paging"]["next"] if more_to_fetch else None
 
-        for signal_name, signal_type in self.signal_types_by_name.items():
-            if signal_name not in self.counts:
-                continue
-            dataset.store_indicator_cache(signal_type)
-            print(f"{signal_name}: {self.counts[signal_name]}")
-
-        dataset.record_indicator_checkpoint(self.stop_time)
+        self.indicator_signals.store_indicators()
+        for threat_type in self.counts:
+            print(f"{threat_type}: {self.counts[threat_type]}")
+        return
 
     def _process_indicators(
         self,
@@ -104,19 +108,15 @@ class ExperimentalFetchCommand(command_base.Command):
                 int(ti_json.get("last_updated")) if "last_updated" in ti_json else None,
                 ti_json.get("status"),
                 ti_json.get("should_delete"),
-                ti_json.get("tags"),
-                [int(app) for app in ti_json.get("applications_with_opinions")],
+                ti_json.get("tags") if "tags" in ti_json else [],
+                [int(app) for app in ti_json.get("applications_with_opinions")] if "applications_with_opinions" in ti_json else [],
             )
 
-            match = False
-            for signal_name, signal_type in self.signal_types_by_name.items():
-                if signal_type.process_indicator(ti):
-                    match = True
-                    self.counts[signal_name] += 1
-            if match:
-                self.counts["all"] += 1
+            self.indicator_signals.process_indicator(ti)
+            self.counts[ti.threat_type] += 1
+            self.counts["Total"] += 1
 
         now = time.time()
         if now - self.last_update_printed >= self.PROGRESS_PRINT_INTERVAL_SEC:
             self.last_update_printed = now
-            self.stderr(f"Processed {self.counts['all']}...")
+            self.stderr(f"Processed {self.counts['Total']}...")
