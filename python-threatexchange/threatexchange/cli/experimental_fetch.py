@@ -99,17 +99,17 @@ class ExperimentalFetchCommand(command_base.Command):
                     self._process_indicators(result["data"])
                 more_to_fetch = "paging" in result and "next" in result["paging"]
                 next_page = result["paging"]["next"] if more_to_fetch else ""
-            except:
+            except Exception as e:
                 remaining_attempts -= 1
                 if remaining_attempts > 0:
                     print(
-                        f"An error occured while fetching, trying again {remaining_attempts} more times."
+                        f"The following error occured while fetching:\n{e.read()}\nTrying again {remaining_attempts} more times."
                     )
                     time.sleep(5)
                     continue
                 else:
                     print(
-                        "5 consecutive errors occured, please run 'threatexchange -c {config} experimental-fetch --continue' shortly to try again from the last successful point."
+                        "5 consecutive errors occured, please try again later by running 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point."
                     )
                     break
             remaining_attempts = 5
