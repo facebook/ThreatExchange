@@ -24,6 +24,7 @@ class ExperimentalFetchCommand(command_base.Command):
     """
 
     PROGRESS_PRINT_INTERVAL_SEC = 30
+    DEFAULT_REFETCH_SEC = 3600 * 24 * 85  # 85 days
 
     @classmethod
     def init_argparse(cls, ap) -> None:
@@ -59,36 +60,58 @@ class ExperimentalFetchCommand(command_base.Command):
         self.counts = collections.Counter()
 
     def execute(self, dataset: Dataset) -> None:
+        request_time = int(time.time())
         privacy_group = dataset.config.privacy_groups[0]
         self.indicator_signals = signal_base.IndicatorSignals(privacy_group)
         dataset.load_indicator_cache(self.indicator_signals)
 
-        # TODO: [Potential] Force full fetch if it has been 90 days since the last fetch.
-        # self.start_time = (
-        #     dataset.get_indicator_checkpoint()
-        #     if self.start_time is None
-        #     else self.start_time
-        # )
-        # self.stop_time = int(time.time()) if self.stop_time is None else self.stop_time
-        start_time = 0
-        stop_time = time.time()
+        # TODO: Consider threat_type in checkpoints
+        checkpoint = dataset.get_indicator_checkpoint(privacy_group)
+        self.start_time = (
+            checkpoint["last_stop_time"] if self.start_time is None else self.start_time
+        )
+        next_page = checkpoint["url"]
+        if request_time - checkpoint["last_run_time"] > self.DEFAULT_REFETCH_SEC:
+            print("It's been a long time since a full fetch, forcing one now.")
+            self.start_time = 0
+            next_page = None
+        self.stop_time = request_time if self.stop_time is None else self.stop_time
 
         more_to_fetch = True
         next_page = None
+        remaining_attempts = 5
 
         while more_to_fetch:
-            result = TE.Net.getThreatUpdates(
-                privacy_group,
-                start_time=self.start_time,
-                stop_time=self.stop_time,
-                threat_type=self.threat_types,
-                next_page=next_page,
-            )
-            if "data" in result:
-                self._process_indicators(result["data"])
-            more_to_fetch = "paging" in result and "next" in result["paging"]
-            next_page = result["paging"]["next"] if more_to_fetch else None
+            try:
+                result = TE.Net.getThreatUpdates(
+                    privacy_group,
+                    start_time=self.start_time,
+                    stop_time=self.stop_time,
+                    threat_type=self.threat_types,
+                    next_page=next_page,
+                )
+                if "data" in result:
+                    self._process_indicators(result["data"])
+                more_to_fetch = "paging" in result and "next" in result["paging"]
+                next_page = result["paging"]["next"] if more_to_fetch else ""
+            except:
+                remaining_attempts -= 1
+                if remaining_attempts > 0:
+                    print(
+                        f"An error occured while fetching, trying again {remaining_attempts} more times."
+                    )
+                    time.sleep(5)
+                    continue
+                else:
+                    print(
+                        "5 consecutive errors occured, please re-run the command shortly to try again from the last successful point."
+                    )
+                    break
+            remaining_attempts = 5
 
+        dataset.record_indicator_checkpoint(
+            privacy_group, self.stop_time, request_time, next_page
+        )
         dataset.store_indicator_cache(self.indicator_signals)
         for threat_type in self.counts:
             print(f"{threat_type}: {self.counts[threat_type]}")
