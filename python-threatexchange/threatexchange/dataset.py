@@ -105,27 +105,19 @@ class Dataset:
         return ret
 
     def load_indicator_cache(
-        self, signal_types: t.Optional[t.Iterable[signal_base.SignalType]] = None
+        self, indicator_signals: signal_base.IndicatorSignals
     ) -> None:
-        """Load indicator files in the state directory and initialize signal types"""
-        signal_types = (
-            [s() for s in meta.get_all_signal_types()]
-            if signal_types is None
-            else signal_types
-        )
-        for signal_type in signal_types:
-            signal_type.load_indicators(
-                self._signal_state_file(signal_type, self.INDICATOR_SUFFIX)
-            )
+        """Load indicator files"""
+        indicator_signals.load_indicators(self.state_dir)
 
     def store_cache(self, signal_type: signal_base.SignalType) -> None:
         if not self.state_dir.exists():
             self.state_dir.mkdir()
         signal_type.store(self._signal_state_file(signal_type))
 
-    def store_indicator_cache(self, signal_type: signal_base.SignalType) -> None:
+    def store_indicator_cache(
+        self, indicator_signals: signal_base.IndicatorSignals
+    ) -> None:
         if not self.state_dir.exists():
             self.state_dir.mkdir()
-        signal_type.store_indicators(
-            self._signal_state_file(signal_type, self.INDICATOR_SUFFIX)
-        )
+        indicator_signals.store_indicators(self.state_dir)

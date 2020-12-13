@@ -61,7 +61,7 @@ class ExperimentalFetchCommand(command_base.Command):
     def execute(self, dataset: Dataset) -> None:
         privacy_group = dataset.config.privacy_groups[0]
         self.indicator_signals = signal_base.IndicatorSignals(privacy_group)
-        self.indicator_signals.load_indicators()
+        dataset.load_indicator_cache(self.indicator_signals)
 
         # TODO: [Potential] Force full fetch if it has been 90 days since the last fetch.
         # self.start_time = (
@@ -89,7 +89,7 @@ class ExperimentalFetchCommand(command_base.Command):
             more_to_fetch = "paging" in result and "next" in result["paging"]
             next_page = result["paging"]["next"] if more_to_fetch else None
 
-        self.indicator_signals.store_indicators()
+        dataset.store_indicator_cache(self.indicator_signals)
         for threat_type in self.counts:
             print(f"{threat_type}: {self.counts[threat_type]}")
         return
@@ -109,7 +109,9 @@ class ExperimentalFetchCommand(command_base.Command):
                 ti_json.get("status"),
                 ti_json.get("should_delete"),
                 ti_json.get("tags") if "tags" in ti_json else [],
-                [int(app) for app in ti_json.get("applications_with_opinions")] if "applications_with_opinions" in ti_json else [],
+                [int(app) for app in ti_json.get("applications_with_opinions")]
+                if "applications_with_opinions" in ti_json
+                else [],
             )
 
             self.indicator_signals.process_indicator(ti)

@@ -11,6 +11,7 @@ import re
 import typing as t
 
 from .. import common
+from .. import dataset
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from ..indicator import ThreatIndicator
 
@@ -66,7 +67,8 @@ class IndicatorSignals:
     """
 
     def __init__(self, privacy_group) -> None:
-        self.dir = pathlib.Path.home() / 'indicators' / str(privacy_group)
+        self.sub_dir = "indicators"
+        self.privacy_group = str(privacy_group)
         self.state: t.Dict[str, t.Dict[int, ThreatIndicator]] = {}
 
     def process_indicator(self, indicator) -> None:
@@ -77,23 +79,27 @@ class IndicatorSignals:
         if indicator.should_delete:
             del self.state[indicator.threat_type][indicator.id]
 
-
-    def store_indicators(self) -> None:
-        if not self.dir.exists():
-            self.dir.mkdir()
+    def store_indicators(self, state_dir: pathlib.Path) -> None:
+        path = state_dir / self.sub_dir
+        if not path.exists():
+            path.mkdir()
+        path = path / self.privacy_group
+        if not path.exists():
+            path.mkdir()
 
         for threat_type in self.state:
-            store = self.dir / f"{threat_type}.csv"
+            store = path / f"{threat_type}{dataset.Dataset.EXTENSION}"
             with store.open("w+", newline="") as s:
                 writer = csv.writer(s)
                 for _, i in self.state[threat_type].items():
                     writer.writerow(i.as_row())
 
-    def load_indicators(self) -> None:
-        if not self.dir.exists():
+    def load_indicators(self, state_dir: pathlib.Path) -> None:
+        path = state_dir / self.sub_dir / self.privacy_group
+        if not path.exists():
             return
 
-        for store in self.dir.glob('*.csv'):
+        for store in path.glob(f"*{dataset.Dataset.EXTENSION}"):
             csv.field_size_limit(store.stat().st_size)  # dodge field size problems
             with store.open("r", newline="") as s:
                 for row in csv.reader(s):
