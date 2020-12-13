@@ -81,24 +81,40 @@ class Dataset:
         return FetchCheckpoint.deserialize(checkpoint.read_text())
 
     def get_indicator_checkpoint(self, privacy_group) -> t.Dict:
-        # get types by breaking string delimited by -, if --continue command then continue from where left off and override other stuff
-        values = {"last_stop_time": 0, "last_run_time": 0, "url": None}
+        values = {
+            "last_stop_time": 0,
+            "last_run_time": 0,
+            "threat_types": None,
+            "url": None,
+        }
         checkpoint = self._indicator_checkpoint_path(privacy_group)
         if not checkpoint.exists():
             return values
-        values_list = checkpoint.read_text().split()
-        values["last_stop_time"] = int(values_list[0])
-        values["last_run_time"] = int(values_list[1])
-        values["url"] = values_list[2] if len(values_list) == 3 else None
+        with checkpoint.open("r+") as f:
+            values["last_stop_time"] = int(f.readline().strip())
+            values["last_run_time"] = int(f.readline().strip())
+            values["threat_types"] = f.readline().strip()
+            values["threat_types"] = (
+                values["threat_types"].split(" ")
+                if values["threat_types"] != ""
+                else None
+            )
+            values["url"] = f.readline().strip()
+            values["url"] = values["url"] if values["url"] != "" else None
         return values
 
     def record_indicator_checkpoint(
-        self, privacy_group: int, stop_time: int, request_time: int, url: str = ""
+        self,
+        privacy_group: int,
+        stop_time: int,
+        request_time: int,
+        threat_types: t.List = [],
+        url: str = "",
     ) -> None:
-        # turn types into string delimited by -
-        self._indicator_checkpoint_path(privacy_group).write_text(
-            f"{stop_time} {request_time} {url}"
-        )
+        types = " ".join(threat_types) if threat_types is not None else ""
+        values = f"{stop_time}\n{request_time}\n{types}\n{url}\n"
+        with self._indicator_checkpoint_path(privacy_group).open("w+") as f:
+            f.writelines(values)
 
     def _signal_state_file(
         self, signal_type: signal_base.SignalType, suffix: str = ""

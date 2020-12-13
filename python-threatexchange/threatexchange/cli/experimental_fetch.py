@@ -71,15 +71,14 @@ class ExperimentalFetchCommand(command_base.Command):
         privacy_group = dataset.config.privacy_groups[0]
         self.indicator_signals = signal_base.IndicatorSignals(privacy_group)
         dataset.load_indicator_cache(self.indicator_signals)
-
-        # TODO: Consider threat_type in checkpoints
         self.stop_time = request_time if self.stop_time is None else self.stop_time
         next_page = None
         if self.continuation:
             checkpoint = dataset.get_indicator_checkpoint(privacy_group)
             self.start_time = checkpoint["last_stop_time"]
-            next_page = checkpoint["url"]
             self.stop_time = request_time
+            self.threat_types = checkpoint["threat_types"]
+            next_page = checkpoint["url"]
             if request_time - checkpoint["last_run_time"] > self.DEFAULT_REFETCH_SEC:
                 print("It's been a long time since a full fetch, forcing one now.")
                 self.start_time = 0
@@ -116,7 +115,7 @@ class ExperimentalFetchCommand(command_base.Command):
             remaining_attempts = 5
 
         dataset.record_indicator_checkpoint(
-            privacy_group, self.stop_time, request_time, next_page
+            privacy_group, self.stop_time, request_time, self.threat_types, next_page
         )
         dataset.store_indicator_cache(self.indicator_signals)
         for threat_type in self.counts:
