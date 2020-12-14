@@ -112,6 +112,7 @@ class Dataset:
         url: str = "",
     ) -> None:
         types = " ".join(threat_types) if threat_types is not None else ""
+        url = url if url is not None else ""
         values = f"{stop_time}\n{request_time}\n{types}\n{url}\n"
         with self._indicator_checkpoint_path(privacy_group).open("w+") as f:
             f.writelines(values)
