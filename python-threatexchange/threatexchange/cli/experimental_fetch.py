@@ -48,6 +48,12 @@ class ExperimentalFetchCommand(command_base.Command):
             nargs="+",
             help="Only fetch updates for indicators of the given type",
         )
+        ap.add_argument(
+            "--page-size",
+            type=int,
+            help="The number of updates to fetch per request, defaults to 100",
+            default=100,
+        )
 
     def __init__(
         self,
@@ -55,16 +61,17 @@ class ExperimentalFetchCommand(command_base.Command):
         start_time: int,
         stop_time: int,
         threat_types: t.List[str],
+        page_size: int,
     ) -> None:
         self.continuation = continuation
         self.start_time = start_time
         self.stop_time = stop_time
         self.threat_types = threat_types
-        self.signal_types_by_name = {
-            name: signal() for name, signal in meta.get_signal_types_by_name().items()
-        }
+        self.limit = page_size
         self.last_update_printed = 0
         self.counts = collections.Counter()
+        self.total_count = 0
+        self.deleted_count = 0
 
     def execute(self, dataset: Dataset) -> None:
         request_time = int(time.time())
@@ -94,6 +101,7 @@ class ExperimentalFetchCommand(command_base.Command):
                     stop_time=self.stop_time,
                     threat_type=self.threat_types,
                     next_page=next_page,
+                    limit=self.limit,
                 )
                 if "data" in result:
                     self._process_indicators(result["data"])
@@ -114,12 +122,15 @@ class ExperimentalFetchCommand(command_base.Command):
                     break
             remaining_attempts = 5
 
+        dataset.store_indicator_cache(self.indicator_signals)
         dataset.record_indicator_checkpoint(
             privacy_group, self.stop_time, request_time, self.threat_types, next_page
         )
-        dataset.store_indicator_cache(self.indicator_signals)
+        print("\nJust like that we are done! Here is a summary:")
         for threat_type in self.counts:
             print(f"{threat_type}: {self.counts[threat_type]}")
+        print(f"\nTotal: {self.total_count}")
+        print(f"{self.deleted_count} of these were deletes.")
         return
 
     def _process_indicators(
@@ -144,9 +155,11 @@ class ExperimentalFetchCommand(command_base.Command):
 
             self.indicator_signals.process_indicator(ti)
             self.counts[ti.threat_type] += 1
-            self.counts["Total"] += 1
+            self.total_count += 1
+            if ti.should_delete:
+                self.deleted_count += 1
 
         now = time.time()
         if now - self.last_update_printed >= self.PROGRESS_PRINT_INTERVAL_SEC:
             self.last_update_printed = now
-            self.stderr(f"Processed {self.counts['Total']}...")
+            self.stderr(f"Processed {self.total_count}...")
