@@ -102,9 +102,12 @@ class IndicatorSignals:
         for store in path.glob(f"[!_]*{dataset.Dataset.EXTENSION}"):
             csv.field_size_limit(store.stat().st_size)  # dodge field size problems
             with store.open("r", newline="") as s:
-                for row in csv.reader(s):
-                    ti = ThreatIndicator.from_row(row)
-                    self.process_indicator(ti)
+                try:
+                    for row in csv.reader(s):
+                        ti = ThreatIndicator.from_row(row)
+                        self.process_indicator(ti)
+                except Exception as e:
+                    print(f"Encountered {e} while loading an indicator from {store}")
 
 
 class HashMatcher:
