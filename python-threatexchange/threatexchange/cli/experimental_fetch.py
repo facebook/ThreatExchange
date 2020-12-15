@@ -4,6 +4,7 @@
 import collections
 import pathlib
 import time
+import urllib
 import typing as t
 from .. import TE
 from ..dataset import Dataset
@@ -109,16 +110,15 @@ class ExperimentalFetchCommand(command_base.Command):
                 next_page = result["paging"]["next"] if more_to_fetch else ""
             except Exception as e:
                 remaining_attempts -= 1
+                print(f"The following error occured:\n{e}")
+                if type(e) is urllib.error.HTTPError:
+                    print(e.read())
                 if remaining_attempts > 0:
-                    print(
-                        f"The following error occured while fetching:\n{e.read()}\nTrying again {remaining_attempts} more times."
-                    )
+                    print(f"\nTrying again {remaining_attempts} more times.")
                     time.sleep(5)
                     continue
                 else:
-                    print(
-                        "5 consecutive errors occured, please try again later by running 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point."
-                    )
+                    print("\n5 consecutive errors occured, saving state and shutting down!")
                     break
             remaining_attempts = 5
 
@@ -126,11 +126,12 @@ class ExperimentalFetchCommand(command_base.Command):
         dataset.record_indicator_checkpoint(
             privacy_group, self.stop_time, request_time, self.threat_types, next_page
         )
-        print("\nJust like that we are done! Here is a summary:")
+        print("\nHere is a summary from this run:")
         for threat_type in self.counts:
             print(f"{threat_type}: {self.counts[threat_type]}")
-        print(f"\nTotal: {self.total_count}")
+        print(f"Total: {self.total_count}")
         print(f"{self.deleted_count} of these were deletes.")
+        print("\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point.")
         return
 
     def _process_indicators(
