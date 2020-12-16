@@ -32,7 +32,7 @@ class ExperimentalFetchCommand(command_base.Command):
         ap.add_argument(
             "--continuation",
             action="store_true",
-            help="Fetch updates that you are missing, this overrides all other given values (i.e. start-time)",
+            help="Fetch updates that you are missing, this overrides all other given options",
         )
         ap.add_argument(
             "--start-time",
@@ -77,8 +77,8 @@ class ExperimentalFetchCommand(command_base.Command):
     def execute(self, dataset: Dataset) -> None:
         request_time = int(time.time())
         privacy_group = dataset.config.privacy_groups[0]
-        self.indicator_signals = signal_base.IndicatorSignals(privacy_group)
-        dataset.load_indicator_cache(self.indicator_signals)
+        self.indicator_store = dataset.get_indicator_store(privacy_group)
+        dataset.load_indicator_cache(self.indicator_store)
         self.stop_time = request_time if self.stop_time is None else self.stop_time
         next_page = None
         if self.continuation:
@@ -90,6 +90,7 @@ class ExperimentalFetchCommand(command_base.Command):
             if request_time - checkpoint["last_run_time"] > self.DEFAULT_REFETCH_SEC:
                 print("It's been a long time since a full fetch, forcing one now.")
                 self.start_time = 0
+                next_page = None
 
         more_to_fetch = True
         remaining_attempts = 5
@@ -117,11 +118,13 @@ class ExperimentalFetchCommand(command_base.Command):
                     time.sleep(5)
                     continue
                 else:
-                    print("\n5 consecutive errors occured, saving state and shutting down!")
+                    print(
+                        "\n5 consecutive errors occured, saving state and shutting down!"
+                    )
                     break
             remaining_attempts = 5
 
-        dataset.store_indicator_cache(self.indicator_signals)
+        dataset.store_indicator_cache(self.indicator_store)
         dataset.record_indicator_checkpoint(
             privacy_group, self.stop_time, request_time, self.threat_types, next_page
         )
@@ -133,7 +136,9 @@ class ExperimentalFetchCommand(command_base.Command):
             print(f"{threat_type}: {self.counts[threat_type]}")
         print(f"Total: {self.total_count}")
         print(f"{self.deleted_count} of these were deletes.")
-        print("\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point.")
+        print(
+            "\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point."
+        )
         return
 
     def _process_indicators(
@@ -156,7 +161,7 @@ class ExperimentalFetchCommand(command_base.Command):
                 else [],
             )
 
-            self.indicator_signals.process_indicator(ti)
+            self.indicator_store.process_indicator(ti)
             self.counts[ti.threat_type] += 1
             self.total_count += 1
             if ti.should_delete:
