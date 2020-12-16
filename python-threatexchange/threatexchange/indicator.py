@@ -61,7 +61,8 @@ class ThreatIndicator(t.NamedTuple):
     def from_row(self, row: t.Iterable) -> "ThreatIndicator":
         """Simple conversion from CSV row"""
         last_updated = int(row[4]) if row[4] else None
-        # should_delete won't be saved to the CSV as if it is true we delete the record
+        # should_delete isn't saved in the CSV as if it is true we delete the record
+        # so all loaded descriptors should have a should_delete value of False
         should_delete = False
         tags = row[6].split(" ") if row[6] else []
         apps = [int(app) for app in (row[7].split(" ") if row[7] else [])]

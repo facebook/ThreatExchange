@@ -113,14 +113,14 @@ class Dataset:
     ) -> None:
         types = " ".join(threat_types) if threat_types is not None else ""
         url = url if url is not None else ""
-        values = f"{stop_time}\n{request_time}\n{types}\n{url}\n"
         with self._indicator_checkpoint_path(privacy_group).open("w+") as f:
-            f.writelines(values)
+            f.writelines(f"{stop_time}\n{request_time}\n{types}\n{url}\n")
 
-    def _signal_state_file(
-        self, signal_type: signal_base.SignalType, suffix: str = ""
-    ) -> pathlib.Path:
-        return self.state_dir / f"{signal_type.get_name()}{suffix}{self.EXTENSION}"
+    def _signal_state_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
+        return self.state_dir / f"{signal_type.get_name()}{self.EXTENSION}"
+
+    def get_indicator_store(self, privacy_group: int) -> signal_base.IndicatorSignals:
+        return signal_base.IndicatorSignals(self.state_dir, privacy_group)
 
     def load_cache(
         self, signal_types: t.Optional[t.Iterable[signal_base.SignalType]] = None
@@ -140,7 +140,7 @@ class Dataset:
         self, indicator_signals: signal_base.IndicatorSignals
     ) -> None:
         """Load indicator files"""
-        indicator_signals.load_indicators(self.state_dir)
+        indicator_signals.load_indicators()
 
     def store_cache(self, signal_type: signal_base.SignalType) -> None:
         if not self.state_dir.exists():
@@ -152,4 +152,4 @@ class Dataset:
     ) -> None:
         if not self.state_dir.exists():
             self.state_dir.mkdir()
-        indicator_signals.store_indicators(self.state_dir)
+        indicator_signals.store_indicators()
