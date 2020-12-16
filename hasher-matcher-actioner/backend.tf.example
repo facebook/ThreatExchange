@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 terraform {
     backend "s3" {
       bucket = # TERRAFORM_STATE_S3_BUCKET

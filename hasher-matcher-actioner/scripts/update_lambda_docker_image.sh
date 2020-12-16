@@ -1,4 +1,5 @@
 #! /bin/bash
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 ECS_PASSWORD="$(aws ecr get-login-password --region us-east-1)"
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)

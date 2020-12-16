@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 ARG DEPS_PATH=/hma-deps
 ARG CODE_DIRECTORY=/hma-lambda
 
