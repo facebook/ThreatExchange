@@ -32,6 +32,25 @@ resource "aws_iam_role_policy_attachment" "lambda_sqs_role_policy" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
 }
 
+data "aws_iam_policy_document" "lambda_s3_access" {
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["${var.s3_images_arn}*"]
+  }
+}
+
+resource "aws_iam_policy" "lambda_s3_access" {
+  name_prefix = "${var.prefix}_pdq_hasher_s3_access"
+  description = "PDQ Hasher access to images in S3"
+  policy      = data.aws_iam_policy_document.lambda_s3_access.json
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
+  role       = aws_iam_role.pdq_hasher_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_s3_access.arn
+}
+
 resource "aws_lambda_function" "pdq_hasher_lambda" {
   function_name = "${var.prefix}_pdq_hasher_lambda"
   package_type  = "Image"

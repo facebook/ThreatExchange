@@ -32,3 +32,8 @@ variable "input_queue_arn" {
   description = "ARN for input sqs queue for lambda to read off of"
   type        = string
 }
+
+variable "s3_images_arn" {
+  description = "ARN for folder in s3 that holds the image files to hash"
+  type = string
+}
