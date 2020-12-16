@@ -1,1 +1,2 @@
-threatexchange[faiss]
+boto
+threatexchange[faiss,pdq_hasher]
