@@ -27,3 +27,8 @@ variable "lambda_docker_command" {
   type        = string
   default     = "pdq_matcher.lambda_handler"
 }
+
+variable "input_queue_arn" {
+  description = "ARN for input sqs queue for lambda to read off of"
+  type        = string
+}

@@ -13,7 +13,7 @@ provider "aws" {
 
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
-    effect  = "allow"
+    effect  = "Allow"
     actions = ["sts:AssumeRole"]
     principals {
       type        = "Service"
@@ -48,14 +48,8 @@ resource "aws_lambda_function" "pdq_matcher_lambda" {
   }
 }
 
-resource "aws_sqs_queue" "pdq_matcher_new_hash_queue" {
-  name_prefix                = "${var.prefix}-pdq-matcher"
-  visibility_timeout_seconds = 60
-  message_retention_seconds  = 1209600
-}
-
 resource "aws_lambda_event_source_mapping" "input" {
-  event_source_arn                   = aws_sqs_queue.pdq_matcher_new_hash_queue.arn
+  event_source_arn                   = var.input_queue_arn
   function_name                      = aws_lambda_function.pdq_matcher_lambda.arn
   batch_size                         = 100
   maximum_batching_window_in_seconds = 30
