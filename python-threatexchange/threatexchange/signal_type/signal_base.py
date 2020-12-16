@@ -66,12 +66,18 @@ class IndicatorSignals:
     A class to load and store ThreatIndicators.
     """
 
-    def __init__(self, privacy_group) -> None:
+    def __init__(self, state_dir: pathlib.Path, privacy_group: int) -> None:
         self.sub_dir = "indicators"
         self.privacy_group = str(privacy_group)
         self.state: t.Dict[str, t.Dict[int, ThreatIndicator]] = {}
+        self.path = state_dir / self.sub_dir
+        if not self.path.exists():
+            self.path.mkdir()
+        self.path = self.path / self.privacy_group
+        if not self.path.exists():
+            self.path.mkdir()
 
-    def process_indicator(self, indicator) -> None:
+    def process_indicator(self, indicator: ThreatIndicator) -> None:
         if indicator.threat_type not in self.state:
             self.state[indicator.threat_type] = {}
 
@@ -79,27 +85,16 @@ class IndicatorSignals:
         if indicator.should_delete:
             del self.state[indicator.threat_type][indicator.id]
 
-    def store_indicators(self, state_dir: pathlib.Path) -> None:
-        path = state_dir / self.sub_dir
-        if not path.exists():
-            path.mkdir()
-        path = path / self.privacy_group
-        if not path.exists():
-            path.mkdir()
-
+    def store_indicators(self) -> None:
         for threat_type in self.state:
-            store = path / f"{threat_type}{dataset.Dataset.EXTENSION}"
+            store = self.path / f"{threat_type}{dataset.Dataset.EXTENSION}"
             with store.open("w+", newline="") as s:
                 writer = csv.writer(s)
                 for _, i in self.state[threat_type].items():
                     writer.writerow(i.as_row())
 
-    def load_indicators(self, state_dir: pathlib.Path) -> None:
-        path = state_dir / self.sub_dir / self.privacy_group
-        if not path.exists():
-            return
-
-        for store in path.glob(f"[!_]*{dataset.Dataset.EXTENSION}"):
+    def load_indicators(self) -> None:
+        for store in self.path.glob(f"[!_]*{dataset.Dataset.EXTENSION}"):
             csv.field_size_limit(store.stat().st_size)  # dodge field size problems
             with store.open("r", newline="") as s:
                 try:
@@ -185,8 +180,11 @@ class SimpleSignalType(SignalType, HashMatcher):
         self.state.clear()
         csv.field_size_limit(path.stat().st_size)  # dodge field size problems
         with path.open("r", newline="") as f:
-            for row in csv.reader(f):
-                self.state[row[0]] = SimpleDescriptorRollup.from_row(row[1:])
+            try:
+                for row in csv.reader(f):
+                    self.state[row[0]] = SimpleDescriptorRollup.from_row(row[1:])
+            except Exception as e:
+                print(e)
 
     def store(self, path: pathlib.Path) -> None:
         with path.open("w+", newline="") as f:
