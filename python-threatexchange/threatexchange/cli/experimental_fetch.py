@@ -52,8 +52,8 @@ class ExperimentalFetchCommand(command_base.Command):
         ap.add_argument(
             "--page-size",
             type=int,
-            help="The number of updates to fetch per request, defaults to 100",
-            default=100,
+            help="The number of updates to fetch per request, defaults to 500",
+            default=500,
         )
 
     def __init__(
@@ -93,7 +93,6 @@ class ExperimentalFetchCommand(command_base.Command):
 
         more_to_fetch = True
         remaining_attempts = 5
-
         while more_to_fetch:
             try:
                 result = TE.Net.getThreatUpdates(
@@ -126,6 +125,9 @@ class ExperimentalFetchCommand(command_base.Command):
         dataset.record_indicator_checkpoint(
             privacy_group, self.stop_time, request_time, self.threat_types, next_page
         )
+
+        if remaining_attempts == 5:
+            print("Just like that we are done!")
         print("\nHere is a summary from this run:")
         for threat_type in self.counts:
             print(f"{threat_type}: {self.counts[threat_type]}")
