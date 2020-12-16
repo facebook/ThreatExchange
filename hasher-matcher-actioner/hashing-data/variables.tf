@@ -17,13 +17,3 @@ variable "prefix" {
   type        = string
 }
 
-variable "lambda_docker_uri" {
-  description = "URI for docker container image to use for lambda function"
-  type        = string
-}
-
-variable "lambda_docker_command" {
-  description = "command override for docker lambda container"
-  type        = string
-  default     = "pdq_matcher.lambda_handler"
-}
