@@ -11,24 +11,20 @@ provider "aws" {
   profile = var.profile
 }
 
-resource "aws_iam_role" "pdq_hasher_lambda_role" {
-  name = "${var.prefix}_pdq_hasher_lambda_role"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "lambda.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
+data "aws_iam_policy_document" "lambda_assume_role" {
+  statement {
+    effect  = "allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
     }
-  ]
+  }
 }
-  EOF
+
+resource "aws_iam_role" "pdq_hasher_lambda_role" {
+  name               = "${var.prefix}_pdq_hasher_lambda_role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_sqs_role_policy" {
