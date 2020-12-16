@@ -73,3 +73,33 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   queue_url = aws_sqs_queue.pdq_hasher_new_file_queue.id
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
+
+# Connect PDQ Hasher to PDQ Matcher
+
+resource "aws_sns_topic_subscription" "match_new_hashes" {
+  topic_arn = module.pdq_hasher.output_topic_arn
+  protocol  = "sqs"
+  endpoint  = aws_sqs_queue.pdq_matcher_new_hash_queue.arn
+}
+
+data "aws_iam_policy_document" "pdq_matcher_queue" {
+  statement {
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.pdq_matcher_new_hash_queue.arn]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [module.pdq_hasher.output_topic_arn]
+    }
+  }
+}
+
+resource "aws_sqs_queue_policy" "pdq_matcher_queue" {
+  queue_url = aws_sqs_queue.pdq_matcher_new_hash_queue.id
+  policy    = data.aws_iam_policy_document.pdq_matcher_queue.json
+}
