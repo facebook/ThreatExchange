@@ -40,7 +40,7 @@ resource "aws_lambda_function" "pdq_matcher_lambda" {
   image_config {
     command = [var.lambda_docker_command]
   }
-
+  timeout = 300
   environment {
     variables = {
       PDQ_MATCHES_TOPIC_ARN = aws_sns_topic.pdq_matches.arn

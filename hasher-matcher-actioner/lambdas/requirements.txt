@@ -1,2 +1,2 @@
 boto
-threatexchange[faiss,pdq_hasher]
+threatexchange[faiss,pdq_hasher]>=0.0.11

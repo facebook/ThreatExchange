@@ -51,6 +51,25 @@ resource "aws_iam_role_policy_attachment" "lambda_s3_access" {
   policy_arn = aws_iam_policy.lambda_s3_access.arn
 }
 
+data "aws_iam_policy_document" "lambda_sns_publish" {
+  statement {
+    effect    = "Allow"
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.pdq_hashes.arn]
+  }
+}
+
+resource "aws_iam_policy" "lambda_sns_publish" {
+  name_prefix = "${var.prefix}_pdq_hasher_sns_publish"
+  description = "PDQ Hasher access to publish to SNS"
+  policy      = data.aws_iam_policy_document.lambda_sns_publish.json
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sns_publish" {
+  role       = aws_iam_role.pdq_hasher_lambda_role.name
+  policy_arn = aws_iam_policy.lambda_sns_publish.arn
+}
+
 resource "aws_lambda_function" "pdq_hasher_lambda" {
   function_name = "${var.prefix}_pdq_hasher_lambda"
   package_type  = "Image"
@@ -59,7 +78,7 @@ resource "aws_lambda_function" "pdq_hasher_lambda" {
   image_config {
     command = [var.lambda_docker_command]
   }
-
+  timeout = 300
   environment {
     variables = {
       PDQ_HASHES_TOPIC_ARN = aws_sns_topic.pdq_hashes.arn
