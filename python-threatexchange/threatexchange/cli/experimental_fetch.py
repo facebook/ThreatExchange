@@ -25,8 +25,10 @@ class ExperimentalFetchCommand(command_base.Command):
     """
 
     PROGRESS_PRINT_INTERVAL_SEC = 30
-    # We use a DEFAULT_REFETCH_SEC of 85 days because threat_updates tombstones last for 90 days
-    # If you don't fetch for updates within the 90 days you may miss some deletion notifications
+    # If a client does not resume tailing the threat_updates endpoint fast enough, 
+    # deletion records will be removed, making it impossible to determine which
+    # records should be retained without refetching the entire dataset from scratch.
+    # The current implementation will retain for 90 days: TODO: Link to documentation
     DEFAULT_REFETCH_SEC = 3600 * 24 * 85  # 85 days
     MAX_CONSECUTIVE_RETRIES = 5
 
