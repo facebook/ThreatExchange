@@ -81,40 +81,32 @@ class Dataset:
         return FetchCheckpoint.deserialize(checkpoint.read_text())
 
     def get_indicator_checkpoint(self, privacy_group) -> t.Dict:
-        values = {
+        checkpoint = {
             "last_stop_time": 0,
             "last_run_time": 0,
-            "threat_types": None,
-            "url": None,
+            "types": None,
         }
-        checkpoint = self._indicator_checkpoint_path(privacy_group)
-        if not checkpoint.exists():
-            return values
-        with checkpoint.open("r+") as f:
-            values["last_stop_time"] = int(f.readline().strip())
-            values["last_run_time"] = int(f.readline().strip())
-            values["threat_types"] = f.readline().strip()
-            values["threat_types"] = (
-                values["threat_types"].split(" ")
-                if values["threat_types"] != ""
-                else None
-            )
-            values["url"] = f.readline().strip()
-            values["url"] = values["url"] if values["url"] != "" else None
-        return values
+        checkpoint_file = self._indicator_checkpoint_path(privacy_group)
+        if not checkpoint_file.exists():
+            return checkpoint
+        with checkpoint_file.open("r+") as f:
+            checkpoint = json.load(f)
+        return checkpoint
 
     def set_indicator_checkpoint(
         self,
         privacy_group: int,
         stop_time: int,
         request_time: int,
-        threat_types: t.List = [],
-        url: str = "",
+        types: t.List = None,
     ) -> None:
-        types = " ".join(threat_types) if threat_types is not None else ""
-        url = url if url is not None else ""
+        checkpoint = {
+            "last_stop_time": stop_time,
+            "last_run_time": request_time,
+            "types": types,
+        }
         with self._indicator_checkpoint_path(privacy_group).open("w+") as f:
-            f.writelines(f"{stop_time}\n{request_time}\n{types}\n{url}\n")
+            json.dump(checkpoint, f)
 
     def _signal_state_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
         return self.state_dir / f"{signal_type.get_name()}{self.EXTENSION}"
