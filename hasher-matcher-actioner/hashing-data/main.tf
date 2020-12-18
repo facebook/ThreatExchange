@@ -30,6 +30,14 @@ resource "aws_s3_bucket_public_access_block" "data_bucket" {
   restrict_public_buckets = true
 }
 
+# Index File Folder
+
+resource "aws_s3_bucket_object" "index" {
+  bucket       = aws_s3_bucket.data_bucket.id
+  key          = "index/"
+  content_type = "application/x-directory"
+}
+
 # Image File Notifications
 
 resource "aws_s3_bucket_object" "images" {

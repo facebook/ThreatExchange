@@ -32,3 +32,13 @@ variable "input_queue_arn" {
   description = "ARN for input sqs queue for lambda to read off of"
   type        = string
 }
+
+variable "s3_index_arn" {
+  description = "ARN for folder in s3 that holds the hash index files to match hashes"
+  type = string
+}
+
+variable "s3_data_bucket_id" {
+  description = "Name of bucket that holds the hash index files to match hashes"
+  type = string
+}

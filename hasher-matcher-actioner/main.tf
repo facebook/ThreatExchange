@@ -31,6 +31,8 @@ module "pdq_matcher" {
   prefix            = var.prefix
   lambda_docker_uri = var.hma_lambda_docker_uri
   input_queue_arn   = aws_sqs_queue.pdq_matcher_new_hash_queue.arn
+  s3_index_arn      = "${module.hashing_data.data_bucket_arn}/${module.hashing_data.index_folder_key}"
+  s3_data_bucket_id = module.hashing_data.data_bucket_id
 }
 
 resource "aws_sqs_queue" "pdq_hasher_new_file_queue" {

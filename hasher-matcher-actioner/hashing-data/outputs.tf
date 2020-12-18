@@ -8,6 +8,14 @@ output "data_bucket_arn" {
   value = aws_s3_bucket.data_bucket.arn
 }
 
+output "data_bucket_id" {
+  value = aws_s3_bucket.data_bucket.id
+}
+
 output "image_folder_key" {
   value = aws_s3_bucket_object.images.id
+}
+
+output "index_folder_key" {
+  value = aws_s3_bucket_object.index.id
 }
