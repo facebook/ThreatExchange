@@ -32,7 +32,7 @@ class ExperimentalFetchCommand(command_base.Command):
         ap.add_argument(
             "--continuation",
             action="store_true",
-            help="Fetch updates that you are missing, this overrides all other given options",
+            help="Continue fetching updates from where you last stopped with the same threat types. This will ignore all other options given",
         )
         ap.add_argument(
             "--start-time",
@@ -70,76 +70,92 @@ class ExperimentalFetchCommand(command_base.Command):
         self.threat_types = threat_types
         self.limit = page_size
         self.last_update_printed = 0
-        self.counts = collections.Counter()
-        self.total_count = 0
-        self.deleted_count = 0
 
     def execute(self, dataset: Dataset) -> None:
         request_time = int(time.time())
         privacy_group = dataset.config.privacy_groups[0]
-        self.indicator_store = dataset.get_indicator_store(privacy_group)
-        dataset.load_indicator_cache(self.indicator_store)
-        self.stop_time = request_time if self.stop_time is None else self.stop_time
-        next_page = None
-        if self.continuation:
-            checkpoint = dataset.get_indicator_checkpoint(privacy_group)
-            self.start_time = checkpoint["last_stop_time"]
-            self.stop_time = request_time
-            self.threat_types = checkpoint["threat_types"]
-            next_page = checkpoint["url"]
-            if request_time - checkpoint["last_run_time"] > self.DEFAULT_REFETCH_SEC:
-                print("It's been a long time since a full fetch, forcing one now.")
-                self.start_time = 0
-                next_page = None
+        for privacy_group in dataset.config.privacy_groups:
+            self.counts = collections.Counter()
+            self.total_count = 0
+            self.deleted_count = 0
+            self.indicator_store = dataset.get_indicator_store(privacy_group)
+            dataset.load_indicator_cache(self.indicator_store)
+            self.stop_time = request_time if self.stop_time is None else self.stop_time
+            next_page = None
+            if self.continuation:
+                checkpoint = dataset.get_indicator_checkpoint(privacy_group)
+                self.start_time = checkpoint["last_stop_time"]
+                self.stop_time = request_time
+                self.threat_types = checkpoint["threat_types"]
+                next_page = checkpoint["url"]
+                if (
+                    request_time - checkpoint["last_run_time"]
+                    > self.DEFAULT_REFETCH_SEC
+                ):
+                    print("It's been a long time since a full fetch, forcing one now.")
+                    self.start_time = 0
+                    next_page = None
 
-        more_to_fetch = True
-        remaining_attempts = 5
-        while more_to_fetch:
-            try:
-                result = TE.Net.getThreatUpdates(
-                    privacy_group,
-                    start_time=self.start_time,
-                    stop_time=self.stop_time,
-                    threat_type=self.threat_types,
-                    next_page=next_page,
-                    limit=self.limit,
-                )
-                if "data" in result:
-                    self._process_indicators(result["data"])
-                more_to_fetch = "paging" in result and "next" in result["paging"]
-                next_page = result["paging"]["next"] if more_to_fetch else ""
-            except Exception as e:
-                remaining_attempts -= 1
-                print(f"The following error occured:\n{e}")
-                if type(e) is urllib.error.HTTPError:
-                    print(e.read())
-                if remaining_attempts > 0:
-                    print(f"\nTrying again {remaining_attempts} more times.")
-                    time.sleep(5)
-                    continue
-                else:
-                    print(
-                        "\n5 consecutive errors occured, saving state and shutting down!"
-                    )
-                    break
+            more_to_fetch = True
             remaining_attempts = 5
+            while more_to_fetch:
+                try:
+                    result = TE.Net.getThreatUpdates(
+                        privacy_group,
+                        next_page,
+                        start_time=self.start_time,
+                        stop_time=self.stop_time,
+                        threat_types=self.threat_types,
+                        limit=self.limit,
+                    )
+                    if "data" in result:
+                        self._process_indicators(result["data"])
+                    more_to_fetch = "paging" in result and "next" in result["paging"]
+                    next_page = result["paging"]["next"] if more_to_fetch else ""
+                except Exception as e:
+                    remaining_attempts -= 1
+                    print(f"The following error occured:\n{e}")
+                    if type(e) is urllib.error.HTTPError:
+                        print(e.read())
+                    if remaining_attempts > 0:
+                        print(f"\nTrying again {remaining_attempts} more times.")
+                        time.sleep(5)
+                        continue
+                    else:
+                        print(
+                            "\n5 consecutive errors occured, saving state and shutting down!"
+                        )
+                        break
+                remaining_attempts = 5
 
-        dataset.store_indicator_cache(self.indicator_store)
-        dataset.record_indicator_checkpoint(
-            privacy_group, self.stop_time, request_time, self.threat_types, next_page
-        )
+            dataset.store_indicator_cache(self.indicator_store)
+            dataset.set_indicator_checkpoint(
+                privacy_group,
+                self.stop_time,
+                request_time,
+                self.threat_types,
+                next_page,
+            )
 
-        if remaining_attempts == 5:
-            print("Just like that we are done!")
-        print("\nHere is a summary from this run:")
-        for threat_type in self.counts:
-            print(f"{threat_type}: {self.counts[threat_type]}")
-        print(f"Total: {self.total_count}")
-        print(f"{self.deleted_count} of these were deletes.")
-        print(
-            "\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point."
-        )
-        return
+            (print(f"\nFor privacy group {privacy_group}:"))
+            if remaining_attempts == 5:
+                print("Just like that we are done!")
+            print("\nHere is a summary from this run:")
+            for threat_type in self.counts:
+                print(f"{threat_type}: {self.counts[threat_type]}")
+            print(
+                f"Total: {self.total_count}\n{self.deleted_count} of these were deletes."
+            )
+            print(f"\nThis brings your total dataset to:")
+            total = 0
+            for threat_type in self.indicator_store.state:
+                size = len(self.indicator_store.state[threat_type])
+                total += size
+                print(f"{threat_type}: {size}")
+            print(f"Total: {total}")
+            print(
+                "\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point."
+            )
 
     def _process_indicators(
         self,
@@ -156,9 +172,7 @@ class ExperimentalFetchCommand(command_base.Command):
                 ti_json.get("status"),
                 ti_json.get("should_delete"),
                 ti_json.get("tags") if "tags" in ti_json else [],
-                [int(app) for app in ti_json.get("applications_with_opinions")]
-                if "applications_with_opinions" in ti_json
-                else [],
+                [int(app) for app in ti_json.get("applications_with_opinions", [])],
             )
 
             self.indicator_store.process_indicator(ti)
