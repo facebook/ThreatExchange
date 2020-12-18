@@ -103,7 +103,7 @@ class Dataset:
             values["url"] = values["url"] if values["url"] != "" else None
         return values
 
-    def record_indicator_checkpoint(
+    def set_indicator_checkpoint(
         self,
         privacy_group: int,
         stop_time: int,
