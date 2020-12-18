@@ -25,14 +25,18 @@ class ExperimentalFetchCommand(command_base.Command):
     """
 
     PROGRESS_PRINT_INTERVAL_SEC = 30
+    # We use a DEFAULT_REFETCH_SEC of 85 days because threat_updates tombstones last for 90 days
+    # If you don't fetch for updates within the 90 days you may miss some deletion notifications
     DEFAULT_REFETCH_SEC = 3600 * 24 * 85  # 85 days
+    MAX_CONSECUTIVE_RETRIES = 5
 
     @classmethod
     def init_argparse(cls, ap) -> None:
+        # TODO: make continuation the default behaviour and give an option to do a full fetch
         ap.add_argument(
             "--continuation",
             action="store_true",
-            help="Continue fetching updates from where you last stopped with the same threat types. This will ignore all other options given",
+            help="Continue fetching updates from where you last stopped with the same threat types. This will ignore all other options given aside from --page-size.",
         )
         ap.add_argument(
             "--start-time",
@@ -45,7 +49,7 @@ class ExperimentalFetchCommand(command_base.Command):
             help="Fetch updates that occured before this timestamp",
         )
         ap.add_argument(
-            "--threat-types",
+            "--types",
             nargs="+",
             help="Only fetch updates for indicators of the given type",
         )
@@ -61,19 +65,18 @@ class ExperimentalFetchCommand(command_base.Command):
         continuation: bool,
         start_time: int,
         stop_time: int,
-        threat_types: t.List[str],
+        types: t.List[str],
         page_size: int,
     ) -> None:
         self.continuation = continuation
         self.start_time = start_time
         self.stop_time = stop_time
-        self.threat_types = threat_types
+        self.types = types
         self.limit = page_size
         self.last_update_printed = 0
 
     def execute(self, dataset: Dataset) -> None:
         request_time = int(time.time())
-        privacy_group = dataset.config.privacy_groups[0]
         for privacy_group in dataset.config.privacy_groups:
             self.counts = collections.Counter()
             self.total_count = 0
@@ -86,18 +89,16 @@ class ExperimentalFetchCommand(command_base.Command):
                 checkpoint = dataset.get_indicator_checkpoint(privacy_group)
                 self.start_time = checkpoint["last_stop_time"]
                 self.stop_time = request_time
-                self.threat_types = checkpoint["threat_types"]
-                next_page = checkpoint["url"]
+                self.types = checkpoint["types"]
                 if (
                     request_time - checkpoint["last_run_time"]
                     > self.DEFAULT_REFETCH_SEC
                 ):
                     print("It's been a long time since a full fetch, forcing one now.")
                     self.start_time = 0
-                    next_page = None
 
             more_to_fetch = True
-            remaining_attempts = 5
+            remaining_attempts = self.MAX_CONSECUTIVE_RETRIES
             while more_to_fetch:
                 try:
                     result = TE.Net.getThreatUpdates(
@@ -105,13 +106,13 @@ class ExperimentalFetchCommand(command_base.Command):
                         next_page,
                         start_time=self.start_time,
                         stop_time=self.stop_time,
-                        threat_types=self.threat_types,
+                        types=self.types,
                         limit=self.limit,
                     )
                     if "data" in result:
                         self._process_indicators(result["data"])
                     more_to_fetch = "paging" in result and "next" in result["paging"]
-                    next_page = result["paging"]["next"] if more_to_fetch else ""
+                    next_page = result["paging"]["next"] if more_to_fetch else None
                 except Exception as e:
                     remaining_attempts -= 1
                     print(f"The following error occured:\n{e}")
@@ -123,23 +124,24 @@ class ExperimentalFetchCommand(command_base.Command):
                         continue
                     else:
                         print(
-                            "\n5 consecutive errors occured, saving state and shutting down!"
+                            f"\n{self.MAX_CONSECUTIVE_RETRIES} consecutive errors occured, shutting down!"
                         )
-                        break
-                remaining_attempts = 5
+                        print(
+                            "Please try again with 'threatexchange -c {config} experimental-fetch --continuation'."
+                        )
+                        return
+                remaining_attempts = self.MAX_CONSECUTIVE_RETRIES
 
             dataset.store_indicator_cache(self.indicator_store)
             dataset.set_indicator_checkpoint(
                 privacy_group,
                 self.stop_time,
                 request_time,
-                self.threat_types,
-                next_page,
+                self.types,
             )
 
-            (print(f"\nFor privacy group {privacy_group}:"))
-            if remaining_attempts == 5:
-                print("Just like that we are done!")
+            # TODO: simplify this output
+            print(f"\nFor privacy group {privacy_group}:")
             print("\nHere is a summary from this run:")
             for threat_type in self.counts:
                 print(f"{threat_type}: {self.counts[threat_type]}")
@@ -154,7 +156,7 @@ class ExperimentalFetchCommand(command_base.Command):
                 print(f"{threat_type}: {size}")
             print(f"Total: {total}")
             print(
-                "\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to continue from the last successful point."
+                "\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to fetch future updates."
             )
 
     def _process_indicators(

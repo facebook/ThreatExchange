@@ -195,8 +195,8 @@ class Net:
             )
             for arg, value in kwargs.items():
                 if value is not None:
-                    if arg == "threat_types":
-                        url += "&threat_types=" + ",".join(value)
+                    if arg == "types":
+                        url += "&types=" + ",".join(value)
                     else:
                         url += "&" + arg + "=" + str(value)
         return self.getJSONFromURL(url)
