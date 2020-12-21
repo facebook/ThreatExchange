@@ -73,7 +73,7 @@ class Net:
 
     @classmethod
     def getJSONFromURL(self, url):
-        """ Perform an HTTP GET request, and return the JSON response payload.
+        """Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `fb_graph_api` above.
         """
         return fb_graph_api.get(url).json()
