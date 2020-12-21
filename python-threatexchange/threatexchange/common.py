@@ -8,6 +8,7 @@ If this file starts getting large, break it up.
 """
 
 import re
+from requests.adapters import HTTPAdapter
 
 
 def class_name_to_human_name(name: str, suffix: str) -> str:
@@ -26,3 +27,25 @@ def camel_case_to_underscore(name: str) -> str:
     """
     s1 = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
+
+
+DEFAULT_TIMEOUT = 5  # seconds
+
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    """Plug into requests to get a well-behaved session that does not wait for eternity.
+    H/T: https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/#setting-default-timeouts
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)

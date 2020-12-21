@@ -13,15 +13,32 @@ import json
 # General Python dependencies
 import os
 import re
-import urllib
-import urllib.error
+import requests
+from requests.packages.urllib3.util.retry import Retry
+
 import urllib.parse
-import urllib.request
+
+from .common import TimeoutHTTPAdapter
+
+
+DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
+retry_strategy = Retry(
+    total=4,
+    status_forcelist=[429, 500, 502, 503, 504],
+    method_whitelist=["HEAD", "GET", "OPTIONS"],
+)
+adapter = TimeoutHTTPAdapter(timeout=60, max_retries=retry_strategy)
+
+# `fb_graph_api`: Custom requests session that provides
+# - retries: 4 retries on GET requests for 429 or 5XX error codes
+# - timeout: 60 seconds. Can be adjusted at the fb_graph_api.get(.., timeout=FOO) level
+
+fb_graph_api = requests.Session()
+fb_graph_api.mount(DEFAULT_TE_BASE_URL, adapter=adapter)
 
 
 class Net:
     THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR"
-    DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
     TE_BASE_URL = DEFAULT_TE_BASE_URL
     APP_TOKEN = None
 
@@ -54,32 +71,12 @@ class Net:
         "reactions_to_remove": "reactions_to_remove",
     }
 
-    # ----------------------------------------------------------------
-    # Helper method for issuing a GET and returning the JSON payload.
     @classmethod
     def getJSONFromURL(self, url):
-        numTries = 0
-        while True:
-            numTries += 1
-            [response, error] = self.tryGET(url)
-            if response != None:
-                response = response.read()
-                # Now make it a string
-                response = response.decode("utf-8")
-                return json.loads(response)
-            elif error.code < 500 or error.code >= 600:
-                raise error
-            elif numTries > 4:
-                raise error
-
-    @classmethod
-    def tryGET(self, url):
-        try:
-            # The timeout is a heuristic
-            response = urllib.request.urlopen(url, None, 60)
-            return [response, None]
-        except urllib.error.HTTPError as e:
-            return [None, e]
+        """ Perform an HTTP GET request, and return the JSON response payload.
+        Same timeouts and retry strategy as `fb_graph_api` above.
+        """
+        return fb_graph_api.get(url).json()
 
     # ----------------------------------------------------------------
     # Looks up the "objective tag" ID for a given tag. This is suitable input for the /threat_tags endpoint.
@@ -352,17 +349,7 @@ class Net:
 
         # Do the POST
         try:
-            response = urllib.request.urlopen(url, data)
-
-            # Decode the outputs from the POST
-            # This is a Python 'bytes'
-            response = response.read()
-            # Now make it a string
-            response = response.decode("utf-8")
-            responseBody = json.loads(response)
-            responseCode = None
-
-            return [None, None, responseBody]
+            return [None, None, fb_graph_api.post(url, data).json()]
 
         except urllib.error.HTTPError as e:
             responseBody = json.loads(e.read().decode("utf-8"))

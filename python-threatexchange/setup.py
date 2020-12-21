@@ -53,6 +53,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
         "python-Levenshtein",
+        "requests",
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},
