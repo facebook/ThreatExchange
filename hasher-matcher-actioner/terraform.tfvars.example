@@ -1,0 +1,2 @@
+hma_lambda_docker_uri = # DOCKER_IMAGE_URI
+prefix = # ENVIRONMENT_PREFIX
