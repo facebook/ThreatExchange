@@ -14,11 +14,33 @@ import json
 import os
 import re
 import requests
+
+from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
 import urllib.parse
 
-from .common import TimeoutHTTPAdapter
+
+DEFAULT_TIMEOUT = 5  # seconds
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    """
+    Plug into requests to get a well-behaved session that does not wait for eternity.
+    H/T: https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/#setting-default-timeouts
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
 
 
 DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
@@ -29,12 +51,33 @@ retry_strategy = Retry(
 )
 adapter = TimeoutHTTPAdapter(timeout=60, max_retries=retry_strategy)
 
-# `fb_graph_api`: Custom requests session that provides
-# - retries: 4 retries on GET requests for 429 or 5XX error codes
-# - timeout: 60 seconds. Can be adjusted at the fb_graph_api.get(.., timeout=FOO) level
 
-fb_graph_api = requests.Session()
-fb_graph_api.mount(DEFAULT_TE_BASE_URL, adapter=adapter)
+def get_fb_graph_api():
+    """
+    Custom requests session that provides
+    - retries: 4 retries on GET requests for 429 or 5XX error codes
+    - timeout: 60 seconds. Can be adjusted at the fb_graph_api.get(.., timeout=FOO) level
+
+    Ideally, should be used within a context manager:
+    ```
+    with get_fb_graph_api() as fb_graph_api:
+        fb_graph_api.get()...
+    ```
+
+    If using without a context manager, ensure you end up calling close() on the returned value.
+
+    TODO: Identify if requests Session object can be used across threads in a
+    `concurrent.futures.ThreadPoolExecutor`
+    - because a session is created per call to get_fb_graph_api(), the underlying conn
+      pool can't be used.
+    - this might become a performance concern if the pre-flight latencies become
+      significant because we make many small requests and not few large ones.
+    - right now, choosing to go ahead with one session per call as is typical in
+      requests.get() equivalents
+    """
+    session = requests.Session()
+    session.mount(DEFAULT_TE_BASE_URL, adapter=adapter)
+    return session
 
 
 class Net:
@@ -73,10 +116,12 @@ class Net:
 
     @classmethod
     def getJSONFromURL(self, url):
-        """Perform an HTTP GET request, and return the JSON response payload.
+        """
+        Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `fb_graph_api` above.
         """
-        return fb_graph_api.get(url).json()
+        with get_fb_graph_api() as fb_graph_api:
+            return fb_graph_api.get(url).json()
 
     # ----------------------------------------------------------------
     # Looks up the "objective tag" ID for a given tag. This is suitable input for the /threat_tags endpoint.
@@ -349,7 +394,8 @@ class Net:
 
         # Do the POST
         try:
-            return [None, None, fb_graph_api.post(url, data).json()]
+            with get_fb_graph_api() as fb_graph_api:
+                return [None, None, fb_graph_api.post(url, data).json()]
 
         except urllib.error.HTTPError as e:
             responseBody = json.loads(e.read().decode("utf-8"))
