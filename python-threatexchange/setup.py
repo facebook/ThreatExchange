@@ -25,6 +25,12 @@ extras_require = {
         "pdqhash>=0.2.2",
         "Pillow",
     ],
+    "pdq_ocr": [
+        "numpy",
+        "pdqhash>=0.2.2",
+        "Pillow",
+        "pytesseract",
+    ],
 }
 
 all_extras = set(sum(extras_require.values(), []))
