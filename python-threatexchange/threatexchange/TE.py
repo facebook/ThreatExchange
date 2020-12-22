@@ -3,7 +3,7 @@
 """
 This is an entire copy of a file from ThreatExchange/hashing
 
-TODO: Slim down to only what we need, and switch to using requests
+TODO: Slim down to only what we need
 """
 
 import copy
@@ -45,12 +45,12 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
-retry_strategy = Retry(
+_retry_strategy = Retry(
     total=4,
     status_forcelist=[429, 500, 502, 503, 504],
     method_whitelist=["HEAD", "GET", "OPTIONS"],
 )
-adapter = TimeoutHTTPAdapter(timeout=60, max_retries=retry_strategy)
+_adapter = TimeoutHTTPAdapter(timeout=60, max_retries=_retry_strategy)
 
 
 def get_fb_graph_api():
@@ -78,7 +78,7 @@ def get_fb_graph_api():
       requests.get() equivalents
     """
     session = requests.Session()
-    session.mount(DEFAULT_TE_BASE_URL, adapter=adapter)
+    session.mount(DEFAULT_TE_BASE_URL, adapter=_adapter)
     return session
 
 
