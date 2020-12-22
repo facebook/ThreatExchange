@@ -23,6 +23,7 @@ import urllib.parse
 
 DEFAULT_TIMEOUT = 5  # seconds
 
+
 class TimeoutHTTPAdapter(HTTPAdapter):
     """
     Plug into requests to get a well-behaved session that does not wait for eternity.
