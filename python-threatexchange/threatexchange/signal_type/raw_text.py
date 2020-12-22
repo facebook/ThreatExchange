@@ -7,13 +7,12 @@ Wrapper around the raw text signal type.
 
 import math
 import pathlib
-import re
 import typing as t
-import unicodedata
 
 import Levenshtein
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
+from .. import common
 from . import signal_base
 
 
@@ -37,7 +36,7 @@ class RawTextSignal(signal_base.SimpleSignalType, signal_base.StrMatcher):
         return self.match_hash(content)
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
-        normalized_str = self._normalize_string(signal_str)
+        normalized_str = common.normalize_string(signal_str)
         # Match considered if 95% match
         match_threshold = math.floor(len(normalized_str) * 0.05)
         matches = []
@@ -64,34 +63,10 @@ class RawTextSignal(signal_base.SimpleSignalType, signal_base.StrMatcher):
         return True
 
     def _postprocess_indicator(self, indicator: str) -> None:
-        normalized = self._normalize_string(indicator)
-        self.normal_to_raw[self._normalize_string(normalized)] = indicator
+        normalized = common.normalize_string(indicator)
+        self.normal_to_raw[common.normalize_string(normalized)] = indicator
 
     def load(self, path: pathlib.Path) -> None:
         super().load(path)
         for indicator in self.state:
             self._postprocess_indicator(indicator)
-
-    def _normalize_string(self, s: str) -> str:
-        """
-        Strip parts of the raw string to try and make matching more effective.
-
-        There are many redundant parts of input strings, or parts that don't
-        meaningfully contribute to whether its a match or not. Try and strip
-        as much of that as possible.
-        """
-        # Lowercase
-        # CrAzY cAsE => crazy case
-        s = s.lower()
-        # Strip accent characters
-        # ãóë => aoe
-        s = "".join(
-            c for c in unicodedata.normalize("NFKD", s) if not unicodedata.combining(c)
-        )
-        # Strip repeats of 2+
-        # w0000000t => w00t
-        s = re.sub("(.)(\1)+", "\1\1", s)
-        # Strip non alphanumerics (including spaces)
-        #
-        s = re.sub("[\W_]", "", s)
-        return s
