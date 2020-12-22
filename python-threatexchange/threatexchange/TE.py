@@ -68,6 +68,7 @@ def get_fb_graph_api():
 
     TODO: Identify if requests Session object can be used across threads in a
     `concurrent.futures.ThreadPoolExecutor`
+    Filed:  https://github.com/facebook/ThreatExchange/issues/348
     - because a session is created per call to get_fb_graph_api(), the underlying conn
       pool can't be used.
     - this might become a performance concern if the pre-flight latencies become
