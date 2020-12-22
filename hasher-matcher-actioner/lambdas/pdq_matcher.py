@@ -15,7 +15,6 @@ s3_client = boto3.client("s3")
 sns_client = boto3.client("sns")
 
 THRESHOLD = 31
-INDEX_S3_KEY = "index/hashes.index"
 LOCAL_INDEX_FILENAME = "/tmp/hashes.index"
 
 
@@ -32,12 +31,12 @@ def lambda_handler(event, context):
     logger.info("pdq_matcher_called")
     OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
     DATA_BUCKET = os.environ["DATA_BUCKET"]
+    INDEX_S3_KEY = os.getenv("INDEX_S3_KEY", "index/hashes.index")
 
     hash_index = get_index(DATA_BUCKET, INDEX_S3_KEY)
     logger.info("loaded_hash_index")
     for sqs_record in event["Records"]:
-        sns_notification = json.loads(sqs_record["body"])
-        message = json.loads(sns_notification["Message"])
+        message = json.loads(sqs_record["body"])
         if message.get("Event") == "TestEvent":
             logger.info("Disregarding Test Event")
             continue

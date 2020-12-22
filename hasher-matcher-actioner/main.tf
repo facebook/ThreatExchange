@@ -19,50 +19,60 @@ module "hashing_data" {
 }
 
 module "pdq_hasher" {
-  source            = "./pdq-hasher"
-  prefix            = var.prefix
-  lambda_docker_uri = var.hma_lambda_docker_uri
-  input_queue_arn   = aws_sqs_queue.pdq_hasher_new_file_queue.arn
-  s3_images_arn     = "${module.hashing_data.data_bucket_arn}/${module.hashing_data.image_folder_key}"
+  source = "./pdq-hasher"
 }
 
 module "pdq_matcher" {
-  source            = "./pdq-matcher"
-  prefix            = var.prefix
-  lambda_docker_uri = var.hma_lambda_docker_uri
-  input_queue_arn   = aws_sqs_queue.pdq_matcher_new_hash_queue.arn
-  s3_index_arn      = "${module.hashing_data.data_bucket_arn}/${module.hashing_data.index_folder_key}"
+  source = "./pdq-matcher"
+}
+
+module "pdq_signals" {
+  source  = "./pdq-signals"
+  region  = "us-east-1"
+  profile = null
+  prefix  = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      matcher = "pdq_matcher.lambda_handler"
+      hasher  = "pdq_hasher.lambda_handler"
+    }
+  }
+  images_input_queue_arn = aws_sqs_queue.pdq_images_queue.arn
+  image_resource_list = [
+    "${module.hashing_data.data_bucket_arn}/${module.hashing_data.image_folder_key}*"
+  ]
   s3_data_bucket_id = module.hashing_data.data_bucket_id
+  matches_sns_topic_arn = aws_sns_topic.matches.arn
+  s3_index_arn      = "${module.hashing_data.data_bucket_arn}/${module.hashing_data.index_folder_key}"
 }
 
-resource "aws_sqs_queue" "pdq_hasher_new_file_queue" {
-  name_prefix                = "${var.prefix}-pdq-hasher-input"
-  visibility_timeout_seconds = 60
-  message_retention_seconds  = 1209600
+resource "aws_sns_topic" "matches" {
+  name_prefix = "${var.prefix}-matches"
 }
 
-resource "aws_sqs_queue" "pdq_matcher_new_hash_queue" {
-  name_prefix                = "${var.prefix}-pdq-matcher"
-  visibility_timeout_seconds = 60
-  message_retention_seconds  = 1209600
-}
-
-# Connect Hashing Data to PDQ Hasher
+# Connect Hashing Data to PDQ Signals
 
 resource "aws_sns_topic_subscription" "hash_new_images" {
   topic_arn = module.hashing_data.image_notification_topic_arn
   protocol  = "sqs"
-  endpoint  = aws_sqs_queue.pdq_hasher_new_file_queue.arn
+  endpoint  = aws_sqs_queue.pdq_images_queue.arn
+}
+
+resource "aws_sqs_queue" "pdq_images_queue" {
+  name_prefix                = "${var.prefix}-pdq-images"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600
 }
 
 data "aws_iam_policy_document" "pdq_hasher_queue" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.pdq_hasher_new_file_queue.arn]
+    resources = [aws_sqs_queue.pdq_images_queue.arn]
     principals {
-      type        = "*"
-      identifiers = ["*"]
+      type = "Service"
+      identifiers = ["sns.amazonaws.com"]
     }
     condition {
       test     = "ArnEquals"
@@ -73,36 +83,6 @@ data "aws_iam_policy_document" "pdq_hasher_queue" {
 }
 
 resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
-  queue_url = aws_sqs_queue.pdq_hasher_new_file_queue.id
+  queue_url = aws_sqs_queue.pdq_images_queue.id
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
-}
-
-# Connect PDQ Hasher to PDQ Matcher
-
-resource "aws_sns_topic_subscription" "match_new_hashes" {
-  topic_arn = module.pdq_hasher.output_topic_arn
-  protocol  = "sqs"
-  endpoint  = aws_sqs_queue.pdq_matcher_new_hash_queue.arn
-}
-
-data "aws_iam_policy_document" "pdq_matcher_queue" {
-  statement {
-    effect    = "Allow"
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.pdq_matcher_new_hash_queue.arn]
-    principals {
-      type        = "*"
-      identifiers = ["*"]
-    }
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values   = [module.pdq_hasher.output_topic_arn]
-    }
-  }
-}
-
-resource "aws_sqs_queue_policy" "pdq_matcher_queue" {
-  queue_url = aws_sqs_queue.pdq_matcher_new_hash_queue.id
-  policy    = data.aws_iam_policy_document.pdq_matcher_queue.json
 }

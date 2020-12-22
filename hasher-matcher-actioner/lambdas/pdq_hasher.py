@@ -14,11 +14,11 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 s3_client = boto3.client("s3")
-sns_client = boto3.client("sns")
+sqs_client = boto3.client("sqs")
 
 
 def lambda_handler(event, context):
-    OUTPUT_TOPIC_ARN = os.environ["PDQ_HASHES_TOPIC_ARN"]
+    OUTPUT_QUEUE_URL = os.environ["PDQ_HASHES_QUEUE_URL"]
     for sqs_record in event["Records"]:
         sns_notification = json.loads(sqs_record["body"])
         message = json.loads(sns_notification["Message"])
@@ -39,7 +39,7 @@ def lambda_handler(event, context):
                 pdq_hash, quality = pdq_hasher.pdq_from_file(path)
                 output = {"hash": pdq_hash, "type": "pdq", "key": key}
                 logger.info("publishing new pdq hash")
-                sns_client.publish(
-                    TopicArn=OUTPUT_TOPIC_ARN,
-                    Message=json.dumps(output),
+                sqs_client.send_message(
+                    QueueUrl=OUTPUT_QUEUE_URL,
+                    MessageBody=json.dumps(output),
                 )
