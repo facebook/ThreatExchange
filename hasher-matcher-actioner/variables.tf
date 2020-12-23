@@ -10,3 +10,9 @@ variable "prefix" {
   type        = string
   default     = "hma"
 }
+
+variable "log_retention_in_days" {
+  description = "How long to retain cloudwatch logs for lambda functions in days"
+  type        = number
+  default     = 14
+}

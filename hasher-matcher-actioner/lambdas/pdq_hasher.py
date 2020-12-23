@@ -16,9 +16,10 @@ logger.setLevel(logging.INFO)
 s3_client = boto3.client("s3")
 sqs_client = boto3.client("sqs")
 
+OUTPUT_QUEUE_URL = os.environ["PDQ_HASHES_QUEUE_URL"]
+
 
 def lambda_handler(event, context):
-    OUTPUT_QUEUE_URL = os.environ["PDQ_HASHES_QUEUE_URL"]
     for sqs_record in event["Records"]:
         sns_notification = json.loads(sqs_record["body"])
         message = json.loads(sns_notification["Message"])

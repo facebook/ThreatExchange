@@ -17,6 +17,10 @@ sns_client = boto3.client("sns")
 THRESHOLD = 31
 LOCAL_INDEX_FILENAME = "/tmp/hashes.index"
 
+INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
+PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
+OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
+
 
 def get_index(bucket_name, key):
     """
@@ -29,11 +33,8 @@ def get_index(bucket_name, key):
 
 def lambda_handler(event, context):
     logger.info("pdq_matcher_called")
-    OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
-    DATA_BUCKET = os.environ["DATA_BUCKET"]
-    INDEX_S3_KEY = os.getenv("INDEX_S3_KEY", "index/hashes.index")
 
-    hash_index = get_index(DATA_BUCKET, INDEX_S3_KEY)
+    hash_index = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
     logger.info("loaded_hash_index")
     for sqs_record in event["Records"]:
         message = json.loads(sqs_record["body"])

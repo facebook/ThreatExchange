@@ -24,23 +24,34 @@ variable "lambda_docker_info" {
     commands = object({
       matcher = string
       hasher  = string
+      indexer = string
     })
   })
 }
 
-variable "images_input_queue_arn" {
-  description = "ARN for SQS queue that will send new images events"
-  type = string
+variable "images_input" {
+  description = "Configuration information for the image content that will be process for PDQ hashes"
+  type = object({
+    input_queue   = string
+    resource_list = list(string)
+  })
 }
 
-variable "image_resource_list" {
-  description = "List of resource ARNs where hasher should be able to pull images from"
-  type        = list(string)
+variable "threat_exchange_data" {
+  description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data"
+  type = object({
+    bucket_name        = string
+    pdq_data_file_key  = string
+    notification_topic = string
+  })
 }
 
-variable "s3_data_bucket_id" {
-  description = "Name of bucket that holds the hash index files to match hashes"
-  type        = string
+variable "index_data_storage" {
+  description = "Configuration information for the S3 Bucket that will hold PDQ Index data"
+  type = object({
+    bucket_name      = string
+    index_folder_key = string
+  })
 }
 
 variable "matches_sns_topic_arn" {
@@ -48,7 +59,7 @@ variable "matches_sns_topic_arn" {
   type        = string
 }
 
-variable "s3_index_arn" {
-  description = "ARN for folder in s3 that holds the hash index files to match hashes"
-  type        = string
+variable "log_retention_in_days" {
+  description = "How long to retain cloudwatch logs for lambda functions in days"
+  type        = number
 }

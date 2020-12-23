@@ -30,6 +30,58 @@ resource "aws_s3_bucket_public_access_block" "data_bucket" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_notification" "bucket_notifications" {
+  bucket = aws_s3_bucket.data_bucket.id
+
+  topic {
+    topic_arn     = aws_sns_topic.image_notification_topic.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "images/"
+  }
+
+  topic {
+    topic_arn     = aws_sns_topic.threat_exchange_data.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = "threat_exchange_data/"
+  }
+}
+
+
+# ThreatExchange Data File Folder
+
+resource "aws_s3_bucket_object" "threat_exchange_data" {
+  bucket       = aws_s3_bucket.data_bucket.id
+  key          = "threat_exchange_data/"
+  content_type = "application/x-directory"
+}
+
+resource "aws_sns_topic" "threat_exchange_data" {
+  name_prefix = "${var.prefix}-threatexchange-data"
+}
+
+data "aws_iam_policy_document" "threat_exchange_data" {
+  statement {
+    effect    = "Allow"
+    actions   = ["SNS:Publish"]
+    resources = [aws_sns_topic.threat_exchange_data.arn]
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = [aws_s3_bucket.data_bucket.arn]
+    }
+  }
+}
+
+resource "aws_sns_topic_policy" "threat_exchange_data" {
+  arn    = aws_sns_topic.threat_exchange_data.arn
+  policy = data.aws_iam_policy_document.threat_exchange_data.json
+}
+
+
 # Index File Folder
 
 resource "aws_s3_bucket_object" "index" {
@@ -73,12 +125,3 @@ resource "aws_sns_topic_policy" "image_notification_topic_policy" {
   policy = data.aws_iam_policy_document.image_notification_topic_policy.json
 }
 
-resource "aws_s3_bucket_notification" "image_notification" {
-  bucket = aws_s3_bucket.data_bucket.id
-
-  topic {
-    topic_arn     = aws_sns_topic.image_notification_topic.arn
-    events        = ["s3:ObjectCreated:*"]
-    filter_prefix = "images/"
-  }
-}
