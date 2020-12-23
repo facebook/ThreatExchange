@@ -16,6 +16,12 @@ provider "aws" {
 resource "aws_s3_bucket" "data_bucket" {
   bucket_prefix = "${var.prefix}-hashing-data"
   acl           = "private"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HashingDataBucket"
+    }
+  )
   versioning {
     enabled = true
   }
@@ -53,10 +59,22 @@ resource "aws_s3_bucket_object" "threat_exchange_data" {
   bucket       = aws_s3_bucket.data_bucket.id
   key          = "threat_exchange_data/"
   content_type = "application/x-directory"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ThreatExchangeDataFolder"
+    }
+  )
 }
 
 resource "aws_sns_topic" "threat_exchange_data" {
   name_prefix = "${var.prefix}-threatexchange-data"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ThreatExchangeDataFolderUpdated"
+    }
+  )
 }
 
 data "aws_iam_policy_document" "threat_exchange_data" {
@@ -88,6 +106,12 @@ resource "aws_s3_bucket_object" "index" {
   bucket       = aws_s3_bucket.data_bucket.id
   key          = "index/"
   content_type = "application/x-directory"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "IndexesFolder"
+    }
+  )
 }
 
 # Image File Notifications
@@ -96,10 +120,22 @@ resource "aws_s3_bucket_object" "images" {
   bucket       = aws_s3_bucket.data_bucket.id
   key          = "images/"
   content_type = "application/x-directory"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ImagesContentFolder"
+    }
+  )
 }
 
 resource "aws_sns_topic" "image_notification_topic" {
   name_prefix = "${var.prefix}-images"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ImagesContentFolderUpdated"
+    }
+  )
 }
 
 data "aws_iam_policy_document" "image_notification_topic_policy" {

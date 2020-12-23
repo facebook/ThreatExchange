@@ -63,3 +63,9 @@ variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
 }
+
+variable "additional_tags" {
+  description = "Additional resource tags"
+  type        = map(string)
+  default     = {}
+}

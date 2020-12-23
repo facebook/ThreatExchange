@@ -47,16 +47,34 @@ resource "aws_lambda_function" "pdq_indexer" {
       PDQ_INDEX_KEY                    = local.pdq_index_key
     }
   }
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQIndexerFunction"
+    }
+  )
 }
 
 resource "aws_cloudwatch_log_group" "pdq_indexer" {
   name              = "/aws/lambda/${aws_lambda_function.pdq_indexer.function_name}"
   retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQIndexerLambdaLogGroup"
+    }
+  )
 }
 
 resource "aws_iam_role" "pdq_indexer" {
   name_prefix        = "${var.prefix}_pdq_indexer"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQIndexerLambdaRole"
+    }
+  )
 }
 
 data "aws_iam_policy_document" "pdq_indexer" {
@@ -111,6 +129,12 @@ resource "aws_sqs_queue" "hashes_queue" {
   name_prefix                = "${var.prefix}-pdq-hashes"
   visibility_timeout_seconds = 300
   message_retention_seconds  = 1209600
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQHashesQueue"
+    }
+  )
 }
 
 resource "aws_lambda_function" "pdq_hasher" {
@@ -128,16 +152,34 @@ resource "aws_lambda_function" "pdq_hasher" {
       PDQ_HASHES_QUEUE_URL = aws_sqs_queue.hashes_queue.id
     }
   }
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQHasherFunction"
+    }
+  )
 }
 
 resource "aws_cloudwatch_log_group" "pdq_hasher" {
   name              = "/aws/lambda/${aws_lambda_function.pdq_hasher.function_name}"
   retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQHasherLambdaLogGroup"
+    }
+  )
 }
 
 resource "aws_iam_role" "pdq_hasher" {
   name_prefix        = "${var.prefix}_pdq_hasher"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQHasherLambdaRole"
+    }
+  )
 }
 
 data "aws_iam_policy_document" "pdq_hasher" {
@@ -202,16 +244,34 @@ resource "aws_lambda_function" "pdq_matcher" {
       PDQ_INDEX_KEY         = local.pdq_index_key
     }
   }
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQMatcherFunction"
+    }
+  )
 }
 
 resource "aws_cloudwatch_log_group" "pdq_matcher" {
   name              = "/aws/lambda/${aws_lambda_function.pdq_matcher.function_name}"
   retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQMatcherLambdaLogGroup"
+    }
+  )
 }
 
 resource "aws_iam_role" "pdq_matcher" {
   name_prefix        = "${var.prefix}_pdq_matcher"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "PDQMatcherLambdaRole"
+    }
+  )
 }
 
 data "aws_iam_policy_document" "pdq_matcher" {

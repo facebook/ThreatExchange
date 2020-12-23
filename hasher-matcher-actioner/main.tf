@@ -13,9 +13,16 @@ provider "aws" {
   region = "us-east-1"
 }
 
+locals {
+  common_tags = {
+    "HMAPrefix" = var.prefix
+  }
+}
+
 module "hashing_data" {
-  source = "./hashing-data"
-  prefix = var.prefix
+  source          = "./hashing-data"
+  prefix          = var.prefix
+  additional_tags = local.common_tags
 }
 
 module "pdq_signals" {
@@ -47,6 +54,7 @@ module "pdq_signals" {
   matches_sns_topic_arn = aws_sns_topic.matches.arn
 
   log_retention_in_days = var.log_retention_in_days
+  additional_tags       = local.common_tags
 }
 
 resource "aws_sns_topic" "matches" {
@@ -59,6 +67,12 @@ resource "aws_sqs_queue" "pdq_images_queue" {
   name_prefix                = "${var.prefix}-pdq-images"
   visibility_timeout_seconds = 300
   message_retention_seconds  = 1209600
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "PDQImagesQueue"
+    }
+  )
 }
 
 resource "aws_sns_topic_subscription" "hash_new_images" {
