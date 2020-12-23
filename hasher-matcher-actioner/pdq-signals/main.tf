@@ -95,7 +95,7 @@ data "aws_iam_policy_document" "pdq_indexer" {
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
     ]
-    resources = [aws_cloudwatch_log_group.pdq_indexer.arn]
+    resources = ["${aws_cloudwatch_log_group.pdq_indexer.arn}:*"]
   }
 }
 
@@ -205,7 +205,7 @@ data "aws_iam_policy_document" "pdq_hasher" {
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
     ]
-    resources = [aws_cloudwatch_log_group.pdq_hasher.arn]
+    resources = ["${aws_cloudwatch_log_group.pdq_hasher.arn}:*"]
   }
 }
 
@@ -297,7 +297,7 @@ data "aws_iam_policy_document" "pdq_matcher" {
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
     ]
-    resources = [aws_cloudwatch_log_group.pdq_matcher.arn]
+    resources = ["${aws_cloudwatch_log_group.pdq_matcher.arn}:*"]
   }
 }
 
