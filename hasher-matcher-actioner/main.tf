@@ -36,6 +36,10 @@ module "pdq_signals" {
       indexer = "pdq_indexer.lambda_handler"
     }
   }
+  datastore = {
+    name = module.hashing_data.hma_datastore.name
+    arn  = module.hashing_data.hma_datastore.arn
+  }
   images_input = {
     input_queue = aws_sqs_queue.pdq_images_queue.arn
     resource_list = [

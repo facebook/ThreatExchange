@@ -161,3 +161,62 @@ resource "aws_sns_topic_policy" "image_notification_topic_policy" {
   policy = data.aws_iam_policy_document.image_notification_topic_policy.json
 }
 
+# DynamoDB Datastore
+
+resource "aws_dynamodb_table" "datastore" {
+  name         = "${var.prefix}-HMADataStore"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+  attribute {
+    name = "GSI1-PK"
+    type = "S"
+  }
+  attribute {
+    name = "GSI1-SK"
+    type = "S"
+  }
+  attribute {
+    name = "GSI2-PK"
+    type = "S"
+  }
+  attribute {
+    name = "Timestamp"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "GSI-1"
+    hash_key        = "GSI1-PK"
+    range_key       = "GSI1-SK"
+    projection_type = "INCLUDE"
+    non_key_attributes = [
+      "ContentHash",
+      "Timestamp",
+      "TEHash",
+      "HashType"
+    ]
+  }
+
+  global_secondary_index {
+    name            = "GSI-2"
+    hash_key        = "GSI2-PK"
+    range_key       = "Timestamp"
+    projection_type = "KEYS_ONLY"
+  }
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HMADataStore"
+    }
+  )
+}

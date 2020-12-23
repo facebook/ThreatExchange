@@ -29,6 +29,14 @@ variable "lambda_docker_info" {
   })
 }
 
+variable "datastore" {
+  description = "DynamoDB Table to store hash and match information into"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
 variable "images_input" {
   description = "Configuration information for the image content that will be process for PDQ hashes"
   type = object({

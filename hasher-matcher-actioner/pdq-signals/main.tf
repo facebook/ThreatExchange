@@ -150,6 +150,7 @@ resource "aws_lambda_function" "pdq_hasher" {
   environment {
     variables = {
       PDQ_HASHES_QUEUE_URL = aws_sqs_queue.hashes_queue.id
+      DYNAMODB_TABLE       = var.datastore.name
     }
   }
   tags = merge(
@@ -199,6 +200,11 @@ data "aws_iam_policy_document" "pdq_hasher" {
     resources = var.images_input.resource_list
   }
   statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:PutItem"]
+    resources = [var.datastore.arn]
+  }
+  statement {
     effect = "Allow"
     actions = [
       "logs:CreateLogStream",
@@ -242,6 +248,7 @@ resource "aws_lambda_function" "pdq_matcher" {
       PDQ_MATCHES_TOPIC_ARN = var.matches_sns_topic_arn
       INDEXES_BUCKET_NAME   = var.index_data_storage.bucket_name
       PDQ_INDEX_KEY         = local.pdq_index_key
+      DYNAMODB_TABLE        = var.datastore.name
     }
   }
   tags = merge(
@@ -289,6 +296,11 @@ data "aws_iam_policy_document" "pdq_matcher" {
     effect    = "Allow"
     actions   = ["s3:GetObject"]
     resources = [local.pdq_index_arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:PutItem"]
+    resources = [var.datastore.arn]
   }
   statement {
     effect = "Allow"
