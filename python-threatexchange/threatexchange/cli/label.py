@@ -22,11 +22,8 @@ class LabelCommand(command_base.Command):
     matches by default in the match command.
 
     Examples:
-      # Label text
-      $ threatexchange -c te.cfg label violating_label_from_config,other_label text "this is an example bad text"
-
       # Label descriptor
-      $ threatexchange -c te.cfg label false_positive descriptor 12345
+      $> threatexchange -c te.cfg label false_positive,other_label descriptor 12345
     """
 
     @classmethod
@@ -44,8 +41,10 @@ class LabelCommand(command_base.Command):
         )
         ap.add_argument("content", help="the content to label")
 
-    def __init__(self, descriptor_id: int, labels: t.List[str]) -> None:
-        self.descriptor_id = descriptor_id
+    def __init__(self, content_type: str, content: str, labels: t.List[str]) -> None:
+        if content_type == "descriptor":
+            self.descriptor_id = content
+
         # Remove any of the special tags that someone included for whatever reason
         self.labels = [
             l for l in labels if l not in descriptor.ThreatDescriptor.SPECIAL_TAGS
