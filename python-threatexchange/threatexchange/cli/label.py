@@ -23,7 +23,7 @@ class LabelCommand(command_base.Command):
 
     Examples:
       # Label descriptor
-      $> threatexchange -c te.cfg label,other_label false_positive descriptor 12345
+      $> threatexchange -c te.cfg label false_positive,other_label descriptor 12345
     """
 
     @classmethod
