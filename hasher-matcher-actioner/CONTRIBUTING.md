@@ -58,7 +58,7 @@ $ aws lambda update-function-code --function-name bodnarbm_pdq_matcher --image-u
 
 ## After Deploying
 
-Until a Syncer module is created, test threatexchange data needs to be manually uploaded to S3 for the indexers to create their indexes. Go to the S3 service on the AWS console, and go to the S3 bucket created by your run of terraform (it should be named something like `<prefix>-hashing-data<string_of_numbers>`). There should be a `threat_exchange_data/` folder there. Open that folder and upload your test threat_exchange data. You can use the `threatexchange_samples` dataset that is downloaded by default using the `threatexchange cli` tool when there is no config given. Once these files are uploaded, you should then see indexes being created in the `index/` folder of the S3 bucket.
+Until a Syncer module is created, test threatexchange data needs to be manually uploaded to S3 for the indexers to create their indexes. Go to the S3 service on the AWS console, and go to the S3 bucket created by your run of terraform (it should be named something like `<prefix>-hashing-data<string_of_numbers>`). There should be a `threat_exchange_data/` folder there. Open that folder and upload your test threat_exchange data. You can use the `threatexchange_samples` dataset that is downloaded by default using the `threatexchange cli` tool when there is no config given (access to the samples still requires ThreatExchange access though). Once these files are uploaded, you should then see indexes being created in the `index/` folder of the S3 bucket.
 
 ## Testing the HMA flow.
 

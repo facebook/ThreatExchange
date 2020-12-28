@@ -47,6 +47,7 @@ def get_index(bucket_name, key):
     """
     Load the given index from the s3 bucket and deserialize it
     """
+    # TODO Cache this index for a period of time to reduce S3 calls and bandwidth.
     with open(LOCAL_INDEX_FILENAME, "wb") as index_file:
         s3_client.download_fileobj(bucket_name, key, index_file)
     return pickle.load(open(LOCAL_INDEX_FILENAME, "rb"))
@@ -54,7 +55,6 @@ def get_index(bucket_name, key):
 
 def lambda_handler(event, context):
     table = dynamodb.Table(DYNAMODB_TABLE)
-    logger.info("pdq_matcher_called")
 
     hash_index: PDQMultiHashIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
     logger.info("loaded_hash_index")
