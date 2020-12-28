@@ -11,7 +11,7 @@ import warnings
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
-from ..hashing.pdq_utils import pdq_match
+from ..hashing.pdq_utils import pdq_match, BITS_IN_PDQ
 
 
 class PdqSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
@@ -50,6 +50,8 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
         return self.match_hash(pdq_hash)
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
+        if len(signal_str) != BITS_IN_PDQ / 4:
+            return []
         return [
             signal_base.SignalMatch(signal_attr.labels, signal_attr.first_descriptor_id)
             for pdq_hash, signal_attr in self.state.items()
