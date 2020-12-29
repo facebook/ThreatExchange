@@ -1,0 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+hma_lambda_docker_uri = # DOCKER_IMAGE_URI
+prefix = # ENVIRONMENT_PREFIX
+log_retention_in_days = # DAYS to retain logs

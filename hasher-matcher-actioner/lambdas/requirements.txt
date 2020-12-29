@@ -1,0 +1,2 @@
+boto3
+threatexchange[faiss,pdq_hasher]>=0.0.11

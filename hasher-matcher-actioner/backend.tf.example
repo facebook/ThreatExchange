@@ -1,0 +1,10 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+terraform {
+    backend "s3" {
+      bucket = # TERRAFORM_STATE_S3_BUCKET
+      key = # TERRAFORM_STATE_KEY
+      region = # TERRAFORM_BUCKET_REGION
+      dynamodb_table = # TERRAFORM_STATE_LOCKING_TABLE
+    }
+}

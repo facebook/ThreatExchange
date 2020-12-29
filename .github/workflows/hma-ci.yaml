@@ -1,0 +1,34 @@
+name: HMA CI
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "hasher-matcher-actioner/**"
+      - ".github/workflows/hma-ci.yaml"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "hasher-matcher-actioner/**"
+      - ".github/workflows/hma-ci.yaml"
+
+defaults:
+  run:
+    working-directory: hasher-matcher-actioner
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.14.x
+      - name: Check format
+        run: terraform fmt -check -diff -recursive -no-color
+        continue-on-error: true
+      - name: Init Modules
+        run: terraform init
+      - name: Validate terraform files
+        run: terraform validate -no-color
