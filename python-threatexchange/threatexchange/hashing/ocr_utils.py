@@ -3,7 +3,7 @@
 
 """
 Util file for Optical character recognition (OCR) related functions.
-Use of pytesseract will required additional libaries, see https://github.com/madmaze/pytesseract#installation
+Use of pytesseract requires additional libaries already be installed, see https://github.com/madmaze/pytesseract#installation
 """
 
 import pdqhash

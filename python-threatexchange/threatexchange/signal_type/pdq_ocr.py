@@ -46,7 +46,7 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
             from ..hashing.ocr_utils import text_from_image_file
         except:
             warnings.warn(
-                "Getting both PDQ hash and text of an image file using OCR will require additional libraries to be installed; install threatexchange with the [pdq_ocr] extra to use them",
+                "Getting both PDQ hash and text of an image file using OCR requires additional libraries already be installed; install threatexchange with the [pdq_hasher & ocr] extra and see ocr_utils.py",
                 category=UserWarning,
             )
             return []
