@@ -2,6 +2,9 @@
 
 python-threatexchange:
   - python-threatexchange/**/*
+  
+hma:
+  - hasher-matcher-actioner/**/*
 
 pdq:
   - pdq/**/*
