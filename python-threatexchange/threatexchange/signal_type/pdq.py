@@ -50,8 +50,12 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
         return self.match_hash(pdq_hash)
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
+
+        # for case where cli tries to match against non-pdq type hashes
+        # (filtering should likely be moved up in future to avoid silent errors)
         if len(signal_str) != BITS_IN_PDQ / 4:
             return []
+
         return [
             signal_base.SignalMatch(signal_attr.labels, signal_attr.first_descriptor_id)
             for pdq_hash, signal_attr in self.state.items()

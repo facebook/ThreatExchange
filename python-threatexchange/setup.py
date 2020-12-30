@@ -25,10 +25,7 @@ extras_require = {
         "pdqhash>=0.2.2",
         "Pillow",
     ],
-    "pdq_ocr": [
-        "numpy",
-        "pdqhash>=0.2.2",
-        "Pillow",
+    "ocr": [
         "pytesseract",
     ],
 }
