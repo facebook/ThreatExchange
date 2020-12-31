@@ -25,6 +25,10 @@ resource "aws_s3_bucket" "data_bucket" {
   versioning {
     enabled = true
   }
+  # For development, this makes cleanup easier
+  # If deploying for real, this should not be used
+  # Could also be set with a variable
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_public_access_block" "data_bucket" {
