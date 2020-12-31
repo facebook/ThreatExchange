@@ -1,4 +1,4 @@
-.PHONY: all docker upload_docker clean
+.PHONY: all docker upload_docker dev_create_configs dev_create_instance dev_destroy_instance dev_clear_configs clean
 
 shell-or-die = $\
 	$(eval sod_out := $(shell $(1); echo $$?))$\
