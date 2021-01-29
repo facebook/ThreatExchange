@@ -206,6 +206,7 @@ class FetchCommand(command_base.Command):
             seen_td_ids = set()
 
             counts = collections.Counter()
+            errors = collections.Counter()
 
             tags_to_fetch = dataset.config.labels
             only_first_fetch = False
@@ -225,12 +226,17 @@ class FetchCommand(command_base.Command):
                 # TODO - consider a timeout
                 descriptors = item.result()
                 for descriptor in descriptors:
-                    match = False
+                    any_match = False
                     for signal_name, signal_type in self.signal_types_by_name.items():
-                        if signal_type.process_descriptor(descriptor):
-                            match = True
+                        is_match = False
+                        try:
+                            is_match = signal_type.process_descriptor(descriptor)
+                        except Exception:
+                            errors[signal_name] += 1
+                        if is_match:
+                            any_match = True
                             counts[signal_name] += 1
-                    if match:
+                    if any_match:
                         counts["all"] += 1
                 now = time.time()
                 if now - self.last_update_printed >= self.PROGRESS_PRINT_INTERVAL_SEC:
@@ -295,6 +301,10 @@ class FetchCommand(command_base.Command):
                 continue
             dataset.store_cache(signal_type)
             print(f"{signal_name}: {counts[signal_name]}")
+        if errors:
+            self.stderr("\nSome signal types had errors:")
+            for signal_name, error_count in sorted(errors.items(), key=lambda t: -t[1]):
+                self.stderr(f"  {signal_name}: {error_count}")
         if not self.sample:
             dataset.record_fetch_checkpoint(
                 self.until_timestamp or self.start_time, fetch_type.is_full
