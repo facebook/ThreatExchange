@@ -71,8 +71,11 @@ class Command:
     def get_help(cls) -> str:
         """The short help of the command"""
         line = cls.get_description().strip().partition("\n")[0]
+        # Good luck debugging this! Slightly reformat short description
+        # (toplevel --help)
         if line[0].isupper():
-            line = line[0].lower() + line[1:]
+            first_word, sp, rem = line.partition(" ")
+            line = f"{first_word.lower()}{sp}{rem}"
         if line[-1] == ".":
             line = line[:-1]
         return line
