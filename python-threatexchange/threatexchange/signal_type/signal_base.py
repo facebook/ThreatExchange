@@ -6,6 +6,7 @@ Core abstractions for signal types.
 """
 
 import csv
+import os
 import pathlib
 import re
 import typing as t
@@ -70,12 +71,7 @@ class IndicatorSignals:
         self.sub_dir = "indicators"
         self.privacy_group = str(privacy_group)
         self.state: t.Dict[str, t.Dict[int, ThreatIndicator]] = {}
-        self.path = state_dir / self.sub_dir
-        if not self.path.exists():
-            self.path.mkdir()
-        self.path = self.path / self.privacy_group
-        if not self.path.exists():
-            self.path.mkdir()
+        self.path = state_dir / self.sub_dir / self.privacy_group
 
     def process_indicator(self, indicator: ThreatIndicator) -> None:
         if indicator.threat_type not in self.state:
@@ -86,6 +82,7 @@ class IndicatorSignals:
             del self.state[indicator.threat_type][indicator.id]
 
     def store_indicators(self) -> None:
+        os.makedirs(self.path, exist_ok=True)
         for threat_type in self.state:
             store = self.path / f"{threat_type}{dataset.Dataset.EXTENSION}"
             with store.open("w+", newline="") as s:
@@ -94,6 +91,9 @@ class IndicatorSignals:
                     writer.writerow(i.as_row())
 
     def load_indicators(self) -> None:
+        # No state directory = no state
+        if not self.path.exists:
+            return
         for store in self.path.glob(f"[!_]*{dataset.Dataset.EXTENSION}"):
             csv.field_size_limit(store.stat().st_size)  # dodge field size problems
             with store.open("r", newline="") as s:
