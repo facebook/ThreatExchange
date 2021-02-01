@@ -13,7 +13,6 @@ import json
 # General Python dependencies
 import os
 import re
-import threading
 import urllib.parse
 
 import requests
@@ -48,8 +47,9 @@ _retry_strategy = Retry(
 def get_fb_graph_api():
     """
     Custom requests session that provides
-    - retries: 4 retries on GET requests for 429 or 5XX error codes
-    - timeout: 60 seconds. Can be adjusted at the fb_graph_api.get(.., timeout=FOO) level
+    - retries: retries on GET requests for 429 or 5XX error codes
+    - timeout: timeout slow requests. Can be adjusted at the
+               fb_graph_api.get(.., timeout=FOO) level
 
     Ideally, should be used within a context manager:
     ```
@@ -57,17 +57,19 @@ def get_fb_graph_api():
         fb_graph_api.get()...
     ```
 
-    If using without a context manager, ensure you end up calling close() on the returned value.
+    If using without a context manager, ensure you end up calling close() on
+    the returned value.
 
     TODO: Identify if requests Session object can be used across threads in a
     `concurrent.futures.ThreadPoolExecutor`
     Filed:  https://github.com/facebook/ThreatExchange/issues/348
-    - because a session is created per call to get_fb_graph_api(), the underlying conn
-      pool can't be used.
-    - this might become a performance concern if the pre-flight latencies become
-      significant because we make many small requests and not few large ones.
-    - right now, choosing to go ahead with one session per call as is typical in
-      requests.get() equivalents
+    - because a session is created per call to get_fb_graph_api(), the
+      underlying conn pool can't be used.
+    - this might become a performance concern if the pre-flight latencies
+      become significant because we make many small requests and not few large
+      ones.
+    - right now, choosing to go ahead with one session per call as is typical
+      in requests.get() equivalents
     """
     session = requests.Session()
     session.mount(
