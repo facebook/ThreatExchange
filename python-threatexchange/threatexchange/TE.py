@@ -13,15 +13,11 @@ import json
 # General Python dependencies
 import os
 import re
-import requests
-
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
-
 import urllib.parse
 
-
-DEFAULT_TIMEOUT = 5  # seconds
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -30,18 +26,14 @@ class TimeoutHTTPAdapter(HTTPAdapter):
     H/T: https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/#setting-default-timeouts
     """
 
-    def __init__(self, *args, **kwargs):
-        self.timeout = DEFAULT_TIMEOUT
-        if "timeout" in kwargs:
-            self.timeout = kwargs["timeout"]
-            del kwargs["timeout"]
+    def __init__(self, *args, timeout=5, **kwargs):
+        self.timeout = timeout
         super().__init__(*args, **kwargs)
 
-    def send(self, request, **kwargs):
-        timeout = kwargs.get("timeout")
+    def send(self, request, *, timeout=None, **kwargs):
         if timeout is None:
-            kwargs["timeout"] = self.timeout
-        return super().send(request, **kwargs)
+            timeout = self.timeout
+        return super().send(request, timeout=timeout, **kwargs)
 
 
 DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
@@ -50,14 +42,14 @@ _retry_strategy = Retry(
     status_forcelist=[429, 500, 502, 503, 504],
     method_whitelist=["HEAD", "GET", "OPTIONS"],
 )
-_adapter = TimeoutHTTPAdapter(timeout=60, max_retries=_retry_strategy)
 
 
 def get_fb_graph_api():
     """
     Custom requests session that provides
-    - retries: 4 retries on GET requests for 429 or 5XX error codes
-    - timeout: 60 seconds. Can be adjusted at the fb_graph_api.get(.., timeout=FOO) level
+    - retries: retries on GET requests for 429 or 5XX error codes
+    - timeout: timeout slow requests. Can be adjusted at the
+               fb_graph_api.get(.., timeout=FOO) level
 
     Ideally, should be used within a context manager:
     ```
@@ -65,20 +57,25 @@ def get_fb_graph_api():
         fb_graph_api.get()...
     ```
 
-    If using without a context manager, ensure you end up calling close() on the returned value.
+    If using without a context manager, ensure you end up calling close() on
+    the returned value.
 
     TODO: Identify if requests Session object can be used across threads in a
     `concurrent.futures.ThreadPoolExecutor`
     Filed:  https://github.com/facebook/ThreatExchange/issues/348
-    - because a session is created per call to get_fb_graph_api(), the underlying conn
-      pool can't be used.
-    - this might become a performance concern if the pre-flight latencies become
-      significant because we make many small requests and not few large ones.
-    - right now, choosing to go ahead with one session per call as is typical in
-      requests.get() equivalents
+    - because a session is created per call to get_fb_graph_api(), the
+      underlying conn pool can't be used.
+    - this might become a performance concern if the pre-flight latencies
+      become significant because we make many small requests and not few large
+      ones.
+    - right now, choosing to go ahead with one session per call as is typical
+      in requests.get() equivalents
     """
     session = requests.Session()
-    session.mount(DEFAULT_TE_BASE_URL, adapter=_adapter)
+    session.mount(
+        DEFAULT_TE_BASE_URL,
+        adapter=TimeoutHTTPAdapter(timeout=60, max_retries=_retry_strategy),
+    )
     return session
 
 
@@ -122,8 +119,8 @@ class Net:
         Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `fb_graph_api` above.
         """
-        with get_fb_graph_api() as fb_graph_api:
-            return fb_graph_api.get(url).json()
+        with get_fb_graph_api() as api:
+            return api.get(url).json()
 
     # ----------------------------------------------------------------
     # Looks up the "objective tag" ID for a given tag. This is suitable input for the /threat_tags endpoint.
