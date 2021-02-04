@@ -94,7 +94,7 @@ def execute_command(namespace) -> None:
 
 
 def get_app_token(cli_option: str = None) -> str:
-    """Initialize the API key from a variety of fallback sources"""
+    """Get the API key from a variety of fallback sources"""
 
     file_loc = pathlib.Path("~/.txtoken").expanduser()
     environment_var = "TX_ACCESS_TOKEN"
@@ -104,7 +104,7 @@ def get_app_token(cli_option: str = None) -> str:
         source = "cli argument"
         token = cli_option
     elif os.environ.get(environment_var):
-        source = "TX_ACCESS_TOKEN environment variable"
+        source = f"{environment_var} environment variable"
         token = os.environ[environment_var]
     elif file_loc.exists() and file_loc.read_text():
         source = file_loc
