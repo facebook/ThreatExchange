@@ -17,13 +17,14 @@ import inspect
 import os
 import os.path
 import pathlib
+import re
 import sys
 import typing as t
 
 from .. import TE
-from . import command_base as base, fetch, experimental_fetch, label, match
 from ..collab_config import CollaborationConfig
 from ..dataset import Dataset
+from . import command_base as base, fetch, experimental_fetch, label, match
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
@@ -48,7 +49,6 @@ def get_argparse() -> argparse.ArgumentParser:
     ap.add_argument(
         "--app-token",
         "-a",
-        type=CollaborationConfig.load,
         metavar="TOKEN",
         help="the App token for ThreatExchange",
     )
@@ -73,7 +73,7 @@ def execute_command(namespace) -> None:
     command_cls = namespace.command_cls
     try:
         # Init TE lib
-        init_app_token(namespace.app_token)
+        TE.Net.APP_TOKEN = get_app_token(namespace.app_token)
         # Init collab config
         cfg = init_config_file(namespace.config)
         # "Init" dataset
@@ -93,25 +93,47 @@ def execute_command(namespace) -> None:
         sys.exit(130)
 
 
-def init_app_token(cli_option: str = None) -> None:
-    """Initialize the API key from a variety of fallback sources"""
+def get_app_token(cli_option: str = None) -> str:
+    """Get the API key from a variety of fallback sources"""
 
     file_loc = pathlib.Path("~/.txtoken").expanduser()
     environment_var = "TX_ACCESS_TOKEN"
+    token = ""
+    source = ""
     if cli_option:
-        TE.Net.APP_TOKEN = cli_option
+        source = "cli argument"
+        token = cli_option
     elif os.environ.get(environment_var):
-        TE.Net.APP_TOKEN = os.environ[environment_var]
+        source = f"{environment_var} environment variable"
+        token = os.environ[environment_var]
     elif file_loc.exists() and file_loc.read_text():
-        TE.Net.APP_TOKEN = file_loc.read_text()
+        source = file_loc
+        token = file_loc.read_text()
     else:
         raise base.CommandError(
             (
-                "Can't find API key - pass as an argument, in the environment as "
-                f"{environment_var} or put it in {file_loc}"
+                "Can't find App Token, pass it in using one of: \n"
+                "  * a cli argument\n"
+                f"  * in the environment as {environment_var}\n"
+                f"  * in a file at {file_loc}\n"
+                "https://developers.facebook.com/tools/accesstoken/"
             ),
             2,
         )
+    token = token.strip()
+    if not is_valid_app_token(token):
+        raise base.CommandError(
+            f"Your current app token (from {source}) is invalid.\n"
+            "Double check that it's an 'App Token' from "
+            "https://developers.facebook.com/tools/accesstoken/",
+            2,
+        )
+    return token
+
+
+def is_valid_app_token(token: str) -> bool:
+    """Returns true if the string looks like a valid token"""
+    return bool(re.match("[0-9]{8,}(?:%7C|\\|)[a-zA-Z0-9_\\-]{20,}", token))
 
 
 def init_config_file(cli_provided: t.IO = None) -> CollaborationConfig:
