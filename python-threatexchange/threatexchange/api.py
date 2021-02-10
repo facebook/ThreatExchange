@@ -36,58 +36,13 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         return super().send(request, timeout=timeout, **kwargs)
 
 
-DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
-_retry_strategy = Retry(
-    total=4,
-    status_forcelist=[429, 500, 502, 503, 504],
-    method_whitelist=["HEAD", "GET", "OPTIONS"],
-)
-
-
-def get_fb_graph_api():
-    """
-    Custom requests session that provides
-    - retries: retries on GET requests for 429 or 5XX error codes
-    - timeout: timeout slow requests. Can be adjusted at the
-               fb_graph_api.get(.., timeout=FOO) level
-
-    Ideally, should be used within a context manager:
-    ```
-    with get_fb_graph_api() as fb_graph_api:
-        fb_graph_api.get()...
-    ```
-
-    If using without a context manager, ensure you end up calling close() on
-    the returned value.
-
-    TODO: Identify if requests Session object can be used across threads in a
-    `concurrent.futures.ThreadPoolExecutor`
-    Filed:  https://github.com/facebook/ThreatExchange/issues/348
-    - because a session is created per call to get_fb_graph_api(), the
-      underlying conn pool can't be used.
-    - this might become a performance concern if the pre-flight latencies
-      become significant because we make many small requests and not few large
-      ones.
-    - right now, choosing to go ahead with one session per call as is typical
-      in requests.get() equivalents
-    """
-    session = requests.Session()
-    session.mount(
-        DEFAULT_TE_BASE_URL,
-        adapter=TimeoutHTTPAdapter(timeout=60, max_retries=_retry_strategy),
-    )
-    return session
-
-
-class Net:
-    THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR"
-    TE_BASE_URL = DEFAULT_TE_BASE_URL
-    APP_TOKEN = None
+class ThreatExchangeAPI:
+    _TE_BASE_URL = "https://graph.facebook.com/v9.0"
 
     # This is just a keystroke-saver / error-avoider for passing around
     # post-parameter field names.
 
-    POST_PARAM_NAMES = {
+    _POST_PARAM_NAMES = {
         "indicator": "indicator",  # For submit
         "type": "type",  # For submit
         "descriptor_id": "descriptor_id",  # For update
@@ -113,25 +68,54 @@ class Net:
         "reactions_to_remove": "reactions_to_remove",
     }
 
-    @classmethod
+    def __init__(self, api_token: str) -> None:
+        self.api_token = api_token
+
     def getJSONFromURL(self, url):
         """
         Perform an HTTP GET request, and return the JSON response payload.
-        Same timeouts and retry strategy as `fb_graph_api` above.
+        Same timeouts and retry strategy as `get_session` above.
         """
-        with get_fb_graph_api() as api:
-            return api.get(url).json()
+        with self._get_session() as session:
+            return session.get(url).json()
 
-    # ----------------------------------------------------------------
-    # Looks up the "objective tag" ID for a given tag. This is suitable input for the /threat_tags endpoint.
+    def _get_session(self):
+        """
+        Custom requests sesson
 
-    @classmethod
+        Ideally, should be used within a context manager:
+        ```
+        with self._get_session() as session:
+            session.get()...
+        ```
+
+        If using without a context manager, ensure you end up calling close() on
+        the returned value.
+        """
+        session = requests.Session()
+        session.mount(
+            self._TE_BASE_URL,
+            adapter=TimeoutHTTPAdapter(
+                timeout=60,
+                max_retries=Retry(
+                    total=4,
+                    status_forcelist=[429, 500, 502, 503, 504],
+                    method_whitelist=["HEAD", "GET", "OPTIONS"],
+                ),
+            ),
+        )
+        return session
+
     def getTagIDFromName(self, tagName, showURLs=False):
+        """
+        Looks up the "objective tag" ID for a given tag.
+        This is suitable input for the /threat_tags endpoint.
+        """
         url = (
-            self.TE_BASE_URL
+            self._TE_BASE_URL
             + "/threat_tags"
             + "/?access_token="
-            + self.APP_TOKEN
+            + self.api_token
             + "&text="
             + urllib.parse.quote(tagName)
         )
@@ -159,10 +143,10 @@ class Net:
         else:
             return desired[0]["id"]
 
-    # ----------------------------------------------------------------
-    # Looks up all metadata for given IDs.
-    @classmethod
     def getInfoForIDs(self, ids, **kwargs):
+        """
+        Looks up all metadata for given IDs.
+        """
         verbose = kwargs.get("verbose", False)
         showURLs = kwargs.get("showURLs", False)
         includeIndicatorInOutput = kwargs.get("includeIndicatorInOutput", True)
@@ -176,13 +160,13 @@ class Net:
                 raise Exception('Malformed descriptor ID "%s"' % id)
 
         # See also
-        # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+        # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/
         # for available fields
 
         url = (
-            self.TE_BASE_URL
+            self._TE_BASE_URL
             + "/?access_token="
-            + self.APP_TOKEN
+            + self.api_token
             + "&ids="
             + ",".join(ids)
             + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description,reactions,my_reactions"
@@ -218,20 +202,18 @@ class Net:
 
         return descriptors
 
-    # ----------------------------------------------------------------
-    # Gets threat updates for the given privacy group.
-    @classmethod
     def getThreatUpdates(self, privacy_group, next_page=None, **kwargs):
+        """Gets threat updates for the given privacy group."""
         if next_page is not None:
             url = next_page
         else:
             url = (
-                self.TE_BASE_URL
+                self._TE_BASE_URL
                 + "/"
                 + str(privacy_group)
                 + "/threat_updates/"
                 + "?access_token="
-                + self.APP_TOKEN
+                + self.api_token
                 + "&fields=id,indicator,type,creation_time,last_updated,should_delete,tags,status,applications_with_opinions"
             )
             for arg, value in kwargs.items():
@@ -242,21 +224,21 @@ class Net:
                         url += "&" + arg + "=" + str(value)
         return self.getJSONFromURL(url)
 
-    # ----------------------------------------------------------------
-    # Returns error message or None.
-    # This simply checks to see (client-side) if required fields aren't provided.
-    @classmethod
     def validatePostPararmsForSubmit(self, postParams):
-        if postParams.get(self.POST_PARAM_NAMES["descriptor_id"]) != None:
+        """
+        Returns error message or None.
+        This simply checks to see (client-side) if required fields aren't provided.
+        """
+        if postParams.get(self._POST_PARAM_NAMES["descriptor_id"]) != None:
             return "descriptor_id must not be specified for submit."
 
         requiredFields = [
-            self.POST_PARAM_NAMES["indicator"],
-            self.POST_PARAM_NAMES["type"],
-            self.POST_PARAM_NAMES["description"],
-            self.POST_PARAM_NAMES["share_level"],
-            self.POST_PARAM_NAMES["status"],
-            self.POST_PARAM_NAMES["privacy_type"],
+            self._POST_PARAM_NAMES["indicator"],
+            self._POST_PARAM_NAMES["type"],
+            self._POST_PARAM_NAMES["description"],
+            self._POST_PARAM_NAMES["share_level"],
+            self._POST_PARAM_NAMES["status"],
+            self._POST_PARAM_NAMES["privacy_type"],
         ]
 
         missingFields = [
@@ -272,56 +254,55 @@ class Net:
         else:
             return "Missing fields %s" % ",".join(missingFields)
 
-    # ----------------------------------------------------------------
-    # Returns error message or None.
-    # This simply checks to see (client-side) if required fields aren't provided.
-    @classmethod
     def validatePostPararmsForCopy(self, postParams):
-        if postParams.get(self.POST_PARAM_NAMES["descriptor_id"]) == None:
+        """
+        Returns error message or None.
+        This simply checks to see (client-side) if required fields aren't provided.
+        """
+        if postParams.get(self._POST_PARAM_NAMES["descriptor_id"]) == None:
             return "Source-descriptor ID must be specified for copy."
-        if postParams.get(self.POST_PARAM_NAMES["privacy_type"]) == None:
+        if postParams.get(self._POST_PARAM_NAMES["privacy_type"]) == None:
             return "Privacy type must be specified for copy."
-        if postParams.get(self.POST_PARAM_NAMES["privacy_members"]) == None:
+        if postParams.get(self._POST_PARAM_NAMES["privacy_members"]) == None:
             return "Privacy members must be specified for copy."
         return None
 
-    @classmethod
     def reactToThreatDescriptor(
-        cls, descriptor_id, reaction, *, showURLs=False, dryRun=False
+        self, descriptor_id, reaction, *, showURLs=False, dryRun=False
     ):
         """
         Does a POST to the reactions API.
 
         See: https://developers.facebook.com/docs/threat-exchange/reference/reacting
         """
-        return cls._postThreatDescriptor(
+        return self._postThreatDescriptor(
             "/".join(
-                (cls.TE_BASE_URL, str(descriptor_id), f"?access_token={cls.APP_TOKEN}")
+                (
+                    self._TE_BASE_URL,
+                    str(descriptor_id),
+                    f"?access_token={self.api_token}",
+                )
             ),
             {"reactions": reaction},
             showURLs=showURLs,
             dryRun=dryRun,
         )
 
-    # ----------------------------------------------------------------
-    # Does a single POST to the threat_descriptors endpoint.  See also
-    # https://developers.facebook.com/docs/threat-exchange/reference/submitting
-    @classmethod
     def submitThreatDescriptor(self, postParams, showURLs, dryRun):
+        """
+        Does a single POST to the threat_descriptors endpoint.  See also
+        https://developers.facebook.com/docs/threat-exchange/reference/submitting
+        """
         errorMessage = self.validatePostPararmsForSubmit(postParams)
         if errorMessage != None:
             return [errorMessage, None, None]
 
-        url = (
-            self.TE_BASE_URL
-            + "/threat_descriptors"
-            + "/?access_token="
-            + self.APP_TOKEN
+        url = "/".join(
+            (self._TE_BASE_URL, "threat_descriptors", f"?access_token={self.api_token}")
         )
 
         return self._postThreatDescriptor(url, postParams, showURLs, dryRun)
 
-    @classmethod
     def copyThreatDescriptor(self, postParams, showURLs, dryRun):
         errorMessage = self.validatePostPararmsForCopy(postParams)
         if errorMessage != None:
@@ -365,15 +346,13 @@ class Net:
         # aren't valid for post
         postParams = {}
         for key, value in newDescriptor.items():
-            if self.POST_PARAM_NAMES.get(key) != None:
+            if self._POST_PARAM_NAMES.get(key) != None:
                 postParams[key] = value
 
         return self.submitThreatDescriptor(postParams, showURLs, dryRun)
 
-    # ----------------------------------------------------------------
-    # Code-reuse for submit and update
-    @classmethod
     def _postThreatDescriptor(self, url, postParams, showURLs, dryRun):
+        """Code-reuse for submit and update"""
         for key, value in postParams.items():
             url += "&%s=%s" % (key, urllib.parse.quote(str(value)))
         if showURLs:
@@ -393,8 +372,8 @@ class Net:
 
         # Do the POST
         try:
-            with get_fb_graph_api() as fb_graph_api:
-                return [None, None, fb_graph_api.post(url, data).json()]
+            with self._get_session() as session:
+                return [None, None, session.post(url, data).json()]
 
         except urllib.error.HTTPError as e:
             responseBody = json.loads(e.read().decode("utf-8"))

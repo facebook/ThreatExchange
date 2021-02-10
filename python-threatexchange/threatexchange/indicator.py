@@ -7,8 +7,6 @@ Wrappers for the json returned by the ThreatExchange API to typed objects.
 
 import typing as t
 
-from . import TE
-
 
 class ThreatIndicator(t.NamedTuple):
     """

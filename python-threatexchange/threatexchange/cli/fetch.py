@@ -15,7 +15,7 @@ import time
 import typing as t
 import urllib.parse
 
-from .. import TE
+from ..api import ThreatExchangeAPI
 from ..collab_config import CollaborationConfig
 from ..content_type import meta
 from ..dataset import Dataset, FetchCheckpoint
@@ -167,7 +167,7 @@ class FetchCommand(command_base.Command):
 
         return FetchType.Incremental(checkpoint.last_fetch)
 
-    def execute(self, dataset: Dataset) -> None:
+    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         if self.clear:
             dataset.clear_cache()
             return
@@ -245,13 +245,13 @@ class FetchCommand(command_base.Command):
                 return len(descriptors)
 
             for tag_name in tags_to_fetch:
-                tag_id = TE.Net.getTagIDFromName(tag_name)
+                tag_id = api.getTagIDFromName(tag_name)
                 if not tag_id:
                     continue
                 pending_futures = collections.deque()
                 remainder_td_ids = collections.deque()
                 query = _TagQueryFetchCheckpoint(
-                    tag_id, fetch_type.from_timestamp, self.until_timestamp
+                    api, tag_id, fetch_type.from_timestamp, self.until_timestamp
                 )
 
                 # Query tags in order on a single thread to prevent overfetching ids
@@ -266,7 +266,7 @@ class FetchCommand(command_base.Command):
                         ]
                         pending_futures.append(
                             id_fetch_pool.submit(
-                                self._fetch_descriptors, batch, dataset.config.labels
+                                self._fetch_descriptors, api, batch, dataset.config.labels
                             )
                         )
                     if only_first_fetch:
@@ -283,6 +283,7 @@ class FetchCommand(command_base.Command):
                     pending_futures.append(
                         id_fetch_pool.submit(
                             self._fetch_descriptors,
+                            api,
                             list(remainder_td_ids),
                             dataset.config.labels,
                         )
@@ -311,12 +312,12 @@ class FetchCommand(command_base.Command):
             )
 
     def _fetch_descriptors(
-        self, td_ids: t.List[int], collab_labels: t.List[str]
+        self, api: ThreatExchangeAPI, td_ids: t.List[int], collab_labels: t.List[str]
     ) -> t.List[ThreatDescriptor]:
         """Do the bulk ThreatDescriptor fetch"""
 
         ret = []
-        for td_json in TE.Net.getInfoForIDs(td_ids):
+        for td_json in api.getInfoForIDs(td_ids):
             owner_id_str = td_json["owner"]["id"]
             td = ThreatDescriptor(
                 id=int(td_json["id"]),
@@ -363,8 +364,9 @@ class FetchCommand(command_base.Command):
 
 
 class _TagQueryFetchCheckpoint:
-    def __init__(self, tag_id: int, since: float = 0, until: float = 0) -> None:
-        query = {"access_token": TE.Net.APP_TOKEN, "limit": 1000, "fields": "id,type"}
+    def __init__(self, api: ThreatExchangeAPI, tag_id: int, since: float = 0, until: float = 0) -> None:
+        self.api = api
+        query = {"access_token": api.api_token, "limit": 1000, "fields": "id,type"}
         # Surprise! The endpoint accepts since/until but then ignores them!
         # You must know the secret command words are "tagged_since" and "tagged_until"
         if since:
@@ -372,14 +374,15 @@ class _TagQueryFetchCheckpoint:
         if until:
             query["tagged_until"] = int(until)
         query_str = urllib.parse.urlencode(query)
-        self._next_url = f"{TE.Net.TE_BASE_URL}/{tag_id}/tagged_objects/?{query_str}"
+        # TODO - clean this up, consider making cursoring from a helper object in api
+        self._next_url = f"{api._TE_BASE_URL}/{tag_id}/tagged_objects/?{query_str}"
 
     def __bool__(self) -> bool:
         return bool(self._next_url)
 
     def next(self) -> t.Dict[id, t.Any]:
-        response = TE.Net.getJSONFromURL(self._next_url)
+        response = self.api.getJSONFromURL(self._next_url)
         self._next_url = response.get("paging", {}).get("next")
         return [
-            d["id"] for d in response["data"] if d["type"] == TE.Net.THREAT_DESCRIPTOR
+            d["id"] for d in response["data"] if d["type"] == "THREAT_DESCRIPTOR"
         ]

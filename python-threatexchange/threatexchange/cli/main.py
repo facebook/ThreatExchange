@@ -21,7 +21,8 @@ import re
 import sys
 import typing as t
 
-from .. import TE
+from .. import descriptor
+from ..api import ThreatExchangeAPI
 from ..collab_config import CollaborationConfig
 from ..dataset import Dataset
 from . import command_base as base, fetch, experimental_fetch, label, match
@@ -72,8 +73,10 @@ def execute_command(namespace) -> None:
         return
     command_cls = namespace.command_cls
     try:
-        # Init TE lib
-        TE.Net.APP_TOKEN = get_app_token(namespace.app_token)
+        # Init API
+        api = ThreatExchangeAPI(get_app_token(namespace.app_token))
+        # Init state library (needs to be refactored)
+        descriptor.ThreatDescriptor.MY_APP_ID = api.api_token.partition("|")[0]
         # Init collab config
         cfg = init_config_file(namespace.config)
         # "Init" dataset
@@ -84,7 +87,7 @@ def execute_command(namespace) -> None:
         command = command_cls(
             **{k: v for k, v in namespace.__dict__.items() if k in arg_names}
         )
-        command.execute(dataset)
+        command.execute(api, dataset)
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)

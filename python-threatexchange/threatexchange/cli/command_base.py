@@ -13,6 +13,7 @@ import sys
 import typing as t
 
 from .. import common
+from ..api import ThreatExchangeAPI
 from ..dataset import Dataset
 
 
@@ -85,5 +86,5 @@ class Command:
         """Convenience accessor to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
-    def execute(self, dataset: Dataset) -> None:
+    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         raise NotImplementedError
