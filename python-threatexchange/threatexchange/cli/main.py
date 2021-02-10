@@ -165,9 +165,9 @@ def _verify_directory(raw: str) -> pathlib.Path:
     return ret
 
 
-def main() -> None:
+def main(args: t.Optional[t.Sequence[t.Text]] = None) -> None:
     ap = get_argparse()
-    namespace = ap.parse_args()
+    namespace = ap.parse_args(args)
     execute_command(namespace)
 
 
