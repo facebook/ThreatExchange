@@ -6,7 +6,7 @@ import pathlib
 import time
 import urllib
 import typing as t
-from .. import TE
+from ..api import ThreatExchangeAPI
 from ..dataset import Dataset
 from ..signal_type import signal_base
 from ..indicator import ThreatIndicator
@@ -77,7 +77,7 @@ class ExperimentalFetchCommand(command_base.Command):
         self.limit = page_size
         self.last_update_printed = 0
 
-    def execute(self, dataset: Dataset) -> None:
+    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         request_time = int(time.time())
         for privacy_group in dataset.config.privacy_groups:
             self.counts = collections.Counter()
@@ -103,7 +103,7 @@ class ExperimentalFetchCommand(command_base.Command):
             remaining_attempts = self.MAX_CONSECUTIVE_RETRIES
             while more_to_fetch:
                 try:
-                    result = TE.Net.getThreatUpdates(
+                    result = api.getThreatUpdates(
                         privacy_group,
                         next_page,
                         start_time=self.start_time,

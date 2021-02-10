@@ -7,7 +7,8 @@ Label command for uploading opinions (ThreatDescriptors) or reactions.
 
 import typing as t
 
-from .. import TE, descriptor
+from .. import descriptor
+from ..api import ThreatExchangeAPI
 from ..collab_config import CollaborationConfig
 from ..content_type import meta, text
 from ..dataset import Dataset
@@ -54,10 +55,10 @@ class LabelCommand(command_base.Command):
         if descriptor.ThreatDescriptor.FALSE_POSITIVE in labels and not self.labels:
             self.false_positive_reaction = True
 
-    def execute(self, dataset: Dataset) -> None:
+    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         if not self.false_positive_reaction:
             raise NotImplementedError
-        err_message, ex, response = TE.Net.reactToThreatDescriptor(
+        err_message, ex, response = api.reactToThreatDescriptor(
             self.descriptor_id, "DISAGREE_WITH_TAGS"
         )
         if ex:

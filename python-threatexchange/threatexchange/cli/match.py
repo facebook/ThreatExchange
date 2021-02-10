@@ -10,6 +10,7 @@ import pathlib
 import sys
 import typing as t
 
+from ..api import ThreatExchangeAPI
 from ..content_type import meta
 from ..dataset import Dataset
 from ..descriptor import ThreatDescriptor
@@ -142,7 +143,7 @@ class MatchCommand(command_base.Command):
             else:
                 yield parsed
 
-    def execute(self, dataset: Dataset) -> None:
+    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         if dataset.is_cache_empty:
             self.stderr(
                 "Looks like you are running this for the first time. Fetching some sample data."

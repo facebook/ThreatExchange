@@ -8,8 +8,6 @@ Wrappers for the json returned by the ThreatExchange API to typed objects.
 import collections
 import typing as t
 
-from . import TE
-
 
 class ThreatDescriptor(t.NamedTuple):
     """
@@ -30,6 +28,8 @@ class ThreatDescriptor(t.NamedTuple):
         ...
     }
     """
+    # TODO - do something smarter than this
+    MY_APP_ID = -1
 
     # You declared the indicator was in the collaboration label set
     TRUE_POSITIVE = "true_positive"
@@ -68,8 +68,7 @@ class ThreatDescriptor(t.NamedTuple):
     @property
     def is_mine(self) -> bool:
         """This Descriptor is my App's Opinion"""
-        # TODO - come up with a way to do this that doesn't use class state
-        return TE.Net.APP_TOKEN.partition("|")[0] == str(self.owner_id)
+        return self.MY_APP_ID == self.owner_id
 
 
 class SimpleDescriptorRollup:
