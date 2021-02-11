@@ -62,49 +62,6 @@ class SignalType:
         raise NotImplementedError
 
 
-class IndicatorSignals:
-    """
-    A class to load and store ThreatIndicators.
-    """
-
-    def __init__(self, state_dir: pathlib.Path, privacy_group: int) -> None:
-        self.sub_dir = "indicators"
-        self.privacy_group = str(privacy_group)
-        self.state: t.Dict[str, t.Dict[int, ThreatIndicator]] = {}
-        self.path = state_dir / self.sub_dir / self.privacy_group
-
-    def process_indicator(self, indicator: ThreatIndicator) -> None:
-        if indicator.threat_type not in self.state:
-            self.state[indicator.threat_type] = {}
-
-        self.state[indicator.threat_type][indicator.id] = indicator
-        if indicator.should_delete:
-            del self.state[indicator.threat_type][indicator.id]
-
-    def store_indicators(self) -> None:
-        os.makedirs(self.path, exist_ok=True)
-        for threat_type in self.state:
-            store = self.path / f"{threat_type}{dataset.Dataset.EXTENSION}"
-            with store.open("w+", newline="") as s:
-                writer = csv.writer(s)
-                for _, i in self.state[threat_type].items():
-                    writer.writerow(i.as_row())
-
-    def load_indicators(self) -> None:
-        # No state directory = no state
-        if not self.path.exists:
-            return
-        for store in self.path.glob(f"[!_]*{dataset.Dataset.EXTENSION}"):
-            csv.field_size_limit(store.stat().st_size)  # dodge field size problems
-            with store.open("r", newline="") as s:
-                try:
-                    for row in csv.reader(s):
-                        ti = ThreatIndicator.from_row(row)
-                        self.process_indicator(ti)
-                except Exception as e:
-                    print(f"Encountered {e} while loading an indicator from {store}")
-
-
 class HashMatcher:
     def match_hash(self, hash: str) -> t.List[SignalMatch]:
         """

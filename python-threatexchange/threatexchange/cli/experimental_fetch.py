@@ -1,191 +1,347 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import argparse
 import collections
+import concurrent.futures
+import datetime
+import json
+import os
 import pathlib
 import time
-import urllib
 import typing as t
+
 from ..api import ThreatExchangeAPI
 from ..dataset import Dataset
-from ..signal_type import signal_base
+from ..descriptor import ThreatDescriptor, SimpleDescriptorRollup
 from ..indicator import ThreatIndicator
-from ..content_type import meta
+from ..signal_type import signal_base
 from . import command_base
 
 
-class ExperimentalFetchCommand(command_base.Command):
+class ThreatUpdate(t.NamedTuple):
+    """A thin wrapper around the /threat_updates API return"""
+
+    raw_json: t.Dict[str, t.Any]
+
+    @property
+    def should_delete(self) -> bool:
+        """This record is a tombstone, and we should delete our copy"""
+        return self.raw_json["should_delete"]
+
+    @property
+    def id(self) -> int:
+        return int(self.raw_json["id"])
+
+    @property
+    def threat_type(self) -> str:
+        return self.raw_json["type"]
+
+    @property
+    def time(self) -> int:
+        return int(self.raw_json["last_updated"])
+
+    @staticmethod
+    def te_threat_updates_fields():
+        return SimpleDescriptorRollup.te_threat_updates_fields()
+
+
+class ThreatUpdatesDelta:
+    def __init__(
+        self, privacy_group: int, start: int = 0, end: t.Optional[int] = None
+    ) -> None:
+        self.privacy_group = privacy_group
+        self.updates = []
+        self.current = start
+        self.start = start
+        self.end = end
+
+        self._cursor = None
+
+    @property
+    def done(self) -> bool:
+        return self.end and self.end <= self.current
+
+    def merge(self, delta: "ThreatUpdatesDelta") -> "ThreatUpdatesDelta":
+        if not self.done or self.end != delta.start:
+            raise ValueError("unchecked merge!")
+        self.updates.extend(delta.updates)
+        self.current = delta.current
+        self.end = delta.end
+        self.tries = delta.tries
+
+    def one_fetch(self, api: ThreatExchangeAPI) -> t.Dict[str, t.Any]:
+        """One fetch only, please"""
+        if self.done:
+            return
+        now = time.time()
+        if self._cursor:
+            self._cursor.next()
+        else:
+            self._cursor = api.get_threat_updates(
+                self.privacy_group,
+                page_size=500,
+                start_time=self.start,
+                stop_time=self.end,
+                fields=ThreatUpdate.te_threat_updates_fields(),
+            )
+        for indidicator_json in self._cursor.data:
+            update = ThreatUpdate(indidicator_json)
+            self.updates.append(update)
+            # Is supposed to be strictly increasing
+            self.current = max(update.time, self.current)
+        if self._cursor.done:
+            if not self.end:
+                self.end = int(now)
+            self.current = self.end
+
+        return self._cursor.data
+
+    def split(
+        self, n: int
+    ) -> t.Tuple["ThreatUpdatesDelta", t.List["ThreatUpdatesDelta"]]:
+        tar = self.end or time.time()
+        diff = (tar - self.current_time) // (n + 1)
+        if diff <= 0:
+            return self, []
+        end = self.end
+        prev = self
+        new_deltas = []
+        for i in range(n - 1):
+            prev.end = prev.start + diff
+            new_deltas.append(ThreatUpdatesDelta(self.privacy_group, prev.end))
+        prev.end = end
+
+        return self, new_deltas
+
+
+class ThreatUpdatesIndicatorStore:
     """
-    WARNING: This is experimental, you probably want to use "Fetch" instead.
+    A wrapper for ThreatIndicator records for a single Collaboration
 
-    Download content from ThreatExchange to disk.
+    There is a unique file for each combination of:
+     * IndicatorType
+     * PrivacyGroup
 
-    Using the CollaborationConfig, identify ThreatPrivacyGroup that
-    corresponds to a single collaboration and fetch related threat updates.
+    The contents of file does not strip anything from the API
+    response, so can potentially contain a lot of data
     """
 
-    PROGRESS_PRINT_INTERVAL_SEC = 30
     # If a client does not resume tailing the threat_updates endpoint fast enough,
     # deletion records will be removed, making it impossible to determine which
     # records should be retained without refetching the entire dataset from scratch.
     # The current implementation will retain for 90 days: TODO: Link to documentation
     DEFAULT_REFETCH_SEC = 3600 * 24 * 85  # 85 days
-    MAX_CONSECUTIVE_RETRIES = 5
+
+    def __init__(self, state_dir: pathlib.Path, privacy_group: int) -> None:
+        self.path = state_dir
+        self._privacy_group = privacy_group
+        # Resettable
+        self._state: t.Dict[int, t.Any] = {}
+        self._last_fetch_time = 0
+        self._fetch_checkpoint = 0
+
+    def reset(self) -> None:
+        self._state.clear()
+        self._last_fetch_time = 0
+        self._last_fetch_checkpoint = 0
+
+    @property
+    def state_file() -> pathlib.Path:
+        return self.path / f"{self._privacy_group}.threat_updates{Dataset.EXTENSION}"
+
+    def load(self) -> None:
+        """Load the state of the threat_updates checkpoints from state directory"""
+        self.reset()
+
+        # No state directory = no state
+        state_path = self.state_file
+        if not state_path.exists():
+            return
+        with state_path.open("r") as s:
+            raw_json = json.load(s)
+            self._state = raw_json["state"]
+            self._last_fetch_time = raw_json["last_fetch_time"]
+            self._fetch_checkpoint = raw_json["fetch_checkpoint"]
+
+    def store(self) -> None:
+        os.makedirs(self.path, exist_ok=True)
+        with self.state_file.open("w") as f:
+            json.dump(
+                {
+                    "state": self._state,
+                    "last_fetch_time": self._last_fetch_time,
+                    "fetch_checkpoint": self._fetch_checkpoint,
+                },
+                f,
+                indent=2,
+            )
+
+    @property
+    def stale(self) -> bool:
+        """Is this state so old that it might be invalid?"""
+        return self._last_fetch_time + self.DEFAULT_REFETCH_SEC < time.time()
+
+    @property
+    def fetch_checkpoint(self) -> int:
+        return self._fetch_checkpoint
+
+    def update(self, delta: ThreatUpdatesDelta) -> None:
+        for update in delta.updates:
+            if update.should_delete:
+                state.pop(update.id, None)
+            else:
+                state[update.id] = update.raw_json
+        self._last_fetch_checkpoint = max(self._last_fetch_checkpoint, delta.current)
+        self._last_fetch_time = max(self._last_fetch_time, delta.current)
+
+    def sync_from_threatexchange(
+        self,
+        api: ThreatExchangeAPI,
+        *,
+        limit: int = 0,
+        stop_time: t.Optional[int] = None,
+        threads: int = 1,
+        progress_fn=None,
+    ) -> None:
+        if self.stale:
+            self.reset()
+
+        leader = ThreatUpdatesDelta(
+            self._privacy_group, self._fetch_checkpoint, end=stop_time
+        )
+        probes = []
+
+        while not leader.done:
+            for raw_json in leader.one_fetch(api):
+                progress_fn(ThreatUpdate(raw_json))
+                limit -= 1
+                if limit == 0:
+                    return
+        return
+
+
+class ExperimentalFetchCommand(command_base.Command):
+    """
+    WARNING: This is experimental, you probably want to use "fetch" instead.
+
+    Download content from ThreatExchange to disk.
+
+    Using the CollaborationConfig, download signals that
+    correspond to a single collaboration, and store them in the state
+    directory.
+    """
+
+    PROGRESS_PRINT_INTERVAL_SEC = 1
 
     @classmethod
     def init_argparse(cls, ap) -> None:
-        # TODO: make continuation the default behaviour and give an option to do a full fetch
         ap.add_argument(
-            "--continuation",
+            "--full",
             action="store_true",
-            help="Continue fetching updates from where you last stopped with the same threat types. This will ignore all other options given aside from --page-size.",
+            help="force a refetch from the beginning of time (this is almost certainly not needed)",
         )
-        ap.add_argument(
-            "--start-time",
-            type=int,
-            help="Fetch updates that occured on or after this timestamp",
-        )
+        ap.add_argument("--limit", type=int, help="stop after fetching this many items")
         ap.add_argument(
             "--stop-time",
             type=int,
-            help="Fetch updates that occured before this timestamp",
-        )
-        ap.add_argument(
-            "--types",
-            nargs="+",
-            help="Only fetch updates for indicators of the given type",
-        )
-        ap.add_argument(
-            "--page-size",
-            type=int,
-            help="The number of updates to fetch per request, defaults to 500",
-            default=500,
+            help="only fetch until this point",
         )
 
     def __init__(
         self,
-        continuation: bool,
-        start_time: int,
+        full: bool,
         stop_time: int,
-        types: t.List[str],
-        page_size: int,
+        limit: int,
     ) -> None:
-        self.continuation = continuation
-        self.start_time = start_time
+        self.full = full
         self.stop_time = stop_time
-        self.types = types
-        self.limit = page_size
-        self.last_update_printed = 0
+        self.limit = limit
+
+        # Progress
+        self.current_pgroup = 0
+        self.last_update_time = 0
+        # Print first update after 5 seconds
+        self.last_update_printed = time.time() - self.PROGRESS_PRINT_INTERVAL_SEC + 5
+        self.processed = 0
+        self.counts = collections.Counter()
 
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         request_time = int(time.time())
+
         for privacy_group in dataset.config.privacy_groups:
-            self.counts = collections.Counter()
-            self.total_count = 0
-            self.deleted_count = 0
-            self.indicator_store = dataset.get_indicator_store(privacy_group)
-            dataset.load_indicator_cache(self.indicator_store)
-            self.stop_time = request_time if self.stop_time is None else self.stop_time
-            next_page = None
-            if self.continuation:
-                checkpoint = dataset.get_indicator_checkpoint(privacy_group)
-                self.start_time = checkpoint["last_stop_time"]
-                self.stop_time = request_time
-                self.types = checkpoint["types"]
-                if (
-                    request_time - checkpoint["last_run_time"]
-                    > self.DEFAULT_REFETCH_SEC
-                ):
-                    print("It's been a long time since a full fetch, forcing one now.")
-                    self.start_time = 0
-
-            more_to_fetch = True
-            remaining_attempts = self.MAX_CONSECUTIVE_RETRIES
-            while more_to_fetch:
-                try:
-                    result = api.getThreatUpdates(
-                        privacy_group,
-                        next_page,
-                        start_time=self.start_time,
-                        stop_time=self.stop_time,
-                        types=self.types,
-                        limit=self.limit,
-                    )
-                    if "data" in result:
-                        self._process_indicators(result["data"])
-                    more_to_fetch = "paging" in result and "next" in result["paging"]
-                    next_page = result["paging"]["next"] if more_to_fetch else None
-                except Exception as e:
-                    remaining_attempts -= 1
-                    print(f"The following error occured:\n{e}")
-                    if type(e) is urllib.error.HTTPError:
-                        print(e.read())
-                    if remaining_attempts > 0:
-                        print(f"\nTrying again {remaining_attempts} more times.")
-                        time.sleep(5)
-                        continue
-                    else:
-                        print(
-                            f"\n{self.MAX_CONSECUTIVE_RETRIES} consecutive errors occured, shutting down!"
-                        )
-                        print(
-                            "Please try again with 'threatexchange -c {config} experimental-fetch --continuation'."
-                        )
-                        return
-                remaining_attempts = self.MAX_CONSECUTIVE_RETRIES
-
-            dataset.store_indicator_cache(self.indicator_store)
-            dataset.set_indicator_checkpoint(
-                privacy_group,
-                self.stop_time,
-                request_time,
-                self.types,
+            indicator_store = ThreatUpdatesIndicatorStore(
+                dataset.state_dir, privacy_group
             )
+            if not self.full:
+                indicator_store.load()
 
-            # TODO: simplify this output
-            print(f"\nFor privacy group {privacy_group}:")
-            print("\nHere is a summary from this run:")
-            for threat_type in self.counts:
-                print(f"{threat_type}: {self.counts[threat_type]}")
-            print(
-                f"Total: {self.total_count}\n{self.deleted_count} of these were deletes."
-            )
-            print(f"\nThis brings your total dataset to:")
-            total = 0
-            for threat_type in self.indicator_store.state:
-                size = len(self.indicator_store.state[threat_type])
-                total += size
-                print(f"{threat_type}: {size}")
-            print(f"Total: {total}")
-            print(
-                "\nYou can run 'threatexchange -c {config} experimental-fetch --continuation' to fetch future updates."
-            )
+            self.last_update_time = indicator_store.fetch_checkpoint
+            self.current_pgroup = privacy_group
 
-    def _process_indicators(
-        self,
-        indicators: list,
-    ) -> None:
-        """Process indicators"""
-        for ti_json in indicators:
-            ti = ThreatIndicator(
-                int(ti_json.get("id")),
-                ti_json.get("indicator"),
-                ti_json.get("type"),
-                int(ti_json.get("creation_time")),
-                int(ti_json.get("last_updated")) if "last_updated" in ti_json else None,
-                ti_json.get("status"),
-                ti_json.get("should_delete"),
-                ti_json.get("tags") if "tags" in ti_json else [],
-                [int(app) for app in ti_json.get("applications_with_opinions", [])],
-            )
+            self._print_progress()
 
-            self.indicator_store.process_indicator(ti)
-            self.counts[ti.threat_type] += 1
-            self.total_count += 1
-            if ti.should_delete:
-                self.deleted_count += 1
+            indicator_store.sync_from_threatexchange(
+                api,
+                limit=self.limit or 0,
+                stop_time=self.stop_time,
+                progress_fn=self._progress,
+            )
+            # indicator_store.store()
+        if self.processed:
+            print(f"Processed {self.processed} updates:")
+            for name, count in sorted(self.counts.items(), key=lambda i: -i[1]):
+                print(f"{name}: {count:+}")
+
+    def _progress(self, update: ThreatUpdate) -> None:
+        self.processed += 1
+
+        self.counts[update.threat_type] += -1 if update.should_delete else 1
+        self.last_update_time = update.time
 
         now = time.time()
         if now - self.last_update_printed >= self.PROGRESS_PRINT_INTERVAL_SEC:
             self.last_update_printed = now
-            self.stderr(f"Processed {self.total_count}...")
+            self._print_progress()
+
+    def _print_progress(self):
+        processed = ""
+        if self.processed:
+            processed = f"Downloaded {self.processed} updates. "
+
+        from_time = "ages long past"
+        if self.last_update_time:
+
+            delta = datetime.datetime.now() - datetime.datetime.utcfromtimestamp(
+                self.last_update_time
+            )
+            parts = []
+            for name, div in (
+                ("Y", datetime.timedelta(days=365)),
+                ("M", datetime.timedelta(days=30)),
+                ("d", datetime.timedelta(days=1)),
+                ("h", datetime.timedelta(hours=1)),
+                ("m", datetime.timedelta(minutes=1)),
+                ("s", datetime.timedelta(seconds=1)),
+            ):
+                val, delta = divmod(
+                    delta,
+                    div
+                )
+                if val:
+                    parts.append((val, name))
+                    # if len(parts) == 2:
+                    #     break
+
+            from_time = "now"
+            if parts:
+                str_parts =  []
+                for val, name in parts:
+                    # s = "s" if val > 1 else ""
+                    str_parts.append(f"{val}{name}")
+                from_time = f"{' '.join(str_parts)} ago"
+
+        self.stderr(
+            f"{processed}Currently on PrivacyGroup({self.current_pgroup}),",
+            f"from {from_time}",
+        )

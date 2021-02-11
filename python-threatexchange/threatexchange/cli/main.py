@@ -60,6 +60,13 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="DIR",
         help="the directory with the config state",
     )
+    ap.add_argument(
+        "--fb-threatexchange-endpoint",
+        "-E",
+        # For facebook developers testing new APIs, allow pointing
+        # to internal endpoints
+        help=argparse.SUPPRESS,
+    )
     subparsers = ap.add_subparsers(title="verbs", help="which action to do")
     for command in get_subcommands():
         command.add_command_to_subparser(subparsers)
@@ -74,7 +81,10 @@ def execute_command(namespace) -> None:
     command_cls = namespace.command_cls
     try:
         # Init API
-        api = ThreatExchangeAPI(get_app_token(namespace.app_token))
+        api = ThreatExchangeAPI(
+            get_app_token(namespace.app_token),
+            endpoint_override=namespace.fb_threatexchange_endpoint,
+        )
         # Init state library (needs to be refactored)
         descriptor.ThreatDescriptor.MY_APP_ID = api.api_token.partition("|")[0]
         # Init collab config
