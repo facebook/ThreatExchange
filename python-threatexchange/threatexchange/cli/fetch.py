@@ -266,7 +266,10 @@ class FetchCommand(command_base.Command):
                         ]
                         pending_futures.append(
                             id_fetch_pool.submit(
-                                self._fetch_descriptors, api, batch, dataset.config.labels
+                                self._fetch_descriptors,
+                                api,
+                                batch,
+                                dataset.config.labels,
                             )
                         )
                     if only_first_fetch:
@@ -364,7 +367,9 @@ class FetchCommand(command_base.Command):
 
 
 class _TagQueryFetchCheckpoint:
-    def __init__(self, api: ThreatExchangeAPI, tag_id: int, since: float = 0, until: float = 0) -> None:
+    def __init__(
+        self, api: ThreatExchangeAPI, tag_id: int, since: float = 0, until: float = 0
+    ) -> None:
         self.api = api
         query = {"access_token": api.api_token, "limit": 1000, "fields": "id,type"}
         # Surprise! The endpoint accepts since/until but then ignores them!
@@ -383,6 +388,4 @@ class _TagQueryFetchCheckpoint:
     def next(self) -> t.Dict[id, t.Any]:
         response = self.api.getJSONFromURL(self._next_url)
         self._next_url = response.get("paging", {}).get("next")
-        return [
-            d["id"] for d in response["data"] if d["type"] == "THREAT_DESCRIPTOR"
-        ]
+        return [d["id"] for d in response["data"] if d["type"] == "THREAT_DESCRIPTOR"]
