@@ -3,7 +3,7 @@ on:
   pull_request_target:
     paths:
       - "hasher-matcher-actioner/**"
-      - ".github/workflows/hma-pull-request.yaml"
+      - ".github/workflows/hma-ci-pull-request.yaml"
 
 defaults:
   run:

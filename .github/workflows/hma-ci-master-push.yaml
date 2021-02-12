@@ -5,7 +5,7 @@ on:
       - master
     paths:
       - "hasher-matcher-actioner/**"
-      - ".github/workflows/hma-ci.yaml"
+      - ".github/workflows/hma-ci-master-push.yaml"
 defaults:
   run:
     working-directory: hasher-matcher-actioner
