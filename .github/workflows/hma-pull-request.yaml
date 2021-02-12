@@ -1,8 +1,7 @@
 name: HMA Pull Request Terraform Validator
 on:
   pull_request:
-    branches:
-      - master
+    types: opened
     paths:
       - "hasher-matcher-actioner/**"
       - ".github/workflows/hma-pull-request.yaml"
