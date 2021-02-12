@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Verify PR Approved
       - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 0.14.x
