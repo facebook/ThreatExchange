@@ -1,5 +1,6 @@
-import sys
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import sys
 import pytest
 
 from threatexchange.cli import main
