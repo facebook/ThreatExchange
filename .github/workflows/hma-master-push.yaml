@@ -1,0 +1,41 @@
+name: HMA Master push
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "hasher-matcher-actioner/**"
+      - ".github/workflows/hma-ci.yaml"
+defaults:
+  run:
+    working-directory: hasher-matcher-actioner
+
+jobs:
+  tf_canary:
+    runs-on: ubuntu-latest
+    env:
+      TF_STATE_S3_BUCKET: secrets.TF_STATE_S3_BUCKET
+      TF_STATE_S3_KEY: secrets.TF_STATE_CANARY_S3_KEY
+      TF_STATE_AWS_REGION: secrets.TF_STATE_AWS_REGION
+      TF_STATE_LOCKING_TABLE: secrets.TF_STATE_LOCKING_TABLE
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.14.x
+      - name: Check format
+        run: terraform fmt -check -diff -recursive -no-color
+        continue-on-error: true
+      - name: Generate backend.tf
+        run: make backend.tf
+      - name: Init Modules
+        run: terraform init -input=false
+      - name: Validate terraform files
+        run: terraform validate -no-color -input=false
+      - name: Setup Test Environment
+        run: terraform -input=false -var 'prefix=tftest' terraform apply
+      - name: Conduct Test
+        run: sleep 100 # Will validate that an environment is setup and torn down and then test
+      - name: Tear Down Test Environment
+        if: ${{ always() }} # Even if previous steps have failed.
+        run: terraform -input=false -var 'prefix=tftest' destroy
