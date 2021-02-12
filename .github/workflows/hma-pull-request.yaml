@@ -1,27 +1,22 @@
-name: HMA CI
+name: HMA Pull Request Terraform Validator
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "hasher-matcher-actioner/**"
-      - ".github/workflows/hma-ci.yaml"
   pull_request:
     branches:
       - master
     paths:
       - "hasher-matcher-actioner/**"
-      - ".github/workflows/hma-ci.yaml"
+      - ".github/workflows/hma-pull-request.yaml"
 
 defaults:
   run:
     working-directory: hasher-matcher-actioner
 
 jobs:
-  terraform:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Verify PR Approved
       - uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 0.14.x

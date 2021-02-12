@@ -24,22 +24,16 @@ upload_docker:
 
 terraform.tfvars:
 	echo 'hma_lambda_docker_uri = "${DOCKER_URI}"' > terraform.tfvars
-	
+
 backend.tf:
-	# These are the values the facebook/ThreatExchange devs use, you may need to update with your own 
-	sed \
-		-e 's/# TERRAFORM_STATE_S3_BUCKET/"threatexchange-tf-state"/' \
-		-e 's/# TERRAFORM_STATE_KEY/"state\/hasher-matcher-actioner-${USER}.tfstate"/' \
-		-e 's/# TERRAFORM_BUCKET_REGION/"us-east-1"/' \
-		-e 's/# TERRAFORM_STATE_LOCKING_TABLE/"terraform-state-locking"/' \
-		backend.tf.example > backend.tf
+	./scripts/write_backend_config.sh > backend.tf
 
 dev_create_configs: terraform.tfvars backend.tf
-	
+
 dev_create_instance: dev_create_configs upload_docker
 	terraform init
 	terraform apply
-	
+
 dev_destroy_instance:
 	terraform destroy
 
