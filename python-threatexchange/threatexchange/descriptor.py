@@ -28,7 +28,8 @@ class ThreatDescriptor(t.NamedTuple):
         ...
     }
     """
-    # TODO - do something smarter than this
+    # TODO - do something smarter than this - static
+    #        class variable problematic, currently set in main.py
     MY_APP_ID = -1
 
     # You declared the indicator was in the collaboration label set

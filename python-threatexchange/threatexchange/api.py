@@ -74,7 +74,7 @@ class ThreatExchangeAPI:
     def getJSONFromURL(self, url):
         """
         Perform an HTTP GET request, and return the JSON response payload.
-        Same timeouts and retry strategy as `get_session` above.
+        Same timeouts and retry strategy as `_get_session` above.
         """
         with self._get_session() as session:
             return session.get(url).json()
