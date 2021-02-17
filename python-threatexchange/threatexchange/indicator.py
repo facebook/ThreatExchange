@@ -44,18 +44,18 @@ class ThreatIndicator(t.NamedTuple):
 
     @classmethod
     def from_json(cls, ti_json: t.Dict[str, t.Any]) -> "ThreatIndicator":
-      """Deserialize from the results of the ThreatIndicator endpoint"""
-      return cls(
-          int(ti_json.get("id")),
-          ti_json.get("indicator"),
-          ti_json.get("type"),
-          int(ti_json.get("creation_time")),
-          int(ti_json.get("last_updated")) if "last_updated" in ti_json else None,
-          ti_json.get("status"),
-          ti_json.get("should_delete"),
-          ti_json.get("tags") if "tags" in ti_json else [],
-          [int(app) for app in ti_json.get("applications_with_opinions", [])],
-      )
+        """Deserialize from the results of the ThreatIndicator endpoint"""
+        return cls(
+            int(ti_json.get("id")),
+            ti_json.get("indicator"),
+            ti_json.get("type"),
+            int(ti_json.get("creation_time")),
+            int(ti_json.get("last_updated")) if "last_updated" in ti_json else None,
+            ti_json.get("status"),
+            ti_json.get("should_delete"),
+            ti_json.get("tags") if "tags" in ti_json else [],
+            [int(app) for app in ti_json.get("applications_with_opinions", [])],
+        )
 
     def as_row(self) -> t.Tuple[int, str, str, int, int, str, str, str]:
         """Simple conversion to CSV row"""

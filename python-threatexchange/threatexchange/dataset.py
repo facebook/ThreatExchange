@@ -86,7 +86,6 @@ class Dataset:
             return FetchCheckpoint(0, 0)
         return FetchCheckpoint.deserialize(checkpoint.read_text())
 
-
     def _signal_state_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
         return self.state_dir / f"{signal_type.get_name()}{self.EXTENSION}"
 
