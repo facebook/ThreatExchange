@@ -2,6 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import argparse
+import csv
 import collections
 import concurrent.futures
 import datetime
@@ -13,13 +14,13 @@ import typing as t
 
 from ..api import ThreatExchangeAPI
 from ..dataset import Dataset
-from ..descriptor import ThreatDescriptor, SimpleDescriptorRollup
-from ..indicator import ThreatIndicator
+from ..descriptor import SimpleDescriptorRollup
 from ..signal_type import signal_base
 from . import command_base
 
 
-class ThreatUpdate(t.NamedTuple):
+# TODO - Once this stabalizes, move this to a new file/directory
+class ThreatUpdateJSON(t.NamedTuple):
     """A thin wrapper around the /threat_updates API return"""
 
     raw_json: t.Dict[str, t.Any]
@@ -34,19 +35,50 @@ class ThreatUpdate(t.NamedTuple):
         return int(self.raw_json["id"])
 
     @property
+    def indicator(self) -> str:
+        return self.raw_json["indicator"]
+
+    @property
     def threat_type(self) -> str:
         return self.raw_json["type"]
 
     @property
     def time(self) -> int:
+        """The time of the update"""
         return int(self.raw_json["last_updated"])
+
+    def as_rollup(self, app_id: int) -> SimpleDescriptorRollup:
+        """As a SimpleDescriptorRollup"""
+        return SimpleDescriptorRollup.from_threat_updates_json(app_id, self.raw_json)
+
+    def as_cli_csv_row(self, app_id: int) -> t.Tuple:
+        """As a simple record type for the threatexchange CLI cache"""
+        return (self.indicator,) + self.as_rollup(app_id).as_row()
 
     @staticmethod
     def te_threat_updates_fields():
+        """Which fields need to be fetched from /threat_updates"""
         return SimpleDescriptorRollup.te_threat_updates_fields()
 
 
+# TODO - Move this to where ThreatUpdateJSON ends up
 class ThreatUpdatesDelta:
+    """
+    A class for tracking a raw stream of /threat_updates
+
+    Any integration with ThreatExchange involves the creation of a local copy
+    of the data. /threat_updates sends changes to that data in either the form
+    of an insert/update or a delete.
+
+    A delta is a stream of updates and deletes, which when applied to an
+    existing database will give you the current set of live records.
+
+    As a parallelization trick, if you need to fetch between t1 and t3,
+    you can pick a point between them, t2, and fetch [t1, t2) and [t2, t3)
+    simulatenously, and the merging of the two is guaranteed to be the same
+    as [t1, t3). The split() and merge() commands aid with this operation
+    """
+
     def __init__(
         self, privacy_group: int, start: int = 0, end: t.Optional[int] = None
     ) -> None:
@@ -60,6 +92,7 @@ class ThreatUpdatesDelta:
 
     @property
     def done(self) -> bool:
+        """Has this delta fetched its entire assigned range?"""
         return self.end and self.end <= self.current
 
     def merge(self, delta: "ThreatUpdatesDelta") -> "ThreatUpdatesDelta":
@@ -71,7 +104,11 @@ class ThreatUpdatesDelta:
         self.tries = delta.tries
 
     def one_fetch(self, api: ThreatExchangeAPI) -> t.Dict[str, t.Any]:
-        """One fetch only, please"""
+        """
+        Do a single fetch from ThreatExchange and store the results.
+
+        One fetch only, please.
+        """
         if self.done:
             return
         now = time.time()
@@ -83,10 +120,10 @@ class ThreatUpdatesDelta:
                 page_size=500,
                 start_time=self.start,
                 stop_time=self.end,
-                fields=ThreatUpdate.te_threat_updates_fields(),
+                fields=ThreatUpdateJSON.te_threat_updates_fields(),
             )
         for indicator_json in self._cursor.data:
-            update = ThreatUpdate(indicator_json)
+            update = ThreatUpdateJSON(indicator_json)
             self.updates.append(update)
             # Is supposed to be strictly increasing
             self.current = max(update.time, self.current)
@@ -100,6 +137,7 @@ class ThreatUpdatesDelta:
     def split(
         self, n: int
     ) -> t.Tuple["ThreatUpdatesDelta", t.List["ThreatUpdatesDelta"]]:
+        """Split this delta into n deltas of roughly even size"""
         tar = self.end or time.time()
         diff = (tar - self.current_time) // (n + 1)
         if diff <= 0:
@@ -124,13 +162,16 @@ class ThreatUpdatesIndicatorStore:
      * PrivacyGroup
 
     The contents of file does not strip anything from the API
-    response, so can potentially contain a lot of data
+    response, so can potentially contain a lot of data.
+
+    If a client does not resume tailing the threat_updates endpoint fast enough,
+    deletion records will be removed, making it impossible to determine which
+    records should be retained without refetching the entire dataset from scratch.
+    The API implementation will retain for 90 days:
+    https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-updates/
     """
 
-    # If a client does not resume tailing the threat_updates endpoint fast enough,
-    # deletion records will be removed, making it impossible to determine which
-    # records should be retained without refetching the entire dataset from scratch.
-    # The current implementation will retain for 90 days: TODO: Link to documentation
+    # See docstring about tailing fast enough
     DEFAULT_REFETCH_SEC = 3600 * 24 * 85  # 85 days
 
     def __init__(self, state_dir: pathlib.Path, privacy_group: int) -> None:
@@ -149,6 +190,9 @@ class ThreatUpdatesIndicatorStore:
     @property
     def state_file(self) -> pathlib.Path:
         return self.path / f"{self._privacy_group}.threat_updates{Dataset.EXTENSION}"
+
+    def __iter__(self):
+        return (ThreatUpdateJSON(v) for v in self._state.values())
 
     def load(self) -> None:
         """Load the state of the threat_updates checkpoints from state directory"""
@@ -177,6 +221,19 @@ class ThreatUpdatesIndicatorStore:
                 indent=2,
             )
 
+    def store_as_cli_cache(self, dataset: Dataset, app_id: int) -> None:
+        row_by_type = collections.defaultdict(list)
+        for threat_update in self:
+            rollup = threat_update.as_rollup(app_id)
+            row_by_type[threat_update.threat_type].append(
+                threat_update.as_cli_csv_row(app_id)
+            )
+        for threat_type, rows in row_by_type.items():
+            path = dataset.state_dir / f"{threat_type}{dataset.EXTENSION}"
+            with path.open("w") as f:
+                writer = csv.writer(f)
+                writer.writerows(rows)
+
     @property
     def stale(self) -> bool:
         """Is this state so old that it might be invalid?"""
@@ -204,9 +261,15 @@ class ThreatUpdatesIndicatorStore:
         threads: int = 1,
         progress_fn=None,
     ) -> None:
+        """
+        Fetch from threat_updates to get a more up-to-date copy of the data.
+        """
         if self.stale:
             self.reset()
 
+        # TODO actually implement fancy threading logic
+        # alternative - instead make the API give hints about where to start
+        # fetches, which will mean that fancy threading logic will be simpler
         leader = ThreatUpdatesDelta(
             self._privacy_group, self._fetch_checkpoint, end=stop_time
         )
@@ -215,7 +278,7 @@ class ThreatUpdatesIndicatorStore:
         try:
             while not leader.done:
                 for raw_json in leader.one_fetch(api):
-                    progress_fn(ThreatUpdate(raw_json))
+                    progress_fn(ThreatUpdateJSON(raw_json))
                     limit -= 1
                     if limit == 0:
                         return
@@ -226,13 +289,14 @@ class ThreatUpdatesIndicatorStore:
 
 class ExperimentalFetchCommand(command_base.Command):
     """
-    WARNING: This is experimental, you probably want to use "fetch" instead.
-
     Download content from ThreatExchange to disk.
 
     Using the CollaborationConfig, download signals that
     correspond to a single collaboration, and store them in the state
     directory.
+
+    This endpoint uses /threat_updates to fetch content sequentially, and in
+    theory can be interrupted without issues.
     """
 
     PROGRESS_PRINT_INTERVAL_SEC = 1
@@ -295,12 +359,16 @@ class ExperimentalFetchCommand(command_base.Command):
                 raise
             finally:
                 indicator_store.store()
-        if self.processed:
-            self.stderr(f"Processed {self.processed} updates:")
-            for name, count in sorted(self.counts.items(), key=lambda i: -i[1]):
-                self.stderr(f"{name}: {count:+}")
+        if not self.processed:
+            return
+        self.stderr(f"Processed {self.processed} updates:")
+        # Now store our signal types
+        indicator_store.store_as_cli_cache(dataset, api.app_id)
 
-    def _progress(self, update: ThreatUpdate) -> None:
+        for name, count in sorted(self.counts.items(), key=lambda i: -i[1]):
+            self.stderr(f"{name}: {count:+}")
+
+    def _progress(self, update: ThreatUpdateJSON) -> None:
         self.processed += 1
 
         self.counts[update.threat_type] += -1 if update.should_delete else 1
