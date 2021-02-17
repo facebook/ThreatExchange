@@ -85,8 +85,8 @@ class ThreatUpdatesDelta:
                 stop_time=self.end,
                 fields=ThreatUpdate.te_threat_updates_fields(),
             )
-        for indidicator_json in self._cursor.data:
-            update = ThreatUpdate(indidicator_json)
+        for indicator_json in self._cursor.data:
+            update = ThreatUpdate(indicator_json)
             self.updates.append(update)
             # Is supposed to be strictly increasing
             self.current = max(update.time, self.current)
@@ -147,7 +147,7 @@ class ThreatUpdatesIndicatorStore:
         self._last_fetch_checkpoint = 0
 
     @property
-    def state_file() -> pathlib.Path:
+    def state_file(self) -> pathlib.Path:
         return self.path / f"{self._privacy_group}.threat_updates{Dataset.EXTENSION}"
 
     def load(self) -> None:
@@ -169,9 +169,9 @@ class ThreatUpdatesIndicatorStore:
         with self.state_file.open("w") as f:
             json.dump(
                 {
-                    "state": self._state,
                     "last_fetch_time": self._last_fetch_time,
                     "fetch_checkpoint": self._fetch_checkpoint,
+                    "state": self._state,
                 },
                 f,
                 indent=2,
@@ -189,10 +189,10 @@ class ThreatUpdatesIndicatorStore:
     def update(self, delta: ThreatUpdatesDelta) -> None:
         for update in delta.updates:
             if update.should_delete:
-                state.pop(update.id, None)
+                self._state.pop(update.id, None)
             else:
-                state[update.id] = update.raw_json
-        self._last_fetch_checkpoint = max(self._last_fetch_checkpoint, delta.current)
+                self._state[update.id] = update.raw_json
+        self._fetch_checkpoint = max(self._last_fetch_checkpoint, delta.current)
         self._last_fetch_time = max(self._last_fetch_time, delta.current)
 
     def sync_from_threatexchange(
@@ -212,12 +212,15 @@ class ThreatUpdatesIndicatorStore:
         )
         probes = []
 
-        while not leader.done:
-            for raw_json in leader.one_fetch(api):
-                progress_fn(ThreatUpdate(raw_json))
-                limit -= 1
-                if limit == 0:
-                    return
+        try:
+            while not leader.done:
+                for raw_json in leader.one_fetch(api):
+                    progress_fn(ThreatUpdate(raw_json))
+                    limit -= 1
+                    if limit == 0:
+                        return
+        finally:
+            self.update(leader)
         return
 
 
@@ -267,31 +270,35 @@ class ExperimentalFetchCommand(command_base.Command):
         self.counts = collections.Counter()
 
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
-        request_time = int(time.time())
-
         for privacy_group in dataset.config.privacy_groups:
             indicator_store = ThreatUpdatesIndicatorStore(
                 dataset.state_dir, privacy_group
             )
             if not self.full:
                 indicator_store.load()
-
             self.last_update_time = indicator_store.fetch_checkpoint
             self.current_pgroup = privacy_group
 
             self._print_progress()
+            if indicator_store.fetch_checkpoint >= time.time():
+                continue
 
-            indicator_store.sync_from_threatexchange(
-                api,
-                limit=self.limit or 0,
-                stop_time=self.stop_time,
-                progress_fn=self._progress,
-            )
-            # indicator_store.store()
+            try:
+                indicator_store.sync_from_threatexchange(
+                    api,
+                    limit=self.limit or 0,
+                    stop_time=self.stop_time,
+                    progress_fn=self._progress,
+                )
+            except:
+                self.stderr("Encountered an exception! Attempting to save progress...")
+                raise
+            finally:
+                indicator_store.store()
         if self.processed:
-            print(f"Processed {self.processed} updates:")
+            self.stderr(f"Processed {self.processed} updates:")
             for name, count in sorted(self.counts.items(), key=lambda i: -i[1]):
-                print(f"{name}: {count:+}")
+                self.stderr(f"{name}: {count:+}")
 
     def _progress(self, update: ThreatUpdate) -> None:
         self.processed += 1
@@ -309,37 +316,37 @@ class ExperimentalFetchCommand(command_base.Command):
         if self.processed:
             processed = f"Downloaded {self.processed} updates. "
 
-        from_time = "ages long past"
-        if self.last_update_time:
-
-            delta = datetime.datetime.now() - datetime.datetime.utcfromtimestamp(
-                self.last_update_time
-            )
+        from_time = ""
+        if not self.last_update_time:
+            from_time = "ages long past"
+        elif self.last_update_time >= time.time():
+            from_time = "moments ago"
+        else:
+            delta = datetime.datetime.utcfromtimestamp(
+                time.time()
+            ) - datetime.datetime.utcfromtimestamp(self.last_update_time)
             parts = []
             for name, div in (
-                ("Y", datetime.timedelta(days=365)),
-                ("M", datetime.timedelta(days=30)),
-                ("d", datetime.timedelta(days=1)),
-                ("h", datetime.timedelta(hours=1)),
-                ("m", datetime.timedelta(minutes=1)),
-                ("s", datetime.timedelta(seconds=1)),
+                ("year", datetime.timedelta(days=365)),
+                ("day", datetime.timedelta(days=1)),
+                ("hour", datetime.timedelta(hours=1)),
+                ("minute", datetime.timedelta(minutes=1)),
+                ("second", datetime.timedelta(seconds=1)),
             ):
-                val, delta = divmod(
-                    delta,
-                    div
-                )
-                if val:
+                val, delta = divmod(delta, div)
+                if val or parts:
                     parts.append((val, name))
-                    # if len(parts) == 2:
-                    #     break
 
             from_time = "now"
             if parts:
-                str_parts =  []
+                str_parts = []
                 for val, name in parts:
-                    # s = "s" if val > 1 else ""
-                    str_parts.append(f"{val}{name}")
-                from_time = f"{' '.join(str_parts)} ago"
+                    if str_parts:
+                        str_parts.append(f"{val:02}{name[0]}")
+                    else:
+                        s = "s" if val > 1 else ""
+                        str_parts.append(f"{val} {name}{s} ")
+                from_time = f"{''.join(str_parts).strip()} ago"
 
         self.stderr(
             f"{processed}Currently on PrivacyGroup({self.current_pgroup}),",
