@@ -17,7 +17,6 @@ import typing as t
 from . import collab_config
 from .content_type import meta
 from .signal_type import signal_base
-from .indicator import ThreatIndicator
 
 
 class FetchCheckpoint(t.NamedTuple):

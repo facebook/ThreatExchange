@@ -14,7 +14,6 @@ import typing as t
 from .. import common
 from .. import dataset
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from ..indicator import ThreatIndicator
 
 
 class SignalMatch(t.NamedTuple):
@@ -137,11 +136,8 @@ class SimpleSignalType(SignalType, HashMatcher):
         self.state.clear()
         csv.field_size_limit(path.stat().st_size)  # dodge field size problems
         with path.open("r", newline="") as f:
-            try:
-                for row in csv.reader(f):
-                    self.state[row[0]] = SimpleDescriptorRollup.from_row(row[1:])
-            except Exception as e:
-                print(e)
+            for row in csv.reader(f):
+                self.state[row[0]] = SimpleDescriptorRollup.from_row(row[1:])
 
     def store(self, path: pathlib.Path) -> None:
         with path.open("w+", newline="") as f:

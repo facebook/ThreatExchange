@@ -55,7 +55,7 @@ class _CursoredResponse:
         next_url = response.get("paging", {}).get("next")
         data = response.get("data", [])
         if self.decode_fn:
-            data = [self.decode_fn(x) for x in self.data]
+            data = [self.decode_fn(x) for x in data]
         self.next_url = next_url
         self.data = data
         self.params.clear()
