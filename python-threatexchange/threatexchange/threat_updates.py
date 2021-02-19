@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+"""
+Helpers and wrappers around the /threat_updates endpoint.
+"""
+
 import json
 import os
 import pathlib
@@ -127,10 +131,20 @@ class ThreatUpdatesDelta:
         """Has this delta fetched its entire assigned range?"""
         return self.end and self.end <= self.current
 
+    def __bool__(self):
+        return self.done or bool(self.updates)
+
     def __iter__(self):
         return iter(self.updates)
 
-    def merge(self, delta: "ThreatUpdatesDelta") -> "ThreatUpdatesDelta":
+    def merge(self, delta: "ThreatUpdatesDelta") -> None:
+        """
+        Merge the earlier delta (this object) with a later delta.
+
+        If you have
+        t1 ---> t2 ---> t3
+        t1.merge(t2).merge(t3) is valid, and will give you a range from t1-t3
+        """
         if not self.done or self.end != delta.start:
             raise ValueError("unchecked merge!")
         self.updates.extend(delta.updates)
@@ -194,7 +208,7 @@ class ThreatUpdatesDelta:
         self,
         api: ThreatExchangeAPI,
         *,
-        limit: int = 0,
+        limit: t.Optional[int] = None,
         progress_fn=lambda x: None,
     ) -> None:
         """
@@ -207,7 +221,7 @@ class ThreatUpdatesDelta:
         while not self.done:
             for update in self.one_fetch(api):
                 progress_fn(update)
-                if limit:
+                if limit is not None:
                     limit -= 1
                     if limit <= 0:
                         return
@@ -234,9 +248,15 @@ class ThreatUpdateCheckpoint(t.NamedTuple):
     fetch_checkpoint: int = 0
 
     def get_updated(self, delta: ThreatUpdatesDelta) -> "ThreatUpdateCheckpoint":
+        # If starting from 0, this is the first fetch, in which case the first update
+        # means that we fetched now.
+        last_fetch_time = self.last_fetch_time
+        if last_fetch_time == 0:
+            last_fetch_time = time.time()
+
         return ThreatUpdateCheckpoint(
-            max(self.last_fetch_time, delta.current),
-            max(self.fetch_checkpoint, delta.current),
+            last_fetch_time=max(last_fetch_time, delta.current),
+            fetch_checkpoint=max(self.fetch_checkpoint, delta.current),
         )
 
     @property
@@ -270,12 +290,12 @@ class ThreatUpdatesStore:
 
     def reset(self) -> None:
         """Toss old state and begin anew"""
-        self.checkpoint = ThreatUpdateCheckpoint(time.time(), 0)
+        self.checkpoint = ThreatUpdateCheckpoint()
 
     @property
     def next_delta(self) -> ThreatUpdatesDelta:
         """Return the next delta that should be applied"""
-        return ThreatUpdatesDelta(self.privacy_group, self.checkpoint.last_fetch_time)
+        return ThreatUpdatesDelta(self.privacy_group, self.checkpoint.fetch_checkpoint)
 
     def load_checkpoint(self) -> None:
         self.checkpoint = self._load_checkpoint()
@@ -362,7 +382,9 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
 
     def _apply_updates_impl(self, delta: ThreatUpdatesDelta) -> None:
         os.makedirs(self.path, exist_ok=True)
-        state = self.load_state()
+        state = {}
+        if delta.start > 0:
+            state = self.load_state()
         for update in delta:
             item = self._serialization.from_threat_updates_json(
                 self.app_id, update.raw_json

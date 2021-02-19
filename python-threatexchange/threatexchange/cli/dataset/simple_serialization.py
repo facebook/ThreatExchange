@@ -67,7 +67,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     def load(cls, state_dir: pathlib.Path) -> t.List["ThreatUpdateSerialization"]:
         """Load this serialization from the state directory"""
         ret = []
-        pattern = r"simple\.([^.]+)\." + re.escape(Dataset.EXTENSION)
+        pattern = r"simple\.([^.]+)" + re.escape(Dataset.EXTENSION)
         for path in state_dir.glob(f"simple.*{Dataset.EXTENSION}"):
             match = re.match(pattern, path.name)
             if not match or not path.is_file():

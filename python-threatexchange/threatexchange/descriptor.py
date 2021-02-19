@@ -57,11 +57,11 @@ class ThreatDescriptor(t.NamedTuple):
         # Hack for now, but nearly refactored out of cls state
         cls.MY_APP_ID = my_app_id
         owner_id_str = td_json["owner"]["id"]
-        tags = td_json["tags"]
+        tags = td_json.get("tags", [])
         # This is needed because ThreatExchangeAPI.getInfoForIDs()
         # does a transform, but other locations do not
-        if isinstance(td_json["tags"], dict):
-            tags = sorted(tag["text"] for tag in td_json["tags"]["data"])
+        if isinstance(tags, dict):
+            tags = sorted(tag["text"] for tag in tags["data"])
         td = cls(
             id=int(td_json["id"]),
             raw_indicator=td_json["raw_indicator"],

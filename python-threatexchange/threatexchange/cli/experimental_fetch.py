@@ -12,7 +12,6 @@ import pathlib
 import time
 import typing as t
 
-
 from .. import threat_updates
 from ..api import ThreatExchangeAPI
 from ..dataset import Dataset
@@ -34,7 +33,7 @@ class ExperimentalFetchCommand(command_base.Command):
     theory can be interrupted without issues.
     """
 
-    PROGRESS_PRINT_INTERVAL_SEC = 1
+    PROGRESS_PRINT_INTERVAL_SEC = 30
 
     @classmethod
     def init_argparse(cls, ap) -> None:
@@ -53,8 +52,8 @@ class ExperimentalFetchCommand(command_base.Command):
     def __init__(
         self,
         full: bool,
-        stop_time: int,
-        limit: int,
+        stop_time: t.Optional[int],
+        limit: t.Optional[int],
     ) -> None:
         self.full = full
         self.stop_time = stop_time
@@ -69,7 +68,8 @@ class ExperimentalFetchCommand(command_base.Command):
         self.counts = collections.Counter()
 
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
-        for privacy_group in dataset.config.privacy_groups:
+        privacy_groups = dataset.config.privacy_groups
+        for privacy_group in privacy_groups:
             indicator_store = threat_updates.ThreatUpdateFileStore(
                 dataset.state_dir,
                 privacy_group,
@@ -83,7 +83,8 @@ class ExperimentalFetchCommand(command_base.Command):
             if indicator_store.stale:
                 indicator_store.reset()
             self.last_update_time = indicator_store.fetch_checkpoint
-            self.current_pgroup = privacy_group
+            if len(privacy_groups) > 1:
+                self.current_pgroup = privacy_group
 
             self._print_progress()
             if indicator_store.fetch_checkpoint >= time.time():
@@ -98,9 +99,12 @@ class ExperimentalFetchCommand(command_base.Command):
                 )
             except:
                 self.stderr("Exception occurred! Attempting to save...")
+                # Force delta to show finished
+                delta.end = delta.current
                 raise
             finally:
-                indicator_store.apply_updates(delta)
+                if delta:
+                    indicator_store.apply_updates(delta)
 
         if not self.processed:
             return
@@ -123,6 +127,10 @@ class ExperimentalFetchCommand(command_base.Command):
         processed = ""
         if self.processed:
             processed = f"Downloaded {self.processed} updates. "
+
+        on_privacy_group = ""
+        if self.current_pgroup:
+            on_privacy_group = f"on PrivacyGroup({self.current_pgroup}) "
 
         from_time = ""
         if not self.last_update_time:
@@ -157,6 +165,5 @@ class ExperimentalFetchCommand(command_base.Command):
                 from_time = f"{''.join(str_parts).strip()} ago"
 
         self.stderr(
-            f"{processed}Currently on PrivacyGroup({self.current_pgroup})",
-            f"at {from_time}",
+            f"{processed}Currently {on_privacy_group}at {from_time}",
         )
