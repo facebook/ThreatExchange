@@ -37,6 +37,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 class _CursoredResponse:
     """Wrapper around paginated responses from Graph API"""
+
     def __init__(self, api: "ThreatExchangeAPI", url, params, decode_fn=None) -> None:
         self.api = api
         self.response = None
