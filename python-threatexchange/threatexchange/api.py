@@ -9,10 +9,9 @@ TODO: Slim down to only what we need
 import copy
 import datetime
 import json
-
-# General Python dependencies
 import os
 import re
+import typing as t
 import urllib.parse
 
 import requests
@@ -34,6 +33,41 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         if timeout is None:
             timeout = self.timeout
         return super().send(request, timeout=timeout, **kwargs)
+
+
+class _CursoredResponse:
+    """Wrapper around paginated responses from Graph API"""
+
+    def __init__(self, api: "ThreatExchangeAPI", url, params, decode_fn=None) -> None:
+        self.api = api
+        self.response = None
+        self.next_url = url
+        self.params = params
+        self.data = []
+        self.decode_fn = decode_fn
+
+    @property
+    def done(self):
+        return self.next_url is None
+
+    def next(self):
+        if self.done:
+            return []
+        response = self.api.getJSONFromURL(self.next_url, self.params)
+        next_url = response.get("paging", {}).get("next")
+        data = response.get("data", [])
+        if self.decode_fn:
+            data = [self.decode_fn(x) for x in data]
+        self.next_url = next_url
+        self.data = data
+        self.params.clear()
+        return self.data
+
+    def __iter__(self):
+        while not self.done:
+            self.next()
+            if self.data is not None:
+                yield self.data
 
 
 class ThreatExchangeAPI:
@@ -68,16 +102,25 @@ class ThreatExchangeAPI:
         "reactions_to_remove": "reactions_to_remove",
     }
 
-    def __init__(self, api_token: str) -> None:
+    def __init__(
+        self, api_token: str, *, endpoint_override: t.Optional[str] = None
+    ) -> None:
         self.api_token = api_token
+        self._base_url = endpoint_override or self._TE_BASE_URL
 
-    def getJSONFromURL(self, url):
+    @property
+    def app_id(self):
+        return int(self.api_token.partition("|")[0])
+
+    def getJSONFromURL(self, url, params=None, *, json_obj_hook: t.Callable = None):
         """
         Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `_get_session` above.
         """
         with self._get_session() as session:
-            return session.get(url).json()
+            response = requests.get(url, params=params or {})
+            response.raise_for_status()
+            return response.json(object_hook=json_obj_hook)
 
     def _get_session(self):
         """
@@ -94,13 +137,14 @@ class ThreatExchangeAPI:
         """
         session = requests.Session()
         session.mount(
-            self._TE_BASE_URL,
+            self._base_url,
             adapter=TimeoutHTTPAdapter(
                 timeout=60,
                 max_retries=Retry(
                     total=4,
                     status_forcelist=[429, 500, 502, 503, 504],
                     method_whitelist=["HEAD", "GET", "OPTIONS"],
+                    backoff_factor=0.2,  # ~1.5 seconds of retries
                 ),
             ),
         )
@@ -112,7 +156,7 @@ class ThreatExchangeAPI:
         This is suitable input for the /threat_tags endpoint.
         """
         url = (
-            self._TE_BASE_URL
+            self._base_url
             + "/threat_tags"
             + "/?access_token="
             + self.api_token
@@ -164,7 +208,7 @@ class ThreatExchangeAPI:
         # for available fields
 
         url = (
-            self._TE_BASE_URL
+            self._base_url
             + "/?access_token="
             + self.api_token
             + "&ids="
@@ -202,27 +246,44 @@ class ThreatExchangeAPI:
 
         return descriptors
 
-    def getThreatUpdates(self, privacy_group, next_page=None, **kwargs):
+    def get_threat_updates(
+        self,
+        privacy_group: int,
+        *,
+        start_time: t.Optional[int] = None,
+        stop_time: t.Optional[int] = None,
+        types: t.Iterable[str] = (),
+        page_size: t.Optional[int] = None,
+        fields: t.Optional[t.Iterable[str]] = None,
+        decode_fn: t.Callable[[t.Any], t.Any] = None,
+    ) -> _CursoredResponse:
         """Gets threat updates for the given privacy group."""
-        if next_page is not None:
-            url = next_page
-        else:
-            url = (
-                self._TE_BASE_URL
-                + "/"
-                + str(privacy_group)
-                + "/threat_updates/"
-                + "?access_token="
-                + self.api_token
-                + "&fields=id,indicator,type,creation_time,last_updated,should_delete,tags,status,applications_with_opinions"
+
+        if fields is None:
+            fields = (
+                "id",
+                "indicator",
+                "type",
+                "creation_time",
+                "last_updated",
+                "should_delete",
+                "tags",
+                "status",
+                "applications_with_opinions",
             )
-            for arg, value in kwargs.items():
-                if value is not None:
-                    if arg == "types":
-                        url += "&types=" + ",".join(value)
-                    else:
-                        url += "&" + arg + "=" + str(value)
-        return self.getJSONFromURL(url)
+
+        params = {
+            "access_token": self.api_token,
+            "start_time": start_time,
+            "stop_time": stop_time,
+            "limit": page_size,
+            "fields": ",".join(fields),
+        }
+        if types:
+            params["types"] = ",".join(types)
+
+        url = f"{self._base_url}/{privacy_group}/threat_updates/"
+        return _CursoredResponse(self, url, params, decode_fn=decode_fn)
 
     def validatePostPararmsForSubmit(self, postParams):
         """
@@ -278,7 +339,7 @@ class ThreatExchangeAPI:
         return self._postThreatDescriptor(
             "/".join(
                 (
-                    self._TE_BASE_URL,
+                    self._base_url,
                     str(descriptor_id),
                     f"?access_token={self.api_token}",
                 )
@@ -298,7 +359,7 @@ class ThreatExchangeAPI:
             return [errorMessage, None, None]
 
         url = "/".join(
-            (self._TE_BASE_URL, "threat_descriptors", f"?access_token={self.api_token}")
+            (self._base_url, "threat_descriptors", f"?access_token={self.api_token}")
         )
 
         return self._postThreatDescriptor(url, postParams, showURLs, dryRun)

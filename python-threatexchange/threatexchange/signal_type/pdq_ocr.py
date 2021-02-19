@@ -59,7 +59,9 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
         return self.match_hash(pdq_hash_plus_ocr)
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
-        content_pdq_hash, content_ocr_text = signal_str.split(",", maxsplit=1)
+        content_pdq_hash, _, content_ocr_text = signal_str.partition(",")
+        if not content_ocr_text:
+            return []
         matches = []
         for pdq_hash_plus_ocr, signal_attr in self.state.items():
             te_pdq_hash, te_ocr_text = pdq_hash_plus_ocr.split(",", maxsplit=1)

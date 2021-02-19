@@ -2,7 +2,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-A wrapper around fetching, storing, and recovering the state from TE.
+A wrapper around loading and storing ThreatExchange data from files.
+
+There are a few categories of state that this wraps:
+  1. Checkpoints - state about previous fetches
+  2. Collaboration Indicator Dumps - Raw output from threat_updates
+  3. Index state - serializations of indexes for SignalType
 """
 
 import json
@@ -80,39 +85,13 @@ class Dataset:
             return FetchCheckpoint(0, 0)
         return FetchCheckpoint.deserialize(checkpoint.read_text())
 
-    def get_indicator_checkpoint(self, privacy_group) -> t.Dict:
-        checkpoint = {
-            "last_stop_time": 0,
-            "last_run_time": 0,
-            "types": None,
-        }
-        checkpoint_file = self._indicator_checkpoint_path(privacy_group)
-        if not checkpoint_file.exists():
-            return checkpoint
-        with checkpoint_file.open("r+") as f:
-            checkpoint = json.load(f)
-        return checkpoint
-
-    def set_indicator_checkpoint(
-        self,
-        privacy_group: int,
-        stop_time: int,
-        request_time: int,
-        types: t.List = None,
-    ) -> None:
-        checkpoint = {
-            "last_stop_time": stop_time,
-            "last_run_time": request_time,
-            "types": types,
-        }
-        with self._indicator_checkpoint_path(privacy_group).open("w+") as f:
-            json.dump(checkpoint, f)
-
     def _signal_state_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
         return self.state_dir / f"{signal_type.get_name()}{self.EXTENSION}"
 
-    def get_indicator_store(self, privacy_group: int) -> signal_base.IndicatorSignals:
-        return signal_base.IndicatorSignals(self.state_dir, privacy_group)
+    def store_cache(self, signal_type: signal_base.SignalType) -> None:
+        if not self.state_dir.exists():
+            self.state_dir.mkdir()
+        signal_type.store(self._signal_state_file(signal_type))
 
     def load_cache(
         self, signal_types: t.Optional[t.Iterable[signal_base.SignalType]] = None
@@ -127,21 +106,3 @@ class Dataset:
                 signal_type.load(signal_state_file)
             ret.append(signal_type)
         return ret
-
-    def load_indicator_cache(
-        self, indicator_signals: signal_base.IndicatorSignals
-    ) -> None:
-        """Load indicator files"""
-        indicator_signals.load_indicators()
-
-    def store_cache(self, signal_type: signal_base.SignalType) -> None:
-        if not self.state_dir.exists():
-            self.state_dir.mkdir()
-        signal_type.store(self._signal_state_file(signal_type))
-
-    def store_indicator_cache(
-        self, indicator_signals: signal_base.IndicatorSignals
-    ) -> None:
-        if not self.state_dir.exists():
-            self.state_dir.mkdir()
-        indicator_signals.store_indicators()

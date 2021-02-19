@@ -52,6 +52,46 @@ class ThreatDescriptor(t.NamedTuple):
     status: str
     added_on: str
 
+    @classmethod
+    def from_te_json(cls, my_app_id: int, td_json) -> "ThreatDescriptor":
+        # Hack for now, but nearly refactored out of cls state
+        cls.MY_APP_ID = my_app_id
+        owner_id_str = td_json["owner"]["id"]
+        tags = td_json.get("tags", [])
+        # This is needed because ThreatExchangeAPI.getInfoForIDs()
+        # does a transform, but other locations do not
+        if isinstance(tags, dict):
+            tags = sorted(tag["text"] for tag in tags["data"])
+        td = cls(
+            id=int(td_json["id"]),
+            raw_indicator=td_json["raw_indicator"],
+            indicator_type=td_json["type"],
+            owner_id=int(owner_id_str),
+            tags=[tag for tag in tags if tag not in ThreatDescriptor.SPECIAL_TAGS],
+            status=td_json["status"],
+            added_on=td_json["added_on"],
+        )
+        # Add special tags
+        # TODO - Consider stripping out collab labels
+        #        from FALSE_POSITIVE & NON_MALICIOUS
+        # Is this my descriptor?
+        if td.is_mine:
+            if td.status == "NON_MALICIOUS":
+                td.tags.append(ThreatDescriptor.FALSE_POSITIVE)
+            else:
+                td.tags.append(ThreatDescriptor.TRUE_POSITIVE)
+        # Disputed path #1 - mark as non_malicious
+        elif td.status == "NON_MALICIOUS":
+            td.tags.append(ThreatDescriptor.DISPUTED)
+        # Disputed path #2 - react with DISAGREE_WITH_TAGS
+        elif "DISAGREE_WITH_TAGS" in td_json.get("my_reactions", ()):
+            td.tags.append(ThreatDescriptor.FALSE_POSITIVE)
+        elif any(
+            t == "DISAGREE_WITH_TAGS" for r in td_json.get("reactions", []) for t in r
+        ):
+            td.tags.append(ThreatDescriptor.DISPUTED)
+        return td
+
     def to_params(self) -> t.Dict[str, t.Any]:
         params = dict(self.__dict__)
         params["type"] = params.pop("indicator_type")
@@ -95,6 +135,20 @@ class SimpleDescriptorRollup:
     def from_descriptor(cls, descriptor: ThreatDescriptor) -> "SimpleDescriptorRollup":
         return cls(descriptor.id, descriptor.added_on, descriptor.tags)
 
+    @classmethod
+    def from_descriptors(
+        cls, descriptors: t.Iterable[ThreatDescriptor]
+    ) -> "SimpleDescriptorRollup":
+        ret = None
+        for d in descriptors:
+            if not ret:
+                ret = cls.from_descriptor(d)
+            else:
+                ret.merge(d)
+        if ret:
+            return ret
+        raise ValueError("Empty descriptor list!")
+
     def merge(self, descriptor: ThreatDescriptor) -> None:
         # Is the other descriptor mine? If so, unconditionally take it and clear
         # everything else
@@ -131,3 +185,40 @@ class SimpleDescriptorRollup:
         if row[2]:
             labels = row[2].split(" ")
         return cls(int(row[0]), row[1], labels)
+
+    @classmethod
+    def from_threat_updates_json(
+        cls, my_app_id: int, te_json: t.Dict[str, t.Any]
+    ) -> t.Optional["SimpleDescriptorRollup"]:
+        if te_json["should_delete"] or not te_json["descriptors"]["data"]:
+            return None
+        descriptors = []
+        for descriptor_json in te_json["descriptors"]["data"]:
+            # Look at me ma! I'm modifying input paramaters!
+            descriptor_json["raw_indicator"] = te_json["indicator"]
+            descriptor_json["type"] = te_json["type"]
+            descriptors.append(
+                ThreatDescriptor.from_te_json(my_app_id, descriptor_json)
+            )
+        return cls.from_descriptors(descriptors)
+
+    @staticmethod
+    def te_threat_updates_fields() -> t.Tuple[str, ...]:
+        return (
+            "id",
+            "indicator",
+            "type",
+            "last_updated",
+            "should_delete",
+            "descriptors{%s}"
+            % ",".join(
+                (
+                    "reactions",
+                    "my_reactions",
+                    "owner{id}",
+                    "tags",
+                    "status",
+                    "added_on",
+                )
+            ),
+        )
