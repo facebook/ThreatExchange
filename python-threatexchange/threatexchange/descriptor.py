@@ -58,7 +58,7 @@ class ThreatDescriptor(t.NamedTuple):
         cls.MY_APP_ID = my_app_id
         owner_id_str = td_json["owner"]["id"]
         tags = td_json.get("tags", [])
-        # This is needed because ThreatExchangeAPI.getInfoForIDs()
+        # This is needed because ThreatExchangeAPI.get_threat_descriptors()
         # does a transform, but other locations do not
         if isinstance(tags, dict):
             tags = sorted(tag["text"] for tag in tags["data"])
