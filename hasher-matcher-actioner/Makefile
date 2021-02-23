@@ -16,7 +16,7 @@ all:
 	@echo >&2 "Must specify target. ${FAIL}"
 
 docker:
-	docker build -f lambdas/Dockerfile -t ${REPOSITORY_NAME} lambdas
+	docker build -f Dockerfile -t ${REPOSITORY_NAME} .
 
 upload_docker:
 	@echo Using tag ${DOCKER_TAG}
