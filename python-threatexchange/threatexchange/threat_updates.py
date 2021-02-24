@@ -347,6 +347,7 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
         self.path = state_dir
         self.app_id = app_id
         self._serialization = serialization
+        self._cached_state = None
 
     @property
     def checkpoint_file(self) -> pathlib.Path:
@@ -375,10 +376,14 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
                 indent=2,
             )
 
-    def load_state(self):
+    def load_state(self, allow_cached=True):
         if not self.path.exists():
             return {}
-        return {item.key: item for item in self._serialization.load(self.path)}
+        if not allow_cached or self._cached_state is None:
+            self._cached_state = {
+                item.key: item for item in self._serialization.load(self.path)
+            }
+        return self._cached_state
 
     def _apply_updates_impl(self, delta: ThreatUpdatesDelta) -> None:
         os.makedirs(self.path, exist_ok=True)
@@ -394,4 +399,5 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
             else:
                 state[item.key] = item
 
+        self._cached_state = state
         self._serialization.store(self.path, state.values())
