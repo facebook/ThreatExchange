@@ -40,7 +40,11 @@ class DatasetCommand(command_base.Command):
             help="print records to screen",
         )
         ap.add_argument(
-            "--type", "-t", dest="only_type", metavar="STR", help="only process one type of indicators (or signals)"
+            "--type",
+            "-t",
+            dest="only_type",
+            metavar="STR",
+            help="only process one type of indicators (or signals)",
         )
         ap.add_argument(
             "--indicator-only", "-i", action="store_true", help="only print indicators"
