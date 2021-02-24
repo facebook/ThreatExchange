@@ -53,7 +53,7 @@ class _CursoredResponse:
     def next(self):
         if self.done:
             return []
-        response = self.api.getJSONFromURL(self.next_url, self.params)
+        response = self.api.get_json_from_url(self.next_url, self.params)
         next_url = response.get("paging", {}).get("next")
         data = response.get("data", [])
         if self.decode_fn:
@@ -112,7 +112,7 @@ class ThreatExchangeAPI:
     def app_id(self):
         return int(self.api_token.partition("|")[0])
 
-    def getJSONFromURL(self, url, params=None, *, json_obj_hook: t.Callable = None):
+    def get_json_from_url(self, url, params=None, *, json_obj_hook: t.Callable = None):
         """
         Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `_get_session` above.
@@ -150,7 +150,7 @@ class ThreatExchangeAPI:
         )
         return session
 
-    def getTagIDFromName(self, tagName, showURLs=False):
+    def get_tag_id(self, tagName, showURLs=False):
         """
         Looks up the "objective tag" ID for a given tag.
         This is suitable input for the /threat_tags endpoint.
@@ -167,7 +167,7 @@ class ThreatExchangeAPI:
             print("URL:")
             print(url)
 
-        response = self.getJSONFromURL(url)
+        response = self.get_json_from_url(url)
 
         # The lookup will get everything that has this as a prefix.
         # So we need to filter the results. This loop also handles the
@@ -187,7 +187,7 @@ class ThreatExchangeAPI:
         else:
             return desired[0]["id"]
 
-    def getInfoForIDs(self, ids, **kwargs):
+    def get_threat_descriptors(self, ids, **kwargs):
         """
         Looks up all metadata for given IDs.
         """
@@ -220,7 +220,7 @@ class ThreatExchangeAPI:
             print("URL:")
             print(url)
 
-        response = self.getJSONFromURL(url)
+        response = self.get_json_from_url(url)
 
         descriptors = []
         for id, descriptor in response.items():
@@ -285,7 +285,7 @@ class ThreatExchangeAPI:
         url = f"{self._base_url}/{privacy_group}/threat_updates/"
         return _CursoredResponse(self, url, params, decode_fn=decode_fn)
 
-    def validatePostPararmsForSubmit(self, postParams):
+    def _validate_post_params_for_submit(self, postParams):
         """
         Returns error message or None.
         This simply checks to see (client-side) if required fields aren't provided.
@@ -315,7 +315,7 @@ class ThreatExchangeAPI:
         else:
             return "Missing fields %s" % ",".join(missingFields)
 
-    def validatePostPararmsForCopy(self, postParams):
+    def _validate_post_pararms_for_copy(self, postParams):
         """
         Returns error message or None.
         This simply checks to see (client-side) if required fields aren't provided.
@@ -328,7 +328,7 @@ class ThreatExchangeAPI:
             return "Privacy members must be specified for copy."
         return None
 
-    def reactToThreatDescriptor(
+    def react_to_threat_descriptor(
         self, descriptor_id, reaction, *, showURLs=False, dryRun=False
     ):
         """
@@ -349,12 +349,12 @@ class ThreatExchangeAPI:
             dryRun=dryRun,
         )
 
-    def submitThreatDescriptor(self, postParams, showURLs, dryRun):
+    def upload_threat_descriptor(self, postParams, showURLs, dryRun):
         """
         Does a single POST to the threat_descriptors endpoint.  See also
         https://developers.facebook.com/docs/threat-exchange/reference/submitting
         """
-        errorMessage = self.validatePostPararmsForSubmit(postParams)
+        errorMessage = self._validate_post_params_for_submit(postParams)
         if errorMessage != None:
             return [errorMessage, None, None]
 
@@ -364,8 +364,8 @@ class ThreatExchangeAPI:
 
         return self._postThreatDescriptor(url, postParams, showURLs, dryRun)
 
-    def copyThreatDescriptor(self, postParams, showURLs, dryRun):
-        errorMessage = self.validatePostPararmsForCopy(postParams)
+    def copy_threat_descriptor(self, postParams, showURLs, dryRun):
+        errorMessage = self._validate_post_pararms_for_copy(postParams)
         if errorMessage != None:
             return [errorMessage, None, None]
 
@@ -373,7 +373,7 @@ class ThreatExchangeAPI:
         sourceID = postParams["descriptor_id"]
         # Not valid for posting a new descriptor
         del postParams["descriptor_id"]
-        sourceDescriptor = self.getInfoForIDs([sourceID], showURLs=showURLs)
+        sourceDescriptor = self.get_threat_descriptors([sourceID], showURLs=showURLs)
         sourceDescriptor = sourceDescriptor[0]
 
         # Mutate necessary fields
@@ -410,7 +410,7 @@ class ThreatExchangeAPI:
             if self._POST_PARAM_NAMES.get(key) != None:
                 postParams[key] = value
 
-        return self.submitThreatDescriptor(postParams, showURLs, dryRun)
+        return self.upload_threat_descriptor(postParams, showURLs, dryRun)
 
     def _postThreatDescriptor(self, url, postParams, showURLs, dryRun):
         """Code-reuse for submit and update"""

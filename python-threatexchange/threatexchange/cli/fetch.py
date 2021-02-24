@@ -245,7 +245,7 @@ class FetchCommand(command_base.Command):
                 return len(descriptors)
 
             for tag_name in tags_to_fetch:
-                tag_id = api.getTagIDFromName(tag_name)
+                tag_id = api.get_tag_id(tag_name)
                 if not tag_id:
                     continue
                 pending_futures = collections.deque()
@@ -320,7 +320,7 @@ class FetchCommand(command_base.Command):
         """Do the bulk ThreatDescriptor fetch"""
         return [
             ThreatDescriptor.from_te_json(ThreatDescriptor.MY_APP_ID, td_json)
-            for td_json in api.getInfoForIDs(td_ids)
+            for td_json in api.get_threat_descriptors(td_ids)
         ]
 
 
@@ -344,6 +344,6 @@ class _TagQueryFetchCheckpoint:
         return bool(self._next_url)
 
     def next(self) -> t.Dict[id, t.Any]:
-        response = self.api.getJSONFromURL(self._next_url)
+        response = self.api.get_json_from_url(self._next_url)
         self._next_url = response.get("paging", {}).get("next")
         return [d["id"] for d in response["data"] if d["type"] == "THREAT_DESCRIPTOR"]

@@ -58,7 +58,7 @@ class LabelCommand(command_base.Command):
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         if not self.false_positive_reaction:
             raise NotImplementedError
-        err_message, ex, response = api.reactToThreatDescriptor(
+        err_message, ex, response = api.react_to_threat_descriptor(
             self.descriptor_id, "DISAGREE_WITH_TAGS"
         )
         if ex:
