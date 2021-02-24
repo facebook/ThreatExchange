@@ -13,4 +13,4 @@ FROM public.ecr.aws/lambda/python:3.8 as prod
 ARG DEPS_PATH
 COPY --from=build $DEPS_PATH $DEPS_PATH
 ENV PYTHONPATH $DEPS_PATH
-COPY . .
+COPY hmalib ./hmalib

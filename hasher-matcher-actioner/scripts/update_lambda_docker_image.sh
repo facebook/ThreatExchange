@@ -18,6 +18,6 @@ ECR_REPOSITORY_URI="$(aws ecr describe-repositories --repository-names hma-lambd
 
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 echo "$ECS_PASSWORD" | docker login --username AWS --password-stdin "$ECR_REPOSITORY_URI"
-docker build -f lambdas/Dockerfile -t "$REPOSITORY_NAME" lambdas
+docker build -f Dockerfile -t "$REPOSITORY_NAME" .
 docker tag "$REPOSITORY_NAME" "${ECR_REPOSITORY_URI}:${DOCKER_TAG}"
 docker push "${ECR_REPOSITORY_URI}:${DOCKER_TAG}"

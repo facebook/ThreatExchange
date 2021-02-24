@@ -31,9 +31,9 @@ module "pdq_signals" {
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
-      matcher = "pdq_matcher.lambda_handler"
-      hasher  = "pdq_hasher.lambda_handler"
-      indexer = "pdq_indexer.lambda_handler"
+      matcher = "hmalib.lambdas.pdq.pdq_matcher.lambda_handler"
+      hasher  = "hmalib.lambdas.pdq.pdq_hasher.lambda_handler"
+      indexer = "hmalib.lambdas.pdq.pdq_indexer.lambda_handler"
     }
   }
   datastore = {
