@@ -1,3 +1,2 @@
 pytest==6.2.1
-boto3-stubs==1.17.14.0
 mypy==0.812
