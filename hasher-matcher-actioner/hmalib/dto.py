@@ -24,10 +24,14 @@ class PDQHashRecord(t.NamedTuple):
             "PK": "c#{}".format(self.content_key),
             "SK": "type:pdq",
             "ContentHash": self.content_hash,
-            "Quality": quality,
-            "Timestamp": timestamp.isoformat(),
+            "Quality": self.quality,
+            "Timestamp": self.timestamp.isoformat(),
             "HashType": "pdq",
         }
 
     def to_sqs_message(self) -> dict:
-        return {"hash": pdq_hash, "type": "pdq", "key": key}
+        return {
+            "hash": self.content_hash,
+            "type": "pdq",
+            "key": self.content_key
+        }

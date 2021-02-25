@@ -9,6 +9,7 @@ from urllib.parse import unquote_plus
 import datetime
 
 import boto3
+from mypy_boto3_dynamodb import DynamoDBServiceResource
 from threatexchange.hashing import pdq_hasher
 
 from hmalib.dto import PDQHashRecord
@@ -19,7 +20,7 @@ logger.setLevel(logging.INFO)
 
 s3_client = boto3.client("s3")
 sqs_client = boto3.client("sqs")
-dynamodb = boto3.resource("dynamodb")
+dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
 OUTPUT_QUEUE_URL = os.environ["PDQ_HASHES_QUEUE_URL"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
