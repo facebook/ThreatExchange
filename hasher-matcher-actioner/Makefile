@@ -22,20 +22,20 @@ upload_docker:
 	@echo Using tag ${DOCKER_TAG}
 	DOCKER_TAG=${DOCKER_TAG} ./scripts/update_lambda_docker_image.sh
 
-terraform.tfvars:
-	echo 'hma_lambda_docker_uri = "${DOCKER_URI}"' > terraform.tfvars
+terraform/terraform.tfvars:
+	echo 'hma_lambda_docker_uri = "${DOCKER_URI}"' > terraform/terraform.tfvars
 
-backend.tf:
-	./scripts/write_backend_config.sh > backend.tf
+terraform/backend.tf:
+	./scripts/write_backend_config.sh > terraform/backend.tf
 
-dev_create_configs: terraform.tfvars backend.tf
+dev_create_configs: terraform/terraform.tfvars terraform/backend.tf
 
 dev_create_instance: dev_create_configs upload_docker
-	terraform init
-	terraform apply
+	cd terraform/ && terraform init -var "prefix=${USER}"
+	cd terraform/ && terraform apply -var "prefix=${USER}"
 
 dev_destroy_instance:
-	terraform destroy
+	cd terraform/ && terraform destroy -var "prefix=${USER}"
 
 dev_clear_configs:
-	-rm terraform.tfvars backend.tf
+	-rm terraform/terraform.tfvars terraform/backend.tf

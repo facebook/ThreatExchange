@@ -11,4 +11,4 @@ sed \
     -e "s/# TERRAFORM_STATE_KEY/\"${s3_key}\"/" \
     -e "s/# TERRAFORM_BUCKET_REGION/\"${aws_region}\"/" \
     -e "s/# TERRAFORM_STATE_LOCKING_TABLE/\"${table_name}\"/" \
-    backend.tf.example
+    terraform/backend.tf.example
