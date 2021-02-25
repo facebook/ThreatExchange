@@ -1,14 +1,15 @@
 import datetime
 import typing as t
 
-# Not enforceable because named tuples can't have multiple inheritance, but all
-# DTO classes in this module should implement methods
-# `to_dynamodb_item(self)`
-# and `to_sqs_message(self)`
-
+"""
+Not enforceable because named tuples can't have multiple inheritance, but all
+DTO classes in this module should implement methods `to_dynamodb_item(self)` and
+`to_sqs_message(self)`
+"""
 
 class PDQHashRecord(t.NamedTuple):
-    """Successful execution at the hasher produces this record.
+    """
+    Successful execution at the hasher produces this record.
     """
 
     content_key: str
@@ -16,9 +17,13 @@ class PDQHashRecord(t.NamedTuple):
     quality: int
     timestamp: datetime.datetime  # ISO-8601 formatted
 
+    @staticmethod
+    def get_dynamodb_pk(key: str):
+        return f"c#{key}"
+
     def to_dynamodb_item(self) -> dict:
         return {
-            "PK": "c#{}".format(self.content_key),
+            "PK": PDQHashRecord.get_dynamodb_pk(self.content_key),
             "SK": "type:pdq",
             "ContentHash": self.content_hash,
             "Quality": self.quality,
