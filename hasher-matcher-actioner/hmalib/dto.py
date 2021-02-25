@@ -9,9 +9,6 @@ import typing as t
 
 class PDQHashRecord(t.NamedTuple):
     """Successful execution at the hasher produces this record.
-
-    At present, we only use these records to write to dynamodb, so this is in
-    the storage module, but we can move this out.
     """
 
     content_key: str
