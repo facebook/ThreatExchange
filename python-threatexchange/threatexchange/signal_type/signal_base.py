@@ -8,12 +8,44 @@ Core abstractions for signal types.
 import csv
 import os
 import pathlib
+import pickle
 import re
 import typing as t
 
 from .. import common
 from .. import dataset
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
+from . import index
+
+
+class TrivialSignalTypeIndex(index.SignalTypeIndex):
+    """
+    Index that does only exact matches and serializes with pickle
+    """
+
+    def __init__(self) -> None:
+        self.state: t.Dict[str, t.List[t.Any]] = {}
+
+    def query(self, hash: str) -> t.List[index.IndexMatch[index.T]]:
+        return [index.IndexMatch(0, meta) for meta in self.state.get(hash, [])]
+
+    @classmethod
+    def build(cls, vals: t.Iterable[t.Tuple[str, t.Any]]):
+        ret = cls()
+        for k, val in vals:
+            l = ret.state.get(k)
+            if not l:
+                l = []
+                ret.state[k] = l
+            l.append(val)
+        return ret
+
+    def serialize(self, fout: t.BinaryIO):
+        pickle.dump(self, fout)
+
+    @classmethod
+    def deserialize(cls, fin: t.BinaryIO):
+        return pickle.load(fin)
 
 
 class SignalMatch(t.NamedTuple):
@@ -46,6 +78,31 @@ class SignalType:
         """A compact name in lower_with_underscore style (used in filenames)"""
         return common.class_name_to_human_name(cls.__name__, "Signal")
 
+    @classmethod
+    def get_index_cls(cls) -> t.Type[index.SignalTypeIndex]:
+        """Return the index class that handles this signal type"""
+        return TrivialSignalTypeIndex
+
+    @classmethod
+    def indicator_applies(cls, indicator_type: str, tags: t.List[str]) -> bool:
+        """Does this indicator correspond to this signal type?"""
+        raise NotImplementedError
+
+    @classmethod
+    def compare_hash(cls, hash1: str, hash2: str) -> int:
+        """
+        Compare the distance of two hashes, the key operaiton for matching.
+
+        If the algorithm doesn't support distance, having 0 = match,
+        1 = no hash.
+
+        Note that this can just be a reference/helper, and the efficient
+        version of the algorithm can live in the index class.
+        """
+        raise NotImplementedError
+
+    ##########################################################################
+    # TODO - Remove  these methods after refactor
     def process_descriptor(self, descriptor: t.Dict[str, t.Any]) -> bool:
         """
         Add ThreatDescriptor to the state of this type, if it is for this type.
@@ -100,9 +157,28 @@ class SimpleSignalType(SignalType, HashMatcher):
     Assumes that the signal type can easily merge on a string.
     """
 
-    INDICATOR_TYPE = ""
-    TYPE_TAG = ""
+    INDICATOR_TYPE: t.Union[str, t.Tuple[str]] = ()
+    TYPE_TAG: t.Optional[str] = None
 
+    @classmethod
+    def indicator_applies(cls, indicator_type: str, tags: t.List[str]) -> bool:
+        types = cls.INDICATOR_TYPE
+        if isinstance(cls.INDICATOR_TYPE, str):
+            types = (cls.INDICATOR_TYPE,)
+        if indicator_type not in types:
+            return False
+        if cls.TYPE_TAG is not None:
+            return cls.TYPE_TAG in tags
+        return True
+
+    @classmethod
+    def compare_hash(cls, hash1: str, hash2: str) -> int:
+        if hash1 == hash2:
+            return 0
+        return 1
+
+    ##########################################################################
+    # TODO - Remove these methods after refactor
     def __init__(self) -> None:
         self.state: t.Dict[str, SimpleDescriptorRollup] = {}
 
@@ -112,10 +188,7 @@ class SimpleSignalType(SignalType, HashMatcher):
 
         Return true if the true if the descriptor was used.
         """
-        if (
-            descriptor.indicator_type != self.INDICATOR_TYPE
-            or self.TYPE_TAG not in descriptor.tags
-        ):
+        if not self.indicator_applies(descriptor.indicator_type, descriptor.tags):
             return False
         old_val = self.state.get(descriptor.raw_indicator)
         if old_val is None:

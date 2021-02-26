@@ -14,10 +14,12 @@ import typing as t
 
 from .. import threat_updates
 from ..api import ThreatExchangeAPI
+from ..content_type import meta
 from ..dataset import Dataset
 from ..descriptor import SimpleDescriptorRollup
 from ..signal_type import signal_base
 from . import command_base
+from . import dataset_cmd
 from .dataset.simple_serialization import CliIndicatorSerialization
 
 
@@ -42,6 +44,11 @@ class ExperimentalFetchCommand(command_base.Command):
             action="store_true",
             help="force a refetch from the beginning of time (this is almost certainly not needed)",
         )
+        ap.add_argument(
+            "--skip-index-rebuild",
+            action="store_true",
+            help="don't rebuild indices after fetch",
+        )
         ap.add_argument("--limit", type=int, help="stop after fetching this many items")
         ap.add_argument(
             "--stop-time",
@@ -54,10 +61,12 @@ class ExperimentalFetchCommand(command_base.Command):
         full: bool,
         stop_time: t.Optional[int],
         limit: t.Optional[int],
+        skip_index_rebuild: bool,
     ) -> None:
         self.full = full
         self.stop_time = stop_time
         self.limit = limit
+        self.skip_index_rebuild = skip_index_rebuild
 
         # Progress
         self.current_pgroup = 0
@@ -69,6 +78,7 @@ class ExperimentalFetchCommand(command_base.Command):
 
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         privacy_groups = dataset.config.privacy_groups
+        stores = []
         for privacy_group in privacy_groups:
             indicator_store = threat_updates.ThreatUpdateFileStore(
                 dataset.state_dir,
@@ -76,6 +86,7 @@ class ExperimentalFetchCommand(command_base.Command):
                 api.app_id,
                 serialization=CliIndicatorSerialization,
             )
+            stores.append(indicator_store)
             if self.full:
                 indicator_store.reset()
             else:
@@ -106,12 +117,16 @@ class ExperimentalFetchCommand(command_base.Command):
                 if delta:
                     indicator_store.apply_updates(delta)
 
-        if not self.processed:
-            return
         self.stderr(f"Processed {self.processed} updates:")
 
-        for name, count in sorted(self.counts.items(), key=lambda i: -i[1]):
-            self.stderr(f"{name}: {count:+}")
+        if self.processed:
+            for name, count in sorted(self.counts.items(), key=lambda i: -i[1]):
+                self.stderr(f"{name}: {count:+}")
+
+        # Rebuild CLI indices
+        if not self.skip_index_rebuild:
+            self.stderr("Rebuilding match indices...")
+            dataset_cmd.generate_cli_indices(dataset, stores)
 
     def _progress(self, update: threat_updates.ThreatUpdateJSON) -> None:
         self.processed += 1

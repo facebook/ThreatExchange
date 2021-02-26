@@ -109,3 +109,7 @@ class TrendQuerySignal(signal_base.SignalType, signal_base.StrMatcher):
             writer = csv.writer(f, dialect="excel-tab")
             for k, v in self.state.items():
                 writer.writerow((k,) + v[1].as_row())
+
+    @classmethod
+    def indicator_applies(cls, indicator_type: str, tags: t.List[str]) -> bool:
+        return indicator_type == "DEBUG_STRING" and "media_type_trend_query" in tags

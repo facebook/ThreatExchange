@@ -17,6 +17,7 @@ import typing as t
 from . import collab_config
 from .content_type import meta
 from .signal_type import signal_base
+from .signal_type import index
 
 
 class FetchCheckpoint(t.NamedTuple):
@@ -88,6 +89,9 @@ class Dataset:
     def _signal_state_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
         return self.state_dir / f"{signal_type.get_name()}{self.EXTENSION}"
 
+    def _index_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
+        return self.state_dir / f"{signal_type.get_name()}.index{self.EXTENSION}"
+
     def store_cache(self, signal_type: signal_base.SignalType) -> None:
         if not self.state_dir.exists():
             self.state_dir.mkdir()
@@ -106,3 +110,23 @@ class Dataset:
                 signal_type.load(signal_state_file)
             ret.append(signal_type)
         return ret
+
+    def store_index(self, signal_type: signal_base.SignalType, index) -> None:
+        if not self.state_dir.exists():
+            self.state_dir.mkdir()
+        path = self._index_file(signal_type)
+        if index is None:
+            if path.exists():
+                path.unlink()
+            return
+        with path.open("wb") as fout:
+            index.serialize(fout)
+
+    def load_index(
+        self, signal_type: signal_base.SignalType
+    ) -> t.Optional[index.SignalTypeIndex]:
+        path = self._index_file(signal_type)
+        if not path.exists():
+            return None
+        with path.open("rb") as fin:
+            return signal_type.get_index_cls.deserialize(fin)
