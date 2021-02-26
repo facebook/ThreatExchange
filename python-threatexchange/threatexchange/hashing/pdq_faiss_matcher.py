@@ -199,12 +199,14 @@ class PDQMultiHashIndex(PDQHashIndex):
         )
         bits_per_hashmap = BITS_IN_PDQ // nhash
         index = faiss.IndexBinaryMultiHash(BITS_IN_PDQ, nhash, bits_per_hashmap)
-        if custom_ids != None:
-            index = faiss.IndexBinaryIDMap2(index)
-            i64_ids = list(map(uint64_to_int64, custom_ids))
-            index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
-        else:
-            index.add(numpy.array(vectors))
+        if vectors:
+            if custom_ids != None:
+                index = faiss.IndexBinaryIDMap2(index)
+                i64_ids = list(map(uint64_to_int64, custom_ids))
+
+                index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
+            else:
+                index.add(numpy.array(vectors))
         return PDQMultiHashIndex(index)
 
     @property
