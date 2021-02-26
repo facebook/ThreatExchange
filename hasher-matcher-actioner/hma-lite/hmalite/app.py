@@ -5,7 +5,10 @@ from hmalite.matcher import matcher_api
 from threatexchange.signal_type import index, pdq_index
 from threatexchange.hashing.pdq_hasher import pdq_from_file
 import os
+import sys
 import csv
+
+CONFIG_ENV = 'HMALITE_CONFIG_FILE'
 
 app = Flask(__name__)
 app.register_blueprint(matcher_api, url_prefix="/v1/hashes")
@@ -14,6 +17,13 @@ app.register_blueprint(matcher_api, url_prefix="/v1/hashes")
 UPLOADS_FOLDER = "hmalite/uploads"
 INDEX_FOLDER = "hmalite/data"
 INDEX_FILENAME = "data.index"
+
+
+if app.config["ENV"] == "production":
+    app.config.from_object("hmalite.config.HmaLiteProdConfig")
+else:
+    app.config.from_object("hmalite.config.HmaLiteDevConfig")
+app.config.from_envvar('CONFIG_ENV', silent=True)
 
 
 @app.route("/")
