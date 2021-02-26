@@ -44,6 +44,7 @@ class IndexMatch(t.Generic[T]):
 
     def __init__(self, distance: int, metadata: T) -> None:
         self.distance = distance
+        self.metadata = metadata
 
 
 class SignalTypeIndex(t.Generic[T]):
