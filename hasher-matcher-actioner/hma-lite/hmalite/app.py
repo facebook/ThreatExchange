@@ -6,7 +6,6 @@ from threatexchange.signal_type import index, pdq_index
 from threatexchange.hashing.pdq_hasher import pdq_from_file
 import os
 import os.path
-import sys
 import csv
 
 CONFIG_ENV = 'HMALITE_CONFIG_FILE'
