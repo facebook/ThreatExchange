@@ -1,10 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import os.path
+
+
 class HmaLiteConfig:
     DEBUG = False
     TESTING = False
 
-    INDEX_FILE = "~/.hmalite/index.te"
+    INDEX_FILE = os.path.expanduser("~/.hmalite/index.te")
+    UPLOADS_FOLDER = os.path.expanduser("~/.hmalite/uploads")
 
 
 class HmaLiteProdConfig(HmaLiteConfig):
