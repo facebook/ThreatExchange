@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>HMA-Lite!</title>
+</head>
+
+<body>
+  <h1>Hello, from the threatexchange API!</h1>
+  <p> The hash we queried was:</p>
+  <p>{{hash}}</p>
+  {%- if image -%}
+  <p> Here is the image you uploaded: </p>
+  <img src="{{ url_for('upload', filename=image) }}" style="width: 64px">
+  {% endif %}
+  {%- if result -%}
+  <p> We found a match! Here is the raw json result:</p>
+  <p>{{result}}</p>
+  {% else %}
+  <p> No match found.</p>
+  {% endif %}
+</body>
+
+</html>

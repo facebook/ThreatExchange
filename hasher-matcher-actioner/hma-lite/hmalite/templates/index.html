@@ -1,23 +1,31 @@
 <!doctype html>
 <html>
-  <head>
-    <title>HMA-Lite!</title>
-  </head>
-  <body>
-    <h1>Hello, from the threatexchange API!</h1>
-    <p>{{ message }}</p>
-    <form method="POST" action="{{url_for('upload_hashes')}}" enctype="multipart/form-data">
-      <p>Provide CSV of hashes to match against: <input type="file" name="data_file"></p>
-      <p><input type="submit" value="Upload"></p>
-    </form>
 
-    <form method="POST" action="{{url_for('check_for_match')}}" enctype="multipart/form-data">
-      <p> Check a PDQ Hash?</p>
-      <p><input type="text" name="hash"><input type="submit" value="Submit"></p>
-    </form>
-    {% for file in files %}
-      <a href=/data/{{  file }} target="_blank"  style="margin-right: 5px;"> {{file}} </a>
-    {% endfor %}
-  </body>
+<head>
+  <title>HMA-Lite!</title>
+</head>
+
+<body>
+  <h1>Hello, from the threatexchange API!</h1>
+  <form method="POST" action="{{url_for('upload_hashes')}}" enctype="multipart/form-data">
+    <p>Provide CSV of hashes to match against: <input type="file" name="data_file"></p>
+    <p><input type="submit" value="Upload"></p>
+  </form>
+
+  <form method="POST" action="{{url_for('check_for_match_hash')}}" enctype="multipart/form-data">
+    <p> Check a PDQ Hash?</p>
+    <p><input type="text" name="hash"><input type="submit" value="Submit"></p>
+  </form>
+
+  <form method="POST" action="{{url_for('check_for_match_image')}}" enctype="multipart/form-data">
+    <p> Check an Image?</p>
+    <p>(.jpg only): <input type="file" name="photo"></p>
+    <p><input type="submit" value="Upload"></p>
+  </form>
+
+  {% for file in files %}
+  <a href=/data/{{ file }} target="_blank" style="margin-right: 5px;"> {{file}} </a>
+  {% endfor %}
+</body>
+
 </html>
-
