@@ -58,7 +58,7 @@ class PDQIndex(SignalTypeIndex):
         """
         Convert the PDQ index into a bytestream (probably a file).
         """
-        return pickle.dumps(self)
+        fout.write(pickle.dumps(self))
 
     @classmethod
     def deserialize(cls, fin: t.BinaryIO) -> "SignalTypeIndex[T]":

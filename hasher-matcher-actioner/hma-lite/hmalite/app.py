@@ -68,7 +68,7 @@ def create_index(filepath):
             entries.append(((row["td_raw_indicator"], row)))
         index = pdq_index.PDQIndex.build(entries)
         with open(os.path.join(INDEX_FOLDER, INDEX_FILENAME), "wb") as f:
-            f.write(index.serialize(f))
+            index.serialize(f)
 
 
 def query_index(hash):
