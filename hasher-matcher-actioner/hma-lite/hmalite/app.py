@@ -5,20 +5,27 @@ from hmalite.matcher import matcher_api
 from threatexchange.signal_type import index, pdq_index
 from threatexchange.hashing.pdq_hasher import pdq_from_file
 import os
+import os.path
 import csv
+
+CONFIG_ENV = 'HMALITE_CONFIG_FILE'
 
 app = Flask(__name__)
 app.register_blueprint(matcher_api, url_prefix="/v1/hashes")
 
-# TODO Move to APP Config
-UPLOADS_FOLDER = "hmalite/uploads"
-INDEX_FOLDER = "hmalite/data"
-INDEX_FILENAME = "data.index"
+
+if app.config["ENV"] == "production":
+    app.config.from_object("hmalite.config.HmaLiteProdConfig")
+else:
+    app.config.from_object("hmalite.config.HmaLiteDevConfig")
+app.config.from_envvar('HMALITE_CONFIG_FILE', silent=True)
 
 
 @app.route("/")
 def index():
-    files = os.listdir("hmalite/data/")
+    files = []
+    if os.path.exists(app.config["INDEX_FILE"]):
+        files = [app.config["INDEX_FILE"]]
     return render_template("index.html", files=files)
 
 
@@ -27,7 +34,7 @@ def upload_hashes():
     if request.method == "POST":
         uploaded_file = request.files["data_file"]
         if uploaded_file.filename != "":
-            filepath = os.path.join(UPLOADS_FOLDER, uploaded_file.filename)
+            filepath = os.path.join(app.config["UPLOADS_FOLDER"], uploaded_file.filename)
             uploaded_file.save(filepath)
             create_index(filepath)
         return index()
@@ -48,7 +55,7 @@ def check_for_match_image():
     if request.method == "POST":
         uploaded_file = request.files["photo"]
         if uploaded_file.filename != "":
-            file_path = os.path.join(UPLOADS_FOLDER, uploaded_file.filename)
+            file_path = os.path.join(app.config["UPLOADS_FOLDER"], uploaded_file.filename)
             uploaded_file.save(file_path)
 
         with open(file_path, "rb") as f:
@@ -67,12 +74,12 @@ def create_index(filepath):
         for row in reader:
             entries.append(((row["td_raw_indicator"], row)))
         index = pdq_index.PDQIndex.build(entries)
-        with open(os.path.join(INDEX_FOLDER, INDEX_FILENAME), "wb") as f:
+        with open(app.config["INDEX_FILE"], "wb") as f:
             index.serialize(f)
 
 
 def query_index(hash):
-    with open(os.path.join(INDEX_FOLDER, INDEX_FILENAME), "rb") as f:
+    with open(app.config["INDEX_FILE"], "rb") as f:
         index = pdq_index.PDQIndex.deserialize(f.read())
         results = index.query(hash)
         matches = []
@@ -89,4 +96,4 @@ def download(filename):
 
 @app.route("/uploads/<filename>")
 def upload(filename):
-    return send_from_directory(directory=UPLOADS_FOLDER, filename=filename)
+    return send_from_directory(directory=app.config["UPLOADS_FOLDER"], filename=filename)
