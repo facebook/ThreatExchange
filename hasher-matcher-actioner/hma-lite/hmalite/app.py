@@ -19,7 +19,7 @@ if app.config["ENV"] == "production":
     app.config.from_object("hmalite.config.HmaLiteProdConfig")
 else:
     app.config.from_object("hmalite.config.HmaLiteDevConfig")
-app.config.from_envvar('CONFIG_ENV', silent=True)
+app.config.from_envvar('HMALITE_CONFIG_FILE', silent=True)
 
 
 @app.route("/")
