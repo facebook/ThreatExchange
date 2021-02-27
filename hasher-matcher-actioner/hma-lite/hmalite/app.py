@@ -8,7 +8,7 @@ import os
 import os.path
 import csv
 
-CONFIG_ENV = 'HMALITE_CONFIG_FILE'
+CONFIG_ENV = "HMALITE_CONFIG_FILE"
 
 app = Flask(__name__)
 app.register_blueprint(matcher_api, url_prefix="/v1/hashes")
@@ -18,7 +18,7 @@ if app.config["ENV"] == "production":
     app.config.from_object("hmalite.config.HmaLiteProdConfig")
 else:
     app.config.from_object("hmalite.config.HmaLiteDevConfig")
-app.config.from_envvar('HMALITE_CONFIG_FILE', silent=True)
+app.config.from_envvar("HMALITE_CONFIG_FILE", silent=True)
 
 
 @app.route("/")
@@ -34,7 +34,9 @@ def upload_hashes():
     if request.method == "POST":
         uploaded_file = request.files["data_file"]
         if uploaded_file.filename != "":
-            filepath = os.path.join(app.config["UPLOADS_FOLDER"], uploaded_file.filename)
+            filepath = os.path.join(
+                app.config["UPLOADS_FOLDER"], uploaded_file.filename
+            )
             uploaded_file.save(filepath)
             create_index(filepath)
         return index()
@@ -55,7 +57,9 @@ def check_for_match_image():
     if request.method == "POST":
         uploaded_file = request.files["photo"]
         if uploaded_file.filename != "":
-            file_path = os.path.join(app.config["UPLOADS_FOLDER"], uploaded_file.filename)
+            file_path = os.path.join(
+                app.config["UPLOADS_FOLDER"], uploaded_file.filename
+            )
             uploaded_file.save(file_path)
 
         with open(file_path, "rb") as f:
@@ -96,4 +100,6 @@ def download(filename):
 
 @app.route("/uploads/<filename>")
 def upload(filename):
-    return send_from_directory(directory=app.config["UPLOADS_FOLDER"], filename=filename)
+    return send_from_directory(
+        directory=app.config["UPLOADS_FOLDER"], filename=filename
+    )
