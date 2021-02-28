@@ -37,6 +37,7 @@ if better_config.DEBUG:
 
 #################### VARIOUS ENDPOINTS ####################
 
+
 @app.route("/")
 def index():
     files = []
@@ -145,6 +146,7 @@ def download(filename):
 def upload(filename):
     return send_from_directory(directory=better_config.upload_folder, filename=filename)
 
+
 def load_index(filepath):
     app.logger.info("loading index into memory from %s", filepath)
     with open(filepath, "rb") as f:
@@ -158,7 +160,9 @@ better_config.create_dirs()
 
 # Pre-load data if available
 csv_f, index_f = better_config.starting_index_files
-app.logger.info("%s - %s", better_config.local_index_file_path, better_config.local_index_file)
+app.logger.info(
+    "%s - %s", better_config.local_index_file_path, better_config.local_index_file
+)
 app.logger.info("%s - %s", csv_f, index_f)
 if index_f:
     app.logger.info("Index available at %s, loading", index_f)
