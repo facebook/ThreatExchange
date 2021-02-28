@@ -53,14 +53,6 @@ class HashCommand(command_base.Command):
         )
 
         ap.add_argument(
-            "--read-stdin",
-            "-I",
-            dest="content",
-            action="store_const",
-            const=[cls.USE_STDIN],
-        )
-
-        ap.add_argument(
             "content",
             nargs="+",
             help=(
