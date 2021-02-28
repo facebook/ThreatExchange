@@ -154,6 +154,7 @@ class StrHasher(HashMatcher, StrMatcher):
     """
     This class can turn hashes into intermediary representations
     """
+
     @classmethod
     def hash_from_str(cls, content: str) -> str:
         """Get a string representation of the hash from a string"""
@@ -171,6 +172,7 @@ class FileHasher(HashMatcher, FileMatcher):
     If also inheiriting from StrHasher, put this second in the inheiretence
     to prefer file hashing to reading the file in as a Str.
     """
+
     @classmethod
     def hash_from_file(self, file: pathlib.Path) -> str:
         """Get a string representation of the hash from a file"""
