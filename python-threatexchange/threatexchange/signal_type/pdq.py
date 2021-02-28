@@ -14,7 +14,7 @@ from . import signal_base
 from ..hashing.pdq_utils import pdq_match, BITS_IN_PDQ
 
 
-class PdqSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
+class PdqSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     """
     PDQ is an open source photo similarity algorithm.
 
@@ -36,8 +36,8 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
     # Hashes of distance less than or equal to this threshold are considered a 'match'
     PDQ_CONFIDENT_MATCH_THRESHOLD = 31
 
-    def match_file(self, file: pathlib.Path) -> t.List[signal_base.SignalMatch]:
-        """Simple PDQ file match."""
+    @classmethod
+    def hash_file(cls, file: pathlib.Path) -> str:
         try:
             from threatexchange.hashing.pdq_hasher import pdq_from_file
         except:
@@ -45,9 +45,9 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
                 "PDQ from file require Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
                 category=UserWarning,
             )
-            return []
-        pdq_hash, quality = pdq_from_file(file)
-        return self.match_hash(pdq_hash)
+            return ""
+        pdq_hash, _quality = pdq_from_file(file)
+        return pdq_hash
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
 

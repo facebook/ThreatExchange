@@ -13,7 +13,7 @@ from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
 
 
-class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileMatcher):
+class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileHasher):
     """
     Simple signal type for Video MD5s.
 
@@ -28,8 +28,8 @@ class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileMatcher):
     INDICATOR_TYPE = "HASH_MD5"
     TYPE_TAG = "media_type_video"
 
-    def match_file(self, file: pathlib.Path) -> t.List[signal_base.SignalMatch]:
-        """Simple MD5 file match."""
+    @classmethod
+    def hash_file(cls, file: pathlib.Path) -> str:
         file_hash = hashlib.md5()
         blocksize = 8192
         with file.open("rb") as f:
@@ -37,7 +37,7 @@ class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileMatcher):
             while chunk:
                 file_hash.update(chunk)
                 chunk = f.read(blocksize)
-        return self.match_hash(file_hash.hexdigest())
+        return file_hash.hexdigest()
 
 
 class PhotoMD5Signal(VideoMD5Signal):

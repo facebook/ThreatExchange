@@ -19,7 +19,7 @@ from ..hashing.pdq_utils import pdq_match
 from .. import common
 
 
-class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
+class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     """
     PDQ is an open source photo similarity algorithm. See 'pdq.py'
     This signal type combines pdq hashes with a text string found using
@@ -39,8 +39,8 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
     # Match considered if 90% of the strings match
     LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD = 0.10
 
-    def match_file(self, file: pathlib.Path) -> t.List[signal_base.SignalMatch]:
-        """Simple PDQ file match."""
+    @classmethod
+    def hash_file(cls, file: pathlib.Path) -> str:
         try:
             from ..hashing.pdq_hasher import pdq_from_file
             from ..hashing.ocr_utils import text_from_image_file
@@ -54,9 +54,7 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileMatcher):
         pdq_hash, quality = pdq_from_file(file)
         ocr_text = text_from_image_file(file)
 
-        pdq_hash_plus_ocr = pdq_hash + "," + ocr_text
-
-        return self.match_hash(pdq_hash_plus_ocr)
+        return f"{pdq_hash},{ocr_text}"
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
         content_pdq_hash, _, content_ocr_text = signal_str.partition(",")
