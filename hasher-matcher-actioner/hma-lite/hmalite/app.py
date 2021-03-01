@@ -11,11 +11,6 @@ from hmalite.matcher import matcher_api
 from threatexchange.hashing.pdq_hasher import pdq_from_file
 from threatexchange.signal_type import pdq_index
 
-# This doesn't really behave the way you might think -
-# instances of flask are destroyed and created all the time
-# Someday we'll have to figure out the correct way to persist it
-_INDEX = pdq_index.PDQIndex(())  # The saddest empty index
-
 
 app = Flask(__name__)
 app.register_blueprint(matcher_api, url_prefix="/v1/hashes")
@@ -33,6 +28,27 @@ if better_config.DEBUG:
     app.logger.info("Config Values:")
     for name in config_cls._fields:
         app.logger.info("%s = %s", name, app.config[name])
+
+
+####################### INDEX HACKS #######################
+# This doesn't really behave the way you might think -
+# instances of flask are destroyed and created all the time/thread
+# local-d, so you'll get a bunch of copies of this(?)
+# Someday we'll have to figure out the correct way to stage it
+_INDEX = None
+
+def get_local_index():
+    global _INDEX
+    if not _INDEX:
+        filepath = better_config.local_index_file
+        with open(filepath, "rb") as f:
+            index = pdq_index.PDQIndex.deserialize(f.read())
+        _INDEX = index
+    return _INDEX
+
+def reset_index(index):
+    global _INDEX
+    _INDEX = index
 
 
 #################### VARIOUS ENDPOINTS ####################
@@ -95,13 +111,12 @@ def create_index(filepath):
 
         # try and guess the format
         sniffer = csv.Sniffer()
-        dialect = sniffer.sniff(sample)
         key = ""
         if sniffer.has_header(sample):
-            reader = csv.DictReader(csvfile, dialect)
+            reader = csv.DictReader(csvfile)
         else:
             reader = csv.DictReader(
-                csvfile, dialect=dialect, fieldnames=["hash"], restkey="meta"
+                csvfile, fieldnames=["hash"], restkey="meta"
             )
 
         # Try and guess what column has the hash
@@ -111,28 +126,34 @@ def create_index(filepath):
                 key = pref
                 break
 
-        app.logger.info("Read CSV file, key=%s", dialect, key)
+        app.logger.info("Read CSV file, key=%s", key)
 
         entries = []
         for row in reader:
-            entries.append(((row[key], row)))
-        index = pdq_index.PDQIndex.build(entries)
-        app.logger.info(
-            "writing index from %s to %s", filepath, better_config.local_index_file_path
-        )
-        with open(better_config.local_index_file_path, "wb") as f:
-            index.serialize(f)
-        # Thanks to the miracle of the GIL, this is (mostly) safe!
-        _INDEX = index
+            entries.append((row[key], row))
+
+    index = pdq_index.PDQIndex.build(entries)
+    app.logger.info(
+        "writing index of size %d from %s to %s",
+        len(entries),
+        filepath,
+        better_config.local_index_file_path,
+    )
+    with open(better_config.local_index_file_path, "wb") as f:
+        index.serialize(f)
+    # Thanks to the miracle of the GIL, this is (mostly) safe!
+    # Flask also aggressively threadlocals everything
+    reset_index(index)
 
 
 def query_index(hash):
     # Grab a local copy in case it gets replaced mid-request
-    index = _INDEX
+    index = get_local_index()
     results = index.query(hash)
     matches = []
     for result in results:
         matches.append(result.metadata)
+    app.logger.info("query against %d, find %d", len(index), len(matches))
     return matches
 
 
@@ -147,12 +168,6 @@ def upload(filename):
     return send_from_directory(directory=better_config.upload_folder, filename=filename)
 
 
-def load_index(filepath):
-    app.logger.info("loading index into memory from %s", filepath)
-    with open(filepath, "rb") as f:
-        _INDEX = pdq_index.PDQIndex.deserialize(f.read())
-
-
 #################### INITIAL SETUP ####################
 
 # Create required directories
@@ -160,15 +175,10 @@ better_config.create_dirs()
 
 # Pre-load data if available
 csv_f, index_f = better_config.starting_index_files
-app.logger.info(
-    "%s - %s", better_config.local_index_file_path, better_config.local_index_file
-)
-app.logger.info("%s - %s", csv_f, index_f)
-if index_f:
-    app.logger.info("Index available at %s, loading", index_f)
+if index_f and index_f != better_config.local_index_file_path:
+    app.logger.info("Starting available at %s, loading", index_f)
     load_index(index_f)
-    if index_f != better_config.local_index_file_path:
-        shutil.copy(index_f, better_config.local_index_file_path)
+    shutil.copy(index_f, better_config.local_index_file_path)
 elif csv_f:
     app.logger.info("CSV available at %s", csv_f)
     create_index(csv_f)

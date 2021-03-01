@@ -49,10 +49,10 @@ class HmaLiteConfig(t.NamedTuple):
 
     @property
     def starting_index_files(self):
-        index_f = self._exists(self.INDEX_FILE) or self.local_index_file
-        csv_f = ""
-        if not index_f:
-            csv_f = self._exists(self.CSV_FILE)
+        index_f = ""
+        csv_f = self._exists(self.CSV_FILE)
+        if not csv_f:
+            index_f = self._exists(self.INDEX_FILE) or self.local_index_file
         return csv_f, index_f
 
     @property
