@@ -1,30 +1,35 @@
-from flask import Blueprint, request, jsonify
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+import typing as t
+
+from flask import Blueprint, request, jsonify, current_app
+from hmalite import index
+from hmalite.config import HmaLiteConfig
+from threatexchange.signal_type.index import IndexMatch
 
 matcher_api = Blueprint("matcher_api", __name__)
 
 
 @matcher_api.route("/query", methods=["GET", "POST"])
 def matcher_query():
+    local_index = index.get_local_index()
+
     if request.method == "POST":
         hashes = request.json["hashes"]
-        matches = [hash for hash in hashes if _mock_is_index_match(hash)]
-        return jsonify(
-            {
-                "matched_hashes": matches,
-                "unmatched_hashes": [hash for hash in hashes if hash not in matches],
-            }
-        )
+
+        matches = {}
+
+        for pdq in hashes:
+            matches[pdq] = index_query_to_dict(local_index.query(pdq))
+
+        return jsonify(results=matches)
     else:
-        hash = request.args.get("hash")
-        if _mock_is_index_match(hash):
-            return ("", 200)
-        else:
-            return ("", 404)
+        pdq = request.args.get("hash")
+        if not pdq:
+            return "requires a hash", 400
+        results = index_query_to_dict(local_index.query(pdq))
+        return jsonify(match=bool(results), result=results)
 
 
-# Replace this with actual index lookup
-import random
-
-
-def _mock_is_index_match(hash: str):
-    return bool(random.getrandbits(1))
+def index_query_to_dict(mm: t.Iterable[IndexMatch]):
+    return [{"distance": m.distance, "data": m.metadata} for m in mm]
