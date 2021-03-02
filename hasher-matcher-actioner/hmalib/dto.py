@@ -24,7 +24,7 @@ class PDQHashRecord(t.NamedTuple):
     def to_dynamodb_item(self) -> dict:
         return {
             "PK": PDQHashRecord.get_dynamodb_pk(self.content_key),
-            "SK": "type:pdq",
+            "SK": "type#pdq",
             "ContentHash": self.content_hash,
             "Quality": self.quality,
             "Timestamp": self.timestamp.isoformat(),
