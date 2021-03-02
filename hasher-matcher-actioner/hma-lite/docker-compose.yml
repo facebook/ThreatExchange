@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  beanstalk-flask:
+    image: "<acid>.dkr.ecr.us-east-1.amazonaws.com/beanstalk-docker:latest"
+    ports:
+      - "5000:80"
