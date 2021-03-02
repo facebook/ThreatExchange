@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-Implementation of SignalTypeIndex abstraction for PDQ by wrapping 
+Implementation of SignalTypeIndex abstraction for PDQ by wrapping
 hashing.pdq_faiss_matcher.
 """
 
@@ -30,6 +30,9 @@ class PDQIndex(SignalTypeIndex):
         self.index = PDQMultiHashIndex.create(
             hashes, custom_ids=self.local_id_to_entry.keys()
         )
+
+    def __len__(self) -> int:
+        return len(self.local_id_to_entry)
 
     def query(self, hash: str) -> t.List[IndexMatch[T]]:
         """
