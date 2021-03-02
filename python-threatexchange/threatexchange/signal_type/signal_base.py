@@ -150,6 +150,39 @@ class StrMatcher(FileMatcher):
         return self.match(path.read_text())
 
 
+class StrHasher(HashMatcher, StrMatcher):
+    """
+    This class can turn text into intermediary representations (hashes)
+    """
+
+    @classmethod
+    def hash_from_str(cls, content: str) -> str:
+        """Get a string representation of the hash from a string"""
+        raise NotImplementedError
+
+    def match(self, content: str) -> t.List[SignalMatch]:
+        str_hash = self.hash_from_str(content)
+        return self.match_hash(str_hash)
+
+
+class FileHasher(HashMatcher, FileMatcher):
+    """
+    This class can hash files.
+
+    If also inheiriting from StrHasher, put this second in the inheiretence
+    to prefer file hashing to reading the file in as a Str.
+    """
+
+    @classmethod
+    def hash_from_file(self, file: pathlib.Path) -> str:
+        """Get a string representation of the hash from a file"""
+        raise NotImplementedError
+
+    def match_file(self, path: pathlib.Path) -> t.List[SignalMatch]:
+        file_hash = self.hash_from_file(path)
+        return self.match_hash(file_hash)
+
+
 class SimpleSignalType(SignalType, HashMatcher):
     """
     Dead simple implementation for loading/storing a SignalType.

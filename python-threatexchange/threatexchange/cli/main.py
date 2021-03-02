@@ -25,7 +25,15 @@ from .. import descriptor
 from ..api import ThreatExchangeAPI
 from ..collab_config import CollaborationConfig
 from ..dataset import Dataset
-from . import command_base as base, fetch, experimental_fetch, label, match, dataset_cmd
+from . import (
+    command_base as base,
+    fetch,
+    experimental_fetch,
+    label,
+    match,
+    dataset_cmd,
+    hash_cmd,
+)
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
@@ -35,6 +43,7 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
         match.MatchCommand,
         label.LabelCommand,
         dataset_cmd.DatasetCommand,
+        hash_cmd.HashCommand,
     ]
 
 
