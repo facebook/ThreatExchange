@@ -2,7 +2,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-Match command for parsing simple data sources against the dataset.
+Hash command to convert content into signatures.
 """
 
 import argparse
@@ -18,9 +18,10 @@ from ..signal_type.signal_base import FileHasher, StrHasher
 from . import command_base, fetch
 
 
+# TODO consider refactor to handle overlap with match
 class HashCommand(command_base.Command):
     """
-    Hash content into signatures.
+    Hash content into signatures (aka hashes).
 
     Reads inputs as filenames by default, or as text with --as-text.
 

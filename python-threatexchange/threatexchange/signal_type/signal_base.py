@@ -152,7 +152,7 @@ class StrMatcher(FileMatcher):
 
 class StrHasher(HashMatcher, StrMatcher):
     """
-    This class can turn hashes into intermediary representations
+    This class can turn text into intermediary representations (hashes)
     """
 
     @classmethod
