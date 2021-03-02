@@ -92,7 +92,12 @@ def create_index(filepath):
         # try and guess the format
         sniffer = csv.Sniffer()
         key = ""
-        if sniffer.has_header(sample):
+        has_header = False
+        try:
+            has_header = sniffer.has_header(sample)
+        except csv.Error:
+            pass
+        if has_header:
             reader = csv.DictReader(csvfile)
         else:
             reader = csv.DictReader(csvfile, fieldnames=["hash"], restkey="meta")
