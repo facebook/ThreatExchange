@@ -8,6 +8,7 @@ import shutil
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from hmalite.config import HmaLiteDevConfig, HmaLiteProdConfig
 from hmalite.matcher import matcher_api
+from hmalite.index import reset_index, get_local_index
 from threatexchange.hashing.pdq_hasher import pdq_from_file
 from threatexchange.signal_type import pdq_index
 
@@ -21,34 +22,13 @@ if app.config["ENV"] == "production":
     app.config.from_object(HmaLiteProdConfig())
 else:
     config_cls = HmaLiteDevConfig
-better_config = config_cls.init_with_environ()
-app.config.from_object(better_config)
+config_helper = config_cls.init_with_environ()
+app.config.from_object(config_helper)
 
-if better_config.DEBUG:
+if config_helper.DEBUG:
     app.logger.info("Config Values:")
     for name in config_cls._fields:
         app.logger.info("%s = %s", name, app.config[name])
-
-
-####################### INDEX HACKS #######################
-# This doesn't really behave the way you might think -
-# instances of flask are destroyed and created all the time/thread
-# local-d, so you'll get a bunch of copies of this(?)
-# Someday we'll have to figure out the correct way to stage it
-_INDEX = None
-
-def get_local_index():
-    global _INDEX
-    if not _INDEX:
-        filepath = better_config.local_index_file
-        with open(filepath, "rb") as f:
-            index = pdq_index.PDQIndex.deserialize(f.read())
-        _INDEX = index
-    return _INDEX
-
-def reset_index(index):
-    global _INDEX
-    _INDEX = index
 
 
 #################### VARIOUS ENDPOINTS ####################
@@ -57,8 +37,8 @@ def reset_index(index):
 @app.route("/")
 def index():
     files = []
-    if better_config.local_index_file:
-        files = [better_config.local_index_file]
+    if config_helper.local_index_file:
+        files = [config_helper.local_index_file]
     return render_template("index.html", files=files)
 
 
@@ -67,7 +47,7 @@ def upload_hashes():
     if request.method == "POST":
         uploaded_file = request.files["data_file"]
         if uploaded_file.filename != "":
-            filepath = os.path.join(better_config.upload_folder, uploaded_file.filename)
+            filepath = os.path.join(config_helper.upload_folder, uploaded_file.filename)
             uploaded_file.save(filepath)
             create_index(filepath)
         return index()
@@ -89,7 +69,7 @@ def check_for_match_image():
         uploaded_file = request.files["photo"]
         if uploaded_file.filename != "":
             file_path = os.path.join(
-                better_config.upload_folder, uploaded_file.filename
+                config_helper.upload_folder, uploaded_file.filename
             )
             uploaded_file.save(file_path)
 
@@ -112,12 +92,15 @@ def create_index(filepath):
         # try and guess the format
         sniffer = csv.Sniffer()
         key = ""
-        if sniffer.has_header(sample):
+        has_header = False
+        try:
+            has_header = sniffer.has_header(sample)
+        except csv.Error:
+            pass
+        if has_header:
             reader = csv.DictReader(csvfile)
         else:
-            reader = csv.DictReader(
-                csvfile, fieldnames=["hash"], restkey="meta"
-            )
+            reader = csv.DictReader(csvfile, fieldnames=["hash"], restkey="meta")
 
         # Try and guess what column has the hash
         key = reader.fieldnames[0]
@@ -137,9 +120,9 @@ def create_index(filepath):
         "writing index of size %d from %s to %s",
         len(entries),
         filepath,
-        better_config.local_index_file_path,
+        config_helper.local_index_file_path,
     )
-    with open(better_config.local_index_file_path, "wb") as f:
+    with open(config_helper.local_index_file_path, "wb") as f:
         index.serialize(f)
     # Thanks to the miracle of the GIL, this is (mostly) safe!
     # Flask also aggressively threadlocals everything
@@ -165,20 +148,20 @@ def download(filename):
 
 @app.route("/uploads/<filename>")
 def upload(filename):
-    return send_from_directory(directory=better_config.upload_folder, filename=filename)
+    return send_from_directory(directory=config_helper.upload_folder, filename=filename)
 
 
 #################### INITIAL SETUP ####################
 
 # Create required directories
-better_config.create_dirs()
+config_helper.create_dirs()
 
 # Pre-load data if available
-csv_f, index_f = better_config.starting_index_files
-if index_f and index_f != better_config.local_index_file_path:
+csv_f, index_f = config_helper.starting_index_files
+if index_f and index_f != config_helper.local_index_file_path:
     app.logger.info("Starting available at %s, loading", index_f)
     load_index(index_f)
-    shutil.copy(index_f, better_config.local_index_file_path)
+    shutil.copy(index_f, config_helper.local_index_file_path)
 elif csv_f:
     app.logger.info("CSV available at %s", csv_f)
     create_index(csv_f)

@@ -5,6 +5,8 @@ import os.path
 import sys
 import typing as t
 
+from flask import current_app
+
 
 class HmaLiteConfig(t.NamedTuple):
     """
@@ -25,13 +27,18 @@ class HmaLiteConfig(t.NamedTuple):
     UPLOADS_FOLDER: str = "uploads/"
 
     @classmethod
-    def init_with_environ(cls):
+    def init_with_environ(cls) -> "HmaLiteConfig":
         kwargs = {}
         # Behold, I am a great and terrible magician
         for name, py_type in cls._field_types.items():  # May break in future versions
             if name in os.environ:
                 kwargs[name] = py_type(os.environ[name])
         return cls(**kwargs)
+
+    @classmethod
+    def from_flask_current_app(cls) -> "HmaLiteConfig":
+        """Init from current flask config"""
+        return cls(**{k: v for k, v in current_app.config.items() if k in cls._fields})
 
     # Helper methods
     def create_dirs(self):
