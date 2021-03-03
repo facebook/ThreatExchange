@@ -46,7 +46,7 @@ $ aws lambda update-function-code --function-name bodnarbm_pdq_matcher --image-u
 
 Before using terraform, you will need to provide some additional configuration, examples of which are provided in this folder using the same name, but with example suffixed to the end.
 
-1. `terraform.tfvars`: In this file, you will want to define the values for the variables defined in [variables.tf](variables.tf). Only variables without defaults are required, though if you are setting up an environment for developing on the HMA prototype, you likely want to override the default `prefix` to allow having an isolated environment. See the terraform docs on [input variables](https://www.terraform.io/docs/configuration/variables.html) for more information on providing variable values and overrides.
+1. `terraform.tfvars`: In this file, you will want to define the values for the variables defined in [variables.tf](terraform/variables.tf). Only variables without defaults are required, though if you are setting up an environment for developing on the HMA prototype, you likely want to override the default `prefix` to allow having an isolated environment. See the terraform docs on [input variables](https://www.terraform.io/docs/configuration/variables.html) for more information on providing variable values and overrides.
 
 2. *(optional)* `backend.tf`: This file is used for optionally defining a remote backend to store your terraform state. If you are working on development for the HMA prototype and are part of the facebook ThreatExchange team, it is highly suggested you use the configuration for this file in the internal wiki. That will enable state locking and remote state storage for your terraform environment.
 
