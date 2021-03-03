@@ -23,7 +23,7 @@ upload_docker:
 	DOCKER_TAG=${DOCKER_TAG} ./scripts/update_lambda_docker_image.sh
 
 terraform/terraform.tfvars:
-	echo 'hma_lambda_docker_uri = "${DOCKER_URI}"' > terraform/terraform.tfvars
+	echo 'hma_lambda_docker_uri = "${DOCKER_URI}:${DOCKER_TAG}"' > terraform/terraform.tfvars
 
 terraform/backend.tf:
 	./scripts/write_backend_config.sh > terraform/backend.tf

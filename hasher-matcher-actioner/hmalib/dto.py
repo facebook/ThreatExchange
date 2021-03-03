@@ -1,39 +1,98 @@
 import datetime
-import typing as t
+from dataclasses import dataclass
 
 """
-Not enforceable because named tuples can't have multiple inheritance, but all
-DTO classes in this module should implement methods `to_dynamodb_item(self)` and
+Data transfer object classes to be used with dynamodbstore
+Classes in this module should implement methods `to_dynamodb_item(self)` and
 `to_sqs_message(self)`
 """
 
-class PDQHashRecord(t.NamedTuple):
+# TODO / review note: should I create a general base version and replace '_IDynamoDBItem' ?
+
+
+@dataclass
+class PDQRecord:
+    """
+    Base Record for PDQ releated items.
+    """
+
+    SIGNAL_TYPE = "pdq"
+
+    content_key: str
+    content_hash: str
+    timestamp: datetime.datetime  # ISO-8601 formatted
+
+    @staticmethod
+    def get_dynamodb_content_key(key: str):
+        return f"c#{key}"
+
+    @staticmethod
+    def get_dynamodb_type_key(key: str):
+        return f"type#{key}"
+
+    @staticmethod
+    def get_dynamodb_type_key(key: str):
+        return f"type#{key}"
+
+    def to_dynamodb_item(self) -> dict:
+        raise NotImplementedError
+
+    def to_sqs_message(self) -> dict:
+        raise NotImplementedError
+
+
+@dataclass
+class PDQHashRecord(PDQRecord):
     """
     Successful execution at the hasher produces this record.
     """
 
-    content_key: str
-    content_hash: str
     quality: int
-    timestamp: datetime.datetime  # ISO-8601 formatted
-
-    @staticmethod
-    def get_dynamodb_pk(key: str):
-        return f"c#{key}"
 
     def to_dynamodb_item(self) -> dict:
         return {
-            "PK": PDQHashRecord.get_dynamodb_pk(self.content_key),
-            "SK": "type#pdq",
+            "PK": PDQHashRecord.get_dynamodb_content_key(self.content_key),
+            "SK": PDQHashRecord.get_dynamodb_type_key(self.SIGNAL_TYPE),
             "ContentHash": self.content_hash,
             "Quality": self.quality,
             "Timestamp": self.timestamp.isoformat(),
-            "HashType": "pdq",
+            "HashType": self.SIGNAL_TYPE,
         }
 
     def to_sqs_message(self) -> dict:
         return {
             "hash": self.content_hash,
-            "type": "pdq",
-            "key": self.content_key
+            "type": self.SIGNAL_TYPE,
+            "key": self.content_key,
         }
+
+
+@dataclass
+class PDQMatchRecord(PDQRecord):
+    """
+    Successful execution at the matcher produces this record.
+    """
+
+    te_id: int
+    te_hash: str
+
+    @staticmethod
+    def get_dynamodb_te_key(key: str):
+        return f"te#{key}"
+
+    def to_dynamodb_item(self) -> dict:
+        return {
+            "PK": PDQMatchRecord.get_dynamodb_content_key(self.content_key),
+            "SK": PDQMatchRecord.get_dynamodb_te_key(self.te_id),
+            "ContentHash": self.content_hash,
+            "Timestamp": self.timestamp.isoformat(),
+            "TEHash": self.te_hash,
+            "GSI1-PK": PDQMatchRecord.get_dynamodb_te_key(self.te_id),
+            "GSI1-SK": PDQMatchRecord.get_dynamodb_content_key(self.content_key),
+            "HashType": self.SIGNAL_TYPE,
+            "GSI2-PK": PDQMatchRecord.get_dynamodb_type_key(self.SIGNAL_TYPE),
+        }
+
+    def to_sqs_message(self) -> dict:
+        # TODO add method for when matches are added to a sqs
+        raise NotImplementedError

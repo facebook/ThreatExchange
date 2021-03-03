@@ -9,7 +9,7 @@ import pickle
 from urllib.parse import unquote_plus
 
 import boto3
-from threatexchange.hashing import PDQMultiHashIndex
+from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
 
@@ -87,13 +87,23 @@ def lambda_handler(event, context):
             codecs.getreader("utf-8")(pdq_data_file["Body"]),
             fieldnames=PDQ_DATA_FILE_COLUMNS,
         )
-        pdq_data = [(row["hash"], int(row["id"])) for row in pdq_data_reader]
+        pdq_data = [
+            (
+                row["hash"],
+                # Also add hash to metadata for easy look up on match
+                {
+                    "id": int(row["id"]),
+                    "hash": row["hash"],
+                },
+            )
+            for row in pdq_data_reader
+        ]
+
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.build_index):
         logger.info("Creating PDQ Hash Index")
-        hashes = [pdq[0] for pdq in pdq_data]
-        ids = [pdq[1] for pdq in pdq_data]
-        index = PDQMultiHashIndex.create(hashes, custom_ids=ids)
+
+        index = PDQIndex.build(pdq_data)
 
         logger.info("Putting index in S3")
         index_bytes = pickle.dumps(index)

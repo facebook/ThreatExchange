@@ -13,8 +13,8 @@ from mypy_boto3_dynamodb import DynamoDBServiceResource
 from threatexchange.hashing import pdq_hasher
 
 from hmalib.dto import PDQHashRecord
-from hmalib.storage.hashstore import HashStore
 from hmalib import metrics
+from hmalib.storage.dynamostore import DynamoStore
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -46,7 +46,7 @@ def lambda_handler(event, context):
     """
 
     records_table = dynamodb.Table(DYNAMODB_TABLE)
-    store = HashStore(records_table)
+    store = DynamoStore(records_table)
 
     for sqs_record in event["Records"]:
         sns_notification = json.loads(sqs_record["body"])
@@ -75,11 +75,11 @@ def lambda_handler(event, context):
                     pdq_hash, quality = pdq_hasher.pdq_from_file(path)
 
                 hash_record = PDQHashRecord(
-                    key, pdq_hash, quality, datetime.datetime.now()
+                    key, pdq_hash, datetime.datetime.now(), quality
                 )
 
                 # Add to dynamodb hash store
-                store.add_hash(hash_record)
+                store.add_item(hash_record)
 
                 # Publish to SQS queue
                 sqs_client.send_message(
