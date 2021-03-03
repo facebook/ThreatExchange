@@ -1,4 +1,4 @@
-.PHONY: all docker upload_docker dev_create_configs dev_create_instance dev_destroy_instance dev_clear_configs clean
+.PHONY: all docker upload_docker dev_create_configs dev_create_instance dev_test_instance dev_destroy_instance dev_clear_configs clean
 
 shell-or-die = $\
 	$(eval sod_out := $(shell $(1); echo $$?))$\
@@ -33,6 +33,14 @@ dev_create_configs: terraform/terraform.tfvars terraform/backend.tf
 dev_create_instance: dev_create_configs upload_docker
 	cd terraform/ && terraform init -var "prefix=${USER}"
 	cd terraform/ && terraform apply -var "prefix=${USER}"
+
+
+# TODO There is probably a better way to do this
+dev_test_instance:
+	TF_DYNAMODB_TABLE=$(call shell-or-die, cd terraform/ && terraform output -json datastore_name) \
+	TF_BUCKET_NAME=$(call shell-or-die, cd terraform/ &&  terraform output -json bucket_name) \
+	TF_PREFIX=$(call shell-or-die, cd terraform/ &&  terraform output -json prefix) \
+	./tests/scripts/check_deployed_instance.py
 
 dev_destroy_instance:
 	cd terraform/ && terraform destroy -var "prefix=${USER}"
