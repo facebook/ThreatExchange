@@ -41,6 +41,7 @@ class TestError(Exception):
     """
     Wrapper for exceptions which cause return codes
     """
+
     def __init__(self, message: str, returncode: int = 1) -> None:
         super().__init__(message)
         self.returncode = returncode
@@ -48,8 +49,9 @@ class TestError(Exception):
 
 def upload_s3_object(bucket: str, key: str, body: str) -> None:
     """
-    Uploads an object,
-    throws if upload fails (put_object only returns if succesful).
+    Uploads an object, throws if upload fails.
+    put_object only returns if succesful and will overwrite anything
+    currently in the bucket with this key.
     """
     try:
         print(f"Attempting to upload {key}...")
@@ -103,6 +105,8 @@ def run(bucket: str, table) -> bool:
     uploads a photo -> looks for the hash and a match
 
     throws TestError if it encoutners unexpected results
+
+    TODO break method into reusable subflows
     """
     # Upload TE Data
     upload_s3_object(bucket, THREAT_EXCHANGE_PDQ_DATA_KEY, TEST_TE_DATA_PDQ)
