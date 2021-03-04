@@ -24,4 +24,4 @@ jobs:
       - name: Init Modules
         run: terraform init -input=false
       - name: Validate terraform files
-        run: terraform validate -no-color -input=false
+        run: terraform validate -no-color
