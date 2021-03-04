@@ -38,7 +38,7 @@ This section needs more details, and will somday have a demo video.
 
 The too-few-details-to-be-useful version of this is:
 1. Copy state files from a run of the `python-threatexchange` CLI to the appropriate s3 bucket
-2. Add a cloudwatch notification (i.e. email) on completion of a match lambda
+2. Add an SNS subcription (i.e. email) on completion of a match lambda
 3. Upload test photos to the appropriate s3 bucket
 4. Hopefully get a notification from step #2
 
