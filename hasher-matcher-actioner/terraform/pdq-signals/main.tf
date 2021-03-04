@@ -46,6 +46,7 @@ resource "aws_lambda_function" "pdq_indexer" {
       INDEXES_BUCKET_NAME              = var.index_data_storage.bucket_name
       PDQ_INDEX_KEY                    = local.pdq_index_key
       MEASURE_PERFORMANCE              = var.measure_performance ? "True" : "False"
+      METRICS_NAMESPACE                = var.metrics_namespace
     }
   }
   tags = merge(
@@ -158,6 +159,7 @@ resource "aws_lambda_function" "pdq_hasher" {
       PDQ_HASHES_QUEUE_URL = aws_sqs_queue.hashes_queue.id
       DYNAMODB_TABLE       = var.datastore.name
       MEASURE_PERFORMANCE  = var.measure_performance ? "True" : "False"
+      METRICS_NAMESPACE    = var.metrics_namespace
     }
   }
   tags = merge(
@@ -261,7 +263,8 @@ resource "aws_lambda_function" "pdq_matcher" {
       INDEXES_BUCKET_NAME   = var.index_data_storage.bucket_name
       PDQ_INDEX_KEY         = local.pdq_index_key
       DYNAMODB_TABLE        = var.datastore.name
-      MEASURE_PERFORMANCE  = var.measure_performance ? "True" : "False"
+      MEASURE_PERFORMANCE   = var.measure_performance ? "True" : "False"
+      METRICS_NAMESPACE     = var.metrics_namespace
     }
   }
   tags = merge(

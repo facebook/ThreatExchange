@@ -22,3 +22,9 @@ variable "measure_performance" {
   type        = bool
   default     = false
 }
+
+variable "metrics_namespace" {
+  description = "Cloudwatch namespace for metrics."
+  type        = string
+  default     = "ThreatExchange/HMA"
+}

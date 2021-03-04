@@ -55,6 +55,9 @@ class names():
         parse_index = f"{_prefix}.parse_index"
         search_index = f"{_prefix}.search_index"
 
+_METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
+METRICS_NAMESPACE = os.getenv(_METRICS_NAMESPACE_ENVVAR, names.hma_namespace)
+
 counts = collections.Counter()
 timers: t.Mapping[str, collections.Counter] = collections.defaultdict(collections.Counter)
 
@@ -96,7 +99,7 @@ if measure_performance:
         timers[duration_name].update({ duration_ms: 1 })
         counts.update({count_name: 1})
 
-    def _metrics_flush(namespace: str = names.hma_namespace):
+    def _metrics_flush(namespace: str = METRICS_NAMESPACE):
         """
         Flushes metrics to an AWS Reporter.
         """
