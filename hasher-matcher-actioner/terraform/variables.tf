@@ -19,6 +19,6 @@ variable "log_retention_in_days" {
 
 variable "measure_performance" {
   description = "Send metrics to cloudwatch. Useful for benchmarking, but can incur costs. Set to string True for this to work."
-  type        = string
-  default     = "False"
+  type        = bool
+  default     = false
 }
