@@ -30,6 +30,11 @@ This script will build and then push the tagged image up to your accounts ECR re
 hma_lambda_docker_uri = "<AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/hma-lambda-dev:bodnarbm"
 ```
 
+There is also a Make command that does the above steps...
+```
+make upload_docker
+```
+
 Additionally, if you are testing a change to a lambda function and just pushed up changed docker image, but reusing an old tag, you will need to force AWS lambda to pick up the new docker image for the function (this is because the lambda functions use the specific instance of the image at the time the function was created and does not follow changes in the tag). You can do this using the aws cli with something like
 
 ```shell
