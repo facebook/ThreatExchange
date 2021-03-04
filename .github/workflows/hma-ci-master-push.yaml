@@ -11,13 +11,8 @@ defaults:
     working-directory: hasher-matcher-actioner
 
 jobs:
-  tf_canary:
+  tf_validate:
     runs-on: ubuntu-latest
-    env:
-      TF_STATE_S3_BUCKET: ${{ secrets.TF_STATE_S3_BUCKET }}
-      TF_STATE_S3_KEY: ${{ secrets.TF_STATE_CANARY_S3_KEY }}
-      TF_STATE_AWS_REGION: ${{ secrets.TF_STATE_AWS_REGION }}
-      TF_STATE_LOCKING_TABLE: ${{ secrets.TF_STATE_LOCKING_TABLE }}
     steps:
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
@@ -26,8 +21,6 @@ jobs:
       - name: Check format
         run: terraform fmt -check -diff -recursive -no-color
         continue-on-error: true
-      - name: Generate backend.tf
-        run: make backend.tf
       - name: Init Modules
         run: terraform init -input=false
       - name: Validate terraform files
