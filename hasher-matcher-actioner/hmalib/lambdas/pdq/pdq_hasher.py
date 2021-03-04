@@ -14,6 +14,7 @@ from threatexchange.hashing import pdq_hasher
 
 from hmalib.dto import PDQHashRecord
 from hmalib.storage.hashstore import HashStore
+from hmalib import metrics
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -67,8 +68,12 @@ def lambda_handler(event, context):
             logger.info("generating pdq hash for %s/%s", bucket_name, key)
             with tempfile.NamedTemporaryFile() as tmp_file:
                 path = Path(tmp_file.name)
-                s3_client.download_fileobj(bucket_name, key, tmp_file)
-                pdq_hash, quality = pdq_hasher.pdq_from_file(path)
+                with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
+                    s3_client.download_fileobj(bucket_name, key, tmp_file)
+
+                with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
+                    pdq_hash, quality = pdq_hasher.pdq_from_file(path)
+
                 hash_record = PDQHashRecord(
                     key, pdq_hash, quality, datetime.datetime.now()
                 )
@@ -83,3 +88,5 @@ def lambda_handler(event, context):
                 )
 
                 logger.info("Published new PDQ hash")
+
+    metrics.flush()

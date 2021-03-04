@@ -45,6 +45,8 @@ resource "aws_lambda_function" "pdq_indexer" {
       THREAT_EXCHANGE_PDQ_DATA_KEY     = var.threat_exchange_data.pdq_data_file_key
       INDEXES_BUCKET_NAME              = var.index_data_storage.bucket_name
       PDQ_INDEX_KEY                    = local.pdq_index_key
+      MEASURE_PERFORMANCE              = var.measure_performance ? "True" : "False"
+      METRICS_NAMESPACE                = var.metrics_namespace
     }
   }
   tags = merge(
@@ -96,6 +98,11 @@ data "aws_iam_policy_document" "pdq_indexer" {
       "logs:DescribeLogStreams"
     ]
     resources = ["${aws_cloudwatch_log_group.pdq_indexer.arn}:*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
   }
 }
 
@@ -151,6 +158,8 @@ resource "aws_lambda_function" "pdq_hasher" {
     variables = {
       PDQ_HASHES_QUEUE_URL = aws_sqs_queue.hashes_queue.id
       DYNAMODB_TABLE       = var.datastore.name
+      MEASURE_PERFORMANCE  = var.measure_performance ? "True" : "False"
+      METRICS_NAMESPACE    = var.metrics_namespace
     }
   }
   tags = merge(
@@ -213,6 +222,11 @@ data "aws_iam_policy_document" "pdq_hasher" {
     ]
     resources = ["${aws_cloudwatch_log_group.pdq_hasher.arn}:*"]
   }
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "pdq_hasher" {
@@ -249,6 +263,8 @@ resource "aws_lambda_function" "pdq_matcher" {
       INDEXES_BUCKET_NAME   = var.index_data_storage.bucket_name
       PDQ_INDEX_KEY         = local.pdq_index_key
       DYNAMODB_TABLE        = var.datastore.name
+      MEASURE_PERFORMANCE   = var.measure_performance ? "True" : "False"
+      METRICS_NAMESPACE     = var.metrics_namespace
     }
   }
   tags = merge(
@@ -310,6 +326,11 @@ data "aws_iam_policy_document" "pdq_matcher" {
       "logs:DescribeLogStreams"
     ]
     resources = ["${aws_cloudwatch_log_group.pdq_matcher.arn}:*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
   }
 }
 

@@ -9,6 +9,8 @@ import datetime
 
 from threatexchange.hashing.pdq_faiss_matcher import PDQFlatHashIndex, PDQMultiHashIndex
 
+from hmalib import metrics
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -48,9 +50,14 @@ def get_index(bucket_name, key):
     Load the given index from the s3 bucket and deserialize it
     """
     # TODO Cache this index for a period of time to reduce S3 calls and bandwidth.
-    with open(LOCAL_INDEX_FILENAME, "wb") as index_file:
-        s3_client.download_fileobj(bucket_name, key, index_file)
-    return pickle.load(open(LOCAL_INDEX_FILENAME, "rb"))
+    with metrics.timer(metrics.names.pdq_matcher_lambda.download_index):
+        with open(LOCAL_INDEX_FILENAME, "wb") as index_file:
+            s3_client.download_fileobj(bucket_name, key, index_file)
+
+    with metrics.timer(metrics.names.pdq_matcher_lambda.parse_index):
+        result = pickle.load(open(LOCAL_INDEX_FILENAME, "rb"))
+
+    return result
 
 
 def lambda_handler(event, context):
@@ -58,16 +65,21 @@ def lambda_handler(event, context):
 
     hash_index: PDQMultiHashIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
     logger.info("loaded_hash_index")
+
     for sqs_record in event["Records"]:
         message = json.loads(sqs_record["body"])
         if message.get("Event") == "TestEvent":
             logger.info("Disregarding Test Event")
             continue
+
         hash_str = message["hash"]
         key = message["key"]
         query = [hash_str]
         current_datetime = datetime.datetime.now()
-        results = hash_index.search(query, THRESHOLD, return_as_ids=True)
+
+        with metrics.timer(metrics.names.pdq_matcher_lambda.search_index):
+            results = hash_index.search(query, THRESHOLD, return_as_ids=True)
+
         # Only checking one hash at a time for now
         result = results[0]
         if len(result) > 0:
@@ -87,3 +99,5 @@ def lambda_handler(event, context):
             )
         else:
             logger.info("No matches found for key: {} hash: {}".format(key, hash_str))
+
+    metrics.flush()
