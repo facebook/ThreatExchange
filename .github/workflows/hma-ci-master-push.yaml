@@ -8,7 +8,7 @@ on:
       - ".github/workflows/hma-ci-master-push.yaml"
 defaults:
   run:
-    working-directory: hasher-matcher-actioner
+    working-directory: hasher-matcher-actioner/terraform
 
 jobs:
   tf_validate:
