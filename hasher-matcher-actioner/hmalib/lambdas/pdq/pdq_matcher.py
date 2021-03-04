@@ -7,7 +7,9 @@ import pickle
 import boto3
 import datetime
 
-from threatexchange.hashing.pdq_faiss_matcher import PDQFlatHashIndex, PDQMultiHashIndex
+from threatexchange.signal_type.pdq_index import PDQIndex
+
+from hmalib.dto import PDQMatchRecord
 
 from hmalib import metrics
 
@@ -28,23 +30,6 @@ OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 
 
-def save_match_to_datastore(
-    table, content_key, te_id, content_hash, current_datetime, te_hash
-):
-    item = {
-        "PK": "c#{}".format(content_key),
-        "SK": "te#{}".format(te_id),
-        "ContentHash": content_hash,
-        "Timestamp": current_datetime.isoformat(),
-        "TEHash": te_hash,
-        "GSI1-PK": "te#{}".format(te_id),
-        "GSI1-SK": "c#{}".format(content_key),
-        "HashType": "pdq",
-        "GSI2-PK": "type#pdq",
-    }
-    table.put_item(Item=item)
-
-
 def get_index(bucket_name, key):
     """
     Load the given index from the s3 bucket and deserialize it
@@ -61,9 +46,9 @@ def get_index(bucket_name, key):
 
 
 def lambda_handler(event, context):
-    table = dynamodb.Table(DYNAMODB_TABLE)
+    records_table = dynamodb.Table(DYNAMODB_TABLE)
 
-    hash_index: PDQMultiHashIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
+    hash_index: PDQIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
     logger.info("loaded_hash_index")
 
     for sqs_record in event["Records"]:
@@ -74,30 +59,29 @@ def lambda_handler(event, context):
 
         hash_str = message["hash"]
         key = message["key"]
-        query = [hash_str]
         current_datetime = datetime.datetime.now()
 
         with metrics.timer(metrics.names.pdq_matcher_lambda.search_index):
-            results = hash_index.search(query, THRESHOLD, return_as_ids=True)
+            results = hash_index.query(hash_str)
 
-        # Only checking one hash at a time for now
-        result = results[0]
-        if len(result) > 0:
-            message_str = "Matches found for key: {} hash: {}, for IDs: {}".format(
-                key, hash_str, result
-            )
-            logger.info(message_str)
-            for te_id in result:
-                te_hash = hash_index.hash_at(te_id)
-                save_match_to_datastore(
-                    table, key, te_id, hash_str, current_datetime, te_hash
-                )
+        if results:
+            match_ids = []
+            for match in results:
+                metadata = match.metadata
+                logger.info("Match found for key: %s, hash %s -> %s", key, hash_str, metadata)
+                te_id = metadata["id"]
+
+                PDQMatchRecord(
+                    key, hash_str, current_datetime, te_id, metadata["hash"]
+                ).write_to_table(records_table)
+
+                match_ids.append(te_id)
             sns_client.publish(
                 TopicArn=OUTPUT_TOPIC_ARN,
                 Subject="Match found in pdq_matcher lambda",
-                Message=message_str,
+                Message=f"Match found for key: {key}, hash: {hash_str}, for IDs: {match_ids}",
             )
         else:
-            logger.info("No matches found for key: {} hash: {}".format(key, hash_str))
+            logger.info(f"No matches found for key: {key} hash: {hash_str}")
 
     metrics.flush()

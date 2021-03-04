@@ -12,9 +12,8 @@ import boto3
 from mypy_boto3_dynamodb import DynamoDBServiceResource
 from threatexchange.hashing import pdq_hasher
 
-from hmalib.dto import PDQHashRecord
-from hmalib.storage.hashstore import HashStore
 from hmalib import metrics
+from hmalib.dto import PipelinePDQHashRecord
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -46,7 +45,6 @@ def lambda_handler(event, context):
     """
 
     records_table = dynamodb.Table(DYNAMODB_TABLE)
-    store = HashStore(records_table)
 
     for sqs_record in event["Records"]:
         sns_notification = json.loads(sqs_record["body"])
@@ -68,18 +66,18 @@ def lambda_handler(event, context):
             logger.info("generating pdq hash for %s/%s", bucket_name, key)
             with tempfile.NamedTemporaryFile() as tmp_file:
                 path = Path(tmp_file.name)
+
                 with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
                     s3_client.download_fileobj(bucket_name, key, tmp_file)
 
                 with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
                     pdq_hash, quality = pdq_hasher.pdq_from_file(path)
 
-                hash_record = PDQHashRecord(
-                    key, pdq_hash, quality, datetime.datetime.now()
+                hash_record = PipelinePDQHashRecord(
+                    key, pdq_hash, datetime.datetime.now(), quality
                 )
 
-                # Add to dynamodb hash store
-                store.add_hash(hash_record)
+                hash_record.write_to_table(records_table)
 
                 # Publish to SQS queue
                 sqs_client.send_message(
