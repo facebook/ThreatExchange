@@ -11,6 +11,8 @@ from urllib.parse import unquote_plus
 import boto3
 from threatexchange.hashing import PDQMultiHashIndex
 
+from hmalib import metrics
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -53,6 +55,20 @@ def was_pdq_data_updated(event):
 
 
 def lambda_handler(event, context):
+    """
+    Listens to SQS events fired when new data files are added to the data
+    bucket's data directory. If the updated key matches a set of criteria,
+    converts the raw data file into an index and writes to an output S3 bucket.
+
+    As per the default configuration, the bucket must be
+    - the hashing data bucket eg.
+      dipanjanm-hashing-data20210224213427723700000003
+    - the key name must be threat_exchange_data/pdq.te
+
+    Which means adding new versions of the datasets will not have an effect. You
+    must add the exact pdq.te file.
+    """
+
     if not was_pdq_data_updated(event):
         logger.info("PDQ Data Not Updated, skipping")
         return
@@ -60,24 +76,32 @@ def lambda_handler(event, context):
     logger.info("PDQ Data Updated, updating pdq hash index")
 
     logger.info("Retreiving PDQ Data from S3")
-    pdq_data_file = s3_client.get_object(
-        Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME, Key=THREAT_EXCHANGE_PDQ_DATA_KEY
-    )
-    pdq_data_reader = csv.DictReader(
-        codecs.getreader("utf-8")(pdq_data_file["Body"]),
-        fieldnames=PDQ_DATA_FILE_COLUMNS,
-    )
-    pdq_data = [(row["hash"], int(row["id"])) for row in pdq_data_reader]
 
-    logger.info("Creating PDQ Hash Index")
-    hashes = [pdq[0] for pdq in pdq_data]
-    ids = [pdq[1] for pdq in pdq_data]
-    index = PDQMultiHashIndex.create(hashes, custom_ids=ids)
+    with metrics.timer(metrics.names.pdq_indexer_lambda.download_datafile):
+        pdq_data_file = s3_client.get_object(
+            Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME, Key=THREAT_EXCHANGE_PDQ_DATA_KEY
+        )
 
-    logger.info("Putting index in S3")
-    index_bytes = pickle.dumps(index)
-    s3_client.put_object(
-        Bucket=INDEXES_BUCKET_NAME, Key=PDQ_INDEX_KEY, Body=index_bytes
-    )
+    with metrics.timer(metrics.names.pdq_indexer_lambda.parse_datafile):
+        pdq_data_reader = csv.DictReader(
+            codecs.getreader("utf-8")(pdq_data_file["Body"]),
+            fieldnames=PDQ_DATA_FILE_COLUMNS,
+        )
+        pdq_data = [(row["hash"], int(row["id"])) for row in pdq_data_reader]
+
+    with metrics.timer(metrics.names.pdq_indexer_lambda.build_index):
+        logger.info("Creating PDQ Hash Index")
+        hashes = [pdq[0] for pdq in pdq_data]
+        ids = [pdq[1] for pdq in pdq_data]
+        index = PDQMultiHashIndex.create(hashes, custom_ids=ids)
+
+        logger.info("Putting index in S3")
+        index_bytes = pickle.dumps(index)
+
+    with metrics.timer(metrics.names.pdq_indexer_lambda.upload_index):
+        s3_client.put_object(
+            Bucket=INDEXES_BUCKET_NAME, Key=PDQ_INDEX_KEY, Body=index_bytes
+        )
 
     logger.info("Index update complete")
+    metrics.flush()
