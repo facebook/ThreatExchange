@@ -10,7 +10,6 @@ import datetime
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib.dto import PDQMatchRecord
-from hmalib.storage.dynamostore import DynamoStore
 
 from hmalib import metrics
 
@@ -48,7 +47,6 @@ def get_index(bucket_name, key):
 
 def lambda_handler(event, context):
     records_table = dynamodb.Table(DYNAMODB_TABLE)
-    store = DynamoStore(records_table)
 
     hash_index: PDQIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
     logger.info("loaded_hash_index")
@@ -66,20 +64,16 @@ def lambda_handler(event, context):
         with metrics.timer(metrics.names.pdq_matcher_lambda.search_index):
             results = hash_index.query(hash_str)
 
-        if len(results) > 0:
+        if results:
             match_ids = []
             for match in results:
                 metadata = match.metadata
-                logger.info(
-                    f"Match found for key: {key}, hash: {hash_str} -> {metadata}"
-                )
+                logger.info("Match found for key: %s, hash %s -> %s", key, hash_str, metadata)
                 te_id = metadata["id"]
 
-                match_record = PDQMatchRecord(
+                PDQMatchRecord(
                     key, hash_str, current_datetime, te_id, metadata["hash"]
-                )
-                # Add to dynamodb match store
-                store.add_item(match_record)
+                ).write_to_table(records_table)
 
                 match_ids.append(te_id)
             sns_client.publish(

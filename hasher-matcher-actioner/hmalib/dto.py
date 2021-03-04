@@ -1,5 +1,9 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 import datetime
+import typing as t
 from dataclasses import dataclass
+from mypy_boto3_dynamodb.service_resource import Table
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -7,13 +11,19 @@ Classes in this module should implement methods `to_dynamodb_item(self)` and
 `to_sqs_message(self)`
 """
 
-# TODO / review note: should I create a general base version and replace '_IDynamoDBItem' ?
+class DynamoDBItem():
+
+  def write_to_table(self, table: Table):
+    table.put_item(Item=self.to_dynamodb_item())
+
+  def to_dynamo_db_item(self) -> t.Dict:
+    raise NotImplementedError
 
 
 @dataclass
-class PDQRecord:
+class PDQRecordBase(DynamoDBItem):
     """
-    Base Record for PDQ releated items.
+    Abstract Base Record for PDQ releated items.
     """
 
     SIGNAL_TYPE = "pdq"
@@ -42,7 +52,7 @@ class PDQRecord:
 
 
 @dataclass
-class PDQHashRecord(PDQRecord):
+class PipelinePDQHashRecord(PDQRecordBase):
     """
     Successful execution at the hasher produces this record.
     """
@@ -51,8 +61,8 @@ class PDQHashRecord(PDQRecord):
 
     def to_dynamodb_item(self) -> dict:
         return {
-            "PK": PDQHashRecord.get_dynamodb_content_key(self.content_key),
-            "SK": PDQHashRecord.get_dynamodb_type_key(self.SIGNAL_TYPE),
+            "PK": self.get_dynamodb_content_key(self.content_key),
+            "SK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
             "ContentHash": self.content_hash,
             "Quality": self.quality,
             "Timestamp": self.timestamp.isoformat(),
@@ -68,7 +78,7 @@ class PDQHashRecord(PDQRecord):
 
 
 @dataclass
-class PDQMatchRecord(PDQRecord):
+class PDQMatchRecord(PDQRecordBase):
     """
     Successful execution at the matcher produces this record.
     """
@@ -82,15 +92,15 @@ class PDQMatchRecord(PDQRecord):
 
     def to_dynamodb_item(self) -> dict:
         return {
-            "PK": PDQMatchRecord.get_dynamodb_content_key(self.content_key),
-            "SK": PDQMatchRecord.get_dynamodb_te_key(self.te_id),
+            "PK": self.get_dynamodb_content_key(self.content_key),
+            "SK": self.get_dynamodb_te_key(self.te_id),
             "ContentHash": self.content_hash,
             "Timestamp": self.timestamp.isoformat(),
             "TEHash": self.te_hash,
-            "GSI1-PK": PDQMatchRecord.get_dynamodb_te_key(self.te_id),
-            "GSI1-SK": PDQMatchRecord.get_dynamodb_content_key(self.content_key),
+            "GSI1-PK": self.get_dynamodb_te_key(self.te_id),
+            "GSI1-SK": self.get_dynamodb_content_key(self.content_key),
             "HashType": self.SIGNAL_TYPE,
-            "GSI2-PK": PDQMatchRecord.get_dynamodb_type_key(self.SIGNAL_TYPE),
+            "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
         }
 
     def to_sqs_message(self) -> dict:
