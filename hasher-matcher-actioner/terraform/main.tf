@@ -62,6 +62,24 @@ module "pdq_signals" {
   measure_performance   = var.measure_performance
 }
 
+module "fetcher" {
+  source = "./fetcher"
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      fetcher = "hmalib.lambdas.fetcher.lambda_handler"
+    }
+  }
+  threat_exchange_data = {
+    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    pdq_data_file_key  = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
+  }
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = local.common_tags
+}
+
 resource "aws_sns_topic" "matches" {
   name_prefix = "${var.prefix}-matches"
 }
