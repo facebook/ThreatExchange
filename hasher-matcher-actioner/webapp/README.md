@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 # Getting started with the hasher-matcher-actioner webapp
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).

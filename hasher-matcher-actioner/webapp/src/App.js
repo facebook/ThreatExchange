@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ */
+
+'use strict';
+
 import React, { useState, useEffect } from 'react';
 
 export default function App() {
@@ -32,7 +38,7 @@ export default function App() {
 function MetricsTable() {
   const [metrics, setMetrics] = useState(null);
   useEffect(() => {
-    fetch("https://m1mx5hd9h0.execute-api.us-east-1.amazonaws.com/hma-api-function1")
+    fetch("<api-url-goes-here")
     .then(response => response.json())
     .then(
       (metrics) => {
