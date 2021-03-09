@@ -28,3 +28,9 @@ variable "metrics_namespace" {
   type        = string
   default     = "ThreatExchange/HMA"
 }
+
+variable "additional_tags" {
+  description = "Additional resource tags. Will be applied to ALL resources created."
+  type        = map(string)
+  default     = {}
+}
