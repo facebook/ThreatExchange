@@ -22,7 +22,7 @@ locals {
 module "hashing_data" {
   source          = "./hashing-data"
   prefix          = var.prefix
-  additional_tags = local.common_tags
+  additional_tags = merge(var.additional_tags, local.common_tags)
 }
 
 module "pdq_signals" {
@@ -58,7 +58,7 @@ module "pdq_signals" {
   matches_sns_topic_arn = aws_sns_topic.matches.arn
 
   log_retention_in_days = var.log_retention_in_days
-  additional_tags       = local.common_tags
+  additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
 }
 
@@ -77,7 +77,7 @@ module "fetcher" {
   }
 
   log_retention_in_days = var.log_retention_in_days
-  additional_tags       = local.common_tags
+  additional_tags       = merge(var.additional_tags, local.common_tags)
 }
 
 resource "aws_sns_topic" "matches" {
@@ -91,6 +91,7 @@ resource "aws_sqs_queue" "pdq_images_queue" {
   visibility_timeout_seconds = 300
   message_retention_seconds  = 1209600
   tags = merge(
+    var.additional_tags,
     local.common_tags,
     {
       Name = "PDQImagesQueue"
@@ -126,7 +127,6 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
 
-
 # Connect Hashing Data to API
 
 module "api" {
@@ -142,8 +142,12 @@ module "api" {
     name = module.hashing_data.hma_datastore.name
     arn  = module.hashing_data.hma_datastore.arn
   }
- 
+
   log_retention_in_days = var.log_retention_in_days
-  additional_tags       = local.common_tags
+  additional_tags       = merge(var.additional_tags, local.common_tags)
 }
 
+module "webapp" {
+  source          = "./webapp"
+  prefix          = var.prefix
+}
