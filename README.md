@@ -10,11 +10,16 @@ The `api-reference-examples` folder contains example implementations in various 
 
 ## python-threatexchange
 
-An all-in-one python Library/CLI tool available on pypi under `threatexchange` which allows basic integration with ThreatExchange including matching on ThreatExchange data.
+A python Library/CLI tool available on pypi under `threatexchange` which allows basic integration with ThreatExchange and matching on ThreatExchange signals.
 
 ## PDQ and TMK Hashing Technologies
 
 ThreatExchange supports a variety of hashing algorithms for photos and videos. Two widely used algorithms are PDQ for photos and TMK for videos. The top-level folders `pdq` and `tmk` includes documentation and  implementation examples of these algorithms.
+
+## Hasher-Matcher-Actioner (HMA)
+
+This is a deployable project for bootstrapping content moderation, containing many subpieces. The initial capabilities support shared banks of image hashes kept in sync via ThreatExchange. Uses docker images (including proof-of-concept HMA-lite), as well as terraform configuration for setting up on AWS.
+
 
 ## Get All Available Data
 
