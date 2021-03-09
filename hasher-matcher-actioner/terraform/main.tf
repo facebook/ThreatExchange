@@ -127,7 +127,6 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
 
-
 # Connect Hashing Data to API
 
 module "api" {
@@ -146,4 +145,9 @@ module "api" {
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
+}
+
+module "webapp" {
+  source          = "./webapp"
+  prefix          = var.prefix
 }
