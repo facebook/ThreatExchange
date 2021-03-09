@@ -72,8 +72,8 @@ module "fetcher" {
     }
   }
   threat_exchange_data = {
-    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_data_file_key  = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
+    bucket_name       = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    pdq_data_file_key = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
   }
 
   log_retention_in_days = var.log_retention_in_days
@@ -124,6 +124,26 @@ data "aws_iam_policy_document" "pdq_hasher_queue" {
 resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   queue_url = aws_sqs_queue.pdq_images_queue.id
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
+}
+
+# Connect Hashing Data to API
+
+module "api" {
+  source = "./api"
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      status_api = "hmalib.lambdas.api.status_api.lambda_handler"
+    }
+  }
+  datastore = {
+    name = module.hashing_data.hma_datastore.name
+    arn  = module.hashing_data.hma_datastore.arn
+  }
+ 
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = local.common_tags
 }
 
 module "webapp" {

@@ -22,19 +22,23 @@ variable "lambda_docker_info" {
   type = object({
     uri = string
     commands = object({
-      fetcher = string
+      status_api = string
     })
   })
 }
 
-variable "threat_exchange_data" {
-  description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data"
+variable "datastore" {
+  description = "DynamoDB Table to store hash and match information into"
   type = object({
-    bucket_name       = string
-    pdq_data_file_key = string
+    name = string
+    arn  = string
   })
 }
 
+variable "log_retention_in_days" {
+  description = "How long to retain cloudwatch logs for lambda functions in days"
+  type        = number
+}
 
 variable "additional_tags" {
   description = "Additional resource tags"
@@ -42,7 +46,4 @@ variable "additional_tags" {
   default     = {}
 }
 
-variable "log_retention_in_days" {
-  description = "How long to retain cloudwatch logs for lambda functions in days"
-  type        = number
-}
+
