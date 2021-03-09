@@ -72,8 +72,8 @@ module "fetcher" {
     }
   }
   threat_exchange_data = {
-    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_data_file_key  = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
+    bucket_name       = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    pdq_data_file_key = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
   }
 
   log_retention_in_days = var.log_retention_in_days
