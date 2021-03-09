@@ -1,15 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-terraform {
-  required_providers {
-    aws = "~> 3.0"
-  }
-}
+#terraform {
+#  required_providers {
+#    aws = "~> 3.0"
+#  }
+#}
 
-provider "aws" {
-  region  = var.region
-  profile = var.profile
-}
+#provider "aws" {
+#  region  = var.region
+#  profile = var.profile
+#}
 
 resource "aws_s3_bucket" "webapp_bucket" {
   bucket = "${var.prefix}-webapp"
@@ -29,7 +29,7 @@ resource "aws_s3_bucket" "webapp_bucket" {
     working_dir = "../webapp"
   }
   provisioner "local-exec" {
-    command = "aws s3 sync ../webapp/build s3://brianeriksen-webapp --acl public-read"
+    command = "aws s3 sync ../webapp/build s3://${var.prefix}-webapp --acl public-read"
   }
   # For development, this makes cleanup easier
   # If deploying for real, this should not be used
