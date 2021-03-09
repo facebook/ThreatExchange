@@ -107,3 +107,8 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   queue_url = aws_sqs_queue.pdq_images_queue.id
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
+
+module "webapp" {
+  source          = "./webapp"
+  prefix          = var.prefix
+}
