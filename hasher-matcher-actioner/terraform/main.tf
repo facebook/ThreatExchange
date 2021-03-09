@@ -129,8 +129,8 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
 
 # Connect Hashing Data to API
 
-module "api_surface" {
-  source = "./api-surface"
+module "api" {
+  source = "./api"
   prefix = var.prefix
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
