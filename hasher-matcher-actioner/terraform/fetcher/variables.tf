@@ -46,3 +46,9 @@ variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
 }
+
+variable "fetch_frequency_min" {
+  description = "How many minutes to wait between queries to ThreatExchange for updates"
+  type        = number
+  default     = 15
+}
