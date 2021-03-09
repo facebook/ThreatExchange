@@ -25,6 +25,14 @@ resource "aws_s3_bucket" "webapp_bucket" {
     error_document = "index.html"
   }
   provisioner "local-exec" {
+    command = "npm run build"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
     command = "aws s3 sync ../webapp/build s3://brianeriksen-webapp --acl public-read"
   }
+  # For development, this makes cleanup easier
+  # If deploying for real, this should not be used
+  # Could also be set with a variable
+  force_destroy = true
 }
