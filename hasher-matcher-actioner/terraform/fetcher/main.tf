@@ -37,6 +37,7 @@ resource "aws_lambda_function" "fetcher" {
   environment {
     variables = {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
+      THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
     }
   }
   tags = merge(
@@ -101,6 +102,11 @@ data "aws_iam_policy_document" "fetcher" {
     effect    = "Allow"
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:Scan"]
+    resources = [aws_dynamodb_table.threatexchange_config.arn]
   }
 }
 
@@ -181,4 +187,23 @@ resource "aws_iam_policy" "fetcher_trigger" {
 resource "aws_iam_role_policy_attachment" "fetcher_trigger" {
   role       = aws_iam_role.fetcher_trigger.name
   policy_arn = aws_iam_policy.fetcher_trigger.arn
+
+### Config storage ###
+
+resource "aws_dynamodb_table" "threatexchange_config" {
+  name         = "${var.prefix}-ThreatExchangeConfig"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "Name"
+
+  attribute {
+    name = "Name"
+    type = "S"
+  }
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ThreatExchangeConfig"
+    }
+  )
 }

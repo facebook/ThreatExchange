@@ -66,6 +66,7 @@ real    0m29.166s
 We're going to take advantage of the fact the entirety of the the `threatexchange` cli is included in the image
 1. Spin up the container
 ```
+$ docker run <MY_IMAGE>
 ```
 2. Set up an interactive session on the container, and set the ThreatExchange credentials via the environment (you can also use the alternatives to environment if you are not worried about bash history and you are only planning on using the image privately.
 ```
