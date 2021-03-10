@@ -133,7 +133,7 @@ resource "aws_cloudwatch_event_target" "fetcher" {
 resource "aws_cloudwatch_event_rule" "recurring_fetch" {
   name                = "${var.prefix}RecurringThreatExchangeFetch"
   description         = "Fetch updates from ThreatExchange on a regular cadence"
-  schedule_expression = "rate(${var.fetch_frequency_min} minute)"
+  schedule_expression = "rate(${var.fetch_frequency_min} minutes)"
   role_arn            = aws_iam_role.fetcher_trigger.arn
 }
 
@@ -187,6 +187,7 @@ resource "aws_iam_policy" "fetcher_trigger" {
 resource "aws_iam_role_policy_attachment" "fetcher_trigger" {
   role       = aws_iam_role.fetcher_trigger.name
   policy_arn = aws_iam_policy.fetcher_trigger.arn
+}
 
 ### Config storage ###
 
