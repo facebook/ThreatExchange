@@ -76,7 +76,7 @@ class ExperimentalFetchCommand(command_base.Command):
         self.processed = 0
         self.counts = collections.Counter()
 
-    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
+    def execute(self, api: ThreatExchangeAPI, dataset: Dataset, types: t.Iterable[str] = ()) -> None:
         privacy_groups = dataset.config.privacy_groups
         stores = []
         for privacy_group in privacy_groups:
@@ -85,6 +85,7 @@ class ExperimentalFetchCommand(command_base.Command):
                 privacy_group,
                 api.app_id,
                 serialization=CliIndicatorSerialization,
+                types=types
             )
             stores.append(indicator_store)
             if self.full:

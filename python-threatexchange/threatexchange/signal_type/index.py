@@ -126,3 +126,8 @@ class SignalTypeIndex(t.Generic[T]):
     def deserialize(cls, fin: t.BinaryIO) -> "SignalTypeIndex[T]":
         """Instanciate an index from a previous call to serialize"""
         raise NotImplementedError
+
+    @property
+    def data_type(cls) -> str:
+        """The Threat Exchange Data type this index type can process"""
+        raise NotImplementedError
