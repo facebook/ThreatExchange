@@ -11,16 +11,27 @@ REPOSITORY_NAME = hma-lambda-dev
 DOCKER_TAG ?= ${USER} # todo - change to ${USER}-latest?
 DOCKER_URI = $(call shell-or-die,docker images --filter=reference='*/${REPOSITORY_NAME}:${DOCKER_TAG}' --format='{{.Repository}}')
 
+LOCAL_TE_DIR = local_threatexchange # Should match LOCAL_THREAT_EXCHANGE ARG in Dockerfile
 
 all:
 	@echo >&2 "Must specify target. ${FAIL}"
 
 docker:
+	if [ ! -d ${LOCAL_TE_DIR} ] ; then mkdir ${LOCAL_TE_DIR} ; fi
 	docker build -f Dockerfile -t ${REPOSITORY_NAME} .
+
+docker_with_local_te:
+	cp -r ../python-threatexchange ${LOCAL_TE_DIR}
+	make docker
+	rm -r ${LOCAL_TE_DIR}
 
 upload_docker:
 	@echo Using tag ${DOCKER_TAG}
 	DOCKER_TAG=${DOCKER_TAG} ./scripts/update_lambda_docker_image.sh
+
+use_local_te:
+	cp -r ${LOCAL_TE_MOD} ./local_threatexchange
+	python3 -m pip install -e local_threatexchange
 
 terraform/terraform.tfvars:
 	echo 'hma_lambda_docker_uri = "${DOCKER_URI}:${DOCKER_TAG}"' > terraform/terraform.tfvars
