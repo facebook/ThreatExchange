@@ -148,6 +148,7 @@ module "api" {
 }
 
 module "webapp" {
-  source          = "./webapp"
-  prefix          = var.prefix
+  include_cloudfront_distribution = var.include_cloudfront_distribution
+  prefix                          = var.prefix
+  source                          = "./webapp"
 }
