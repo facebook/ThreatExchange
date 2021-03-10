@@ -11,6 +11,8 @@ provider "aws" {
   profile = var.profile
 }
 
+### Lambda for fetcher ###
+
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
     effect  = "Allow"
@@ -21,8 +23,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
     }
   }
 }
-
-# Lambda for fetcher
 
 resource "aws_lambda_function" "fetcher" {
   function_name = "${var.prefix}_fetcher"
@@ -48,6 +48,14 @@ resource "aws_lambda_function" "fetcher" {
   )
 }
 
+resource "aws_lambda_permission" "allow_cloudwatch" {
+  statement_id  = "${var.prefix}AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.fetcher.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.recurring_fetch.arn
+}
+
 resource "aws_cloudwatch_log_group" "fetcher" {
   name              = "/aws/lambda/${aws_lambda_function.fetcher.function_name}"
   retention_in_days = var.log_retention_in_days
@@ -62,7 +70,7 @@ resource "aws_cloudwatch_log_group" "fetcher" {
 resource "aws_iam_role" "fetcher" {
   name_prefix        = "${var.prefix}_fetcher"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-  tags = merge(
+  tags               = merge(
     var.additional_tags,
     {
       Name = "FetcherLambdaRole"
@@ -82,8 +90,8 @@ data "aws_iam_policy_document" "fetcher" {
     resources = ["arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.pdq_data_file_key}"]
   }
   statement {
-    effect = "Allow"
-    actions = [
+    effect   = "Allow"
+    actions  = [
       "logs:CreateLogStream",
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
@@ -113,16 +121,74 @@ resource "aws_iam_role_policy_attachment" "fetcher" {
   policy_arn = aws_iam_policy.fetcher.arn
 }
 
+### AWS Cloud Watch Event to regularly fetch ###
 
-#resource "aws_lambda_permission" "fetcher" {
-#  action        = "lambda:InvokeFunction"
-#  function_name = aws_lambda_function.fetcher.function_name
-#  principal     = "sns.amazonaws.com"
-#  source_arn    = var.threat_exchange_data.notification_topic
-#}
+# Pointer to function
+resource "aws_cloudwatch_event_target" "fetcher" {
+  arn       = aws_lambda_function.fetcher.arn
+  rule      = aws_cloudwatch_event_rule.recurring_fetch.name
+}
 
+# Rule that runs regularly
+resource "aws_cloudwatch_event_rule" "recurring_fetch" {
+  name                = "${var.prefix}RecurringThreatExchangeFetch"
+  description         = "Fetch updates from ThreatExchange on a regular cadence"
+  schedule_expression = "rate(${var.fetch_frequency_min} minute)"
+  role_arn            = aws_iam_role.fetcher_trigger.arn
+}
 
-# Config storage
+# Role for the trigger
+resource "aws_iam_role" "fetcher_trigger" {
+  name_prefix        = "${var.prefix}_fetcher_trigger"
+  assume_role_policy = data.aws_iam_policy_document.fetcher_trigger_assume_role.json
+
+  tags               = merge(
+    var.additional_tags,
+    {
+      Name = "FetcherLambdaTriggerRole"
+    }
+  )
+}
+
+# Assume policy for trigger role allowing events.amazonaws.com to assume the role
+data "aws_iam_policy_document" "fetcher_trigger_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+  }
+}
+
+# Define a policy document to asign to the role
+data "aws_iam_policy_document" "fetcher_trigger" {
+  statement {
+    actions   = ["lambda:InvokeFunction"]
+    resources = ["*"]
+    effect    = "Allow"
+    condition {
+      test     = "ArnLike"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudwatch_event_rule.recurring_fetch.arn]
+    }
+  }
+}
+
+# Create a permission policy from policy document
+resource "aws_iam_policy" "fetcher_trigger" {
+  name_prefix = "${var.prefix}_fetcher_trigger_role_policy"
+  description = "Permissions for Recurring Fetcher Trigger"
+  policy      = data.aws_iam_policy_document.fetcher_trigger.json
+}
+
+# Attach a permission policy to the fetech trigger role
+resource "aws_iam_role_policy_attachment" "fetcher_trigger" {
+  role       = aws_iam_role.fetcher_trigger.name
+  policy_arn = aws_iam_policy.fetcher_trigger.arn
+
+### Config storage ###
 
 resource "aws_dynamodb_table" "threatexchange_config" {
   name         = "${var.prefix}-ThreatExchangeConfig"
