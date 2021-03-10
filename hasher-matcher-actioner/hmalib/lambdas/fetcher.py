@@ -49,7 +49,7 @@ def lambda_handler(event, context):
     if len(names) > len(collabs):
         names[-1] = "..."
 
-    data = f"Triggered at time {current_time}, found {len(collabs)} collabs: {''.join(names)}"
+    data = f"Triggered at time {current_time}, found {len(collabs)} collabs: {', '.join(names)}"
     print(data)
 
     # TODO fetch data from ThreatExchange
