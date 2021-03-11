@@ -17,12 +17,53 @@ $ ./storm_images_queue https://queue.amazonaws.com/<acid>/<queue_name> <bucket_n
 """
 
 import sys
+import typing as t
 import argparse
 import boto3
 import json
+import concurrent.futures
 
 
 SQS_BATCH_SIZE = 10 # matches the batch size in s3 subscription
+
+def _send_sqs_message(
+    queue_url: str,
+    s3_bucket: str,
+    current_chunk: t.List[str],
+    sent_batch_count: int,
+):
+    sqs_client = boto3.client('sqs')
+    sqs_client.send_message_batch(
+        QueueUrl=queue_url,
+        Entries=[
+            {
+                "Id": f"message-{sent_batch_count}-{i}",
+                "MessageBody": json.dumps(
+                    {
+                        "Message": json.dumps(
+                            {
+                                "Records": [
+                                    {
+                                        "s3": {
+                                            "bucket": {
+                                                "name": s3_bucket,
+                                            },
+                                            "object": {
+                                                "key": image,
+                                                "size": 12,  # Any positive number works.
+                                            },
+                                        }
+                                    }
+                                ]
+                            }
+                        )
+                    }
+                ),
+            }
+            for i, image in enumerate(current_chunk)
+        ],
+    )
+
 
 def unleash_storm(
     queue_url: str,
@@ -41,39 +82,23 @@ def unleash_storm(
     images = list(map(lambda x: x['Key'], response['Contents']))
     image_chunks = [images[i:i + SQS_BATCH_SIZE] for i in range(0, len(images), SQS_BATCH_SIZE)]
 
-    sqs_client = boto3.client('sqs')
-
     sent_batch_count = 0
     sent_message_count = 0
-    while sent_message_count < msg_count:
-        current_chunk = image_chunks[sent_batch_count % len(image_chunks)]
+    jobs = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        while sent_message_count < msg_count:
+            current_chunk = image_chunks[sent_batch_count % len(image_chunks)]
 
-        # Process one chunk begin
-        sqs_client.send_message_batch(
-            QueueUrl=queue_url,
-            Entries=[{
-                        'Id': f'message-{sent_batch_count}-{i}',
-                        'MessageBody':  json.dumps({
-                            'Message': json.dumps({
-                                'Records': [{
-                                    's3': {
-                                        'bucket': {
-                                            'name': s3_bucket,
-                                        },
-                                        'object': {
-                                            'key': image,
-                                            'size': 12 # Any positive number works.
-                                        }
-                                    }
-                                }]
-                            })
-                        })
-                    } for i, image in enumerate(current_chunk)]
-        )
-        # Process one chunk ends
+            jobs.append(executor.submit(_send_sqs_message, queue_url, s3_bucket, current_chunk, sent_batch_count))
 
-        sent_message_count += len(current_chunk)
-        sent_batch_count += 1
+            # executors are fire-and-forget, so we increment counters as
+            # soon as the message is dropped.
+            sent_message_count += len(current_chunk)
+            sent_batch_count += 1
+
+        for i, completed_future in enumerate(concurrent.futures.as_completed(jobs)):
+            # Report progress
+            print(i, "of", sent_batch_count, "completed.", end='\r')
 
     print("Sent", sent_message_count, "messages in", sent_batch_count, "batches")
 
