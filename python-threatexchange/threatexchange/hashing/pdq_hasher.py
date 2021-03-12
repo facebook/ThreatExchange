@@ -9,7 +9,10 @@ from PIL import Image, ImageOps
 import typing as t
 
 
-PDQOutput = t.Tuple[str, int] # hexadecimal representation of the Hash vector and a numerical quality value
+PDQOutput = t.Tuple[
+    str, int
+]  # hexadecimal representation of the Hash vector and a numerical quality value
+
 
 def pdq_from_file(path: pathlib.Path) -> PDQOutput:
     """
