@@ -72,7 +72,7 @@ resource "aws_iam_role" "status_api" {
 data "aws_iam_policy_document" "status_api" {
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:GetItem"]
+    actions   = ["dynamodb:GetItem","dynamodb:Scan"]
     resources = [var.datastore.arn]
   }
   statement {
@@ -128,7 +128,7 @@ resource "aws_apigatewayv2_stage" "hma_apigateway" {
 
 resource "aws_apigatewayv2_route" "hma_apigateway" {
   api_id             = aws_apigatewayv2_api.hma_apigateway.id
-  route_key          = "$default"
+  route_key          = "ANY /{proxy+}"
   authorization_type = "AWS_IAM"
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
@@ -139,6 +139,7 @@ resource "aws_apigatewayv2_integration" "hma_apigateway" {
   integration_type   = "AWS_PROXY"
   integration_method = "POST"
   integration_uri    = aws_lambda_function.status_api.invoke_arn
+  payload_format_version = "2.0"
 }
 
 resource "aws_cloudwatch_log_group" "hma_apigateway" {
