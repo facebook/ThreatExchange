@@ -46,7 +46,6 @@ dLQXVIVCt/xUqx1ILJ/bAcdDLuj1OjT0DwULeQovxm67AAAAAElFTkSuQmCC"""
 RANDOM_IMAGE_PDQ = "ad64cd9875e131a177b1f2a0d6b38ae1de9ea80421e4c51dde1b0363deba3466"
 
 
-
 class PDQHasherModuleUnitTest(unittest.TestCase):
     def test_pdq_from_file(self):
         """ Writes a few bytes to a file and runs the pdq hasher on it. """
