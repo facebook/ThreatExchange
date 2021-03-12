@@ -132,15 +132,21 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
 module "api" {
   source = "./api"
   prefix = var.prefix
+  api_access_token = var.api_access_token
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
-      status_api = "hmalib.lambdas.api.status_api.lambda_handler"
+      api_root = "hmalib.lambdas.api.api_root.lambda_handler"
+      api_auth = "hmalib.lambdas.api.api_auth.lambda_handler"
     }
   }
   datastore = {
     name = module.hashing_data.hma_datastore.name
     arn  = module.hashing_data.hma_datastore.arn
+  }
+  image_data_storage = {
+    bucket_name      = module.hashing_data.image_folder_info.bucket_name
+    image_folder_key = module.hashing_data.image_folder_info.key
   }
 
   log_retention_in_days = var.log_retention_in_days

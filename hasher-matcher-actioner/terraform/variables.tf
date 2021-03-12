@@ -11,6 +11,12 @@ variable "prefix" {
   default     = "hma"
 }
 
+variable "api_access_token" {
+  description = "access token checked for in authorizer api lambda"
+  type        = string
+  sensitive = true
+}
+
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
