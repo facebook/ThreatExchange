@@ -12,6 +12,7 @@ from hmalib import metrics
 from hmalib.dto import PDQMatchRecord
 from hmalib.common import get_logger
 
+logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 sns_client = boto3.client("sns")
 dynamodb = boto3.resource("dynamodb")
@@ -50,7 +51,6 @@ def lambda_handler(event, context):
     - the index data bucket is INDEXES_BUCKET_NAME
     - the key name must be PDQ_INDEX_KEY
     """
-    logger = get_logger(__name__)
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
     hash_index: PDQIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)

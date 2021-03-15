@@ -13,6 +13,7 @@ from threatexchange.signal_type.pdq_index import PDQIndex
 from hmalib import metrics
 from hmalib.common import get_logger
 
+logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 
 PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
@@ -65,7 +66,6 @@ def lambda_handler(event, context):
     Which means adding new versions of the datasets will not have an effect. You
     must add the exact pdq.te file.
     """
-    logger = get_logger(__name__)
 
     if not was_pdq_data_updated(event):
         logger.info("PDQ Data Not Updated, skipping")

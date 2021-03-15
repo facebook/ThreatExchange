@@ -3,6 +3,8 @@
 import os
 from hmalib.common import get_logger
 
+logger = get_logger(__name__)
+
 ACCESS_TOKEN = os.environ["ACCESS_TOKEN"]
 
 
@@ -10,7 +12,6 @@ def lambda_handler(event, _):
     """
     Authorizer for API requesteds
     """
-    logger = get_logger(__name__)
     logger.info(event)
     response = {"isAuthorized": False, "context": {"AuthInfo": "QueryStringTokenCheck"}}
 

@@ -15,6 +15,7 @@ from hmalib import metrics
 from hmalib.dto import PipelinePDQHashRecord
 from hmalib.common import get_logger
 
+logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 sqs_client = boto3.client("sqs")
 dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
@@ -40,7 +41,6 @@ def lambda_handler(event, context):
 
     1: https://docs.aws.amazon.com/lambda/latest/dg/images-create.html
     """
-    logger = get_logger(__name__)
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
     for sqs_record in event["Records"]:
