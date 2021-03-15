@@ -9,11 +9,12 @@ from boto3.dynamodb.conditions import Attr
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
+from hmalib.common import get_logger
+
 app = bottle.default_app()
 apig_wsgi_handler = make_lambda_handler(app)
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger = get_logger(__name__)
 
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")

@@ -14,11 +14,15 @@ Without the environment variables, will be a no-op.
 """
 
 _ENABLE_PERF_MEASUREMENTS_ENVVAR = "MEASURE_PERFORMANCE"
-measure_performance : bool = os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR, "False") in ["True", "1"]
+measure_performance: bool = os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR, "False") in [
+    "True",
+    "1",
+]
 
 logger = logging.getLogger(__name__)
 
-class names():
+
+class names:
     """
     Not a real class, just a bag of metric names. Ignore the lowercase name if
     you can. :)
@@ -32,15 +36,16 @@ class names():
     - action and noun both should be free of special characters
     - if used as a timer, will be suffixed by "-count" and "-duration"
     """
+
     hma_namespace = "ThreatExchange/HMA"
 
-    class pdq_hasher_lambda():
+    class pdq_hasher_lambda:
         _prefix = "lambdas.pdqhasher"
 
         download_file = f"{_prefix}.download_file"
         hash = f"{_prefix}.hash"
 
-    class pdq_indexer_lambda():
+    class pdq_indexer_lambda:
         _prefix = "lambdas.pdqindexer"
 
         download_datafile = f"{_prefix}.download_datafile"
@@ -48,28 +53,36 @@ class names():
         build_index = f"{_prefix}.build_index"
         upload_index = f"{_prefix}.upload_index"
 
-    class pdq_matcher_lambda():
+    class pdq_matcher_lambda:
         _prefix = "lambdas.pdqmatcher"
 
         download_index = f"{_prefix}.download_index"
         parse_index = f"{_prefix}.parse_index"
         search_index = f"{_prefix}.search_index"
 
+
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
 METRICS_NAMESPACE = os.getenv(_METRICS_NAMESPACE_ENVVAR, names.hma_namespace)
 
 counts = collections.Counter()
-timers: t.Mapping[str, collections.Counter] = collections.defaultdict(collections.Counter)
+timers: t.Mapping[str, collections.Counter] = collections.defaultdict(
+    collections.Counter
+)
+
 
 @contextmanager
 def _no_op_timer(name):
     yield
 
+
 def _no_op_flush():
     pass
 
+
 if measure_performance:
-    logger.info("Performance measurement requested. Supplying appmetrics instrumentation.")
+    logger.info(
+        "Performance measurement requested. Supplying appmetrics instrumentation."
+    )
     from hmalib.metrics.cloudwatch import AWSCloudWatchReporter, AWSCloudWatchUnit
 
     @contextmanager
@@ -90,13 +103,13 @@ if measure_performance:
         count_name = f"{name}-count"
         duration_name = f"{name}-duration"
 
-        start_ms : int = int(time.perf_counter() * 1000)
+        start_ms: int = int(time.perf_counter() * 1000)
 
         yield
 
-        duration_ms : int = int(time.perf_counter() * 1000) - start_ms
+        duration_ms: int = int(time.perf_counter() * 1000) - start_ms
 
-        timers[duration_name].update({ duration_ms: 1 })
+        timers[duration_name].update({duration_ms: 1})
         counts.update({count_name: 1})
 
     def _metrics_flush(namespace: str = METRICS_NAMESPACE):
@@ -106,17 +119,16 @@ if measure_performance:
         try:
             reporter = AWSCloudWatchReporter(namespace)
             datums = []
-            datums.extend([
-                reporter.get_counter_datum(k, v) for k, v in counts.items()
-            ])
+            datums.extend([reporter.get_counter_datum(k, v) for k, v in counts.items()])
 
-            datums.extend([
-                reporter.get_multi_value_datums(
-                    k,
-                    v,
-                    AWSCloudWatchUnit.Milliseconds
-                ) for k, v in timers.items()
-            ])
+            datums.extend(
+                [
+                    reporter.get_multi_value_datums(
+                        k, v, AWSCloudWatchUnit.Milliseconds
+                    )
+                    for k, v in timers.items()
+                ]
+            )
             reporter.report(datums)
         except Exception as e:
             logger.exception("Couldn't report metrics to cloudwatch")
@@ -124,7 +136,9 @@ if measure_performance:
     flush = _metrics_flush
     timer = _timer_wrapper
 else:
-    logger.info("Performance measurement not requested. Supplying no-op instrumentation.")
+    logger.info(
+        "Performance measurement not requested. Supplying no-op instrumentation."
+    )
 
     flush = _no_op_flush
     timer = _no_op_timer

@@ -3,7 +3,6 @@
 import codecs
 import csv
 import json
-import logging
 import os
 import pickle
 from urllib.parse import unquote_plus
@@ -12,9 +11,7 @@ import boto3
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+from hmalib.common import get_logger
 
 s3_client = boto3.client("s3")
 
@@ -68,6 +65,7 @@ def lambda_handler(event, context):
     Which means adding new versions of the datasets will not have an effect. You
     must add the exact pdq.te file.
     """
+    logger = get_logger(__name__)
 
     if not was_pdq_data_updated(event):
         logger.info("PDQ Data Not Updated, skipping")
@@ -98,7 +96,6 @@ def lambda_handler(event, context):
             )
             for row in pdq_data_reader
         ]
-
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.build_index):
         logger.info("Creating PDQ Hash Index")
