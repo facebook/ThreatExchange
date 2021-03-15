@@ -52,3 +52,9 @@ variable "fetch_frequency_min" {
   type        = number
   default     = 15
 }
+
+variable "te_api_token" {
+  description = "Token to read data from ThreatExchange"
+  type        = string
+  sensitive   = true
+}
