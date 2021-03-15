@@ -2,20 +2,21 @@
 import logging
 import os
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-
 ACCESS_TOKEN = os.environ["ACCESS_TOKEN"]
 
+def get_logger():
+    """This pattern prevents creates implicitly creating a root logger by creating the sub-logger named __name__"""
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    return logger
 
-def lambda_handler(event, context):
+def lambda_handler(event, _):
     """
-    authorizer for API requesteds
+    Authorizer for API requesteds
     """
+    logger = get_logger()
     logger.info(event)
-    logger.info(context)
-    response = {"isAuthorized": False, "context": {"AuthInfo": "Customer1"}}
+    response = {"isAuthorized": False, "context": {"AuthInfo": "QueryStringTokenCheck"}}
 
     if event["queryStringParameters"]["access_token"] == ACCESS_TOKEN:
         response["isAuthorized"] = True
