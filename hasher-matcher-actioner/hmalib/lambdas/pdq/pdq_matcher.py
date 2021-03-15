@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import json
-import logging
 import os
 import pickle
 import boto3
@@ -9,13 +8,11 @@ import datetime
 
 from threatexchange.signal_type.pdq_index import PDQIndex
 
-from hmalib.dto import PDQMatchRecord
-
 from hmalib import metrics
+from hmalib.dto import PDQMatchRecord
+from hmalib.common import get_logger
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
+logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 sns_client = boto3.client("sns")
 dynamodb = boto3.resource("dynamodb")
@@ -46,6 +43,14 @@ def get_index(bucket_name, key):
 
 
 def lambda_handler(event, context):
+    """
+    Listens to SQS events fired when new hash is generated. Loads the index stored in
+    an S3 bucket and looks for a match
+
+    As per the default configuration
+    - the index data bucket is INDEXES_BUCKET_NAME
+    - the key name must be PDQ_INDEX_KEY
+    """
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
     hash_index: PDQIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
@@ -68,7 +73,9 @@ def lambda_handler(event, context):
             match_ids = []
             for match in results:
                 metadata = match.metadata
-                logger.info("Match found for key: %s, hash %s -> %s", key, hash_str, metadata)
+                logger.info(
+                    "Match found for key: %s, hash %s -> %s", key, hash_str, metadata
+                )
                 te_id = metadata["id"]
 
                 PDQMatchRecord(

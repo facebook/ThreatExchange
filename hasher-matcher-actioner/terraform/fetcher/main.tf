@@ -208,3 +208,14 @@ resource "aws_dynamodb_table" "threatexchange_config" {
     }
   )
 }
+
+### ThreatExchange API Token Secret ###
+
+resource "aws_secretsmanager_secret" "api_token" {
+  name = "threatexchange/${var.prefix}_api_tokens"
+}
+
+resource "aws_secretsmanager_secret_version" "example" {
+  secret_id     = aws_secretsmanager_secret.api_token.id
+  secret_string = var.te_api_token
+}
