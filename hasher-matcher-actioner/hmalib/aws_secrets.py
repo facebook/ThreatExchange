@@ -7,8 +7,6 @@ import boto3
 import base64
 import typing as t
 
-import json
-
 session = boto3.session.Session()
 secrets_client = session.client(
     service_name='secretsmanager',
