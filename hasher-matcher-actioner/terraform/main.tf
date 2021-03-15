@@ -65,6 +65,7 @@ module "pdq_signals" {
 module "fetcher" {
   source = "./fetcher"
   prefix = var.prefix
+  te_api_token = "${var.te_app_id}|${var.te_app_secret}"
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {

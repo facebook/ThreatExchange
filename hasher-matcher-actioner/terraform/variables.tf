@@ -46,3 +46,14 @@ variable "include_cloudfront_distribution" {
   type        = bool
   default     = false
 }
+
+variable "te_app_id" {
+  description = "The App ID used to access to ThreatExchange"
+  type = string
+}
+
+variable "te_app_secret" {
+  description = "The secret token used to authenticate your access to the ThreatExchange app. You can find this by navigating to https://developers.facebook.com/apps/<YOUR-APP-ID>/settings/basic/ "
+  type = string
+  sensitive = true
+}
