@@ -7,6 +7,7 @@ import boto3
 import json
 from boto3.dynamodb.conditions import Attr
 from apig_wsgi import make_lambda_handler
+from bottle import response, error
 
 app = bottle.default_app()
 apig_wsgi_handler = make_lambda_handler(app)
@@ -18,17 +19,47 @@ s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
+IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
+IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
+
+# Override common errors codes to return json instead of bottle's default html
+@error(404)
+def error404(error):
+    response.content_type = "application/json"
+    return json.dumps({"error": "404"})
 
 
-@app.get("/echo/<val>")
-def echo(val):
-    return val
+@error(405)
+def error405(error):
+    response.content_type = "application/json"
+    return json.dumps({"error": "405"})
+
+
+@error(500)
+def error500(error):
+    response.content_type = "application/json"
+    return json.dumps({"error": "500"})
 
 
 @app.get("/")
 def root():
     return {
-        "reply": "Hello World, HMA",
+        "message": "Hello World, HMA",
+    }
+
+
+@app.route("/upload", method="POST")
+def upload():
+    uploaded = bottle.request.files.get("upload")
+    # TODO a whole bunch of validation and error checking...
+    s3_client.upload_file(
+        Fileobj=uploaded.file,
+        Bucket=IMAGE_BUCKET_NAME,
+        Key=f"{IMAGE_FOLDER_KEY}{uploaded.filename}",
+    )
+
+    return {
+        "message": "uploaded!",
     }
 
 
@@ -39,19 +70,19 @@ def matches():
     matches = []
     for match in results:
         matches.append({match["PK"]: match["SK"]})
-    return json.dumps({"matches": matches})
+    return {"matches": matches}
 
 
 @app.get("/hash/<key>")
 def hashes(key=None):
     results = check_db_for_hash(key)
     logger.info(results)
-    return json.dumps(results)
+    return results
 
 
 def lambda_handler(event, context):
     """
-    Status of delpoyed HMA
+    root request handler
     """
     logger.info("Received event: " + json.dumps(event, indent=2))
     response = apig_wsgi_handler(event, context)
@@ -59,6 +90,7 @@ def lambda_handler(event, context):
     return response
 
 
+# TODO move to utils library
 def check_db_for_matches():
     table = dynamodb.Table(DYNAMODB_TABLE)
     result = table.scan(
