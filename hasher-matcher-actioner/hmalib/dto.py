@@ -11,13 +11,13 @@ Classes in this module should implement methods `to_dynamodb_item(self)` and
 `to_sqs_message(self)`
 """
 
-class DynamoDBItem():
 
-  def write_to_table(self, table: Table):
-    table.put_item(Item=self.to_dynamodb_item())
+class DynamoDBItem:
+    def write_to_table(self, table: Table):
+        table.put_item(Item=self.to_dynamodb_item())
 
-  def to_dynamo_db_item(self) -> t.Dict:
-    raise NotImplementedError
+    def to_dynamo_db_item(self) -> t.Dict:
+        raise NotImplementedError
 
 
 @dataclass

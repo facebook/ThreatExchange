@@ -3,7 +3,6 @@
 import codecs
 import csv
 import json
-import logging
 import os
 import pickle
 from urllib.parse import unquote_plus
@@ -12,10 +11,9 @@ import boto3
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
+from hmalib.common import get_logger
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
+logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 
 PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
@@ -98,7 +96,6 @@ def lambda_handler(event, context):
             )
             for row in pdq_data_reader
         ]
-
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.build_index):
         logger.info("Creating PDQ Hash Index")

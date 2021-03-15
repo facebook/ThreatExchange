@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import json
-import logging
 import os
 import tempfile
 from pathlib import Path
@@ -14,10 +13,9 @@ from threatexchange.hashing import pdq_hasher
 
 from hmalib import metrics
 from hmalib.dto import PipelinePDQHashRecord
+from hmalib.common import get_logger
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
+logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 sqs_client = boto3.client("sqs")
 dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
@@ -43,7 +41,6 @@ def lambda_handler(event, context):
 
     1: https://docs.aws.amazon.com/lambda/latest/dg/images-create.html
     """
-
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
     for sqs_record in event["Records"]:
