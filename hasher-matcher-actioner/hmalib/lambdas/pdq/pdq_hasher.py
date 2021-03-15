@@ -61,27 +61,28 @@ def lambda_handler(event, context):
                 continue
 
             logger.info("generating pdq hash for %s/%s", bucket_name, key)
-            with tempfile.NamedTemporaryFile() as tmp_file:
-                path = Path(tmp_file.name)
 
-                with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
-                    s3_client.download_fileobj(bucket_name, key, tmp_file)
+            with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
+                bytes_: bytes = s3_client.get_object(
+                    Bucket=bucket_name,
+                    Key=key
+                )['Body'].read()
 
-                with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
-                    pdq_hash, quality = pdq_hasher.pdq_from_file(path)
+            with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
+                pdq_hash, quality = pdq_hasher.pdq_from_bytes(bytes_)
 
-                hash_record = PipelinePDQHashRecord(
-                    key, pdq_hash, datetime.datetime.now(), quality
-                )
+            hash_record = PipelinePDQHashRecord(
+                key, pdq_hash, datetime.datetime.now(), quality
+            )
 
-                hash_record.write_to_table(records_table)
+            hash_record.write_to_table(records_table)
 
-                # Publish to SQS queue
-                sqs_client.send_message(
-                    QueueUrl=OUTPUT_QUEUE_URL,
-                    MessageBody=json.dumps(hash_record.to_sqs_message()),
-                )
+            # Publish to SQS queue
+            sqs_client.send_message(
+                QueueUrl=OUTPUT_QUEUE_URL,
+                MessageBody=json.dumps(hash_record.to_sqs_message()),
+            )
 
-                logger.info("Published new PDQ hash")
+            logger.info("Published new PDQ hash")
 
     metrics.flush()
