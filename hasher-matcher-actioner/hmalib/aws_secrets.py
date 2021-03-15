@@ -6,7 +6,6 @@ Wrapper functions for reading secrets stored in AWS
 import boto3
 import base64
 import typing as t
-import ast
 
 import json
 
@@ -28,8 +27,7 @@ class AWSSecrets:
         get the ThreatExchange API Key
         """
         secret_name = "threatexchange/api_keys"
-        key_name = "default"
-        api_key = get_key_value_secret(secret_name, key_name)
+        api_key = get_str_secret(secret_name)
         return api_key
 
 def get_bin_secret(secret_name: str) -> bytes:
@@ -48,18 +46,8 @@ def get_str_secret(secret_name: str) -> str:
     str_response = response['SecretString']
     return str_response
 
-def get_key_value_secret(secret_name: str, key: str) -> str:
-    """
-    For secerts stored in AWS Secrets Manager as dicts
-    """
-    str_response = get_str_secret(secret_name)
-    dict_response = json.loads(str_response)
-    return dict_response[key]
-
 def get_secret_value_response(secret_name: str):
     get_secret_value_response = secrets_client.get_secret_value(
             SecretId=secret_name
         )
     return get_secret_value_response
-
-print(AWSSecrets.te_api_key())
