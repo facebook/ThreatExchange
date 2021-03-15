@@ -12,8 +12,6 @@ secrets_client = session.client(
     service_name='secretsmanager',
 )
 
-from threatexchange.api import ThreatExchangeAPI
-
 class AWSSecrets:
     """
     A class for reading secrets stored in aws
