@@ -148,7 +148,7 @@ class MatchCommand(command_base.Command):
             self.stderr(
                 "Looks like you are running this for the first time. Fetching some sample data."
             )
-            fetch.FetchCommand(sample=True).execute(dataset)
+            fetch.FetchCommand(sample=True).execute(api, dataset)
 
         all_signal_types = dataset.load_cache(
             s() for s in self.content_type.get_signal_types()

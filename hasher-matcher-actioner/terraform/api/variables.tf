@@ -17,13 +17,28 @@ variable "prefix" {
   type        = string
 }
 
+variable "api_access_token" {
+  description = "access token checked for in authorizer api lambda"
+  type        = string
+  sensitive = true
+}
+
 variable "lambda_docker_info" {
   description = "Docker container information for lambda functions"
   type = object({
     uri = string
     commands = object({
-      status_api = string
+      api_root = string
+      api_auth = string
     })
+  })
+}
+
+variable "image_data_storage" {
+  description = "Configuration information for the S3 Bucket that will hold uploaded content"
+  type = object({
+    bucket_name     = string
+    image_folder_key  = string
   })
 }
 

@@ -37,10 +37,11 @@ class AWSCloudWatchUnit(Enum):
 
 
 @dataclass
-class AWSCloudWatchMetricDatum():
+class AWSCloudWatchMetricDatum:
     """
     AWS Cloudwatch MetricData struct.
     """
+
     metric_name: str
     value: float = None
     dimensions: t.Dict[str, str] = None
@@ -51,23 +52,23 @@ class AWSCloudWatchMetricDatum():
 
     def to_dict(self) -> t.Dict:
         result = {
-            'MetricName': self.metric_name,
+            "MetricName": self.metric_name,
         }
 
         if self.timestamp:
-            result['Timestamp'] = self.timestamp
+            result["Timestamp"] = self.timestamp
 
         if self.value:
-            result['Value'] = self.value
+            result["Value"] = self.value
 
         if self.unit:
-            result['Unit'] = self.unit.value
+            result["Unit"] = self.unit.value
 
         if self.values:
-            result['Values'] = self.values
+            result["Values"] = self.values
 
         if self.counts:
-            result['Counts'] = self.counts
+            result["Counts"] = self.counts
 
         return result
 
@@ -79,15 +80,16 @@ class AWSCloudWatchReporter(object):
     For now, only timer and counters are supported because that's all you
     need to measure performance of functions.
     """
+
     def __init__(self, namespace: str):
-        self.client = boto3.client('cloudwatch')
+        self.client = boto3.client("cloudwatch")
         self.namespace = namespace
 
     def get_multi_value_datums(
         self,
         name: str,
         value_count_mapping: t.Mapping[int, int],
-        unit: AWSCloudWatchUnit
+        unit: AWSCloudWatchUnit,
     ) -> AWSCloudWatchMetricDatum:
         """
         For reporting multiple values. Requires a dict from values ->
@@ -113,11 +115,8 @@ class AWSCloudWatchReporter(object):
             counts.append(v)
 
         return AWSCloudWatchMetricDatum(
-                metric_name=name,
-                values=values,
-                counts=counts,
-                unit=unit
-            )
+            metric_name=name, values=values, counts=counts, unit=unit
+        )
 
     def get_counter_datum(
         self,
@@ -128,17 +127,16 @@ class AWSCloudWatchReporter(object):
         For reporting counts. Returns a single datum.
         """
         return AWSCloudWatchMetricDatum(
-                metric_name=name,
-                value=value,
-                unit=AWSCloudWatchUnit.Count
-            )
+            metric_name=name, value=value, unit=AWSCloudWatchUnit.Count
+        )
 
     def report(self, metric_datums: t.List[AWSCloudWatchMetricDatum]):
         # Publish metric datums to cloudwatch
         self._put_metric_data(self.namespace, metric_datums)
 
-    def _put_metric_data(self, namespace: str, metric_datums: t.List[AWSCloudWatchMetricDatum]):
+    def _put_metric_data(
+        self, namespace: str, metric_datums: t.List[AWSCloudWatchMetricDatum]
+    ):
         self.client.put_metric_data(
-            Namespace=namespace,
-            MetricData=[x.to_dict() for x in metric_datums]
+            Namespace=namespace, MetricData=[x.to_dict() for x in metric_datums]
         )

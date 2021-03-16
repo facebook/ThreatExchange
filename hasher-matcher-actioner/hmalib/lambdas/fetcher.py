@@ -9,6 +9,7 @@ from functools import lru_cache
 
 dynamodb = boto3.resource("dynamodb")
 
+
 @dataclass
 class FetcherConfig:
 
@@ -20,24 +21,24 @@ class FetcherConfig:
     def get(cls):
         return cls(
             output_s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"]
+            collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
         )
 
 
 def lambda_handler(event, context):
     config = FetcherConfig.get()
 
-    paginator = dynamodb.meta.client.get_paginator('scan')
+    paginator = dynamodb.meta.client.get_paginator("scan")
 
     response_iterator = paginator.paginate(
         TableName=config.collab_config_table,
         ProjectionExpression=",".join(("#name", "privacy_group", "tags")),
-        ExpressionAttributeNames={"#name": "name"}
+        ExpressionAttributeNames={"#name": "name"},
     )
 
     collabs = []
     for page in response_iterator:
-        for item in page['Items']:
+        for item in page["Items"]:
             name = item["name"]
             privacy_group = item["privacy_group"]
             collabs.append((name, privacy_group))
@@ -53,14 +54,8 @@ def lambda_handler(event, context):
     print(data)
 
     # TODO fetch data from ThreatExchange
-    threat_exchange_data = [
-        {'should_delete' : False,
-         'data' : data}
-        ]
+    threat_exchange_data = [{"should_delete": False, "data": data}]
 
     # TODO add TE data to indexer
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps(threat_exchange_data)
-    }
+    return {"statusCode": 200, "body": json.dumps(threat_exchange_data)}
