@@ -2,7 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Collapse, Modal } from 'react-bootstrap'
 
@@ -126,6 +126,7 @@ export default function Matches() {
           </table>
         </div>
       </div>
+      <MatchList2 />
       <MatchDetailsModal show={showModal} onHide={() => setShowModal(false)} />
     </>
   );
@@ -157,4 +158,72 @@ function MatchDetailsModal(props) {
       </Modal.Footer>
     </Modal>
   );
+}
+
+
+
+// TODO - Move to where this should belong
+async function callAPI(
+  route,
+  params = {},
+  init = {
+    method: 'GET',
+    headers: {
+      // 'Content-Type': 'application/json'  // Uncomment at your own peril
+    },
+  }
+) {
+  // TODO figure out root path. For now copy your own URL gateway here
+  const root = "https://7k9twyc4pi.execute-api.us-east-1.amazonaws.com";
+  const urlWithParams = new URL(`${root}/${route}`);
+  // TODO replace with real auth someday
+  urlWithParams.searchParams.append("access_token", "asupersecrettoken");
+  for (const [key, value] of Object.entries(params)) {
+    urlWithParams.searchParams.append(key, value);
+  }
+  const response = await fetch(urlWithParams.toString(), init);
+  return response.json();
+}
+
+function MatchList2() {
+
+  const [matchesData, setMatchesData] = useState([]);
+
+  useEffect(() => {
+    callAPI("matches")
+      .then((data) => {
+        setMatchesData(data["matches"])
+      })
+  })
+
+  return (
+    <div class="row mt-3">
+      <div class="col-xs-12">
+        <table class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Hash</th>
+              <th>Matched On</th>
+              <th>Reaction</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {matchesData.map((match) => {
+              var img_key = Object.keys(match)[0];
+              var te_val = match[img_key];
+              return <tr class="align-middle">
+                <td class="align-middle">{img_key}</td>
+                <td class="align-middle">{te_val}</td>
+                <td class="align-middle">TODO</td>
+                <td class="align-middle">TODO</td>
+                <td class="align-middle"><Link to="/matches/file1.jpg" class="btn btn-outline-primary btn-sm">Details</Link></td>
+              </tr>;
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }
