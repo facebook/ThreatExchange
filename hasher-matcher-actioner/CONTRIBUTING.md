@@ -47,6 +47,16 @@ e.g.
 $ aws lambda update-function-code --function-name bodnarbm_pdq_matcher --image-uri <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/hma-lambda-dev:bodnarbm
 ```
 
+Lastly, if you are testing changes to the [`python-threatexchange` module](https://github.com/facebook/ThreatExchange/tree/master/python-threatexchange) that you would like to deploy on docker, you can make docker reference your local version of `python-threatexchange` by running the following steps from the  `hasher-matcher-actioner` directory:
+1. `$ cp -r ../python-threatexchange local_threatexchange`
+2. Edit the Makefile to include the following lines **before** the pip install requirements:
+```
+ARG LOCAL_THREAT_EXCHANGE=./local_threatexchange
+COPY $LOCAL_THREAT_EXCHANGE $LOCAL_THREAT_EXCHANGE
+RUN python3 -m pip install ./local_threatexchange --target "${DEPS_PATH}"
+```
+3. `$ make docker && rm -r local_threatexchange`
+
 ## Config Files
 
 Before using terraform, you will need to provide some additional configuration, examples of which are provided in this folder using the same name, but with example suffixed to the end.

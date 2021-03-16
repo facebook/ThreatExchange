@@ -11,6 +11,12 @@ variable "prefix" {
   default     = "hma"
 }
 
+variable "api_access_token" {
+  description = "access token checked for in authorizer api lambda"
+  type        = string
+  sensitive = true
+}
+
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
@@ -39,4 +45,10 @@ variable "include_cloudfront_distribution" {
   description = "Indicates whether a CloudFront distribution is included"
   type        = bool
   default     = false
+}
+
+variable "te_api_token" {
+  description = "The secret token used to authenticate your access to ThreatExchange. You can find this by navigating to https://developers.facebook.com/tools/accesstoken/"
+  type        = string
+  sensitive   = true
 }
