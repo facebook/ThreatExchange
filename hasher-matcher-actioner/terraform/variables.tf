@@ -15,6 +15,7 @@ variable "api_access_token" {
   description = "access token checked for in authorizer api lambda"
   type        = string
   sensitive = true
+  default = "asupersecrettoken"  # Will replace before real data stored
 }
 
 variable "log_retention_in_days" {
