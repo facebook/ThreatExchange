@@ -2,7 +2,6 @@
 
 import boto3
 import os
-import shutil
 import pathlib
 
 from datetime import datetime
@@ -11,27 +10,19 @@ from functools import lru_cache
 
 from threatexchange.threat_updates import ThreatUpdateFileStore
 from threatexchange.signal_type.pdq_index import PDQIndex
-
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
 from threatexchange.api import ThreatExchangeAPI
 
-## Add hmalib to python path
-import sys
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-parentdir = os.path.dirname(parentdir)
-sys.path.append(parentdir)
-
 from hmalib.aws_secrets import AWSSecrets
 
-# THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
-
-indecies = [PDQIndex]
+indicies = [PDQIndex]
 
 dynamodb = boto3.resource("dynamodb")
 s3_client = boto3.client("s3")
 
 dataset_folder = pathlib.Path("temp_te_data")
+if not os.path.exists(dataset_folder) or not os.path.isdir(dataset_folder):
+    os.mkdir(dataset_folder)
 
 @dataclass
 class FetcherConfig:
@@ -43,6 +34,7 @@ class FetcherConfig:
     @lru_cache(maxsize=1)  # probably overkill, but at least it's consistent
     def get(cls):
         return cls(
+            # TODO read from environment variables
             # output_s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
             # collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
             output_s3_bucket="my-fake-bucket",
@@ -63,7 +55,7 @@ def lambda_handler(event, context):
     collabs = []
     for page in response_iterator:
         for item in page['Items']:
-            collabs.append((item["Name"], item["privacy_group"][0]))
+            collabs.append((item["Name"], item["privacy_group"]))
 
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")
@@ -81,18 +73,17 @@ def lambda_handler(event, context):
     stores = []
     for name, privacy_group in collabs:
         print(f"Processing updates for collaboration {name}")
-        # create empty temp dataset folder if doesnt exist
-        collab_dataset_folder = dataset_folder / privacy_group
-        if os.path.exists(collab_dataset_folder) and os.path.isdir(collab_dataset_folder):
-            shutil.rmtree(collab_dataset_folder)
-        os.mkdir(collab_dataset_folder)
+        # create temp dataset directory if doesnt exist
+        collab_dataset_folder = dataset_folder / str(privacy_group)
+        if not os.path.exists(collab_dataset_folder) or not os.path.isdir(collab_dataset_folder):
+            os.mkdir(collab_dataset_folder)
 
         indicator_store = ThreatUpdateFileStore(
             collab_dataset_folder,
             privacy_group,
             api.app_id,
             serialization=CliIndicatorSerialization,
-            types=[index_cls.data_type() for index_cls in indecies]
+            types=[index_cls.data_type() for index_cls in indicies]
         )
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
@@ -121,4 +112,5 @@ def lambda_handler(event, context):
 
     return {"statusCode": 200, "body": "Sure Yeah why not"}
 
-lambda_handler(None, None)
+if __name__ == "__main__":
+    lambda_handler(None, None)
