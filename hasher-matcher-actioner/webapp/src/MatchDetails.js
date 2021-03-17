@@ -54,6 +54,7 @@ export default function MatchDetails() {
                 <th>Tags</th>
                 <th>Status</th>
                 <th>Partners with Opinions</th>
+                <th>Action Taken</th>
               </tr>
             </thead>
             <tbody>
@@ -66,6 +67,7 @@ export default function MatchDetails() {
                 <td>tag1, tag2</td>
                 <td>MALICIOUS</td>
                 <td>app1, app2</td>
+                <td>Delete</td>
               </tr>
             </tbody>
           </table>
