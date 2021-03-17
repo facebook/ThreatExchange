@@ -117,12 +117,14 @@ class ThreatUpdatesDelta:
         privacy_group: int,
         start: int = 0,
         end: t.Optional[int] = None,
+        types: t.Iterable[str] = (),
     ) -> None:
         self.privacy_group = privacy_group
         self.updates = []
         self.current = start
         self.start = start
         self.end = end
+        self.types = list(types)
 
         self._cursor = None
 
@@ -167,6 +169,7 @@ class ThreatUpdatesDelta:
                 page_size=500,
                 start_time=self.start,
                 stop_time=self.end,
+                types=self.types,
                 fields=ThreatUpdateJSON.te_threat_updates_fields(),
                 decode_fn=ThreatUpdateJSON,
             )
@@ -280,9 +283,11 @@ class ThreatUpdatesStore:
     def __init__(
         self,
         privacy_group: int,
+        types: t.Iterable[str] = (),
     ) -> None:
         self.privacy_group = privacy_group
         self.checkpoint = None
+        self.types = types
 
     @property
     def fetch_checkpoint(self):
@@ -295,7 +300,9 @@ class ThreatUpdatesStore:
     @property
     def next_delta(self) -> ThreatUpdatesDelta:
         """Return the next delta that should be applied"""
-        return ThreatUpdatesDelta(self.privacy_group, self.checkpoint.fetch_checkpoint)
+        return ThreatUpdatesDelta(
+            self.privacy_group, self.checkpoint.fetch_checkpoint, None, self.types
+        )
 
     def load_checkpoint(self) -> None:
         self.checkpoint = self._load_checkpoint()
@@ -342,8 +349,9 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
         app_id: int,
         *,
         serialization=ThreatUpdateJSON,
+        types: t.Iterable[str] = (),
     ) -> None:
-        super().__init__(privacy_group)
+        super().__init__(privacy_group, types)
         self.path = state_dir
         self.app_id = app_id
         self._serialization = serialization

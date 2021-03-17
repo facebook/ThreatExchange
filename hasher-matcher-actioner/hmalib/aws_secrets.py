@@ -23,7 +23,8 @@ class AWSSecrets:
         """
         get the ThreatExchange API Key
         """
-        secret_name = "threatexchange/api_keys"
+        # TODO Read name from AWS/os.environ
+        secret_name = "threatexchange/jeberl_api_tokens"
         api_key = get_str_secret(secret_name)
         return api_key
 

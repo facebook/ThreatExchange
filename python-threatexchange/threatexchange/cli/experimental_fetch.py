@@ -76,7 +76,9 @@ class ExperimentalFetchCommand(command_base.Command):
         self.processed = 0
         self.counts = collections.Counter()
 
-    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
+    def execute(
+        self, api: ThreatExchangeAPI, dataset: Dataset
+    ) -> None:
         privacy_groups = dataset.config.privacy_groups
         stores = []
         for privacy_group in privacy_groups:
