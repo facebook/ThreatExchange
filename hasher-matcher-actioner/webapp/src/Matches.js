@@ -6,6 +6,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Collapse, Modal } from 'react-bootstrap'
 
+import { getAPI } from './Api';
+
 export default function Matches() {
   const [showFilters, setShowFilters] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -161,36 +163,12 @@ function MatchDetailsModal(props) {
 }
 
 
-
-// TODO - Move to where this should belong
-async function callAPI(
-  route,
-  params = {},
-  init = {
-    method: 'GET',
-    headers: {
-      // 'Content-Type': 'application/json'  // Uncomment at your own peril
-    },
-  }
-) {
-  // TODO figure out root path. For now copy your own URL gateway here
-  const root = "https://7k9twyc4pi.execute-api.us-east-1.amazonaws.com";
-  const urlWithParams = new URL(`${root}/${route}`);
-  // TODO replace with real auth someday
-  urlWithParams.searchParams.append("access_token", "asupersecrettoken");
-  for (const [key, value] of Object.entries(params)) {
-    urlWithParams.searchParams.append(key, value);
-  }
-  const response = await fetch(urlWithParams.toString(), init);
-  return response.json();
-}
-
 function MatchList2() {
 
   const [matchesData, setMatchesData] = useState([]);
 
   useEffect(() => {
-    callAPI("matches")
+    getAPI("matches")
       .then((data) => {
         setMatchesData(data["matches"])
       })

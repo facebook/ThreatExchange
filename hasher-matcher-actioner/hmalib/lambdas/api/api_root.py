@@ -51,9 +51,9 @@ def root():
 
 @app.route("/upload", method="POST")
 def upload():
-    uploaded = bottle.request.files.get("upload")
+    uploaded = bottle.request.files.get("image")
     # TODO a whole bunch of validation and error checking...
-    s3_client.upload_file(
+    s3_client.upload_fileobj(
         Fileobj=uploaded.file,
         Bucket=IMAGE_BUCKET_NAME,
         Key=f"{IMAGE_FOLDER_KEY}{uploaded.filename}",
