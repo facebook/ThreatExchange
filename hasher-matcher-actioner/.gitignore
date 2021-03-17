@@ -1,5 +1,5 @@
 # Local .terraform directories
-**/.terraform*
+**/.terraform/*
 
 # .tfstate files
 *.tfstate
@@ -34,5 +34,3 @@ override.tf.json
 terraform.rc
 
 backend.tf
-
-local_threatexchange
