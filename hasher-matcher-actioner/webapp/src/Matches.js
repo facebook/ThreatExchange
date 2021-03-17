@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Collapse, Modal } from 'react-bootstrap'
 
-import { getAPI } from './Api';
+import { fetchMatches } from './Api';
 
 export default function Matches() {
   const [showFilters, setShowFilters] = useState(false);
@@ -168,11 +168,8 @@ function MatchList2() {
   const [matchesData, setMatchesData] = useState([]);
 
   useEffect(() => {
-    getAPI("matches")
-      .then((data) => {
-        setMatchesData(data["matches"])
-      })
-  })
+    fetchMatches().then((matches) => setMatchesData(matches))
+  }, [])
 
   return (
     <div class="row mt-3">
@@ -188,7 +185,7 @@ function MatchList2() {
             </tr>
           </thead>
           <tbody>
-            {matchesData.map((match) => {
+            {matchesData.length ? matchesData.map((match) => {
               var img_key = Object.keys(match)[0];
               var te_val = match[img_key];
               return <tr class="align-middle">
@@ -198,7 +195,7 @@ function MatchList2() {
                 <td class="align-middle">TODO</td>
                 <td class="align-middle"><Link to="/matches/file1.jpg" class="btn btn-outline-primary btn-sm">Details</Link></td>
               </tr>;
-            })}
+            }) : <p>No Matches Found.</p>}
           </tbody>
         </table>
       </div>

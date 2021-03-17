@@ -7,23 +7,13 @@ import { Link } from 'react-router-dom';
 import { Button, Col, Collapse, Image, Row } from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 
-import { postAPI } from './Api'
+import { uploadImage } from './Api'
 
 export default function Upload() {
   const [fileName, setFileName] = useState('Select Browse to choose a file.');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [image, setImage] = useState({ preview: "", raw: "" });
-
-  function handleUpload() {
-    const formData = new FormData();
-    formData.append("image", image.raw);
-    postAPI('upload', formData).then((response) => {
-      // TODO check for succesfull upload
-      setSubmitted(true);
-      setSubmitting(false)
-    })
-  }
 
   return (
     <>
@@ -37,10 +27,11 @@ export default function Upload() {
             </p>
               <div className="custom-file">
                 <input type="file" className="custom-file-input" id="customFile" onChange={(e) => {
-                  setFileName(e.nativeEvent.path[0].files[0].name);
+                  const file = e.nativeEvent.path[0].files[0]
+                  setFileName(file.name);
                   setImage({
-                    preview: URL.createObjectURL(e.nativeEvent.path[0].files[0]),
-                    raw: e.nativeEvent.path[0].files[0]
+                    preview: URL.createObjectURL(file),
+                    raw: file
                   }
                   );
                 }} />
@@ -49,7 +40,11 @@ export default function Upload() {
               <div className="mt-3">
                 <Button onClick={() => {
                   setSubmitting(true);
-                  handleUpload()
+                  // TODO check for succesfull upload
+                  uploadImage(image.raw).then(() => {
+                    setSubmitted(true);
+                    setSubmitting(false);
+                  });
                 }}>Submit</Button>
               </div>
             </div>
@@ -64,10 +59,11 @@ export default function Upload() {
               </Spinner>
             </div>
           </Collapse>
+          {/* TODO this should poll the API for results */}
           <Collapse in={submitted}>
             <div>
               <p>Uploaded {fileName}: hash should be generated shortly... </p>
-              <p> if a match is found it will be visable here: </p>
+              <p> if a match is found it will be visible here: </p>
               <p><Link as={Button} to={'/matches/' + fileName}>View Match Details</Link></p>
             </div>
           </Collapse>
