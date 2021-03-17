@@ -63,10 +63,9 @@ def lambda_handler(event, context):
             logger.info("generating pdq hash for %s/%s", bucket_name, key)
 
             with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
-                bytes_: bytes = s3_client.get_object(
-                    Bucket=bucket_name,
-                    Key=key
-                )['Body'].read()
+                bytes_: bytes = s3_client.get_object(Bucket=bucket_name, Key=key)[
+                    "Body"
+                ].read()
 
             with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
                 pdq_hash, quality = pdq_hasher.pdq_from_bytes(bytes_)
