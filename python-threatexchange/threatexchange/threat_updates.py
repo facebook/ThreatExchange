@@ -300,7 +300,9 @@ class ThreatUpdatesStore:
     @property
     def next_delta(self) -> ThreatUpdatesDelta:
         """Return the next delta that should be applied"""
-        return ThreatUpdatesDelta(self.privacy_group, self.checkpoint.fetch_checkpoint, None, self.types)
+        return ThreatUpdatesDelta(
+            self.privacy_group, self.checkpoint.fetch_checkpoint, None, self.types
+        )
 
     def load_checkpoint(self) -> None:
         self.checkpoint = self._load_checkpoint()
