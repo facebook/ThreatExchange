@@ -213,9 +213,10 @@ resource "aws_dynamodb_table" "threatexchange_config" {
 
 resource "aws_secretsmanager_secret" "api_token" {
   name = "threatexchange/${var.prefix}_api_tokens"
+  recovery_window_in_days = 0
 }
 
-resource "aws_secretsmanager_secret_version" "example" {
+resource "aws_secretsmanager_secret_version" "api_token" {
   secret_id     = aws_secretsmanager_secret.api_token.id
   secret_string = var.te_api_token
 }
