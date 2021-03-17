@@ -9,7 +9,7 @@ import datetime
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.dto import PDQMatchRecord
+from hmalib.models import PDQMatchRecord
 from hmalib.common import get_logger
 
 logger = get_logger(__name__)

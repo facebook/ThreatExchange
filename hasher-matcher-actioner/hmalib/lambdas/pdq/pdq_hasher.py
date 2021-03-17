@@ -12,7 +12,7 @@ from mypy_boto3_dynamodb import DynamoDBServiceResource
 from threatexchange.hashing import pdq_hasher
 
 from hmalib import metrics
-from hmalib.dto import PipelinePDQHashRecord
+from hmalib.models import PipelinePDQHashRecord
 from hmalib.common import get_logger
 
 logger = get_logger(__name__)
