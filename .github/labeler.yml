@@ -8,3 +8,6 @@ hma:
 
 pdq:
   - pdq/**/*
+
+hma-ui:
+  - hasher-matcher-actioner/webapp/**/* 
