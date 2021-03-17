@@ -124,7 +124,7 @@ class ThreatUpdatesDelta:
         self.current = start
         self.start = start
         self.end = end
-        self.types = types
+        self.types = list(types)
 
         self._cursor = None
 

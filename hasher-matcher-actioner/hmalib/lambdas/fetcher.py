@@ -2,27 +2,29 @@
 
 import boto3
 import os
-import pathlib
+import tempfile
 
+from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
 from functools import lru_cache
 
 from threatexchange.threat_updates import ThreatUpdateFileStore
-from threatexchange.signal_type.pdq_index import PDQIndex
+from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
 from threatexchange.api import ThreatExchangeAPI
 
 from hmalib.aws_secrets import AWSSecrets
+from hmalib.common import get_logger
 
-indicies = [PDQIndex]
+logger = get_logger(__name__)
+
+signal_types = [PdqSignal]
 
 dynamodb = boto3.resource("dynamodb")
 s3_client = boto3.client("s3")
 
-dataset_folder = pathlib.Path("temp_te_data")
-if not os.path.exists(dataset_folder) or not os.path.isdir(dataset_folder):
-    os.mkdir(dataset_folder)
+dataset_dir = tempfile.TemporaryDirectory()
 
 @dataclass
 class FetcherConfig:
@@ -65,25 +67,22 @@ def lambda_handler(event, context):
         names[-1] = "..."
 
     data = f"Triggered at time {current_time}, found {len(collabs)} collabs: {', '.join(names)}"
-    print(data)
+    logger.info(data)
 
     api_key = AWSSecrets.te_api_key()
     api = ThreatExchangeAPI(api_key)
 
     stores = []
     for name, privacy_group in collabs:
-        print(f"Processing updates for collaboration {name}")
+        logger.info(f"Processing updates for collaboration {name}")
         # create temp dataset directory if doesnt exist
-        collab_dataset_folder = dataset_folder / str(privacy_group)
-        if not os.path.exists(collab_dataset_folder) or not os.path.isdir(collab_dataset_folder):
-            os.mkdir(collab_dataset_folder)
+        collab_dataset_dir = tempfile.TemporaryDirectory(suffix=str(privacy_group))
 
         indicator_store = ThreatUpdateFileStore(
-            collab_dataset_folder,
+            Path(collab_dataset_dir.name),
             privacy_group,
             api.app_id,
             serialization=CliIndicatorSerialization,
-            types=[index_cls.data_type() for index_cls in indicies]
         )
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
@@ -94,13 +93,15 @@ def lambda_handler(event, context):
             continue
 
         delta = indicator_store.next_delta
+        # Hacky - we only support PDQ right now, force to only fetch that
+        delta.types = [signal_type.INDICATOR_TYPE for signal_type in signal_types]
+
         try:
             delta.incremental_sync_from_threatexchange(
                 api,
-                # progress_fn=print
             )
         except:
-            print("Exception occurred! Attempting to save...")
+            logger.info("Exception occurred! Attempting to save...")
             # Force delta to show finished
             delta.end = delta.current
             raise

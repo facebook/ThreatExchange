@@ -69,7 +69,3 @@ class PDQIndex(SignalTypeIndex):
         Instanciate an index from a previous call to serialize
         """
         return pickle.loads(fin)
-
-    @classmethod
-    def data_type(cls) -> str:
-        return "HASH_PDQ"
