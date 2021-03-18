@@ -64,7 +64,7 @@ class names:
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
 METRICS_NAMESPACE = os.getenv(_METRICS_NAMESPACE_ENVVAR, names.hma_namespace)
 
-counts = collections.Counter()
+counts: collections.Counter = collections.Counter()
 timers: t.Mapping[str, collections.Counter] = collections.defaultdict(
     collections.Counter
 )
@@ -75,7 +75,7 @@ def _no_op_timer(name):
     yield
 
 
-def _no_op_flush():
+def _no_op_flush(namespace: str = "does not matter"):
     pass
 
 

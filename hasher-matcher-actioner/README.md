@@ -1,5 +1,7 @@
 # Hasher-Matcher-Actioner (HMA)
 
+![image](https://user-images.githubusercontent.com/1654004/111525752-2d5f0200-871b-11eb-9239-98dffecaa45e.png)
+
 HMA is a prototype reference architecture for rapidly spinning up a complete solution for integrating with ThreatExchange datasets and evaluating content against them. The goal is to make it possible to spin up an instance with the minimum number of commands, and be able to run at a reasonable scale without customization. 
 
 The name "hasher, matcher, actioner" refers to the process by which new content is evaluated against banks of known content. First content is hashed into intermediate representations ("Hashes" or "Signals"), then it is matched against an index of known content, and then some action is taken as a result, such as counting the hits, or enqueuing for human review.

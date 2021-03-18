@@ -39,6 +39,7 @@ dynamodb = boto3.resource("dynamodb")
 s3 = boto3.resource("s3")
 
 
+
 @dataclass
 class FetcherConfig:
     """
@@ -291,6 +292,7 @@ def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
 # for silly testing purposes
 # run from hasher-matcher-actioner with
 # python3 -m hmalib.lambdas.fetcher
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     FetcherConfig.get.cache_clear()  # Just in case

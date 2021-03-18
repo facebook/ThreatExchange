@@ -34,7 +34,7 @@ def get_bin_secret(secret_name: str) -> bytes:
     For secerts stored in AWS Secrets Manager as binary
     """
     response = get_secret_value_response(secret_name)
-    decoded_binary_secret = base64.b64decode(get_secret_value_response["SecretBinary"])
+    decoded_binary_secret = base64.b64decode(get_secret_value_response("SecretBinary"))
     return decoded_binary_secret
 
 
