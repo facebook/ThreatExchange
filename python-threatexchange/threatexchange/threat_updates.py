@@ -364,6 +364,10 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
     def checkpoint_file(self) -> pathlib.Path:
         return self.path / f"{self.privacy_group}.threat_updates.checkpoint"
 
+    def reset(self):
+        super().reset()
+        self._cached_state.clear()
+
     def _load_checkpoint(self) -> ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
         if not self.checkpoint_file.exists():

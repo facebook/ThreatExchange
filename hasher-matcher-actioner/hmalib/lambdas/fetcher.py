@@ -8,32 +8,29 @@ signals to synchronize a local copy of the database, which will then
 be fed into various indices.
 """
 
-import boto3
-from botocore.errorfactory import ClientError
+import csv
+import io
 import os
 import tempfile
-import io
-import csv
-
-from pathlib import Path
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 from functools import lru_cache
+from pathlib import Path
 
-from threatexchange import threat_updates as tu
-from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
-from threatexchange.signal_type.pdq import PdqSignal
-from threatexchange.api import ThreatExchangeAPI
-
+import boto3
+from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common import get_logger
+from threatexchange import threat_updates as tu
+from threatexchange.api import ThreatExchangeAPI
+from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
+from threatexchange.signal_type.pdq import PdqSignal
 
 
 logger = get_logger(__name__)
 
 dynamodb = boto3.resource("dynamodb")
 s3_client = boto3.client("s3")
-
 
 
 @dataclass
@@ -51,9 +48,10 @@ class FetcherConfig:
     def get(cls):
         return cls(
             output_s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            output_s3_key = os.environ["THREAT_EXCHANGE_PDQ_DATA_KEY"],
+            output_s3_key=os.environ["THREAT_EXCHANGE_PDQ_DATA_KEY"],
             collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
         )
+
 
 def lambda_handler(event, context):
     config = FetcherConfig.get()
@@ -68,7 +66,7 @@ def lambda_handler(event, context):
 
     collabs = []
     for page in response_iterator:
-        for item in page['Items']:
+        for item in page["Items"]:
             collabs.append((item["Name"], item["privacy_group"]))
 
     now = datetime.now()
@@ -86,12 +84,9 @@ def lambda_handler(event, context):
 
     stores = []
     for name, privacy_group in collabs:
-        logger.info(f"Processing updates for collaboration {name}")
-        # create temp dataset directory if doesnt exist
-        collab_dataset_dir = tempfile.TemporaryDirectory(suffix=str(privacy_group))
+        logger.info("Processing updates for collaboration %s", name)
 
-        indicator_store = ThreatUpdateS3Store(
-            Path(collab_dataset_dir.name),
+        indicator_store = ThreatUpdateS3PDQStore(
             privacy_group,
             api.app_id,
             serialization=S3IndicatorSerialization,
@@ -99,6 +94,7 @@ def lambda_handler(event, context):
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
         if indicator_store.stale:
+            logger.warning("Store for %s - %d stale! Resetting.", name, privacy_group)
             indicator_store.reset()
 
         if indicator_store.fetch_checkpoint >= now.timestamp():
@@ -129,7 +125,7 @@ def lambda_handler(event, context):
     return {"statusCode": 200, "body": "Sure Yeah why not"}
 
 
-class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
+class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
     """
     Store files in S3!
     """
@@ -141,7 +137,7 @@ class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
         self,
         privacy_group: int,
         app_id: int,
-        s3_bucket: boto3.Bucket
+        s3_bucket: boto3.Bucket,
         *,
         types: t.Iterable[str] = (),
     ) -> None:
@@ -158,26 +154,30 @@ class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
     def data_s3_key(self) -> str:
         return f"{self.privacy_group}.{self.DATA_S3_KEY_SUFFIX}"
 
-    def _load_checkpoint(self) -> ThreatUpdateCheckpoint:
+    def reset(self):
+        super().reset()
+        self._cached_state.clear()
+
+    def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
 
         content = io.StringIO()
         try:
             self.s3_bucket.download_fileobj(self.checkpoint_s3_key, content)
         except ClientError as ce:
-            if ce.response['Error']['Code'] == "404":
-                return ThreatUpdateCheckpoint()
+            if ce.response["Error"]["Code"] == "404":
+                return tu.ThreatUpdateCheckpoint()
             raise
 
         content.seek(0)
         checkpoint_json = json.load(content)
 
-        return ThreatUpdateCheckpoint(
+        return tu.ThreatUpdateCheckpoint(
             checkpoint_json["last_fetch_time"],
             checkpoint_json["fetch_checkpoint"],
         )
 
-    def _store_checkpoint(self, checkpoint: ThreatUpdateCheckpoint) -> None:
+    def _store_checkpoint(self, checkpoint: tu.ThreatUpdateCheckpoint) -> None:
         serialized_checkpoint = json.dumps(
             {
                 "last_fetch_time": checkpoint.last_fetch_time,
@@ -185,9 +185,7 @@ class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
             },
             indent=2,
         )
-        self.bucket.put_object(
-            Bucket=INDEXES_BUCKET_NAME, Key=PDQ_INDEX_KEY, Body=serialized_checkpoint
-        )
+        self.bucket.put_object(Key=self.checkpoint_s3_key, Body=serialized_checkpoint)
 
     def load_state(self, allow_cached=True):
         if not allow_cached or self._cached_state is None:
@@ -195,11 +193,12 @@ class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
             try:
                 self.s3_bucket.download_fileobj(self.data_s3_key, content)
             except ClientError as ce:
-                if ce.response['Error']['Code'] != "404":
+                if ce.response["Error"]["Code"] != "404":
                     raise
+                # Otherwise no statefile
             content.seek(0)
-            # Violate your warranty with module state!
             items = []
+            # Violate your warranty with module state!
             csv.field_size_limit(sys.maxsize)  # dodge field size problems
             for row in csv.reader(content):
                 items.append(
@@ -210,14 +209,10 @@ class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
                     )
                 )
             # Do all in one assignment just in case of threads
-            self._cached_state = {
-                item.key: item for item in items
-            }
+            self._cached_state = {item.key: item for item in items}
         return self._cached_state
 
-    def _store_state(
-        self, contents: t.Iterable["CliIndicatorSerialization"]
-    ):
+    def _store_state(self, contents: t.Iterable["CliIndicatorSerialization"]):
         row_by_type = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
@@ -243,8 +238,8 @@ class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
             else:
                 state[item.key] = item
 
+        self._store_state(state.values())
         self._cached_state = state
-        CliIndicatorSerialization.store(self.path, state.values())
 
 
 # for silly testing purposes
@@ -252,7 +247,10 @@ class ThreatUpdateS3PDQStore(ThreatUpdatesStore):
 # python3 -m hmalib.lambdas.fetcher
 if __name__ == "__main__":
     config = FetcherConfig.get()
-    config.output_s3_bucket = "my-fake-bucket",
-    config.collab_config_table = "jeberl-ThreatExchangeConfig",
+    config.output_s3_bucket = "my-fake-bucket"
+    config.collab_config_table = "jeberl-ThreatExchangeConfig"
+    config.output_s3_key = "threat_exchange_data/pdq.te"
 
+    # This will only kinda work for so long - eventually will
+    # need to use a proper harness
     lambda_handler(None, None)
