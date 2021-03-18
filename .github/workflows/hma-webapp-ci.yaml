@@ -27,4 +27,6 @@ jobs:
       - name: Run ESLint
         run: |
           npx eslint src --ext .js,.jsx  
+      - name: Run Prettier
+        run: |
           npx prettier --check src 
