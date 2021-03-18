@@ -46,7 +46,7 @@ class FetcherConfig:
     """
 
     s3_state_bucket: str
-    s3_state_key_prefix: str
+    s3_key_prefix: str
     output_s3_pdq_key: str
     collab_config_table: str
 
@@ -55,7 +55,7 @@ class FetcherConfig:
     def get(cls):
         return cls(
             s3_state_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            s3_state_key_prefix=os.environ.get(
+            s3_key_prefix=os.environ.get(
                 "THREAT_EXCHANGE_STATE_KEY_PREFIX", "threat_exchange_data"
             ),
             output_s3_pdq_key=os.environ["THREAT_EXCHANGE_PDQ_DATA_KEY"],
@@ -102,6 +102,7 @@ def lambda_handler(event, context):
             privacy_group,
             api.app_id,
             te_data_bucket,
+            config.s3_key_prefix,
         )
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
@@ -295,7 +296,7 @@ if __name__ == "__main__":
     FetcherConfig.get.cache_clear()  # Just in case
     os.environ.setdefault(
         "THREAT_EXCHANGE_DATA_BUCKET_NAME",
-        "jeberl-hashing-data20210304224022904400000003/",
+        "jeberl-hashing-data20210304224022904400000003",
     )
     os.environ.setdefault("THREAT_EXCHANGE_PDQ_DATA_KEY", "threat_exchange_data/pdq.te")
     os.environ.setdefault(
