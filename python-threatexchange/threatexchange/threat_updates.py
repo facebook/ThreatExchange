@@ -35,6 +35,7 @@ class ThreatUpdateSerialization:
         """Which &fields= arguments need to be passed for this serialization"""
         raise NotImplementedError
 
+    # TODO - Remove reliance on files to better support DB usecase
     @classmethod
     def store(
         cls, state_dir: pathlib.Path, contents: t.Iterable["ThreatUpdateSerialization"]
@@ -46,6 +47,7 @@ class ThreatUpdateSerialization:
         """
         raise NotImplementedError
 
+    # TODO - Remove reliance on files to better support DB usecase
     @classmethod
     def load(cls, state_dir: pathlib.Path) -> t.Iterable["ThreatUpdateSerialization"]:
         """Load this serialization from the state directory"""
@@ -283,6 +285,7 @@ class ThreatUpdatesStore:
     def __init__(
         self,
         privacy_group: int,
+        # TODO - remove: causes correctness issues with checkpoint
         types: t.Iterable[str] = (),
     ) -> None:
         self.privacy_group = privacy_group
