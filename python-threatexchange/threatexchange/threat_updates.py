@@ -287,7 +287,6 @@ class ThreatUpdatesStore:
     def __init__(
         self,
         privacy_group: int,
-        # TODO - remove: causes correctness issues with checkpoint
     ) -> None:
         self.privacy_group = privacy_group
         self.checkpoint = None
