@@ -10,6 +10,7 @@ import os
 import pathlib
 import time
 import typing as t
+from dataclasses import dataclass
 
 from .api import ThreatExchangeAPI
 from .dataset import Dataset
@@ -35,6 +36,7 @@ class ThreatUpdateSerialization:
         """Which &fields= arguments need to be passed for this serialization"""
         raise NotImplementedError
 
+    # TODO - Remove reliance on files to better support DB usecase
     @classmethod
     def store(
         cls, state_dir: pathlib.Path, contents: t.Iterable["ThreatUpdateSerialization"]
@@ -46,13 +48,15 @@ class ThreatUpdateSerialization:
         """
         raise NotImplementedError
 
+    # TODO - Remove reliance on files to better support DB usecase
     @classmethod
     def load(cls, state_dir: pathlib.Path) -> t.Iterable["ThreatUpdateSerialization"]:
         """Load this serialization from the state directory"""
         raise NotImplementedError
 
 
-class ThreatUpdateJSON(t.NamedTuple, ThreatUpdateSerialization):
+@dataclass
+class ThreatUpdateJSON(ThreatUpdateSerialization):
     """A thin wrapper around the /threat_updates API return"""
 
     raw_json: t.Dict[str, t.Any]
@@ -283,11 +287,9 @@ class ThreatUpdatesStore:
     def __init__(
         self,
         privacy_group: int,
-        types: t.Iterable[str] = (),
     ) -> None:
         self.privacy_group = privacy_group
         self.checkpoint = None
-        self.types = types
 
     @property
     def fetch_checkpoint(self):
@@ -301,7 +303,9 @@ class ThreatUpdatesStore:
     def next_delta(self) -> ThreatUpdatesDelta:
         """Return the next delta that should be applied"""
         return ThreatUpdatesDelta(
-            self.privacy_group, self.checkpoint.fetch_checkpoint, None, self.types
+            self.privacy_group,
+            self.checkpoint.fetch_checkpoint,
+            None,
         )
 
     def load_checkpoint(self) -> None:
@@ -332,7 +336,9 @@ class ThreatUpdatesStore:
             ), "gap in delta record"
             assert not self.stale, "attempted to apply stale delta"
         assert delta.done, "delta was not fetched"
-        self._apply_updates_impl(delta)
+        # It's possible the fetch completed but has no records
+        if delta.updates:
+            self._apply_updates_impl(delta)
         self.checkpoint = self.checkpoint.get_updated(delta)
         self._store_checkpoint(self.checkpoint)
 
@@ -349,9 +355,8 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
         app_id: int,
         *,
         serialization=ThreatUpdateJSON,
-        types: t.Iterable[str] = (),
     ) -> None:
-        super().__init__(privacy_group, types)
+        super().__init__(privacy_group)
         self.path = state_dir
         self.app_id = app_id
         self._serialization = serialization
@@ -360,6 +365,10 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
     @property
     def checkpoint_file(self) -> pathlib.Path:
         return self.path / f"{self.privacy_group}.threat_updates.checkpoint"
+
+    def reset(self):
+        super().reset()
+        self._cached_state.clear()
 
     def _load_checkpoint(self) -> ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
