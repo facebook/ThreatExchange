@@ -5,6 +5,7 @@
 Helpers and wrappers around the /threat_updates endpoint.
 """
 
+from dataclass import dataclass
 import json
 import os
 import pathlib
@@ -54,7 +55,8 @@ class ThreatUpdateSerialization:
         raise NotImplementedError
 
 
-class ThreatUpdateJSON(t.NamedTuple, ThreatUpdateSerialization):
+@dataclass
+class ThreatUpdateJSON(ThreatUpdateSerialization):
     """A thin wrapper around the /threat_updates API return"""
 
     raw_json: t.Dict[str, t.Any]
