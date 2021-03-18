@@ -5,7 +5,7 @@
 Helpers and wrappers around the /threat_updates endpoint.
 """
 
-from dataclass import dataclass
+from dataclasses import dataclass
 import json
 import os
 import pathlib
