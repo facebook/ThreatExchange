@@ -35,6 +35,10 @@
             "required": {
               "some": [ "nesting", "id"  ]
             }
-          }]
+          }],
+        "quotes": [
+            "error",
+            "single"
+        ]
     }
 }

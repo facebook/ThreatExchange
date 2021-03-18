@@ -2,22 +2,21 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, { useState } from "react";
-import { useHistory, useParams } from "react-router-dom";
-import { Button, Col, Collapse, Image, Row } from "react-bootstrap";
+import React, {useState} from 'react';
+import {useHistory, useParams} from 'react-router-dom';
+import {Button, Col, Collapse, Image, Row} from 'react-bootstrap';
 
 export default function MatchDetails() {
   const history = useHistory();
-  const { id } = useParams();
+  const {id} = useParams();
   const [showNewReactionButtons, setShowNewReactionButtons] = useState(false);
-  const [reaction, setReaction] = useState("Seen");
+  const [reaction, setReaction] = useState('Seen');
   return (
     <>
       <button
         type="submit"
         className="float-right btn btn-primary"
-        onClick={() => history.goBack()}
-      >
+        onClick={() => history.goBack()}>
         Back
       </button>
       <h1>Match Details</h1>
@@ -35,16 +34,15 @@ export default function MatchDetails() {
             <tr>
               <td>Reaction:</td>
               <td>
-                {reaction}{" "}
+                {reaction}{' '}
                 <Button
                   className="float-right"
                   size="sm"
                   variant="outline-primary"
                   onClick={() =>
                     setShowNewReactionButtons(!showNewReactionButtons)
-                  }
-                >
-                  {showNewReactionButtons ? "Cancel" : "Change"}
+                  }>
+                  {showNewReactionButtons ? 'Cancel' : 'Change'}
                 </Button>
                 <Collapse in={showNewReactionButtons}>
                   <div>
@@ -53,17 +51,15 @@ export default function MatchDetails() {
                       size="sm"
                       variant="outline-primary"
                       onClick={() => {
-                        setReaction("Positive");
+                        setReaction('Positive');
                         setShowNewReactionButtons(false);
-                      }}
-                    >
+                      }}>
                       Positive
                     </Button>
                     <Button
                       className="ml-2"
                       size="sm"
-                      variant="outline-primary"
-                    >
+                      variant="outline-primary">
                       False Positive
                     </Button>
                   </div>
@@ -100,8 +96,8 @@ export default function MatchDetails() {
               <tr>
                 <td>2880742865368386</td>
                 <td>HASH_PDQ</td>
-                <td style={{ maxWidth: "250px", overflow: "hidden" }}>
-                  <span style={{ overflow: "hidden" }} />
+                <td style={{maxWidth: '250px', overflow: 'hidden'}}>
+                  <span style={{overflow: 'hidden'}} />
                   acecf3355e3125c8e24e2f30e0d4ec4f8482b878b3c34cdbdf063278db275992
                 </td>
                 <td>31 Jul 2020 6:47pm</td>

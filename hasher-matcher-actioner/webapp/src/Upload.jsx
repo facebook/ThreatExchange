@@ -2,18 +2,18 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { Button, Col, Collapse, Image, Row } from "react-bootstrap";
-import Spinner from "react-bootstrap/Spinner";
+import React, {useState} from 'react';
+import {Link} from 'react-router-dom';
+import {Button, Col, Collapse, Image, Row} from 'react-bootstrap';
+import Spinner from 'react-bootstrap/Spinner';
 
-import { uploadImage } from "./Api";
+import {uploadImage} from './Api';
 
 export default function Upload() {
-  const [fileName, setFileName] = useState("Select Browse to choose a file.");
+  const [fileName, setFileName] = useState('Select Browse to choose a file.');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [image, setImage] = useState({ preview: "", raw: "" });
+  const [image, setImage] = useState({preview: '', raw: ''});
 
   return (
     <>
@@ -31,7 +31,7 @@ export default function Upload() {
                   type="file"
                   className="custom-file-input"
                   id="customFile"
-                  onChange={(e) => {
+                  onChange={e => {
                     const file = e.nativeEvent.path[0].files[0];
                     setFileName(file.name);
                     setImage({
@@ -53,8 +53,7 @@ export default function Upload() {
                       setSubmitted(true);
                       setSubmitting(false);
                     });
-                  }}
-                >
+                  }}>
                   Submit
                 </Button>
               </div>
@@ -82,7 +81,7 @@ export default function Upload() {
           </Collapse>
         </Col>
         <Col md={6}>
-          <Collapse in={fileName !== "Select Browse to choose a file."}>
+          <Collapse in={fileName !== 'Select Browse to choose a file.'}>
             <Image src={image.preview} fluid rounded />
           </Collapse>
         </Col>

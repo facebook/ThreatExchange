@@ -2,15 +2,15 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from "react";
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
-import { AnimatedSwitch } from "react-router-transition";
-import Dashboard from "./Dashboard";
-import MatchDetails from "./MatchDetails";
-import Matches from "./Matches";
-import Settings from "./Settings";
-import Signals from "./Signals";
-import Upload from "./Upload";
+import React from 'react';
+import {BrowserRouter as Router, Route, Link} from 'react-router-dom';
+import {AnimatedSwitch} from 'react-router-transition';
+import Dashboard from './Dashboard';
+import MatchDetails from './MatchDetails';
+import Matches from './Matches';
+import Settings from './Settings';
+import Signals from './Signals';
+import Upload from './Upload';
 
 export default function App() {
   return (
@@ -52,11 +52,10 @@ export default function App() {
       </nav>
       <main role="main" className="container mt-4">
         <AnimatedSwitch
-          atEnter={{ opacity: 0 }}
-          atLeave={{ opacity: 0 }}
-          atActive={{ opacity: 1 }}
-          className="switch-wrapper"
-        >
+          atEnter={{opacity: 0}}
+          atLeave={{opacity: 0}}
+          atActive={{opacity: 1}}
+          className="switch-wrapper">
           <Route path="/matches/:id">
             <MatchDetails />
           </Route>

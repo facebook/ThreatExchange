@@ -3,10 +3,10 @@
  */
 
 // TODO figure out root path. For now copy your own URL gateway here
-const API_ROOT = "https://<APPID>.execute-api.us-east-1.amazonaws.com";
+const API_ROOT = 'https://<APPID>.execute-api.us-east-1.amazonaws.com';
 // TODO replace with real auth someday
-const API_TOKEN_KEY = "access_token";
-const API_TOKEN = "asupersecrettoken";
+const API_TOKEN_KEY = 'access_token';
+const API_TOKEN = 'asupersecrettoken';
 
 async function getAPI(route, params = {}) {
   const urlWithParams = new URL(`${API_ROOT}/${route}`);
@@ -16,7 +16,7 @@ async function getAPI(route, params = {}) {
   });
 
   const response = await fetch(urlWithParams.toString(), {
-    method: "GET",
+    method: 'GET',
   });
   return response.json();
 }
@@ -30,7 +30,7 @@ async function postAPI(route, body, params = {}) {
   });
 
   const requestOptions = {
-    method: "POST",
+    method: 'POST',
     body,
   };
 
@@ -38,11 +38,11 @@ async function postAPI(route, body, params = {}) {
 }
 
 export async function fetchMatches() {
-  return getAPI("matches").then((data) => data.matches);
+  return getAPI('matches').then(data => data.matches);
 }
 
 export async function uploadImage(fileObject) {
   const formData = new FormData();
-  formData.append("image", fileObject);
-  return postAPI("upload", formData);
+  formData.append('image', fileObject);
+  return postAPI('upload', formData);
 }

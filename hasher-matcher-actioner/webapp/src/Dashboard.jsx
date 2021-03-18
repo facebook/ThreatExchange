@@ -2,8 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from "react";
-import { useHistory } from "react-router-dom";
+import React from 'react';
+import {useHistory} from 'react-router-dom';
 
 export default function Dashboard() {
   const history = useHistory();
@@ -31,15 +31,14 @@ export default function Dashboard() {
           <div
             className="card text-center"
             role="link"
-            onClick={() => history.push("/matches")}
-            onKeyDown={(e) => {
-              if (e.code === "Enter") {
-                history.push("/matches");
+            onClick={() => history.push('/matches')}
+            onKeyDown={e => {
+              if (e.code === 'Enter') {
+                history.push('/matches');
               }
             }}
-            style={{ cursor: "pointer" }}
-            tabIndex={0}
-          >
+            style={{cursor: 'pointer'}}
+            tabIndex={0}>
             <div className="card-header text-white bg-success">
               <h4 className="mb-0">Matches</h4>
             </div>
@@ -74,15 +73,14 @@ export default function Dashboard() {
           <div
             className="card text-center"
             role="link"
-            onClick={() => history.push("/signals")}
-            onKeyDown={(e) => {
-              if (e.code === "Enter") {
-                history.push("/signals");
+            onClick={() => history.push('/signals')}
+            onKeyDown={e => {
+              if (e.code === 'Enter') {
+                history.push('/signals');
               }
             }}
-            style={{ cursor: "pointer" }}
-            tabIndex={0}
-          >
+            style={{cursor: 'pointer'}}
+            tabIndex={0}>
             <div className="card-header text-white bg-success">
               <h4 className="mb-0">Signals</h4>
             </div>

@@ -2,11 +2,11 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Button, Collapse, Modal } from "react-bootstrap";
+import React, {useState, useEffect} from 'react';
+import {Link} from 'react-router-dom';
+import {Button, Collapse, Modal} from 'react-bootstrap';
 
-import { fetchMatches } from "./Api";
+import {fetchMatches} from './Api';
 
 export default function Matches() {
   const [showFilters, setShowFilters] = useState(false);
@@ -16,9 +16,8 @@ export default function Matches() {
       <button
         type="submit"
         className="float-right btn btn-primary"
-        onClick={() => setShowFilters(!showFilters)}
-      >
-        {showFilters ? "Hide" : "Show"} Filters
+        onClick={() => setShowFilters(!showFilters)}>
+        {showFilters ? 'Hide' : 'Show'} Filters
       </button>
       <h1>Matches</h1>
       <Collapse in={showFilters}>
@@ -99,8 +98,7 @@ export default function Matches() {
                   <button
                     type="button"
                     className="btn btn-outline-primary btn-sm"
-                    onClick={() => setShowModal(true)}
-                  >
+                    onClick={() => setShowModal(true)}>
                     Details
                   </button>
                 </td>
@@ -115,8 +113,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <Link
                     to="/matches/file1.jpg"
-                    class="btn btn-outline-primary btn-sm"
-                  >
+                    class="btn btn-outline-primary btn-sm">
                     Details
                   </Link>
                 </td>
@@ -131,8 +128,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <button
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
-                  >
+                    className="btn btn-outline-primary btn-sm">
                     Details
                   </button>
                 </td>
@@ -147,8 +143,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <button
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
-                  >
+                    className="btn btn-outline-primary btn-sm">
                     Details
                   </button>
                 </td>
@@ -163,8 +158,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <button
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
-                  >
+                    className="btn btn-outline-primary btn-sm">
                     Details
                   </button>
                 </td>
@@ -179,8 +173,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <button
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
-                  >
+                    className="btn btn-outline-primary btn-sm">
                     Details
                   </button>
                 </td>
@@ -195,8 +188,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <button
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
-                  >
+                    className="btn btn-outline-primary btn-sm">
                     Details
                   </button>
                 </td>
@@ -211,8 +203,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <button
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
-                  >
+                    className="btn btn-outline-primary btn-sm">
                     Details
                   </button>
                 </td>
@@ -230,15 +221,14 @@ export default function Matches() {
 function MatchDetailsModal(props) {
   // TODO add prop typing
   // eslint-disable-next-line react/prop-types
-  const { show, onHide } = props;
+  const {show, onHide} = props;
   return (
     <Modal
       show={show}
       onHide={onHide}
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
-      centered
-    >
+      centered>
       <Modal.Header closeButton>
         <Modal.Title id="contained-modal-title-vcenter">
           Match Details
@@ -263,7 +253,7 @@ function MatchList2() {
   const [matchesData, setMatchesData] = useState([]);
 
   useEffect(() => {
-    fetchMatches().then((matches) => setMatchesData(matches));
+    fetchMatches().then(matches => setMatchesData(matches));
   }, []);
 
   return (
@@ -281,7 +271,7 @@ function MatchList2() {
           </thead>
           <tbody>
             {matchesData.length ? (
-              matchesData.map((match) => {
+              matchesData.map(match => {
                 const imgKey = Object.keys(match)[0];
                 const teVal = match[imgKey];
                 return (
@@ -293,8 +283,7 @@ function MatchList2() {
                     <td className="align-middle">
                       <Link
                         to="/matches/file1.jpg"
-                        class="btn btn-outline-primary btn-sm"
-                      >
+                        class="btn btn-outline-primary btn-sm">
                         Details
                       </Link>
                     </td>

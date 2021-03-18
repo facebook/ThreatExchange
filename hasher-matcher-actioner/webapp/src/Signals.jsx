@@ -2,7 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from "react";
+import React from 'react';
 
 export default function Signals() {
   return (
