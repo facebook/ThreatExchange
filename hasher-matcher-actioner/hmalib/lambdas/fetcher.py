@@ -45,16 +45,20 @@ class FetcherConfig:
     Simple holder for getting typed environment variables
     """
 
-    output_s3_bucket: str
-    output_s3_key: str
+    s3_state_bucket: str
+    s3_state_key_prefix: str
+    output_s3_pdq_key: str
     collab_config_table: str
 
     @classmethod
     @lru_cache(maxsize=1)  # probably overkill, but at least it's consistent
     def get(cls):
         return cls(
-            output_s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            output_s3_key=os.environ["THREAT_EXCHANGE_PDQ_DATA_KEY"],
+            s3_state_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
+            s3_state_key_prefix=os.environ.get(
+                "THREAT_EXCHANGE_STATE_KEY_PREFIX", "threat_exchange_data"
+            ),
+            output_s3_pdq_key=os.environ["THREAT_EXCHANGE_PDQ_DATA_KEY"],
             collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
         )
 
@@ -88,7 +92,7 @@ def lambda_handler(event, context):
     api_key = AWSSecrets.te_api_key()
     api = ThreatExchangeAPI(api_key)
 
-    te_data_bucket = s3.Bucket(config.output_s3_bucket)
+    te_data_bucket = s3.Bucket(config.s3_state_bucket)
 
     stores = []
     for name, privacy_group in collabs:
@@ -122,7 +126,10 @@ def lambda_handler(event, context):
             raise
         finally:
             if delta:
+                logging.info("Fetch complete, applying %d updates", len(delta.updates))
                 indicator_store.apply_updates(delta)
+            else:
+                logging.error("Failed before fetching any records")
 
     # TODO add TE data to indexer
 
@@ -134,27 +141,26 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
     Store files in S3!
     """
 
-    CHECKPOINT_S3_KEY_SUFFIX = "checkpoint"
-    DATA_S3_KEY_SUFFIX = "te"
-
     def __init__(
         self,
         privacy_group: int,
         app_id: int,
         s3_bucket: t.Any,  # Not typable?
+        s3_key_prefix: str,
     ) -> None:
         super().__init__(privacy_group)
         self.app_id = app_id
         self._cached_state = None
-        self._s3_bucket = s3_bucket
+        self.s3_bucket = s3_bucket
+        self.s3_key_prefix = s3_key_prefix
 
     @property
     def checkpoint_s3_key(self) -> str:
-        return f"{self.privacy_group}.{self.CHECKPOINT_S3_KEY_SUFFIX}"
+        return f"{self.s3_key_prefix}/{self.privacy_group}.checkpoint"
 
     @property
     def data_s3_key(self) -> str:
-        return f"{self.privacy_group}.pdq.{self.DATA_S3_KEY_SUFFIX}"
+        return f"{self.s3_key_prefix}/{self.privacy_group}.pdq.te"
 
     @property
     def next_delta(self) -> tu.ThreatUpdatesDelta:
@@ -177,7 +183,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
     def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
 
-        txt_content = read_s3_text(self._s3_bucket, self.checkpoint_s3_key)
+        txt_content = read_s3_text(self.s3_bucket, self.checkpoint_s3_key)
         if txt_content is None:
             logger.warning("No s3 checkpoint for %d. First run?", self.privacy_group)
             return tu.ThreatUpdateCheckpoint()
@@ -206,7 +212,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             txt_content,
             indent=2,
         )
-        write_s3_text(txt_content, self._s3_bucket, self.checkpoint_s3_key)
+        write_s3_text(txt_content, self.s3_bucket, self.checkpoint_s3_key)
         logger.info(
             "Stored checkpoint for %d. last_fetch_time=%d fetch_checkpoint=%d",
             self.privacy_group,
@@ -216,7 +222,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
     def load_state(self, allow_cached=True):
         if not allow_cached or self._cached_state is None:
-            txt_content = read_s3_text(self._s3_bucket, self.data_s3_key)
+            txt_content = read_s3_text(self.s3_bucket, self.data_s3_key)
             items = []
             if txt_content is None:
                 logger.warning("No TE state for %d. First run?", self.privacy_group)
@@ -245,7 +251,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         with io.StringIO(newline="") as txt_content:
             writer = csv.writer(txt_content)
             writer.writerows(item.as_csv_row() for item in items)
-            write_s3_text(txt_content, self._s3_bucket, self.data_s3_key)
+            write_s3_text(txt_content, self.s3_bucket, self.data_s3_key)
             logger.info("%d rows stored for %d", len(items), self.privacy_group)
 
     def _apply_updates_impl(self, delta: tu.ThreatUpdatesDelta) -> None:
@@ -289,7 +295,7 @@ if __name__ == "__main__":
     FetcherConfig.get.cache_clear()  # Just in case
     os.environ.setdefault(
         "THREAT_EXCHANGE_DATA_BUCKET_NAME",
-        "jeberl-hashing-data20210304224022904400000003",
+        "jeberl-hashing-data20210304224022904400000003/",
     )
     os.environ.setdefault("THREAT_EXCHANGE_PDQ_DATA_KEY", "threat_exchange_data/pdq.te")
     os.environ.setdefault(
