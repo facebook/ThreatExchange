@@ -43,15 +43,15 @@ class AWSCloudWatchMetricDatum:
     """
 
     metric_name: str
-    value: float = None
-    dimensions: t.Dict[str, str] = None
+    value: t.Optional[float] = None
+    dimensions: t.Optional[t.Dict[str, str]] = None
     timestamp: datetime = field(default_factory=datetime.utcnow)
-    values: t.List[float] = None
-    counts: t.List[float] = None
-    unit: AWSCloudWatchUnit = field(default=None)
+    values: t.Optional[t.List[float]] = None
+    counts: t.Optional[t.List[int]] = None
+    unit: t.Optional[AWSCloudWatchUnit] = field(default=None)
 
     def to_dict(self) -> t.Dict:
-        result = {
+        result: t.Dict[str, t.Any] = {
             "MetricName": self.metric_name,
         }
 
@@ -88,7 +88,7 @@ class AWSCloudWatchReporter(object):
     def get_multi_value_datums(
         self,
         name: str,
-        value_count_mapping: t.Mapping[int, int],
+        value_count_mapping: t.Mapping[t.Union[int, float], int],
         unit: AWSCloudWatchUnit,
     ) -> AWSCloudWatchMetricDatum:
         """
@@ -122,7 +122,7 @@ class AWSCloudWatchReporter(object):
         self,
         name: str,
         value: int,
-    ) -> t.List[AWSCloudWatchMetricDatum]:
+    ) -> AWSCloudWatchMetricDatum:
         """
         For reporting counts. Returns a single datum.
         """
