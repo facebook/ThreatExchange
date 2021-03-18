@@ -26,6 +26,7 @@ s3_client = boto3.client("s3")
 
 dataset_dir = tempfile.TemporaryDirectory()
 
+
 @dataclass
 class FetcherConfig:
 
@@ -43,6 +44,7 @@ class FetcherConfig:
             collab_config_table="jeberl-ThreatExchangeConfig",
         )
 
+
 def lambda_handler(event, context):
     config = FetcherConfig.get()
 
@@ -56,7 +58,7 @@ def lambda_handler(event, context):
 
     collabs = []
     for page in response_iterator:
-        for item in page['Items']:
+        for item in page["Items"]:
             collabs.append((item["Name"], item["privacy_group"]))
 
     now = datetime.now()
@@ -112,6 +114,7 @@ def lambda_handler(event, context):
     # TODO add TE data to indexer
 
     return {"statusCode": 200, "body": "Sure Yeah why not"}
+
 
 if __name__ == "__main__":
     lambda_handler(None, None)

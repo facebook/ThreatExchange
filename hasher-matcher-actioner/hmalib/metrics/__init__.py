@@ -75,7 +75,7 @@ def _no_op_timer(name):
     yield
 
 
-def _no_op_flush(namespace: str = 'does not matter'):
+def _no_op_flush(namespace: str = "does not matter"):
     pass
 
 
