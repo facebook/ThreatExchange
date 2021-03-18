@@ -8,10 +8,15 @@ signals to synchronize a local copy of the database, which will then
 be fed into various indices.
 """
 
+import collections
 import csv
 import io
+import json
+import logging
 import os
+import sys
 import tempfile
+import typing as t
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
@@ -24,13 +29,14 @@ from hmalib.common import get_logger
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
+from threatexchange.descriptor import SimpleDescriptorRollup
 from threatexchange.signal_type.pdq import PdqSignal
 
 
 logger = get_logger(__name__)
 
 dynamodb = boto3.resource("dynamodb")
-s3_client = boto3.client("s3")
+s3 = boto3.resource("s3")
 
 
 @dataclass
@@ -82,6 +88,8 @@ def lambda_handler(event, context):
     api_key = AWSSecrets.te_api_key()
     api = ThreatExchangeAPI(api_key)
 
+    te_data_bucket = s3.Bucket(config.output_s3_bucket)
+
     stores = []
     for name, privacy_group in collabs:
         logger.info("Processing updates for collaboration %s", name)
@@ -89,7 +97,7 @@ def lambda_handler(event, context):
         indicator_store = ThreatUpdateS3PDQStore(
             privacy_group,
             api.app_id,
-            serialization=S3IndicatorSerialization,
+            te_data_bucket,
         )
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
@@ -101,10 +109,6 @@ def lambda_handler(event, context):
             continue
 
         delta = indicator_store.next_delta
-        # Hacky - we only support PDQ right now, force to only fetch that
-        # Eventually want to always download everything and choose what to
-        # do with it later, though checkpoints will need to be reset
-        delta.types = ["HASH_PDQ"]
 
         try:
             delta.incremental_sync_from_threatexchange(
@@ -137,77 +141,97 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         self,
         privacy_group: int,
         app_id: int,
-        s3_bucket: boto3.Bucket,
-        *,
-        types: t.Iterable[str] = (),
+        s3_bucket: t.Any,  # Not typable?
     ) -> None:
-        super().__init__(privacy_group, types)
+        super().__init__(privacy_group)
         self.app_id = app_id
         self._cached_state = None
         self._s3_bucket = s3_bucket
 
     @property
     def checkpoint_s3_key(self) -> str:
-        return f"{self._s3_key}.{self.CHECKPOINT_S3_KEY_SUFFIX}"
+        return f"{self.privacy_group}.{self.CHECKPOINT_S3_KEY_SUFFIX}"
 
     @property
     def data_s3_key(self) -> str:
-        return f"{self.privacy_group}.{self.DATA_S3_KEY_SUFFIX}"
+        return f"{self.privacy_group}.pdq.{self.DATA_S3_KEY_SUFFIX}"
+
+    @property
+    def next_delta(self) -> tu.ThreatUpdatesDelta:
+        """
+        Hacky - we only support PDQ right now, force to only fetch that
+        Eventually want to always download everything and choose what to
+        do with it later, though checkpoints will need to be reset
+
+        IF YOU CHANGE THIS, OLD CHECKPOINTS NEED TO BE INVALIDATED TO
+        GET THE NON-PDQ DATA!
+        """
+        delta = super().next_delta
+        delta.types = ["HASH_PDQ"]
+        return delta
 
     def reset(self):
         super().reset()
-        self._cached_state.clear()
+        self._cached_state = None
 
     def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
 
-        content = io.StringIO()
-        try:
-            self.s3_bucket.download_fileobj(self.checkpoint_s3_key, content)
-        except ClientError as ce:
-            if ce.response["Error"]["Code"] == "404":
-                return tu.ThreatUpdateCheckpoint()
-            raise
+        txt_content = read_s3_text(self._s3_bucket, self.checkpoint_s3_key)
+        if txt_content is None:
+            logger.warning("No s3 checkpoint for %d. First run?", self.privacy_group)
+            return tu.ThreatUpdateCheckpoint()
+        checkpoint_json = json.load(txt_content)
 
-        content.seek(0)
-        checkpoint_json = json.load(content)
-
-        return tu.ThreatUpdateCheckpoint(
+        ret = tu.ThreatUpdateCheckpoint(
             checkpoint_json["last_fetch_time"],
             checkpoint_json["fetch_checkpoint"],
         )
+        logger.info(
+            "Loaded checkpoint for %d. last_fetch_time=%d fetch_checkpoint=%d",
+            self.privacy_group,
+            ret.last_fetch_time,
+            ret.fetch_checkpoint,
+        )
+
+        return ret
 
     def _store_checkpoint(self, checkpoint: tu.ThreatUpdateCheckpoint) -> None:
-        serialized_checkpoint = json.dumps(
+        txt_content = io.StringIO()
+        json.dump(
             {
                 "last_fetch_time": checkpoint.last_fetch_time,
                 "fetch_checkpoint": checkpoint.fetch_checkpoint,
             },
+            txt_content,
             indent=2,
         )
-        self.bucket.put_object(Key=self.checkpoint_s3_key, Body=serialized_checkpoint)
+        write_s3_text(txt_content, self._s3_bucket, self.checkpoint_s3_key)
+        logger.info(
+            "Stored checkpoint for %d. last_fetch_time=%d fetch_checkpoint=%d",
+            self.privacy_group,
+            checkpoint.last_fetch_time,
+            checkpoint.fetch_checkpoint,
+        )
 
     def load_state(self, allow_cached=True):
         if not allow_cached or self._cached_state is None:
-            content = io.StringIO(newline="")
-            try:
-                self.s3_bucket.download_fileobj(self.data_s3_key, content)
-            except ClientError as ce:
-                if ce.response["Error"]["Code"] != "404":
-                    raise
-                # Otherwise no statefile
-            content.seek(0)
+            txt_content = read_s3_text(self._s3_bucket, self.data_s3_key)
             items = []
-            # Violate your warranty with module state!
-            csv.field_size_limit(sys.maxsize)  # dodge field size problems
-            for row in csv.reader(content):
-                items.append(
-                    CliIndicatorSerialization(
-                        "HASH_PDQ",
-                        row[0],
-                        SimpleDescriptorRollup.from_row(row[1:]),
+            if txt_content is None:
+                logger.warning("No TE state for %d. First run?", self.privacy_group)
+            else:
+                # Violate your warranty with module state!
+                csv.field_size_limit(65535)  # dodge field size problems
+                for row in csv.reader(txt_content):
+                    items.append(
+                        CliIndicatorSerialization(
+                            "HASH_PDQ",
+                            row[0],
+                            SimpleDescriptorRollup.from_row(row[1:]),
+                        )
                     )
-                )
+                logger.info("%d rows loaded for %d", len(items), self.privacy_group)
             # Do all in one assignment just in case of threads
             self._cached_state = {item.key: item for item in items}
         return self._cached_state
@@ -216,16 +240,15 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         row_by_type = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
-        ret = []
-        for items in row_by_type.get("HASH_PDQ", []):
-            with io.StringIO(newline="") as content:
-                writer = csv.writer(content)
-                writer.writerows(item.as_csv_row() for item in items)
-                self.s3_bucket.upload_fileobj(self.data_s3_key, content)
-        return ret
+        # Discard all updates except PDQ
+        items = row_by_type.get("HASH_PDQ", [])
+        with io.StringIO(newline="") as txt_content:
+            writer = csv.writer(txt_content)
+            writer.writerows(item.as_csv_row() for item in items)
+            write_s3_text(txt_content, self._s3_bucket, self.data_s3_key)
+            logger.info("%d rows stored for %d", len(items), self.privacy_group)
 
-    def _apply_updates_impl(self, delta: ThreatUpdatesDelta) -> None:
-        os.makedirs(self.path, exist_ok=True)
+    def _apply_updates_impl(self, delta: tu.ThreatUpdatesDelta) -> None:
         state = {}
         if delta.start > 0:
             state = self.load_state()
@@ -242,14 +265,37 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         self._cached_state = state
 
 
+def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
+    byte_content = io.BytesIO()
+    try:
+        bucket.download_fileobj(key, byte_content)
+    except ClientError as ce:
+        if ce.response["Error"]["Code"] != "404":
+            raise
+        return None
+    return io.StringIO(byte_content.getvalue().decode())
+
+
+def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
+    byte_content = io.BytesIO(txt_content.getvalue().encode())
+    bucket.upload_fileobj(byte_content, key)
+
+
 # for silly testing purposes
 # run from hasher-matcher-actioner with
 # python3 -m hmalib.lambdas.fetcher
 if __name__ == "__main__":
-    config = FetcherConfig.get()
-    config.output_s3_bucket = "my-fake-bucket"
-    config.collab_config_table = "jeberl-ThreatExchangeConfig"
-    config.output_s3_key = "threat_exchange_data/pdq.te"
+    logging.basicConfig(level=logging.INFO)
+    FetcherConfig.get.cache_clear()  # Just in case
+    os.environ.setdefault(
+        "THREAT_EXCHANGE_DATA_BUCKET_NAME",
+        "jeberl-hashing-data20210304224022904400000003",
+    )
+    os.environ.setdefault("THREAT_EXCHANGE_PDQ_DATA_KEY", "threat_exchange_data/pdq.te")
+    os.environ.setdefault(
+        "THREAT_EXCHANGE_CONFIG_DYNAMODB", "jeberl-ThreatExchangeConfig"
+    )
+    FetcherConfig.get()
 
     # This will only kinda work for so long - eventually will
     # need to use a proper harness

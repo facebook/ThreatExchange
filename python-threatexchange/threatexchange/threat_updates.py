@@ -5,12 +5,12 @@
 Helpers and wrappers around the /threat_updates endpoint.
 """
 
-from dataclasses import dataclass
 import json
 import os
 import pathlib
 import time
 import typing as t
+from dataclasses import dataclass
 
 from .api import ThreatExchangeAPI
 from .dataset import Dataset
@@ -288,11 +288,9 @@ class ThreatUpdatesStore:
         self,
         privacy_group: int,
         # TODO - remove: causes correctness issues with checkpoint
-        types: t.Iterable[str] = (),
     ) -> None:
         self.privacy_group = privacy_group
         self.checkpoint = None
-        self.types = types
 
     @property
     def fetch_checkpoint(self):
@@ -306,7 +304,9 @@ class ThreatUpdatesStore:
     def next_delta(self) -> ThreatUpdatesDelta:
         """Return the next delta that should be applied"""
         return ThreatUpdatesDelta(
-            self.privacy_group, self.checkpoint.fetch_checkpoint, None, self.types
+            self.privacy_group,
+            self.checkpoint.fetch_checkpoint,
+            None,
         )
 
     def load_checkpoint(self) -> None:
@@ -337,7 +337,9 @@ class ThreatUpdatesStore:
             ), "gap in delta record"
             assert not self.stale, "attempted to apply stale delta"
         assert delta.done, "delta was not fetched"
-        self._apply_updates_impl(delta)
+        # It's possible the fetch completed but has no records
+        if delta.updates:
+            self._apply_updates_impl(delta)
         self.checkpoint = self.checkpoint.get_updated(delta)
         self._store_checkpoint(self.checkpoint)
 
@@ -354,9 +356,8 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
         app_id: int,
         *,
         serialization=ThreatUpdateJSON,
-        types: t.Iterable[str] = (),
     ) -> None:
-        super().__init__(privacy_group, types)
+        super().__init__(privacy_group)
         self.path = state_dir
         self.app_id = app_id
         self._serialization = serialization
