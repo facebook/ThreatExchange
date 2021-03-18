@@ -2,7 +2,7 @@
 
 import datetime
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
 
 """
@@ -16,7 +16,7 @@ class DynamoDBItem:
     def write_to_table(self, table: Table):
         table.put_item(Item=self.to_dynamodb_item())
 
-    def to_dynamo_db_item(self) -> t.Dict:
+    def to_dynamodb_item(self) -> t.Dict:
         raise NotImplementedError
 
 
@@ -35,10 +35,6 @@ class PDQRecordBase(DynamoDBItem):
     @staticmethod
     def get_dynamodb_content_key(key: str):
         return f"c#{key}"
-
-    @staticmethod
-    def get_dynamodb_type_key(key: str):
-        return f"type#{key}"
 
     @staticmethod
     def get_dynamodb_type_key(key: str):
@@ -87,7 +83,7 @@ class PDQMatchRecord(PDQRecordBase):
     te_hash: str
 
     @staticmethod
-    def get_dynamodb_te_key(key: str):
+    def get_dynamodb_te_key(key: t.Union[str, int]):
         return f"te#{key}"
 
     def to_dynamodb_item(self) -> dict:

@@ -13,16 +13,20 @@ Run with
 $ MEASURE_PERFORMANCE=1 PYTHONPATH=. python tests/scripts/gen-fake-cloudwatch-metrics.py
 """
 
+
 def worker():
     # just spend some time
     with timer(names.pdq_hasher_lambda.download_file):
-        time.sleep(random.random()/100.0)
+        time.sleep(random.random() / 100.0)
 
     with timer(names.pdq_hasher_lambda.hash):
-        time.sleep(random.random()/100.0)
+        time.sleep(random.random() / 100.0)
+
 
 def main():
-    reporter = AWSCloudWatchReporter(namespace="ThreatExchange/HMA-Test-Cloudwatch-Reporter"),
+    reporter = (
+        AWSCloudWatchReporter(namespace="ThreatExchange/HMA-Test-Cloudwatch-Reporter"),
+    )
 
     # emulate some work
     print("Hit CTRL-C to stop the process. Will publish metrics on being interrupted.")
@@ -32,7 +36,8 @@ def main():
         except KeyboardInterrupt:
             break
 
-    flush('ThreatExchange/HMA-Test')
+    flush("ThreatExchange/HMA-Test")
+
 
 if __name__ == "__main__":
     main()
