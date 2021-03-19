@@ -2,7 +2,8 @@
 
 import datetime
 import typing as t
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key
 
@@ -133,6 +134,7 @@ class PDQMatchRecord(PDQRecordBase):
             "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
+            "Labels": [x.to_dynamodb_string() for x in self.labels]
         }
 
     def to_sqs_message(self) -> dict:
@@ -281,3 +283,56 @@ class MatchRecordQuery:
             & Key("UpdatedAt").between(start_time, end_time),
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
         ).get("Items", [])
+    @staticmethod
+    def from_dynamodb_string(string: str) -> "Label":
+        return Label(*string.split(":"))
+
+
+@dataclass
+class MatchMessage(SNSMessage):
+    """
+    Captures a match that will need to be processed. Joins the dataset and the
+    pipeline together.
+
+    Pipeline fields:
+    - `content_key`: A way for partners to refer uniquely to content on their
+      site
+    - `content_hash`: The pipeline generated hash for the content_key
+
+    Dataset fields:
+    - `banked_content_id`: Inside the bank, what's a unique way to refer to what
+      was matched against?
+    - `bank_id`: [optional][Defaults to 'threatexchange_all_collabs'] Which bank
+      did we fetch this banked_content from?
+    - `bank_source`: [optional][Defaults to 'api/threatexchange'] This is
+      forward looking, but potentially, we could have this be 'local', or
+      'api/some-other-api'
+    """
+    content_key: str
+    content_hash: str
+    banked_indicator_id: str
+
+    # source information, for now, it's okay to be hardcoded
+    # to threatexchange
+    bank_id: str = 'threatexchange_all_collabs'
+    bank_source: str = 'api/threatexchange'
+
+    def to_sns_message(self) -> str:
+        return json.dumps({
+            'ContentKey': self.content_key,
+            'ContentHash': self.content_hash,
+            'BankedIndicatorId': self.banked_indicator_id,
+            'BankId': self.bank_id,
+            'BankSource': self.bank_source
+        })
+
+    @staticmethod
+    def from_sns_message(message: str) -> t.Type['MatchMessage']:
+        parsed = json.loads(message)
+        return MatchMessage(
+            parsed['ContentKey'],
+            parsed['ContentHash'],
+            parsed['BankedIndicatorId'],
+            parsed['BankId'],
+            parsed['BankSource']
+        )
