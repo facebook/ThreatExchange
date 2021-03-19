@@ -17,10 +17,14 @@ variable "prefix" {
   type        = string
 }
 
-variable "api_access_token" {
-  description = "access token checked for in authorizer api lambda"
+variable "api_authorizer_jwt_issuer" {
+  description = "A URL to the JWT issuer (used by the api gateway authorizer)"
   type        = string
-  sensitive = true
+}
+
+variable "api_authorizer_audience" {
+  description = "The audience entry for the JWT authorizer (used by the api gateway authorizer; for Cognito integration, must be the app client id)"
+  type        = string
 }
 
 variable "lambda_docker_info" {
@@ -60,5 +64,3 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
-
-

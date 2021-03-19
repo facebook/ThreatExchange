@@ -133,7 +133,8 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
 module "api" {
   source = "./api"
   prefix = var.prefix
-  api_access_token = var.api_access_token
+  api_authorizer_jwt_issuer = var.api_authorizer_jwt_issuer
+  api_authorizer_audience = var.api_authorizer_audience
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {

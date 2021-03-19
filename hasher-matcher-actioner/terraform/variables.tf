@@ -11,11 +11,14 @@ variable "prefix" {
   default     = "hma"
 }
 
-variable "api_access_token" {
-  description = "access token checked for in authorizer api lambda"
+variable "api_authorizer_jwt_issuer" {
+  description = "A URL to the JWT issuer (used by the api gateway authorizer)"
   type        = string
-  sensitive = true
-  default = "asupersecrettoken"  # Will replace before real data stored
+}
+
+variable "api_authorizer_audience" {
+  description = "The audience entry for the JWT authorizer (used by the api gateway authorizer; for Cognito integration, must be the app client id)"
+  type        = string
 }
 
 variable "log_retention_in_days" {
