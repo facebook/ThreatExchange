@@ -92,6 +92,7 @@ def lambda_handler(event, context):
                 {
                     "id": int(row["id"]),
                     "hash": row["hash"],
+                    "source": "te",  # default for now to make downstream easier to generalize
                 },
             )
             for row in pdq_data_reader

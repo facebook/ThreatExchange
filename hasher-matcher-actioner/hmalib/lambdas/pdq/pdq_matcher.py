@@ -76,13 +76,18 @@ def lambda_handler(event, context):
                 logger.info(
                     "Match found for key: %s, hash %s -> %s", key, hash_str, metadata
                 )
-                te_id = metadata["id"]
+                signal_id = metadata["id"]
 
                 PDQMatchRecord(
-                    key, hash_str, current_datetime, te_id, metadata["hash"]
+                    key,
+                    hash_str,
+                    current_datetime,
+                    signal_id,
+                    metadata["source"],
+                    metadata["hash"],
                 ).write_to_table(records_table)
 
-                match_ids.append(te_id)
+                match_ids.append(signal_id)
             sns_client.publish(
                 TopicArn=OUTPUT_TOPIC_ARN,
                 Subject="Match found in pdq_matcher lambda",

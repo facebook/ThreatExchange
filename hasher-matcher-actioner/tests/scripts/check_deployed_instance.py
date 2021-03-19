@@ -6,7 +6,6 @@ Utility script to confirm the basic functionally of a deployed hma instance
 """
 
 import typing as t
-import logging
 import os
 import boto3
 from botocore.exceptions import ClientError
@@ -93,7 +92,6 @@ def wait_for_db_item(
                 return result["Item"]
             time.sleep(wait_time)
             retries -= 1
-        return {}
     except ClientError as e:
         raise TestError(e.msg)
 
@@ -132,7 +130,7 @@ def run(bucket: str, table) -> bool:
     # match found?
     result = wait_for_db_item(
         table,
-        key={"PK": f"c#{TEST_PHOTO_KEY}", "SK": f"te#{TEST_PHOTO_EXPECTED_ID}"},
+        key={"PK": f"c#{TEST_PHOTO_KEY}", "SK": f"s#te#{TEST_PHOTO_EXPECTED_ID}"},
         attributes=["HashType"],
     )
     if "HashType" not in result:
@@ -147,7 +145,7 @@ def cleanup(bucket, table):
         "Cleaning up...   ",
     )
     table.delete_item(
-        Key={"PK": f"c#{TEST_PHOTO_KEY}", "SK": f"te#{TEST_PHOTO_EXPECTED_ID}"},
+        Key={"PK": f"c#{TEST_PHOTO_KEY}", "SK": f"s#te#{TEST_PHOTO_EXPECTED_ID}"},
     )
     table.delete_item(
         Key={"PK": f"c#{TEST_PHOTO_KEY}", "SK": "type#pdq"},
