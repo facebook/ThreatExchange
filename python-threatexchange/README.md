@@ -21,8 +21,6 @@ The bundled cli tool of the same name is meant to demonstrate the library, as we
 $ python3 -m pip install threatexchange [--upgrade]
 ```
 
-The `threatexchange` module is only developed with support for *>=python3.7* however it may work with earlier versions of python3 if the correct backports are installed locally. Specicially, if trying to run with python 3.6 or earlier you should install the [dataclasses backport](https://docs.python.org/3/library/dataclasses.html) (eg. `python3 -m pip install dataclasses`).
-
 The base installation includes matching for:
 
 **Text**
