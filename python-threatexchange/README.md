@@ -11,9 +11,9 @@ Additionally, once you have the data, the application of those signals can be di
 
 This library provides a reference implementation for fetching datasets, applying many common formats, and uploading your own signals to the dataset.
 
-These reference implementations are not meant to be the best, most efficient, or production ready versions, but to instead be simple enough that they could be easily pasted to other languages. 
+These reference implementations are not meant to be the best, most efficient, or production ready versions, but to instead be simple enough that they could be easily pasted to other languages.
 
-The bundled cli tool of the same name is meant to demonstrate the library, as well as potentially provide a first draft implementation for prototype or evaluation. 
+The bundled cli tool of the same name is meant to demonstrate the library, as well as potentially provide a first draft implementation for prototype or evaluation.
 
 ## Installation
 
@@ -90,9 +90,9 @@ This library encodes both the visibility and the conventions into a file that ca
 Which establishes that there are three valid labels for this collaboration (of which all data should have at least one), and that uploaded data should be shared in privacy group 123456789.
 
 ### Signal Type and Signals
-Signals are inputs to matching algorithms that will run against content. SignalType is an abstraction that covers both the algorithm that produces signals from content, as well as the matching algorithm itself. For example, the PhotoMD5 SignalType contains both the hashing algorithm (md5) to convert photos to MD5s, the serialization of photo MD5s in ThreatExchange, as well as comparing MD5s from stored Signals and matched content. 
+Signals are inputs to matching algorithms that will run against content. SignalType is an abstraction that covers both the algorithm that produces signals from content, as well as the matching algorithm itself. For example, the PhotoMD5 SignalType contains both the hashing algorithm (md5) to convert photos to MD5s, the serialization of photo MD5s in ThreatExchange, as well as comparing MD5s from stored Signals and matched content.
 
-In ThreatExchange, data is stored as [ThreatIndicators](https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-indicator). ThreatIndicators have a type, such as HASH_MD5, which indicate what the data represents. However, there may be types that haven't been encoded yet as ThreatIndicators in ThreatExchange, and so a convention on what they represent must be established. For example, for media hashing, Photo MD5s and Video MD5s are two different types of MD5s, and you probably don't want to combine the two. To solve this, collaborations often come up with conventions using ThreatTags to resolve the two. For example, a photo md5 hash could have the tag "media_type_photo" added to it. However, ThreatTags can only be applied at the [ThreatDescriptor](https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor) level. 
+In ThreatExchange, data is stored as [ThreatIndicators](https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-indicator). ThreatIndicators have a type, such as HASH_MD5, which indicate what the data represents. However, there may be types that haven't been encoded yet as ThreatIndicators in ThreatExchange, and so a convention on what they represent must be established. For example, for media hashing, Photo MD5s and Video MD5s are two different types of MD5s, and you probably don't want to combine the two. To solve this, collaborations often come up with conventions using ThreatTags to resolve the two. For example, a photo md5 hash could have the tag "media_type_photo" added to it. However, ThreatTags can only be applied at the [ThreatDescriptor](https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor) level.
 
 This ends up making the API interactions complicated. To deal with this, the library (and CLI) simply group everything by Signal Type, and each algorithm just takes one or more Signal Types as inputs.
 
@@ -106,7 +106,7 @@ Example:
 2. Photo - Photo MD5 and Photo PDQ can run against this, but Raw Text or Trend Query might also apply (if going against OCR data).
 
 ### Collaborative Signal Datasets
-This library and tool are designed to be used to demonstrate collaborative signal datasets. This is where multiple contributors are adding labels on signals and uploading them to ThreatExchange. If multiple contributors are labeling, there is a possibility of disagreement or partial agreement. 
+This library and tool are designed to be used to demonstrate collaborative signal datasets. This is where multiple contributors are adding labels on signals and uploading them to ThreatExchange. If multiple contributors are labeling, there is a possibility of disagreement or partial agreement.
 
 In many advanced cases, you may want to filter signals that are disputed, or only contributors you trust. This library applies several shorthand labels to signals for the most common filters.
 
@@ -115,7 +115,7 @@ In many advanced cases, you may want to filter signals that are disputed, or onl
 3. disputed - This label is added if a contributor (other than yourself) marked the signal as a false positive
 
 ```bash
-$ threatexchange match photo example_disputed.jpg 
+$ threatexchange match photo example_disputed.jpg
 8313378 photo_pdq example_label_a disputed
 
 $ threatexchange match photo example_disputed.jpg  --hide-disputed
