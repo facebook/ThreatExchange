@@ -70,7 +70,7 @@ resource "aws_cloudwatch_log_group" "fetcher" {
 resource "aws_iam_role" "fetcher" {
   name_prefix        = "${var.prefix}_fetcher"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-  tags               = merge(
+  tags = merge(
     var.additional_tags,
     {
       Name = "FetcherLambdaRole"
@@ -90,8 +90,8 @@ data "aws_iam_policy_document" "fetcher" {
     resources = ["arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.pdq_data_file_key}"]
   }
   statement {
-    effect   = "Allow"
-    actions  = [
+    effect = "Allow"
+    actions = [
       "logs:CreateLogStream",
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
@@ -125,8 +125,8 @@ resource "aws_iam_role_policy_attachment" "fetcher" {
 
 # Pointer to function
 resource "aws_cloudwatch_event_target" "fetcher" {
-  arn       = aws_lambda_function.fetcher.arn
-  rule      = aws_cloudwatch_event_rule.recurring_fetch.name
+  arn  = aws_lambda_function.fetcher.arn
+  rule = aws_cloudwatch_event_rule.recurring_fetch.name
 }
 
 # Rule that runs regularly
@@ -142,7 +142,7 @@ resource "aws_iam_role" "fetcher_trigger" {
   name_prefix        = "${var.prefix}_fetcher_trigger"
   assume_role_policy = data.aws_iam_policy_document.fetcher_trigger_assume_role.json
 
-  tags               = merge(
+  tags = merge(
     var.additional_tags,
     {
       Name = "FetcherLambdaTriggerRole"
@@ -212,7 +212,7 @@ resource "aws_dynamodb_table" "threatexchange_config" {
 ### ThreatExchange API Token Secret ###
 
 resource "aws_secretsmanager_secret" "api_token" {
-  name = "threatexchange/${var.prefix}_api_tokens"
+  name                    = "threatexchange/${var.prefix}_api_tokens"
   recovery_window_in_days = 0
 }
 

@@ -36,9 +36,9 @@ resource "aws_lambda_function" "api_root" {
   memory_size = 512
   environment {
     variables = {
-      DYNAMODB_TABLE = var.datastore.name
-      IMAGE_BUCKET_NAME    = var.image_data_storage.bucket_name
-      IMAGE_FOLDER_KEY     = var.image_data_storage.image_folder_key
+      DYNAMODB_TABLE    = var.datastore.name
+      IMAGE_BUCKET_NAME = var.image_data_storage.bucket_name
+      IMAGE_FOLDER_KEY  = var.image_data_storage.image_folder_key
     }
   }
   tags = merge(
@@ -74,7 +74,7 @@ resource "aws_iam_role" "api_root" {
 data "aws_iam_policy_document" "api_root" {
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:GetItem","dynamodb:Scan"]
+    actions   = ["dynamodb:GetItem", "dynamodb:Scan"]
     resources = [var.datastore.arn]
   }
   statement {
@@ -137,7 +137,7 @@ resource "aws_apigatewayv2_route" "hma_apigateway_get" {
   api_id             = aws_apigatewayv2_api.hma_apigateway.id
   route_key          = "GET /{proxy+}"
   authorization_type = "JWT"
-  authorizer_id = aws_apigatewayv2_authorizer.hma_apigateway.id
+  authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
 
@@ -145,16 +145,16 @@ resource "aws_apigatewayv2_route" "hma_apigateway_post" {
   api_id             = aws_apigatewayv2_api.hma_apigateway.id
   route_key          = "POST /{proxy+}"
   authorization_type = "JWT"
-  authorizer_id = aws_apigatewayv2_authorizer.hma_apigateway.id
+  authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
 
 resource "aws_apigatewayv2_integration" "hma_apigateway" {
-  api_id             = aws_apigatewayv2_api.hma_apigateway.id
-  credentials_arn    = aws_iam_role.hma_apigateway.arn
-  integration_type   = "AWS_PROXY"
-  integration_method = "POST"
-  integration_uri    = aws_lambda_function.api_root.invoke_arn
+  api_id                 = aws_apigatewayv2_api.hma_apigateway.id
+  credentials_arn        = aws_iam_role.hma_apigateway.arn
+  integration_type       = "AWS_PROXY"
+  integration_method     = "POST"
+  integration_uri        = aws_lambda_function.api_root.invoke_arn
   payload_format_version = "2.0"
 }
 
@@ -165,8 +165,8 @@ resource "aws_apigatewayv2_authorizer" "hma_apigateway" {
   name             = "${var.prefix}-jwt-authorizer"
 
   jwt_configuration {
-    audience = ["1hu072n2n920b7kadllfi3imko"]
-    issuer   = "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_sLTnjlLF7"
+    audience = [var.api_authorizer_audience]
+    issuer   = var.api_authorizer_jwt_issuer
   }
 }
 
