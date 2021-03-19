@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name="hmalib",
-    description="Python Library for Facebook ThreatExchange",
+    description="Convenience package for hmalib. Probably don't distribute it.",
 
     install_requires=[
         "boto3",
