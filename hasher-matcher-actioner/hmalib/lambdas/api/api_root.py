@@ -1,16 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import logging
 import os
 import bottle
 import boto3
 import json
 import base64
+import typing as t
 from boto3.dynamodb.conditions import Attr
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
+
 from hmalib.common import get_logger
+from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
 
 # Set to 10MB for /upload
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -55,6 +57,14 @@ def root():
 
 @app.route("/upload", method="POST")
 def upload():
+    """
+    upload API endpoint
+    expects request in the format
+    {
+        fileName: str,
+        fileContentsBase64Encoded: bytes,
+    }
+    """
     fileNameAndEncodedContent = bottle.request.json
     fileName = fileNameAndEncodedContent.get("fileName", None)
     fileContentsBase64Encoded = fileNameAndEncodedContent.get(
@@ -75,17 +85,50 @@ def upload():
 
 @app.get("/matches")
 def matches():
-    results = check_db_for_matches()
+    """
+    matches API endpoint:
+    returns style { matches: [{
+        content_id: str,
+        signal_id: str,
+        matched_on: str,
+        reaction: str, # TODO
+        }]
+    }
+    """
+    results = gen_matches()
     logger.info(results)
-    matches = []
-    for match in results:
-        matches.append({match["PK"]: match["SK"]})
-    return {"matches": matches}
+    return {"matches": results}
+
+
+@app.get("/match/<key>")
+def match_details(key=None):
+    """
+    matche details API endpoint:
+    return format: match_details : [{
+        "content_id": str
+        "content_hash": str,
+        "signal_id": str,
+        "signal_hash": str,
+        "signal_source": str,
+        "updated_at": str, # ISO-8601 formatted
+    }]
+    """
+    results = gen_match_details(key)
+    logger.info(results)
+    return {"match_details": results}
 
 
 @app.get("/hash/<key>")
 def hashes(key=None):
-    results = check_db_for_hash(key)
+    """
+    hash details API endpoint:
+    return format: {
+        content_id: str,
+        content_hash: str,
+        updated_at: str,
+    }
+    """
+    results = gen_hash(key)
     logger.info(results)
     return results
 
@@ -101,19 +144,52 @@ def lambda_handler(event, context):
 
 
 # TODO move to utils library
-def check_db_for_matches():
+def gen_matches() -> t.List:
     table = dynamodb.Table(DYNAMODB_TABLE)
-    result = table.scan(
-        ProjectionExpression="SK,PK",
-        FilterExpression=Attr("SK").begins_with("te#"),
-    )
-    return result.get("Items")
+    records = PDQMatchRecord.get_from_time_range(table)
+    results = [
+        {
+            "content_id": record.content_id,
+            "signal_id": record.signal_id,
+            "signal_source": record.signal_source,
+            "updated_at": record.updated_at.isoformat(),
+            "reactions": "TODO",
+        }
+        for record in records
+    ]
+    return results
 
 
-def check_db_for_hash(key):
+def gen_match_details(content_id: str) -> t.List:
+    if content_id is None:
+        return []
     table = dynamodb.Table(DYNAMODB_TABLE)
-    result = table.scan(
-        ProjectionExpression="ContentHash",
-        FilterExpression=(Attr("PK").eq(f"c#images/{key}") & Attr("SK").eq("type#pdq")),
+    records = PDQMatchRecord.get_from_content_id(
+        table, f"{IMAGE_FOLDER_KEY}{content_id}"
     )
-    return result.get("Items")
+    results = [
+        {
+            "content_id": record.content_id,
+            "content_hash": record.content_hash,
+            "signal_id": record.signal_id,
+            "signal_hash": record.signal_hash,
+            "signal_source": record.signal_source,
+            "updated_at": record.updated_at.isoformat(),
+        }
+        for record in records
+    ]
+    return results
+
+
+def gen_hash(content_id: str) -> t.Dict:
+    if content_id is None:
+        return {}
+    table = dynamodb.Table(DYNAMODB_TABLE)
+    record = PipelinePDQHashRecord.get_from_content_id(
+        table, f"{IMAGE_FOLDER_KEY}{content_id}"
+    )
+    return {
+        "content_id": record.content_id,
+        "content_hash": record.content_hash,
+        "updated_at": record.updated_at.isoformat(),
+    }
