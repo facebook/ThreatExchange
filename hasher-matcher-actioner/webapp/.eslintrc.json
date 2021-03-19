@@ -25,7 +25,7 @@
         "react/jsx-filename-extension": ["warn", { "extensions": [".js", ".jsx"] }],
         "prettier/prettier": [
             "error",
-			{"endOfLine":"auto"}
+            {"endOfLine":"auto"}
         ],
         "jsx-a11y/label-has-associated-control": [ "error", {
             "required": {
