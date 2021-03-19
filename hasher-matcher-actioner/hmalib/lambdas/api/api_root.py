@@ -57,7 +57,9 @@ def root():
 def upload():
     fileNameAndEncodedContent = bottle.request.json
     fileName = fileNameAndEncodedContent.get("fileName", None)
-    fileContentsBase64Encoded = fileNameAndEncodedContent.get("fileContentsBase64Encoded", None)
+    fileContentsBase64Encoded = fileNameAndEncodedContent.get(
+        "fileContentsBase64Encoded", None
+    )
     fileContents = base64.b64decode(fileContentsBase64Encoded)
     # TODO a whole bunch of validation and error checking...
     s3_client.put_object(
