@@ -16,7 +16,7 @@ Additionally, if you want to make use of the provided scripts for doing things l
 
 Beyond tooling you need to have access to an AWS account where the various resources defined in the terraform files here will be created. You will want to either have your AWS credentials either in your environment or in a centralized credentials file. (See the [aws terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication) for more information on these credentials) **Note: These applying these terraform files to your AWS account will result in resources being created that will create costs for your account.**
 
-Lambdas in HMA are developed to be run with *>=python3.7*, however you may be able to get them to run with earlier versions of python3 by installing different backports. For example, to run hma lambdas using python3.6 you will need to install the [`dataclasses` backport](https://docs.python.org/3/library/dataclasses.html) (eg. `python3 -m pip install dataclasses`).
+Lambdas in HMA are developed to be run with *>=python3.7*, however you may be able to get them to run with earlier versions of python3 by installing different backports. For example, to run hma lambdas using python3.6 you will need to install the [`dataclasses` backport](https://pypi.org/project/dataclasses/) (eg. `python3 -m pip install dataclasses`).
 
 ## Building the Docker Lambda Image
 
