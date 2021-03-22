@@ -11,16 +11,6 @@ variable "prefix" {
   default     = "hma"
 }
 
-variable "api_authorizer_jwt_issuer" {
-  description = "A URL to the JWT issuer (used by the api gateway authorizer)"
-  type        = string
-}
-
-variable "api_authorizer_audience" {
-  description = "The audience entry for the JWT authorizer (used by the api gateway authorizer; for Cognito integration, must be the app client id)"
-  type        = string
-}
-
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
