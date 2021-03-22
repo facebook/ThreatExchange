@@ -153,11 +153,11 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
     @property
     def checkpoint_s3_key(self) -> str:
-        return f"{self.s3_key_prefix}/checkpoint/{self.privacy_group}.te"
+        return f"{self.s3_key_prefix}/{self.privacy_group}checkpoint.te"
 
     @property
     def data_s3_key(self) -> str:
-        return f"{self.s3_key_prefix}/pdq/{self.privacy_group}.te"
+        return f"{self.s3_key_prefix}/{self.privacy_group}.pdq.te"
 
     @property
     def next_delta(self) -> tu.ThreatUpdatesDelta:
