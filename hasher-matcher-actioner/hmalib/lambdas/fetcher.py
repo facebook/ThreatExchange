@@ -39,7 +39,6 @@ dynamodb = boto3.resource("dynamodb")
 s3 = boto3.resource("s3")
 
 
-
 @dataclass
 class FetcherConfig:
     """
