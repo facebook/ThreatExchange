@@ -47,7 +47,6 @@ class FetcherConfig:
 
     s3_state_bucket: str
     s3_key_prefix: str
-    output_s3_pdq_key: str
     collab_config_table: str
 
     @classmethod
@@ -55,10 +54,7 @@ class FetcherConfig:
     def get(cls):
         return cls(
             s3_state_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            s3_key_prefix=os.environ.get(
-                "THREAT_EXCHANGE_STATE_KEY_PREFIX", "threat_exchange_data"
-            ),
-            output_s3_pdq_key=os.environ["THREAT_EXCHANGE_PDQ_DATA_KEY"],
+            s3_key_prefix=os.environ["THREAT_EXCHANGE_STATE_KEY_PREFIX"],
             collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
         )
 
@@ -157,11 +153,11 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
     @property
     def checkpoint_s3_key(self) -> str:
-        return f"{self.s3_key_prefix}/{self.privacy_group}.checkpoint"
+        return f"{self.s3_key_prefix}/checkpoint/{self.privacy_group}.te"
 
     @property
     def data_s3_key(self) -> str:
-        return f"{self.s3_key_prefix}/{self.privacy_group}.pdq.te"
+        return f"{self.s3_key_prefix}/pdq/{self.privacy_group}.te"
 
     @property
     def next_delta(self) -> tu.ThreatUpdatesDelta:
@@ -298,7 +294,6 @@ if __name__ == "__main__":
         "THREAT_EXCHANGE_DATA_BUCKET_NAME",
         "jeberl-hashing-data20210324205948477200000003",
     )
-    os.environ.setdefault("THREAT_EXCHANGE_PDQ_DATA_KEY", "threat_exchange_data/pdq.te")
     os.environ.setdefault(
         "THREAT_EXCHANGE_CONFIG_DYNAMODB", "jeberl-ThreatExchangeConfig"
     )

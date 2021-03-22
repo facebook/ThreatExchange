@@ -42,7 +42,7 @@ resource "aws_lambda_function" "pdq_indexer" {
   environment {
     variables = {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
-      THREAT_EXCHANGE_PDQ_DATA_KEY     = var.threat_exchange_data.pdq_data_file_key
+      THREAT_EXCHANGE_STATE_KEY_PREFIX = var.threat_exchange_data.state_key_prefix
       INDEXES_BUCKET_NAME              = var.index_data_storage.bucket_name
       PDQ_INDEX_KEY                    = local.pdq_index_key
       MEASURE_PERFORMANCE              = var.measure_performance ? "True" : "False"
@@ -83,7 +83,7 @@ data "aws_iam_policy_document" "pdq_indexer" {
   statement {
     effect    = "Allow"
     actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.pdq_data_file_key}"]
+    resources = ["arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.state_key_prefix}"]
   }
   statement {
     effect    = "Allow"

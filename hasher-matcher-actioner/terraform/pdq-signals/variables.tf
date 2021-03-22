@@ -49,7 +49,7 @@ variable "threat_exchange_data" {
   description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data"
   type = object({
     bucket_name        = string
-    pdq_data_file_key  = string
+    state_key_prefix   = string
     notification_topic = string
   })
 }

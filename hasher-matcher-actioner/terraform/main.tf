@@ -52,6 +52,7 @@ module "pdq_signals" {
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_data_file_key  = local.pdq_data_file_key
+    state_key_prefix   = module.hashing_data.threat_exchange_data_folder_info.key
     notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
   }
   index_data_storage = {
