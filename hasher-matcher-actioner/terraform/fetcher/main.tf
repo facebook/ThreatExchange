@@ -38,6 +38,8 @@ resource "aws_lambda_function" "fetcher" {
     variables = {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
       THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
+      THREAT_EXCHANGE_PDQ_DATA_KEY     = var.threat_exchange_data.pdq_data_file_key
+
     }
   }
   tags = merge(
@@ -107,6 +109,11 @@ data "aws_iam_policy_document" "fetcher" {
     effect    = "Allow"
     actions   = ["dynamodb:Scan"]
     resources = [aws_dynamodb_table.threatexchange_config.arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.api_token.arn]
   }
 }
 
