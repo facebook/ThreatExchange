@@ -13,6 +13,8 @@ provider "aws" {
   region = "us-east-1"
 }
 
+data "aws_region" "default" {}
+
 locals {
   common_tags = {
     "HMAPrefix" = var.prefix
@@ -63,8 +65,8 @@ module "pdq_signals" {
 }
 
 module "fetcher" {
-  source = "./fetcher"
-  prefix = var.prefix
+  source       = "./fetcher"
+  prefix       = var.prefix
   te_api_token = var.te_api_token
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
@@ -128,12 +130,20 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
 
+# Set up Cognito for authenticating api and webapp
+
+module "authentication" {
+  source = "./authentication"
+  prefix = var.prefix
+}
+
 # Connect Hashing Data to API
 
 module "api" {
-  source = "./api"
-  prefix = var.prefix
-  api_access_token = var.api_access_token
+  source                    = "./api"
+  prefix                    = var.prefix
+  api_authorizer_jwt_issuer = "https://cognito-idp.${data.aws_region.default.name}.amazonaws.com/${module.authentication.webapp_and_api_user_pool_id}"
+  api_authorizer_audience   = module.authentication.webapp_and_api_user_pool_client_id
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
@@ -152,6 +162,11 @@ module "api" {
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
+}
+
+resource "local_file" "webapp_env" {
+  sensitive_content = "REACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
+  filename          = "../webapp/.env"
 }
 
 module "webapp" {

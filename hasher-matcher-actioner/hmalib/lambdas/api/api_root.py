@@ -5,11 +5,15 @@ import os
 import bottle
 import boto3
 import json
+import base64
 from boto3.dynamodb.conditions import Attr
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
 from hmalib.common import get_logger
+
+# Set to 10MB for /upload
+bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
 
 app = bottle.default_app()
 apig_wsgi_handler = make_lambda_handler(app)
@@ -51,12 +55,17 @@ def root():
 
 @app.route("/upload", method="POST")
 def upload():
-    uploaded = bottle.request.files.get("image")
+    fileNameAndEncodedContent = bottle.request.json
+    fileName = fileNameAndEncodedContent.get("fileName", None)
+    fileContentsBase64Encoded = fileNameAndEncodedContent.get(
+        "fileContentsBase64Encoded", None
+    )
+    fileContents = base64.b64decode(fileContentsBase64Encoded)
     # TODO a whole bunch of validation and error checking...
-    s3_client.upload_fileobj(
-        Fileobj=uploaded.file,
+    s3_client.put_object(
+        Body=fileContents,
         Bucket=IMAGE_BUCKET_NAME,
-        Key=f"{IMAGE_FOLDER_KEY}{uploaded.filename}",
+        Key=f"{IMAGE_FOLDER_KEY}{fileName}",
     )
 
     return {

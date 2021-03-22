@@ -5,6 +5,7 @@
 import React, {useState, useEffect} from 'react';
 import {Link} from 'react-router-dom';
 import {Button, Collapse, Modal} from 'react-bootstrap';
+import Spinner from 'react-bootstrap/Spinner';
 
 import {fetchMatches} from './Api';
 
@@ -113,7 +114,7 @@ export default function Matches() {
                 <td className="align-middle">
                   <Link
                     to="/matches/file1.jpg"
-                    class="btn btn-outline-primary btn-sm">
+                    className="btn btn-outline-primary btn-sm">
                     Details
                   </Link>
                 </td>
@@ -250,52 +251,62 @@ function MatchDetailsModal(props) {
 }
 
 function MatchList2() {
-  const [matchesData, setMatchesData] = useState([]);
+  const [matchesData, setMatchesData] = useState(null);
 
   useEffect(() => {
-    fetchMatches().then(matches => setMatchesData(matches));
+    fetchMatches().then(matches => setMatchesData(matches.matches));
+    // .catch(err => console.log(err));
   }, []);
 
   return (
-    <div className="row mt-3">
-      <div className="col-xs-12">
-        <table className="table table-hover table-sm">
-          <thead>
-            <tr>
-              <th>Image</th>
-              <th>Hash</th>
-              <th>Matched On</th>
-              <th>Reaction</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {matchesData.length ? (
-              matchesData.map(match => {
-                const imgKey = Object.keys(match)[0];
-                const teVal = match[imgKey];
-                return (
-                  <tr className="align-middle">
-                    <td className="align-middle">{imgKey}</td>
-                    <td className="align-middle">{teVal}</td>
-                    <td className="align-middle">TODO</td>
-                    <td className="align-middle">TODO</td>
-                    <td className="align-middle">
-                      <Link
-                        to="/matches/file1.jpg"
-                        class="btn btn-outline-primary btn-sm">
-                        Details
-                      </Link>
-                    </td>
+    <>
+      <Spinner hidden={matchesData !== null} animation="border" role="status">
+        <span className="sr-only">Loading...</span>
+      </Spinner>
+      <Collapse in={matchesData !== null}>
+        <div className="row mt-3">
+          <div className="col-xs-12">
+            <table className="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Hash</th>
+                  <th>Matched On</th>
+                  <th>Reaction</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {matchesData !== null && matchesData.length ? (
+                  matchesData.map(match => {
+                    const imgKey = Object.keys(match)[0];
+                    const teVal = match[imgKey];
+                    return (
+                      <tr className="align-middle" key={imgKey}>
+                        <td className="align-middle">{imgKey}</td>
+                        <td className="align-middle">{teVal}</td>
+                        <td className="align-middle">TODO</td>
+                        <td className="align-middle">TODO</td>
+                        <td className="align-middle">
+                          <Link
+                            to="/matches/file1.jpg"
+                            className="btn btn-outline-primary btn-sm">
+                            Details
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={5}>No Matches Found.</td>
                   </tr>
-                );
-              })
-            ) : (
-              <p>No Matches Found.</p>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </Collapse>
+    </>
   );
 }

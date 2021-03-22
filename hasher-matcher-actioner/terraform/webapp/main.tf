@@ -2,7 +2,7 @@
 
 resource "aws_s3_bucket" "webapp" {
   bucket = "${var.prefix}-webapp"
-  acl           = "public-read"
+  acl    = "public-read"
   tags = merge(
     var.additional_tags,
     {
@@ -14,7 +14,7 @@ resource "aws_s3_bucket" "webapp" {
     error_document = "index.html"
   }
   provisioner "local-exec" {
-    command = "npm run build"
+    command     = "npm run build"
     working_dir = "../webapp"
   }
   provisioner "local-exec" {
@@ -27,7 +27,7 @@ resource "aws_s3_bucket" "webapp" {
 }
 
 resource "aws_cloudfront_distribution" "webapp" {
-  count               = var.include_cloudfront_distribution ? 1 : 0
+  count = var.include_cloudfront_distribution ? 1 : 0
 
   default_root_object = "index.html"
   enabled             = true
