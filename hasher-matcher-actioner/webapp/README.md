@@ -39,6 +39,16 @@ The build is minified and the filenames include the hashes.
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+### Running the Webapp Locally
+Even when running the UI locally, the API will need to serve from a full instance of HMA. Follow the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md) for details on how to spin up an instance.
+
+After deploying an instance, build and then start your instance locally. It may take a few refreshes, but you should be directed to the same login page as the one as the instance you deployed. If you haven't set up an account yet, see the note on how to do that in the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md).
+
+Once you have done that, the pages you are served should match your local copy, and you can develop on the UI.
+
+
+### Lint and Formatting
+
 It also utilizes [eslint](https://eslint.org/) and [prettier](https://prettier.io/) configured in [.eslintrc.json](.eslintrc.json) and [.prettierrc.json](.prettierrc.json) respectively. (Both tools have code editor [integrations](https://prettier.io/docs/en/editors.html) that may be found helpful.)
 
 Please run the following checks/formating before submitting a PR.
