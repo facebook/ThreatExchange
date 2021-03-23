@@ -1,5 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-
 # Getting started with the hasher-matcher-actioner webapp
 
 This project requires [npm](https://www.npmjs.com/get-npm) be installed. Once installed `npm install` from within this directory should enable usage of the scripts referenced below.
