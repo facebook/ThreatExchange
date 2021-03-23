@@ -5,6 +5,7 @@ from moto import mock_dynamodb2
 from hmalib import models
 import boto3
 import datetime
+import os
 
 
 class TestPDQModels(unittest.TestCase):
@@ -13,8 +14,20 @@ class TestPDQModels(unittest.TestCase):
     TEST_SIGNAL_ID = "5555555555555555"
     TEST_SIGNAL_SOURCE = "test_source"
 
+    @staticmethod
+    def mock_aws_credentials():
+        """
+        Mocked AWS Credentials for moto.
+        (likely not needed based on local testing but just incase)
+        """
+        os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+        os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+        os.environ["AWS_SECURITY_TOKEN"] = "testing"
+        os.environ["AWS_SESSION_TOKEN"] = "testing"
+
     @classmethod
     def setUpClass(cls):
+        cls.mock_aws_credentials()
         cls.mock_dynamodb2 = mock_dynamodb2()
         cls.mock_dynamodb2.start()
         cls.create_mocked_table()
@@ -25,7 +38,7 @@ class TestPDQModels(unittest.TestCase):
 
     @classmethod
     def create_mocked_table(cls):
-        dynamodb = boto3.resource("dynamodb")
+        dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
         table_name = "test-table"
         cls.table = dynamodb.create_table(
             AttributeDefinitions=[
