@@ -4,6 +4,4 @@ hma_lambda_docker_uri = # DOCKER_IMAGE_URI
 prefix = # ENVIRONMENT_PREFIX
 log_retention_in_days = # DAYS to retain logs
 include_cloudfront_distribution = true
-api_authorizer_jwt_issuer = "https://cognito-idp.<aws-region>.amazonaws.com/<cognito-user-pool-pool-id>"
-api_authorizer_audience = "<cognito-user-pool-app-client-id>"
 te_api_token = "<threat-exchange-api-token>"

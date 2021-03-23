@@ -1,14 +1,12 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-
 # Getting started with the hasher-matcher-actioner webapp
 
-This project requires [npm](https://www.npmjs.com/get-npm) be installed. Once installed `npm install` from within this directory should enable usage of the scripts referenced below.
+This project requires [npm](https://www.npmjs.com/get-npm) be installed. Once npm is installed, `npm install` must be run from this directory to enable usage of the scripts referenced below. (Running terraform apply will run `npm install` for you.)
 
-To run, build or test you need to create a .env file in the webapp directory. One is created for you when you terraform apply, and it should look something like what you see in .env.example.
+To run, build or test you need a .env file in this directory. One is created for you when you terraform apply, and it should look like .env.example.
 
 To sign in (whether running from localhost, the s3 bucket url, or the cloudfront distribution) you need a user. Take these steps to create a user after you've run terraform apply:
 
-1. Open Your User Pools in the AWS console (e.g., https://console.aws.amazon.com/cognito/users/?region=us-east-1)
+1. Open Your User Pools in the AWS console (e.g., https://console.aws.amazon.com/cognito/users/?region=us-east-1 substituting your region as appropriate)
 2. Select the user pool configured for your HMA environment.
 3. Select Users and groups (left nav).
 4. Select Create user and follow the instructions. You can leave Phone Number blank, if you wish; Username, Temporary password and Email are required. Leaving Mark email as verified checked speeds things up by skipping the built-in email verification step.
@@ -40,6 +38,16 @@ The build is minified and the filenames include the hashes.
 ## Contributing
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+### Running the Webapp Locally
+Even when running the UI locally, the API will need to serve from a full instance of HMA. Follow the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md) for details on how to spin up an instance.
+
+After deploying an instance, build and then start your instance locally. It may take a few refreshes, but you should be directed to the same login page as the one as the instance you deployed. If you haven't set up an account yet, see the note on how to do that in the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md).
+
+Once you have done that, the pages you are served should match your local copy, and you can develop on the UI.
+
+
+### Lint and Formatting
 
 It also utilizes [eslint](https://eslint.org/) and [prettier](https://prettier.io/) configured in [.eslintrc.json](.eslintrc.json) and [.prettierrc.json](.prettierrc.json) respectively. (Both tools have code editor [integrations](https://prettier.io/docs/en/editors.html) that may be found helpful.)
 

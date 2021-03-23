@@ -35,6 +35,21 @@ $ make dev_create_instance  # This will upload docker to AWS and then start the 
 $ make dev_destroy_instance  # This will wipe your instance completely, leaving no resources on the cloud
 ```
 
+## Handling User Authentification in the Instance
+HMA uses https://aws.amazon.com/cognito/ for user accounts. You may find that you instead want to authenticate with your own internal authorization in the long term, but in the short term, you can quickly create new user accounts to use from the [user page](https://console.aws.amazon.com/cognito/users/).
+
+## Visiting the UI
+To visit your deployed UI, you'll need to get the static URL for the s3 bucket. To do that:
+1. Visit the s3 management console at https://s3.console.aws.amazon.com/s3/
+2. Search for "<your prefix>-webapp"
+3. Click on the object, and then find the "properties" tab
+4. Scroll to the bottom and find "Static Web Hosting" and grab the URL
+5. Visit the URL from your browser. You should be prompted for the account you created from the Auethentification step
+![image](https://user-images.githubusercontent.com/1654004/112202142-49a4e800-8bce-11eb-8ed9-8375e77fe8e1.png)
+6. After entering your information, you should see the landing page of the UI
+
+
+
 ## Demonstrating HMA From the Instance
 This section needs more details, and will somday have a demo video. 
 
