@@ -15,7 +15,7 @@ resource "aws_cognito_user_pool" "webapp_and_api_user_pool" {
     allow_admin_create_user_only = true
   }
   auto_verified_attributes = ["email"]
-  name                     = "${var.prefix}-user-pool"
+  name                     = "${var.prefix}-hma-user-pool"
   password_policy {
     minimum_length                   = 8
     require_lowercase                = true
@@ -40,7 +40,7 @@ resource "aws_cognito_user_pool" "webapp_and_api_user_pool" {
 }
 
 resource "aws_cognito_user_pool_client" "webapp_and_api_user_pool_client" {
-  name                                 = "${var.prefix}-user-pool-client"
+  name                                 = "${var.prefix}-hma-user-pool-client"
   user_pool_id                         = aws_cognito_user_pool.webapp_and_api_user_pool.id
   generate_secret                      = false
   allowed_oauth_flows_user_pool_client = true

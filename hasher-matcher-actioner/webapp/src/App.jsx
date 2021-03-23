@@ -6,7 +6,7 @@ import React from 'react';
 import {BrowserRouter as Router, Route, Link} from 'react-router-dom';
 import {AnimatedSwitch} from 'react-router-transition';
 import {Auth} from 'aws-amplify';
-import {AmplifyAuthenticator} from '@aws-amplify/ui-react';
+import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 import Dashboard from './Dashboard';
 import MatchDetails from './MatchDetails';
 import Matches from './Matches';
@@ -17,6 +17,12 @@ import Upload from './Upload';
 export default function App() {
   return (
     <AmplifyAuthenticator>
+      <div slot="sign-in">
+        <AmplifySignIn
+          hideSignUp
+          headerText="Sign in to Hasher-Matcher-Actioner HMA"
+        />
+      </div>
       <Router>
         <nav className="navbar navbar-expand-md navbar-dark bg-dark">
           <a className="navbar-brand" href="/">

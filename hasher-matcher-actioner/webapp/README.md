@@ -1,12 +1,12 @@
 # Getting started with the hasher-matcher-actioner webapp
 
-This project requires [npm](https://www.npmjs.com/get-npm) be installed. Once installed `npm install` from within this directory should enable usage of the scripts referenced below.
+This project requires [npm](https://www.npmjs.com/get-npm) be installed. Once npm is installed, `npm install` must be run from this directory to enable usage of the scripts referenced below. (Running terraform apply will run `npm install` for you.)
 
-To run, build or test you need to create a .env file in the webapp directory. One is created for you when you terraform apply, and it should look something like what you see in .env.example.
+To run, build or test you need a .env file in this directory. One is created for you when you terraform apply, and it should look like .env.example.
 
 To sign in (whether running from localhost, the s3 bucket url, or the cloudfront distribution) you need a user. Take these steps to create a user after you've run terraform apply:
 
-1. Open Your User Pools in the AWS console (e.g., https://console.aws.amazon.com/cognito/users/?region=us-east-1)
+1. Open Your User Pools in the AWS console (e.g., https://console.aws.amazon.com/cognito/users/?region=us-east-1 substituting your region as appropriate)
 2. Select the user pool configured for your HMA environment.
 3. Select Users and groups (left nav).
 4. Select Create user and follow the instructions. You can leave Phone Number blank, if you wish; Username, Temporary password and Email are required. Leaving Mark email as verified checked speeds things up by skipping the built-in email verification step.
