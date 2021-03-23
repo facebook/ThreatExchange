@@ -9,6 +9,12 @@ output "bucket_name" {
 output "datastore_name" {
   value = module.hashing_data.hma_datastore.name
 }
+output "pdq_data_file_key" {
+  value = local.pdq_data_file_key
+}
+output "image_folder_key" {
+  value = module.hashing_data.image_folder_info.key
+}
 output "prefix" {
   value = var.prefix
 }
