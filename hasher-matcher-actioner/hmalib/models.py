@@ -25,6 +25,18 @@ class DynamoDBItem:
     def to_dynamodb_item(self) -> t.Dict:
         raise NotImplementedError
 
+    @staticmethod
+    def get_dynamodb_content_key(c_id: str) -> str:
+        return f"{DynamoDBItem.CONTENT_KEY_PREFIX}{c_id}"
+
+    @staticmethod
+    def get_dynamodb_type_key(type: str) -> str:
+        return f"{DynamoDBItem.TYPE_PREFIX}{type}"
+
+    @staticmethod
+    def remove_content_key_prefix(key: str) -> str:
+        return key[len(DynamoDBItem.CONTENT_KEY_PREFIX) :]
+
 
 @dataclass
 class PDQRecordBase(DynamoDBItem):
@@ -34,17 +46,9 @@ class PDQRecordBase(DynamoDBItem):
 
     SIGNAL_TYPE = "pdq"
 
-    content_key: str
+    content_id: str
     content_hash: str
     updated_at: datetime.datetime  # ISO-8601 formatted
-
-    @staticmethod
-    def get_dynamodb_content_key(key: str) -> str:
-        return f"{PDQRecordBase.CONTENT_KEY_PREFIX}{key}"
-
-    @staticmethod
-    def get_dynamodb_type_key(key: str) -> str:
-        return f"{PDQRecordBase.TYPE_PREFIX}{key}"
 
     def to_dynamodb_item(self) -> dict:
         raise NotImplementedError
@@ -63,7 +67,7 @@ class PipelinePDQHashRecord(PDQRecordBase):
 
     def to_dynamodb_item(self) -> dict:
         return {
-            "PK": self.get_dynamodb_content_key(self.content_key),
+            "PK": self.get_dynamodb_content_key(self.content_id),
             "SK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
             "ContentHash": self.content_hash,
             "Quality": self.quality,
@@ -75,29 +79,28 @@ class PipelinePDQHashRecord(PDQRecordBase):
         return {
             "hash": self.content_hash,
             "type": self.SIGNAL_TYPE,
-            "key": self.content_key,
+            "key": self.content_id,
         }
 
     @classmethod
-    def get_from_content_key(
+    def get_from_content_id(
         cls, table: Table, content_key: str
-    ) -> t.Union["PipelinePDQHashRecord", None]:
+    ) -> t.Optional["PipelinePDQHashRecord"]:
         items = HashRecordQuery.from_content_key(
             table,
             cls.get_dynamodb_content_key(content_key),
             cls.get_dynamodb_type_key(cls.SIGNAL_TYPE),
         )
-        records = []
-        for item in items():
-            records.append(
-                PipelinePDQHashRecord(
-                    item["PK"],
-                    item["ContentHash"],
-                    item["UpdatedAt"],
-                    item["Quality"],
-                )
+        records = [
+            PipelinePDQHashRecord(
+                item["PK"][len(DynamoDBItem.CONTENT_KEY_PREFIX) :],
+                item["ContentHash"],
+                datetime.datetime.fromisoformat(item["UpdatedAt"]),
+                item["Quality"],
             )
-        return None if not len(records) else records[0]
+            for item in items
+        ]
+        return None if not records else records[0]
 
 
 @dataclass
@@ -106,7 +109,7 @@ class PDQMatchRecord(PDQRecordBase):
     Successful execution at the matcher produces this record.
     """
 
-    signal_id: int
+    signal_id: t.Union[str, int]
     signal_source: str
     signal_hash: str
 
@@ -114,16 +117,20 @@ class PDQMatchRecord(PDQRecordBase):
     def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
         return f"{PDQMatchRecord.SIGNAL_KEY_PREFIX}{source}#{s_id}"
 
+    @staticmethod
+    def remove_signal_key_prefix(key: str, source: str) -> str:
+        return key[len(PDQMatchRecord.SIGNAL_KEY_PREFIX) + len(source) + 1 :]
+
     def to_dynamodb_item(self) -> dict:
         return {
-            "PK": self.get_dynamodb_content_key(self.content_key),
+            "PK": self.get_dynamodb_content_key(self.content_id),
             "SK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
             "ContentHash": self.content_hash,
             "UpdatedAt": self.updated_at.isoformat(),
             "SignalHash": self.signal_hash,
             "SignalSource": self.signal_source,
             "GSI1-PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
-            "GSI1-SK": self.get_dynamodb_content_key(self.content_key),
+            "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
         }
@@ -133,12 +140,12 @@ class PDQMatchRecord(PDQRecordBase):
         raise NotImplementedError
 
     @classmethod
-    def get_from_content_key(
-        cls, table: Table, content_key: str
+    def get_from_content_id(
+        cls, table: Table, content_id: str
     ) -> t.List["PDQMatchRecord"]:
         items = MatchRecordQuery.from_content_key(
             table,
-            cls.get_dynamodb_content_key(content_key),
+            cls.get_dynamodb_content_key(content_id),
             cls.SIGNAL_KEY_PREFIX,
             cls.SIGNAL_TYPE,
         )
@@ -146,7 +153,7 @@ class PDQMatchRecord(PDQRecordBase):
 
     @classmethod
     def get_from_signal(
-        cls, table: Table, signal_source: str, signal_id: t.Union[str, int]
+        cls, table: Table, signal_id: t.Union[str, int], signal_source: str
     ) -> t.List["PDQMatchRecord"]:
         items = MatchRecordQuery.from_signal_key(
             table,
@@ -157,7 +164,7 @@ class PDQMatchRecord(PDQRecordBase):
 
     @classmethod
     def get_from_time_range(
-        cls, table: Table, start_time: str, end_time: str
+        cls, table: Table, start_time: str = None, end_time: str = None
     ) -> t.List["PDQMatchRecord"]:
         items = MatchRecordQuery.from_time_range(
             table, cls.get_dynamodb_type_key(cls.SIGNAL_TYPE), start_time, end_time
@@ -165,20 +172,22 @@ class PDQMatchRecord(PDQRecordBase):
         return cls._result_items_to_records(items)
 
     @staticmethod
-    def _result_items_to_records(items: t.List[t.Dict]) -> t.List["PDQMatchRecord"]:
-        records = []
-        for item in items:
-            records.append(
-                PDQMatchRecord(
-                    item["PK"],
-                    item["ContentHash"],
-                    item["UpdatedAt"],
-                    item["SK"],
-                    item["SignalSource"],
-                    item["SignalHash"],
-                )
+    def _result_items_to_records(
+        items: t.List[t.Dict],
+    ) -> t.List["PDQMatchRecord"]:
+        return [
+            PDQMatchRecord(
+                PDQMatchRecord.remove_content_key_prefix(item["PK"]),
+                item["ContentHash"],
+                datetime.datetime.fromisoformat(item["UpdatedAt"]),
+                PDQMatchRecord.remove_signal_key_prefix(
+                    item["SK"], item["SignalSource"]
+                ),
+                item["SignalSource"],
+                item["SignalHash"],
             )
-        return records
+            for item in items
+        ]
 
 
 class HashRecordQuery:
@@ -200,7 +209,7 @@ class HashRecordQuery:
         return table.query(
             KeyConditionExpression=key_con_exp,
             ProjectionExpression="PK, ContentHash, UpdatedAt, Quality",
-        ).get("Items")
+        ).get("Items", [])
 
 
 class MatchRecordQuery:
@@ -223,7 +232,7 @@ class MatchRecordQuery:
         Given a content key (and optional hash type), give me its content hash (for that type).
 
         """
-        filter_exp = ""
+        filter_exp = None
         if not hash_type is None:
             filter_exp = Attr("HashType").eq(hash_type)
 
@@ -232,7 +241,7 @@ class MatchRecordQuery:
             & Key("SK").begins_with(source_prefix),
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
             FilterExpression=filter_exp,
-        ).get("Items")
+        ).get("Items", [])
 
     @classmethod
     def from_signal_key(
@@ -240,11 +249,11 @@ class MatchRecordQuery:
         table: Table,
         signal_key: str,
         hash_type: str = None,
-    ) -> t.List:
+    ) -> t.List[t.Dict]:
         """
         Given a Signal ID/Key (and optional hash type), give me any content matches found
         """
-        filter_exp = ""
+        filter_exp = None
         if not hash_type is None:
             filter_exp = Attr("HashType").eq(hash_type)
 
@@ -253,7 +262,7 @@ class MatchRecordQuery:
             KeyConditionExpression=Key("GSI1-PK").eq(signal_key),
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
             FilterExpression=filter_exp,
-        ).get("Items")
+        ).get("Items", [])
 
     @classmethod
     def from_time_range(
@@ -271,4 +280,4 @@ class MatchRecordQuery:
             KeyConditionExpression=Key("GSI2-PK").eq(hash_type)
             & Key("UpdatedAt").between(start_time, end_time),
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
-        ).get("Items")
+        ).get("Items", [])

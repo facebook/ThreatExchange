@@ -215,7 +215,13 @@ resource "aws_dynamodb_table" "datastore" {
     name            = "GSI-2"
     hash_key        = "GSI2-PK"
     range_key       = "UpdatedAt"
-    projection_type = "KEYS_ONLY"
+    projection_type = "INCLUDE"
+    non_key_attributes = [
+      "ContentHash",
+      "SignalHash",
+      "SignalSource",
+      "HashType"
+    ]
   }
 
   tags = merge(
