@@ -17,7 +17,7 @@ import Upload from './Upload';
 export default function App() {
   return (
     <AmplifyAuthenticator>
-      <div slot="sign-in" style={{}}>
+      <div slot="sign-in">
         <AmplifySignIn
           hideSignUp
           headerText="Sign in to Hasher-Matcher-Actioner HMA"
