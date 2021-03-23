@@ -27,18 +27,20 @@ class PDQRecordBase(DynamoDBItem):
     """
 
     SIGNAL_TYPE = "pdq"
+    CONTENT_KEY_PREFIX = "c#"
+    TYPE_PREFIX = "type#"
 
     content_key: str
     content_hash: str
     timestamp: datetime.datetime  # ISO-8601 formatted
 
     @staticmethod
-    def get_dynamodb_content_key(key: str):
-        return f"c#{key}"
+    def get_dynamodb_content_key(key: str) -> str:
+        return f"{PDQRecordBase.CONTENT_KEY_PREFIX}{key}"
 
     @staticmethod
-    def get_dynamodb_type_key(key: str):
-        return f"type#{key}"
+    def get_dynamodb_type_key(key: str) -> str:
+        return f"{PDQRecordBase.TYPE_PREFIX}{key}"
 
     def to_dynamodb_item(self) -> dict:
         raise NotImplementedError
@@ -79,21 +81,24 @@ class PDQMatchRecord(PDQRecordBase):
     Successful execution at the matcher produces this record.
     """
 
-    te_id: int
-    te_hash: str
+    SIGNAL_KEY_PREFIX = "s#"
+    signal_id: int
+    signal_source: str
+    signal_hash: str
 
     @staticmethod
-    def get_dynamodb_te_key(key: t.Union[str, int]):
-        return f"te#{key}"
+    def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
+        return f"{PDQMatchRecord.SIGNAL_KEY_PREFIX}{source}#{s_id}"
 
     def to_dynamodb_item(self) -> dict:
         return {
             "PK": self.get_dynamodb_content_key(self.content_key),
-            "SK": self.get_dynamodb_te_key(self.te_id),
+            "SK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
             "ContentHash": self.content_hash,
             "Timestamp": self.timestamp.isoformat(),
-            "TEHash": self.te_hash,
-            "GSI1-PK": self.get_dynamodb_te_key(self.te_id),
+            "SignalHash": self.signal_hash,
+            "SignalSource": self.signal_source,
+            "GSI1-PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
             "GSI1-SK": self.get_dynamodb_content_key(self.content_key),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),

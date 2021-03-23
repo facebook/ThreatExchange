@@ -205,7 +205,8 @@ resource "aws_dynamodb_table" "datastore" {
     non_key_attributes = [
       "ContentHash",
       "Timestamp",
-      "TEHash",
+      "SignalHash",
+      "SignalSource",
       "HashType"
     ]
   }
