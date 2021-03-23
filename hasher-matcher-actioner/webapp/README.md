@@ -2,7 +2,7 @@
 
 # Getting started with the hasher-matcher-actioner webapp
 
-This project requires [npm](https://www.npmjs.com/get-npm) be installed. Once npm is installed, run `npm install` from within this directory to enable usage of the scripts referenced below.
+This project requires [npm](https://www.npmjs.com/get-npm) be installed. Once npm is installed, `npm install` must be run from this directory to enable usage of the scripts referenced below. (Running terraform apply will run `npm install` for you.)
 
 To run, build or test you need a .env file in this directory. One is created for you when you terraform apply, and it should look like .env.example.
 

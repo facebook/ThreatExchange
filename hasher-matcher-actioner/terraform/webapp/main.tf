@@ -14,6 +14,10 @@ resource "aws_s3_bucket" "webapp" {
     error_document = "index.html"
   }
   provisioner "local-exec" {
+    command     = "npm install --silent"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
     command     = "npm run build"
     working_dir = "../webapp"
   }
