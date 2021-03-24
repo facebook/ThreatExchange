@@ -193,7 +193,7 @@ resource "aws_dynamodb_table" "datastore" {
     type = "S"
   }
   attribute {
-    name = "Timestamp"
+    name = "UpdatedAt"
     type = "S"
   }
 
@@ -204,7 +204,7 @@ resource "aws_dynamodb_table" "datastore" {
     projection_type = "INCLUDE"
     non_key_attributes = [
       "ContentHash",
-      "Timestamp",
+      "UpdatedAt",
       "SignalHash",
       "SignalSource",
       "HashType"
@@ -214,8 +214,14 @@ resource "aws_dynamodb_table" "datastore" {
   global_secondary_index {
     name            = "GSI-2"
     hash_key        = "GSI2-PK"
-    range_key       = "Timestamp"
-    projection_type = "KEYS_ONLY"
+    range_key       = "UpdatedAt"
+    projection_type = "INCLUDE"
+    non_key_attributes = [
+      "ContentHash",
+      "SignalHash",
+      "SignalSource",
+      "HashType"
+    ]
   }
 
   tags = merge(
