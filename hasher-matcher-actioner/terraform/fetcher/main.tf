@@ -38,6 +38,8 @@ resource "aws_lambda_function" "fetcher" {
     variables = {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
       THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
+      THREAT_EXCHANGE_PDQ_DATA_KEY     = var.threat_exchange_data.pdq_data_file_key
+
     }
   }
   tags = merge(
@@ -81,13 +83,15 @@ resource "aws_iam_role" "fetcher" {
 data "aws_iam_policy_document" "fetcher" {
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.pdq_data_file_key}"]
-  }
-  statement {
-    effect    = "Allow"
-    actions   = ["s3:PutObject"]
-    resources = ["arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.pdq_data_file_key}"]
+    actions   = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      "arn:aws:s3:::*/*",
+      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}"
+    ]
   }
   statement {
     effect = "Allow"
@@ -107,6 +111,11 @@ data "aws_iam_policy_document" "fetcher" {
     effect    = "Allow"
     actions   = ["dynamodb:Scan"]
     resources = [aws_dynamodb_table.threatexchange_config.arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [aws_secretsmanager_secret.api_token.arn]
   }
 }
 

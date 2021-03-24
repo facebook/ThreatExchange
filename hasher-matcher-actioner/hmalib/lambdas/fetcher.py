@@ -183,7 +183,6 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
     def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
-
         txt_content = read_s3_text(self.s3_bucket, self.checkpoint_s3_key)
         if txt_content is None:
             logger.warning("No s3 checkpoint for %d. First run?", self.privacy_group)
@@ -297,7 +296,7 @@ if __name__ == "__main__":
     FetcherConfig.get.cache_clear()  # Just in case
     os.environ.setdefault(
         "THREAT_EXCHANGE_DATA_BUCKET_NAME",
-        "jeberl-hashing-data20210304224022904400000003",
+        "jeberl-hashing-data20210324205948477200000003",
     )
     os.environ.setdefault("THREAT_EXCHANGE_PDQ_DATA_KEY", "threat_exchange_data/pdq.te")
     os.environ.setdefault(

@@ -42,7 +42,7 @@ variable "include_cloudfront_distribution" {
 }
 
 variable "te_api_token" {
-  description = "The secret token used to authenticate your access to ThreatExchange. You can find this by navigating to https://developers.facebook.com/tools/accesstoken/"
+  description = "The secret token used to authenticate your access to ThreatExchange. You can find this by navigating to https://developers.facebook.com/tools/accesstoken/. Leave blank if you would not like to fetch from ThreatExchange"
   type        = string
   sensitive   = true
 }
