@@ -186,5 +186,22 @@ if __name__ == "__main__":
             }
         ]
     }
+    data_not_updated_event = {
+        "Records": [
+            {
+                "Records": [
+                    {
+                        "s3": {
+                            "bucket": {"name": THREAT_EXCHANGE_DATA_BUCKET_NAME},
+                            "object": {
+                                "key": "some_other_file.txt"
+                            },
+                        }
+                    }
+                ]
+            }
+        ]
+    }
 
     lambda_handler(data_updated_event, None)
+    lambda_handler(data_not_updated_event, None)
