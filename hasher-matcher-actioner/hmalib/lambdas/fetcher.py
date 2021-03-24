@@ -183,7 +183,6 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
     def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
-
         txt_content = read_s3_text(self.s3_bucket, self.checkpoint_s3_key)
         if txt_content is None:
             logger.warning("No s3 checkpoint for %d. First run?", self.privacy_group)
