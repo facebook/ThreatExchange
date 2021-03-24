@@ -296,7 +296,7 @@ if __name__ == "__main__":
     FetcherConfig.get.cache_clear()  # Just in case
     os.environ.setdefault(
         "THREAT_EXCHANGE_DATA_BUCKET_NAME",
-        "jeberl-hashing-data20210304224022904400000003",
+        "jeberl-hashing-data20210324205948477200000003",
     )
     os.environ.setdefault("THREAT_EXCHANGE_PDQ_DATA_KEY", "threat_exchange_data/pdq.te")
     os.environ.setdefault(

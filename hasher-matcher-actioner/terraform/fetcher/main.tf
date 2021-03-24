@@ -88,7 +88,10 @@ data "aws_iam_policy_document" "fetcher" {
       "s3:PutObject",
       "s3:ListBucket",
     ]
-    resources = ["*"]
+    resources = [
+      "arn:aws:s3:::*/*",
+      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}"
+    ]
   }
   statement {
     effect = "Allow"
