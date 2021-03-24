@@ -1,4 +1,4 @@
-.PHONY: all docker upload_docker dev_create_configs dev_create_instance dev_test_instance dev_destroy_instance dev_clear_configs clean dev_upload_test_data
+.PHONY: all docker upload_docker dev_create_configs dev_create_instance dev_test_instance dev_upload_test_signal dev_upload_test_content dev_upload_test_data dev_destroy_instance dev_clear_configs clean 
 
 shell-or-die = $\
 	$(eval sod_out := $(shell $(1); echo $$?))$\
@@ -45,13 +45,13 @@ dev_test_instance:
 dev_upload_test_signal:
 	@TF_BUCKET_NAME=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json bucket_name | tr -d '"') && \
 	TF_PDQ_DATA_FILE_KEY=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json pdq_data_file_key | tr -d '"') && \
-	echo "Are you sure? This will copy over $${TF_PDQ_DATA_FILE_KEY} in $${TF_BUCKET_NAME} [y/N] " && read ans && [ $${ans:-N} = y ] && \
+	echo "Upload sample signals? [y/N] This will copy over $${TF_PDQ_DATA_FILE_KEY} in $${TF_BUCKET_NAME}" && read ans && [ $${ans:-N} = y ] && \
 	aws s3 cp sample_data/pdq.csv s3://$${TF_BUCKET_NAME}/$${TF_PDQ_DATA_FILE_KEY}
 
 dev_upload_test_content:
 	@TF_BUCKET_NAME=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json bucket_name | tr -d '"') && \
 	TF_IMAGE_FOLDER_KEY=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json image_folder_key | tr -d '"') && \
-	echo "Are you sure? This will upload an images to $${TF_IMAGE_FOLDER_KEY} in s3 and will likely trigger the hasher (and mactcher) [y/N] " && read ans && [ $${ans:-N} = y ] && \
+	echo "Upload test photo? [y/N]  This will upload an images to $${TF_IMAGE_FOLDER_KEY} in s3 and will likely trigger the hasher (and matcher)" && read ans && [ $${ans:-N} = y ] && \
 	aws s3 cp tests/data/b.jpg s3://$${TF_BUCKET_NAME}/$${TF_IMAGE_FOLDER_KEY}
 
 dev_upload_test_data: dev_upload_test_signal dev_upload_test_content
