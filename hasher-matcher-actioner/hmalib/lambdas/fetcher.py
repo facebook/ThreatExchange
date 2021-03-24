@@ -151,7 +151,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
     ) -> None:
         super().__init__(privacy_group)
         self.app_id = app_id
-        self._cached_state = None
+        self._cached_state: t.Optional[t.Dict] = None
         self.s3_bucket = s3_bucket
         self.s3_key_prefix = s3_key_prefix
 
