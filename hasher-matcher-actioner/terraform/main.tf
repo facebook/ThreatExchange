@@ -19,6 +19,7 @@ locals {
   common_tags = {
     "HMAPrefix" = var.prefix
   }
+  pdq_data_file_key = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
 }
 
 module "hashing_data" {
@@ -50,7 +51,7 @@ module "pdq_signals" {
   }
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_data_file_key  = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
+    pdq_data_file_key  = local.pdq_data_file_key
     notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
   }
   index_data_storage = {
@@ -76,7 +77,7 @@ module "fetcher" {
   }
   threat_exchange_data = {
     bucket_name       = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_data_file_key = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
+    pdq_data_file_key = local.pdq_data_file_key
   }
 
   log_retention_in_days = var.log_retention_in_days
