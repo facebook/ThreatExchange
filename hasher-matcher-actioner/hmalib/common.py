@@ -3,11 +3,24 @@
 import logging
 
 
+class PrintLogger:
+    """
+    Custom logger that just prints
+    """
+
+    def info(self, log_string):
+        print(log_string)
+
+
 def get_logger(name=__name__, level=logging.INFO):
     """
     This pattern prevents creates implicitly creating a root logger by creating the sub-logger named __name__
     Also by default sets level to INFO
     """
+
+    if name == "print" and level == logging.INFO:
+        return PrintLogger()
+
     logger = logging.getLogger(name)
     logger.setLevel(level)
     return logger
