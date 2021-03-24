@@ -244,7 +244,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         return self._cached_state
 
     def _store_state(self, contents: t.Iterable["CliIndicatorSerialization"]):
-        row_by_type = collections.defaultdict(list)
+        row_by_type: t.DefaultDict = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
         # Discard all updates except PDQ
@@ -256,7 +256,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             logger.info("%d rows stored for %d", len(items), self.privacy_group)
 
     def _apply_updates_impl(self, delta: tu.ThreatUpdatesDelta) -> None:
-        state = {}
+        state: t.Dict = {}
         if delta.start > 0:
             state = self.load_state()
         for update in delta:
