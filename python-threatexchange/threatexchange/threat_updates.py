@@ -10,6 +10,7 @@ import os
 import pathlib
 import time
 import typing as t
+from dataclasses import dataclass
 
 from .api import ThreatExchangeAPI
 from .dataset import Dataset
@@ -54,12 +55,11 @@ class ThreatUpdateSerialization:
         raise NotImplementedError
 
 
+@dataclass
 class ThreatUpdateJSON(ThreatUpdateSerialization):
     """A thin wrapper around the /threat_updates API return"""
 
-    def __init__(self, raw_json: t.Dict[str, t.Any]):
-        super().__init__()
-        self.raw_json = raw_json
+    raw_json: t.Dict[str, t.Any]
 
     @property
     def should_delete(self) -> bool:
