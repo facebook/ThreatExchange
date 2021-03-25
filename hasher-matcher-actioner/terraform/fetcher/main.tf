@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "fetcher" {
 resource "aws_cloudwatch_event_rule" "recurring_fetch" {
   name                = "${var.prefix}RecurringThreatExchangeFetch"
   description         = "Fetch updates from ThreatExchange on a regular cadence"
-  schedule_expression = "rate(${var.fetch_frequency_min} minutes)"
+  schedule_expression = "rate(${var.fetch_frequency})"
   role_arn            = aws_iam_role.fetcher_trigger.arn
 }
 
