@@ -46,3 +46,9 @@ variable "te_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "threat_exchange_collabs" {
+  description = "Collaborations to read from ThreatExchange"
+  type = map(string)
+  default = {}
+}
