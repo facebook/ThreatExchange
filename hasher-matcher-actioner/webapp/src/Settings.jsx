@@ -9,6 +9,8 @@ import Row from 'react-bootstrap/Row';
 import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 import ListGroup from 'react-bootstrap/ListGroup';
+import Button from 'react-bootstrap/Button';
+import Badge from 'react-bootstrap/Badge';
 
 export default function Settings() {
   return (
@@ -51,10 +53,16 @@ function DataSets() {
             <Card.Body className="text-left">
               <Card.Text>
                 <h5>Labels</h5>
-                <ul>
-                  <li>cat</li>
-                  <li>delete</li>
-                </ul>
+                <div>
+                  <Badge pill variant="primary">
+                    cat
+                  </Badge>
+                </div>
+                <div>
+                  <Badge pill variant="primary">
+                    delete
+                  </Badge>
+                </div>
                 <h5>Matching</h5>
                 <ul>
                   <li>PDQ: Distance 31</li>
@@ -70,14 +78,14 @@ function DataSets() {
                 </ul>
               </ListGroup.Item>
             </ListGroup>
-            <a href="#todo" className="btn btn-primary">
+            <Button variant="primary" block>
               Edit
-            </a>
+            </Button>
           </Card>
         </Col>
-        <div className="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 mb-4">
+        <Col lg={4} sm={6} xs={12} className="mb-4">
           <div className="card text-center">
-            <div className="card-header text-white bg-success">
+            <div className="card-header text-white bg-secondary">
               <h4 className="mb-0">Dog Media</h4>
             </div>
             <div className="card-body text-left">
@@ -94,11 +102,11 @@ function DataSets() {
                 </ul>
               </p>
             </div>
-            <a href="#todo" className="btn btn-primary">
+            <Button variant="primary" block>
               Edit
-            </a>
+            </Button>
           </div>
-        </div>
+        </Col>
       </Row>
     </>
   );
@@ -116,29 +124,34 @@ function DataSet() {
           <Card.Body className="text-left">
             <Card.Text>
               <h5>Labels</h5>
-              <ul>
-                <li>cat</li>
-                <li>unverified</li>
-                <li>*low_precision</li>
-              </ul>
+              <Badge pill variant="primary">
+                cat
+              </Badge>{' '}
+              <Badge pill variant="primary">
+                unverified
+              </Badge>{' '}
+              <Badge pill variant="info">
+                low_precision
+              </Badge>
               <h5>Matching</h5>
-              <ul>
-                <li>PDQ: Distance 17</li>
-              </ul>
+              <div>
+                <Badge variant="success">PDQ</Badge> Distance 17
+              </div>
             </Card.Text>
           </Card.Body>
           <ListGroup variant="flush" className="text-left">
             <ListGroup.Item>
               <h5>Shared From: Cat Dataset</h5>
               <h6>Label Map</h6>
-              <ul>
-                <li>low_precision → *</li>
-              </ul>
+              {'low_precision → '}
+              <Badge pill variant="info">
+                low_precision
+              </Badge>
             </ListGroup.Item>
           </ListGroup>
-          <a href="#todo" className="btn btn-primary">
+          <Button variant="primary" block>
             Edit
-          </a>
+          </Button>
         </Card>
       </Col>
     </>
@@ -180,9 +193,9 @@ function SignalSource() {
                 </div>
               </Card.Text>
             </Card.Body>
-            <a href="#todo" className="btn btn-primary">
+            <Button variant="primary" block>
               Edit
-            </a>
+            </Button>
           </Card>
         </Col>
       </Row>
