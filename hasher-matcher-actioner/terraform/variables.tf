@@ -63,3 +63,9 @@ variable "fetch_frequency" {
   type        = string
   default     = "15 minutes"
 }
+
+variable "threat_exchange_collabs" {
+  description = "Collaborations to read from ThreatExchange"
+  type = map(string)
+  default = {}
+}
