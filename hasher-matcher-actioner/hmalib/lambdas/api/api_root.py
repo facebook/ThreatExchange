@@ -188,8 +188,12 @@ def gen_hash(content_id: str) -> t.Dict:
     record = PipelinePDQHashRecord.get_from_content_id(
         table, f"{IMAGE_FOLDER_KEY}{content_id}"
     )
-    return {
-        "content_id": record.content_id,
-        "content_hash": record.content_hash,
-        "updated_at": record.updated_at.isoformat(),
-    }
+    return (
+        {
+            "content_id": record.content_id,
+            "content_hash": record.content_hash,
+            "updated_at": record.updated_at.isoformat(),
+        }
+        if record
+        else {}
+    )
