@@ -47,8 +47,8 @@ variable "te_api_token" {
   sensitive   = true
 }
 
-variable "fetch_frequency_min" {
-  description = "How many minutes to wait between queries to ThreatExchange for updates"
-  type        = number
-  default     = 15
+variable "fetch_frequency" {
+  description = "How long to wait between calls to ThreatExcahnge. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+  type        = string
+  default     = "15 minutes"
 }

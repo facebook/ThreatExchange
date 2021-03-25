@@ -84,7 +84,7 @@ module "fetcher" {
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
-  fetch_frequency_min   = var.fetch_frequency_min
+  fetch_frequency       = var.fetch_frequency
 }
 
 resource "aws_sns_topic" "matches" {
