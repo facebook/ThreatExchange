@@ -83,7 +83,6 @@ module "fetcher" {
   }
   collab_file = var.collab_file
 
-  collab_file           = var.collab_file
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   fetch_frequency       = var.fetch_frequency
