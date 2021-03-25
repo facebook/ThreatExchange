@@ -84,7 +84,7 @@ data "aws_iam_policy_document" "pdq_indexer" {
     effect    = "Allow"
     actions   = ["s3:GetObject"]
     resources = [
-      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.pdq_data_file_key}",
+      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}",
     ]
   }
   statement {
