@@ -50,7 +50,6 @@ variable "log_retention_in_days" {
 variable "fetch_frequency_min" {
   description = "How many minutes to wait between queries to ThreatExchange for updates"
   type        = number
-  default     = 15
 }
 
 variable "te_api_token" {

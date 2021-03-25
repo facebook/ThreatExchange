@@ -46,3 +46,9 @@ variable "te_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "fetch_frequency_min" {
+  description = "How many minutes to wait between queries to ThreatExchange for updates"
+  type        = number
+  default     = 15
+}
