@@ -218,7 +218,7 @@ resource "aws_dynamodb_table" "threatexchange_config" {
   )
 
   provisioner "local-exec" {
-    command = "bash populate_config_db.sh ${aws_dynamodb_table.threatexchange_config.name}"
+    command = "bash populate_config_db.sh ${var.collab_file} ${aws_dynamodb_table.threatexchange_config.name}"
   }
 }
 

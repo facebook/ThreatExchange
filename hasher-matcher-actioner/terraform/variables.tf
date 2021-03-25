@@ -47,8 +47,8 @@ variable "te_api_token" {
   sensitive   = true
 }
 
-variable "threat_exchange_collabs" {
-  description = "Collaborations to read from ThreatExchange"
-  type = map(string)
-  default = {}
+variable "collab_file" {
+  description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
+  type = string
+  default = "collabs_example.json"
 }
