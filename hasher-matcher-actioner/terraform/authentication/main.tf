@@ -44,11 +44,6 @@ resource "aws_cognito_user_pool_domain" "webapp_user_pool_domain" {
   user_pool_id = aws_cognito_user_pool.webapp_and_api_user_pool.id
 }
 
-# Initially the user pool app client is created with local developers in mind. If a
-# cloudfront distribution is created (triggerd by a variable value specified in
-# terraform.tfvars) then the callback and sign out (logout) urls fields are set after
-# the cloudfront distribution is created.
-
 resource "aws_cognito_user_pool_client" "webapp_and_api_user_pool_client" {
   name                                 = "${var.prefix}-hma-user-pool-client"
   user_pool_id                         = aws_cognito_user_pool.webapp_and_api_user_pool.id
@@ -57,8 +52,8 @@ resource "aws_cognito_user_pool_client" "webapp_and_api_user_pool_client" {
   explicit_auth_flows                  = ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
   allowed_oauth_scopes                 = ["openid"]
   allowed_oauth_flows                  = ["code"]
-  callback_urls                        = ["https://localhost:3000"]
-  logout_urls                          = ["https://localhost:3000"]
+  callback_urls                        = var.use_cloudfront_distribution_url ? [var.cloudfront_distribution_url] : ["https://localhost:3000"]
+  logout_urls                          = var.use_cloudfront_distribution_url ? [var.cloudfront_distribution_url] : ["https://localhost:3000"]
   supported_identity_providers         = ["COGNITO"]
   prevent_user_existence_errors        = "ENABLED"
   token_validity_units {

@@ -130,15 +130,26 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
 
-# Set up Cognito for authenticating api and webapp
+# Set up webapp resources (s3 bucket and cloudfront distribution)
 
-module "authentication" {
-  source       = "./authentication"
-  prefix       = var.prefix
-  organization = var.organization
+module "webapp" {
+  source                          = "./webapp"
+  prefix                          = var.prefix
+  organization                    = var.organization
+  include_cloudfront_distribution = var.include_cloudfront_distribution
 }
 
-# Connect Hashing Data to API
+# Set up Cognito for authenticating webapp and api
+
+module "authentication" {
+  source                          = "./authentication"
+  prefix                          = var.prefix
+  organization                    = var.organization
+  use_cloudfront_distribution_url = var.include_cloudfront_distribution
+  cloudfront_distribution_url     = "https://${module.webapp.cloudfront_distribution_domain_name}"
+}
+
+# Set up api
 
 module "api" {
   source                    = "./api"
@@ -165,28 +176,32 @@ module "api" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
 }
 
+# Build and deploy webapp
+
 resource "local_file" "webapp_env" {
+  depends_on = [
+    module.api.invoke_url,
+    module.authentication.webapp_and_api_user_pool_id,
+    module.authentication.webapp_and_api_user_pool_client_id
+  ]
   sensitive_content = "REACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
   filename          = "../webapp/.env"
 }
 
-module "webapp" {
-  source                          = "./webapp"
-  prefix                          = var.prefix
-  organization                    = var.organization
-  include_cloudfront_distribution = var.include_cloudfront_distribution
-}
-
-# Due to a dependency cycle, the callback urls and sign out (logout) urls cannot be set
-# when the user pool client is created. The null resource resource below conditionally
-# fixes those up if a cloudfront distribution was created.
-
-resource "null_resource" "apply_cloudfront_domain_name_to_user_pool_client" {
-  count = var.include_cloudfront_distribution ? 1 : 0
+resource "null_resource" "build_and_deploy_webapp" {
   depends_on = [
-    module.webapp.cloudfront_distribution_domain_name
+    module.webapp.s3_bucket_name,
+    local_file.webapp_env
   ]
   provisioner "local-exec" {
-    command = "aws cognito-idp update-user-pool-client --user-pool-id ${module.authentication.webapp_and_api_user_pool_id} --client-id ${module.authentication.webapp_and_api_user_pool_client_id} --callback-urls https://${module.webapp.cloudfront_distribution_domain_name} --logout-urls https://${module.webapp.cloudfront_distribution_domain_name} --supported-identity-providers COGNITO --allowed-o-auth-flows code --allowed-o-auth-flows-user-pool-client --allowed-o-auth-scopes openid --no-cli-pager"
+    command     = "npm install --silent"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
+    command     = "npm run build"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
+    command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl public-read"
   }
 }

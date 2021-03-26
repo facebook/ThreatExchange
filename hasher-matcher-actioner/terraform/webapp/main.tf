@@ -13,17 +13,6 @@ resource "aws_s3_bucket" "webapp" {
     index_document = "index.html"
     error_document = "index.html"
   }
-  provisioner "local-exec" {
-    command     = "npm install --silent"
-    working_dir = "../webapp"
-  }
-  provisioner "local-exec" {
-    command     = "npm run build"
-    working_dir = "../webapp"
-  }
-  provisioner "local-exec" {
-    command = "aws s3 sync ../webapp/build s3://${var.organization}-${var.prefix}-hma-webapp --acl public-read"
-  }
   # For development, this makes cleanup easier
   # If deploying for real, this should not be used
   # Could also be set with a variable
