@@ -18,7 +18,7 @@ def get_logger(name=__name__, level=logging.INFO):
     Also by default sets level to INFO
     """
 
-    if name == "print" and level == logging.INFO:
+    if name == "print":
         return PrintLogger()
 
     logger = logging.getLogger(name)

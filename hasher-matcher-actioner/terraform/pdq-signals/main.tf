@@ -273,6 +273,7 @@ resource "aws_lambda_function" "pdq_matcher" {
       PDQ_INDEX_KEY         = local.pdq_index_key
       DYNAMODB_TABLE        = var.datastore.name
       MEASURE_PERFORMANCE   = var.measure_performance ? "True" : "False"
+      METRICS_NAMESPACE     = var.metrics_namespace
     }
   }
   tags = merge(
