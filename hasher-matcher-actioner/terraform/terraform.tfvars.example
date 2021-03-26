@@ -2,6 +2,7 @@
 
 hma_lambda_docker_uri = # DOCKER_IMAGE_URI
 prefix = # ENVIRONMENT_PREFIX
+organization = # a name or acronym for your organization (use only lower case alpha a-z, and, optionally, hyphens)
 log_retention_in_days = # DAYS to retain logs
 include_cloudfront_distribution = true
 te_api_token = "<threat-exchange-api-token>"

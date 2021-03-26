@@ -133,8 +133,9 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
 # Set up Cognito for authenticating api and webapp
 
 module "authentication" {
-  source = "./authentication"
-  prefix = var.prefix
+  source       = "./authentication"
+  prefix       = var.prefix
+  organization = var.organization
 }
 
 # Connect Hashing Data to API
@@ -170,7 +171,22 @@ resource "local_file" "webapp_env" {
 }
 
 module "webapp" {
-  include_cloudfront_distribution = var.include_cloudfront_distribution
-  prefix                          = var.prefix
   source                          = "./webapp"
+  prefix                          = var.prefix
+  organization                    = var.organization
+  include_cloudfront_distribution = var.include_cloudfront_distribution
+}
+
+# Due to a dependency cycle, the callback urls and sign out (logout) urls cannot be set
+# when the user pool client is created. The null resource resource below conditionally
+# fixes those up if a cloudfront distribution was created.
+
+resource "null_resource" "apply_cloudfront_domain_name_to_user_pool_client" {
+  count = var.include_cloudfront_distribution ? 1 : 0
+  depends_on = [
+    module.webapp.cloudfront_distribution_domain_name
+  ]
+  provisioner "local-exec" {
+    command = "aws cognito-idp update-user-pool-client --user-pool-id ${module.authentication.webapp_and_api_user_pool_id} --client-id ${module.authentication.webapp_and_api_user_pool_client_id} --callback-urls https://${module.webapp.cloudfront_distribution_domain_name} --logout-urls https://${module.webapp.cloudfront_distribution_domain_name} --supported-identity-providers COGNITO --allowed-o-auth-flows code --allowed-o-auth-flows-user-pool-client --allowed-o-auth-scopes openid --no-cli-pager"
+  }
 }

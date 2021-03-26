@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 resource "aws_s3_bucket" "webapp" {
-  bucket = "${var.prefix}-hma-webapp"
+  bucket = "${var.organization}-${var.prefix}-hma-webapp"
   acl    = "public-read"
   tags = merge(
     var.additional_tags,
@@ -22,7 +22,7 @@ resource "aws_s3_bucket" "webapp" {
     working_dir = "../webapp"
   }
   provisioner "local-exec" {
-    command = "aws s3 sync ../webapp/build s3://${var.prefix}-hma-webapp --acl public-read"
+    command = "aws s3 sync ../webapp/build s3://${var.organization}-${var.prefix}-hma-webapp --acl public-read"
   }
   # For development, this makes cleanup easier
   # If deploying for real, this should not be used
@@ -39,7 +39,7 @@ resource "aws_cloudfront_distribution" "webapp" {
   is_ipv6_enabled     = true
 
   origin {
-    origin_id   = "${var.prefix}-hma-webapp-origin"
+    origin_id   = "${var.organization}-${var.prefix}-hma-webapp-origin"
     domain_name = aws_s3_bucket.webapp.website_endpoint
 
     custom_origin_config {
@@ -57,7 +57,7 @@ resource "aws_cloudfront_distribution" "webapp" {
     default_ttl            = 300
     max_ttl                = 1200
     min_ttl                = 0
-    target_origin_id       = "${var.prefix}-hma-webapp-origin"
+    target_origin_id       = "${var.organization}-${var.prefix}-hma-webapp-origin"
     viewer_protocol_policy = "allow-all"
     forwarded_values {
       query_string = false
