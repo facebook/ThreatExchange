@@ -5,3 +5,4 @@ prefix = # ENVIRONMENT_PREFIX
 log_retention_in_days = # DAYS to retain logs
 include_cloudfront_distribution = true
 te_api_token = "<threat-exchange-api-token>"
+collab_file = "collabs_example.json"

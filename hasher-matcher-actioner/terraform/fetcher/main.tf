@@ -201,7 +201,7 @@ resource "aws_iam_role_policy_attachment" "fetcher_trigger" {
 ### Config storage ###
 
 resource "aws_dynamodb_table" "threatexchange_config" {
-  name         = "${var.prefix}-ThreatExchangeConfig"
+  name         = "${var.prefix}ThreatExchangeConfig"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "Name"
 
@@ -216,6 +216,10 @@ resource "aws_dynamodb_table" "threatexchange_config" {
       Name = "ThreatExchangeConfig"
     }
   )
+
+  provisioner "local-exec" {
+    command = "bash populate_config_db.sh ${var.collab_file} ${aws_dynamodb_table.threatexchange_config.name}"
+  }
 }
 
 ### ThreatExchange API Token Secret ###

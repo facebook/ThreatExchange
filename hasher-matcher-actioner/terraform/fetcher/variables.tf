@@ -35,7 +35,6 @@ variable "threat_exchange_data" {
   })
 }
 
-
 variable "additional_tags" {
   description = "Additional resource tags"
   type        = map(string)
@@ -56,4 +55,9 @@ variable "te_api_token" {
   description = "Token to read data from ThreatExchange"
   type        = string
   sensitive   = true
+}
+
+variable "collab_file" {
+  description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
+  type = string
 }

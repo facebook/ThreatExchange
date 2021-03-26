@@ -47,6 +47,12 @@ variable "te_api_token" {
   sensitive   = true
 }
 
+variable "collab_file" {
+  description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
+  type = string
+  default = "collabs_example.json"
+}
+
 variable "fetch_frequency" {
   description = "How long to wait between calls to ThreatExcahnge. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
   type        = string

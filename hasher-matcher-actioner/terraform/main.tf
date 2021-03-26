@@ -81,6 +81,7 @@ module "fetcher" {
     bucket_name       = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_data_file_key = local.pdq_data_file_key
   }
+  collab_file = var.collab_file
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
