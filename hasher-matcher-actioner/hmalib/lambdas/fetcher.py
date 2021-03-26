@@ -35,8 +35,8 @@ from threatexchange.signal_type.pdq import PdqSignal
 
 logger = get_logger(__name__)
 
-dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-s3 = boto3.resource("s3", region_name="us-east-1")
+dynamodb = boto3.resource("dynamodb")
+s3 = boto3.resource("s3")
 
 
 @dataclass
@@ -46,7 +46,7 @@ class FetcherConfig:
     """
 
     s3_state_bucket: str
-    s3_key_prefix: str
+    s3_state_key_prefix: str
     collab_config_table: str
 
     @classmethod
@@ -54,7 +54,7 @@ class FetcherConfig:
     def get(cls):
         return cls(
             s3_state_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            s3_key_prefix=os.environ["THREAT_EXCHANGE_STATE_KEY_PREFIX"],
+            s3_state_key_prefix=os.environ["THREAT_EXCHANGE_STATE_KEY_PREFIX"],
             collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
         )
 
@@ -98,7 +98,7 @@ def lambda_handler(event, context):
             privacy_group,
             api.app_id,
             te_data_bucket,
-            config.s3_key_prefix,
+            config.s3_state_key_prefix,
         )
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
@@ -290,13 +290,6 @@ def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     FetcherConfig.get.cache_clear()  # Just in case
-    os.environ.setdefault(
-        "THREAT_EXCHANGE_DATA_BUCKET_NAME",
-        "jeberl-hashing-data20210324205948477200000003",
-    )
-    os.environ.setdefault(
-        "THREAT_EXCHANGE_CONFIG_DYNAMODB", "jeberl-ThreatExchangeConfig"
-    )
     FetcherConfig.get()
 
     # This will only kinda work for so long - eventually will

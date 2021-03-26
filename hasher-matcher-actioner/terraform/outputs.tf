@@ -18,4 +18,3 @@ output "image_folder_key" {
 output "prefix" {
   value = var.prefix
 }
-

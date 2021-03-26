@@ -21,16 +21,11 @@ s3_client = boto3.client("s3")
 
 PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
 
-# THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
-# THREAT_EXCHANGE_STATE_KEY_PREFIX = os.environ["THREAT_EXCHANGE_STATE_KEY_PREFIX"]
-THREAT_EXCHANGE_DATA_BUCKET_NAME = "jeberl-hashing-data20210324205948477200000003"
-THREAT_EXCHANGE_STATE_KEY_PREFIX = "threat_exchange_data"
-THREAT_EXCHANGE_PDQ_KEY_SUFFIX = ".pdq.te"
-
-# INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
-# PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
-INDEXES_BUCKET_NAME = "jeberl-hashing-data20210324205948477200000003"
-PDQ_INDEX_KEY = "index/pdq_hashes.index"
+THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
+THREAT_EXCHANGE_STATE_KEY_PREFIX = os.environ["THREAT_EXCHANGE_STATE_KEY_PREFIX"]
+THREAT_EXCHANGE_PDQ_KEY_SUFFIX = os.environ["THREAT_EXCHANGE_PDQ_KEY_SUFFIX"]
+INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
+PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
 
 HashRowType = t.Tuple[str, t.Dict[str, t.Any]]
 S3FileType = t.Dict[str, t.Any]
@@ -188,22 +183,6 @@ if __name__ == "__main__":
                                 "key": THREAT_EXCHANGE_STATE_KEY_PREFIX
                                 + str(privacy_group_id)
                                 + THREAT_EXCHANGE_PDQ_KEY_SUFFIX
-                            },
-                        }
-                    }
-                ]
-            }
-        ]
-    }
-    data_not_updated_event = {
-        "Records": [
-            {
-                "Records": [
-                    {
-                        "s3": {
-                            "bucket": {"name": THREAT_EXCHANGE_DATA_BUCKET_NAME},
-                            "object": {
-                                "key": "some_other_file.txt"
                             },
                         }
                     }

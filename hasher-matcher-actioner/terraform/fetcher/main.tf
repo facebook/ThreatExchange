@@ -38,8 +38,7 @@ resource "aws_lambda_function" "fetcher" {
     variables = {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
       THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
-      THREAT_EXCHANGE_PDQ_DATA_KEY     = var.threat_exchange_data.pdq_data_file_key
-
+      THREAT_EXCHANGE_STATE_KEY_PREFIX = var.threat_exchange_data.state_key_prefix
     }
   }
   tags = merge(
