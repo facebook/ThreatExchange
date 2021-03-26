@@ -135,14 +135,26 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
 
-# Set up Cognito for authenticating api and webapp
+# Set up webapp resources (s3 bucket and cloudfront distribution)
 
-module "authentication" {
-  source = "./authentication"
-  prefix = var.prefix
+module "webapp" {
+  source                          = "./webapp"
+  prefix                          = var.prefix
+  organization                    = var.organization
+  include_cloudfront_distribution = var.include_cloudfront_distribution
 }
 
-# Connect Hashing Data to API
+# Set up Cognito for authenticating webapp and api
+
+module "authentication" {
+  source                          = "./authentication"
+  prefix                          = var.prefix
+  organization                    = var.organization
+  use_cloudfront_distribution_url = var.include_cloudfront_distribution
+  cloudfront_distribution_url     = "https://${module.webapp.cloudfront_distribution_domain_name}"
+}
+
+# Set up api
 
 module "api" {
   source                    = "./api"
@@ -169,13 +181,32 @@ module "api" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
 }
 
+# Build and deploy webapp
+
 resource "local_file" "webapp_env" {
+  depends_on = [
+    module.api.invoke_url,
+    module.authentication.webapp_and_api_user_pool_id,
+    module.authentication.webapp_and_api_user_pool_client_id
+  ]
   sensitive_content = "REACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
   filename          = "../webapp/.env"
 }
 
-module "webapp" {
-  include_cloudfront_distribution = var.include_cloudfront_distribution
-  prefix                          = var.prefix
-  source                          = "./webapp"
+resource "null_resource" "build_and_deploy_webapp" {
+  depends_on = [
+    module.webapp.s3_bucket_name,
+    local_file.webapp_env
+  ]
+  provisioner "local-exec" {
+    command     = "npm install --silent"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
+    command     = "npm run build"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
+    command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl public-read"
+  }
 }

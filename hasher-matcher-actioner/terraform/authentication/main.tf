@@ -39,16 +39,21 @@ resource "aws_cognito_user_pool" "webapp_and_api_user_pool" {
   }
 }
 
+resource "aws_cognito_user_pool_domain" "webapp_user_pool_domain" {
+  domain       = "${var.organization}-${var.prefix}-hma-webapp"
+  user_pool_id = aws_cognito_user_pool.webapp_and_api_user_pool.id
+}
+
 resource "aws_cognito_user_pool_client" "webapp_and_api_user_pool_client" {
   name                                 = "${var.prefix}-hma-user-pool-client"
   user_pool_id                         = aws_cognito_user_pool.webapp_and_api_user_pool.id
   generate_secret                      = false
   allowed_oauth_flows_user_pool_client = true
-  explicit_auth_flows                  = ["ALLOW_CUSTOM_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  explicit_auth_flows                  = ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
   allowed_oauth_scopes                 = ["openid"]
   allowed_oauth_flows                  = ["code"]
-  callback_urls                        = ["https://localhost:3000"]
-  logout_urls                          = ["https://localhost:3000"]
+  callback_urls                        = var.use_cloudfront_distribution_url ? [var.cloudfront_distribution_url] : ["https://localhost:3000"]
+  logout_urls                          = var.use_cloudfront_distribution_url ? [var.cloudfront_distribution_url] : ["https://localhost:3000"]
   supported_identity_providers         = ["COGNITO"]
   prevent_user_existence_errors        = "ENABLED"
   token_validity_units {

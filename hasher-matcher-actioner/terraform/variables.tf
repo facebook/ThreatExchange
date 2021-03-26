@@ -11,6 +11,11 @@ variable "prefix" {
   default     = "hma"
 }
 
+variable "organization" {
+  description = "The name / acronym to use for resource names that must be globally unique (use only lower case alpha a-z, and, optionally, hyphens)"
+  type        = string
+}
+
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
