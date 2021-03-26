@@ -69,12 +69,14 @@ module "fetcher" {
   source       = "./fetcher"
   prefix       = var.prefix
   te_api_token = var.te_api_token
+
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
       fetcher = "hmalib.lambdas.fetcher.lambda_handler"
     }
   }
+
   threat_exchange_data = {
     bucket_name       = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_data_file_key = local.pdq_data_file_key
@@ -82,6 +84,7 @@ module "fetcher" {
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
+  fetch_frequency       = var.fetch_frequency
 }
 
 resource "aws_sns_topic" "matches" {

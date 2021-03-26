@@ -46,3 +46,9 @@ variable "te_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "fetch_frequency" {
+  description = "How long to wait between calls to ThreatExcahnge. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+  type        = string
+  default     = "15 minutes"
+}
