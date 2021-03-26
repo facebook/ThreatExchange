@@ -51,6 +51,7 @@ variable "threat_exchange_data" {
     bucket_name        = string
     state_key_prefix   = string
     notification_topic = string
+    pdq_key_suffix     = string
   })
 }
 
