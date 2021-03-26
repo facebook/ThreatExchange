@@ -75,145 +75,90 @@ export default function Matches() {
           </form>
         </div>
       </Collapse>
-      <div className="row mt-3">
-        <div className="col-xs-12">
-          <table className="table table-hover table-sm">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Hash</th>
-                <th>Matched On</th>
-                <th>Reaction</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="align-middle">
-                <td className="align-middle">file1.jpg</td>
-                <td className="align-middle">
-                  8a551807446ba95400eb032ba8fe51c3857eaaa5570cea70bb87775cbdc1eebe
-                </td>
-                <td className="align-middle">5 Feb 2021 1:47pm</td>
-                <td className="align-middle">Seen</td>
-                <td className="align-middle">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm"
-                    onClick={() => setShowModal(true)}>
-                    Details
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="align-middle">file1.jpg</td>
-                <td className="align-middle">
-                  652fe95ab4ae5129c07e92da787e525ab44b736ea5ab5ce4485ba344158b8e86
-                </td>
-                <td className="align-middle">5 Feb 2021 1:44pm</td>
-                <td className="align-middle">Seen</td>
-                <td className="align-middle">
-                  <Link
-                    to="/matches/file1.jpg"
-                    className="btn btn-outline-primary btn-sm">
-                    Details
-                  </Link>
-                </td>
-              </tr>
-              <tr>
-                <td className="align-middle">file2.jpg</td>
-                <td className="align-middle">
-                  652fe95ab4ae5129c07e92da787e525ab44b736ea5ab5ce4485ba344158b8e86
-                </td>
-                <td className="align-middle">5 Feb 2021 1:44pm</td>
-                <td className="align-middle">Positive</td>
-                <td className="align-middle">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm">
-                    Details
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="align-middle">file3.jpg</td>
-                <td className="align-middle">
-                  652fe95ab4ae5129c07e92da787e525ab44b736ea5ab5ce4485ba344158b8e86
-                </td>
-                <td className="align-middle">5 Feb 2021 1:44pm</td>
-                <td className="align-middle">Positive</td>
-                <td className="align-middle">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm">
-                    Details
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="align-middle">file4.jpg</td>
-                <td className="align-middle">
-                  652fe95ab4ae5129c07e92da787e525ab44b736ea5ab5ce4485ba344158b8e86
-                </td>
-                <td className="align-middle">5 Feb 2021 1:44pm</td>
-                <td className="align-middle">False Positive</td>
-                <td className="align-middle">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm">
-                    Details
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="align-middle">file5.jpg</td>
-                <td className="align-middle">
-                  652fe95ab4ae5129c07e92da787e525ab44b736ea5ab5ce4485ba344158b8e86
-                </td>
-                <td className="align-middle">5 Feb 2021 1:44pm</td>
-                <td className="align-middle">Seen</td>
-                <td className="align-middle">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm">
-                    Details
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="align-middle">file6.jpg</td>
-                <td className="align-middle">
-                  652fe95ab4ae5129c07e92da787e525ab44b736ea5ab5ce4485ba344158b8e86
-                </td>
-                <td className="align-middle">5 Feb 2021 1:44pm</td>
-                <td className="align-middle">Positive</td>
-                <td className="align-middle">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm">
-                    Details
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td className="align-middle">file7.jpg</td>
-                <td className="align-middle">
-                  652fe95ab4ae5129c07e92da787e525ab44b736ea5ab5ce4485ba344158b8e86
-                </td>
-                <td className="align-middle">5 Feb 2021 1:44pm</td>
-                <td className="align-middle">Seen</td>
-                <td className="align-middle">
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary btn-sm">
-                    Details
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <MatchList />
+      <MatchDetailsModal show={showModal} onHide={() => setShowModal(false)} />
+    </>
+  );
+}
+
+function MatchList() {
+  const [matchesData, setMatchesData] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    fetchMatches().then(matches => setMatchesData(matches.matches));
+    // .catch(err => console.log(err));
+  }, []);
+
+  function formatTimestamp(timestamp) {
+    return new Intl.DateTimeFormat('defualt', {
+      day: 'numeric',
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).format(new Date(timestamp));
+  }
+
+  return (
+    <>
+      <Spinner hidden={matchesData !== null} animation="border" role="status">
+        <span className="sr-only">Loading...</span>
+      </Spinner>
+      <Collapse in={matchesData !== null}>
+        <div className="row mt-3">
+          <div className="col-xs-12">
+            <table className="table table-hover table-sm">
+              <thead>
+                <tr>
+                  <th>Content</th>
+                  <th>Matched Signal ID</th>
+                  <th>Source</th>
+                  <th>Last Updated</th>
+                  <th>Reaction</th>
+                  <th>
+                    {/* for now have this at the header button so we still have an example of a model  */}
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={() => setShowModal(true)}>
+                      Details
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {matchesData !== null && matchesData.length ? (
+                  matchesData.map(match => (
+                    <tr className="align-middle" key={match.content_id}>
+                      <td className="align-middle">{match.content_id}</td>
+                      <td className="align-middle">{match.signal_id}</td>
+                      <td className="align-middle">{match.signal_source}</td>
+                      <td className="align-middle">
+                        {formatTimestamp(match.updated_at)}
+                      </td>
+                      <td className="align-middle">{match.reactions}</td>
+                      <td className="align-middle">
+                        <Link
+                          to="/matches/file1.jpg"
+                          className="btn btn-outline-primary btn-sm">
+                          Details
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5}>No Matches Found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-      <MatchList2 />
+      </Collapse>
       <MatchDetailsModal show={showModal} onHide={() => setShowModal(false)} />
     </>
   );
@@ -247,66 +192,5 @@ function MatchDetailsModal(props) {
         <Button onClick={onHide}>Close</Button>
       </Modal.Footer>
     </Modal>
-  );
-}
-
-function MatchList2() {
-  const [matchesData, setMatchesData] = useState(null);
-
-  useEffect(() => {
-    fetchMatches().then(matches => setMatchesData(matches.matches));
-    // .catch(err => console.log(err));
-  }, []);
-
-  return (
-    <>
-      <Spinner hidden={matchesData !== null} animation="border" role="status">
-        <span className="sr-only">Loading...</span>
-      </Spinner>
-      <Collapse in={matchesData !== null}>
-        <div className="row mt-3">
-          <div className="col-xs-12">
-            <table className="table table-hover table-sm">
-              <thead>
-                <tr>
-                  <th>Image</th>
-                  <th>Hash</th>
-                  <th>Matched On</th>
-                  <th>Reaction</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {matchesData !== null && matchesData.length ? (
-                  matchesData.map(match => {
-                    const imgKey = Object.keys(match)[0];
-                    const teVal = match[imgKey];
-                    return (
-                      <tr className="align-middle" key={imgKey}>
-                        <td className="align-middle">{imgKey}</td>
-                        <td className="align-middle">{teVal}</td>
-                        <td className="align-middle">TODO</td>
-                        <td className="align-middle">TODO</td>
-                        <td className="align-middle">
-                          <Link
-                            to="/matches/file1.jpg"
-                            className="btn btn-outline-primary btn-sm">
-                            Details
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={5}>No Matches Found.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </Collapse>
-    </>
   );
 }

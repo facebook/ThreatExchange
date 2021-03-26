@@ -74,8 +74,8 @@ resource "aws_iam_role" "api_root" {
 data "aws_iam_policy_document" "api_root" {
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:GetItem", "dynamodb:Scan"]
-    resources = [var.datastore.arn]
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]
+    resources = ["${var.datastore.arn}*"]
   }
   statement {
     effect    = "Allow"
