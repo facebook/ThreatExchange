@@ -16,7 +16,7 @@ from threatexchange.signal_type.pdq_index import PDQIndex
 from hmalib import metrics
 from hmalib.common import get_logger
 
-logger = get_logger("print")
+logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 
 PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
@@ -142,8 +142,6 @@ def lambda_handler(event, context):
     with metrics.timer(metrics.names.pdq_indexer_lambda.parse_datafiles):
         logger.info("Parsing PDQ Hash files")
         pdq_data = [parse_pdq_file(**pdq_data_file) for pdq_data_file in pdq_data_files]
-        print("length 0 = ", len(pdq_data[0]))
-        print("length 1 = ", len(pdq_data[1]))
 
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.merge_datafiles):
