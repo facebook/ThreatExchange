@@ -45,11 +45,12 @@ class names:
         download_file = f"{_prefix}.download_file"
         hash = f"{_prefix}.hash"
 
-    class pdq_indexer_lambda:
+    class pdq_indexer_lambda(lamda_with_datafiles):
         _prefix = "lambdas.pdqindexer"
 
-        download_datafiles = f"{_prefix}.download_datafiles"
-        parse_datafiles = f"{_prefix}.parse_datafiles"
+        def prefix_impl():
+            return _prefix
+
         merge_datafiles = f"{_prefix}.merge_datafiles"
         build_index = f"{_prefix}.build_index"
         upload_index = f"{_prefix}.upload_index"
@@ -60,6 +61,21 @@ class names:
         download_index = f"{_prefix}.download_index"
         parse_index = f"{_prefix}.parse_index"
         search_index = f"{_prefix}.search_index"
+
+    class api_hash_count(lamda_with_datafiles):
+         _prefix = "api.hashcount"
+
+        def prefix_impl():
+            return _prefix
+
+
+class lamda_with_datafiles():
+    def prefix_impl():
+        raise NotImplementedError()
+
+    download_datafiles = f"{prefix_impl()}.download_datafiles"
+    parse_datafiles = f"{prefix_impl()}.parse_datafiles"
+
 
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"

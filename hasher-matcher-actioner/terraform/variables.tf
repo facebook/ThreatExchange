@@ -81,3 +81,9 @@ variable "webapp_and_api_shared_user_pool_client_id" {
   type        = string
   default     = ""
 }
+
+variable "collab_file" {
+  description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
+  type = string
+  default = "collabs_example.json"
+}

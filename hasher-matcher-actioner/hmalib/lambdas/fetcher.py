@@ -25,7 +25,7 @@ from pathlib import Path
 import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
-from hmalib.common import get_logger
+from hmalib.common import get_logger, IMPLEMENTED_DATA_TYPES
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
@@ -130,10 +130,10 @@ def lambda_handler(event, context):
 
     # TODO add TE data to indexer
 
-    return {"statusCode": 200, "body": "Sure Yeah why not"}
+    return {"statusCode": 200}
 
 
-class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
+class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
     """
     Store files in S3!
     """
@@ -162,15 +162,15 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
     @property
     def next_delta(self) -> tu.ThreatUpdatesDelta:
         """
-        Hacky - we only support PDQ right now, force to only fetch that
+        Hacky - we only support certain data types right now, force to only fetch those
         Eventually want to always download everything and choose what to
         do with it later, though checkpoints will need to be reset
 
-        IF YOU CHANGE THIS, OLD CHECKPOINTS NEED TO BE INVALIDATED TO
-        GET THE NON-PDQ DATA!
+        IF YOU CHANGE THIS TO ALLOW THE USER TO SPECIFIY DATA TYPES
+        OLD CHECKPOINTS NEED TO BE INVALIDATED
         """
         delta = super().next_delta
-        delta.types = ["HASH_PDQ"]
+        delta.types = [IMPLEMENTED_DATA_TYPES]
         return delta
 
     def reset(self):
@@ -265,6 +265,8 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
         self._store_state(state.values())
         self._cached_state = state
+
+class ThreatUpdateS3PDQStore(ThreatUpdateS3Store):
 
 
 def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:

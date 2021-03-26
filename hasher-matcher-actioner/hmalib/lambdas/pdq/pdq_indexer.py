@@ -14,7 +14,7 @@ import boto3
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.common import get_logger
+from hmalib.common import get_logger, ThreatExchangeS3PDQAdapter
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
@@ -63,6 +63,7 @@ def was_pdq_data_updated(event):
     return False
 
 
+<<<<<<< HEAD
 def get_pdq_file(file_name: str) -> t.Dict[str, t.Any]:
     return {
         "pdq_file_name": file_name,
@@ -92,6 +93,8 @@ def parse_pdq_file(pdq_file_name: str, pdq_data_file: S3FileT) -> t.List[HashRow
     ]
 
 
+=======
+>>>>>>> temp
 def merge_pdq_files(
     accumulator: t.Dict[str, HashRowT], hash_row: HashRowT
 ) -> t.Dict[str, HashRowT]:
@@ -114,7 +117,8 @@ def lambda_handler(event, context):
     As per the default configuration, the bucket must be
     - the hashing data bucket eg.
       dipanjanm-hashing-data20210224213427723700000003
-    - the key name must be threat_exchange_data/pdq.te
+    - the key name must be in the ThreatExchange folder (eg. threat_exchange_data/)
+    - the key name must be a pdq file ending in ".pdq.te"
 
     Which means adding new versions of the datasets will not have an effect. You
     must add the exact pdq.te file.
@@ -125,7 +129,9 @@ def lambda_handler(event, context):
         return
 
     logger.info("PDQ Data Updated, updating pdq hash index")
+    metrics_logger = metrics.names.pdq_indexer_lambda
 
+<<<<<<< HEAD
     logger.info("Retreiving PDQ Data from S3")
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.download_datafiles):
@@ -148,21 +154,25 @@ def lambda_handler(event, context):
     with metrics.timer(metrics.names.pdq_indexer_lambda.parse_datafiles):
         logger.info("Parsing PDQ Hash files")
         pdq_data = [parse_pdq_file(**pdq_data_file) for pdq_data_file in pdq_data_files]
+=======
+    pdq_storage = ThreatExchangeS3PDQAdapter(metrics_logger : metrics_logger)
+    pdq_data_files = pdq_storage.get_files()
+>>>>>>> temp
 
-    with metrics.timer(metrics.names.pdq_indexer_lambda.merge_datafiles):
+    with metrics.timer(metrics_logger.merge_datafiles):
         logger.info("Merging PDQ Hash files")
-        flat_pdq_data = [hash_row for pdq_file in pdq_data for hash_row in pdq_file]
+        flat_pdq_data = [hash_row for pdq_file in pdq_data_files for hash_row in pdq_file]
 
         merged_pdq_data = reduce(merge_pdq_files, flat_pdq_data, {}).values()
 
-    with metrics.timer(metrics.names.pdq_indexer_lambda.build_index):
+    with metrics.timer(metrics_logger.build_index):
         logger.info("Creating PDQ Hash Index")
         index = PDQIndex.build(merged_pdq_data)
 
         logger.info("Putting index in S3")
         index_bytes = pickle.dumps(index)
 
-    with metrics.timer(metrics.names.pdq_indexer_lambda.upload_index):
+    with metrics.timer(metrics_logger.upload_index):
         s3_client.put_object(
             Bucket=INDEXES_BUCKET_NAME, Key=PDQ_INDEX_KEY, Body=index_bytes
         )
