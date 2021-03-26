@@ -162,7 +162,7 @@ class MatchDetailsResult(t.TypedDict):
 
 
 def gen_match_details(content_id: str) -> t.List[MatchDetailsResult]:
-    if content_id:
+    if not content_id:
         return []
     table = dynamodb.Table(DYNAMODB_TABLE)
     records = PDQMatchRecord.get_from_content_id(
@@ -188,7 +188,7 @@ class HashResult(t.TypedDict):
 
 
 def gen_hash(content_id: str) -> t.Optional[HashResult]:
-    if content_id:
+    if not content_id:
         return None
     table = dynamodb.Table(DYNAMODB_TABLE)
     record = PipelinePDQHashRecord.get_from_content_id(
