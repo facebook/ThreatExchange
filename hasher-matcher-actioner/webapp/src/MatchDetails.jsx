@@ -2,15 +2,36 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
-import {Button, Col, Collapse, Image, Row} from 'react-bootstrap';
+import {Button, Col, Collapse, Row} from 'react-bootstrap';
+import Spinner from 'react-bootstrap/Spinner';
+
+import {fetchMatchDetails, fetchHash, fetchImage} from './Api';
+import {CopyableHashField, CopyableTextField} from './utils/TextFieldsUtils';
+import {formatTimestamp} from './utils/DateTimeUtils';
+import {BlurUntilHoverImage} from './utils/ImageUtils';
 
 export default function MatchDetails() {
   const history = useHistory();
   const {id} = useParams();
   const [showNewReactionButtons, setShowNewReactionButtons] = useState(false);
   const [reaction, setReaction] = useState('Seen');
+  const [hashDetails, setHashDetails] = useState(null);
+  const [img, setImage] = useState(null);
+
+  useEffect(() => {
+    fetchHash(id).then(hash => {
+      setHashDetails(hash);
+    });
+  }, []);
+
+  useEffect(() => {
+    fetchImage(id).then(result => {
+      setImage(URL.createObjectURL(result));
+    });
+  }, []);
+
   return (
     <>
       <button
@@ -24,17 +45,31 @@ export default function MatchDetails() {
         <Col md={6}>
           <table className="table">
             <tr>
-              <td>Matched content:</td>
+              <td>Content ID:</td>
               <td>{id}</td>
             </tr>
             <tr>
-              <td>Matched on:</td>
-              <td>2 Feb 2021 5:03am</td>
+              <td>Content Hash:</td>
+              <CopyableHashField
+                text={
+                  hashDetails
+                    ? hashDetails.content_hash ?? 'Not found'
+                    : 'loading...'
+                }
+              />
             </tr>
             <tr>
-              <td>Reaction:</td>
+              <td>Hashed on:</td>
               <td>
-                {reaction}{' '}
+                {hashDetails
+                  ? formatTimestamp(hashDetails.updated_at)
+                  : 'loading...'}
+              </td>
+            </tr>
+            <tr>
+              <td>Reaction (Mocked):</td>
+              <td>
+                {reaction}
                 <Button
                   className="float-right"
                   size="sm"
@@ -69,48 +104,71 @@ export default function MatchDetails() {
           </table>
         </Col>
         <Col md={6}>
-          <Image
-            src="https://www.creditabsolute.com/wp-content/uploads/2019/04/block_beach_1.jpg"
-            fluid
-            rounded
-          />
+          <BlurUntilHoverImage src={img} />
         </Col>
       </Row>
-      <Row>
-        <Col md={12}>
-          <table className="table mt-4">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Indicator Type</th>
-                <th>Indicator</th>
-                <th>Created</th>
-                <th>Last Updated</th>
-                <th>Tags</th>
-                <th>Status</th>
-                <th>Partners with Opinions</th>
-                <th>Action Taken</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>2880742865368386</td>
-                <td>HASH_PDQ</td>
-                <td style={{maxWidth: '250px', overflow: 'hidden'}}>
-                  <span style={{overflow: 'hidden'}} />
-                  acecf3355e3125c8e24e2f30e0d4ec4f8482b878b3c34cdbdf063278db275992
-                </td>
-                <td>31 Jul 2020 6:47pm</td>
-                <td>31 Jul 2020 6:47pm</td>
-                <td>tag1, tag2</td>
-                <td>MALICIOUS</td>
-                <td>app1, app2</td>
-                <td>Delete</td>
-              </tr>
-            </tbody>
-          </table>
-        </Col>
-      </Row>
+      <MatchesList contentKey={id} />
+    </>
+  );
+}
+
+function MatchesList(props) {
+  const [matchDetails, setMatchDetails] = useState(null);
+  // eslint-disable-next-line react/prop-types
+  const {contentKey} = props;
+  useEffect(() => {
+    fetchMatchDetails(contentKey).then(matches => {
+      setMatchDetails(matches.match_details);
+    });
+  }, []);
+
+  return (
+    <>
+      <Spinner hidden={matchDetails !== null} animation="border" role="status">
+        <span className="sr-only">Loading...</span>
+      </Spinner>
+      <Collapse in={matchDetails !== null}>
+        <Row>
+          <Col md={12}>
+            <table className="table mt-4">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Type</th>
+                  <th>Indicator</th>
+                  <th>Last Updated</th>
+                  <th>Tags (Mocked)</th>
+                  <th>Status (Mocked)</th>
+                  <th>Partners with Opinions (Mocked)</th>
+                  <th>Action Taken (Mocked)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {matchDetails !== null && matchDetails.length ? (
+                  matchDetails.map(match => (
+                    <tr className="align-middle" key={match.signal_id}>
+                      <td>
+                        <CopyableTextField text={match.signal_id} />
+                      </td>
+                      <td>HASH_PDQ</td>
+                      <CopyableHashField text={match.signal_hash} />
+                      <td>{formatTimestamp(match.updated_at)}</td>
+                      <td>tag1, tag2</td>
+                      <td>UNKNOWN</td>
+                      <td>app1, app2</td>
+                      <td>Delete</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5}>No Matches Found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </Col>
+        </Row>
+      </Collapse>
     </>
   );
 }

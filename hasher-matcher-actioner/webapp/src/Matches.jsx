@@ -8,6 +8,7 @@ import {Button, Collapse, Modal} from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 
 import {fetchMatches} from './Api';
+import {formatTimestamp} from './utils/DateTimeUtils';
 
 export default function Matches() {
   const [showFilters, setShowFilters] = useState(false);
@@ -90,18 +91,6 @@ function MatchList() {
     // .catch(err => console.log(err));
   }, []);
 
-  function formatTimestamp(timestamp) {
-    return new Intl.DateTimeFormat('defualt', {
-      day: 'numeric',
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    }).format(new Date(timestamp));
-  }
-
   return (
     <>
       <Spinner hidden={matchesData !== null} animation="border" role="status">
@@ -142,7 +131,7 @@ function MatchList() {
                       <td className="align-middle">{match.reactions}</td>
                       <td className="align-middle">
                         <Link
-                          to="/matches/file1.jpg"
+                          to={`/matches/${match.content_id}`}
                           className="btn btn-outline-primary btn-sm">
                           Details
                         </Link>
