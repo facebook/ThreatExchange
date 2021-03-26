@@ -22,7 +22,7 @@ s3_client = boto3.client("s3")
 PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
 
 THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
-THREAT_EXCHANGE_STATE_KEY_PREFIX = os.environ["THREAT_EXCHANGE_STATE_KEY_PREFIX"]
+THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 THREAT_EXCHANGE_PDQ_KEY_SUFFIX = os.environ["THREAT_EXCHANGE_PDQ_KEY_SUFFIX"]
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
@@ -52,7 +52,7 @@ def was_pdq_data_updated(event):
             key = unquote_plus(s3_record["s3"]["object"]["key"])
             if (
                 bucket_name == THREAT_EXCHANGE_DATA_BUCKET_NAME
-                and key.startswith(THREAT_EXCHANGE_STATE_KEY_PREFIX)
+                and key.startswith(THREAT_EXCHANGE_DATA_FOLDER)
                 and key.endswith(THREAT_EXCHANGE_PDQ_KEY_SUFFIX)
             ):
                 return True
@@ -127,9 +127,9 @@ def lambda_handler(event, context):
     logger.info("Retreiving PDQ Data from S3")
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.download_datafiles):
-        s3_bucket_files = s3_client.list_objects(
+        s3_bucket_files = s3_client.list_objects_v2(
             Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME,
-            Prefix=THREAT_EXCHANGE_STATE_KEY_PREFIX,
+            Prefix=THREAT_EXCHANGE_DATA_FOLDER,
         )["Contents"]
         logger.info("Found " + str(len(s3_bucket_files)) + " Files")
 
@@ -176,7 +176,7 @@ if __name__ == "__main__":
                         "s3": {
                             "bucket": {"name": THREAT_EXCHANGE_DATA_BUCKET_NAME},
                             "object": {
-                                "key": THREAT_EXCHANGE_STATE_KEY_PREFIX
+                                "key": THREAT_EXCHANGE_DATA_FOLDER
                                 + str(privacy_group_id)
                                 + THREAT_EXCHANGE_PDQ_KEY_SUFFIX
                             },

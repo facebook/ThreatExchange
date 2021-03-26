@@ -52,7 +52,7 @@ module "pdq_signals" {
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_key_suffix     = local.pdq_key_suffix
-    state_key_prefix   = module.hashing_data.threat_exchange_data_folder_info.key
+    data_folder        = module.hashing_data.threat_exchange_data_folder_info.key
     notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
   }
   index_data_storage = {
@@ -79,8 +79,8 @@ module "fetcher" {
   }
 
   threat_exchange_data = {
-    bucket_name       = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    state_key_prefix  = module.hashing_data.threat_exchange_data_folder_info.key
+    bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    data_folder = module.hashing_data.threat_exchange_data_folder_info.key
   }
   collab_file = var.collab_file
 
