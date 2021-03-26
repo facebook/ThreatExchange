@@ -10,6 +10,7 @@ import typing as t
 session = boto3.session.Session()
 secrets_client = session.client(
     service_name="secretsmanager",
+    region_name="us-east-1"
 )
 
 

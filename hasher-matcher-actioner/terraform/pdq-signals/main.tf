@@ -82,10 +82,18 @@ resource "aws_iam_role" "pdq_indexer" {
 data "aws_iam_policy_document" "pdq_indexer" {
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
+    actions   = [
+      "s3:GetObject",
+      "s3:ListObjects"
+    ]
     resources = [
       "arn:aws:s3:::${var.threat_exchange_data.bucket_name}",
     ]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = [local.pdq_index_arn]
   }
   statement {
     effect    = "Allow"

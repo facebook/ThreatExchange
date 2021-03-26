@@ -23,13 +23,13 @@ PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
 
 # THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
 # THREAT_EXCHANGE_STATE_KEY_PREFIX = os.environ["THREAT_EXCHANGE_STATE_KEY_PREFIX"]
-THREAT_EXCHANGE_DATA_BUCKET_NAME = "jeberl-hashing-data20210322163912673100000003"
-THREAT_EXCHANGE_STATE_KEY_PREFIX = "threat_exchnage_data"
+THREAT_EXCHANGE_DATA_BUCKET_NAME = "jeberl-hashing-data20210324205948477200000003"
+THREAT_EXCHANGE_STATE_KEY_PREFIX = "threat_exchange_data"
 THREAT_EXCHANGE_PDQ_KEY_SUFFIX = ".pdq.te"
 
 # INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 # PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
-INDEXES_BUCKET_NAME = "jeberl-hashing-data20210322163912673100000003"
+INDEXES_BUCKET_NAME = "jeberl-hashing-data20210324205948477200000003"
 PDQ_INDEX_KEY = "index/pdq_hashes.index"
 
 HashRowType = t.Tuple[str, t.Dict[str, t.Any]]
@@ -64,11 +64,11 @@ def was_pdq_data_updated(event):
     return False
 
 
-def get_pdq_file(file_name: str) -> t.Tuple[str, S3FileType]:
-    return (
-        file_name,
-        s3_client.get_object(Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME, Key=file_name),
-    )
+def get_pdq_file(file_name: str) -> t.Dict[str, S3FileType]:
+    return {
+        'pdq_file_name' : file_name,
+        'pdq_data_file' : s3_client.get_object(Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME, Key=file_name),
+    }
 
 
 def parse_pdq_file(
@@ -86,7 +86,7 @@ def parse_pdq_file(
                 "id": int(row["id"]),
                 "hash": row["hash"],
                 "source": "te",  # default for now to make downstream easier to generalize
-                "privacy_group": [pdq_file_name.split("/")[-1].split(".")[0]],
+                "privacy_groups": [pdq_file_name.split("/")[-1].split(".")[0]],
             },
         )
         for row in pdq_data_reader
@@ -94,15 +94,15 @@ def parse_pdq_file(
 
 
 def merge_pdq_files(
-    accumulator: t.Dict[str, HashRowType], hash_row: HashRowType
+    accumulator: t.Dict[str, HashRowType], hash_row: t.Tuple[str, HashRowType]
 ) -> t.Dict[str, HashRowType]:
     hash, meta_data = hash_row
     if hash not in accumulator.keys():
         # Add hash as new row
-        accumulator[hash] = hash_row
+        accumulator[hash] = meta_data
     else:
         # Add new privacy group to existing row
-        accumulator[hash]["privacy_groups"].append(hash_row["privacy_groups"][0])
+        accumulator[hash]["privacy_groups"].append(meta_data["privacy_groups"][0])
     return accumulator
 
 
@@ -130,28 +130,37 @@ def lambda_handler(event, context):
     logger.info("Retreiving PDQ Data from S3")
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.download_datafiles):
-        s3_bucket_file_names = s3_client.list_objects(
+        s3_bucket_files = s3_client.list_objects(
             Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME,
             Prefix=THREAT_EXCHANGE_STATE_KEY_PREFIX,
-        )
+        )['Contents']
+        logger.info("Found " + str(len(s3_bucket_files)) + " Files")
+
         pdq_data_files = [
-            get_pdq_file(file_name)
-            for file_name in s3_bucket_file_names
-            if file_name.endswith(THREAT_EXCHANGE_PDQ_KEY_SUFFIX)
+            get_pdq_file(file['Key'])
+            for file in s3_bucket_files
+            if file['Key'].endswith(THREAT_EXCHANGE_PDQ_KEY_SUFFIX)
         ]
+        logger.info("Found " + str(len(pdq_data_files)) + " PDQ Files")
+
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.parse_datafiles):
         logger.info("Parsing PDQ Hash files")
         pdq_data = [parse_pdq_file(**pdq_data_file) for pdq_data_file in pdq_data_files]
+        print("length 0 = ", len(pdq_data[0]))
+        print("length 1 = ", len(pdq_data[1]))
+
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.merge_datafiles):
         logger.info("Merging PDQ Hash files")
         flat_pdq_data = [hash_row for pdq_file in pdq_data for hash_row in pdq_file]
 
-        merged_pdq_data = reduce(merge_pdq_files, flat_pdq_data, {})
+        #TODO Currently list of HashRowTypes may need to change
+        merged_pdq_data = reduce(merge_pdq_files, flat_pdq_data, {}).items()
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.build_index):
         logger.info("Creating PDQ Hash Index")
+        #TODO This takes an interable Tuple of hash to HashRowTypes
         index = PDQIndex.build(merged_pdq_data)
 
         logger.info("Putting index in S3")
@@ -204,4 +213,3 @@ if __name__ == "__main__":
     }
 
     lambda_handler(data_updated_event, None)
-    lambda_handler(data_not_updated_event, None)

@@ -35,8 +35,8 @@ from threatexchange.signal_type.pdq import PdqSignal
 
 logger = get_logger(__name__)
 
-dynamodb = boto3.resource("dynamodb")
-s3 = boto3.resource("s3")
+dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+s3 = boto3.resource("s3", region_name="us-east-1")
 
 
 @dataclass
