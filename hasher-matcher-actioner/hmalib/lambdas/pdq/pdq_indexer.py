@@ -27,8 +27,8 @@ THREAT_EXCHANGE_PDQ_KEY_SUFFIX = os.environ["THREAT_EXCHANGE_PDQ_KEY_SUFFIX"]
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
 
-HashRowType = t.Tuple[str, t.Dict[str, t.Any]]
-S3FileType = t.Dict[str, t.Any]
+HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
+S3FileT = t.Dict[str, t.Any]
 
 
 def unwrap_if_sns(data):
@@ -69,8 +69,8 @@ def get_pdq_file(file_name: str) -> t.Dict[str, t.Any]:
 
 
 def parse_pdq_file(
-    pdq_file_name: str, pdq_data_file: S3FileType
-) -> t.List[HashRowType]:
+    pdq_file_name: str, pdq_data_file: S3FileT
+) -> t.List[HashRowT]:
     pdq_data_reader = csv.DictReader(
         codecs.getreader("utf-8")(pdq_data_file["Body"]),
         fieldnames=PDQ_DATA_FILE_COLUMNS,
@@ -91,8 +91,8 @@ def parse_pdq_file(
 
 
 def merge_pdq_files(
-    accumulator: t.Dict[str, HashRowType], hash_row: HashRowType
-) -> t.Dict[str, HashRowType]:
+    accumulator: t.Dict[str, HashRowT], hash_row: HashRowT
+) -> t.Dict[str, HashRowT]:
     hash, meta_data = hash_row
     if hash not in accumulator.keys():
         # Add hash as new row
@@ -131,14 +131,14 @@ def lambda_handler(event, context):
             Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME,
             Prefix=THREAT_EXCHANGE_DATA_FOLDER,
         )["Contents"]
-        logger.info("Found " + str(len(s3_bucket_files)) + " Files")
+        logger.info("Found %d Files", len(s3_bucket_files))
 
         pdq_data_files = [
             get_pdq_file(file["Key"])
             for file in s3_bucket_files
             if file["Key"].endswith(THREAT_EXCHANGE_PDQ_KEY_SUFFIX)
         ]
-        logger.info("Found " + str(len(pdq_data_files)) + " PDQ Files")
+        logger.info("Found %d PDQ Files", len(pdq_data_files))
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.parse_datafiles):
         logger.info("Parsing PDQ Hash files")
@@ -166,6 +166,8 @@ def lambda_handler(event, context):
     metrics.flush()
 
 
+# For testing purposes so that this can be run from the command line like:
+# $ python3 -m hmalib.lambdas.pdq.pdq_indexer
 if __name__ == "__main__":
     privacy_group_id = 1234567890
     data_updated_event = {
