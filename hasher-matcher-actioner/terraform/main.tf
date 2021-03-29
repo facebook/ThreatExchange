@@ -141,17 +141,20 @@ module "webapp" {
   source                          = "./webapp"
   prefix                          = var.prefix
   organization                    = var.organization
-  include_cloudfront_distribution = var.include_cloudfront_distribution
+  include_cloudfront_distribution = var.include_cloudfront_distribution && !var.use_shared_user_pool
 }
 
-# Set up Cognito for authenticating webapp and api
+# Set up Cognito for authenticating webapp and api (unless shared setup is indicated in terraform.tfvars)
 
 module "authentication" {
-  source                          = "./authentication"
-  prefix                          = var.prefix
-  organization                    = var.organization
-  use_cloudfront_distribution_url = var.include_cloudfront_distribution
-  cloudfront_distribution_url     = "https://${module.webapp.cloudfront_distribution_domain_name}"
+  source                                    = "./authentication"
+  prefix                                    = var.prefix
+  organization                              = var.organization
+  use_cloudfront_distribution_url           = var.include_cloudfront_distribution
+  cloudfront_distribution_url               = "https://${module.webapp.cloudfront_distribution_domain_name}"
+  use_shared_user_pool                      = var.use_shared_user_pool
+  webapp_and_api_shared_user_pool_id        = var.webapp_and_api_shared_user_pool_id
+  webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
 }
 
 # Set up api

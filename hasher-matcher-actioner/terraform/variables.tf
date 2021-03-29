@@ -54,12 +54,30 @@ variable "te_api_token" {
 
 variable "collab_file" {
   description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
-  type = string
-  default = "collabs_example.json"
+  type        = string
+  default     = "collabs_example.json"
 }
 
 variable "fetch_frequency" {
   description = "How long to wait between calls to ThreatExcahnge. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
   type        = string
   default     = "15 minutes"
+}
+
+variable "use_shared_user_pool" {
+  description = "Indicates if the web app and api will use a shared user pool (generally true for developers / engineers sandbox environments, otherwise false)"
+  type        = bool
+  default     = false
+}
+
+variable "webapp_and_api_shared_user_pool_id" {
+  description = "The id of the shared user pool. Used in conjunction with use_shared_user_pool set to true. Generate by running terraform init & apply from /authentication-shared."
+  type        = string
+  default     = ""
+}
+
+variable "webapp_and_api_shared_user_pool_client_id" {
+  description = "The id of the shared user pool app client. Used in conjunction with use_shared_user_pool set to true. Generate by running terraform init & apply from /authentication-shared."
+  type        = string
+  default     = ""
 }

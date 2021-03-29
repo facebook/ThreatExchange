@@ -11,6 +11,8 @@ To sign in (whether running from localhost, the s3 bucket url, or the cloudfront
 3. Select Users and groups (left nav).
 4. Select Create user and follow the instructions. You can leave Phone Number blank, if you wish; Username, Temporary password and Email are required. Leaving Mark email as verified checked speeds things up by skipping the built-in email verification step.
 
+By default, the Cognito user pool app client configuration uses identity and access tokens that are valid for 60 minutes, and a refresh token that's valid for 30 days. Those settings can be changed via the AWS console once your environment is created using terraform, or you can change values in `/terraform/authentication/main.tf`.
+
 ## Available Scripts
 
 In the project directory, you can run:
@@ -40,12 +42,12 @@ The build is minified and the filenames include the hashes.
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ### Running the Webapp Locally
+
 Even when running the UI locally, the API will need to serve from a full instance of HMA. Follow the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md) for details on how to spin up an instance.
 
 After deploying an instance, build and then start your instance locally. It may take a few refreshes, but you should be directed to the same login page as the one as the instance you deployed. If you haven't set up an account yet, see the note on how to do that in the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md).
 
 Once you have done that, the pages you are served should match your local copy, and you can develop on the UI.
-
 
 ### Lint and Formatting
 
