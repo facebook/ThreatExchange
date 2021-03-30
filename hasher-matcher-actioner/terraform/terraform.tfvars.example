@@ -7,3 +7,6 @@ log_retention_in_days = # DAYS to retain logs
 include_cloudfront_distribution = true
 te_api_token = "<threat-exchange-api-token>"
 collab_file = "collabs_example.json"
+use_shared_user_pool = false # if true, run terraform apply from /authentication-shared terraform and use its outputs for webapp_and_api_shared_user_pool_id and webapp_and_api_shared_user_pool_client_id
+webapp_and_api_shared_user_pool_id = # "<webapp_and_api_shared_user_pool_id>" output when terraform apply is run from /authentication-shared directory
+webapp_and_api_shared_user_pool_client_id = # "<webapp_and_api_shared_user_pool_client_id>" output when terraform apply is run from /authentication-shared directory
