@@ -21,8 +21,10 @@ export const BlurUntilHoverImage =
 
     return src ? (
       <Image
-        onMouseOut={() => setStyle(imgStyleBlur)}
-        onMouseOver={() => setStyle(imgStyleNoBlur)}
+        onMouseLeave={() => setStyle(imgStyleBlur)}
+        onMouseEnter={() => {
+          setStyle(imgStyleNoBlur);
+        }}
         style={style}
         src={src}
         fluid

@@ -86,7 +86,7 @@ def upload():
 @app.get("/image/<key>")
 def image(key=None):
     """
-    image endpoint
+    return the bytes of an image in the "IMAGE_FOLDER_KEY" based on key
     """
     logger.info(key)
     if not key:
@@ -95,6 +95,7 @@ def image(key=None):
     bytes_: bytes = s3_client.get_object(
         Bucket=IMAGE_BUCKET_NAME, Key=f"{IMAGE_FOLDER_KEY}{key}"
     )["Body"].read()
+    # TODO make the content type dynamic
     response.set_header("Content-type", "image/jpeg")
     return bytes_
 

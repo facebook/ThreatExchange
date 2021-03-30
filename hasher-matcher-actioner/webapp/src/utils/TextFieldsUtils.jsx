@@ -6,25 +6,12 @@ import React, {useState, useEffect, useCallback} from 'react';
 import {Popover, OverlayTrigger} from 'react-bootstrap';
 import copy from 'clipboard-copy';
 
-function truncateString(input, maxLength = 25) {
-  if (input == null) {
-    return '';
-  }
-  if (input.length <= maxLength) {
-    return input;
-  }
-  return `${input.substring(0, maxLength)}...`;
-}
-
 // eslint-disable-next-line react/prop-types
-export function CopyableHashField({text, tooltip}) {
+export function CopyableHashField({text, tooltip = 'Copy hash to clipboard?'}) {
   return (
     <td style={{maxWidth: '250px', overflow: 'hidden'}}>
       <span style={{overflow: 'hidden'}} />
-      <CopyableTextField
-        text={text}
-        tooltip={tooltip ?? 'Copy hash to clipboard?'}
-      />
+      <CopyableTextField text={text} tooltip={tooltip} />
     </td>
   );
 }
@@ -66,9 +53,12 @@ export function CopyableTextField({text, tooltip}) {
     margin: 0,
     padding: 0,
     hover: {},
+    maxWidth: '245px',
+    overflow: 'hidden',
     focus: {
       textDecoration: 'none',
     },
+    textOverflow: 'ellipsis',
   };
 
   return (
@@ -81,13 +71,8 @@ export function CopyableTextField({text, tooltip}) {
         role="link"
         style={linkButtonStyle}
         onClick={copyText}
-        onKeyDown={e => {
-          if (e.code === 'Enter') {
-            copyText();
-          }
-        }}
         tabIndex={0}>
-        {truncateString(text)}
+        {text}
       </button>
     </OverlayTrigger>
   );
