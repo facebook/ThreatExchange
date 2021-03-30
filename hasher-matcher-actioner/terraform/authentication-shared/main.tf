@@ -1,5 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+# This terraform configuration script is used in isolation to configure
+# a shared shared user pool to be used across a team of developers /
+# engineers that are collaborating on HMA developemnt within a single
+# AWS account.
+
 terraform {
   required_providers {
     aws = {
@@ -65,8 +70,8 @@ resource "aws_cognito_user_pool_client" "webapp_and_api_shared_user_pool_client"
   explicit_auth_flows                  = ["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
   allowed_oauth_scopes                 = ["openid"]
   allowed_oauth_flows                  = ["code"]
-  callback_urls                        = ["https://localhost:3000"]
-  logout_urls                          = ["https://localhost:3000"]
+  callback_urls                        = ["https://localhost:3000"] # a shared user pool and its app client is for developers only
+  logout_urls                          = ["https://localhost:3000"] # a shared user pool and its app client is for developers only
   supported_identity_providers         = ["COGNITO"]
   prevent_user_existence_errors        = "ENABLED"
   token_validity_units {
