@@ -7,6 +7,7 @@ from hmalib.models import MatchMessage
 
 logger = get_logger(__name__)
 
+
 def lambda_handler(event, context):
     """
     The output SNS topics from matchers have SQS instances subscribed to them.
@@ -22,4 +23,6 @@ def lambda_handler(event, context):
     """
     for sqs_record in event["Records"]:
         sns_notification = json.loads(sqs_record["body"])
-        match_message: MatchMessage = MatchMessage.from_sns_message(sns_notification["Message"])
+        match_message: MatchMessage = MatchMessage.from_sns_message(
+            sns_notification["Message"]
+        )

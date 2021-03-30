@@ -29,7 +29,6 @@ OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 
 
-
 def get_default_labels() -> t.List[Label]:
     """
     As a stop gap measure, the matcher will add default labels that instruct the
@@ -37,11 +36,10 @@ def get_default_labels() -> t.List[Label]:
     between matched records and post-match phases.
     """
     return [
-        Label('SourceDatabase', 'threatexchange-all-collabs'),
-        Label('SourceBank', 'threatexchange/default'),
-        Label('ViolationType', 'any'),
+        Label("SourceDatabase", "threatexchange-all-collabs"),
+        Label("SourceBank", "threatexchange/default"),
+        Label("ViolationType", "any"),
     ]
-
 
 
 def get_index(bucket_name, key):
@@ -115,15 +113,14 @@ def lambda_handler(event, context):
                 message = MatchMessage(
                     content_key=key,
                     content_hash=hash_str,
-                    banked_indicator_id=signal_id
+                    banked_indicator_id=signal_id,
                 )
 
                 # Publish one message per match. This might be a perf penalty if
                 # we get > 1 match per index query. But I'm assuming that's
                 # rare. Unfortunately, there is no batch publish in SNS.
                 sns_client.publish(
-                    TopicArn=OUTPUT_TOPIC_ARN,
-                    Message=message.to_sns_message()
+                    TopicArn=OUTPUT_TOPIC_ARN, Message=message.to_sns_message()
                 )
         else:
             logger.info(f"No matches found for key: {key} hash: {hash_str}")
