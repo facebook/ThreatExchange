@@ -5,9 +5,7 @@ import bottle
 import boto3
 import json
 import base64
-from dataclasses import dataclass, asdict
 import typing as t
-from boto3.dynamodb.conditions import Attr
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
@@ -83,6 +81,23 @@ def upload():
     return {
         "message": "uploaded!",
     }
+
+
+@app.get("/image/<key>")
+def image(key=None):
+    """
+    return the bytes of an image in the "IMAGE_FOLDER_KEY" based on key
+    """
+    logger.info(key)
+    if not key:
+        return
+    # TODO a whole bunch of validation and error checking...
+    bytes_: bytes = s3_client.get_object(
+        Bucket=IMAGE_BUCKET_NAME, Key=f"{IMAGE_FOLDER_KEY}{key}"
+    )["Body"].read()
+    # TODO make the content type dynamic
+    response.set_header("Content-type", "image/jpeg")
+    return bytes_
 
 
 @app.get("/matches")
