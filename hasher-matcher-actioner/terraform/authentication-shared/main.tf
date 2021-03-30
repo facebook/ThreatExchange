@@ -5,6 +5,11 @@
 # engineers that are collaborating on HMA developemnt within a single
 # AWS account.
 
+# The three resource configurations below were directly copied from
+# /authentication/main.tf and adjusted so that their names were
+# unique (to keep terraform state from getting confused). Consider
+# /authentication/main.tf when making changes here.
+
 terraform {
   required_providers {
     aws = {

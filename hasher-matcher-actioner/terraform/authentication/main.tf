@@ -1,5 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+# The three resource configurations below were directly copied to
+# /authentication-shared/main.tf and adjusted so that their names were
+# unique (to keep terraform state from getting confused). Consider
+# /authentication-shared/main.tf when making changes here.
+
 resource "aws_cognito_user_pool" "webapp_and_api_user_pool" {
   account_recovery_setting {
     recovery_mechanism {
