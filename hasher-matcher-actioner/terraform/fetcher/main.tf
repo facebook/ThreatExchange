@@ -24,6 +24,10 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
+locals {
+  threat_exchange_api_token_secret_name = "threatexchange/${var.prefix}_api_tokens"
+}
+
 resource "aws_lambda_function" "fetcher" {
   function_name = "${var.prefix}_fetcher"
   package_type  = "Image"
@@ -36,10 +40,10 @@ resource "aws_lambda_function" "fetcher" {
   memory_size = 512
   environment {
     variables = {
-      THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
-      THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
-      THREAT_EXCHANGE_PDQ_DATA_KEY     = var.threat_exchange_data.pdq_data_file_key
-
+      THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
+      THREAT_EXCHANGE_CONFIG_DYNAMODB       = aws_dynamodb_table.threatexchange_config.name
+      THREAT_EXCHANGE_PDQ_DATA_KEY          = var.threat_exchange_data.pdq_data_file_key
+      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = local.threat_exchange_api_token_secret_name
     }
   }
   tags = merge(
@@ -82,8 +86,8 @@ resource "aws_iam_role" "fetcher" {
 
 data "aws_iam_policy_document" "fetcher" {
   statement {
-    effect    = "Allow"
-    actions   = [
+    effect = "Allow"
+    actions = [
       "s3:GetObject",
       "s3:PutObject",
       "s3:ListBucket",
@@ -225,7 +229,7 @@ resource "aws_dynamodb_table" "threatexchange_config" {
 ### ThreatExchange API Token Secret ###
 
 resource "aws_secretsmanager_secret" "api_token" {
-  name                    = "threatexchange/${var.prefix}_api_tokens"
+  name                    = local.threat_exchange_api_token_secret_name
   recovery_window_in_days = 0
 }
 

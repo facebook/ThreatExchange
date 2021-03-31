@@ -5,6 +5,7 @@ Wrapper functions for reading secrets stored in AWS
 
 import boto3
 import base64
+import os
 import typing as t
 
 session = boto3.session.Session()
@@ -23,8 +24,7 @@ class AWSSecrets:
         """
         get the ThreatExchange API Key
         """
-        # TODO Read name from AWS/os.environ
-        secret_name = "threatexchange/jeberl_api_tokens"
+        secret_name = os.environ["THREAT_EXCHANGE_API_TOKEN_SECRET_NAME"]
         api_key = get_str_secret(secret_name)
         return api_key
 
