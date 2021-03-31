@@ -28,6 +28,3 @@ class TestHashFrom(unittest.TestCase):
         str_hashers = [s for s in signal_types if issubclass(type(s), StrHasher)]
         for str_hasher in str_hashers:
             str_hasher.hash_from_str("test string")
-
-    def test_supports_pickling(self):
-        pass
