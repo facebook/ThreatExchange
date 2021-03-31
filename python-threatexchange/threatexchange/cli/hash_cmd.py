@@ -93,16 +93,16 @@ class HashCommand(command_base.Command):
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
 
         all_signal_types = dataset.load_cache(
-            s
+            s()
             for s in self.content_type.get_signal_types()
             if self.signal_type in (None, s.get_name())
         )
 
-        file_hashers = [s for s in all_signal_types if issubclass(s, FileHasher)]
-        str_hashers = [s for s in all_signal_types if issubclass(s, StrHasher)]
+        file_hashers = [s for s in all_signal_types if issubclass(type(s), FileHasher)]
+        str_hashers = [s for s in all_signal_types if issubclass(type(s), StrHasher)]
 
         for inp in self.input_generator:
-            hash_fn = lambda s, t: s.hash_file(t)
+            hash_fn = lambda s, t: s.hash_from_file(t)
             signal_types = file_hashers
             if isinstance(inp, str):
                 hash_fn = lambda s, t: s.hash_from_str(t)
