@@ -19,7 +19,9 @@ def pdq_from_file(path: pathlib.Path) -> PDQOutput:
     Given a path to a file return the PDQ Hash string in hex.
     Current tested against: jpg
     """
-    img_pil = Image.open(path)
+    # Convert to RGB makes sure the resulting array has the number of dimensions
+    # expected by 'pdqhash' (without this black and white images result in errors).
+    img_pil = Image.open(path).convert("RGB")
     image = numpy.asarray(img_pil)
     return _pdq_from_numpy_array(image)
 
