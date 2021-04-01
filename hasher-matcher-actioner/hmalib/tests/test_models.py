@@ -70,7 +70,7 @@ class TestPDQModels(unittest.TestCase):
                             "SignalHash",
                             "SignalSource",
                             "HashType",
-                            "Labels"
+                            "Labels",
                         ],
                     },
                 },
@@ -87,7 +87,7 @@ class TestPDQModels(unittest.TestCase):
                             "SignalHash",
                             "SignalSource",
                             "HashType",
-                            "Labels"
+                            "Labels",
                         ],
                     },
                 },
