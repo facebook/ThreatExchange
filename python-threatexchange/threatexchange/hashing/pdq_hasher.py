@@ -4,7 +4,7 @@
 import io
 import pdqhash
 import pathlib
-import numpy
+import numpy as np
 from PIL import Image, ImageOps
 import typing as t
 
@@ -19,10 +19,8 @@ def pdq_from_file(path: pathlib.Path) -> PDQOutput:
     Given a path to a file return the PDQ Hash string in hex.
     Current tested against: jpg
     """
-    # Convert to RGB makes sure the resulting array has the number of dimensions
-    # expected by 'pdqhash' (without this black and white images result in errors).
-    img_pil = Image.open(path).convert("RGB")
-    image = numpy.asarray(img_pil)
+    img_pil = Image.open(path)
+    image = _check_dimension_and_expand_if_needed(np.asarray(img_pil))
     return _pdq_from_numpy_array(image)
 
 
@@ -30,11 +28,13 @@ def pdq_from_bytes(file_bytes: bytes) -> PDQOutput:
     """
     For the bytestream from an image file, compute PDQ Hash and quality.
     """
-    np_array = numpy.asarray(Image.open(io.BytesIO(file_bytes)))
+    np_array = _check_dimension_and_expand_if_needed(
+        np.asarray(Image.open(io.BytesIO(file_bytes)))
+    )
     return _pdq_from_numpy_array(np_array)
 
 
-def _pdq_from_numpy_array(array: numpy.ndarray) -> PDQOutput:
+def _pdq_from_numpy_array(array: np.ndarray) -> PDQOutput:
     hash_vector, quality = pdqhash.compute(array)
 
     bin_str = "".join([str(x) for x in hash_vector])
@@ -46,3 +46,13 @@ def _pdq_from_numpy_array(array: numpy.ndarray) -> PDQOutput:
     hex_str = hex_str.lower()
 
     return hex_str, quality
+
+
+def _check_dimension_and_expand_if_needed(array: np.ndarray) -> np.ndarray:
+    """
+    Convert 2 dim array to the 3 dim 'pdqhash' expects
+    (without this black and white images result in errors).
+    """
+    if array.ndim == 2:
+        array = np.concatenate([array[..., np.newaxis]] * 3, axis=2)
+    return array
