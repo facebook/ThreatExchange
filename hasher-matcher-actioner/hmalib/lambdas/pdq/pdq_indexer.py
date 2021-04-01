@@ -72,9 +72,7 @@ def get_pdq_file(file_name: str) -> t.Dict[str, t.Any]:
     }
 
 
-def parse_pdq_file(
-    pdq_file_name: str, pdq_data_file: S3FileT
-) -> t.List[HashRowT]:
+def parse_pdq_file(pdq_file_name: str, pdq_data_file: S3FileT) -> t.List[HashRowT]:
     pdq_data_reader = csv.DictReader(
         codecs.getreader("utf-8")(pdq_data_file["Body"]),
         fieldnames=PDQ_DATA_FILE_COLUMNS,

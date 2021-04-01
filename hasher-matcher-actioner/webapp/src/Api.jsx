@@ -12,8 +12,9 @@ async function getAuthorizationToken() {
   return jwtToken;
 }
 
-async function apiGet(route, params = {}) {
+async function apiGet(route, params = {}, responseType = null) {
   return API.get('hma_api', route, {
+    responseType,
     headers: {
       Authorization: await getAuthorizationToken(),
     },
@@ -33,6 +34,18 @@ async function apiPost(route, body, params = {}) {
 
 export function fetchMatches() {
   return apiGet('/matches');
+}
+
+export function fetchMatchDetails(key) {
+  return apiGet(`/match/${key}`);
+}
+
+export function fetchHash(key) {
+  return apiGet(`/hash/${key}`);
+}
+
+export function fetchImage(key) {
+  return apiGet(`/image/${key}`, {}, 'blob');
 }
 
 export async function uploadImage(file) {
