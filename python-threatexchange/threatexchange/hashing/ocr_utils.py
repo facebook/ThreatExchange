@@ -22,7 +22,7 @@ def text_from_image_file(path: pathlib.Path):
         return pytesseract.image_to_string(img_pil)
     except pytesseract.TesseractNotFoundError as e:
         warnings.warn(
-            e.msg,
+            str(e),
             category=UserWarning,
         )
     return ""
