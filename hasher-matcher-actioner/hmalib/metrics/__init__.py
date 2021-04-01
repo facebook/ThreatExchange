@@ -48,8 +48,9 @@ class names:
     class pdq_indexer_lambda:
         _prefix = "lambdas.pdqindexer"
 
-        download_datafile = f"{_prefix}.download_datafile"
-        parse_datafile = f"{_prefix}.parse_datafile"
+        download_datafiles = f"{_prefix}.download_datafiles"
+        parse_datafiles = f"{_prefix}.parse_datafiles"
+        merge_datafiles = f"{_prefix}.merge_datafiles"
         build_index = f"{_prefix}.build_index"
         upload_index = f"{_prefix}.upload_index"
 

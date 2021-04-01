@@ -40,9 +40,9 @@ resource "aws_lambda_function" "fetcher" {
   memory_size = 512
   environment {
     variables = {
-      THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
-      THREAT_EXCHANGE_CONFIG_DYNAMODB       = aws_dynamodb_table.threatexchange_config.name
-      THREAT_EXCHANGE_PDQ_DATA_KEY          = var.threat_exchange_data.pdq_data_file_key
+      THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
+      THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
+      THREAT_EXCHANGE_DATA_FOLDER      = var.threat_exchange_data.data_folder
       THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = local.threat_exchange_api_token_secret_name
     }
   }
