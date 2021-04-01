@@ -47,7 +47,7 @@ resource "aws_cloudfront_distribution" "webapp" {
     max_ttl                = 1200
     min_ttl                = 0
     target_origin_id       = "${var.organization}-${var.prefix}-hma-webapp-origin"
-    viewer_protocol_policy = "allow-all"
+    viewer_protocol_policy = "redirect-to-https"
     forwarded_values {
       query_string = false
       cookies {
