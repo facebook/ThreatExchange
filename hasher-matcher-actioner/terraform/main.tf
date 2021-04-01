@@ -19,7 +19,7 @@ locals {
   common_tags = {
     "HMAPrefix" = var.prefix
   }
-  pdq_key_suffix = ".pdq.te"
+  pdq_file_extension = ".pdq.te"
 }
 
 module "hashing_data" {
@@ -51,7 +51,7 @@ module "pdq_signals" {
   }
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_key_suffix     = local.pdq_key_suffix
+    pdq_file_extension = local.pdq_file_extension
     data_folder        = module.hashing_data.threat_exchange_data_folder_info.key
     notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
   }

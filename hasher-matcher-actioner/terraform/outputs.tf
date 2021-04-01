@@ -9,8 +9,8 @@ output "bucket_name" {
 output "datastore_name" {
   value = module.hashing_data.hma_datastore.name
 }
-output "pdq_key_suffix" {
-  value = local.pdq_key_suffix
+output "pdq_file_extension" {
+  value = local.pdq_file_extension
 }
 output "image_folder_key" {
   value = module.hashing_data.image_folder_info.key

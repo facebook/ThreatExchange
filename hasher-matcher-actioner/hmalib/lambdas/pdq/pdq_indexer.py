@@ -23,7 +23,7 @@ PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
 
 THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
 THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
-THREAT_EXCHANGE_PDQ_KEY_SUFFIX = os.environ["THREAT_EXCHANGE_PDQ_KEY_SUFFIX"]
+THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
 
@@ -43,17 +43,21 @@ def is_s3_testevent(data):
 
 
 def was_pdq_data_updated(event):
+    # TODO: This will attempt to load all pdq files everytime any pdq file is updated
+    # so if files are updated for c collaborations it will lead to c^2 files being read
+    # this can be optimized by no longer being event based but instead running on
+    # a timer if the files have changed.
     for record in event["Records"]:
         inner_record = unwrap_if_sns(record)
         if is_s3_testevent(inner_record):
             continue
         for s3_record in inner_record["Records"]:
             bucket_name = s3_record["s3"]["bucket"]["name"]
-            key = unquote_plus(s3_record["s3"]["object"]["key"])
+            file_path = unquote_plus(s3_record["s3"]["object"]["key"])
             if (
                 bucket_name == THREAT_EXCHANGE_DATA_BUCKET_NAME
-                and key.startswith(THREAT_EXCHANGE_DATA_FOLDER)
-                and key.endswith(THREAT_EXCHANGE_PDQ_KEY_SUFFIX)
+                and file_path.startswith(THREAT_EXCHANGE_DATA_FOLDER)
+                and file_path.endswith(THREAT_EXCHANGE_PDQ_FILE_EXTENSION)
             ):
                 return True
     return False
@@ -127,6 +131,9 @@ def lambda_handler(event, context):
     logger.info("Retreiving PDQ Data from S3")
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.download_datafiles):
+        # S3 doesnt have a built in concept of folders but the AWS UI
+        # implements folder-like functionality using prefixes. We follow
+        # this same convension here using folder name in a prefix search
         s3_bucket_files = s3_client.list_objects_v2(
             Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME,
             Prefix=THREAT_EXCHANGE_DATA_FOLDER,
@@ -136,7 +143,7 @@ def lambda_handler(event, context):
         pdq_data_files = [
             get_pdq_file(file["Key"])
             for file in s3_bucket_files
-            if file["Key"].endswith(THREAT_EXCHANGE_PDQ_KEY_SUFFIX)
+            if file["Key"].endswith(THREAT_EXCHANGE_PDQ_FILE_EXTENSION)
         ]
         logger.info("Found %d PDQ Files", len(pdq_data_files))
 
@@ -180,7 +187,7 @@ if __name__ == "__main__":
                             "object": {
                                 "key": THREAT_EXCHANGE_DATA_FOLDER
                                 + str(privacy_group_id)
-                                + THREAT_EXCHANGE_PDQ_KEY_SUFFIX
+                                + THREAT_EXCHANGE_PDQ_FILE_EXTENSION
                             },
                         }
                     }

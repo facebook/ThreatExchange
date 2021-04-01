@@ -28,7 +28,7 @@ variable "lambda_docker_info" {
 }
 
 variable "threat_exchange_data" {
-  description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data"
+  description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data. data_folder is actually just a key prefix to search for but this is displyed as a folder in AWS UI"
   type = object({
     bucket_name       = string
     data_folder       = string
