@@ -37,7 +37,7 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     PDQ_CONFIDENT_MATCH_THRESHOLD = 31
 
     @classmethod
-    def hash_file(cls, file: pathlib.Path) -> str:
+    def hash_from_file(cls, file: pathlib.Path) -> str:
         try:
             from threatexchange.hashing.pdq_hasher import pdq_from_file
         except:
