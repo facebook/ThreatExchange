@@ -49,7 +49,10 @@ def _pdq_from_numpy_array(array: np.ndarray) -> PDQOutput:
 
 
 def _check_dimension_and_expand_if_needed(array: np.ndarray) -> np.ndarray:
-    # 'pdqhash' expected 3 dim so (without this black and white images result in errors).
+    """
+    Convert 2 dim array to the 3 dim 'pdqhash' expects
+    (without this black and white images result in errors).
+    """
     if array.ndim == 2:
         array = np.concatenate([array[..., np.newaxis]] * 3, axis=2)
     return array
