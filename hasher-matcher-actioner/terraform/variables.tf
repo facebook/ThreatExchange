@@ -49,8 +49,8 @@ variable "te_api_token" {
 
 variable "collab_file" {
   description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
-  type = string
-  default = "collabs_example.json"
+  type        = string
+  default     = "collabs_example.json"
 }
 
 variable "fetch_frequency" {
