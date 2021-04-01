@@ -100,6 +100,7 @@ def lambda_handler(event, context):
                 )
                 signal_id = metadata["id"]
 
+                # TODO: Add source (threatexchange) tags to match record
                 PDQMatchRecord(
                     key,
                     hash_str,
@@ -110,6 +111,7 @@ def lambda_handler(event, context):
                 ).write_to_table(records_table)
 
                 match_ids.append(signal_id)
+                # TODO: Add source (threatexchange) tags to match message
                 message = MatchMessage(
                     content_key=key,
                     content_hash=hash_str,

@@ -38,6 +38,35 @@ class DynamoDBItem:
     def remove_content_key_prefix(key: str) -> str:
         return key[len(DynamoDBItem.CONTENT_KEY_PREFIX) :]
 
+class SNSMessage:
+    def to_sns_message(self) -> str:
+        raise NotImplementedError
+
+    @classmethod
+    def from_sns_message(cls, message: str) -> t.Type["SNSMessage"]:
+        raise NotImplementedError
+
+
+@dataclass
+class Label:
+    key: str
+    value: str
+
+    def __post_init__(self):
+        """
+        Validate that the key name does not have colons.
+        """
+
+    def to_dynamodb_dict(self) -> dict:
+        return {
+            "K": self.key,
+            "V": self.value
+        }
+
+    @classmethod
+    def from_dynamodb_dict(cls, d: dict) -> 'Label':
+        return cls(d['K'], d['V'])
+
 
 @dataclass
 class PDQRecordBase(DynamoDBItem):
@@ -113,6 +142,7 @@ class PDQMatchRecord(PDQRecordBase):
     signal_id: t.Union[str, int]
     signal_source: str
     signal_hash: str
+    labels: t.List[Label] = field(default_factory=list)
 
     @staticmethod
     def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
@@ -134,7 +164,7 @@ class PDQMatchRecord(PDQRecordBase):
             "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
-            "Labels": [x.to_dynamodb_string() for x in self.labels],
+            "Labels": [x.to_dynamodb_dict() for x in self.labels],
         }
 
     def to_sqs_message(self) -> dict:
@@ -187,6 +217,7 @@ class PDQMatchRecord(PDQRecordBase):
                 ),
                 item["SignalSource"],
                 item["SignalHash"],
+                [Label.from_dynamodb_dict(x) for x in item["Labels"]]
             )
             for item in items
         ]
@@ -220,7 +251,7 @@ class MatchRecordQuery:
     Written to be agnostic to hash type so it can be reused by other types of 'MatchRecord's.
     """
 
-    DEFAULT_PROJ_EXP = "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash"
+    DEFAULT_PROJ_EXP = "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Labels"
 
     @classmethod
     def from_content_key(
@@ -284,10 +315,6 @@ class MatchRecordQuery:
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
         ).get("Items", [])
 
-    @staticmethod
-    def from_dynamodb_string(string: str) -> "Label":
-        return Label(*string.split(":"))
-
 
 @dataclass
 class MatchMessage(SNSMessage):
@@ -330,10 +357,10 @@ class MatchMessage(SNSMessage):
             }
         )
 
-    @staticmethod
-    def from_sns_message(message: str) -> t.Type["MatchMessage"]:
+    @classmethod
+    def from_sns_message(cls, message: str) -> t.Type["MatchMessage"]:
         parsed = json.loads(message)
-        return MatchMessage(
+        return cls(
             parsed["ContentKey"],
             parsed["ContentHash"],
             parsed["BankedIndicatorId"],

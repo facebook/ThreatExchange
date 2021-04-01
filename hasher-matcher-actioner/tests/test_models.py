@@ -9,9 +9,8 @@ class LabelsTestCase(TestCase):
         l = Label("some key", "some value")
         # Just validate that no error is raised
 
-    def test_label_validation_contains_color(self):
-        with pytest.raises(ValueError):
-            l = Label("some:bad key", "some value")
-
-        with pytest.raises(ValueError):
-            l = Label("some key", "some bad: value")
+    def test_label_serde(self):
+        # serde is serialization/deserialization
+        l = Label("some key", "some value")
+        serded_l = Label.from_dynamodb_dict(l.to_dynamodb_dict())
+        self.assertEqual(l, serded_l)

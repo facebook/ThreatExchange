@@ -10,12 +10,14 @@ logger = get_logger(__name__)
 
 def lambda_handler(event, context):
     """
-    The output SNS topics from matchers have SQS instances subscribed to them.
-    This indirection allows for fanout. Multiple SQS queues can be tagged to the
-    same SNS topic and SNS will guarantee delivery to the queues.
+    This lambda is called once per match per dataset. If a single hash matches
+    multiple datasets, this will be called multiple times.
 
-    Architecture aside, here's what you need to know. The actions layer will be
-    listening on an SQS queue. For every record,
+    Eventually, this will be just an action labeller. It will label a match
+    record with the action it recommends. A separate system will be stood up
+    that aggregates labels and 'decides' which action would be taken.
+
+    For now, this method will,
     - it will construct the MatchMessage object and identify the actions it
       needs to invoke.
     - for now, rather than fanning out to individual specific lambdas, it will
