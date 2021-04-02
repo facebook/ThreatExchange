@@ -121,7 +121,7 @@ def lambda_handler(event, context):
                         banked_indicator_id=signal_id,
                     )
                     for signal_id in match_ids
-                ]
+                ],
             )
 
             # Publish one message for the set of matches.
