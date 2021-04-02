@@ -11,7 +11,7 @@ from mypy_boto3_sns import SNSClient
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.models import PDQMatchRecord, Label, MatchMessage
+from hmalib.models import PDQMatchRecord, Label, MatchMessage, DatasetMatchDetails
 from hmalib.common import get_logger
 
 logger = get_logger(__name__)
@@ -111,19 +111,23 @@ def lambda_handler(event, context):
                 ).write_to_table(records_table)
 
                 match_ids.append(signal_id)
-                # TODO: Add source (threatexchange) tags to match message
-                message = MatchMessage(
-                    content_key=key,
-                    content_hash=hash_str,
-                    banked_indicator_id=signal_id,
-                )
 
-                # Publish one message per match. This might be a perf penalty if
-                # we get > 1 match per index query. But I'm assuming that's
-                # rare. Unfortunately, there is no batch publish in SNS.
-                sns_client.publish(
-                    TopicArn=OUTPUT_TOPIC_ARN, Message=message.to_sns_message()
-                )
+            # TODO: Add source (threatexchange) tags to match message
+            message = MatchMessage(
+                content_key=key,
+                content_hash=hash_str,
+                match_details=[
+                    DatasetMatchDetails(
+                        banked_indicator_id=signal_id,
+                    )
+                    for signal_id in match_ids
+                ]
+            )
+
+            # Publish one message for the set of matches.
+            sns_client.publish(
+                TopicArn=OUTPUT_TOPIC_ARN, Message=message.to_sns_message()
+            )
         else:
             logger.info(f"No matches found for key: {key} hash: {hash_str}")
 

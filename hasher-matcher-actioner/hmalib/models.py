@@ -53,11 +53,6 @@ class Label:
     key: str
     value: str
 
-    def __post_init__(self):
-        """
-        Validate that the key name does not have colons.
-        """
-
     def to_dynamodb_dict(self) -> dict:
         return {"K": self.key, "V": self.value}
 
@@ -319,14 +314,42 @@ class MatchRecordQuery:
 @dataclass
 class MatchMessage(SNSMessage):
     """
-    Captures a match that will need to be processed. Joins the dataset and the
-    pipeline together.
+    Captures a set of matches that will need to be processed. We create one
+    match message for a single content key. It is possible that a single content
+    hash matches multiple datasets. When it does, the entire set of matches are
+    forwarded together so that *one* appropriate action can be taken.
 
-    Pipeline fields:
     - `content_key`: A way for partners to refer uniquely to content on their
       site
-    - `content_hash`: The pipeline generated hash for the content_key
+    - `content_hash`: The hash generated for the content_key
+    """
 
+    content_key: str
+    content_hash: str
+    match_details: t.List["DatasetMatchDetails"] = field(default_factory=list)
+
+    def to_sns_message(self) -> str:
+        return json.dumps(
+            {
+                "ContentKey": self.content_key,
+                "ContentHash": self.content_hash,
+                "MatchDetails": [x.to_dict() for x in self.match_details],
+            }
+        )
+
+    @classmethod
+    def from_sns_message(cls, message: str) -> "MatchMessage":
+        parsed = json.loads(message)
+        return cls(
+            parsed["ContentKey"],
+            parsed["ContentHash"],
+            [DatasetMatchDetails.from_dict(d) for d in parsed["MatchDetails"]],
+        )
+
+
+@dataclass
+class DatasetMatchDetails:
+    """
     Dataset fields:
     - `banked_content_id`: Inside the bank, what's a unique way to refer to what
       was matched against?
@@ -337,8 +360,6 @@ class MatchMessage(SNSMessage):
       'api/some-other-api'
     """
 
-    content_key: str
-    content_hash: str
     banked_indicator_id: str
 
     # source information, for now, it's okay to be hardcoded
@@ -346,24 +367,17 @@ class MatchMessage(SNSMessage):
     bank_id: str = "threatexchange_all_collabs"
     bank_source: str = "api/threatexchange"
 
-    def to_sns_message(self) -> str:
-        return json.dumps(
-            {
-                "ContentKey": self.content_key,
-                "ContentHash": self.content_hash,
-                "BankedIndicatorId": self.banked_indicator_id,
-                "BankId": self.bank_id,
-                "BankSource": self.bank_source,
-            }
-        )
+    def to_dict(self) -> dict:
+        return {
+            "BankedIndicatorId": self.banked_indicator_id,
+            "BankId": self.bank_id,
+            "BankSource": self.bank_source,
+        }
 
     @classmethod
-    def from_sns_message(cls, message: str) -> "MatchMessage":
-        parsed = json.loads(message)
+    def from_dict(cls, d: dict) -> "DatasetMatchDetails":
         return cls(
-            parsed["ContentKey"],
-            parsed["ContentHash"],
-            parsed["BankedIndicatorId"],
-            parsed["BankId"],
-            parsed["BankSource"],
+            d["BankedIndicatorId"],
+            d["BankId"],
+            d["BankSource"],
         )
