@@ -133,6 +133,50 @@ def hashes(key=None):
     return results if results else {}
 
 
+@app.get("/content_status/<key>")
+def content_status(key=None):
+    """
+    content status API endpoint:
+    currently returns mocked data
+    """
+    return {"status": "mocked_seen"}
+
+
+@app.post("/content_status/<key>")
+def update_content_status(key=None):
+    """
+    content status post API endpoint:
+    currently returns mocked data
+    """
+    logger.info("Status update post request received")
+    updated_status = json.loads(bottle.request.body.getvalue())
+    logger.info(updated_status)
+
+    return {"status": f"mocked_{updated_status.get('status')}"}
+
+
+@app.get("/signals")
+def signals():
+    """
+    Summary of all signal sources
+    """
+    signal_summary = gen_signals()
+    return {"signals": signal_summary}
+
+
+# Rough Missing endpoint list #
+
+
+@app.get("/dashboard")
+def dashboard():
+    """
+    Details for landing page
+    """
+
+    dashboard = gen_dashboard_mock()
+    return {"dashboard": dashboard}
+
+
 def lambda_handler(event, context):
     """
     root request handler
@@ -161,10 +205,17 @@ def gen_matches() -> t.List[MatchesResult]:
             "signal_id": record.signal_id,
             "signal_source": record.signal_source,
             "updated_at": record.updated_at.isoformat(),
-            "reactions": "TODO",
+            "reactions": "Mocked",
         }
         for record in records
     ]
+
+
+class MatchDetailsMetaData(t.TypedDict):
+    type: str
+    tags: t.List[str]
+    status: str
+    opinions: t.List[str]
 
 
 class MatchDetailsResult(t.TypedDict):
@@ -174,6 +225,8 @@ class MatchDetailsResult(t.TypedDict):
     signal_hash: str
     signal_source: str
     updated_at: str
+    meta_data: MatchDetailsMetaData
+    actions: t.List[str]
 
 
 def gen_match_details(content_id: str) -> t.List[MatchDetailsResult]:
@@ -183,6 +236,16 @@ def gen_match_details(content_id: str) -> t.List[MatchDetailsResult]:
     records = PDQMatchRecord.get_from_content_id(
         table, f"{IMAGE_FOLDER_KEY}{content_id}"
     )
+    # TODO these mocked metadata should either be added to
+    # PDQMatchRecord or some other look up in the data model
+    MOCKED_METADATA: MatchDetailsMetaData = {
+        "type": "HASH_PDQ",
+        "tags": ["mocked_t1", "mocked_t2"],
+        "status": "MOCKED_STATUS",
+        "opinions": ["mocked_a1", "mocked_a2"],
+    }
+
+    MOCKED_ACTIONS = ["Mocked_False_Postive", "Mocked_Delete"]
     return [
         {
             "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
@@ -191,6 +254,8 @@ def gen_match_details(content_id: str) -> t.List[MatchDetailsResult]:
             "signal_hash": record.signal_hash,
             "signal_source": record.signal_source,
             "updated_at": record.updated_at.isoformat(),
+            "meta_data": MOCKED_METADATA,
+            "actions": MOCKED_ACTIONS,
         }
         for record in records
     ]
@@ -215,4 +280,94 @@ def gen_hash(content_id: str) -> t.Optional[HashResult]:
         "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
         "content_hash": record.content_hash,
         "updated_at": record.updated_at.isoformat(),
+    }
+
+
+class SignalSourceType(t.TypedDict):
+    type: str
+    count: int
+
+
+class SignalSourceSummary(t.TypedDict):
+    name: str
+    signals: t.List[SignalSourceType]
+    updated_at: str
+
+
+def gen_signals() -> t.List[SignalSourceSummary]:
+    """
+    TODO this should be updated to check ThreatExchangeConfig
+    based on what it finds in the config it should then do a s3 select on the files
+    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.select_object_content
+    """
+    MOCKED_SIGNAL_TYPE1A: SignalSourceType = {"type": "HASH_PDQ", "count": 12456}
+    MOCKED_SIGNAL_TYPE1B: SignalSourceType = {"type": "MOCKED_TYPE1", "count": 456}
+    MOCKED_SIGNAL_TYPE2A: SignalSourceType = {"type": "HASH_PDQ", "count": 2456}
+    MOCKED_SIGNAL_TYPE2B: SignalSourceType = {"type": "MOCKED_TYPE2", "count": 956}
+
+    MOCKED_SIGNAL_SOURCE1: SignalSourceSummary = {
+        "name": "Mocked Signal Source 1",
+        "signals": [MOCKED_SIGNAL_TYPE1A, MOCKED_SIGNAL_TYPE1B],
+        "updated_at": "mocked datetime1",
+    }
+    MOCKED_SIGNAL_SOURCE2: SignalSourceSummary = {
+        "name": "Mocked Signal Source 2",
+        "signals": [MOCKED_SIGNAL_TYPE2A, MOCKED_SIGNAL_TYPE2B],
+        "updated_at": "mocked datetime2",
+    }
+    return [MOCKED_SIGNAL_SOURCE1, MOCKED_SIGNAL_SOURCE2]
+
+
+class DashboardCount(t.TypedDict):
+    total: int
+    today: int
+    updated_at: str
+
+
+class DashboardSystemStatus(t.TypedDict):
+    status: str
+    days_running: int
+    updated_at: str
+
+
+class Dashboard(t.TypedDict):
+    hashes: DashboardCount
+    matches: DashboardCount
+    actions: DashboardCount
+    signals: DashboardCount
+    system_status: DashboardSystemStatus
+
+
+def gen_dashboard_mock() -> Dashboard:
+    hashes: DashboardCount = {
+        "total": 34217123456,
+        "today": 145609278,
+        "updated_at": "MockData and Timestamp",
+    }
+    matches: DashboardCount = {
+        "total": 14376,
+        "today": 109,
+        "updated_at": "MockData and Timestamp",
+    }
+    actions: DashboardCount = {
+        "total": 3456,
+        "today": 27,
+        "updated_at": "MockData and Timestamp",
+    }
+    signals: DashboardCount = {
+        "total": 123456,
+        "today": 654,
+        "updated_at": "MockData and Timestamp",
+    }
+    system_status: DashboardSystemStatus = {
+        "status": "Running (Mocked)",
+        "days_running": 42,
+        "updated_at": "MockData and Timestamp",
+    }
+    return {
+        "hashes": hashes,
+        "matches": matches,
+        "actions": actions,
+        "signals": signals,
+        "system_status": system_status,
     }
