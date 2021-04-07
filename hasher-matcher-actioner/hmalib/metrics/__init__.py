@@ -21,6 +21,17 @@ measure_performance: bool = os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR, "False")
 
 logger = logging.getLogger(__name__)
 
+class lambda_with_datafiles():
+    def prefix_impl():
+        raise NotImplementedError()
+
+    @property
+    def download_datafiles(self):
+        return f"{self.prefix_impl()}.download_datafiles"
+
+    @property
+    def parse_datafiles(self):
+        return f"{self.prefix_impl()}.parse_datafiles"
 
 class names:
     """
@@ -45,7 +56,7 @@ class names:
         download_file = f"{_prefix}.download_file"
         hash = f"{_prefix}.hash"
 
-    class pdq_indexer_lambda(lamda_with_datafiles):
+    class pdq_indexer_lambda(lambda_with_datafiles):
         _prefix = "lambdas.pdqindexer"
 
         def prefix_impl():
@@ -62,20 +73,11 @@ class names:
         parse_index = f"{_prefix}.parse_index"
         search_index = f"{_prefix}.search_index"
 
-    class api_hash_count(lamda_with_datafiles):
-         _prefix = "api.hashcount"
+    class api_hash_count(lambda_with_datafiles):
+        _prefix = "api.hashcount"
 
         def prefix_impl():
             return _prefix
-
-
-class lamda_with_datafiles():
-    def prefix_impl():
-        raise NotImplementedError()
-
-    download_datafiles = f"{prefix_impl()}.download_datafiles"
-    parse_datafiles = f"{prefix_impl()}.parse_datafiles"
-
 
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"

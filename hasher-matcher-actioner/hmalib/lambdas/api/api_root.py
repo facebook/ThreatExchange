@@ -5,9 +5,7 @@ import bottle
 import boto3
 import json
 import base64
-from dataclasses import dataclass, asdict
 import typing as t
-from boto3.dynamodb.conditions import Attr
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
@@ -84,6 +82,21 @@ def upload():
         "message": "uploaded!",
     }
 
+@app.get("/image/<key>")
+def image(key=None):
+    """
+    return the bytes of an image in the "IMAGE_FOLDER_KEY" based on key
+    """
+    logger.info(key)
+    if not key:
+        return
+    # TODO a whole bunch of validation and error checking...
+    bytes_: bytes = s3_client.get_object(
+        Bucket=IMAGE_BUCKET_NAME, Key=f"{IMAGE_FOLDER_KEY}{key}"
+    )["Body"].read()
+    # TODO make the content type dynamic
+    response.set_header("Content-type", "image/jpeg")
+    return bytes_
 
 @app.get("/matches")
 def matches():
@@ -211,8 +224,8 @@ def gen_hash(content_id: str) -> t.Optional[HashResult]:
         "updated_at": record.updated_at.isoformat(),
     }
 
-def gen_hash_count() -> t.List[t.Dict[str, int]]:
+def gen_hash_count() -> t.Dict[str, int]:
     pdq_storage = ThreatExchangeS3PDQAdapter(metrics_logger : metrics.names.api_hash_count)
-    pdq_data_files = pdq_storage.get_files()
+    pdq_data_files = pdq_storage.load_data()
 
-    #TODO count the hashes in the files and return list of privacy groups to hash counts
+    return {file_name : len(rows) for file_name, rows in pdq_data_files.items()}
