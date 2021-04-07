@@ -21,7 +21,8 @@ measure_performance: bool = os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR, "False")
 
 logger = logging.getLogger(__name__)
 
-class lambda_with_datafiles():
+
+class lambda_with_datafiles:
     def prefix_impl(self):
         raise NotImplementedError()
 
@@ -32,6 +33,7 @@ class lambda_with_datafiles():
     @property
     def parse_datafiles(self):
         return f"{self.prefix_impl()}.parse_datafiles"
+
 
 class names:
     """

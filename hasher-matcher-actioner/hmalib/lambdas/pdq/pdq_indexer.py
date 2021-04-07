@@ -25,6 +25,7 @@ THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENS
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
 
+
 def unwrap_if_sns(data):
     if "EventSource" in data and data["EventSource"] == "aws:sns":
         message = data["Sns"]["Message"]
@@ -98,7 +99,7 @@ def lambda_handler(event, context):
     with metrics.timer(metrics_logger.merge_datafiles):
         logger.info("Merging PDQ Hash files")
         flat_pdq_data = [
-            hash_row for pdq_file in pdq_data_files for hash_row in pdq_file
+            hash_row for pdq_file in pdq_data_files.values() for hash_row in pdq_file
         ]
 
         merged_pdq_data = reduce(merge_pdq_files, flat_pdq_data, {}).values()

@@ -9,8 +9,8 @@ import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
-
-from hmalib.common import get_logger
+from hmalib import metrics
+from hmalib.common import get_logger, ThreatExchangeS3PDQAdapter
 from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
 
 # Set to 10MB for /upload
@@ -82,6 +82,7 @@ def upload():
         "message": "uploaded!",
     }
 
+
 @app.get("/image/<key>")
 def image(key=None):
     """
@@ -97,6 +98,7 @@ def image(key=None):
     # TODO make the content type dynamic
     response.set_header("Content-type", "image/jpeg")
     return bytes_
+
 
 @app.get("/matches")
 def matches():
@@ -129,6 +131,7 @@ def hashes(key=None):
     results = gen_hash(key)
     logger.debug(results)
     return results if results else {}
+
 
 @app.get("/hash_count")
 def hash_count():
@@ -225,7 +228,9 @@ def gen_hash(content_id: str) -> t.Optional[HashResult]:
     }
 
 def gen_hash_count() -> t.Dict[str, int]:
-    pdq_storage = ThreatExchangeS3PDQAdapter(metrics_logger=metrics.names.api_hash_count)
+    pdq_storage = ThreatExchangeS3PDQAdapter(
+        metrics_logger=metrics.names.api_hash_count()
+    )
     pdq_data_files = pdq_storage.load_data()
 
-    return {file_name : len(rows) for file_name, rows in pdq_data_files.items()}
+    return {file_name: len(rows) for file_name, rows in pdq_data_files.items()}

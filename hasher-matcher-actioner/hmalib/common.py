@@ -13,6 +13,7 @@ from hmalib import metrics
 
 HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
 
+
 def get_logger(name=__name__, level=logging.INFO):
     """
     This pattern prevents creates implicitly creating a root logger by creating the sub-logger named __name__
@@ -23,6 +24,7 @@ def get_logger(name=__name__, level=logging.INFO):
     logger.setLevel(level)
     return logger
 
+
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 
@@ -30,8 +32,9 @@ THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"
 THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
 
+
 @dataclass
-class ThreatExchangeS3Adapter():
+class ThreatExchangeS3Adapter:
     """
     Adapter for reading ThreatExchange data stored in S3. Concrete implementations
     are for a specific indicator type such as PDQ
@@ -39,8 +42,7 @@ class ThreatExchangeS3Adapter():
     Should probably refactor and merge with ThreatUpdateS3Store for writes
     """
 
-    metrics_logger : metrics.lambda_with_datafiles
-
+    metrics_logger: metrics.lambda_with_datafiles
 
     S3FileT = t.Dict[str, t.Any]
 
@@ -62,18 +64,19 @@ class ThreatExchangeS3Adapter():
             logger.info("Found %d Files", len(s3_bucket_files))
 
             typed_data_files = {
-                file["Key"] : self._get_file(file["Key"])
+                file["Key"]: self._get_file(file["Key"])
                 for file in s3_bucket_files
                 if file["Key"].endswith(self.indicator_type_file_extension)
             }
-            logger.info("Found %d %s Files", len(typed_data_files), self.file_type_str_name)
+            logger.info(
+                "Found %d %s Files", len(typed_data_files), self.file_type_str_name
+            )
 
         with metrics.timer(self.metrics_logger.parse_datafiles):
             logger.info("Parsing %s Hash files", self.file_type_str_name)
             typed_data = {
-                file_name : self._parse_file(**typed_data_file)
-                for file_name, typed_data_file
-                in typed_data_files.items()
+                file_name: self._parse_file(**typed_data_file)
+                for file_name, typed_data_file in typed_data_files.items()
             }
 
         return typed_data
@@ -111,11 +114,7 @@ class ThreatExchangeS3Adapter():
             ),
         }
 
-    def _parse_file(
-        self,
-        file_name: str,
-        data_file: S3FileT
-    ) -> t.List[HashRowT]:
+    def _parse_file(self, file_name: str, data_file: S3FileT) -> t.List[HashRowT]:
         data_reader = csv.DictReader(
             codecs.getreader("utf-8")(data_file["Body"]),
             fieldnames=self.indicator_type_file_columns,
@@ -128,11 +127,14 @@ class ThreatExchangeS3Adapter():
                     "id": int(row["id"]),
                     "hash": row["hash"],
                     "source": "te",  # default for now to make downstream easier to generalize
-                    "privacy_groups": [file_name.split("/")[-1].split(".")[0]], #read privacy group from key
+                    "privacy_groups": [
+                        file_name.split("/")[-1].split(".")[0]
+                    ],  # read privacy group from key
                 },
             )
             for row in data_reader
         ]
+
 
 class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
     """
