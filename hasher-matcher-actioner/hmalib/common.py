@@ -61,16 +61,20 @@ class ThreatExchangeS3Adapter():
             )["Contents"]
             logger.info("Found %d Files", len(s3_bucket_files))
 
-            typed_data_files = [
-                self._get_file(file["Key"])
+            typed_data_files = {
+                file["Key"] : self._get_file(file["Key"])
                 for file in s3_bucket_files
                 if file["Key"].endswith(self.indicator_type_file_extension)
-            ]
+            }
             logger.info("Found %d %s Files", len(typed_data_files), self.file_type_str_name)
 
         with metrics.timer(self.metrics_logger.parse_datafiles):
             logger.info("Parsing %s Hash files", self.file_type_str_name)
-            typed_data = [self._parse_file(**typed_data_file) for typed_data_file in typed_data_files]
+            typed_data = {
+                file_name : self._parse_file(**typed_data_file)
+                for file_name, typed_data_file
+                in typed_data_files.items()
+            }
 
         return typed_data
 
@@ -114,7 +118,7 @@ class ThreatExchangeS3Adapter():
     ) -> t.List[HashRowT]:
         data_reader = csv.DictReader(
             codecs.getreader("utf-8")(data_file["Body"]),
-            fieldnames=self.data_file_columns,
+            fieldnames=self.indicator_type_file_columns,
         )
         return [
             (
@@ -140,7 +144,7 @@ class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
         return THREAT_EXCHANGE_PDQ_FILE_EXTENSION
 
     @property
-    def data_file_columns(self):
+    def indicator_type_file_columns(self):
         return ["hash", "id", "timestamp", "tags"]
 
     @property

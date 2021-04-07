@@ -22,7 +22,7 @@ measure_performance: bool = os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR, "False")
 logger = logging.getLogger(__name__)
 
 class lambda_with_datafiles():
-    def prefix_impl():
+    def prefix_impl(self):
         raise NotImplementedError()
 
     @property
@@ -59,7 +59,7 @@ class names:
     class pdq_indexer_lambda(lambda_with_datafiles):
         _prefix = "lambdas.pdqindexer"
 
-        def prefix_impl():
+        def prefix_impl(self):
             return _prefix
 
         merge_datafiles = f"{_prefix}.merge_datafiles"
@@ -76,7 +76,7 @@ class names:
     class api_hash_count(lambda_with_datafiles):
         _prefix = "api.hashcount"
 
-        def prefix_impl():
+        def prefix_impl(self):
             return _prefix
 
 

@@ -225,7 +225,7 @@ def gen_hash(content_id: str) -> t.Optional[HashResult]:
     }
 
 def gen_hash_count() -> t.Dict[str, int]:
-    pdq_storage = ThreatExchangeS3PDQAdapter(metrics_logger : metrics.names.api_hash_count)
+    pdq_storage = ThreatExchangeS3PDQAdapter(metrics_logger=metrics.names.api_hash_count)
     pdq_data_files = pdq_storage.load_data()
 
     return {file_name : len(rows) for file_name, rows in pdq_data_files.items()}
