@@ -227,6 +227,7 @@ def gen_hash(content_id: str) -> t.Optional[HashResult]:
         "updated_at": record.updated_at.isoformat(),
     }
 
+
 def gen_hash_count() -> t.Dict[str, int]:
     pdq_storage = ThreatExchangeS3PDQAdapter(
         metrics_logger=metrics.names.api_hash_count()
