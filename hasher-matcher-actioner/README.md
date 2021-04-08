@@ -44,7 +44,7 @@ To visit your deployed UI, you'll need to get the static URL for the s3 bucket. 
 2. Search for "<your prefix>-webapp"
 3. Click on the object, and then find the "properties" tab
 4. Scroll to the bottom and find "Static Web Hosting" and grab the URL
-5. Visit the URL from your browser. You should be prompted for the account you created from the Auethentification step
+5. Visit the URL from your browser. You should be prompted for the account you created from the Authentification step
 ![image](https://user-images.githubusercontent.com/1654004/112202142-49a4e800-8bce-11eb-8ed9-8375e77fe8e1.png)
 6. After entering your information, you should see the landing page of the UI
 

@@ -45,20 +45,16 @@ class FetcherConfig:
     Simple holder for getting typed environment variables
     """
 
-    s3_state_bucket: str
-    s3_key_prefix: str
-    output_s3_pdq_key: str
+    s3_bucket: str
+    s3_te_data_folder: str
     collab_config_table: str
 
     @classmethod
     @lru_cache(maxsize=1)  # probably overkill, but at least it's consistent
     def get(cls):
         return cls(
-            s3_state_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            s3_key_prefix=os.environ.get(
-                "THREAT_EXCHANGE_STATE_KEY_PREFIX", "threat_exchange_data"
-            ),
-            output_s3_pdq_key=os.environ["THREAT_EXCHANGE_PDQ_DATA_KEY"],
+            s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
+            s3_te_data_folder=os.environ["THREAT_EXCHANGE_DATA_FOLDER"],
             collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
         )
 
@@ -92,7 +88,7 @@ def lambda_handler(event, context):
     api_key = AWSSecrets.te_api_key()
     api = ThreatExchangeAPI(api_key)
 
-    te_data_bucket = s3.Bucket(config.s3_state_bucket)
+    te_data_bucket = s3.Bucket(config.s3_bucket)
 
     stores = []
     for name, privacy_group in collabs:
@@ -102,7 +98,7 @@ def lambda_handler(event, context):
             privacy_group,
             api.app_id,
             te_data_bucket,
-            config.s3_key_prefix,
+            config.s3_te_data_folder,
         )
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
@@ -147,21 +143,21 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         privacy_group: int,
         app_id: int,
         s3_bucket: t.Any,  # Not typable?
-        s3_key_prefix: str,
+        s3_te_data_folder: str,
     ) -> None:
         super().__init__(privacy_group)
         self.app_id = app_id
         self._cached_state: t.Optional[t.Dict] = None
         self.s3_bucket = s3_bucket
-        self.s3_key_prefix = s3_key_prefix
+        self.s3_te_data_folder = s3_te_data_folder
 
     @property
     def checkpoint_s3_key(self) -> str:
-        return f"{self.s3_key_prefix}/{self.privacy_group}.checkpoint"
+        return f"{self.s3_te_data_folder}{self.privacy_group}.checkpoint"
 
     @property
     def data_s3_key(self) -> str:
-        return f"{self.s3_key_prefix}/{self.privacy_group}.pdq.te"
+        return f"{self.s3_te_data_folder}{self.privacy_group}.pdq.te"
 
     @property
     def next_delta(self) -> tu.ThreatUpdatesDelta:
@@ -294,14 +290,6 @@ def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     FetcherConfig.get.cache_clear()  # Just in case
-    os.environ.setdefault(
-        "THREAT_EXCHANGE_DATA_BUCKET_NAME",
-        "jeberl-hashing-data20210324205948477200000003",
-    )
-    os.environ.setdefault("THREAT_EXCHANGE_PDQ_DATA_KEY", "threat_exchange_data/pdq.te")
-    os.environ.setdefault(
-        "THREAT_EXCHANGE_CONFIG_DYNAMODB", "jeberl-ThreatExchangeConfig"
-    )
     FetcherConfig.get()
 
     # This will only kinda work for so long - eventually will

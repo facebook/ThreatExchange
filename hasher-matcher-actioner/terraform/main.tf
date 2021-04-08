@@ -19,7 +19,7 @@ locals {
   common_tags = {
     "HMAPrefix" = var.prefix
   }
-  pdq_data_file_key = "${module.hashing_data.threat_exchange_data_folder_info.key}pdq.te"
+  pdq_file_extension = ".pdq.te"
 }
 
 module "hashing_data" {
@@ -51,7 +51,8 @@ module "pdq_signals" {
   }
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_data_file_key  = local.pdq_data_file_key
+    pdq_file_extension = local.pdq_file_extension
+    data_folder        = module.hashing_data.threat_exchange_data_folder_info.key
     notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
   }
   index_data_storage = {
@@ -78,8 +79,8 @@ module "fetcher" {
   }
 
   threat_exchange_data = {
-    bucket_name       = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_data_file_key = local.pdq_data_file_key
+    bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    data_folder = module.hashing_data.threat_exchange_data_folder_info.key
   }
   collab_file = var.collab_file
 
@@ -135,14 +136,29 @@ resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
   policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
 }
 
-# Set up Cognito for authenticating api and webapp
+# Set up webapp resources (s3 bucket and cloudfront distribution)
 
-module "authentication" {
-  source = "./authentication"
-  prefix = var.prefix
+module "webapp" {
+  source                          = "./webapp"
+  prefix                          = var.prefix
+  organization                    = var.organization
+  include_cloudfront_distribution = var.include_cloudfront_distribution && !var.use_shared_user_pool
 }
 
-# Connect Hashing Data to API
+# Set up Cognito for authenticating webapp and api (unless shared setup is indicated in terraform.tfvars)
+
+module "authentication" {
+  source                                    = "./authentication"
+  prefix                                    = var.prefix
+  organization                              = var.organization
+  use_cloudfront_distribution_url           = var.include_cloudfront_distribution
+  cloudfront_distribution_url               = "https://${module.webapp.cloudfront_distribution_domain_name}"
+  use_shared_user_pool                      = var.use_shared_user_pool
+  webapp_and_api_shared_user_pool_id        = var.webapp_and_api_shared_user_pool_id
+  webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
+}
+
+# Set up api
 
 module "api" {
   source                    = "./api"
@@ -169,15 +185,34 @@ module "api" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
 }
 
+# Build and deploy webapp
+
 resource "local_file" "webapp_env" {
+  depends_on = [
+    module.api.invoke_url,
+    module.authentication.webapp_and_api_user_pool_id,
+    module.authentication.webapp_and_api_user_pool_client_id
+  ]
   sensitive_content = "REACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
   filename          = "../webapp/.env"
 }
 
-module "webapp" {
-  include_cloudfront_distribution = var.include_cloudfront_distribution
-  prefix                          = var.prefix
-  source                          = "./webapp"
+resource "null_resource" "build_and_deploy_webapp" {
+  depends_on = [
+    module.webapp.s3_bucket_name,
+    local_file.webapp_env
+  ]
+  provisioner "local-exec" {
+    command     = "npm install --silent"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
+    command     = "npm run build"
+    working_dir = "../webapp"
+  }
+  provisioner "local-exec" {
+    command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl public-read"
+  }
 }
 
 module "actions" {

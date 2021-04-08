@@ -29,10 +29,10 @@ class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileHasher):
     TYPE_TAG = "media_type_video"
 
     @classmethod
-    def hash_file(cls, file: pathlib.Path) -> str:
+    def hash_from_file(cls, path: pathlib.Path) -> str:
         file_hash = hashlib.md5()
         blocksize = 8192
-        with file.open("rb") as f:
+        with open(path, "rb") as f:
             chunk = f.read(blocksize)
             while chunk:
                 file_hash.update(chunk)

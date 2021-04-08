@@ -11,6 +11,11 @@ variable "prefix" {
   default     = "hma"
 }
 
+variable "organization" {
+  description = "The name / acronym to use for resource names that must be globally unique (use only lower case alpha a-z, and, optionally, hyphens)"
+  type        = string
+}
+
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
@@ -47,14 +52,32 @@ variable "te_api_token" {
   sensitive   = true
 }
 
+variable "fetch_frequency" {
+  description = "How long to wait between calls to ThreatExcahnge. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+  type        = string
+  default     = "15 minutes"
+}
+
 variable "collab_file" {
   description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
   type        = string
   default     = "collabs_example.json"
 }
 
-variable "fetch_frequency" {
-  description = "How long to wait between calls to ThreatExcahnge. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+variable "use_shared_user_pool" {
+  description = "Indicates if the web app and api will use a shared user pool (generally true for developers / engineers sandbox environments, otherwise false)"
+  type        = bool
+  default     = false
+}
+
+variable "webapp_and_api_shared_user_pool_id" {
+  description = "The id of the shared user pool. Used in conjunction with use_shared_user_pool set to true. Generate by running terraform init & apply from /authentication-shared."
   type        = string
-  default     = "15 minutes"
+  default     = ""
+}
+
+variable "webapp_and_api_shared_user_pool_client_id" {
+  description = "The id of the shared user pool app client. Used in conjunction with use_shared_user_pool set to true. Generate by running terraform init & apply from /authentication-shared."
+  type        = string
+  default     = ""
 }

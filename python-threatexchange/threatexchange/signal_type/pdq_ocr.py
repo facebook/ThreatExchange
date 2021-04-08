@@ -40,7 +40,7 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD = 0.10
 
     @classmethod
-    def hash_file(cls, file: pathlib.Path) -> str:
+    def hash_from_file(cls, file: pathlib.Path) -> str:
         try:
             from ..hashing.pdq_hasher import pdq_from_file
             from ..hashing.ocr_utils import text_from_image_file

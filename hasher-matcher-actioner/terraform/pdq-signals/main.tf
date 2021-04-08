@@ -42,11 +42,10 @@ resource "aws_lambda_function" "pdq_indexer" {
   environment {
     variables = {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
-      THREAT_EXCHANGE_PDQ_DATA_KEY     = var.threat_exchange_data.pdq_data_file_key
+      THREAT_EXCHANGE_DATA_FOLDER      = var.threat_exchange_data.data_folder
+      THREAT_EXCHANGE_PDQ_FILE_EXTENSION   = var.threat_exchange_data.pdq_file_extension
       INDEXES_BUCKET_NAME              = var.index_data_storage.bucket_name
       PDQ_INDEX_KEY                    = local.pdq_index_key
-      MEASURE_PERFORMANCE              = var.measure_performance ? "True" : "False"
-      METRICS_NAMESPACE                = var.metrics_namespace
     }
   }
   tags = merge(
@@ -82,8 +81,26 @@ resource "aws_iam_role" "pdq_indexer" {
 data "aws_iam_policy_document" "pdq_indexer" {
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.pdq_data_file_key}"]
+    actions   = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}*",
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = [
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}",
+    ]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = [local.pdq_index_arn]
   }
   statement {
     effect    = "Allow"
