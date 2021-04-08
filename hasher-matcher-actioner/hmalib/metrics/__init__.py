@@ -22,6 +22,19 @@ measure_performance: bool = os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR, "False")
 logger = logging.getLogger(__name__)
 
 
+class lambda_with_datafiles:
+    def prefix_impl(self):
+        raise NotImplementedError()
+
+    @property
+    def download_datafiles(self):
+        return f"{self.prefix_impl()}.download_datafiles"
+
+    @property
+    def parse_datafiles(self):
+        return f"{self.prefix_impl()}.parse_datafiles"
+
+
 class names:
     """
     Not a real class, just a bag of metric names. Ignore the lowercase name if
@@ -45,11 +58,12 @@ class names:
         download_file = f"{_prefix}.download_file"
         hash = f"{_prefix}.hash"
 
-    class pdq_indexer_lambda:
+    class pdq_indexer_lambda(lambda_with_datafiles):
         _prefix = "lambdas.pdqindexer"
 
-        download_datafiles = f"{_prefix}.download_datafiles"
-        parse_datafiles = f"{_prefix}.parse_datafiles"
+        def prefix_impl(self):
+            return _prefix
+
         merge_datafiles = f"{_prefix}.merge_datafiles"
         build_index = f"{_prefix}.build_index"
         upload_index = f"{_prefix}.upload_index"
@@ -60,6 +74,12 @@ class names:
         download_index = f"{_prefix}.download_index"
         parse_index = f"{_prefix}.parse_index"
         search_index = f"{_prefix}.search_index"
+
+    class api_hash_count(lambda_with_datafiles):
+        _prefix = "api.hashcount"
+
+        def prefix_impl(self):
+            return _prefix
 
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"

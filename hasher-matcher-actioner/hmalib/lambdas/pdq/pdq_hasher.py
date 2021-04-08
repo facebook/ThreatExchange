@@ -13,7 +13,7 @@ from threatexchange.hashing import pdq_hasher
 
 from hmalib import metrics
 from hmalib.models import PipelinePDQHashRecord
-from hmalib.common import get_logger
+from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
