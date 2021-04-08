@@ -106,7 +106,7 @@ def matches():
     matches API endpoint:
     returns style { matches: [MatchesResult] }
     """
-    results = gen_matches()
+    results = get_matches()
     logger.debug(results)
     return {"matches": results}
 
@@ -117,7 +117,7 @@ def match_details(key=None):
     matche details API endpoint:
     return format: match_details : [MatchDetailsResult]
     """
-    results = gen_match_details(key)
+    results = get_match_details(key)
     logger.debug(results)
     return {"match_details": results}
 
@@ -128,7 +128,7 @@ def hashes(key=None):
     hash details API endpoint:
     return format: HashResult
     """
-    results = gen_hash(key)
+    results = get_hash(key)
     logger.debug(results)
     return results if results else {}
 
@@ -160,11 +160,8 @@ def signals():
     """
     Summary of all signal sources
     """
-    signal_summary = gen_signals()
+    signal_summary = get_signals()
     return {"signals": signal_summary}
-
-
-# Rough Missing endpoint list #
 
 
 @app.get("/dashboard")
@@ -173,7 +170,7 @@ def dashboard():
     Details for landing page
     """
 
-    dashboard = gen_dashboard_mock()
+    dashboard = get_dashboard_mock()
     return {"dashboard": dashboard}
 
 
@@ -196,7 +193,7 @@ class MatchesResult(t.TypedDict):
     reactions: str  # TODO
 
 
-def gen_matches() -> t.List[MatchesResult]:
+def get_matches() -> t.List[MatchesResult]:
     table = dynamodb.Table(DYNAMODB_TABLE)
     records = PDQMatchRecord.get_from_time_range(table)
     return [
@@ -229,7 +226,7 @@ class MatchDetailsResult(t.TypedDict):
     actions: t.List[str]
 
 
-def gen_match_details(content_id: str) -> t.List[MatchDetailsResult]:
+def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
     if not content_id:
         return []
     table = dynamodb.Table(DYNAMODB_TABLE)
@@ -267,7 +264,7 @@ class HashResult(t.TypedDict):
     updated_at: str
 
 
-def gen_hash(content_id: str) -> t.Optional[HashResult]:
+def get_hash(content_id: str) -> t.Optional[HashResult]:
     if not content_id:
         return None
     table = dynamodb.Table(DYNAMODB_TABLE)
@@ -294,7 +291,7 @@ class SignalSourceSummary(t.TypedDict):
     updated_at: str
 
 
-def gen_signals() -> t.List[SignalSourceSummary]:
+def get_signals() -> t.List[SignalSourceSummary]:
     """
     TODO this should be updated to check ThreatExchangeConfig
     based on what it finds in the config it should then do a s3 select on the files
@@ -338,7 +335,7 @@ class Dashboard(t.TypedDict):
     system_status: DashboardSystemStatus
 
 
-def gen_dashboard_mock() -> Dashboard:
+def get_dashboard_mock() -> Dashboard:
     hashes: DashboardCount = {
         "total": 34217123456,
         "today": 145609278,
