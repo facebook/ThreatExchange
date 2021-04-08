@@ -215,3 +215,21 @@ resource "null_resource" "build_and_deploy_webapp" {
     command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl public-read"
   }
 }
+
+module "actions" {
+  source = "./actions"
+
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      action_performer = "hmalib.lambdas.actions.action_performer.lambda_handler"
+    }
+  }
+
+  matches_sns_topic_arn = aws_sns_topic.matches.arn
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  measure_performance   = var.measure_performance
+}

@@ -207,7 +207,8 @@ resource "aws_dynamodb_table" "datastore" {
       "UpdatedAt",
       "SignalHash",
       "SignalSource",
-      "HashType"
+      "HashType",
+      "Labels"
     ]
   }
 
@@ -220,7 +221,8 @@ resource "aws_dynamodb_table" "datastore" {
       "ContentHash",
       "SignalHash",
       "SignalSource",
-      "HashType"
+      "HashType",
+      "Labels"
     ]
   }
 
