@@ -2,7 +2,7 @@
 
 import json
 
-from hmalib.common import get_logger
+from hmalib.common.logging import get_logger
 from hmalib.models import MatchMessage
 
 logger = get_logger(__name__)
