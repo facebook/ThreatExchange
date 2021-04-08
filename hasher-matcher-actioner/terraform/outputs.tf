@@ -12,6 +12,9 @@ output "datastore_name" {
 output "pdq_file_extension" {
   value = local.pdq_file_extension
 }
+output "te_data_folder" {
+  value = local.te_data_folder
+}
 output "image_folder_key" {
   value = module.hashing_data.image_folder_info.key
 }
