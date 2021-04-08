@@ -20,6 +20,7 @@ locals {
     "HMAPrefix" = var.prefix
   }
   pdq_file_extension = ".pdq.te"
+  te_data_folder     = module.hashing_data.threat_exchange_data_folder_info.key
 }
 
 module "hashing_data" {
@@ -52,7 +53,7 @@ module "pdq_signals" {
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_file_extension = local.pdq_file_extension
-    data_folder        = module.hashing_data.threat_exchange_data_folder_info.key
+    data_folder        = local.te_data_folder
     notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
   }
   index_data_storage = {
@@ -80,7 +81,7 @@ module "fetcher" {
 
   threat_exchange_data = {
     bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    data_folder = module.hashing_data.threat_exchange_data_folder_info.key
+    data_folder = local.te_data_folder
   }
   collab_file = var.collab_file
 
