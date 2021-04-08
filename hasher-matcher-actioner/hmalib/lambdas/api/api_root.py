@@ -138,7 +138,7 @@ def hash_count():
     """
     how many hashes exist in HMA
     """
-    results = hash_count()
+    results = get_hash_count()
     logger.debug(results)
     return results if results else {}
 
@@ -228,7 +228,7 @@ def gen_hash(content_id: str) -> t.Optional[HashResult]:
     }
 
 
-def gen_hash_count() -> t.Dict[str, int]:
+def get_hash_count() -> t.Dict[str, int]:
     pdq_storage = ThreatExchangeS3PDQAdapter(
         metrics_logger=metrics.names.api_hash_count()
     )

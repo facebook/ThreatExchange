@@ -11,6 +11,8 @@ import typing as t
 from dataclasses import dataclass
 from hmalib import metrics
 
+s3_client = boto3.client("s3")
+
 HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
 
 
@@ -26,11 +28,26 @@ def get_logger(name=__name__, level=logging.INFO):
 
 
 logger = get_logger(__name__)
-s3_client = boto3.client("s3")
 
-THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
-THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
-THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
+
+@dataclass
+class S3ThreatDataConfig:
+
+    threat_exchange_data_bucket_name: str
+    threat_exchange_data_folder: str
+    threat_exchange_pdq_file_extension: str
+
+    @classmethod
+    def get(cls):
+        return cls(
+            threat_exchange_data_bucket_name=os.environ[
+                "THREAT_EXCHANGE_DATA_BUCKET_NAME"
+            ],
+            threat_exchange_data_folder=os.environ["THREAT_EXCHANGE_DATA_FOLDER"],
+            threat_exchange_pdq_file_extension=os.environ[
+                "THREAT_EXCHANGE_PDQ_FILE_EXTENSION"
+            ],
+        )
 
 
 @dataclass
@@ -39,12 +56,15 @@ class ThreatExchangeS3Adapter:
     Adapter for reading ThreatExchange data stored in S3. Concrete implementations
     are for a specific indicator type such as PDQ
 
+    Assumes CSV file format
+
     Should probably refactor and merge with ThreatUpdateS3Store for writes
     """
 
     metrics_logger: metrics.lambda_with_datafiles
 
     S3FileT = t.Dict[str, t.Any]
+    config: S3ThreatDataConfig = S3ThreatDataConfig.get()
 
     def load_data(self) -> t.Dict[str, t.List[HashRowT]]:
         """
@@ -58,8 +78,8 @@ class ThreatExchangeS3Adapter:
             # implements folder-like functionality using prefixes. We follow
             # this same convension here using folder name in a prefix search
             s3_bucket_files = s3_client.list_objects_v2(
-                Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME,
-                Prefix=THREAT_EXCHANGE_DATA_FOLDER,
+                Bucket=self.config.threat_exchange_data_bucket_name,
+                Prefix=self.config.threat_exchange_data_folder,
             )["Contents"]
             logger.info("Found %d Files", len(s3_bucket_files))
 
@@ -110,7 +130,7 @@ class ThreatExchangeS3Adapter:
         return {
             "file_name": file_name,
             "data_file": s3_client.get_object(
-                Bucket=THREAT_EXCHANGE_DATA_BUCKET_NAME, Key=file_name
+                Bucket=self.config.threat_exchange_data_bucket_name, Key=file_name
             ),
         }
 
@@ -138,12 +158,12 @@ class ThreatExchangeS3Adapter:
 
 class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
     """
-    Adapter for reading ThreatExchange PDQ data stored in S3
+    Adapter for reading ThreatExchange PDQ data stored in CSV files S3
     """
 
     @property
     def indicator_type_file_extension(self):
-        return THREAT_EXCHANGE_PDQ_FILE_EXTENSION
+        return self.config.threat_exchange_pdq_file_extension
 
     @property
     def indicator_type_file_columns(self):
