@@ -153,7 +153,7 @@ def lambda_handler(event, context):
         logger.info("Merging PDQ Hash files")
         flat_pdq_data = [hash_row for pdq_file in pdq_data for hash_row in pdq_file]
 
-        merged_pdq_data = reduce(merge_pdq_files, flat_pdq_data, {}).items()
+        merged_pdq_data = reduce(merge_pdq_files, flat_pdq_data, {}).values()
 
     with metrics.timer(metrics.names.pdq_indexer_lambda.build_index):
         logger.info("Creating PDQ Hash Index")
