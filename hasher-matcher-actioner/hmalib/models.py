@@ -2,7 +2,8 @@
 
 import datetime
 import typing as t
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key
 
@@ -36,6 +37,28 @@ class DynamoDBItem:
     @staticmethod
     def remove_content_key_prefix(key: str) -> str:
         return key[len(DynamoDBItem.CONTENT_KEY_PREFIX) :]
+
+
+class SNSMessage:
+    def to_sns_message(self) -> str:
+        raise NotImplementedError
+
+    @classmethod
+    def from_sns_message(cls, message: str) -> "SNSMessage":
+        raise NotImplementedError
+
+
+@dataclass
+class Label:
+    key: str
+    value: str
+
+    def to_dynamodb_dict(self) -> dict:
+        return {"K": self.key, "V": self.value}
+
+    @classmethod
+    def from_dynamodb_dict(cls, d: dict) -> "Label":
+        return cls(d["K"], d["V"])
 
 
 @dataclass
@@ -112,6 +135,7 @@ class PDQMatchRecord(PDQRecordBase):
     signal_id: t.Union[str, int]
     signal_source: str
     signal_hash: str
+    labels: t.List[Label] = field(default_factory=list)
 
     @staticmethod
     def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
@@ -133,6 +157,7 @@ class PDQMatchRecord(PDQRecordBase):
             "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
+            "Labels": [x.to_dynamodb_dict() for x in self.labels],
         }
 
     def to_sqs_message(self) -> dict:
@@ -185,6 +210,7 @@ class PDQMatchRecord(PDQRecordBase):
                 ),
                 item["SignalSource"],
                 item["SignalHash"],
+                [Label.from_dynamodb_dict(x) for x in item["Labels"]],
             )
             for item in items
         ]
@@ -218,7 +244,9 @@ class MatchRecordQuery:
     Written to be agnostic to hash type so it can be reused by other types of 'MatchRecord's.
     """
 
-    DEFAULT_PROJ_EXP = "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash"
+    DEFAULT_PROJ_EXP = (
+        "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Labels"
+    )
 
     @classmethod
     def from_content_key(
@@ -281,3 +309,75 @@ class MatchRecordQuery:
             & Key("UpdatedAt").between(start_time, end_time),
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
         ).get("Items", [])
+
+
+@dataclass
+class MatchMessage(SNSMessage):
+    """
+    Captures a set of matches that will need to be processed. We create one
+    match message for a single content key. It is possible that a single content
+    hash matches multiple datasets. When it does, the entire set of matches are
+    forwarded together so that *one* appropriate action can be taken.
+
+    - `content_key`: A way for partners to refer uniquely to content on their
+      site
+    - `content_hash`: The hash generated for the content_key
+    """
+
+    content_key: str
+    content_hash: str
+    match_details: t.List["DatasetMatchDetails"] = field(default_factory=list)
+
+    def to_sns_message(self) -> str:
+        return json.dumps(
+            {
+                "ContentKey": self.content_key,
+                "ContentHash": self.content_hash,
+                "MatchDetails": [x.to_dict() for x in self.match_details],
+            }
+        )
+
+    @classmethod
+    def from_sns_message(cls, message: str) -> "MatchMessage":
+        parsed = json.loads(message)
+        return cls(
+            parsed["ContentKey"],
+            parsed["ContentHash"],
+            [DatasetMatchDetails.from_dict(d) for d in parsed["MatchDetails"]],
+        )
+
+
+@dataclass
+class DatasetMatchDetails:
+    """
+    Dataset fields:
+    - `banked_content_id`: Inside the bank, what's a unique way to refer to what
+      was matched against?
+    - `bank_id`: [optional][Defaults to 'threatexchange_all_collabs'] Which bank
+      did we fetch this banked_content from?
+    - `bank_source`: [optional][Defaults to 'api/threatexchange'] This is
+      forward looking, but potentially, we could have this be 'local', or
+      'api/some-other-api'
+    """
+
+    banked_indicator_id: str
+
+    # source information, for now, it's okay to be hardcoded
+    # to threatexchange
+    bank_id: str = "threatexchange_all_collabs"
+    bank_source: str = "api/threatexchange"
+
+    def to_dict(self) -> dict:
+        return {
+            "BankedIndicatorId": self.banked_indicator_id,
+            "BankId": self.bank_id,
+            "BankSource": self.bank_source,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "DatasetMatchDetails":
+        return cls(
+            d["BankedIndicatorId"],
+            d["BankId"],
+            d["BankSource"],
+        )

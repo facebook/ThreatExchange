@@ -59,9 +59,9 @@ variable "fetch_frequency" {
 }
 
 variable "collab_file" {
-  description = "An optinal file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
-  type = string
-  default = "collabs_example.json"
+  description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
+  type        = string
+  default     = "collabs_example.json"
 }
 
 variable "use_shared_user_pool" {
