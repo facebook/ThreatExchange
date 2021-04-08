@@ -10,7 +10,8 @@ from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
 from hmalib import metrics
-from hmalib.common import get_logger, ThreatExchangeS3PDQAdapter
+from hmalib.common.logging import get_logger
+from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter
 from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
 
 # Set to 10MB for /upload

@@ -10,7 +10,7 @@ from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
 from hmalib.models import PDQMatchRecord
-from hmalib.common import get_logger
+from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")

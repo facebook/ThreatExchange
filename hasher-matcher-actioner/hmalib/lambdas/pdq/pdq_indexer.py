@@ -12,7 +12,8 @@ import boto3
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.common import get_logger, ThreatExchangeS3PDQAdapter, HashRowT
+from hmalib.common.logging import get_logger
+from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, HashRowT
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")

@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import logging
 import os
 import boto3
 import csv
@@ -10,24 +9,12 @@ import typing as t
 
 from dataclasses import dataclass
 from hmalib import metrics
-
-s3_client = boto3.client("s3")
-
-HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
-
-
-def get_logger(name=__name__, level=logging.INFO):
-    """
-    This pattern prevents creates implicitly creating a root logger by creating the sub-logger named __name__
-    Also by default sets level to INFO
-    """
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    return logger
-
+from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
+
+s3_client = boto3.client("s3")
+HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
 
 
 @dataclass
@@ -122,7 +109,7 @@ class ThreatExchangeS3Adapter:
     @property
     def indicator_type_file_columns(self):
         """
-        What are the columns when this type of data is stored in S3
+        What are the csv columns when this type of data is stored in S3
         """
         raise NotImplementedError()
 
