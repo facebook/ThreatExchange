@@ -7,7 +7,7 @@ import boto3
 import datetime
 import os
 
-import hmalib.lambdas.actions.action_performer
+from hmalib.lambdas.actions.action_performer import ActionLabel, perform_action
 
 
 class TestActioner(unittest.TestCase):
@@ -21,6 +21,7 @@ class TestActioner(unittest.TestCase):
             action_label = ActionLabel("Action", "Something else")
         except Exception as e:
             raised = e.args[0] == "'Something else' is not a valid Action"
+            print(e.args[0])
         assert raised
 
         raised = False
