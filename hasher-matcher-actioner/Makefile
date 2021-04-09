@@ -40,13 +40,17 @@ dev_test_instance:
 	TF_DYNAMODB_TABLE=$(call shell-or-die, cd terraform/ && terraform output -json datastore_name) \
 	TF_BUCKET_NAME=$(call shell-or-die, cd terraform/ &&  terraform output -json bucket_name) \
 	TF_PREFIX=$(call shell-or-die, cd terraform/ &&  terraform output -json prefix) \
+	TF_PDQ_FILE_EXTENSION=$(call shell-or-die, cd terraform/ &&  terraform output -json pdq_file_extension) \
+	TF_TE_DATA_FOLDER=$(call shell-or-die, cd terraform/ &&  terraform output -json te_data_folder) \
+	TF_IMAGE_FOLDER_KEY=$(call shell-or-die, cd terraform/ &&  terraform output -json image_folder_key) \
 	./tests/scripts/check_deployed_instance.py
 
 dev_upload_test_signal:
 	@TF_BUCKET_NAME=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json bucket_name | tr -d '"') && \
-	TF_PDQ_DATA_FILE_KEY=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json pdq_data_file_key | tr -d '"') && \
-	echo "Upload sample signals? [y/N] This will copy over $${TF_PDQ_DATA_FILE_KEY} in $${TF_BUCKET_NAME}" && read ans && [ $${ans:-N} = y ] && \
-	aws s3 cp sample_data/pdq.csv s3://$${TF_BUCKET_NAME}/$${TF_PDQ_DATA_FILE_KEY}
+	TF_PDQ_FILE_EXTENSION=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json pdq_file_extension | tr -d '"') && \
+	TF_TE_DATA_FOLDER=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json te_data_folder | tr -d '"') && \
+	echo "Upload sample signals? [y/N] This will copy over $${TF_TE_DATA_FOLDER}sample_data$${TF_PDQ_FILE_EXTENSION} in $${TF_BUCKET_NAME}" && read ans && [ $${ans:-N} = y ] && \
+	aws s3 cp sample_data/pdq.csv s3://$${TF_BUCKET_NAME}/$${TF_TE_DATA_FOLDER}sample_data$${TF_PDQ_FILE_EXTENSION}
 
 dev_upload_test_content:
 	@TF_BUCKET_NAME=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json bucket_name | tr -d '"') && \

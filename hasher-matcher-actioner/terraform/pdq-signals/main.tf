@@ -41,11 +41,11 @@ resource "aws_lambda_function" "pdq_indexer" {
   memory_size = 512
   environment {
     variables = {
-      THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
-      THREAT_EXCHANGE_DATA_FOLDER      = var.threat_exchange_data.data_folder
-      THREAT_EXCHANGE_PDQ_FILE_EXTENSION   = var.threat_exchange_data.pdq_file_extension
-      INDEXES_BUCKET_NAME              = var.index_data_storage.bucket_name
-      PDQ_INDEX_KEY                    = local.pdq_index_key
+      THREAT_EXCHANGE_DATA_BUCKET_NAME   = var.threat_exchange_data.bucket_name
+      THREAT_EXCHANGE_DATA_FOLDER        = var.threat_exchange_data.data_folder
+      THREAT_EXCHANGE_PDQ_FILE_EXTENSION = var.threat_exchange_data.pdq_file_extension
+      INDEXES_BUCKET_NAME                = var.index_data_storage.bucket_name
+      PDQ_INDEX_KEY                      = local.pdq_index_key
     }
   }
   tags = merge(

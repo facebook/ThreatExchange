@@ -25,7 +25,7 @@ from pathlib import Path
 import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
-from hmalib.common import get_logger
+from hmalib.common.logging import get_logger
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
@@ -190,7 +190,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             checkpoint_json["fetch_checkpoint"],
         )
         logger.info(
-            "Loaded checkpoint for %d. last_fetch_time=%d fetch_checkpoint=%d",
+            "Loaded checkpoint for privacy group %d. last_fetch_time=%d fetch_checkpoint=%d",
             self.privacy_group,
             ret.last_fetch_time,
             ret.fetch_checkpoint,
@@ -210,7 +210,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         )
         write_s3_text(txt_content, self.s3_bucket, self.checkpoint_s3_key)
         logger.info(
-            "Stored checkpoint for %d. last_fetch_time=%d fetch_checkpoint=%d",
+            "Stored checkpoint for privacy group %d. last_fetch_time=%d fetch_checkpoint=%d",
             self.privacy_group,
             checkpoint.last_fetch_time,
             checkpoint.fetch_checkpoint,

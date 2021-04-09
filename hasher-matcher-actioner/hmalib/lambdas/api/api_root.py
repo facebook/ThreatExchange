@@ -9,8 +9,9 @@ import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
-
-from hmalib.common import get_logger
+from hmalib import metrics
+from hmalib.common.logging import get_logger
+from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter
 from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
 
 # Set to 10MB for /upload
@@ -185,6 +186,16 @@ def dashboard_actions():
 @app.get("/dashboard-status")
 def dashboard_status():
     return {"dashboard-status": get_dashboard_system_status()}
+
+
+@app.get("/hash_count")
+def hash_count():
+    """
+    how many hashes exist in HMA
+    """
+    results = get_hash_count()
+    logger.debug(results)
+    return results if results else {}
 
 
 def lambda_handler(event, context):
@@ -377,3 +388,12 @@ def get_dashboard_system_status() -> DashboardSystemStatus:
         days_running=42,
         updated_at="MockData and Timestamp",
     )
+
+
+def get_hash_count() -> t.Dict[str, int]:
+    pdq_storage = ThreatExchangeS3PDQAdapter(
+        metrics_logger=metrics.names.api_hash_count()
+    )
+    pdq_data_files = pdq_storage.load_data()
+
+    return {file_name: len(rows) for file_name, rows in pdq_data_files.items()}
