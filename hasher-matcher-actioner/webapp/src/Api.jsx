@@ -44,8 +44,20 @@ export function fetchHash(key) {
   return apiGet(`/hash/${key}`);
 }
 
+export function fetchContentStatus(key) {
+  return apiGet(`/content_status/${key}`);
+}
+
 export function fetchImage(key) {
   return apiGet(`/image/${key}`, {}, 'blob');
+}
+
+export function fetchSignalSummary() {
+  return apiGet('/signals');
+}
+
+export function fetchDashboardCardSummary(path) {
+  return apiGet(`/${path}`);
 }
 
 export async function uploadImage(file) {
@@ -58,4 +70,10 @@ export async function uploadImage(file) {
       fileContentsBase64Encoded,
     });
   };
+}
+
+export async function updateContentStatus(key, status) {
+  apiPost(`/content_status/${key}`, {
+    status,
+  });
 }
