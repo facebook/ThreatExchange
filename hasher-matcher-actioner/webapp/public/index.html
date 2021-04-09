@@ -11,9 +11,22 @@
       .switch-wrapper > div {
         position: absolute;
       }
+
+      div#root {
+        display: flex;
+        flex-wrap: nowrap;
+        height: 100vh;
+        height: -webkit-fill-available;
+
+        /* In case something goes wrong and horizontal scrolling is necessary. */
+        overflow-x: auto;
+
+        /* The sidebar and the main area will have their own vertical scrolls */
+        overflow-y: hidden;
+      }
     </style>
   </head>
-  <body >
+  <body>
     <div id="root"></div>
   </body>
 </html>
