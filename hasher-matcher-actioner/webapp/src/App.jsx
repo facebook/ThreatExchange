@@ -7,6 +7,8 @@ import {BrowserRouter as Router, Route} from 'react-router-dom';
 import {AnimatedSwitch} from 'react-router-transition';
 import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 
+import './styles/_app.scss';
+
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import MatchDetails from './MatchDetails';
