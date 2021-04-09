@@ -11,8 +11,8 @@ from mypy_boto3_sns import SNSClient
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.models import PDQMatchRecord, Label, MatchMessage, DatasetMatchDetails
-from hmalib.common import get_logger
+from hmalib.models import PDQMatchRecord, Label
+from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")

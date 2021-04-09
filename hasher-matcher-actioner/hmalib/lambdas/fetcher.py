@@ -25,7 +25,7 @@ from pathlib import Path
 import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
-from hmalib.common import get_logger
+from hmalib.common.logging import get_logger
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
