@@ -56,8 +56,8 @@ export function fetchSignalSummary() {
   return apiGet('/signals');
 }
 
-export function fetchDashboardSummary() {
-  return apiGet('/dashboard');
+export function fetchDashboardCardSummary(path) {
+  return apiGet(`/${path}`);
 }
 
 export async function uploadImage(file) {

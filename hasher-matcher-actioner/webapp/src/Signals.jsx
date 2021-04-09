@@ -6,7 +6,7 @@
 
 import React, {useState, useEffect} from 'react';
 import Spinner from 'react-bootstrap/Spinner';
-import {Collapse} from 'react-bootstrap';
+import {Collapse, Row, Col, Card, Table} from 'react-bootstrap';
 
 import {fetchSignalSummary} from './Api';
 
@@ -22,7 +22,7 @@ export default function Signals() {
   return (
     <>
       <h1>Signals</h1>
-      <div className="row mt-3">
+      <Row className="mt-3">
         <Spinner
           hidden={signalSummary !== null}
           animation="border"
@@ -38,7 +38,7 @@ export default function Signals() {
               : null}
           </>
         </Collapse>
-      </div>
+      </Row>
     </>
   );
 }
@@ -46,13 +46,13 @@ export default function Signals() {
 function SignalSummary({summary}) {
   return (
     <>
-      <div className="col-md-12 mb-4">
-        <div className="card">
-          <div className="card-header text-white bg-success">
-            <h4 className="mb-0">{summary.name}</h4>
-          </div>
-          <div className="card-body">
-            <table className="table mb-0">
+      <Col md="12" className="mb-4">
+        <Card>
+          <Card.Header as="h4" className="text-white bg-success">
+            {summary.name}
+          </Card.Header>
+          <Card.Body className="py-0">
+            <Table className="mb-0">
               <thead>
                 <tr>
                   <th>Signal Type</th>
@@ -73,15 +73,13 @@ function SignalSummary({summary}) {
                   </tr>
                 )}
               </tbody>
-            </table>
-          </div>
-          <div className="card-footer">
-            <small className="font-weight-light">
-              as of {summary.updated_at}
-            </small>
-          </div>
-        </div>
-      </div>
+            </Table>
+          </Card.Body>
+          <Card.Footer as="small" className="font-weight-light">
+            as of {summary.updated_at}
+          </Card.Footer>
+        </Card>
+      </Col>
     </>
   );
 }

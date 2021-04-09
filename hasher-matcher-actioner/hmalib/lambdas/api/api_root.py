@@ -133,7 +133,7 @@ def hashes(key=None):
     return results if results else {}
 
 
-@app.get("/content_status/<key>")
+@app.get("/content-status/<key>")
 def content_status(key=None):
     """
     content status API endpoint:
@@ -141,7 +141,7 @@ def content_status(key=None):
     return {"status": "mocked_seen"}
 
 
-@app.post("/content_status/<key>")
+@app.post("/content-status/<key>")
 def update_content_status(key=None):
     """
     content status post API endpoint:
@@ -161,12 +161,30 @@ def signals():
     return {"signals": get_signals()}
 
 
-@app.get("/dashboard")
-def dashboard():
-    """
-    Details for landing page
-    """
-    return {"dashboard": get_dashboard_mock()}
+# there is likely a fancy python way to generalize these similar methods
+@app.get("/dashboard-hashes")
+def dashboard_hashes():
+    return {"dashboard-hashes": get_dashboard_hashes()}
+
+
+@app.get("/dashboard-matches")
+def dashboard_matches():
+    return {"dashboard-matches": get_dashboard_matches()}
+
+
+@app.get("/dashboard-signals")
+def dashboard_signals():
+    return {"dashboard-signals": get_dashboard_signals()}
+
+
+@app.get("/dashboard-actions")
+def dashboard_actions():
+    return {"dashboard-actions": get_dashboard_actions()}
+
+
+@app.get("/dashboard-status")
+def dashboard_status():
+    return {"dashboard-status": get_dashboard_system_status()}
 
 
 def lambda_handler(event, context):
@@ -179,7 +197,7 @@ def lambda_handler(event, context):
     return response
 
 
-# TODO move to its own library
+# TODO move below this comment its own files once all connected to real data.
 class MatchesResult(t.TypedDict):
     content_id: str
     signal_id: t.Union[str, int]
@@ -203,7 +221,7 @@ def get_matches() -> t.List[MatchesResult]:
     ]
 
 
-class MatchDetailsMetaData(t.TypedDict):
+class MatchDetailsMetadata(t.TypedDict):
     type: str
     tags: t.List[str]
     status: str
@@ -217,7 +235,7 @@ class MatchDetailsResult(t.TypedDict):
     signal_hash: str
     signal_source: str
     updated_at: str
-    meta_data: MatchDetailsMetaData
+    meta_data: MatchDetailsMetadata
     actions: t.List[str]
 
 
@@ -230,7 +248,7 @@ def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
     )
     # TODO these mocked metadata should either be added to
     # PDQMatchRecord or some other look up in the data model
-    mocked_metadata = MatchDetailsMetaData(
+    mocked_metadata = MatchDetailsMetadata(
         type="HASH_PDQ",
         tags=["mocked_t1", "mocked_t2"],
         status="MOCKED_STATUS",
@@ -290,7 +308,6 @@ def get_signals() -> t.List[SignalSourceSummary]:
     """
     TODO this should be updated to check ThreatExchangeConfig
     based on what it finds in the config it should then do a s3 select on the files
-    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.select_object_content
     """
     mocked_signal_type1a = SignalSourceType(type="HASH_PDQ", count=12456)
     mocked_signal_type1b = SignalSourceType(type="MOCKED_TYPE1", count=456)
@@ -322,44 +339,41 @@ class DashboardSystemStatus(t.TypedDict):
     updated_at: str
 
 
-class Dashboard(t.TypedDict):
-    hashes: DashboardCount
-    matches: DashboardCount
-    actions: DashboardCount
-    signals: DashboardCount
-    system_status: DashboardSystemStatus
-
-
-def get_dashboard_mock() -> Dashboard:
-    hashes = DashboardCount(
+def get_dashboard_hashes() -> DashboardCount:
+    return DashboardCount(
         total=34217123456,
         today=145609278,
         updated_at="MockData and Timestamp",
     )
-    matches = DashboardCount(
+
+
+def get_dashboard_matches() -> DashboardCount:
+    return DashboardCount(
         total=14376,
         today=109,
         updated_at="MockData and Timestamp",
     )
-    actions = DashboardCount(
+
+
+def get_dashboard_actions() -> DashboardCount:
+    return DashboardCount(
         total=3456,
         today=27,
         updated_at="MockData and Timestamp",
     )
-    signals = DashboardCount(
+
+
+def get_dashboard_signals() -> DashboardCount:
+    return DashboardCount(
         total=123456,
         today=654,
         updated_at="MockData and Timestamp",
     )
-    system_status = DashboardSystemStatus(
+
+
+def get_dashboard_system_status() -> DashboardSystemStatus:
+    return DashboardSystemStatus(
         status="Running (Mocked)",
         days_running=42,
         updated_at="MockData and Timestamp",
     )
-    return {
-        "hashes": hashes,
-        "matches": matches,
-        "actions": actions,
-        "signals": signals,
-        "system_status": system_status,
-    }

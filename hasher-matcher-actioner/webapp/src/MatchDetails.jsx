@@ -4,7 +4,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
-import {Button, Col, Collapse, Row} from 'react-bootstrap';
+import {Button, Col, Collapse, Row, Table} from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 
 import {
@@ -48,7 +48,7 @@ export default function MatchDetails() {
       <h1>Summary</h1>
       <Row>
         <Col md={6}>
-          <table className="table">
+          <Table>
             <tr>
               <td>Content ID:</td>
               <td>{id}</td>
@@ -129,7 +129,7 @@ export default function MatchDetails() {
                 </Collapse>
               </td>
             </tr>
-          </table>
+          </Table>
         </Col>
         <Col md={6}>
           <BlurUntilHoverImage src={img} />
@@ -159,7 +159,7 @@ function MatchesList(props) {
         <Row>
           <Col md={12}>
             <h3>Matches</h3>
-            <table className="table mt-4" title="Matches">
+            <Table className="mt-4" title="Matches">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -194,7 +194,7 @@ function MatchesList(props) {
                   </tr>
                 )}
               </tbody>
-            </table>
+            </Table>
           </Col>
         </Row>
       </Collapse>
