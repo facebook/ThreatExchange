@@ -79,7 +79,7 @@ class names:
         _prefix = "api.hashcount"
 
         def prefix_impl(self):
-            return _prefix
+            return self._prefix
 
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"

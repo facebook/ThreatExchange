@@ -36,9 +36,12 @@ resource "aws_lambda_function" "api_root" {
   memory_size = 512
   environment {
     variables = {
-      DYNAMODB_TABLE    = var.datastore.name
-      IMAGE_BUCKET_NAME = var.image_data_storage.bucket_name
-      IMAGE_FOLDER_KEY  = var.image_data_storage.image_folder_key
+      DYNAMODB_TABLE                     = var.datastore.name
+      IMAGE_BUCKET_NAME                  = var.image_data_storage.bucket_name
+      IMAGE_FOLDER_KEY                   = var.image_data_storage.image_folder_key
+      THREAT_EXCHANGE_DATA_BUCKET_NAME   = var.threat_exchange_data.bucket_name
+      THREAT_EXCHANGE_DATA_FOLDER        = var.threat_exchange_data.data_folder
+      THREAT_EXCHANGE_PDQ_FILE_EXTENSION = var.threat_exchange_data.pdq_file_extension
     }
   }
   tags = merge(
@@ -81,6 +84,24 @@ data "aws_iam_policy_document" "api_root" {
     effect    = "Allow"
     actions   = ["s3:GetObject", "s3:PutObject"]
     resources = ["arn:aws:s3:::${var.image_data_storage.bucket_name}/${var.image_data_storage.image_folder_key}*"]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}*",
+    ]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}",
+    ]
   }
   statement {
     effect = "Allow"
