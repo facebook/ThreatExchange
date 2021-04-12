@@ -153,9 +153,9 @@ def react_to_threat_exchange(match_message: MatchMessage, reaction_label: Label)
     logger.debug("react to threat exchange")
 
 
-if __name__ == "__main__":
-    # For basic debugging
-    match_message = MatchMessage("key", "hash", [])
-    action_label = ActionLabel("Action", "ENQUE_FOR_REVIEW")
+# if __name__ == "__main__":
+#    # For basic debugging
+#    match_message = MatchMessage("key", "hash", [])
+#    action_label = ActionLabel("Action", "ENQUE_FOR_REVIEW")
 
-    perform_action(match_message, action_label)
+#    perform_action(match_message, action_label)
