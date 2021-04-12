@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+"""
+Typed representations (dataclasses only) for interfacing with the
+threatexchange API.
+"""
+
 from datetime import datetime
 from dateutil.parser import parse
 from dataclasses import dataclass
-
-"""
-Models (dataclasses only) for interfacing with the threatexchange API.
-"""
 
 
 def _parse_datetime_from_iso_8601(datestr: str) -> datetime:
@@ -32,7 +33,7 @@ class ThreatPrivacyGroup:
             d["id"],
             d["name"],
             d["description"],
-            d["members_can_see"],
-            d["members_can_use"],
+            bool(d["members_can_see"]),
+            bool(d["members_can_use"]),
             _parse_datetime_from_iso_8601(d["last_updated"]),
         )
