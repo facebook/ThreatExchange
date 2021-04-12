@@ -11,7 +11,7 @@ from bottle import response, error
 
 from hmalib import metrics
 from hmalib.common.logging import get_logger
-from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter
+from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
 from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
 
 # Set to 10MB for /upload
@@ -25,6 +25,9 @@ logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
+THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
+THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
+THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
@@ -391,8 +394,13 @@ def get_dashboard_system_status() -> DashboardSystemStatus:
 
 
 def get_hash_count() -> t.Dict[str, int]:
+    s3_config = S3ThreatDataConfig(
+        threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
+        threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
+        threat_exchange_pdq_file_extension=THREAT_EXCHANGE_PDQ_FILE_EXTENSION,
+    )
     pdq_storage = ThreatExchangeS3PDQAdapter(
-        metrics_logger=metrics.names.api_hash_count()
+        config=s3_config, metrics_logger=metrics.names.api_hash_count()
     )
     pdq_data_files = pdq_storage.load_data()
 

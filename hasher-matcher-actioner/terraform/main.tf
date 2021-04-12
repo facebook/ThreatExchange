@@ -181,6 +181,11 @@ module "api" {
     bucket_name      = module.hashing_data.image_folder_info.bucket_name
     image_folder_key = module.hashing_data.image_folder_info.key
   }
+  threat_exchange_data = {
+    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    pdq_file_extension = local.pdq_file_extension
+    data_folder        = local.te_data_folder
+  }
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)

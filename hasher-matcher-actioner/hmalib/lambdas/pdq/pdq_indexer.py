@@ -13,7 +13,11 @@ from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
 from hmalib.common.logging import get_logger
-from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, HashRowT
+from hmalib.common.s3_adapters import (
+    ThreatExchangeS3PDQAdapter,
+    S3ThreatDataConfig,
+    HashRowT,
+)
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
@@ -95,7 +99,15 @@ def lambda_handler(event, context):
     logger.info("PDQ Data Updated, updating pdq hash index")
     metrics_logger = metrics.names.pdq_indexer_lambda
 
-    pdq_data_files = ThreatExchangeS3PDQAdapter(metrics_logger).load_data()
+    s3_config = S3ThreatDataConfig(
+        threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
+        threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
+        threat_exchange_pdq_file_extension=THREAT_EXCHANGE_PDQ_FILE_EXTENSION,
+    )
+
+    pdq_data_files = ThreatExchangeS3PDQAdapter(
+        config=s3_config, metrics_logger=metrics_logger
+    ).load_data()
 
     with metrics.timer(metrics_logger.merge_datafiles):
         logger.info("Merging PDQ Hash files")

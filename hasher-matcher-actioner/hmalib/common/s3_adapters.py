@@ -24,18 +24,6 @@ class S3ThreatDataConfig:
     threat_exchange_data_folder: str
     threat_exchange_pdq_file_extension: str
 
-    @classmethod
-    def get(cls):
-        return cls(
-            threat_exchange_data_bucket_name=os.environ[
-                "THREAT_EXCHANGE_DATA_BUCKET_NAME"
-            ],
-            threat_exchange_data_folder=os.environ["THREAT_EXCHANGE_DATA_FOLDER"],
-            threat_exchange_pdq_file_extension=os.environ[
-                "THREAT_EXCHANGE_PDQ_FILE_EXTENSION"
-            ],
-        )
-
 
 @dataclass
 class ThreatExchangeS3Adapter:
@@ -51,7 +39,7 @@ class ThreatExchangeS3Adapter:
     metrics_logger: metrics.lambda_with_datafiles
 
     S3FileT = t.Dict[str, t.Any]
-    config: S3ThreatDataConfig = S3ThreatDataConfig.get()
+    config: S3ThreatDataConfig
 
     def load_data(self) -> t.Dict[str, t.List[HashRowT]]:
         """
