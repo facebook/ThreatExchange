@@ -13,4 +13,4 @@ sudo chown $(whoami):developers /var/run/docker.sock
 pip install -r requirements-dev.txt
 
 # Install javascript toolchain
-cd webapp && yarn install && cd ..
+cd webapp && npm install && cd ..
