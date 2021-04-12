@@ -66,14 +66,14 @@ def lambda_handler(event, context):
 
     response_iterator = paginator.paginate(
         TableName=config.collab_config_table,
-        ProjectionExpression=",".join(("#Name", "privacy_group", "tags", "active")),
+        ProjectionExpression=",".join(("#Name", "privacy_group", "tags", "fetcher_active")),
         ExpressionAttributeNames={"#Name": "Name"},
     )
 
     collabs = []
     for page in response_iterator:
         for item in page["Items"]:
-            if item["active"] == True:
+            if item["fetcher_active"] == True:
                 collabs.append((item["Name"], item["privacy_group"]))
 
     now = datetime.now()
