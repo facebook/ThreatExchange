@@ -10,8 +10,8 @@
             "tags" : {
                 "L" : []
             },
-            "active" : {
-                "S": "N"
+            "fetcher_active" : {
+                "BOOL": false
             }
         }
     }
@@ -28,8 +28,8 @@
             "tags" : {
                 "L" : []
             },
-            "active" : {
-                "S": "N"
+            "fetcher_active" : {
+                "BOOL": false
             }
         }
     }
