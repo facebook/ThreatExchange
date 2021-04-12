@@ -66,7 +66,9 @@ def lambda_handler(event, context):
 
     response_iterator = paginator.paginate(
         TableName=config.collab_config_table,
-        ProjectionExpression=",".join(("#Name", "privacy_group", "tags", "fetcher_active")),
+        ProjectionExpression=",".join(
+            ("#Name", "privacy_group", "tags", "fetcher_active")
+        ),
         ExpressionAttributeNames={"#Name": "Name"},
     )
 
