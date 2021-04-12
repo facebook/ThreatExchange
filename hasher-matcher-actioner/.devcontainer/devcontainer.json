@@ -18,6 +18,7 @@
 		"ms-python.python",
 		"rvest.vs-code-prettier-eslint",
 		"ms-azuretools.vscode-docker",
+		"hashicorp.terraform",
 	],
 
 	"mounts": [
