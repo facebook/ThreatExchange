@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Make $PATH respect user binaries
+echo "\n\nexport PATH=$PATH:~/.local/bin" >> ~/.bashrc
+
+# Link aws configuration directory paths
+ln -s /var/run/aws-config/ ~/.aws
+
+# Change ownership of docker socket to allow builds
+sudo chown $(whoami):developers /var/run/docker.sock 
+
+# Install python dependencies, including dev dep
+pip install -r requirements-dev.txt
+
+# Install javascript toolchain
+cd webapp && npm install && cd ..
