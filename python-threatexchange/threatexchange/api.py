@@ -286,7 +286,7 @@ class ThreatExchangeAPI:
 
         url = f"{self._base_url}/{privacy_group}/threat_updates/"
         return _CursoredResponse(self, url, params, decode_fn=decode_fn)
-
+        
     def get_threat_privacy_groups_member(
         self,
     ) -> t.List[ThreatPrivacyGroup]:
@@ -294,7 +294,19 @@ class ThreatExchangeAPI:
         Returns a non-paginated list of all privacy groups the current app is a
         member of.
         """
-        url = self._get_graph_api_url(f"{self.app_id}/threat_privacy_groups_member")
+        fields = [
+            "id",
+            "members_can_see",
+            "members_can_use",
+            "name",
+            "description",
+            "last_updated",
+            "added_on"
+        ]
+        url = self._get_graph_api_url(
+            f"{self.app_id}/threat_privacy_groups_member",
+            {"fields": ",".join(fields}
+        )
         response = self.get_json_from_url(url)
         return [ThreatPrivacyGroup.from_graph_api_dict(d) for d in response["data"]]
 

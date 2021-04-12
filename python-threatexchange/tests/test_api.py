@@ -19,7 +19,7 @@ class APIIntegrationTest(unittest.TestCase):
 
     def test_get_threat_privacy_groups_member(self):
         """
-        Assumes that the app (if token is provided) will have atleast one
+        Assumes that the app (if token is provided) will have at least one
         privacy group.
         """
         response = self.api.get_threat_privacy_groups_member()
