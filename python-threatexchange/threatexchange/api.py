@@ -18,6 +18,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+from .api_representations import ThreatPrivacyGroup
+
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     """
@@ -284,6 +286,52 @@ class ThreatExchangeAPI:
 
         url = f"{self._base_url}/{privacy_group}/threat_updates/"
         return _CursoredResponse(self, url, params, decode_fn=decode_fn)
+
+    def get_threat_privacy_groups_member(
+        self,
+    ) -> t.List[ThreatPrivacyGroup]:
+        """
+        Returns a non-paginated list of all privacy groups the current app is a
+        member of.
+        """
+        fields = [
+            "id",
+            "members_can_see",
+            "members_can_use",
+            "name",
+            "description",
+            "last_updated",
+            "added_on",
+        ]
+        url = self._get_graph_api_url(
+            f"{self.app_id}/threat_privacy_groups_member", {"fields": ",".join(fields)}
+        )
+        response = self.get_json_from_url(url)
+        return [ThreatPrivacyGroup.from_graph_api_dict(d) for d in response["data"]]
+
+    def _get_graph_api_url(
+        self, sub_path: t.Optional[str], query_dict: t.Dict = {}
+    ) -> str:
+        """
+        Returns a threatexchange URL for a sub-path and a dictionary of query
+        parameters. Automatically adds access_token to the query dictionary.
+        """
+        if "access_token" not in query_dict:
+            query_dict["access_token"] = self.api_token
+
+        query = urllib.parse.urlencode(query_dict)
+
+        base_url_parts = urllib.parse.urlparse(self._base_url)
+        url_parts = urllib.parse.ParseResult(
+            base_url_parts.scheme,
+            base_url_parts.netloc,
+            f"{base_url_parts.path}/{sub_path}",
+            base_url_parts.params,
+            query,
+            base_url_parts.fragment,
+        )
+
+        return urllib.parse.urlunparse(url_parts)
 
     def _validate_post_params_for_submit(self, postParams):
         """
