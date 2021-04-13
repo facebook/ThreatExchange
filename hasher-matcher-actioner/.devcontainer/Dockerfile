@@ -104,6 +104,13 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - \
     && apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
     && apt-get update && apt-get install terraform
 
+# [Bash History] The volume is mounted in devcontainer.json
+ARG unixname
+RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
+    && mkdir /commandhistory \
+    && touch /commandhistory/.bash_history \
+    && chown -R $unixname /commandhistory \
+    && echo $SNIPPET >> "/home/$unixname/.bashrc"
 
 # [Forward Docker requests to host docker engine]
 # Volume is mounted and so is the socket. The socket configuration is within
