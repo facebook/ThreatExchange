@@ -54,7 +54,7 @@ def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
     Returns an ActionLabel for each ActionRule that applies to a MatchMessage.
     """
     action_rules = get_action_rules()
-    action_labels = []  # use Set here
+    action_labels = []
     for action_rule in action_rules:
         if action_rule.applies(match_message) and not action_labels.contains(
             action_rule.action_label
