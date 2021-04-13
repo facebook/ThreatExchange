@@ -3,6 +3,7 @@
 import json
 import typing as t
 
+from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
 from hmalib.models import MatchMessage, Label
 
@@ -19,30 +20,35 @@ def lambda_handler(event, context):
     """
     for sqs_record in event[
         "Records"
-    ]:  # confused about this... are we popping off more than one thing at a time from the "matches" queue?
+    ]:  # TODO research max # sqs records / lambda_handler invocation
         sns_notification = json.loads(sqs_record["body"])
         match_message: MatchMessage = MatchMessage.from_sns_message(
             sns_notification["Message"]
         )
         action_labels = get_action_labels(match_message)
         for action_label in action_labels:
+            # TODO create a new action execution queue and enqueue the
+            # match message and action label (or, possibly, add the
+            # action label to the match message and enqueue the match
+            # message by itself)
             perform_action(match_message, action_label)
 
-        # the more I write code here about reacting to ThreatExchange, the more I wish it was somewhere else entirely. Implementing
-        # here forever ties up action-related code with ThreatExchange-specific code / functionality. I prefer putting
-        # ThreatExchange-related specifics for reacting into another lambda that also subscribes to the matcher's notifications.
-        if threat_exchange_reacting_is_enabled():
+        if threat_exchange_reacting_is_enabled(match_message):
             threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
-                action_labels
+                match_message, action_labels
             )
-            if threat_exchange_reaction_labels is t.List[Label]:
+            if threat_exchange_reaction_labels:
                 for threat_exchange_reaction_label in threat_exchange_reaction_labels:
+                    # TODO create a new ThreatExchange reaction queue and enqueue
+                    # the match message and threat exchange reaction label (or, possibly,
+                    # add the threat exchange reaction label to the match message
+                    # and enqueue the match message by itself)
                     react_to_threat_exchange(
                         match_message, threat_exchange_reaction_label
                     )
 
 
-def get_action_labels(match_message: MatchMessage) -> t.List[ActionLabel]:
+def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
     """
     TODO finish implementation
     Returns an ActionLabel for each ActionRule that applies to a MatchMessage.
@@ -58,11 +64,11 @@ def get_action_labels(match_message: MatchMessage) -> t.List[ActionLabel]:
     return action_labels
 
 
-def get_action_rules() -> t.List[ActionRule]:
+def get_action_rules() -> t.List["ActionRule"]:
     """
     TODO implement
-    Returns a collection of ActionRule objects. An ActionRule will have the following attributes:
-    MustHaveLabels, MustNotHaveLabels, ActionLabel
+    Returns the ActionRule objects stored in the config repository. Each ActionRule
+    will have the following attributes: MustHaveLabels, MustNotHaveLabels, ActionLabel
     """
     return [
         ActionRule(
@@ -73,24 +79,24 @@ def get_action_rules() -> t.List[ActionRule]:
     ]
 
 
-def get_actions() -> t.List[Action]:
+def get_actions() -> t.List["Action"]:
     """
     TODO implement
-    Returns a collection of Action objects. An Action will have the following attributes:
-    ActionLabel, Priority, SupersededByActionLabel
+    Returns the Action objects stored in the config repository. Each Action will have
+    the following attributes: ActionLabel, Priority, SupersededByActionLabel
     """
     return [
         Action(
-            ActionLabel("Action", "EnqueueForReview"),
+            ActionLabel("ENQUEUE_FOR_REVIEW"),
             1,
-            [ActionLabel("Action", "SomeMoreImortantAction")],
+            [ActionLabel("A_MORE_IMPORTANT_ACTION")],
         )
     ]
 
 
 def remove_superseded_actions(
-    action_labels: t.List[ActionLabel],
-) -> t.List[ActionLabel]:
+    action_labels: t.List["ActionLabel"],
+) -> t.List["ActionLabel"]:
     """
     TODO implement
     Evaluates a collection of ActionLabels against the configured Action objects, removing
@@ -99,23 +105,29 @@ def remove_superseded_actions(
     return action_labels
 
 
-def threat_exchange_reacting_is_enabled() -> bool:
+def threat_exchange_reacting_is_enabled(match_message: MatchMessage) -> bool:
     """
     TODO implement
-    Looks up whether ThreatExchange reactions are enabled.
+    Looks up from a config whether ThreatExchange reacting is enabled. Initially this will be a global
+    config, and this method will return True if reacting is enabled, False otherwise. At some point the
+    config for reacting to ThreatExchange may be on a per collaboration basis. In that case, the config
+    will be referenced for each collaboration involved (implied by the match message). If reacting
+    is enabled for a given collaboration, a label will be added to the match message
+    (e.g. "ThreatExchangeReactingEnabled:<collaboration-id>").
     """
     return True
 
 
 def get_threat_exchange_reaction_labels(
-    action_labels: t.List[ActionLabel],
-) -> t.List[Label]:
+    match_message: MatchMessage,
+    action_labels: t.List["ActionLabel"],
+) -> t.List["Label"]:
     """
     TODO implement
     Evaluates a collection of action_labels against some yet to be defined configuration
     (and possible business login) to produce
     """
-    return [Label("ThreatExchangeReaction", "SawThisToo")]
+    return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
 
 
 def perform_writeback_in_review(match_message: MatchMessage):
@@ -128,59 +140,38 @@ def perform_enque_for_review(match_message: MatchMessage):
     logger.debug("enqued for review")
 
 
-possible_actions = {
-    "WRITEBACK_IN_REVIEW": perform_writeback_in_review,
-    "ENQUE_FOR_REVIEW": perform_enque_for_review,
-}
+class LabelWithConstraints(Label):
+    _KEY_CONSTRAINT = "KeyConstraint"
+
+    def __init__(self, value: str):
+        super(LabelWithConstraints, self).__init__(self._KEY_CONSTRAINT, value)
 
 
-class ActionLabel(Label):
-    def __init__(self, key: str, value: str):
-        if key != "Action":
-            raise Exception("ActionLabels must have a key Action")
-
-        if value not in possible_actions.keys():
-            raise Exception(f"'%s' is not a valid Action" % value)
-
-        super(self.__class__, self).__init__(key, value)
+class ActionLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "Action"
 
 
+class ThreatExchangeReactionLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "ThreatExchangeReaction"
+
+
+@dataclass
 class Action:
     action_label: ActionLabel
     priority: int
     superseded_by: t.List[ActionLabel]
 
-    def __init__(
-        self,
-        action_label: ActionLabel,
-        priority: int,
-        superseded_by: t.List[ActionLabel],
-    ):
-        self.action_label = action_label
-        self.priority = priority
-        self.superseded_by = superseded_by
 
-
+@dataclass
 class ActionRule:
     action_label: ActionLabel
     must_have_labels: t.List[Label]
     must_not_have_labels: t.List[Label]
 
-    def __init__(
-        self,
-        action_label: ActionLabel,
-        must_have_labels: t.List[Label],
-        must_not_have_labels: t.List[Label],
-    ):
-        self.action_label = action_label
-        self.must_have_labels = must_have_labels
-        self.must_not_have_labels = must_not_have_labels
-
 
 def perform_action(match_message: MatchMessage, action_label: ActionLabel):
-    for action, action_performer in possible_actions.items():
-        if action is action_label.value:
-            action_performer(match_message)
+    # TODO implement
+    logger.debug("perform action")
 
 
 def react_to_threat_exchange(match_message: MatchMessage, reaction_label: Label):
@@ -188,9 +179,9 @@ def react_to_threat_exchange(match_message: MatchMessage, reaction_label: Label)
     logger.debug("react to threat exchange")
 
 
-# if __name__ == "__main__":
-#    # For basic debugging
-#    match_message = MatchMessage("key", "hash", [])
-#    action_label = ActionLabel("Action", "ENQUE_FOR_REVIEW")
+if __name__ == "__main__":
+    # For basic debugging
+    match_message = MatchMessage("key", "hash", [])
+    action_label = ActionLabel("ENQUE_FOR_REVIEW")
 
-#    perform_action(match_message, action_label)
+    perform_action(match_message, action_label)
