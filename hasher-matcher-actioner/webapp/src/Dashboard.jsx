@@ -78,7 +78,7 @@ function DashboardCard({title, endpoint, handleOnClick}) {
 
 function DashboardCardBody({details}) {
   if (details) {
-    if (details.total && details.today) {
+    if (details.total != null && details.today != null) {
       return (
         <Card.Body>
           <h5>{details.total.toLocaleString()}</h5>
@@ -86,7 +86,7 @@ function DashboardCardBody({details}) {
         </Card.Body>
       );
     }
-    if (details.status && details.days_running) {
+    if (details.status != null && details.days_running != null) {
       return (
         <Card.Body>
           <h5>{details.status}</h5>

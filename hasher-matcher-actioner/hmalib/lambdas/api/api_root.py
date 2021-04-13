@@ -13,7 +13,7 @@ from bottle import response, error
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
-from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
+from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord, PDQRecordBase
 
 # Set to 10MB for /upload
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -362,10 +362,8 @@ def get_dashboard_matches() -> DashboardCount:
     return get_count_from_record_cls(PDQMatchRecord)
 
 
-def get_count_from_record_cls(
-    record_cls: t.Union[t.Type[PDQMatchRecord], t.Type[PipelinePDQHashRecord]]
-) -> DashboardCount:
-    # TODO this is an very inefficient way to do this but connecting to real counts > mock
+def get_count_from_record_cls(record_cls: t.Type[PDQRecordBase]) -> DashboardCount:
+    # TODO this is an ~inefficient way to do this but connecting to real counts > mock
     now = datetime.datetime.now()
     day_ago = now - datetime.timedelta(1)
     table = dynamodb.Table(DYNAMODB_TABLE)
@@ -405,6 +403,7 @@ def get_dashboard_system_status() -> DashboardSystemStatus:
     )
 
 
+# TODO this method is expensive some cache or memoization method might be a good idea.
 def get_signal_hash_count() -> t.Dict[str, int]:
     s3_config = S3ThreatDataConfig(
         threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,

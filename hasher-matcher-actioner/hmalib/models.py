@@ -79,6 +79,12 @@ class PDQRecordBase(DynamoDBItem):
     def to_sqs_message(self) -> dict:
         raise NotImplementedError
 
+    @classmethod
+    def get_from_time_range(
+        cls, table: Table, start_time: str = None, end_time: str = None
+    ) -> t.List:
+        raise NotImplementedError
+
 
 @dataclass
 class PipelinePDQHashRecord(PDQRecordBase):
