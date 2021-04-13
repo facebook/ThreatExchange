@@ -14,7 +14,9 @@ RUN groupadd --gid 1000 developers \
 
 # [Install Tools!]
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
-    apt-get -y install --no-install-recommends git make jq sudo
+    apt-get -y install --no-install-recommends git make jq sudo \
+    software-properties-common apt-transport-https ca-certificates curl \
+    gnupg lsb-release
 
 # [Allow sudo] Need sudo later in post-create to open up docker socket
 ARG unixname
@@ -90,14 +92,18 @@ RUN set -ex \
 
 # [Install Docker CLI]
 RUN export DEBIAN_FRONTEND=noninteractive \
-   && apt-get -y install apt-transport-https ca-certificates curl \
-    gnupg lsb-release \
    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg \
     --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
    &&  echo \
   "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
    && apt-get update && apt-get -y install docker-ce-cli
+
+# [Install Terraform CLI]
+RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - \
+    && apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+    && apt-get update && apt-get install terraform
+
 
 # [Forward Docker requests to host docker engine]
 # Volume is mounted and so is the socket. The socket configuration is within
