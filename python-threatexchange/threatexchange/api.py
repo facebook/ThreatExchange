@@ -302,12 +302,47 @@ class ThreatExchangeAPI:
             "description",
             "last_updated",
             "added_on",
+            "threat_updates_enabled",
         ]
         url = self._get_graph_api_url(
             f"{self.app_id}/threat_privacy_groups_member", {"fields": ",".join(fields)}
         )
         response = self.get_json_from_url(url)
         return [ThreatPrivacyGroup.from_graph_api_dict(d) for d in response["data"]]
+
+    def get_threat_privacy_groups_owner(
+        self,
+    ) -> t.List[ThreatPrivacyGroup]:
+        """
+        Returns a non-paginated list of all privacy groups the current app is a
+        owner of.
+        """
+        fields = [
+            "id",
+            "members_can_see",
+            "members_can_use",
+            "name",
+            "description",
+            "last_updated",
+            "added_on",
+            "threat_updates_enabled",
+        ]
+        url = self._get_graph_api_url(
+            f"{self.app_id}/threat_privacy_groups_owner", {"fields": ",".join(fields)}
+        )
+        response = self.get_json_from_url(url)
+        return [ThreatPrivacyGroup.from_graph_api_dict(d) for d in response["data"]]
+
+    def privacy_group_can_use_threat_updates(self, privacy_group_id: int) -> bool:
+        """
+        Returns if the privacy group can be used with the threat updates endpoint.
+        """
+        url = self._get_graph_api_url(f"{privacy_group_id}/threat_updates")
+        response = self.get_json_from_url(url)
+        if "error" not in response:
+            return True
+        else:
+            return False
 
     def _get_graph_api_url(
         self, sub_path: t.Optional[str], query_dict: t.Dict = {}
