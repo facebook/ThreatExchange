@@ -9,6 +9,9 @@
             },
             "tags" : {
                 "L" : []
+            },
+            "fetcher_active" : {
+                "BOOL": false
             }
         }
     }
@@ -24,6 +27,9 @@
             },
             "tags" : {
                 "L" : []
+            },
+            "fetcher_active" : {
+                "BOOL": false
             }
         }
     }
