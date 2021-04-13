@@ -8,6 +8,7 @@ from hmalib.models import MatchMessage, Label
 
 logger = get_logger(__name__)
 
+
 def lambda_handler(event, context):
     """
     This lambda is called when one or more matches are found. If a single hash matches
@@ -16,7 +17,9 @@ def lambda_handler(event, context):
     Action labels are generated for each match message, then an action is performed
     corresponding to each action label.
     """
-    for sqs_record in event["Records"]: #confused about this... are we popping off more than one thing at a time from the "matches" queue?
+    for sqs_record in event[
+        "Records"
+    ]:  # confused about this... are we popping off more than one thing at a time from the "matches" queue?
         sns_notification = json.loads(sqs_record["body"])
         match_message: MatchMessage = MatchMessage.from_sns_message(
             sns_notification["Message"]
@@ -29,23 +32,29 @@ def lambda_handler(event, context):
         # here forever ties up action-related code with ThreatExchange-specific code / functionality. I prefer putting
         # ThreatExchange-related specifics for reacting into another lambda that also subscribes to the matcher's notifications.
         if threat_exchange_reacting_is_enabled():
-            threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(action_labels)
+            threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
+                action_labels
+            )
             if threat_exchange_reaction_labels is t.List[Label]:
                 for threat_exchange_reaction_label in threat_exchange_reaction_labels:
-                    react_to_threat_exchange(match_message, threat_exchange_reaction_label)
+                    react_to_threat_exchange(
+                        match_message, threat_exchange_reaction_label
+                    )
 
 
 def get_action_labels(match_message: MatchMessage) -> t.List[ActionLabel]:
     """
     TODO finish implementation
-    Returns an ActionLabel for each ActionRule that applies to a MatchMessage. 
+    Returns an ActionLabel for each ActionRule that applies to a MatchMessage.
     """
     action_rules = get_action_rules()
-    action_labels = [] # use Set here
+    action_labels = []  # use Set here
     for action_rule in action_rules:
-        if action_rule.applies(match_message) and not action_labels.contains(action_rule.action_label):
+        if action_rule.applies(match_message) and not action_labels.contains(
+            action_rule.action_label
+        ):
             action_labels.append(action_rule.action_label)
-    action_labels = remove_superseded_actions(action_labels) # maybe not needed for v0
+    action_labels = remove_superseded_actions(action_labels)  # maybe not needed for v0
     return action_labels
 
 
@@ -55,7 +64,13 @@ def get_action_rules() -> t.List[ActionRule]:
     Returns a collection of ActionRule objects. An ActionRule will have the following attributes:
     MustHaveLabels, MustNotHaveLabels, ActionLabel
     """
-    return [ActionRule(ActionLabel("Action", "EnqueueForReview"), [Label("Collaboration", "12345")], [])]
+    return [
+        ActionRule(
+            ActionLabel("Action", "EnqueueForReview"),
+            [Label("Collaboration", "12345")],
+            [],
+        )
+    ]
 
 
 def get_actions() -> t.List[Action]:
@@ -64,10 +79,18 @@ def get_actions() -> t.List[Action]:
     Returns a collection of Action objects. An Action will have the following attributes:
     ActionLabel, Priority, SupersededByActionLabel
     """
-    return [Action(ActionLabel("Action", "EnqueueForReview"), 1, [ActionLabel("Action", "SomeMoreImortantAction")])]
+    return [
+        Action(
+            ActionLabel("Action", "EnqueueForReview"),
+            1,
+            [ActionLabel("Action", "SomeMoreImortantAction")],
+        )
+    ]
 
 
-def remove_superseded_actions(action_labels: t.List[ActionLabel]) -> t.List[ActionLabel]:
+def remove_superseded_actions(
+    action_labels: t.List[ActionLabel],
+) -> t.List[ActionLabel]:
     """
     TODO implement
     Evaluates a collection of ActionLabels against the configured Action objects, removing
@@ -84,11 +107,13 @@ def threat_exchange_reacting_is_enabled() -> bool:
     return True
 
 
-def get_threat_exchange_reaction_labels(action_labels: t.List[ActionLabel]) -> t.List[Label]:
+def get_threat_exchange_reaction_labels(
+    action_labels: t.List[ActionLabel],
+) -> t.List[Label]:
     """
     TODO implement
     Evaluates a collection of action_labels against some yet to be defined configuration
-    (and possible business login) to produce 
+    (and possible business login) to produce
     """
     return [Label("ThreatExchangeReaction", "SawThisToo")]
 
@@ -125,7 +150,12 @@ class Action:
     priority: int
     superseded_by: t.List[ActionLabel]
 
-    def __init__(self, action_label: ActionLabel, priority: int, superseded_by: t.List[ActionLabel]):
+    def __init__(
+        self,
+        action_label: ActionLabel,
+        priority: int,
+        superseded_by: t.List[ActionLabel],
+    ):
         self.action_label = action_label
         self.priority = priority
         self.superseded_by = superseded_by
@@ -136,7 +166,12 @@ class ActionRule:
     must_have_labels: t.List[Label]
     must_not_have_labels: t.List[Label]
 
-    def __init__(self, action_label: ActionLabel, must_have_labels: t.List[Label], must_not_have_labels: t.List[Label]):
+    def __init__(
+        self,
+        action_label: ActionLabel,
+        must_have_labels: t.List[Label],
+        must_not_have_labels: t.List[Label],
+    ):
         self.action_label = action_label
         self.must_have_labels = must_have_labels
         self.must_not_have_labels = must_not_have_labels
