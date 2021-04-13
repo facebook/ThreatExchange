@@ -24,6 +24,7 @@
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
 		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
+		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.hma-cmdhist,target=/commandhistory,type=bind",
 	],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
