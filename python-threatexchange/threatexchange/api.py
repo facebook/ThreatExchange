@@ -333,17 +333,6 @@ class ThreatExchangeAPI:
         response = self.get_json_from_url(url)
         return [ThreatPrivacyGroup.from_graph_api_dict(d) for d in response["data"]]
 
-    def privacy_group_can_use_threat_updates(self, privacy_group_id: int) -> bool:
-        """
-        Returns if the privacy group can be used with the threat updates endpoint.
-        """
-        url = self._get_graph_api_url(f"{privacy_group_id}/threat_updates")
-        response = self.get_json_from_url(url)
-        if "error" not in response:
-            return True
-        else:
-            return False
-
     def _get_graph_api_url(
         self, sub_path: t.Optional[str], query_dict: t.Dict = {}
     ) -> str:

@@ -35,5 +35,6 @@ class ThreatPrivacyGroup:
             d["description"],
             bool(d["members_can_see"]),
             bool(d["members_can_use"]),
+            bool(d["threat_updates_enabled"]),
             _parse_datetime_from_iso_8601(d["last_updated"]),
         )
