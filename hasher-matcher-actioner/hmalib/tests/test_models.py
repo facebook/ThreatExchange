@@ -145,6 +145,19 @@ class TestPDQModels(unittest.TestCase):
 
         assert record == query_record
 
+    def test_query_hash_record_by_time(self):
+        """
+        Test PipelinePDQHashRecord write table with get_from_content_key query by time
+        """
+
+        record = self.get_example_pdq_hash_record()
+
+        record.write_to_table(self.table)
+
+        query_record = models.PipelinePDQHashRecord.get_from_time_range(self.table)[0]
+
+        assert record == query_record
+
     def test_write_match_record(self):
         """
         Test PDQMatchRecord write table with hardcode query
@@ -181,7 +194,7 @@ class TestPDQModels(unittest.TestCase):
 
     def test_query_match_record_by_signal_id(self):
         """
-        Test PDQMatchRecord write table with get_from_content_key query
+        Test PDQMatchRecord write table with get_from_content_key query by signal
         """
 
         record = self.get_example_pdq_match_record()
@@ -196,7 +209,7 @@ class TestPDQModels(unittest.TestCase):
 
     def test_query_match_record_by_time(self):
         """
-        Test PDQMatchRecord write table with get_from_content_key query
+        Test PDQMatchRecord write table with get_from_content_key query by time
         """
 
         record = self.get_example_pdq_match_record()
@@ -206,3 +219,15 @@ class TestPDQModels(unittest.TestCase):
         query_record = models.PDQMatchRecord.get_from_time_range(self.table)[0]
 
         assert record == query_record
+
+
+class LabelsTestCase(unittest.TestCase):
+    def test_label_validation(self):
+        l = models.Label("some key", "some value")
+        # Just validate that no error is raised
+
+    def test_label_serde(self):
+        # serde is serialization/deserialization
+        l = models.Label("some key", "some value")
+        serded_l = models.Label.from_dynamodb_dict(l.to_dynamodb_dict())
+        self.assertEqual(l, serded_l)
