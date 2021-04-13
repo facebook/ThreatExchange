@@ -75,7 +75,7 @@ def lambda_handler(event, context):
     collabs = []
     for page in response_iterator:
         for item in page["Items"]:
-            if item["fetcher_active"] == True:
+            if item["fetcher_active"]:
                 collabs.append((item["Name"], item["privacy_group"]))
 
     now = datetime.now()
