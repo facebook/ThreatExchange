@@ -20,6 +20,7 @@ locals {
     "HMAPrefix" = var.prefix
   }
   pdq_file_extension = ".pdq.te"
+  te_data_folder     = module.hashing_data.threat_exchange_data_folder_info.key
 }
 
 module "hashing_data" {
@@ -52,7 +53,7 @@ module "pdq_signals" {
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_file_extension = local.pdq_file_extension
-    data_folder        = module.hashing_data.threat_exchange_data_folder_info.key
+    data_folder        = local.te_data_folder
     notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
   }
   index_data_storage = {
@@ -80,7 +81,7 @@ module "fetcher" {
 
   threat_exchange_data = {
     bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    data_folder = module.hashing_data.threat_exchange_data_folder_info.key
+    data_folder = local.te_data_folder
   }
   collab_file = var.collab_file
 
@@ -180,6 +181,11 @@ module "api" {
     bucket_name      = module.hashing_data.image_folder_info.bucket_name
     image_folder_key = module.hashing_data.image_folder_info.key
   }
+  threat_exchange_data = {
+    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    pdq_file_extension = local.pdq_file_extension
+    data_folder        = local.te_data_folder
+  }
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
@@ -213,4 +219,22 @@ resource "null_resource" "build_and_deploy_webapp" {
   provisioner "local-exec" {
     command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl public-read"
   }
+}
+
+module "actions" {
+  source = "./actions"
+
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      action_performer = "hmalib.lambdas.actions.action_performer.lambda_handler"
+    }
+  }
+
+  matches_sns_topic_arn = aws_sns_topic.matches.arn
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  measure_performance   = var.measure_performance
 }

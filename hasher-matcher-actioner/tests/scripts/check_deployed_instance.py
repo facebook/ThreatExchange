@@ -15,16 +15,20 @@ import sys
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
+PREFIX = os.environ["TF_PREFIX"]
+BUCKET_NAME = os.environ["TF_BUCKET_NAME"]
+DYNAMODB_TABLE = os.environ["TF_DYNAMODB_TABLE"]
+
 # Copy of what is configured in tf files (not worth building a parser for them for single point of mataince imo)
-THREAT_EXCHANGE_PDQ_DATA_KEY = "threat_exchange_data/pdq.te"
+THREAT_EXCHANGE_PDQ_DATA_KEY = f"""{os.environ["TF_TE_DATA_FOLDER"]}script_sample_data{os.environ["TF_PDQ_FILE_EXTENSION"]}"""
 PDQ_INDEX_KEY = "index/pdq_hashes.index"
 
 # Test uses hasher-matcher-actioner/tests/data/b.jpg
-TEST_PHOTO_KEY = "images/test_photo.jpg"
+TEST_PHOTO_KEY = f"""{os.environ["TF_IMAGE_FOLDER_KEY"]}test_photo_from_script.jpg"""
 TEST_PHOTO_EXPECTED_HASH = (
     "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
 )
-TEST_PHOTO_EXPECTED_ID = "5555555555555555"
+TEST_PHOTO_EXPECTED_ID = "4109214869142910"
 
 TEST_TE_DATA_PDQ = f"""0000000000000000000000000000000000000000000000000000000000000000,0000000000000001,2020-07-31T18:47:52+0000,tag1 tag2 tag3
 000000000000000000000000000000000000000000000000000000000000ffff,0000000000000001,2020-07-31T18:47:52+0000,tag1 tag2 tag3
@@ -161,9 +165,6 @@ def main():
     Attempts to run the test, if run throws it will try to clean up before exiting.
     """
     print("\nChecking deployed instance...")
-    PREFIX = os.environ["TF_PREFIX"]
-    BUCKET_NAME = os.environ["TF_BUCKET_NAME"]
-    DYNAMODB_TABLE = os.environ["TF_DYNAMODB_TABLE"]
     table = dynamodb.Table(DYNAMODB_TABLE)
     print(f"Running against instance using prefix: {PREFIX}")
     try:

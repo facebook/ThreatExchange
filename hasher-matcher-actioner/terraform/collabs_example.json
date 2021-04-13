@@ -10,8 +10,13 @@
             "tags" : {
                 "L" : []
             },
+<<<<<<< HEAD
             "active" : {
                 "S": "N"
+=======
+            "fetcher_active" : {
+                "BOOL": false
+>>>>>>> 017beddfc5750676b89716b27de6edabfe84bdf1
             }
         }
     }
@@ -28,8 +33,13 @@
             "tags" : {
                 "L" : []
             },
+<<<<<<< HEAD
             "active" : {
                 "S": "N"
+=======
+            "fetcher_active" : {
+                "BOOL": false
+>>>>>>> 017beddfc5750676b89716b27de6edabfe84bdf1
             }
         }
     }

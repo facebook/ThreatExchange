@@ -58,6 +58,7 @@ setup(
         "python-Levenshtein",
         "requests",
         "dataclasses",
+        "python-dateutil",
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},

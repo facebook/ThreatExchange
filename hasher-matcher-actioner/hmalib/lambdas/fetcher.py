@@ -25,7 +25,7 @@ from pathlib import Path
 import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
-from hmalib.common import get_logger
+from hmalib.common.logging import get_logger
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
@@ -66,14 +66,24 @@ def lambda_handler(event, context):
 
     response_iterator = paginator.paginate(
         TableName=config.collab_config_table,
+<<<<<<< HEAD
         ProjectionExpression=",".join(("#Name", "privacy_group", "tags" , "active")),
+=======
+        ProjectionExpression=",".join(
+            ("#Name", "privacy_group", "tags", "fetcher_active")
+        ),
+>>>>>>> 017beddfc5750676b89716b27de6edabfe84bdf1
         ExpressionAttributeNames={"#Name": "Name"},
     )
 
     collabs = []
     for page in response_iterator:
         for item in page["Items"]:
+<<<<<<< HEAD
             if item["active"] == 'Y':
+=======
+            if item["fetcher_active"]:
+>>>>>>> 017beddfc5750676b89716b27de6edabfe84bdf1
                 collabs.append((item["Name"], item["privacy_group"]))
 
     now = datetime.now()
@@ -191,7 +201,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             checkpoint_json["fetch_checkpoint"],
         )
         logger.info(
-            "Loaded checkpoint for %d. last_fetch_time=%d fetch_checkpoint=%d",
+            "Loaded checkpoint for privacy group %d. last_fetch_time=%d fetch_checkpoint=%d",
             self.privacy_group,
             ret.last_fetch_time,
             ret.fetch_checkpoint,
@@ -211,7 +221,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         )
         write_s3_text(txt_content, self.s3_bucket, self.checkpoint_s3_key)
         logger.info(
-            "Stored checkpoint for %d. last_fetch_time=%d fetch_checkpoint=%d",
+            "Stored checkpoint for privacy group %d. last_fetch_time=%d fetch_checkpoint=%d",
             self.privacy_group,
             checkpoint.last_fetch_time,
             checkpoint.fetch_checkpoint,

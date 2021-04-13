@@ -9,8 +9,9 @@ import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
-
-from hmalib.common import get_logger
+from hmalib import metrics
+from hmalib.common.logging import get_logger
+from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
 from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
 
 # Set to 10MB for /upload
@@ -24,6 +25,9 @@ logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
+THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
+THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
+THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
@@ -106,7 +110,7 @@ def matches():
     matches API endpoint:
     returns style { matches: [MatchesResult] }
     """
-    results = gen_matches()
+    results = get_matches()
     logger.debug(results)
     return {"matches": results}
 
@@ -117,7 +121,7 @@ def match_details(key=None):
     matche details API endpoint:
     return format: match_details : [MatchDetailsResult]
     """
-    results = gen_match_details(key)
+    results = get_match_details(key)
     logger.debug(results)
     return {"match_details": results}
 
@@ -128,7 +132,71 @@ def hashes(key=None):
     hash details API endpoint:
     return format: HashResult
     """
-    results = gen_hash(key)
+    results = get_hash(key)
+    logger.debug(results)
+    return results if results else {}
+
+
+@app.get("/content-status/<key>")
+def content_status(key=None):
+    """
+    content status API endpoint:
+    """
+    return {"status": "mocked_seen"}
+
+
+@app.post("/content-status/<key>")
+def update_content_status(key=None):
+    """
+    content status post API endpoint:
+    """
+    logger.info("Status update post request received")
+    updated_status = json.loads(bottle.request.body.getvalue())
+    logger.info(updated_status)
+
+    return {"status": f"mocked_{updated_status.get('status')}"}
+
+
+@app.get("/signals")
+def signals():
+    """
+    Summary of all signal sources
+    """
+    return {"signals": get_signals()}
+
+
+# there is likely a fancy python way to generalize these similar methods
+@app.get("/dashboard-hashes")
+def dashboard_hashes():
+    return {"dashboard-hashes": get_dashboard_hashes()}
+
+
+@app.get("/dashboard-matches")
+def dashboard_matches():
+    return {"dashboard-matches": get_dashboard_matches()}
+
+
+@app.get("/dashboard-signals")
+def dashboard_signals():
+    return {"dashboard-signals": get_dashboard_signals()}
+
+
+@app.get("/dashboard-actions")
+def dashboard_actions():
+    return {"dashboard-actions": get_dashboard_actions()}
+
+
+@app.get("/dashboard-status")
+def dashboard_status():
+    return {"dashboard-status": get_dashboard_system_status()}
+
+
+@app.get("/hash_count")
+def hash_count():
+    """
+    how many hashes exist in HMA
+    """
+    results = get_hash_count()
     logger.debug(results)
     return results if results else {}
 
@@ -143,7 +211,7 @@ def lambda_handler(event, context):
     return response
 
 
-# TODO move to its own library
+# TODO move below this comment its own files once all connected to real data.
 class MatchesResult(t.TypedDict):
     content_id: str
     signal_id: t.Union[str, int]
@@ -152,7 +220,7 @@ class MatchesResult(t.TypedDict):
     reactions: str  # TODO
 
 
-def gen_matches() -> t.List[MatchesResult]:
+def get_matches() -> t.List[MatchesResult]:
     table = dynamodb.Table(DYNAMODB_TABLE)
     records = PDQMatchRecord.get_from_time_range(table)
     return [
@@ -161,10 +229,17 @@ def gen_matches() -> t.List[MatchesResult]:
             "signal_id": record.signal_id,
             "signal_source": record.signal_source,
             "updated_at": record.updated_at.isoformat(),
-            "reactions": "TODO",
+            "reactions": "Mocked",
         }
         for record in records
     ]
+
+
+class MatchDetailsMetadata(t.TypedDict):
+    type: str
+    tags: t.List[str]
+    status: str
+    opinions: t.List[str]
 
 
 class MatchDetailsResult(t.TypedDict):
@@ -174,15 +249,27 @@ class MatchDetailsResult(t.TypedDict):
     signal_hash: str
     signal_source: str
     updated_at: str
+    meta_data: MatchDetailsMetadata
+    actions: t.List[str]
 
 
-def gen_match_details(content_id: str) -> t.List[MatchDetailsResult]:
+def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
     if not content_id:
         return []
     table = dynamodb.Table(DYNAMODB_TABLE)
     records = PDQMatchRecord.get_from_content_id(
         table, f"{IMAGE_FOLDER_KEY}{content_id}"
     )
+    # TODO these mocked metadata should either be added to
+    # PDQMatchRecord or some other look up in the data model
+    mocked_metadata = MatchDetailsMetadata(
+        type="HASH_PDQ",
+        tags=["mocked_t1", "mocked_t2"],
+        status="MOCKED_STATUS",
+        opinions=["mocked_a1", "mocked_a2"],
+    )
+
+    mocked_actions = ["Mocked_False_Postive", "Mocked_Delete"]
     return [
         {
             "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
@@ -191,6 +278,8 @@ def gen_match_details(content_id: str) -> t.List[MatchDetailsResult]:
             "signal_hash": record.signal_hash,
             "signal_source": record.signal_source,
             "updated_at": record.updated_at.isoformat(),
+            "meta_data": mocked_metadata,
+            "actions": mocked_actions,
         }
         for record in records
     ]
@@ -202,7 +291,7 @@ class HashResult(t.TypedDict):
     updated_at: str
 
 
-def gen_hash(content_id: str) -> t.Optional[HashResult]:
+def get_hash(content_id: str) -> t.Optional[HashResult]:
     if not content_id:
         return None
     table = dynamodb.Table(DYNAMODB_TABLE)
@@ -216,3 +305,103 @@ def gen_hash(content_id: str) -> t.Optional[HashResult]:
         "content_hash": record.content_hash,
         "updated_at": record.updated_at.isoformat(),
     }
+
+
+class SignalSourceType(t.TypedDict):
+    type: str
+    count: int
+
+
+class SignalSourceSummary(t.TypedDict):
+    name: str
+    signals: t.List[SignalSourceType]
+    updated_at: str
+
+
+def get_signals() -> t.List[SignalSourceSummary]:
+    """
+    TODO this should be updated to check ThreatExchangeConfig
+    based on what it finds in the config it should then do a s3 select on the files
+    """
+    mocked_signal_type1a = SignalSourceType(type="HASH_PDQ", count=12456)
+    mocked_signal_type1b = SignalSourceType(type="MOCKED_TYPE1", count=456)
+    mocked_signal_type2a = SignalSourceType(type="HASH_PDQ", count=2456)
+    mocked_signal_type2b = SignalSourceType(type="MOCKED_TYPE2", count=956)
+
+    mocked_signal_source1 = SignalSourceSummary(
+        name="Mocked Signal Source 1",
+        signals=[mocked_signal_type1a, mocked_signal_type1b],
+        updated_at="mocked datetime1",
+    )
+    mocked_signal_source2 = SignalSourceSummary(
+        name="Mocked Signal Source 2",
+        signals=[mocked_signal_type2a, mocked_signal_type2b],
+        updated_at="mocked datetime2",
+    )
+    return [mocked_signal_source1, mocked_signal_source2]
+
+
+class DashboardCount(t.TypedDict):
+    total: int
+    today: int
+    updated_at: str
+
+
+class DashboardSystemStatus(t.TypedDict):
+    status: str
+    days_running: int
+    updated_at: str
+
+
+def get_dashboard_hashes() -> DashboardCount:
+    return DashboardCount(
+        total=34217123456,
+        today=145609278,
+        updated_at="MockData and Timestamp",
+    )
+
+
+def get_dashboard_matches() -> DashboardCount:
+    return DashboardCount(
+        total=14376,
+        today=109,
+        updated_at="MockData and Timestamp",
+    )
+
+
+def get_dashboard_actions() -> DashboardCount:
+    return DashboardCount(
+        total=3456,
+        today=27,
+        updated_at="MockData and Timestamp",
+    )
+
+
+def get_dashboard_signals() -> DashboardCount:
+    return DashboardCount(
+        total=123456,
+        today=654,
+        updated_at="MockData and Timestamp",
+    )
+
+
+def get_dashboard_system_status() -> DashboardSystemStatus:
+    return DashboardSystemStatus(
+        status="Running (Mocked)",
+        days_running=42,
+        updated_at="MockData and Timestamp",
+    )
+
+
+def get_hash_count() -> t.Dict[str, int]:
+    s3_config = S3ThreatDataConfig(
+        threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
+        threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
+        threat_exchange_pdq_file_extension=THREAT_EXCHANGE_PDQ_FILE_EXTENSION,
+    )
+    pdq_storage = ThreatExchangeS3PDQAdapter(
+        config=s3_config, metrics_logger=metrics.names.api_hash_count()
+    )
+    pdq_data_files = pdq_storage.load_data()
+
+    return {file_name: len(rows) for file_name, rows in pdq_data_files.items()}

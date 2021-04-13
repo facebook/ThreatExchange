@@ -108,19 +108,16 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "queue_url",
-        type=str,
         help="SQS Queue URL. Must include account id. eg. https://queue.amazonaws.com/<acid>/<queue_name>",
     )
 
     parser.add_argument(
         "s3_bucket",
-        type=str,
         help="S3 Bucket Name. Only provide the name, protocol and slashes are not required."
     )
 
     parser.add_argument(
         "s3_prefix",
-        type=str,
         help="S3 Bucket prefix for images you want to use. Only use a trailing slash. eg. images/100KB"
     )
 

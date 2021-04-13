@@ -4,10 +4,15 @@
 
 import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
-import {Button, Col, Collapse, Row} from 'react-bootstrap';
+import {Button, Col, Collapse, Row, Table} from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 
-import {fetchMatchDetails, fetchHash, fetchImage} from './Api';
+import {
+  fetchMatchDetails,
+  fetchHash,
+  fetchImage,
+  updateContentStatus,
+} from './Api';
 import {CopyableHashField, CopyableTextField} from './utils/TextFieldsUtils';
 import {formatTimestamp} from './utils/DateTimeUtils';
 import {BlurUntilHoverImage} from './utils/ImageUtils';
@@ -40,10 +45,10 @@ export default function MatchDetails() {
         onClick={() => history.goBack()}>
         Back
       </button>
-      <h1>Match Details</h1>
+      <h1>Summary</h1>
       <Row>
         <Col md={6}>
-          <table className="table">
+          <Table>
             <tr>
               <td>Content ID:</td>
               <td>{id}</td>
@@ -67,7 +72,7 @@ export default function MatchDetails() {
               </td>
             </tr>
             <tr>
-              <td>Reaction (Mocked):</td>
+              <td>Status:</td>
               <td>
                 {reaction}
                 <Button
@@ -81,27 +86,50 @@ export default function MatchDetails() {
                 </Button>
                 <Collapse in={showNewReactionButtons}>
                   <div>
-                    <p className="mt-3">Change reaction to...</p>
+                    <p className="mt-3">Update to...</p>
                     <Button
                       size="sm"
                       variant="outline-primary"
                       onClick={() => {
-                        setReaction('Positive');
-                        setShowNewReactionButtons(false);
+                        const newStatus = 'Positive (Mocked)';
+                        updateContentStatus(id, newStatus).then(() => {
+                          setShowNewReactionButtons(false);
+                          setReaction(newStatus);
+                        });
                       }}>
                       Positive
                     </Button>
                     <Button
                       className="ml-2"
                       size="sm"
-                      variant="outline-primary">
+                      variant="outline-primary"
+                      onClick={() => {
+                        const newStatus = 'False Positive (Mocked)';
+                        updateContentStatus(id, newStatus).then(() => {
+                          setShowNewReactionButtons(false);
+                          setReaction(newStatus);
+                        });
+                      }}>
                       False Positive
+                    </Button>
+                    <Button
+                      className="ml-2"
+                      size="sm"
+                      variant="outline-primary"
+                      onClick={() => {
+                        const newStatus = 'To Delete (Mocked)';
+                        updateContentStatus(id, newStatus).then(() => {
+                          setShowNewReactionButtons(false);
+                          setReaction(newStatus);
+                        });
+                      }}>
+                      Delete
                     </Button>
                   </div>
                 </Collapse>
               </td>
             </tr>
-          </table>
+          </Table>
         </Col>
         <Col md={6}>
           <BlurUntilHoverImage src={img} />
@@ -120,7 +148,7 @@ function MatchesList(props) {
     fetchMatchDetails(contentKey).then(matches => {
       setMatchDetails(matches.match_details);
     });
-  }, []);
+  }, [contentKey]);
 
   return (
     <>
@@ -130,17 +158,18 @@ function MatchesList(props) {
       <Collapse in={matchDetails !== null}>
         <Row>
           <Col md={12}>
-            <table className="table mt-4">
+            <h3>Matches</h3>
+            <Table className="mt-4" title="Matches">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Type</th>
                   <th>Indicator</th>
                   <th>Last Updated</th>
-                  <th>Tags (Mocked)</th>
-                  <th>Status (Mocked)</th>
-                  <th>Partners with Opinions (Mocked)</th>
-                  <th>Action Taken (Mocked)</th>
+                  <th>Tags</th>
+                  <th>Status</th>
+                  <th>Partners with Opinions</th>
+                  <th>Actions Taken:</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,13 +179,13 @@ function MatchesList(props) {
                       <td>
                         <CopyableTextField text={match.signal_id} />
                       </td>
-                      <td>HASH_PDQ</td>
+                      <td>{match.meta_data.type}</td>
                       <CopyableHashField text={match.signal_hash} />
                       <td>{formatTimestamp(match.updated_at)}</td>
-                      <td>tag1, tag2</td>
-                      <td>UNKNOWN</td>
-                      <td>app1, app2</td>
-                      <td>Delete</td>
+                      <td>{match.meta_data.tags.join(', ')}</td>
+                      <td>{match.meta_data.status}</td>
+                      <td>{match.meta_data.opinions.join(', ')}</td>
+                      <td>{match.actions.join(', ')}</td>
                     </tr>
                   ))
                 ) : (
@@ -165,7 +194,7 @@ function MatchesList(props) {
                   </tr>
                 )}
               </tbody>
-            </table>
+            </Table>
           </Col>
         </Row>
       </Collapse>

@@ -1,117 +1,99 @@
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
+// TODO I don't like having this but until our js is typed it probably necessary
+/* eslint-disable react/prop-types */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {useHistory} from 'react-router-dom';
+import {Col, Card} from 'react-bootstrap';
+
+import {fetchDashboardCardSummary} from './Api';
 
 export default function Dashboard() {
   const history = useHistory();
+
   return (
     <>
       <h1>Dashboard</h1>
       <div className="row mt-3">
-        <div className="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 mb-4">
-          <div className="card text-center">
-            <div className="card-header text-white bg-success">
-              <h4 className="mb-0">Hashes</h4>
-            </div>
-            <div className="card-body">
-              <h5>34,217,123,456</h5>
-              <h6>145,609,278 today</h6>
-            </div>
-            <div className="card-footer">
-              <small className="font-weight-light">
-                as of 12 Mar 2021 2:03pm
-              </small>
-            </div>
-          </div>
-        </div>
-        <div className="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 mb-4">
-          <div
-            className="card text-center"
-            role="link"
-            onClick={() => history.push('/matches')}
-            onKeyDown={e => {
-              if (e.code === 'Enter') {
-                history.push('/matches');
-              }
-            }}
-            style={{cursor: 'pointer'}}
-            tabIndex={0}>
-            <div className="card-header text-white bg-success">
-              <h4 className="mb-0">Matches</h4>
-            </div>
-            <div className="card-body">
-              <h5>14,376</h5>
-              <h6>109 today</h6>
-            </div>
-            <div className="card-footer">
-              <small className="font-weight-light">
-                last match 12 Mar 2021 11:03am
-              </small>
-            </div>
-          </div>
-        </div>
-        <div className="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 mb-4">
-          <div className="card text-center">
-            <div className="card-header text-white bg-success">
-              <h4 className="mb-0">Actions</h4>
-            </div>
-            <div className="card-body">
-              <h5>3,456</h5>
-              <h6>27 today</h6>
-            </div>
-            <div className="card-footer">
-              <small className="font-weight-light">
-                as of 12 Mar 2021 2:03pm
-              </small>
-            </div>
-          </div>
-        </div>
-        <div className="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 mb-4">
-          <div
-            className="card text-center"
-            role="link"
-            onClick={() => history.push('/signals')}
-            onKeyDown={e => {
-              if (e.code === 'Enter') {
-                history.push('/signals');
-              }
-            }}
-            style={{cursor: 'pointer'}}
-            tabIndex={0}>
-            <div className="card-header text-white bg-success">
-              <h4 className="mb-0">Signals</h4>
-            </div>
-            <div className="card-body">
-              <h5>123,456</h5>
-              <h6>654 today</h6>
-            </div>
-            <div className="card-footer">
-              <small className="font-weight-light">
-                as of 12 Mar 2021 2:03pm
-              </small>
-            </div>
-          </div>
-        </div>
-        <div className="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-xs-12 mb-4">
-          <div className="card text-center">
-            <div className="card-header text-white bg-success">
-              <h4 className="mb-0">System Status</h4>
-            </div>
-            <div className="card-body">
-              <h5>Running</h5>
-              <h6>47 days</h6>
-            </div>
-            <div className="card-footer">
-              <small className="font-weight-light">
-                running since 7 Feb 2021
-              </small>
-            </div>
-          </div>
-        </div>
+        <DashboardCard title="Hashes" endpoint="dashboard-hashes" />
+
+        <DashboardCard
+          title="Matches"
+          endpoint="dashboard-matches"
+          handleOnClick={() => history.push('/matches')}
+        />
+
+        <DashboardCard title="Actions" endpoint="dashboard-actions" />
+
+        <DashboardCard
+          title="Signals"
+          endpoint="dashboard-signals"
+          handleOnClick={() => history.push('/signals')}
+        />
+
+        <DashboardCard title="System Status" endpoint="dashboard-status" />
       </div>
     </>
   );
+}
+
+function DashboardCard({title, endpoint, handleOnClick}) {
+  const [details, setDetails] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardCardSummary(endpoint).then(summaries => {
+      setDetails(summaries[endpoint]);
+    });
+  }, []);
+  return (
+    <>
+      <Col xl="4" lg="4" md="6" sm="6" xs="12" className="mb-4">
+        <Card
+          className="text-center"
+          role="link"
+          onClick={handleOnClick ? () => handleOnClick() : null}
+          onKeyDown={e => {
+            if (handleOnClick && e.code === 'Enter') {
+              handleOnClick();
+            }
+          }}
+          style={handleOnClick ? {cursor: 'pointer'} : {}}
+          tabIndex={handleOnClick ? 0 : -1}>
+          <Card.Header as="h4" className="text-white bg-success">
+            {title}
+          </Card.Header>
+
+          <DashboardCardBody details={details} />
+
+          <Card.Footer as="small" className="font-weight-light">
+            as of {details ? details.updated_at : 'unknown'}
+          </Card.Footer>
+        </Card>
+      </Col>
+    </>
+  );
+}
+
+function DashboardCardBody({details}) {
+  if (details) {
+    if (details.total && details.today) {
+      return (
+        <Card.Body>
+          <h5>{details.total.toLocaleString()}</h5>
+          <h6>{`${details.today.toLocaleString()} today`}</h6>
+        </Card.Body>
+      );
+    }
+    if (details.status && details.days_running) {
+      return (
+        <Card.Body>
+          <h5>{details.status}</h5>
+          <h6>{`${details.days_running.toLocaleString()} days`}</h6>
+        </Card.Body>
+      );
+    }
+  }
+  return <Card.Body as="h5">loading...</Card.Body>;
 }
