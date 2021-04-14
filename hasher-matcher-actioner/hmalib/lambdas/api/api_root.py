@@ -314,7 +314,10 @@ def get_hash_count() -> t.Dict[str, int]:
 
 
 app.mount(
-    "/matches/v1/", get_matches_api(dynamodb_table=dynamodb.Table(DYNAMODB_TABLE))
+    "/matches/",
+    get_matches_api(
+        dynamodb_table=dynamodb.Table(DYNAMODB_TABLE), image_folder_key=IMAGE_FOLDER_KEY
+    ),
 )
 
 

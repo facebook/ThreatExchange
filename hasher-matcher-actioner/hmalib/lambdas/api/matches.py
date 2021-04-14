@@ -2,18 +2,11 @@
 
 import bottle
 from dataclasses import dataclass, asdict
-import os
 from mypy_boto3_dynamodb.service_resource import Table
 import typing as t
 
 from hmalib.models import PDQMatchRecord
 from .middleware import jsoninator, JSONifiable
-
-
-# TODO: Remove dependency on image folder key, use a common interface for
-# s3 and non-s3 HMA requests.
-IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
-IMAGE_FOLDER_KEY_LEN = len(IMAGE_FOLDER_KEY)
 
 
 @dataclass
@@ -74,12 +67,14 @@ class MatchDetailsResponse(JSONifiable):
         return {"match_details": [detail.to_json() for detail in self.match_details]}
 
 
-def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
+def get_match_details(
+    table: Table, content_id: str, image_folder_key: str
+) -> t.List[MatchDetail]:
     if not content_id:
         return []
 
     records = PDQMatchRecord.get_from_content_id(
-        table, f"{IMAGE_FOLDER_KEY}{content_id}"
+        table, f"{image_folder_key}{content_id}"
     )
 
     # TODO these mocked metadata should either be added to
@@ -94,7 +89,7 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
     mocked_actions = ["Mocked_False_Postive", "Mocked_Delete"]
     return [
         MatchDetail(
-            content_id=record.content_id[IMAGE_FOLDER_KEY_LEN:],
+            content_id=record.content_id[len(image_folder_key) :],
             content_hash=record.content_hash,
             signal_id=record.signal_id,
             signal_hash=record.signal_hash,
@@ -107,7 +102,7 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
     ]
 
 
-def get_matches_api(dynamodb_table: Table) -> bottle.Bottle:
+def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
     API that this API plugs into. Declare dependencies here, but initialize in
@@ -115,10 +110,10 @@ def get_matches_api(dynamodb_table: Table) -> bottle.Bottle:
     """
 
     # A prefix to all routes must be provided by the api_root app
-    # The documentation below expects prefix to be '/matches/v1'
+    # The documentation below expects prefix to be '/matches/'
     matches_api = bottle.Bottle()
 
-    @matches_api.get("/matches/", apply=[jsoninator])
+    @matches_api.get("/", apply=[jsoninator])
     def matches() -> MatchSummariesResponse:
         """
         Returns all, or a filtered list of matches.
@@ -127,7 +122,7 @@ def get_matches_api(dynamodb_table: Table) -> bottle.Bottle:
         return MatchSummariesResponse(
             match_summaries=[
                 MatchSummary(
-                    content_id=record.content_id[IMAGE_FOLDER_KEY_LEN:],
+                    content_id=record.content_id[len(image_folder_key) :],
                     signal_id=record.signal_id,
                     signal_source=record.signal_source,
                     updated_at=record.updated_at.isoformat(),
@@ -143,7 +138,7 @@ def get_matches_api(dynamodb_table: Table) -> bottle.Bottle:
         matche details API endpoint:
         return format: match_details : [MatchDetailsResult]
         """
-        results = get_match_details(dynamodb_table, key)
+        results = get_match_details(dynamodb_table, key, image_folder_key)
         return MatchDetailsResponse(match_details=results)
 
     return matches_api
