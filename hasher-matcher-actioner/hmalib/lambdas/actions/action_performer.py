@@ -54,13 +54,13 @@ def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
     Returns an ActionLabel for each ActionRule that applies to a MatchMessage.
     """
     action_rules = get_action_rules()
-    action_labels = []
+    action_labels: t.List["ActionLabel"] = []
     for action_rule in action_rules:
-        if action_rule.applies(match_message) and not action_labels.contains(
-            action_rule.action_label
-        ):
+        if action_rule_applies_to_match_message(
+            action_rule, match_message
+        ) and not action_labels.__contains__(action_rule.action_label):
             action_labels.append(action_rule.action_label)
-    action_labels = remove_superseded_actions(action_labels)  # maybe not needed for v0
+    action_labels = remove_superseded_actions(action_labels)
     return action_labels
 
 
@@ -68,22 +68,34 @@ def get_action_rules() -> t.List["ActionRule"]:
     """
     TODO implement
     Returns the ActionRule objects stored in the config repository. Each ActionRule
-    will have the following attributes: MustHaveLabels, MustNotHaveLabels, ActionLabel
+    will have the following attributes: MustHaveLabels, MustNotHaveLabels, ActionLabel.
     """
     return [
         ActionRule(
-            ActionLabel("Action", "EnqueueForReview"),
+            ActionLabel("EnqueueForReview"),
             [Label("Collaboration", "12345")],
             [],
         )
     ]
 
 
+def action_rule_applies_to_match_message(
+    action_rule: ActionRule, match_message: MatchMessage
+) -> bool:
+    """
+    Evaluate if the action rule applies to the match message. Return True if the action rule's "must have"
+    labels are all present in the match message, and that none of the "must not have" labels are present
+    in the match message, otherwise return False.
+    """
+    return True
+
+
 def get_actions() -> t.List["Action"]:
     """
     TODO implement
     Returns the Action objects stored in the config repository. Each Action will have
-    the following attributes: ActionLabel, Priority, SupersededByActionLabel
+    the following attributes: ActionLabel, Priority, SupersededByActionLabel (Priority
+    and SupersededByActionLabel are used by remove_superseded_actions).
     """
     return [
         Action(
@@ -99,8 +111,8 @@ def remove_superseded_actions(
 ) -> t.List["ActionLabel"]:
     """
     TODO implement
-    Evaluates a collection of ActionLabels against the configured Action objects, removing
-    an ActionLabel when it's superseded by another.
+    Evaluates a collection of ActionLabels generated for a match message against the actions.
+    Action labels that are superseded by another will be removed.
     """
     return action_labels
 
