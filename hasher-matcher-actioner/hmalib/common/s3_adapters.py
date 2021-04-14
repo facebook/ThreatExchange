@@ -124,9 +124,9 @@ class ThreatExchangeS3Adapter:
                     "privacy_groups": [
                         file_name.split("/")[-1].split(".")[0]
                     ],  # read privacy group from key
-                    "tags": row[
-                        "tags"
-                    ],  # note: these are the labels assigned by pytx in descriptor.py (NOT a 1-1 with tags on TE)
+                    "tags": row["tags"].split(" ")
+                    if row["tags"]
+                    else None,  # note: these are the labels assigned by pytx in descriptor.py (NOT a 1-1 with tags on TE)
                 },
             )
             for row in data_reader
