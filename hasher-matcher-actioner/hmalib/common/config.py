@@ -12,6 +12,7 @@ from dataclasses import dataclass, fields, is_dataclass
 import typing as t
 
 import boto3
+from boto3.dynamodb.conditions import Attr
 
 T = t.TypeVar("T")
 TConfig = t.TypeVar("TConfig", bound="HMAConfig")
@@ -76,12 +77,15 @@ class HMAConfig:
         assert _TABLE_NAME
         paginator = dynamodb.meta.client.get_paginator("scan")
 
-        response_iterator = paginator.paginate(TableName=_TABLE_NAME)
+        response_iterator = paginator.paginate(
+            TableName=_TABLE_NAME,
+            FilterExpression=Attr("ConfigType").eq(cls.get_config_type()),
+        )
 
         ret = []
         for page in response_iterator:
             for item in page["Items"]:
-                ret.append(_dynamodb_item_to_config(item["Item"]))
+                ret.append(_dynamodb_item_to_config(cls, item))
         return ret
 
     @staticmethod

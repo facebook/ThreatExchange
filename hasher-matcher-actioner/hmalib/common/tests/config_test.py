@@ -140,3 +140,13 @@ class ConfigTest(unittest.TestCase):
 
         with self.assertRaises(config.HMAConfigSerializationError):
             self.assertEqualsAfterDynamodb(also_fails)
+
+    def test_rename_behavior(self):
+
+        a_config = config.HMAConfig("First")
+        config.update_config(a_config)
+        a_config.name = "Second"
+        config.update_config(a_config)
+
+        all_configs = config.HMAConfig.get_all()
+        self.assertEqual({c.name for c in all_configs}, {"First", "Second"})
