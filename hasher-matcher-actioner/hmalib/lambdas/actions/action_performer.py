@@ -10,6 +10,7 @@ from hmalib.common.actioner_models import (
     ActionPerformer,
     WebhookActionPerformer,
     Post,
+    Delete,
 )
 from hmalib.models import MatchMessage, Label
 
@@ -39,7 +40,7 @@ def get_action_perfromers_config() -> t.Dict[ActionLabel, ActionPerformer]:
         ),
         ActionLabel("SendDeleteWebhook"): WebhookActionPerformer(
             Delete, "https://webhook.site/ff7ebc37-514a-439e-9a03-45635463"
-        )
+        ),
     }
 
 
