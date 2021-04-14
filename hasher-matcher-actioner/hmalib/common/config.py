@@ -246,6 +246,7 @@ def _py_to_aws_field(in_type: t.Type[T], py_field: t.Any) -> T:
     if in_type is t.Set[float]:  # SN
         # WARNING WARNING
         # floating point is not truly supported in dynamodb
+        # See note above
         return {Decimal(str(s)) for s in py_field}  # type: ignore # mypy/issues/10003
 
     if origin is list:  # L

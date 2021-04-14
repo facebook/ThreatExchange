@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import unittest
 from unittest.mock import patch
 import os
@@ -61,6 +61,12 @@ class ConfigTest(unittest.TestCase):
             ],
         )
 
+    def assertEqualsAfterDynamodb(self, config_instance):
+        """Asserts configs are still equal after writing to DB"""
+        config.update_config(config_instance)
+        from_db = config_instance.get(config_instance.name)
+        self.assertEqual(config_instance, from_db)
+
     def test_simple(self):
         """Tests a simple config class"""
 
@@ -76,15 +82,61 @@ class ConfigTest(unittest.TestCase):
         simple = SimpleConfig(
             "Foo", a=1, b="a", c=3.4, d={1, 2}, e={3.6, 5.1}, f={"a", "c"}
         )
+        self.assertEqualsAfterDynamodb(simple)
 
-        config.update_config(simple)
+    def test_complicated(self):
+        @dataclass
+        class ComplicatedConfig(config.HMAConfig):
+            a: t.List[int]
+            b: t.Dict[str, str]
+            c: t.List[t.Dict[str, t.List[int]]]
 
-        simple_from_db = SimpleConfig.get(simple.name)
+        complicated = ComplicatedConfig(
+            "Bar", a=[1, 2, 5], b={"a": "ayy", "b": "bee"}, c=[{"a": [5, 4, 1]}]
+        )
+        self.assertEqualsAfterDynamodb(complicated)
 
-        self.assertEqual(simple, simple_from_db)
+    def test_wrong_types(self):
+        @dataclass
+        class SimpleConfig(config.HMAConfig):
+            a: int = 1
+            b: str = "a"
+            c: t.List[str] = field(default_factory=list)
 
-    def test_complex(self):
-        pass
+        ok = SimpleConfig("Ok")
+        self.assertEqualsAfterDynamodb(ok)
 
-    def test_invalid(self):
-        pass
+        wrong_a = SimpleConfig("wrong_a", a="str")
+        wrong_b = SimpleConfig("wrong_b", b=321)
+        wrong_c = SimpleConfig("wrong_c", c=["a", 1, 2.0])
+
+        with self.assertRaises(config.HMAConfigSerializationError):
+            self.assertEqualsAfterDynamodb(wrong_a)
+        with self.assertRaises(config.HMAConfigSerializationError):
+            self.assertEqualsAfterDynamodb(wrong_b)
+        with self.assertRaises(config.HMAConfigSerializationError):
+            self.assertEqualsAfterDynamodb(wrong_c)
+
+    def test_invalid_serialization(self):
+        @dataclass
+        class TupleConfig(config.HMAConfig):
+            a: t.Tuple[int, str]
+
+        fails_on_serialization = TupleConfig("Tuple", (1, "a"))
+
+        with self.assertRaises(config.HMAConfigSerializationError):
+            self.assertEqualsAfterDynamodb(fails_on_serialization)
+
+        @dataclass
+        class NestedClass:
+            a: int
+            b: str
+
+        @dataclass
+        class NestedConfig(config.HMAConfig):
+            a: NestedClass
+
+        also_fails = NestedConfig("Nested", a=NestedClass(a=1, b="a"))
+
+        with self.assertRaises(config.HMAConfigSerializationError):
+            self.assertEqualsAfterDynamodb(also_fails)
