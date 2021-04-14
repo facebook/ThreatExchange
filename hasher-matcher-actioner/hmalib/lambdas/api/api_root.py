@@ -18,9 +18,11 @@ from hmalib.models import (
     PDQMatchRecord,
     PipelinePDQHashRecord,
     PDQRecordBase,
-    PDQSignalMetadata,
 )
 from threatexchange.descriptor import ThreatDescriptor
+from hmalib.models import PipelinePDQHashRecord
+
+from .matches import get_matches_api
 
 # Set to 10MB for /upload
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -112,28 +114,6 @@ def image(key=None):
     return bytes_
 
 
-@app.get("/matches")
-def matches():
-    """
-    matches API endpoint:
-    returns style { matches: [MatchesResult] }
-    """
-    results = get_matches()
-    logger.debug(results)
-    return {"matches": results}
-
-
-@app.get("/match/<key>")
-def match_details(key=None):
-    """
-    matche details API endpoint:
-    return format: match_details : [MatchDetailsResult]
-    """
-    results = get_match_details(key)
-    logger.debug(results)
-    return {"match_details": results}
-
-
 @app.get("/hash/<key>")
 def hashes(key=None):
     """
@@ -217,114 +197,6 @@ def lambda_handler(event, context):
     response = apig_wsgi_handler(event, context)
     logger.info("Response event: " + json.dumps(response, indent=2))
     return response
-
-
-# TODO move below this comment its own files once all connected to real data.
-class MatchesResult(t.TypedDict):
-    content_id: str
-    signal_id: t.Union[str, int]
-    signal_source: str
-    updated_at: str
-    reactions: str  # TODO
-
-
-def get_matches() -> t.List[MatchesResult]:
-    table = dynamodb.Table(DYNAMODB_TABLE)
-    records = PDQMatchRecord.get_from_time_range(table)
-    return [
-        {
-            "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
-            "signal_id": record.signal_id,
-            "signal_source": record.signal_source,
-            "updated_at": record.updated_at.isoformat(),
-            "reactions": "Mocked",
-        }
-        for record in records
-    ]
-
-
-class MatchDetailsMetadata(t.TypedDict):
-    dataset: str
-    tags: t.List[str]
-    opinion: str
-
-
-class MatchDetailsResult(t.TypedDict):
-    content_id: str
-    content_hash: str
-    signal_id: t.Union[str, int]
-    signal_hash: str
-    signal_source: str
-    signal_type: str
-    updated_at: str
-    metadata: t.List[MatchDetailsMetadata]
-
-
-def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
-    if not content_id:
-        return []
-    table = dynamodb.Table(DYNAMODB_TABLE)
-    records = PDQMatchRecord.get_from_content_id(
-        table, f"{IMAGE_FOLDER_KEY}{content_id}"
-    )
-    return [
-        {
-            "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
-            "content_hash": record.content_hash,
-            "signal_id": record.signal_id,
-            "signal_hash": record.signal_hash,
-            "signal_source": record.signal_source,
-            "signal_type": record.SIGNAL_TYPE,
-            "updated_at": record.updated_at.isoformat(),
-            "metadata": get_signal_details(record.signal_id, record.signal_source),
-        }
-        for record in records
-    ]
-
-
-def get_signal_details(
-    signal_id: t.Union[str, int], signal_source: str
-) -> t.List[MatchDetailsMetadata]:
-    if not signal_id or not signal_source:
-        return []
-    table = dynamodb.Table(DYNAMODB_TABLE)
-    return [
-        MatchDetailsMetadata(
-            dataset=metadata.ds_id,
-            tags=[
-                tag
-                for tag in metadata.tags
-                if tag
-                not in [
-                    ThreatDescriptor.TRUE_POSITIVE,
-                    ThreatDescriptor.FALSE_POSITIVE,
-                    ThreatDescriptor.DISPUTED,
-                ]
-            ],
-            opinion=get_opinion_from_tags(metadata.tags).value,
-        )
-        for metadata in PDQSignalMetadata.get_from_signal(
-            table, signal_id, signal_source
-        )
-    ]
-
-
-class OpinionString(Enum):
-    TP = "True Positive"
-    FP = "False Positive"
-    DISPUTED = "Unknown (Disputed)"
-    UNKNOWN = "Unknown"
-
-
-def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
-    # see python-threatexchange descriptor.py for origins
-    if ThreatDescriptor.TRUE_POSITIVE in tags:
-        return OpinionString.TP
-    if ThreatDescriptor.FALSE_POSITIVE in tags:
-        return OpinionString.FP
-    if ThreatDescriptor.DISPUTED in tags:
-        return OpinionString.DISPUTED
-    return OpinionString.UNKNOWN
 
 
 class HashResult(t.TypedDict):
@@ -457,3 +329,15 @@ def get_signal_hash_count() -> t.Dict[str, int]:
     pdq_data_files = pdq_storage.load_data()
 
     return {file_name: len(rows) for file_name, rows in pdq_data_files.items()}
+
+
+app.mount(
+    "/matches/",
+    get_matches_api(
+        dynamodb_table=dynamodb.Table(DYNAMODB_TABLE), image_folder_key=IMAGE_FOLDER_KEY
+    ),
+)
+
+
+if __name__ == "__main__":
+    app.run()
