@@ -5,6 +5,7 @@ import bottle
 import boto3
 import json
 import base64
+import datetime
 import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
@@ -12,7 +13,7 @@ from bottle import response, error
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
-from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
+from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord, PDQRecordBase
 
 # Set to 10MB for /upload
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -191,12 +192,12 @@ def dashboard_status():
     return {"dashboard-status": get_dashboard_system_status()}
 
 
-@app.get("/hash_count")
+@app.get("/hash-counts")
 def hash_count():
     """
     how many hashes exist in HMA
     """
-    results = get_hash_count()
+    results = get_signal_hash_count()
     logger.debug(results)
     return results if results else {}
 
@@ -323,22 +324,22 @@ def get_signals() -> t.List[SignalSourceSummary]:
     TODO this should be updated to check ThreatExchangeConfig
     based on what it finds in the config it should then do a s3 select on the files
     """
-    mocked_signal_type1a = SignalSourceType(type="HASH_PDQ", count=12456)
-    mocked_signal_type1b = SignalSourceType(type="MOCKED_TYPE1", count=456)
-    mocked_signal_type2a = SignalSourceType(type="HASH_PDQ", count=2456)
-    mocked_signal_type2b = SignalSourceType(type="MOCKED_TYPE2", count=956)
-
-    mocked_signal_source1 = SignalSourceSummary(
-        name="Mocked Signal Source 1",
-        signals=[mocked_signal_type1a, mocked_signal_type1b],
-        updated_at="mocked datetime1",
-    )
-    mocked_signal_source2 = SignalSourceSummary(
-        name="Mocked Signal Source 2",
-        signals=[mocked_signal_type2a, mocked_signal_type2b],
-        updated_at="mocked datetime2",
-    )
-    return [mocked_signal_source1, mocked_signal_source2]
+    signals = []
+    counts = get_signal_hash_count()
+    for dataset, total in counts.items():
+        if dataset.endswith(THREAT_EXCHANGE_PDQ_FILE_EXTENSION):
+            dataset_name = dataset.replace(
+                THREAT_EXCHANGE_PDQ_FILE_EXTENSION, ""
+            ).replace(THREAT_EXCHANGE_DATA_FOLDER, "")
+            signals.append(
+                SignalSourceSummary(
+                    name=dataset_name,
+                    # TODO remove hardcode and config mapping file extention to type
+                    signals=[SignalSourceType(type="HASH_PDQ", count=total)],
+                    updated_at="TODO",
+                )
+            )
+    return signals
 
 
 class DashboardCount(t.TypedDict):
@@ -354,18 +355,24 @@ class DashboardSystemStatus(t.TypedDict):
 
 
 def get_dashboard_hashes() -> DashboardCount:
-    return DashboardCount(
-        total=34217123456,
-        today=145609278,
-        updated_at="MockData and Timestamp",
-    )
+    return get_count_from_record_cls(PipelinePDQHashRecord)
 
 
 def get_dashboard_matches() -> DashboardCount:
+    return get_count_from_record_cls(PDQMatchRecord)
+
+
+def get_count_from_record_cls(record_cls: t.Type[PDQRecordBase]) -> DashboardCount:
+    # TODO this is an ~inefficient way to do this but connecting to real counts > mock
+    now = datetime.datetime.now()
+    day_ago = now - datetime.timedelta(1)
+    table = dynamodb.Table(DYNAMODB_TABLE)
+    total_count = len(record_cls.get_from_time_range(table))
+    today_count = len(record_cls.get_from_time_range(table, day_ago.isoformat()))
     return DashboardCount(
-        total=14376,
-        today=109,
-        updated_at="MockData and Timestamp",
+        total=total_count,
+        today=today_count,
+        updated_at=now.isoformat(),
     )
 
 
@@ -378,10 +385,13 @@ def get_dashboard_actions() -> DashboardCount:
 
 
 def get_dashboard_signals() -> DashboardCount:
+    """
+    note: SIGNALS COUNT != NUMBER OF UNQUIE HASHES
+    """
     return DashboardCount(
-        total=123456,
-        today=654,
-        updated_at="MockData and Timestamp",
+        total=sum(get_signal_hash_count().values()),
+        today=-1,
+        updated_at="TODO",
     )
 
 
@@ -393,7 +403,8 @@ def get_dashboard_system_status() -> DashboardSystemStatus:
     )
 
 
-def get_hash_count() -> t.Dict[str, int]:
+# TODO this method is expensive some cache or memoization method might be a good idea.
+def get_signal_hash_count() -> t.Dict[str, int]:
     s3_config = S3ThreatDataConfig(
         threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
         threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,

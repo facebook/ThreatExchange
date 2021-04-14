@@ -6,7 +6,7 @@
 
 import React, {useState, useEffect} from 'react';
 import {useHistory} from 'react-router-dom';
-import {Col, Card} from 'react-bootstrap';
+import {Col, Card, Row} from 'react-bootstrap';
 
 import {fetchDashboardCardSummary} from './Api';
 
@@ -16,7 +16,7 @@ export default function Dashboard() {
   return (
     <>
       <h1>Dashboard</h1>
-      <div className="row mt-3">
+      <Row className="mt-3">
         <DashboardCard title="Hashes" endpoint="dashboard-hashes" />
 
         <DashboardCard
@@ -34,7 +34,7 @@ export default function Dashboard() {
         />
 
         <DashboardCard title="System Status" endpoint="dashboard-status" />
-      </div>
+      </Row>
     </>
   );
 }
@@ -61,7 +61,7 @@ function DashboardCard({title, endpoint, handleOnClick}) {
           }}
           style={handleOnClick ? {cursor: 'pointer'} : {}}
           tabIndex={handleOnClick ? 0 : -1}>
-          <Card.Header as="h4" className="text-white bg-success">
+          <Card.Header as="h4" className="text-white bg-primary">
             {title}
           </Card.Header>
 
@@ -78,7 +78,7 @@ function DashboardCard({title, endpoint, handleOnClick}) {
 
 function DashboardCardBody({details}) {
   if (details) {
-    if (details.total && details.today) {
+    if (details.total != null && details.today != null) {
       return (
         <Card.Body>
           <h5>{details.total.toLocaleString()}</h5>
@@ -86,7 +86,7 @@ function DashboardCardBody({details}) {
         </Card.Body>
       );
     }
-    if (details.status && details.days_running) {
+    if (details.status != null && details.days_running != null) {
       return (
         <Card.Body>
           <h5>{details.status}</h5>

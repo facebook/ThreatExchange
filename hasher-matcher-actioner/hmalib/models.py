@@ -79,6 +79,12 @@ class PDQRecordBase(DynamoDBItem):
     def to_sqs_message(self) -> dict:
         raise NotImplementedError
 
+    @classmethod
+    def get_from_time_range(
+        cls, table: Table, start_time: str = None, end_time: str = None
+    ) -> t.List:
+        raise NotImplementedError
+
 
 @dataclass
 class PipelinePDQHashRecord(PDQRecordBase):
@@ -114,7 +120,23 @@ class PipelinePDQHashRecord(PDQRecordBase):
             cls.get_dynamodb_content_key(content_key),
             cls.get_dynamodb_type_key(cls.SIGNAL_TYPE),
         )
-        records = [
+        records = cls._result_items_to_records(items)
+        return None if not records else records[0]
+
+    @classmethod
+    def get_from_time_range(
+        cls, table: Table, start_time: str = None, end_time: str = None
+    ) -> t.List["PipelinePDQHashRecord"]:
+        items = HashRecordQuery.from_time_range(
+            table, cls.get_dynamodb_type_key(cls.SIGNAL_TYPE), start_time, end_time
+        )
+        return cls._result_items_to_records(items)
+
+    @staticmethod
+    def _result_items_to_records(
+        items: t.List[t.Dict],
+    ) -> t.List["PipelinePDQHashRecord"]:
+        return [
             PipelinePDQHashRecord(
                 item["PK"][len(DynamoDBItem.CONTENT_KEY_PREFIX) :],
                 item["ContentHash"],
@@ -123,7 +145,6 @@ class PipelinePDQHashRecord(PDQRecordBase):
             )
             for item in items
         ]
-        return None if not records else records[0]
 
 
 @dataclass
@@ -217,9 +238,11 @@ class PDQMatchRecord(PDQRecordBase):
 
 
 class HashRecordQuery:
-    @staticmethod
+    DEFAULT_PROJ_EXP = "PK, ContentHash, UpdatedAt, Quality"
+
+    @classmethod
     def from_content_key(
-        table: Table, content_key: str, hash_type_key: str = None
+        cls, table: Table, content_key: str, hash_type_key: str = None
     ) -> t.List[t.Dict]:
         """
         Given a content key (and optional hash type), return its content hash (for that type).
@@ -234,7 +257,24 @@ class HashRecordQuery:
 
         return table.query(
             KeyConditionExpression=key_con_exp,
-            ProjectionExpression="PK, ContentHash, UpdatedAt, Quality",
+            ProjectionExpression=cls.DEFAULT_PROJ_EXP,
+        ).get("Items", [])
+
+    @classmethod
+    def from_time_range(
+        cls, table: Table, hash_type: str, start_time: str = None, end_time: str = None
+    ) -> t.List[t.Dict]:
+        """
+        Given a hash type and time range, give me all the hashes found for that type and time range
+        """
+        if start_time is None:
+            start_time = datetime.datetime.min.isoformat()
+        if end_time is None:
+            end_time = datetime.datetime.max.isoformat()
+        return table.scan(
+            FilterExpression=Key("SK").eq(hash_type)
+            & Key("UpdatedAt").between(start_time, end_time),
+            ProjectionExpression=cls.DEFAULT_PROJ_EXP,
         ).get("Items", [])
 
 

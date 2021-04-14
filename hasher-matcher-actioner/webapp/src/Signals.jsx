@@ -33,7 +33,7 @@ export default function Signals() {
           <>
             {signalSummary !== null && signalSummary.length
               ? signalSummary.map(summary => (
-                  <SignalSummary summary={summary} />
+                  <SignalSummary key={summary.name} summary={summary} />
                 ))
               : null}
           </>
@@ -45,41 +45,39 @@ export default function Signals() {
 
 function SignalSummary({summary}) {
   return (
-    <>
-      <Col md="12" className="mb-4">
-        <Card>
-          <Card.Header as="h4" className="text-white bg-success">
-            {summary.name}
-          </Card.Header>
-          <Card.Body className="py-0">
-            <Table className="mb-0">
-              <thead>
-                <tr>
-                  <th>Signal Type</th>
-                  <th>Number of Signals</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.signals !== null && summary.signals.length ? (
-                  summary.signals.map(signal => (
-                    <tr>
-                      <td>{signal.type}</td>
-                      <td>{signal.count}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5}>No Signals Found.</td>
+    <Col key={summary.name} md="8" className="mb-4">
+      <Card>
+        <Card.Header as="h4" className="text-white bg-primary">
+          Dataset: {summary.name}
+        </Card.Header>
+        <Card.Body className="py-0">
+          <Table className="mb-0">
+            <thead>
+              <tr>
+                <th>Signal Type</th>
+                <th>Number of Signals</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.signals !== null && summary.signals.length ? (
+                summary.signals.map(signal => (
+                  <tr key={signal}>
+                    <td>{signal.type}</td>
+                    <td>{signal.count}</td>
                   </tr>
-                )}
-              </tbody>
-            </Table>
-          </Card.Body>
-          <Card.Footer as="small" className="font-weight-light">
-            as of {summary.updated_at}
-          </Card.Footer>
-        </Card>
-      </Col>
-    </>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5}>No Signals Found.</td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+        </Card.Body>
+        <Card.Footer as="small" className="font-weight-light">
+          as of {summary.updated_at}
+        </Card.Footer>
+      </Card>
+    </Col>
   );
 }
