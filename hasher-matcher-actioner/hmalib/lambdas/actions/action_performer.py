@@ -36,10 +36,10 @@ def get_action_perfromers_config() -> t.Dict[ActionLabel, ActionPerformer]:
     # TODO Should Read From s3 Configs table and determine which performer dynamically
     return {
         ActionLabel("SendDemoteWebhook"): WebhookActionPerformer(
-            Post, "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
+            Post(), "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
         ActionLabel("SendDeleteWebhook"): WebhookActionPerformer(
-            Delete, "https://webhook.site/ff7ebc37-514a-439e-9a03-45635463"
+            Delete(), "https://webhook.site/ff7ebc37-514a-439e-9a03-45635463"
         ),
     }
 
@@ -54,7 +54,7 @@ def lambda_handler(event, context):
     TODO: Currently action evaluator calls perform_action directly. We will eventually
     want to put an SQS queue in the middle which will call this function
     """
-    pass
+    return {"version" : "1"}
 
 
 if __name__ == "__main__":

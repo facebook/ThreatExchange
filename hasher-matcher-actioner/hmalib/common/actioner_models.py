@@ -44,32 +44,32 @@ TUrl = t.Union[t.Text, bytes]
 
 
 class HTTPRequestTypes:
-    @staticmethod
-    def call(url: TUrl, data: str) -> Response:
+    @classmethod
+    def call(cls, url: TUrl, data: str) -> Response:
         raise NotImplementedError()
 
 
 class Post(HTTPRequestTypes):
-    @staticmethod
-    def call(url: TUrl, data: str) -> Response:
+    @classmethod
+    def call(cls, url: TUrl, data: str) -> Response:
         return post(url, data)
 
 
 class Get(HTTPRequestTypes):
-    @staticmethod
-    def call(url: TUrl, _data: str) -> Response:
+    @classmethod
+    def call(cls, url: TUrl, _data: str) -> Response:
         return get(url)
 
 
 class Put(HTTPRequestTypes):
-    @staticmethod
-    def call(url: TUrl, data: str) -> Response:
+    @classmethod
+    def call(cls, url: TUrl, data: str) -> Response:
         return put(url, data)
 
 
 class Delete(HTTPRequestTypes):
-    @staticmethod
-    def call(url: TUrl, _data: str) -> Response:
+    @classmethod
+    def call(cls, url: TUrl, _data: str) -> Response:
         return delete(url)
 
 
@@ -81,7 +81,7 @@ class ActionPerformer:
 @dataclass
 class WebhookActionPerformer(ActionPerformer):
 
-    request_type: type[HTTPRequestTypes]
+    request_type: HTTPRequestTypes
     url: TUrl
 
     def perform_action(self, match_message: MatchMessage) -> None:
