@@ -73,7 +73,7 @@ def merge_pdq_files(
     else:
         # Add new privacy group to existing row
         accumulator[hash][1]["privacy_groups"].update(meta_data["privacy_groups"])
-        # Add new labels from privacy group to existing row
+        # Add new 'tags' for privacy group to existing row
         accumulator[hash][1]["tags"].update(meta_data["tags"])
     return accumulator
 
