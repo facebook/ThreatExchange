@@ -5,7 +5,12 @@ import typing as t
 
 from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from hmalib.common.actioner_models import ActionLabel
+from hmalib.common.actioner_models import (
+    ActionLabel,
+    ActionPerformer,
+    WebhookActionPerformer,
+    Post,
+)
 from hmalib.models import MatchMessage, Label
 
 logger = get_logger(__name__)
@@ -22,8 +27,15 @@ def perform_enque_for_review(match_message: MatchMessage):
 
 
 def perform_action(match_message: MatchMessage, action_label: ActionLabel):
-    # TODO implement
-    logger.debug("perform action")
+    action_performer = get_action_performer(action_label)
+    action_performer.perform_action(match_message)
+
+
+def get_action_performer(action_label: ActionLabel) -> ActionPerformer:
+    # TODO Should Read From s3 Configs table and determine which performer dynamically
+    return WebhookActionPerformer(
+        Post, "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
+    )
 
 
 def react_to_threat_exchange(match_message: MatchMessage, reaction_label: Label):
@@ -33,7 +45,8 @@ def react_to_threat_exchange(match_message: MatchMessage, reaction_label: Label)
 
 def lambda_handler(event, context):
     """
-    TODO
+    TODO: Currently action evaluator calls perform_action directly. We will eventually
+    want to put an SQS queue in the middle which will call this function
     """
     pass
 
@@ -41,6 +54,6 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     # For basic debugging
     match_message = MatchMessage("key", "hash", [])
-    action_label = ActionLabel("ENQUE_FOR_REVIEW")
+    action_label = ActionLabel("SendDemoteWebhook")
 
     perform_action(match_message, action_label)

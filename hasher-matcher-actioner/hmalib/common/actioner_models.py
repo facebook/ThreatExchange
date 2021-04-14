@@ -3,7 +3,9 @@
 from dataclasses import dataclass
 import typing as t
 
-from hmalib.models import Label
+from hmalib.models import Label, MatchMessage
+
+from requests import get, post, put, delete, Response
 
 
 class LabelWithConstraints(Label):
@@ -33,3 +35,51 @@ class ActionRule:
     action_label: ActionLabel
     must_have_labels: t.List[Label]
     must_not_have_labels: t.List[Label]
+
+
+TUrl = t.Union[t.Text, bytes]
+
+
+class HTTPRequestTypes:
+    @staticmethod
+    def call(url: TUrl, data: str) -> Response:
+        raise NotImplementedError()
+
+
+class Post(HTTPRequestTypes):
+    @staticmethod
+    def call(url: TUrl, data: str) -> Response:
+        return post(url, data)
+
+
+class Get(HTTPRequestTypes):
+    @staticmethod
+    def call(url: TUrl, _data: str) -> Response:
+        return get(url)
+
+
+class Put(HTTPRequestTypes):
+    @staticmethod
+    def call(url: TUrl, data: str) -> Response:
+        return put(url, data)
+
+
+class Delete(HTTPRequestTypes):
+    @staticmethod
+    def call(url: TUrl, _data: str) -> Response:
+        return delete(url)
+
+
+class ActionPerformer:
+    def perform_action(self, match_message: MatchMessage) -> None:
+        raise NotImplementedError()
+
+
+@dataclass
+class WebhookActionPerformer(ActionPerformer):
+
+    request_type: type[HTTPRequestTypes]
+    url: TUrl
+
+    def perform_action(self, match_message: MatchMessage) -> None:
+        self.request_type.call(self.url, match_message.to_sns_message())
