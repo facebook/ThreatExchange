@@ -160,6 +160,10 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
     @property
     def data_s3_key(self) -> str:
+        """
+        Creates a 'file_name' structure that is dependent on downstream (see s3_adapters.py)
+        TODO replace ".pdq.te" with os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
+        """
         return f"{self.s3_te_data_folder}{self.privacy_group}.pdq.te"
 
     @property
