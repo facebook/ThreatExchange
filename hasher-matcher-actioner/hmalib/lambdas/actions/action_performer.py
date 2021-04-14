@@ -10,6 +10,35 @@ from hmalib.models import MatchMessage, Label
 logger = get_logger(__name__)
 
 
+class LabelWithConstraints(Label):
+    _KEY_CONSTRAINT = "KeyConstraint"
+
+    def __init__(self, value: str):
+        super(LabelWithConstraints, self).__init__(self._KEY_CONSTRAINT, value)
+
+
+class ActionLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "Action"
+
+
+class ThreatExchangeReactionLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "ThreatExchangeReaction"
+
+
+@dataclass
+class Action:
+    action_label: ActionLabel
+    priority: int
+    superseded_by: t.List[ActionLabel]
+
+
+@dataclass
+class ActionRule:
+    action_label: ActionLabel
+    must_have_labels: t.List[Label]
+    must_not_have_labels: t.List[Label]
+
+
 def lambda_handler(event, context):
     """
     This lambda is called when one or more matches are found. If a single hash matches
@@ -150,35 +179,6 @@ def perform_writeback_in_review(match_message: MatchMessage):
 def perform_enque_for_review(match_message: MatchMessage):
     # TODO implement
     logger.debug("enqued for review")
-
-
-class LabelWithConstraints(Label):
-    _KEY_CONSTRAINT = "KeyConstraint"
-
-    def __init__(self, value: str):
-        super(LabelWithConstraints, self).__init__(self._KEY_CONSTRAINT, value)
-
-
-class ActionLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "Action"
-
-
-class ThreatExchangeReactionLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "ThreatExchangeReaction"
-
-
-@dataclass
-class Action:
-    action_label: ActionLabel
-    priority: int
-    superseded_by: t.List[ActionLabel]
-
-
-@dataclass
-class ActionRule:
-    action_label: ActionLabel
-    must_have_labels: t.List[Label]
-    must_not_have_labels: t.List[Label]
 
 
 def perform_action(match_message: MatchMessage, action_label: ActionLabel):
