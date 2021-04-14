@@ -12,7 +12,9 @@ from bottle import response, error
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
-from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord
+from hmalib.models import PipelinePDQHashRecord
+
+from .matches import get_matches_api
 
 # Set to 10MB for /upload
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -104,28 +106,6 @@ def image(key=None):
     return bytes_
 
 
-@app.get("/matches")
-def matches():
-    """
-    matches API endpoint:
-    returns style { matches: [MatchesResult] }
-    """
-    results = get_matches()
-    logger.debug(results)
-    return {"matches": results}
-
-
-@app.get("/match/<key>")
-def match_details(key=None):
-    """
-    matche details API endpoint:
-    return format: match_details : [MatchDetailsResult]
-    """
-    results = get_match_details(key)
-    logger.debug(results)
-    return {"match_details": results}
-
-
 @app.get("/hash/<key>")
 def hashes(key=None):
     """
@@ -209,80 +189,6 @@ def lambda_handler(event, context):
     response = apig_wsgi_handler(event, context)
     logger.info("Response event: " + json.dumps(response, indent=2))
     return response
-
-
-# TODO move below this comment its own files once all connected to real data.
-class MatchesResult(t.TypedDict):
-    content_id: str
-    signal_id: t.Union[str, int]
-    signal_source: str
-    updated_at: str
-    reactions: str  # TODO
-
-
-def get_matches() -> t.List[MatchesResult]:
-    table = dynamodb.Table(DYNAMODB_TABLE)
-    records = PDQMatchRecord.get_from_time_range(table)
-    return [
-        {
-            "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
-            "signal_id": record.signal_id,
-            "signal_source": record.signal_source,
-            "updated_at": record.updated_at.isoformat(),
-            "reactions": "Mocked",
-        }
-        for record in records
-    ]
-
-
-class MatchDetailsMetadata(t.TypedDict):
-    type: str
-    tags: t.List[str]
-    status: str
-    opinions: t.List[str]
-
-
-class MatchDetailsResult(t.TypedDict):
-    content_id: str
-    content_hash: str
-    signal_id: t.Union[str, int]
-    signal_hash: str
-    signal_source: str
-    updated_at: str
-    meta_data: MatchDetailsMetadata
-    actions: t.List[str]
-
-
-def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
-    if not content_id:
-        return []
-    table = dynamodb.Table(DYNAMODB_TABLE)
-    records = PDQMatchRecord.get_from_content_id(
-        table, f"{IMAGE_FOLDER_KEY}{content_id}"
-    )
-    # TODO these mocked metadata should either be added to
-    # PDQMatchRecord or some other look up in the data model
-    mocked_metadata = MatchDetailsMetadata(
-        type="HASH_PDQ",
-        tags=["mocked_t1", "mocked_t2"],
-        status="MOCKED_STATUS",
-        opinions=["mocked_a1", "mocked_a2"],
-    )
-
-    mocked_actions = ["Mocked_False_Postive", "Mocked_Delete"]
-    return [
-        {
-            "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
-            "content_hash": record.content_hash,
-            "signal_id": record.signal_id,
-            "signal_hash": record.signal_hash,
-            "signal_source": record.signal_source,
-            "updated_at": record.updated_at.isoformat(),
-            "meta_data": mocked_metadata,
-            "actions": mocked_actions,
-        }
-        for record in records
-    ]
 
 
 class HashResult(t.TypedDict):
@@ -405,3 +311,12 @@ def get_hash_count() -> t.Dict[str, int]:
     pdq_data_files = pdq_storage.load_data()
 
     return {file_name: len(rows) for file_name, rows in pdq_data_files.items()}
+
+
+app.mount(
+    "/matches/v1/", get_matches_api(dynamodb_table=dynamodb.Table(DYNAMODB_TABLE))
+)
+
+
+if __name__ == "__main__":
+    app.run()
