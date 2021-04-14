@@ -15,6 +15,7 @@ export default function Signals() {
 
   useEffect(() => {
     fetchSignalSummary().then(summaries => {
+      // TODO this will spin forever if no signals are found (we should add a second Collapse)
       if (summaries.signals.length) {
         setSignalSummary(summaries.signals);
       }
