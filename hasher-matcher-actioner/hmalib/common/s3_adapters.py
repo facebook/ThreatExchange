@@ -73,7 +73,6 @@ class ThreatExchangeS3Adapter:
                 file_name: self._parse_file(**typed_data_file)
                 for file_name, typed_data_file in typed_data_files.items()
             }
-
         return typed_data
 
     @property
@@ -125,6 +124,9 @@ class ThreatExchangeS3Adapter:
                     "privacy_groups": [
                         file_name.split("/")[-1].split(".")[0]
                     ],  # read privacy group from key
+                    "tags": row[
+                        "tags"
+                    ],  # note: these are the labels assigned by pytx in descriptor.py (NOT a 1-1 with tags on TE)
                 },
             )
             for row in data_reader
@@ -146,4 +148,4 @@ class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
 
     @property
     def file_type_str_name(self):
-        "PDQ"
+        return "PDQ"
