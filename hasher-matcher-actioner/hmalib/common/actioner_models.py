@@ -18,6 +18,9 @@ class LabelWithConstraints(Label):
 class ActionLabel(LabelWithConstraints):
     _KEY_CONSTRAINT = "Action"
 
+    def __hash__(self) -> int:
+        return self.value.__hash__()
+
 
 class ThreatExchangeReactionLabel(LabelWithConstraints):
     _KEY_CONSTRAINT = "ThreatExchangeReaction"

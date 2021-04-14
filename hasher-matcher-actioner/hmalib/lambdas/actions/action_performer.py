@@ -27,15 +27,20 @@ def perform_enque_for_review(match_message: MatchMessage):
 
 
 def perform_action(match_message: MatchMessage, action_label: ActionLabel):
-    action_performer = get_action_performer(action_label)
+    action_performer = get_action_perfromers_config()[action_label]
     action_performer.perform_action(match_message)
 
 
-def get_action_performer(action_label: ActionLabel) -> ActionPerformer:
+def get_action_perfromers_config() -> t.Dict[ActionLabel, ActionPerformer]:
     # TODO Should Read From s3 Configs table and determine which performer dynamically
-    return WebhookActionPerformer(
-        Post, "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
-    )
+    return {
+        ActionLabel("SendDemoteWebhook"): WebhookActionPerformer(
+            Post, "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
+        ),
+        ActionLabel("SendDeleteWebhook"): WebhookActionPerformer(
+            Delete, "https://webhook.site/ff7ebc37-514a-439e-9a03-45635463"
+        )
+    }
 
 
 def react_to_threat_exchange(match_message: MatchMessage, reaction_label: Label):
