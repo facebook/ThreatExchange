@@ -28,8 +28,9 @@ def perform_enque_for_review(match_message: MatchMessage):
 
 
 def perform_action(match_message: MatchMessage, action_label: ActionLabel):
-    action_performer = get_action_perfromers_config()[action_label]
-    action_performer.perform_action(match_message)
+    action_performer = get_action_perfromers_config().get(action_label)
+    if action_performer:
+        action_performer.perform_action(match_message)
 
 
 def get_action_perfromers_config() -> t.Dict[ActionLabel, ActionPerformer]:
@@ -54,7 +55,7 @@ def lambda_handler(event, context):
     TODO: Currently action evaluator calls perform_action directly. We will eventually
     want to put an SQS queue in the middle which will call this function
     """
-    return {"version" : "1"}
+    return {"version": "1"}
 
 
 if __name__ == "__main__":

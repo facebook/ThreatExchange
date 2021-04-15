@@ -8,6 +8,7 @@ import datetime
 import os
 
 from hmalib.lambdas.actions.action_performer import ActionLabel, perform_action
+from hmalib.models import MatchMessage
 
 
 class TestActioner(unittest.TestCase):
@@ -20,3 +21,8 @@ class TestActioner(unittest.TestCase):
         assert action_label.key == "Action"
 
         perform_action(None, action_label)
+
+    def test_action_performed(self):
+        action_label = ActionLabel("SendDemoteWebhook")
+        match_message = MatchMessage("key", "hash", [])
+        perform_action(match_message, action_label)
