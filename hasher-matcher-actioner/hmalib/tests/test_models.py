@@ -13,7 +13,7 @@ class TestPDQModels(unittest.TestCase):
     TEST_CONTENT_ID = "image/test_photo.jpg"
     TEST_SIGNAL_ID = "5555555555555555"
     TEST_SIGNAL_SOURCE = "test_source"
-    TEST_PG_ID = "sample_data"
+    TEST_DATASET_ID = "sample_data"
 
     @staticmethod
     def mock_aws_credentials():
@@ -122,7 +122,7 @@ class TestPDQModels(unittest.TestCase):
         pdq_hash = "a0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
         return models.PDQSignalMetadata(
             TestPDQModels.TEST_SIGNAL_ID,
-            TestPDQModels.TEST_PG_ID,
+            TestPDQModels.TEST_DATASET_ID,
             datetime.datetime.now(),
             TestPDQModels.TEST_SIGNAL_SOURCE,
             pdq_hash,
@@ -244,7 +244,7 @@ class TestPDQModels(unittest.TestCase):
         result = self.table.get_item(
             Key={
                 "PK": f"s#{TestPDQModels.TEST_SIGNAL_SOURCE}#{TestPDQModels.TEST_SIGNAL_ID}",
-                "SK": f"pg#{TestPDQModels.TEST_PG_ID}",
+                "SK": f"ds#{TestPDQModels.TEST_DATASET_ID}",
             },
         )
         items = result.get("Item")
