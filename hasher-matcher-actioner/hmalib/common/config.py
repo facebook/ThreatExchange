@@ -282,11 +282,9 @@ def _py_to_aws_field(in_type: t.Type[T], py_field: t.Any) -> T:
         return {Decimal(str(s)) for s in py_field}  # type: ignore # mypy/issues/10003
 
     if origin is list:  # L
-        assert len(args) == 1
         return [_py_to_aws_field(args[0], v) for v in py_field]  # type: ignore # mypy/issues/10003
 
     if origin is dict and args[0] is str:  # M
-        assert len(args) == 2
         return {k: _py_to_aws_field(args[1], v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
 
     raise HMAConfigSerializationError(
