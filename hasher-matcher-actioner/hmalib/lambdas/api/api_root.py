@@ -13,7 +13,13 @@ from bottle import response, error
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
-from hmalib.models import PDQMatchRecord, PipelinePDQHashRecord, PDQRecordBase
+from hmalib.models import (
+    PDQMatchRecord,
+    PipelinePDQHashRecord,
+    PDQRecordBase,
+    PDQSignalMetadata,
+)
+from threatexchange.descriptor import ThreatDescriptor
 
 # Set to 10MB for /upload
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -237,10 +243,9 @@ def get_matches() -> t.List[MatchesResult]:
 
 
 class MatchDetailsMetadata(t.TypedDict):
-    type: str
+    pg: str
     tags: t.List[str]
-    status: str
-    opinions: t.List[str]
+    opinion: str
 
 
 class MatchDetailsResult(t.TypedDict):
@@ -249,9 +254,9 @@ class MatchDetailsResult(t.TypedDict):
     signal_id: t.Union[str, int]
     signal_hash: str
     signal_source: str
+    signal_type: str
     updated_at: str
-    meta_data: MatchDetailsMetadata
-    actions: t.List[str]
+    metadata: t.List[MatchDetailsMetadata]
 
 
 def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
@@ -261,16 +266,6 @@ def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
     records = PDQMatchRecord.get_from_content_id(
         table, f"{IMAGE_FOLDER_KEY}{content_id}"
     )
-    # TODO these mocked metadata should either be added to
-    # PDQMatchRecord or some other look up in the data model
-    mocked_metadata = MatchDetailsMetadata(
-        type="HASH_PDQ",
-        tags=["mocked_t1", "mocked_t2"],
-        status="MOCKED_STATUS",
-        opinions=["mocked_a1", "mocked_a2"],
-    )
-
-    mocked_actions = ["Mocked_False_Postive", "Mocked_Delete"]
     return [
         {
             "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
@@ -278,12 +273,50 @@ def get_match_details(content_id: str) -> t.List[MatchDetailsResult]:
             "signal_id": record.signal_id,
             "signal_hash": record.signal_hash,
             "signal_source": record.signal_source,
+            "signal_type": record.SIGNAL_TYPE,
             "updated_at": record.updated_at.isoformat(),
-            "meta_data": mocked_metadata,
-            "actions": mocked_actions,
+            "metadata": get_signal_details(record.signal_id, record.signal_source),
         }
         for record in records
     ]
+
+
+def get_signal_details(
+    signal_id: t.Union[str, int], signal_source: str
+) -> t.List[MatchDetailsMetadata]:
+    if not signal_id or not signal_source:
+        return []
+    table = dynamodb.Table(DYNAMODB_TABLE)
+    return [
+        MatchDetailsMetadata(
+            pg=metadata.pg_id,
+            tags=[
+                tag
+                for tag in metadata.tags
+                if tag
+                not in [
+                    ThreatDescriptor.TRUE_POSITIVE,
+                    ThreatDescriptor.FALSE_POSITIVE,
+                    ThreatDescriptor.DISPUTED,
+                ]
+            ],
+            opinion=get_opinion_from_tags(metadata.tags),
+        )
+        for metadata in PDQSignalMetadata.get_from_signal(
+            table, signal_id, signal_source
+        )
+    ]
+
+
+def get_opinion_from_tags(tags: t.List[str]):
+    # see python-threatexchange descriptor.py for origins
+    if ThreatDescriptor.TRUE_POSITIVE in tags:
+        return "True Positive"
+    if ThreatDescriptor.FALSE_POSITIVE in tags:
+        return "False Positive"
+    if ThreatDescriptor.DISPUTED in tags:
+        return "Unknown (Disputed)"
+    return "Unknown"
 
 
 class HashResult(t.TypedDict):

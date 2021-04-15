@@ -117,6 +117,7 @@ def lambda_handler(event, context):
                 ).write_to_table(records_table)
 
                 for pg in metadata.get("privacy_groups", []):
+                    # TODO: we might be able to get away with some 'if exists/upsert' here
                     PDQSignalMetadata(
                         signal_id,
                         pg,
