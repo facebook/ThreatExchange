@@ -28,33 +28,19 @@ def lambda_handler(event, context):
     api = ThreatExchangeAPI(api_key)
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()
-    items = []
-    privacy_ids = set()
-    build_items(items, privacy_group_member_list, privacy_ids)
-    build_items(items, privacy_group_owner_list, privacy_ids)
+    unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
     table = dynamodb.Table(collab_config_table)
     with table.batch_writer() as batch:
-        for item in items:
-            batch.put_item(Item=item)
-
-
-def build_items(items, privacy_group_list, privacy_ids):
-    if privacy_group_list:
-        for privacy_group in privacy_group_list:
-            if (
-                privacy_group.threat_updates_enabled
-                and privacy_group.id not in privacy_ids
-            ):
+        for privacy_group in unique_privacy_groups:
+            if privacy_group.threat_updates_enabled:
                 logger.info("Adding collaboration name %s", privacy_group.name)
-                privacy_ids.add(privacy_group.id)
                 item = {
                     "Name": privacy_group.name,
                     "privacy_group": privacy_group.id,
                     "tags": [],
                     "fetcher_active": False,
                 }
-                items.append(item)
-
+                batch.put_item(Item=item)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

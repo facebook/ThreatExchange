@@ -39,3 +39,6 @@ class ThreatPrivacyGroup:
             bool(d["threat_updates_enabled"]),
             _parse_datetime_from_iso_8601(d["last_updated"]),
         )
+
+    def __eq__(self,o: ThreatPrivacyGroup) -> bool :
+        return self.id == o.id
