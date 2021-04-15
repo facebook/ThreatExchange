@@ -43,33 +43,35 @@ class ActionRule:
 TUrl = t.Union[t.Text, bytes]
 
 
-class HTTPRequestTypes:
-    @classmethod
-    def call(cls, url: TUrl, data: str) -> Response:
+class HTTPRequest:
+    @staticmethod
+    def call(url: TUrl, **kwargs) -> Response:
         raise NotImplementedError()
 
 
-class Post(HTTPRequestTypes):
-    @classmethod
-    def call(cls, url: TUrl, data: str) -> Response:
+class Post(HTTPRequest):
+    @staticmethod
+    def call(url: TUrl, **kwargs) -> Response:
+        data = kwargs.get("data")
         return post(url, data)
 
 
-class Get(HTTPRequestTypes):
-    @classmethod
-    def call(cls, url: TUrl, _data: str) -> Response:
+class Get(HTTPRequest):
+    @staticmethod
+    def call(url: TUrl, **kwargs) -> Response:
         return get(url)
 
 
-class Put(HTTPRequestTypes):
-    @classmethod
-    def call(cls, url: TUrl, data: str) -> Response:
+class Put(HTTPRequest):
+    @staticmethod
+    def call(url: TUrl, **kwargs) -> Response:
+        data = kwargs.get("data")
         return put(url, data)
 
 
-class Delete(HTTPRequestTypes):
-    @classmethod
-    def call(cls, url: TUrl, _data: str) -> Response:
+class Delete(HTTPRequest):
+    @staticmethod
+    def call(url: TUrl, **kwargs) -> Response:
         return delete(url)
 
 
@@ -81,8 +83,9 @@ class ActionPerformer:
 @dataclass
 class WebhookActionPerformer(ActionPerformer):
 
-    request_type: HTTPRequestTypes
+    request_type: t.Type[HTTPRequest]
     url: TUrl
 
     def perform_action(self, match_message: MatchMessage) -> None:
-        self.request_type.call(self.url, match_message.to_sns_message())
+        kwargs = {"url": self.url, "data": match_message.to_sns_message()}
+        self.request_type.call(**kwargs)

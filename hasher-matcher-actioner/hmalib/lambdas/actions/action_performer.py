@@ -10,7 +10,7 @@ from hmalib.common.actioner_models import (
     ActionPerformer,
     WebhookActionPerformer,
     Post,
-    Delete,
+    Put,
 )
 from hmalib.models import MatchMessage, Label
 
@@ -27,20 +27,22 @@ def perform_enque_for_review(match_message: MatchMessage):
     logger.debug("enqued for review")
 
 
-def perform_action(match_message: MatchMessage, action_label: ActionLabel):
+def perform_action(match_message: MatchMessage, action_label: ActionLabel) -> int:
     action_performer = get_action_perfromers_config().get(action_label)
     if action_performer:
         action_performer.perform_action(match_message)
+        return 1
+    return 0
 
 
 def get_action_perfromers_config() -> t.Dict[ActionLabel, ActionPerformer]:
     # TODO Should Read From s3 Configs table and determine which performer dynamically
     return {
-        ActionLabel("SendDemoteWebhook"): WebhookActionPerformer(
-            Post(), "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
+        ActionLabel("SendDemotePostWebhook"): WebhookActionPerformer(
+            Post, "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
-        ActionLabel("SendDeleteWebhook"): WebhookActionPerformer(
-            Delete(), "https://webhook.site/ff7ebc37-514a-439e-9a03-45635463"
+        ActionLabel("SendDeletePutWebhook"): WebhookActionPerformer(
+            Put, "https://webhook.site/ff7ebc37-514a-439e-9a03-45635463"
         ),
     }
 
@@ -61,6 +63,6 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     # For basic debugging
     match_message = MatchMessage("key", "hash", [])
-    action_label = ActionLabel("SendDemoteWebhook")
+    action_label = ActionLabel("SendDemotePostWebhook")
 
     perform_action(match_message, action_label)
