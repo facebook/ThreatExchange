@@ -23,6 +23,31 @@ locals {
   te_data_folder     = module.hashing_data.threat_exchange_data_folder_info.key
 }
 
+### Config storage ###
+
+resource "aws_dynamodb_table" "hma_config" {
+  name         = "${var.prefix}-HMAConfig"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "ConfigType"
+  range_key    = "ConfigName"
+
+  attribute {
+    name = "ConfigType"
+    type = "S"
+  }
+  attribute {
+    name = "ConfigName"
+    type = "S"
+  }
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HMAConfig"
+    }
+  )
+}
+
 module "hashing_data" {
   source          = "./hashing-data"
   prefix          = var.prefix
@@ -88,6 +113,8 @@ module "fetcher" {
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   fetch_frequency       = var.fetch_frequency
+
+  config_arn = aws_dynamodb_table.hma_config.arn
 }
 
 resource "aws_sns_topic" "matches" {

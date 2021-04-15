@@ -61,3 +61,8 @@ variable "collab_file" {
   description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
   type = string
 }
+
+variable "config_arn" {
+  description = "The ARN of the DynamoDB table with configs"
+  type = string
+}
