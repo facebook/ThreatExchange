@@ -23,9 +23,7 @@ TConfig = t.TypeVar("TConfig", bound="HMAConfig")
 _TABLE_NAME = None
 
 
-functools.lru_cache(maxsize=1)
-
-
+@functools.lru_cache(maxsize=1)
 def get_dynamodb():
     """
     Get the dynamodb resource.
@@ -51,12 +49,16 @@ class HMAConfig:
 
     Supported attribute types you can see in _aws_field_to_py()
 
+    Don't name any fields the reserved key names of
+      * ConfigType
+      * ConfigName
+
     For versioning:
-    * adding more fields is safe if the new fields have defaults.
-    * Removing fields is safe if you don't re-use names.
-    * Changing types is likely not safe, and try and avoid doing it.
-    It would be possible to override get() and get_all() to run your own
-    deserialization logic, but then things are complicated.
+      * adding more fields is safe if the new fields have defaults.
+      * Removing fields is safe if you don't re-use names.
+      * Changing types is likely not safe, and try and avoid doing it.
+        It would be possible to override get() and get_all() to run your own
+        deserialization logic, but then things are complicated.
     ---
 
     Astute readers may notice that there are no abstract methods, and in fact,
@@ -75,7 +77,7 @@ class HMAConfig:
         return cls.__name__
 
     @classmethod
-    def get(cls: t.Type[TConfig], name: str) -> TConfig:
+    def get(cls: t.Type[TConfig], name: str) -> t.Optional[TConfig]:
         assert _TABLE_NAME
         result = get_dynamodb().meta.client.get_item(
             TableName=_TABLE_NAME,
@@ -84,7 +86,17 @@ class HMAConfig:
                 "ConfigName": name,
             },
         )
-        return _dynamodb_item_to_config(cls, result["Item"])
+        item = result.get("Item")
+        if not item:
+            return None
+        return _dynamodb_item_to_config(cls, item)
+
+    @classmethod
+    def getx(cls: t.Type[TConfig], name: str) -> TConfig:
+        ret = cls.get(name)
+        if not ret:
+            raise ValueError(f"No {cls.__name__} named {name}")
+        return ret
 
     @classmethod
     def get_all(cls: t.Type[TConfig]) -> t.List[TConfig]:
@@ -130,8 +142,8 @@ def update_config(config: HMAConfig) -> None:
     )
 
 
-def delete_config_by_name(config_type: str, name: str) -> None:
-    """Delete a config by name only"""
+def delete_config_by_type_and_name(config_type: str, name: str) -> None:
+    """Delete a config by name (and type)"""
     assert _TABLE_NAME
     get_dynamodb().meta.client.delete_item(
         TableName=_TABLE_NAME,
@@ -144,7 +156,7 @@ def delete_config_by_name(config_type: str, name: str) -> None:
 
 def delete_config(config: HMAConfig) -> None:
     """Delete a config"""
-    delete_config_by_name(config.get_config_type(), config.name)
+    delete_config_by_type_and_name(config.get_config_type(), config.name)
 
 
 def _dynamodb_item_to_config(
@@ -215,12 +227,12 @@ def _aws_field_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
         return {float(s) for s in aws_field}  # type: ignore # mypy/issues/10003
 
     if origin is list:  # L
-        assert len(args) == 1
         return [_aws_field_to_py(args[0], v) for v in aws_field]  # type: ignore # mypy/issues/10003
     # It would be possible to add support for nested dataclasses here, which
     # just become maps with the keys as their attributes
+    # Another option would be adding a new class that adds methods to convert
+    # to an AWS-friendly struct and back
     if origin is dict and args[0] is str:  # M
-        assert len(args) == 2
         return {k: _aws_field_to_py(args[1], v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
 
     raise HMAConfigSerializationError(

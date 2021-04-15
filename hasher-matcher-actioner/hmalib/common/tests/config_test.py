@@ -24,6 +24,7 @@ class ConfigTest(unittest.TestCase):
         os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
         os.environ["AWS_SECURITY_TOKEN"] = "testing"
         os.environ["AWS_SESSION_TOKEN"] = "testing"
+        os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
 
     @classmethod
     def setUpClass(cls):
@@ -32,17 +33,26 @@ class ConfigTest(unittest.TestCase):
         cls.mock_dynamodb2.start()
         cls.create_mocked_table()
 
-        # Module level state is evil!
-        cls._dynamodb_patch = patch.object(
-            config, "dynamodb", new=boto3.resource("dynamodb")
-        )
-        cls._dynamodb_patch.start()
-
         config.HMAConfig.initialize(cls.TABLE_NAME)
+
+    def tearDown(self):
+        client = boto3.client("dynamodb")
+        paginator = client.get_paginator("scan")
+
+        response_iterator = paginator.paginate(
+            TableName=config._TABLE_NAME,
+        )
+
+        ret = []
+        for page in response_iterator:
+            for item in page["Items"]:
+                config.delete_config_by_type_and_name(
+                    item["ConfigType"]["S"], item["ConfigName"]["S"]
+                )
+        return ret
 
     @classmethod
     def tearDownClass(cls):
-        cls._dynamodb_patch.stop()
         cls.mock_dynamodb2.stop()
 
     @classmethod
@@ -141,8 +151,40 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaises(config.HMAConfigSerializationError):
             self.assertEqualsAfterDynamodb(also_fails)
 
-    def test_rename_behavior(self):
+    def test_get(self):
+        a_config = config.HMAConfig("a")
+        config.update_config(a_config)
+        self.assertEqual(a_config, config.HMAConfig.get("a"))
+        self.assertEqual(a_config, config.HMAConfig.getx("a"))
+        self.assertIsNone(config.HMAConfig.get("b"))
+        with self.assertRaisesRegex(ValueError, "No HMAConfig named b"):
+            self.assertIsNone(config.HMAConfig.getx("b"))
 
+    def test_get_all(self):
+        @dataclass
+        class GetAllConfig(config.HMAConfig):
+            a: int = 1
+            b: str = "a"
+            c: t.List[str] = field(default_factory=list)
+
+        configs_to_make = [
+            GetAllConfig("a", a=2),
+            GetAllConfig("b", b="b"),
+            GetAllConfig("c", c=["a", "b", "c"]),
+        ]
+
+        made_configs = []
+        self.assertCountEqual(made_configs, GetAllConfig.get_all())
+        for c in configs_to_make:
+            config.update_config(c)
+            made_configs.append(c)
+            self.assertCountEqual(made_configs, GetAllConfig.get_all())
+        config.delete_config(made_configs[-1])
+        made_configs = made_configs[:-1]
+        self.assertCountEqual(made_configs, GetAllConfig.get_all())
+
+    def test_rename_behavior(self):
+        """Rename is not fully supported and so generates new records atm"""
         a_config = config.HMAConfig("First")
         config.update_config(a_config)
         a_config.name = "Second"
@@ -150,3 +192,11 @@ class ConfigTest(unittest.TestCase):
 
         all_configs = config.HMAConfig.get_all()
         self.assertEqual({c.name for c in all_configs}, {"First", "Second"})
+
+    def test_delete(self):
+        a_config = config.HMAConfig("a")
+        config.update_config(a_config)
+        self.assertEqual({c.name for c in config.HMAConfig.get_all()}, {"a"})
+        config.delete_config(a_config)
+        self.assertEqual({c.name for c in config.HMAConfig.get_all()}, set())
+        self.assertEqual(None, config.HMAConfig.get("a"))
