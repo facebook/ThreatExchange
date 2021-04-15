@@ -98,7 +98,7 @@ resource "aws_cloudwatch_log_group" "action_evaluator" {
   tags = merge(
     var.additional_tags,
     {
-      Name = "ActionPerformerLambdaLogGroup"
+      Name = "ActionEvaluatorLambdaLogGroup"
     }
   )
 }
