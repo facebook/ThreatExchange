@@ -36,7 +36,7 @@ def lambda_handler(event, context):
                 logger.info("Adding collaboration name %s", privacy_group.name)
                 item = {
                     "Name": privacy_group.name,
-                    "privacy_group": privacy_group.id,
+                    "privacy_group_id": privacy_group.id,
                     "tags": [],
                     "fetcher_active": False,
                 }

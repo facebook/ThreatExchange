@@ -31,6 +31,9 @@ class ThreatPrivacyGroup:
     def __eq__(self, other) -> bool:
         return self.id == other.id
 
+    def __hash__(self) -> bool:
+        return hash(self.id)
+
     @classmethod
     def from_graph_api_dict(cls, d: dict) -> "ThreatPrivacyGroup":
         return cls(
