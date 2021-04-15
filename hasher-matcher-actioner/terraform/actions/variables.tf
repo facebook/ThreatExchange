@@ -8,6 +8,7 @@ variable "lambda_docker_info" {
   type = object({
     uri = string
     commands = object({
+      action_evaluator = string
       action_performer = string
     })
   })

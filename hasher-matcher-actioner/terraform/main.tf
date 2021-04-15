@@ -255,6 +255,7 @@ module "actions" {
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
+      action_evaluator = "hmalib.lambdas.actions.action_evaluator.lambda_handler"
       action_performer = "hmalib.lambdas.actions.action_performer.lambda_handler"
     }
   }

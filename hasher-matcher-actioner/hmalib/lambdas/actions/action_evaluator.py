@@ -25,9 +25,8 @@ def lambda_handler(event, context):
     Action labels are generated for each match message, then an action is performed
     corresponding to each action label.
     """
-    for sqs_record in event[
-        "Records"
-    ]:  # TODO research max # sqs records / lambda_handler invocation
+    for sqs_record in event["Records"]:
+        # TODO research max # sqs records / lambda_handler invocation
         sns_notification = json.loads(sqs_record["body"])
         match_message: MatchMessage = MatchMessage.from_sns_message(
             sns_notification["Message"]
@@ -53,6 +52,7 @@ def lambda_handler(event, context):
                     react_to_threat_exchange(
                         match_message, threat_exchange_reaction_label
                     )
+    return {"action_evaluated": "true"}
 
 
 def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
