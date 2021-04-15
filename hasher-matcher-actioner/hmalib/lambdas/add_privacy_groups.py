@@ -42,6 +42,7 @@ def lambda_handler(event, context):
                 }
                 batch.put_item(Item=item)
 
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     lambda_handler(None, None)
