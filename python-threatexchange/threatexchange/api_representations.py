@@ -25,6 +25,7 @@ class ThreatPrivacyGroup:
     description: str
     members_can_see: bool
     members_can_use: bool
+    threat_updates_enabled: bool
     last_updated: datetime
 
     @classmethod
