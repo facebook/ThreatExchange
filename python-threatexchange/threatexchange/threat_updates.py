@@ -368,7 +368,8 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
 
     def reset(self):
         super().reset()
-        self._cached_state.clear()
+        if self._cached_state:
+            self._cached_state.clear()
 
     def _load_checkpoint(self) -> ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""

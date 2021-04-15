@@ -16,20 +16,7 @@ class TestActioner(unittest.TestCase):
         Test that ActionLabels have correct constraints
         """
 
-        raised = False
-        try:
-            action_label = ActionLabel("Action", "Something else")
-        except Exception as e:
-            raised = e.args[0] == "'Something else' is not a valid Action"
-            print(e.args[0])
-        assert raised
+        action_label = ActionLabel("ENQUEUE_FOR_REVIEW")
+        assert action_label.key == "Action"
 
-        raised = False
-        try:
-            action_label = ActionLabel("Another Label", "WRITEBACK_IN_REVIEW")
-        except Exception as e:
-            raised = e.args[0] == "ActionLabels must have a key Action"
-        assert raised
-
-        action_label = ActionLabel("Action", "ENQUE_FOR_REVIEW")
         perform_action(None, action_label)
