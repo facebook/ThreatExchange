@@ -60,6 +60,11 @@ class Label:
     def from_dynamodb_dict(cls, d: dict) -> "Label":
         return cls(d["K"], d["V"])
 
+    def __eq__(self, another_label: object) -> bool:
+        if not isinstance(another_label, Label):
+            return NotImplemented
+        return self.key == another_label.key and self.value == another_label.value
+
 
 @dataclass
 class PDQRecordBase(DynamoDBItem):
