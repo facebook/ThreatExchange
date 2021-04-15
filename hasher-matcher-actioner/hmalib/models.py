@@ -31,6 +31,14 @@ class DynamoDBItem:
         return f"{DynamoDBItem.CONTENT_KEY_PREFIX}{c_id}"
 
     @staticmethod
+    def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
+        return f"{DynamoDBItem.SIGNAL_KEY_PREFIX}{source}#{s_id}"
+
+    @staticmethod
+    def remove_signal_key_prefix(key: str, source: str) -> str:
+        return key[len(DynamoDBItem.SIGNAL_KEY_PREFIX) + len(source) + 1 :]
+
+    @staticmethod
     def get_dynamodb_type_key(type: str) -> str:
         return f"{DynamoDBItem.TYPE_PREFIX}{type}"
 
@@ -46,6 +54,90 @@ class SNSMessage:
     @classmethod
     def from_sns_message(cls, message: str) -> "SNSMessage":
         raise NotImplementedError
+
+
+@dataclass
+class SignalMetadataBase(DynamoDBItem):
+    """
+    Base for signal metadata.
+    'PG' refers to privacy group which for the time being is
+    quivalent to collab (and in the long term could map to bank)
+    """
+
+    PG_PREFIX = "pg#"
+
+    signal_id: t.Union[str, int]
+    pg_id: str
+    updated_at: datetime.datetime  # ISO-8601 formatted
+    signal_source: str
+    signal_hash: str  # duplicated field with PDQMatchRecord having both for now to help with debuging/testing
+    tags: t.List[t.Any] = field(default_factory=list)
+
+    @staticmethod
+    def get_dynamodb_pg_key(pg_id: str) -> str:
+        return f"{SignalMetadataBase.PG_PREFIX}{pg_id}"
+
+
+@dataclass
+class PDQSignalMetadata(SignalMetadataBase):
+    """
+    PDQ Signal metadata.
+    This object is designed to be an ~lookaside on some of the values used by
+    PDQMatchRecord for easier and more consistent updating by the syncer and UI.
+
+    Otherwise updates on a signals metadata would require updating all
+    PDQMatchRecord associated; TODO: For now there will be some overlap between
+    this object and PDQMatchRecord.
+    """
+
+    SIGNAL_TYPE = "pdq"
+
+    def to_dynamodb_item(self) -> dict:
+        return {
+            "PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
+            "SK": self.get_dynamodb_pg_key(self.pg_id),
+            "SignalHash": self.signal_hash,
+            "SignalSource": self.signal_source,
+            "UpdatedAt": self.updated_at.isoformat(),
+            "HashType": self.SIGNAL_TYPE,
+            "Tags": self.tags,
+        }
+
+    @classmethod
+    def get_from_signal(
+        cls,
+        table: Table,
+        signal_id: t.Union[str, int],
+        signal_source: str,
+    ) -> t.List["PDQSignalMetadata"]:
+
+        items = table.query(
+            KeyConditionExpression=Key("PK").eq(
+                cls.get_dynamodb_signal_key(signal_source, signal_id)
+            )
+            & Key("SK").begins_with(cls.PG_PREFIX),
+            ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags",
+            FilterExpression=Attr("HashType").eq(cls.SIGNAL_TYPE),
+        ).get("Items", [])
+        return cls._result_items_to_metadata(items)
+
+    @staticmethod
+    def _result_items_to_metadata(
+        items: t.List[t.Dict],
+    ) -> t.List["PDQSignalMetadata"]:
+        return [
+            PDQSignalMetadata(
+                PDQSignalMetadata.remove_signal_key_prefix(
+                    item["PK"], item["SignalSource"]
+                ),
+                item["SK"][len(PDQSignalMetadata.PG_PREFIX) :],
+                datetime.datetime.fromisoformat(item["UpdatedAt"]),
+                item["SignalSource"],
+                item["SignalHash"],
+                item["Tags"],
+            )
+            for item in items
+        ]
 
 
 @dataclass
@@ -162,14 +254,6 @@ class PDQMatchRecord(PDQRecordBase):
     signal_source: str
     signal_hash: str
     labels: t.List[Label] = field(default_factory=list)
-
-    @staticmethod
-    def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
-        return f"{PDQMatchRecord.SIGNAL_KEY_PREFIX}{source}#{s_id}"
-
-    @staticmethod
-    def remove_signal_key_prefix(key: str, source: str) -> str:
-        return key[len(PDQMatchRecord.SIGNAL_KEY_PREFIX) + len(source) + 1 :]
 
     def to_dynamodb_item(self) -> dict:
         return {
