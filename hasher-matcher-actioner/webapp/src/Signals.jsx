@@ -15,7 +15,10 @@ export default function Signals() {
 
   useEffect(() => {
     fetchSignalSummary().then(summaries => {
-      setSignalSummary(summaries.signals);
+      // TODO this will spin forever if no signals are found (fix: should add second Collapse)
+      if (summaries.signals.length) {
+        setSignalSummary(summaries.signals);
+      }
     });
   }, []);
 
@@ -45,7 +48,7 @@ export default function Signals() {
 
 function SignalSummary({summary}) {
   return (
-    <Col key={summary.name} md="8" className="mb-4">
+    <Col key={summary.name} md="12" className="mb-4">
       <Card>
         <Card.Header as="h4" className="text-white bg-primary">
           Dataset: {summary.name}

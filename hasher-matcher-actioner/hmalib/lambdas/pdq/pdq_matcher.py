@@ -11,7 +11,7 @@ from mypy_boto3_sns import SNSClient
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.models import PDQMatchRecord, Label
+from hmalib.models import PDQMatchRecord, Label, MatchMessage, DatasetMatchDetails
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
