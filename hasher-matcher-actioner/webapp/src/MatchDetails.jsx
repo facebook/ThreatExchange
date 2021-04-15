@@ -175,11 +175,11 @@ function MatchesList(props) {
                 {matchDetails !== null && matchDetails.length ? (
                   matchDetails.map((match, index) => (
                     <>
-                      {match.metadata.map((data, subIndex) => (
+                      {match.metadata.map((metadata, subIndex) => (
                         <tr
                           style={index % 2 ? {} : {background: '#dddddd'}}
                           className="align-middle"
-                          key={match.signal_id + data.pg}>
+                          key={match.signal_id + metadata.dataset}>
                           {subIndex === 0 ? (
                             <>
                               <td>
@@ -197,9 +197,9 @@ function MatchesList(props) {
                               <td />
                             </>
                           )}
-                          <td>{data.pg}</td>
-                          <td>{data.opinion}</td>
-                          <td>{data.tags.join(', ')}</td>
+                          <td>{metadata.dataset}</td>
+                          <td>{metadata.opinion}</td>
+                          <td>{metadata.tags.join(', ')}</td>
                         </tr>
                       ))}
                     </>

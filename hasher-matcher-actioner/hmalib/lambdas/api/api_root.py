@@ -9,6 +9,7 @@ import datetime
 import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
+from enum import Enum
 
 from hmalib import metrics
 from hmalib.common.logging import get_logger
@@ -243,7 +244,7 @@ def get_matches() -> t.List[MatchesResult]:
 
 
 class MatchDetailsMetadata(t.TypedDict):
-    pg: str
+    dataset: str
     tags: t.List[str]
     opinion: str
 
@@ -289,7 +290,7 @@ def get_signal_details(
     table = dynamodb.Table(DYNAMODB_TABLE)
     return [
         MatchDetailsMetadata(
-            pg=metadata.pg_id,
+            dataset=metadata.ds_id,
             tags=[
                 tag
                 for tag in metadata.tags
@@ -300,7 +301,7 @@ def get_signal_details(
                     ThreatDescriptor.DISPUTED,
                 ]
             ],
-            opinion=get_opinion_from_tags(metadata.tags),
+            opinion=get_opinion_from_tags(metadata.tags).value,
         )
         for metadata in PDQSignalMetadata.get_from_signal(
             table, signal_id, signal_source
@@ -308,15 +309,22 @@ def get_signal_details(
     ]
 
 
-def get_opinion_from_tags(tags: t.List[str]):
+class OpinionString(Enum):
+    TP = "True Positive"
+    FP = "False Positive"
+    DISPUTED = "Unknown (Disputed)"
+    UNKNOWN = "Unknown"
+
+
+def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
     # see python-threatexchange descriptor.py for origins
     if ThreatDescriptor.TRUE_POSITIVE in tags:
-        return "True Positive"
+        return OpinionString.TP
     if ThreatDescriptor.FALSE_POSITIVE in tags:
-        return "False Positive"
+        return OpinionString.FP
     if ThreatDescriptor.DISPUTED in tags:
-        return "Unknown (Disputed)"
-    return "Unknown"
+        return OpinionString.DISPUTED
+    return OpinionString.UNKNOWN
 
 
 class HashResult(t.TypedDict):
