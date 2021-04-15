@@ -28,6 +28,9 @@ class ThreatPrivacyGroup:
     threat_updates_enabled: bool
     last_updated: datetime
 
+    def __eq__(self, other) -> bool:
+        return self.id == other.id
+
     @classmethod
     def from_graph_api_dict(cls, d: dict) -> "ThreatPrivacyGroup":
         return cls(
@@ -39,6 +42,3 @@ class ThreatPrivacyGroup:
             bool(d["threat_updates_enabled"]),
             _parse_datetime_from_iso_8601(d["last_updated"]),
         )
-
-    def __eq__(self, o: ThreatPrivacyGroup) -> bool:
-        return self.id == o.id
