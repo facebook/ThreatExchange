@@ -8,6 +8,7 @@ AWS API types and local types. There's likely already an existing
 library that exists somewhere that does this much better.
 """
 from decimal import Decimal
+import functools
 from dataclasses import dataclass, fields, is_dataclass
 import typing as t
 
@@ -17,10 +18,23 @@ from boto3.dynamodb.conditions import Attr
 T = t.TypeVar("T")
 TConfig = t.TypeVar("TConfig", bound="HMAConfig")
 
-dynamodb = boto3.resource("dynamodb")
 
 # module level state, set with HMAConfig.initialize()
 _TABLE_NAME = None
+
+
+functools.lru_cache(maxsize=1)
+
+
+def get_dynamodb():
+    """
+    Get the dynamodb resource.
+
+    Putting this at module level causes problems with mocking, so hide in a
+    function. This is only ever used for meta.client, so maybe it would be
+    better to use that. Probably not thread safe.
+    """
+    return boto3.resource("dynamodb")
 
 
 class HMAConfigSerializationError(ValueError):
@@ -63,7 +77,7 @@ class HMAConfig:
     @classmethod
     def get(cls: t.Type[TConfig], name: str) -> TConfig:
         assert _TABLE_NAME
-        result = dynamodb.meta.client.get_item(
+        result = get_dynamodb().meta.client.get_item(
             TableName=_TABLE_NAME,
             Key={
                 "ConfigType": cls.get_config_type(),
@@ -75,7 +89,7 @@ class HMAConfig:
     @classmethod
     def get_all(cls: t.Type[TConfig]) -> t.List[TConfig]:
         assert _TABLE_NAME
-        paginator = dynamodb.meta.client.get_paginator("scan")
+        paginator = get_dynamodb().meta.client.get_paginator("scan")
 
         response_iterator = paginator.paginate(
             TableName=_TABLE_NAME,
@@ -110,7 +124,7 @@ def update_config(config: HMAConfig) -> None:
     # TODO - we should probably sanity check here to make sure all the fields
     #        are the expected types, because lolpython. Otherwise, it will
     #        fail to deserialize later
-    dynamodb.meta.client.put_item(
+    get_dynamodb().meta.client.put_item(
         TableName=_TABLE_NAME,
         Item=_config_to_dynamodb_item(config),
     )
@@ -119,7 +133,7 @@ def update_config(config: HMAConfig) -> None:
 def delete_config_by_name(config_type: str, name: str) -> None:
     """Delete a config by name only"""
     assert _TABLE_NAME
-    dynamodb.meta.client.delete_item(
+    get_dynamodb().meta.client.delete_item(
         TableName=_TABLE_NAME,
         Key={
             "ConfigType": config_type,
@@ -230,7 +244,9 @@ def _py_to_aws_field(in_type: t.Type[T], py_field: t.Any) -> T:
         )
 
     if in_type is int:  # N
-        return Decimal(py_field)  # type: ignore # mypy/issues/10003
+        # Technically, this also needs to be converted to decimal,
+        # but the boto3 translater seems to handle it fine
+        return py_field  # type: ignore # mypy/issues/10003
     if in_type is float:  # N
         # WARNING WARNING
         # floating point is not truly supported in dynamodb
@@ -246,7 +262,7 @@ def _py_to_aws_field(in_type: t.Type[T], py_field: t.Any) -> T:
     if in_type is t.Set[str]:  # SS
         return py_field  # type: ignore # mypy/issues/10003
     if in_type is t.Set[int]:  # SN
-        return {Decimal(s) for s in py_field}  # type: ignore # mypy/issues/10003
+        return {i for i in py_field}  # type: ignore # mypy/issues/10003
     if in_type is t.Set[float]:  # SN
         # WARNING WARNING
         # floating point is not truly supported in dynamodb
