@@ -13,11 +13,12 @@ from moto import mock_dynamodb2
 from hmalib.common import config
 from hmalib.common.actioner_models import (
     ActionPerformerConfig,
+    ActionPerformer,
     WebhookPutActionPerformer,
     WebhookPostActionPerformer,
     ActionLabel,
 )
-from hmalib.lambdas.actions.action_performer import perform_action
+from hmalib.lambdas.actions.action_performer import perform_label_action
 from hmalib.models import MatchMessage
 
 
@@ -212,11 +213,11 @@ class ConfigTest(unittest.TestCase):
     def test_action_performer_configs(self):
         configs: t.List[ActionPerformer] = [
             WebhookPostActionPerformer(
-                ActionLabel("SendDemotePostWebhook"),
+                action_label=ActionLabel("SendDemotePostWebhook"),
                 url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
             ),
             WebhookPutActionPerformer(
-                ActionLabel("SendDeletePutWebhook"),
+                action_label=ActionLabel("SendDeletePutWebhook"),
                 url="https://webhook.site/ff7ebc37-514a-439e-9a03-45635463",
             ),
         ]
@@ -236,7 +237,7 @@ class ConfigTest(unittest.TestCase):
     def test_action_performer(self):
         configs: t.List[ActionPerformer] = [
             WebhookPostActionPerformer(
-                ActionLabel("SendDemotePostWebhook"),
+                action_label=ActionLabel("SendDemotePostWebhook"),
                 url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
             ),
         ]
@@ -246,7 +247,31 @@ class ConfigTest(unittest.TestCase):
         action_label = ActionLabel("SendDemotePostWebhook")
         match_message = MatchMessage("key", "hash", [])
 
-        assert perform_action(match_message, action_label) == 1
+        assert perform_label_action(match_message, action_label) == 1
 
         action_label = ActionLabel("SendDemotePutWebhook")
-        assert perform_action(match_message, action_label) == 0
+        assert perform_label_action(match_message, action_label) == 0
+
+    def test_action_performer_int(self):
+        @dataclass
+        class IntActionPerformer(ActionPerformer):
+            a: int
+            b: str
+
+            def perform_action(self, match_message):
+                print("Performing IntAction with params a={self.a} b={self.b}")
+
+        configs: t.List[ActionPerformer] = [
+            IntActionPerformer(
+                ActionLabel("IntLabel"),
+                a=42,
+                b="my string"
+            ),
+        ]
+        for c in configs:
+            ActionPerformerConfig.update_performer(c)
+
+        action_label = ActionLabel("IntLabel")
+        match_message = MatchMessage("key", "hash", [])
+
+        assert perform_label_action(match_message, action_label) == 1

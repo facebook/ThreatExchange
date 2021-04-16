@@ -26,7 +26,7 @@ def perform_enque_for_review(match_message: MatchMessage):
     logger.debug("enqued for review")
 
 
-def perform_action(match_message: MatchMessage, action_label: ActionLabel) -> int:
+def perform_label_action(match_message: MatchMessage, action_label: ActionLabel) -> int:
     action_performer = ActionPerformerConfig.get_performer(action_label)
     if action_performer:
         action_performer.perform_action(match_message)

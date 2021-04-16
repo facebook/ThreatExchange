@@ -46,7 +46,7 @@ TUrl = t.Union[t.Text, bytes]
 
 
 @dataclass
-class ActionPerformer:
+class ActionPerformer():
     """
     A configuration of what action should be performed when a specific label
     is added to a match. Each label can lead to exactly one action being taken.
@@ -123,7 +123,7 @@ class ActionPerformerConfig(config.HMAConfig):
     """
 
     concrete_type: str
-    concrete_type_attrs: t.Dict[str, str]
+    concrete_type_attrs: t.Dict[str, t.Any]
 
     @classmethod
     def get_performer(cls, action_label: ActionLabel) -> t.Optional["ActionPerformer"]:
