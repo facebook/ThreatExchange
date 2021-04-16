@@ -26,6 +26,7 @@ import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.logging import get_logger
+from hmalib.models import PDQSignalMetadata
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
@@ -48,14 +49,24 @@ class FetcherConfig:
     s3_bucket: str
     s3_te_data_folder: str
     collab_config_table: str
+    data_store_table: str
 
     @classmethod
     @lru_cache(maxsize=1)  # probably overkill, but at least it's consistent
     def get(cls):
+        # These defaults are naive but can be updated for testing purposes.
         return cls(
-            s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
-            s3_te_data_folder=os.environ["THREAT_EXCHANGE_DATA_FOLDER"],
-            collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
+            s3_bucket=os.environ.get(
+                "THREAT_EXCHANGE_DATA_BUCKET_NAME",
+                "DEFAULT_BUCKET",
+            ),
+            s3_te_data_folder=os.environ.get(
+                "THREAT_EXCHANGE_DATA_FOLDER", "threat_exchange_data/"
+            ),
+            collab_config_table=os.environ.get(
+                "THREAT_EXCHANGE_CONFIG_DYNAMODB", "default-ThreatExchangeConfig"
+            ),
+            data_store_table=os.environ.get("DYNAMODB_TABLE", "default-HMADataStore"),
         )
 
 
@@ -102,6 +113,7 @@ def lambda_handler(event, context):
             api.app_id,
             te_data_bucket,
             config.s3_te_data_folder,
+            config.data_store_table,
         )
         stores.append(indicator_store)
         indicator_store.load_checkpoint()
@@ -127,7 +139,9 @@ def lambda_handler(event, context):
         finally:
             if delta:
                 logging.info("Fetch complete, applying %d updates", len(delta.updates))
-                indicator_store.apply_updates(delta)
+                indicator_store.apply_updates(
+                    delta, post_apply_fn=indicator_store.post_apply
+                )
             else:
                 logging.error("Failed before fetching any records")
 
@@ -147,12 +161,14 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         app_id: int,
         s3_bucket: t.Any,  # Not typable?
         s3_te_data_folder: str,
+        data_store_table: str,
     ) -> None:
         super().__init__(privacy_group)
         self.app_id = app_id
         self._cached_state: t.Optional[t.Dict] = None
         self.s3_bucket = s3_bucket
         self.s3_te_data_folder = s3_te_data_folder
+        self.data_store_table = data_store_table
 
     @property
     def checkpoint_s3_key(self) -> str:
@@ -257,8 +273,13 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             write_s3_text(txt_content, self.s3_bucket, self.data_s3_key)
             logger.info("%d rows stored for %d", len(items), self.privacy_group)
 
-    def _apply_updates_impl(self, delta: tu.ThreatUpdatesDelta) -> None:
+    def _apply_updates_impl(
+        self,
+        delta: tu.ThreatUpdatesDelta,
+        post_apply_fn=lambda x: None,
+    ) -> None:
         state: t.Dict = {}
+        updated: t.Dict = {}
         if delta.start > 0:
             state = self.load_state()
         for update in delta:
@@ -269,9 +290,34 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 state.pop(item.key, None)
             else:
                 state[item.key] = item
+                updated[item.key] = item
 
         self._store_state(state.values())
         self._cached_state = state
+
+        post_apply_fn(updated)
+
+    def post_apply(self, updated: t.Dict = {}):
+        """
+        After the fetcher applies an update, check to see if
+        matches for any of the updated signals and if so update
+        their tags.
+        """
+        privacy_group = self.data_s3_key.split("/")[-1].split(".")[0]
+        table = dynamodb.Table(self.data_store_table)
+
+        for update in updated.values():
+            row = update.as_csv_row()
+            # example row format: ('<signal>', '<id>', '<time added>', '<tag1 tags2>')
+            # e.g ('096a6f9...064f', 1234567891234567, '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+            PDQSignalMetadata(
+                signal_id=int(row[1]),
+                ds_id=privacy_group,
+                updated_at=datetime.now(),
+                signal_source="te",
+                signal_hash=row[0],
+                tags=row[3].split(" ") if row[3] else [],
+            ).write_to_table_if_already_exists(table)
 
 
 def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:

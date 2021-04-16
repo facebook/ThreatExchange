@@ -5,7 +5,8 @@ import typing as t
 import json
 from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
-from boto3.dynamodb.conditions import Attr, Key
+from boto3.dynamodb.conditions import Attr, Key, And
+from botocore.exceptions import ClientError
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -22,6 +23,22 @@ class DynamoDBItem:
 
     def write_to_table(self, table: Table):
         table.put_item(Item=self.to_dynamodb_item())
+
+    def write_to_table_if_already_exists(self, table: Table) -> bool:
+        """
+        Only write to table if the objects with PK and SK already exist.
+        returns true if object existed and therefore put was successful
+        """
+        try:
+            table.put_item(
+                Item=self.to_dynamodb_item(),
+                ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore # service_resource.Table.put_item params are mistyped here...)
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                raise e
+            return False
+        return True
 
     def to_dynamodb_item(self) -> t.Dict:
         raise NotImplementedError
