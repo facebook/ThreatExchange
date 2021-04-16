@@ -32,12 +32,20 @@ async function apiPost(route, body, params = {}) {
   });
 }
 
-export function fetchMatches() {
-  return apiGet('/matches');
+export function fetchAllMatches() {
+  return apiGet('/matches/');
+}
+
+export function fetchMatchesFromSignal(signalSource, signalId) {
+  return apiGet('/matches/', {signal_q: signalId, signal_source: signalSource});
+}
+
+export function fetchMatchesFromContent(contentId) {
+  return apiGet('/matches/', {content_q: contentId});
 }
 
 export function fetchMatchDetails(key) {
-  return apiGet(`/match/${key}`);
+  return apiGet(`/matches/match/${key}/`);
 }
 
 export function fetchHash(key) {
