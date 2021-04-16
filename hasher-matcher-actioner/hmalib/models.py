@@ -488,7 +488,8 @@ class BankedSignal:
     - `bank_id`: The unique way to refer to the bank banked_content_id came from
     - `bank_source`: This is forward looking: this might be 'te' or 'local';
       indicates source of or relationship between one or more banks
-    - `classifications`: TODO write something here
+    - `classifications`: a list of strings that provide additional context
+      about the banked signal
     """
 
     banked_content_id: str
@@ -507,8 +508,5 @@ class BankedSignal:
     @classmethod
     def from_dict(cls, d: dict) -> "BankedSignal":
         return cls(
-            d["BankedContentId"],
-            d["BankId"],
-            d["BankSource"],
-            d["Classifications"]
+            d["BankedContentId"], d["BankId"], d["BankSource"], d["Classifications"]
         )

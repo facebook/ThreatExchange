@@ -133,7 +133,9 @@ def lambda_handler(event, context):
                 # TODO: change naming upstream and here from privacy_group[s]
                 # to dataset[s]
                 for privacy_group in metadata.get("privacy_groups", []):
-                    banked_signal = BankedSignal(signal_id, privacy_group, metadata["source"])
+                    banked_signal = BankedSignal(
+                        signal_id, privacy_group, metadata["source"]
+                    )
                     for tag in metadata["tags"].get(privacy_group, []):
                         banked_signal.classifications.append(tag)
                     matching_banked_signals.append(banked_signal)
