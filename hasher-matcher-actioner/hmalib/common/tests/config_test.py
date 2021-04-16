@@ -17,6 +17,8 @@ from hmalib.common.actioner_models import (
     WebhookPostActionPerformer,
     ActionLabel,
 )
+from hmalib.lambdas.actions.action_performer import perform_action
+from hmalib.models import MatchMessage
 
 
 class ConfigTest(unittest.TestCase):
@@ -207,7 +209,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual({c.name for c in config.HMAConfig.get_all()}, set())
         self.assertEqual(None, config.HMAConfig.get("a"))
 
-    def test_actioner(self):
+    def test_action_performer_configs(self):
         configs: t.List[ActionPerformer] = [
             WebhookPostActionPerformer(
                 ActionLabel("SendDemotePostWebhook"),
@@ -230,3 +232,21 @@ class ConfigTest(unittest.TestCase):
             ActionLabel("SendDeletePutWebhook")
         )
         assert put_config == configs[1]
+
+    def test_action_performer(self):
+        configs: t.List[ActionPerformer] = [
+            WebhookPostActionPerformer(
+                ActionLabel("SendDemotePostWebhook"),
+                url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+            ),
+        ]
+        for c in configs:
+            ActionPerformerConfig.update_performer(c)
+
+        action_label = ActionLabel("SendDemotePostWebhook")
+        match_message = MatchMessage("key", "hash", [])
+
+        assert perform_action(match_message, action_label) == 1
+
+        action_label = ActionLabel("SendDemotePutWebhook")
+        assert perform_action(match_message, action_label) == 0
