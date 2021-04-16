@@ -46,7 +46,7 @@ TUrl = t.Union[t.Text, bytes]
 
 
 @dataclass
-class ActionPerformer():
+class ActionPerformer:
     """
     A configuration of what action should be performed when a specific label
     is added to a match. Each label can lead to exactly one action being taken.

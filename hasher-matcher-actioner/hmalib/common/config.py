@@ -236,7 +236,7 @@ def _aws_field_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
         if args[1] is not t.Any:
             # check if value type of map origin is explicitly set
             return {k: _aws_field_to_py(args[1], v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
-        return {k: _aws_field_to_py(type(v), v) for k, v in aws_field.items()} # type: ignore # mypy/issues/10003
+        return {k: _aws_field_to_py(type(v), v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
 
     raise HMAConfigSerializationError(
         "Missing DynamoDB deserialization logic for %r" % in_type
@@ -291,7 +291,7 @@ def _py_to_aws_field(in_type: t.Type[T], py_field: t.Any) -> T:
         if args[1] is not t.Any:
             # check if value type of map origin is explicitly set
             return {k: _py_to_aws_field(args[1], v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
-        return {k: _py_to_aws_field(type(v), v) for k, v in py_field.items()} # type: ignore # mypy/issues/10003
+        return {k: _py_to_aws_field(type(v), v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
 
     raise HMAConfigSerializationError(
         "Missing DynamoDB Serialization logic for %r" % in_type

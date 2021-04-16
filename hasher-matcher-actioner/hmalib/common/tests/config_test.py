@@ -262,11 +262,7 @@ class ConfigTest(unittest.TestCase):
                 print("Performing IntAction with params a={self.a} b={self.b}")
 
         configs: t.List[ActionPerformer] = [
-            IntActionPerformer(
-                ActionLabel("IntLabel"),
-                a=42,
-                b="my string"
-            ),
+            IntActionPerformer(ActionLabel("IntLabel"), a=42, b="my string"),
         ]
         for c in configs:
             ActionPerformerConfig.update_performer(c)
