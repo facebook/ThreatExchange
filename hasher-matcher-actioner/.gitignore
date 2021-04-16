@@ -34,3 +34,6 @@ override.tf.json
 terraform.rc
 
 backend.tf
+
+# Ignore built python distributions
+dist/
