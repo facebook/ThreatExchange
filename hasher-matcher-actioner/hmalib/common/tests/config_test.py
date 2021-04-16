@@ -11,6 +11,12 @@ import moto
 from moto import mock_dynamodb2
 
 from hmalib.common import config
+from hmalib.common.actioner_models import (
+    ActionPerformerConfig,
+    WebhookPutActionPerformer,
+    WebhookPostActionPerformer,
+    ActionLabel,
+)
 
 
 class ConfigTest(unittest.TestCase):
@@ -200,3 +206,27 @@ class ConfigTest(unittest.TestCase):
         config.delete_config(a_config)
         self.assertEqual({c.name for c in config.HMAConfig.get_all()}, set())
         self.assertEqual(None, config.HMAConfig.get("a"))
+
+    def test_actioner(self):
+        configs: t.List[ActionPerformer] = [
+            WebhookPostActionPerformer(
+                ActionLabel("SendDemotePostWebhook"),
+                url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+            ),
+            WebhookPutActionPerformer(
+                ActionLabel("SendDeletePutWebhook"),
+                url="https://webhook.site/ff7ebc37-514a-439e-9a03-45635463",
+            ),
+        ]
+        for c in configs:
+            ActionPerformerConfig.update_performer(c)
+
+        post_config = ActionPerformerConfig.get_performer(
+            ActionLabel("SendDemotePostWebhook")
+        )
+        assert post_config == configs[0]
+
+        put_config = ActionPerformerConfig.get_performer(
+            ActionLabel("SendDeletePutWebhook")
+        )
+        assert put_config == configs[1]

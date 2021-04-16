@@ -12,24 +12,25 @@ from hmalib.models import MatchMessage
 
 
 class TestActioner(unittest.TestCase):
-    def test_action_classes(self):
-        """
-        Test that ActionLabels have correct constraints
-        """
+    pass
+    # def test_action_classes(self):
+    #     """
+    #     Test that ActionLabels have correct constraints
+    #     """
 
-        action_label = ActionLabel("ENQUEUE_FOR_REVIEW")
-        assert action_label.key == "Action"
+    #     action_label = ActionLabel("ENQUEUE_FOR_REVIEW")
+    #     assert action_label.key == "Action"
 
-        result = perform_action(None, action_label)
-        assert result == 0
+    #     result = perform_action(None, action_label)
+    #     assert result == 0
 
-    def test_action_performed(self):
-        action_label = ActionLabel("SendDemotePostWebhook")
-        match_message = MatchMessage("key", "hash", [])
-        result = perform_action(match_message, action_label)
-        assert result == 1
+    # def test_action_performed(self):
+    #     action_label = ActionLabel("SendDemotePostWebhook")
+    #     match_message = MatchMessage("key", "hash", [])
+    #     result = perform_action(match_message, action_label)
+    #     assert result == 1
 
-        action_label = ActionLabel("SendDeletePutWebhook")
-        match_message = MatchMessage("key", "hash", [])
-        result = perform_action(match_message, action_label)
-        assert result == 1
+    #     action_label = ActionLabel("SendDeletePutWebhook")
+    #     match_message = MatchMessage("key", "hash", [])
+    #     result = perform_action(match_message, action_label)
+    #     assert result == 1
