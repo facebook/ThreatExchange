@@ -12,7 +12,7 @@ from hmalib.common.actioner_models import (
     Action,
     ActionRule,
 )
-from hmalib.lambdas.actions.action_performer import perform_action
+from hmalib.lambdas.actions.action_performer import perform_label_action
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ def lambda_handler(event, context):
             # match message and action label (or, possibly, add the
             # action label to the match message and enqueue the match
             # message by itself)
-            perform_action(match_message, action_label)
+            perform_label_action(match_message, action_label)
 
         if threat_exchange_reacting_is_enabled(match_message):
             threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(

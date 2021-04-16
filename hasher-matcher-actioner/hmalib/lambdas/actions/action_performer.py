@@ -52,4 +52,4 @@ if __name__ == "__main__":
     match_message = MatchMessage("key", "hash", [])
     action_label = ActionLabel("SendDemotePostWebhook")
 
-    perform_action(match_message, action_label)
+    perform_label_action(match_message, action_label)
