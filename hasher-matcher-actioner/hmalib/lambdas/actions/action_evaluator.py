@@ -151,7 +151,7 @@ def get_threat_exchange_reaction_labels(
     """
     return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
 
-def react_to_threat_exchange(match_message: MatchMessage, threat_exchange_reaction_label: ThreatExchangeReactionLabel) -> t.NoReturn:
+def react_to_threat_exchange(match_message: MatchMessage, threat_exchange_reaction_label: ThreatExchangeReactionLabel) -> None:
     """
     TODO implement
     Puts a ThreatExchangeReactionMessage on the queue to be processed asynchronously
