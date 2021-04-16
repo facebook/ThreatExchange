@@ -131,7 +131,7 @@ class ActionPerformerConfig(config.HMAConfig):
         Load from AWS the correct actioner config as the correct concrete class if it exists
         """
         name = action_label.value
-        performer_config: t.Optional[ActionPerformerConfig] = super().get(name)
+        performer_config: t.Optional[ActionPerformerConfig] = cls.get(name)
         if performer_config:
             subclasses_classes = {
                 cls.__name__: cls for cls in get_all_subclasses_rec({ActionPerformer})
