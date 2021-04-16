@@ -118,7 +118,19 @@ def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bott
         """
         Returns all, or a filtered list of matches.
         """
-        records = PDQMatchRecord.get_from_time_range(dynamodb_table)
+        signal_q = bottle.request.query.signal_q or None
+        signal_source = bottle.request.query.signal_source or None
+        content_q = bottle.request.query.content_q or None
+
+        if content_q:
+            records = PDQMatchRecord.get_from_content_id(dynamodb_table, content_q)
+        elif signal_q:
+            records = PDQMatchRecord.get_from_signal(
+                dynamodb_table, signal_q, signal_source
+            )
+        else:
+            records = PDQMatchRecord.get_from_time_range(dynamodb_table)
+
         return MatchSummariesResponse(
             match_summaries=[
                 MatchSummary(
