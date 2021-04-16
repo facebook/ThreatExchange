@@ -8,6 +8,7 @@ import datetime
 import os
 
 from hmalib.lambdas.actions.action_performer import ActionLabel, perform_action
+from hmalib.models import MatchMessage
 
 
 class TestActioner(unittest.TestCase):
@@ -19,4 +20,16 @@ class TestActioner(unittest.TestCase):
         action_label = ActionLabel("ENQUEUE_FOR_REVIEW")
         assert action_label.key == "Action"
 
-        perform_action(None, action_label)
+        result = perform_action(None, action_label)
+        assert result == 0
+
+    def test_action_performed(self):
+        action_label = ActionLabel("SendDemotePostWebhook")
+        match_message = MatchMessage("key", "hash", [])
+        result = perform_action(match_message, action_label)
+        assert result == 1
+
+        action_label = ActionLabel("SendDeletePutWebhook")
+        match_message = MatchMessage("key", "hash", [])
+        result = perform_action(match_message, action_label)
+        assert result == 1

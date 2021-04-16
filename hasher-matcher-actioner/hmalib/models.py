@@ -31,6 +31,14 @@ class DynamoDBItem:
         return f"{DynamoDBItem.CONTENT_KEY_PREFIX}{c_id}"
 
     @staticmethod
+    def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
+        return f"{DynamoDBItem.SIGNAL_KEY_PREFIX}{source}#{s_id}"
+
+    @staticmethod
+    def remove_signal_key_prefix(key: str, source: str) -> str:
+        return key[len(DynamoDBItem.SIGNAL_KEY_PREFIX) + len(source) + 1 :]
+
+    @staticmethod
     def get_dynamodb_type_key(type: str) -> str:
         return f"{DynamoDBItem.TYPE_PREFIX}{type}"
 
@@ -46,6 +54,91 @@ class SNSMessage:
     @classmethod
     def from_sns_message(cls, message: str) -> "SNSMessage":
         raise NotImplementedError
+
+
+@dataclass
+class SignalMetadataBase(DynamoDBItem):
+    """
+    Base for signal metadata.
+    'ds' refers to dataset which for the time being is
+    quivalent to collab or privacy group (and in the long term could map to bank)
+    """
+
+    DATASET_PREFIX = "ds#"
+
+    signal_id: t.Union[str, int]
+    ds_id: str
+    updated_at: datetime.datetime
+    signal_source: str
+    signal_hash: str  # duplicated field with PDQMatchRecord having both for now to help with debuging/testing
+    tags: t.List[str] = field(default_factory=list)
+
+    @staticmethod
+    def get_dynamodb_ds_key(ds_id: str) -> str:
+        return f"{SignalMetadataBase.DATASET_PREFIX}{ds_id}"
+
+
+@dataclass
+class PDQSignalMetadata(SignalMetadataBase):
+    """
+    PDQ Signal metadata.
+    This object is designed to be an ~lookaside on some of the values used by
+    PDQMatchRecord for easier and more consistent updating by the syncer and UI.
+
+    Otherwise updates on a signals metadata would require updating all
+    PDQMatchRecord associated; TODO: For now there will be some overlap between
+    this object and PDQMatchRecord.
+    """
+
+    SIGNAL_TYPE = "pdq"
+
+    def to_dynamodb_item(self) -> dict:
+        return {
+            "PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
+            "SK": self.get_dynamodb_ds_key(self.ds_id),
+            "SignalHash": self.signal_hash,
+            "SignalSource": self.signal_source,  # defaults to 'te' in the current pipeline
+            "UpdatedAt": self.updated_at.isoformat(),
+            "HashType": self.SIGNAL_TYPE,
+            "Tags": self.tags,
+        }
+
+    @classmethod
+    def get_from_signal(
+        cls,
+        table: Table,
+        signal_id: t.Union[str, int],
+        signal_source: str,
+    ) -> t.List["PDQSignalMetadata"]:
+
+        items = table.query(
+            KeyConditionExpression=Key("PK").eq(
+                cls.get_dynamodb_signal_key(signal_source, signal_id)
+            )
+            & Key("SK").begins_with(cls.DATASET_PREFIX),
+            ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags",
+            FilterExpression=Attr("HashType").eq(cls.SIGNAL_TYPE),
+        ).get("Items", [])
+        return cls._result_items_to_metadata(items)
+
+    @classmethod
+    def _result_items_to_metadata(
+        cls,
+        items: t.List[t.Dict],
+    ) -> t.List["PDQSignalMetadata"]:
+        return [
+            PDQSignalMetadata(
+                signal_id=cls.remove_signal_key_prefix(
+                    item["PK"], item["SignalSource"]
+                ),
+                ds_id=item["SK"][len(cls.DATASET_PREFIX) :],
+                updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
+                signal_source=item["SignalSource"],
+                signal_hash=item["SignalHash"],
+                tags=item["Tags"],
+            )
+            for item in items
+        ]
 
 
 @dataclass
@@ -76,7 +169,7 @@ class PDQRecordBase(DynamoDBItem):
 
     content_id: str
     content_hash: str
-    updated_at: datetime.datetime  # ISO-8601 formatted
+    updated_at: datetime.datetime
 
     def to_dynamodb_item(self) -> dict:
         raise NotImplementedError
@@ -137,16 +230,17 @@ class PipelinePDQHashRecord(PDQRecordBase):
         )
         return cls._result_items_to_records(items)
 
-    @staticmethod
+    @classmethod
     def _result_items_to_records(
+        cls,
         items: t.List[t.Dict],
     ) -> t.List["PipelinePDQHashRecord"]:
         return [
             PipelinePDQHashRecord(
-                item["PK"][len(DynamoDBItem.CONTENT_KEY_PREFIX) :],
-                item["ContentHash"],
-                datetime.datetime.fromisoformat(item["UpdatedAt"]),
-                item["Quality"],
+                content_id=item["PK"][len(cls.CONTENT_KEY_PREFIX) :],
+                content_hash=item["ContentHash"],
+                updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
+                quality=item["Quality"],
             )
             for item in items
         ]
@@ -162,14 +256,6 @@ class PDQMatchRecord(PDQRecordBase):
     signal_source: str
     signal_hash: str
     labels: t.List[Label] = field(default_factory=list)
-
-    @staticmethod
-    def get_dynamodb_signal_key(source: str, s_id: t.Union[str, int]) -> str:
-        return f"{PDQMatchRecord.SIGNAL_KEY_PREFIX}{source}#{s_id}"
-
-    @staticmethod
-    def remove_signal_key_prefix(key: str, source: str) -> str:
-        return key[len(PDQMatchRecord.SIGNAL_KEY_PREFIX) + len(source) + 1 :]
 
     def to_dynamodb_item(self) -> dict:
         return {
@@ -222,21 +308,22 @@ class PDQMatchRecord(PDQRecordBase):
         )
         return cls._result_items_to_records(items)
 
-    @staticmethod
+    @classmethod
     def _result_items_to_records(
+        cls,
         items: t.List[t.Dict],
     ) -> t.List["PDQMatchRecord"]:
         return [
             PDQMatchRecord(
-                PDQMatchRecord.remove_content_key_prefix(item["PK"]),
-                item["ContentHash"],
-                datetime.datetime.fromisoformat(item["UpdatedAt"]),
-                PDQMatchRecord.remove_signal_key_prefix(
+                content_id=cls.remove_content_key_prefix(item["PK"]),
+                content_hash=item["ContentHash"],
+                updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
+                signal_id=cls.remove_signal_key_prefix(
                     item["SK"], item["SignalSource"]
                 ),
-                item["SignalSource"],
-                item["SignalHash"],
-                [Label.from_dynamodb_dict(x) for x in item["Labels"]],
+                signal_source=item["SignalSource"],
+                signal_hash=item["SignalHash"],
+                labels=[Label.from_dynamodb_dict(x) for x in item["Labels"]],
             )
             for item in items
         ]

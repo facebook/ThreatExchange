@@ -21,7 +21,7 @@ export default function MatchDetails() {
   const history = useHistory();
   const {id} = useParams();
   const [showNewReactionButtons, setShowNewReactionButtons] = useState(false);
-  const [reaction, setReaction] = useState('Seen');
+  const [reaction, setReaction] = useState('Mocked');
   const [hashDetails, setHashDetails] = useState(null);
   const [img, setImage] = useState(null);
 
@@ -91,26 +91,26 @@ export default function MatchDetails() {
                       size="sm"
                       variant="outline-primary"
                       onClick={() => {
-                        const newStatus = 'Positive (Mocked)';
+                        const newStatus = 'Status 1 (Mocked)';
                         updateContentStatus(id, newStatus).then(() => {
                           setShowNewReactionButtons(false);
                           setReaction(newStatus);
                         });
                       }}>
-                      Positive
+                      Action 1
                     </Button>
                     <Button
                       className="ml-2"
                       size="sm"
                       variant="outline-primary"
                       onClick={() => {
-                        const newStatus = 'False Positive (Mocked)';
+                        const newStatus = 'Status 2 (Mocked)';
                         updateContentStatus(id, newStatus).then(() => {
                           setShowNewReactionButtons(false);
                           setReaction(newStatus);
                         });
                       }}>
-                      False Positive
+                      Action 2
                     </Button>
                     <Button
                       className="ml-2"
@@ -159,34 +159,50 @@ function MatchesList(props) {
         <Row>
           <Col md={12}>
             <h3>Matches</h3>
-            <Table className="mt-4" title="Matches">
+            <Table responsive className="mt-4" title="Matches">
               <thead>
                 <tr>
                   <th>ID</th>
                   <th>Type</th>
                   <th>Indicator</th>
                   <th>Last Updated</th>
+                  <th>Dataset</th>
+                  <th>Opinion</th>
                   <th>Tags</th>
-                  <th>Status</th>
-                  <th>Partners with Opinions</th>
-                  <th>Actions Taken:</th>
                 </tr>
               </thead>
               <tbody>
                 {matchDetails !== null && matchDetails.length ? (
-                  matchDetails.map(match => (
-                    <tr className="align-middle" key={match.signal_id}>
-                      <td>
-                        <CopyableTextField text={match.signal_id} />
-                      </td>
-                      <td>{match.meta_data.type}</td>
-                      <CopyableHashField text={match.signal_hash} />
-                      <td>{formatTimestamp(match.updated_at)}</td>
-                      <td>{match.meta_data.tags.join(', ')}</td>
-                      <td>{match.meta_data.status}</td>
-                      <td>{match.meta_data.opinions.join(', ')}</td>
-                      <td>{match.actions.join(', ')}</td>
-                    </tr>
+                  matchDetails.map((match, index) => (
+                    <>
+                      {match.metadata.map((metadata, subIndex) => (
+                        <tr
+                          style={index % 2 ? {} : {background: '#dddddd'}}
+                          className="align-middle"
+                          key={match.signal_id + metadata.dataset}>
+                          {subIndex === 0 ? (
+                            <>
+                              <td>
+                                <CopyableTextField text={match.signal_id} />
+                              </td>
+                              <td>{match.signal_type}</td>
+                              <CopyableHashField text={match.signal_hash} />
+                              <td>{formatTimestamp(match.updated_at)}</td>
+                            </>
+                          ) : (
+                            <>
+                              <td />
+                              <td />
+                              <td />
+                              <td />
+                            </>
+                          )}
+                          <td>{metadata.dataset}</td>
+                          <td>{metadata.opinion}</td>
+                          <td>{metadata.tags.join(', ')}</td>
+                        </tr>
+                      ))}
+                    </>
                   ))
                 ) : (
                   <tr>

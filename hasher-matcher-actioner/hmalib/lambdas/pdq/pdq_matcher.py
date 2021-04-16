@@ -11,7 +11,13 @@ from mypy_boto3_sns import SNSClient
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.models import PDQMatchRecord, Label, MatchMessage, DatasetMatchDetails
+from hmalib.models import (
+    PDQMatchRecord,
+    Label,
+    MatchMessage,
+    DatasetMatchDetails,
+    PDQSignalMetadata,
+)
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -109,6 +115,17 @@ def lambda_handler(event, context):
                     metadata["source"],
                     metadata["hash"],
                 ).write_to_table(records_table)
+
+                for pg in metadata.get("privacy_groups", []):
+                    # TODO: we might be able to get away with some 'if exists/upsert' here
+                    PDQSignalMetadata(
+                        signal_id,
+                        pg,
+                        current_datetime,
+                        metadata["source"],
+                        metadata["hash"],
+                        metadata["tags"].get(pg, []),
+                    ).write_to_table(records_table)
 
                 match_ids.append(signal_id)
 

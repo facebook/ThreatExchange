@@ -118,6 +118,11 @@ data "aws_iam_policy_document" "fetcher" {
   }
   statement {
     effect    = "Allow"
+    actions   = ["dynamodb:Scan"]
+    resources = [var.config_arn]
+  }
+  statement {
+    effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
     resources = [aws_secretsmanager_secret.api_token.arn]
   }

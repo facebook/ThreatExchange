@@ -49,12 +49,28 @@ resource "aws_sns_topic_subscription" "new_matches_topic" {
   endpoint  = aws_sqs_queue.matches_queue.arn
 }
 
-# Create a lambda for performing actions in response to matches. Be prepared,
-# quite a few blocks ahead.
+# Create a lambda for evaluating which actions to be performed as a result
+# of matches. Be prepared, quite a few blocks ahead.
+resource "aws_lambda_function" "action_evaluator" {
+  function_name = "${var.prefix}_action_evaluator"
+  package_type  = "Image"
+  role          = aws_iam_role.actioner.arn
+  image_uri     = var.lambda_docker_info.uri
+
+  image_config {
+    command = [var.lambda_docker_info.commands.action_evaluator]
+  }
+
+  timeout     = 300
+  memory_size = 512
+}
+
+# Create a lambda for performing actions in response to matches, after they are evaluated by
+# the action evaluator.
 resource "aws_lambda_function" "action_performer" {
   function_name = "${var.prefix}_action_performer"
   package_type  = "Image"
-  role          = aws_iam_role.action_performer.arn
+  role          = aws_iam_role.actioner.arn
   image_uri     = var.lambda_docker_info.uri
 
   image_config {
@@ -65,8 +81,32 @@ resource "aws_lambda_function" "action_performer" {
   memory_size = 512
 }
 
-resource "aws_iam_role" "action_performer" {
-  name_prefix        = "${var.prefix}_actioner_performer"
+resource "aws_cloudwatch_log_group" "action_performer" {
+  name              = "/aws/lambda/${aws_lambda_function.action_performer.function_name}"
+  retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ActionPerformerLambdaLogGroup"
+    }
+  )
+}
+
+resource "aws_cloudwatch_log_group" "action_evaluator" {
+  name              = "/aws/lambda/${aws_lambda_function.action_evaluator.function_name}"
+  retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ActionEvaluatorLambdaLogGroup"
+    }
+  )
+}
+
+# Currently both the action_evaluator and action_performer lambda
+# use this same iam role+policy. We may need to split this later
+resource "aws_iam_role" "actioner" {
+  name_prefix        = "${var.prefix}_actioner"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
   tags               = var.additional_tags
 }
@@ -82,24 +122,13 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "action_performer" {
-  name              = "/aws/lambda/${aws_lambda_function.action_performer.function_name}"
-  retention_in_days = var.log_retention_in_days
-  tags = merge(
-    var.additional_tags,
-    {
-      Name = "ActionPerformerLambdaLogGroup"
-    }
-  )
-}
-
-resource "aws_iam_policy" "action_performer" {
-  name_prefix = "${var.prefix}_action_performer_role_policy"
-  policy      = data.aws_iam_policy_document.action_performer.json
+resource "aws_iam_policy" "actioner" {
+  name_prefix = "${var.prefix}_actioner_role_policy"
+  policy      = data.aws_iam_policy_document.actioner.json
 }
 
 
-data "aws_iam_policy_document" "action_performer" {
+data "aws_iam_policy_document" "actioner" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
@@ -112,7 +141,10 @@ data "aws_iam_policy_document" "action_performer" {
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
     ]
-    resources = ["${aws_cloudwatch_log_group.action_performer.arn}:*"]
+    resources = [
+      "${aws_cloudwatch_log_group.action_performer.arn}:*",
+      "${aws_cloudwatch_log_group.action_evaluator.arn}:*",
+    ]
   }
   statement {
     effect    = "Allow"
@@ -121,16 +153,16 @@ data "aws_iam_policy_document" "action_performer" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "action_performer" {
-  role       = aws_iam_role.action_performer.name
-  policy_arn = aws_iam_policy.action_performer.arn
+resource "aws_iam_role_policy_attachment" "actioner" {
+  role       = aws_iam_role.actioner.name
+  policy_arn = aws_iam_policy.actioner.arn
 }
-# That's the end of blocks dedicated to the lambda alone
+# That's the end of blocks dedicated to the lambdas alone
 
 # Now, connect SQS -> Lambda
-resource "aws_lambda_event_source_mapping" "matches_queue_to_lambda" {
+resource "aws_lambda_event_source_mapping" "matches_queue_to_action_evaluator" {
   event_source_arn                   = aws_sqs_queue.matches_queue.arn
-  function_name                      = aws_lambda_function.action_performer.arn
+  function_name                      = aws_lambda_function.action_evaluator.arn
   batch_size                         = 100
   maximum_batching_window_in_seconds = 30
 }
