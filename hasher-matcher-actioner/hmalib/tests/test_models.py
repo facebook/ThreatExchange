@@ -13,6 +13,7 @@ class TestPDQModels(unittest.TestCase):
     TEST_CONTENT_ID = "image/test_photo.jpg"
     TEST_SIGNAL_ID = "5555555555555555"
     TEST_SIGNAL_SOURCE = "test_source"
+    TEST_DATASET_ID = "sample_data"
 
     @staticmethod
     def mock_aws_credentials():
@@ -114,6 +115,18 @@ class TestPDQModels(unittest.TestCase):
             TestPDQModels.TEST_SIGNAL_ID,
             TestPDQModels.TEST_SIGNAL_SOURCE,
             signal_hash,
+        )
+
+    @staticmethod
+    def get_example_pdq_signal_metadata():
+        pdq_hash = "a0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
+        return models.PDQSignalMetadata(
+            TestPDQModels.TEST_SIGNAL_ID,
+            TestPDQModels.TEST_DATASET_ID,
+            datetime.datetime.now(),
+            TestPDQModels.TEST_SIGNAL_SOURCE,
+            pdq_hash,
+            ["test_tag1", "test_tag2"],
         )
 
     def test_write_hash_record(self):
@@ -219,6 +232,42 @@ class TestPDQModels(unittest.TestCase):
         query_record = models.PDQMatchRecord.get_from_time_range(self.table)[0]
 
         assert record == query_record
+
+    def test_pdq_signal_metadata_manually(self):
+        """
+        Test PDQSignalMetadata write table
+        """
+        metadata = self.get_example_pdq_signal_metadata()
+
+        metadata.write_to_table(self.table)
+
+        result = self.table.get_item(
+            Key={
+                "PK": f"s#{TestPDQModels.TEST_SIGNAL_SOURCE}#{TestPDQModels.TEST_SIGNAL_ID}",
+                "SK": f"ds#{TestPDQModels.TEST_DATASET_ID}",
+            },
+        )
+        items = result.get("Item")
+        query_hash = items.get("SignalHash")
+        assert metadata.signal_hash == query_hash
+        for tag in metadata.tags:
+            assert tag in items.get("Tags")
+
+    def test_pdq_signal_metadata_by_signal(self):
+        """
+        Test PDQSignalMetadata write table with get_from_signal
+        """
+        metadata = self.get_example_pdq_signal_metadata()
+
+        metadata.write_to_table(self.table)
+
+        query_metadata = models.PDQSignalMetadata.get_from_signal(
+            self.table, TestPDQModels.TEST_SIGNAL_ID, TestPDQModels.TEST_SIGNAL_SOURCE
+        )[0]
+
+        assert metadata.signal_hash == query_metadata.signal_hash
+        for tag in metadata.tags:
+            assert tag in query_metadata.tags
 
 
 class LabelsTestCase(unittest.TestCase):
