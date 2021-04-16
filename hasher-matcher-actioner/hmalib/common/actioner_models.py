@@ -107,6 +107,7 @@ def get_all_subclasses_rec(recursive: t.Set[t.Type]) -> t.Set[t.Type]:
     return recursive
 
 
+# TODO David said he wanted to refactor this
 @dataclass
 class ActionPerformerConfig(config.HMAConfig):
     """
