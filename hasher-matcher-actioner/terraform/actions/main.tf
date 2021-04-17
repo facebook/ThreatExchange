@@ -49,6 +49,20 @@ resource "aws_sns_topic_subscription" "new_matches_topic" {
   endpoint  = aws_sqs_queue.matches_queue.arn
 }
 
+# Set up a queue for sending messages from action evaluator to action performer
+
+resource "aws_sqs_queue" "actions_queue" {
+  name_prefix                = "${var.prefix}-actions"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ActionsQueue"
+    }
+  )
+}
+
 # Create a lambda for evaluating which actions to be performed as a result
 # of matches. Be prepared, quite a few blocks ahead.
 resource "aws_lambda_function" "action_evaluator" {
@@ -63,6 +77,12 @@ resource "aws_lambda_function" "action_evaluator" {
 
   timeout     = 300
   memory_size = 512
+
+  environment {
+    variables = {
+      ACTIONS_QUEUE_URL = aws_sqs_queue.actions_queue.id
+    }
+  }
 }
 
 # Create a lambda for performing actions in response to matches, after they are evaluated by
@@ -127,12 +147,16 @@ resource "aws_iam_policy" "actioner" {
   policy      = data.aws_iam_policy_document.actioner.json
 }
 
-
 data "aws_iam_policy_document" "actioner" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
-    resources = [aws_sqs_queue.matches_queue.arn]
+    resources = [aws_sqs_queue.matches_queue.arn, aws_sqs_queue.actions_queue.arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.actions_queue.arn]
   }
   statement {
     effect = "Allow"
@@ -163,6 +187,13 @@ resource "aws_iam_role_policy_attachment" "actioner" {
 resource "aws_lambda_event_source_mapping" "matches_queue_to_action_evaluator" {
   event_source_arn                   = aws_sqs_queue.matches_queue.arn
   function_name                      = aws_lambda_function.action_evaluator.arn
+  batch_size                         = 100
+  maximum_batching_window_in_seconds = 30
+}
+
+resource "aws_lambda_event_source_mapping" "actions_queue_to_action_performer" {
+  event_source_arn                   = aws_sqs_queue.actions_queue.arn
+  function_name                      = aws_lambda_function.action_performer.arn
   batch_size                         = 100
   maximum_batching_window_in_seconds = 30
 }

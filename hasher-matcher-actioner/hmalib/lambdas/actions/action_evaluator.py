@@ -1,6 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import boto3
 import json
+import os
 import typing as t
 
 from dataclasses import dataclass, field
@@ -15,7 +17,9 @@ from hmalib.common.actioner_models import (
 from hmalib.lambdas.actions.action_performer import perform_label_action
 
 logger = get_logger(__name__)
+sqs_client = boto3.client("sqs")
 
+ACTIONS_QUEUE_URL = os.environ["ACTIONS_QUEUE_URL"]
 
 def lambda_handler(event, context):
     """
@@ -40,7 +44,14 @@ def lambda_handler(event, context):
             # match message and action label (or, possibly, add the
             # action label to the match message and enqueue the match
             # message by itself)
-            perform_label_action(match_message, action_label)
+            
+            # perform_action(match_message, action_label)
+
+            sqs_client.send_message(
+                QueueUrl=ACTIONS_QUEUE_URL,
+                MessageBody=json.dumps(match_message.to_sns_message()),
+            )
+
 
         if threat_exchange_reacting_is_enabled(match_message):
             threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
