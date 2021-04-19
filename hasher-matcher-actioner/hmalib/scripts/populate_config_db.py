@@ -64,13 +64,13 @@ def load_defaults(_args):
     configs = [
         ThreatExchangeConfig(
             "Test Config 1",
-            enabled=False,
-            privacy_group=303636684709969,
+            fetcher_active=True,
+            privacy_group_id="303636684709969",
         ),
         ThreatExchangeConfig(
             "Test Config 2",
-            enabled=False,
-            privacy_group=258601789084078,
+            fetcher_active=True,
+            privacy_group_id="258601789084078",
         ),
     ]
     for config in configs:

@@ -20,7 +20,7 @@ def _parse_datetime_from_iso_8601(datestr: str) -> datetime:
 
 @dataclass
 class ThreatPrivacyGroup:
-    id: str
+    id: int
     name: str
     description: str
     members_can_see: bool

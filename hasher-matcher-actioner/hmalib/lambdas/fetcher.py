@@ -26,6 +26,7 @@ import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
+from hmalib.common import config as hmaconfig
 from hmalib.common.logging import get_logger
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
@@ -88,8 +89,8 @@ class ThreatExchangeConfig(HMAConfig):
     need to join HMA and ThreatExchange data.
     """
 
-    enabled: bool
-    privacy_group: int
+    fetcher_active: bool
+    privacy_group_id: str
 
 
 def lambda_handler(event, context):
@@ -168,6 +169,33 @@ def lambda_handler(event, context):
     # TODO add TE data to indexer
 
     return {"statusCode": 200, "body": "Sure Yeah why not"}
+
+
+def sync_privacy_groups():
+    """
+    Implementation of the "sync_privacy_groups" function of threatexchange config.
+
+    1. call ThreatExchange API get_threat_privacy_groups_member
+    and get_threat_privacy_groups_owner to get the list of privacy groups
+
+    2. If the threat_updates_enabled is true, save it using config framework
+    """
+    lambda_init_once()
+    api_key = AWSSecrets.te_api_key()
+    api = ThreatExchangeAPI(api_key)
+    privacy_group_member_list = api.get_threat_privacy_groups_member()
+    privacy_group_owner_list = api.get_threat_privacy_groups_owner()
+    unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
+
+    for privacy_group in unique_privacy_groups:
+        if privacy_group.threat_updates_enabled:
+            logger.info("Adding collaboration name %s", privacy_group.name)
+            config = ThreatExchangeConfig(
+                privacy_group.name,
+                fetcher_active=True,
+                privacy_group_id=privacy_group.id,
+            )
+            hmaconfig.update_config(config)
 
 
 class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
@@ -333,4 +361,5 @@ if __name__ == "__main__":
 
     # This will only kinda work for so long - eventually will
     # need to use a proper harness
+    sync_privacy_groups()
     lambda_handler(None, None)
