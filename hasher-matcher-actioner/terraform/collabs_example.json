@@ -11,7 +11,7 @@
                 "L" : []
             },
             "fetcher_active" : {
-                "BOOL": false
+                "BOOL": true
             }
         }
     }
@@ -29,7 +29,7 @@
                 "L" : []
             },
             "fetcher_active" : {
-                "BOOL": false
+                "BOOL": true
             }
         }
     }
