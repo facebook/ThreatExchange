@@ -6,6 +6,7 @@ import os
 import typing as t
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 from hmalib.common.logging import get_logger
 from hmalib.models import MatchMessage, Label
 from hmalib.common.actioner_models import (
@@ -19,8 +20,23 @@ from hmalib.lambdas.actions.action_performer import perform_label_action
 logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
 
-ACTIONS_QUEUE_URL = os.environ["ACTIONS_QUEUE_URL"]
-REACTIONS_QUEUE_URL = os.environ["REACTIONS_QUEUE_URL"]
+
+@dataclass
+class ActionEvaluatorConfig:
+    """
+    Simple holder for getting typed environment variables
+    """
+
+    actions_queue_url: str
+    reactions_queue_url: str
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def get(cls):
+        return cls(
+            actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
+            reactions_queue_url=os.environ["REACTIONS_QUEUE_URL"],
+        )
 
 
 def lambda_handler(event, context):
@@ -31,6 +47,8 @@ def lambda_handler(event, context):
     Action labels are generated for each match message, then an action is performed
     corresponding to each action label.
     """
+    config = ActionEvaluatorConfig.get()
+
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sns_notification = json.loads(sqs_record["body"])
@@ -44,7 +62,7 @@ def lambda_handler(event, context):
         for action_label in action_labels:
             # TODO implement ActionMessage as the message class to use here
             sqs_client.send_message(
-                QueueUrl=ACTIONS_QUEUE_URL,
+                QueueUrl=config.actions_queue_url,
                 MessageBody=json.dumps(match_message.to_sns_message()),
             )
 
@@ -56,7 +74,7 @@ def lambda_handler(event, context):
                 for threat_exchange_reaction_label in threat_exchange_reaction_labels:
                     # TODO implement ReactionMessage as the message class to use here
                     sqs_client.send_message(
-                        QueueUrl=REACTIONS_QUEUE_URL,
+                        QueueUrl=config.reactions_queue_url,
                         MessageBody=json.dumps(match_message.to_sns_message()),
                     )
 
