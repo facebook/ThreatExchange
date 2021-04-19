@@ -120,7 +120,7 @@ data "aws_iam_policy_document" "fetcher" {
   statement {
     effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = ["*"]
+    resources = [var.api_token_secret.arn]
   }
 }
 
