@@ -14,12 +14,15 @@ from hmalib.common import config
 from hmalib.common.actioner_models import (
     ActionPerformerConfig,
     ActionPerformer,
-    WebhookPutActionPerformer,
+    ReactInReviewActionPerformer,
+    ReactInReviewActionPerformer,
     WebhookPostActionPerformer,
+    WebhookPutActionPerformer,
     ActionLabel,
+    ReactSawThisTooActionPerformer,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
-from hmalib.models import MatchMessage
+from hmalib.models import MatchMessage, BankedSignal
 
 
 class ConfigTest(unittest.TestCase):
@@ -269,5 +272,29 @@ class ConfigTest(unittest.TestCase):
 
         action_label = ActionLabel("IntLabel")
         match_message = MatchMessage("key", "hash", [])
+
+        assert perform_label_action(match_message, action_label) == 1
+
+    def test_react_action(self):
+        banked_signals = [
+            BankedSignal("2862392437204724", "bank 4", "te"),
+            BankedSignal("4194946153908639", "bank 4", "te"),
+        ]
+
+        configs: t.List[ActionPerformer] = [
+            ReactInReviewActionPerformer(
+                action_label=ActionLabel("ReactInReview"),
+            ),
+            ReactSawThisTooActionPerformer(
+                action_label=ActionLabel("ReactSawThisToo"),
+            ),
+        ]
+        for c in configs:
+            ActionPerformerConfig.update_performer(c)
+
+        action_label = ActionLabel("ReactInReview")
+
+        match_message = MatchMessage("key", "hash", banked_signals)
+        action_label = ActionLabel("ReactSawThisToo")
 
         assert perform_label_action(match_message, action_label) == 1

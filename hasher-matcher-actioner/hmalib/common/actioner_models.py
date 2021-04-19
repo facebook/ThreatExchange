@@ -1,13 +1,19 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from dataclasses import dataclass, fields
-
 import typing as t
 
-from hmalib.models import Label, MatchMessage
+from dataclasses import dataclass, fields
+from requests import get, post, put, delete, Response
+
 import hmalib.common.config as config
 
-from requests import get, post, put, delete, Response
+from hmalib.models import Label, MatchMessage, BankedSignal
+from hmalib.common.logging import get_logger
+from hmalib.aws_secrets import AWSSecrets
+
+from threatexchange.api import ThreatExchangeAPI
+
+logger = get_logger(__name__)
 
 
 class LabelWithConstraints(Label):
@@ -99,6 +105,44 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
         return delete(self.url)
 
 
+@dataclass
+class ReactActionPerformer(ActionPerformer):
+    @property
+    def reaction(self) -> str:
+        raise NotImplementedError
+
+    def perform_action(self, match_message: MatchMessage) -> None:
+        api_key = AWSSecrets.te_api_key()
+        api = ThreatExchangeAPI(api_key)
+
+        indicator_ids = {
+            dataset_match_details.banked_content_id
+            for dataset_match_details in match_message.matching_banked_signals
+        }
+
+        descriptor_ids = {
+            descriptor_id["id"]
+            for indicator_id in indicator_ids
+            for descriptor_id in api.get_threat_descriptors_from_indicator(indicator_id)
+        }
+
+        for id in descriptor_ids:
+            api.react_to_threat_descriptor(id, self.reaction)
+            logger.warning("wrote back %s on descriptor %s", self.reaction, id)
+
+
+class ReactInReviewActionPerformer(ReactActionPerformer):
+    reaction = "IN_REVIEW"
+
+
+class ReactIngestedActionPerformer(ReactActionPerformer):
+    reaction = "INGESTED"
+
+
+class ReactSawThisTooActionPerformer(ReactActionPerformer):
+    reaction = "SAW_THIS_TOO"
+
+
 def get_all_subclasses_rec(recursive: t.Set[t.Type]) -> t.Set[t.Type]:
     subclasses = {subclass for cls in recursive for subclass in cls.__subclasses__()}
     union = recursive.union(subclasses)
@@ -158,3 +202,25 @@ class ActionPerformerConfig(config.HMAConfig):
             concrete_type_attrs=attrs,
         )
         config.update_config(action_performer_config)
+
+
+if __name__ == "__main__":
+
+    banked_signals = [
+        BankedSignal("2862392437204724", "bank 4", "te"),
+        BankedSignal("4194946153908639", "bank 4", "te"),
+    ]
+    match_message = MatchMessage("key", "hash", banked_signals)
+
+    configs: t.List[ActionPerformer] = [
+        ReactInReviewActionPerformer(
+            action_label=ActionLabel("ReactInReview"),
+        ),
+        ReactSawThisTooActionPerformer(
+            action_label=ActionLabel("ReactSawThisToo"),
+        ),
+    ]
+
+    # This will react to 4 real descriptors
+    for action_config in configs:
+        action_config.perform_action(match_message)
