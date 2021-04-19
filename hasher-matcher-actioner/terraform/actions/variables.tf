@@ -10,6 +10,7 @@ variable "lambda_docker_info" {
     commands = object({
       action_evaluator = string
       action_performer = string
+      reactioner = string
     })
   })
 }

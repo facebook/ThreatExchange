@@ -49,7 +49,7 @@ resource "aws_sns_topic_subscription" "new_matches_topic" {
   endpoint  = aws_sqs_queue.matches_queue.arn
 }
 
-# Set up a queue for sending messages from action evaluator to action performer
+# Set up the queue for sending messages from the action evaluator to the action performer
 
 resource "aws_sqs_queue" "actions_queue" {
   name_prefix                = "${var.prefix}-actions"
@@ -59,6 +59,20 @@ resource "aws_sqs_queue" "actions_queue" {
     var.additional_tags,
     {
       Name = "ActionsQueue"
+    }
+  )
+}
+
+# Set up the queue for sending messages from the action evaluator to the reactioner
+
+resource "aws_sqs_queue" "reactions_queue" {
+  name_prefix                = "${var.prefix}-reactions"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ReactionsQueue"
     }
   )
 }
@@ -101,6 +115,32 @@ resource "aws_lambda_function" "action_performer" {
   memory_size = 512
 }
 
+# Create a lambda for reacting to ThreatExchange.
+resource "aws_lambda_function" "reactioner" {
+  function_name = "${var.prefix}_reactioner"
+  package_type  = "Image"
+  role          = aws_iam_role.actioner.arn
+  image_uri     = var.lambda_docker_info.uri
+
+  image_config {
+    command = [var.lambda_docker_info.commands.reactioner]
+  }
+
+  timeout     = 300
+  memory_size = 512
+}
+
+resource "aws_cloudwatch_log_group" "action_evaluator" {
+  name              = "/aws/lambda/${aws_lambda_function.action_evaluator.function_name}"
+  retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ActionEvaluatorLambdaLogGroup"
+    }
+  )
+}
+
 resource "aws_cloudwatch_log_group" "action_performer" {
   name              = "/aws/lambda/${aws_lambda_function.action_performer.function_name}"
   retention_in_days = var.log_retention_in_days
@@ -112,13 +152,13 @@ resource "aws_cloudwatch_log_group" "action_performer" {
   )
 }
 
-resource "aws_cloudwatch_log_group" "action_evaluator" {
-  name              = "/aws/lambda/${aws_lambda_function.action_evaluator.function_name}"
+resource "aws_cloudwatch_log_group" "reactioner" {
+  name              = "/aws/lambda/${aws_lambda_function.reactioner.function_name}"
   retention_in_days = var.log_retention_in_days
   tags = merge(
     var.additional_tags,
     {
-      Name = "ActionEvaluatorLambdaLogGroup"
+      Name = "ReactionerLambdaLogGroup"
     }
   )
 }
@@ -151,12 +191,12 @@ data "aws_iam_policy_document" "actioner" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
-    resources = [aws_sqs_queue.matches_queue.arn, aws_sqs_queue.actions_queue.arn]
+    resources = [aws_sqs_queue.matches_queue.arn, aws_sqs_queue.actions_queue.arn, aws_sqs_queue.reactions_queue.arn]
   }
   statement {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.actions_queue.arn]
+    resources = [aws_sqs_queue.actions_queue.arn, aws_sqs_queue.reactions_queue.arn]
   }
   statement {
     effect = "Allow"
@@ -168,6 +208,7 @@ data "aws_iam_policy_document" "actioner" {
     resources = [
       "${aws_cloudwatch_log_group.action_performer.arn}:*",
       "${aws_cloudwatch_log_group.action_evaluator.arn}:*",
+      "${aws_cloudwatch_log_group.reactioner.arn}:*",
     ]
   }
   statement {
@@ -194,6 +235,13 @@ resource "aws_lambda_event_source_mapping" "matches_queue_to_action_evaluator" {
 resource "aws_lambda_event_source_mapping" "actions_queue_to_action_performer" {
   event_source_arn                   = aws_sqs_queue.actions_queue.arn
   function_name                      = aws_lambda_function.action_performer.arn
+  batch_size                         = 100
+  maximum_batching_window_in_seconds = 30
+}
+
+resource "aws_lambda_event_source_mapping" "reactions_queue_to_reactioner" {
+  event_source_arn                   = aws_sqs_queue.reactions_queue.arn
+  function_name                      = aws_lambda_function.reactioner.arn
   batch_size                         = 100
   maximum_batching_window_in_seconds = 30
 }

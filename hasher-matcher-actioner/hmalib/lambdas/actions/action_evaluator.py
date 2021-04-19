@@ -21,6 +21,7 @@ sqs_client = boto3.client("sqs")
 
 ACTIONS_QUEUE_URL = os.environ["ACTIONS_QUEUE_URL"]
 
+
 def lambda_handler(event, context):
     """
     This lambda is called when one or more matches are found. If a single hash matches
@@ -44,14 +45,13 @@ def lambda_handler(event, context):
             # match message and action label (or, possibly, add the
             # action label to the match message and enqueue the match
             # message by itself)
-            
+
             # perform_action(match_message, action_label)
 
             sqs_client.send_message(
                 QueueUrl=ACTIONS_QUEUE_URL,
                 MessageBody=json.dumps(match_message.to_sns_message()),
             )
-
 
         if threat_exchange_reacting_is_enabled(match_message):
             threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
@@ -111,7 +111,7 @@ def action_rule_applies_to_match_message(
     return True
 
 
-def get_actions() -> t.List["Action"]:
+def get_actions() -> t.List[Action]:
     """
     TODO implement
     Returns the Action objects stored in the config repository. Each Action will have
@@ -129,7 +129,7 @@ def get_actions() -> t.List["Action"]:
 
 def remove_superseded_actions(
     action_labels: t.List["ActionLabel"],
-) -> t.List["ActionLabel"]:
+) -> t.List[ActionLabel]:
     """
     TODO implement
     Evaluates a collection of ActionLabels generated for a match message against the actions.
@@ -153,8 +153,8 @@ def threat_exchange_reacting_is_enabled(match_message: MatchMessage) -> bool:
 
 def get_threat_exchange_reaction_labels(
     match_message: MatchMessage,
-    action_labels: t.List["ActionLabel"],
-) -> t.List["Label"]:
+    action_labels: t.List[ActionLabel],
+) -> t.List[Label]:
     """
     TODO implement
     Evaluates a collection of action_labels against some yet to be defined configuration
