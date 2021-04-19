@@ -32,7 +32,7 @@ def lambda_handler(event, context):
             sns_notification["Message"]
         )
 
-        logger.info(f"Evaluating match_message: {match_message}")
+        logger.info("Evaluating match_message: %s", match_message)
 
         action_labels = get_action_labels(match_message)
         for action_label in action_labels:
@@ -161,8 +161,10 @@ def react_to_threat_exchange(
     Puts a ThreatExchangeReactionMessage on the queue to be processed asynchronously
     """
     logger.info(
-        f"The contents of a ThreatExchangeReactionMessage will contain match_message = {match_message} and threat_exchange_reaction_label = {threat_exchange_reaction_label}"
+        "The contents of a ThreatExchangeReactionMessage will contain the following:"
     )
+    logger.ingo("match_message = %s", match_message)
+    logger.info("threat_exchange_reaction_label = %s", threat_exchange_reaction_label)
 
 
 if __name__ == "__main__":
