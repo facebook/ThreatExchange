@@ -11,7 +11,7 @@ import './styles/_app.scss';
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import MatchDetails from './MatchDetails';
-import MatchIndex from './pages/MatchIndex';
+import Matches from './pages/Matches';
 import Settings from './Settings';
 import Signals from './Signals';
 import Upload from './Upload';
@@ -34,7 +34,7 @@ export default function App() {
                 <MatchDetails />
               </Route>
               <Route path="/matches">
-                <MatchIndex />
+                <Matches />
               </Route>
               <Route path="/signals">
                 <Signals />

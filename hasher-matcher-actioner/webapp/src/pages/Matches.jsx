@@ -27,7 +27,7 @@ import {timeAgo} from '../utils/DateTimeUtils';
 import ContentMatchPane from '../components/ContentMatchPane';
 import {useQuery} from '../utils/QueryParams';
 
-export default function MatchIndex() {
+export default function Matches() {
   const query = useQuery();
   const searchQuery = query.get('contentId') || query.get('signalId');
   let searchInAttribute;
@@ -115,31 +115,57 @@ function MatchListFilters({searchInAttribute, searchQuery}) {
     e.preventDefault(); // Prevent form submit
   };
 
+  const inputRef = React.createRef();
+
   return (
-    <Form>
+    <Form onSubmit={loadSearchPage}>
       <Form.Group>
-        <InputGroup>
-          <InputGroup.Prepend>
-            <Form.Control
-              as="select"
-              value={localSearchInAttribute}
-              onChange={e => setLocalSearchInAttribute(e.target.value)}>
-              <option value="contentId">Content ID</option>
-              <option value="signalId">Signal ID</option>
-            </Form.Control>
-          </InputGroup.Prepend>
-          <FormControl
-            onChange={e => setLocalSearchQuery(e.target.value)}
-            value={localSearchQuery || ''}
-            htmlSize="40"
-          />
-          <InputGroup.Append>
-            <Button onClick={loadSearchPage}>Search</Button>
-          </InputGroup.Append>
-        </InputGroup>
-        <Form.Text>
-          Search for matches of your content IDs or Signal IDs.
-        </Form.Text>
+        <Row className="mt-1">
+          <InputGroup>
+            <FormControl
+              ref={inputRef}
+              onChange={e => setLocalSearchQuery(e.target.value)}
+              value={localSearchQuery || ''}
+              htmlSize="40"
+            />
+            <InputGroup.Append>
+              <Button onClick={loadSearchPage}>Search</Button>
+            </InputGroup.Append>
+          </InputGroup>
+        </Row>
+        <Row className="justify-content-between mt-3">
+          <Col md="5">
+            <Form.Check
+              id="match-list-filter-radio-contentid"
+              type="radio"
+              value="contentId"
+              label="Content ID"
+              checked={localSearchInAttribute === 'contentId'}
+              onChange={e => setLocalSearchInAttribute(e.target.value)}
+            />
+          </Col>
+          <Col md="4">
+            <Form.Check
+              id="match-list-filter-radio-signalid"
+              type="radio"
+              value="signalId"
+              label="Signal ID"
+              checked={localSearchInAttribute === 'signalId'}
+              onChange={e => setLocalSearchInAttribute(e.target.value)}
+            />
+          </Col>
+          <Col md="3" className="push-right">
+            <Button
+              variant="light"
+              size="sm"
+              onClick={() => {
+                setLocalSearchQuery('');
+                inputRef.current.focus();
+              }}>
+              Clear
+            </Button>
+          </Col>
+        </Row>
       </Form.Group>
     </Form>
   );
@@ -182,10 +208,11 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
         <span className="sr-only">Loading...</span>
       </Spinner>
       <Collapse in={matchesData !== null}>
-        <div className="row mt-3">
-          <div className="col-12">
+        <Row className="mt-3">
+          <Col>
             <table className="table table-hover small">
               <thead>
+                {/* TODO: Undecided nomenclature */}
                 <tr>
                   <th>Content Id</th>
                   <th>Matched in Dataset</th>
@@ -225,8 +252,8 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
                 )}
               </tbody>
             </table>
-          </div>
-        </div>
+          </Col>
+        </Row>
       </Collapse>
     </>
   );

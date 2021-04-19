@@ -30,6 +30,7 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
       })
       .catch(() => {
         setImage(
+          // TODO: Use a better in-house error message. Perhaps not blur it?
           'https://image.shutterstock.com/image-vector/mission-failed-text-on-red-260nw-1633188751.jpg',
         );
       });
@@ -39,8 +40,19 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
     (hashDetails === null && <p>Loading...</p>) || (
       <Container>
         <Row>
+          {/* Avoid explicit padding if possible when re-doing this page. */}
           <Col className="p-4">
             <BlurUntilHoverImage src={img} />
+          </Col>
+        </Row>
+        <Row>
+          <Col md={3} className="p-4">
+            Details
+          </Col>
+          <Col className="p-4">
+            <Link to={`/matches/${contentId}`}>
+              View Details for this match.
+            </Link>
           </Col>
         </Row>
         <Row>
