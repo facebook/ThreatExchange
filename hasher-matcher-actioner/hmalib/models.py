@@ -24,22 +24,6 @@ class DynamoDBItem:
     def write_to_table(self, table: Table):
         table.put_item(Item=self.to_dynamodb_item())
 
-    def write_to_table_if_already_exists(self, table: Table) -> bool:
-        """
-        Only write to table if the objects with PK and SK already exist.
-        returns true if object existed and therefore put was successful
-        """
-        try:
-            table.put_item(
-                Item=self.to_dynamodb_item(),
-                ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore # service_resource.Table.put_item params are mistyped here...)
-            )
-        except ClientError as e:
-            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
-                raise e
-            return False
-        return True
-
     def to_dynamodb_item(self) -> t.Dict:
         raise NotImplementedError
 
@@ -114,11 +98,43 @@ class PDQSignalMetadata(SignalMetadataBase):
             "PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
             "SK": self.get_dynamodb_ds_key(self.ds_id),
             "SignalHash": self.signal_hash,
-            "SignalSource": self.signal_source,  # defaults to 'te' in the current pipeline
+            "SignalSource": self.signal_source,
             "UpdatedAt": self.updated_at.isoformat(),
             "HashType": self.SIGNAL_TYPE,
             "Tags": self.tags,
         }
+
+    def update_tags_in_table_if_exists(self, table: Table) -> bool:
+        """
+        Only write tags for object in table if the objects with matchig PK and SK already exist
+        (also updates updated_at).
+        Returns true if object existed and therefore update was successful otherwise false.
+        """
+        try:
+            table.update_item(
+                Key={
+                    "PK": self.get_dynamodb_signal_key(
+                        self.signal_source, self.signal_id
+                    ),
+                    "SK": self.get_dynamodb_ds_key(self.ds_id),
+                },
+                # service_resource.Table.update_item's ConditionExpression params is not typed to use its own objects here...
+                ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore
+                ExpressionAttributeValues={
+                    ":t": self.tags,
+                    ":u": self.updated_at.isoformat(),
+                },
+                ExpressionAttributeNames={
+                    "#T": "Tags",
+                    "#U": "UpdatedAt",
+                },
+                UpdateExpression="SET #T = :t, #U = :u",
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                raise e
+            return False
+        return True
 
     @classmethod
     def get_from_signal(

@@ -26,6 +26,7 @@ import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.logging import get_logger
+from hmalib.common.s3_adapters import S3ThreatDataConfig
 from hmalib.models import PDQSignalMetadata
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
@@ -52,21 +53,14 @@ class FetcherConfig:
     data_store_table: str
 
     @classmethod
-    @lru_cache(maxsize=1)  # probably overkill, but at least it's consistent
+    @lru_cache(maxsize=None)  # probably overkill, but at least it's consistent
     def get(cls):
         # These defaults are naive but can be updated for testing purposes.
         return cls(
-            s3_bucket=os.environ.get(
-                "THREAT_EXCHANGE_DATA_BUCKET_NAME",
-                "DEFAULT_BUCKET",
-            ),
-            s3_te_data_folder=os.environ.get(
-                "THREAT_EXCHANGE_DATA_FOLDER", "threat_exchange_data/"
-            ),
-            collab_config_table=os.environ.get(
-                "THREAT_EXCHANGE_CONFIG_DYNAMODB", "default-ThreatExchangeConfig"
-            ),
-            data_store_table=os.environ.get("DYNAMODB_TABLE", "default-HMADataStore"),
+            s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
+            s3_te_data_folder=os.environ["THREAT_EXCHANGE_DATA_FOLDER"],
+            collab_config_table=os.environ["THREAT_EXCHANGE_CONFIG_DYNAMODB"],
+            data_store_table=os.environ["DYNAMODB_DATASTORE_TABLE"],
         )
 
 
@@ -303,21 +297,26 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         matches for any of the updated signals and if so update
         their tags.
         """
-        privacy_group = self.data_s3_key.split("/")[-1].split(".")[0]
         table = dynamodb.Table(self.data_store_table)
 
         for update in updated.values():
             row = update.as_csv_row()
             # example row format: ('<signal>', '<id>', '<time added>', '<tag1 tags2>')
             # e.g ('096a6f9...064f', 1234567891234567, '2020-07-31T18:47:45+0000', 'true_positive hma_test')
-            PDQSignalMetadata(
+            if PDQSignalMetadata(
                 signal_id=int(row[1]),
-                ds_id=privacy_group,
+                ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
-                signal_source="te",
-                signal_hash=row[0],
+                signal_source=S3ThreatDataConfig.SOURCE_STR,
+                signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
                 tags=row[3].split(" ") if row[3] else [],
-            ).write_to_table_if_already_exists(table)
+            ).update_tags_in_table_if_exists(table):
+                logger.info(
+                    "Updated Signal Tags in DB for signal id: %s source: %s for privacy group: %d",
+                    row[1],
+                    S3ThreatDataConfig.SOURCE_STR,
+                    self.privacy_group,
+                )
 
 
 def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
