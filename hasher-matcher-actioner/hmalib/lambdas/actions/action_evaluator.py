@@ -51,9 +51,14 @@ def lambda_handler(event, context):
 
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
-        sns_notification = json.loads(sqs_record["body"])
+        sqs_record_body = json.loads(sqs_record["body"])
+
+        if sqs_record_body.get("Event") == "TestEvent":
+            logger.info("Disregarding test: %s", sqs_record_body)
+            continue
+
         match_message: MatchMessage = MatchMessage.from_sns_message(
-            sns_notification["Message"]
+            sqs_record_body["Message"]
         )
 
         logger.info("Evaluating match_message: %s", match_message)

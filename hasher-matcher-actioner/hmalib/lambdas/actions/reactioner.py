@@ -16,7 +16,12 @@ def lambda_handler(event, context):
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
-        logger.info(f"sqs_record_body = {sqs_record_body}")
+
+        if sqs_record_body.get("Event") == "TestEvent":
+            logger.info("Disregarding test: %s", sqs_record_body)
+            continue
+
+        logger.info("Reactin with sqs_record_body = %s", sqs_record_body)
         # TODO next PR will include implementation of the ReactionMessage class
 
     return {"reaction_completed": "true"}
