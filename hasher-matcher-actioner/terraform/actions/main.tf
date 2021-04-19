@@ -154,7 +154,7 @@ data "aws_iam_policy_document" "actioner" {
   statement {
     effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [var.api_token_secret.arn]
+    resources = [var.te_api_token_secret.arn]
   }
 }
 

@@ -39,7 +39,7 @@ resource "aws_lambda_function" "fetcher" {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
       THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
       THREAT_EXCHANGE_DATA_FOLDER      = var.threat_exchange_data.data_folder
-      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.api_token_secret.name
+      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
     }
   }
   tags = merge(
@@ -120,7 +120,7 @@ data "aws_iam_policy_document" "fetcher" {
   statement {
     effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [var.api_token_secret.arn]
+    resources = [var.te_api_token_secret.arn]
   }
 }
 

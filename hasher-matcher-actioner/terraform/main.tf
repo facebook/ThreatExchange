@@ -21,7 +21,7 @@ locals {
   }
   pdq_file_extension   = ".pdq.te"
   te_data_folder       = module.hashing_data.threat_exchange_data_folder_info.key
-  api_token_secret_name = "threatexchange/${var.prefix}_api_tokens"
+  te_api_token_secret_name = "threatexchange/${var.prefix}_api_tokens"
 }
 
 ### Config storage ###
@@ -116,7 +116,7 @@ module "fetcher" {
   fetch_frequency       = var.fetch_frequency
 
   config_arn = aws_dynamodb_table.hma_config.arn
-  api_token_secret  = aws_secretsmanager_secret.api_token
+  te_api_token_secret  = aws_secretsmanager_secret.te_api_token
 }
 
 resource "aws_sns_topic" "matches" {
@@ -267,17 +267,17 @@ module "actions" {
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
-  api_token_secret      = aws_secretsmanager_secret.api_token
+  te_api_token_secret      = aws_secretsmanager_secret.te_api_token
 }
 
 ### ThreatExchange API Token Secret ###
 
-resource "aws_secretsmanager_secret" "api_token" {
-  name                    = local.api_token_secret_name
+resource "aws_secretsmanager_secret" "te_api_token" {
+  name                    = local.te_api_token_secret_name
   recovery_window_in_days = 0
 }
 
-resource "aws_secretsmanager_secret_version" "api_token" {
-  secret_id     = aws_secretsmanager_secret.api_token.id
+resource "aws_secretsmanager_secret_version" "te_api_token" {
+  secret_id     = aws_secretsmanager_secret.te_api_token.id
   secret_string = var.te_api_token
 }

@@ -67,7 +67,7 @@ variable "config_arn" {
   type = string
 }
 
-variable "api_token_secret" {
+variable "te_api_token_secret" {
   description = "The aws secret where the ThreatExchange API token is stored"
   type = object({
     name = string
