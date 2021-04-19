@@ -31,6 +31,9 @@ def lambda_handler(event, context):
         match_message: MatchMessage = MatchMessage.from_sns_message(
             sns_notification["Message"]
         )
+
+        logger.info("Evaluating match_message: %s", match_message)
+
         action_labels = get_action_labels(match_message)
         for action_label in action_labels:
             # TODO create a new action execution queue and enqueue the
@@ -147,6 +150,21 @@ def get_threat_exchange_reaction_labels(
     (and possible business login) to produce
     """
     return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
+
+
+def react_to_threat_exchange(
+    match_message: MatchMessage,
+    threat_exchange_reaction_label: ThreatExchangeReactionLabel,
+) -> None:
+    """
+    TODO implement
+    Puts a ThreatExchangeReactionMessage on the queue to be processed asynchronously
+    """
+    logger.info(
+        "The contents of a ThreatExchangeReactionMessage will contain the following:"
+    )
+    logger.ingo("match_message = %s", match_message)
+    logger.info("threat_exchange_reaction_label = %s", threat_exchange_reaction_label)
 
 
 if __name__ == "__main__":

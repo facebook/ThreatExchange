@@ -449,7 +449,7 @@ class MatchMessage(SNSMessage):
     Captures a set of matches that will need to be processed. We create one
     match message for a single content key. It is possible that a single content
     hash matches multiple datasets. When it does, the entire set of matches are
-    forwarded together so that *one* appropriate action can be taken.
+    forwarded together so that any appropriate action can be taken.
 
     - `content_key`: A way for partners to refer uniquely to content on their
       site
@@ -458,14 +458,14 @@ class MatchMessage(SNSMessage):
 
     content_key: str
     content_hash: str
-    match_details: t.List["DatasetMatchDetails"] = field(default_factory=list)
+    matching_banked_signals: t.List["BankedSignal"] = field(default_factory=list)
 
     def to_sns_message(self) -> str:
         return json.dumps(
             {
                 "ContentKey": self.content_key,
                 "ContentHash": self.content_hash,
-                "MatchDetails": [x.to_dict() for x in self.match_details],
+                "BankedSignal": [x.to_dict() for x in self.matching_banked_signals],
             }
         )
 
@@ -475,41 +475,38 @@ class MatchMessage(SNSMessage):
         return cls(
             parsed["ContentKey"],
             parsed["ContentHash"],
-            [DatasetMatchDetails.from_dict(d) for d in parsed["MatchDetails"]],
+            [BankedSignal.from_dict(d) for d in parsed["BankedSignal"]],
         )
 
 
 @dataclass
-class DatasetMatchDetails:
+class BankedSignal:
     """
-    Dataset fields:
-    - `banked_content_id`: Inside the bank, what's a unique way to refer to what
-      was matched against?
-    - `bank_id`: [optional][Defaults to 'threatexchange_all_collabs'] Which bank
-      did we fetch this banked_content from?
-    - `bank_source`: [optional][Defaults to 'api/threatexchange'] This is
-      forward looking, but potentially, we could have this be 'local', or
-      'api/some-other-api'
+    BankedSignal fields:
+    - `banked_content_id`: Inside the bank, the unique way to refer to what
+      was matched against
+    - `bank_id`: The unique way to refer to the bank banked_content_id came from
+    - `bank_source`: This is forward looking: this might be 'te' or 'local';
+      indicates source of or relationship between one or more banks
+    - `classifications`: a list of strings that provide additional context
+      about the banked signal
     """
 
-    banked_indicator_id: str
-
-    # source information, for now, it's okay to be hardcoded
-    # to threatexchange
-    bank_id: str = "threatexchange_all_collabs"
-    bank_source: str = "api/threatexchange"
+    banked_content_id: str
+    bank_id: str
+    bank_source: str
+    classifications: t.List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
-            "BankedIndicatorId": self.banked_indicator_id,
+            "BankedContentId": self.banked_content_id,
             "BankId": self.bank_id,
             "BankSource": self.bank_source,
+            "Classifications": self.classifications,
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "DatasetMatchDetails":
+    def from_dict(cls, d: dict) -> "BankedSignal":
         return cls(
-            d["BankedIndicatorId"],
-            d["BankId"],
-            d["BankSource"],
+            d["BankedContentId"], d["BankId"], d["BankSource"], d["Classifications"]
         )
