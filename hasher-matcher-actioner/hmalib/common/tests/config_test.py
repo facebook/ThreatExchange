@@ -38,7 +38,9 @@ class ConfigTest(unittest.TestCase):
         os.environ["AWS_SECURITY_TOKEN"] = "testing"
         os.environ["AWS_SESSION_TOKEN"] = "testing"
         os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
-        os.environ["THREAT_EXCHANGE_API_TOKEN_SECRET_NAME"] = "threatexchange/jeberl_api_tokens"
+        os.environ[
+            "THREAT_EXCHANGE_API_TOKEN_SECRET_NAME"
+        ] = "threatexchange/jeberl_api_tokens"
 
     @classmethod
     def setUpClass(cls):
