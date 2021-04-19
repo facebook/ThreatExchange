@@ -2,6 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
+import {formatDistanceToNow, parseISO} from 'date-fns';
+
 export function formatTimestamp(timestamp) {
   if (!timestamp) {
     return 'Unknown';
@@ -17,4 +19,6 @@ export function formatTimestamp(timestamp) {
   }).format(new Date(timestamp));
 }
 
-export {formatTimestamp as default};
+export function timeAgo(isoDateString) {
+  return formatDistanceToNow(parseISO(isoDateString), {addSuffix: true});
+}

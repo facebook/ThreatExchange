@@ -19,6 +19,8 @@
 		"rvest.vs-code-prettier-eslint",
 		"ms-azuretools.vscode-docker",
 		"hashicorp.terraform",
+		"eamodio.gitlens",
+		"stkb.rewrap"
 	],
 
 	"mounts": [
