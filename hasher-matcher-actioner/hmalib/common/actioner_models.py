@@ -128,7 +128,7 @@ class ReactActionPerformer(ActionPerformer):
 
         for id in descriptor_ids:
             api.react_to_threat_descriptor(id, self.reaction)
-            logger.warning("wrote back %s on descriptor %s", self.reaction, id)
+            logger.warning("reacted %s to descriptor %s", self.reaction, id)
 
 
 class ReactInReviewActionPerformer(ReactActionPerformer):
