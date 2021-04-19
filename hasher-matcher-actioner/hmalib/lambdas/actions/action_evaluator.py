@@ -1,9 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import boto3
 import json
+import os
 import typing as t
 
 from dataclasses import dataclass, field
+from functools import lru_cache
 from hmalib.common.logging import get_logger
 from hmalib.models import MatchMessage, Label
 from hmalib.common.actioner_models import (
@@ -15,6 +18,25 @@ from hmalib.common.actioner_models import (
 from hmalib.lambdas.actions.action_performer import perform_label_action
 
 logger = get_logger(__name__)
+sqs_client = boto3.client("sqs")
+
+
+@dataclass
+class ActionEvaluatorConfig:
+    """
+    Simple holder for getting typed environment variables
+    """
+
+    actions_queue_url: str
+    reactions_queue_url: str
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def get(cls):
+        return cls(
+            actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
+            reactions_queue_url=os.environ["REACTIONS_QUEUE_URL"],
+        )
 
 
 def lambda_handler(event, context):
@@ -25,22 +47,29 @@ def lambda_handler(event, context):
     Action labels are generated for each match message, then an action is performed
     corresponding to each action label.
     """
+    config = ActionEvaluatorConfig.get()
+
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
-        sns_notification = json.loads(sqs_record["body"])
+        sqs_record_body = json.loads(sqs_record["body"])
+
+        if sqs_record_body.get("Event") == "TestEvent":
+            logger.info("Disregarding test: %s", sqs_record_body)
+            continue
+
         match_message: MatchMessage = MatchMessage.from_sns_message(
-            sns_notification["Message"]
+            sqs_record_body["Message"]
         )
 
         logger.info("Evaluating match_message: %s", match_message)
 
         action_labels = get_action_labels(match_message)
         for action_label in action_labels:
-            # TODO create a new action execution queue and enqueue the
-            # match message and action label (or, possibly, add the
-            # action label to the match message and enqueue the match
-            # message by itself)
-            perform_label_action(match_message, action_label)
+            # TODO implement ActionMessage as the message class to use here
+            sqs_client.send_message(
+                QueueUrl=config.actions_queue_url,
+                MessageBody=json.dumps(match_message.to_sns_message()),
+            )
 
         if threat_exchange_reacting_is_enabled(match_message):
             threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
@@ -48,14 +77,13 @@ def lambda_handler(event, context):
             )
             if threat_exchange_reaction_labels:
                 for threat_exchange_reaction_label in threat_exchange_reaction_labels:
-                    # TODO create a new ThreatExchange reaction queue and enqueue
-                    # the match message and threat exchange reaction label (or, possibly,
-                    # add the threat exchange reaction label to the match message
-                    # and enqueue the match message by itself)
-                    react_to_threat_exchange(
-                        match_message, threat_exchange_reaction_label
+                    # TODO implement ReactionMessage as the message class to use here
+                    sqs_client.send_message(
+                        QueueUrl=config.reactions_queue_url,
+                        MessageBody=json.dumps(match_message.to_sns_message()),
                     )
-    return {"action_evaluated": "true"}
+
+    return {"evaluation_completed": "true"}
 
 
 def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
@@ -100,7 +128,7 @@ def action_rule_applies_to_match_message(
     return True
 
 
-def get_actions() -> t.List["Action"]:
+def get_actions() -> t.List[Action]:
     """
     TODO implement
     Returns the Action objects stored in the config repository. Each Action will have
@@ -118,7 +146,7 @@ def get_actions() -> t.List["Action"]:
 
 def remove_superseded_actions(
     action_labels: t.List["ActionLabel"],
-) -> t.List["ActionLabel"]:
+) -> t.List[ActionLabel]:
     """
     TODO implement
     Evaluates a collection of ActionLabels generated for a match message against the actions.
@@ -142,29 +170,14 @@ def threat_exchange_reacting_is_enabled(match_message: MatchMessage) -> bool:
 
 def get_threat_exchange_reaction_labels(
     match_message: MatchMessage,
-    action_labels: t.List["ActionLabel"],
-) -> t.List["Label"]:
+    action_labels: t.List[ActionLabel],
+) -> t.List[Label]:
     """
     TODO implement
     Evaluates a collection of action_labels against some yet to be defined configuration
     (and possible business login) to produce
     """
     return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
-
-
-def react_to_threat_exchange(
-    match_message: MatchMessage,
-    threat_exchange_reaction_label: ThreatExchangeReactionLabel,
-) -> None:
-    """
-    TODO implement
-    Puts a ThreatExchangeReactionMessage on the queue to be processed asynchronously
-    """
-    logger.info(
-        "The contents of a ThreatExchangeReactionMessage will contain the following:"
-    )
-    logger.ingo("match_message = %s", match_message)
-    logger.info("threat_exchange_reaction_label = %s", threat_exchange_reaction_label)
 
 
 if __name__ == "__main__":
