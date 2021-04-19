@@ -25,6 +25,7 @@ from pathlib import Path
 import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
+from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
@@ -37,6 +38,24 @@ logger = get_logger(__name__)
 
 dynamodb = boto3.resource("dynamodb")
 s3 = boto3.resource("s3")
+
+# Lambda init tricks
+@lru_cache(maxsize=1)
+def lambda_init_once():
+    """
+    Do some late initialization for required lambda components.
+
+    Lambda initialization is weird - despite the existence of perfectly
+    good constructions like __name__ == __main__, there don't appear
+    to be easy ways to split your lambda-specific logic from your
+    module logic except by splitting up the files and making your
+    lambda entry as small as possible.
+
+    TODO: Just refactor this file to separate the lambda and functional
+          components
+    """
+    cfg = FetcherConfig.get()
+    HMAConfig.initialize(cfg.collab_config_table)
 
 
 @dataclass
@@ -59,7 +78,22 @@ class FetcherConfig:
         )
 
 
+@dataclass
+class ThreatExchangeConfig(HMAConfig):
+    """
+    Config for ThreatExchange integrations
+    Consumed by the fetcher to get data from the right places in
+    ThreatExchange, downstream to control write-back information
+    like reactions and uploads, and possibly other places that
+    need to join HMA and ThreatExchange data.
+    """
+
+    enabled: bool
+    privacy_group: int
+
+
 def lambda_handler(event, context):
+    lambda_init_once()
     config = FetcherConfig.get()
 
     paginator = dynamodb.meta.client.get_paginator("scan")
@@ -296,8 +330,6 @@ def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    FetcherConfig.get.cache_clear()  # Just in case
-    FetcherConfig.get()
 
     # This will only kinda work for so long - eventually will
     # need to use a proper harness

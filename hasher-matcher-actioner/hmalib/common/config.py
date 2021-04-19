@@ -233,7 +233,10 @@ def _aws_field_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
     # Another option would be adding a new class that adds methods to convert
     # to an AWS-friendly struct and back
     if origin is dict and args[0] is str:  # M
-        return {k: _aws_field_to_py(args[1], v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
+        if args[1] is not t.Any:
+            # check if value type of map origin is explicitly set
+            return {k: _aws_field_to_py(args[1], v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
+        return {k: _aws_field_to_py(type(v), v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
 
     raise HMAConfigSerializationError(
         "Missing DynamoDB deserialization logic for %r" % in_type
@@ -285,7 +288,10 @@ def _py_to_aws_field(in_type: t.Type[T], py_field: t.Any) -> T:
         return [_py_to_aws_field(args[0], v) for v in py_field]  # type: ignore # mypy/issues/10003
 
     if origin is dict and args[0] is str:  # M
-        return {k: _py_to_aws_field(args[1], v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
+        if args[1] is not t.Any:
+            # check if value type of map origin is explicitly set
+            return {k: _py_to_aws_field(args[1], v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
+        return {k: _py_to_aws_field(type(v), v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
 
     raise HMAConfigSerializationError(
         "Missing DynamoDB Serialization logic for %r" % in_type
