@@ -34,21 +34,17 @@ def perform_label_action(match_message: MatchMessage, action_label: ActionLabel)
     return 0
 
 
-def react_to_threat_exchange(match_message: MatchMessage, reaction_label: Label):
-    # TODO implement
-    logger.debug("react to threat exchange")
-
-
 def lambda_handler(event, context):
     """
     This is the main entry point for performing an action. The action evaluator puts
-    <class-name-concept-phrase> on the actions queue and here's where they're popped
+    an action message on the actions queue and here's where they're popped
     off and dealt with.
     """
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
         logger.info(f"sqs_record_body = {sqs_record_body}")
+        # TODO instantiate an instance of ActionMessage here, then call perform_action()
 
     return {"action_performed": "true"}
 

@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
 
 ACTIONS_QUEUE_URL = os.environ["ACTIONS_QUEUE_URL"]
+REACTIONS_QUEUE_URL = os.environ["REACTIONS_QUEUE_URL"]
 
 
 def lambda_handler(event, context):
@@ -41,13 +42,7 @@ def lambda_handler(event, context):
 
         action_labels = get_action_labels(match_message)
         for action_label in action_labels:
-            # TODO create a new action execution queue and enqueue the
-            # match message and action label (or, possibly, add the
-            # action label to the match message and enqueue the match
-            # message by itself)
-
-            # perform_action(match_message, action_label)
-
+            # TODO implement ActionMessage as the message class to use here
             sqs_client.send_message(
                 QueueUrl=ACTIONS_QUEUE_URL,
                 MessageBody=json.dumps(match_message.to_sns_message()),
@@ -59,14 +54,13 @@ def lambda_handler(event, context):
             )
             if threat_exchange_reaction_labels:
                 for threat_exchange_reaction_label in threat_exchange_reaction_labels:
-                    # TODO create a new ThreatExchange reaction queue and enqueue
-                    # the match message and threat exchange reaction label (or, possibly,
-                    # add the threat exchange reaction label to the match message
-                    # and enqueue the match message by itself)
-                    react_to_threat_exchange(
-                        match_message, threat_exchange_reaction_label
+                    # TODO implement ReactionMessage as the message class to use here
+                    sqs_client.send_message(
+                        QueueUrl=REACTIONS_QUEUE_URL,
+                        MessageBody=json.dumps(match_message.to_sns_message()),
                     )
-    return {"action_evaluated": "true"}
+
+    return {"evaluation_completed": "true"}
 
 
 def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
@@ -161,21 +155,6 @@ def get_threat_exchange_reaction_labels(
     (and possible business login) to produce
     """
     return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
-
-
-def react_to_threat_exchange(
-    match_message: MatchMessage,
-    threat_exchange_reaction_label: ThreatExchangeReactionLabel,
-) -> None:
-    """
-    TODO implement
-    Puts a ThreatExchangeReactionMessage on the queue to be processed asynchronously
-    """
-    logger.info(
-        "The contents of a ThreatExchangeReactionMessage will contain the following:"
-    )
-    logger.ingo("match_message = %s", match_message)
-    logger.info("threat_exchange_reaction_label = %s", threat_exchange_reaction_label)
 
 
 if __name__ == "__main__":

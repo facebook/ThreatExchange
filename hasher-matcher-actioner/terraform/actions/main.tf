@@ -77,12 +77,14 @@ resource "aws_sqs_queue" "reactions_queue" {
   )
 }
 
-# Create a lambda for evaluating which actions to be performed as a result
-# of matches. Be prepared, quite a few blocks ahead.
+# Lambda functions
+
+# Action evaluator evaluates which actions to perform as a result of a match.
+
 resource "aws_lambda_function" "action_evaluator" {
   function_name = "${var.prefix}_action_evaluator"
   package_type  = "Image"
-  role          = aws_iam_role.actioner.arn
+  role          = aws_iam_role.action_evaluator.arn
   image_uri     = var.lambda_docker_info.uri
 
   image_config {
@@ -94,17 +96,18 @@ resource "aws_lambda_function" "action_evaluator" {
 
   environment {
     variables = {
-      ACTIONS_QUEUE_URL = aws_sqs_queue.actions_queue.id
+      ACTIONS_QUEUE_URL = aws_sqs_queue.actions_queue.id,
+      REACTIONS_QUEUE_URL = aws_sqs_queue.reactions_queue.id,
     }
   }
 }
 
-# Create a lambda for performing actions in response to matches, after they are evaluated by
-# the action evaluator.
+# Action performer performs actions decided on by the action evaluator.
+
 resource "aws_lambda_function" "action_performer" {
   function_name = "${var.prefix}_action_performer"
   package_type  = "Image"
-  role          = aws_iam_role.actioner.arn
+  role          = aws_iam_role.action_performer.arn
   image_uri     = var.lambda_docker_info.uri
 
   image_config {
@@ -115,11 +118,12 @@ resource "aws_lambda_function" "action_performer" {
   memory_size = 512
 }
 
-# Create a lambda for reacting to ThreatExchange.
+# Reactioner reacts to ThreatExchange.
+
 resource "aws_lambda_function" "reactioner" {
   function_name = "${var.prefix}_reactioner"
   package_type  = "Image"
-  role          = aws_iam_role.actioner.arn
+  role          = aws_iam_role.reactioner.arn
   image_uri     = var.lambda_docker_info.uri
 
   image_config {
@@ -129,6 +133,8 @@ resource "aws_lambda_function" "reactioner" {
   timeout     = 300
   memory_size = 512
 }
+
+# Log groups
 
 resource "aws_cloudwatch_log_group" "action_evaluator" {
   name              = "/aws/lambda/${aws_lambda_function.action_evaluator.function_name}"
@@ -163,13 +169,7 @@ resource "aws_cloudwatch_log_group" "reactioner" {
   )
 }
 
-# Currently both the action_evaluator and action_performer lambda
-# use this same iam role+policy. We may need to split this later
-resource "aws_iam_role" "actioner" {
-  name_prefix        = "${var.prefix}_actioner"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-  tags               = var.additional_tags
-}
+# Common "assume role" policy document
 
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
@@ -182,16 +182,24 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-resource "aws_iam_policy" "actioner" {
-  name_prefix = "${var.prefix}_actioner_role_policy"
-  policy      = data.aws_iam_policy_document.actioner.json
+# Role and policy for action evaluator
+
+resource "aws_iam_role" "action_evaluator" {
+  name_prefix        = "${var.prefix}_action_evaluator"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags               = var.additional_tags
 }
 
-data "aws_iam_policy_document" "actioner" {
+resource "aws_iam_policy" "action_evaluator" {
+  name_prefix = "${var.prefix}_action_evaluator_role_policy"
+  policy      = data.aws_iam_policy_document.action_evaluator.json
+}
+
+data "aws_iam_policy_document" "action_evaluator" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
-    resources = [aws_sqs_queue.matches_queue.arn, aws_sqs_queue.actions_queue.arn, aws_sqs_queue.reactions_queue.arn]
+    resources = [aws_sqs_queue.matches_queue.arn]
   }
   statement {
     effect    = "Allow"
@@ -205,11 +213,7 @@ data "aws_iam_policy_document" "actioner" {
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
     ]
-    resources = [
-      "${aws_cloudwatch_log_group.action_performer.arn}:*",
-      "${aws_cloudwatch_log_group.action_evaluator.arn}:*",
-      "${aws_cloudwatch_log_group.reactioner.arn}:*",
-    ]
+    resources = ["${aws_cloudwatch_log_group.action_evaluator.arn}:*"]
   }
   statement {
     effect    = "Allow"
@@ -218,13 +222,93 @@ data "aws_iam_policy_document" "actioner" {
   }
 }
 
-resource "aws_iam_role_policy_attachment" "actioner" {
-  role       = aws_iam_role.actioner.name
-  policy_arn = aws_iam_policy.actioner.arn
+resource "aws_iam_role_policy_attachment" "action_evaluator" {
+  role       = aws_iam_role.action_evaluator.name
+  policy_arn = aws_iam_policy.action_evaluator.arn
 }
-# That's the end of blocks dedicated to the lambdas alone
 
-# Now, connect SQS -> Lambda
+# Role and policy for action performer
+
+resource "aws_iam_role" "action_performer" {
+  name_prefix        = "${var.prefix}_action_performer"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags               = var.additional_tags
+}
+
+resource "aws_iam_policy" "action_performer" {
+  name_prefix = "${var.prefix}_action_performer_role_policy"
+  policy      = data.aws_iam_policy_document.action_performer.json
+}
+
+data "aws_iam_policy_document" "action_performer" {
+  statement {
+    effect    = "Allow"
+    actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
+    resources = [aws_sqs_queue.actions_queue.arn]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams"
+    ]
+    resources = ["${aws_cloudwatch_log_group.action_performer.arn}:*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "action_performer" {
+  role       = aws_iam_role.action_performer.name
+  policy_arn = aws_iam_policy.action_performer.arn
+}
+
+# Role and policy for action reactioner
+
+resource "aws_iam_role" "reactioner" {
+  name_prefix        = "${var.prefix}_reactioner"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags               = var.additional_tags
+}
+
+resource "aws_iam_policy" "reactioner" {
+  name_prefix = "${var.prefix}_reactioner_role_policy"
+  policy      = data.aws_iam_policy_document.reactioner.json
+}
+
+data "aws_iam_policy_document" "reactioner" {
+  statement {
+    effect    = "Allow"
+    actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
+    resources = [aws_sqs_queue.reactions_queue.arn]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams"
+    ]
+    resources = ["${aws_cloudwatch_log_group.reactioner.arn}:*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "reactioner" {
+  role       = aws_iam_role.reactioner.name
+  policy_arn = aws_iam_policy.reactioner.arn
+}
+
+# Connect sqs -> lambda
+
 resource "aws_lambda_event_source_mapping" "matches_queue_to_action_evaluator" {
   event_source_arn                   = aws_sqs_queue.matches_queue.arn
   function_name                      = aws_lambda_function.action_evaluator.arn
