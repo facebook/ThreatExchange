@@ -361,5 +361,4 @@ if __name__ == "__main__":
 
     # This will only kinda work for so long - eventually will
     # need to use a proper harness
-    sync_privacy_groups()
     lambda_handler(None, None)
