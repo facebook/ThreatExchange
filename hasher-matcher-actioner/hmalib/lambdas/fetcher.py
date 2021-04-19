@@ -90,7 +90,7 @@ class ThreatExchangeConfig(HMAConfig):
     """
 
     fetcher_active: bool
-    privacy_group_id: str
+    privacy_group_name: str
 
 
 def lambda_handler(event, context):
@@ -188,12 +188,14 @@ def sync_privacy_groups():
     unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
 
     for privacy_group in unique_privacy_groups:
-        if privacy_group.threat_updates_enabled:
+        if (
+            privacy_group.threat_updates_enabled
+        ):  # HMA can only read from privacy groups that have threat_updates enabled. See here for more details: https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-updates/v9.0
             logger.info("Adding collaboration name %s", privacy_group.name)
             config = ThreatExchangeConfig(
-                privacy_group.name,
-                fetcher_active=True,
-                privacy_group_id=privacy_group.id,
+                privacy_group.id,
+                fetcher_active=True,  # TODO Currently default to True for testing purpose, need to switch it to False before v0 launch
+                privacy_group_name=privacy_group.name,
             )
             hmaconfig.update_config(config)
 
