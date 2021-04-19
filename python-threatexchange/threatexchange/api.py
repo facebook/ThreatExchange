@@ -45,7 +45,7 @@ class _CursoredResponse:
         self.response = None
         self.next_url = url
         self.params = params
-        self.data : t.List = []
+        self.data: t.List = []
         self.decode_fn = decode_fn
 
     @property
@@ -527,4 +527,4 @@ class ThreatExchangeAPI:
 
         response = self.get_json_from_url(url)
 
-        return response['descriptors']['data']
+        return response["descriptors"]["data"]
