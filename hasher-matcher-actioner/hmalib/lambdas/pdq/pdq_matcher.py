@@ -11,7 +11,13 @@ from mypy_boto3_sns import SNSClient
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.models import PDQMatchRecord, Label, MatchMessage, DatasetMatchDetails
+from hmalib.models import (
+    PDQMatchRecord,
+    Label,
+    MatchMessage,
+    BankedSignal,
+    PDQSignalMetadata,
+)
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -93,6 +99,7 @@ def lambda_handler(event, context):
 
         if results:
             match_ids = []
+            matching_banked_signals: t.List[BankedSignal] = []
             for match in results:
                 metadata = match.metadata
                 logger.info(
@@ -110,24 +117,43 @@ def lambda_handler(event, context):
                     metadata["hash"],
                 ).write_to_table(records_table)
 
+                for pg in metadata.get("privacy_groups", []):
+                    # TODO: we might be able to get away with some 'if exists/upsert' here
+                    PDQSignalMetadata(
+                        signal_id,
+                        pg,
+                        current_datetime,
+                        metadata["source"],
+                        metadata["hash"],
+                        metadata["tags"].get(pg, []),
+                    ).write_to_table(records_table)
+
                 match_ids.append(signal_id)
 
+                # TODO: change naming upstream and here from privacy_group[s]
+                # to dataset[s]
+                for privacy_group in metadata.get("privacy_groups", []):
+                    banked_signal = BankedSignal(
+                        signal_id, privacy_group, metadata["source"]
+                    )
+                    for tag in metadata["tags"].get(privacy_group, []):
+                        banked_signal.classifications.append(tag)
+                    matching_banked_signals.append(banked_signal)
+
             # TODO: Add source (threatexchange) tags to match message
-            message = MatchMessage(
+            match_message = MatchMessage(
                 content_key=key,
                 content_hash=hash_str,
-                match_details=[
-                    DatasetMatchDetails(
-                        banked_indicator_id=signal_id,
-                    )
-                    for signal_id in match_ids
-                ],
+                matching_banked_signals=matching_banked_signals,
             )
+
+            logger.info(f"Publishing match_message: {match_message}")
 
             # Publish one message for the set of matches.
             sns_client.publish(
-                TopicArn=OUTPUT_TOPIC_ARN, Message=message.to_sns_message()
+                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_sns_message()
             )
+
         else:
             logger.info(f"No matches found for key: {key} hash: {hash_str}")
 

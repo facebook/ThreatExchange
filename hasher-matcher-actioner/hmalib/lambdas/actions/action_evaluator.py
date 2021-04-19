@@ -12,7 +12,7 @@ from hmalib.common.actioner_models import (
     Action,
     ActionRule,
 )
-from hmalib.lambdas.actions.action_performer import perform_action
+from hmalib.lambdas.actions.action_performer import perform_label_action
 
 logger = get_logger(__name__)
 
@@ -25,20 +25,22 @@ def lambda_handler(event, context):
     Action labels are generated for each match message, then an action is performed
     corresponding to each action label.
     """
-    for sqs_record in event[
-        "Records"
-    ]:  # TODO research max # sqs records / lambda_handler invocation
+    for sqs_record in event["Records"]:
+        # TODO research max # sqs records / lambda_handler invocation
         sns_notification = json.loads(sqs_record["body"])
         match_message: MatchMessage = MatchMessage.from_sns_message(
             sns_notification["Message"]
         )
+
+        logger.info("Evaluating match_message: %s", match_message)
+
         action_labels = get_action_labels(match_message)
         for action_label in action_labels:
             # TODO create a new action execution queue and enqueue the
             # match message and action label (or, possibly, add the
             # action label to the match message and enqueue the match
             # message by itself)
-            perform_action(match_message, action_label)
+            perform_label_action(match_message, action_label)
 
         if threat_exchange_reacting_is_enabled(match_message):
             threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
@@ -53,6 +55,7 @@ def lambda_handler(event, context):
                     react_to_threat_exchange(
                         match_message, threat_exchange_reaction_label
                     )
+    return {"action_evaluated": "true"}
 
 
 def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
@@ -147,6 +150,21 @@ def get_threat_exchange_reaction_labels(
     (and possible business login) to produce
     """
     return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
+
+
+def react_to_threat_exchange(
+    match_message: MatchMessage,
+    threat_exchange_reaction_label: ThreatExchangeReactionLabel,
+) -> None:
+    """
+    TODO implement
+    Puts a ThreatExchangeReactionMessage on the queue to be processed asynchronously
+    """
+    logger.info(
+        "The contents of a ThreatExchangeReactionMessage will contain the following:"
+    )
+    logger.ingo("match_message = %s", match_message)
+    logger.info("threat_exchange_reaction_label = %s", threat_exchange_reaction_label)
 
 
 if __name__ == "__main__":
