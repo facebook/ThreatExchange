@@ -118,6 +118,7 @@ class ReactActionPerformer(ActionPerformer):
         indicator_ids = {
             dataset_match_details.banked_content_id
             for dataset_match_details in match_message.matching_banked_signals
+            if dataset_match_details.bank_source == "te"
         }
 
         descriptor_ids = {
