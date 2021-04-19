@@ -5,9 +5,6 @@ import typing as t
 from hmalib.common.actioner_models import (
     ActionLabel,
     ActionPerformerConfig,
-    ActionPerformer,
-    ReactInReviewActionPerformer,
-    ReactSawThisTooActionPerformer,
 )
 
 from dataclasses import dataclass, field

@@ -14,11 +14,12 @@ from hmalib.common import config
 from hmalib.common.actioner_models import (
     ActionPerformerConfig,
     ActionPerformer,
-    ReactInReviewActionPerformer,
-    ReactInReviewActionPerformer,
     WebhookPostActionPerformer,
     WebhookPutActionPerformer,
     ActionLabel,
+)
+from hmalib.common.reactioner_models import (
+    ReactInReviewActionPerformer,
     ReactSawThisTooActionPerformer,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
