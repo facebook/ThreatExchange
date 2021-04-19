@@ -151,6 +151,11 @@ data "aws_iam_policy_document" "actioner" {
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"]
   }
+  statement {
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [var.te_api_token_secret.arn]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "actioner" {

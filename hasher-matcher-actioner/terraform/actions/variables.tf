@@ -35,3 +35,11 @@ variable "measure_performance" {
   type        = bool
   default     = false
 }
+
+variable "te_api_token_secret" {
+  description = "The aws secret where the ThreatExchange API token is stored"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
