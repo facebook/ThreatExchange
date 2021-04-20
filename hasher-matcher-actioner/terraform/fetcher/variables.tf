@@ -71,15 +71,18 @@ variable "collab_file" {
   type        = string
 }
 
-variable "config_arn" {
-  description = "The ARN of the DynamoDB table with configs"
-  type        = string
-}
-
 variable "te_api_token_secret" {
   description = "The aws secret where the ThreatExchange API token is stored"
   type = object({
     name = string
     arn  = string
+  })
+}
+
+variable "hma_config" {
+  description = "Config settings for dynamodb table"
+  type = object({
+    arn        = string
+    table_name = string
   })
 }
