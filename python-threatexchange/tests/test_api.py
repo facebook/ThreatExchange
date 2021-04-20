@@ -2,7 +2,8 @@ import os
 import unittest
 import collections.abc
 
-from threatexchange.api import ThreatExchangeAPI, ThreatPrivacyGroup
+from threatexchange.api import ThreatExchangeAPI
+from threatexchange.api_representations import ThreatPrivacyGroup
 
 THREAT_EXCHANGE_INTEGRATION_TEST_TOKEN = os.getenv(
     "THREAT_EXCHANGE_INTEGRATION_TEST_TOKEN"

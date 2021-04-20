@@ -20,12 +20,19 @@ def _parse_datetime_from_iso_8601(datestr: str) -> datetime:
 
 @dataclass
 class ThreatPrivacyGroup:
-    id: str
+    id: int
     name: str
     description: str
     members_can_see: bool
     members_can_use: bool
+    threat_updates_enabled: bool
     last_updated: datetime
+
+    def __eq__(self, other) -> bool:
+        return self.id == other.id
+
+    def __hash__(self) -> bool:
+        return hash(self.id)
 
     @classmethod
     def from_graph_api_dict(cls, d: dict) -> "ThreatPrivacyGroup":

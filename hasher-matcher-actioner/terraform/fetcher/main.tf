@@ -24,10 +24,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-locals {
-  threat_exchange_api_token_secret_name = "threatexchange/${var.prefix}_api_tokens"
-}
-
 resource "aws_lambda_function" "fetcher" {
   function_name = "${var.prefix}_fetcher"
   package_type  = "Image"
@@ -43,7 +39,7 @@ resource "aws_lambda_function" "fetcher" {
       THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
       THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
       THREAT_EXCHANGE_DATA_FOLDER      = var.threat_exchange_data.data_folder
-      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = local.threat_exchange_api_token_secret_name
+      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
     }
   }
   tags = merge(
@@ -124,7 +120,7 @@ data "aws_iam_policy_document" "fetcher" {
   statement {
     effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_secretsmanager_secret.api_token.arn]
+    resources = [var.te_api_token_secret.arn]
   }
 }
 
@@ -229,16 +225,4 @@ resource "aws_dynamodb_table" "threatexchange_config" {
   provisioner "local-exec" {
     command = "python3 ../scripts/populate_config_db ${var.collab_file} ${aws_dynamodb_table.threatexchange_config.name}"
   }
-}
-
-### ThreatExchange API Token Secret ###
-
-resource "aws_secretsmanager_secret" "api_token" {
-  name                    = local.threat_exchange_api_token_secret_name
-  recovery_window_in_days = 0
-}
-
-resource "aws_secretsmanager_secret_version" "api_token" {
-  secret_id     = aws_secretsmanager_secret.api_token.id
-  secret_string = var.te_api_token
 }

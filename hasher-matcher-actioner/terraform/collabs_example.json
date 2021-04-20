@@ -4,7 +4,7 @@
             "Name": {
                 "S": "Test Config 1"
             },
-            "privacy_group": {
+            "privacy_group_id": {
                 "N": "303636684709969"
             },
             "tags" : {
@@ -22,7 +22,7 @@
             "Name": {
                 "S": "Test Config 2"
             },
-            "privacy_group": {
+            "privacy_group_id": {
                 "N": "258601789084078"
             },
             "tags" : {

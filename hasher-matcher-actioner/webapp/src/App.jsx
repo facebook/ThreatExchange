@@ -3,8 +3,7 @@
  */
 
 import React from 'react';
-import {BrowserRouter as Router, Route} from 'react-router-dom';
-import {AnimatedSwitch} from 'react-router-transition';
+import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 
 import './styles/_app.scss';
@@ -12,7 +11,7 @@ import './styles/_app.scss';
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import MatchDetails from './MatchDetails';
-import Matches from './Matches';
+import Matches from './pages/Matches';
 import Settings from './Settings';
 import Signals from './Signals';
 import Upload from './Upload';
@@ -29,12 +28,8 @@ export default function App() {
       <Router>
         <div className="row">
           <Sidebar className="col-md-2 bg-light sidebar" />
-          <main role="main" className="col-md-10 container pt-4 pl-5">
-            <AnimatedSwitch
-              atEnter={{opacity: 0}}
-              atLeave={{opacity: 0}}
-              atActive={{opacity: 1}}
-              className="switch-wrapper">
+          <main role="main" className="col-md-10 px-0 main">
+            <Switch>
               <Route path="/matches/:id">
                 <MatchDetails />
               </Route>
@@ -53,7 +48,7 @@ export default function App() {
               <Route path="/">
                 <Dashboard />
               </Route>
-            </AnimatedSwitch>
+            </Switch>
           </main>
         </div>
       </Router>
