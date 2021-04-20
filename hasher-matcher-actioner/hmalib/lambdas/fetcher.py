@@ -357,8 +357,8 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
     def post_apply(self, updated: t.Dict = {}):
         """
-        After the fetcher applies an update, check to see if
-        matches for any of the updated signals and if so update
+        After the fetcher applies an update, check for matches
+        to any of the signals in data_store_table and if found update
         their tags.
         """
         table = dynamodb.Table(self.data_store_table)
