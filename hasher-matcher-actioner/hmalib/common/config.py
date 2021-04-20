@@ -142,29 +142,39 @@ class _HMAConfigWithSubtypeMeta(type):
     """
 
     def __new__(metacls, cls_name: str, bases, cls_dict):
-        if cls_name != "HMAConfigWithSubtypes":
+        # Is this one of the bases?
+        if cls_name in ("HMAConfigWithSubtypes", "_HMAConfigSubtype"):
+            return super().__new__(metacls, cls_name, bases, cls_dict)
+        # Has a Subtype already been applied?
+        for base in bases:
+            if hasattr(base, "Subtype"):
+                return super().__new__(metacls, cls_name, bases, cls_dict)
+        # Else create magic defaults
+        cls_dict["Subtype"] = None  # Recursion guard, overwrite below
 
-            config_type = ""
-            # Provide magic default - last in MRO order or class name
-            for base in bases:
-                if hasattr(base, "CONFIG_TYPE"):
-                    config_type = base.CONFIG_TYPE
-            if not config_type:
-                config_type = cls_name
-                cls_dict["CONFIG_TYPE"] = cls_name
+        config_type = ""
+        # Provide magic default - last in MRO order or class name
+        for base in bases:
+            if hasattr(base, "CONFIG_TYPE"):
+                config_type = base.CONFIG_TYPE
+        if not config_type:
+            config_type = cls_name
+            cls_dict["CONFIG_TYPE"] = cls_name
 
-            class _SpecializedHMAConfigSubtype(HMAConfigSubtype):
-                CONFIG_TYPE: t.ClassVar[str] = config_type
+        new_cls = super().__new__(metacls, cls_name, bases, cls_dict)
 
-            cls_dict["Subtype"] = _SpecializedHMAConfigSubtype
-        return type.__new__(metacls, cls_name, bases, cls_dict)
+        class _SpecializedHMAConfigSubtype(new_cls, _HMAConfigSubtype):  # type: ignore
+            CONFIG_TYPE: t.ClassVar[str] = config_type
+
+        new_cls.Subtype = _SpecializedHMAConfigSubtype  # type: ignore
+        return new_cls
 
 
 class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
     """
     An HMAConfig that shares a table with other configs (and therefore names).
 
-    How to use (version 1: same file):
+    How to use (version 1: same file - preferred):
 
         @dataclass
         class MyCoolSubtypedConfig(HMAConfigWithSubtypes):
@@ -192,34 +202,28 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
 
     How to use (version 2: different files)
 
-        # File 1
-        COMMON_CONFIG_TYPE = "asdfg"
-
-        # File 2
-        from .file_1 import COMMON_CONFIG_TYPE
-
-        @dataclass
-        class SubType1(HMAConfigSubtypes):
-            CONFIG_TYPE = COMMON_CONFIG_TYPE
-            only_on_sub: str
-
-        # File 3
-        from common import COMMON_CONFIG_TYPE
-        from .file_2 import SubType1
-
         @dataclass
         class MyCoolSubtypedConfig(HMAConfigWithSubtypes):
-            CONFIG_TYPE = COMMON_CONFIG_TYPE
             common_attribute: int
 
             @staticmethod
             def get_subtype_classes():
-            return [Subtype1]
+                # Don't know of a solution to fix inline import antipattern :/
+                from .file_2 import SubType1
+                return [Subtype1]
+
+
+        # File 2
+        from .file_1 import MyCoolSubtypedConfig
+
+        @dataclass
+        class SubType1(MyCoolSubtypedConfig.SubType):
+            only_on_sub: str
     """
 
     CONFIG_TYPE: t.ClassVar[str]  # Magically defaults to cls name if unset
     Subtype: t.ClassVar[
-        t.Type["HMAConfigSubtype"]
+        t.Type["_HMAConfigSubtype"]
     ]  # Is set by _HMAConfigWithSubtypeMeta
 
     @classmethod
@@ -227,7 +231,7 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
         return cls.CONFIG_TYPE
 
     @staticmethod
-    def get_subtype_classes() -> t.List[t.Type["HMAConfigSubtype"]]:
+    def get_subtype_classes() -> t.List[t.Type["_HMAConfigSubtype"]]:
         """
         All the classes that make up this config class.
 
@@ -240,9 +244,9 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
 
     @classmethod
     @functools.lru_cache(maxsize=1)
-    def _get_subtypes_by_name(cls) -> t.Dict[str, t.Type["HMAConfigSubtype"]]:
+    def _get_subtypes_by_name(cls) -> t.Dict[str, t.Type["_HMAConfigSubtype"]]:
         tmp_variable_for_mypy: t.List[
-            t.Type["HMAConfigSubtype"]
+            t.Type["_HMAConfigSubtype"]
         ] = cls.get_subtype_classes()
         return {c.get_config_subtype(): c for c in tmp_variable_for_mypy}
 
@@ -255,45 +259,26 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
             return None
         return item_cls._convert_item(item)
 
-    # Retyping of methods to return subtype
-    @classmethod
-    def get(cls, name: str) -> t.Optional["HMAConfigSubtype"]:
-        return super().get(name)
-
-    @classmethod
-    def getx(cls, name: str) -> t.Optional["HMAConfigSubtype"]:
-        return super().getx(name)
-
-    @classmethod
-    def get_all(cls) -> t.List["HMAConfigSubtype"]:
-        return super().get_all()
-
 
 @dataclass
-class HMAConfigSubtype(HMAConfig):
+class _HMAConfigSubtype(HMAConfigWithSubtypes):
     """
     A config with a shared namespace. @see HMAConfigWithSubtypes
 
-    This is meant to be used like a trait/mixin, so like this:
+    On the tradeoff from making this in the inheiritence heirarchy of
+    HMAConfigWithSubtypes or not, forcing it to be in the same heirarchy
+    preserves the get/get_all typing, and allows you to put common fields
+    on the base class.
 
-    @dataclass
-    class SubType1(ClsWithHMAConfigWithSubtypes, HMAConfigSubtype):
-        blah: int
-
-    If you swap the order of inheritence, it probably doesn't work
-    because of method resolution order (mro).
+    A different option would be to have HMAConfigWithSubtypes not inherit
+    HMAConfig (Subtype would), give it get, getx, and get_all, and if you
+    wanted a base class, you could just make one yourself.
     """
-
-    CONFIG_TYPE: t.ClassVar[str]  # Can be set via _HMAConfigWithSubtypeMeta
 
     config_subtype: str = field(init=False)
 
     def __post_init__(self):
         self.config_subtype = self.get_config_subtype()
-
-    @classmethod
-    def get_config_type(cls) -> str:
-        return cls.CONFIG_TYPE
 
     @classmethod
     def get_config_subtype(cls) -> str:
@@ -321,7 +306,9 @@ class HMAConfigSubtype(HMAConfig):
 def update_config(config: HMAConfig) -> None:
     """Update or create a config. No locking or versioning!"""
     assert _TABLE_NAME
-    if isinstance(config, HMAConfigWithSubtypes):
+    if isinstance(config, HMAConfigWithSubtypes) and not isinstance(
+        config, _HMAConfigSubtype
+    ):
         raise ValueError(
             f"Tried to write f{config.__class__.__name__} instead of its subtypes"
         )

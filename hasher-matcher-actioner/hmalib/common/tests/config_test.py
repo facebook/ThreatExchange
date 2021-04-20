@@ -222,8 +222,6 @@ class ConfigTest(unittest.TestCase):
 
         @dataclass
         class SubtypeOne(MultiConfig.Subtype):
-            """Demonstrating circular version"""
-
             a: int
 
         @dataclass
@@ -231,16 +229,7 @@ class ConfigTest(unittest.TestCase):
             b: str
 
         @dataclass
-        class SubtypeThree(config.HMAConfigSubtype):
-            """
-            Demonstrating non-circular version.
-
-            For this, you would define the shared CONFING_TYPE at the
-            bottom of the dependency chain
-            """
-
-            CONFIG_TYPE = "MultiConfig"
-
+        class SubtypeThree(MultiConfig.Subtype):
             a: t.List[float]
 
         one = SubtypeOne("One", 5)
