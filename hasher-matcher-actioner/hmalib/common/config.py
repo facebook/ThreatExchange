@@ -21,7 +21,17 @@ TConfig = t.TypeVar("TConfig", bound="HMAConfig")
 
 
 # module level state, set with HMAConfig.initialize()
+# It's module level to avoid temptation of creating multiple
+# config tables instead of refactoring
 _TABLE_NAME = None
+
+
+def _assert_initialized():
+    assert _TABLE_NAME, """
+HMAConfig.initialize() hasn't been called yet with the config table. 
+If you are writing a new lambda, make sure you initialize in the entry point,
+likely passing in the table name via environment variable.
+""".strip()
 
 
 @functools.lru_cache(maxsize=1)
@@ -79,7 +89,7 @@ class HMAConfig:
 
     @classmethod
     def get(cls: t.Type[TConfig], name: str) -> t.Optional[TConfig]:
-        assert _TABLE_NAME
+        _assert_initialized()
         result = get_dynamodb().meta.client.get_item(
             TableName=_TABLE_NAME,
             Key={
@@ -98,7 +108,7 @@ class HMAConfig:
 
     @classmethod
     def get_all(cls: t.Type[TConfig]) -> t.List[TConfig]:
-        assert _TABLE_NAME
+        _assert_initialized()
         paginator = get_dynamodb().meta.client.get_paginator("scan")
 
         response_iterator = paginator.paginate(
@@ -132,7 +142,10 @@ class HMAConfig:
         Call this just once (preferably from your main or lambda entry point)
         """
         global _TABLE_NAME
-        assert _TABLE_NAME is None
+        assert _TABLE_NAME in (
+            None,
+            config_table_name,
+        ), f"HMAConfig was already initialized with {_TABLE_NAME}!"
         _TABLE_NAME = config_table_name
 
 
@@ -297,7 +310,7 @@ class _HMAConfigSubtype(HMAConfigWithSubtypes):
 
 def update_config(config: HMAConfig) -> None:
     """Update or create a config. No locking or versioning!"""
-    assert _TABLE_NAME
+    _assert_initialized()
     if isinstance(config, HMAConfigWithSubtypes) and not isinstance(
         config, _HMAConfigSubtype
     ):
@@ -315,7 +328,7 @@ def update_config(config: HMAConfig) -> None:
 
 def delete_config_by_type_and_name(config_type: str, name: str) -> None:
     """Delete a config by name (and type)"""
-    assert _TABLE_NAME
+    _assert_initialized()
     get_dynamodb().meta.client.delete_item(
         TableName=_TABLE_NAME,
         Key={
