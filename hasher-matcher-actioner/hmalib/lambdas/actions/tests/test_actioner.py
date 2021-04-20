@@ -5,13 +5,14 @@ from hmalib.common.actioner_models import (
     ActionLabel,
     ActionPerformerConfig,
     BankedSignal,
-    MatchMessage
+    MatchMessage,
 )
 
 from hmalib.common.reactioner_models import (
     ReactInReviewActionPerformer,
     ReactSawThisTooActionPerformer,
 )
+
 
 class TestActioner(unittest.TestCase):
     def test_react_action(self):
