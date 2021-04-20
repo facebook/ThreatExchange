@@ -105,6 +105,11 @@ module "fetcher" {
     }
   }
 
+  datastore = {
+    name = module.hashing_data.hma_datastore.name
+    arn  = module.hashing_data.hma_datastore.arn
+  }
+
   threat_exchange_data = {
     bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     data_folder = local.te_data_folder
