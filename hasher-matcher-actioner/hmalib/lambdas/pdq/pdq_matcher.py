@@ -13,7 +13,6 @@ from threatexchange.signal_type.pdq_index import PDQIndex
 from hmalib import metrics
 from hmalib.models import (
     PDQMatchRecord,
-    Label,
     MatchMessage,
     BankedSignal,
     PDQSignalMetadata,
@@ -33,19 +32,6 @@ PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
 OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
-
-
-def get_default_labels() -> t.List[Label]:
-    """
-    As a stop gap measure, the matcher will add default labels that instruct the
-    actioner. In the long-term, we expect labels to be the message-passing infra
-    between matched records and post-match phases.
-    """
-    return [
-        Label("SourceDatabase", "threatexchange-all-collabs"),
-        Label("SourceBank", "threatexchange/default"),
-        Label("ViolationType", "any"),
-    ]
 
 
 def get_index(bucket_name, key):
@@ -151,7 +137,7 @@ def lambda_handler(event, context):
 
             # Publish one message for the set of matches.
             sns_client.publish(
-                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_sns_message()
+                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_aws_message()
             )
 
         else:

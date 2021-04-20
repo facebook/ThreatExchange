@@ -47,6 +47,18 @@ resource "aws_dynamodb_table" "hma_config" {
       Name = "HMAConfig"
     }
   )
+
+  # TODO(dcallies) allow creation of initial configs
+  # provisioner "local-exec" {
+  #  command = "python3 ../scripts/populate_config_db ${var.collab_file} ${aws_dynamodb_table.threatexchange_config.name}"
+  # }
+}
+
+locals {
+  hma_config = {
+    arn        = aws_dynamodb_table.hma_config.arn
+    table_name = aws_dynamodb_table.hma_config.name
+  }
 }
 
 module "hashing_data" {
@@ -105,6 +117,11 @@ module "fetcher" {
     }
   }
 
+  datastore = {
+    name = module.hashing_data.hma_datastore.name
+    arn  = module.hashing_data.hma_datastore.arn
+  }
+
   threat_exchange_data = {
     bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     data_folder = local.te_data_folder
@@ -115,8 +132,8 @@ module "fetcher" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
   fetch_frequency       = var.fetch_frequency
 
-  config_arn = aws_dynamodb_table.hma_config.arn
   te_api_token_secret  = aws_secretsmanager_secret.te_api_token
+  hma_config = local.hma_config
 }
 
 resource "aws_sns_topic" "matches" {

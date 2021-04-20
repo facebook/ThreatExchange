@@ -5,7 +5,8 @@ import typing as t
 import json
 from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
-from boto3.dynamodb.conditions import Attr, Key
+from boto3.dynamodb.conditions import Attr, Key, And
+from botocore.exceptions import ClientError
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -47,12 +48,12 @@ class DynamoDBItem:
         return key[len(DynamoDBItem.CONTENT_KEY_PREFIX) :]
 
 
-class SNSMessage:
-    def to_sns_message(self) -> str:
+class AWSMessage:
+    def to_aws_message(self) -> str:
         raise NotImplementedError
 
     @classmethod
-    def from_sns_message(cls, message: str) -> "SNSMessage":
+    def from_aws_message(cls, message: str) -> "AWSMessage":
         raise NotImplementedError
 
 
@@ -97,11 +98,43 @@ class PDQSignalMetadata(SignalMetadataBase):
             "PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
             "SK": self.get_dynamodb_ds_key(self.ds_id),
             "SignalHash": self.signal_hash,
-            "SignalSource": self.signal_source,  # defaults to 'te' in the current pipeline
+            "SignalSource": self.signal_source,
             "UpdatedAt": self.updated_at.isoformat(),
             "HashType": self.SIGNAL_TYPE,
             "Tags": self.tags,
         }
+
+    def update_tags_in_table_if_exists(self, table: Table) -> bool:
+        """
+        Only write tags for object in table if the objects with matchig PK and SK already exist
+        (also updates updated_at).
+        Returns true if object existed and therefore update was successful otherwise false.
+        """
+        try:
+            table.update_item(
+                Key={
+                    "PK": self.get_dynamodb_signal_key(
+                        self.signal_source, self.signal_id
+                    ),
+                    "SK": self.get_dynamodb_ds_key(self.ds_id),
+                },
+                # service_resource.Table.update_item's ConditionExpression params is not typed to use its own objects here...
+                ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore
+                ExpressionAttributeValues={
+                    ":t": self.tags,
+                    ":u": self.updated_at.isoformat(),
+                },
+                ExpressionAttributeNames={
+                    "#T": "Tags",
+                    "#U": "UpdatedAt",
+                },
+                UpdateExpression="SET #T = :t, #U = :u",
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                raise e
+            return False
+        return True
 
     @classmethod
     def get_from_signal(
@@ -139,24 +172,6 @@ class PDQSignalMetadata(SignalMetadataBase):
             )
             for item in items
         ]
-
-
-@dataclass
-class Label:
-    key: str
-    value: str
-
-    def to_dynamodb_dict(self) -> dict:
-        return {"K": self.key, "V": self.value}
-
-    @classmethod
-    def from_dynamodb_dict(cls, d: dict) -> "Label":
-        return cls(d["K"], d["V"])
-
-    def __eq__(self, another_label: object) -> bool:
-        if not isinstance(another_label, Label):
-            return NotImplemented
-        return self.key == another_label.key and self.value == another_label.value
 
 
 @dataclass
@@ -255,7 +270,6 @@ class PDQMatchRecord(PDQRecordBase):
     signal_id: t.Union[str, int]
     signal_source: str
     signal_hash: str
-    labels: t.List[Label] = field(default_factory=list)
 
     def to_dynamodb_item(self) -> dict:
         return {
@@ -269,7 +283,6 @@ class PDQMatchRecord(PDQRecordBase):
             "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
-            "Labels": [x.to_dynamodb_dict() for x in self.labels],
         }
 
     def to_sqs_message(self) -> dict:
@@ -323,7 +336,6 @@ class PDQMatchRecord(PDQRecordBase):
                 ),
                 signal_source=item["SignalSource"],
                 signal_hash=item["SignalHash"],
-                labels=[Label.from_dynamodb_dict(x) for x in item["Labels"]],
             )
             for item in items
         ]
@@ -444,7 +456,7 @@ class MatchRecordQuery:
 
 
 @dataclass
-class MatchMessage(SNSMessage):
+class MatchMessage(AWSMessage):
     """
     Captures a set of matches that will need to be processed. We create one
     match message for a single content key. It is possible that a single content
@@ -460,22 +472,24 @@ class MatchMessage(SNSMessage):
     content_hash: str
     matching_banked_signals: t.List["BankedSignal"] = field(default_factory=list)
 
-    def to_sns_message(self) -> str:
+    def to_aws_message(self) -> str:
         return json.dumps(
             {
                 "ContentKey": self.content_key,
                 "ContentHash": self.content_hash,
-                "BankedSignal": [x.to_dict() for x in self.matching_banked_signals],
+                "MatchingBankedSignals": [
+                    x.to_dict() for x in self.matching_banked_signals
+                ],
             }
         )
 
     @classmethod
-    def from_sns_message(cls, message: str) -> "MatchMessage":
+    def from_aws_message(cls, message: str) -> "MatchMessage":
         parsed = json.loads(message)
         return cls(
             parsed["ContentKey"],
             parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["BankedSignal"]],
+            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
         )
 
 

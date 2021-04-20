@@ -8,12 +8,15 @@ import typing as t
 from dataclasses import dataclass, field
 from functools import lru_cache
 from hmalib.common.logging import get_logger
-from hmalib.models import MatchMessage, Label
+from hmalib.models import MatchMessage
 from hmalib.common.actioner_models import (
-    ActionLabel,
-    ThreatExchangeReactionLabel,
     Action,
+    ActionLabel,
+    ActionMessage,
     ActionRule,
+    Label,
+    ReactionMessage,
+    ThreatExchangeReactionLabel,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
 
@@ -52,23 +55,18 @@ def lambda_handler(event, context):
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
-
-        if sqs_record_body.get("Event") == "TestEvent":
-            logger.info("Disregarding test: %s", sqs_record_body)
-            continue
-
-        match_message: MatchMessage = MatchMessage.from_sns_message(
-            sqs_record_body["Message"]
-        )
+        match_message = MatchMessage.from_aws_message(sqs_record_body["Message"])
 
         logger.info("Evaluating match_message: %s", match_message)
 
         action_labels = get_action_labels(match_message)
         for action_label in action_labels:
-            # TODO implement ActionMessage as the message class to use here
+            action_message = ActionMessage.from_match_message_and_label(
+                match_message, action_label
+            )
             sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
-                MessageBody=json.dumps(match_message.to_sns_message()),
+                MessageBody=json.dumps(action_message.to_aws_message()),
             )
 
         if threat_exchange_reacting_is_enabled(match_message):
@@ -77,10 +75,16 @@ def lambda_handler(event, context):
             )
             if threat_exchange_reaction_labels:
                 for threat_exchange_reaction_label in threat_exchange_reaction_labels:
-                    # TODO implement ReactionMessage as the message class to use here
+                    threat_exchange_reaction_message = (
+                        ReactionMessage.from_match_message_and_label(
+                            match_message, threat_exchange_reaction_label
+                        )
+                    )
                     sqs_client.send_message(
                         QueueUrl=config.reactions_queue_url,
-                        MessageBody=json.dumps(match_message.to_sns_message()),
+                        MessageBody=json.dumps(
+                            threat_exchange_reaction_message.to_aws_message()
+                        ),
                     )
 
     return {"evaluation_completed": "true"}
