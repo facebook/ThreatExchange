@@ -151,20 +151,12 @@ class _HMAConfigWithSubtypeMeta(type):
                 return super().__new__(metacls, cls_name, bases, cls_dict)
         # Else create magic defaults
         cls_dict["Subtype"] = None  # Recursion guard, overwrite below
-
-        config_type = ""
-        # Provide magic default - last in MRO order or class name
-        for base in bases:
-            if hasattr(base, "CONFIG_TYPE"):
-                config_type = base.CONFIG_TYPE
-        if not config_type:
-            config_type = cls_name
-            cls_dict["CONFIG_TYPE"] = cls_name
+        cls_dict.setdefault("CONFIG_TYPE", cls_name)
 
         new_cls = super().__new__(metacls, cls_name, bases, cls_dict)
 
         class _SpecializedHMAConfigSubtype(new_cls, _HMAConfigSubtype):  # type: ignore
-            CONFIG_TYPE: t.ClassVar[str] = config_type
+            pass
 
         new_cls.Subtype = _SpecializedHMAConfigSubtype  # type: ignore
         return new_cls
