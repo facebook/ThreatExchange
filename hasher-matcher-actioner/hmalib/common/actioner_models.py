@@ -69,6 +69,9 @@ TUrl = t.Union[t.Text, bytes]
 class ActionMessage(MatchMessage):
     """
     The action performer needs the match message plus which action to perform
+    TODO Create a reflection / introspection-based helper that implements 
+    to_ / from_aws_message code (and maybe from_match_message_and_label(), too)
+    for ActionMessage and MatchMessage.
     """
 
     action_label: ActionLabel = ActionLabel("UnspecifiedAction")
