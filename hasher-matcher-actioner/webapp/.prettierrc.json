@@ -1,13 +1,13 @@
 {
-    "arrowParens": "avoid",
-    "singleQuote": true,
-    "trailingComma": "all",
-    "bracketSpacing": false,
-    "jsxBracketSameLine": true,
-    "endOfLine":"auto",
-    "overrides": [
-      {
-        "files": ["*.js", "*.jsx"]
-      }
-    ]
-  }
+  "arrowParens": "avoid",
+  "singleQuote": true,
+  "trailingComma": "all",
+  "bracketSpacing": false,
+  "jsxBracketSameLine": true,
+  "endOfLine": "auto",
+  "overrides": [
+    {
+      "files": ["*.js", "*.jsx"]
+    }
+  ]
+}
