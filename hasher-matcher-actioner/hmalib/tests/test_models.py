@@ -71,7 +71,6 @@ class TestPDQModels(unittest.TestCase):
                             "SignalHash",
                             "SignalSource",
                             "HashType",
-                            "Labels",
                         ],
                     },
                 },
@@ -88,7 +87,6 @@ class TestPDQModels(unittest.TestCase):
                             "SignalHash",
                             "SignalSource",
                             "HashType",
-                            "Labels",
                         ],
                     },
                 },
@@ -301,15 +299,3 @@ class TestPDQModels(unittest.TestCase):
         )[0]
         for tag in replaced_tags:
             assert tag in query_metadata.tags
-
-
-class LabelsTestCase(unittest.TestCase):
-    def test_label_validation(self):
-        l = models.Label("some key", "some value")
-        # Just validate that no error is raised
-
-    def test_label_serde(self):
-        # serde is serialization/deserialization
-        l = models.Label("some key", "some value")
-        serded_l = models.Label.from_dynamodb_dict(l.to_dynamodb_dict())
-        self.assertEqual(l, serded_l)
