@@ -259,6 +259,12 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(one_replaced, MultiConfig.get("One"))
         self.assertEqual(one_replaced, SubtypeTwo.get("One"))
 
+        # Writing the superclass gives you an error
+        with self.assertRaisesRegex(
+            ValueError, "Tried to write MultiConfig instead of its subtypes"
+        ):
+            config.update_config(MultiConfig("Foo"))
+
     # TODO - Move all this to the action code where it
 
     def test_action_performer_configs(self):

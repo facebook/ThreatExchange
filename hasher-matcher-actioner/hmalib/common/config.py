@@ -200,7 +200,7 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
         SubType1.get()                  # Will only get Subtype1
         SubType1.get_all()              # Will only get Subtype1
 
-    How to use (version 2: different files)
+    How to use (version 2: different files, but some jank)
 
         @dataclass
         class MyCoolSubtypedConfig(HMAConfigWithSubtypes):
@@ -310,7 +310,7 @@ def update_config(config: HMAConfig) -> None:
         config, _HMAConfigSubtype
     ):
         raise ValueError(
-            f"Tried to write f{config.__class__.__name__} instead of its subtypes"
+            f"Tried to write {config.__class__.__name__} instead of its subtypes"
         )
     # TODO - we should probably sanity check here to make sure all the fields
     #        are the expected types, because lolpython. Otherwise, it will
