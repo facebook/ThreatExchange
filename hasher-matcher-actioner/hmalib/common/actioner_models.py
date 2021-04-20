@@ -78,7 +78,9 @@ class ActionMessage(MatchMessage):
             {
                 "ContentKey": self.content_key,
                 "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [x.to_dict() for x in self.matching_banked_signals],
+                "MatchingBankedSignals": [
+                    x.to_dict() for x in self.matching_banked_signals
+                ],
                 "ActionLabelValue": self.action_label.value,
             }
         )
@@ -121,7 +123,9 @@ class ReactionMessage(MatchMessage):
             {
                 "ContentKey": self.content_key,
                 "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [x.to_dict() for x in self.matching_banked_signals],
+                "MatchingBankedSignals": [
+                    x.to_dict() for x in self.matching_banked_signals
+                ],
                 "ReactionLabelValue": self.reaction_label.value,
             }
         )
