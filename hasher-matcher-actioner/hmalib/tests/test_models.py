@@ -121,12 +121,12 @@ class TestPDQModels(unittest.TestCase):
     def get_example_pdq_signal_metadata():
         pdq_hash = "a0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
         return models.PDQSignalMetadata(
-            TestPDQModels.TEST_SIGNAL_ID,
-            TestPDQModels.TEST_DATASET_ID,
-            datetime.datetime.now(),
-            TestPDQModels.TEST_SIGNAL_SOURCE,
-            pdq_hash,
-            ["test_tag1", "test_tag2"],
+            signal_id=TestPDQModels.TEST_SIGNAL_ID,
+            ds_id=TestPDQModels.TEST_DATASET_ID,
+            updated_at=datetime.datetime.now(),
+            signal_source=TestPDQModels.TEST_SIGNAL_SOURCE,
+            signal_hash=pdq_hash,
+            tags=["test_tag1", "test_tag2"],
         )
 
     def test_write_hash_record(self):
@@ -267,6 +267,39 @@ class TestPDQModels(unittest.TestCase):
 
         assert metadata.signal_hash == query_metadata.signal_hash
         for tag in metadata.tags:
+            assert tag in query_metadata.tags
+
+    def test_pdq_signal_metadata_update_tags_in_table(self):
+        """
+        Test PDQSignalMetadata write to table with update_tags_in_table_if_exists
+        """
+        metadata = self.get_example_pdq_signal_metadata()
+
+        # change id since table persists betweeen test
+        new_signal_id = "123456789"
+        metadata.signal_id = new_signal_id
+
+        # first attempt at update should return false (doesn't exist)
+        assert not metadata.update_tags_in_table_if_exists(self.table)
+
+        metadata.write_to_table(self.table)
+
+        query_metadata = models.PDQSignalMetadata.get_from_signal(
+            self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
+        )[0]
+        assert metadata.signal_hash == query_metadata.signal_hash
+        for tag in metadata.tags:
+            assert tag in query_metadata.tags
+
+        replaced_tags = ["new", "list", "of", "tags"]
+        metadata.tags = replaced_tags
+
+        # second attmept at update should succeed
+        assert metadata.update_tags_in_table_if_exists(self.table)
+        query_metadata = models.PDQSignalMetadata.get_from_signal(
+            self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
+        )[0]
+        for tag in replaced_tags:
             assert tag in query_metadata.tags
 
 

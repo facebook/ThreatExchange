@@ -20,6 +20,8 @@ HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
 @dataclass
 class S3ThreatDataConfig:
 
+    SOURCE_STR = "te"
+
     threat_exchange_data_bucket_name: str
     threat_exchange_data_folder: str
     threat_exchange_pdq_file_extension: str
@@ -121,7 +123,7 @@ class ThreatExchangeS3Adapter:
                 {
                     "id": int(row["id"]),
                     "hash": row["hash"],
-                    "source": "te",  # default for now to make downstream easier to generalize
+                    "source": self.config.SOURCE_STR,  # default for now to make downstream easier to generalize
                     "privacy_groups": set(
                         [privacy_group]
                     ),  # read privacy group from key

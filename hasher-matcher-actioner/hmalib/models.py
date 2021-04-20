@@ -5,7 +5,8 @@ import typing as t
 import json
 from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
-from boto3.dynamodb.conditions import Attr, Key
+from boto3.dynamodb.conditions import Attr, Key, And
+from botocore.exceptions import ClientError
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -97,11 +98,43 @@ class PDQSignalMetadata(SignalMetadataBase):
             "PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
             "SK": self.get_dynamodb_ds_key(self.ds_id),
             "SignalHash": self.signal_hash,
-            "SignalSource": self.signal_source,  # defaults to 'te' in the current pipeline
+            "SignalSource": self.signal_source,
             "UpdatedAt": self.updated_at.isoformat(),
             "HashType": self.SIGNAL_TYPE,
             "Tags": self.tags,
         }
+
+    def update_tags_in_table_if_exists(self, table: Table) -> bool:
+        """
+        Only write tags for object in table if the objects with matchig PK and SK already exist
+        (also updates updated_at).
+        Returns true if object existed and therefore update was successful otherwise false.
+        """
+        try:
+            table.update_item(
+                Key={
+                    "PK": self.get_dynamodb_signal_key(
+                        self.signal_source, self.signal_id
+                    ),
+                    "SK": self.get_dynamodb_ds_key(self.ds_id),
+                },
+                # service_resource.Table.update_item's ConditionExpression params is not typed to use its own objects here...
+                ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore
+                ExpressionAttributeValues={
+                    ":t": self.tags,
+                    ":u": self.updated_at.isoformat(),
+                },
+                ExpressionAttributeNames={
+                    "#T": "Tags",
+                    "#U": "UpdatedAt",
+                },
+                UpdateExpression="SET #T = :t, #U = :u",
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                raise e
+            return False
+        return True
 
     @classmethod
     def get_from_signal(

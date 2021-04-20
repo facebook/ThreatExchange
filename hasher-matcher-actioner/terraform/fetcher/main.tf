@@ -36,10 +36,11 @@ resource "aws_lambda_function" "fetcher" {
   memory_size = 512
   environment {
     variables = {
-      THREAT_EXCHANGE_DATA_BUCKET_NAME = var.threat_exchange_data.bucket_name
-      THREAT_EXCHANGE_CONFIG_DYNAMODB  = aws_dynamodb_table.threatexchange_config.name
-      THREAT_EXCHANGE_DATA_FOLDER      = var.threat_exchange_data.data_folder
+      THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
+      THREAT_EXCHANGE_CONFIG_DYNAMODB       = aws_dynamodb_table.threatexchange_config.name
+      THREAT_EXCHANGE_DATA_FOLDER           = var.threat_exchange_data.data_folder
       THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
+      DYNAMODB_DATASTORE_TABLE              = var.datastore.name
     }
   }
   tags = merge(
@@ -116,6 +117,11 @@ data "aws_iam_policy_document" "fetcher" {
     effect    = "Allow"
     actions   = ["dynamodb:Scan"]
     resources = [var.config_arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:UpdateItem"]
+    resources = [var.datastore.arn]
   }
   statement {
     effect    = "Allow"

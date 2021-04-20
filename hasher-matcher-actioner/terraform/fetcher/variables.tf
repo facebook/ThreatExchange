@@ -27,11 +27,20 @@ variable "lambda_docker_info" {
   })
 }
 
+
+variable "datastore" {
+  description = "DynamoDB Table to store hash and match information into"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
 variable "threat_exchange_data" {
   description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data. data_folder is actually just a key prefix to search for but this is displyed as a folder in AWS UI"
   type = object({
-    bucket_name       = string
-    data_folder       = string
+    bucket_name = string
+    data_folder = string
   })
 }
 
@@ -59,12 +68,12 @@ variable "te_api_token" {
 
 variable "collab_file" {
   description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
-  type = string
+  type        = string
 }
 
 variable "config_arn" {
   description = "The ARN of the DynamoDB table with configs"
-  type = string
+  type        = string
 }
 
 variable "te_api_token_secret" {
