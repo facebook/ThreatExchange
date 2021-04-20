@@ -210,6 +210,63 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual({c.name for c in config.HMAConfig.get_all()}, set())
         self.assertEqual(None, config.HMAConfig.get("a"))
 
+    def test_subconfigs(self):
+        class MultiConfig(config.HMAConfigWithSubtypes):
+            @staticmethod
+            def get_subtype_classes():
+                return [
+                    SubtypeOne,
+                    SubtypeTwo,
+                    SubtypeThree,
+                ]
+
+        @dataclass
+        class SubtypeOne(MultiConfig.Subtype):
+            a: int
+
+        @dataclass
+        class SubtypeTwo(MultiConfig.Subtype):
+            b: str
+
+        @dataclass
+        class SubtypeThree(MultiConfig.Subtype):
+            a: t.List[float]
+
+        one = SubtypeOne("One", 5)
+        two = SubtypeTwo("Two", "five")
+        three = SubtypeThree("Three", [5.0, 0.00001])  # ah ah ah
+
+        config.update_config(one)
+        config.update_config(two)
+        config.update_config(three)
+
+        self.assertEqualsAfterDynamodb(one)
+        self.assertEqualsAfterDynamodb(two)
+        self.assertEqualsAfterDynamodb(three)
+
+        # Getting by the superclass gets you all of them
+        self.assertCountEqual([one, two, three], MultiConfig.get_all())
+        self.assertEqual(one, MultiConfig.get("One"))
+        self.assertEqual(three, MultiConfig.get("Three"))
+        # Getting by the subclass gets you one of them
+        self.assertEqual(three, SubtypeThree.get("Three"))
+        self.assertIsNone(SubtypeOne.get("Three"))
+
+        # Renaming behavior stomps on the old one
+        one_replaced = SubtypeTwo("One", "replaces two")
+        config.update_config(one_replaced)
+        self.assertIsNone(SubtypeOne.get("One"))
+        self.assertEqual(one_replaced, MultiConfig.get("One"))
+        self.assertEqual(one_replaced, SubtypeTwo.get("One"))
+
+        # Writing the superclass gives you an error
+        with self.assertRaisesRegex(
+            ValueError, "Tried to write MultiConfig instead of its subtypes"
+        ):
+            config.update_config(MultiConfig("Foo"))
+
+    # TODO - Move all this to the action code where it
+
     def test_action_performer_configs(self):
         configs: t.List[ActionPerformer] = [
             WebhookPostActionPerformer(
