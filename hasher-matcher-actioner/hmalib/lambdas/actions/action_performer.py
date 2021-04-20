@@ -14,6 +14,8 @@ from hmalib.common.logging import get_logger
 from hmalib.models import MatchMessage
 from hmalib.common import config
 
+logger = get_logger(__name__)
+
 
 def perform_label_action(match_message: MatchMessage, action_label: ActionLabel) -> int:
     action_performer = ActionPerformerConfig.get_performer(action_label)

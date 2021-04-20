@@ -23,3 +23,7 @@ def lambda_handler(event, context):
         logger.info("Reacting: reaction_message = %s", reaction_message)
 
     return {"reaction_completed": "true"}
+
+
+if __name__ == "__main__":
+    pass
