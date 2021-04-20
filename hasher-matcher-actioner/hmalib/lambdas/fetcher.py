@@ -38,6 +38,7 @@ from threatexchange.signal_type.pdq import PdqSignal
 
 logger = get_logger(__name__)
 s3 = boto3.resource("s3")
+dynamodb = boto3.resource("dynamodb")
 
 # Lambda init tricks
 @lru_cache(maxsize=1)
