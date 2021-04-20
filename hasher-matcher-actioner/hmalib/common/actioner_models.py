@@ -1,13 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from dataclasses import dataclass, fields
-
 import typing as t
 
-from hmalib.models import Label, MatchMessage
+from dataclasses import dataclass, fields
+from requests import get, post, put, delete, Response
+
 import hmalib.common.config as config
 
-from requests import get, post, put, delete, Response
+from hmalib.models import Label, MatchMessage, BankedSignal
+from hmalib.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class LabelWithConstraints(Label):
@@ -158,3 +161,26 @@ class ActionPerformerConfig(config.HMAConfig):
             concrete_type_attrs=attrs,
         )
         config.update_config(action_performer_config)
+
+
+if __name__ == "__main__":
+
+    banked_signals = [
+        BankedSignal("2862392437204724", "bank 4", "te"),
+        BankedSignal("4194946153908639", "bank 4", "te"),
+    ]
+    match_message = MatchMessage("key", "hash", banked_signals)
+
+    configs: t.List[ActionPerformer] = [
+        WebhookDeleteActionPerformer(
+            action_label=ActionLabel("DeleteWebhook"),
+            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+        ),
+        WebhookPutActionPerformer(
+            action_label=ActionLabel("PutWebook"),
+            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+        ),
+    ]
+
+    for action_config in configs:
+        action_config.perform_action(match_message)

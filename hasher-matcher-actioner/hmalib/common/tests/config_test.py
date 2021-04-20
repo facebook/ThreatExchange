@@ -14,12 +14,12 @@ from hmalib.common import config
 from hmalib.common.actioner_models import (
     ActionPerformerConfig,
     ActionPerformer,
-    WebhookPutActionPerformer,
     WebhookPostActionPerformer,
+    WebhookPutActionPerformer,
     ActionLabel,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
-from hmalib.models import MatchMessage
+from hmalib.models import MatchMessage, BankedSignal
 
 
 class ConfigTest(unittest.TestCase):

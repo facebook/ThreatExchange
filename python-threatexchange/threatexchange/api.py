@@ -45,7 +45,7 @@ class _CursoredResponse:
         self.response = None
         self.next_url = url
         self.params = params
-        self.data = []
+        self.data: t.List = []
         self.decode_fn = decode_fn
 
     @property
@@ -145,7 +145,7 @@ class ThreatExchangeAPI:
                 max_retries=Retry(
                     total=4,
                     status_forcelist=[429, 500, 502, 503, 504],
-                    method_whitelist=["HEAD", "GET", "OPTIONS"],
+                    allowed_methods=["HEAD", "GET", "OPTIONS"],
                     backoff_factor=0.2,  # ~1.5 seconds of retries
                 ),
             ),
@@ -226,7 +226,7 @@ class ThreatExchangeAPI:
 
         descriptors = []
         for id, descriptor in response.items():
-            if includeIndicatorInOutput == False:
+            if not includeIndicatorInOutput:
                 del descriptor["raw_indicator"]
             if verbose:
                 print(json.dumps(descriptor))
@@ -245,7 +245,6 @@ class ThreatExchangeAPI:
                 descriptor["description"] = ""
 
             descriptors.append(descriptor)
-
         return descriptors
 
     def get_threat_updates(
@@ -511,3 +510,21 @@ class ThreatExchangeAPI:
         except urllib.error.HTTPError as e:
             responseBody = json.loads(e.read().decode("utf-8"))
             return [None, e, responseBody]
+
+    def get_threat_descriptors_from_indicator(
+        self, indicator_id: int, showURLs: bool = False
+    ) -> t.List[t.Dict[str, t.Any]]:
+        url = (
+            self._base_url
+            + "/"
+            + str(indicator_id)
+            + "?fields=descriptors&access_token="
+            + self.api_token
+        )
+
+        if showURLs:
+            print("url =", url)
+
+        response = self.get_json_from_url(url)
+
+        return response["descriptors"]["data"]
