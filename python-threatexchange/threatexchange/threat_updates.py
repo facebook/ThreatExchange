@@ -319,7 +319,11 @@ class ThreatUpdatesStore:
         """Save the state of the threat_updates checkpoints after a succesful apply"""
         raise NotImplementedError
 
-    def _apply_updates_impl(self, delta: ThreatUpdatesDelta) -> None:
+    def _apply_updates_impl(
+        self,
+        delta: ThreatUpdatesDelta,
+        post_apply_fn=lambda x: None,
+    ) -> None:
         """Apply delta to state and store it"""
         raise NotImplementedError
 
@@ -328,7 +332,11 @@ class ThreatUpdatesStore:
         """Is this state so old that it might be invalid?"""
         return self.checkpoint.stale
 
-    def apply_updates(self, delta: ThreatUpdatesDelta) -> None:
+    def apply_updates(
+        self,
+        delta: ThreatUpdatesDelta,
+        post_apply_fn=lambda x: None,
+    ) -> None:
         """Merge updates to the data store"""
         if delta.start != 0:
             assert (
@@ -338,7 +346,7 @@ class ThreatUpdatesStore:
         assert delta.done, "delta was not fetched"
         # It's possible the fetch completed but has no records
         if delta.updates:
-            self._apply_updates_impl(delta)
+            self._apply_updates_impl(delta, post_apply_fn)
         self.checkpoint = self.checkpoint.get_updated(delta)
         self._store_checkpoint(self.checkpoint)
 
@@ -403,7 +411,9 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
             }
         return self._cached_state
 
-    def _apply_updates_impl(self, delta: ThreatUpdatesDelta) -> None:
+    def _apply_updates_impl(
+        self, delta: ThreatUpdatesDelta, post_apply_fn=lambda x: None
+    ) -> None:
         os.makedirs(self.path, exist_ok=True)
         state = {}
         if delta.start > 0:
