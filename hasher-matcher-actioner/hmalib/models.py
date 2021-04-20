@@ -48,12 +48,12 @@ class DynamoDBItem:
         return key[len(DynamoDBItem.CONTENT_KEY_PREFIX) :]
 
 
-class SNSMessage:
-    def to_sns_message(self) -> str:
+class AWSMessage:
+    def to_aws_message(self) -> str:
         raise NotImplementedError
 
     @classmethod
-    def from_sns_message(cls, message: str) -> "SNSMessage":
+    def from_aws_message(cls, message: str) -> "AWSMessage":
         raise NotImplementedError
 
 
@@ -175,24 +175,6 @@ class PDQSignalMetadata(SignalMetadataBase):
 
 
 @dataclass
-class Label:
-    key: str
-    value: str
-
-    def to_dynamodb_dict(self) -> dict:
-        return {"K": self.key, "V": self.value}
-
-    @classmethod
-    def from_dynamodb_dict(cls, d: dict) -> "Label":
-        return cls(d["K"], d["V"])
-
-    def __eq__(self, another_label: object) -> bool:
-        if not isinstance(another_label, Label):
-            return NotImplemented
-        return self.key == another_label.key and self.value == another_label.value
-
-
-@dataclass
 class PDQRecordBase(DynamoDBItem):
     """
     Abstract Base Record for PDQ releated items.
@@ -288,7 +270,6 @@ class PDQMatchRecord(PDQRecordBase):
     signal_id: t.Union[str, int]
     signal_source: str
     signal_hash: str
-    labels: t.List[Label] = field(default_factory=list)
 
     def to_dynamodb_item(self) -> dict:
         return {
@@ -302,7 +283,6 @@ class PDQMatchRecord(PDQRecordBase):
             "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
-            "Labels": [x.to_dynamodb_dict() for x in self.labels],
         }
 
     def to_sqs_message(self) -> dict:
@@ -356,7 +336,6 @@ class PDQMatchRecord(PDQRecordBase):
                 ),
                 signal_source=item["SignalSource"],
                 signal_hash=item["SignalHash"],
-                labels=[Label.from_dynamodb_dict(x) for x in item["Labels"]],
             )
             for item in items
         ]
@@ -477,7 +456,7 @@ class MatchRecordQuery:
 
 
 @dataclass
-class MatchMessage(SNSMessage):
+class MatchMessage(AWSMessage):
     """
     Captures a set of matches that will need to be processed. We create one
     match message for a single content key. It is possible that a single content
@@ -493,22 +472,24 @@ class MatchMessage(SNSMessage):
     content_hash: str
     matching_banked_signals: t.List["BankedSignal"] = field(default_factory=list)
 
-    def to_sns_message(self) -> str:
+    def to_aws_message(self) -> str:
         return json.dumps(
             {
                 "ContentKey": self.content_key,
                 "ContentHash": self.content_hash,
-                "BankedSignal": [x.to_dict() for x in self.matching_banked_signals],
+                "MatchingBankedSignals": [
+                    x.to_dict() for x in self.matching_banked_signals
+                ],
             }
         )
 
     @classmethod
-    def from_sns_message(cls, message: str) -> "MatchMessage":
+    def from_aws_message(cls, message: str) -> "MatchMessage":
         parsed = json.loads(message)
         return cls(
             parsed["ContentKey"],
             parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["BankedSignal"]],
+            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
         )
 
 

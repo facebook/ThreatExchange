@@ -4,13 +4,17 @@ import json
 import typing as t
 from hmalib.common.actioner_models import (
     ActionLabel,
+    ActionMessage,
     ActionPerformerConfig,
+    ActionPerformer,
 )
 
 from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from hmalib.models import MatchMessage, Label, BankedSignal
+from hmalib.models import MatchMessage
 from hmalib.common import config
+
+logger = get_logger(__name__)
 
 
 def perform_label_action(match_message: MatchMessage, action_label: ActionLabel) -> int:
@@ -29,15 +33,11 @@ def lambda_handler(event, context):
     """
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
-        sqs_record_body = json.loads(sqs_record["body"])
+        action_message = ActionMessage.from_aws_message(json.loads(sqs_record["body"]))
 
-        if sqs_record_body.get("Event") == "TestEvent":
-            logger.info("Disregarding test: %s", sqs_record_body)
-            continue
+        logger.info("Performing action: action_message = %s", action_message)
 
-        logger.info("Performing action: sqs_record_body = %s", sqs_record_body)
-
-        # TODO instantiate an instance of ActionMessage here, then call perform_action()
+        perform_label_action(action_message, action_message.action_label)
 
     return {"action_performed": "true"}
 
