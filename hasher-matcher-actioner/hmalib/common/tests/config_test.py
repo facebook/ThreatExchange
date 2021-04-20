@@ -18,10 +18,6 @@ from hmalib.common.actioner_models import (
     WebhookPutActionPerformer,
     ActionLabel,
 )
-from hmalib.common.reactioner_models import (
-    ReactInReviewActionPerformer,
-    ReactSawThisTooActionPerformer,
-)
 from hmalib.lambdas.actions.action_performer import perform_label_action
 from hmalib.models import MatchMessage, BankedSignal
 
@@ -38,9 +34,6 @@ class ConfigTest(unittest.TestCase):
         os.environ["AWS_SECURITY_TOKEN"] = "testing"
         os.environ["AWS_SESSION_TOKEN"] = "testing"
         os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
-        os.environ[
-            "THREAT_EXCHANGE_API_TOKEN_SECRET_NAME"
-        ] = "threatexchange/jeberl_api_tokens"
 
     @classmethod
     def setUpClass(cls):
