@@ -11,6 +11,7 @@ import Tab from 'react-bootstrap/Tab';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
+import Table from 'react-bootstrap/Table';
 
 export default function Settings() {
   return (
@@ -22,7 +23,77 @@ export default function Settings() {
         <Tab eventKey="pipeline" title="Pipeline">
           Todo!
         </Tab>
+        <Tab eventKey="actions" title="Actions">
+          <ActionSettingsTab />
+        </Tab>
       </Tabs>
+    </>
+  );
+}
+
+function ActionSettingsTab() {
+  return (
+    <>
+      <ActionLabelSettings />
+      <ActionPerformerSettings />
+    </>
+  );
+}
+
+function ActionLabelSettings() {
+  return <>Action Label Settings coming here</>;
+}
+
+function WebhookActionerRender() {
+  return <Card>This is a card displaying a WebhookActionerRender</Card>;
+}
+
+const ActionerTypes = {
+  WebhookActioner: {
+    args: ['url', 'headers'],
+    renderer: WebhookActionerRender,
+  },
+};
+
+function ActionPerformerSettings() {
+  const performers = [
+    {
+      name: 'MyFirstAction',
+      actioner: {
+        type: 'WebhookActioner',
+        url: 'myurl.com',
+        headers: '{"h1" : "header"}',
+      },
+    },
+    {
+      name: 'MySecondAction',
+      actioner: {
+        type: 'WebhookActioner',
+        url: 'myotherurl.com',
+        headers: '{"h4" : "header"}',
+      },
+    },
+  ];
+
+  const headerBlock = ['Action', 'Action Type'].map(header => (
+    <th>{header}</th>
+  ));
+  const performerBlocks = performers.map(performer => (
+    <tr>
+      <td>{performer.name}</td>
+      <td>{ActionerTypes[performer.actioner.type].renderer()}</td>
+    </tr>
+  ));
+  return (
+    <>
+      <h2 className="mt-4">Action Definitions</h2>
+      <h5 className="mt-5">Define what the Actions above mean</h5>
+      <Table striped bordered hover>
+        <thead>
+          <tr>{headerBlock}</tr>
+        </thead>
+        <tbody>{performerBlocks}</tbody>
+      </Table>
     </>
   );
 }
