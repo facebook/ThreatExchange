@@ -48,10 +48,6 @@ def get_dynamodb():
     return boto3.resource("dynamodb")
 
 
-class HMAConfigSerializationError(ValueError):
-    pass
-
-
 @dataclass
 class HMAConfig:
     """
