@@ -11,7 +11,7 @@ from hmalib.lambdas.fetcher import *
 
 @dataclass
 class Dataset(JSONifiable):
-    privacy_group_id: str
+    privacy_group_id: int
     privacy_group_name: str
     fetcher_active: bool
 
