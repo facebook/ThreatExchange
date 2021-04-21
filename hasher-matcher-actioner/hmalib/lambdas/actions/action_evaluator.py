@@ -20,9 +20,9 @@ from hmalib.common.actioner_models import (
     ThreatExchangeReactionLabel,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
+from mypy_boto3_sqs import SQSClient
 
 logger = get_logger(__name__)
-sqs_client = boto3.client("sqs")
 
 
 @dataclass
@@ -33,6 +33,7 @@ class ActionEvaluatorConfig:
 
     actions_queue_url: str
     reactions_queue_url: str
+    sqs_client: SQSClient
 
     @classmethod
     @lru_cache(maxsize=None)
@@ -40,6 +41,7 @@ class ActionEvaluatorConfig:
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
             reactions_queue_url=os.environ["REACTIONS_QUEUE_URL"],
+            sqs_client=boto3.client("sqs"),
         )
 
 
@@ -69,7 +71,7 @@ def lambda_handler(event, context):
             action_message = ActionMessage.from_match_message_and_label(
                 match_message, action_label
             )
-            sqs_client.send_message(
+            config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
                 MessageBody=json.dumps(action_message.to_aws_message()),
             )
@@ -85,7 +87,7 @@ def lambda_handler(event, context):
                             match_message, threat_exchange_reaction_label
                         )
                     )
-                    sqs_client.send_message(
+                    config.sqs_client.send_message(
                         QueueUrl=config.reactions_queue_url,
                         MessageBody=json.dumps(
                             threat_exchange_reaction_message.to_aws_message()
