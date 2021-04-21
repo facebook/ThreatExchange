@@ -6,7 +6,7 @@ from dataclasses import dataclass, asdict
 from .middleware import jsoninator, JSONifiable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
-from hmalib.lambdas.fetcher import *
+from hmalib.lambdas.fetcher import ThreatExchangeConfig, sync_privacy_groups
 
 
 @dataclass
@@ -17,6 +17,13 @@ class Dataset(JSONifiable):
 
     def to_json(self) -> t.Dict:
         return asdict(self)
+
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Dataset":
+        return cls(
+            d["privacy_group_id"], d["privacy_group_name"], d["fetcher_active"]
+        )
 
 
 @dataclass
@@ -32,14 +39,14 @@ class DatasetsResponse(JSONifiable):
 
 
 @dataclass
-class SyncOrUpdateDatasetResponse(JSONifiable):
+class SyncDatasetResponse(JSONifiable):
     response: str
 
     def to_json(self) -> t.Dict:
         return asdict(self)
 
 
-def get_datasets_api(hma_config: str) -> bottle.Bottle:
+def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
     API that this API plugs into. Declare dependencies here, but initialize in
@@ -49,7 +56,7 @@ def get_datasets_api(hma_config: str) -> bottle.Bottle:
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/datasets/'
     datasets_api = bottle.Bottle()
-    HMAConfig.initialize(hma_config)
+    HMAConfig.initialize(hma_config_table)
 
     @datasets_api.get("/", apply=[jsoninator])
     def datasets() -> DatasetsResponse:
@@ -73,25 +80,23 @@ def get_datasets_api(hma_config: str) -> bottle.Bottle:
         """
         Update dataset
         """
-        data = bottle.request.json
-        if data and data["privacy_group_id"]:
-            config = ThreatExchangeConfig(
-                str(data["privacy_group_id"]),
-                fetcher_active=data["fetcher_active"],
-                privacy_group_name=data["privacy_group_name"],
+        dataSet = Dataset.from_dict(bottle.request.json)
+        config = ThreatExchangeConfig(
+                str(dataSet.privacy_group_id),
+                fetcher_active=dataSet.fetcher_active,
+                privacy_group_name=dataSet.privacy_group_name,
             )
             # Warning! Will stomp on existing configs (including if you disable them)
-            hmaconfig.update_config(config)
-            return SyncOrUpdateDatasetResponse(
-                response=f'{data["privacy_group_id"]} is successfully updated'
-            )
+        hmaconfig.update_config(config)
+            
+        return dataSet
 
     @datasets_api.post("/sync", apply=[jsoninator])
     def sync_datasets():
         """
-        Sync dataset
+        Fetch new collaborations from ThreatExchnage and potentially update the configs stored in AWS
         """
         sync_privacy_groups()
-        return SyncOrUpdateDatasetResponse(response="Dataset is update-to-date")
+        return SyncDatasetResponse(response="Dataset is update-to-date")
 
     return datasets_api
