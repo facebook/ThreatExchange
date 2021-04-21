@@ -77,16 +77,16 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         """
         Update dataset
         """
-        dataSet = Dataset.from_dict(bottle.request.json)
+        dataset = Dataset.from_dict(bottle.request.json)
         config = ThreatExchangeConfig(
-            str(dataSet.privacy_group_id),
-            fetcher_active=dataSet.fetcher_active,
-            privacy_group_name=dataSet.privacy_group_name,
+            str(dataset.privacy_group_id),
+            fetcher_active=dataset.fetcher_active,
+            privacy_group_name=dataset.privacy_group_name,
         )
         # Warning! Will stomp on existing configs (including if you disable them)
         hmaconfig.update_config(config)
 
-        return dataSet
+        return dataset
 
     @datasets_api.post("/sync", apply=[jsoninator])
     def sync_datasets():
