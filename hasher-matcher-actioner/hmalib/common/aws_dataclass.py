@@ -75,7 +75,7 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
         return {
             field.name: py_to_aws(getattr(py_field, field.name), field.type)
             for field in fields(in_type)
-        }
+        }  # type: ignore # mypy/issues/10003
 
     raise AWSSerializationFailure(f"Missing Serialization logic for {in_type!r}")
 
@@ -138,7 +138,7 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
             if val is None:
                 continue  # Hopefully missing b/c default or version difference
             kwargs[field.name] = aws_to_py(field.type, val)
-        return in_type(**kwargs)
+        return in_type(**kwargs)  # type: ignore  # No idea how to correctly type this
 
     raise AWSSerializationFailure(f"Missing deserialization logic for {in_type!r}")
 
