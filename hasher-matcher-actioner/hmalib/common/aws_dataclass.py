@@ -7,7 +7,22 @@ There's likely already an existing library that exists somewhere that does
 this much better, but after spending 5 minutes looking, just try and write
 something on our own.
 
+How to use:
 
+    import typing as t
+    from hmalib.common.aws_dataclass import HasAWSSerialization
+    from dataclasses import dataclass
+
+    @dataclass
+    class Item(HasAWSSerialization):
+        a: int
+        b: str
+        c: t.List[str]
+
+    item = Item(5, "5", ["five"])
+    more_portable_dict = item.to_aws()
+    # Can write to dynamodb, or 
+    same_item = Item.from_aws(more_portable_dict)
 """
 
 from decimal import Decimal
@@ -68,6 +83,10 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
 
     if origin is list:  # L
         return [py_to_aws(v, args[0]) for v in py_field]  # type: ignore # mypy/issues/10003
+    # various simple collections that don't fit into a
+    # special cases above can likely be coerced into list.
+    if origin is set:  # L - Special case
+        return [py_to_aws(v, args[0]) for v in py_field]  # type: ignore # mypy/issues/10003
 
     if origin is dict and args[0] is str:  # M
         return {k: py_to_aws(v, args[1]) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
@@ -98,6 +117,9 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
         check_type = (int, Decimal)
     elif is_dataclass(in_type):
         check_type = dict
+    elif check_type is set and args:
+        if args[0] not in (str, float, int, Decimal):
+            check_type = list
 
     if not isinstance(aws_field, check_type or in_type):
         raise AWSSerializationFailure(
@@ -122,6 +144,8 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
     if in_type is t.Set[float]:  # SN
         return {float(s) for s in aws_field}  # type: ignore # mypy/issues/10003
 
+    if origin is set:  # L - special case
+        return {aws_to_py(args[0], v) for v in aws_field}  # type: ignore # mypy/issues/10003
     if origin is list:  # L
         return [aws_to_py(args[0], v) for v in aws_field]  # type: ignore # mypy/issues/10003
     # It would be possible to add support for nested dataclasses here, which

@@ -34,6 +34,10 @@ class SimpleInt:
 @dataclass
 class SimpleStr:
     a: str = "b"
+    b: str = "c"
+
+    def __hash__(self):
+        return hash((self.a, self.b))
 
 
 @dataclass
@@ -43,9 +47,9 @@ class ListOfSet:
 
 @dataclass
 class Nested:
-    x: SimpleInt = field(default_factory=SimpleInt)
-    y: SimpleStr = field(default_factory=SimpleStr)
-    z: ListOfSet = field(default_factory=ListOfSet)
+    w: SimpleInt = field(default_factory=SimpleInt)
+    x: t.Set[SimpleStr] = field(default_factory=lambda: {SimpleStr()})
+    y: ListOfSet = field(default_factory=ListOfSet)
 
 
 # @dataclass
