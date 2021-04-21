@@ -224,7 +224,7 @@ class ConfigTest(unittest.TestCase):
 
         @dataclass
         class SubtypeThree(SubtypeAbstractParentClass):
-            a: t.List[float]
+            a: t.List[float]  # type: ignore
 
         one = SubtypeOne("One", 5)
         two = SubtypeTwo("Two", "five")
