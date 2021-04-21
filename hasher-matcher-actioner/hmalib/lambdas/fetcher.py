@@ -184,7 +184,6 @@ def sync_privacy_groups():
 
     2. If the threat_updates_enabled is true, save it using config framework
     """
-    lambda_init_once()
     api_key = AWSSecrets.te_api_key()
     api = ThreatExchangeAPI(api_key)
     privacy_group_member_list = api.get_threat_privacy_groups_member()
@@ -205,6 +204,7 @@ def sync_privacy_groups():
                 privacy_group_name=privacy_group.name,
             )
             # Warning! Will stomp on existing configs (including if you disable them)
+            # TODO need to compare with existing privacy groups in dynamoDB to create/update/delete
             hmaconfig.update_config(config)
 
 
