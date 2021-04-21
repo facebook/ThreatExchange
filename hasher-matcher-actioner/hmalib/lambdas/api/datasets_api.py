@@ -18,12 +18,9 @@ class Dataset(JSONifiable):
     def to_json(self) -> t.Dict:
         return asdict(self)
 
-
     @classmethod
     def from_dict(cls, d: dict) -> "Dataset":
-        return cls(
-            d["privacy_group_id"], d["privacy_group_name"], d["fetcher_active"]
-        )
+        return cls(d["privacy_group_id"], d["privacy_group_name"], d["fetcher_active"])
 
 
 @dataclass
@@ -82,13 +79,13 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         """
         dataSet = Dataset.from_dict(bottle.request.json)
         config = ThreatExchangeConfig(
-                str(dataSet.privacy_group_id),
-                fetcher_active=dataSet.fetcher_active,
-                privacy_group_name=dataSet.privacy_group_name,
-            )
-            # Warning! Will stomp on existing configs (including if you disable them)
+            str(dataSet.privacy_group_id),
+            fetcher_active=dataSet.fetcher_active,
+            privacy_group_name=dataSet.privacy_group_name,
+        )
+        # Warning! Will stomp on existing configs (including if you disable them)
         hmaconfig.update_config(config)
-            
+
         return dataSet
 
     @datasets_api.post("/sync", apply=[jsoninator])
