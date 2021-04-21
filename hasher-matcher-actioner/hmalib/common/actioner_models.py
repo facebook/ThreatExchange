@@ -158,118 +158,69 @@ class ReactionMessage(MatchMessage):
 
 
 @dataclass
-class ActionPerformer:
+class ActionPerformer(config.HMAConfigWithSubtypes):
     """
-    A configuration of what action should be performed when a specific label
-    is added to a match. Each label can lead to exactly one action being taken.
+    An ActionPerfomer is the configuration + the code to perform an action.
 
-    To create a new type of ActionPerformer simply extend this class
-    and add the necessary fields as attributes. All these attributes will be stored in AWS
-    after update_aws_config is called. To retrieve from AWS the correct
-    action performer for a label use the function ActionPerformerConfig.get_performer
+    All actions share the same namespace (so that a post action and a
+    "send to review" action can't both be called "IActionReview")
 
-    NOTE all attributes must be aws serializable. see config._py_to_aws_field for serialization logic
+    ActionPerformer.get("action_name").perform_action(match_message)
     """
 
-    action_label: ActionLabel
+    @staticmethod
+    def get_subtype_classes():
+        return [
+            WebhookPostActionPerformer,
+            WebhookGetActionPerformer,
+            WebhookPutActionPerformer,
+            WebhookDeleteActionPerformer,
+        ]
 
+    # Implemented by subtypes
     def perform_action(self, match_message: MatchMessage) -> None:
         raise NotImplementedError
 
 
 @dataclass
 class WebhookActionPerformer(ActionPerformer):
-    url: TUrl
+    """Superclass for webhooks"""
+
+    url: str
 
     def perform_action(self, match_message: MatchMessage) -> None:
-        kwargs = {"data": match_message.to_aws_message()}
-        self.call(**kwargs)
+        self.call(data=match_message.to_aws_message())
 
-    def call(self, **kwargs) -> Response:
+    def call(self, data: str) -> Response:
         raise NotImplementedError()
 
 
 class WebhookPostActionPerformer(WebhookActionPerformer):
-    def call(self, **kwargs) -> Response:
-        data = kwargs.get("data")
+    """Hit an arbitrary endpoint with a POST"""
+
+    def call(self, data: str) -> Response:
         return post(self.url, data)
 
 
 class WebhookGetActionPerformer(WebhookActionPerformer):
-    def call(self, **kwargs) -> Response:
+    """Hit an arbitrary endpoint with a GET"""
+
+    def call(self, _data: str) -> Response:
         return get(self.url)
 
 
 class WebhookPutActionPerformer(WebhookActionPerformer):
-    def call(self, **kwargs) -> Response:
-        data = kwargs.get("data")
+    """Hit an arbitrary endpoint with a PUT"""
+
+    def call(self, data: str) -> Response:
         return put(self.url, data)
 
 
 class WebhookDeleteActionPerformer(WebhookActionPerformer):
-    def call(self, **kwargs) -> Response:
+    """Hit an arbitrary endpoint with a DELETE"""
+
+    def call(self, _data: str) -> Response:
         return delete(self.url)
-
-
-def get_all_subclasses_rec(recursive: t.Set[t.Type]) -> t.Set[t.Type]:
-    subclasses = {subclass for cls in recursive for subclass in cls.__subclasses__()}
-    union = recursive.union(subclasses)
-    if union != recursive:
-        return get_all_subclasses_rec(union)
-    return recursive
-
-
-# TODO David said he wanted to refactor this
-@dataclass
-class ActionPerformerConfig(config.HMAConfig):
-    """
-    An adapter to use the HMAConfig Class to store differnet types of
-    ActionPerformer configs. Since ActionPerformer configs are all unique by label but may
-    be of different types, we store the name of the concrete type and the
-    attributes of that type in AWS.
-
-    DO NOT CALL config.HMAConfig FUNCTIONS DIRECTLY
-
-    To load a config from a label use ActionPerformerConfig.get_performer
-
-    To update an action performer ActionPerformerConfig.update_performer
-    """
-
-    concrete_type: str
-    concrete_type_attrs: t.Dict[str, t.Any]
-
-    @classmethod
-    def get_performer(cls, action_label: ActionLabel) -> t.Optional["ActionPerformer"]:
-        """
-        Load from AWS the correct actioner config as the correct concrete class if it exists
-        """
-        name = action_label.value
-        performer_config: t.Optional[ActionPerformerConfig] = cls.get(name)
-        if performer_config:
-            subclasses_classes = {
-                cls.__name__: cls for cls in get_all_subclasses_rec({ActionPerformer})
-            }
-            return subclasses_classes[performer_config.concrete_type](
-                action_label=action_label, **performer_config.concrete_type_attrs
-            )
-        return None
-
-    @classmethod
-    def update_performer(cls, action_performer: ActionPerformer) -> None:
-        """
-        Use this function to update the config in AWS instead of config.update_config directly
-        """
-        attrs = {
-            field.name: getattr(action_performer, field.name)
-            for field in fields(action_performer)
-        }
-        del attrs["action_label"]
-        action_performer_config = ActionPerformerConfig(
-            name=action_performer.action_label.value,
-            concrete_type=action_performer.__class__.__name__,
-            concrete_type_attrs=attrs,
-        )
-        config.update_config(action_performer_config)
 
 
 if __name__ == "__main__":
@@ -282,11 +233,11 @@ if __name__ == "__main__":
 
     configs: t.List[ActionPerformer] = [
         WebhookDeleteActionPerformer(
-            action_label=ActionLabel("DeleteWebhook"),
+            name="DeleteWebhook",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
         ),
         WebhookPutActionPerformer(
-            action_label=ActionLabel("PutWebook"),
+            name="PutWebook",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
         ),
     ]

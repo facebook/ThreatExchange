@@ -7,19 +7,9 @@ import os
 import typing as t
 
 import boto3
-import moto
 from moto import mock_dynamodb2
 
 from hmalib.common import config
-from hmalib.common.actioner_models import (
-    ActionPerformerConfig,
-    ActionPerformer,
-    WebhookPostActionPerformer,
-    WebhookPutActionPerformer,
-    ActionLabel,
-)
-from hmalib.lambdas.actions.action_performer import perform_label_action
-from hmalib.models import MatchMessage, BankedSignal
 
 
 class ConfigTest(unittest.TestCase):
@@ -225,12 +215,16 @@ class ConfigTest(unittest.TestCase):
             a: int
 
         @dataclass
+        class SubtypeAbstractParentClass(MultiConfig.Subtype):
+            a: bool
+
+        @dataclass
         class SubtypeTwo(MultiConfig.Subtype):
             b: str
 
         @dataclass
-        class SubtypeThree(MultiConfig.Subtype):
-            a: t.List[float]
+        class SubtypeThree(SubtypeAbstractParentClass):
+            a: t.List[float]  # type: ignore
 
         one = SubtypeOne("One", 5)
         two = SubtypeTwo("Two", "five")
@@ -265,66 +259,10 @@ class ConfigTest(unittest.TestCase):
         ):
             config.update_config(MultiConfig("Foo"))
 
-    # TODO - Move all this to the action code where it
-
-    def test_action_performer_configs(self):
-        configs: t.List[ActionPerformer] = [
-            WebhookPostActionPerformer(
-                action_label=ActionLabel("SendDemotePostWebhook"),
-                url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
-            ),
-            WebhookPutActionPerformer(
-                action_label=ActionLabel("SendDeletePutWebhook"),
-                url="https://webhook.site/ff7ebc37-514a-439e-9a03-45635463",
-            ),
-        ]
-        for c in configs:
-            ActionPerformerConfig.update_performer(c)
-
-        post_config = ActionPerformerConfig.get_performer(
-            ActionLabel("SendDemotePostWebhook")
-        )
-        assert post_config == configs[0]
-
-        put_config = ActionPerformerConfig.get_performer(
-            ActionLabel("SendDeletePutWebhook")
-        )
-        assert put_config == configs[1]
-
-    def test_action_performer(self):
-        configs: t.List[ActionPerformer] = [
-            WebhookPostActionPerformer(
-                action_label=ActionLabel("SendDemotePostWebhook"),
-                url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
-            ),
-        ]
-        for c in configs:
-            ActionPerformerConfig.update_performer(c)
-
-        action_label = ActionLabel("SendDemotePostWebhook")
-        match_message = MatchMessage("key", "hash", [])
-
-        assert perform_label_action(match_message, action_label) == 1
-
-        action_label = ActionLabel("SendDemotePutWebhook")
-        assert perform_label_action(match_message, action_label) == 0
-
-    def test_action_performer_int(self):
-        @dataclass
-        class IntActionPerformer(ActionPerformer):
-            a: int
-            b: str
-
-            def perform_action(self, match_message):
-                print("Performing IntAction with params a={self.a} b={self.b}")
-
-        configs: t.List[ActionPerformer] = [
-            IntActionPerformer(ActionLabel("IntLabel"), a=42, b="my string"),
-        ]
-        for c in configs:
-            ActionPerformerConfig.update_performer(c)
-
-        action_label = ActionLabel("IntLabel")
-        match_message = MatchMessage("key", "hash", [])
-
-        assert perform_label_action(match_message, action_label) == 1
+        # Writing the "abstract" config gives you an error
+        with self.assertRaisesRegex(
+            ValueError,
+            "Tried to write subtype SubtypeAbstractParentClass"
+            " but it's not in get_subtype_classes",
+        ):
+            config.update_config(SubtypeAbstractParentClass("Foo", False))

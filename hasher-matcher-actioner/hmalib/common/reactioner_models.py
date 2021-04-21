@@ -60,11 +60,9 @@ if __name__ == "__main__":
     match_message = MatchMessage("key", "hash", banked_signals)
 
     configs: t.List[ActionPerformer] = [
-        ReactInReviewActionPerformer(
-            action_label=ActionLabel("ReactInReview"),
-        ),
+        ReactInReviewActionPerformer("ReactInReview"),
         ReactSawThisTooActionPerformer(
-            action_label=ActionLabel("ReactSawThisToo"),
+            "ReactSawThisToo",
         ),
     ]
 

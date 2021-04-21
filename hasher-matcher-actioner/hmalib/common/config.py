@@ -311,12 +311,16 @@ class _HMAConfigSubtype(HMAConfigWithSubtypes):
 def update_config(config: HMAConfig) -> None:
     """Update or create a config. No locking or versioning!"""
     _assert_initialized()
-    if isinstance(config, HMAConfigWithSubtypes) and not isinstance(
-        config, _HMAConfigSubtype
-    ):
-        raise ValueError(
-            f"Tried to write {config.__class__.__name__} instead of its subtypes"
-        )
+    if isinstance(config, HMAConfigWithSubtypes):
+        if not isinstance(config, _HMAConfigSubtype):
+            raise ValueError(
+                f"Tried to write {config.__class__.__name__} instead of its subtypes"
+            )
+        elif config.get_config_subtype() not in config._get_subtypes_by_name():
+            raise ValueError(
+                f"Tried to write subtype {config.__class__.__name__}"
+                " but it's not in get_subtype_classes()"
+            )
     # TODO - we should probably sanity check here to make sure all the fields
     #        are the expected types, because lolpython. Otherwise, it will
     #        fail to deserialize later
