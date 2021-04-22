@@ -34,6 +34,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
 
         action_rules = [
             ActionRule(
+                enqueue_for_review_action_label.value,
                 enqueue_for_review_action_label,
                 [BankIDClassificationLabel(bank_id)],
                 [ClassificationLabel("Foo")],

@@ -1,6 +1,6 @@
 variable "matches_sns_topic_arn" {
-    description = "ARN for the topic that collects matches from matchers."
-    type = string
+  description = "ARN for the topic that collects matches from matchers."
+  type        = string
 }
 
 variable "lambda_docker_info" {
@@ -10,7 +10,7 @@ variable "lambda_docker_info" {
     commands = object({
       action_evaluator = string
       action_performer = string
-      reactioner = string
+      reactioner       = string
     })
   })
 }
@@ -39,6 +39,14 @@ variable "measure_performance" {
 
 variable "te_api_token_secret" {
   description = "The aws secret where the ThreatExchange API token is stored"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
+variable "config_table" {
+  description = "The name and arn of the DynamoDB table used for persisting configs."
   type = object({
     name = string
     arn  = string
