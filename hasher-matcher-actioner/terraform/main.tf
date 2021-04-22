@@ -235,6 +235,7 @@ module "api" {
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
+  hma_config            = local.hma_config
 }
 
 # Build and deploy webapp

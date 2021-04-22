@@ -73,3 +73,11 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "hma_config" {
+  description = "Config settings for dynamodb table"
+  type = object({
+    arn        = string
+    table_name = string
+  })
+}

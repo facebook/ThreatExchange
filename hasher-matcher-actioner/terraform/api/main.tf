@@ -37,6 +37,7 @@ resource "aws_lambda_function" "api_root" {
   environment {
     variables = {
       DYNAMODB_TABLE                     = var.datastore.name
+      HMA_CONFIG_TABLE                   = var.hma_config.table_name
       IMAGE_BUCKET_NAME                  = var.image_data_storage.bucket_name
       IMAGE_FOLDER_KEY                   = var.image_data_storage.image_folder_key
       THREAT_EXCHANGE_DATA_BUCKET_NAME   = var.threat_exchange_data.bucket_name
@@ -79,6 +80,11 @@ data "aws_iam_policy_document" "api_root" {
     effect    = "Allow"
     actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]
     resources = ["${var.datastore.arn}*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem"]
+    resources = [var.hma_config.arn]
   }
   statement {
     effect    = "Allow"
