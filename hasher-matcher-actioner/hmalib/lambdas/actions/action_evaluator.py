@@ -14,6 +14,9 @@ from hmalib.common.actioner_models import (
     ActionLabel,
     ActionMessage,
     ActionRule,
+    BankedContentIDClassificationLabel,
+    BankIDClassificationLabel,
+    BankSourceClassificationLabel,
     ClassificationLabel,
     Label,
     ReactionMessage,
@@ -122,9 +125,11 @@ def get_classifications_by_match(match_message: MatchMessage) -> t.List[t.Set[La
 
     for banked_signal in match_message.matching_banked_signals:
         classifications: t.Set[Label] = set()
-        classifications.add(Label("BankSource", banked_signal.bank_source))
-        classifications.add(Label("BankId", banked_signal.bank_id))
-        classifications.add(Label("BankedContentId", banked_signal.banked_content_id))
+        classifications.add(BankSourceClassificationLabel(banked_signal.bank_source))
+        classifications.add(BankIDClassificationLabel(banked_signal.bank_id))
+        classifications.add(
+            BankedContentIDClassificationLabel(banked_signal.banked_content_id)
+        )
         for classification in banked_signal.classifications:
             classifications.add(ClassificationLabel(classification))
         classifications_by_match.append(classifications)
@@ -141,8 +146,11 @@ def get_action_rules() -> t.List[ActionRule]:
     return [
         ActionRule(
             ActionLabel("EnqueueForReview"),
-            [Label("BankId", "12345")],
-            [Label("Classification", "Foo")],
+            [
+                BankIDClassificationLabel("303636684709969"),
+                ClassificationLabel("true_positive"),
+            ],
+            [BankedContentIDClassificationLabel("3364504410306721")],
         )
     ]
 
@@ -171,7 +179,7 @@ def get_actions() -> t.List[Action]:
     """
     return [
         Action(
-            ActionLabel("ENQUEUE_FOR_REVIEW"),
+            ActionLabel("EnqueueForReview"),
             1,
             [ActionLabel("A_MORE_IMPORTANT_ACTION")],
         )
@@ -216,16 +224,23 @@ def get_threat_exchange_reaction_labels(
 
 if __name__ == "__main__":
     # For basic debugging
-    banked_signal = BankedSignal("67890", "12345", "Test", ["Bar", "Xyz"])
+    banked_signal = BankedSignal(
+        "4169895076385542", "303636684709969", "te", ["true_positive", "Bar", "Xyz"]
+    )
     match_message = MatchMessage("key", "hash", [banked_signal])
 
     print(
         f"get_action_labels({match_message}, {get_action_rules()}):\n\t{get_action_labels(match_message, get_action_rules())}\n\n"
     )
 
-    banked_signal = BankedSignal("67890", "12345", "Test", ["Foo", "Bar", "Xyz"])
-    match_message = MatchMessage("key", "hash", [banked_signal])
+    banked_signal_2 = BankedSignal(
+        "3364504410306721",
+        "303636684709969",
+        "te",
+        ["true_positive", "Foo", "Bar", "Xyz"],
+    )
+    match_message_2 = MatchMessage("key", "hash", [banked_signal_2])
 
     print(
-        f"get_action_labels({match_message}, {get_action_rules()}):\n\t{get_action_labels(match_message, get_action_rules())}\n\n"
+        f"get_action_labels({match_message_2}, {get_action_rules()}):\n\t{get_action_labels(match_message_2, get_action_rules())}\n\n"
     )

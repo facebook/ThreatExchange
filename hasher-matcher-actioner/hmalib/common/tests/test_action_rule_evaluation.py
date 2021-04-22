@@ -8,6 +8,7 @@ from hmalib.models import MatchMessage, BankedSignal
 from hmalib.common.actioner_models import (
     ActionLabel,
     ActionRule,
+    BankIDClassificationLabel,
     ClassificationLabel,
     Label,
 )
@@ -34,7 +35,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         action_rules = [
             ActionRule(
                 enqueue_for_review_action_label,
-                [Label("BankId", bank_id)],
+                [BankIDClassificationLabel(bank_id)],
                 [ClassificationLabel("Foo")],
             )
         ]

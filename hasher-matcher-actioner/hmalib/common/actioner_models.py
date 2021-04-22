@@ -44,6 +44,18 @@ class ClassificationLabel(LabelWithConstraints):
     _KEY_CONSTRAINT = "Classification"
 
 
+class BankSourceClassificationLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "BankSource"
+
+
+class BankIDClassificationLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "BankID"
+
+
+class BankedContentIDClassificationLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "BankedContentID"
+
+
 class ActionLabel(LabelWithConstraints):
     _KEY_CONSTRAINT = "Action"
 
