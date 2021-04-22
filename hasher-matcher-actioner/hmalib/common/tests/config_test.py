@@ -9,7 +9,7 @@ import typing as t
 import boto3
 from moto import mock_dynamodb2
 
-from hmalib.common import config
+from hmalib.common import config, aws_dataclass
 
 
 class ConfigTest(unittest.TestCase):
@@ -105,6 +105,19 @@ class ConfigTest(unittest.TestCase):
         )
         self.assertEqualsAfterDynamodb(complicated)
 
+    def test_nested(self):
+        @dataclass
+        class NestedClass:
+            a: int
+            b: str
+
+        @dataclass
+        class NestedConfig(config.HMAConfig):
+            a: NestedClass
+
+        nested = NestedConfig("Nested", a=NestedClass(a=1, b="a"))
+        self.assertEqualsAfterDynamodb(nested)
+
     def test_wrong_types(self):
         @dataclass
         class SimpleConfig(config.HMAConfig):
@@ -119,11 +132,11 @@ class ConfigTest(unittest.TestCase):
         wrong_b = SimpleConfig("wrong_b", b=321)
         wrong_c = SimpleConfig("wrong_c", c=["a", 1, 2.0])
 
-        with self.assertRaises(config.HMAConfigSerializationError):
+        with self.assertRaises(aws_dataclass.AWSSerializationFailure):
             self.assertEqualsAfterDynamodb(wrong_a)
-        with self.assertRaises(config.HMAConfigSerializationError):
+        with self.assertRaises(aws_dataclass.AWSSerializationFailure):
             self.assertEqualsAfterDynamodb(wrong_b)
-        with self.assertRaises(config.HMAConfigSerializationError):
+        with self.assertRaises(aws_dataclass.AWSSerializationFailure):
             self.assertEqualsAfterDynamodb(wrong_c)
 
     def test_invalid_serialization(self):
@@ -133,22 +146,8 @@ class ConfigTest(unittest.TestCase):
 
         fails_on_serialization = TupleConfig("Tuple", (1, "a"))
 
-        with self.assertRaises(config.HMAConfigSerializationError):
+        with self.assertRaises(aws_dataclass.AWSSerializationFailure):
             self.assertEqualsAfterDynamodb(fails_on_serialization)
-
-        @dataclass
-        class NestedClass:
-            a: int
-            b: str
-
-        @dataclass
-        class NestedConfig(config.HMAConfig):
-            a: NestedClass
-
-        also_fails = NestedConfig("Nested", a=NestedClass(a=1, b="a"))
-
-        with self.assertRaises(config.HMAConfigSerializationError):
-            self.assertEqualsAfterDynamodb(also_fails)
 
     def test_get(self):
         a_config = config.HMAConfig("a")
