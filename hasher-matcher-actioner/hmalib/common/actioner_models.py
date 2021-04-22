@@ -173,7 +173,6 @@ class ReactionMessage(MatchMessage):
         )
 
 
-@dataclass
 class ActionPerformer(config.HMAConfigWithSubtypes):
     """
     An ActionPerfomer is the configuration + the code to perform an action.
@@ -199,7 +198,7 @@ class ActionPerformer(config.HMAConfigWithSubtypes):
 
 
 @dataclass
-class WebhookActionPerformer(ActionPerformer):
+class WebhookActionPerformer(ActionPerformer.Subtype):  # type: ignore
     """Superclass for webhooks"""
 
     url: str
@@ -211,6 +210,7 @@ class WebhookActionPerformer(ActionPerformer):
         raise NotImplementedError()
 
 
+@dataclass
 class WebhookPostActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a POST"""
 
@@ -218,6 +218,7 @@ class WebhookPostActionPerformer(WebhookActionPerformer):
         return post(self.url, data)
 
 
+@dataclass
 class WebhookGetActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a GET"""
 
@@ -225,6 +226,7 @@ class WebhookGetActionPerformer(WebhookActionPerformer):
         return get(self.url)
 
 
+@dataclass
 class WebhookPutActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a PUT"""
 
@@ -232,6 +234,7 @@ class WebhookPutActionPerformer(WebhookActionPerformer):
         return put(self.url, data)
 
 
+@dataclass
 class WebhookDeleteActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a DELETE"""
 
@@ -248,13 +251,11 @@ if __name__ == "__main__":
     match_message = MatchMessage("key", "hash", banked_signals)
 
     configs: t.List[ActionPerformer] = [
-        WebhookDeleteActionPerformer(
-            name="DeleteWebhook",
-            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+        WebhookDeleteActionPerformer(  # type: ignore
+            "DeleteWebhook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
-        WebhookPutActionPerformer(
-            name="PutWebook",
-            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+        WebhookPutActionPerformer(  # type: ignore
+            "PutWebook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
     ]
 
