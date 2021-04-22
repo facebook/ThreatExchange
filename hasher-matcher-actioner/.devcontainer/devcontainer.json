@@ -1,44 +1,43 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-	"name": "hma-devserver",
-	"build": {
-		"dockerfile": "Dockerfile",
-		"args": {
-			"unixname": "dipanjanm"
-		}
-	},
-
-	// Set *default* container specific settings.json values on container create.
-	"settings": { 
-		"terminal.integrated.shell.linux": "/bin/bash"
-	},
-
-	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [
-		"ms-python.python",
-		"rvest.vs-code-prettier-eslint",
-		"ms-azuretools.vscode-docker",
-		"hashicorp.terraform",
-		"eamodio.gitlens",
-		"stkb.rewrap"
-	],
-
-	"mounts": [
-		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
-		"source=${localEnv:HOME}${localEnv:USERPROFILE}/.hma-cmdhist,target=/commandhistory,type=bind",
-	],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "sh .devcontainer/post-create",
-
-	// Use 'portsAttributes' to set default properties for specific forwarded ports.
-	"portsAttributes": {
-		"3000": {
-			"label": "Hello Remote World",
-			"onAutoForward": "notify"
-		}
-	},
-
-	"remoteUser": "dipanjanm",
+  "name": "hma-devserver",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "unixname": "REPLACEME"
+    }
+  },
+  // Set *default* container specific settings.json values on container create.
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash",
+    "editor.formatOnSave": true,
+    "python.formatting.blackPath": "black",
+    "[javascriptreact]": {
+      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    }
+  },
+  // Add the IDs of extensions you want installed when the container is created.
+  "extensions": [
+    "ms-python.python",
+    "rvest.vs-code-prettier-eslint",
+    "ms-azuretools.vscode-docker",
+    "hashicorp.terraform",
+    "eamodio.gitlens",
+    "stkb.rewrap"
+  ],
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.hma-cmdhist,target=/commandhistory,type=bind"
+  ],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "sh .devcontainer/post-create",
+  // Use 'portsAttributes' to set default properties for specific forwarded ports.
+  "portsAttributes": {
+    "3000": {
+      "label": "Hello Remote World",
+      "onAutoForward": "notify"
+    }
+  },
+  "remoteUser": "REPLACEME"
 }

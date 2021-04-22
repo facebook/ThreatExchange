@@ -16,6 +16,8 @@ import typing as t
 import boto3
 from boto3.dynamodb.conditions import Attr
 
+from .aws_dataclass import py_to_aws, aws_to_py
+
 T = t.TypeVar("T")
 TConfig = t.TypeVar("TConfig", bound="HMAConfig")
 
@@ -44,10 +46,6 @@ def get_dynamodb():
     better to use that. Probably not thread safe.
     """
     return boto3.resource("dynamodb")
-
-
-class HMAConfigSerializationError(ValueError):
-    pass
 
 
 @dataclass
@@ -351,15 +349,9 @@ def _dynamodb_item_to_config(
     config_cls: t.Type[TConfig], aws_item: t.Dict[str, t.Any]
 ) -> "HMAConfig":
     """Convert the result of a get_item into a config"""
-    kwargs = {}
-    for field in fields(config_cls):
-        aws_field = aws_item.get(field.name)
-        if aws_field is None:
-            continue  # Hopefully missing b/c default or version difference
-        kwargs[field.name] = _aws_field_to_py(field.type, aws_field)
-    kwargs["name"] = aws_item["ConfigName"]
     assert aws_item["ConfigType"] == config_cls.get_config_type()
-    return config_cls(**kwargs)
+    aws_item["name"] = aws_item.pop("ConfigName")
+    return aws_to_py(config_cls, aws_item)
 
 
 def _config_to_dynamodb_item(config) -> t.Dict[str, t.Any]:
@@ -367,120 +359,10 @@ def _config_to_dynamodb_item(config) -> t.Dict[str, t.Any]:
     Convert a config object into what is what goes into the put_item Item arg
     """
     item = {
-        field.name: _py_to_aws_field(field.type, getattr(config, field.name))
+        field.name: py_to_aws(getattr(config, field.name), field.type)
         for field in fields(config)
     }
     del item["name"]
     item["ConfigType"] = config.get_config_type()
     item["ConfigName"] = config.name
     return item
-
-
-def _aws_field_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
-    """
-    Convert an AWS item back into its py equivalent
-
-    This might not even be strictly required, but we check that
-    all the types are roughly what we expect, and convert
-    Decimals back into ints/floats
-    """
-    origin = t.get_origin(in_type)
-    args = t.get_args(in_type)
-
-    check_type = origin
-    if in_type in (int, float):
-        check_type = Decimal
-
-    if not isinstance(aws_field, check_type or in_type):
-        raise HMAConfigSerializationError(
-            "DynamoDB Deserialization error: "
-            f"Expected {in_type} got {type(aws_field)} ({aws_field!r})"
-        )
-
-    if in_type is int:  # N
-        return int(aws_field)  # type: ignore # mypy/issues/10003
-    if in_type is float:  # N
-        return float(aws_field)  # type: ignore # mypy/issues/10003
-    if in_type is Decimal:  # N
-        return aws_field  # type: ignore # mypy/issues/10003
-    if in_type is str:  # S
-        return aws_field  # type: ignore # mypy/issues/10003
-    if in_type is bool:  # BOOL
-        return aws_field  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[str]:  # SS
-        return aws_field  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[int]:  # SN
-        return {int(s) for s in aws_field}  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[float]:  # SN
-        return {float(s) for s in aws_field}  # type: ignore # mypy/issues/10003
-
-    if origin is list:  # L
-        return [_aws_field_to_py(args[0], v) for v in aws_field]  # type: ignore # mypy/issues/10003
-    # It would be possible to add support for nested dataclasses here, which
-    # just become maps with the keys as their attributes
-    # Another option would be adding a new class that adds methods to convert
-    # to an AWS-friendly struct and back
-    if origin is dict and args[0] is str:  # M
-        if args[1] is not t.Any:
-            # check if value type of map origin is explicitly set
-            return {k: _aws_field_to_py(args[1], v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
-        return {k: _aws_field_to_py(type(v), v) for k, v in aws_field.items()}  # type: ignore # mypy/issues/10003
-
-    raise HMAConfigSerializationError(
-        "Missing DynamoDB deserialization logic for %r" % in_type
-    )
-
-
-def _py_to_aws_field(in_type: t.Type[T], py_field: t.Any) -> T:
-    """
-    Convert a py item into its AWS equivalent.
-
-    Should exactly inverse _aws_field_to_py
-    """
-    origin = t.get_origin(in_type)
-    args = t.get_args(in_type)
-
-    if not isinstance(py_field, origin or in_type):
-        raise HMAConfigSerializationError(
-            "DynamoDB Serialization error: "
-            f"Expected {in_type} got {type(py_field)} ({py_field!r})"
-        )
-
-    if in_type is int:  # N
-        # Technically, this also needs to be converted to decimal,
-        # but the boto3 translater seems to handle it fine
-        return py_field  # type: ignore # mypy/issues/10003
-    if in_type is float:  # N
-        # WARNING WARNING
-        # floating point is not truly supported in dynamodb
-        # We can fake it for numbers without too much precision
-        # but Decimal("3.4") != float(3.4)
-        return Decimal(str(py_field))  # type: ignore # mypy/issues/10003
-    if in_type is Decimal:  # N
-        return py_field  # type: ignore # mypy/issues/10003
-    if in_type is str:  # S
-        return py_field  # type: ignore # mypy/issues/10003
-    if in_type is bool:  # BOOL
-        return py_field  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[str]:  # SS
-        return py_field  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[int]:  # SN
-        return {i for i in py_field}  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[float]:  # SN
-        # WARNING WARNING
-        # floating point is not truly supported in dynamodb
-        # See note above
-        return {Decimal(str(s)) for s in py_field}  # type: ignore # mypy/issues/10003
-
-    if origin is list:  # L
-        return [_py_to_aws_field(args[0], v) for v in py_field]  # type: ignore # mypy/issues/10003
-
-    if origin is dict and args[0] is str:  # M
-        if args[1] is not t.Any:
-            # check if value type of map origin is explicitly set
-            return {k: _py_to_aws_field(args[1], v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
-        return {k: _py_to_aws_field(type(v), v) for k, v in py_field.items()}  # type: ignore # mypy/issues/10003
-
-    raise HMAConfigSerializationError(
-        "Missing DynamoDB Serialization logic for %r" % in_type
-    )

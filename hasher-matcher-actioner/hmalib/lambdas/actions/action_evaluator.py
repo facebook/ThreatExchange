@@ -8,20 +8,24 @@ import typing as t
 from dataclasses import dataclass, field
 from functools import lru_cache
 from hmalib.common.logging import get_logger
-from hmalib.models import MatchMessage
+from hmalib.models import MatchMessage, BankedSignal
 from hmalib.common.actioner_models import (
     Action,
     ActionLabel,
     ActionMessage,
     ActionRule,
+    BankedContentIDClassificationLabel,
+    BankIDClassificationLabel,
+    BankSourceClassificationLabel,
+    ClassificationLabel,
     Label,
     ReactionMessage,
     ThreatExchangeReactionLabel,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
+from mypy_boto3_sqs import SQSClient
 
 logger = get_logger(__name__)
-sqs_client = boto3.client("sqs")
 
 
 @dataclass
@@ -32,13 +36,15 @@ class ActionEvaluatorConfig:
 
     actions_queue_url: str
     reactions_queue_url: str
+    sqs_client: SQSClient
 
     @classmethod
-    @lru_cache(maxsize=1)
+    @lru_cache(maxsize=None)
     def get(cls):
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
             reactions_queue_url=os.environ["REACTIONS_QUEUE_URL"],
+            sqs_client=boto3.client("sqs"),
         )
 
 
@@ -59,12 +65,16 @@ def lambda_handler(event, context):
 
         logger.info("Evaluating match_message: %s", match_message)
 
-        action_labels = get_action_labels(match_message)
+        action_rules = get_action_rules()
+
+        logger.info("Evaluating against action_rules: %s", action_rules)
+
+        action_labels = get_action_labels(match_message, action_rules)
         for action_label in action_labels:
             action_message = ActionMessage.from_match_message_and_label(
                 match_message, action_label
             )
-            sqs_client.send_message(
+            config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
                 MessageBody=json.dumps(action_message.to_aws_message()),
             )
@@ -80,7 +90,7 @@ def lambda_handler(event, context):
                             match_message, threat_exchange_reaction_label
                         )
                     )
-                    sqs_client.send_message(
+                    config.sqs_client.send_message(
                         QueueUrl=config.reactions_queue_url,
                         MessageBody=json.dumps(
                             threat_exchange_reaction_message.to_aws_message()
@@ -90,46 +100,74 @@ def lambda_handler(event, context):
     return {"evaluation_completed": "true"}
 
 
-def get_action_labels(match_message: MatchMessage) -> t.List["ActionLabel"]:
+def get_action_labels(
+    match_message: MatchMessage, action_rules: t.List[ActionRule]
+) -> t.Set[ActionLabel]:
     """
-    TODO finish implementation
-    Returns an ActionLabel for each ActionRule that applies to a MatchMessage.
+    Returns action labels for each action rule that applies to a match message.
     """
-    action_rules = get_action_rules()
-    action_labels: t.List["ActionLabel"] = []
-    for action_rule in action_rules:
-        if action_rule_applies_to_match_message(
-            action_rule, match_message
-        ) and not action_labels.__contains__(action_rule.action_label):
-            action_labels.append(action_rule.action_label)
+    classifications_by_match = get_classifications_by_match(match_message)
+    action_labels: t.Set[ActionLabel] = set()
+    for classifications in classifications_by_match:
+        for action_rule in action_rules:
+            if action_rule_applies_to_classifications(action_rule, classifications):
+                action_labels.add(action_rule.action_label)
     action_labels = remove_superseded_actions(action_labels)
     return action_labels
 
 
-def get_action_rules() -> t.List["ActionRule"]:
+def get_classifications_by_match(match_message: MatchMessage) -> t.List[t.Set[Label]]:
     """
-    TODO implement
+    Creates a list of sets of classifications (as labels). Each set contains the labels that
+    classify one matching banked piece of content.
+    """
+    classifications_by_match: t.List[t.Set[Label]] = list()
+
+    for banked_signal in match_message.matching_banked_signals:
+        classifications: t.Set[Label] = set()
+        classifications.add(BankSourceClassificationLabel(banked_signal.bank_source))
+        classifications.add(BankIDClassificationLabel(banked_signal.bank_id))
+        classifications.add(
+            BankedContentIDClassificationLabel(banked_signal.banked_content_id)
+        )
+        for classification in banked_signal.classifications:
+            classifications.add(ClassificationLabel(classification))
+        classifications_by_match.append(classifications)
+
+    return classifications_by_match
+
+
+def get_action_rules() -> t.List[ActionRule]:
+    """
+    TODO implement (get from config)
     Returns the ActionRule objects stored in the config repository. Each ActionRule
     will have the following attributes: MustHaveLabels, MustNotHaveLabels, ActionLabel.
     """
     return [
         ActionRule(
             ActionLabel("EnqueueForReview"),
-            [Label("Collaboration", "12345")],
-            [],
+            [
+                BankIDClassificationLabel("303636684709969"),
+                ClassificationLabel("true_positive"),
+            ],
+            [BankedContentIDClassificationLabel("3364504410306721")],
         )
     ]
 
 
-def action_rule_applies_to_match_message(
-    action_rule: ActionRule, match_message: MatchMessage
+def action_rule_applies_to_classifications(
+    action_rule: ActionRule, classifications: t.Set[Label]
 ) -> bool:
     """
-    Evaluate if the action rule applies to the match message. Return True if the action rule's "must have"
-    labels are all present in the match message, and that none of the "must not have" labels are present
-    in the match message, otherwise return False.
+    Evaluate if the action rule applies to the classifications. Return True if the action rule's "must have"
+    labels are all present and none of the "must not have" labels are present in the classifications, otherwise return False.
     """
-    return True
+    must_have_labels: t.Set[Label] = set(action_rule.must_have_labels)
+    must_not_have_labels: t.Set[Label] = set(action_rule.must_not_have_labels)
+
+    return must_have_labels.issubset(
+        classifications
+    ) and must_not_have_labels.isdisjoint(classifications)
 
 
 def get_actions() -> t.List[Action]:
@@ -141,7 +179,7 @@ def get_actions() -> t.List[Action]:
     """
     return [
         Action(
-            ActionLabel("ENQUEUE_FOR_REVIEW"),
+            ActionLabel("EnqueueForReview"),
             1,
             [ActionLabel("A_MORE_IMPORTANT_ACTION")],
         )
@@ -149,8 +187,8 @@ def get_actions() -> t.List[Action]:
 
 
 def remove_superseded_actions(
-    action_labels: t.List["ActionLabel"],
-) -> t.List[ActionLabel]:
+    action_labels: t.Set[ActionLabel],
+) -> t.Set[ActionLabel]:
     """
     TODO implement
     Evaluates a collection of ActionLabels generated for a match message against the actions.
@@ -186,5 +224,23 @@ def get_threat_exchange_reaction_labels(
 
 if __name__ == "__main__":
     # For basic debugging
-    match_message = MatchMessage("key", "hash", [])
-    action_label = ActionLabel("ENQUE_FOR_REVIEW")
+    banked_signal = BankedSignal(
+        "4169895076385542", "303636684709969", "te", ["true_positive", "Bar", "Xyz"]
+    )
+    match_message = MatchMessage("key", "hash", [banked_signal])
+
+    print(
+        f"get_action_labels({match_message}, {get_action_rules()}):\n\t{get_action_labels(match_message, get_action_rules())}\n\n"
+    )
+
+    banked_signal_2 = BankedSignal(
+        "3364504410306721",
+        "303636684709969",
+        "te",
+        ["true_positive", "Foo", "Bar", "Xyz"],
+    )
+    match_message_2 = MatchMessage("key", "hash", [banked_signal_2])
+
+    print(
+        f"get_action_labels({match_message_2}, {get_action_rules()}):\n\t{get_action_labels(match_message_2, get_action_rules())}\n\n"
+    )

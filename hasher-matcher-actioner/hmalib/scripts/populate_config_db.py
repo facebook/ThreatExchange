@@ -18,6 +18,7 @@ import re
 
 from hmalib.lambdas.fetcher import ThreatExchangeConfig
 from hmalib.common import config as hmaconfig
+from hmalib.common.actioner_models import WebhookPostActionPerformer
 
 SUPPORTED_CONFIGS = [
     ThreatExchangeConfig,
@@ -71,6 +72,10 @@ def load_defaults(_args):
             "258601789084078",
             fetcher_active=True,
             privacy_group_name="Test Config 2",
+        ),
+        WebhookPostActionPerformer(
+            name="EnqueForReviewAction",
+            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
         ),
     ]
     for config in configs:
