@@ -58,6 +58,20 @@ class Nested:
 #     n: "SelfNested" = None  # lies
 
 
+@dataclass
+class SkipInitBase:
+    a: int
+    b: str = field(init=False)
+
+    def __post_init__(self):
+        self.b = "abc"
+
+
+@dataclass
+class SkipInit(SkipInitBase):
+    a: int = field(default=2, init=False)
+
+
 class AWSDataclassTest(unittest.TestCase):
 
     DEFAULT_OBJECTS = [
@@ -68,6 +82,8 @@ class AWSDataclassTest(unittest.TestCase):
         ListOfSet(),
         Nested(),
         # SelfNested(),
+        SkipInitBase(1),
+        SkipInit(),
     ]
 
     def assertSerializesCorrectly(self, d):
