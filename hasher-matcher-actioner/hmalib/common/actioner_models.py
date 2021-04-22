@@ -4,7 +4,7 @@ import hmalib.common.config as config
 import json
 import typing as t
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from hmalib.common.logging import get_logger
 from hmalib.models import BankedSignal, MatchMessage
 from requests import get, post, put, delete, Response
@@ -12,7 +12,7 @@ from requests import get, post, put, delete, Response
 logger = get_logger(__name__)
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Label:
     key: str
     value: str
@@ -29,39 +29,35 @@ class Label:
             return NotImplemented
         return self.key == another_label.key and self.value == another_label.value
 
-    def __hash__(self) -> int:
-        return self.value.__hash__()
+
+@dataclass(unsafe_hash=True)
+class ClassificationLabel(Label):
+    key = field(default="Classification", init=False)
 
 
-class LabelWithConstraints(Label):
-    _KEY_CONSTRAINT = "KeyConstraint"
-
-    def __init__(self, value: str):
-        super(LabelWithConstraints, self).__init__(self._KEY_CONSTRAINT, value)
+@dataclass(unsafe_hash=True)
+class BankSourceClassificationLabel(Label):
+    key = field(default="BankSourceClassification", init=False)
 
 
-class ClassificationLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "Classification"
+@dataclass(unsafe_hash=True)
+class BankIDClassificationLabel(Label):
+    key = field(default="BankIDClassification", init=False)
 
 
-class BankSourceClassificationLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "BankSource"
+@dataclass(unsafe_hash=True)
+class BankedContentIDClassificationLabel(Label):
+    key = field(default="BankedContentIDClassification", init=False)
 
 
-class BankIDClassificationLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "BankID"
+@dataclass(unsafe_hash=True)
+class ActionLabel(Label):
+    key = field(default="Action", init=False)
 
 
-class BankedContentIDClassificationLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "BankedContentID"
-
-
-class ActionLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "Action"
-
-
-class ThreatExchangeReactionLabel(LabelWithConstraints):
-    _KEY_CONSTRAINT = "ThreatExchangeReaction"
+@dataclass(unsafe_hash=True)
+class ThreatExchangeReactionLabel(Label):
+    key = field(default="ThreatExchangeReaction", init=False)
 
 
 @dataclass
