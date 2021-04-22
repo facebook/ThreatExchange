@@ -163,9 +163,9 @@ class _HMAConfigWithSubtypeMeta(type):
         # Is this the base?
         if cls_name == "HMAConfigWithSubtypes":
             return super().__new__(metacls, cls_name, bases, cls_dict)
-        # Has a CONFIG_TYPE already been applied?
+        # Has a _PARENT already been applied?
         for base in bases:
-            if hasattr(base, "CONFIG_TYPE"):
+            if hasattr(base, "_PARENT"):
                 return super().__new__(metacls, cls_name, bases, cls_dict)
         # Else create magic defaults
         cls_dict.setdefault("CONFIG_TYPE", cls_name)
