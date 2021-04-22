@@ -46,10 +46,10 @@ function ActionLabelSettings() {
   return <>Action Label Settings coming here</>;
 }
 
-function WebhookActionerRender({url, headers, webhookType}) {
+function WebhookActioner({url, headers, webhookType}) {
   return (
     <Card>
-      <h5>WebhookActionerRender</h5>
+      <h5>WebhookActioner</h5>
       URL : {url}
       <br />
       Webhook Type : {webhookType}
@@ -74,7 +74,7 @@ const ActionerTypes = {
         default: '{}',
       },
     },
-    renderer: WebhookActionerRender,
+    renderer: WebhookActioner,
     description:
       'When configured for a match, the WebhookActioner will send a webhook to the specified url with data describing the match',
   },
