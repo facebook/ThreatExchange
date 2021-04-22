@@ -2,15 +2,17 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
+/* eslint-disable react/prop-types */
+
 import React from 'react';
 import Card from 'react-bootstrap/Card';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
-import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
 import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
+import Tabs from 'react-bootstrap/Tabs';
 import Table from 'react-bootstrap/Table';
 
 export default function Settings() {
@@ -44,14 +46,37 @@ function ActionLabelSettings() {
   return <>Action Label Settings coming here</>;
 }
 
-function WebhookActionerRender() {
-  return <Card>This is a card displaying a WebhookActionerRender</Card>;
+function WebhookActioner({url, headers, webhookType}) {
+  return (
+    <Card>
+      <h5>WebhookActioner</h5>
+      URL : {url}
+      <br />
+      Webhook Type : {webhookType}
+      <br />
+      Headers : {headers}
+      <br />
+    </Card>
+  );
 }
 
 const ActionerTypes = {
   WebhookActioner: {
-    args: ['url', 'headers'],
-    renderer: WebhookActionerRender,
+    args: {
+      url: {description: 'The url to send a webhook to'},
+      webhookType: {
+        description:
+          'What type of webhook should be sent (POST, DELETE, PUT, or GET)',
+        default: 'POST',
+      },
+      headers: {
+        description: 'Optional json object of headers to include in webhook',
+        default: '{}',
+      },
+    },
+    renderer: WebhookActioner,
+    description:
+      'When configured for a match, the WebhookActioner will send a webhook to the specified url with data describing the match',
   },
 };
 
@@ -59,29 +84,31 @@ function ActionPerformerSettings() {
   const performers = [
     {
       name: 'MyFirstAction',
-      actioner: {
-        type: 'WebhookActioner',
+      type: 'WebhookActioner',
+      params: {
         url: 'myurl.com',
+        webhookType: 'POST',
         headers: '{"h1" : "header"}',
       },
     },
     {
       name: 'MySecondAction',
-      actioner: {
-        type: 'WebhookActioner',
+      type: 'WebhookActioner',
+      params: {
         url: 'myotherurl.com',
+        webhookType: 'DELETE',
         headers: '{"h4" : "header"}',
       },
     },
   ];
 
-  const headerBlock = ['Action', 'Action Type'].map(header => (
+  const headerBlock = ['Action Name', 'Action Details'].map(header => (
     <th>{header}</th>
   ));
   const performerBlocks = performers.map(performer => (
     <tr>
       <td>{performer.name}</td>
-      <td>{ActionerTypes[performer.actioner.type].renderer()}</td>
+      <td>{ActionerTypes[performer.type].renderer(performer.params)}</td>
     </tr>
   ));
   return (
