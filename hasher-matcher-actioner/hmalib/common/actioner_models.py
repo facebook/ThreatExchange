@@ -32,32 +32,32 @@ class Label:
 
 @dataclass(unsafe_hash=True)
 class ClassificationLabel(Label):
-    key = field(default="Classification", init=False)
+    key: str = field(default="Classification", init=False)
 
 
 @dataclass(unsafe_hash=True)
 class BankSourceClassificationLabel(Label):
-    key = field(default="BankSourceClassification", init=False)
+    key: str = field(default="BankSourceClassification", init=False)
 
 
 @dataclass(unsafe_hash=True)
 class BankIDClassificationLabel(Label):
-    key = field(default="BankIDClassification", init=False)
+    key: str = field(default="BankIDClassification", init=False)
 
 
 @dataclass(unsafe_hash=True)
 class BankedContentIDClassificationLabel(Label):
-    key = field(default="BankedContentIDClassification", init=False)
+    key: str = field(default="BankedContentIDClassification", init=False)
 
 
 @dataclass(unsafe_hash=True)
 class ActionLabel(Label):
-    key = field(default="Action", init=False)
+    key: str = field(default="Action", init=False)
 
 
 @dataclass(unsafe_hash=True)
 class ThreatExchangeReactionLabel(Label):
-    key = field(default="ThreatExchangeReaction", init=False)
+    key: str = field(default="ThreatExchangeReaction", init=False)
 
 
 @dataclass
