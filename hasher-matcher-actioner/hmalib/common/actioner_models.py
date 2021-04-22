@@ -198,7 +198,7 @@ class ActionPerformer(config.HMAConfigWithSubtypes):
 
 
 @dataclass
-class WebhookActionPerformer(ActionPerformer.Subtype):  # type: ignore
+class WebhookActionPerformer(ActionPerformer):
     """Superclass for webhooks"""
 
     url: str
@@ -251,10 +251,10 @@ if __name__ == "__main__":
     match_message = MatchMessage("key", "hash", banked_signals)
 
     configs: t.List[ActionPerformer] = [
-        WebhookDeleteActionPerformer(  # type: ignore
+        WebhookDeleteActionPerformer(
             "DeleteWebhook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
-        WebhookPutActionPerformer(  # type: ignore
+        WebhookPutActionPerformer(
             "PutWebook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
     ]
