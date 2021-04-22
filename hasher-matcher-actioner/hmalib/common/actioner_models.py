@@ -157,7 +157,6 @@ class ReactionMessage(MatchMessage):
         )
 
 
-@dataclass
 class ActionPerformer(config.HMAConfigWithSubtypes):
     """
     An ActionPerfomer is the configuration + the code to perform an action.
@@ -183,7 +182,7 @@ class ActionPerformer(config.HMAConfigWithSubtypes):
 
 
 @dataclass
-class WebhookActionPerformer(ActionPerformer.Subtype):
+class WebhookActionPerformer(ActionPerformer.Subtype):  # type: ignore
     """Superclass for webhooks"""
 
     url: str
@@ -236,13 +235,11 @@ if __name__ == "__main__":
     match_message = MatchMessage("key", "hash", banked_signals)
 
     configs: t.List[ActionPerformer] = [
-        WebhookDeleteActionPerformer(
-            "DeleteWebhook",
-            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+        WebhookDeleteActionPerformer(  # type: ignore
+            "DeleteWebhook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
-        WebhookPutActionPerformer(
-            "PutWebook",
-            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+        WebhookPutActionPerformer(  # type: ignore
+            "PutWebook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
         ),
     ]
 
