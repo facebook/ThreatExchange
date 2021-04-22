@@ -183,7 +183,7 @@ class ActionPerformer(config.HMAConfigWithSubtypes):
 
 
 @dataclass
-class WebhookActionPerformer(ActionPerformer):
+class WebhookActionPerformer(ActionPerformer.Subtype):
     """Superclass for webhooks"""
 
     url: str
@@ -195,6 +195,7 @@ class WebhookActionPerformer(ActionPerformer):
         raise NotImplementedError()
 
 
+@dataclass
 class WebhookPostActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a POST"""
 
@@ -202,6 +203,7 @@ class WebhookPostActionPerformer(WebhookActionPerformer):
         return post(self.url, data)
 
 
+@dataclass
 class WebhookGetActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a GET"""
 
@@ -209,6 +211,7 @@ class WebhookGetActionPerformer(WebhookActionPerformer):
         return get(self.url)
 
 
+@dataclass
 class WebhookPutActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a PUT"""
 
@@ -216,6 +219,7 @@ class WebhookPutActionPerformer(WebhookActionPerformer):
         return put(self.url, data)
 
 
+@dataclass
 class WebhookDeleteActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a DELETE"""
 
@@ -233,11 +237,11 @@ if __name__ == "__main__":
 
     configs: t.List[ActionPerformer] = [
         WebhookDeleteActionPerformer(
-            name="DeleteWebhook",
+            "DeleteWebhook",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
         ),
         WebhookPutActionPerformer(
-            name="PutWebook",
+            "PutWebook",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
         ),
     ]
