@@ -29,6 +29,9 @@ class Label:
             return NotImplemented
         return self.key == another_label.key and self.value == another_label.value
 
+    def __hash__(self) -> int:
+        return self.value.__hash__()
+
 
 class LabelWithConstraints(Label):
     _KEY_CONSTRAINT = "KeyConstraint"
@@ -37,11 +40,24 @@ class LabelWithConstraints(Label):
         super(LabelWithConstraints, self).__init__(self._KEY_CONSTRAINT, value)
 
 
+class ClassificationLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "Classification"
+
+
+class BankSourceClassificationLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "BankSource"
+
+
+class BankIDClassificationLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "BankID"
+
+
+class BankedContentIDClassificationLabel(LabelWithConstraints):
+    _KEY_CONSTRAINT = "BankedContentID"
+
+
 class ActionLabel(LabelWithConstraints):
     _KEY_CONSTRAINT = "Action"
-
-    def __hash__(self) -> int:
-        return self.value.__hash__()
 
 
 class ThreatExchangeReactionLabel(LabelWithConstraints):
