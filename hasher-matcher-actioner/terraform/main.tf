@@ -286,7 +286,10 @@ module "actions" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
   te_api_token_secret   = aws_secretsmanager_secret.te_api_token
-  config_table          = local.config_table
+  config_table = {
+    name = aws_dynamodb_table.config_table.name
+    arn  = aws_dynamodb_table.config_table.arn
+  }
 }
 
 ### ThreatExchange API Token Secret ###
