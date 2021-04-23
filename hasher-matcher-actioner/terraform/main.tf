@@ -26,7 +26,7 @@ locals {
 
 ### Config storage ###
 
-resource "aws_dynamodb_table" "hma_config" {
+resource "aws_dynamodb_table" "config_table" {
   name         = "${var.prefix}-HMAConfig"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "ConfigType"
@@ -55,9 +55,9 @@ resource "aws_dynamodb_table" "hma_config" {
 }
 
 locals {
-  hma_config = {
-    arn        = aws_dynamodb_table.hma_config.arn
-    table_name = aws_dynamodb_table.hma_config.name
+  config_table = {
+    arn  = aws_dynamodb_table.config_table.arn
+    name = aws_dynamodb_table.config_table.name
   }
 }
 
@@ -133,7 +133,7 @@ module "fetcher" {
   fetch_frequency       = var.fetch_frequency
 
   te_api_token_secret = aws_secretsmanager_secret.te_api_token
-  hma_config          = local.hma_config
+  config_table        = local.config_table
 }
 
 resource "aws_sns_topic" "matches" {
@@ -286,10 +286,7 @@ module "actions" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
   te_api_token_secret   = aws_secretsmanager_secret.te_api_token
-  config_table = {
-    name = aws_dynamodb_table.hma_config.name
-    arn  = aws_dynamodb_table.hma_config.arn
-  }
+  config_table          = local.config_table
 }
 
 ### ThreatExchange API Token Secret ###

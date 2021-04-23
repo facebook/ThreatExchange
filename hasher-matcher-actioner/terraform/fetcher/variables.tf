@@ -79,10 +79,10 @@ variable "te_api_token_secret" {
   })
 }
 
-variable "hma_config" {
-  description = "Config settings for dynamodb table"
+variable "config_table" {
+  description = "The name and arn of the DynamoDB table used for persisting configs."
   type = object({
-    arn        = string
-    table_name = string
+    arn  = string
+    name = string
   })
 }

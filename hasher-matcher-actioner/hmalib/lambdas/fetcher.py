@@ -56,7 +56,7 @@ def lambda_init_once():
           components
     """
     cfg = FetcherConfig.get()
-    HMAConfig.initialize(cfg.collab_config_table)
+    HMAConfig.initialize(cfg.config_table_name)
 
 
 @dataclass
@@ -67,7 +67,7 @@ class FetcherConfig:
 
     s3_bucket: str
     s3_te_data_folder: str
-    collab_config_table: str
+    config_table_name: str
     data_store_table: str
 
     @classmethod
@@ -77,7 +77,7 @@ class FetcherConfig:
         return cls(
             s3_bucket=os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"],
             s3_te_data_folder=os.environ["THREAT_EXCHANGE_DATA_FOLDER"],
-            collab_config_table=os.environ["HMA_CONFIG_TABLE"],
+            config_table_name=os.environ["CONFIG_TABLE_NAME"],
             data_store_table=os.environ["DYNAMODB_DATASTORE_TABLE"],
         )
 

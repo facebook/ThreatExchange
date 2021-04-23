@@ -48,7 +48,7 @@ variable "te_api_token_secret" {
 variable "config_table" {
   description = "The name and arn of the DynamoDB table used for persisting configs."
   type = object({
-    name = string
     arn  = string
+    name = string
   })
 }
