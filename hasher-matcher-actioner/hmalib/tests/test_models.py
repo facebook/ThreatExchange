@@ -299,3 +299,39 @@ class TestPDQModels(unittest.TestCase):
         )[0]
         for tag in replaced_tags:
             assert tag in query_metadata.tags
+
+    def test_pdq_signal_metadata_update_pending_chage_in_table(self):
+        """
+        Test PDQSignalMetadata write to table with update_pending_opinion_change_in_table_if_exists
+        """
+        metadata = self.get_example_pdq_signal_metadata()
+
+        # change id since table persists betweeen test
+        new_signal_id = "987654321"
+        metadata.signal_id = new_signal_id
+
+        # first attempt at update should return false (doesn't exist)
+        assert not metadata.update_pending_opinion_change_in_table_if_exists(self.table)
+
+        metadata.write_to_table(self.table)
+
+        query_metadata = models.PDQSignalMetadata.get_from_signal(
+            self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
+        )[0]
+        assert metadata.signal_hash == query_metadata.signal_hash
+        assert (
+            models.PendingOpinionChange.NONE.value
+            == query_metadata.pending_opinion_change.value
+        )
+
+        metadata.pending_opinion_change = models.PendingOpinionChange.MARK_TRUE_POSITIVE
+
+        # second attmept at update should succeed
+        assert metadata.update_pending_opinion_change_in_table_if_exists(self.table)
+        query_metadata = models.PDQSignalMetadata.get_from_signal(
+            self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
+        )[0]
+        assert (
+            models.PendingOpinionChange.MARK_TRUE_POSITIVE.value
+            == query_metadata.pending_opinion_change.value
+        )

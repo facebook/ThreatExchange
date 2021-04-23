@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
+from enum import Enum
 import typing as t
 import json
 from dataclasses import dataclass, field
@@ -57,6 +58,13 @@ class AWSMessage:
         raise NotImplementedError
 
 
+class PendingOpinionChange(Enum):
+    MARK_TRUE_POSITIVE = "mark_true_positive"
+    MARK_FALSE_POSITIVE = "mark_false_positive"
+    REMOVE_OPINION = "remove_opinion"
+    NONE = "none"
+
+
 @dataclass
 class SignalMetadataBase(DynamoDBItem):
     """
@@ -73,6 +81,7 @@ class SignalMetadataBase(DynamoDBItem):
     signal_source: str
     signal_hash: str  # duplicated field with PDQMatchRecord having both for now to help with debuging/testing
     tags: t.List[str] = field(default_factory=list)
+    pending_opinion_change: PendingOpinionChange = PendingOpinionChange.NONE
 
     @staticmethod
     def get_dynamodb_ds_key(ds_id: str) -> str:
@@ -102,11 +111,28 @@ class PDQSignalMetadata(SignalMetadataBase):
             "UpdatedAt": self.updated_at.isoformat(),
             "HashType": self.SIGNAL_TYPE,
             "Tags": self.tags,
+            "PendingOpinionChange": self.pending_opinion_change.value,
         }
 
     def update_tags_in_table_if_exists(self, table: Table) -> bool:
+        return self._update_field_in_table_if_exists(
+            table,
+            field_value=self.tags,
+            field_name="Tags",
+        )
+
+    def update_pending_opinion_change_in_table_if_exists(self, table: Table) -> bool:
+        return self._update_field_in_table_if_exists(
+            table,
+            field_value=self.pending_opinion_change.value,
+            field_name="PendingOpinionChange",
+        )
+
+    def _update_field_in_table_if_exists(
+        self, table: Table, field_value: t.Any, field_name: str
+    ) -> bool:
         """
-        Only write tags for object in table if the objects with matchig PK and SK already exist
+        Only write the field for object in table if the objects with matchig PK and SK already exist
         (also updates updated_at).
         Returns true if object existed and therefore update was successful otherwise false.
         """
@@ -121,14 +147,14 @@ class PDQSignalMetadata(SignalMetadataBase):
                 # service_resource.Table.update_item's ConditionExpression params is not typed to use its own objects here...
                 ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore
                 ExpressionAttributeValues={
-                    ":t": self.tags,
+                    ":f": field_value,
                     ":u": self.updated_at.isoformat(),
                 },
                 ExpressionAttributeNames={
-                    "#T": "Tags",
+                    "#F": field_name,
                     "#U": "UpdatedAt",
                 },
-                UpdateExpression="SET #T = :t, #U = :u",
+                UpdateExpression="SET #F = :f, #U = :u",
             )
         except ClientError as e:
             if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
@@ -149,7 +175,7 @@ class PDQSignalMetadata(SignalMetadataBase):
                 cls.get_dynamodb_signal_key(signal_source, signal_id)
             )
             & Key("SK").begins_with(cls.DATASET_PREFIX),
-            ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags",
+            ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags, PendingOpinionChange",
             FilterExpression=Attr("HashType").eq(cls.SIGNAL_TYPE),
         ).get("Items", [])
         return cls._result_items_to_metadata(items)
@@ -169,6 +195,9 @@ class PDQSignalMetadata(SignalMetadataBase):
                 signal_source=item["SignalSource"],
                 signal_hash=item["SignalHash"],
                 tags=item["Tags"],
+                pending_opinion_change=PendingOpinionChange(
+                    item.get("PendingOpinionChange", PendingOpinionChange.NONE.value)
+                ),
             )
             for item in items
         ]
