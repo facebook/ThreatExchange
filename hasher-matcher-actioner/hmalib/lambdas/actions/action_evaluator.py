@@ -81,7 +81,7 @@ def lambda_handler(event, context):
             )
             config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
-                MessageBody=json.dumps(action_message.to_aws_message()),
+                MessageBody=action_message.to_aws_message(),
             )
 
         if threat_exchange_reacting_is_enabled(match_message):
@@ -97,9 +97,7 @@ def lambda_handler(event, context):
                     )
                     config.sqs_client.send_message(
                         QueueUrl=config.reactions_queue_url,
-                        MessageBody=json.dumps(
-                            threat_exchange_reaction_message.to_aws_message()
-                        ),
+                        MessageBody=threat_exchange_reaction_message.to_aws_message(),
                     )
 
     return {"evaluation_completed": "true"}

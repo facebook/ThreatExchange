@@ -70,8 +70,6 @@ def load_defaults(_args):
 
     # Could also put the default on the class, but seems too fancy
 
-    action_label = ActionLabel("EnqueueForReview")
-
     configs = [
         ThreatExchangeConfig(
             "303636684709969",
@@ -87,16 +85,39 @@ def load_defaults(_args):
             name="EnqueueForReview",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
         ),
+        WebhookPostActionPerformer(
+            name="EnqueueMiniCastleForReview",
+            url="https://webhook.site/01cef721-bdcc-4681-8430-679c75659867",
+        ),
+        WebhookPostActionPerformer(
+            name="EnqueueSailboatForReview",
+            url="https://webhook.site/fa5c5ad5-f5cc-4692-bf03-a03a4ae3f714",
+        ),
         ActionRule(
-            action_label.value,
-            action_label,
-            [
-                BankIDClassificationLabel("303636684709969"),
-                ClassificationLabel("true_positive"),
-            ],
-            [BankedContentIDClassificationLabel("3364504410306721")],
+            "Enqueue Mini-Castle for Review",
+            ActionLabel("EnqueueMiniCastleForReview"),
+            set(
+                [
+                    BankIDClassificationLabel("303636684709969"),
+                    ClassificationLabel("true_positive"),
+                ]
+            ),
+            set([BankedContentIDClassificationLabel("3364504410306721")]),
+        ),
+        ActionRule(
+            "Enqueue Sailboat for Review",
+            ActionLabel("EnqueueSailboatForReview"),
+            set(
+                [
+                    BankIDClassificationLabel("303636684709969"),
+                    ClassificationLabel("true_positive"),
+                    BankedContentIDClassificationLabel("3364504410306721"),
+                ]
+            ),
+            set(),
         ),
     ]
+
     for config in configs:
         # Someday maybe can do filtering or something, I dunno
         hmaconfig.update_config(config)

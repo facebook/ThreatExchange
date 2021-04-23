@@ -120,7 +120,7 @@ def lambda_handler(event, context):
                 # to dataset[s]
                 for privacy_group in metadata.get("privacy_groups", []):
                     banked_signal = BankedSignal(
-                        signal_id, privacy_group, metadata["source"]
+                        str(signal_id), str(privacy_group), str(metadata["source"])
                     )
                     for tag in metadata["tags"].get(privacy_group, []):
                         banked_signal.classifications.append(tag)
