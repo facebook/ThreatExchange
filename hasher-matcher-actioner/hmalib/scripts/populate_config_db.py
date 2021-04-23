@@ -72,12 +72,12 @@ def load_defaults(_args):
 
     configs = [
         ThreatExchangeConfig(
-            "303636684709969",
+            name="303636684709969",
             fetcher_active=True,
             privacy_group_name="Test Config 1",
         ),
         ThreatExchangeConfig(
-            "258601789084078",
+            name="258601789084078",
             fetcher_active=True,
             privacy_group_name="Test Config 2",
         ),
@@ -100,27 +100,29 @@ def load_defaults(_args):
             # https://webhook.site/#!/fa5c5ad5-f5cc-4692-bf03-a03a4ae3f714
         ),
         ActionRule(
-            "Enqueue Mini-Castle for Review",
-            ActionLabel("EnqueueMiniCastleForReview"),
-            set(
+            name="Enqueue Mini-Castle for Review",
+            action_label=ActionLabel("EnqueueMiniCastleForReview"),
+            must_have_labels=set(
                 [
                     BankIDClassificationLabel("303636684709969"),
                     ClassificationLabel("true_positive"),
                 ]
             ),
-            set([BankedContentIDClassificationLabel("3364504410306721")]),
+            must_not_have_labels=set(
+                [BankedContentIDClassificationLabel("3364504410306721")]
+            ),
         ),
         ActionRule(
-            "Enqueue Sailboat for Review",
-            ActionLabel("EnqueueSailboatForReview"),
-            set(
+            name="Enqueue Sailboat for Review",
+            action_label=ActionLabel("EnqueueSailboatForReview"),
+            must_have_labels=set(
                 [
                     BankIDClassificationLabel("303636684709969"),
                     ClassificationLabel("true_positive"),
                     BankedContentIDClassificationLabel("3364504410306721"),
                 ]
             ),
-            set(),
+            must_not_have_labels=set(),
         ),
     ]
 

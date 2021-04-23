@@ -62,27 +62,29 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
 
         action_rules = [
             ActionRule(
-                "Enqueue Mini-Castle for Review",
-                enqueue_mini_castle_for_review_action_label,
-                set(
+                name="Enqueue Mini-Castle for Review",
+                action_label=enqueue_mini_castle_for_review_action_label,
+                must_have_labels=set(
                     [
                         BankIDClassificationLabel("303636684709969"),
                         ClassificationLabel("true_positive"),
                     ]
                 ),
-                set([BankedContentIDClassificationLabel("3364504410306721")]),
+                must_not_have_labels=set(
+                    [BankedContentIDClassificationLabel("3364504410306721")]
+                ),
             ),
             ActionRule(
-                "Enqueue Sailboat for Review",
-                enqueue_sailboat_for_review_action_label,
-                set(
+                name="Enqueue Sailboat for Review",
+                action_label=enqueue_sailboat_for_review_action_label,
+                must_have_labels=set(
                     [
                         BankIDClassificationLabel("303636684709969"),
                         ClassificationLabel("true_positive"),
                         BankedContentIDClassificationLabel("3364504410306721"),
                     ]
                 ),
-                set(),
+                must_not_have_labels=set(),
             ),
         ]
 
