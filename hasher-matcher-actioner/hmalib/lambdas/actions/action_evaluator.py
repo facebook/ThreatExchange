@@ -7,6 +7,7 @@ import typing as t
 
 from dataclasses import dataclass, field
 from functools import lru_cache
+from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.models import MatchMessage, BankedSignal
 from hmalib.common.actioner_models import (
@@ -41,6 +42,10 @@ class ActionEvaluatorConfig:
     @classmethod
     @lru_cache(maxsize=None)
     def get(cls):
+        logger.info(
+            "Initializing configs using table name %s", os.environ["CONFIG_TABLE_NAME"]
+        )
+        HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
             reactions_queue_url=os.environ["REACTIONS_QUEUE_URL"],
@@ -139,20 +144,10 @@ def get_classifications_by_match(match_message: MatchMessage) -> t.List[t.Set[La
 
 def get_action_rules() -> t.List[ActionRule]:
     """
-    TODO implement (get from config)
     Returns the ActionRule objects stored in the config repository. Each ActionRule
     will have the following attributes: MustHaveLabels, MustNotHaveLabels, ActionLabel.
     """
-    return [
-        ActionRule(
-            ActionLabel("EnqueueForReview"),
-            [
-                BankIDClassificationLabel("303636684709969"),
-                ClassificationLabel("true_positive"),
-            ],
-            [BankedContentIDClassificationLabel("3364504410306721")],
-        )
-    ]
+    return ActionRule.get_all()
 
 
 def action_rule_applies_to_classifications(

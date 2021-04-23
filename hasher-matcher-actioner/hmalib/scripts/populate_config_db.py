@@ -17,6 +17,13 @@ import typing as t
 import re
 
 from hmalib.lambdas.fetcher import ThreatExchangeConfig
+from hmalib.common.actioner_models import (
+    ActionLabel,
+    ActionRule,
+    BankedContentIDClassificationLabel,
+    BankIDClassificationLabel,
+    ClassificationLabel,
+)
 from hmalib.common import config as hmaconfig
 from hmalib.common.actioner_models import WebhookPostActionPerformer
 
@@ -62,6 +69,9 @@ def load_defaults(_args):
     """
 
     # Could also put the default on the class, but seems too fancy
+
+    action_label = ActionLabel("EnqueueForReview")
+
     configs = [
         ThreatExchangeConfig(
             "303636684709969",
@@ -74,8 +84,17 @@ def load_defaults(_args):
             privacy_group_name="Test Config 2",
         ),
         WebhookPostActionPerformer(
-            name="EnqueForReviewAction",
+            name="EnqueueForReview",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+        ),
+        ActionRule(
+            action_label.value,
+            action_label,
+            [
+                BankIDClassificationLabel("303636684709969"),
+                ClassificationLabel("true_positive"),
+            ],
+            [BankedContentIDClassificationLabel("3364504410306721")],
         ),
     ]
     for config in configs:

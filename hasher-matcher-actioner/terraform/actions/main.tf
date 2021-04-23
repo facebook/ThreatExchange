@@ -96,8 +96,9 @@ resource "aws_lambda_function" "action_evaluator" {
 
   environment {
     variables = {
-      ACTIONS_QUEUE_URL = aws_sqs_queue.actions_queue.id,
+      ACTIONS_QUEUE_URL   = aws_sqs_queue.actions_queue.id,
       REACTIONS_QUEUE_URL = aws_sqs_queue.reactions_queue.id,
+      CONFIG_TABLE_NAME   = var.config_table.name,
     }
   }
 }
@@ -116,6 +117,12 @@ resource "aws_lambda_function" "action_performer" {
 
   timeout     = 300
   memory_size = 512
+
+  environment {
+    variables = {
+      CONFIG_TABLE_NAME = var.config_table.name,
+    }
+  }
 }
 
 # Reactioner reacts to ThreatExchange.
@@ -207,6 +214,11 @@ data "aws_iam_policy_document" "action_evaluator" {
     resources = [aws_sqs_queue.actions_queue.arn, aws_sqs_queue.reactions_queue.arn]
   }
   statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:Scan"]
+    resources = [var.config_table.arn]
+  }
+  statement {
     effect = "Allow"
     actions = [
       "logs:CreateLogStream",
@@ -264,6 +276,14 @@ data "aws_iam_policy_document" "action_performer" {
     effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
     resources = [var.te_api_token_secret.arn]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:Get*",
+    ]
+    resources = [var.config_table.arn]
   }
 }
 

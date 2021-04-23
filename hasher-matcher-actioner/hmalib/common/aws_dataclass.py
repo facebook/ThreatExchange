@@ -158,6 +158,8 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
     if is_dataclass(in_type):
         kwargs = {}
         for field in fields(in_type):
+            if not field.init:
+                continue
             val = aws_field.get(field.name)
             if val is None:
                 continue  # Hopefully missing b/c default or version difference
