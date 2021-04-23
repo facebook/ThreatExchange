@@ -17,4 +17,3 @@ pdq/java/bazel-out/
 pdq/java/bazel-testlogs/
 .mypy_cache/
 .vscode/
-hasher-matcher-actioner/.devcontainer/devcontainer.json
