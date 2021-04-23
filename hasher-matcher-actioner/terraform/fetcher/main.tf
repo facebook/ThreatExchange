@@ -37,7 +37,7 @@ resource "aws_lambda_function" "fetcher" {
   environment {
     variables = {
       THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
-      HMA_CONFIG_TABLE                      = var.hma_config.table_name
+      CONFIG_TABLE_NAME                     = var.config_table.name
       THREAT_EXCHANGE_DATA_FOLDER           = var.threat_exchange_data.data_folder
       THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
       DYNAMODB_DATASTORE_TABLE              = var.datastore.name
@@ -111,7 +111,7 @@ data "aws_iam_policy_document" "fetcher" {
   statement {
     effect    = "Allow"
     actions   = ["dynamodb:Scan"]
-    resources = [var.hma_config.arn]
+    resources = [var.config_table.arn]
   }
   statement {
     effect    = "Allow"

@@ -96,8 +96,9 @@ resource "aws_lambda_function" "action_evaluator" {
 
   environment {
     variables = {
-      ACTIONS_QUEUE_URL = aws_sqs_queue.actions_queue.id,
+      ACTIONS_QUEUE_URL   = aws_sqs_queue.actions_queue.id,
       REACTIONS_QUEUE_URL = aws_sqs_queue.reactions_queue.id,
+      CONFIG_TABLE_NAME   = var.config_table.name,
     }
   }
 }
@@ -205,6 +206,11 @@ data "aws_iam_policy_document" "action_evaluator" {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
     resources = [aws_sqs_queue.actions_queue.arn, aws_sqs_queue.reactions_queue.arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:Scan"]
+    resources = [var.config_table.arn]
   }
   statement {
     effect = "Allow"

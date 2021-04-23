@@ -19,14 +19,14 @@ locals {
   common_tags = {
     "HMAPrefix" = var.prefix
   }
-  pdq_file_extension   = ".pdq.te"
-  te_data_folder       = module.hashing_data.threat_exchange_data_folder_info.key
+  pdq_file_extension       = ".pdq.te"
+  te_data_folder           = module.hashing_data.threat_exchange_data_folder_info.key
   te_api_token_secret_name = "threatexchange/${var.prefix}_api_tokens"
 }
 
 ### Config storage ###
 
-resource "aws_dynamodb_table" "hma_config" {
+resource "aws_dynamodb_table" "config_table" {
   name         = "${var.prefix}-HMAConfig"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "ConfigType"
@@ -55,9 +55,9 @@ resource "aws_dynamodb_table" "hma_config" {
 }
 
 locals {
-  hma_config = {
-    arn        = aws_dynamodb_table.hma_config.arn
-    table_name = aws_dynamodb_table.hma_config.name
+  config_table = {
+    arn  = aws_dynamodb_table.config_table.arn
+    name = aws_dynamodb_table.config_table.name
   }
 }
 
@@ -132,8 +132,8 @@ module "fetcher" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
   fetch_frequency       = var.fetch_frequency
 
-  te_api_token_secret  = aws_secretsmanager_secret.te_api_token
-  hma_config = local.hma_config
+  te_api_token_secret = aws_secretsmanager_secret.te_api_token
+  config_table        = local.config_table
 }
 
 resource "aws_sns_topic" "matches" {
@@ -285,7 +285,8 @@ module "actions" {
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
-  te_api_token_secret      = aws_secretsmanager_secret.te_api_token
+  te_api_token_secret   = aws_secretsmanager_secret.te_api_token
+  config_table          = local.config_table
 }
 
 ### ThreatExchange API Token Secret ###
