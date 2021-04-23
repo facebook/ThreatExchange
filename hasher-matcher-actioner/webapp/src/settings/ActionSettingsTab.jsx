@@ -13,8 +13,8 @@ import Form from 'react-bootstrap/Form';
 export default function ActionSettingsTab() {
   return (
     <>
-      <ActionLabelSettings />
       <ActionPerformerSettings />
+      <ActionLabelSettings />
     </>
   );
 }
@@ -28,8 +28,7 @@ const ActionerTypes = {
     args: {
       url: {description: 'The url to send a webhook to'},
       webhookType: {
-        description:
-          'What type of webhook should be sent (POST, DELETE, PUT, or GET)',
+        description: 'What type of webhook should be sent?',
         default: 'POST',
       },
       headers: {
@@ -38,7 +37,7 @@ const ActionerTypes = {
       },
     },
     description:
-      'When configured for a match, the WebhookActioner will send a webhook to the specified url with data describing the match',
+      'When a match occurs, a webhook will be sent to the specified url with data describing the match',
   },
 };
 
@@ -46,89 +45,119 @@ function WebhookActionerRender({url, webhookType, headers}) {
   const actionerDetails = ActionerTypes.WebhookActioner;
 
   const [editing, setEditing] = useState(false);
-  const [newURL, setURL] = useState(url);
-  const [newWebhookType, setWebhookType] = useState(webhookType);
-  const [newHeaders, setHeaders] = useState(headers);
 
-  let tempURL = newURL;
-  let tempWebhookType = newWebhookType;
-  let tempHeaders = newHeaders;
+  const [savedURL, setURL] = useState(url);
+  const [savedWebhookType, setWebhookType] = useState(webhookType);
+  const [savedHeaders, setHeaders] = useState(headers);
+  const [tempURL, setTempURL] = useState(url);
+  const [tempWebhookType, setTempWebhookType] = useState(webhookType);
+  const [tempHeaders, setTempHeaders] = useState(headers);
+
   return (
     <Card>
       <div hidden={editing}>
-        <h5>WebhookActionerRender</h5>
-        URL : {newURL}
-        <br />
-        Webhook Type : {newWebhookType}
-        <br />
-        Headers : {newHeaders}
-        <br />
-        <Button
-          variant="primary"
-          onClick={() => {
-            setEditing(true);
-          }}>
-          Edit
-        </Button>
+        <Card.Header>
+          WebhookActioner
+          <br />
+          <Form.Text className="text-muted">
+            {ActionerTypes.WebhookActioner.description}
+          </Form.Text>
+        </Card.Header>
+        <Card.Body>
+          URL : {savedURL}
+          <br />
+          Webhook Type : {savedWebhookType}
+          <br />
+          Headers : {savedHeaders}
+          <br />
+        </Card.Body>
+        <Card.Footer>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setEditing(true);
+            }}>
+            Edit
+          </Button>
+        </Card.Footer>
       </div>
 
       <div hidden={!editing}>
-        <Form>
-          <Form.Group>
-            <Form.Label>Action Type</Form.Label>
-            <Form.Control as="select" size="lg">
-              <option>WebhookActioner</option>
-            </Form.Control>
+        <Card.Header>
+          <Form>
+            <Form.Group>
+              <Form.Control as="select" size="lg">
+                <option>WebhookActioner</option>
+              </Form.Control>
+            </Form.Group>
+          </Form>
+        </Card.Header>
+        <Card.Body>
+          <Form>
+            <Form.Group>
+              <Form.Label>URL</Form.Label>
+              <Form.Text className="text-muted">
+                {actionerDetails.args.url.description}
+              </Form.Text>
+              <Form.Control
+                type="url"
+                value={tempURL}
+                onChange={e => {
+                  setTempURL(e.target.value);
+                }}
+              />
+              <Form.Label>Webhook Type</Form.Label>
+              <Form.Text className="text-muted">
+                {actionerDetails.args.webhookType.description}
+              </Form.Text>
+              <Form.Control
+                as="select"
+                value={tempWebhookType}
+                onChange={e => {
+                  setTempWebhookType(e.target.value);
+                }}>
+                <option>POST</option>
+                <option>GET</option>
+                <option>PUT</option>
+                <option>DELETE</option>
+              </Form.Control>
 
-            <Form.Label>URL</Form.Label>
-            <Form.Control
-              type="url"
-              placeholder={actionerDetails.args.url.description}
-              onChange={e => {
-                tempURL = e.target.value;
-              }}
-            />
-
-            <Form.Label>Webhook Type</Form.Label>
-            <Form.Control
-              as="select"
-              placeholder={actionerDetails.args.webhookType.description}
-              onChange={e => {
-                tempWebhookType = e.target.value;
-              }}>
-              <option>POST</option>
-              <option>GET</option>
-              <option>PUT</option>
-              <option>DELETE</option>
-            </Form.Control>
-
-            <Form.Label>Headers</Form.Label>
-            <Form.Control
-              type="text"
-              placeholder={actionerDetails.args.headers.description}
-              onChange={e => {
-                tempHeaders = e.target.value;
-              }}
-            />
-          </Form.Group>
-        </Form>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setURL(tempURL);
-            setWebhookType(tempWebhookType);
-            setHeaders(tempHeaders);
-            setEditing(false);
-          }}>
-          Save
-        </Button>
-        <Button
-          variant="danger"
-          onClick={() => {
-            setEditing(false);
-          }}>
-          Cancel
-        </Button>
+              <Form.Label>Headers</Form.Label>
+              <Form.Text className="text-muted">
+                {actionerDetails.args.headers.description}
+              </Form.Text>
+              <Form.Control
+                type="text"
+                value={tempHeaders}
+                onChange={e => {
+                  setTempHeaders(e.target.value);
+                }}
+              />
+            </Form.Group>
+          </Form>
+        </Card.Body>
+        <Card.Footer>
+          <Button
+            variant="primary"
+            onClick={() => {
+              setURL(tempURL);
+              setWebhookType(tempWebhookType);
+              setHeaders(tempHeaders);
+              setEditing(false);
+            }}>
+            Save
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setTempURL(savedURL);
+              setTempWebhookType(savedWebhookType);
+              setTempHeaders(savedHeaders);
+              setEditing(false);
+            }}>
+            Cancel
+          </Button>
+        </Card.Footer>
       </div>
     </Card>
   );
@@ -140,14 +169,14 @@ const ActionRenderers = {
 
 function ActionPerformerRow({name, type, params}) {
   const [editing, setEditing] = useState(false);
-  const [newName, setName] = useState(name);
-  let tempName = name;
+  const [savedName, setName] = useState(name);
+  const [tempName, setTempName] = useState(name);
   return (
     <tr>
       <td>
         <div hidden={editing}>
-          {' '}
-          {newName}
+          {savedName}
+          <br />
           <Button
             variant="primary"
             onClick={() => {
@@ -164,8 +193,9 @@ function ActionPerformerRow({name, type, params}) {
               <Form.Control
                 type="text"
                 placeholder="New Action Name"
+                value={tempName}
                 onChange={e => {
-                  tempName = e.target.value;
+                  setTempName(e.target.value);
                 }}
               />
             </Form.Group>
@@ -182,6 +212,7 @@ function ActionPerformerRow({name, type, params}) {
           <Button
             variant="danger"
             onClick={() => {
+              setTempName(savedName);
               setEditing(false);
             }}>
             Cancel
@@ -233,14 +264,18 @@ function ActionPerformerSettings() {
   );
   return (
     <>
-      <h2 className="mt-4">Action Definitions</h2>
-      <h5 className="mt-5">Define what the Actions above mean</h5>
-      <Table striped bordered hover>
-        <thead>
-          <tr>{headerBlock}</tr>
-        </thead>
-        <tbody>{performerBlocks}</tbody>
-      </Table>
+      <Card.Header>
+        <h2 className="mt-4">Action Definitions</h2>
+        <h5 className="mt-5">Define what to do for different Actions</h5>
+      </Card.Header>
+      <Card.Body>
+        <Table striped bordered hover>
+          <thead>
+            <tr>{headerBlock}</tr>
+          </thead>
+          <tbody>{performerBlocks}</tbody>
+        </Table>
+      </Card.Body>
     </>
   );
 }
