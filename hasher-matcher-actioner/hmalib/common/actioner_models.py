@@ -78,8 +78,8 @@ class ActionRule(config.HMAConfig):
     """
 
     action_label: ActionLabel
-    must_have_labels: t.List[Label]
-    must_not_have_labels: t.List[Label]
+    must_have_labels: t.Set[Label]
+    must_not_have_labels: t.Set[Label]
 
 
 TUrl = t.Union[t.Text, bytes]

@@ -144,6 +144,7 @@ def get_classifications_by_match(match_message: MatchMessage) -> t.List[t.Set[La
 
 def get_action_rules() -> t.List[ActionRule]:
     """
+    TODO Research caching rules for a short bit of time (1 min? 5 min?) use @lru_cache to implement
     Returns the ActionRule objects stored in the config repository. Each ActionRule
     will have the following attributes: MustHaveLabels, MustNotHaveLabels, ActionLabel.
     """
@@ -157,12 +158,9 @@ def action_rule_applies_to_classifications(
     Evaluate if the action rule applies to the classifications. Return True if the action rule's "must have"
     labels are all present and none of the "must not have" labels are present in the classifications, otherwise return False.
     """
-    must_have_labels: t.Set[Label] = set(action_rule.must_have_labels)
-    must_not_have_labels: t.Set[Label] = set(action_rule.must_not_have_labels)
-
-    return must_have_labels.issubset(
+    return action_rule.must_have_labels.issubset(
         classifications
-    ) and must_not_have_labels.isdisjoint(classifications)
+    ) and action_rule.must_not_have_labels.isdisjoint(classifications)
 
 
 def get_actions() -> t.List[Action]:
