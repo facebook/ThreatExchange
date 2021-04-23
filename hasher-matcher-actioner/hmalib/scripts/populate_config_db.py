@@ -77,11 +77,15 @@ def load_defaults(_args):
             "303636684709969",
             fetcher_active=True,
             privacy_group_name="Test Config 1",
+            write_back=True,
+            in_use=True,
         ),
         ThreatExchangeConfig(
             "258601789084078",
             fetcher_active=True,
             privacy_group_name="Test Config 2",
+            write_back=True,
+            in_use=True,
         ),
         WebhookPostActionPerformer(
             name="EnqueueForReview",

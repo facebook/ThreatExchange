@@ -9,6 +9,7 @@ library that exists somewhere that does this much better.
 """
 
 from decimal import Decimal
+from botocore.exceptions import ClientError
 import functools
 from dataclasses import dataclass, field, fields, is_dataclass
 import typing as t
@@ -306,8 +307,13 @@ class _HMAConfigSubtype(HMAConfigWithSubtypes):
 # to make them easier to spot in the wild
 
 
-def update_config(config: HMAConfig) -> None:
-    """Update or create a config. No locking or versioning!"""
+def update_config(
+    config: HMAConfig, insert_only: bool = False, key: str = "ConfigName"
+) -> None:
+    """
+    Update or create a config. No locking or versioning!
+    Adding a optional argument conditionExpression to create or update a config conditionally
+    """
     _assert_initialized()
     if isinstance(config, HMAConfigWithSubtypes):
         if not isinstance(config, _HMAConfigSubtype):
@@ -322,10 +328,42 @@ def update_config(config: HMAConfig) -> None:
     # TODO - we should probably sanity check here to make sure all the fields
     #        are the expected types, because lolpython. Otherwise, it will
     #        fail to deserialize later
-    get_dynamodb().meta.client.put_item(
+    if insert_only:
+        try:
+            get_dynamodb().meta.client.put_item(
+                TableName=_TABLE_NAME,
+                Item=_config_to_dynamodb_item(config),
+                ConditionExpression=Attr(key).not_exists(),
+            )
+        except ClientError as e:
+            # Ignore the ConditionalCheckFailedException, bubble up
+            # other exceptions.
+            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+                raise
+    else:
+        get_dynamodb().meta.client.put_item(
+            TableName=_TABLE_NAME,
+            Item=_config_to_dynamodb_item(config),
+        )
+
+
+def update_config_attributes_by_type_and_name(
+    config_type: str, name: str, updates: dict
+):
+    """Delete a config by name (and type)"""
+    _assert_initialized()
+    update_expression, values = _get_update_params(updates)
+    response = get_dynamodb().meta.client.update_item(
         TableName=_TABLE_NAME,
-        Item=_config_to_dynamodb_item(config),
+        Key={
+            "ConfigType": config_type,
+            "ConfigName": name,
+        },
+        ExpressionAttributeValues=dict(values),
+        UpdateExpression=update_expression,
+        ReturnValues="ALL_NEW",
     )
+    return response["Attributes"]
 
 
 def delete_config_by_type_and_name(config_type: str, name: str) -> None:
@@ -366,3 +404,23 @@ def _config_to_dynamodb_item(config) -> t.Dict[str, t.Any]:
     item["ConfigType"] = config.get_config_type()
     item["ConfigName"] = config.name
     return item
+
+
+def _get_update_params(body: dict):
+    """Given a dictionary we generate an update expression and a dict of values
+    to update a dynamodb table.
+
+    Params:
+        body (dict): Parameters to use for formatting.
+
+    Returns:
+        update expression, dict of values.
+    """
+    update_expression = ["set "]
+    update_values = dict()
+
+    for key, val in body.items():
+        update_expression.append(f" {key} = :{key},")
+        update_values[f":{key}"] = val
+
+    return "".join(update_expression)[:-1], update_values
