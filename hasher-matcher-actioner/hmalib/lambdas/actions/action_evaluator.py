@@ -148,18 +148,6 @@ def get_action_rules() -> t.List[ActionRule]:
     will have the following attributes: MustHaveLabels, MustNotHaveLabels, ActionLabel.
     """
     return ActionRule.get_all()
-    # action_label = ActionLabel("EnqueueForReview")
-    # return [
-    #     ActionRule(
-    #         action_label.value,
-    #         action_label,
-    #         [
-    #             BankIDClassificationLabel("303636684709969"),
-    #             ClassificationLabel("true_positive"),
-    #         ],
-    #         [BankedContentIDClassificationLabel("3364504410306721")],
-    #     )
-    # ]
 
 
 def action_rule_applies_to_classifications(
