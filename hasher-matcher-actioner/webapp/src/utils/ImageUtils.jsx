@@ -12,8 +12,8 @@ export const BlurUntilHoverImage =
       border: 'none',
       filter: 'blur(10px) grayscale(100%)',
       margin: '4px 4px 4px 4px',
-      maxHeight: '490px',
-      maxWidth: '490px',
+      maxHeight: '450px',
+      maxWidth: '450px',
     };
 
     const imgStyleNoBlur = {...imgStyleBlur, filter: 'none'};
