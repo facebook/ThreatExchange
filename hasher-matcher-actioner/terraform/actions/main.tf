@@ -117,6 +117,12 @@ resource "aws_lambda_function" "action_performer" {
 
   timeout     = 300
   memory_size = 512
+
+  environment {
+    variables = {
+      CONFIG_TABLE_NAME = var.config_table.name,
+    }
+  }
 }
 
 # Reactioner reacts to ThreatExchange.
@@ -270,6 +276,14 @@ data "aws_iam_policy_document" "action_performer" {
     effect    = "Allow"
     actions   = ["secretsmanager:GetSecretValue"]
     resources = [var.te_api_token_secret.arn]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:Get*",
+    ]
+    resources = [var.config_table.arn]
   }
 }
 
