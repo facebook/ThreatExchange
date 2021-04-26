@@ -37,7 +37,10 @@ export function fetchAllMatches() {
 }
 
 export function fetchMatchesFromSignal(signalSource, signalId) {
-  return apiGet('/matches/', {signal_q: signalId, signal_source: signalSource});
+  return apiGet('/matches/', {
+    signal_q: signalId,
+    signal_source: signalSource,
+  });
 }
 
 export function fetchMatchesFromContent(contentId) {
@@ -50,10 +53,6 @@ export function fetchMatchDetails(key) {
 
 export function fetchHash(key) {
   return apiGet(`/hash/${key}`);
-}
-
-export function fetchContentStatus(key) {
-  return apiGet(`/content_status/${key}`);
 }
 
 export function fetchImage(key) {
@@ -80,8 +79,20 @@ export async function uploadImage(file) {
   };
 }
 
-export async function updateContentStatus(key, status) {
-  apiPost(`/content_status/${key}`, {
-    status,
-  });
+export async function requestSignalOpinionChange(
+  signalId,
+  signalSource,
+  dataset,
+  opinionChange,
+) {
+  apiPost(
+    '/matches/request-signal-opinion-change/',
+    {},
+    {
+      signal_q: signalId,
+      signal_source: signalSource,
+      dataset_q: dataset,
+      opinion_change: opinionChange,
+    },
+  );
 }
