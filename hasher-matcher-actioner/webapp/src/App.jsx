@@ -10,7 +10,7 @@ import './styles/_app.scss';
 
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
-import ContentDetails from './ContentDetails';
+import ContentDetails from './pages/ContentDetails';
 import Matches from './pages/Matches';
 import Settings from './Settings';
 import Signals from './Signals';
