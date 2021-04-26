@@ -74,6 +74,7 @@ def sync_privacy_groups():
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()
     unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
+    priavcy_group_id_in_use = set()
 
     for privacy_group in unique_privacy_groups:
         if privacy_group.threat_updates_enabled:
@@ -81,6 +82,7 @@ def sync_privacy_groups():
             # # See here for more details:
             # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-updates/v9.0
             logger.info("Adding collaboration name %s", privacy_group.name)
+            priavcy_group_id_in_use.add(privacy_group.id)
             config = ThreatExchangeConfig(
                 privacy_group.id,
                 # TODO Currently default to True for testing purpose,
@@ -93,6 +95,18 @@ def sync_privacy_groups():
             # Warning! Will stomp on existing configs (including if you disable them)
             # TODO need to compare with existing privacy groups in dynamoDB to create/update/delete
             hmaconfig.update_config(config, insert_only=True)
+    update_privacy_group_in_use(priavcy_group_id_in_use)
+
+
+def update_privacy_group_in_use(priavcy_group_id_in_use: set) -> None:
+    collabs = ThreatExchangeConfig.get_all()
+    for collab in collabs:
+        if collab.privacy_group_id not in priavcy_group_id_in_use:
+            hmaconfig.update_config_attributes_by_type_and_name(
+                config_type="ThreatExchangeConfig",
+                name=str(collab.privacy_group_id),
+                updates={"in_use": False},
+            )
 
 
 def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
