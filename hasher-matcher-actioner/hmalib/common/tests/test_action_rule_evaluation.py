@@ -8,6 +8,7 @@ from hmalib.models import MatchMessage, BankedSignal
 from hmalib.common.actioner_models import (
     ActionLabel,
     ActionRule,
+    BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     ClassificationLabel,
     Label,
@@ -36,8 +37,8 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             ActionRule(
                 enqueue_for_review_action_label.value,
                 enqueue_for_review_action_label,
-                [BankIDClassificationLabel(bank_id)],
-                [ClassificationLabel("Foo")],
+                set([BankIDClassificationLabel(bank_id)]),
+                set([ClassificationLabel("Foo")]),
             )
         ]
 
@@ -51,3 +52,74 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         action_labels = get_action_labels(match_message_with_foo, action_rules)
 
         assert len(action_labels) == 0
+
+        enqueue_mini_castle_for_review_action_label = ActionLabel(
+            "EnqueueMiniCastleForReview"
+        )
+        enqueue_sailboat_for_review_action_label = ActionLabel(
+            "EnqueueSailboatForReview"
+        )
+
+        action_rules = [
+            ActionRule(
+                name="Enqueue Mini-Castle for Review",
+                action_label=enqueue_mini_castle_for_review_action_label,
+                must_have_labels=set(
+                    [
+                        BankIDClassificationLabel("303636684709969"),
+                        ClassificationLabel("true_positive"),
+                    ]
+                ),
+                must_not_have_labels=set(
+                    [BankedContentIDClassificationLabel("3364504410306721")]
+                ),
+            ),
+            ActionRule(
+                name="Enqueue Sailboat for Review",
+                action_label=enqueue_sailboat_for_review_action_label,
+                must_have_labels=set(
+                    [
+                        BankIDClassificationLabel("303636684709969"),
+                        ClassificationLabel("true_positive"),
+                        BankedContentIDClassificationLabel("3364504410306721"),
+                    ]
+                ),
+                must_not_have_labels=set(),
+            ),
+        ]
+
+        mini_castle_match_message = MatchMessage(
+            content_key="images/mini-castle.jpg",
+            content_hash="361da9e6cf1b72f5cea0344e5bb6e70939f4c70328ace762529cac704297354a",
+            matching_banked_signals=[
+                BankedSignal(
+                    banked_content_id="4169895076385542",
+                    bank_id="303636684709969",
+                    bank_source="te",
+                    classifications=["true_positive"],
+                )
+            ],
+        )
+
+        sailboat_match_message = MatchMessage(
+            content_key="images/sailboat-mast-and-sun.jpg",
+            content_hash="388ff5e1084efef10096df9cb969296dff2b04d67a94065ecd292129ef6b1090",
+            matching_banked_signals=[
+                BankedSignal(
+                    banked_content_id="3364504410306721",
+                    bank_id="303636684709969",
+                    bank_source="te",
+                    classifications=["true_positive"],
+                )
+            ],
+        )
+
+        action_labels = get_action_labels(mini_castle_match_message, action_rules)
+
+        assert len(action_labels) == 1
+        assert action_labels.pop() == enqueue_mini_castle_for_review_action_label
+
+        action_labels = get_action_labels(sailboat_match_message, action_rules)
+
+        assert len(action_labels) == 1
+        assert action_labels.pop() == enqueue_sailboat_for_review_action_label
