@@ -172,7 +172,7 @@ function ActionPerformerRow({name, type, params}) {
   const [savedName, setName] = useState(name);
   const [tempName, setTempName] = useState(name);
   return (
-    <tr>
+    <tr key={name}>
       <td>
         <div hidden={editing}>
           {savedName}
@@ -257,7 +257,7 @@ function ActionPerformerSettings() {
   // const [editing, setEditing] = useState([false, false]);
 
   const headerBlock = ['Action Name', 'Action Details'].map(header => (
-    <th>{header}</th>
+    <th key={header}>{header}</th>
   ));
   const performerBlocks = performers.map(performer =>
     ActionPerformerRow(performer),
@@ -265,7 +265,7 @@ function ActionPerformerSettings() {
   return (
     <>
       <Card.Header>
-        <h2 className="mt-4">Action Definitions</h2>
+        <h2 className="mt-2">Action Definitions</h2>
         <h5 className="mt-5">Define what to do for different Actions</h5>
       </Card.Header>
       <Card.Body>
