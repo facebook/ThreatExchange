@@ -41,7 +41,7 @@ const ActionerTypes = {
   },
 };
 
-function WebhookActionerRender({url, webhookType, headers}) {
+function WebhookActioner({url, webhookType, headers}) {
   const actionerDetails = ActionerTypes.WebhookActioner;
 
   const [editing, setEditing] = useState(false);
@@ -163,8 +163,8 @@ function WebhookActionerRender({url, webhookType, headers}) {
   );
 }
 
-const ActionRenderers = {
-  WebhookActioner: WebhookActionerRender,
+const Actioners = {
+  WebhookActioner,
 };
 
 function ActionPerformerRow({name, type, params}) {
@@ -219,7 +219,7 @@ function ActionPerformerRow({name, type, params}) {
           </Button>
         </div>
       </td>
-      <td>{ActionRenderers[type](params)}</td>
+      <td>{Actioners[type](params)}</td>
     </tr>
   );
 }
