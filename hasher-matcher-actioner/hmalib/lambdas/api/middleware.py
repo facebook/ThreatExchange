@@ -83,10 +83,30 @@ def jsoninator(
     # I feel like I'm doing a lot of work to support a common API for typed
     # request payloads and untyped request payloads.  All this could be avoided
     # by having `jsoninator` and `jsoninator_typed_request(RequestType)`, but
-    # meh! This looks shinier.
+    # meh! This looks shinier. All the complexity is hidden behind a single
+    # method call.
 
-    # Can't use isinstance because Class types are t.Callable as well.
+    # Super verbose description of decorator BEGINS
+
+    # A decorator is just a function that returns another function where the
+    # returned function has some semantics. [Link to decorators
+    # tutorial](https://realpython.com/primer-on-python-decorators/) If you are
+    # familiar with decorators, continue reading this comment.
+
+    # When you add jsoninator without arguments to bottle's apply=[..] list, it will
+    # call jsoninator with the view function. As is typical with decorators.
+
+    # When you add jsoninator with some arguments, python will first execute the
+    # function, and then use the return value as a decorator.
+    
+    # Super verbose description of decorator ENDS
+
+    # Can't use isinstance because Class types are t.Callable as well. So,
+    # instead use the from_dict class method to determine if this is a decorator
+    # for a typed request
     if hasattr(view_fn_or_request_type, "from_dict"):
+        # Yes, it is a typed request style invocation, so cast to appropriate
+        # types.
         request_type: DictParseable = t.cast(DictParseable, view_fn_or_request_type)
 
         def _jsoninantor_internal_for_typed_request_objects(
@@ -94,14 +114,18 @@ def jsoninator(
         ):
             def wrapper(*args, **kwargs):
                 try:
+                    # Try to extract request
                     request_object = request_type.from_dict(bottle.request.json)
                 except Exception as e:
                     logger.error(
                         "Failed to deserialize JSON for type: %s", str(request_type)
                     )
                     logger.exception(e)
+                    bottle.response.status_code = 400
+                    return "Could not parse JSON."
 
                 response_object = view_fn(request_object, *args, **kwargs)
+                
                 bottle.response.content_type = "application/json"
                 return json.dumps(response_object.to_json())
 
@@ -110,12 +134,15 @@ def jsoninator(
         return _jsoninantor_internal_for_typed_request_objects
 
     else:
+        # It is a typed response payload style invocation, so cast to approriate
+        # type.
         view_fn: t.Callable[[int, int], JSONifiable] = t.cast(
             t.Callable[[int, int], JSONifiable], view_fn_or_request_type
         )
 
         def wrapper(*args, **kwargs):
             body = view_fn(*args, **kwargs)
+            
             bottle.response.content_type = "application/json"
             return json.dumps(body.to_json())
 
