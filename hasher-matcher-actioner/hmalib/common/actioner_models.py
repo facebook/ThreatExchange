@@ -85,16 +85,21 @@ class ActionMessage(MatchMessage):
     """
 
     action_label: ActionLabel = ActionLabel("UnspecifiedAction")
+    action_rules: t.List[ActionRule] = field(default_factory=list)
 
     @classmethod
-    def from_match_message_and_label(
-        cls, match_message: MatchMessage, action_label: ActionLabel
+    def from_match_message_action_label_and_action_rules(
+        cls,
+        match_message: MatchMessage,
+        action_label: ActionLabel,
+        action_rules: t.List[ActionRule],
     ) -> "ActionMessage":
         return cls(
             match_message.content_key,
             match_message.content_hash,
             match_message.matching_banked_signals,
             action_label,
+            action_rules,
         )
 
 
