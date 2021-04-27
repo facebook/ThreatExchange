@@ -98,7 +98,7 @@ def jsoninator(
 
     # When you add jsoninator with some arguments, python will first execute the
     # function, and then use the return value as a decorator.
-    
+
     # Super verbose description of decorator ENDS
 
     # Can't use isinstance because Class types are t.Callable as well. So,
@@ -125,7 +125,7 @@ def jsoninator(
                     return "Could not parse JSON."
 
                 response_object = view_fn(request_object, *args, **kwargs)
-                
+
                 bottle.response.content_type = "application/json"
                 return json.dumps(response_object.to_json())
 
@@ -142,7 +142,7 @@ def jsoninator(
 
         def wrapper(*args, **kwargs):
             body = view_fn(*args, **kwargs)
-            
+
             bottle.response.content_type = "application/json"
             return json.dumps(body.to_json())
 

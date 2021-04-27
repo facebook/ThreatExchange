@@ -15,8 +15,18 @@
   },
   "plugins": ["react", "prettier"],
   "rules": {
-    "react/jsx-filename-extension": ["warn", {"extensions": [".js", ".jsx"]}],
-    "prettier/prettier": ["error", {"endOfLine": "auto"}],
+    "react/jsx-filename-extension": [
+      "warn",
+      {
+        "extensions": [".js", ".jsx"]
+      }
+    ],
+    "prettier/prettier": [
+      "error",
+      {
+        "endOfLine": "auto"
+      }
+    ],
     "jsx-a11y/label-has-associated-control": [
       "error",
       {

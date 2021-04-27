@@ -51,7 +51,7 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
           </Col>
           <Col className="p-4">
             <Link to={`/matches/${contentId}`}>
-              View Details for this match.
+              View Details for this matched content.
             </Link>
           </Col>
         </Row>

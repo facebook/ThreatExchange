@@ -19,7 +19,6 @@ from hmalib.models import (
     PipelinePDQHashRecord,
     PDQRecordBase,
 )
-from threatexchange.descriptor import ThreatDescriptor
 from hmalib.models import PipelinePDQHashRecord
 
 from .matches import get_matches_api
@@ -123,26 +122,6 @@ def hashes(key=None):
     results = get_hash(key)
     logger.debug(results)
     return results if results else {}
-
-
-@app.get("/content-status/<key>")
-def content_status(key=None):
-    """
-    content status API endpoint:
-    """
-    return {"status": "mocked_seen"}
-
-
-@app.post("/content-status/<key>")
-def update_content_status(key=None):
-    """
-    content status post API endpoint:
-    """
-    logger.info("Status update post request received")
-    updated_status = json.loads(bottle.request.body.getvalue())
-    logger.info(updated_status)
-
-    return {"status": f"mocked_{updated_status.get('status')}"}
 
 
 @app.get("/signals")
@@ -334,7 +313,8 @@ def get_signal_hash_count() -> t.Dict[str, int]:
 app.mount(
     "/matches/",
     get_matches_api(
-        dynamodb_table=dynamodb.Table(DYNAMODB_TABLE), image_folder_key=IMAGE_FOLDER_KEY
+        dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
+        image_folder_key=IMAGE_FOLDER_KEY,
     ),
 )
 
