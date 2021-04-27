@@ -210,15 +210,15 @@ class ConfigTest(unittest.TestCase):
                 ]
 
         @dataclass
-        class SubtypeOne(MultiConfig.Subtype):
+        class SubtypeOne(MultiConfig):
             a: int
 
         @dataclass
-        class SubtypeAbstractParentClass(MultiConfig.Subtype):
+        class SubtypeAbstractParentClass(MultiConfig):
             a: bool
 
         @dataclass
-        class SubtypeTwo(MultiConfig.Subtype):
+        class SubtypeTwo(MultiConfig):
             b: str
 
         @dataclass
