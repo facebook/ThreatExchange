@@ -17,13 +17,6 @@ class Label:
     key: str
     value: str
 
-    def to_dynamodb_dict(self) -> dict:
-        return {"K": self.key, "V": self.value}
-
-    @classmethod
-    def from_dynamodb_dict(cls, d: dict):
-        return cls(d["K"], d["V"])
-
     def __eq__(self, another_label: object) -> bool:
         if not isinstance(another_label, Label):
             return NotImplemented
@@ -89,34 +82,9 @@ TUrl = t.Union[t.Text, bytes]
 class ActionMessage(MatchMessage):
     """
     The action performer needs the match message plus which action to perform
-    TODO Create a reflection / introspection-based helper that implements
-    to_ / from_aws_message code (and maybe from_match_message_and_label(), too)
-    for ActionMessage and MatchMessage.
     """
 
     action_label: ActionLabel = ActionLabel("UnspecifiedAction")
-
-    def to_aws_message(self) -> str:
-        return json.dumps(
-            {
-                "ContentKey": self.content_key,
-                "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [
-                    x.to_dict() for x in self.matching_banked_signals
-                ],
-                "ActionLabelValue": self.action_label.value,
-            }
-        )
-
-    @classmethod
-    def from_aws_message(cls, message: str) -> "ActionMessage":
-        parsed = json.loads(message)
-        return cls(
-            parsed["ContentKey"],
-            parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
-            ActionLabel(parsed["ActionLabelValue"]),
-        )
 
     @classmethod
     def from_match_message_and_label(
@@ -137,31 +105,9 @@ class ReactionMessage(MatchMessage):
     to the source of the signal (for now, ThreatExchange).
     """
 
-    reaction_label: ThreatExchangeReactionLabel = ThreatExchangeReactionLabel(
-        "UnspecifiedThreatExchangeReaction"
+    reaction_label: ThreatExchangeReactionLabel = field(
+        default=ThreatExchangeReactionLabel("UnspecifiedThreatExchangeReaction")
     )
-
-    def to_aws_message(self) -> str:
-        return json.dumps(
-            {
-                "ContentKey": self.content_key,
-                "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [
-                    x.to_dict() for x in self.matching_banked_signals
-                ],
-                "ReactionLabelValue": self.reaction_label.value,
-            }
-        )
-
-    @classmethod
-    def from_aws_message(cls, message: str) -> "ReactionMessage":
-        parsed = json.loads(message)
-        return cls(
-            parsed["ContentKey"],
-            parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
-            ThreatExchangeReactionLabel(parsed["ReactionLabelValue"]),
-        )
 
     @classmethod
     def from_match_message_and_label(
@@ -208,7 +154,7 @@ class WebhookActionPerformer(ActionPerformer.Subtype):  # type: ignore
     url: str
 
     def perform_action(self, match_message: MatchMessage) -> None:
-        self.call(data=match_message.to_aws_message())
+        self.call(data=json.dumps(match_message.to_aws()))
 
     def call(self, data: str) -> Response:
         raise NotImplementedError()

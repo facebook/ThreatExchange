@@ -66,7 +66,7 @@ def lambda_handler(event, context):
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
-        match_message = MatchMessage.from_aws_message(sqs_record_body["Message"])
+        match_message = MatchMessage.from_aws_json(sqs_record_body["Message"])
 
         logger.info("Evaluating match_message: %s", match_message)
 
@@ -81,7 +81,7 @@ def lambda_handler(event, context):
             )
             config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
-                MessageBody=action_message.to_aws_message(),
+                MessageBody=action_message.to_aws_json(),
             )
 
         if threat_exchange_reacting_is_enabled(match_message):
@@ -97,7 +97,7 @@ def lambda_handler(event, context):
                     )
                     config.sqs_client.send_message(
                         QueueUrl=config.reactions_queue_url,
-                        MessageBody=threat_exchange_reaction_message.to_aws_message(),
+                        MessageBody=threat_exchange_reaction_message.to_aws_json(),
                     )
 
     return {"evaluation_completed": "true"}
