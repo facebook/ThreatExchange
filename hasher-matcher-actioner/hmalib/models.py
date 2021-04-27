@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
+from hmalib.common.aws_dataclass import HasAWSSerialization
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -340,44 +341,6 @@ class MatchRecordQuery:
 
 
 @dataclass
-class MatchMessage(AWSMessage):
-    """
-    Captures a set of matches that will need to be processed. We create one
-    match message for a single content key. It is possible that a single content
-    hash matches multiple datasets. When it does, the entire set of matches are
-    forwarded together so that any appropriate action can be taken.
-
-    - `content_key`: A way for partners to refer uniquely to content on their
-      site
-    - `content_hash`: The hash generated for the content_key
-    """
-
-    content_key: str
-    content_hash: str
-    matching_banked_signals: t.List["BankedSignal"] = field(default_factory=list)
-
-    def to_aws_message(self) -> str:
-        return json.dumps(
-            {
-                "ContentKey": self.content_key,
-                "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [
-                    x.to_dict() for x in self.matching_banked_signals
-                ],
-            }
-        )
-
-    @classmethod
-    def from_aws_message(cls, message: str) -> "MatchMessage":
-        parsed = json.loads(message)
-        return cls(
-            parsed["ContentKey"],
-            parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
-        )
-
-
-@dataclass
 class BankedSignal:
     """
     BankedSignal fields:
@@ -395,16 +358,20 @@ class BankedSignal:
     bank_source: str
     classifications: t.List[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
-        return {
-            "BankedContentId": self.banked_content_id,
-            "BankId": self.bank_id,
-            "BankSource": self.bank_source,
-            "Classifications": self.classifications,
-        }
 
-    @classmethod
-    def from_dict(cls, d: dict) -> "BankedSignal":
-        return cls(
-            d["BankedContentId"], d["BankId"], d["BankSource"], d["Classifications"]
-        )
+@dataclass
+class MatchMessage(HasAWSSerialization):
+    """
+    Captures a set of matches that will need to be processed. We create one
+    match message for a single content key. It is possible that a single content
+    hash matches multiple datasets. When it does, the entire set of matches are
+    forwarded together so that any appropriate action can be taken.
+
+    - `content_key`: A way for partners to refer uniquely to content on their
+      site
+    - `content_hash`: The hash generated for the content_key
+    """
+
+    content_key: str
+    content_hash: str
+    matching_banked_signals: t.List[BankedSignal] = field(default_factory=list)

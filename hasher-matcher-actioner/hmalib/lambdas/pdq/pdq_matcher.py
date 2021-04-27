@@ -138,7 +138,7 @@ def lambda_handler(event, context):
 
             # Publish one message for the set of matches.
             sns_client.publish(
-                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_aws_message()
+                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_aws_json()
             )
 
         else:

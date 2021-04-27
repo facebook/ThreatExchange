@@ -57,7 +57,7 @@ def lambda_handler(event, context):
     lambda_init_once()
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
-        action_message = ActionMessage.from_aws_message(sqs_record["body"])
+        action_message = ActionMessage.from_aws_json(sqs_record["body"])
 
         logger.info("Performing action: action_message = %s", action_message)
 
@@ -90,5 +90,5 @@ if __name__ == "__main__":
         matching_banked_signals=banked_signals,
         action_label=ActionLabel("EnqueForReview"),
     )
-    event = {"Records": [{"body": action_message.to_aws_message()}]}
+    event = {"Records": [{"body": action_message.to_aws()}]}
     lambda_handler(event, None)
