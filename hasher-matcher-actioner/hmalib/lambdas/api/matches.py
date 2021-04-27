@@ -12,7 +12,10 @@ from logging import Logger
 from threatexchange.descriptor import ThreatDescriptor
 from hmalib.models import PDQMatchRecord
 from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
+from hmalib.common.logging import get_logger
 from .middleware import jsoninator, JSONifiable
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -145,9 +148,7 @@ def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
     return OpinionString.UNKNOWN
 
 
-def get_matches_api(
-    dynamodb_table: Table, image_folder_key: str, logger: Logger
-) -> bottle.Bottle:
+def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
     API that this API plugs into. Declare dependencies here, but initialize in
