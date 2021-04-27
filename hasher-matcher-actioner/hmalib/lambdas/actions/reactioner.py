@@ -20,6 +20,12 @@ def lambda_handler(event, context):
 
         logger.info("Reacting: reaction_message = %s", reaction_message)
 
+        reaction_label = reaction_message.reaction_label
+        for writebacker_cls in Writebacker.performable_subclasses():
+            if writebacker_cls.__name__() == reaction_label:
+                writebacker = writebacker_cls()
+                writebacker.perform_writeback(reaction_message)
+
     return {"reaction_completed": "true"}
 
 
