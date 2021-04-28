@@ -1,4 +1,5 @@
 import typing as t
+import os
 
 from dataclasses import dataclass, fields
 
@@ -13,12 +14,12 @@ logger = get_logger(__name__)
 
 
 @dataclass
-class Writebacker(ActionPerformer):
+class Writebacker:
     """
-    The action of writing back to an HMA data soruce (eg. ThreatExchange)
-    is done through the Action Framework. Every source that enables writebacks
-    should have an implmentation of this class (eg ThreatExchangeWritebacker)
-    and optionally sub implementations (eg ThreatExchangeFalsePositiveWritebacker)
+    For writing back to an HMA data soruce (eg. ThreatExchange). Every source that
+    enables writebacks should have an implmentation of this class
+    (eg ThreatExchangeWritebacker) and optionally sub implementations
+    (eg ThreatExchangeFalsePositiveWritebacker)
 
     You must also add the subclass you are implementing to the performable_subclasses
     fucntion below
@@ -45,6 +46,16 @@ class Writebacker(ActionPerformer):
         ]
 
 
+class MockedThreatExchangeAPI:
+    mocked_descriptor_ids = ["12345", "67890"]
+
+    def get_threat_descriptors_from_indicator(self, indicator) -> t.List[int]:
+        return [{"id": id} for id in self.mocked_descriptor_ids]
+
+    def react_to_threat_descriptor(self, descriptor, reaction) -> None:
+        assert descriptor in self.mocked_descriptor_ids
+
+
 @dataclass
 class ThreatExchangeWritebacker(Writebacker):
     """
@@ -53,6 +64,9 @@ class ThreatExchangeWritebacker(Writebacker):
 
     @property
     def te_api(self) -> ThreatExchangeAPI:
+        mock_te_api = os.environ.get("MOCK_TE_API")
+        if mock_te_api == "True":
+            return MockedThreatExchangeAPI()
         api_key = AWSSecrets.te_api_key()
         return ThreatExchangeAPI(api_key)
 

@@ -4,6 +4,7 @@ import json
 
 from hmalib.common.logging import get_logger
 from hmalib.common.actioner_models import ReactionMessage
+from hmalib.common.reactioner_models import Writebacker
 
 logger = get_logger(__name__)
 
@@ -14,19 +15,21 @@ def lambda_handler(event, context):
     sends a reaction message by way of the reactions queue and here's where they're
     popped off and dealt with.
     """
+    reaction_performed = None
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         reaction_message = ReactionMessage.from_aws_message(sqs_record["body"])
 
         logger.info("Reacting: reaction_message = %s", reaction_message)
 
-        reaction_label = reaction_message.reaction_label
+        reaction_label = reaction_message.reaction_label.value
         for writebacker_cls in Writebacker.performable_subclasses():
-            if writebacker_cls.__name__() == reaction_label:
+            if writebacker_cls.__name__ == reaction_label:
                 writebacker = writebacker_cls()
                 writebacker.perform_writeback(reaction_message)
+                reaction_performed = writebacker_cls.__name__
 
-    return {"reaction_completed": "true"}
+    return {"reaction_performed": reaction_performed}
 
 
 if __name__ == "__main__":
