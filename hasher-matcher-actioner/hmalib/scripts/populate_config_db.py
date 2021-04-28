@@ -15,7 +15,7 @@ import tempfile
 import subprocess
 import typing as t
 import re
-
+from botocore.exceptions import ClientError
 from hmalib.lambdas.fetcher import ThreatExchangeConfig
 from hmalib.common.actioner_models import (
     ActionLabel,
@@ -132,7 +132,17 @@ def load_defaults(_args):
 
     for config in configs:
         # Someday maybe can do filtering or something, I dunno
-        hmaconfig.create_config(config)
+        # Add try catch block to avoid test failure
+
+        try:
+            hmaconfig.create_config(config)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                print(
+                    "Can't insert duplicated config, " + e.response["Error"]["Message"],
+                )
+            else:
+                raise
         print(config)
 
 
