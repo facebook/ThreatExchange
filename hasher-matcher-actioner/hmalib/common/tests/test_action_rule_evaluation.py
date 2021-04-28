@@ -3,16 +3,18 @@
 import typing as t
 import unittest
 
-from hmalib.lambdas.actions.action_evaluator import get_actions_to_take
-from hmalib.models import MatchMessage, BankedSignal
-from hmalib.common.actioner_models import (
+from hmalib.common.evaluator_models import (
     ActionLabel,
     ActionRule,
+)
+from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     ClassificationLabel,
     Label,
 )
+from hmalib.common.message_models import BankedSignal, MatchMessage
+from hmalib.lambdas.actions.action_evaluator import get_actions_to_take
 
 
 class ActionRuleEvaluationTestCase(unittest.TestCase):
@@ -21,12 +23,14 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         enqueue_for_review_action_label = ActionLabel("EnqueueForReview")
         bank_id = "12345"
 
-        banked_signal_without_foo = BankedSignal(
-            "67890", bank_id, "Test", ["Bar", "Xyz"]
-        )
-        banked_signal_with_foo = BankedSignal(
-            "67890", bank_id, "Test", ["Foo", "Bar", "Xyz"]
-        )
+        banked_signal_without_foo = BankedSignal("67890", bank_id, "Test")
+        banked_signal_without_foo.add_classification("Bar")
+        banked_signal_without_foo.add_classification("Xyz")
+
+        banked_signal_with_foo = BankedSignal("67890", bank_id, "Test")
+        banked_signal_with_foo.add_classification("Foo")
+        banked_signal_with_foo.add_classification("Bar")
+        banked_signal_with_foo.add_classification("Xyz")
 
         match_message_without_foo = MatchMessage(
             "key", "hash", [banked_signal_without_foo]
@@ -94,30 +98,30 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             ),
         ]
 
+        mini_castle_banked_signal = BankedSignal(
+            banked_content_id="4169895076385542",
+            bank_id="303636684709969",
+            bank_source="te",
+        )
+        mini_castle_banked_signal.add_classification("true_positive")
+
         mini_castle_match_message = MatchMessage(
             content_key="images/mini-castle.jpg",
             content_hash="361da9e6cf1b72f5cea0344e5bb6e70939f4c70328ace762529cac704297354a",
-            matching_banked_signals=[
-                BankedSignal(
-                    banked_content_id="4169895076385542",
-                    bank_id="303636684709969",
-                    bank_source="te",
-                    classifications=["true_positive"],
-                )
-            ],
+            matching_banked_signals=[mini_castle_banked_signal],
         )
+
+        sailboat_banked_signal = BankedSignal(
+            banked_content_id="3364504410306721",
+            bank_id="303636684709969",
+            bank_source="te",
+        )
+        sailboat_banked_signal.add_classification("true_positive")
 
         sailboat_match_message = MatchMessage(
             content_key="images/sailboat-mast-and-sun.jpg",
             content_hash="388ff5e1084efef10096df9cb969296dff2b04d67a94065ecd292129ef6b1090",
-            matching_banked_signals=[
-                BankedSignal(
-                    banked_content_id="3364504410306721",
-                    bank_id="303636684709969",
-                    bank_source="te",
-                    classifications=["true_positive"],
-                )
-            ],
+            matching_banked_signals=[sailboat_banked_signal],
         )
 
         action_label_to_action_rules = get_actions_to_take(

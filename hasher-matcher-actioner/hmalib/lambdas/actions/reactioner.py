@@ -3,7 +3,7 @@
 import json
 
 from hmalib.common.logging import get_logger
-from hmalib.common.actioner_models import ReactionMessage
+from hmalib.common.message_models import ReactionMessage
 
 logger = get_logger(__name__)
 
