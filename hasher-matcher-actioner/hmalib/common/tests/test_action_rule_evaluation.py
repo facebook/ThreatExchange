@@ -3,15 +3,20 @@
 import typing as t
 import unittest
 
-from hmalib.lambdas.actions.action_evaluator import get_action_labels
-from hmalib.models import MatchMessage, BankedSignal
-from hmalib.common.actioner_models import (
+from hmalib.common.evaluator_models import (
     ActionLabel,
     ActionRule,
+)
+from hmalib.common.label_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     ClassificationLabel,
     Label,
+)
+from hmalib.common.message_models import BankedSignal, MatchMessage
+from hmalib.lambdas.actions.action_evaluator import (
+    get_actions_to_take,
+    action_rule_applies_to_classifications,
 )
 
 
@@ -21,12 +26,14 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         enqueue_for_review_action_label = ActionLabel("EnqueueForReview")
         bank_id = "12345"
 
-        banked_signal_without_foo = BankedSignal(
-            "67890", bank_id, "Test", ["Bar", "Xyz"]
-        )
-        banked_signal_with_foo = BankedSignal(
-            "67890", bank_id, "Test", ["Foo", "Bar", "Xyz"]
-        )
+        banked_signal_without_foo = BankedSignal("67890", bank_id, "Test")
+        banked_signal_without_foo.add_classification("Bar")
+        banked_signal_without_foo.add_classification("Xyz")
+
+        banked_signal_with_foo = BankedSignal("67890", bank_id, "Test")
+        banked_signal_with_foo.add_classification("Foo")
+        banked_signal_with_foo.add_classification("Bar")
+        banked_signal_with_foo.add_classification("Xyz")
 
         match_message_without_foo = MatchMessage(
             "key", "hash", [banked_signal_without_foo]
@@ -42,16 +49,34 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             )
         ]
 
-        action_labels: t.Set[ActionLabel] = get_action_labels(
-            match_message_without_foo, action_rules
+        action_label_to_action_rules: t.Dict[
+            ActionLabel, t.List[ActionRule]
+        ] = get_actions_to_take(match_message_without_foo, action_rules)
+
+        print(banked_signal_without_foo.classifications)
+        print(set([BankIDClassificationLabel(bank_id)]))
+        print(
+            set([BankIDClassificationLabel(bank_id)]).issubset(
+                banked_signal_without_foo.classifications
+            )
         )
 
-        assert len(action_labels) == 1
-        assert action_labels.pop() == enqueue_for_review_action_label
+        applies = banked_signal_without_foo.classifications.issubset(
+            set([BankIDClassificationLabel(bank_id)])
+        )
+        print("applies? ", applies)
+        assert len(action_label_to_action_rules) == 1
+        self.assertIn(
+            enqueue_for_review_action_label,
+            action_label_to_action_rules,
+            "enqueue_for_review_action_label should be in action_label_to_action_rules",
+        )
 
-        action_labels = get_action_labels(match_message_with_foo, action_rules)
+        action_label_to_action_rules = get_actions_to_take(
+            match_message_with_foo, action_rules
+        )
 
-        assert len(action_labels) == 0
+        assert len(action_label_to_action_rules) == 0
 
         enqueue_mini_castle_for_review_action_label = ActionLabel(
             "EnqueueMiniCastleForReview"
@@ -88,38 +113,50 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             ),
         ]
 
+        mini_castle_banked_signal = BankedSignal(
+            banked_content_id="4169895076385542",
+            bank_id="303636684709969",
+            bank_source="te",
+        )
+        mini_castle_banked_signal.add_classification("true_positive")
+
         mini_castle_match_message = MatchMessage(
             content_key="images/mini-castle.jpg",
             content_hash="361da9e6cf1b72f5cea0344e5bb6e70939f4c70328ace762529cac704297354a",
-            matching_banked_signals=[
-                BankedSignal(
-                    banked_content_id="4169895076385542",
-                    bank_id="303636684709969",
-                    bank_source="te",
-                    classifications=["true_positive"],
-                )
-            ],
+            matching_banked_signals=[mini_castle_banked_signal],
         )
+
+        sailboat_banked_signal = BankedSignal(
+            banked_content_id="3364504410306721",
+            bank_id="303636684709969",
+            bank_source="te",
+        )
+        sailboat_banked_signal.add_classification("true_positive")
 
         sailboat_match_message = MatchMessage(
             content_key="images/sailboat-mast-and-sun.jpg",
             content_hash="388ff5e1084efef10096df9cb969296dff2b04d67a94065ecd292129ef6b1090",
-            matching_banked_signals=[
-                BankedSignal(
-                    banked_content_id="3364504410306721",
-                    bank_id="303636684709969",
-                    bank_source="te",
-                    classifications=["true_positive"],
-                )
-            ],
+            matching_banked_signals=[sailboat_banked_signal],
         )
 
-        action_labels = get_action_labels(mini_castle_match_message, action_rules)
+        action_label_to_action_rules = get_actions_to_take(
+            mini_castle_match_message, action_rules
+        )
 
-        assert len(action_labels) == 1
-        assert action_labels.pop() == enqueue_mini_castle_for_review_action_label
+        assert len(action_label_to_action_rules) == 1
+        self.assertIn(
+            enqueue_mini_castle_for_review_action_label,
+            action_label_to_action_rules,
+            "enqueue_mini_castle_for_review_action_label should be in action_label_to_action_rules",
+        )
 
-        action_labels = get_action_labels(sailboat_match_message, action_rules)
+        action_label_to_action_rules = get_actions_to_take(
+            sailboat_match_message, action_rules
+        )
 
-        assert len(action_labels) == 1
-        assert action_labels.pop() == enqueue_sailboat_for_review_action_label
+        assert len(action_label_to_action_rules) == 1
+        self.assertIn(
+            enqueue_sailboat_for_review_action_label,
+            action_label_to_action_rules,
+            "enqueue_sailboat_for_review_action_label should be in action_label_to_action_rules",
+        )

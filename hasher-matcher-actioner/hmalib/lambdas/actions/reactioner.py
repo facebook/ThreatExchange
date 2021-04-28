@@ -3,8 +3,8 @@
 import json
 
 from hmalib.common.logging import get_logger
-from hmalib.common.actioner_models import ReactionMessage
 from hmalib.common.reactioner_models import Writebacker
+from hmalib.common.message_models import ReactionMessage
 
 logger = get_logger(__name__)
 
@@ -18,11 +18,8 @@ def lambda_handler(event, context):
     reactions_performed = {}
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
-        reaction_message = ReactionMessage.from_aws_message(sqs_record["body"])
-
+        reaction_message = ReactionMessage.from_aws_json(sqs_record["body"])
         logger.info("Reacting: reaction_message = %s", reaction_message)
-
-        reaction_label = reaction_message.reaction_label.value
 
         # get all sources that are related to this reaction
         sources = {

@@ -4,16 +4,13 @@ import json
 import os
 import typing as t
 from functools import lru_cache
+from hmalib.common.message_models import BankedSignal, ActionMessage, MatchMessage
 from hmalib.common.actioner_models import (
-    ActionLabel,
-    ActionMessage,
     ActionPerformer,
-    BankedSignal,
     WebhookPostActionPerformer,
 )
-
+from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.logging import get_logger
-from hmalib.models import MatchMessage
 
 from hmalib.common import config
 
@@ -57,7 +54,7 @@ def lambda_handler(event, context):
     lambda_init_once()
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
-        action_message = ActionMessage.from_aws_message(sqs_record["body"])
+        action_message = ActionMessage.from_aws_json(sqs_record["body"])
 
         logger.info("Performing action: action_message = %s", action_message)
 
@@ -90,5 +87,5 @@ if __name__ == "__main__":
         matching_banked_signals=banked_signals,
         action_label=ActionLabel("EnqueForReview"),
     )
-    event = {"Records": [{"body": action_message.to_aws_message()}]}
+    event = {"Records": [{"body": action_message.to_aws()}]}
     lambda_handler(event, None)

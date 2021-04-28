@@ -4,16 +4,14 @@ import unittest
 import os
 import typing as t
 from hmalib.lambdas.actions.reactioner import lambda_handler
-from hmalib.common.actioner_models import (
-    MatchMessage,
-    ReactionMessage,
-    BankedSignal,
+from hmalib.common.label_models import (
     SawThisTooReactionLabel,
     IngestedReactionLabel,
     InReviewReactionLabel,
     FalsePositiveReactionLabel,
     TruePositiveReactionLabel,
 )
+from hmalib.common.message_models import MatchMessage, ReactionMessage, BankedSignal
 
 from hmalib.common.reactioner_models import Writebacker
 
@@ -35,13 +33,11 @@ class WritebackerTestCase(unittest.TestCase):
         reaction_message = ReactionMessage.from_match_message_and_label(
             self.match_message, reaction
         )
-        event = {"Records": [{"body": reaction_message.to_aws_message()}]}
+        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
         assert result == {
-            "reactions_performed": {
-                "te": "reacted SAW_THIS_TOO to descriptors [12345,67890]"
-            }
+            "reactions_performed": {"te": "reacted SAW_THIS_TOO to 2 descriptors"}
         }
 
         os.environ["MOCK_TE_API"] = "False"
@@ -53,13 +49,11 @@ class WritebackerTestCase(unittest.TestCase):
         reaction_message = ReactionMessage.from_match_message_and_label(
             self.match_message, reaction
         )
-        event = {"Records": [{"body": reaction_message.to_aws_message()}]}
+        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
         assert result == {
-            "reactions_performed": {
-                "te": "reacted INGESTED to descriptors [12345,67890]"
-            }
+            "reactions_performed": {"te": "reacted INGESTED to 2 descriptors"}
         }
 
         os.environ["MOCK_TE_API"] = "False"
@@ -71,13 +65,11 @@ class WritebackerTestCase(unittest.TestCase):
         reaction_message = ReactionMessage.from_match_message_and_label(
             self.match_message, reaction
         )
-        event = {"Records": [{"body": reaction_message.to_aws_message()}]}
+        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
         assert result == {
-            "reactions_performed": {
-                "te": "reacted IN_REVIEW to descriptors [12345,67890]"
-            }
+            "reactions_performed": {"te": "reacted IN_REVIEW to 2 descriptors"}
         }
 
         os.environ["MOCK_TE_API"] = "False"
@@ -89,7 +81,7 @@ class WritebackerTestCase(unittest.TestCase):
         reaction_message = ReactionMessage.from_match_message_and_label(
             self.match_message, reaction
         )
-        event = {"Records": [{"body": reaction_message.to_aws_message()}]}
+        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
         assert result == {"reactions_performed": {"te": "Wrote Back false positive"}}
@@ -103,7 +95,7 @@ class WritebackerTestCase(unittest.TestCase):
         reaction_message = ReactionMessage.from_match_message_and_label(
             self.match_message, reaction
         )
-        event = {"Records": [{"body": reaction_message.to_aws_message()}]}
+        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
         assert result == {"reactions_performed": {"te": "Wrote Back true positive"}}
@@ -137,7 +129,7 @@ class WritebackerTestCase(unittest.TestCase):
     #     reaction_message = ReactionMessage.from_match_message_and_label(
     #         self.match_message, reaction
     #     )
-    #     event = {"Records": [{"body": reaction_message.to_aws_message()}]}
+    #     event = {"Records": [{"body": reaction_message.to_aws_json()}]}
 
     #     result = lambda_handler(event, None)
     #     assert result == {

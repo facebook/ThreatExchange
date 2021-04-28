@@ -6,86 +6,11 @@ import typing as t
 
 from dataclasses import dataclass, field, fields
 from hmalib.common.logging import get_logger
-from hmalib.models import BankedSignal, MatchMessage
+from hmalib.common.message_models import MatchMessage
+from hmalib.common.label_models import ActionLabel, Label
 from requests import get, post, put, delete, Response
 
 logger = get_logger(__name__)
-
-
-@dataclass(unsafe_hash=True)
-class Label:
-    key: str
-    value: str
-
-    def to_dynamodb_dict(self) -> dict:
-        return {"K": self.key, "V": self.value}
-
-    @classmethod
-    def from_dynamodb_dict(cls, d: dict):
-        return cls(d["K"], d["V"])
-
-    def __eq__(self, another_label: object) -> bool:
-        if not isinstance(another_label, Label):
-            return NotImplemented
-        return self.key == another_label.key and self.value == another_label.value
-
-
-@dataclass(unsafe_hash=True)
-class ClassificationLabel(Label):
-    key: str = field(default="Classification", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class BankSourceClassificationLabel(Label):
-    key: str = field(default="BankSourceClassification", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class BankIDClassificationLabel(Label):
-    key: str = field(default="BankIDClassification", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class BankedContentIDClassificationLabel(Label):
-    key: str = field(default="BankedContentIDClassification", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class ActionLabel(Label):
-    key: str = field(default="Action", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class ReactionLabel(Label):
-    key: str = field(default="Reaction", init=False)
-
-    def __eq__(self, other) -> bool:
-        return self.value == other.value
-
-
-@dataclass(unsafe_hash=True)
-class SawThisTooReactionLabel(ReactionLabel):
-    value: str = field(default="SawThisToo", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class FalsePositiveReactionLabel(ReactionLabel):
-    value: str = field(default="FalsePositive", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class TruePositiveReactionLabel(ReactionLabel):
-    value: str = field(default="TruePositive", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class InReviewReactionLabel(ReactionLabel):
-    value: str = field(default="InReview", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class IngestedReactionLabel(ReactionLabel):
-    value: str = field(default="Ingested", init=False)
 
 
 @dataclass
@@ -95,112 +20,7 @@ class Action:
     superseded_by: t.List[ActionLabel]
 
 
-@dataclass
-class ActionRule(config.HMAConfig):
-    """
-    Action rules are config-backed objects that have a set of labels (both
-    "must have" and "must not have") which, when evaluated against the
-    classifications of a matching banked piece of content, lead to an action
-    to take (specified by the rule's action label). By convention each action
-    rule's name field is also the value field of the rule's action label.
-    """
-
-    action_label: ActionLabel
-    must_have_labels: t.Set[Label]
-    must_not_have_labels: t.Set[Label]
-
-
 TUrl = t.Union[t.Text, bytes]
-
-
-@dataclass
-class ActionMessage(MatchMessage):
-    """
-    The action performer needs the match message plus which action to perform
-    TODO Create a reflection / introspection-based helper that implements
-    to_ / from_aws_message code (and maybe from_match_message_and_label(), too)
-    for ActionMessage and MatchMessage.
-    """
-
-    action_label: ActionLabel = ActionLabel("UnspecifiedAction")
-
-    def to_aws_message(self) -> str:
-        return json.dumps(
-            {
-                "ContentKey": self.content_key,
-                "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [
-                    x.to_dict() for x in self.matching_banked_signals
-                ],
-                "ActionLabelValue": self.action_label.value,
-            }
-        )
-
-    @classmethod
-    def from_aws_message(cls, message: str) -> "ActionMessage":
-        parsed = json.loads(message)
-        return cls(
-            parsed["ContentKey"],
-            parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
-            ActionLabel(parsed["ActionLabelValue"]),
-        )
-
-    @classmethod
-    def from_match_message_and_label(
-        cls, match_message: MatchMessage, action_label: ActionLabel
-    ) -> "ActionMessage":
-        return cls(
-            match_message.content_key,
-            match_message.content_hash,
-            match_message.matching_banked_signals,
-            action_label,
-        )
-
-
-@dataclass
-class ReactionMessage(MatchMessage):
-    """
-    The reactioner needs the match message plus which reaction to send back
-    to the source of the signal (for now, ThreatExchange).
-    """
-
-    reaction_label: ReactionLabel = ReactionLabel("UnspecifiedThreatExchangeReaction")
-
-    def to_aws_message(self) -> str:
-        return json.dumps(
-            {
-                "ContentKey": self.content_key,
-                "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [
-                    x.to_dict() for x in self.matching_banked_signals
-                ],
-                "ReactionLabelValue": self.reaction_label.value,
-            }
-        )
-
-    @classmethod
-    def from_aws_message(cls, message: str) -> "ReactionMessage":
-        parsed = json.loads(message)
-        return cls(
-            parsed["ContentKey"],
-            parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
-            ReactionLabel(parsed["ReactionLabelValue"]),
-        )
-
-    @classmethod
-    def from_match_message_and_label(
-        cls,
-        match_message: MatchMessage,
-        reaction_label: ReactionLabel,
-    ) -> "ReactionMessage":
-        return cls(
-            match_message.content_key,
-            match_message.content_hash,
-            match_message.matching_banked_signals,
-            reaction_label,
-        )
 
 
 class ActionPerformer(config.HMAConfigWithSubtypes):
@@ -234,7 +54,7 @@ class WebhookActionPerformer(ActionPerformer):
     url: str
 
     def perform_action(self, match_message: MatchMessage) -> None:
-        self.call(data=match_message.to_aws_message())
+        self.call(data=json.dumps(match_message.to_aws()))
 
     def call(self, data: str) -> Response:
         raise NotImplementedError()
@@ -270,24 +90,3 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
 
     def call(self, _data: str) -> Response:
         return delete(self.url)
-
-
-if __name__ == "__main__":
-
-    banked_signals = [
-        BankedSignal("2862392437204724", "bank 4", "te"),
-        BankedSignal("4194946153908639", "bank 4", "te"),
-    ]
-    match_message = MatchMessage("key", "hash", banked_signals)
-
-    configs: t.List[ActionPerformer] = [
-        WebhookDeleteActionPerformer(
-            "DeleteWebhook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
-        ),
-        WebhookPutActionPerformer(
-            "PutWebook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
-        ),
-    ]
-
-    for action_config in configs:
-        action_config.perform_action(match_message)

@@ -3,12 +3,11 @@ import os
 
 from dataclasses import dataclass, fields
 
-from hmalib.models import MatchMessage, BankedSignal
+from hmalib.common.message_models import BankedSignal, MatchMessage
 from hmalib.common.logging import get_logger
-from hmalib.common.actioner_models import (
-    ActionPerformer,
-    ActionLabel,
-    ReactionMessage,
+
+from hmalib.common.actioner_models import ActionPerformer
+from hmalib.common.label_models import (
     ReactionLabel,
     InReviewReactionLabel,
     SawThisTooReactionLabel,
@@ -16,6 +15,9 @@ from hmalib.common.actioner_models import (
     FalsePositiveReactionLabel,
     TruePositiveReactionLabel,
 )
+from hmalib.common.actioner_models import ActionPerformer
+from hmalib.common.evaluator_models import ActionLabel
+from hmalib.common.message_models import ReactionMessage
 from hmalib.aws_secrets import AWSSecrets
 
 from threatexchange.api import ThreatExchangeAPI
@@ -219,9 +221,9 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
         return (
             "reacted "
             + self.reaction
-            + " to descriptors ["
-            + ",".join(descriptor_ids)
-            + "]"
+            + " to "
+            + str(len(descriptor_ids))
+            + " descriptors"
         )
 
 
