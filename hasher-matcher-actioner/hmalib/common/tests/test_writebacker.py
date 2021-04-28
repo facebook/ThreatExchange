@@ -3,16 +3,16 @@
 import unittest
 import os
 import typing as t
-from hmalib.lambdas.actions.reactioner import lambda_handler
+from hmalib.lambdas.actions.writebacker import lambda_handler
 from hmalib.common.label_models import (
-    SawThisTooReactionLabel,
-    IngestedReactionLabel,
-    FalsePositiveReactionLabel,
-    TruePositiveReactionLabel,
+    SawThisTooWritebackLabel,
+    IngestedWritebackLabel,
+    FalsePositiveWritebackLabel,
+    TruePositiveWritebackLabel,
 )
-from hmalib.common.message_models import MatchMessage, ReactionMessage, BankedSignal
+from hmalib.common.message_models import MatchMessage, WritebackMessage, BankedSignal
 
-from hmalib.common.reactioner_models import Writebacker
+from hmalib.common.writebacker_models import Writebacker
 
 
 class WritebackerTestCase(unittest.TestCase):
@@ -28,15 +28,15 @@ class WritebackerTestCase(unittest.TestCase):
     def test_saw_this_too(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        reaction = SawThisTooReactionLabel()
-        reaction_message = ReactionMessage.from_match_message_and_label(
-            self.match_message, reaction
+        writeback = SawThisTooWritebackLabel()
+        writeback_message = WritebackMessage.from_match_message_and_label(
+            self.match_message, writeback
         )
-        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
+        event = {"Records": [{"body": writeback_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
         assert result == {
-            "reactions_performed": {"te": "reacted SAW_THIS_TOO to 2 descriptors"}
+            "writebacks_performed": {"te": "reacted SAW_THIS_TOO to 2 descriptors"}
         }
 
         os.environ["MOCK_TE_API"] = "False"
@@ -44,15 +44,15 @@ class WritebackerTestCase(unittest.TestCase):
     def test_ingested(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        reaction = IngestedReactionLabel()
-        reaction_message = ReactionMessage.from_match_message_and_label(
-            self.match_message, reaction
+        writeback = IngestedWritebackLabel()
+        writeback_message = WritebackMessage.from_match_message_and_label(
+            self.match_message, writeback
         )
-        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
+        event = {"Records": [{"body": writeback_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
         assert result == {
-            "reactions_performed": {"te": "reacted INGESTED to 2 descriptors"}
+            "writebacks_performed": {"te": "reacted INGESTED to 2 descriptors"}
         }
 
         os.environ["MOCK_TE_API"] = "False"
@@ -60,27 +60,27 @@ class WritebackerTestCase(unittest.TestCase):
     def test_false_positve(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        reaction = FalsePositiveReactionLabel()
-        reaction_message = ReactionMessage.from_match_message_and_label(
-            self.match_message, reaction
+        writeback = FalsePositiveWritebackLabel()
+        writeback_message = WritebackMessage.from_match_message_and_label(
+            self.match_message, writeback
         )
-        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
+        event = {"Records": [{"body": writeback_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
-        assert result == {"reactions_performed": {"te": "Wrote Back false positive"}}
+        assert result == {"writebacks_performed": {"te": "Wrote Back false positive"}}
 
         os.environ["MOCK_TE_API"] = "False"
 
     def test_true_positve(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        reaction = TruePositiveReactionLabel()
-        reaction_message = ReactionMessage.from_match_message_and_label(
-            self.match_message, reaction
+        writeback = TruePositiveWritebackLabel()
+        writeback_message = WritebackMessage.from_match_message_and_label(
+            self.match_message, writeback
         )
-        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
+        event = {"Records": [{"body": writeback_message.to_aws_json()}]}
 
         result = lambda_handler(event, None)
-        assert result == {"reactions_performed": {"te": "Wrote Back true positive"}}
+        assert result == {"writebacks_performed": {"te": "Wrote Back true positive"}}
 
         os.environ["MOCK_TE_API"] = "False"

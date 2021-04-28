@@ -8,7 +8,7 @@ from hmalib.common.label_models import (
     BankSourceClassificationLabel,
     ClassificationLabel,
     Label,
-    ReactionLabel,
+    WritebackLabel,
 )
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.aws_dataclass import HasAWSSerialization
@@ -89,25 +89,25 @@ class ActionMessage(MatchMessage):
 
 
 @dataclass
-class ReactionMessage(MatchMessage):
+class WritebackMessage(MatchMessage):
     """
-    The reactioner needs the match message plus which reaction to send back
-    to the source of the signal (for now, ThreatExchange).
+    The Writebacker needs the match message plus which writeback type to perfrom
+    on the source of the signal (for now, ThreatExchange).
     """
 
-    reaction_label: ReactionLabel = field(
-        default=ReactionLabel("UnspecifiedThreatExchangeReaction")
+    writeback_label: WritebackLabel = field(
+        default=WritebackLabel("UnspecifiedThreatExchangeWriteback")
     )
 
     @classmethod
     def from_match_message_and_label(
         cls,
         match_message: MatchMessage,
-        reaction_label: ReactionLabel,
-    ) -> "ReactionMessage":
+        writeback_label: WritebackLabel,
+    ) -> "WritebackMessage":
         return cls(
             match_message.content_key,
             match_message.content_hash,
             match_message.matching_banked_signals,
-            reaction_label,
+            writeback_label,
         )

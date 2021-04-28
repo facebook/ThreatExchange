@@ -55,28 +55,28 @@ class ActionLabel(Label):
 
 
 @dataclass(unsafe_hash=True)
-class ReactionLabel(Label):
-    key: str = field(default="Reaction", init=False)
+class WritebackLabel(Label):
+    key: str = field(default="Writeback", init=False)
 
     def __eq__(self, other) -> bool:
         return self.value == other.value
 
 
 @dataclass(unsafe_hash=True)
-class SawThisTooReactionLabel(ReactionLabel):
+class SawThisTooWritebackLabel(WritebackLabel):
     value: str = field(default="SawThisToo", init=False)
 
 
 @dataclass(unsafe_hash=True)
-class FalsePositiveReactionLabel(ReactionLabel):
+class FalsePositiveWritebackLabel(WritebackLabel):
     value: str = field(default="FalsePositive", init=False)
 
 
 @dataclass(unsafe_hash=True)
-class TruePositiveReactionLabel(ReactionLabel):
+class TruePositiveWritebackLabel(WritebackLabel):
     value: str = field(default="TruePositive", init=False)
 
 
 @dataclass(unsafe_hash=True)
-class IngestedReactionLabel(ReactionLabel):
+class IngestedWritebackLabel(WritebackLabel):
     value: str = field(default="Ingested", init=False)

@@ -13,10 +13,10 @@ from hmalib.common.label_models import (
     BankIDClassificationLabel,
     BankSourceClassificationLabel,
     ClassificationLabel,
-    SawThisTooReactionLabel,
+    SawThisTooWritebackLabel,
     Label,
 )
-from hmalib.common.reactioner_models import ThreatExchangeSawThisTooWritebacker
+from hmalib.common.writebacker_models import ThreatExchangeSawThisTooWritebacker
 from hmalib.common.config import HMAConfig
 from hmalib.common.evaluator_models import (
     Action,
@@ -27,7 +27,7 @@ from hmalib.common.message_models import (
     ActionMessage,
     BankedSignal,
     MatchMessage,
-    ReactionMessage,
+    WritebackMessage,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
 from mypy_boto3_sqs import SQSClient
@@ -42,7 +42,7 @@ class ActionEvaluatorConfig:
     """
 
     actions_queue_url: str
-    reactions_queue_url: str
+    writebacks_queue_url: str
     sqs_client: SQSClient
 
     @classmethod
@@ -54,7 +54,7 @@ class ActionEvaluatorConfig:
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
-            reactions_queue_url=os.environ["REACTIONS_QUEUE_URL"],
+            writebacks_queue_url=os.environ["WRITEBACKS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
         )
 
@@ -95,10 +95,10 @@ def lambda_handler(event, context):
                 MessageBody=action_message.to_aws_json(),
             )
 
-        for reaction_messages in get_reaction_messages(match_message, action_labels):
+        for writeback_messages in get_writeback_messages(match_message, action_labels):
             config.sqs_client.send_message(
-                QueueUrl=config.reactions_queue_url,
-                MessageBody=reaction_messages.to_aws_json(),
+                QueueUrl=config.writebacks_queue_url,
+                MessageBody=writeback_messages.to_aws_json(),
             )
 
     return {"evaluation_completed": "true"}
@@ -179,17 +179,19 @@ def remove_superseded_actions(
     return action_label_to_action_rules
 
 
-def get_reaction_messages(
+def get_writeback_messages(
     match_message: MatchMessage,
     action_labels: t.List[ActionLabel],
-) -> t.List[ReactionMessage]:
+) -> t.List[WritebackMessage]:
     """
     TODO implement
     Evaluates a collection of action_labels against some yet to be defined configuration
     (and possible business login) to produce
     """
-    reaction_label = SawThisTooReactionLabel()
-    return [ReactionMessage.from_match_message_and_label(match_message, reaction_label)]
+    writeback_label = SawThisTooWritebackLabel()
+    return [
+        WritebackMessage.from_match_message_and_label(match_message, writeback_label)
+    ]
 
 
 if __name__ == "__main__":

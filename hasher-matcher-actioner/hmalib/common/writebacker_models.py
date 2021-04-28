@@ -9,15 +9,15 @@ from hmalib.common.logging import get_logger
 
 from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.label_models import (
-    ReactionLabel,
-    SawThisTooReactionLabel,
-    IngestedReactionLabel,
-    FalsePositiveReactionLabel,
-    TruePositiveReactionLabel,
+    WritebackLabel,
+    SawThisTooWritebackLabel,
+    IngestedWritebackLabel,
+    FalsePositiveWritebackLabel,
+    TruePositiveWritebackLabel,
 )
 from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.evaluator_models import ActionLabel
-from hmalib.common.message_models import ReactionMessage
+from hmalib.common.message_models import WritebackMessage
 from hmalib.aws_secrets import AWSSecrets
 
 from threatexchange.api import ThreatExchangeAPI
@@ -90,18 +90,18 @@ class Writebacker:
         raise NotImplementedError
 
     @property
-    def reaction_label(self) -> ReactionLabel:
+    def writeback_type(self) -> WritebackLabel:
         """
-        The reaction label for when this action should be performed (eg SawThisTooReactionLabel())
+        The writeback label for when this action should be performed (eg SawThisTooWritebackLabel())
         """
         raise NotImplementedError
 
-    def _writeback_impl(self, writeback_message: ReactionMessage) -> str:
+    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
         raise NotImplementedError
 
-    def perform_writeback(self, writeback_message: ReactionMessage) -> str:
+    def perform_writeback(self, writeback_message: WritebackMessage) -> str:
         writeback_options = self.writeback_options()
-        writeback_to_perform = writeback_message.reaction_label.value
+        writeback_to_perform = writeback_message.writeback_label.value
         if writeback_to_perform not in writeback_options:
             return (
                 "Could not find writebacker for source "
@@ -137,12 +137,12 @@ class ThreatExchangeWritebacker(Writebacker):
     def writeback_is_enabled(self) -> bool:
         """
         TODO implement
-        Looks up from a config whether ThreatExchange reacting is enabled. Initially this will be a global
-        config, and this method will return True if reacting is enabled, False otherwise. At some point the
-        config for reacting to ThreatExchange may be on a per collaboration basis. In that case, the config
-        will be referenced for each collaboration involved (implied by the match message). If reacting
+        Looks up from a config whether ThreatExchange writing back is enabled. Initially this will be a global
+        config, and this method will return True if writing back is enabled, False otherwise. At some point the
+        config for writing back to ThreatExchange may be on a per collaboration basis. In that case, the config
+        will be referenced for each collaboration involved (implied by the match message). If writing back
         is enabled for a given collaboration, a label will be added to the match message
-        (e.g. "ThreatExchangeReactingEnabled:<collaboration-id>").
+        (e.g. "ThreatExchangeWritingBackEnabled:<collaboration-id>").
         """
         return True
 
@@ -166,7 +166,7 @@ class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeWritebacker):
 
     """
 
-    def _writeback_impl(self, writeback_message: ReactionMessage) -> str:
+    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
         # TODO Implement
         return "Wrote Back false positive"
 
@@ -182,7 +182,7 @@ class ThreatExchangeTruePositivePositiveWritebacker(ThreatExchangeWritebacker):
 
     """
 
-    def _writeback_impl(self, writeback_message: ReactionMessage) -> str:
+    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
         # TODO Implement
         return "Wrote Back true positive"
 
@@ -201,7 +201,7 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
     def reaction(self) -> str:
         raise NotImplementedError
 
-    def _writeback_impl(self, writeback_message: ReactionMessage) -> str:
+    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
         indicator_ids = {
             dataset_match_details.banked_content_id
             for dataset_match_details in writeback_message.matching_banked_signals
