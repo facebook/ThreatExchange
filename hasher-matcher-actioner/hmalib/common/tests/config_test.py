@@ -8,7 +8,7 @@ import typing as t
 
 import boto3
 from moto import mock_dynamodb2
-
+from botocore.exceptions import ClientError
 from hmalib.common import config, aws_dataclass
 
 
@@ -72,7 +72,13 @@ class ConfigTest(unittest.TestCase):
 
     def assertEqualsAfterDynamodb(self, config_instance):
         """Asserts configs are still equal after writing to DB"""
-        config.create_config(config_instance)
+        try:
+            config.create_config(config_instance)
+        except ClientError as e:
+            if e.response['Error']['Code'] == "ConditionalCheckFailedException":
+                print("can't insert duplicated item")
+            else:
+                raise 
         from_db = config_instance.get(config_instance.name)
         self.assertEqual(config_instance, from_db)
 
