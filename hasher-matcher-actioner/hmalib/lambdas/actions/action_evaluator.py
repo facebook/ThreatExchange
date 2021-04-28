@@ -21,8 +21,9 @@ from hmalib.common.actioner_models import (
     ClassificationLabel,
     Label,
     ReactionMessage,
-    ThreatExchangeReactionLabel,
+    SawThisTooReactionLabel,
 )
+from hmalib.common.reactioner_models import ThreatExchangeSawThisTooWritebacker
 from hmalib.lambdas.actions.action_performer import perform_label_action
 from mypy_boto3_sqs import SQSClient
 
@@ -84,21 +85,20 @@ def lambda_handler(event, context):
                 MessageBody=action_message.to_aws_message(),
             )
 
-        if threat_exchange_reacting_is_enabled(match_message):
-            threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
-                match_message, action_labels
-            )
-            if threat_exchange_reaction_labels:
-                for threat_exchange_reaction_label in threat_exchange_reaction_labels:
-                    threat_exchange_reaction_message = (
-                        ReactionMessage.from_match_message_and_label(
-                            match_message, threat_exchange_reaction_label
-                        )
+        threat_exchange_reaction_labels = get_reaction_messages(
+            match_message, action_labels
+        )
+        if threat_exchange_reaction_labels:
+            for threat_exchange_reaction_label in threat_exchange_reaction_labels:
+                threat_exchange_reaction_message = (
+                    ReactionMessage.from_match_message_and_label(
+                        match_message, threat_exchange_reaction_label
                     )
-                    config.sqs_client.send_message(
-                        QueueUrl=config.reactions_queue_url,
-                        MessageBody=threat_exchange_reaction_message.to_aws_message(),
-                    )
+                )
+                config.sqs_client.send_message(
+                    QueueUrl=config.reactions_queue_url,
+                    MessageBody=threat_exchange_reaction_message.to_aws_message(),
+                )
 
     return {"evaluation_completed": "true"}
 
@@ -188,29 +188,17 @@ def remove_superseded_actions(
     return action_labels
 
 
-def threat_exchange_reacting_is_enabled(match_message: MatchMessage) -> bool:
-    """
-    TODO implement
-    Looks up from a config whether ThreatExchange reacting is enabled. Initially this will be a global
-    config, and this method will return True if reacting is enabled, False otherwise. At some point the
-    config for reacting to ThreatExchange may be on a per collaboration basis. In that case, the config
-    will be referenced for each collaboration involved (implied by the match message). If reacting
-    is enabled for a given collaboration, a label will be added to the match message
-    (e.g. "ThreatExchangeReactingEnabled:<collaboration-id>").
-    """
-    return True
-
-
-def get_threat_exchange_reaction_labels(
+def get_reaction_message(
     match_message: MatchMessage,
     action_labels: t.List[ActionLabel],
-) -> t.List[Label]:
+) -> t.List[ReactionMessage]:
     """
     TODO implement
     Evaluates a collection of action_labels against some yet to be defined configuration
     (and possible business login) to produce
     """
-    return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
+    reaction_label = SawThisTooReactionLabel()
+    return [ReactionMessage.from_match_message_and_label(match_message, reaction_label)]
 
 
 if __name__ == "__main__":

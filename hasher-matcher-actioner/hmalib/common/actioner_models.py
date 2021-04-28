@@ -56,8 +56,36 @@ class ActionLabel(Label):
 
 
 @dataclass(unsafe_hash=True)
-class ThreatExchangeReactionLabel(Label):
-    key: str = field(default="ThreatExchangeReaction", init=False)
+class ReactionLabel(Label):
+    key: str = field(default="Reaction", init=False)
+
+    def __eq__(self, other) -> bool:
+        return self.value == other.value
+
+
+@dataclass(unsafe_hash=True)
+class SawThisTooReactionLabel(ReactionLabel):
+    value: str = field(default="SawThisToo", init=False)
+
+
+@dataclass(unsafe_hash=True)
+class FalsePositiveReactionLabel(ReactionLabel):
+    value: str = field(default="FalsePositive", init=False)
+
+
+@dataclass(unsafe_hash=True)
+class TruePositiveReactionLabel(ReactionLabel):
+    value: str = field(default="TruePositive", init=False)
+
+
+@dataclass(unsafe_hash=True)
+class InReviewReactionLabel(ReactionLabel):
+    value: str = field(default="InReview", init=False)
+
+
+@dataclass(unsafe_hash=True)
+class IngestedReactionLabel(ReactionLabel):
+    value: str = field(default="Ingested", init=False)
 
 
 @dataclass
@@ -137,9 +165,7 @@ class ReactionMessage(MatchMessage):
     to the source of the signal (for now, ThreatExchange).
     """
 
-    reaction_label: ThreatExchangeReactionLabel = ThreatExchangeReactionLabel(
-        "UnspecifiedThreatExchangeReaction"
-    )
+    reaction_label: ReactionLabel = ReactionLabel("UnspecifiedThreatExchangeReaction")
 
     def to_aws_message(self) -> str:
         return json.dumps(
@@ -160,20 +186,20 @@ class ReactionMessage(MatchMessage):
             parsed["ContentKey"],
             parsed["ContentHash"],
             [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
-            ThreatExchangeReactionLabel(parsed["ReactionLabelValue"]),
+            ReactionLabel(parsed["ReactionLabelValue"]),
         )
 
     @classmethod
     def from_match_message_and_label(
         cls,
         match_message: MatchMessage,
-        threat_exchange_reaction_label: ThreatExchangeReactionLabel,
+        reaction_label: ReactionLabel,
     ) -> "ReactionMessage":
         return cls(
             match_message.content_key,
             match_message.content_hash,
             match_message.matching_banked_signals,
-            threat_exchange_reaction_label,
+            reaction_label,
         )
 
 
