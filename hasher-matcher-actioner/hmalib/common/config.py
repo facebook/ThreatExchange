@@ -71,6 +71,7 @@ class HMAConfig:
         deserialization logic, but then things are complicated.
     ---
 
+
     Astute readers may notice that there are no abstract methods, and in fact,
     it would be possible to create records of this type if you really wanted
     to, but probably don't.
@@ -133,6 +134,13 @@ class HMAConfig:
     def _scan_filter(cls):
         return Attr("ConfigType").eq(cls.get_config_type())
 
+    @classmethod
+    def _assert_writable(cls):
+        """
+        Throw an exception if the config should not be writable (i.e. abstract)
+        """
+        pass
+
     @staticmethod
     def initialize(config_table_name: str) -> None:
         """
@@ -154,29 +162,25 @@ class _HMAConfigWithSubtypeMeta(type):
     """
 
     def __new__(metacls, cls_name: str, bases, cls_dict):
-        # Is this one of the bases?
-        if cls_name in ("HMAConfigWithSubtypes", "_HMAConfigSubtype"):
+        # Is this the base?
+        if cls_name == "HMAConfigWithSubtypes":
             return super().__new__(metacls, cls_name, bases, cls_dict)
-        # Has a Subtype already been applied?
+        # Has a _PARENT already been applied?
         for base in bases:
-            if hasattr(base, "Subtype"):
+            if hasattr(base, "_PARENT"):
                 return super().__new__(metacls, cls_name, bases, cls_dict)
         # Else create magic defaults
-        cls_dict["Subtype"] = None  # Recursion guard, overwrite below
         cls_dict.setdefault("CONFIG_TYPE", cls_name)
-
         new_cls = super().__new__(metacls, cls_name, bases, cls_dict)
-
-        class _SpecializedHMAConfigSubtype(new_cls, _HMAConfigSubtype):  # type: ignore
-            pass
-
-        new_cls.Subtype = _SpecializedHMAConfigSubtype  # type: ignore
+        new_cls._PARENT = new_cls  # type: ignore
         return new_cls
 
 
+@dataclass
 class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
     """
     An HMAConfig that shares a table with other configs (and therefore names).
+
 
     How to use (version 1: same file - preferred):
 
@@ -226,16 +230,23 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
     """
 
     CONFIG_TYPE: t.ClassVar[str]  # Magically defaults to cls name if unset
-    Subtype: t.ClassVar[
-        t.Type["_HMAConfigSubtype"]
-    ]  # Is set by _HMAConfigWithSubtypeMeta
+    _PARENT: t.ClassVar[t.Type["HMAConfigWithSubtypes"]]  # Set by metaclass
+
+    config_subtype: str = field(init=False)
+
+    def __post_init__(self):
+        self.config_subtype = self.get_config_subtype()
 
     @classmethod
     def get_config_type(cls) -> str:
         return cls.CONFIG_TYPE
 
+    @classmethod
+    def get_config_subtype(cls) -> str:
+        return cls.__name__
+
     @staticmethod
-    def get_subtype_classes() -> t.List[t.Type["_HMAConfigSubtype"]]:
+    def get_subtype_classes() -> t.List[t.Type["HMAConfigWithSubtypes"]]:
         """
         All the classes that make up this config class.
 
@@ -248,9 +259,9 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
 
     @classmethod
     @functools.lru_cache(maxsize=1)
-    def _get_subtypes_by_name(cls) -> t.Dict[str, t.Type["_HMAConfigSubtype"]]:
+    def _get_subtypes_by_name(cls) -> t.Dict[str, t.Type["HMAConfigWithSubtypes"]]:
         tmp_variable_for_mypy: t.List[
-            t.Type["_HMAConfigSubtype"]
+            t.Type["HMAConfigWithSubtypes"]
         ] = cls.get_subtype_classes()
         return {c.get_config_subtype(): c for c in tmp_variable_for_mypy}
 
@@ -258,112 +269,68 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
     def _convert_item(cls, item: t.Dict[str, t.Any]):
         if not item:
             return None
-        item_cls = cls._get_subtypes_by_name().get(item["config_subtype"])
+        item = dict(item)
+        # Remove config_subtype from the dict before conversion
+        item_cls = cls._get_subtypes_by_name().get(item.pop("config_subtype"))
         if not item_cls:
             return None
-        return item_cls._convert_item(item)
-
-
-@dataclass
-class _HMAConfigSubtype(HMAConfigWithSubtypes):
-    """
-    A config with a shared namespace. @see HMAConfigWithSubtypes
-
-    On the tradeoff from making this in the inheiritence heirarchy of
-    HMAConfigWithSubtypes or not, forcing it to be in the same heirarchy
-    preserves the get/get_all typing, and allows you to put common fields
-    on the base class.
-
-    A different option would be to have HMAConfigWithSubtypes not inherit
-    HMAConfig (Subtype would), give it get, getx, and get_all, and if you
-    wanted a base class, you could just make one yourself.
-    """
-
-    config_subtype: str = field(init=False)
-
-    def __post_init__(self):
-        self.config_subtype = self.get_config_subtype()
-
-    @classmethod
-    def get_config_subtype(cls) -> str:
-        return cls.__name__
+        if cls not in (cls._PARENT, item_cls):
+            return None
+        return _dynamodb_item_to_config(item_cls, item)
 
     @classmethod
     def _scan_filter(cls):
-        return super()._scan_filter() and Attr("config_subtype").eq(
-            cls.get_config_subtype
-        )
+        ret = super()._scan_filter()
+        if cls._PARENT is cls:
+            return ret
+        return ret and Attr("config_subtype").eq(cls.get_config_subtype)
 
     @classmethod
-    def _convert_item(cls, item: t.Dict[str, t.Any]):
-        item = dict(item or {})
-        # Remove config_subtype from the dict before conversion
-        if item.pop("config_subtype", None) != cls.get_config_subtype():
-            return None
-        return _dynamodb_item_to_config(cls, item)
+    def _assert_writable(cls):
+        super()._assert_writable()
+        if cls._PARENT is cls:
+            raise ValueError(f"Tried to write {cls.__name__} instead of its subtypes")
+        elif cls.get_config_subtype() not in cls._get_subtypes_by_name():
+            raise ValueError(
+                f"Tried to write subtype {cls.__name__}"
+                " but it's not in get_subtype_classes(), "
+                "is it supposed to be abstract?"
+            )
 
 
 # Methods that mutate the config are separate
 # to make them easier to spot in the wild
 
 
-def update_config(
-    config: HMAConfig, insert_only: bool = False, key: str = "ConfigName"
-) -> None:
+def create_config(config: HMAConfig) -> None:
     """
-    Update or create a config. No locking or versioning!
-    Adding a optional argument conditionExpression to create or update a config conditionally
+    Creates a config, exception if one exists with the same type and name
     """
     _assert_initialized()
-    if isinstance(config, HMAConfigWithSubtypes):
-        if not isinstance(config, _HMAConfigSubtype):
-            raise ValueError(
-                f"Tried to write {config.__class__.__name__} instead of its subtypes"
-            )
-        elif config.get_config_subtype() not in config._get_subtypes_by_name():
-            raise ValueError(
-                f"Tried to write subtype {config.__class__.__name__}"
-                " but it's not in get_subtype_classes()"
-            )
+    config._assert_writable()
     # TODO - we should probably sanity check here to make sure all the fields
     #        are the expected types, because lolpython. Otherwise, it will
     #        fail to deserialize later
-    if insert_only:
-        try:
-            get_dynamodb().meta.client.put_item(
-                TableName=_TABLE_NAME,
-                Item=_config_to_dynamodb_item(config),
-                ConditionExpression=Attr(key).not_exists(),
-            )
-        except ClientError as e:
-            # Ignore the ConditionalCheckFailedException, bubble up
-            # other exceptions.
-            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
-                raise
-    else:
-        get_dynamodb().meta.client.put_item(
-            TableName=_TABLE_NAME,
-            Item=_config_to_dynamodb_item(config),
-        )
-
-
-def update_config_attributes_by_type_and_name(
-    config_type: str, name: str, updates: dict
-):
-    """Delete a config by name (and type)"""
-    _assert_initialized()
-    update_expression, values = _get_update_params(updates)
-    response = get_dynamodb().meta.client.update_item(
+    get_dynamodb().meta.client.put_item(
         TableName=_TABLE_NAME,
-        Key={
-            "ConfigType": config_type,
-            "ConfigName": name,
-        },
-        ExpressionAttributeValues=dict(values),
-        UpdateExpression=update_expression,
-        ReturnValues="ALL_NEW",
+        Item=_config_to_dynamodb_item(config),
+        ConditionExpression=Attr("ConfigType").not_exists(),
     )
-    return response["Attributes"]
+
+
+def update_config(config: HMAConfig) -> "HMAConfig":
+    """
+    Updates a config, exception if doesn't exist.
+    If atomic = True, requires that the config wasn't updated
+    since your last Config.get()
+    """
+    _assert_initialized()
+    get_dynamodb().meta.client.put_item(
+        TableName=_TABLE_NAME,
+        Item=_config_to_dynamodb_item(config),
+        ConditionExpression=Attr("ConfigType").exists() & Attr("ConfigName").exists(),
+    )
+    return config
 
 
 def delete_config_by_type_and_name(config_type: str, name: str) -> None:
@@ -404,23 +371,3 @@ def _config_to_dynamodb_item(config) -> t.Dict[str, t.Any]:
     item["ConfigType"] = config.get_config_type()
     item["ConfigName"] = config.name
     return item
-
-
-def _get_update_params(body: dict):
-    """Given a dictionary we generate an update expression and a dict of values
-    to update a dynamodb table.
-
-    Params:
-        body (dict): Parameters to use for formatting.
-
-    Returns:
-        update expression, dict of values.
-    """
-    update_expression = ["set "]
-    update_values = dict()
-
-    for key, val in body.items():
-        update_expression.append(f" {key} = :{key},")
-        update_values[f":{key}"] = val
-
-    return "".join(update_expression)[:-1], update_values

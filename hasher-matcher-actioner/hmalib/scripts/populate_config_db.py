@@ -132,7 +132,7 @@ def load_defaults(_args):
 
     for config in configs:
         # Someday maybe can do filtering or something, I dunno
-        hmaconfig.update_config(config)
+        hmaconfig.create_config(config)
         print(config)
 
 
