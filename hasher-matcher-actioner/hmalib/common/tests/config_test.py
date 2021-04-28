@@ -75,10 +75,10 @@ class ConfigTest(unittest.TestCase):
         try:
             config.create_config(config_instance)
         except ClientError as e:
-            if e.response['Error']['Code'] == "ConditionalCheckFailedException":
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
                 print("can't insert duplicated item")
             else:
-                raise 
+                raise
         from_db = config_instance.get(config_instance.name)
         self.assertEqual(config_instance, from_db)
 
