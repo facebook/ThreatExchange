@@ -71,13 +71,6 @@ class UpdateDatasetRequest(DictParseable):
 
 
 def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
-    """
-    A Closure that includes all dependencies that MUST be provided by the root
-    API that this API plugs into. Declare dependencies here, but initialize in
-    the root API alone.
-    """
-
-    # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/datasets/'
     datasets_api = bottle.Bottle()
     HMAConfig.initialize(hma_config_table)
