@@ -4,16 +4,13 @@ import json
 import os
 import typing as t
 from functools import lru_cache
+from hmalib.common.message_models import BankedSignal, ActionMessage, MatchMessage
 from hmalib.common.actioner_models import (
-    ActionLabel,
-    ActionMessage,
     ActionPerformer,
-    BankedSignal,
     WebhookPostActionPerformer,
 )
-
+from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.logging import get_logger
-from hmalib.models import MatchMessage
 
 from hmalib.common import config
 

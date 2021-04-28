@@ -17,9 +17,11 @@ import typing as t
 import re
 
 from hmalib.lambdas.fetcher import ThreatExchangeConfig
-from hmalib.common.actioner_models import (
+from hmalib.common.evaluator_models import (
     ActionLabel,
     ActionRule,
+)
+from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     ClassificationLabel,

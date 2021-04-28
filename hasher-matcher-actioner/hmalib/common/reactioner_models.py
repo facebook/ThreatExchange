@@ -2,9 +2,10 @@ import typing as t
 
 from dataclasses import dataclass, fields
 
-from hmalib.models import MatchMessage, BankedSignal
+from hmalib.common.message_models import BankedSignal, MatchMessage
 from hmalib.common.logging import get_logger
-from hmalib.common.actioner_models import ActionPerformer, ActionLabel
+from hmalib.common.actioner_models import ActionPerformer
+from hmalib.common.evaluator_models import ActionLabel
 from hmalib.aws_secrets import AWSSecrets
 
 from threatexchange.api import ThreatExchangeAPI

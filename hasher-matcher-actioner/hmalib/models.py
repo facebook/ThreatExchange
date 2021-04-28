@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
-from hmalib.common.aws_dataclass import HasAWSSerialization
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -338,40 +337,3 @@ class MatchRecordQuery:
             & Key("UpdatedAt").between(start_time, end_time),
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
         ).get("Items", [])
-
-
-@dataclass
-class BankedSignal:
-    """
-    BankedSignal fields:
-    - `banked_content_id`: Inside the bank, the unique way to refer to what
-      was matched against
-    - `bank_id`: The unique way to refer to the bank banked_content_id came from
-    - `bank_source`: This is forward looking: this might be 'te' or 'local';
-      indicates source of or relationship between one or more banks
-    - `classifications`: a list of strings that provide additional context
-      about the banked signal
-    """
-
-    banked_content_id: str
-    bank_id: str
-    bank_source: str
-    classifications: t.List[str] = field(default_factory=list)
-
-
-@dataclass
-class MatchMessage(HasAWSSerialization):
-    """
-    Captures a set of matches that will need to be processed. We create one
-    match message for a single content key. It is possible that a single content
-    hash matches multiple datasets. When it does, the entire set of matches are
-    forwarded together so that any appropriate action can be taken.
-
-    - `content_key`: A way for partners to refer uniquely to content on their
-      site
-    - `content_hash`: The hash generated for the content_key
-    """
-
-    content_key: str
-    content_hash: str
-    matching_banked_signals: t.List[BankedSignal] = field(default_factory=list)
