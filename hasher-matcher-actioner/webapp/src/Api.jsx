@@ -32,12 +32,25 @@ async function apiPost(route, body, params = {}) {
   });
 }
 
+async function apiPut(route, body, params = {}) {
+  return API.put('hma_api', route, {
+    body,
+    headers: {
+      Authorization: await getAuthorizationToken(),
+    },
+    queryStringParameters: params,
+  });
+}
+
 export function fetchAllMatches() {
   return apiGet('/matches/');
 }
 
 export function fetchMatchesFromSignal(signalSource, signalId) {
-  return apiGet('/matches/', {signal_q: signalId, signal_source: signalSource});
+  return apiGet('/matches/', {
+    signal_q: signalId,
+    signal_source: signalSource,
+  });
 }
 
 export function fetchMatchesFromContent(contentId) {
@@ -50,10 +63,6 @@ export function fetchMatchDetails(key) {
 
 export function fetchHash(key) {
   return apiGet(`/hash/${key}`);
-}
-
-export function fetchContentStatus(key) {
-  return apiGet(`/content_status/${key}`);
 }
 
 export function fetchImage(key) {
@@ -80,8 +89,40 @@ export async function uploadImage(file) {
   };
 }
 
-export async function updateContentStatus(key, status) {
-  apiPost(`/content_status/${key}`, {
-    status,
+export async function requestSignalOpinionChange(
+  signalId,
+  signalSource,
+  dataset,
+  opinionChange,
+) {
+  apiPost(
+    '/matches/request-signal-opinion-change/',
+    {},
+    {
+      signal_q: signalId,
+      signal_source: signalSource,
+      dataset_q: dataset,
+      opinion_change: opinionChange,
+    },
+  );
+}
+
+export function fetchAllDatasets() {
+  return apiGet('/datasets/');
+}
+
+export function updateDatasets(
+  privacyGroupId,
+  fetcherActive = null,
+  writeBack = null,
+) {
+  return apiPut('/datasets/update', {
+    privacy_group_id: privacyGroupId,
+    ...(fetcherActive && {fetcher_active: fetcherActive}),
+    ...(writeBack && {write_back: writeBack}),
   });
+}
+
+export function syncDatasets() {
+  return apiPost('/matches/sync');
 }

@@ -27,6 +27,8 @@ How to use:
 
 from decimal import Decimal
 from dataclasses import dataclass, field, fields, is_dataclass
+
+import json
 import typing as t
 
 T = t.TypeVar("T")
@@ -48,6 +50,13 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
     args = t.get_args(in_type)
 
     check_type = origin or in_type
+
+    if isinstance(check_type, t.ForwardRef):
+        raise AWSSerializationFailure(
+            "Serialization error: "
+            f"Expected no forward refs, but detected {check_type}. "
+            "Rework your dataclasses to avoid forward references."
+        )
 
     if not isinstance(py_field, check_type):
         raise AWSSerializationFailure(
@@ -175,6 +184,13 @@ class HasAWSSerialization:
     def to_aws(self):
         return py_to_aws(self)
 
+    def to_aws_json(self):
+        return json.dumps(self.to_aws())
+
     @classmethod
     def from_aws(cls: t.Type[T], val: t.Dict[str, t.Any]) -> T:
         return aws_to_py(cls, val)
+
+    @classmethod
+    def from_aws_json(cls: t.Type[T], val: str) -> T:
+        return aws_to_py(cls, json.loads(val))

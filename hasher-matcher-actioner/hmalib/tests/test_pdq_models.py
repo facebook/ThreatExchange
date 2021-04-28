@@ -3,6 +3,8 @@
 import unittest
 from moto import mock_dynamodb2
 from hmalib import models
+from hmalib.common import signal_models
+
 import boto3
 import datetime
 import os
@@ -118,7 +120,7 @@ class TestPDQModels(unittest.TestCase):
     @staticmethod
     def get_example_pdq_signal_metadata():
         pdq_hash = "a0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
-        return models.PDQSignalMetadata(
+        return signal_models.PDQSignalMetadata(
             signal_id=TestPDQModels.TEST_SIGNAL_ID,
             ds_id=TestPDQModels.TEST_DATASET_ID,
             updated_at=datetime.datetime.now(),
@@ -259,7 +261,7 @@ class TestPDQModels(unittest.TestCase):
 
         metadata.write_to_table(self.table)
 
-        query_metadata = models.PDQSignalMetadata.get_from_signal(
+        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
             self.table, TestPDQModels.TEST_SIGNAL_ID, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
 
@@ -282,7 +284,7 @@ class TestPDQModels(unittest.TestCase):
 
         metadata.write_to_table(self.table)
 
-        query_metadata = models.PDQSignalMetadata.get_from_signal(
+        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
             self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
         assert metadata.signal_hash == query_metadata.signal_hash
@@ -294,8 +296,46 @@ class TestPDQModels(unittest.TestCase):
 
         # second attmept at update should succeed
         assert metadata.update_tags_in_table_if_exists(self.table)
-        query_metadata = models.PDQSignalMetadata.get_from_signal(
+        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
             self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
         for tag in replaced_tags:
             assert tag in query_metadata.tags
+
+    def test_pdq_signal_metadata_update_pending_chage_in_table(self):
+        """
+        Test PDQSignalMetadata write to table with update_pending_opinion_change_in_table_if_exists
+        """
+        metadata = self.get_example_pdq_signal_metadata()
+
+        # change id since table persists betweeen test
+        new_signal_id = "987654321"
+        metadata.signal_id = new_signal_id
+
+        # first attempt at update should return false (doesn't exist)
+        assert not metadata.update_pending_opinion_change_in_table_if_exists(self.table)
+
+        metadata.write_to_table(self.table)
+
+        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
+            self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
+        )[0]
+        assert metadata.signal_hash == query_metadata.signal_hash
+        assert (
+            signal_models.PendingOpinionChange.NONE.value
+            == query_metadata.pending_opinion_change.value
+        )
+
+        metadata.pending_opinion_change = (
+            signal_models.PendingOpinionChange.MARK_TRUE_POSITIVE
+        )
+
+        # second attmept at update should succeed
+        assert metadata.update_pending_opinion_change_in_table_if_exists(self.table)
+        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
+            self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
+        )[0]
+        assert (
+            signal_models.PendingOpinionChange.MARK_TRUE_POSITIVE.value
+            == query_metadata.pending_opinion_change.value
+        )

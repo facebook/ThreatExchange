@@ -66,7 +66,7 @@ def lambda_handler(event, context):
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
-        match_message = MatchMessage.from_aws_message(sqs_record_body["Message"])
+        match_message = MatchMessage.from_aws_json(sqs_record_body["Message"])
 
         logger.info("Evaluating match_message: %s", match_message)
 
@@ -74,14 +74,19 @@ def lambda_handler(event, context):
 
         logger.info("Evaluating against action_rules: %s", action_rules)
 
-        action_labels = get_action_labels(match_message, action_rules)
+        action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
+        action_labels = list(action_label_to_action_rules.keys())
         for action_label in action_labels:
-            action_message = ActionMessage.from_match_message_and_label(
-                match_message, action_label
+            action_message = (
+                ActionMessage.from_match_message_action_label_and_action_rules(
+                    match_message,
+                    action_label,
+                    action_label_to_action_rules[action_label],
+                )
             )
             config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
-                MessageBody=action_message.to_aws_message(),
+                MessageBody=action_message.to_aws_json(),
             )
 
         if threat_exchange_reacting_is_enabled(match_message):
@@ -97,26 +102,35 @@ def lambda_handler(event, context):
                     )
                     config.sqs_client.send_message(
                         QueueUrl=config.reactions_queue_url,
-                        MessageBody=threat_exchange_reaction_message.to_aws_message(),
+                        MessageBody=threat_exchange_reaction_message.to_aws_json(),
                     )
 
     return {"evaluation_completed": "true"}
 
 
-def get_action_labels(
+def get_actions_to_take(
     match_message: MatchMessage, action_rules: t.List[ActionRule]
-) -> t.Set[ActionLabel]:
+) -> t.Dict[ActionLabel, t.List[ActionRule]]:
     """
     Returns action labels for each action rule that applies to a match message.
     """
     classifications_by_match = get_classifications_by_match(match_message)
-    action_labels: t.Set[ActionLabel] = set()
+    action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]] = dict()
     for classifications in classifications_by_match:
         for action_rule in action_rules:
             if action_rule_applies_to_classifications(action_rule, classifications):
-                action_labels.add(action_rule.action_label)
-    action_labels = remove_superseded_actions(action_labels)
-    return action_labels
+                if action_rule.action_label in action_label_to_action_rules:
+                    action_label_to_action_rules[action_rule.action_label].append(
+                        action_rule
+                    )
+                else:
+                    action_label_to_action_rules[action_rule.action_label] = [
+                        action_rule
+                    ]
+    action_label_to_action_rules = remove_superseded_actions(
+        action_label_to_action_rules
+    )
+    return action_label_to_action_rules
 
 
 def get_classifications_by_match(match_message: MatchMessage) -> t.List[t.Set[Label]]:
@@ -178,14 +192,15 @@ def get_actions() -> t.List[Action]:
 
 
 def remove_superseded_actions(
-    action_labels: t.Set[ActionLabel],
-) -> t.Set[ActionLabel]:
+    action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]],
+) -> t.Dict[ActionLabel, t.List[ActionRule]]:
     """
     TODO implement
-    Evaluates a collection of ActionLabels generated for a match message against the actions.
-    Action labels that are superseded by another will be removed.
+    Evaluates a dictionary of action labels and the associated action rules generated for
+    a match message against the actions. Action labels that are superseded by another will
+    be removed.
     """
-    return action_labels
+    return action_label_to_action_rules
 
 
 def threat_exchange_reacting_is_enabled(match_message: MatchMessage) -> bool:
@@ -215,23 +230,29 @@ def get_threat_exchange_reaction_labels(
 
 if __name__ == "__main__":
     # For basic debugging
+
+    action_rules = [
+        ActionRule(
+            name="Enqueue Mini-Castle for Review",
+            action_label=ActionLabel("EnqueueMiniCastleForReview"),
+            must_have_labels=set(
+                [
+                    BankIDClassificationLabel("303636684709969"),
+                    ClassificationLabel("true_positive"),
+                ]
+            ),
+            must_not_have_labels=set(
+                [BankedContentIDClassificationLabel("3364504410306721")]
+            ),
+        ),
+    ]
+
     banked_signal = BankedSignal(
-        "4169895076385542", "303636684709969", "te", ["true_positive", "Bar", "Xyz"]
+        "4169895076385542", "303636684709969", "te", ["true_positive"]
     )
+
     match_message = MatchMessage("key", "hash", [banked_signal])
 
-    print(
-        f"get_action_labels({match_message}, {get_action_rules()}):\n\t{get_action_labels(match_message, get_action_rules())}\n\n"
-    )
+    action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
 
-    banked_signal_2 = BankedSignal(
-        "3364504410306721",
-        "303636684709969",
-        "te",
-        ["true_positive", "Foo", "Bar", "Xyz"],
-    )
-    match_message_2 = MatchMessage("key", "hash", [banked_signal_2])
-
-    print(
-        f"get_action_labels({match_message_2}, {get_action_rules()}):\n\t{get_action_labels(match_message_2, get_action_rules())}\n\n"
-    )
+    print(action_label_to_action_rules)

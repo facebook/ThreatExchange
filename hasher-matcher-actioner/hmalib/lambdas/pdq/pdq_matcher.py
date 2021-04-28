@@ -15,8 +15,8 @@ from hmalib.models import (
     PDQMatchRecord,
     MatchMessage,
     BankedSignal,
-    PDQSignalMetadata,
 )
+from hmalib.common.signal_models import PDQSignalMetadata
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -105,6 +105,7 @@ def lambda_handler(event, context):
 
                 for pg in metadata.get("privacy_groups", []):
                     # TODO: we might be able to get away with some 'if exists/upsert' here
+                    # TODO: @BarrettOlson Write if don't exist or only update given fields is now needed!
                     PDQSignalMetadata(
                         signal_id,
                         pg,
@@ -137,7 +138,7 @@ def lambda_handler(event, context):
 
             # Publish one message for the set of matches.
             sns_client.publish(
-                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_aws_message()
+                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_aws_json()
             )
 
         else:

@@ -3,3 +3,4 @@ pytest==6.2.1
 mypy==0.812
 black
 moto
+WebTest==2.0.35

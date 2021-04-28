@@ -3,7 +3,7 @@
 import typing as t
 import unittest
 
-from hmalib.lambdas.actions.action_evaluator import get_action_labels
+from hmalib.lambdas.actions.action_evaluator import get_actions_to_take
 from hmalib.models import MatchMessage, BankedSignal
 from hmalib.common.actioner_models import (
     ActionLabel,
@@ -42,16 +42,22 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             )
         ]
 
-        action_labels: t.Set[ActionLabel] = get_action_labels(
-            match_message_without_foo, action_rules
+        action_label_to_action_rules: t.Dict[
+            ActionLabel, t.List[ActionRule]
+        ] = get_actions_to_take(match_message_without_foo, action_rules)
+
+        assert len(action_label_to_action_rules) == 1
+        self.assertIn(
+            enqueue_for_review_action_label,
+            action_label_to_action_rules,
+            "enqueue_for_review_action_label should be in action_label_to_action_rules",
         )
 
-        assert len(action_labels) == 1
-        assert action_labels.pop() == enqueue_for_review_action_label
+        action_label_to_action_rules = get_actions_to_take(
+            match_message_with_foo, action_rules
+        )
 
-        action_labels = get_action_labels(match_message_with_foo, action_rules)
-
-        assert len(action_labels) == 0
+        assert len(action_label_to_action_rules) == 0
 
         enqueue_mini_castle_for_review_action_label = ActionLabel(
             "EnqueueMiniCastleForReview"
@@ -114,12 +120,24 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             ],
         )
 
-        action_labels = get_action_labels(mini_castle_match_message, action_rules)
+        action_label_to_action_rules = get_actions_to_take(
+            mini_castle_match_message, action_rules
+        )
 
-        assert len(action_labels) == 1
-        assert action_labels.pop() == enqueue_mini_castle_for_review_action_label
+        assert len(action_label_to_action_rules) == 1
+        self.assertIn(
+            enqueue_mini_castle_for_review_action_label,
+            action_label_to_action_rules,
+            "enqueue_mini_castle_for_review_action_label should be in action_label_to_action_rules",
+        )
 
-        action_labels = get_action_labels(sailboat_match_message, action_rules)
+        action_label_to_action_rules = get_actions_to_take(
+            sailboat_match_message, action_rules
+        )
 
-        assert len(action_labels) == 1
-        assert action_labels.pop() == enqueue_sailboat_for_review_action_label
+        assert len(action_label_to_action_rules) == 1
+        self.assertIn(
+            enqueue_sailboat_for_review_action_label,
+            action_label_to_action_rules,
+            "enqueue_sailboat_for_review_action_label should be in action_label_to_action_rules",
+        )

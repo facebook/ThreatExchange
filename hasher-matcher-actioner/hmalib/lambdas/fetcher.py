@@ -28,7 +28,7 @@ from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import S3ThreatDataConfig
-from hmalib.models import PDQSignalMetadata
+from hmalib.common.signal_models import PDQSignalMetadata
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization

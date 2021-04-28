@@ -16,7 +16,7 @@ def lambda_handler(event, context):
     """
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
-        reaction_message = ReactionMessage.from_aws_message(sqs_record["body"])
+        reaction_message = ReactionMessage.from_aws_json(sqs_record["body"])
 
         logger.info("Reacting: reaction_message = %s", reaction_message)
 

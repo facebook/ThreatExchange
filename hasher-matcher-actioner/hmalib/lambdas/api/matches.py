@@ -1,14 +1,21 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import bottle
+import datetime
+
 from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 import typing as t
 from enum import Enum
-from threatexchange.descriptor import ThreatDescriptor
+from logging import Logger
 
-from hmalib.models import PDQMatchRecord, PDQSignalMetadata
+from threatexchange.descriptor import ThreatDescriptor
+from hmalib.models import PDQMatchRecord
+from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
+from hmalib.common.logging import get_logger
 from .middleware import jsoninator, JSONifiable
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -38,6 +45,7 @@ class MatchDetailMetadata(JSONifiable):
     dataset: str
     tags: t.List[str]
     opinion: str
+    pending_opinion_change: str
 
     def to_json(self) -> t.Dict:
         return asdict(self)
@@ -66,6 +74,14 @@ class MatchDetailsResponse(JSONifiable):
 
     def to_json(self) -> t.Dict:
         return {"match_details": [detail.to_json() for detail in self.match_details]}
+
+
+@dataclass
+class ChangeSignalOpinionResponse(JSONifiable):
+    success: bool
+
+    def to_json(self) -> t.Dict:
+        return {"change_requested": self.success}
 
 
 def get_match_details(
@@ -103,16 +119,10 @@ def get_signal_details(
         MatchDetailMetadata(
             dataset=metadata.ds_id,
             tags=[
-                tag
-                for tag in metadata.tags
-                if tag
-                not in [
-                    ThreatDescriptor.TRUE_POSITIVE,
-                    ThreatDescriptor.FALSE_POSITIVE,
-                    ThreatDescriptor.DISPUTED,
-                ]
+                tag for tag in metadata.tags if tag not in ThreatDescriptor.SPECIAL_TAGS
             ],
             opinion=get_opinion_from_tags(metadata.tags).value,
+            pending_opinion_change=metadata.pending_opinion_change.value,
         )
         for metadata in PDQSignalMetadata.get_from_signal(
             table, signal_id, signal_source
@@ -121,18 +131,18 @@ def get_signal_details(
 
 
 class OpinionString(Enum):
-    TP = "True Positive"
-    FP = "False Positive"
-    DISPUTED = "Unknown (Disputed)"
+    TRUE_POSITIVE = "True Positive"
+    FALSE_POSITIVE = "False Positive"
+    DISPUTED = "Disputed"
     UNKNOWN = "Unknown"
 
 
 def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
     # see python-threatexchange descriptor.py for origins
     if ThreatDescriptor.TRUE_POSITIVE in tags:
-        return OpinionString.TP
+        return OpinionString.TRUE_POSITIVE
     if ThreatDescriptor.FALSE_POSITIVE in tags:
-        return OpinionString.FP
+        return OpinionString.FALSE_POSITIVE
     if ThreatDescriptor.DISPUTED in tags:
         return OpinionString.DISPUTED
     return OpinionString.UNKNOWN
@@ -188,5 +198,40 @@ def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bott
         """
         results = get_match_details(dynamodb_table, key, image_folder_key)
         return MatchDetailsResponse(match_details=results)
+
+    @matches_api.post("/request-signal-opinion-change/")
+    def request_signal_opinion_change() -> ChangeSignalOpinionResponse:
+        """
+        request a change to the opinion for a signal in a dataset
+        """
+        signal_q = bottle.request.query.signal_q or None
+        signal_source = bottle.request.query.signal_source or None
+        dataset_q = bottle.request.query.dataset_q or None
+        opinion_change = bottle.request.query.opinion_change or None
+
+        if not signal_q or not signal_source or not dataset_q or not opinion_change:
+            return ChangeSignalOpinionResponse(False)
+
+        # TODO send message to action framework to actually request the change in TE
+        logger.info(
+            f"Mock: Reaction change enqueued for {signal_source}:{signal_q} in {dataset_q} change={opinion_change}"
+        )
+
+        signal = PDQSignalMetadata(
+            signal_id=signal_q,
+            ds_id=dataset_q,
+            updated_at=datetime.datetime.now(),
+            signal_source=signal_source,
+            signal_hash="",  # SignalHash not needed for update
+            tags=[],  # Tags not needed for update
+            pending_opinion_change=PendingOpinionChange(opinion_change),
+        )
+        success = signal.update_pending_opinion_change_in_table_if_exists(
+            dynamodb_table
+        )
+        if not success:
+            logger.info(f"Attempting to update {signal} in db failed")
+
+        return ChangeSignalOpinionResponse(success)
 
     return matches_api

@@ -10,7 +10,7 @@ import './styles/_app.scss';
 
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
-import MatchDetails from './MatchDetails';
+import ContentDetails from './pages/ContentDetails';
 import Matches from './pages/Matches';
 import Settings from './Settings';
 import Signals from './Signals';
@@ -31,7 +31,7 @@ export default function App() {
           <main role="main" className="col-md-10 px-0 main">
             <Switch>
               <Route path="/matches/:id">
-                <MatchDetails />
+                <ContentDetails />
               </Route>
               <Route path="/matches">
                 <Matches />

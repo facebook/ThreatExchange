@@ -1,12 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
+from enum import Enum
 import typing as t
 import json
 from dataclasses import dataclass, field
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
+from hmalib.common.aws_dataclass import HasAWSSerialization
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -55,123 +57,6 @@ class AWSMessage:
     @classmethod
     def from_aws_message(cls, message: str) -> "AWSMessage":
         raise NotImplementedError
-
-
-@dataclass
-class SignalMetadataBase(DynamoDBItem):
-    """
-    Base for signal metadata.
-    'ds' refers to dataset which for the time being is
-    quivalent to collab or privacy group (and in the long term could map to bank)
-    """
-
-    DATASET_PREFIX = "ds#"
-
-    signal_id: t.Union[str, int]
-    ds_id: str
-    updated_at: datetime.datetime
-    signal_source: str
-    signal_hash: str  # duplicated field with PDQMatchRecord having both for now to help with debuging/testing
-    tags: t.List[str] = field(default_factory=list)
-
-    @staticmethod
-    def get_dynamodb_ds_key(ds_id: str) -> str:
-        return f"{SignalMetadataBase.DATASET_PREFIX}{ds_id}"
-
-
-@dataclass
-class PDQSignalMetadata(SignalMetadataBase):
-    """
-    PDQ Signal metadata.
-    This object is designed to be an ~lookaside on some of the values used by
-    PDQMatchRecord for easier and more consistent updating by the syncer and UI.
-
-    Otherwise updates on a signals metadata would require updating all
-    PDQMatchRecord associated; TODO: For now there will be some overlap between
-    this object and PDQMatchRecord.
-    """
-
-    SIGNAL_TYPE = "pdq"
-
-    def to_dynamodb_item(self) -> dict:
-        return {
-            "PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
-            "SK": self.get_dynamodb_ds_key(self.ds_id),
-            "SignalHash": self.signal_hash,
-            "SignalSource": self.signal_source,
-            "UpdatedAt": self.updated_at.isoformat(),
-            "HashType": self.SIGNAL_TYPE,
-            "Tags": self.tags,
-        }
-
-    def update_tags_in_table_if_exists(self, table: Table) -> bool:
-        """
-        Only write tags for object in table if the objects with matchig PK and SK already exist
-        (also updates updated_at).
-        Returns true if object existed and therefore update was successful otherwise false.
-        """
-        try:
-            table.update_item(
-                Key={
-                    "PK": self.get_dynamodb_signal_key(
-                        self.signal_source, self.signal_id
-                    ),
-                    "SK": self.get_dynamodb_ds_key(self.ds_id),
-                },
-                # service_resource.Table.update_item's ConditionExpression params is not typed to use its own objects here...
-                ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore
-                ExpressionAttributeValues={
-                    ":t": self.tags,
-                    ":u": self.updated_at.isoformat(),
-                },
-                ExpressionAttributeNames={
-                    "#T": "Tags",
-                    "#U": "UpdatedAt",
-                },
-                UpdateExpression="SET #T = :t, #U = :u",
-            )
-        except ClientError as e:
-            if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
-                raise e
-            return False
-        return True
-
-    @classmethod
-    def get_from_signal(
-        cls,
-        table: Table,
-        signal_id: t.Union[str, int],
-        signal_source: str,
-    ) -> t.List["PDQSignalMetadata"]:
-
-        items = table.query(
-            KeyConditionExpression=Key("PK").eq(
-                cls.get_dynamodb_signal_key(signal_source, signal_id)
-            )
-            & Key("SK").begins_with(cls.DATASET_PREFIX),
-            ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags",
-            FilterExpression=Attr("HashType").eq(cls.SIGNAL_TYPE),
-        ).get("Items", [])
-        return cls._result_items_to_metadata(items)
-
-    @classmethod
-    def _result_items_to_metadata(
-        cls,
-        items: t.List[t.Dict],
-    ) -> t.List["PDQSignalMetadata"]:
-        return [
-            PDQSignalMetadata(
-                signal_id=cls.remove_signal_key_prefix(
-                    item["PK"], item["SignalSource"]
-                ),
-                ds_id=item["SK"][len(cls.DATASET_PREFIX) :],
-                updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
-                signal_source=item["SignalSource"],
-                signal_hash=item["SignalHash"],
-                tags=item["Tags"],
-            )
-            for item in items
-        ]
 
 
 @dataclass
@@ -456,44 +341,6 @@ class MatchRecordQuery:
 
 
 @dataclass
-class MatchMessage(AWSMessage):
-    """
-    Captures a set of matches that will need to be processed. We create one
-    match message for a single content key. It is possible that a single content
-    hash matches multiple datasets. When it does, the entire set of matches are
-    forwarded together so that any appropriate action can be taken.
-
-    - `content_key`: A way for partners to refer uniquely to content on their
-      site
-    - `content_hash`: The hash generated for the content_key
-    """
-
-    content_key: str
-    content_hash: str
-    matching_banked_signals: t.List["BankedSignal"] = field(default_factory=list)
-
-    def to_aws_message(self) -> str:
-        return json.dumps(
-            {
-                "ContentKey": self.content_key,
-                "ContentHash": self.content_hash,
-                "MatchingBankedSignals": [
-                    x.to_dict() for x in self.matching_banked_signals
-                ],
-            }
-        )
-
-    @classmethod
-    def from_aws_message(cls, message: str) -> "MatchMessage":
-        parsed = json.loads(message)
-        return cls(
-            parsed["ContentKey"],
-            parsed["ContentHash"],
-            [BankedSignal.from_dict(d) for d in parsed["MatchingBankedSignals"]],
-        )
-
-
-@dataclass
 class BankedSignal:
     """
     BankedSignal fields:
@@ -511,16 +358,20 @@ class BankedSignal:
     bank_source: str
     classifications: t.List[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
-        return {
-            "BankedContentId": self.banked_content_id,
-            "BankId": self.bank_id,
-            "BankSource": self.bank_source,
-            "Classifications": self.classifications,
-        }
 
-    @classmethod
-    def from_dict(cls, d: dict) -> "BankedSignal":
-        return cls(
-            d["BankedContentId"], d["BankId"], d["BankSource"], d["Classifications"]
-        )
+@dataclass
+class MatchMessage(HasAWSSerialization):
+    """
+    Captures a set of matches that will need to be processed. We create one
+    match message for a single content key. It is possible that a single content
+    hash matches multiple datasets. When it does, the entire set of matches are
+    forwarded together so that any appropriate action can be taken.
+
+    - `content_key`: A way for partners to refer uniquely to content on their
+      site
+    - `content_hash`: The hash generated for the content_key
+    """
+
+    content_key: str
+    content_hash: str
+    matching_banked_signals: t.List[BankedSignal] = field(default_factory=list)
