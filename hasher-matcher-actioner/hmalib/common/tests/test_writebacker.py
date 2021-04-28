@@ -7,7 +7,6 @@ from hmalib.lambdas.actions.reactioner import lambda_handler
 from hmalib.common.label_models import (
     SawThisTooReactionLabel,
     IngestedReactionLabel,
-    InReviewReactionLabel,
     FalsePositiveReactionLabel,
     TruePositiveReactionLabel,
 )
@@ -58,22 +57,6 @@ class WritebackerTestCase(unittest.TestCase):
 
         os.environ["MOCK_TE_API"] = "False"
 
-    def test_in_review(self):
-        os.environ["MOCK_TE_API"] = "True"
-
-        reaction = InReviewReactionLabel()
-        reaction_message = ReactionMessage.from_match_message_and_label(
-            self.match_message, reaction
-        )
-        event = {"Records": [{"body": reaction_message.to_aws_json()}]}
-
-        result = lambda_handler(event, None)
-        assert result == {
-            "reactions_performed": {"te": "reacted IN_REVIEW to 2 descriptors"}
-        }
-
-        os.environ["MOCK_TE_API"] = "False"
-
     def test_false_positve(self):
         os.environ["MOCK_TE_API"] = "True"
 
@@ -101,42 +84,3 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {"reactions_performed": {"te": "Wrote Back true positive"}}
 
         os.environ["MOCK_TE_API"] = "False"
-
-    # def test_second_writebacker(self):
-    #     class NonTEWritebacker(Writebacker):
-    #         """
-    #         Writebacker parent object for all writebacks to ThreatExchange
-    #         """
-
-    #         source = "non-te-source"
-
-    #         @staticmethod
-    #         def writeback_options() -> t.List[t.Type["NonTEWritebacker"]]:
-    #             return [NonTEFalsePositveWritebacker]
-
-    #         def writeback_is_enabled(self) -> bool:
-    #             return True
-
-    #     class NonTEFalsePositveWritebacker(NonTEWritebacker):
-    #         reaction_label = FalsePositiveReactionLabel()
-
-    #         def _writeback_impl(self, writeback_message: ReactionMessage) -> str:
-    #             return "Wrote Back false positive to non TE source"
-
-    #     os.environ["MOCK_TE_API"] = "True"
-
-    #     reaction = FalsePositiveReactionLabel()
-    #     reaction_message = ReactionMessage.from_match_message_and_label(
-    #         self.match_message, reaction
-    #     )
-    #     event = {"Records": [{"body": reaction_message.to_aws_json()}]}
-
-    #     result = lambda_handler(event, None)
-    #     assert result == {
-    #         "reactions_performed": {
-    #             "te": "Wrote Back false positive",
-    #             "non-te-source": "Wrote Back false positive to non TE source",
-    #         }
-    #     }
-
-    #     os.environ["MOCK_TE_API"] = "False"

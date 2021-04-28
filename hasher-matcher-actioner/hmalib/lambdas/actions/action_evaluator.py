@@ -95,20 +95,11 @@ def lambda_handler(event, context):
                 MessageBody=action_message.to_aws_json(),
             )
 
-        threat_exchange_reaction_labels = get_reaction_messages(
-            match_message, action_labels
-        )
-        if threat_exchange_reaction_labels:
-            for threat_exchange_reaction_label in threat_exchange_reaction_labels:
-                threat_exchange_reaction_message = (
-                    ReactionMessage.from_match_message_and_label(
-                        match_message, threat_exchange_reaction_label
-                    )
-                )
-                config.sqs_client.send_message(
-                    QueueUrl=config.reactions_queue_url,
-                    MessageBody=threat_exchange_reaction_message.to_aws_json(),
-                )
+        for reaction_messages in get_reaction_messages(match_message, action_labels):
+            config.sqs_client.send_message(
+                QueueUrl=config.reactions_queue_url,
+                MessageBody=reaction_messages.to_aws_json(),
+            )
 
     return {"evaluation_completed": "true"}
 
@@ -188,7 +179,7 @@ def remove_superseded_actions(
     return action_label_to_action_rules
 
 
-def get_reaction_message(
+def get_reaction_messages(
     match_message: MatchMessage,
     action_labels: t.List[ActionLabel],
 ) -> t.List[ReactionMessage]:
@@ -230,5 +221,3 @@ if __name__ == "__main__":
     match_message = MatchMessage("key", "hash", [banked_signal])
 
     action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
-
-    print(action_label_to_action_rules)

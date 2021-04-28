@@ -1,6 +1,7 @@
 import typing as t
 import os
 
+from functools import lru_cache
 from dataclasses import dataclass, fields
 
 from hmalib.common.message_models import BankedSignal, MatchMessage
@@ -9,7 +10,6 @@ from hmalib.common.logging import get_logger
 from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.label_models import (
     ReactionLabel,
-    InReviewReactionLabel,
     SawThisTooReactionLabel,
     IngestedReactionLabel,
     FalsePositiveReactionLabel,
@@ -56,28 +56,32 @@ class Writebacker:
         raise NotImplementedError
 
     @staticmethod
-    def writeback_options() -> t.List[t.Type["Writebacker"]]:
+    def writeback_options() -> t.Dict[str, t.Type["Writebacker"]]:
         """
-        Every source that enables writebacks must have a list of all writebacks that
-        can be taken. See ThreatExchangeWritebacker an example
+        For a given source that performs writebacks, this fucntion specifies what types of
+        writebacks that can be taken as a mapping from writback type to writebacker. The
+        type should be same as the type of is passed in the WritebackLabel passed to the writebacker
         """
         raise NotImplementedError
 
     @classmethod
-    def sources_with_writebacks(cls) -> t.List[t.Type["Writebacker"]]:
-        """
-        Writebacker parent classes for all sources that enable writebacks
-        """
-        print(Writebacker.__subclasses__())
-        return Writebacker.__subclasses__()
-
-    @classmethod
+    @lru_cache(maxsize=None)
     def get_writebacker_for_source(cls, source: str) -> t.Optional["Writebacker"]:
-        for writebacker_cls in cls.sources_with_writebacks():
-            writebacker = writebacker_cls()
-            if writebacker.source == source:
-                return writebacker
-        return None
+        if cls.__name__ != "Writebacker":
+            raise ValueError(
+                "get_writebacker_for_source can only be called from the Writebacker class directly. eg Writebacker().get_writebacker_for_source"
+            )
+
+        print("subclasses", cls.__subclasses__())
+
+        sources_to_writebacker_cls = {
+            writebacker_cls().source: writebacker_cls
+            for writebacker_cls in cls.__subclasses__()
+        }
+
+        if source not in sources_to_writebacker_cls.keys():
+            return None
+        return sources_to_writebacker_cls[source]()
 
     def writeback_is_enabled(self) -> bool:
         """
@@ -97,18 +101,19 @@ class Writebacker:
 
     def perform_writeback(self, writeback_message: ReactionMessage) -> str:
         writeback_options = self.writeback_options()
-        for writeback_option_cls in writeback_options:
-            writebacker = writeback_option_cls()
-            if writebacker.reaction_label == writeback_message.reaction_label:
-                if writebacker.writeback_is_enabled:
-                    return writebacker._writeback_impl(writeback_message)
-                return "Writeback {writebacker.__name__} not performed becuase it switched off"
-        return (
-            "Could not find writebacker for source "
-            + self.source
-            + " that can perform writeback "
-            + writeback_message.reaction_label.value
-        )
+        writeback_to_perform = writeback_message.reaction_label.value
+        if writeback_to_perform not in writeback_options:
+            return (
+                "Could not find writebacker for source "
+                + self.source
+                + " that can perform writeback "
+                + writeback_to_perform
+            )
+
+        writebacker = writeback_options[writeback_to_perform]()
+        if writebacker.writeback_is_enabled:
+            return writebacker._writeback_impl(writeback_message)
+        return "Writeback {writebacker.__name__} not performed becuase it switched off"
 
 
 @dataclass
@@ -120,14 +125,14 @@ class ThreatExchangeWritebacker(Writebacker):
     source = "te"
 
     @staticmethod
-    def writeback_options() -> t.List[t.Type["Writebacker"]]:
-        return [
-            ThreatExchangeFalsePositiveWritebacker,
-            ThreatExchangeTruePositivePositiveWritebacker,
-            ThreatExchangeInReviewWritebacker,
-            ThreatExchangeIngestedWritebacker,
-            ThreatExchangeSawThisTooWritebacker,
-        ]
+    @lru_cache(maxsize=None)
+    def writeback_options() -> t.Dict[str, t.Type["Writebacker"]]:
+        return {
+            "FalsePositive": ThreatExchangeFalsePositiveWritebacker,
+            "TruePositive": ThreatExchangeTruePositivePositiveWritebacker,
+            "Ingested": ThreatExchangeIngestedWritebacker,
+            "SawThisToo": ThreatExchangeSawThisTooWritebacker,
+        }
 
     def writeback_is_enabled(self) -> bool:
         """
@@ -161,8 +166,6 @@ class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeWritebacker):
 
     """
 
-    reaction_label = FalsePositiveReactionLabel()
-
     def _writeback_impl(self, writeback_message: ReactionMessage) -> str:
         # TODO Implement
         return "Wrote Back false positive"
@@ -178,8 +181,6 @@ class ThreatExchangeTruePositivePositiveWritebacker(ThreatExchangeWritebacker):
     in that privacy group that adds the agreement tag for the privacy group
 
     """
-
-    reaction_label = TruePositiveReactionLabel()
 
     def _writeback_impl(self, writeback_message: ReactionMessage) -> str:
         # TODO Implement
@@ -227,19 +228,12 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
         )
 
 
-class ThreatExchangeInReviewWritebacker(ThreatExchangeReactionWritebacker):
-    reaction = "IN_REVIEW"
-    reaction_label = InReviewReactionLabel()
-
-
 class ThreatExchangeIngestedWritebacker(ThreatExchangeReactionWritebacker):
     reaction = "INGESTED"
-    reaction_label = IngestedReactionLabel()
 
 
 class ThreatExchangeSawThisTooWritebacker(ThreatExchangeReactionWritebacker):
     reaction = "SAW_THIS_TOO"
-    reaction_label = SawThisTooReactionLabel()
 
 
 if __name__ == "__main__":

@@ -53,18 +53,6 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             ActionLabel, t.List[ActionRule]
         ] = get_actions_to_take(match_message_without_foo, action_rules)
 
-        print(banked_signal_without_foo.classifications)
-        print(set([BankIDClassificationLabel(bank_id)]))
-        print(
-            set([BankIDClassificationLabel(bank_id)]).issubset(
-                banked_signal_without_foo.classifications
-            )
-        )
-
-        applies = banked_signal_without_foo.classifications.issubset(
-            set([BankIDClassificationLabel(bank_id)])
-        )
-        print("applies? ", applies)
         assert len(action_label_to_action_rules) == 1
         self.assertIn(
             enqueue_for_review_action_label,

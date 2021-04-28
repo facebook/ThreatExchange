@@ -78,10 +78,5 @@ class TruePositiveReactionLabel(ReactionLabel):
 
 
 @dataclass(unsafe_hash=True)
-class InReviewReactionLabel(ReactionLabel):
-    value: str = field(default="InReview", init=False)
-
-
-@dataclass(unsafe_hash=True)
 class IngestedReactionLabel(ReactionLabel):
     value: str = field(default="Ingested", init=False)
