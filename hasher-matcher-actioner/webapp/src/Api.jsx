@@ -32,16 +32,6 @@ async function apiPost(route, body, params = {}) {
   });
 }
 
-async function apiPut(route, body, params = {}) {
-  return API.put('hma_api', route, {
-    body,
-    headers: {
-      Authorization: await getAuthorizationToken(),
-    },
-    queryStringParameters: params,
-  });
-}
-
 export function fetchAllMatches() {
   return apiGet('/matches/');
 }
@@ -105,24 +95,4 @@ export async function requestSignalOpinionChange(
       opinion_change: opinionChange,
     },
   );
-}
-
-export function fetchAllDatasets() {
-  return apiGet('/datasets/');
-}
-
-export function updateDatasets(
-  privacyGroupId,
-  fetcherActive = null,
-  writeBack = null,
-) {
-  return apiPut('/datasets/update', {
-    privacy_group_id: privacyGroupId,
-    ...(fetcherActive && {fetcher_active: fetcherActive}),
-    ...(writeBack && {write_back: writeBack}),
-  });
-}
-
-export function syncDatasets() {
-  return apiPost('/matches/sync');
 }
