@@ -34,6 +34,16 @@ class Dataset(JSONifiable):
             d["in_use"],
         )
 
+    @classmethod
+    def from_collab(cls, collab: ThreatExchangeConfig) -> "Dataset":
+        return cls(
+            collab.privacy_group_id,
+            collab.privacy_group_name,
+            collab.fetcher_active,
+            collab.write_back,
+            collab.in_use,
+        )
+
 
 @dataclass
 class DatasetsResponse(JSONifiable):
@@ -82,19 +92,10 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         """
         collabs = ThreatExchangeConfig.get_all()
         return DatasetsResponse(
-            datasets_response=[
-                Dataset(
-                    privacy_group_id=collab.privacy_group_id,
-                    privacy_group_name=collab.privacy_group_name,
-                    fetcher_active=collab.fetcher_active,
-                    write_back=collab.write_back,
-                    in_use=collab.in_use,
-                )
-                for collab in collabs
-            ]
+            datasets_response=[Dataset.from_collab(collab) for collab in collabs]
         )
 
-    @datasets_api.put("/update", apply=[jsoninator(UpdateDatasetRequest)])
+    @datasets_api.post("/update", apply=[jsoninator(UpdateDatasetRequest)])
     def update_dataset(request: UpdateDatasetRequest) -> Dataset:
         """
         Update dataset fetcher_active and write_back
