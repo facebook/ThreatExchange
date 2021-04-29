@@ -22,5 +22,5 @@ export const SUBMISSION_TYPE = Object.freeze({
   UPLOAD: 'Direct Upload',
   RAW: 'Raw Value (example only)',
   S3_OBJECT: 'S3 Object (example only)',
-  PRESIGNED_URL: 'Presigned URL (example only)',
+  URL: 'URL (example only)',
 });

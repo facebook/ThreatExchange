@@ -110,7 +110,7 @@ export default function SubmitContent() {
               <p>Provide content to the HMA system to match against.</p>
               <p>
                 Currently only <b>images</b> with Submisson Type -{' '}
-                <b>Direct Upload</b> is supported.
+                <b>Direct Upload</b> is supported. URL support comming soon(tm).
               </p>
             </div>
             <div className="px-4 py-2" />
@@ -166,9 +166,9 @@ export default function SubmitContent() {
                 />
               )}
 
-              {submissionType === SUBMISSION_TYPE.PRESIGNED_URL && (
+              {submissionType === SUBMISSION_TYPE.URL && (
                 <NotYetSupportedField
-                  label="Presigned URL"
+                  label="Provide a URL to the content"
                   handleInputChange={handleInputChange}
                 />
               )}
