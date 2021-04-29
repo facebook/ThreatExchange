@@ -21,6 +21,7 @@ from hmalib.models import (
 from hmalib.models import PipelinePDQHashRecord
 
 from .matches import get_matches_api
+from .datasets_api import get_datasets_api
 from .submit import get_submit_api
 
 # Set to 10MB for /upload
@@ -37,6 +38,7 @@ dynamodb = boto3.resource("dynamodb")
 THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
 THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
+HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
@@ -325,6 +327,11 @@ app.mount(
         image_bucket_key=IMAGE_BUCKET_NAME,
         image_folder_key=IMAGE_FOLDER_KEY,
     ),
+)
+
+app.mount(
+    "/datasets/",
+    get_datasets_api(hma_config_table=HMA_CONFIG_TABLE),
 )
 
 

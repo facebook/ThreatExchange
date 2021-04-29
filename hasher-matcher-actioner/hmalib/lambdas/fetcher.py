@@ -26,7 +26,6 @@ import boto3
 from botocore.errorfactory import ClientError
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
-from hmalib.common import config as hmaconfig
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import S3ThreatDataConfig
 from hmalib.common.signal_models import PDQSignalMetadata
@@ -96,6 +95,8 @@ class ThreatExchangeConfig(HMAConfig):
     # TODO - consider hiding name field and always populating with ID
     fetcher_active: bool
     privacy_group_name: str
+    in_use: bool
+    write_back: bool
 
     @property
     def privacy_group_id(self) -> int:
@@ -173,39 +174,6 @@ def lambda_handler(event, context):
     # TODO add TE data to indexer
 
     return {"statusCode": 200, "body": "Sure Yeah why not"}
-
-
-def sync_privacy_groups():
-    """
-    Implementation of the "sync_privacy_groups" function of threatexchange config.
-
-    1. call ThreatExchange API get_threat_privacy_groups_member
-    and get_threat_privacy_groups_owner to get the list of privacy groups
-
-    2. If the threat_updates_enabled is true, save it using config framework
-    """
-    lambda_init_once()
-    api_key = AWSSecrets.te_api_key()
-    api = ThreatExchangeAPI(api_key)
-    privacy_group_member_list = api.get_threat_privacy_groups_member()
-    privacy_group_owner_list = api.get_threat_privacy_groups_owner()
-    unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
-
-    for privacy_group in unique_privacy_groups:
-        if privacy_group.threat_updates_enabled:
-            # HMA can only read from privacy groups that have threat_updates enabled.
-            # # See here for more details:
-            # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-updates/v9.0
-            logger.info("Adding collaboration name %s", privacy_group.name)
-            config = ThreatExchangeConfig(
-                privacy_group.id,
-                # TODO Currently default to True for testing purpose,
-                # need to switch it to False before v0 launch
-                fetcher_active=True,
-                privacy_group_name=privacy_group.name,
-            )
-            # Warning! Will stomp on existing configs (including if you disable them)
-            hmaconfig.update_config(config)
 
 
 class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):

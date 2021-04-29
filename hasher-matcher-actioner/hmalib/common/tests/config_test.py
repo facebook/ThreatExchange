@@ -8,7 +8,7 @@ import typing as t
 
 import boto3
 from moto import mock_dynamodb2
-
+from botocore.exceptions import ClientError
 from hmalib.common import config, aws_dataclass
 
 
@@ -72,7 +72,13 @@ class ConfigTest(unittest.TestCase):
 
     def assertEqualsAfterDynamodb(self, config_instance):
         """Asserts configs are still equal after writing to DB"""
-        config.update_config(config_instance)
+        try:
+            config.create_config(config_instance)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                print("can't insert duplicated item")
+            else:
+                raise
         from_db = config_instance.get(config_instance.name)
         self.assertEqual(config_instance, from_db)
 
@@ -151,7 +157,7 @@ class ConfigTest(unittest.TestCase):
 
     def test_get(self):
         a_config = config.HMAConfig("a")
-        config.update_config(a_config)
+        config.create_config(a_config)
         self.assertEqual(a_config, config.HMAConfig.get("a"))
         self.assertEqual(a_config, config.HMAConfig.getx("a"))
         self.assertIsNone(config.HMAConfig.get("b"))
@@ -174,7 +180,7 @@ class ConfigTest(unittest.TestCase):
         made_configs = []
         self.assertCountEqual(made_configs, GetAllConfig.get_all())
         for c in configs_to_make:
-            config.update_config(c)
+            config.create_config(c)
             made_configs.append(c)
             self.assertCountEqual(made_configs, GetAllConfig.get_all())
         config.delete_config(made_configs[-1])
@@ -184,16 +190,16 @@ class ConfigTest(unittest.TestCase):
     def test_rename_behavior(self):
         """Rename is not fully supported and so generates new records atm"""
         a_config = config.HMAConfig("First")
-        config.update_config(a_config)
+        config.create_config(a_config)
         a_config.name = "Second"
-        config.update_config(a_config)
+        config.create_config(a_config)
 
         all_configs = config.HMAConfig.get_all()
         self.assertEqual({c.name for c in all_configs}, {"First", "Second"})
 
     def test_delete(self):
         a_config = config.HMAConfig("a")
-        config.update_config(a_config)
+        config.create_config(a_config)
         self.assertEqual({c.name for c in config.HMAConfig.get_all()}, {"a"})
         config.delete_config(a_config)
         self.assertEqual({c.name for c in config.HMAConfig.get_all()}, set())
@@ -229,9 +235,9 @@ class ConfigTest(unittest.TestCase):
         two = SubtypeTwo("Two", "five")
         three = SubtypeThree("Three", [5.0, 0.00001])  # ah ah ah
 
-        config.update_config(one)
-        config.update_config(two)
-        config.update_config(three)
+        config.create_config(one)
+        config.create_config(two)
+        config.create_config(three)
 
         self.assertEqualsAfterDynamodb(one)
         self.assertEqualsAfterDynamodb(two)
@@ -256,7 +262,7 @@ class ConfigTest(unittest.TestCase):
         with self.assertRaisesRegex(
             ValueError, "Tried to write MultiConfig instead of its subtypes"
         ):
-            config.update_config(MultiConfig("Foo"))
+            config.create_config(MultiConfig("Foo"))
 
         # Writing the "abstract" config gives you an error
         with self.assertRaisesRegex(
@@ -264,4 +270,4 @@ class ConfigTest(unittest.TestCase):
             "Tried to write subtype SubtypeAbstractParentClass"
             " but it's not in get_subtype_classes",
         ):
-            config.update_config(SubtypeAbstractParentClass("Foo", False))
+            config.create_config(SubtypeAbstractParentClass("Foo", False))

@@ -9,6 +9,7 @@ library that exists somewhere that does this much better.
 """
 
 from decimal import Decimal
+from botocore.exceptions import ClientError
 import functools
 from dataclasses import dataclass, field, fields, is_dataclass
 import typing as t
@@ -69,6 +70,7 @@ class HMAConfig:
         It would be possible to override get() and get_all() to run your own
         deserialization logic, but then things are complicated.
     ---
+
 
     Astute readers may notice that there are no abstract methods, and in fact,
     it would be possible to create records of this type if you really wanted
@@ -300,8 +302,10 @@ class HMAConfigWithSubtypes(HMAConfig, metaclass=_HMAConfigWithSubtypeMeta):
 # to make them easier to spot in the wild
 
 
-def update_config(config: HMAConfig) -> None:
-    """Update or create a config. No locking or versioning!"""
+def create_config(config: HMAConfig) -> None:
+    """
+    Creates a config, exception if one exists with the same type and name
+    """
     _assert_initialized()
     config._assert_writable()
     # TODO - we should probably sanity check here to make sure all the fields
@@ -310,7 +314,25 @@ def update_config(config: HMAConfig) -> None:
     get_dynamodb().meta.client.put_item(
         TableName=_TABLE_NAME,
         Item=_config_to_dynamodb_item(config),
+        ConditionExpression=Attr("ConfigType").not_exists(),
     )
+
+
+def update_config(config: HMAConfig) -> "HMAConfig":
+    """
+    Updates a config, exception if doesn't exist.
+    # How to update a config
+    config = MyConfig.getx(name)
+    config.nested.one_field = 2
+    update_config(config)
+    """
+    _assert_initialized()
+    get_dynamodb().meta.client.put_item(
+        TableName=_TABLE_NAME,
+        Item=_config_to_dynamodb_item(config),
+        ConditionExpression=Attr("ConfigType").exists() & Attr("ConfigName").exists(),
+    )
+    return config
 
 
 def delete_config_by_type_and_name(config_type: str, name: str) -> None:

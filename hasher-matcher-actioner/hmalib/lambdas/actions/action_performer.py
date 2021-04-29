@@ -79,7 +79,7 @@ if __name__ == "__main__":
         ),
     ]
     for performer_config in configs:
-        config.update_config(performer_config)
+        config.create_config(performer_config)
 
     action_message = ActionMessage(
         "key",
