@@ -321,8 +321,10 @@ def create_config(config: HMAConfig) -> None:
 def update_config(config: HMAConfig) -> "HMAConfig":
     """
     Updates a config, exception if doesn't exist.
-    If atomic = True, requires that the config wasn't updated
-    since your last Config.get()
+    # How to update a config
+    config = MyConfig.getx(name)
+    config.nested.one_field = 2
+    update_config(config)
     """
     _assert_initialized()
     get_dynamodb().meta.client.put_item(
