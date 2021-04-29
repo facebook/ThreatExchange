@@ -3,6 +3,7 @@
 import bottle
 import boto3
 import base64
+import json
 
 from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
@@ -38,8 +39,24 @@ class SubmitContentRequestBody(DictParseable):
 
 @dataclass
 class SubmitContentResponse(JSONifiable):
-    content_id_submitted: str
+    content_id: str
     submit_successful: bool
+
+    def to_json(self) -> t.Dict:
+        return asdict(self)
+
+
+@dataclass
+class SubmitContentError(JSONifiable):
+    """
+    Warning: by defualt this will still return 200
+    you need to update bottle.response.status
+    if you want a specific return code.
+    ToDo update middleware.py to handle this.
+    """
+
+    content_id: str
+    message: str
 
     def to_json(self) -> t.Dict:
         return asdict(self)
@@ -59,7 +76,9 @@ def get_submit_api(
     submit_api = bottle.Bottle()
 
     @submit_api.post("/", apply=[jsoninator(SubmitContentRequestBody)])
-    def submit(request: SubmitContentRequestBody) -> SubmitContentResponse:
+    def submit(
+        request: SubmitContentRequestBody,
+    ) -> t.Union[SubmitContentResponse, SubmitContentError]:
         """
         Endpoint to allow for the general submission of content to the system
         """
@@ -78,12 +97,14 @@ def get_submit_api(
             )
 
             return SubmitContentResponse(
-                content_id_submitted=request.content_id, submit_successful=True
+                content_id=request.content_id, submit_successful=True
             )
 
         # Other possible submission types are not supported so just echo content_id for testing
-        return SubmitContentResponse(
-            content_id_submitted=request.content_id, submit_successful=False
+        bottle.response.status = 422
+        return SubmitContentError(
+            content_id=request.content_id,
+            message="submission_type not yet supported",
         )
 
     return submit_api
