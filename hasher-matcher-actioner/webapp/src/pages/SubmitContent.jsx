@@ -9,23 +9,22 @@ import {
   Row,
   Form,
   Container,
-  InputGroup,
-  Image,
   Collapse,
-  Accordion,
-  Card,
   Spinner,
 } from 'react-bootstrap';
+import {Link} from 'react-router-dom';
+
 import {submitContent, submitContentUpload} from '../Api';
+import {SUBMISSION_TYPE} from '../utils/constants';
 
-const SUBMISSION_TYPE = Object.freeze({
-  UPLOAD: 'Direct Upload',
-  RAW: 'Raw Value (example only)',
-  S3_OBJECT: 'S3 Object (example only)',
-  PRESIGNED_URL: 'Presigned URL (example only)',
-});
+import {
+  ContentIdAndTypeField,
+  PhotoUploadField,
+  OptionalMetadataField,
+  NotYetSupportedField,
+} from '../components/SubmitContentFields';
 
-const FORM_DEFUALTS = {
+const FORM_DEFAULTS = {
   submissionType: undefined,
   contentId: undefined,
   contentType: 'PHOTO',
@@ -34,11 +33,12 @@ const FORM_DEFUALTS = {
 
 export default function SubmitContent() {
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedId, setSubmittedId] = useState(undefined);
   const [submissionType, setSubmissionType] = useState('');
   const [submissionMetadata, setSubmissionMetadata] = useState({});
-  const [inputs, setInputs] = useState(FORM_DEFUALTS);
+  const [inputs, setInputs] = useState(FORM_DEFAULTS);
 
+  // for most input changes we only need to take the input name and store the event value
   const handleInputChange = event => {
     event.persist();
     setInputs(inputs_ => ({
@@ -47,10 +47,15 @@ export default function SubmitContent() {
     }));
   };
 
+  // image upload is a special case so that we can do the following:
+  // - give a preview of the image to user
+  // - auto populate the content id if it is currently empty
   const handleInputChangeUpload = event => {
     const file = event.nativeEvent.path[0].files[0];
+    const contentId = inputs.contentId ?? file.name;
     setInputs(inputs_ => ({
       ...inputs_,
+      contentId,
       [event.target.name]: {
         preview: URL.createObjectURL(file),
         raw: file,
@@ -78,7 +83,7 @@ export default function SubmitContent() {
         packageMetadata(),
       ).then(() => {
         setSubmitting(false);
-        setSubmitted(true);
+        setSubmittedId(inputs.contentId);
       });
     } else {
       submitContent(
@@ -89,12 +94,13 @@ export default function SubmitContent() {
         packageMetadata(),
       ).then(() => {
         setSubmitting(false);
-        setSubmitted(true);
+        setSubmittedId(inputs.contentId);
       });
     }
   };
 
   return (
+    // ToDo header copied from matches page -> standardize into shared component
     <div className="d-flex flex-column justify-content-start align-items-stretch h-100 w-100">
       <div className="flex-grow-0">
         <Container className="bg-dark text-light" fluid>
@@ -102,6 +108,10 @@ export default function SubmitContent() {
             <div className="px-4 py-2">
               <h1>Submit Content</h1>
               <p>Provide content to the HMA system to match against.</p>
+              <p>
+                Currently only <b>images</b> with Submisson Type -{' '}
+                <b>Direct Upload</b> is supported.
+              </p>
             </div>
             <div className="px-4 py-2" />
           </Row>
@@ -133,211 +143,78 @@ export default function SubmitContent() {
             </Form.Control>
           </Form.Group>
 
-          <Form.Group>
+          <Form.Group className="mx-4">
             <Form.Row>
               {submissionType === SUBMISSION_TYPE.UPLOAD && (
-                <Form.Group>
-                  <Form.Label>Upload Photo</Form.Label>
-                  <Form.File as={Col} custom required>
-                    <Form.File.Label>
-                      {inputs.contentRef &&
-                      inputs.contentRef.raw &&
-                      inputs.contentRef.raw instanceof File
-                        ? inputs.contentRef.raw.name
-                        : 'Submitted file will be stored by HMA System'}
-                    </Form.File.Label>
-                    <Form.File.Input
-                      onChange={handleInputChangeUpload}
-                      name="contentRef"
-                    />
-                  </Form.File>
-                  <Form.Group>
-                    {inputs.contentRef &&
-                    inputs.contentRef.raw &&
-                    inputs.contentRef.raw instanceof File ? (
-                      <Accordion className="mt-3">
-                        <Card>
-                          <Card.Header>
-                            <Accordion.Toggle
-                              as={Button}
-                              size="sm"
-                              variant="link"
-                              eventKey="0">
-                              Preview
-                            </Accordion.Toggle>
-                          </Card.Header>
-                          <Accordion.Collapse eventKey="0">
-                            <Card.Body>
-                              <Image
-                                style={{
-                                  border: 'none',
-                                  maxHeight: '400px',
-                                  maxWidth: '400px',
-                                }}
-                                src={
-                                  inputs.contentRef && inputs.contentRef.preview
-                                    ? inputs.contentRef.preview
-                                    : ''
-                                }
-                                fluid
-                                rounded
-                              />
-                            </Card.Body>
-                          </Accordion.Collapse>
-                        </Card>
-                      </Accordion>
-                    ) : undefined}
-                  </Form.Group>
-                </Form.Group>
+                <PhotoUploadField
+                  inputs={inputs}
+                  handleInputChangeUpload={handleInputChangeUpload}
+                />
               )}
 
               {submissionType === SUBMISSION_TYPE.RAW && (
-                <Form.Group>
-                  <Form.Label>Provide content as raw string</Form.Label>
-                  <Form.Control
-                    required
-                    onChange={handleInputChange}
-                    name="contentRef"
-                    placeholder="Not Currently Supported"
-                  />
-                </Form.Group>
+                <NotYetSupportedField
+                  label="Provide content as raw string"
+                  handleInputChange={handleInputChange}
+                />
               )}
 
               {submissionType === SUBMISSION_TYPE.S3_OBJECT && (
-                <Form.Group>
-                  <Form.Label>Existing S3 Object Name</Form.Label>
-                  <Form.Control
-                    onChange={handleInputChange}
-                    name="contentRef"
-                    type="text"
-                    placeholder="bucket_name/key"
-                    required
-                  />
-                </Form.Group>
+                <NotYetSupportedField
+                  label="Existing S3 Object Name"
+                  handleInputChange={handleInputChange}
+                />
               )}
 
               {submissionType === SUBMISSION_TYPE.PRESIGNED_URL && (
-                <Form.Group>
-                  <Form.Label>{SUBMISSION_TYPE.PRESIGNED_URL}</Form.Label>
-                  <Form.Control
-                    onChange={handleInputChange}
-                    name="contentRef"
-                    placeholder={`Enter ${SUBMISSION_TYPE.PRESIGNED_URL}`}
-                    required
-                  />
-                </Form.Group>
+                <NotYetSupportedField
+                  label="Presigned URL"
+                  handleInputChange={handleInputChange}
+                />
               )}
             </Form.Row>
-
-            <Form.Row>
-              <Form.Label>Content ID and Type</Form.Label>
-              <InputGroup>
-                <Form.Control
-                  onChange={handleInputChange}
-                  type="text"
-                  name="contentId"
-                  placeholder="Enter a unique identifier for content (currently behavior will overwrite)"
-                  required
-                />
-
-                <Form.Group>
-                  <Form.Control
-                    onChange={handleInputChange}
-                    required
-                    as="select"
-                    name="contentType"
-                    custom>
-                    <option key="empty" value="" hidden>
-                      Select type...
-                    </option>
-                    <option key="1" value="PHOTO">
-                      PHOTO
-                    </option>
-                  </Form.Control>
-                </Form.Group>
-              </InputGroup>
-            </Form.Row>
-            <Form.Row>
-              <Form.Label as={Col}>Optional Metadata</Form.Label>
-
-              <Form.Group>
-                <Button
-                  variant="success"
-                  className="float-right mr-2"
-                  size="sm"
-                  onClick={() => {
-                    setSubmissionMetadata({
-                      ...submissionMetadata,
-                      [Object.keys(submissionMetadata).length]: {},
-                    });
-                  }}>
-                  +
-                </Button>
-              </Form.Group>
-            </Form.Row>
-            {Object.keys(submissionMetadata).map(entry => (
-              <Form.Row key={entry}>
-                <Form.Group as={Col}>
-                  <InputGroup>
-                    <InputGroup.Prepend>
-                      <InputGroup.Text>Key</InputGroup.Text>
-                    </InputGroup.Prepend>
-                    <Form.Control
-                      onChange={e => {
-                        const metadataCopy = {...submissionMetadata};
-                        metadataCopy[entry].key = e.target.value;
-                        setSubmissionMetadata(metadataCopy);
-                      }}
-                    />
-                  </InputGroup>
-                </Form.Group>
-                <Form.Group as={Col}>
-                  <InputGroup>
-                    <InputGroup.Prepend>
-                      <InputGroup.Text>Value</InputGroup.Text>
-                    </InputGroup.Prepend>
-                    <Form.Control
-                      onChange={e => {
-                        const metadataCopy = {...submissionMetadata};
-                        metadataCopy[entry].value = e.target.value;
-                        setSubmissionMetadata(metadataCopy);
-                      }}
-                    />
-                  </InputGroup>
-                </Form.Group>
-                <Form.Group>
-                  <Button
-                    variant="danger"
-                    className="float-right"
-                    onClick={() => {
-                      const metadataCopy = {...submissionMetadata};
-                      delete metadataCopy[entry];
-                      setSubmissionMetadata(metadataCopy);
-                    }}>
-                    -
-                  </Button>
-                </Form.Group>
-              </Form.Row>
-            ))}
-          </Form.Group>
-          <Form.Group>
-            <Button
-              variant="primary"
-              disabled={submitted || submissionType !== SUBMISSION_TYPE.UPLOAD}
-              type="submit">
-              Submit
-            </Button>
-            <Collapse in={submitting}>
-              <Spinner
-                as="span"
-                animation="border"
-                role="status"
+            <ContentIdAndTypeField
+              inputs={inputs}
+              handleInputChange={handleInputChange}
+            />
+            <OptionalMetadataField
+              submissionMetadata={submissionMetadata}
+              setSubmissionMetadata={setSubmissionMetadata}
+            />
+            <Form.Group as={Row}>
+              <Button
+                style={{maxHeight: 38}}
+                className="ml-3"
                 variant="primary"
-              />
-            </Collapse>
-            <Collapse in={submitted}>
-              <span className="ml-2">Submitted!</span>
-            </Collapse>
+                disabled={
+                  submitting || submissionType !== SUBMISSION_TYPE.UPLOAD
+                }
+                type="submit">
+                Submit
+              </Button>
+              <Collapse in={submitting}>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  role="status"
+                  variant="primary"
+                />
+              </Collapse>
+              <Collapse in={submittedId}>
+                <Col className="ml-4">
+                  <Row>
+                    Submitted! It will take a few minutes for the hash to be
+                    generated.
+                  </Row>
+                  <Row>
+                    <Link to={`/matches/${submittedId}`}>
+                      Once created, the hash and any matches found can be viewed
+                      here.
+                    </Link>
+                  </Row>
+                </Col>
+              </Collapse>
+            </Form.Group>
           </Form.Group>
         </Form>
       </Container>
