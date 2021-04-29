@@ -21,3 +21,7 @@ output "image_folder_key" {
 output "prefix" {
   value = var.prefix
 }
+
+output "api_url" {
+  value = module.api.invoke_url
+}
