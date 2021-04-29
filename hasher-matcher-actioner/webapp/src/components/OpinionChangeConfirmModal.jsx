@@ -97,8 +97,8 @@ OpinionChangeConfirmModal.propTypes = {
   dataset: PropTypes.string,
   signalId: PropTypes.string,
   signalSource: PropTypes.string,
-  opinion: OPINION_STRING,
-  pendingOpinionChange: PENDING_OPINION_CHANGE,
+  opinion: PropTypes.oneOf(Object.values(OPINION_STRING)),
+  pendingOpinionChange: PropTypes.oneOf(Object.values(PENDING_OPINION_CHANGE)),
 };
 
 OpinionChangeConfirmModal.defaultProps = {
