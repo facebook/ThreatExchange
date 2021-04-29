@@ -1,15 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-from hmalib.common.actioner_models import (
-    ActionLabel,
-    ActionMessage,
-    ActionRule,
+from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
-    BankedSignal,
     BankIDClassificationLabel,
     ClassificationLabel,
 )
+from hmalib.common.evaluator_models import ActionLabel, ActionRule
+from hmalib.common.message_models import BankedSignal, ActionMessage
 
 
 class ActionMessageTestCase(unittest.TestCase):
@@ -34,17 +32,17 @@ class ActionMessageTestCase(unittest.TestCase):
             ),
         ]
 
+        banked_signal = BankedSignal(
+            banked_content_id="4169895076385542",
+            bank_id="303636684709969",
+            bank_source="te",
+        )
+        banked_signal.add_classification("true_positive")
+
         action_message = ActionMessage(
             content_key="images/mini-castle.jpg",
             content_hash="361da9e6cf1b72f5cea0344e5bb6e70939f4c70328ace762529cac704297354a",
-            matching_banked_signals=[
-                BankedSignal(
-                    banked_content_id="4169895076385542",
-                    bank_id="303636684709969",
-                    bank_source="te",
-                    classifications=["true_positive"],
-                )
-            ],
+            matching_banked_signals=[banked_signal],
             action_label=enqueue_mini_castle_for_review_action_label,
             action_rules=action_rules,
         )

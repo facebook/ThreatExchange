@@ -11,11 +11,8 @@ from mypy_boto3_sns import SNSClient
 from threatexchange.signal_type.pdq_index import PDQIndex
 
 from hmalib import metrics
-from hmalib.models import (
-    PDQMatchRecord,
-    MatchMessage,
-    BankedSignal,
-)
+from hmalib.models import PDQMatchRecord
+from hmalib.common.message_models import BankedSignal, MatchMessage
 from hmalib.common.signal_models import PDQSignalMetadata
 from hmalib.common.logging import get_logger
 
@@ -124,7 +121,7 @@ def lambda_handler(event, context):
                         str(signal_id), str(privacy_group), str(metadata["source"])
                     )
                     for tag in metadata["tags"].get(privacy_group, []):
-                        banked_signal.classifications.append(tag)
+                        banked_signal.add_classification(tag)
                     matching_banked_signals.append(banked_signal)
 
             # TODO: Add source (threatexchange) tags to match message

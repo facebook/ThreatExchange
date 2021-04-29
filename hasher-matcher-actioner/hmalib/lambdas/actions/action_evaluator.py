@@ -7,21 +7,26 @@ import typing as t
 
 from dataclasses import dataclass, field
 from functools import lru_cache
-from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
-from hmalib.models import MatchMessage, BankedSignal
-from hmalib.common.actioner_models import (
-    Action,
-    ActionLabel,
-    ActionMessage,
-    ActionRule,
+from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     BankSourceClassificationLabel,
     ClassificationLabel,
     Label,
-    ReactionMessage,
+)
+from hmalib.common.config import HMAConfig
+from hmalib.common.evaluator_models import (
+    Action,
+    ActionLabel,
+    ActionRule,
     ThreatExchangeReactionLabel,
+)
+from hmalib.common.message_models import (
+    ActionMessage,
+    BankedSignal,
+    MatchMessage,
+    ReactionMessage,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
 from mypy_boto3_sqs import SQSClient
@@ -114,11 +119,12 @@ def get_actions_to_take(
     """
     Returns action labels for each action rule that applies to a match message.
     """
-    classifications_by_match = get_classifications_by_match(match_message)
     action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]] = dict()
-    for classifications in classifications_by_match:
+    for banked_signal in match_message.matching_banked_signals:
         for action_rule in action_rules:
-            if action_rule_applies_to_classifications(action_rule, classifications):
+            if action_rule_applies_to_classifications(
+                action_rule, banked_signal.classifications
+            ):
                 if action_rule.action_label in action_label_to_action_rules:
                     action_label_to_action_rules[action_rule.action_label].append(
                         action_rule
@@ -131,27 +137,6 @@ def get_actions_to_take(
         action_label_to_action_rules
     )
     return action_label_to_action_rules
-
-
-def get_classifications_by_match(match_message: MatchMessage) -> t.List[t.Set[Label]]:
-    """
-    Creates a list of sets of classifications (as labels). Each set contains the labels that
-    classify one matching banked piece of content.
-    """
-    classifications_by_match: t.List[t.Set[Label]] = list()
-
-    for banked_signal in match_message.matching_banked_signals:
-        classifications: t.Set[Label] = set()
-        classifications.add(BankSourceClassificationLabel(banked_signal.bank_source))
-        classifications.add(BankIDClassificationLabel(banked_signal.bank_id))
-        classifications.add(
-            BankedContentIDClassificationLabel(banked_signal.banked_content_id)
-        )
-        for classification in banked_signal.classifications:
-            classifications.add(ClassificationLabel(classification))
-        classifications_by_match.append(classifications)
-
-    return classifications_by_match
 
 
 def get_action_rules() -> t.List[ActionRule]:
@@ -248,8 +233,11 @@ if __name__ == "__main__":
     ]
 
     banked_signal = BankedSignal(
-        "4169895076385542", "303636684709969", "te", ["true_positive"]
+        "4169895076385542",
+        "303636684709969",
+        "te",
     )
+    banked_signal.add_classification("true_positive")
 
     match_message = MatchMessage("key", "hash", [banked_signal])
 
