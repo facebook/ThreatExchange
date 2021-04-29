@@ -121,7 +121,7 @@ def jsoninator(
                         "Failed to deserialize JSON for type: %s", str(request_type)
                     )
                     logger.exception(e)
-                    bottle.response.status_code = 400
+                    bottle.response.status = 400
                     return "Could not parse JSON."
 
                 response_object = view_fn(request_object, *args, **kwargs)
