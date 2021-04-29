@@ -331,7 +331,7 @@ app.mount(
 
 app.mount(
     "/datasets/",
-    get_datasets_api(hma_config_table=HMA_CONFIG_TABLE),   
+    get_datasets_api(hma_config_table=HMA_CONFIG_TABLE),
 )
 
 
