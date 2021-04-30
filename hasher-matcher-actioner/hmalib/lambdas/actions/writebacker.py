@@ -33,6 +33,7 @@ def lambda_handler(event, context):
         ]
         for writebacker in source_writebackers:
             result = writebacker.perform_writeback(writeback_message)
+            logger.info("Writeback result: %s", result)
             writebacks_performed[writebacker.source] = result
 
     return {"writebacks_performed": writebacks_performed}

@@ -4,12 +4,7 @@ import unittest
 import os
 import typing as t
 from hmalib.lambdas.actions.writebacker import lambda_handler
-from hmalib.common.label_models import (
-    SawThisTooWritebackLabel,
-    IngestedWritebackLabel,
-    FalsePositiveWritebackLabel,
-    TruePositiveWritebackLabel,
-)
+from hmalib.common.classification_models import WritebackTypes
 from hmalib.common.message_models import MatchMessage, WritebackMessage, BankedSignal
 
 from hmalib.common.writebacker_models import Writebacker
@@ -28,7 +23,7 @@ class WritebackerTestCase(unittest.TestCase):
     def test_saw_this_too(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        writeback = SawThisTooWritebackLabel()
+        writeback = WritebackTypes.SawThisToo
         writeback_message = WritebackMessage.from_match_message_and_label(
             self.match_message, writeback
         )
@@ -44,7 +39,7 @@ class WritebackerTestCase(unittest.TestCase):
     def test_ingested(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        writeback = IngestedWritebackLabel()
+        writeback = WritebackTypes.Ingested
         writeback_message = WritebackMessage.from_match_message_and_label(
             self.match_message, writeback
         )
@@ -60,7 +55,7 @@ class WritebackerTestCase(unittest.TestCase):
     def test_false_positve(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        writeback = FalsePositiveWritebackLabel()
+        writeback = WritebackTypes.FalsePositive
         writeback_message = WritebackMessage.from_match_message_and_label(
             self.match_message, writeback
         )
@@ -74,7 +69,7 @@ class WritebackerTestCase(unittest.TestCase):
     def test_true_positve(self):
         os.environ["MOCK_TE_API"] = "True"
 
-        writeback = TruePositiveWritebackLabel()
+        writeback = WritebackTypes.TruePositive
         writeback_message = WritebackMessage.from_match_message_and_label(
             self.match_message, writeback
         )

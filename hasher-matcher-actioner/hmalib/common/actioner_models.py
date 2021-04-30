@@ -7,17 +7,10 @@ import typing as t
 from dataclasses import dataclass, field, fields
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import MatchMessage
-from hmalib.common.label_models import ActionLabel, Label
+from hmalib.common.classification_models import ActionLabel, Label
 from requests import get, post, put, delete, Response
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class Action:
-    action_label: ActionLabel
-    priority: int
-    superseded_by: t.List[ActionLabel]
 
 
 TUrl = t.Union[t.Text, bytes]

@@ -3,7 +3,7 @@
 import typing as t
 
 from dataclasses import dataclass, field
-from hmalib.common.label_models import ClassificationLabel, ActionLabel
+from hmalib.common.classification_models import ClassificationLabel, ActionLabel
 from hmalib.common.config import HMAConfig
 
 

@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-from hmalib.common.label_models import (
+from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     ClassificationLabel,

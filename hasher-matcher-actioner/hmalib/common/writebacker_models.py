@@ -8,13 +8,7 @@ from hmalib.common.message_models import BankedSignal, MatchMessage
 from hmalib.common.logging import get_logger
 
 from hmalib.common.actioner_models import ActionPerformer
-from hmalib.common.label_models import (
-    WritebackLabel,
-    SawThisTooWritebackLabel,
-    IngestedWritebackLabel,
-    FalsePositiveWritebackLabel,
-    TruePositiveWritebackLabel,
-)
+from hmalib.common.classification_models import WritebackTypes
 from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.message_models import WritebackMessage
@@ -34,7 +28,7 @@ class MockedThreatExchangeAPI:
         return [{"id": id} for id in self.mocked_descriptor_ids]
 
     def react_to_threat_descriptor(self, descriptor, reaction) -> None:
-        assert descriptor in self.mocked_descriptor_ids
+        return None
 
 
 class Writebacker:
@@ -56,11 +50,13 @@ class Writebacker:
         raise NotImplementedError
 
     @staticmethod
-    def writeback_options() -> t.Dict[str, t.Type["Writebacker"]]:
+    def writeback_options() -> t.Dict[
+        WritebackTypes.WritebackType, t.Type["Writebacker"]
+    ]:
         """
         For a given source that performs writebacks, this fucntion specifies what types of
         writebacks that can be taken as a mapping from writback type to writebacker. The
-        type should be same as the type of is passed in the WritebackLabel passed to the writebacker
+        type should be same as WritebackType passed to the writebacker
         """
         raise NotImplementedError
 
@@ -88,9 +84,9 @@ class Writebacker:
         raise NotImplementedError
 
     @property
-    def writeback_type(self) -> WritebackLabel:
+    def writeback_type(self) -> WritebackTypes.WritebackType:
         """
-        The writeback label for when this action should be performed (eg SawThisTooWritebackLabel())
+        The writeback label for when this action should be performed (eg WritebackType.SawThisToo)
         """
         raise NotImplementedError
 
@@ -99,19 +95,21 @@ class Writebacker:
 
     def perform_writeback(self, writeback_message: WritebackMessage) -> str:
         writeback_options = self.writeback_options()
-        writeback_to_perform = writeback_message.writeback_label.value
+        writeback_to_perform = writeback_message.writeback_type
         if writeback_to_perform not in writeback_options:
             return (
                 "Could not find writebacker for source "
                 + self.source
                 + " that can perform writeback "
-                + writeback_to_perform
+                + writeback_to_perform.value
             )
 
         writebacker = writeback_options[writeback_to_perform]()
         if writebacker.writeback_is_enabled:
             return writebacker._writeback_impl(writeback_message)
-        return "Writeback {writebacker.__name__} not performed becuase it switched off"
+        return (
+            "Writeback {writebacker.__name__} not performed becuase it's switched off"
+        )
 
 
 @dataclass
@@ -124,23 +122,21 @@ class ThreatExchangeWritebacker(Writebacker):
 
     @staticmethod
     @lru_cache(maxsize=None)
-    def writeback_options() -> t.Dict[str, t.Type["Writebacker"]]:
+    def writeback_options() -> t.Dict[
+        WritebackTypes.WritebackType, t.Type["Writebacker"]
+    ]:
         return {
-            "FalsePositive": ThreatExchangeFalsePositiveWritebacker,
-            "TruePositive": ThreatExchangeTruePositivePositiveWritebacker,
-            "Ingested": ThreatExchangeIngestedWritebacker,
-            "SawThisToo": ThreatExchangeSawThisTooWritebacker,
+            WritebackTypes.FalsePositive: ThreatExchangeFalsePositiveWritebacker,
+            WritebackTypes.TruePositive: ThreatExchangeTruePositivePositiveWritebacker,
+            WritebackTypes.Ingested: ThreatExchangeIngestedWritebacker,
+            WritebackTypes.SawThisToo: ThreatExchangeSawThisTooWritebacker,
         }
 
     def writeback_is_enabled(self) -> bool:
         """
         TODO implement
-        Looks up from a config whether ThreatExchange writing back is enabled. Initially this will be a global
-        config, and this method will return True if writing back is enabled, False otherwise. At some point the
-        config for writing back to ThreatExchange may be on a per collaboration basis. In that case, the config
-        will be referenced for each collaboration involved (implied by the match message). If writing back
-        is enabled for a given collaboration, a label will be added to the match message
-        (e.g. "ThreatExchangeWritingBackEnabled:<collaboration-id>").
+        Looks up from a config whether ThreatExchange writing back is enabled. Initially this will be a per
+        collaboration lookup
         """
         return True
 
@@ -209,7 +205,7 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
 
         # TODO: currnetly, banked_content_id is the descriptor id. We need to change this
         # to be the indicator_id and then find all descriptors for that indicator. After
-        # that chage delete the lines above and uncomment the lines below
+        # that change, delete the lines above and uncomment the lines below
         #
 
         # indicator_ids = {

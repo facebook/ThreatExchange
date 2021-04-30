@@ -8,12 +8,12 @@ import typing as t
 from dataclasses import dataclass, field
 from functools import lru_cache
 from hmalib.common.logging import get_logger
-from hmalib.common.label_models import (
+from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     BankSourceClassificationLabel,
     ClassificationLabel,
-    SawThisTooWritebackLabel,
+    WritebackTypes,
     Label,
 )
 from hmalib.common.writebacker_models import ThreatExchangeSawThisTooWritebacker
@@ -190,7 +190,7 @@ def get_writeback_messages(
     Evaluates a collection of action_labels against some yet to be defined configuration
     (and possible business login) to produce
     """
-    writeback_label = SawThisTooWritebackLabel()
+    writeback_label = WritebackTypes.SawThisToo
     return [
         WritebackMessage.from_match_message_and_label(match_message, writeback_label)
     ]
