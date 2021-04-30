@@ -1,5 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+provider "aws" {
+  region = var.region
+}
+
 locals {
   common_tags = {
     "HMAPrefix" = var.prefix

@@ -15,6 +15,12 @@ variable "lambda_docker_info" {
   })
 }
 
+variable "region" {
+  description = "AWS region to deploy to"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "prefix" {
   description = "Prefix to use for resource names"
   type        = string
