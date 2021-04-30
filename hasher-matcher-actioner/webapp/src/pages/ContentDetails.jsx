@@ -51,36 +51,38 @@ export default function ContentDetails() {
         }}>
         <Col md={6}>
           <Table>
-            <tr>
-              <td>Content ID:</td>
-              <td>{id}</td>
-            </tr>
-            <tr>
-              <td>Content Hash:</td>
-              <CopyableHashField
-                text={
-                  hashDetails
-                    ? hashDetails.content_hash ?? 'Not found'
-                    : 'loading...'
-                }
-              />
-            </tr>
-            <tr>
-              <td>Hashed on:</td>
-              <td>
-                {hashDetails
-                  ? formatTimestamp(hashDetails.updated_at)
-                  : 'loading...'}
-              </td>
-            </tr>
-            <tr>
-              <td>Status:</td>
-              <td>
-                {actions.length
-                  ? 'TODO Render Actions Needs a Component'
-                  : 'No actions performed'}
-              </td>
-            </tr>
+            <tbody>
+              <tr>
+                <td>Content ID:</td>
+                <td>{id}</td>
+              </tr>
+              <tr>
+                <td>Content Hash:</td>
+                <CopyableHashField
+                  text={
+                    hashDetails
+                      ? hashDetails.content_hash ?? 'Not found'
+                      : 'loading...'
+                  }
+                />
+              </tr>
+              <tr>
+                <td>Hashed on:</td>
+                <td>
+                  {hashDetails
+                    ? formatTimestamp(hashDetails.updated_at)
+                    : 'loading...'}
+                </td>
+              </tr>
+              <tr>
+                <td>Status:</td>
+                <td>
+                  {actions.length
+                    ? 'TODO Render Actions Needs a Component'
+                    : 'No actions performed'}
+                </td>
+              </tr>
+            </tbody>
           </Table>
         </Col>
         <Col md={6}>

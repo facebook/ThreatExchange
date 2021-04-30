@@ -15,7 +15,7 @@ import tempfile
 import subprocess
 import typing as t
 import re
-
+from botocore.exceptions import ClientError
 from hmalib.lambdas.fetcher import ThreatExchangeConfig
 from hmalib.common.evaluator_models import (
     ActionLabel,
@@ -77,11 +77,15 @@ def load_defaults(_args):
             name="303636684709969",
             fetcher_active=True,
             privacy_group_name="Test Config 1",
+            write_back=True,
+            in_use=True,
         ),
         ThreatExchangeConfig(
             name="258601789084078",
             fetcher_active=True,
             privacy_group_name="Test Config 2",
+            write_back=True,
+            in_use=True,
         ),
         WebhookPostActionPerformer(
             name="EnqueueForReview",
@@ -130,7 +134,17 @@ def load_defaults(_args):
 
     for config in configs:
         # Someday maybe can do filtering or something, I dunno
-        hmaconfig.update_config(config)
+        # Add try catch block to avoid test failure
+
+        try:
+            hmaconfig.create_config(config)
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                print(
+                    "Can't insert duplicated config, " + e.response["Error"]["Message"],
+                )
+            else:
+                raise
         print(config)
 
 

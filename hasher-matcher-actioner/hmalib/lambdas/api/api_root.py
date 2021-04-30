@@ -9,7 +9,6 @@ import datetime
 import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
-from enum import Enum
 
 from hmalib import metrics
 from hmalib.common.logging import get_logger
@@ -22,6 +21,8 @@ from hmalib.models import (
 from hmalib.models import PipelinePDQHashRecord
 
 from .matches import get_matches_api
+from .datasets_api import get_datasets_api
+from .submit import get_submit_api
 
 # Set to 10MB for /upload
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -37,6 +38,7 @@ dynamodb = boto3.resource("dynamodb")
 THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
 THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
+HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
@@ -316,6 +318,20 @@ app.mount(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_folder_key=IMAGE_FOLDER_KEY,
     ),
+)
+
+app.mount(
+    "/submit/",
+    get_submit_api(
+        dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
+        image_bucket_key=IMAGE_BUCKET_NAME,
+        image_folder_key=IMAGE_FOLDER_KEY,
+    ),
+)
+
+app.mount(
+    "/datasets/",
+    get_datasets_api(hma_config_table=HMA_CONFIG_TABLE),
 )
 
 

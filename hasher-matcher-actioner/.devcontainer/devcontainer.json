@@ -4,7 +4,7 @@
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "unixname": "REPLACEME"
+      "unixname": "${env:USER}"
     }
   },
   // Set *default* container specific settings.json values on container create.
@@ -39,5 +39,5 @@
       "onAutoForward": "notify"
     }
   },
-  "remoteUser": "REPLACEME"
+  "remoteUser": "${localEnv:USER}"
 }

@@ -193,7 +193,7 @@ def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bott
     @matches_api.get("/match/<key>/", apply=[jsoninator])
     def match_details(key=None) -> MatchDetailsResponse:
         """
-        matche details API endpoint:
+        match details API endpoint:
         return format: match_details : [MatchDetailsResult]
         """
         results = get_match_details(dynamodb_table, key, image_folder_key)
