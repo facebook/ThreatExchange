@@ -7,6 +7,11 @@ Storms the submissions API for a running HMA instance with images.
 Try to resist the urge to add any hmalib dependencies here. This script can be
 run on a server which does not have hmalib.
 
+Sample Usage:
+```
+$ ./storm_submissions_api https://m....f.execute-api.us-east-1.amazonaws.com/ ../copydays-extended/200100.jpg 100
+```
+
 TODO:
 [x] Make a single successful request with a stolen JWT
 [x] Make threadpooled requests
@@ -45,10 +50,7 @@ def _send_single_submission(api_url: str, filepath: str, metadata: t.Dict) -> in
 
         req = request.Request(submission_path, method="POST")
         req.add_header("Content-Type", "application/json")
-        req.add_header(
-            "Authorization",
-            "eyJraWQiOiJZMUNQdFRkcjIrOCtjRUJOMjF4cjBGWEFRc1VmbFMyODBKKzVmNnhGVkFJPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIzZGE3ZGE3ZS01YTYzLTQwODMtODEyMy1lYmE5OGEzYWFkNWEiLCJldmVudF9pZCI6ImRjMzBhOTM3LTFiZGUtNGExZS05ZWE0LTBkZTMyZmM1YTFjNiIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiYXdzLmNvZ25pdG8uc2lnbmluLnVzZXIuYWRtaW4iLCJhdXRoX3RpbWUiOjE2MTkwMjQwODQsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbVwvdXMtZWFzdC0xX3J1dzcxR0N3UCIsImV4cCI6MTYxOTgwMTg1OCwiaWF0IjoxNjE5Nzk4MjU5LCJqdGkiOiJmYTg3ZWVhNS0yZjk1LTRkMjMtYWYzNy1iYjZhNDI2YWU4MWIiLCJjbGllbnRfaWQiOiI3cTh0MjltdTRiMTdibGE0Y2YxZ2RqNWlyZiIsInVzZXJuYW1lIjoiZGlwYW5qYW5tIn0.uFe7PUt1tMtSuH3nf0EMM6lZck9NNRhy0RWlP69qdj2qDzfibXmgeEwYtR4LaCklHeoqa1rYoMC6wuQH85dMJQWr6f7IZvss-cYr1O3DT9qNNlGnjqcjKy_NP3ZBypHW_nNC6Yxc9zmoiTYasEfvRoh9PxZ41chKpn2NkPn8FMF5FcaDl7sxv800dPm3o3GCNon8sGHlVqHOWy94sl-4_7yO5Z5gAo5BSoFFckAb2iSoWJr_tu2BJMBz3QXpUh1WbhTqauMakLgHhfleXvz6dEIBS-sHQ2_mGKoJUxauHmUzzggp5FehlsoVfPXNgCKKn7_YXjsl80GjQe589NS6dA",
-        )
+        req.add_header("Authorization", "<STOLEN_JWT_TOKEN>")
         payload = json.dumps(payload)
         payload = payload.encode()
 
