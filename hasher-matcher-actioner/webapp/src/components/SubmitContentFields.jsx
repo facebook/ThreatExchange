@@ -69,12 +69,11 @@ export function ContentIdAndTypeField({inputs, handleInputChange}) {
 
 ContentIdAndTypeField.propTypes = {
   inputs: PropTypes.shape(inputsShape),
-  handleInputChange: PropTypes.func,
+  handleInputChange: PropTypes.func.isRequired,
 };
 
 ContentIdAndTypeField.defaultProps = {
   inputs: undefined,
-  handleInputChange: undefined,
 };
 
 export function PhotoUploadField({inputs, handleInputChangeUpload}) {
@@ -131,12 +130,11 @@ export function PhotoUploadField({inputs, handleInputChangeUpload}) {
 
 PhotoUploadField.propTypes = {
   inputs: PropTypes.shape(inputsShape),
-  handleInputChangeUpload: PropTypes.func,
+  handleInputChangeUpload: PropTypes.func.isRequired,
 };
 
 PhotoUploadField.defaultProps = {
   inputs: undefined,
-  handleInputChangeUpload: undefined,
 };
 
 export function OptionalMetadataField({
@@ -210,12 +208,11 @@ export function OptionalMetadataField({
 
 OptionalMetadataField.propTypes = {
   submissionMetadata: PropTypes.objectOf(PropTypes.string),
-  setSubmissionMetadata: PropTypes.func,
+  setSubmissionMetadata: PropTypes.func.isRequired,
 };
 
 OptionalMetadataField.defaultProps = {
   submissionMetadata: undefined,
-  setSubmissionMetadata: undefined,
 };
 
 export function NotYetSupportedField({label, handleInputChange}) {
@@ -234,10 +231,9 @@ export function NotYetSupportedField({label, handleInputChange}) {
 
 NotYetSupportedField.propTypes = {
   label: PropTypes.string,
-  handleInputChange: PropTypes.func,
+  handleInputChange: PropTypes.func.isRequired,
 };
 
 NotYetSupportedField.defaultProps = {
   label: undefined,
-  handleInputChange: undefined,
 };
