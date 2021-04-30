@@ -223,7 +223,6 @@ if __name__ == "__main__":
     banked_signal.add_classification("true_positive")
 
     match_message = MatchMessage("key", "hash", [banked_signal])
-    print(match_message.to_aws_json())
     event = {
         "Records": [
             {"body": json.dumps({"Message": json.dumps(match_message.to_aws_json())})}

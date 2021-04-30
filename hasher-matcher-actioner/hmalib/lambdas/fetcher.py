@@ -332,7 +332,6 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         table = dynamodb.Table(self.data_store_table)
 
         for update in updated.values():
-            print(update)
             row = update.as_csv_row()
             # example row format: ('<signal>', '<id>', '<time added>', '<tag1 tags2>')
             # e.g ('096a6f9...064f', 1234567891234567, '2020-07-31T18:47:45+0000', 'true_positive hma_test')

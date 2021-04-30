@@ -72,8 +72,6 @@ class Writebacker:
                 "get_writebacker_for_source can only be called from the Writebacker class directly. eg Writebacker().get_writebacker_for_source"
             )
 
-        print("subclasses", cls.__subclasses__())
-
         sources_to_writebacker_cls = {
             writebacker_cls().source: writebacker_cls
             for writebacker_cls in cls.__subclasses__()
