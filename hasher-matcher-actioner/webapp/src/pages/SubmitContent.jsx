@@ -109,8 +109,8 @@ export default function SubmitContent() {
               <h1>Submit Content</h1>
               <p>Provide content to the HMA system to match against.</p>
               <p>
-                Currently only <b>images</b> with Submisson Type -{' '}
-                <b>Direct Upload</b> is supported. URL support comming soon(tm).
+                Currently only <b>images</b> using the submisson type{' '}
+                <b>Direct Upload</b> or <b>URL</b> are supported.
               </p>
             </div>
             <div className="px-4 py-2" />
@@ -152,6 +152,21 @@ export default function SubmitContent() {
                 />
               )}
 
+              {submissionType === SUBMISSION_TYPE.URL && (
+                <Form.Group>
+                  <Form.Label>Provide a URL to the content</Form.Label>
+                  <Form.Control
+                    onChange={handleInputChange}
+                    name="contentRef"
+                    placeholder="presigned url"
+                    required
+                  />
+                  <Form.Text className="text-muted mt-0">
+                    Currently behavior will store a copy of the content
+                  </Form.Text>
+                </Form.Group>
+              )}
+
               {submissionType === SUBMISSION_TYPE.RAW && (
                 <NotYetSupportedField
                   label="Provide content as raw string"
@@ -162,13 +177,6 @@ export default function SubmitContent() {
               {submissionType === SUBMISSION_TYPE.S3_OBJECT && (
                 <NotYetSupportedField
                   label="Existing S3 Object Name"
-                  handleInputChange={handleInputChange}
-                />
-              )}
-
-              {submissionType === SUBMISSION_TYPE.URL && (
-                <NotYetSupportedField
-                  label="Provide a URL to the content"
                   handleInputChange={handleInputChange}
                 />
               )}
@@ -187,7 +195,9 @@ export default function SubmitContent() {
                 className="ml-3"
                 variant="primary"
                 disabled={
-                  submitting || submissionType !== SUBMISSION_TYPE.UPLOAD
+                  submitting ||
+                  submissionType === SUBMISSION_TYPE.RAW ||
+                  submissionType === SUBMISSION_TYPE.S3_OBJECT
                 }
                 type="submit">
                 Submit

@@ -3,10 +3,12 @@
 import bottle
 import boto3
 import base64
-import json
+import requests
 
+from enum import Enum
 from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
+from botocore.exceptions import ClientError
 import typing as t
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
@@ -15,6 +17,13 @@ from hmalib.common.logging import get_logger
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
+
+
+class SubmissionType(Enum):
+    UPLOAD = "Direct Upload"
+    URL = "URL"
+    RAW = "Raw Value (example only)"
+    S3_OBJECT = "S3 Object (example only)"
 
 
 @dataclass
@@ -99,12 +108,35 @@ def get_submit_api(
             return SubmitContentResponse(
                 content_id=request.content_id, submit_successful=True
             )
+        elif request.submission_type == "URL":
+            fileName = request.content_id
+            url = request.content_ref
+            response = requests.get(url)
+            # TODO better checks that the URL actually worked...
+            if response and response.content:
+                # TODO a whole bunch more validation and error checking...
 
-        # Other possible submission types are not supported so just echo content_id for testing
-        bottle.response.status = 422
-        return SubmitContentError(
-            content_id=request.content_id,
-            message="submission_type not yet supported",
-        )
+                # Right now this make a local copy in s3, future changes to pdq_hasher
+                # should allow us to avoid storing to our own s3 bucket (or possibly give the user the option)
+                s3_client.put_object(
+                    Body=response.content,
+                    Bucket=image_bucket_key,
+                    Key=f"{image_folder_key}{fileName}",
+                )
 
-    return submit_api
+                return SubmitContentResponse(
+                    content_id=request.content_id, submit_successful=True
+                )
+            else:
+                bottle.response.status = 400
+                return SubmitContentError(
+                    content_id=request.content_id,
+                    message="url submitted could not be read from",
+                )
+        else:
+            # Other possible submission types are not supported so just echo content_id for testing
+            bottle.response.status = 422
+            return SubmitContentError(
+                content_id=request.content_id,
+                message="submission_type not yet supported",
+            )
