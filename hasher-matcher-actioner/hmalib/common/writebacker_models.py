@@ -202,19 +202,30 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
         raise NotImplementedError
 
     def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
-        indicator_ids = {
+
+        descriptor_ids = {
             dataset_match_details.banked_content_id
             for dataset_match_details in writeback_message.matching_banked_signals
             if dataset_match_details.bank_source == "te"
         }
 
-        descriptor_ids = {
-            descriptor_id["id"]
-            for indicator_id in indicator_ids
-            for descriptor_id in self.te_api.get_threat_descriptors_from_indicator(
-                indicator_id
-            )
-        }
+        # TODO: currnetly, banked_content_id is the descriptor id. We need to change this
+        # to be the indicator_id and then find all descriptors for that indicator. After
+        # that chage delete the lines above and uncomment the lines below
+        #
+
+        # indicator_ids = {
+        #     dataset_match_details.banked_content_id
+        #     for dataset_match_details in writeback_message.matching_banked_signals
+        #     if dataset_match_details.bank_source == "te"
+        # }
+        # descriptor_ids = {
+        #     descriptor_id["id"]
+        #     for indicator_id in indicator_ids
+        #     for descriptor_id in self.te_api.get_threat_descriptors_from_indicator(
+        #         indicator_id
+        #     )
+        # }
 
         for id in descriptor_ids:
             self.te_api.react_to_threat_descriptor(id, self.reaction)

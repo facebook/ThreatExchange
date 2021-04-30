@@ -72,6 +72,7 @@ def lambda_handler(event, context):
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
+        logger.info("sqs record body %s", sqs_record["body"])
         match_message = MatchMessage.from_aws_json(sqs_record_body["Message"])
 
         logger.info("Evaluating match_message: %s", match_message)
@@ -95,10 +96,11 @@ def lambda_handler(event, context):
                 MessageBody=action_message.to_aws_json(),
             )
 
-        for writeback_messages in get_writeback_messages(match_message, action_labels):
+        for writeback_message in get_writeback_messages(match_message, action_labels):
+            logger.info("Sending Writeback message: %s", writeback_message)
             config.sqs_client.send_message(
                 QueueUrl=config.writebacks_queue_url,
-                MessageBody=writeback_messages.to_aws_json(),
+                MessageBody=writeback_message.to_aws_json(),
             )
 
     return {"evaluation_completed": "true"}
@@ -221,5 +223,10 @@ if __name__ == "__main__":
     banked_signal.add_classification("true_positive")
 
     match_message = MatchMessage("key", "hash", [banked_signal])
-
-    action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
+    print(match_message.to_aws_json())
+    event = {
+        "Records": [
+            {"body": json.dumps({"Message": json.dumps(match_message.to_aws_json())})}
+        ]
+    }
+    lambda_handler(event, None)
