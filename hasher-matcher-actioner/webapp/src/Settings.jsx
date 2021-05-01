@@ -6,6 +6,7 @@ import React from 'react';
 import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import {useHistory, useParams} from 'react-router-dom';
+import ActionRuleSettingsTab from './settings/ActionRuleSettingsTab';
 import ActionSettingsTab from './settings/ActionSettingsTab';
 import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 
@@ -18,7 +19,8 @@ export default function Settings() {
     (tab !== 'threatexchange' &&
       tab !== 'signals' &&
       tab !== 'pipeline' &&
-      tab !== 'actions')
+      tab !== 'actions' &&
+      tab !== 'action-rules')
   ) {
     window.location = '/settings/threatexchange';
   }
@@ -41,6 +43,9 @@ export default function Settings() {
         </Tab>
         <Tab eventKey="actions" title="Actions">
           <ActionSettingsTab />
+        </Tab>
+        <Tab eventKey="action-rules" title="Action Rules">
+          <ActionRuleSettingsTab />
         </Tab>
       </Tabs>
     </>

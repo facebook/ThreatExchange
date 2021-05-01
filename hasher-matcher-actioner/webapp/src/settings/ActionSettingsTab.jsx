@@ -11,16 +11,18 @@ import Table from 'react-bootstrap/Table';
 import Form from 'react-bootstrap/Form';
 
 export default function ActionSettingsTab() {
+  /**
+   * TODO This used to have an ActionLabel Settings component here. The
+   * action rules are now in a separate tab. We can now rename this
+   * outer component to ActionPerformerSettingsTab and start the
+   * implementation of that component here. Not doing that now because
+   * someone else is actively working in this space.
+   */
   return (
     <>
       <ActionPerformerSettings />
-      <ActionLabelSettings />
     </>
   );
-}
-
-function ActionLabelSettings() {
-  return <>Action Label Settings coming here</>;
 }
 
 const ActionerTypes = {
@@ -264,18 +266,20 @@ function ActionPerformerSettings() {
   );
   return (
     <>
-      <Card.Header>
-        <h2 className="mt-2">Action Definitions</h2>
-        <h5 className="mt-5">Define what to do for different Actions</h5>
-      </Card.Header>
-      <Card.Body>
-        <Table striped bordered hover>
-          <thead>
-            <tr>{headerBlock}</tr>
-          </thead>
-          <tbody>{performerBlocks}</tbody>
-        </Table>
-      </Card.Body>
+      <Card>
+        <Card.Header>
+          <h2 className="mt-2">Action Definitions</h2>
+          <h5 className="mt-5">Define what to do for different Actions</h5>
+        </Card.Header>
+        <Card.Body>
+          <Table striped bordered hover>
+            <thead>
+              <tr>{headerBlock}</tr>
+            </thead>
+            <tbody>{performerBlocks}</tbody>
+          </Table>
+        </Card.Body>
+      </Card>
     </>
   );
 }
