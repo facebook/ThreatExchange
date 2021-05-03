@@ -9,10 +9,12 @@ import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Form from 'react-bootstrap/Form';
+import Modal from 'react-bootstrap/Modal';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
+import Toast from 'react-bootstrap/Toast';
 
-const actionRules = [
+const mockedActionRules = [
   {
     name: 'Bank ID 303636684709969 Except Sailboat',
     must_have_labels:
@@ -114,6 +116,7 @@ function ActionRuleFormColumns(props) {
 }
 
 export default function ActionRuleSettingsTab() {
+  const [actionRules, setActionRules] = useState(mockedActionRules);
   const [adding, setAdding] = useState(false);
   const [nameRef] = useState(React.createRef());
   const [mustHaveLabelsRef] = useState(React.createRef());
@@ -125,6 +128,19 @@ export default function ActionRuleSettingsTab() {
     false,
   );
   const [showActionRequired, setShowActionRequired] = useState(false);
+  const [showDeletedActionRuleToast, setShowDeletedActionRuleToast] = useState(
+    false,
+  );
+
+  const deleteActionRule = name => {
+    const indexToDelete = actionRules.findIndex(
+      actionRule => actionRule.name === name,
+    );
+    actionRules.splice(indexToDelete, 1);
+    console.log(actionRules);
+    setActionRules([...actionRules]);
+    setShowDeletedActionRuleToast(true);
+  };
 
   const actionRulesTableRows = actionRules.map(actionRule => (
     <ActionRulesTableRow
@@ -133,6 +149,7 @@ export default function ActionRuleSettingsTab() {
       mustHaveLabels={actionRule.must_have_labels}
       mustNotHaveLabels={actionRule.must_not_have_labels}
       actionId={actionRule.action_id}
+      onDeleteActionRule={deleteActionRule}
     />
   ));
 
@@ -260,15 +277,34 @@ export default function ActionRuleSettingsTab() {
             </Table>
           </Col>
         </Row>
+        <div className="feedback-toast-container">
+          <Toast
+            onClose={() => setShowDeletedActionRuleToast(false)}
+            show={showDeletedActionRuleToast}
+            delay={5000}
+            autohide>
+            <Toast.Body>The action rule was deleted.</Toast.Body>
+          </Toast>
+        </div>
       </Container>
     </>
   );
 }
 
 function ActionRulesTableRow(props) {
-  const {name, mustHaveLabels, mustNotHaveLabels, actionId} = props;
+  const {
+    name,
+    mustHaveLabels,
+    mustNotHaveLabels,
+    actionId,
+    onDeleteActionRule,
+  } = props;
   const [editing, setEditing] = useState(false);
-  const [deleted, setDeleted] = useState(false);
+  const [
+    showDeleteActionRuleConfirmation,
+    setShowDeleteActionRuleConfirmation,
+  ] = useState(false);
+
   const [nameRef] = useState(React.createRef());
   const [mustHaveLabelsRef] = useState(React.createRef());
   const [mustNotHaveLabelsRef] = useState(React.createRef());
@@ -276,7 +312,7 @@ function ActionRulesTableRow(props) {
 
   return (
     <>
-      <tr hidden={editing || deleted}>
+      <tr hidden={editing}>
         <td>
           <Button
             className="mb-2 table-action-button"
@@ -286,13 +322,38 @@ function ActionRulesTableRow(props) {
           <Button
             variant="secondary"
             className="table-action-button"
-            onClick={() => setDeleted(true)}>
+            onClick={() => setShowDeleteActionRuleConfirmation(true)}>
             <ion-icon
               name="trash-bin"
               size="large"
               className="ion-icon-white"
             />
           </Button>
+          <Modal
+            show={showDeleteActionRuleConfirmation}
+            onHide={() => setShowDeleteActionRuleConfirmation(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Action Rule Delete</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <p>
+                Please confirm you want to delete the action rule named{' '}
+                <strong>{name}</strong>?
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => setShowDeleteActionRuleConfirmation(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => onDeleteActionRule(name)}>
+                Delete Action Rule
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </td>
         <td>{name}</td>
         <td className="action-rule-classification-column">{mustHaveLabels}</td>
@@ -305,7 +366,7 @@ function ActionRulesTableRow(props) {
         </td>
         <td>{actions.find(action => action.id === actionId).name}</td>
       </tr>
-      <tr hidden={!editing || deleted}>
+      <tr hidden={!editing}>
         <td>
           <Button
             variant="outline-primary"
