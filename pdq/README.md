@@ -5,7 +5,7 @@
 This is the reference implementation for the PDQ hashing algorithm.
 
 Please see
-[LICENSE.txt](https://github.com/facebook/ThreatExchange/blob/master/hashing/pdq/LICENSE.txt)
+[LICENSE.txt](https://github.com/facebook/ThreatExchange/blob/master/pdq/LICENSE.txt)
 as well as
 [../hashing.pdf](https://github.com/facebook/ThreatExchange/blob/master/hashing/hashing.pdf)
 within this repository.
