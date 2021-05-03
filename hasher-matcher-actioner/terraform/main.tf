@@ -236,6 +236,7 @@ module "api" {
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   config_table          = local.config_table
+  te_api_token_secret   = aws_secretsmanager_secret.te_api_token
 }
 
 # Build and deploy webapp

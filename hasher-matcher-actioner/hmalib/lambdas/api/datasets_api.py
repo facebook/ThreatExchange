@@ -27,7 +27,7 @@ class Dataset(JSONifiable):
     @classmethod
     def from_dict(cls, d: dict) -> "Dataset":
         return cls(
-            d["privacy_group_id"],
+            int(d["privacy_group_id"]),
             d["privacy_group_name"],
             d["fetcher_active"],
             d["write_back"],
@@ -58,7 +58,7 @@ class DatasetsResponse(JSONifiable):
 
 
 @dataclass
-class SyncDatasetResponse(JSONifiable):
+class SyncDeleteDatasetResponse(JSONifiable):
     response: str
 
     def to_json(self) -> t.Dict:
@@ -108,11 +108,20 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         return Dataset.from_dict(updated_config)
 
     @datasets_api.post("/sync", apply=[jsoninator])
-    def sync_datasets() -> SyncDatasetResponse:
+    def sync_datasets() -> SyncDeleteDatasetResponse:
         """
         Fetch new collaborations from ThreatExchnage and potentially update the configs stored in AWS
         """
         sync_privacy_groups()
-        return SyncDatasetResponse(response="Dataset is update-to-date")
+        return SyncDeleteDatasetResponse(response="Dataset is update-to-date")
+
+    @datasets_api.post("/delete/<key>", apply=[jsoninator])
+    def delete_dataset(key=None) -> SyncDeleteDatasetResponse:
+        """
+        Delete dataset
+        """
+        config = ThreatExchangeConfig.getx(str(key))
+        hmaconfig.delete_config(config)
+        return SyncDeleteDatasetResponse(response="Dataset is update-to-date")
 
     return datasets_api
