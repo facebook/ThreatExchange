@@ -77,7 +77,15 @@ variable "additional_tags" {
 variable "config_table" {
   description = "The name and arn of the DynamoDB table used for persisting configs."
   type = object({
-    arn        = string
-    name       = string
+    arn  = string
+    name = string
+  })
+}
+
+variable "te_api_token_secret" {
+  description = "The aws secret where the ThreatExchange API token is stored"
+  type = object({
+    name = string
+    arn  = string
   })
 }
