@@ -132,6 +132,21 @@ export default function ActionRuleSettingsTab() {
     false,
   );
 
+  const resetForm = () => {
+    nameRef.current.value = '';
+    mustHaveLabelsRef.current.value = '';
+    mustNotHaveLabelsRef.current.value = '';
+    actionRef.current.value = '0';
+  };
+
+  const addActionRule = newActionRule => {
+    actionRules.push(newActionRule);
+    actionRules.sort((a, b) =>
+      a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
+    );
+    setActionRules([...actionRules]);
+  };
+
   const deleteActionRule = name => {
     const indexToDelete = actionRules.findIndex(
       actionRule => actionRule.name === name,
@@ -142,6 +157,14 @@ export default function ActionRuleSettingsTab() {
     setShowDeletedActionRuleToast(true);
   };
 
+  const saveActionRule = (oldName, editedActionRule) => {
+    const indexToUpdate = actionRules.findIndex(
+      actionRule => actionRule.name === oldName,
+    );
+    deleteActionRule(oldName);
+    addActionRule(editedActionRule);
+  };
+
   const actionRulesTableRows = actionRules.map(actionRule => (
     <ActionRulesTableRow
       key={actionRule.name}
@@ -150,6 +173,7 @@ export default function ActionRuleSettingsTab() {
       mustNotHaveLabels={actionRule.must_not_have_labels}
       actionId={actionRule.action_id}
       onDeleteActionRule={deleteActionRule}
+      onSaveEditedActionRule={saveActionRule}
     />
   ));
 
@@ -212,14 +236,8 @@ export default function ActionRuleSettingsTab() {
                         setShowActionRequired(false);
 
                         if (actionRuleIsValid(newActionRule, actionRules)) {
-                          actionRules.push(newActionRule);
-
-                          actionRules.sort((a, b) =>
-                            a.name.toLowerCase() > b.name.toLowerCase()
-                              ? 1
-                              : -1,
-                          );
-
+                          addActionRule(newActionRule);
+                          resetForm();
                           setAdding(false);
                         } else {
                           setShowNameRequired(!newActionRule.name);
@@ -247,10 +265,7 @@ export default function ActionRuleSettingsTab() {
                       variant="outline-secondary"
                       className="table-action-button"
                       onClick={() => {
-                        nameRef.current.value = '';
-                        mustHaveLabelsRef.current.value = '';
-                        mustNotHaveLabelsRef.current.value = '';
-                        actionRef.current.value = '0';
+                        resetForm();
                         setShowNameRequired(false);
                         setShowNameMustBeUnique(false);
                         setShowMustHaveLabelsRequired(false);
@@ -298,6 +313,7 @@ function ActionRulesTableRow(props) {
     mustNotHaveLabels,
     actionId,
     onDeleteActionRule,
+    onSaveEditedActionRule,
   } = props;
   const [editing, setEditing] = useState(false);
   const [
@@ -316,7 +332,13 @@ function ActionRulesTableRow(props) {
         <td>
           <Button
             className="mb-2 table-action-button"
-            onClick={() => setEditing(true)}>
+            onClick={() => {
+              nameRef.current.value = name;
+              mustHaveLabelsRef.current.value = mustHaveLabels;
+              mustNotHaveLabelsRef.current.value = mustNotHaveLabels;
+              actionRef.current.value = actionId;
+              setEditing(true);
+            }}>
             <ion-icon name="pencil" size="large" className="ion-icon-white" />
           </Button>{' '}
           <Button
@@ -371,7 +393,16 @@ function ActionRulesTableRow(props) {
           <Button
             variant="outline-primary"
             className="mb-2 table-action-button"
-            onClick={() => setEditing(false)}>
+            onClick={() => {
+              const editedActionRule = {
+                name: nameRef.current.value,
+                must_have_labels: mustHaveLabelsRef.current.value,
+                must_not_have_labels: mustNotHaveLabelsRef.current.value,
+                action_id: actionRef.current.value,
+              };
+              onSaveEditedActionRule(name, editedActionRule);
+              setEditing(false);
+            }}>
             <ion-icon
               name="checkmark"
               size="large"
