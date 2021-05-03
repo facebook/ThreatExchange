@@ -14,10 +14,7 @@ from hmalib.common.classification_models import (
     Label,
 )
 from hmalib.common.message_models import BankedSignal, MatchMessage
-from hmalib.lambdas.actions.action_evaluator import (
-    get_actions_to_take,
-    action_rule_applies_to_classifications,
-)
+from hmalib.lambdas.actions.action_evaluator import get_actions_to_take
 
 
 class ActionRuleEvaluationTestCase(unittest.TestCase):

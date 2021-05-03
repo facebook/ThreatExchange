@@ -96,8 +96,10 @@ class Writebacker:
     def perform_writeback(self, writeback_message: WritebackMessage) -> str:
         writeback_options = self.writeback_options()
         writeback_to_perform = writeback_message.writeback_type
+
+        error = None
         if writeback_to_perform not in writeback_options:
-            return (
+            error = (
                 "Could not find writebacker for source "
                 + self.source
                 + " that can perform writeback "
@@ -107,9 +109,12 @@ class Writebacker:
         writebacker = writeback_options[writeback_to_perform]()
         if writebacker.writeback_is_enabled:
             return writebacker._writeback_impl(writeback_message)
-        return (
+
+        error = error | (
             "Writeback {writebacker.__name__} not performed becuase it's switched off"
         )
+        logger.error(error)
+        return error
 
 
 @dataclass
