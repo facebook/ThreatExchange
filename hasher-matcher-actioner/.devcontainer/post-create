@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Make $PATH respect user binaries
-echo "\n\nexport PATH=$PATH:~/.local/bin" >> ~/.bashrc
-
 # Link aws configuration directory paths
 ln -s /var/run/aws-config/ ~/.aws
 

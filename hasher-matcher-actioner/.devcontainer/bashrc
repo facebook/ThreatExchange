@@ -1,0 +1,6 @@
+source /etc/bash.bashrc
+
+# Make path respect local binaries from pip
+export PATH=$PATH:~/.local/bin
+
+# Last line must have a newline char!
