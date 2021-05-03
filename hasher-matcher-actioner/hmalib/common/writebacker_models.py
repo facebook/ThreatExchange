@@ -13,6 +13,8 @@ from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.message_models import WritebackMessage
 from hmalib.aws_secrets import AWSSecrets
+from hmalib.lambdas.fetcher import ThreatExchangeConfig
+
 
 from threatexchange.api import ThreatExchangeAPI
 
@@ -77,9 +79,9 @@ class Writebacker:
             return None
         return sources_to_writebacker_cls[source]()
 
-    def writeback_is_enabled(self) -> bool:
+    def writeback_is_enabled(self, writeback_signal: BankedSignal) -> bool:
         """
-        Users can switch on/off writebacks either globally or for individual sources
+        Users can switch on/off writebacks either globally for individual sources, or based on the matched signal
         """
         raise NotImplementedError
 
@@ -90,31 +92,36 @@ class Writebacker:
         """
         raise NotImplementedError
 
-    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         raise NotImplementedError
 
-    def perform_writeback(self, writeback_message: WritebackMessage) -> str:
-        writeback_options = self.writeback_options()
+    def perform_writeback(self, writeback_message: WritebackMessage) -> t.List[str]:
         writeback_to_perform = writeback_message.writeback_type
 
         error = None
-        if writeback_to_perform not in writeback_options:
+        if writeback_to_perform not in self.writeback_options():
             error = (
                 "Could not find writebacker for source "
                 + self.source
                 + " that can perform writeback "
                 + writeback_to_perform.value
             )
+            logger.error(error)
+            return [error]
 
-        writebacker = writeback_options[writeback_to_perform]()
-        if writebacker.writeback_is_enabled:
-            return writebacker._writeback_impl(writeback_message)
-
-        error = error | (
-            "Writeback {writebacker.__name__} not performed becuase it's switched off"
-        )
-        logger.error(error)
-        return error
+        results = []
+        writebacker = self.writeback_options()[writeback_to_perform]()
+        for writeback_signal in writeback_message.matching_banked_signals:
+            # filter our matches from other sources
+            if writeback_signal.bank_source == self.source:
+                result = None
+                if writebacker.writeback_is_enabled(writeback_signal):
+                    result = writebacker._writeback_impl(writeback_signal)
+                else:
+                    result = "No writeback performed for banked content id {writeback_signal.banked_content_id} becuase writebacks were disabled"
+                logger.info(result)
+                results.append(result)
+        return results
 
 
 @dataclass
@@ -137,13 +144,13 @@ class ThreatExchangeWritebacker(Writebacker):
             WritebackTypes.SawThisToo: ThreatExchangeSawThisTooWritebacker,
         }
 
-    def writeback_is_enabled(self) -> bool:
-        """
-        TODO implement
-        Looks up from a config whether ThreatExchange writing back is enabled. Initially this will be a per
-        collaboration lookup
-        """
-        return True
+    def writeback_is_enabled(self, writeback_signal: BankedSignal) -> bool:
+        privacy_group_id = writeback_signal.bank_id
+        privacy_group_config = ThreatExchangeConfig.cahced_get(privacy_group_id)
+        if not privacy_group_config:
+            # If no config, dont write back
+            return False
+        return privacy_group_config.write_back
 
     @property
     def te_api(self) -> ThreatExchangeAPI:
@@ -165,7 +172,7 @@ class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeWritebacker):
 
     """
 
-    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         # TODO Implement
         return "Wrote Back false positive"
 
@@ -181,7 +188,7 @@ class ThreatExchangeTruePositivePositiveWritebacker(ThreatExchangeWritebacker):
 
     """
 
-    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         # TODO Implement
         return "Wrote Back true positive"
 
@@ -200,18 +207,12 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
     def reaction(self) -> str:
         raise NotImplementedError
 
-    def _writeback_impl(self, writeback_message: WritebackMessage) -> str:
-
-        descriptor_ids = {
-            dataset_match_details.banked_content_id
-            for dataset_match_details in writeback_message.matching_banked_signals
-            if dataset_match_details.bank_source == "te"
-        }
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
+        descriptor_ids = {writeback_signal.banked_content_id}
 
         # TODO: currnetly, banked_content_id is the descriptor id. We need to change this
         # to be the indicator_id and then find all descriptors for that indicator. After
-        # that change, delete the lines above and uncomment the lines below
-        #
+        # that change, delete the line above and uncomment the lines below
 
         # indicator_ids = {
         #     dataset_match_details.banked_content_id

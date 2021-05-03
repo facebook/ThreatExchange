@@ -100,6 +100,11 @@ class HMAConfig:
         return cls._convert_item(result.get("Item"))
 
     @classmethod
+    @functools.lru_cache(maxsize=None)
+    def cahced_get(cls: t.Type[TConfig], name: str) -> t.Optional[TConfig]:
+        return cls.get(name)
+
+    @classmethod
     def getx(cls: t.Type[TConfig], name: str) -> TConfig:
         ret = cls.get(name)
         if not ret:

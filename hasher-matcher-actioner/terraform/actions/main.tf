@@ -341,6 +341,12 @@ data "aws_iam_policy_document" "writebacker" {
     actions   = ["secretsmanager:GetSecretValue"]
     resources = [var.te_api_token_secret.arn]
   }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem"]
+    resources = [var.config_table.arn]
+  }
 }
 
 resource "aws_iam_role_policy_attachment" "writebacker" {
