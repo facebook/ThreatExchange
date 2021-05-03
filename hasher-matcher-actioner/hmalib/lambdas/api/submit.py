@@ -19,6 +19,7 @@ s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
 
+# TODO use enum in storage class
 class SubmissionType(Enum):
     UPLOAD = "Direct Upload"
     URL = "URL"
@@ -116,8 +117,9 @@ def get_submit_api(
             if response and response.content:
                 # TODO a whole bunch more validation and error checking...
 
-                # Right now this make a local copy in s3, future changes to pdq_hasher
-                # should allow us to avoid storing to our own s3 bucket (or possibly give the user the option)
+                # Right now this makes a local copy in s3 but future changes to
+                # pdq_hasher should allow us to avoid storing to our own s3 bucket
+                # (or possibly give the api/user the option)
                 s3_client.put_object(
                     Body=response.content,
                     Bucket=image_bucket_key,
