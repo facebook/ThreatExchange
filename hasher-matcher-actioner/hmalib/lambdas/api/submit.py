@@ -142,3 +142,5 @@ def get_submit_api(
                 content_id=request.content_id,
                 message="submission_type not yet supported",
             )
+
+    return submit_api
