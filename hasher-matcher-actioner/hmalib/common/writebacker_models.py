@@ -150,7 +150,7 @@ class ThreatExchangeWritebacker(Writebacker):
         mock_te_api = os.environ.get("MOCK_TE_API")
         if mock_te_api == "True":
             return MockedThreatExchangeAPI()
-        api_key = AWSSecrets.te_api_key()
+        api_key = AWSSecrets().te_api_key()
         return ThreatExchangeAPI(api_key)
 
 
