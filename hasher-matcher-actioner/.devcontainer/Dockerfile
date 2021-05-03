@@ -16,7 +16,7 @@ RUN groupadd --gid 1000 developers \
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
   apt-get -y install --no-install-recommends git make jq sudo \
   software-properties-common apt-transport-https ca-certificates curl \
-  gnupg lsb-release
+  gnupg lsb-release tmux zsh
 
 # [Allow sudo] Need sudo later in post-create to open up docker socket
 ARG unixname
@@ -110,13 +110,23 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 \
   && apt update \
   && apt install gh
 
-# [Bash History] The volume is mounted in devcontainer.json
+# [Shell Dotfiles]
 ARG unixname
-RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
-  && mkdir /commandhistory \
+COPY --chown=${unixname} zshrc /home/$unixname/.zshrc
+
+ARG unixname
+COPY --chown=${unixname} bashrc /home/$unixname/.bashrc
+
+# [Shell Histories] The volume is mounted in devcontainer.json
+ARG unixname
+RUN BASH_SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
+  && ZSH_SNIPPET="export HISTFILE=/commandhistory/.zsh_history" \
+  && mkdir -p /commandhistory \
   && touch /commandhistory/.bash_history \
+  && touch /commandhistory/.zsh_history \
   && chown -R $unixname /commandhistory \
-  && echo $SNIPPET >> "/home/$unixname/.bashrc"
+  && echo $BASH_SNIPPET >> "/home/$unixname/.bashrc" \
+  && echo $ZSH_SNIPPET >> "/home/$unixname/.zshrc"
 
 # [Forward Docker requests to host docker engine]
 # Volume is mounted and so is the socket. The socket configuration is within
