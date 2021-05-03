@@ -41,8 +41,45 @@ const actions = [
   },
 ];
 
+function actionRuleNameIsUnique(name, actionrules) {
+  if (name) {
+    const nameLower = name.toLowerCase();
+    return (
+      actionrules.findIndex(
+        actionRule => actionRule.name.toLowerCase() === nameLower,
+      ) === -1
+    );
+  }
+
+  return true;
+}
+
+function actionRuleIsValid(actionRule, actionrules) {
+  return (
+    actionRule.name &&
+    actionRule.must_have_labels &&
+    actionRule.action_id !== '0' &&
+    actionRuleNameIsUnique(actionRule.name, actionrules)
+  );
+}
+
+function Required(props) {
+  const {show} = props;
+  return (
+    <span hidden={!show} className="text-danger">
+      (required)
+    </span>
+  );
+}
+
 function ActionRuleFormColumns(props) {
-  const {nameRef, mustHaveLabelsRef, mustNotHaveLabelsRef, actionRef} = props;
+  const {
+    nameRef,
+    mustHaveLabelsRef,
+    mustNotHaveLabelsRef,
+    actionRef,
+    showNameMustBeUnique,
+  } = props;
 
   const actionOptions = actions.map(action => (
     <option key={action.id} value={action.id}>
@@ -54,7 +91,9 @@ function ActionRuleFormColumns(props) {
     <>
       <td>
         <Form.Control type="text" required ref={nameRef} />
-        <Form.Text>An action rule&rsquo;s name must be unique.</Form.Text>
+        <Form.Text hidden={!showNameMustBeUnique} className="text-danger">
+          An action rule&rsquo;s name must be unique.
+        </Form.Text>
       </td>
       <td>
         <Form.Control as="textarea" rows={4} required ref={mustHaveLabelsRef} />
@@ -80,6 +119,12 @@ export default function ActionRuleSettingsTab() {
   const [mustHaveLabelsRef] = useState(React.createRef());
   const [mustNotHaveLabelsRef] = useState(React.createRef());
   const [actionRef] = useState(React.createRef());
+  const [showNameRequired, setShowNameRequired] = useState(false);
+  const [showNameMustBeUnique, setShowNameMustBeUnique] = useState(false);
+  const [showMustHaveLabelsRequired, setShowMustHaveLabelsRequired] = useState(
+    false,
+  );
+  const [showActionRequired, setShowActionRequired] = useState(false);
 
   const actionRulesTableRows = actionRules.map(actionRule => (
     <ActionRulesTableRow
@@ -117,10 +162,16 @@ export default function ActionRuleSettingsTab() {
                       <ion-icon name="add" size="large" />
                     </Button>
                   </th>
-                  <th>Name</th>
-                  <th>Labeled As</th>
+                  <th>
+                    Name <Required show={adding && showNameRequired} />
+                  </th>
+                  <th>
+                    Labeled As <Required show={showMustHaveLabelsRequired} />
+                  </th>
                   <th>Not Labeled As</th>
-                  <th>Action</th>
+                  <th>
+                    Action <Required show={showActionRequired} />
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -138,13 +189,36 @@ export default function ActionRuleSettingsTab() {
                           action_id: actionRef.current.value,
                         };
 
-                        actionRules.push(newActionRule);
+                        setShowNameRequired(false);
+                        setShowNameMustBeUnique(false);
+                        setShowMustHaveLabelsRequired(false);
+                        setShowActionRequired(false);
 
-                        actionRules.sort((a, b) =>
-                          a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
-                        );
+                        if (actionRuleIsValid(newActionRule, actionRules)) {
+                          actionRules.push(newActionRule);
 
-                        setAdding(false);
+                          actionRules.sort((a, b) =>
+                            a.name.toLowerCase() > b.name.toLowerCase()
+                              ? 1
+                              : -1,
+                          );
+
+                          setAdding(false);
+                        } else {
+                          setShowNameRequired(!newActionRule.name);
+                          setShowNameMustBeUnique(
+                            !actionRuleNameIsUnique(
+                              nameRef.current.value,
+                              actionRules,
+                            ),
+                          );
+                          setShowMustHaveLabelsRequired(
+                            !newActionRule.must_have_labels,
+                          );
+                          setShowActionRequired(
+                            newActionRule.action_id === '0',
+                          );
+                        }
                       }}>
                       <ion-icon
                         name="checkmark"
@@ -160,6 +234,10 @@ export default function ActionRuleSettingsTab() {
                         mustHaveLabelsRef.current.value = '';
                         mustNotHaveLabelsRef.current.value = '';
                         actionRef.current.value = '0';
+                        setShowNameRequired(false);
+                        setShowNameMustBeUnique(false);
+                        setShowMustHaveLabelsRequired(false);
+                        setShowActionRequired(false);
                         setAdding(false);
                       }}>
                       <ion-icon
@@ -174,6 +252,7 @@ export default function ActionRuleSettingsTab() {
                     mustHaveLabelsRef={mustHaveLabelsRef}
                     mustNotHaveLabelsRef={mustNotHaveLabelsRef}
                     actionRef={actionRef}
+                    showNameMustBeUnique={showNameMustBeUnique}
                   />
                 </tr>
                 {actionRulesTableRows}
