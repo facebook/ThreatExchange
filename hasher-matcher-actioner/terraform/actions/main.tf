@@ -1,5 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+provider "aws" {
+  region = var.region
+}
+
 locals {
   common_tags = {
     "HMAPrefix" = var.prefix
@@ -63,16 +67,16 @@ resource "aws_sqs_queue" "actions_queue" {
   )
 }
 
-# Set up the queue for sending messages from the action evaluator to the reactioner
+# Set up the queue for sending messages from the action evaluator to the writebacker
 
-resource "aws_sqs_queue" "reactions_queue" {
-  name_prefix                = "${var.prefix}-reactions"
+resource "aws_sqs_queue" "writebacks_queue" {
+  name_prefix                = "${var.prefix}-writebacks"
   visibility_timeout_seconds = 300
   message_retention_seconds  = 1209600
   tags = merge(
     var.additional_tags,
     {
-      Name = "ReactionsQueue"
+      Name = "WritebacksQueue"
     }
   )
 }
@@ -96,9 +100,9 @@ resource "aws_lambda_function" "action_evaluator" {
 
   environment {
     variables = {
-      ACTIONS_QUEUE_URL   = aws_sqs_queue.actions_queue.id,
-      REACTIONS_QUEUE_URL = aws_sqs_queue.reactions_queue.id,
-      CONFIG_TABLE_NAME   = var.config_table.name,
+      ACTIONS_QUEUE_URL    = aws_sqs_queue.actions_queue.id,
+      WRITEBACKS_QUEUE_URL = aws_sqs_queue.writebacks_queue.id,
+      CONFIG_TABLE_NAME    = var.config_table.name,
     }
   }
 }
@@ -125,16 +129,22 @@ resource "aws_lambda_function" "action_performer" {
   }
 }
 
-# Reactioner reacts to ThreatExchange.
+# Writebacker sends data back to the data source (eg. ThreatExchange)
 
-resource "aws_lambda_function" "reactioner" {
-  function_name = "${var.prefix}_reactioner"
+resource "aws_lambda_function" "writebacker" {
+  function_name = "${var.prefix}_writebacker"
   package_type  = "Image"
-  role          = aws_iam_role.reactioner.arn
+  role          = aws_iam_role.writebacker.arn
   image_uri     = var.lambda_docker_info.uri
 
   image_config {
-    command = [var.lambda_docker_info.commands.reactioner]
+    command = [var.lambda_docker_info.commands.writebacker]
+  }
+
+  environment {
+    variables = {
+      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
+    }
   }
 
   timeout     = 300
@@ -165,13 +175,13 @@ resource "aws_cloudwatch_log_group" "action_performer" {
   )
 }
 
-resource "aws_cloudwatch_log_group" "reactioner" {
-  name              = "/aws/lambda/${aws_lambda_function.reactioner.function_name}"
+resource "aws_cloudwatch_log_group" "writebacker" {
+  name              = "/aws/lambda/${aws_lambda_function.writebacker.function_name}"
   retention_in_days = var.log_retention_in_days
   tags = merge(
     var.additional_tags,
     {
-      Name = "ReactionerLambdaLogGroup"
+      Name = "WritebackerLambdaLogGroup"
     }
   )
 }
@@ -211,7 +221,7 @@ data "aws_iam_policy_document" "action_evaluator" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.actions_queue.arn, aws_sqs_queue.reactions_queue.arn]
+    resources = [aws_sqs_queue.actions_queue.arn, aws_sqs_queue.writebacks_queue.arn]
   }
   statement {
     effect    = "Allow"
@@ -292,24 +302,24 @@ resource "aws_iam_role_policy_attachment" "action_performer" {
   policy_arn = aws_iam_policy.action_performer.arn
 }
 
-# Role and policy for action reactioner
+# Role and policy for action writebacker
 
-resource "aws_iam_role" "reactioner" {
-  name_prefix        = "${var.prefix}_reactioner"
+resource "aws_iam_role" "writebacker" {
+  name_prefix        = "${var.prefix}_writebacker"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
   tags               = var.additional_tags
 }
 
-resource "aws_iam_policy" "reactioner" {
-  name_prefix = "${var.prefix}_reactioner_role_policy"
-  policy      = data.aws_iam_policy_document.reactioner.json
+resource "aws_iam_policy" "writebacker" {
+  name_prefix = "${var.prefix}_writebacker_role_policy"
+  policy      = data.aws_iam_policy_document.writebacker.json
 }
 
-data "aws_iam_policy_document" "reactioner" {
+data "aws_iam_policy_document" "writebacker" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
-    resources = [aws_sqs_queue.reactions_queue.arn]
+    resources = [aws_sqs_queue.writebacks_queue.arn]
   }
   statement {
     effect = "Allow"
@@ -318,18 +328,24 @@ data "aws_iam_policy_document" "reactioner" {
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
     ]
-    resources = ["${aws_cloudwatch_log_group.reactioner.arn}:*"]
+    resources = ["${aws_cloudwatch_log_group.writebacker.arn}:*"]
   }
   statement {
     effect    = "Allow"
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"]
   }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [var.te_api_token_secret.arn]
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "reactioner" {
-  role       = aws_iam_role.reactioner.name
-  policy_arn = aws_iam_policy.reactioner.arn
+resource "aws_iam_role_policy_attachment" "writebacker" {
+  role       = aws_iam_role.writebacker.name
+  policy_arn = aws_iam_policy.writebacker.arn
 }
 
 # Connect sqs -> lambda
@@ -348,9 +364,9 @@ resource "aws_lambda_event_source_mapping" "actions_queue_to_action_performer" {
   maximum_batching_window_in_seconds = 30
 }
 
-resource "aws_lambda_event_source_mapping" "reactions_queue_to_reactioner" {
-  event_source_arn                   = aws_sqs_queue.reactions_queue.arn
-  function_name                      = aws_lambda_function.reactioner.arn
+resource "aws_lambda_event_source_mapping" "writebacks_queue_to_writebacker" {
+  event_source_arn                   = aws_sqs_queue.writebacks_queue.arn
+  function_name                      = aws_lambda_function.writebacker.arn
   batch_size                         = 100
   maximum_batching_window_in_seconds = 30
 }

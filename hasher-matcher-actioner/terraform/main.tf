@@ -278,7 +278,7 @@ module "actions" {
     commands = {
       action_evaluator = "hmalib.lambdas.actions.action_evaluator.lambda_handler"
       action_performer = "hmalib.lambdas.actions.action_performer.lambda_handler"
-      reactioner       = "hmalib.lambdas.actions.reactioner.lambda_handler"
+      writebacker      = "hmalib.lambdas.actions.writebacker.lambda_handler"
     }
   }
 

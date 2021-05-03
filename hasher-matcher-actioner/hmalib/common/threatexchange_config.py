@@ -17,7 +17,7 @@ WRITE_BACK = True
 
 
 def sync_privacy_groups():
-    api_key = AWSSecrets.te_api_key()
+    api_key = AWSSecrets().te_api_key()
     api = ThreatExchangeAPI(api_key)
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()
