@@ -17,3 +17,10 @@ export const PENDING_OPINION_CHANGE = Object.freeze({
   REMOVE_OPINION: 'remove_opinion',
   NONE: 'none',
 });
+
+export const SUBMISSION_TYPE = Object.freeze({
+  UPLOAD: 'Direct Upload',
+  RAW: 'Raw Value (example only)',
+  S3_OBJECT: 'S3 Object (example only)',
+  URL: 'URL (example only)',
+});

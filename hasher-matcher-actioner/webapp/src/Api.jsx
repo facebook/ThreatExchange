@@ -69,14 +69,14 @@ export function fetchDashboardCardSummary(path) {
 
 export async function uploadImage(file) {
   const fileReader = new FileReader();
-  fileReader.readAsArrayBuffer(file);
   fileReader.onload = () => {
     const fileContentsBase64Encoded = encode(fileReader.result);
-    apiPost('/upload', {
+    return apiPost('/upload', {
       fileName: file.name,
       fileContentsBase64Encoded,
     });
   };
+  fileReader.readAsArrayBuffer(file);
 }
 
 export async function requestSignalOpinionChange(
@@ -95,4 +95,41 @@ export async function requestSignalOpinionChange(
       opinion_change: opinionChange,
     },
   );
+}
+
+export async function submitContent(
+  submissionType,
+  contentId,
+  contentType,
+  contentRef,
+  metadata,
+) {
+  return apiPost('/submit/', {
+    submission_type: submissionType,
+    content_id: contentId,
+    content_type: contentType,
+    content_ref: contentRef,
+    metadata,
+  });
+}
+
+export async function submitContentUpload(
+  submissionType,
+  contentId,
+  contentType,
+  contentRef,
+  metadata,
+) {
+  const fileReader = new FileReader();
+  fileReader.onload = () => {
+    const fileContentsBase64Encoded = encode(fileReader.result);
+    apiPost('/submit/', {
+      submission_type: submissionType,
+      content_id: contentId,
+      content_type: contentType,
+      content_ref: fileContentsBase64Encoded,
+      metadata,
+    });
+  };
+  return fileReader.readAsArrayBuffer(contentRef);
 }

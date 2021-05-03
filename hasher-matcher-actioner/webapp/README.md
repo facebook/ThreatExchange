@@ -63,3 +63,16 @@ npx prettier --write src
 # ensure app builds
 npm run build
 ```
+
+# Deploying to S3
+
+Terraform takes care of most of it. But it is not smart enough to do the deploy. It must be instructed to do so. Use the terraform taint command as outlined below.
+
+Run these in the `hasher-matcher-actioner` directory.
+
+```shell
+$ terraform -chdir=terraform taint "null_resource.build_and_deploy_webapp"
+$ terraform -chdir=terraform apply -var prefix="$(whoami)"
+```
+
+You might need to force refresh your browser for the changes to take effect. S3 sends liberal caching headers. `<Cmd>+<Shift>+R` on Firefox and potentially other browsers.

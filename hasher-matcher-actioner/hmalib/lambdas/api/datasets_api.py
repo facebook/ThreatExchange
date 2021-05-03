@@ -122,6 +122,6 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         """
         config = ThreatExchangeConfig.getx(str(key))
         hmaconfig.delete_config(config)
-        return SyncDeleteDatasetResponse(response="Dataset is update-to-date")
+        return SyncDeleteDatasetResponse(response="The dataset is deleted")
 
     return datasets_api

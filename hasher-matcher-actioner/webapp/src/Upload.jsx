@@ -18,6 +18,15 @@ export default function Upload() {
   return (
     <>
       <h1>Upload</h1>
+      <Row className="mt-3" float>
+        <Col md={6}>
+          Checkout WIP{' '}
+          <Link as="Button" to="/submit">
+            Submit Page
+          </Link>{' '}
+          that will soon replace this one!
+        </Col>
+      </Row>
       <Row className="mt-3">
         <Col md={6}>
           <Collapse in={!submitting && !submitted}>

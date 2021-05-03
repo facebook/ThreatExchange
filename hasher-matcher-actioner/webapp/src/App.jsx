@@ -15,6 +15,7 @@ import Matches from './pages/Matches';
 import Settings from './Settings';
 import Signals from './Signals';
 import Upload from './Upload';
+import SubmitContent from './pages/SubmitContent';
 
 export default function App() {
   return (
@@ -41,6 +42,9 @@ export default function App() {
               </Route>
               <Route path="/upload">
                 <Upload />
+              </Route>
+              <Route path="/submit">
+                <SubmitContent />
               </Route>
               <Route path="/settings">
                 <Settings />
