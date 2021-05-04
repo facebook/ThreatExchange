@@ -4,64 +4,84 @@
 
 import React, {useEffect, useState} from 'react';
 import {
-  Col,
   Row,
   Button,
   Toast,
-  Form,
   Spinner,
   Tooltip,
   OverlayTrigger,
   Card,
 } from 'react-bootstrap';
-import PropTypes from 'prop-types';
-import {CopyableTextField} from '../utils/TextFieldsUtils';
+import ThreatExchangePrivacyGroupCard from '../components/ThreatExchangePrivacyGroupCard';
 import {
   fetchAllDatasets,
   syncAllDatasets,
-  udpateDataset,
+  updateDataset,
   deleteDataset,
 } from '../Api';
 
 export default function ThreatExchangeSettingsTab() {
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastBody, setToastBody] = useState(null);
   const onPrivacyGroupSave = privacyGroup => {
-    udpateDataset(
+    updateDataset(
       privacyGroup.privacyGroupId,
       privacyGroup.localFetcherActive,
       privacyGroup.localWriteBack,
-    ).then(response => {
-      datasets[
-        datasets.findIndex(
-          item => item.privacy_group_id === response.privacy_group_id,
-        )
-      ] = response;
-      setDatasets(datasets);
-    });
+    )
+      .then(response => {
+        setToastBody('Changes are saved!');
+        setShowToast(true);
+        datasets[
+          datasets.findIndex(
+            item => item.privacy_group_id === response.privacy_group_id,
+          )
+        ] = response;
+        setDatasets(datasets);
+      })
+      .catch(() => {
+        setToastBody('Errors when saving changes. Please try again later');
+        setShowToast(true);
+      });
   };
   const onPrivacyGroupDelete = privacyGroupId => {
-    deleteDataset(privacyGroupId).then(() => {
-      const filteredDatasets = datasets.filter(
-        item => item.privacy_group_id !== privacyGroupId,
-      );
-      setDatasets(filteredDatasets);
-    });
+    deleteDataset(privacyGroupId)
+      .then(response => {
+        setToastBody(response.response);
+        setShowToast(true);
+        const filteredDatasets = datasets.filter(
+          item => item.privacy_group_id !== privacyGroupId,
+        );
+        setDatasets(filteredDatasets);
+      })
+      .catch(() => {
+        setToastBody(
+          'Errors when deleting the privacy group. Please try again later',
+        );
+        setShowToast(true);
+      });
   };
   const onSync = () => {
-    syncAllDatasets().then(syncResponse => {
-      setSyncing(true);
-      if (syncResponse.response === 'Dataset is update-to-date') {
+    setSyncing(true);
+    syncAllDatasets()
+      .then(syncResponse => {
+        setSyncing(false);
+        setToastBody(syncResponse.response);
+        setShowToast(true);
         fetchAllDatasets().then(response => {
           setDatasets(response.datasets_response);
         });
-      } else {
-        alert('Errors when syncing privacy groups. Please try again later');
-      }
-    });
+      })
+      .catch(() => {
+        setSyncing(false);
+        setToastBody(
+          'Errors when syncing privacy groups. Please try again later',
+        );
+        setShowToast(true);
+      });
   };
   useEffect(() => {
     fetchAllDatasets(setLoading(false)).then(response => {
@@ -84,15 +104,13 @@ export default function ThreatExchangeSettingsTab() {
             }>
             <Button
               variant="primary"
+              disabled={syncing}
               onClick={() => {
-                setSyncing(false);
-                setToastBody('Privacy groups are up to date!');
-                setShowToast(true);
                 onSync();
               }}
               style={{marginLeft: 10}}>
               <Spinner
-                hidden={syncing}
+                hidden={!syncing}
                 as="span"
                 animation="border"
                 size="sm"
@@ -125,8 +143,6 @@ export default function ThreatExchangeSettingsTab() {
                   writeBack={dataset.write_back}
                   onSave={onPrivacyGroupSave}
                   onDelete={onPrivacyGroupDelete}
-                  setShowToast={setShowToast}
-                  setToastBody={setToastBody}
                 />
               ))}
         </Row>
@@ -134,111 +150,3 @@ export default function ThreatExchangeSettingsTab() {
     </>
   );
 }
-
-function ThreatExchangePrivacyGroupCard({
-  fetcherActive,
-  inUse,
-  privacyGroupId,
-  privacyGroupName,
-  writeBack,
-  onSave,
-  onDelete,
-  setShowToast,
-  setToastBody,
-}) {
-  const [originalFetcherActive, setOriginalFetcherActive] = useState(
-    fetcherActive,
-  );
-  const [originalWriteBack, setOriginalWriteBack] = useState(writeBack);
-  const [localFetcherActive, setLocalFetcherActive] = useState(fetcherActive);
-  const [localWriteBack, setLocalWriteBack] = useState(writeBack);
-  const onSwitchFetcherActive = () => {
-    setLocalFetcherActive(!localFetcherActive);
-  };
-  const onSwitchWriteBack = () => {
-    setLocalWriteBack(!localWriteBack);
-  };
-
-  return (
-    <>
-      <Col lg={4} sm={6} xs={12} className="mb-4">
-        <Card className="text-center">
-          <Card.Header
-            className={
-              inUse ? 'text-white bg-success' : 'text-white bg-secondary'
-            }>
-            <h4 className="mb-0">{privacyGroupName}</h4>
-          </Card.Header>
-          <Card.Subtitle className="mt-2 mb-2 text-muted">
-            <CopyableTextField text={privacyGroupId} />
-          </Card.Subtitle>
-          <Card.Body className="text-left">
-            <Form>
-              <Form.Switch
-                onChange={onSwitchFetcherActive}
-                id={`fetcherActiveSwitch${privacyGroupId}`}
-                label="Fetcher Active"
-                checked={localFetcherActive}
-                disabled={!inUse}
-              />
-              <Form.Switch
-                onChange={onSwitchWriteBack}
-                id={`writeBackSwitch${privacyGroupId}`}
-                label="Write Back"
-                checked={localWriteBack}
-                disabled={!inUse}
-              />
-            </Form>
-          </Card.Body>
-          <Card.Footer>
-            {localWriteBack === originalWriteBack &&
-            localFetcherActive === originalFetcherActive ? null : (
-              <div>
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    setOriginalFetcherActive(localFetcherActive);
-                    setOriginalWriteBack(localWriteBack);
-                    setToastBody('Changes are saved!');
-                    setShowToast(true);
-                    onSave({
-                      privacyGroupId,
-                      localFetcherActive,
-                      localWriteBack,
-                    });
-                  }}>
-                  Save
-                </Button>
-              </div>
-            )}
-            {inUse ? null : (
-              <div>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setToastBody('The privacy group is deleted!');
-                    setShowToast(true);
-                    onDelete(privacyGroupId);
-                  }}>
-                  Delete
-                </Button>
-              </div>
-            )}
-          </Card.Footer>
-        </Card>
-      </Col>
-    </>
-  );
-}
-
-ThreatExchangePrivacyGroupCard.propTypes = {
-  fetcherActive: PropTypes.bool.isRequired,
-  inUse: PropTypes.bool.isRequired,
-  privacyGroupId: PropTypes.number.isRequired,
-  privacyGroupName: PropTypes.string.isRequired,
-  writeBack: PropTypes.bool.isRequired,
-  onSave: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired,
-  setShowToast: PropTypes.func.isRequired,
-  setToastBody: PropTypes.func.isRequired,
-};
