@@ -40,12 +40,22 @@ export default function ThreatExchangePrivacyGroupCard({
           </Card.Subtitle>
           <Card.Body className="text-left">
             <Form>
+              {privacyGroupId === 258601789084078 ||
+              privacyGroupId === 303636684709969 ? (
+                <a
+                  href="https://lear.inrialpes.fr/~jegou/data.php#copydays"
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  Copydays
+                </a>
+              ) : null}
               <Form.Switch
                 onChange={onSwitchFetcherActive}
                 id={`fetcherActiveSwitch${privacyGroupId}`}
                 label="Fetcher Active"
                 checked={localFetcherActive}
                 disabled={!inUse}
+                style={{marginTop: 10}}
               />
               <Form.Switch
                 onChange={onSwitchWriteBack}
