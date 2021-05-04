@@ -96,7 +96,7 @@ def get_submit_api(
         assert isinstance(request, SubmitContentRequestBody)
         logger.debug(f"Content Submit Request Received {request.content_id}")
 
-        if request.submission_type == "UPLOAD":
+        if request.submission_type == SubmissionType.UPLOAD.name:
             fileName = request.content_id
             fileContents = base64.b64decode(request.content_ref)
             # TODO a whole bunch more validation and error checking...
@@ -109,7 +109,7 @@ def get_submit_api(
             return SubmitContentResponse(
                 content_id=request.content_id, submit_successful=True
             )
-        elif request.submission_type == "URL":
+        elif request.submission_type == SubmissionType.URL.name:
             fileName = request.content_id
             url = request.content_ref
             response = requests.get(url)
