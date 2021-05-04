@@ -42,7 +42,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
                 enqueue_for_review_action_label.value,
                 enqueue_for_review_action_label,
                 set([BankIDClassificationLabel(bank_id)]),
-                set([ClassificationLabel("Foo")]),
+                set([ClassificationLabel("Classification", "Foo")]),
             )
         ]
 
@@ -77,7 +77,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
                 must_have_labels=set(
                     [
                         BankIDClassificationLabel("303636684709969"),
-                        ClassificationLabel("true_positive"),
+                        ClassificationLabel("Classification", "true_positive"),
                     ]
                 ),
                 must_not_have_labels=set(
@@ -90,7 +90,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
                 must_have_labels=set(
                     [
                         BankIDClassificationLabel("303636684709969"),
-                        ClassificationLabel("true_positive"),
+                        ClassificationLabel("Classification", "true_positive"),
                         BankedContentIDClassificationLabel("3364504410306721"),
                     ]
                 ),

@@ -18,8 +18,6 @@ from hmalib.common import config
 
 logger = get_logger(__name__)
 
-dynamodb = boto3.resource("dynamodb")
-
 
 @lru_cache(maxsize=1)
 def lambda_init_once():
