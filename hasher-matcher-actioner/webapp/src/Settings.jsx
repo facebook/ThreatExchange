@@ -11,7 +11,7 @@ import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 export default function Settings() {
   return (
     <>
-      <Tabs defaultActiveKey="signals" id="setting-tabs">
+      <Tabs defaultActiveKey="threatexchange" id="setting-tabs">
         <Tab eventKey="threatexchange" title="ThreatExchange">
           <ThreatExchangeSettingsTab />
         </Tab>
