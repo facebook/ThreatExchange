@@ -118,7 +118,11 @@ class Writebacker:
                 if writebacker.writeback_is_enabled(writeback_signal):
                     result = writebacker._writeback_impl(writeback_signal)
                 else:
-                    result = "No writeback performed for banked content id {writeback_signal.banked_content_id} becuase writebacks were disabled"
+                    result = (
+                        "No writeback performed for banked content id "
+                        + writeback_signal.banked_content_id
+                        + " becuase writebacks were disabled"
+                    )
                 logger.info(result)
                 results.append(result)
         return results
@@ -146,11 +150,11 @@ class ThreatExchangeWritebacker(Writebacker):
 
     def writeback_is_enabled(self, writeback_signal: BankedSignal) -> bool:
         privacy_group_id = writeback_signal.bank_id
-        privacy_group_config = ThreatExchangeConfig.cahced_get(privacy_group_id)
-        if not privacy_group_config:
-            # If no config, dont write back
-            return False
-        return privacy_group_config.write_back
+        privacy_group_config = ThreatExchangeConfig.cached_get(privacy_group_id)
+        if isinstance(privacy_group_config, ThreatExchangeConfig):
+            return privacy_group_config.write_back
+        # If no config, dont write back
+        return False
 
     @property
     def te_api(self) -> ThreatExchangeAPI:
@@ -174,7 +178,10 @@ class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeWritebacker):
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         # TODO Implement
-        return "Wrote Back false positive"
+        return (
+            "Wrote back false positive on indicator "
+            + writeback_signal.banked_content_id
+        )
 
 
 class ThreatExchangeTruePositivePositiveWritebacker(ThreatExchangeWritebacker):
@@ -190,7 +197,10 @@ class ThreatExchangeTruePositivePositiveWritebacker(ThreatExchangeWritebacker):
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         # TODO Implement
-        return "Wrote Back true positive"
+        return (
+            "Wrote back true positive on indicator "
+            + writeback_signal.banked_content_id
+        )
 
 
 @dataclass
