@@ -201,7 +201,7 @@ def get_writeback_messages(
 
 if __name__ == "__main__":
     # For basic debugging
-    HMAConfig.initialize("jeberl-HMAConfig")
+    HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
     action_rules = get_action_rules()
     match_message = MatchMessage(
         content_key="images/200200.jpg",
@@ -224,39 +224,3 @@ if __name__ == "__main__":
     )
     action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
     action_labels = list(action_label_to_action_rules.keys())
-
-    # action_rules = [
-    #     ActionRule(
-    #         name="Enqueue Mini-Castle for Review",
-    #         action_label=ActionLabel("EnqueueMiniCastleForReview"),
-    #         must_have_labels=set(
-    #             [
-    #                 BankIDClassificationLabel("303636684709969"),
-    #                 ClassificationLabel("true_positive"),
-    #             ]
-    #         ),
-    #         must_not_have_labels=set(
-    #             [BankedContentIDClassificationLabel("3364504410306721")]
-    #         ),
-    #     ),
-    # ]
-
-    # banked_signal = BankedSignal(
-    #     "4169895076385542",
-    #     "303636684709969",
-    #     "te",
-    # )
-    # banked_signal.add_classification("true_positive")
-
-    # match_message = MatchMessage("key", "hash", [banked_signal])
-
-    # action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
-
-    # print(action_label_to_action_rules)
-
-    # event = {
-    #     "Records": [
-    #         {"body": json.dumps({"Message": json.dumps(match_message.to_aws_json())})}
-    #     ]
-    # }
-    # lambda_handler(event, None)
