@@ -30,7 +30,7 @@ class Label:
 
 @dataclass(unsafe_hash=True)
 class ClassificationLabel(Label):
-    key: str
+    key: str = field(default="Classification", init=False)
 
 
 @dataclass(unsafe_hash=True)

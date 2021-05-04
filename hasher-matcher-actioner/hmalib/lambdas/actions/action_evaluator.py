@@ -120,7 +120,6 @@ def get_actions_to_take(
             if action_rule_applies_to_classifications(
                 action_rule, banked_signal.classifications
             ):
-                print("rule applies to classifications")
                 if action_rule.action_label in action_label_to_action_rules:
                     action_label_to_action_rules[action_rule.action_label].append(
                         action_rule
