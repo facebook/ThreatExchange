@@ -13,7 +13,8 @@ from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.message_models import WritebackMessage
 from hmalib.aws_secrets import AWSSecrets
-from hmalib.lambdas.fetcher import ThreatExchangeConfig
+
+from hmalib.common.fetcher_modules import ThreatExchangeConfig
 
 
 from threatexchange.api import ThreatExchangeAPI
