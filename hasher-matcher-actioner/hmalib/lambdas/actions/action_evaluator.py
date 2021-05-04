@@ -91,6 +91,8 @@ def lambda_handler(event, context):
                     action_label_to_action_rules[action_label],
                 )
             )
+
+            logger.info("Sending Action message: %s", action_message)
             config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
                 MessageBody=action_message.to_aws_json(),
