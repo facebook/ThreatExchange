@@ -146,7 +146,7 @@ export function deleteDataset(key) {
   return apiPost(`/datasets/delete/${key}`);
 }
 
-export function udpateDataset(privacyGroupId, fetcherActive, writeBack) {
+export function updateDataset(privacyGroupId, fetcherActive, writeBack) {
   return apiPost('/datasets/update', {
     privacy_group_id: privacyGroupId,
     fetcher_active: fetcherActive,
