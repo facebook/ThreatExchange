@@ -4,14 +4,19 @@ import json
 import os
 import boto3
 import typing as t
+import datetime
+from dataclasses import dataclass
 from functools import lru_cache
 from hmalib.common.message_models import BankedSignal, ActionMessage, MatchMessage
 from hmalib.common.actioner_models import (
     ActionPerformer,
     WebhookPostActionPerformer,
 )
+from hmalib.models import PDQActionRecord
 from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.logging import get_logger
+from mypy_boto3_dynamodb.service_resource import Table
+
 
 from hmalib.common import config
 
@@ -19,22 +24,20 @@ from hmalib.common import config
 logger = get_logger(__name__)
 
 
-@lru_cache(maxsize=1)
-def lambda_init_once():
-    """
-    Do some late initialization for required lambda components.
+@dataclass
+class ActionPerformerConfig:
+    records_table: Table
 
-    Lambda initialization is weird - despite the existence of perfectly
-    good constructions like __name__ == __main__, there don't appear
-    to be easy ways to split your lambda-specific logic from your
-    module logic except by splitting up the files and making your
-    lambda entry as small as possible.
+    @classmethod
+    @lru_cache(maxsize=None)
+    def get(cls):
+        config_table = os.environ["CONFIG_TABLE_NAME"]
+        config.HMAConfig.initialize(config_table)
 
-    TODO: Just refactor this file to separate the lambda and functional
-          components
-    """
-    config_table = os.environ["CONFIG_TABLE_NAME"]
-    config.HMAConfig.initialize(config_table)
+        DYNAMODB_RECORDS_TABLE = os.environ["DYNAMODB_RECORDS_TABLE"]
+        dynamodb = boto3.resource("dynamodb")
+
+        return cls(records_table=dynamodb.Table(DYNAMODB_RECORDS_TABLE))
 
 
 def perform_label_action(
@@ -52,7 +55,8 @@ def lambda_handler(event, context):
     an action message on the actions queue and here's where they're popped
     off and dealt with.
     """
-    lambda_init_once()
+    config = ActionPerformerConfig.get()
+
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         action_message = ActionMessage.from_aws_json(sqs_record["body"])
@@ -61,11 +65,20 @@ def lambda_handler(event, context):
 
         perform_label_action(action_message, action_message.action_label)
 
+        PDQActionRecord(
+            content_id=action_message.content_key,
+            content_hash=action_message.content_hash,
+            updated_at=datetime.datetime.now(),
+            action_label=action_message.action_label.value,
+        ).write_to_table(config.records_table)
+
     return {"action_performed": "true"}
 
 
 if __name__ == "__main__":
-    lambda_init_once()
+    os.environ["DYNAMODB_RECORDS_TABLE"] = "jeberl-HMADataStore"
+
+    config = ActionPerformerConfig.get()
 
     banked_signals = [
         BankedSignal("2862392437204724", "bank 4", "te"),

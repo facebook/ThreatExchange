@@ -124,7 +124,8 @@ resource "aws_lambda_function" "action_performer" {
 
   environment {
     variables = {
-      CONFIG_TABLE_NAME = var.config_table.name,
+      CONFIG_TABLE_NAME      = var.config_table.name,
+      DYNAMODB_RECORDS_TABLE = var.dynamo_records_table.name,
     }
   }
 }
@@ -292,8 +293,9 @@ data "aws_iam_policy_document" "action_performer" {
     effect = "Allow"
     actions = [
       "dynamodb:Get*",
+      "dynamodb:PutItem"
     ]
-    resources = [var.config_table.arn]
+    resources = [var.config_table.arn, var.dynamo_records_table.arn]
   }
 }
 

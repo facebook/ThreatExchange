@@ -58,3 +58,11 @@ variable "config_table" {
     name = string
   })
 }
+
+variable "dynamo_records_table" {
+  description = "The name and arn of the DynamoDB table used for storing records."
+  type = object({
+    arn  = string
+    name = string
+  })
+}

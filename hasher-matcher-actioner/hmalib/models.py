@@ -84,6 +84,25 @@ class PDQRecordBase(DynamoDBItem):
 
 
 @dataclass
+class PDQActionRecord(PDQRecordBase):
+    """
+    Actions correctly performed produce this record
+    """
+
+    action_label: str
+
+    def to_dynamodb_item(self) -> dict:
+        return {
+            "PK": self.get_dynamodb_content_key(self.content_id),
+            "SK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
+            "ContentHash": self.content_hash,
+            "UpdatedAt": self.updated_at.isoformat(),
+            "HashType": self.SIGNAL_TYPE,
+            "ActionLabel": self.action_label,
+        }
+
+
+@dataclass
 class PipelinePDQHashRecord(PDQRecordBase):
     """
     Successful execution at the hasher produces this record.
