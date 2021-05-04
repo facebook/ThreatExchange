@@ -133,3 +133,23 @@ export async function submitContentUpload(
   };
   return fileReader.readAsArrayBuffer(contentRef);
 }
+
+export function fetchAllDatasets() {
+  return apiGet('/datasets/');
+}
+
+export function syncAllDatasets() {
+  return apiPost('/datasets/sync');
+}
+
+export function deleteDataset(key) {
+  return apiPost(`/datasets/delete/${key}`);
+}
+
+export function updateDataset(privacyGroupId, fetcherActive, writeBack) {
+  return apiPost('/datasets/update', {
+    privacy_group_id: privacyGroupId,
+    fetcher_active: fetcherActive,
+    write_back: writeBack,
+  });
+}

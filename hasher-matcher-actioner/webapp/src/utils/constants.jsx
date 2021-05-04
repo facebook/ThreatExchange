@@ -18,9 +18,10 @@ export const PENDING_OPINION_CHANGE = Object.freeze({
   NONE: 'none',
 });
 
+// Corseponds  SubmissionType in hmalib/api/submit.py
 export const SUBMISSION_TYPE = Object.freeze({
   UPLOAD: 'Direct Upload',
+  URL: 'URL',
   RAW: 'Raw Value (example only)',
   S3_OBJECT: 'S3 Object (example only)',
-  URL: 'URL (example only)',
 });
