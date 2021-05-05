@@ -16,6 +16,17 @@ class Label:
     key: str
     value: str
 
+    def __eq__(self, other) -> bool:
+        # Concrete type doesnt matter for equality, only key, value
+        # eg the following are equal:
+        #   ClassificationLabel("Classification", "true_positive")
+        #   Label("Classification", "true_positive")
+        return (
+            isinstance(other, Label)
+            and self.key == other.key
+            and self.value == other.value
+        )
+
 
 @dataclass(unsafe_hash=True)
 class ClassificationLabel(Label):

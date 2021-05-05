@@ -91,6 +91,8 @@ def lambda_handler(event, context):
                     action_label_to_action_rules[action_label],
                 )
             )
+
+            logger.info("Sending Action message: %s", action_message)
             config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
                 MessageBody=action_message.to_aws_json(),
@@ -198,39 +200,26 @@ def get_writeback_messages(
 
 if __name__ == "__main__":
     # For basic debugging
-
-    action_rules = [
-        ActionRule(
-            name="Enqueue Mini-Castle for Review",
-            action_label=ActionLabel("EnqueueMiniCastleForReview"),
-            must_have_labels=set(
-                [
-                    BankIDClassificationLabel("303636684709969"),
-                    ClassificationLabel("true_positive"),
-                ]
-            ),
-            must_not_have_labels=set(
-                [BankedContentIDClassificationLabel("3364504410306721")]
-            ),
-        ),
-    ]
-
-    banked_signal = BankedSignal(
-        "4169895076385542",
-        "303636684709969",
-        "te",
+    HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
+    action_rules = get_action_rules()
+    match_message = MatchMessage(
+        content_key="images/200200.jpg",
+        content_hash="20f66f3a2e6eff06d895a8f421c045e1c76f0bf87652d72ce7249412d8d52acc",
+        matching_banked_signals=[
+            BankedSignal(
+                banked_content_id="3534976909868947",
+                bank_id="303636684709969",
+                bank_source="te",
+                classifications={
+                    Label(key="BankIDClassification", value="303636684709969"),
+                    Label(key="Classification", value="true_positive"),
+                    Label(key="BankSourceClassification", value="te"),
+                    Label(
+                        key="BankedContentIDClassification", value="3534976909868947"
+                    ),
+                },
+            )
+        ],
     )
-    banked_signal.add_classification("true_positive")
-
-    match_message = MatchMessage("key", "hash", [banked_signal])
-
     action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
-
-    print(action_label_to_action_rules)
-
-    event = {
-        "Records": [
-            {"body": json.dumps({"Message": json.dumps(match_message.to_aws_json())})}
-        ]
-    }
-    lambda_handler(event, None)
+    action_labels = list(action_label_to_action_rules.keys())

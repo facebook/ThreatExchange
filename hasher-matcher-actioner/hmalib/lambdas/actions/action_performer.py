@@ -2,6 +2,7 @@
 
 import json
 import os
+import boto3
 import typing as t
 from functools import lru_cache
 from hmalib.common.message_models import BankedSignal, ActionMessage, MatchMessage
@@ -72,20 +73,11 @@ if __name__ == "__main__":
     ]
     match_message = MatchMessage("key", "hash", banked_signals)
 
-    configs: t.List[ActionPerformer] = [
-        WebhookPostActionPerformer(  # type: ignore
-            "EnqueueForReview",
-            "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
-        ),
-    ]
-    for performer_config in configs:
-        config.create_config(performer_config)
-
     action_message = ActionMessage(
         "key",
         "hash",
         matching_banked_signals=banked_signals,
         action_label=ActionLabel("EnqueForReview"),
     )
-    event = {"Records": [{"body": action_message.to_aws()}]}
+    event = {"Records": [{"body": action_message.to_aws_json()}]}
     lambda_handler(event, None)

@@ -3,7 +3,7 @@
 import typing as t
 
 from dataclasses import dataclass, field
-from hmalib.common.classification_models import ClassificationLabel, ActionLabel
+from hmalib.common.classification_models import Label, ActionLabel
 from hmalib.common.config import HMAConfig
 
 
@@ -25,5 +25,5 @@ class ActionRule(HMAConfig):
     """
 
     action_label: ActionLabel
-    must_have_labels: t.Set[ClassificationLabel]
-    must_not_have_labels: t.Set[ClassificationLabel]
+    must_have_labels: t.Set[Label]
+    must_not_have_labels: t.Set[Label]
