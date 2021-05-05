@@ -23,8 +23,7 @@ def sync_privacy_groups():
     api = ThreatExchangeAPI(api_key)
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()
-    unique_privacy_groups = set(
-        privacy_group_member_list + privacy_group_owner_list)
+    unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
     priavcy_group_id_in_use = set()
 
     for privacy_group in unique_privacy_groups:

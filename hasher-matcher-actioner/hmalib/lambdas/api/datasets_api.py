@@ -108,8 +108,7 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         """
         collabs = ThreatExchangeConfig.get_all()
         return DatasetsResponse(
-            datasets_response=[Dataset.from_collab(
-                collab) for collab in collabs]
+            datasets_response=[Dataset.from_collab(collab) for collab in collabs]
         )
 
     @datasets_api.post("/update", apply=[jsoninator(UpdateDatasetRequest)])
