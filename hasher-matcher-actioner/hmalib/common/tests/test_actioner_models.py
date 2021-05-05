@@ -23,7 +23,7 @@ class ActionMessageTestCase(unittest.TestCase):
                 must_have_labels=set(
                     [
                         BankIDClassificationLabel("303636684709969"),
-                        ClassificationLabel("Classification", "true_positive"),
+                        ClassificationLabel("true_positive"),
                     ]
                 ),
                 must_not_have_labels=set(

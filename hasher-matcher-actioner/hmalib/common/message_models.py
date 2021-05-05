@@ -42,7 +42,7 @@ class BankedSignal:
     def add_classification(self, classification: str):
         if len(self.classifications) == 0:
             self.add_bank_classifications()
-        self.classifications.add(ClassificationLabel("Classification", classification))
+        self.classifications.add(ClassificationLabel(classification))
 
 
 @dataclass

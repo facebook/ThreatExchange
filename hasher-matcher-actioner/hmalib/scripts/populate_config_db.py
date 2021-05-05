@@ -19,7 +19,7 @@ import subprocess
 import typing as t
 import re
 from botocore.exceptions import ClientError
-from hmalib.common.fetcher_modules import ThreatExchangeConfig
+from hmalib.common.fetcher_models import ThreatExchangeConfig
 from hmalib.common.evaluator_models import (
     ActionLabel,
     ActionRule,

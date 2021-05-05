@@ -14,7 +14,7 @@ from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.message_models import WritebackMessage
 from hmalib.aws_secrets import AWSSecrets
 
-from hmalib.common.fetcher_modules import ThreatExchangeConfig
+from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 
 from threatexchange.api import ThreatExchangeAPI
@@ -155,6 +155,7 @@ class ThreatExchangeWritebacker(Writebacker):
         if isinstance(privacy_group_config, ThreatExchangeConfig):
             return privacy_group_config.write_back
         # If no config, dont write back
+        logger.warn("No config found for privacy group " + str(privacy_group_id))
         return False
 
     @property

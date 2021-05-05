@@ -29,7 +29,7 @@ from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import S3ThreatDataConfig
 from hmalib.common.signal_models import PDQSignalMetadata
-from hmalib.common.fetcher_modules import ThreatExchangeConfig
+from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
