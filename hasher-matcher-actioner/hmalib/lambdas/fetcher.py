@@ -254,7 +254,6 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 # Violate your warranty with module state!
                 csv.field_size_limit(65535)  # dodge field size problems
                 for row in csv.reader(txt_content):
-                    print()
                     items.append(
                         CliIndicatorSerialization(
                             "HASH_PDQ",
@@ -314,21 +313,22 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         """
         table = dynamodb.Table(self.data_store_table)
 
+
         for update in updated.values():
             row = update.as_csv_row()
-            # example row format: ('<signal>', '<id>', '<time added>', '<tag1 tags2>')
-            # e.g ('096a6f9...064f', 1234567891234567, '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+            # example row format: (<indicator-id>, <raw_indicator>, <descriptor_id>, <time added>, <space-separated-tags>')
+            # e.g (10736405276340','096a6f9...064f', 1234567891234567, '2020-07-31T18:47:45+0000', 'true_positive hma_test')
             if PDQSignalMetadata(
-                signal_id=int(row[1]),
+                signal_id=int(row[0]),
                 ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
                 signal_source=S3ThreatDataConfig.SOURCE_STR,
-                signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
-                tags=row[3].split(" ") if row[3] else [],
+                signal_hash=row[1],  # note: not used by update_tags_in_table_if_exists
+                tags=row[4].split(" ") if row[3] else [],
             ).update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for signal id: %s source: %s for privacy group: %d",
-                    row[1],
+                    row[0],
                     S3ThreatDataConfig.SOURCE_STR,
                     self.privacy_group,
                 )
