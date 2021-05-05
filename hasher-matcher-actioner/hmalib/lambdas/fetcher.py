@@ -254,6 +254,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 # Violate your warranty with module state!
                 csv.field_size_limit(65535)  # dodge field size problems
                 for row in csv.reader(txt_content):
+                    print()
                     items.append(
                         CliIndicatorSerialization(
                             "HASH_PDQ",
@@ -307,6 +308,9 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         After the fetcher applies an update, check for matches
         to any of the signals in data_store_table and if found update
         their tags.
+
+        Additionally, if writebacks are enabled for this privacy group write back
+        INGESTED to ThreatExchange
         """
         table = dynamodb.Table(self.data_store_table)
 

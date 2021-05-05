@@ -20,8 +20,9 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     """A short compact serialization optimized for the CLI"""
 
     def __init__(
-        self, indicator_type: str, indicator: str, rollup: SimpleDescriptorRollup
+        self, indicator_id: str, indicator_type: str, indicator: str, rollup: SimpleDescriptorRollup
     ):
+        self.indicator_id = indicator_id
         self.indicator_type = indicator_type
         self.indicator = indicator
         self.rollup = rollup
@@ -37,6 +38,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     @classmethod
     def from_threat_updates_json(cls, app_id, te_json):
         return cls(
+            te_json["id"],
             te_json["type"],
             te_json["indicator"],
             SimpleDescriptorRollup.from_threat_updates_json(app_id, te_json),
