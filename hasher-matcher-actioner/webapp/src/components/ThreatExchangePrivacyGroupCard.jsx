@@ -1,13 +1,22 @@
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
-import {Col, Button, Form, Card} from 'react-bootstrap';
+import {
+  Col,
+  Button,
+  Form,
+  Card,
+  OverlayTrigger,
+  Popover,
+} from 'react-bootstrap';
 import {CopyableTextField} from '../utils/TextFieldsUtils';
 
 export default function ThreatExchangePrivacyGroupCard({
   fetcherActive,
+  matcherActive,
   inUse,
   privacyGroupId,
   privacyGroupName,
+  description,
   writeBack,
   onSave,
   onDelete,
@@ -16,13 +25,20 @@ export default function ThreatExchangePrivacyGroupCard({
     fetcherActive,
   );
   const [originalWriteBack, setOriginalWriteBack] = useState(writeBack);
+  const [originalMatcherActive, setOriginalMatcherActive] = useState(
+    matcherActive,
+  );
   const [localFetcherActive, setLocalFetcherActive] = useState(fetcherActive);
   const [localWriteBack, setLocalWriteBack] = useState(writeBack);
+  const [localMatcherActive, setLocalMatcherActive] = useState(matcherActive);
   const onSwitchFetcherActive = () => {
     setLocalFetcherActive(!localFetcherActive);
   };
   const onSwitchWriteBack = () => {
     setLocalWriteBack(!localWriteBack);
+  };
+  const onSwitchMatcherActive = () => {
+    setLocalMatcherActive(!localMatcherActive);
   };
 
   return (
@@ -40,15 +56,17 @@ export default function ThreatExchangePrivacyGroupCard({
           </Card.Subtitle>
           <Card.Body className="text-left">
             <Form>
-              {privacyGroupId === 258601789084078 ||
-              privacyGroupId === 303636684709969 ? (
-                <a
-                  href="https://lear.inrialpes.fr/~jegou/data.php#copydays"
-                  target="_blank"
-                  rel="noopener noreferrer">
-                  Copydays
-                </a>
-              ) : null}
+              <OverlayTrigger
+                trigger="click"
+                placement="right"
+                overlay={
+                  <Popover id={`popover-basic${privacyGroupId}`}>
+                    <Popover.Title as="h3">Information</Popover.Title>
+                    <Popover.Content>{description}</Popover.Content>
+                  </Popover>
+                }>
+                <Button variant="info">more info</Button>
+              </OverlayTrigger>
               <Form.Switch
                 onChange={onSwitchFetcherActive}
                 id={`fetcherActiveSwitch${privacyGroupId}`}
@@ -56,6 +74,13 @@ export default function ThreatExchangePrivacyGroupCard({
                 checked={localFetcherActive}
                 disabled={!inUse}
                 style={{marginTop: 10}}
+              />
+              <Form.Switch
+                onChange={onSwitchMatcherActive}
+                id={`matcherSwitch${privacyGroupId}`}
+                label="Matcher Active"
+                checked={localMatcherActive}
+                disabled={!inUse}
               />
               <Form.Switch
                 onChange={onSwitchWriteBack}
@@ -68,17 +93,20 @@ export default function ThreatExchangePrivacyGroupCard({
           </Card.Body>
           <Card.Footer>
             {localWriteBack === originalWriteBack &&
-            localFetcherActive === originalFetcherActive ? null : (
+            localFetcherActive === originalFetcherActive &&
+            localMatcherActive === originalMatcherActive ? null : (
               <div>
                 <Button
                   variant="primary"
                   onClick={() => {
                     setOriginalFetcherActive(localFetcherActive);
                     setOriginalWriteBack(localWriteBack);
+                    setOriginalMatcherActive(localMatcherActive);
                     onSave({
                       privacyGroupId,
                       localFetcherActive,
                       localWriteBack,
+                      localMatcherActive,
                     });
                   }}>
                   Save
@@ -105,9 +133,11 @@ export default function ThreatExchangePrivacyGroupCard({
 
 ThreatExchangePrivacyGroupCard.propTypes = {
   fetcherActive: PropTypes.bool.isRequired,
+  matcherActive: PropTypes.bool.isRequired,
   inUse: PropTypes.bool.isRequired,
   privacyGroupId: PropTypes.number.isRequired,
   privacyGroupName: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
   writeBack: PropTypes.bool.isRequired,
   onSave: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,

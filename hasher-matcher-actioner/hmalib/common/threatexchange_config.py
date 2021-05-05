@@ -8,12 +8,14 @@ from hmalib.aws_secrets import AWSSecrets
 from threatexchange.api import ThreatExchangeAPI
 from hmalib.common.logging import get_logger
 from hmalib.common import config as hmaconfig
-from hmalib.lambdas.fetcher import ThreatExchangeConfig
+from hmalib.common.config import HMAConfig
+from hmalib.common.fetcher_models import ThreatExchangeConfig
 from botocore.exceptions import ClientError
 
 logger = get_logger(__name__)
 FETCHER_ACTIVE = True
 WRITE_BACK = True
+MATCHER_ACTIVE = True
 
 
 def sync_privacy_groups():
@@ -21,7 +23,8 @@ def sync_privacy_groups():
     api = ThreatExchangeAPI(api_key)
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()
-    unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
+    unique_privacy_groups = set(
+        privacy_group_member_list + privacy_group_owner_list)
     priavcy_group_id_in_use = set()
 
     for privacy_group in unique_privacy_groups:
@@ -38,6 +41,8 @@ def sync_privacy_groups():
                 fetcher_active=FETCHER_ACTIVE,
                 privacy_group_name=privacy_group.name,
                 in_use=True,
+                description=privacy_group.description,
+                matcher_active=MATCHER_ACTIVE,
                 write_back=WRITE_BACK,
             )
             try:
@@ -48,12 +53,21 @@ def sync_privacy_groups():
                         "Can't insert duplicated config, %s",
                         e.response["Error"]["Message"],
                     )
+                    update_privacy_group_description(
+                        str(privacy_group.id), privacy_group.description
+                    )
                 else:
                     raise
-    update_privacy_group_in_use(priavcy_group_id_in_use)
+    update_privacy_groups_in_use(priavcy_group_id_in_use)
 
 
-def update_privacy_group_in_use(priavcy_group_id_in_use: set) -> None:
+def update_privacy_group_description(privacy_group_id: str, description: str) -> None:
+    config = ThreatExchangeConfig.getx(privacy_group_id)
+    config.description = description
+    hmaconfig.update_config(config)
+
+
+def update_privacy_groups_in_use(priavcy_group_id_in_use: set) -> None:
     collabs = ThreatExchangeConfig.get_all()
     for collab in collabs:
         if str(collab.privacy_group_id) not in priavcy_group_id_in_use:

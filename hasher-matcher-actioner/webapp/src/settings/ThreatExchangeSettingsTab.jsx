@@ -31,6 +31,7 @@ export default function ThreatExchangeSettingsTab() {
       privacyGroup.privacyGroupId,
       privacyGroup.localFetcherActive,
       privacyGroup.localWriteBack,
+      privacyGroup.localMatcherActive,
     )
       .then(response => {
         setToastBody('Changes are saved!');
@@ -137,7 +138,9 @@ export default function ThreatExchangeSettingsTab() {
                 <ThreatExchangePrivacyGroupCard
                   key={dataset.privacy_group_id}
                   privacyGroupName={dataset.privacy_group_name}
+                  description={dataset.description}
                   fetcherActive={dataset.fetcher_active}
+                  matcherActive={dataset.matcher_active}
                   inUse={dataset.in_use}
                   privacyGroupId={dataset.privacy_group_id}
                   writeBack={dataset.write_back}
