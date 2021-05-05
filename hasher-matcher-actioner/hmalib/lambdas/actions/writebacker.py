@@ -24,7 +24,7 @@ def lambda_handler(event, context):
         # get all sources that are related to this writeback
         sources = {
             banked_signal.bank_source
-            for banked_signal in writeback_message.matching_banked_signals
+            for banked_signal in writeback_message.banked_signals
         }
         source_writebackers = [
             Writebacker.get_writebacker_for_source(source)

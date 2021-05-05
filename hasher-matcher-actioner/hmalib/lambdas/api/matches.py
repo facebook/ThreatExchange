@@ -13,6 +13,7 @@ from threatexchange.descriptor import ThreatDescriptor
 from hmalib.models import PDQMatchRecord
 from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.logging import get_logger
+from hmalib.common.message_models import BankedSignal, WritebackMessage, WritebackTypes
 from .middleware import jsoninator, JSONifiable
 
 logger = get_logger(__name__)
@@ -204,27 +205,32 @@ def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bott
         """
         request a change to the opinion for a signal in a dataset
         """
-        signal_q = bottle.request.query.signal_q or None
+        signal_id = bottle.request.query.signal_q or None
         signal_source = bottle.request.query.signal_source or None
-        dataset_q = bottle.request.query.dataset_q or None
+        ds_id = bottle.request.query.dataset_q or None
         opinion_change = bottle.request.query.opinion_change or None
 
-        if not signal_q or not signal_source or not dataset_q or not opinion_change:
+        if not signal_id or not signal_source or not ds_id or not opinion_change:
             return ChangeSignalOpinionResponse(False)
 
-        # TODO send message to action framework to actually request the change in TE
+        pending_opinion_change = PendingOpinionChange(opinion_change)
+
+        writeback_message = WritebackMessage.from_banked_signal_and_opinion_change(
+            BankedSignal(signal_id, ds_id, signal_source), pending_opinion_change
+        )
+        writeback_message.send_to_queue()
         logger.info(
-            f"Mock: Reaction change enqueued for {signal_source}:{signal_q} in {dataset_q} change={opinion_change}"
+            f"Reaction change enqueued for {signal_source}:{signal_id} in {ds_id} change={opinion_change}"
         )
 
         signal = PDQSignalMetadata(
-            signal_id=signal_q,
-            ds_id=dataset_q,
+            signal_id=signal_id,
+            ds_id=ds_id,
             updated_at=datetime.datetime.now(),
             signal_source=signal_source,
             signal_hash="",  # SignalHash not needed for update
             tags=[],  # Tags not needed for update
-            pending_opinion_change=PendingOpinionChange(opinion_change),
+            pending_opinion_change=pending_opinion_change,
         )
         success = signal.update_pending_opinion_change_in_table_if_exists(
             dynamodb_table

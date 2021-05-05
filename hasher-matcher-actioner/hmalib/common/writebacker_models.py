@@ -58,7 +58,7 @@ class Writebacker:
     ]:
         """
         For a given source that performs writebacks, this fucntion specifies what types of
-        writebacks that can be taken as a mapping from writback type to writebacker. The
+        writebacks that can be taken as a mapping from writeback type to writebacker. The
         type should be same as WritebackType passed to the writebacker
         """
         raise NotImplementedError
@@ -112,7 +112,7 @@ class Writebacker:
 
         results = []
         writebacker = self.writeback_options()[writeback_to_perform]()
-        for writeback_signal in writeback_message.matching_banked_signals:
+        for writeback_signal in writeback_message.banked_signals:
             # filter our matches from other sources
             if writeback_signal.bank_source == self.source:
                 result = None
@@ -150,6 +150,8 @@ class ThreatExchangeWritebacker(Writebacker):
         }
 
     def writeback_is_enabled(self, writeback_signal: BankedSignal) -> bool:
+        ThreatExchangeConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
+
         privacy_group_id = writeback_signal.bank_id
         privacy_group_config = ThreatExchangeConfig.cached_get(privacy_group_id)
         if isinstance(privacy_group_config, ThreatExchangeConfig):

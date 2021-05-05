@@ -44,7 +44,7 @@ class WritebackerTestCase(unittest.TestCase):
         os.environ["MOCK_TE_API"] = "True"
 
         writeback = WritebackTypes.SawThisToo
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
@@ -66,7 +66,7 @@ class WritebackerTestCase(unittest.TestCase):
         os.environ["MOCK_TE_API"] = "True"
 
         writeback = WritebackTypes.Ingested
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
@@ -88,7 +88,7 @@ class WritebackerTestCase(unittest.TestCase):
         os.environ["MOCK_TE_API"] = "True"
 
         writeback = WritebackTypes.FalsePositive
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
@@ -110,7 +110,7 @@ class WritebackerTestCase(unittest.TestCase):
         os.environ["MOCK_TE_API"] = "True"
 
         writeback = WritebackTypes.TruePositive
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
