@@ -33,7 +33,7 @@ class WritebackerTestCase(unittest.TestCase):
             "pg 4", True, "Trustworthy PG", "test description", True, True, True
         ),
         ThreatExchangeConfig(
-            "pg 3", True, "UnTrustworthy PG", "test description", True, True, False
+            "pg 3", True, "UnTrustworthy PG", "test description", True, False, True
         ),
     ]
 
