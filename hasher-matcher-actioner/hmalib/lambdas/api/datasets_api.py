@@ -9,7 +9,7 @@ from hmalib.common.logging import get_logger
 from .middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
-from hmalib.lambdas.fetcher import ThreatExchangeConfig
+from hmalib.common.fetcher_models import ThreatExchangeConfig
 from hmalib.common.threatexchange_config import sync_privacy_groups
 
 

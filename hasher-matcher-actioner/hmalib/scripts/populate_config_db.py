@@ -5,6 +5,9 @@
 
 """
 Write simple configs to the HMA config database
+
+To run with defualt configs:
+$ python3 -m hmalib.scripts.populate_config_db load_example_configs
 """
 
 import argparse
@@ -16,7 +19,7 @@ import subprocess
 import typing as t
 import re
 from botocore.exceptions import ClientError
-from hmalib.lambdas.fetcher import ThreatExchangeConfig
+from hmalib.common.fetcher_models import ThreatExchangeConfig
 from hmalib.common.evaluator_models import (
     ActionLabel,
     ActionRule,
