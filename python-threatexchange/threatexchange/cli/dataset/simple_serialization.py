@@ -53,7 +53,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     def store(
         cls, state_dir: pathlib.Path, contents: t.Iterable["CliIndicatorSerialization"]
     ) -> t.List[pathlib.Path]:
-        # Stores in multiple files split by data type
+        # Stores in multiple files split by indicator type
         row_by_type = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
@@ -92,16 +92,17 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
         return ret
 
 
-class CliIndicatorSerializationWithIndicatorID(CliIndicatorSerialization):
+class HMASerialization(CliIndicatorSerialization):
     """
-    Indentical to CliIndicatorSerialization but with an additional field for Indicator ID
+    A Serialization for HMA Similar to CliIndicatorSerialization but with
+    Indicator ID instead of Descriptor ID
     """
 
     def __init__(
         self,
-        indicator_id: str,
-        indicator_type: str,
         indicator: str,
+        indicator_type: str,
+        indicator_id: str,
         rollup: SimpleDescriptorRollup,
     ):
         self.indicator_id = indicator_id
@@ -110,15 +111,15 @@ class CliIndicatorSerializationWithIndicatorID(CliIndicatorSerialization):
         self.rollup = rollup
 
     def as_csv_row(self) -> t.Tuple:
-        """As a simple record type for the threatexchange CLI cache"""
-        return (self.indicator_id, self.indicator) + self.rollup.as_row()
+        """indicator details and descriptor rollup without descriptor ID"""
+        return (self.indicator, self.indicator_id) + self.rollup.as_row()
 
     @classmethod
     def from_threat_updates_json(cls, app_id, te_json):
         return cls(
-            te_json["id"],
-            te_json["type"],
             te_json["indicator"],
+            te_json["type"],
+            te_json["id"],
             SimpleDescriptorRollup.from_threat_updates_json(app_id, te_json),
         )
 
@@ -143,7 +144,7 @@ class CliIndicatorSerializationWithIndicatorID(CliIndicatorSerialization):
                             row[0],
                             indicator_type,
                             row[1],
-                            SimpleDescriptorRollup.from_row(row[1:]),
+                            SimpleDescriptorRollup.from_row(row[2:]),
                         )
                     )
         return ret
