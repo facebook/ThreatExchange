@@ -313,7 +313,6 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         """
         table = dynamodb.Table(self.data_store_table)
 
-
         for update in updated.values():
             row = update.as_csv_row()
             # example row format: (<indicator-id>, <raw_indicator>, <descriptor_id>, <time added>, <space-separated-tags>')
