@@ -92,9 +92,10 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
         return ret
 
 
-class CliIndicatorSerializationWithIndicatorID(CliIndicatorSerialization):
+class HMASerialization(CliIndicatorSerialization):
     """
-    Indentical to CliIndicatorSerialization but with an additional field for Indicator ID
+    A Serialization for HMA Similar to CliIndicatorSerialization but with
+    Indicator ID instead of Descriptor ID
     """
 
     def __init__(
@@ -110,8 +111,8 @@ class CliIndicatorSerializationWithIndicatorID(CliIndicatorSerialization):
         self.rollup = rollup
 
     def as_csv_row(self) -> t.Tuple:
-        """As a simple record type for the threatexchange CLI cache"""
-        return (self.indicator_id, self.indicator) + self.rollup.as_row()
+        """indicator details and descriptor rollup without descriptor ID"""
+        return (self.indicator_id, self.indicator) + self.rollup.as_row_without_id()
 
     @classmethod
     def from_threat_updates_json(cls, app_id, te_json):
@@ -143,7 +144,7 @@ class CliIndicatorSerializationWithIndicatorID(CliIndicatorSerialization):
                             row[0],
                             indicator_type,
                             row[1],
-                            SimpleDescriptorRollup.from_row(row[1:]),
+                            SimpleDescriptorRollup.from_row(row[2:]),
                         )
                     )
         return ret
