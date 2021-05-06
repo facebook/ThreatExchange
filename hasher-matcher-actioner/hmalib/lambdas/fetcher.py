@@ -33,9 +33,7 @@ from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
-from threatexchange.cli.dataset.simple_serialization import (
-    CliIndicatorSerializationWithIndicatorID,
-)
+from threatexchange.cli.dataset.simple_serialization import HMASerialization
 from threatexchange.descriptor import SimpleDescriptorRollup
 from threatexchange.signal_type.pdq import PdqSignal
 
@@ -257,7 +255,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 csv.field_size_limit(65535)  # dodge field size problems
                 for row in csv.reader(txt_content):
                     items.append(
-                        CliIndicatorSerializationWithIndicatorID(
+                        HMASerialization(
                             row[0],
                             "HASH_PDQ",
                             row[1],
@@ -269,9 +267,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             self._cached_state = {item.key: item for item in items}
         return self._cached_state
 
-    def _store_state(
-        self, contents: t.Iterable["CliIndicatorSerializationWithIndicatorID"]
-    ):
+    def _store_state(self, contents: t.Iterable["HMASerialization"]):
         row_by_type: t.DefaultDict = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
@@ -293,7 +289,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         if delta.start > 0:
             state = self.load_state()
         for update in delta:
-            item = CliIndicatorSerializationWithIndicatorID.from_threat_updates_json(
+            item = HMASerialization.from_threat_updates_json(
                 self.app_id, update.raw_json
             )
             if update.should_delete:
@@ -320,15 +316,15 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
         for update in updated.values():
             row = update.as_csv_row()
-            # example row format: (<indicator-id>, <raw_indicator>, <descriptor_id>, <time added>, <space-separated-tags>')
-            # e.g (10736405276340','096a6f9...064f', 1234567891234567, '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+            # example row format: (<indicator-id>, <raw_indicator>, <time added>, <space-separated-tags>')
+            # e.g (10736405276340','096a6f9...064f', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
             if PDQSignalMetadata(
                 signal_id=int(row[0]),
                 ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
                 signal_source=S3ThreatDataConfig.SOURCE_STR,
                 signal_hash=row[1],  # note: not used by update_tags_in_table_if_exists
-                tags=row[4].split(" ") if row[3] else [],
+                tags=row[3].split(" ") if row[3] else [],
             ).update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for signal id: %s source: %s for privacy group: %d",
