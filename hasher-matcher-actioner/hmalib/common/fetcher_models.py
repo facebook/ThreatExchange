@@ -17,8 +17,10 @@ class ThreatExchangeConfig(HMAConfig):
     # TODO - consider hiding name field and always populating with ID
     fetcher_active: bool
     privacy_group_name: str
+    description: str
     in_use: bool
     write_back: bool
+    matcher_active: bool
 
     @property
     def privacy_group_id(self) -> int:

@@ -17,7 +17,9 @@ from hmalib.common.threatexchange_config import sync_privacy_groups
 class Dataset(JSONifiable):
     privacy_group_id: int
     privacy_group_name: str
+    description: str
     fetcher_active: bool
+    matcher_active: bool
     write_back: bool
     in_use: bool
 
@@ -29,7 +31,9 @@ class Dataset(JSONifiable):
         return cls(
             int(d["privacy_group_id"]),
             d["privacy_group_name"],
+            d["description"],
             d["fetcher_active"],
+            d["matcher_active"],
             d["write_back"],
             d["in_use"],
         )
@@ -39,7 +43,9 @@ class Dataset(JSONifiable):
         return cls(
             collab.privacy_group_id,
             collab.privacy_group_name,
+            collab.description,
             collab.fetcher_active,
+            collab.matcher_active,
             collab.write_back,
             collab.in_use,
         )
@@ -77,6 +83,7 @@ class DeleteDatasetResponse(JSONifiable):
 class UpdateDatasetRequest(DictParseable):
     privacy_group_id: int
     fetcher_active: bool
+    matcher_active: bool
     write_back: bool
 
     @classmethod
@@ -84,6 +91,7 @@ class UpdateDatasetRequest(DictParseable):
         return cls(
             d["privacy_group_id"],
             d["fetcher_active"],
+            d["matcher_active"],
             d["write_back"],
         )
 
@@ -106,11 +114,12 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
     @datasets_api.post("/update", apply=[jsoninator(UpdateDatasetRequest)])
     def update_dataset(request: UpdateDatasetRequest) -> Dataset:
         """
-        Update dataset fetcher_active and write_back
+        Update dataset fetcher_active, write_back and matcher_active
         """
         config = ThreatExchangeConfig.getx(str(request.privacy_group_id))
         config.fetcher_active = request.fetcher_active
         config.write_back = request.write_back
+        config.matcher_active = request.matcher_active
         updated_config = hmaconfig.update_config(config).__dict__
         updated_config["privacy_group_id"] = updated_config["name"]
         return Dataset.from_dict(updated_config)
