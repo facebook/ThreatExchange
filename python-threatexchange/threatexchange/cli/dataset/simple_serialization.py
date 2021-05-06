@@ -20,7 +20,10 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     """A short compact serialization optimized for the CLI"""
 
     def __init__(
-        self, indicator_type: str, indicator: str, rollup: SimpleDescriptorRollup
+        self,
+        indicator_type: str,
+        indicator: str,
+        rollup: SimpleDescriptorRollup,
     ):
         self.indicator_type = indicator_type
         self.indicator = indicator
@@ -50,7 +53,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     def store(
         cls, state_dir: pathlib.Path, contents: t.Iterable["CliIndicatorSerialization"]
     ) -> t.List[pathlib.Path]:
-        # Stores in multiple files
+        # Stores in multiple files split by data type
         row_by_type = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
@@ -83,6 +86,63 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
                         cls(
                             indicator_type,
                             row[0],
+                            SimpleDescriptorRollup.from_row(row[1:]),
+                        )
+                    )
+        return ret
+
+
+class CliIndicatorSerializationWithIndicatorID(CliIndicatorSerialization):
+    """
+    Indentical to CliIndicatorSerialization but with an additional field for Indicator ID
+    """
+
+    def __init__(
+        self,
+        indicator_id: str,
+        indicator_type: str,
+        indicator: str,
+        rollup: SimpleDescriptorRollup,
+    ):
+        self.indicator_id = indicator_id
+        self.indicator_type = indicator_type
+        self.indicator = indicator
+        self.rollup = rollup
+
+    def as_csv_row(self) -> t.Tuple:
+        """As a simple record type for the threatexchange CLI cache"""
+        return (self.indicator_id, self.indicator) + self.rollup.as_row()
+
+    @classmethod
+    def from_threat_updates_json(cls, app_id, te_json):
+        return cls(
+            te_json["id"],
+            te_json["type"],
+            te_json["indicator"],
+            SimpleDescriptorRollup.from_threat_updates_json(app_id, te_json),
+        )
+
+    @classmethod
+    def load(
+        cls, state_dir: pathlib.Path
+    ) -> t.List["threat_updates.ThreatUpdateSerialization"]:
+        """Load this serialization from the state directory"""
+        ret = []
+        pattern = r"simple\.([^.]+)" + re.escape(Dataset.EXTENSION)
+        for path in state_dir.glob(f"simple.*{Dataset.EXTENSION}"):
+            match = re.match(pattern, path.name)
+            if not match or not path.is_file():
+                continue
+            indicator_type = match.group(1)
+            # Violate your warranty with class state! Not threadsafe!
+            csv.field_size_limit(path.stat().st_size)  # dodge field size problems
+            with path.open("r", newline="") as f:
+                for row in csv.reader(f):
+                    ret.append(
+                        cls(
+                            row[0],
+                            indicator_type,
+                            row[1],
                             SimpleDescriptorRollup.from_row(row[1:]),
                         )
                     )
