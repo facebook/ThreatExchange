@@ -22,7 +22,7 @@ def is_publishing_metrics():
     return measure_performance
 
 
-class MetricTimePeriod:
+class MetricTimePeriod(Enum):
     HOURS_24 = "24h"
     HOURS_1 = "1h"
     DAYS_7 = "7d"
@@ -52,6 +52,30 @@ def _period(period: MetricTimePeriod):
     }[period] or 60 * 10
 
 
+def _pad_with_None_values(
+    graph_data: t.List[t.Tuple[datetime, int]], start_time: datetime, end_time: datetime
+):
+    """
+    Pad graph data with 0 values if the first or last entries are too far (>60
+    seconds) from start or end time respectively.
+
+    Note: Mutates the graph_data parameter, but returns it too.
+    """
+
+    if (
+        len(graph_data) == 0
+        or abs((start_time - graph_data[0][0]).total_seconds()) > 60
+    ):
+        # If start time and the first graph point have more than a minute, pad
+        graph_data.insert(0, [start_time, None])
+
+    if len(graph_data) == 0 or abs((end_time - graph_data[-1][0]).total_seconds()) > 60:
+        # If start time and the first graph point have more than a minute, pad
+        graph_data.append([end_time, None])
+
+    return graph_data
+
+
 @dataclass
 class CountMetricWithGraph:
     count: int
@@ -64,23 +88,32 @@ def get_count_with_graph(
     """
     Given a time period and a set of metric names, gets the sum of the metric
     over the period and a graphable list of timestamps and values.
+
+    The graph data always contains the start and end time stamps with None values
+    to make graphing easier.
     """
     result = {}
+
+    start_time = _start_time(time_period).replace(second=0, microsecond=0, tzinfo=None)
+    end_time = datetime.now().replace(second=0, microsecond=0, tzinfo=None)
 
     for metric_name in names:
         stats = _get_cloudwatch_client().get_metric_statistics(
             Namespace=METRICS_NAMESPACE,
             MetricName=f"{metric_name}-count",
             Statistics=["Sum"],
-            StartTime=_start_time(time_period),
-            EndTime=datetime.now(),
+            StartTime=start_time,
+            EndTime=end_time,
             Period=_period(time_period),
         )["Datapoints"]
 
         total = int(functools.reduce(lambda acc, s: acc + s["Sum"], stats, 0))
 
-        graph_data = [(s["Timestamp"], int(s["Sum"])) for s in stats]
+        graph_data = [
+            (s["Timestamp"].replace(tzinfo=None), int(s["Sum"])) for s in stats
+        ]
         graph_data.sort(key=lambda t: t[0])  # Sort by timestamp
+        graph_data = _pad_with_None_values(graph_data, start_time, end_time)
 
         result[metric_name] = CountMetricWithGraph(total, graph_data)
 
