@@ -43,68 +43,78 @@ const actions = [
   },
 ];
 
-function actionRuleNameIsUnique(name, actionrules) {
-  if (name) {
-    const nameLower = name.toLowerCase();
-    return (
-      actionrules.findIndex(
-        actionRule => actionRule.name.toLowerCase() === nameLower,
-      ) === -1
-    );
-  }
-
-  return true;
-}
-
-function actionRuleIsValid(actionRule, actionrules) {
-  return (
-    actionRule.name &&
-    actionRule.must_have_labels &&
-    actionRule.action_id !== '0' &&
-    actionRuleNameIsUnique(actionRule.name, actionrules)
-  );
-}
-
-function Required(props) {
-  const {show} = props;
-  return (
-    <span hidden={!show} className="text-danger">
-      (required)
-    </span>
-  );
-}
-
 function ActionRuleFormColumns(props) {
   const {
-    nameRef,
-    mustHaveLabelsRef,
-    mustNotHaveLabelsRef,
-    actionRef,
-    showNameMustBeUnique,
+    name,
+    mustHaveLabels,
+    mustNotHaveLabels,
+    action,
+    showErrors,
+    nameIsUnique,
+    oldName,
+    onChange,
   } = props;
 
-  const actionOptions = actions.map(action => (
-    <option key={action.id} value={action.id}>
-      {action.name}
+  const actionOptions = actions.map(actn => (
+    <option key={actn.id} value={actn.id}>
+      {actn.name}
     </option>
   ));
 
   return (
     <>
       <td>
-        <Form.Control type="text" required ref={nameRef} />
-        <Form.Text hidden={!showNameMustBeUnique} className="text-danger">
+        <Form.Label>
+          Name
+          <span hidden={!showErrors || name}> (required)</span>
+        </Form.Label>
+        <Form.Control
+          type="text"
+          required
+          value={name}
+          onChange={e => onChange({name: e.target.value})}
+          isInvalid={showErrors && !name}
+        />
+        <Form.Text
+          hidden={!showErrors || nameIsUnique(name, oldName)}
+          className="text-danger">
           An action rule&rsquo;s name must be unique.
         </Form.Text>
       </td>
       <td>
-        <Form.Control as="textarea" rows={4} required ref={mustHaveLabelsRef} />
+        <Form.Label>
+          Labeled As
+          <span hidden={!showErrors || mustHaveLabels}> (required)</span>
+        </Form.Label>
+        <Form.Control
+          as="textarea"
+          rows={4}
+          required
+          value={mustHaveLabels}
+          onChange={e => onChange({must_have_labels: e.target.value})}
+          isInvalid={showErrors && !mustHaveLabels}
+        />
       </td>
       <td>
-        <Form.Control as="textarea" rows={4} ref={mustNotHaveLabelsRef} />
+        <Form.Label>Not Labeled As</Form.Label>
+        <Form.Control
+          as="textarea"
+          rows={4}
+          value={mustNotHaveLabels}
+          onChange={e => onChange({must_not_have_labels: e.target.value})}
+        />
       </td>
       <td>
-        <Form.Control as="select" required ref={actionRef}>
+        <Form.Label>
+          Action
+          <span hidden={!showErrors || action !== '0'}> (required)</span>
+        </Form.Label>
+        <Form.Control
+          as="select"
+          required
+          value={action}
+          onChange={e => onChange({action_id: e.target.value})}
+          isInvalid={showErrors && action === '0'}>
           <option value="0" key="0" selected>
             Select an action...
           </option>
@@ -118,51 +128,82 @@ function ActionRuleFormColumns(props) {
 export default function ActionRuleSettingsTab() {
   const [actionRules, setActionRules] = useState(mockedActionRules);
   const [adding, setAdding] = useState(false);
-  const [nameRef] = useState(React.createRef());
-  const [mustHaveLabelsRef] = useState(React.createRef());
-  const [mustNotHaveLabelsRef] = useState(React.createRef());
-  const [actionRef] = useState(React.createRef());
-  const [showNameRequired, setShowNameRequired] = useState(false);
-  const [showNameMustBeUnique, setShowNameMustBeUnique] = useState(false);
-  const [showMustHaveLabelsRequired, setShowMustHaveLabelsRequired] = useState(
-    false,
-  );
-  const [showActionRequired, setShowActionRequired] = useState(false);
-  const [showDeletedActionRuleToast, setShowDeletedActionRuleToast] = useState(
-    false,
-  );
+  const [newActionRule, setNewActionRule] = useState({
+    name: '',
+    must_have_labels: '',
+    must_not_have_labels: '',
+    action_id: '0',
+  });
+  const [showErrors, setShowErrors] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
-  const resetForm = () => {
-    nameRef.current.value = '';
-    mustHaveLabelsRef.current.value = '';
-    mustNotHaveLabelsRef.current.value = '';
-    actionRef.current.value = '0';
+  const onNewActionRuleChange = updatedField => {
+    setNewActionRule({...newActionRule, ...updatedField});
   };
 
-  const addActionRule = newActionRule => {
-    actionRules.push(newActionRule);
+  const actionRuleNameIsUnique = (newName, oldName, actionrules) => {
+    if (newName) {
+      const nameLower = newName.toLowerCase();
+
+      const actionRuleIndex = actionrules.findIndex(
+        actionRule => actionRule.name.toLowerCase() === nameLower,
+      );
+
+      return actionRuleIndex === -1 ? true : newName === oldName;
+    }
+    return true;
+  };
+
+  const nameIsUnique = (newName, oldName) =>
+    actionRuleNameIsUnique(newName, oldName, actionRules);
+
+  const actionRuleIsValid = (actionRule, actionrules, oldName) =>
+    actionRule.name &&
+    actionRule.must_have_labels &&
+    actionRule.action_id !== '0' &&
+    actionRuleNameIsUnique(actionRule.name, oldName, actionrules);
+
+  const ruleIsValid = (actionRule, oldName) =>
+    actionRuleIsValid(actionRule, actionRules, oldName);
+
+  const resetForm = () => {
+    setNewActionRule({
+      name: '',
+      must_have_labels: '',
+      must_not_have_labels: '',
+      action_id: '0',
+    });
+  };
+
+  const addActionRule = actionRule => {
+    actionRules.push(actionRule);
     actionRules.sort((a, b) =>
       a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
     );
     setActionRules([...actionRules]);
   };
 
-  const deleteActionRule = name => {
-    const indexToDelete = actionRules.findIndex(
-      actionRule => actionRule.name === name,
-    );
-    actionRules.splice(indexToDelete, 1);
-    console.log(actionRules);
-    setActionRules([...actionRules]);
-    setShowDeletedActionRuleToast(true);
+  const displayToast = message => {
+    setToastMessage(message);
+    setShowToast(true);
   };
 
-  const saveActionRule = (oldName, editedActionRule) => {
-    const indexToUpdate = actionRules.findIndex(
+  const deleteActionRule = (oldName, suppressToast) => {
+    const indexToDelete = actionRules.findIndex(
       actionRule => actionRule.name === oldName,
     );
-    deleteActionRule(oldName);
-    addActionRule(editedActionRule);
+    actionRules.splice(indexToDelete, 1);
+    setActionRules([...actionRules]);
+    if (suppressToast === undefined) {
+      displayToast('The action rule was deleted successfully.');
+    }
+  };
+
+  const updateActionRule = (oldName, updatedActionRule) => {
+    deleteActionRule(oldName, true);
+    addActionRule(updatedActionRule);
+    displayToast('The action rule was updated successfully.');
   };
 
   const actionRulesTableRows = actionRules.map(actionRule => (
@@ -173,7 +214,9 @@ export default function ActionRuleSettingsTab() {
       mustNotHaveLabels={actionRule.must_not_have_labels}
       actionId={actionRule.action_id}
       onDeleteActionRule={deleteActionRule}
-      onSaveEditedActionRule={saveActionRule}
+      onUpdateActionRule={updateActionRule}
+      ruleIsValid={ruleIsValid}
+      nameIsUnique={nameIsUnique}
     />
   ));
 
@@ -203,16 +246,10 @@ export default function ActionRuleSettingsTab() {
                       <ion-icon name="add" size="large" />
                     </Button>
                   </th>
-                  <th>
-                    Name <Required show={adding && showNameRequired} />
-                  </th>
-                  <th>
-                    Labeled As <Required show={showMustHaveLabelsRequired} />
-                  </th>
+                  <th>Name</th>
+                  <th>Labeled As</th>
                   <th>Not Labeled As</th>
-                  <th>
-                    Action <Required show={showActionRequired} />
-                  </th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -222,37 +259,17 @@ export default function ActionRuleSettingsTab() {
                       variant="outline-primary"
                       className="mb-2 table-action-button"
                       onClick={() => {
-                        const newActionRule = {
-                          name: nameRef.current.value,
-                          must_have_labels: mustHaveLabelsRef.current.value,
-                          must_not_have_labels:
-                            mustNotHaveLabelsRef.current.value,
-                          action_id: actionRef.current.value,
-                        };
-
-                        setShowNameRequired(false);
-                        setShowNameMustBeUnique(false);
-                        setShowMustHaveLabelsRequired(false);
-                        setShowActionRequired(false);
+                        setShowErrors(false);
 
                         if (actionRuleIsValid(newActionRule, actionRules)) {
                           addActionRule(newActionRule);
                           resetForm();
                           setAdding(false);
+                          displayToast(
+                            'A new action rule was added successfully.',
+                          );
                         } else {
-                          setShowNameRequired(!newActionRule.name);
-                          setShowNameMustBeUnique(
-                            !actionRuleNameIsUnique(
-                              nameRef.current.value,
-                              actionRules,
-                            ),
-                          );
-                          setShowMustHaveLabelsRequired(
-                            !newActionRule.must_have_labels,
-                          );
-                          setShowActionRequired(
-                            newActionRule.action_id === '0',
-                          );
+                          setShowErrors(true);
                         }
                       }}>
                       <ion-icon
@@ -265,11 +282,8 @@ export default function ActionRuleSettingsTab() {
                       variant="outline-secondary"
                       className="table-action-button"
                       onClick={() => {
+                        setShowErrors(false);
                         resetForm();
-                        setShowNameRequired(false);
-                        setShowNameMustBeUnique(false);
-                        setShowMustHaveLabelsRequired(false);
-                        setShowActionRequired(false);
                         setAdding(false);
                       }}>
                       <ion-icon
@@ -280,11 +294,14 @@ export default function ActionRuleSettingsTab() {
                     </Button>
                   </td>
                   <ActionRuleFormColumns
-                    nameRef={nameRef}
-                    mustHaveLabelsRef={mustHaveLabelsRef}
-                    mustNotHaveLabelsRef={mustNotHaveLabelsRef}
-                    actionRef={actionRef}
-                    showNameMustBeUnique={showNameMustBeUnique}
+                    name={newActionRule.name}
+                    mustHaveLabels={newActionRule.must_have_labels}
+                    mustNotHaveLabels={newActionRule.must_not_have_labels}
+                    action={newActionRule.action_id}
+                    showErrors={showErrors}
+                    nameIsUnique={nameIsUnique}
+                    oldName={undefined}
+                    onChange={onNewActionRuleChange}
                   />
                 </tr>
                 {actionRulesTableRows}
@@ -294,11 +311,11 @@ export default function ActionRuleSettingsTab() {
         </Row>
         <div className="feedback-toast-container">
           <Toast
-            onClose={() => setShowDeletedActionRuleToast(false)}
-            show={showDeletedActionRuleToast}
+            onClose={() => setShowToast(false)}
+            show={showToast}
             delay={5000}
             autohide>
-            <Toast.Body>The action rule was deleted.</Toast.Body>
+            <Toast.Body>{toastMessage}</Toast.Body>
           </Toast>
         </div>
       </Container>
@@ -313,18 +330,35 @@ function ActionRulesTableRow(props) {
     mustNotHaveLabels,
     actionId,
     onDeleteActionRule,
-    onSaveEditedActionRule,
+    onUpdateActionRule,
+    ruleIsValid,
+    nameIsUnique,
   } = props;
   const [editing, setEditing] = useState(false);
   const [
     showDeleteActionRuleConfirmation,
     setShowDeleteActionRuleConfirmation,
   ] = useState(false);
+  const [updatedActionRule, setUpdatedActionRule] = useState({
+    name,
+    must_have_labels: mustHaveLabels,
+    must_not_have_labels: mustNotHaveLabels,
+    action_id: actionId,
+  });
+  const [showErrors, setShowErrors] = useState(false);
 
-  const [nameRef] = useState(React.createRef());
-  const [mustHaveLabelsRef] = useState(React.createRef());
-  const [mustNotHaveLabelsRef] = useState(React.createRef());
-  const [actionRef] = useState(React.createRef());
+  const onUpdatedActionRuleChange = updatedField => {
+    setUpdatedActionRule({...updatedActionRule, ...updatedField});
+  };
+
+  const resetForm = () => {
+    setUpdatedActionRule({
+      name,
+      must_have_labels: mustHaveLabels,
+      must_not_have_labels: mustNotHaveLabels,
+      action_id: actionId,
+    });
+  };
 
   return (
     <>
@@ -333,10 +367,6 @@ function ActionRulesTableRow(props) {
           <Button
             className="mb-2 table-action-button"
             onClick={() => {
-              nameRef.current.value = name;
-              mustHaveLabelsRef.current.value = mustHaveLabels;
-              mustNotHaveLabelsRef.current.value = mustNotHaveLabels;
-              actionRef.current.value = actionId;
               setEditing(true);
             }}>
             <ion-icon name="pencil" size="large" className="ion-icon-white" />
@@ -360,7 +390,7 @@ function ActionRulesTableRow(props) {
             <Modal.Body>
               <p>
                 Please confirm you want to delete the action rule named{' '}
-                <strong>{name}</strong>?
+                <strong>{name}</strong>.
               </p>
             </Modal.Body>
             <Modal.Footer>
@@ -372,7 +402,7 @@ function ActionRulesTableRow(props) {
               <Button
                 variant="primary"
                 onClick={() => onDeleteActionRule(name)}>
-                Delete Action Rule
+                Yes, Delete This Action Rule
               </Button>
             </Modal.Footer>
           </Modal>
@@ -394,14 +424,15 @@ function ActionRulesTableRow(props) {
             variant="outline-primary"
             className="mb-2 table-action-button"
             onClick={() => {
-              const editedActionRule = {
-                name: nameRef.current.value,
-                must_have_labels: mustHaveLabelsRef.current.value,
-                must_not_have_labels: mustNotHaveLabelsRef.current.value,
-                action_id: actionRef.current.value,
-              };
-              onSaveEditedActionRule(name, editedActionRule);
-              setEditing(false);
+              setShowErrors(false);
+
+              if (ruleIsValid(updatedActionRule, name)) {
+                onUpdateActionRule(name, updatedActionRule);
+                resetForm();
+                setEditing(false);
+              } else {
+                setShowErrors(true);
+              }
             }}>
             <ion-icon
               name="checkmark"
@@ -412,15 +443,23 @@ function ActionRulesTableRow(props) {
           <Button
             variant="outline-secondary"
             className="table-action-button"
-            onClick={() => setEditing(false)}>
+            onClick={() => {
+              setShowErrors(false);
+              resetForm();
+              setEditing(false);
+            }}>
             <ion-icon name="close" size="large" className="ion-icon-white" />
           </Button>
         </td>
         <ActionRuleFormColumns
-          nameRef={nameRef}
-          mustHaveLabelsRef={mustHaveLabelsRef}
-          mustNotHaveLabelsRef={mustNotHaveLabelsRef}
-          actionRef={actionRef}
+          name={updatedActionRule.name}
+          mustHaveLabels={updatedActionRule.must_have_labels}
+          mustNotHaveLabels={updatedActionRule.must_not_have_labels}
+          action={updatedActionRule.action_id}
+          showErrors={showErrors}
+          nameIsUnique={nameIsUnique}
+          oldName={name}
+          onChange={onUpdatedActionRuleChange}
         />
       </tr>
     </>
