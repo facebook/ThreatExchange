@@ -77,7 +77,13 @@ variable "additional_tags" {
 variable "config_table" {
   description = "The name and arn of the DynamoDB table used for persisting configs."
   type = object({
-    arn        = string
-    name       = string
+    arn  = string
+    name = string
   })
+}
+
+variable "measure_performance" {
+  description = "Send metrics to cloudwatch. Useful for benchmarking, but can incur costs. Set to string True for this to work."
+  type        = bool
+  default     = false
 }
