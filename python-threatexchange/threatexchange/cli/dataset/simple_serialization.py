@@ -20,7 +20,11 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     """A short compact serialization optimized for the CLI"""
 
     def __init__(
-        self, indicator_id: str, indicator_type: str, indicator: str, rollup: SimpleDescriptorRollup
+        self,
+        indicator_id: str,
+        indicator_type: str,
+        indicator: str,
+        rollup: SimpleDescriptorRollup,
     ):
         self.indicator_id = indicator_id
         self.indicator_type = indicator_type
