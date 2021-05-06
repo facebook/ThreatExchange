@@ -316,15 +316,15 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
         for update in updated.values():
             row = update.as_csv_row()
-            # example row format: (<indicator-id>, <raw_indicator>, <time added>, <space-separated-tags>')
-            # e.g (10736405276340','096a6f9...064f', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+            # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
+            # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
             if PDQSignalMetadata(
-                signal_id=int(row[0]),
+                signal_id=int(row[1]),
                 ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
                 signal_source=S3ThreatDataConfig.SOURCE_STR,
-                signal_hash=row[1],  # note: not used by update_tags_in_table_if_exists
-                tags=row[3].split(" ") if row[3] else [],
+                signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
+                tags=row[4].split(" ") if row[4] else [],
             ).update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for signal id: %s source: %s for privacy group: %d",
@@ -358,4 +358,15 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     # This will only kinda work for so long - eventually will
     # need to use a proper harness
-    lambda_handler(None, None)
+    # lambda_handler(None, None)
+
+    csv.field_size_limit(65535)  # dodge field size problems
+    rows = ["ced62bad954258f42e23904a6edc82a77db541622b598db6b124a6cb9496e7d3,1901095716680926,3170688743018501,2020-07-31T18:47:52+0000,true_positive hma_test","1eccc389c5db3db9b02647666bd24e8c9618e0e5342199de37104f1ef7659a87,2772434039524407,3226049650848873,2020-07-31T18:47:52+0000,true_positive hma_test"]
+    for row in csv.reader(rows):
+        HMASerialization(
+            row[0],
+            "HASH_PDQ",
+            row[1],
+            SimpleDescriptorRollup.from_row(row[2:]),
+        )
+        print("serialized row")
