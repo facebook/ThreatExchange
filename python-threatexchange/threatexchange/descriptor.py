@@ -174,14 +174,9 @@ class SimpleDescriptorRollup:
         )
         self.labels.union(descriptor.tags)
 
-    def as_row_without_id(self) -> t.Tuple[str, str]:
-        """Simple conversion to CSV row excluding the descriptor ID"""
-        return self.added_on, " ".join(self.labels)
-
     def as_row(self) -> t.Tuple[int, str, str]:
         """Simple conversion to CSV row"""
-        return self.first_descriptor_id, *self.as_row_without_id()
-
+        return self.first_descriptor_id, self.added_on, " ".join(self.labels)
     @classmethod
     def from_row(cls, row: t.Iterable) -> "SimpleDescriptorRollup":
         """Simple conversion from CSV row"""
