@@ -13,9 +13,9 @@ from hmalib.common.fetcher_models import ThreatExchangeConfig
 from botocore.exceptions import ClientError
 
 logger = get_logger(__name__)
-FETCHER_ACTIVE = True
-WRITE_BACK = True
-MATCHER_ACTIVE = True
+FETCHER_ACTIVE_DEFAULT = True
+WRITE_BACK_DEFAULT = True
+MATCHER_ACTIVE_DEFAULT = True
 
 
 def sync_privacy_groups():
@@ -37,12 +37,12 @@ def sync_privacy_groups():
                 privacy_group.id,
                 # TODO Currently default to True for testing purpose,
                 # need to switch it to False before v0 launch
-                fetcher_active=FETCHER_ACTIVE,
+                fetcher_active=FETCHER_ACTIVE_DEFAULT,
                 privacy_group_name=privacy_group.name,
                 in_use=True,
                 description=privacy_group.description,
-                matcher_active=MATCHER_ACTIVE,
-                write_back=WRITE_BACK,
+                matcher_active=MATCHER_ACTIVE_DEFAULT,
+                write_back=WRITE_BACK_DEFAULT,
             )
             try:
                 hmaconfig.create_config(config)

@@ -56,17 +56,19 @@ export default function ThreatExchangePrivacyGroupCard({
           </Card.Subtitle>
           <Card.Body className="text-left">
             <Form>
-              <OverlayTrigger
-                trigger="click"
-                placement="right"
-                overlay={
-                  <Popover id={`popover-basic${privacyGroupId}`}>
-                    <Popover.Title as="h3">Information</Popover.Title>
-                    <Popover.Content>{description}</Popover.Content>
-                  </Popover>
-                }>
-                <Button variant="info">more info</Button>
-              </OverlayTrigger>
+              <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+                <OverlayTrigger
+                  trigger="click"
+                  placement="bottom"
+                  overlay={
+                    <Popover id={`popover-basic${privacyGroupId}`}>
+                      <Popover.Title as="h3">Information</Popover.Title>
+                      <Popover.Content>{description}</Popover.Content>
+                    </Popover>
+                  }>
+                  <Button variant="info">more info</Button>
+                </OverlayTrigger>
+              </div>
               <Form.Switch
                 onChange={onSwitchFetcherActive}
                 id={`fetcherActiveSwitch${privacyGroupId}`}
