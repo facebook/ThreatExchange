@@ -361,7 +361,10 @@ if __name__ == "__main__":
     # lambda_handler(None, None)
 
     csv.field_size_limit(65535)  # dodge field size problems
-    rows = ["ced62bad954258f42e23904a6edc82a77db541622b598db6b124a6cb9496e7d3,1901095716680926,3170688743018501,2020-07-31T18:47:52+0000,true_positive hma_test","1eccc389c5db3db9b02647666bd24e8c9618e0e5342199de37104f1ef7659a87,2772434039524407,3226049650848873,2020-07-31T18:47:52+0000,true_positive hma_test"]
+    rows = [
+        "ced62bad954258f42e23904a6edc82a77db541622b598db6b124a6cb9496e7d3,1901095716680926,3170688743018501,2020-07-31T18:47:52+0000,true_positive hma_test",
+        "1eccc389c5db3db9b02647666bd24e8c9618e0e5342199de37104f1ef7659a87,2772434039524407,3226049650848873,2020-07-31T18:47:52+0000,true_positive hma_test",
+    ]
     for row in csv.reader(rows):
         HMASerialization(
             row[0],
