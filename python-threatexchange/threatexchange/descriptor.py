@@ -177,6 +177,7 @@ class SimpleDescriptorRollup:
     def as_row(self) -> t.Tuple[int, str, str]:
         """Simple conversion to CSV row"""
         return self.first_descriptor_id, self.added_on, " ".join(self.labels)
+
     @classmethod
     def from_row(cls, row: t.Iterable) -> "SimpleDescriptorRollup":
         """Simple conversion from CSV row"""

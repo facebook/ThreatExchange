@@ -95,7 +95,10 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
 class HMASerialization(CliIndicatorSerialization):
     """
     A Serialization for HMA Similar to CliIndicatorSerialization but with
-    Indicator ID instead of Descriptor ID
+    Indicator ID.
+
+    We also include the First Descriptor ID. The logic to determine which ID
+    this is can be found in the SimpleDescriptorRollup
     """
 
     def __init__(
