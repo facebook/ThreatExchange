@@ -3,18 +3,8 @@
 import typing as t
 
 from dataclasses import dataclass, field
-from hmalib.common.classification_models import Label
+from hmalib.common.classification_models import Label, ActionLabel
 from hmalib.common.config import HMAConfig
-
-
-@dataclass(unsafe_hash=True)
-class ActionLabel(Label):
-    key: str = field(default="Action", init=False)
-
-
-@dataclass(unsafe_hash=True)
-class ThreatExchangeReactionLabel(Label):
-    key: str = field(default="ThreatExchangeReaction", init=False)
 
 
 @dataclass

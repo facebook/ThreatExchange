@@ -2,19 +2,15 @@
 
 import typing as t
 from dataclasses import dataclass, field
-
 from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     BankSourceClassificationLabel,
     ClassificationLabel,
     Label,
+    WritebackTypes,
 )
-from hmalib.common.evaluator_models import (
-    ActionLabel,
-    ActionRule,
-    ThreatExchangeReactionLabel,
-)
+from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.aws_dataclass import HasAWSSerialization
 
 
@@ -93,25 +89,25 @@ class ActionMessage(MatchMessage):
 
 
 @dataclass
-class ReactionMessage(MatchMessage):
+class WritebackMessage(MatchMessage):
     """
-    The reactioner needs the match message plus which reaction to send back
-    to the source of the signal (for now, ThreatExchange).
+    The Writebacker needs the match message plus which writeback type to perfrom
+    on the source of the signal (for now, ThreatExchange).
     """
 
-    reaction_label: ThreatExchangeReactionLabel = field(
-        default=ThreatExchangeReactionLabel("UnspecifiedThreatExchangeReaction")
+    writeback_type: WritebackTypes.WritebackType = field(
+        default=WritebackTypes.UnspecifiedWriteback
     )
 
     @classmethod
     def from_match_message_and_label(
         cls,
         match_message: MatchMessage,
-        threat_exchange_reaction_label: ThreatExchangeReactionLabel,
-    ) -> "ReactionMessage":
+        writeback_type: WritebackTypes.WritebackType,
+    ) -> "WritebackMessage":
         return cls(
             match_message.content_key,
             match_message.content_hash,
             match_message.matching_banked_signals,
-            threat_exchange_reaction_label,
+            writeback_type,
         )

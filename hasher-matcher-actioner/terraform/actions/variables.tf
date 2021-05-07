@@ -10,9 +10,15 @@ variable "lambda_docker_info" {
     commands = object({
       action_evaluator = string
       action_performer = string
-      reactioner       = string
+      writebacker      = string
     })
   })
+}
+
+variable "region" {
+  description = "AWS region to deploy to"
+  type        = string
+  default     = "us-east-1"
 }
 
 variable "prefix" {

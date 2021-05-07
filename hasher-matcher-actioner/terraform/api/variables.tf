@@ -82,6 +82,14 @@ variable "config_table" {
   })
 }
 
+variable "te_api_token_secret" {
+  description = "The aws secret where the ThreatExchange API token is stored"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
 variable "measure_performance" {
   description = "Send metrics to cloudwatch. Useful for benchmarking, but can incur costs. Set to string True for this to work."
   type        = bool

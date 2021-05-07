@@ -29,6 +29,8 @@ from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import S3ThreatDataConfig
 from hmalib.common.signal_models import PDQSignalMetadata
+from hmalib.common.fetcher_models import ThreatExchangeConfig
+
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
@@ -81,29 +83,6 @@ class FetcherConfig:
         )
 
 
-@dataclass
-class ThreatExchangeConfig(HMAConfig):
-    """
-    Config for ThreatExchange integrations
-
-    Consumed by the fetcher to get data from the right places in
-    ThreatExchange, downstream to control write-back information
-    like reactions and uploads, and possibly other places that
-    need to join HMA and ThreatExchange data.
-    """
-
-    # TODO - consider hiding name field and always populating with ID
-    fetcher_active: bool
-    privacy_group_name: str
-    in_use: bool
-    write_back: bool
-
-    @property
-    def privacy_group_id(self) -> int:
-        """TE Configs are keyed by their privacy group ID"""
-        return int(self.name)
-
-
 def lambda_handler(event, context):
     lambda_init_once()
     config = FetcherConfig.get()
@@ -119,7 +98,7 @@ def lambda_handler(event, context):
     data = f"Triggered at time {current_time}, found {len(collabs)} collabs: {', '.join(names)}"
     logger.info(data)
 
-    api_key = AWSSecrets.te_api_key()
+    api_key = AWSSecrets().te_api_key()
     api = ThreatExchangeAPI(api_key)
 
     te_data_bucket = s3.Bucket(config.s3_bucket)

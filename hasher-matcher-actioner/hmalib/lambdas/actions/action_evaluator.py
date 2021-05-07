@@ -13,20 +13,21 @@ from hmalib.common.classification_models import (
     BankIDClassificationLabel,
     BankSourceClassificationLabel,
     ClassificationLabel,
+    WritebackTypes,
     Label,
 )
+from hmalib.common.writebacker_models import ThreatExchangeSawThisTooWritebacker
 from hmalib.common.config import HMAConfig
 from hmalib.common.evaluator_models import (
     Action,
     ActionLabel,
     ActionRule,
-    ThreatExchangeReactionLabel,
 )
 from hmalib.common.message_models import (
     ActionMessage,
     BankedSignal,
     MatchMessage,
-    ReactionMessage,
+    WritebackMessage,
 )
 from hmalib.lambdas.actions.action_performer import perform_label_action
 from mypy_boto3_sqs import SQSClient
@@ -41,7 +42,7 @@ class ActionEvaluatorConfig:
     """
 
     actions_queue_url: str
-    reactions_queue_url: str
+    writebacks_queue_url: str
     sqs_client: SQSClient
 
     @classmethod
@@ -53,7 +54,7 @@ class ActionEvaluatorConfig:
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
-            reactions_queue_url=os.environ["REACTIONS_QUEUE_URL"],
+            writebacks_queue_url=os.environ["WRITEBACKS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
         )
 
@@ -71,6 +72,7 @@ def lambda_handler(event, context):
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
+        logger.info("sqs record body %s", sqs_record["body"])
         match_message = MatchMessage.from_aws_json(sqs_record_body["Message"])
 
         logger.info("Evaluating match_message: %s", match_message)
@@ -89,26 +91,19 @@ def lambda_handler(event, context):
                     action_label_to_action_rules[action_label],
                 )
             )
+
+            logger.info("Sending Action message: %s", action_message)
             config.sqs_client.send_message(
                 QueueUrl=config.actions_queue_url,
                 MessageBody=action_message.to_aws_json(),
             )
 
-        if threat_exchange_reacting_is_enabled(match_message):
-            threat_exchange_reaction_labels = get_threat_exchange_reaction_labels(
-                match_message, action_labels
+        for writeback_message in get_writeback_messages(match_message, action_labels):
+            logger.info("Sending Writeback message: %s", writeback_message)
+            config.sqs_client.send_message(
+                QueueUrl=config.writebacks_queue_url,
+                MessageBody=writeback_message.to_aws_json(),
             )
-            if threat_exchange_reaction_labels:
-                for threat_exchange_reaction_label in threat_exchange_reaction_labels:
-                    threat_exchange_reaction_message = (
-                        ReactionMessage.from_match_message_and_label(
-                            match_message, threat_exchange_reaction_label
-                        )
-                    )
-                    config.sqs_client.send_message(
-                        QueueUrl=config.reactions_queue_url,
-                        MessageBody=threat_exchange_reaction_message.to_aws_json(),
-                    )
 
     return {"evaluation_completed": "true"}
 
@@ -188,59 +183,43 @@ def remove_superseded_actions(
     return action_label_to_action_rules
 
 
-def threat_exchange_reacting_is_enabled(match_message: MatchMessage) -> bool:
-    """
-    TODO implement
-    Looks up from a config whether ThreatExchange reacting is enabled. Initially this will be a global
-    config, and this method will return True if reacting is enabled, False otherwise. At some point the
-    config for reacting to ThreatExchange may be on a per collaboration basis. In that case, the config
-    will be referenced for each collaboration involved (implied by the match message). If reacting
-    is enabled for a given collaboration, a label will be added to the match message
-    (e.g. "ThreatExchangeReactingEnabled:<collaboration-id>").
-    """
-    return True
-
-
-def get_threat_exchange_reaction_labels(
+def get_writeback_messages(
     match_message: MatchMessage,
     action_labels: t.List[ActionLabel],
-) -> t.List[Label]:
+) -> t.List[WritebackMessage]:
     """
     TODO implement
     Evaluates a collection of action_labels against some yet to be defined configuration
     (and possible business login) to produce
     """
-    return [ThreatExchangeReactionLabel("SAW_THIS_TOO")]
+    writeback_label = WritebackTypes.SawThisToo
+    return [
+        WritebackMessage.from_match_message_and_label(match_message, writeback_label)
+    ]
 
 
 if __name__ == "__main__":
     # For basic debugging
-
-    action_rules = [
-        ActionRule(
-            name="Enqueue Mini-Castle for Review",
-            action_label=ActionLabel("EnqueueMiniCastleForReview"),
-            must_have_labels=set(
-                [
-                    BankIDClassificationLabel("303636684709969"),
-                    ClassificationLabel("true_positive"),
-                ]
-            ),
-            must_not_have_labels=set(
-                [BankedContentIDClassificationLabel("3364504410306721")]
-            ),
-        ),
-    ]
-
-    banked_signal = BankedSignal(
-        "4169895076385542",
-        "303636684709969",
-        "te",
+    HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
+    action_rules = get_action_rules()
+    match_message = MatchMessage(
+        content_key="images/200200.jpg",
+        content_hash="20f66f3a2e6eff06d895a8f421c045e1c76f0bf87652d72ce7249412d8d52acc",
+        matching_banked_signals=[
+            BankedSignal(
+                banked_content_id="3534976909868947",
+                bank_id="303636684709969",
+                bank_source="te",
+                classifications={
+                    Label(key="BankIDClassification", value="303636684709969"),
+                    Label(key="Classification", value="true_positive"),
+                    Label(key="BankSourceClassification", value="te"),
+                    Label(
+                        key="BankedContentIDClassification", value="3534976909868947"
+                    ),
+                },
+            )
+        ],
     )
-    banked_signal.add_classification("true_positive")
-
-    match_message = MatchMessage("key", "hash", [banked_signal])
-
     action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
-
-    print(action_label_to_action_rules)
+    action_labels = list(action_label_to_action_rules.keys())

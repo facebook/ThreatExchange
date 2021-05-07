@@ -5,12 +5,15 @@ import json
 import typing as t
 
 from dataclasses import dataclass, field, fields
-from hmalib.common.message_models import BankedSignal
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import MatchMessage
+from hmalib.common.classification_models import ActionLabel, Label
 from requests import get, post, put, delete, Response
 
 logger = get_logger(__name__)
+
+
+TUrl = t.Union[t.Text, bytes]
 
 
 class ActionPerformer(config.HMAConfigWithSubtypes):
@@ -80,24 +83,3 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
 
     def call(self, _data: str) -> Response:
         return delete(self.url)
-
-
-if __name__ == "__main__":
-
-    banked_signals = [
-        BankedSignal("2862392437204724", "bank 4", "te"),
-        BankedSignal("4194946153908639", "bank 4", "te"),
-    ]
-    match_message = MatchMessage("key", "hash", banked_signals)
-
-    configs: t.List[ActionPerformer] = [
-        WebhookDeleteActionPerformer(
-            "DeleteWebhook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
-        ),
-        WebhookPutActionPerformer(
-            "PutWebook", "https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195"
-        ),
-    ]
-
-    for action_config in configs:
-        action_config.perform_action(match_message)

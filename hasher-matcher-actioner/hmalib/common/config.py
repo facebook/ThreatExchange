@@ -28,6 +28,8 @@ TConfig = t.TypeVar("TConfig", bound="HMAConfig")
 # config tables instead of refactoring
 _TABLE_NAME = None
 
+mocks: t.Dict[str, t.Any] = {}
+
 
 def _assert_initialized():
     assert _TABLE_NAME, """
@@ -90,6 +92,12 @@ class HMAConfig:
     @classmethod
     def get(cls: t.Type[TConfig], name: str) -> t.Optional[TConfig]:
         _assert_initialized()
+
+        # check if this config has been mocked
+        mocked = mocks.get(cls.get_config_type() + name)
+        if mocked and isinstance(mocked, cls):
+            return mocked
+
         result = get_dynamodb().meta.client.get_item(
             TableName=_TABLE_NAME,
             Key={
@@ -98,6 +106,11 @@ class HMAConfig:
             },
         )
         return cls._convert_item(result.get("Item"))
+
+    @classmethod
+    @functools.lru_cache(maxsize=None)
+    def cached_get(cls: t.Type[TConfig], name: str) -> t.Optional[TConfig]:
+        return cls.get(name)
 
     @classmethod
     def getx(cls: t.Type[TConfig], name: str) -> TConfig:
@@ -332,6 +345,11 @@ def update_config(config: HMAConfig) -> "HMAConfig":
         Item=_config_to_dynamodb_item(config),
         ConditionExpression=Attr("ConfigType").exists() & Attr("ConfigName").exists(),
     )
+    return config
+
+
+def mock_create_config(config: HMAConfig) -> "HMAConfig":
+    mocks[config.__class__.__name__ + config.name] = config
     return config
 
 

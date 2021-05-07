@@ -36,14 +36,15 @@ resource "aws_lambda_function" "api_root" {
   memory_size = 512
   environment {
     variables = {
-      DYNAMODB_TABLE                     = var.datastore.name
-      HMA_CONFIG_TABLE                   = var.config_table.name
-      IMAGE_BUCKET_NAME                  = var.image_data_storage.bucket_name
-      IMAGE_FOLDER_KEY                   = var.image_data_storage.image_folder_key
-      THREAT_EXCHANGE_DATA_BUCKET_NAME   = var.threat_exchange_data.bucket_name
-      THREAT_EXCHANGE_DATA_FOLDER        = var.threat_exchange_data.data_folder
-      THREAT_EXCHANGE_PDQ_FILE_EXTENSION = var.threat_exchange_data.pdq_file_extension
-      MEASURE_PERFORMANCE                = var.measure_performance ? "True" : "False"
+      DYNAMODB_TABLE                        = var.datastore.name
+      HMA_CONFIG_TABLE                      = var.config_table.name
+      IMAGE_BUCKET_NAME                     = var.image_data_storage.bucket_name
+      IMAGE_FOLDER_KEY                      = var.image_data_storage.image_folder_key
+      THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
+      THREAT_EXCHANGE_DATA_FOLDER           = var.threat_exchange_data.data_folder
+      THREAT_EXCHANGE_PDQ_FILE_EXTENSION    = var.threat_exchange_data.pdq_file_extension
+      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
+      MEASURE_PERFORMANCE                   = var.measure_performance ? "True" : "False"
     }
   }
   tags = merge(
@@ -84,7 +85,7 @@ data "aws_iam_policy_document" "api_root" {
   }
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem"]
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:DeleteItem"]
     resources = [var.config_table.arn]
   }
   statement {
@@ -119,10 +120,17 @@ data "aws_iam_policy_document" "api_root" {
     ]
     resources = ["${aws_cloudwatch_log_group.api_root.arn}:*"]
   }
+  
   statement {
     effect    = "Allow"
     actions   = ["cloudwatch:GetMetricStatistics"]
     resources = ["*"]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [var.te_api_token_secret.arn]
   }
 }
 
