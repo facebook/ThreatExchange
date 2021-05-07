@@ -115,7 +115,7 @@ function ActionRuleFormColumns(props) {
           value={action}
           onChange={e => onChange({action_id: e.target.value})}
           isInvalid={showErrors && action === '0'}>
-          <option value="0" key="0" selected>
+          <option value="0" key="0">
             Select an action...
           </option>
           {actionOptions}

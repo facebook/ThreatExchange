@@ -17,7 +17,6 @@ export default function Settings() {
     tab === undefined ||
     !tab ||
     (tab !== 'threatexchange' &&
-      tab !== 'signals' &&
       tab !== 'pipeline' &&
       tab !== 'actions' &&
       tab !== 'action-rules')
@@ -34,9 +33,6 @@ export default function Settings() {
         }}>
         <Tab eventKey="threatexchange" title="ThreatExchange">
           <ThreatExchangeSettingsTab />
-        </Tab>
-        <Tab eventKey="signals" title="Signals">
-          <SignalSettingsTab />
         </Tab>
         <Tab eventKey="pipeline" title="Pipeline">
           Todo!
