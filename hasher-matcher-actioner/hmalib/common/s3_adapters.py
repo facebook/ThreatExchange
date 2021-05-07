@@ -147,7 +147,7 @@ class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
 
     @property
     def indicator_type_file_columns(self):
-        return ["indicator_id", "hash", "descriptor_id", "timestamp", "tags"]
+        return ["hash", "indicator_id", "descriptor_id", "timestamp", "tags"]
 
     @property
     def file_type_str_name(self):
