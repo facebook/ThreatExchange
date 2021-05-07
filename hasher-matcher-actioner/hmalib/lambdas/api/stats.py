@@ -4,7 +4,6 @@ import bottle
 import datetime
 
 from dataclasses import dataclass, asdict, field
-from enum import Enum
 import typing as t
 from mypy_boto3_dynamodb.service_resource import Table
 
@@ -18,15 +17,8 @@ from .middleware import jsoninator, JSONifiable
 logger = get_logger(__name__)
 
 
-class StatNameChoices(Enum):
-    HASHES = "hashes"
-    MATCHES = "matches"
-    ACTIONS_TAKEN = "actions"
-
-
 @dataclass
 class StatsCard(JSONifiable):
-    stat_name: StatNameChoices
     number: int
     time_span: metrics_query.MetricTimePeriod
     graph_data: t.List[t.Tuple[datetime.datetime, int]]
@@ -36,7 +28,6 @@ class StatsCard(JSONifiable):
         result = asdict(self)
         result.update(
             last_updated=int(self.last_updated.timestamp()),
-            stat_name=self.stat_name.value,
             time_span=self.time_span.value,
             graph_data=[
                 [int(datum[0].timestamp()), datum[1]] for datum in self.graph_data
@@ -46,16 +37,15 @@ class StatsCard(JSONifiable):
 
 
 @dataclass
-class DefaultStatsResponse(JSONifiable):
+class StatResponse(JSONifiable):
     """
-    The first stats page. Contains most stats you need to understand how things
-    are at a high level.
+    Represents a single stat.
     """
 
-    stats: t.List[StatsCard] = field(default_factory=list)
+    stat: StatsCard
 
     def to_json(self) -> t.Dict:
-        return {"cards": [s.to_json() for s in self.stats]}
+        return {"card": self.stat.to_json()}
 
 
 def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
@@ -67,8 +57,13 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
     # The documentation below expects prefix to be '/stats/'
     stats_api = bottle.Bottle()
 
+    stat_name_to_metric = {
+        "hashes": metrics.names.pdq_hasher_lambda.hash,
+        "matches": metrics.names.pdq_matcher_lambda.search_index,
+    }
+
     @stats_api.get("/", apply=[jsoninator])
-    def default_stats() -> DefaultStatsResponse:
+    def default_stats() -> StatResponse:
         """
         If measure performance tfvar/os.env is true, it returns stats, else,
         returns 404. A 404 should be surfaced by clients with instructions on
@@ -80,6 +75,17 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
         if not is_publishing_metrics():
             return bottle.abort(404, "This HMA instance is not publishing metrics.")
 
+        if (
+            not bottle.request.query.stat_name
+            or bottle.request.query.stat_name not in stat_name_to_metric
+        ):
+            return bottle.abort(
+                400,
+                f"Must specifiy stat_name in query parameters. Must be one of {stat_name_to_metric.keys()}",
+            )
+
+        metric = stat_name_to_metric.get(bottle.request.query.stat_name)
+
         time_span_arg = bottle.request.query.time_span
         metric_time_period = {
             "24h": metrics_query.MetricTimePeriod.HOURS_24,
@@ -88,33 +94,16 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
         }.get(time_span_arg, metrics_query.MetricTimePeriod.HOURS_24)
 
         count_with_graphs = metrics_query.get_count_with_graph(
-            [
-                metrics.names.pdq_hasher_lambda.hash,
-                metrics.names.pdq_matcher_lambda.search_index,
-                # metrics.names.actionining stuff.
-            ],
+            [metric],
             metric_time_period,
         )
 
-        return DefaultStatsResponse(
-            [
-                StatsCard(
-                    StatNameChoices.HASHES,
-                    count_with_graphs[metrics.names.pdq_hasher_lambda.hash].count,
-                    metric_time_period,
-                    count_with_graphs[metrics.names.pdq_hasher_lambda.hash].graph_data,
-                ),
-                StatsCard(
-                    StatNameChoices.MATCHES,
-                    count_with_graphs[
-                        metrics.names.pdq_matcher_lambda.search_index
-                    ].count,
-                    metric_time_period,
-                    count_with_graphs[
-                        metrics.names.pdq_matcher_lambda.search_index
-                    ].graph_data,
-                ),
-            ]
+        return StatResponse(
+            StatsCard(
+                count_with_graphs[metric].count,
+                metric_time_period,
+                count_with_graphs[metric].graph_data,
+            )
         )
 
     return stats_api

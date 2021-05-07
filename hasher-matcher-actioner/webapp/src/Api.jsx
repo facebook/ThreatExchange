@@ -67,14 +67,8 @@ export function fetchDashboardCardSummary(path) {
   return apiGet(`/${path}`);
 }
 
-export const StatsTimeSpans = Object.freeze({
-  HOURS_1: '1h',
-  HOURS_24: '24h',
-  DAYS_7: '7d',
-});
-
-export function fetchStats(timeSpan) {
-  return apiGet('/stats/', {time_span: timeSpan});
+export function fetchStats(statName, timeSpan) {
+  return apiGet('/stats/', {stat_name: statName, time_span: timeSpan});
 }
 
 export async function uploadImage(file) {

@@ -3,6 +3,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
+import PropTypes from 'prop-types';
 import {
   Container,
   Row,
@@ -14,7 +15,8 @@ import {
   DropdownButton,
 } from 'react-bootstrap';
 
-import {fetchStats, StatsTimeSpans} from '../Api';
+import {fetchStats} from '../Api';
+import {StatNames, StatsTimeSpans} from '../utils/constants';
 import GraphWithNumberWidget from '../components/GraphWithNumberWidget';
 
 function getDisplayTitle(statName) {
@@ -70,14 +72,7 @@ function toUFlotFormat(graphData) {
  * Will be renamed as Dashboard.jsx once we replace it.
  */
 export default function Dash() {
-  const [statCards, setStatCards] = useState([]);
   const [timeSpan, setTimeSpan] = useState(StatsTimeSpans.HOURS_24);
-
-  useEffect(() => {
-    fetchStats(timeSpan).then(response => {
-      setStatCards(response.cards);
-    });
-  }, [timeSpan]);
 
   return (
     <Container className="m-4">
@@ -93,6 +88,7 @@ export default function Dash() {
               .map(entry => entry[1]) // Get values only, no keys.
               .map((timeSpanChoice, index) => (
                 <Dropdown.Item
+                  key={`time-span-picker-${timeSpanChoice}`}
                   eventKey={index}
                   onSelect={() => setTimeSpan(timeSpanChoice)}>
                   {getDisplayTimeSpan(timeSpanChoice)}
@@ -103,30 +99,44 @@ export default function Dash() {
       </Row>
       <Row>
         <Col xs={6}>
-          {statCards.length === 0 ? (
-            <Spinner animation="border" role="status">
-              <span className="sr-only">Loading...</span>
-            </Spinner>
-          ) : (
-            statCards.map(card => (
-              <Card key={`stat-card-${card.stat_name}`} className="mb-4">
-                <Card.Header>
-                  <GraphWithNumberWidget
-                    graphData={toUFlotFormat(card.graph_data)}
-                  />
-                  <h1>{getDisplayNumber(card.number)}</h1>
-                </Card.Header>
-                <Card.Body>
-                  <Card.Title>{getDisplayTitle(card.stat_name)}</Card.Title>
-                  <Card.Subtitle>
-                    Processed in the last {getDisplayTimeSpan(card.time_span)}.
-                  </Card.Subtitle>
-                </Card.Body>
-              </Card>
-            ))
-          )}
+          <StatCard statName={StatNames.HASHES} timeSpan={timeSpan} />
+          <StatCard statName={StatNames.MATCHES} timeSpan={timeSpan} />
         </Col>
       </Row>
     </Container>
   );
 }
+
+function StatCard({statName, timeSpan}) {
+  const [card, setCard] = useState(undefined);
+
+  useEffect(() => {
+    fetchStats(statName, timeSpan).then(response => {
+      setCard(response.card);
+    });
+  }, [timeSpan]);
+
+  return card === undefined ? (
+    <Spinner animation="border" role="status">
+      <span className="sr-only">Loading...</span>
+    </Spinner>
+  ) : (
+    <Card key={`stat-card-${statName}`} className="mb-4">
+      <Card.Header>
+        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
+        <h1>{getDisplayNumber(card.number)}</h1>
+      </Card.Header>
+      <Card.Body>
+        <Card.Title>{getDisplayTitle(statName)}</Card.Title>
+        <Card.Subtitle>
+          Processed in the last {getDisplayTimeSpan(card.time_span)}.
+        </Card.Subtitle>
+      </Card.Body>
+    </Card>
+  );
+}
+
+StatCard.propTypes = {
+  statName: PropTypes.string.isRequired,
+  timeSpan: PropTypes.string.isRequired,
+};

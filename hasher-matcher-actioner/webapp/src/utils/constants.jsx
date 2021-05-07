@@ -24,3 +24,16 @@ export const SUBMISSION_TYPE = Object.freeze({
   S3_OBJECT: 'S3 Object (example only)',
   URL: 'URL (example only)',
 });
+
+// Matchtes MetricTimePeriod in hmalib/metrics/query.py
+export const StatsTimeSpans = Object.freeze({
+  HOURS_1: '1h',
+  HOURS_24: '24h',
+  DAYS_7: '7d',
+});
+
+// Matchtes stat_name_to_metric in hmalib/lambdas/api/stats.py
+export const StatNames = Object.freeze({
+  HASHES: 'hashes',
+  MATCHES: 'matches',
+});
