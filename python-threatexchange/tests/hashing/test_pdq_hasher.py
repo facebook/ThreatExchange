@@ -48,7 +48,7 @@ RANDOM_IMAGE_PDQ = "ad64cd9875e131a177b1f2a0d6b38ae1de9ea80421e4c51dde1b0363deba
 
 class PDQHasherModuleUnitTest(unittest.TestCase):
     def test_pdq_from_file(self):
-        """ Writes a few bytes to a file and runs the pdq hasher on it. """
+        """Writes a few bytes to a file and runs the pdq hasher on it."""
         with tempfile.NamedTemporaryFile("w+b") as f:
             f.write(base64.b64decode(RANDOM_IMAGE_BASE64))
             f.flush()
@@ -57,7 +57,7 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
             assert pdq_hash == RANDOM_IMAGE_PDQ
 
     def test_pdq_from_bytes(self):
-        """Runs the pdq hashser directly on bytes """
+        """Runs the pdq hashser directly on bytes"""
         bytes_ = base64.b64decode(RANDOM_IMAGE_BASE64)
         pdq_hash = pdq_hasher.pdq_from_bytes(bytes_)[0]
         assert pdq_hash == RANDOM_IMAGE_PDQ
