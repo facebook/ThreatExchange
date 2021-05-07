@@ -19,6 +19,13 @@ export function formatTimestamp(timestamp) {
   }).format(new Date(timestamp));
 }
 
+/**
+ * Convert an ISO Date String to a relative time value.
+ * eg. Converts 2021-08-28T00:00:00 into 12 minutes ago.
+ *
+ * @param {string} isoDateString
+ * @returns string
+ */
 export function timeAgo(isoDateString) {
   return formatDistanceToNow(parseISO(isoDateString), {addSuffix: true});
 }

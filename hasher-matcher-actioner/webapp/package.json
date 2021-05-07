@@ -19,7 +19,9 @@
     "react-bootstrap": "^1.5.2",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "4.0.3"
+    "react-scripts": "4.0.3",
+    "uplot": "^1.6.9",
+    "uplot-react": "^1.0.2"
   },
   "scripts": {
     "start": "react-scripts start",
