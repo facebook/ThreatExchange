@@ -17,6 +17,7 @@ import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import ContentDetails from './pages/ContentDetails';
 import Matches from './pages/Matches';
+import Dash from './pages/Dash';
 import Settings from './Settings';
 import Signals from './Signals';
 import Upload from './Upload';
@@ -34,7 +35,10 @@ export default function App() {
       <Router>
         <div className="row">
           <Sidebar className="col-md-2 bg-light sidebar" />
-          <main role="main" className="col-md-10 px-0 main">
+          <main
+            role="main"
+            className="col-md-10 px-0 main"
+            style={{overflow: 'auto'}}>
             <Switch>
               <Route path="/matches/:id">
                 <ContentDetails />
@@ -53,6 +57,9 @@ export default function App() {
               </Route>
               <Route path="/settings/:tab">
                 <Settings />
+              </Route>
+              <Route path="/dashboard">
+                <Dash />
               </Route>
               <Route path="/settings">
                 <Redirect to="/settings/signals" />

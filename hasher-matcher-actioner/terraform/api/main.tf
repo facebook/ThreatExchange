@@ -44,6 +44,7 @@ resource "aws_lambda_function" "api_root" {
       THREAT_EXCHANGE_DATA_FOLDER           = var.threat_exchange_data.data_folder
       THREAT_EXCHANGE_PDQ_FILE_EXTENSION    = var.threat_exchange_data.pdq_file_extension
       THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
+      MEASURE_PERFORMANCE                   = var.measure_performance ? "True" : "False"
     }
   }
   tags = merge(
@@ -118,6 +119,12 @@ data "aws_iam_policy_document" "api_root" {
       "logs:DescribeLogStreams"
     ]
     resources = ["${aws_cloudwatch_log_group.api_root.arn}:*"]
+  }
+  
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:GetMetricStatistics"]
+    resources = ["*"]
   }
 
   statement {

@@ -89,3 +89,9 @@ variable "te_api_token_secret" {
     arn  = string
   })
 }
+
+variable "measure_performance" {
+  description = "Send metrics to cloudwatch. Useful for benchmarking, but can incur costs. Set to string True for this to work."
+  type        = bool
+  default     = false
+}
