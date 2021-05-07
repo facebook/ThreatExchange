@@ -29,8 +29,12 @@ class WritebackerTestCase(unittest.TestCase):
     # Writebacks are enabled for the trustworth privacy group not for
     # the untrustworthy one
     configs = [
-        ThreatExchangeConfig("pg 4", True, "Trustworthy PG", True, True),
-        ThreatExchangeConfig("pg 3", True, "UnTrustworthy PG", True, False),
+        ThreatExchangeConfig(
+            "pg 4", True, "Trustworthy PG", "test description", True, True, True
+        ),
+        ThreatExchangeConfig(
+            "pg 3", True, "UnTrustworthy PG", "test description", True, False, True
+        ),
     ]
 
     for config in configs:

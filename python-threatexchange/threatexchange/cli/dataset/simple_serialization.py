@@ -95,7 +95,10 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
 class HMASerialization(CliIndicatorSerialization):
     """
     A Serialization for HMA Similar to CliIndicatorSerialization but with
-    Indicator ID instead of Descriptor ID
+    Indicator ID.
+
+    We also include the First Descriptor ID. The logic to determine which ID
+    this is can be found in the SimpleDescriptorRollup
     """
 
     def __init__(
@@ -124,6 +127,17 @@ class HMASerialization(CliIndicatorSerialization):
         )
 
     @classmethod
+    def from_csv_row(
+        cls, row: t.List[t.Any], indicator_type: str
+    ) -> "HMASerialization":
+        return cls(
+            str(row[0]),
+            indicator_type,
+            str(row[1]),
+            SimpleDescriptorRollup.from_row(row[2:]),
+        )
+
+    @classmethod
     def load(
         cls, state_dir: pathlib.Path
     ) -> t.List["threat_updates.ThreatUpdateSerialization"]:
@@ -139,12 +153,27 @@ class HMASerialization(CliIndicatorSerialization):
             csv.field_size_limit(path.stat().st_size)  # dodge field size problems
             with path.open("r", newline="") as f:
                 for row in csv.reader(f):
-                    ret.append(
-                        cls(
-                            row[0],
-                            indicator_type,
-                            row[1],
-                            SimpleDescriptorRollup.from_row(row[2:]),
-                        )
-                    )
+                    ret.append(cls.from_csv_row(row, indicator_type))
         return ret
+
+
+if __name__ == "__main__":
+    # Test Serialize Deserialize
+    indicator = "indicator"
+    indicator_id = "12345"
+    first_descriptor_id = 6789
+    added_on = "today"
+    labels = {"tag1", "tag2"}
+
+    ser = HMASerialization(
+        indicator,
+        "HASH_PDQ",
+        indicator_id,
+        SimpleDescriptorRollup(first_descriptor_id, added_on, labels),
+    )
+    serdeser = HMASerialization.from_csv_row(ser.as_csv_row(), "HASH_PDQ")
+
+    if ser.as_csv_row() == serdeser.as_csv_row():
+        print("Serialization worked correctly")
+    else:
+        print("Serialization failed")

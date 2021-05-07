@@ -82,6 +82,8 @@ def load_defaults(_args):
             privacy_group_name="Test Config 1",
             write_back=True,
             in_use=True,
+            description="test description",
+            matcher_active=True,
         ),
         ThreatExchangeConfig(
             name="258601789084078",
@@ -89,6 +91,8 @@ def load_defaults(_args):
             privacy_group_name="Test Config 2",
             write_back=True,
             in_use=True,
+            description="test description",
+            matcher_active=True,
         ),
         WebhookPostActionPerformer(
             name="EnqueueForReview",
@@ -176,7 +180,10 @@ if __name__ == "__main__":
             elif field.type is bool:
                 parse_type = better_bool_type
             elif field.type in (t.Set[str], t.List[str]):
-                parse_type = lambda x: set(x.split(","))
+
+                def parse_type(x):
+                    return set(x.split(","))
+
             else:
                 raise Exception(f"Unsupported type in config: {field.type}")
             arg = field.name
