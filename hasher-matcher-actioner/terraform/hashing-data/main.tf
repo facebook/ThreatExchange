@@ -22,6 +22,13 @@ resource "aws_s3_bucket" "data_bucket" {
       Name = "HashingDataBucket"
     }
   )
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT"]
+    allowed_origins = ["*"]
+    max_age_seconds = 3000
+  }
+
   versioning {
     enabled = true
   }
