@@ -110,7 +110,13 @@ def get_count_with_graph(
         total = int(functools.reduce(lambda acc, s: acc + s["Sum"], stats, 0))
 
         graph_data = [
-            (s["Timestamp"].replace(tzinfo=None), int(s["Sum"])) for s in stats
+            # Removing tzinfo because you can't work with timezone aware
+            # datetime objects and timezone unaware timedelta objects. Either
+            # way, eventually, these get decomposed to an epoch value, so this
+            # will not hurt.
+            # `_pad_with_None_values` expects timezone unaware objects.
+            (s["Timestamp"].replace(tzinfo=None), int(s["Sum"]))
+            for s in stats
         ]
         graph_data.sort(key=lambda t: t[0])  # Sort by timestamp
         graph_data = _pad_with_None_values(graph_data, start_time, end_time)

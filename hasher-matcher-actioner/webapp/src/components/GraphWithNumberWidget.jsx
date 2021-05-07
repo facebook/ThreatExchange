@@ -11,7 +11,7 @@ import '../../node_modules/uplot/dist/uPlot.min.css';
 
 /**
  * Reduces the width required for displaying a number. eg. 4,000 -> 4k.
- * 2,000,000 -> 2M etc.
+ * 2,000,000 -> 2m etc.
  */
 function shortenNumRepr(n) {
   if (n < 1e3) return n;
@@ -43,13 +43,7 @@ const opts = {
   ],
 };
 
-// const data = [
-//   [1546300800, 1546387200], // x-values (timestamps)
-//   [35, 71], // y-values (series 1)
-// ];
-
-export default function GraphWithNumberWidget({number, graphData}) {
-  console.log(number);
+export default function GraphWithNumberWidget({graphData}) {
   return (
     <div>
       <UplotReact options={opts} data={graphData} />
@@ -58,6 +52,5 @@ export default function GraphWithNumberWidget({number, graphData}) {
 }
 
 GraphWithNumberWidget.propTypes = {
-  number: PropTypes.number.isRequired,
   graphData: PropTypes.arrayOf(PropTypes.number).isRequired,
 };

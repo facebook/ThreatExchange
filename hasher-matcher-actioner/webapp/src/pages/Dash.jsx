@@ -77,8 +77,10 @@ export default function Dash() {
   return (
     <Container className="m-4">
       <Row>
-        <Col xs={6} className="mb-4 d-flex justify-content-end">
-          <div>Show statistics for the last</div>
+        <Col
+          xs={6}
+          className="mb-4 d-flex align-items-baseline justify-content-end">
+          <div className="align-middle mr-2">Show statistics for the last</div>
           <DropdownButton
             as={ButtonGroup}
             id="dropdown-time-span-picker"
