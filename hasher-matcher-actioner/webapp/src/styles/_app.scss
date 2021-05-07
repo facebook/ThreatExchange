@@ -13,4 +13,26 @@ div#root {
 
 .main {
   height: 100vh;
+  overflow-y: auto;
+}
+
+.action-rule-classification-column {
+  word-wrap: break-word;
+  max-width: 250px;
+}
+
+.ion-icon-white {
+  color: white;
+}
+
+.table-action-button {
+  display: block;
+  margin: auto;
+}
+
+.feedback-toast-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  padding: 25px;
 }

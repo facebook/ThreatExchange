@@ -3,7 +3,12 @@
  */
 
 import React from 'react';
-import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Redirect,
+  Route,
+  Switch,
+} from 'react-router-dom';
 import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 
 import './styles/_app.scss';
@@ -46,8 +51,11 @@ export default function App() {
               <Route path="/submit">
                 <SubmitContent />
               </Route>
-              <Route path="/settings">
+              <Route path="/settings/:tab">
                 <Settings />
+              </Route>
+              <Route path="/settings">
+                <Redirect to="/settings/signals" />
               </Route>
               <Route path="/">
                 <Dashboard />
