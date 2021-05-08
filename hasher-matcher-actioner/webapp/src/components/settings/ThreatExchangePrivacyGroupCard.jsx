@@ -8,7 +8,7 @@ import {
   OverlayTrigger,
   Popover,
 } from 'react-bootstrap';
-import {CopyableTextField} from '../utils/TextFieldsUtils';
+import {CopyableTextField} from '../../utils/TextFieldsUtils';
 
 export default function ThreatExchangePrivacyGroupCard({
   fetcherActive,

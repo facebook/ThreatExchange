@@ -12,7 +12,7 @@ import {
   OverlayTrigger,
   Card,
 } from 'react-bootstrap';
-import ThreatExchangePrivacyGroupCard from '../../components/ThreatExchangePrivacyGroupCard';
+import ThreatExchangePrivacyGroupCard from '../../components/settings/ThreatExchangePrivacyGroupCard';
 import {
   fetchAllDatasets,
   syncAllDatasets,
