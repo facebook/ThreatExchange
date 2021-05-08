@@ -13,6 +13,7 @@ import Modal from 'react-bootstrap/Modal';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
+import '../../styles/_settings.scss';
 
 const mockedActionRules = [
   {
