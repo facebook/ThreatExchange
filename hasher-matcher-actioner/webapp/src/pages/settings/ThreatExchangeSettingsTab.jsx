@@ -12,13 +12,13 @@ import {
   OverlayTrigger,
   Card,
 } from 'react-bootstrap';
-import ThreatExchangePrivacyGroupCard from '../components/ThreatExchangePrivacyGroupCard';
+import ThreatExchangePrivacyGroupCard from '../../components/settings/ThreatExchangePrivacyGroupCard';
 import {
   fetchAllDatasets,
   syncAllDatasets,
   updateDataset,
   deleteDataset,
-} from '../Api';
+} from '../../Api';
 
 export default function ThreatExchangeSettingsTab() {
   const [datasets, setDatasets] = useState([]);
