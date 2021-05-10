@@ -53,8 +53,10 @@ def _period(period: MetricTimePeriod):
 
 
 def _pad_with_None_values(
-    graph_data: t.List[t.Tuple[datetime, int]], start_time: datetime, end_time: datetime
-):
+    graph_data: t.List[t.Tuple[datetime, t.Optional[int]]],
+    start_time: datetime,
+    end_time: datetime,
+) -> t.List[t.Tuple[datetime, t.Optional[int]]]:
     """
     Pad graph data with 0 values if the first or last entries are too far (>60
     seconds) from start or end time respectively.
@@ -67,11 +69,11 @@ def _pad_with_None_values(
         or abs((start_time - graph_data[0][0]).total_seconds()) > 60
     ):
         # If start time and the first graph point have more than a minute, pad
-        graph_data.insert(0, [start_time, None])
+        graph_data.insert(0, (start_time, None))
 
     if len(graph_data) == 0 or abs((end_time - graph_data[-1][0]).total_seconds()) > 60:
         # If start time and the first graph point have more than a minute, pad
-        graph_data.append([end_time, None])
+        graph_data.append((end_time, None))
 
     return graph_data
 
@@ -79,7 +81,7 @@ def _pad_with_None_values(
 @dataclass
 class CountMetricWithGraph:
     count: int
-    graph_data: t.List[t.Tuple[datetime, int]]
+    graph_data: t.List[t.Tuple[datetime, t.Optional[int]]]
 
 
 def get_count_with_graph(
@@ -109,7 +111,7 @@ def get_count_with_graph(
 
         total = int(functools.reduce(lambda acc, s: acc + s["Sum"], stats, 0))
 
-        graph_data = [
+        graph_data: t.List[t.Tuple[datetime, t.Optional[int]]] = [
             # Removing tzinfo because you can't work with timezone aware
             # datetime objects and timezone unaware timedelta objects. Either
             # way, eventually, these get decomposed to an epoch value, so this
