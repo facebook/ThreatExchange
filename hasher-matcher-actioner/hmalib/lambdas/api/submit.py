@@ -19,6 +19,49 @@ s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
 
+def create_presigned_put_url(bucket_name, object_name, file_type, expiration=3600):
+    """
+    Generate a presigned URL to share an S3 object
+    """
+
+    s3_client = boto3.client("s3")
+    try:
+        response = s3_client.generate_presigned_url(
+            "put_object",
+            Params={
+                "Bucket": bucket_name,
+                "Key": object_name,
+                "ContentType": file_type,
+            },
+            ExpiresIn=expiration,
+        )
+    except ClientError as e:
+        logger.error(e)
+        return None
+
+    return response
+
+
+@dataclass
+class InitUploadResponse(JSONifiable):
+    content_id: str
+    file_type: str
+    presigned_url: str
+
+    def to_json(self) -> t.Dict:
+        return asdict(self)
+
+
+@dataclass
+class InitUploadRequestBody(DictParseable):
+    content_id: str
+    file_type: str
+
+    @classmethod
+    def from_dict(cls, d):
+        return cls(d["content_id"], d["file_type"])
+
+
 # TODO use enum in storage class
 class SubmissionType(Enum):
     UPLOAD = "Direct Upload"
@@ -59,7 +102,7 @@ class SubmitContentResponse(JSONifiable):
 @dataclass
 class SubmitContentError(JSONifiable):
     """
-    Warning: by defualt this will still return 200
+    Warning: by default this will still return 200
     you need to update bottle.response.status
     if you want a specific return code.
     ToDo update middleware.py to handle this.
@@ -142,5 +185,32 @@ def get_submit_api(
                 content_id=request.content_id,
                 message="submission_type not yet supported",
             )
+
+    @submit_api.post("/init-upload/", apply=[jsoninator(InitUploadRequestBody)])
+    def init_upload(
+        request: InitUploadRequestBody,
+    ) -> t.Union[InitUploadResponse, SubmitContentError]:
+        """
+        TODO Endpoint to provide requester with presigned url to upload a photo
+        """
+
+        # TODO error checking on if key already exist etc.
+        presigned_url = create_presigned_put_url(
+            bucket_name=image_bucket_key,
+            object_name=f"{image_folder_key}{request.content_id}",
+            file_type=request.file_type,
+        )
+        if presigned_url:
+            return InitUploadResponse(
+                content_id=request.content_id,
+                file_type=request.file_type,
+                presigned_url=presigned_url,
+            )
+
+        bottle.response.status = 400
+        return SubmitContentError(
+            content_id=request.content_id,
+            message="not yet supported",
+        )
 
     return submit_api
