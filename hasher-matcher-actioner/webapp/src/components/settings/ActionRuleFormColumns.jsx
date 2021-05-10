@@ -18,9 +18,9 @@ export default function ActionRuleFormColumns({
   onChange,
 }) {
   const actionOptions = actions
-    ? actions.map(actn => (
-        <option key={actn.id} value={actn.id}>
-          {actn.name}
+    ? actions.map(action => (
+        <option key={action.id} value={action.id}>
+          {action.name}
         </option>
       ))
     : [];
@@ -96,10 +96,10 @@ ActionRuleFormColumns.propTypes = {
       name: PropTypes.string.isRequired,
     }),
   ).isRequired,
-  name: PropTypes.string,
-  mustHaveLabels: PropTypes.string,
-  mustNotHaveLabels: PropTypes.string,
-  actionId: PropTypes.string,
+  name: PropTypes.string.isRequired,
+  mustHaveLabels: PropTypes.string.isRequired,
+  mustNotHaveLabels: PropTypes.string.isRequired,
+  actionId: PropTypes.string.isRequired,
   showErrors: PropTypes.bool.isRequired,
   nameIsUnique: PropTypes.func.isRequired,
   oldName: PropTypes.string,
@@ -107,9 +107,5 @@ ActionRuleFormColumns.propTypes = {
 };
 
 ActionRuleFormColumns.defaultProps = {
-  name: '',
-  mustHaveLabels: '',
-  mustNotHaveLabels: '',
-  actionId: '0',
   oldName: undefined,
 };

@@ -139,7 +139,7 @@ export default function ActionRulesTableRow({
           name={updatedActionRule.name}
           mustHaveLabels={updatedActionRule.must_have_labels}
           mustNotHaveLabels={updatedActionRule.must_not_have_labels}
-          action={updatedActionRule.action_id}
+          actionId={updatedActionRule.action_id}
           showErrors={showErrors}
           nameIsUnique={nameIsUnique}
           oldName={name}

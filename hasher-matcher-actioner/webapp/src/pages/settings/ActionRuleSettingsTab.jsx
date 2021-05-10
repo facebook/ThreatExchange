@@ -212,7 +212,7 @@ export default function ActionRuleSettingsTab() {
                     name={newActionRule.name}
                     mustHaveLabels={newActionRule.must_have_labels}
                     mustNotHaveLabels={newActionRule.must_not_have_labels}
-                    action={newActionRule.action_id}
+                    actionId={newActionRule.action_id}
                     showErrors={showErrors}
                     nameIsUnique={nameIsUnique}
                     oldName={undefined}
