@@ -5,7 +5,7 @@
 /* eslint-disable react/prop-types */
 
 import React, {useState, useEffect} from 'react';
-import {useHistory} from 'react-router-dom';
+import {Link, useHistory} from 'react-router-dom';
 import {Col, Card, Row} from 'react-bootstrap';
 
 import {fetchDashboardCardSummary} from './Api';
@@ -16,6 +16,7 @@ export default function Dashboard() {
   return (
     <>
       <h1>Dashboard</h1>
+      <Link to="/dashboard">Try the new dashboard!</Link>
       <Row className="mt-3">
         <DashboardCard title="Hashes" endpoint="dashboard-hashes" />
 

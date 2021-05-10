@@ -67,6 +67,10 @@ export function fetchDashboardCardSummary(path) {
   return apiGet(`/${path}`);
 }
 
+export function fetchStats(statName, timeSpan) {
+  return apiGet('/stats/', {stat_name: statName, time_span: timeSpan});
+}
+
 export async function uploadImage(file) {
   const fileReader = new FileReader();
   fileReader.onload = () => {
