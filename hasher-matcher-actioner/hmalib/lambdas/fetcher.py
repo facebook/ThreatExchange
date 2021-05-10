@@ -327,8 +327,8 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 tags=row[4].split(" ") if row[4] else [],
             ).update_tags_in_table_if_exists(table):
                 logger.info(
-                    "Updated Signal Tags in DB for signal id: %s source: %s for privacy group: %d",
-                    row[0],
+                    "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
+                    row[1],
                     S3ThreatDataConfig.SOURCE_STR,
                     self.privacy_group,
                 )
@@ -358,8 +358,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     # This will only kinda work for so long - eventually will
     # need to use a proper harness
-    # lambda_handler(None, None)
-
     csv.field_size_limit(65535)  # dodge field size problems
     rows = [
         "ced62bad954258f42e23904a6edc82a77db541622b598db6b124a6cb9496e7d3,1901095716680926,3170688743018501,2020-07-31T18:47:52+0000,true_positive hma_test",
