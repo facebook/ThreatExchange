@@ -25,6 +25,8 @@ from .datasets_api import get_datasets_api
 from .submit import get_submit_api
 from .stats import get_stats_api
 
+# Set to 10MB for images
+bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
 
 app = bottle.default_app()
 apig_wsgi_handler = make_lambda_handler(app)

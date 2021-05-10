@@ -18,9 +18,6 @@ logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
-# Set to 10MB for images
-bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
-
 
 def create_presigned_put_url(bucket_name, object_name, file_type, expiration=3600):
     """

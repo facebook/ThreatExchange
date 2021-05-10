@@ -33,6 +33,10 @@ from time import perf_counter
 
 STOLEN_JWT_TOKEN = "<STOLEN_JWT_TOKEN>"
 
+# "/" does not work with react router preventing the content submission details from rendering.
+# However it can be used here for easier clean up between storms that do not need the UI.
+SUBMISSION_SEPARATOR = "-"
+
 
 def _send_single_submission_url(api_url: str, filepath: str, metadata: t.Dict) -> int:
     """
@@ -44,23 +48,23 @@ def _send_single_submission_url(api_url: str, filepath: str, metadata: t.Dict) -
     start_time = perf_counter()
 
     with open(filepath, "rb") as f:
-        submission_content_id = f"storm_url/{datetime.date.today().isoformat()}/{str(uuid.uuid4())}-{file_name}"
+        submission_content_id = f"storm_url{SUBMISSION_SEPARATOR}{datetime.date.today().isoformat()}{SUBMISSION_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
 
         payload = {
             "content_id": submission_content_id,
             "file_type": "image/jpeg",
         }
 
-        req = request.Request(submission_path, method="POST")
-        req.add_header("Content-Type", "application/json")
-        req.add_header("Authorization", STOLEN_JWT_TOKEN)
+        get_signed_url_req = request.Request(submission_path, method="POST")
+        get_signed_url_req.add_header("Content-Type", "application/json")
+        get_signed_url_req.add_header("Authorization", STOLEN_JWT_TOKEN)
         payload = json.dumps(payload)
         payload = payload.encode()
 
-        r = request.urlopen(req, data=payload)
-        r = json.loads(r.read().decode("utf-8"))
-        r = requests.put(
-            r["presigned_url"], data=f, headers={"content-type": "image/jpeg"}
+        response = request.urlopen(get_signed_url_req, data=payload)
+        response = json.loads(response.read().decode("utf-8"))
+        put_response = requests.put(
+            response["presigned_url"], data=f, headers={"content-type": "image/jpeg"}
         )
 
     # convert seconds to miliseconds.
@@ -78,7 +82,7 @@ def _send_single_submission_b64(api_url: str, filepath: str, metadata: t.Dict) -
     with open(filepath, "rb") as f:
         payload = {
             "submission_type": "UPLOAD",
-            "content_id": f"storm/{datetime.date.today().isoformat()}/{str(uuid.uuid4())}-{file_name}",
+            "content_id": f"storm{SUBMISSION_SEPARATOR}{datetime.date.today().isoformat()}{SUBMISSION_SEPARATOR}{str(uuid.uuid4())}-{file_name}",
             "content_type": "photo",
             "content_ref": str(base64.b64encode(f.read()), "utf-8"),
             "metadata": [],
