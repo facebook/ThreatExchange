@@ -2,9 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-/* eslint-disable react/prop-types */
-
 import React, {useState} from 'react';
+import {PropTypes} from 'prop-types';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import ActionRuleFormColumns from './ActionRuleFormColumns';
@@ -150,3 +149,24 @@ export default function ActionRulesTableRow({
     </>
   );
 }
+
+ActionRulesTableRow.propTypes = {
+  actions: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
+  name: PropTypes.string.isRequired,
+  mustHaveLabels: PropTypes.string.isRequired,
+  mustNotHaveLabels: PropTypes.string,
+  actionId: PropTypes.string.isRequired,
+  onDeleteActionRule: PropTypes.func.isRequired,
+  onUpdateActionRule: PropTypes.func.isRequired,
+  ruleIsValid: PropTypes.func.isRequired,
+  nameIsUnique: PropTypes.func.isRequired,
+};
+
+ActionRulesTableRow.defaultProps = {
+  mustNotHaveLabels: '',
+};

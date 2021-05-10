@@ -2,9 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-/* eslint-disable react/prop-types */
-
 import React from 'react';
+import {PropTypes} from 'prop-types';
 import Form from 'react-bootstrap/Form';
 
 export default function ActionRuleFormColumns({
@@ -12,7 +11,7 @@ export default function ActionRuleFormColumns({
   name,
   mustHaveLabels,
   mustNotHaveLabels,
-  action,
+  actionId,
   showErrors,
   nameIsUnique,
   oldName,
@@ -72,14 +71,14 @@ export default function ActionRuleFormColumns({
       <td>
         <Form.Label>
           Action
-          <span hidden={!showErrors || action !== '0'}> (required)</span>
+          <span hidden={!showErrors || actionId !== '0'}> (required)</span>
         </Form.Label>
         <Form.Control
           as="select"
           required
-          value={action}
+          value={actionId}
           onChange={e => onChange({action_id: e.target.value})}
-          isInvalid={showErrors && action === '0'}>
+          isInvalid={showErrors && actionId === '0'}>
           <option value="0" key="0">
             Select an action...
           </option>
@@ -89,3 +88,28 @@ export default function ActionRuleFormColumns({
     </>
   );
 }
+
+ActionRuleFormColumns.propTypes = {
+  actions: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
+  name: PropTypes.string,
+  mustHaveLabels: PropTypes.string,
+  mustNotHaveLabels: PropTypes.string,
+  actionId: PropTypes.string,
+  showErrors: PropTypes.bool.isRequired,
+  nameIsUnique: PropTypes.func.isRequired,
+  oldName: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+};
+
+ActionRuleFormColumns.defaultProps = {
+  name: '',
+  mustHaveLabels: '',
+  mustNotHaveLabels: '',
+  actionId: '0',
+  oldName: undefined,
+};
