@@ -21,8 +21,8 @@ logger = get_logger(__name__)
 class StatsCard(JSONifiable):
     number: int
     time_span: metrics_query.MetricTimePeriod
-    graph_data: t.List[t.Tuple[datetime.datetime, int]]
-    last_updated: str = field(default_factory=datetime.datetime.now)
+    graph_data: t.List[t.Tuple[datetime.datetime, t.Optional[int]]]
+    last_updated: datetime.datetime = field(default_factory=datetime.datetime.now)
 
     def to_json(self) -> t.Dict:
         result = asdict(self)
@@ -84,7 +84,7 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
                 f"Must specifiy stat_name in query parameters. Must be one of {stat_name_to_metric.keys()}",
             )
 
-        metric = stat_name_to_metric.get(bottle.request.query.stat_name)
+        metric = stat_name_to_metric[bottle.request.query.stat_name]
 
         time_span_arg = bottle.request.query.time_span
         metric_time_period = {
