@@ -71,7 +71,7 @@ function toUFlotFormat(graphData) {
 /**
  * Will be renamed as Dashboard.jsx once we replace it.
  */
-export default function Dash() {
+export default function Dashboard() {
   const [timeSpan, setTimeSpan] = useState(StatsTimeSpans.HOURS_24);
 
   return (

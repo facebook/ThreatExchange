@@ -14,10 +14,9 @@ import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 import './styles/_app.scss';
 
 import Sidebar from './Sidebar';
-import Dashboard from './Dashboard';
 import ContentDetails from './pages/ContentDetails';
 import Matches from './pages/Matches';
-import Dash from './pages/Dash';
+import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import Signals from './Signals';
 import Upload from './Upload';
@@ -57,9 +56,6 @@ export default function App() {
               </Route>
               <Route path="/settings/:tab">
                 <Settings />
-              </Route>
-              <Route path="/dashboard">
-                <Dash />
               </Route>
               <Route path="/settings">
                 <Redirect to="/settings/signals" />
