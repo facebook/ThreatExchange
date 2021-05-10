@@ -33,7 +33,7 @@ from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
-from threatexchange.cli.dataset.simple_serialization import CliIndicatorSerialization
+from threatexchange.cli.dataset.simple_serialization import HMASerialization
 from threatexchange.descriptor import SimpleDescriptorRollup
 from threatexchange.signal_type.pdq import PdqSignal
 
@@ -255,10 +255,11 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 csv.field_size_limit(65535)  # dodge field size problems
                 for row in csv.reader(txt_content):
                     items.append(
-                        CliIndicatorSerialization(
-                            "HASH_PDQ",
+                        HMASerialization(
                             row[0],
-                            SimpleDescriptorRollup.from_row(row[1:]),
+                            "HASH_PDQ",
+                            row[1],
+                            SimpleDescriptorRollup.from_row(row[2:]),
                         )
                     )
                 logger.info("%d rows loaded for %d", len(items), self.privacy_group)
@@ -266,7 +267,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             self._cached_state = {item.key: item for item in items}
         return self._cached_state
 
-    def _store_state(self, contents: t.Iterable["CliIndicatorSerialization"]):
+    def _store_state(self, contents: t.Iterable["HMASerialization"]):
         row_by_type: t.DefaultDict = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
@@ -288,7 +289,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         if delta.start > 0:
             state = self.load_state()
         for update in delta:
-            item = CliIndicatorSerialization.from_threat_updates_json(
+            item = HMASerialization.from_threat_updates_json(
                 self.app_id, update.raw_json
             )
             if update.should_delete:
@@ -307,23 +308,26 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         After the fetcher applies an update, check for matches
         to any of the signals in data_store_table and if found update
         their tags.
+
+        Additionally, if writebacks are enabled for this privacy group write back
+        INGESTED to ThreatExchange
         """
         table = dynamodb.Table(self.data_store_table)
 
         for update in updated.values():
             row = update.as_csv_row()
-            # example row format: ('<signal>', '<id>', '<time added>', '<tag1 tags2>')
-            # e.g ('096a6f9...064f', 1234567891234567, '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+            # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
+            # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
             if PDQSignalMetadata(
                 signal_id=int(row[1]),
                 ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
                 signal_source=S3ThreatDataConfig.SOURCE_STR,
                 signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
-                tags=row[3].split(" ") if row[3] else [],
+                tags=row[4].split(" ") if row[4] else [],
             ).update_tags_in_table_if_exists(table):
                 logger.info(
-                    "Updated Signal Tags in DB for signal id: %s source: %s for privacy group: %d",
+                    "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
                     row[1],
                     S3ThreatDataConfig.SOURCE_STR,
                     self.privacy_group,
@@ -354,4 +358,16 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     # This will only kinda work for so long - eventually will
     # need to use a proper harness
-    lambda_handler(None, None)
+    csv.field_size_limit(65535)  # dodge field size problems
+    rows = [
+        "ced62bad954258f42e23904a6edc82a77db541622b598db6b124a6cb9496e7d3,1901095716680926,3170688743018501,2020-07-31T18:47:52+0000,true_positive hma_test",
+        "1eccc389c5db3db9b02647666bd24e8c9618e0e5342199de37104f1ef7659a87,2772434039524407,3226049650848873,2020-07-31T18:47:52+0000,true_positive hma_test",
+    ]
+    for row in csv.reader(rows):
+        HMASerialization(
+            row[0],
+            "HASH_PDQ",
+            row[1],
+            SimpleDescriptorRollup.from_row(row[2:]),
+        )
+        print("serialized row")

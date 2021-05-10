@@ -121,7 +121,7 @@ class ThreatExchangeS3Adapter:
                 row["hash"],
                 # Also add hash to metadata for easy look up on match
                 {
-                    "id": int(row["id"]),
+                    "id": int(row["indicator_id"]),
                     "hash": row["hash"],
                     "source": self.config.SOURCE_STR,  # default for now to make downstream easier to generalize
                     "privacy_groups": set(
@@ -147,7 +147,7 @@ class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
 
     @property
     def indicator_type_file_columns(self):
-        return ["hash", "id", "timestamp", "tags"]
+        return ["hash", "indicator_id", "descriptor_id", "timestamp", "tags"]
 
     @property
     def file_type_str_name(self):

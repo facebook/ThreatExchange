@@ -53,8 +53,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "reacted SAW_THIS_TOO to 1 descriptors",
-                    "reacted SAW_THIS_TOO to 1 descriptors",
+                    "reacted SAW_THIS_TOO to 2 descriptors",
+                    "reacted SAW_THIS_TOO to 2 descriptors",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
@@ -75,8 +75,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "reacted INGESTED to 1 descriptors",
-                    "reacted INGESTED to 1 descriptors",
+                    "reacted INGESTED to 2 descriptors",
+                    "reacted INGESTED to 2 descriptors",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
