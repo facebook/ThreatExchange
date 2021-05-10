@@ -130,7 +130,7 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         Fetch new collaborations from ThreatExchnage and potentially update the configs stored in AWS
         """
         sync_privacy_groups()
-        return SyncDatasetResponse(response="Dataset is update-to-date")
+        return SyncDatasetResponse(response="Privacy groups are up to date")
 
     @datasets_api.post("/delete/<key>", apply=[jsoninator])
     def delete_dataset(key=None) -> DeleteDatasetResponse:
@@ -139,6 +139,6 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         """
         config = ThreatExchangeConfig.getx(str(key))
         hmaconfig.delete_config(config)
-        return DeleteDatasetResponse(response="The dataset is deleted")
+        return DeleteDatasetResponse(response="The privacy group is deleted")
 
     return datasets_api
