@@ -53,7 +53,8 @@ def get_index(bucket_name, key):
 def get_privacy_group_matcher_active(privacy_group_id: str) -> bool:
     config = ThreatExchangeConfig.get(privacy_group_id)
     if not config:
-        return True
+        logger.warning("Privacy group %s is not found!", privacy_group_id)
+        return False
     logger.info("matcher_active for %s is %s", privacy_group_id, config.matcher_active)
     return config.matcher_active
 

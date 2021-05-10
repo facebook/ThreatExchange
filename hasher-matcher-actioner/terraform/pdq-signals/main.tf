@@ -80,8 +80,8 @@ resource "aws_iam_role" "pdq_indexer" {
 
 data "aws_iam_policy_document" "pdq_indexer" {
   statement {
-    effect = "Allow"
-    actions = [
+    effect    = "Allow"
+    actions   = [
       "s3:GetObject",
     ]
     resources = [
@@ -89,8 +89,8 @@ data "aws_iam_policy_document" "pdq_indexer" {
     ]
   }
   statement {
-    effect = "Allow"
-    actions = [
+    effect    = "Allow"
+    actions   = [
       "s3:ListBucket"
     ]
     resources = [
