@@ -9,7 +9,7 @@ import {
   Popover,
 } from 'react-bootstrap';
 import DOMPurify from 'dompurify';
-import {CopyableTextField} from '../utils/TextFieldsUtils';
+import {CopyableTextField} from '../../utils/TextFieldsUtils';
 
 export default function ThreatExchangePrivacyGroupCard({
   fetcherActive,
