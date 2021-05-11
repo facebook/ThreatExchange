@@ -8,6 +8,7 @@ import {
   OverlayTrigger,
   Popover,
 } from 'react-bootstrap';
+import DOMPurify from 'dompurify';
 import {CopyableTextField} from '../../utils/TextFieldsUtils';
 
 export default function ThreatExchangePrivacyGroupCard({
@@ -47,9 +48,11 @@ export default function ThreatExchangePrivacyGroupCard({
         <Card className="text-center">
           <Card.Header
             className={
-              inUse ? 'text-white bg-success' : 'text-white bg-secondary'
+              inUse ? 'text-white bg-primary' : 'text-white bg-secondary'
             }>
-            <h4 className="mb-0">{privacyGroupName}</h4>
+            <h4 className="mb-0">
+              <CopyableTextField text={privacyGroupName} color="white" />
+            </h4>
           </Card.Header>
           <Card.Subtitle className="mt-2 mb-2 text-muted">
             <CopyableTextField text={privacyGroupId} />
@@ -63,7 +66,15 @@ export default function ThreatExchangePrivacyGroupCard({
                   overlay={
                     <Popover id={`popover-basic${privacyGroupId}`}>
                       <Popover.Title as="h3">Information</Popover.Title>
-                      <Popover.Content>{description}</Popover.Content>
+                      <Popover.Content>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(`${description}`, {
+                              ADD_ATTR: ['target'],
+                            }),
+                          }}
+                        />
+                      </Popover.Content>
                     </Popover>
                   }>
                   <Button variant="info">more info</Button>

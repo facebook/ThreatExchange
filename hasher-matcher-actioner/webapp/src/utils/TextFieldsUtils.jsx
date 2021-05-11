@@ -34,7 +34,7 @@ const UpdatingPopover = React.forwardRef(
 );
 
 // eslint-disable-next-line react/prop-types
-export function CopyableTextField({text, tooltip}) {
+export function CopyableTextField({text, tooltip, color}) {
   const helpText = tooltip ?? 'Copy to clipboard?';
   const [message, setMessage] = useState(helpText);
 
@@ -52,8 +52,9 @@ export function CopyableTextField({text, tooltip}) {
     display: 'inline',
     margin: 0,
     padding: 0,
+    color: color ?? 'black',
     hover: {},
-    maxWidth: '245px',
+    maxWidth: '250px',
     overflow: 'hidden',
     focus: {
       textDecoration: 'none',

@@ -15,6 +15,8 @@ from hmalib.models import PDQMatchRecord
 from hmalib.common.message_models import BankedSignal, MatchMessage
 from hmalib.common.signal_models import PDQSignalMetadata
 from hmalib.common.logging import get_logger
+from hmalib.common.config import HMAConfig
+from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
@@ -29,6 +31,8 @@ PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
 OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
+HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
+HMAConfig.initialize(HMA_CONFIG_TABLE)
 
 
 def get_index(bucket_name, key):
@@ -44,6 +48,15 @@ def get_index(bucket_name, key):
         result = pickle.load(open(LOCAL_INDEX_FILENAME, "rb"))
 
     return result
+
+
+def get_privacy_group_matcher_active(privacy_group_id: str) -> bool:
+    config = ThreatExchangeConfig.get(privacy_group_id)
+    if not config:
+        logger.warning("Privacy group %s is not found!", privacy_group_id)
+        return False
+    logger.info("matcher_active for %s is %s", privacy_group_id, config.matcher_active)
+    return config.matcher_active
 
 
 def lambda_handler(event, context):
@@ -87,6 +100,11 @@ def lambda_handler(event, context):
                 metadata = match.metadata
                 logger.info(
                     "Match found for key: %s, hash %s -> %s", key, hash_str, metadata
+                )
+                privacy_group_list = metadata.get("privacy_groups", [])
+                metadata["privacy_groups"] = filter(
+                    lambda x: get_privacy_group_matcher_active(str(x)),
+                    privacy_group_list,
                 )
                 signal_id = metadata["id"]
 

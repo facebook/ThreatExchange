@@ -282,6 +282,7 @@ resource "aws_lambda_function" "pdq_matcher" {
       DYNAMODB_TABLE        = var.datastore.name
       MEASURE_PERFORMANCE   = var.measure_performance ? "True" : "False"
       METRICS_NAMESPACE     = var.metrics_namespace
+      HMA_CONFIG_TABLE      = var.config_table.name
     }
   }
   tags = merge(
@@ -348,6 +349,12 @@ data "aws_iam_policy_document" "pdq_matcher" {
     effect    = "Allow"
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]
+    resources = [var.config_table.arn]
   }
 }
 
