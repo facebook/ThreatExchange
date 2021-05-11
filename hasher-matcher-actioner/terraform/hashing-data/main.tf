@@ -75,12 +75,18 @@ resource "null_resource" "provide_sample_pdq_data_copydays" {
   # $ terraform taint module.hashing_data.null_resource.provide_sample_pdq_data_copydays
   # $ terraform apply
 
+  # To get a sensible privacy group value, we reverse engineer the filename split at
+  # hmalib.common.s3_adapters.ThreatExchangeS3Adapter._parse_file at line 118
   depends_on = [
     aws_s3_bucket_object.threat_exchange_data
   ]
 
   provisioner "local-exec" {
-    command = "aws s3 cp ../sample_data/copydays-jpg1-pdq-hashes.csv s3://${aws_s3_bucket_object.threat_exchange_data.bucket}/${aws_s3_bucket_object.threat_exchange_data.key}copydays-jpg1-pdq-hashes.pdq.te"
+    environment = {
+      PRIVACY_GROUP = "copydays-test"
+    }
+
+    command = "aws s3 cp ../sample_data/copydays-jpg1-pdq-hashes.csv s3://${aws_s3_bucket_object.threat_exchange_data.bucket}/${aws_s3_bucket_object.threat_exchange_data.key}$PRIVACY_GROUP.copydays-jpg1-pdq-hashes.pdq.te"
   }
 }
 
