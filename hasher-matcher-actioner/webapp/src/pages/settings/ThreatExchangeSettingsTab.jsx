@@ -14,7 +14,7 @@ import {
   Col,
 } from 'react-bootstrap';
 import ThreatExchangePrivacyGroupCard from '../../components/settings/ThreatExchangePrivacyGroupCard';
-import CopydaysInformationBlock from '../../components/CopydaysInformationBlock';
+import HolidaysDatasetInformationBlock from '../../components/HolidaysDatasetInformationBlock';
 import {
   fetchAllDatasets,
   syncAllDatasets,
@@ -154,7 +154,7 @@ export default function ThreatExchangeSettingsTab() {
       </Card.Body>
 
       <Col className="mx-1" md="6">
-        <CopydaysInformationBlock />
+        <HolidaysDatasetInformationBlock />
       </Col>
     </>
   );
