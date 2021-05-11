@@ -11,8 +11,10 @@ import {
   Tooltip,
   OverlayTrigger,
   Card,
+  Col,
 } from 'react-bootstrap';
 import ThreatExchangePrivacyGroupCard from '../../components/settings/ThreatExchangePrivacyGroupCard';
+import HolidaysDatasetInformationBlock from '../../components/HolidaysDatasetInformationBlock';
 import {
   fetchAllDatasets,
   syncAllDatasets,
@@ -150,6 +152,10 @@ export default function ThreatExchangeSettingsTab() {
               ))}
         </Row>
       </Card.Body>
+
+      <Col className="mx-1" md="6">
+        <HolidaysDatasetInformationBlock />
+      </Col>
     </>
   );
 }

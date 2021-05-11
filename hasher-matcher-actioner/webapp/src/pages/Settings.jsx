@@ -12,7 +12,7 @@ import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 
 // This array must include the eventKey attribute value of any Tab in Tabs as
 // a part of the implementation to give each tab its own route.
-const tabEventKeys = ['threatexchange', 'pipeline', 'actions', 'action-rules'];
+const tabEventKeys = ['threatexchange', 'actions', 'action-rules'];
 
 export default function Settings() {
   const {tab} = useParams();
@@ -30,9 +30,6 @@ export default function Settings() {
         }}>
         <Tab eventKey="threatexchange" title="ThreatExchange">
           <ThreatExchangeSettingsTab />
-        </Tab>
-        <Tab eventKey="pipeline" title="Pipeline">
-          Todo!
         </Tab>
         <Tab eventKey="actions" title="Actions">
           <ActionSettingsTab />
