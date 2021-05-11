@@ -71,16 +71,23 @@ export function fetchStats(statName, timeSpan) {
   return apiGet('/stats/', {stat_name: statName, time_span: timeSpan});
 }
 
-export async function uploadImage(file) {
-  const fileReader = new FileReader();
-  fileReader.onload = () => {
-    const fileContentsBase64Encoded = encode(fileReader.result);
-    return apiPost('/upload', {
-      fileName: file.name,
-      fileContentsBase64Encoded,
-    });
+function initPhotoUpload(contentId, content) {
+  return apiPost('/submit/init-upload/', {
+    content_id: contentId,
+    file_type: content.type,
+  });
+}
+
+export async function uploadPhoto(contentId, content) {
+  const initResult = await initPhotoUpload(contentId, content);
+
+  const requestOptions = {
+    method: 'PUT',
+    body: content,
   };
-  fileReader.readAsArrayBuffer(file);
+
+  const result = await fetch(initResult.presigned_url, requestOptions);
+  return result;
 }
 
 export async function requestSignalOpinionChange(

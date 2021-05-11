@@ -7,7 +7,7 @@ import {Link} from 'react-router-dom';
 import {Button, Col, Collapse, Image, Row} from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 
-import {uploadImage} from './Api';
+import {uploadPhoto} from './Api';
 
 export default function Upload() {
   const [fileName, setFileName] = useState('Select Browse to choose a file.');
@@ -58,7 +58,7 @@ export default function Upload() {
                   onClick={() => {
                     setSubmitting(true);
                     // TODO check for succesfull upload
-                    uploadImage(image.raw).then(() => {
+                    uploadPhoto(fileName, image.raw).then(() => {
                       setSubmitted(true);
                       setSubmitting(false);
                     });

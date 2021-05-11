@@ -10,17 +10,14 @@ import ActionRuleSettingsTab from './settings/ActionRuleSettingsTab';
 import ActionSettingsTab from './settings/ActionSettingsTab';
 import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 
+// This array must include the eventKey attribute value of any Tab in Tabs as
+// a part of the implementation to give each tab its own route.
+const tabEventKeys = ['threatexchange', 'pipeline', 'actions', 'action-rules'];
+
 export default function Settings() {
   const {tab} = useParams();
   const history = useHistory();
-  if (
-    tab === undefined ||
-    !tab ||
-    (tab !== 'threatexchange' &&
-      tab !== 'pipeline' &&
-      tab !== 'actions' &&
-      tab !== 'action-rules')
-  ) {
+  if (tab === undefined || !tab || !tabEventKeys.includes(tab)) {
     window.location = '/settings/threatexchange';
   }
   return (

@@ -25,7 +25,7 @@ from .datasets_api import get_datasets_api
 from .submit import get_submit_api
 from .stats import get_stats_api
 
-# Set to 10MB for /upload
+# Set to 10MB for images
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
 
 app = bottle.default_app()
@@ -68,34 +68,6 @@ def error500(error):
 def root():
     return {
         "message": "Hello World, HMA",
-    }
-
-
-@app.route("/upload", method="POST")
-def upload():
-    """
-    upload API endpoint
-    expects request in the format
-    {
-        fileName: str,
-        fileContentsBase64Encoded: bytes,
-    }
-    """
-    fileNameAndEncodedContent = bottle.request.json
-    fileName = fileNameAndEncodedContent.get("fileName", None)
-    fileContentsBase64Encoded = fileNameAndEncodedContent.get(
-        "fileContentsBase64Encoded", None
-    )
-    fileContents = base64.b64decode(fileContentsBase64Encoded)
-    # TODO a whole bunch of validation and error checking...
-    s3_client.put_object(
-        Body=fileContents,
-        Bucket=IMAGE_BUCKET_NAME,
-        Key=f"{IMAGE_FOLDER_KEY}{fileName}",
-    )
-
-    return {
-        "message": "uploaded!",
     }
 
 

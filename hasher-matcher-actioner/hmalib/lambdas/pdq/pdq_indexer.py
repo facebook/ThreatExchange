@@ -22,8 +22,6 @@ from hmalib.common.s3_adapters import (
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 
-PDQ_DATA_FILE_COLUMNS = ["hash", "id", "timestamp", "tags"]
-
 THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
 THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
