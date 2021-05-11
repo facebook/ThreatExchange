@@ -97,18 +97,21 @@ def load_defaults(_args):
         WebhookPostActionPerformer(
             name="EnqueueForReview",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+            headers='{"Connection":"keep-alive"}',
             # monitoring page:
             # https://webhook.site/#!/ff7ebc37-514a-439e-9a03-46f86989e195
         ),
         WebhookPostActionPerformer(
             name="EnqueueMiniCastleForReview",
             url="https://webhook.site/01cef721-bdcc-4681-8430-679c75659867",
+            headers='{"Connection":"keep-alive"}',
             # monitoring page:
             # https://webhook.site/#!/01cef721-bdcc-4681-8430-679c75659867
         ),
         WebhookPostActionPerformer(
             name="EnqueueSailboatForReview",
             url="https://webhook.site/fa5c5ad5-f5cc-4692-bf03-a03a4ae3f714",
+            headers='{"Connection":"keep-alive"}',
             # monitoring page:
             # https://webhook.site/#!/fa5c5ad5-f5cc-4692-bf03-a03a4ae3f714
         ),
