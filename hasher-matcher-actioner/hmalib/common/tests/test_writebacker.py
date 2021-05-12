@@ -42,9 +42,10 @@ class WritebackerTestCase(unittest.TestCase):
 
     def test_saw_this_too(self):
         os.environ["MOCK_TE_API"] = "True"
+        os.environ["CONFIG_TABLE_NAME"] = "test-HMAConfig"
 
         writeback = WritebackTypes.SawThisToo
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
@@ -64,9 +65,10 @@ class WritebackerTestCase(unittest.TestCase):
 
     def test_ingested(self):
         os.environ["MOCK_TE_API"] = "True"
+        os.environ["CONFIG_TABLE_NAME"] = "test-HMAConfig"
 
         writeback = WritebackTypes.Ingested
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
@@ -86,9 +88,10 @@ class WritebackerTestCase(unittest.TestCase):
 
     def test_false_positve(self):
         os.environ["MOCK_TE_API"] = "True"
+        os.environ["CONFIG_TABLE_NAME"] = "test-HMAConfig"
 
         writeback = WritebackTypes.FalsePositive
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
@@ -108,9 +111,10 @@ class WritebackerTestCase(unittest.TestCase):
 
     def test_true_positve(self):
         os.environ["MOCK_TE_API"] = "True"
+        os.environ["CONFIG_TABLE_NAME"] = "test-HMAConfig"
 
         writeback = WritebackTypes.TruePositive
-        writeback_message = WritebackMessage.from_match_message_and_label(
+        writeback_message = WritebackMessage.from_match_message_and_type(
             self.match_message, writeback
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}

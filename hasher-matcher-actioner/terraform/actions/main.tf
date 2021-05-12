@@ -144,6 +144,8 @@ resource "aws_lambda_function" "writebacker" {
   environment {
     variables = {
       THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
+      CONFIG_TABLE_NAME                     = var.config_table.name,
+
     }
   }
 

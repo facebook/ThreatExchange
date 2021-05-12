@@ -95,3 +95,12 @@ variable "measure_performance" {
   type        = bool
   default     = false
 }
+
+variable "writebacks_queue" {
+  description = "ARN and url to send writebacks to"
+  type = object({
+    url = string
+    arn = string
+  })
+}
+

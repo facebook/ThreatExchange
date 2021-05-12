@@ -12,10 +12,8 @@ from hmalib.common.classification_models import WritebackTypes
 from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.message_models import WritebackMessage
-from hmalib.aws_secrets import AWSSecrets
-
 from hmalib.common.fetcher_models import ThreatExchangeConfig
-
+from hmalib.aws_secrets import AWSSecrets
 
 from threatexchange.api import ThreatExchangeAPI
 
@@ -58,7 +56,7 @@ class Writebacker:
     ]:
         """
         For a given source that performs writebacks, this fucntion specifies what types of
-        writebacks that can be taken as a mapping from writback type to writebacker. The
+        writebacks that can be taken as a mapping from writeback type to writebacker. The
         type should be same as WritebackType passed to the writebacker
         """
         raise NotImplementedError
@@ -112,7 +110,7 @@ class Writebacker:
 
         results = []
         writebacker = self.writeback_options()[writeback_to_perform]()
-        for writeback_signal in writeback_message.matching_banked_signals:
+        for writeback_signal in writeback_message.banked_signals:
             # filter our matches from other sources
             if writeback_signal.bank_source == self.source:
                 result = None

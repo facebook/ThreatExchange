@@ -291,6 +291,7 @@ app.mount(
     get_matches_api(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_folder_key=IMAGE_FOLDER_KEY,
+        hma_config_table=HMA_CONFIG_TABLE,
     ),
 )
 

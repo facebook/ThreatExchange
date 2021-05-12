@@ -42,7 +42,6 @@ class ActionEvaluatorConfig:
     """
 
     actions_queue_url: str
-    writebacks_queue_url: str
     sqs_client: SQSClient
 
     @classmethod
@@ -54,7 +53,6 @@ class ActionEvaluatorConfig:
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
-            writebacks_queue_url=os.environ["WRITEBACKS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
         )
 
@@ -98,12 +96,10 @@ def lambda_handler(event, context):
                 MessageBody=action_message.to_aws_json(),
             )
 
-        for writeback_message in get_writeback_messages(match_message, action_labels):
-            logger.info("Sending Writeback message: %s", writeback_message)
-            config.sqs_client.send_message(
-                QueueUrl=config.writebacks_queue_url,
-                MessageBody=writeback_message.to_aws_json(),
-            )
+        writeback_message = WritebackMessage.from_match_message_and_type(
+            match_message, WritebackTypes.SawThisToo
+        )
+        writeback_message.send_to_queue()
 
     return {"evaluation_completed": "true"}
 
@@ -181,21 +177,6 @@ def remove_superseded_actions(
     be removed.
     """
     return action_label_to_action_rules
-
-
-def get_writeback_messages(
-    match_message: MatchMessage,
-    action_labels: t.List[ActionLabel],
-) -> t.List[WritebackMessage]:
-    """
-    TODO implement
-    Evaluates a collection of action_labels against some yet to be defined configuration
-    (and possible business login) to produce
-    """
-    writeback_label = WritebackTypes.SawThisToo
-    return [
-        WritebackMessage.from_match_message_and_label(match_message, writeback_label)
-    ]
 
 
 if __name__ == "__main__":

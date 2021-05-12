@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from hmalib.common.signal_models import PendingOpinionChange
 import hmalib.common.config as config
 import json
 import typing as t
@@ -62,5 +63,6 @@ class WritebackTypes:
     FalsePositive = WritebackType("FalsePositive")
     TruePositive = WritebackType("TruePositive")
     Ingested = WritebackType("Ingested")
+    RemoveOpinion = WritebackType("RemoveOpinion")
 
-    UnspecifiedWriteback = WritebackType("UnspecifiedWriteback")
+    NoWriteback = WritebackType("NoWriteback")

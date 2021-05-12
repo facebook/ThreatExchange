@@ -239,6 +239,8 @@ module "api" {
   config_table          = local.config_table
   measure_performance   = var.measure_performance
   te_api_token_secret   = aws_secretsmanager_secret.te_api_token
+
+  writebacks_queue = module.actions.writebacks_queue
 }
 
 # Build and deploy webapp
