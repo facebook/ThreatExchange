@@ -61,7 +61,7 @@ export default function ThreatExchangePrivacyGroupCard({
             <Form>
               <div style={{display: 'flex', justifyContent: 'flex-end'}}>
                 <OverlayTrigger
-                  trigger="click"
+                  trigger="focus"
                   placement="bottom"
                   overlay={
                     <Popover id={`popover-basic${privacyGroupId}`}>
