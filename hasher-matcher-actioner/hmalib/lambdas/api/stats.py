@@ -8,7 +8,7 @@ import typing as t
 from mypy_boto3_dynamodb.service_resource import Table
 
 from hmalib.common.logging import get_logger
-from hmalib import metrics
+from hmalib import metrics, models
 from hmalib.metrics import query as metrics_query
 from hmalib.metrics.query import is_publishing_metrics
 
@@ -19,9 +19,10 @@ logger = get_logger(__name__)
 
 @dataclass
 class StatsCard(JSONifiable):
-    number: int
+    time_span_count: int
     time_span: metrics_query.MetricTimePeriod
     graph_data: t.List[t.Tuple[datetime.datetime, t.Optional[int]]]
+    total_count: int
     last_updated: datetime.datetime = field(default_factory=datetime.datetime.now)
 
     def to_json(self) -> t.Dict:
@@ -62,6 +63,12 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
         "matches": metrics.names.pdq_matcher_lambda.search_index,
     }
 
+    # DynamoDBItem class is used to get total counts
+    stat_name_to_count = {
+        "hashes": lambda: models.PipelinePDQHashRecord.get_total_count(dynamodb_table),
+        "matches": lambda: models.PDQMatchRecord.get_total_count(dynamodb_table),
+    }
+
     @stats_api.get("/", apply=[jsoninator])
     def default_stats() -> StatResponse:
         """
@@ -98,11 +105,14 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
             metric_time_period,
         )
 
+        total_count = stat_name_to_count[bottle.request.query.stat_name]()
+
         return StatResponse(
             StatsCard(
                 count_with_graphs[metric].count,
                 metric_time_period,
                 count_with_graphs[metric].graph_data,
+                total_count or 0,
             )
         )
 

@@ -108,32 +108,6 @@ def signals():
     return {"signals": get_signals()}
 
 
-# there is likely a fancy python way to generalize these similar methods
-@app.get("/dashboard-hashes")
-def dashboard_hashes():
-    return {"dashboard-hashes": get_dashboard_hashes()}
-
-
-@app.get("/dashboard-matches")
-def dashboard_matches():
-    return {"dashboard-matches": get_dashboard_matches()}
-
-
-@app.get("/dashboard-signals")
-def dashboard_signals():
-    return {"dashboard-signals": get_dashboard_signals()}
-
-
-@app.get("/dashboard-actions")
-def dashboard_actions():
-    return {"dashboard-actions": get_dashboard_actions()}
-
-
-@app.get("/dashboard-status")
-def dashboard_status():
-    return {"dashboard-status": get_dashboard_system_status()}
-
-
 @app.get("/hash-counts")
 def hash_count():
     """
@@ -208,67 +182,6 @@ def get_signals() -> t.List[SignalSourceSummary]:
                 )
             )
     return signals
-
-
-class DashboardCount(t.TypedDict):
-    total: int
-    today: int
-    updated_at: str
-
-
-class DashboardSystemStatus(t.TypedDict):
-    status: str
-    days_running: int
-    updated_at: str
-
-
-def get_dashboard_hashes() -> DashboardCount:
-    return get_count_from_record_cls(PipelinePDQHashRecord)
-
-
-def get_dashboard_matches() -> DashboardCount:
-    return get_count_from_record_cls(PDQMatchRecord)
-
-
-def get_count_from_record_cls(record_cls: t.Type[PDQRecordBase]) -> DashboardCount:
-    # TODO this is an ~inefficient way to do this but connecting to real counts > mock
-    now = datetime.datetime.now()
-    day_ago = now - datetime.timedelta(1)
-    table = dynamodb.Table(DYNAMODB_TABLE)
-    total_count = len(record_cls.get_from_time_range(table))
-    today_count = len(record_cls.get_from_time_range(table, day_ago.isoformat()))
-    return DashboardCount(
-        total=total_count,
-        today=today_count,
-        updated_at=now.isoformat(),
-    )
-
-
-def get_dashboard_actions() -> DashboardCount:
-    return DashboardCount(
-        total=3456,
-        today=27,
-        updated_at="MockData and Timestamp",
-    )
-
-
-def get_dashboard_signals() -> DashboardCount:
-    """
-    note: SIGNALS COUNT != NUMBER OF UNQUIE HASHES
-    """
-    return DashboardCount(
-        total=sum(get_signal_hash_count().values()),
-        today=-1,
-        updated_at="TODO",
-    )
-
-
-def get_dashboard_system_status() -> DashboardSystemStatus:
-    return DashboardSystemStatus(
-        status="Running (Mocked)",
-        days_running=42,
-        updated_at="MockData and Timestamp",
-    )
 
 
 # TODO this method is expensive some cache or memoization method might be a good idea.

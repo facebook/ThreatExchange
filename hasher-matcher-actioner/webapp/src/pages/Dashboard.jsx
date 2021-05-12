@@ -18,6 +18,7 @@ import {
 import {fetchStats} from '../Api';
 import {StatNames, StatsTimeSpans} from '../utils/constants';
 import GraphWithNumberWidget from '../components/GraphWithNumberWidget';
+import shortenNumRepr from '../utils/NumberUtils';
 
 function getDisplayTitle(statName) {
   return (
@@ -40,14 +41,14 @@ function getDisplayTimeSpan(timeSpan) {
 }
 
 /**
- * Eventually, this should squeeze large numbers into more digestible values.
+ * Squeeze large numbers into more digestible values.
  * eg. 1,079,234 -> 1M+, 1,508 -> 1.5K
  *
  * @param {int} number
  * @returns string
  */
 function getDisplayNumber(number) {
-  return number;
+  return shortenNumRepr(number);
 }
 
 /**
@@ -71,7 +72,7 @@ function toUFlotFormat(graphData) {
 /**
  * Will be renamed as Dashboard.jsx once we replace it.
  */
-export default function Dash() {
+export default function Dashboard() {
   const [timeSpan, setTimeSpan] = useState(StatsTimeSpans.HOURS_24);
 
   return (
@@ -126,13 +127,23 @@ function StatCard({statName, timeSpan}) {
     <Card key={`stat-card-${statName}`} className="mb-4">
       <Card.Header>
         <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
-        <h1>{getDisplayNumber(card.number)}</h1>
       </Card.Header>
       <Card.Body>
-        <Card.Title>{getDisplayTitle(statName)}</Card.Title>
-        <Card.Subtitle>
-          Processed in the last {getDisplayTimeSpan(card.time_span)}.
-        </Card.Subtitle>
+        <Row>
+          <Col xs={4}>
+            <h3 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h3>
+          </Col>
+          <Col xs={4}>
+            <h1>{getDisplayNumber(card.time_span_count)}</h1>
+            <small className="text-muted">
+              in the last {getDisplayTimeSpan(card.time_span)}.
+            </small>
+          </Col>
+          <Col xs={4}>
+            <h1>{getDisplayNumber(card.total_count)}</h1>
+            <small className="text-muted">since HMA is online.</small>
+          </Col>
+        </Row>
       </Card.Body>
     </Card>
   );
