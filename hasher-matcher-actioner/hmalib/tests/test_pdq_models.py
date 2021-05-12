@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
+from contextlib import contextmanager
 from moto import mock_dynamodb2
 from hmalib import models
 from hmalib.common import signal_models
@@ -339,3 +340,50 @@ class TestPDQModels(unittest.TestCase):
             signal_models.PendingOpinionChange.MARK_TRUE_POSITIVE.value
             == query_metadata.pending_opinion_change.value
         )
+
+
+class CountersTest(TestPDQModels):
+    @contextmanager
+    def fresh_dynamodb(self):
+        # Code to acquire resource, e.g.:
+        self.__class__.setUpClass()
+        try:
+            yield
+        finally:
+            self.__class__.tearDownClass()
+
+    def test_writes_init_counters(self):
+        """
+        Test that the first write creates a counter.
+        """
+        with self.fresh_dynamodb():
+            record = self.get_example_pdq_hash_record()
+            record.write_to_table(self.table)
+
+            assert 1 == models.PipelinePDQHashRecord.get_total_count(self.table)
+
+    def test_writes_inc_counters(self):
+        """
+        Test that subsequent writes increment counters.
+        """
+        with self.fresh_dynamodb():
+            record = self.get_example_pdq_hash_record()
+            record.write_to_table(self.table)
+            record.write_to_table(self.table)
+            record.write_to_table(self.table)
+            record.write_to_table(self.table)
+
+            assert 4 == models.PipelinePDQHashRecord.get_total_count(self.table)
+
+    def test_writes_inc_counters_only_for_the_updated_class(self):
+        """
+        Test that the writes do not increment counters for other classes.
+        """
+        with self.fresh_dynamodb():
+            record = self.get_example_pdq_hash_record()
+            record.write_to_table(self.table)
+            record.write_to_table(self.table)
+            record.write_to_table(self.table)
+            record.write_to_table(self.table)
+
+            assert 0 == models.PDQMatchRecord.get_total_count(self.table)

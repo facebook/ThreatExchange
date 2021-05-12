@@ -5,7 +5,10 @@ from enum import Enum
 import typing as t
 import json
 from dataclasses import dataclass, field
+from decimal import Decimal
 from mypy_boto3_dynamodb.service_resource import Table
+from mypy_boto3_dynamodb import Client
+from mypy_boto3_dynamodb.type_defs import TransactWriteItemTypeDef
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
 
@@ -16,14 +19,96 @@ Classes in this module should implement methods `to_dynamodb_item(self)` and
 """
 
 
-class DynamoDBItem:
+class DynamoDBCountMixin:
+    """
+    This is a mixin for the base class (DynamoDBItem). It is not required to be
+    mixed in to the concrete classes. Use this just to group common
+    functionality together.
+
+    Most methods defined are class methods and not static methods. Static
+    methods are unbounded which makes it impossible to override and refer to in
+    sub classes.
+    """
+
+    @classmethod
+    def is_total_countable(cls):
+        """
+        To be declared by sub classes. If true, a counter record is maintained
+        in the same table. Be advised, that the counter is incremented with
+        every 'write' be it a create or update.
+        """
+        return False
+
+    @classmethod
+    def get_total_count_keyname(cls):
+        """
+        Is used to store and retrieve count values. To be implemented by
+        concrete classes alone. Unless is_total_countable() is True, this method
+        need not be implemented.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def get_total_count(cls, table: Table) -> t.Optional[int]:
+        """
+        See `is_total_countable`. If self.is_total_countable is False, return
+        None. Else return the number of writes this table has seen.
+        """
+        if cls.is_total_countable():
+            response = table.get_item(
+                Key={"PK": cls._get_count_pkey(), "SK": cls._get_count_skey()}
+            )
+            return (
+                "Item" in response
+                and int(t.cast(Decimal, response["Item"]["WriteCount"]))
+                or 0
+            )
+        else:
+            return None
+
+    @classmethod
+    def _get_count_pkey(cls) -> str:
+        return "counts"
+
+    @classmethod
+    def _get_count_skey(cls) -> str:
+        return f"count#{cls.get_total_count_keyname()}"
+
+
+class DynamoDBItem(DynamoDBCountMixin):
 
     CONTENT_KEY_PREFIX = "c#"
     SIGNAL_KEY_PREFIX = "s#"
     TYPE_PREFIX = "type#"
 
     def write_to_table(self, table: Table):
-        table.put_item(Item=self.to_dynamodb_item())
+        client: Client = table.meta.client
+        transact_items: t.List[TransactWriteItemTypeDef] = [
+            {
+                "Put": {
+                    "Item": self.to_dynamodb_item(),
+                    "TableName": table.table_name,
+                },
+            },
+        ]
+
+        if self.__class__.is_total_countable():
+            transact_items.append(
+                {
+                    "Update": {
+                        "Key": {
+                            "PK": self._get_count_pkey(),
+                            "SK": self._get_count_skey(),
+                        },
+                        # if_not_exists takes care of initializing the count if it hasn't been done yet.
+                        "UpdateExpression": "SET WriteCount = if_not_exists(WriteCount, :zero) + :one",
+                        "TableName": table.table_name,
+                        "ExpressionAttributeValues": {":one": 1, ":zero": 0},
+                    },
+                }
+            )
+
+        client.transact_write_items(TransactItems=transact_items)
 
     def to_dynamodb_item(self) -> t.Dict:
         raise NotImplementedError
@@ -109,6 +194,14 @@ class PipelinePDQHashRecord(PDQRecordBase):
         }
 
     @classmethod
+    def is_total_countable(cls):
+        return True
+
+    @classmethod
+    def get_total_count_keyname(cls):
+        return "PipelinePDQHashRecord"
+
+    @classmethod
     def get_from_content_id(
         cls, table: Table, content_key: str
     ) -> t.Optional["PipelinePDQHashRecord"]:
@@ -172,6 +265,14 @@ class PDQMatchRecord(PDQRecordBase):
     def to_sqs_message(self) -> dict:
         # TODO add method for when matches are added to a sqs
         raise NotImplementedError
+
+    @classmethod
+    def is_total_countable(self):
+        return True
+
+    @classmethod
+    def get_total_count_keyname(self):
+        return "PDQMatchRecord"
 
     @classmethod
     def get_from_content_id(

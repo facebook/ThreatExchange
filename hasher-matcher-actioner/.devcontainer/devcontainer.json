@@ -9,7 +9,20 @@
   },
   // Set *default* container specific settings.json values on container create.
   "settings": {
-    "terminal.integrated.shell.linux": "/bin/bash",
+    "terminal.integrated.profiles.linux": {
+      "bash": {
+        "path": "/bin/bash",
+        "args": [
+          "-l"
+        ]
+      },
+      "zsh": {
+        "path": "/bin/zsh",
+        "args": [
+          "-l"
+        ]
+      }
+    },
     "editor.formatOnSave": true,
     "python.formatting.blackPath": "black",
     "[javascriptreact]": {
@@ -38,6 +51,9 @@
       "label": "Hello Remote World",
       "onAutoForward": "notify"
     }
+  },
+  "remoteEnv": {
+    "IN_DEVCONTAINER": "true"
   },
   "remoteUser": "${localEnv:USER}"
 }
