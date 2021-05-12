@@ -5,7 +5,6 @@
 import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import {
-  Container,
   Row,
   Col,
   Card,
@@ -19,6 +18,7 @@ import {fetchStats} from '../Api';
 import {StatNames, StatsTimeSpans} from '../utils/constants';
 import GraphWithNumberWidget from '../components/GraphWithNumberWidget';
 import shortenNumRepr from '../utils/NumberUtils';
+import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
 function getDisplayTitle(statName) {
   return (
@@ -76,11 +76,9 @@ export default function Dashboard() {
   const [timeSpan, setTimeSpan] = useState(StatsTimeSpans.HOURS_24);
 
   return (
-    <Container className="m-4">
+    <FixedWidthCenterAlignedLayout title="HMA Dashboard">
       <Row>
-        <Col
-          xs={6}
-          className="mb-4 d-flex align-items-baseline justify-content-end">
+        <Col className="mb-4 d-flex align-items-baseline justify-content-end">
           <div className="align-middle mr-2">Show statistics for the last</div>
           <DropdownButton
             as={ButtonGroup}
@@ -101,12 +99,12 @@ export default function Dashboard() {
         </Col>
       </Row>
       <Row>
-        <Col xs={6}>
+        <Col>
           <StatCard statName={StatNames.HASHES} timeSpan={timeSpan} />
           <StatCard statName={StatNames.MATCHES} timeSpan={timeSpan} />
         </Col>
       </Row>
-    </Container>
+    </FixedWidthCenterAlignedLayout>
   );
 }
 

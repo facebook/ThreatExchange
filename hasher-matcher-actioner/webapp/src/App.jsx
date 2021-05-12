@@ -18,7 +18,7 @@ import ContentDetails from './pages/ContentDetails';
 import Matches from './pages/Matches';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
-import Signals from './Signals';
+import Signals from './pages/Signals';
 import Upload from './Upload';
 import SubmitContent from './pages/SubmitContent';
 

@@ -7,8 +7,9 @@
 import React, {useState, useEffect} from 'react';
 import Spinner from 'react-bootstrap/Spinner';
 import {Collapse, Row, Col, Card, Table} from 'react-bootstrap';
+import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
-import {fetchSignalSummary} from './Api';
+import {fetchSignalSummary} from '../Api';
 
 export default function Signals() {
   const [signalSummary, setSignalSummary] = useState(null);
@@ -23,8 +24,7 @@ export default function Signals() {
   }, []);
 
   return (
-    <>
-      <h1>Signals</h1>
+    <FixedWidthCenterAlignedLayout title="Signals">
       <Row className="mt-3">
         <Spinner
           hidden={signalSummary !== null}
@@ -42,7 +42,7 @@ export default function Signals() {
           </>
         </Collapse>
       </Row>
-    </>
+    </FixedWidthCenterAlignedLayout>
   );
 }
 
