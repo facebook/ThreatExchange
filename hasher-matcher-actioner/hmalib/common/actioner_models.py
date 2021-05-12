@@ -45,6 +45,7 @@ class WebhookActionPerformer(ActionPerformer):
     """Superclass for webhooks"""
 
     url: str
+    headers: str
 
     def perform_action(self, match_message: MatchMessage) -> None:
         self.call(data=json.dumps(match_message.to_aws()))
@@ -58,7 +59,7 @@ class WebhookPostActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a POST"""
 
     def call(self, data: str) -> Response:
-        return post(self.url, data)
+        return post(self.url, data, headers=json.loads(self.headers))
 
 
 @dataclass
@@ -66,7 +67,7 @@ class WebhookGetActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a GET"""
 
     def call(self, _data: str) -> Response:
-        return get(self.url)
+        return get(self.url, headers=json.loads(self.headers))
 
 
 @dataclass
@@ -74,7 +75,7 @@ class WebhookPutActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a PUT"""
 
     def call(self, data: str) -> Response:
-        return put(self.url, data)
+        return put(self.url, data, headers=json.loads(self.headers))
 
 
 @dataclass
@@ -82,4 +83,4 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a DELETE"""
 
     def call(self, _data: str) -> Response:
-        return delete(self.url)
+        return delete(self.url, headers=json.loads(self.headers))
