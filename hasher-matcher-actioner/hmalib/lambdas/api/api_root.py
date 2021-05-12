@@ -24,6 +24,7 @@ from .matches import get_matches_api
 from .datasets_api import get_datasets_api
 from .submit import get_submit_api
 from .stats import get_stats_api
+from .actions_api import get_actions_api
 
 # Set to 10MB for images
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -308,6 +309,11 @@ app.mount(
 )
 
 app.mount("/stats/", get_stats_api(dynamodb_table=dynamodb.Table(DYNAMODB_TABLE)))
+
+app.mount(
+    "/actions/",
+    get_actions_api(hma_config_table=HMA_CONFIG_TABLE),
+)
 
 if __name__ == "__main__":
     app.run()
