@@ -5,8 +5,10 @@ from enum import Enum
 import typing as t
 import json
 from dataclasses import dataclass, field
+from decimal import Decimal
 from mypy_boto3_dynamodb.service_resource import Table
 from mypy_boto3_dynamodb import Client
+from mypy_boto3_dynamodb.type_defs import TransactWriteItemTypeDef
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
 
@@ -56,7 +58,11 @@ class DynamoDBCountMixin:
             response = table.get_item(
                 Key={"PK": cls._get_count_pkey(), "SK": cls._get_count_skey()}
             )
-            return "Item" in response and response["Item"]["WriteCount"] or 0
+            return (
+                "Item" in response
+                and int(t.cast(Decimal, response["Item"]["WriteCount"]))
+                or 0
+            )
         else:
             return None
 
@@ -77,7 +83,7 @@ class DynamoDBItem(DynamoDBCountMixin):
 
     def write_to_table(self, table: Table):
         client: Client = table.meta.client
-        transact_items = [
+        transact_items: t.List[TransactWriteItemTypeDef] = [
             {
                 "Put": {
                     "Item": self.to_dynamodb_item(),
