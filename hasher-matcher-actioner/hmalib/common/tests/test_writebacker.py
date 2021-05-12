@@ -54,8 +54,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "reacted SAW_THIS_TOO to 2 descriptors",
-                    "reacted SAW_THIS_TOO to 2 descriptors",
+                    "reacted SAW_THIS_TOO to 2 descriptors : 21,31",
+                    "reacted SAW_THIS_TOO to 2 descriptors : 22,32",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
@@ -77,8 +77,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "reacted DISAGREE_WITH_TAGS to 2 descriptors",
-                    "reacted DISAGREE_WITH_TAGS to 2 descriptors",
+                    "reacted DISAGREE_WITH_TAGS to 2 descriptors : 21,31",
+                    "reacted DISAGREE_WITH_TAGS to 2 descriptors : 22,32",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
@@ -100,8 +100,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "MOCKED: Wrote back TruePositive for indicator 2862392437204724",
-                    "MOCKED: Wrote back TruePositive for indicator 4194946153908639",
+                    "Wrote back TruePositive for indicator 2862392437204724\n Built/Updated descriptor: 11",
+                    "Wrote back TruePositive for indicator 4194946153908639\n Built/Updated descriptor: 12",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }

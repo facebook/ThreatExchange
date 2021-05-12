@@ -1,3 +1,5 @@
+from requests import api
+from hmalib.common.signal_models import PDQSignalMetadata
 import typing as t
 import os
 
@@ -19,17 +21,70 @@ from threatexchange.api import ThreatExchangeAPI
 
 logger = get_logger(__name__)
 
+TE_UPLOAD_TAG = "uploaded_by_hma"
+
 
 class MockedThreatExchangeAPI:
-    mocked_descriptor_ids = ["12345", "67890"]
+
+    app_id = my_app_id = "a1"
+    other_app_id = "a2"
+    third_app_id = "a3"
+
+    indicator_to_desriptors = {
+        "2862392437204724": [
+            {"owner": my_app_id, "id": "11"},
+            {"owner": other_app_id, "id": "21"},
+            {"owner": third_app_id, "id": "31"},
+        ],
+        "4194946153908639": [
+            {"owner": my_app_id, "id": "12"},
+            {"owner": other_app_id, "id": "22"},
+            {"owner": third_app_id, "id": "32"},
+        ],
+        "3027465034605137": [
+            {"owner": my_app_id, "id": "13"},
+            {"owner": other_app_id, "id": "23"},
+            {"owner": third_app_id, "id": "33"},
+        ],
+    }
 
     def get_threat_descriptors_from_indicator(
         self, indicator
     ) -> t.List[t.Dict[str, str]]:
-        return [{"id": id} for id in self.mocked_descriptor_ids]
+        return self.indicator_to_desriptors[indicator]
 
     def react_to_threat_descriptor(self, descriptor, reaction) -> None:
+        # can only react to a descriptor that exists
+        assert descriptor in (
+            descriptor["id"]
+            for descriptor_set in self.indicator_to_desriptors.values()
+            for descriptor in descriptor_set
+        )
         return None
+
+    def upload_threat_descriptor(self, postParams, *vargs):
+        # Find the indicator for the descriptor we're trying to copy
+        indicator = [
+            descriptor_set
+            for descriptor_set in self.indicator_to_desriptors.values()
+            if postParams["descriptor_id"]
+            in [descriptor["id"] for descriptor in descriptor_set]
+        ][0]
+        return [
+            None,
+            None,
+            {
+                "success": True,
+                "id": [
+                    descriptor["id"]
+                    for descriptor in indicator
+                    if descriptor["owner"] == self.my_app_id
+                ][0],
+            },
+        ]
+
+    def copy_threat_descriptor(self, postParams, *vargs):
+        return self.upload_threat_descriptor(postParams, *vargs)
 
 
 class Writebacker:
@@ -176,8 +231,52 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
     """
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
-        # TODO Implement
-        return f"MOCKED: Wrote back TruePositive for indicator {writeback_signal.banked_content_id}"
+        indicator_id = writeback_signal.banked_content_id
+        privacy_group_id = writeback_signal.bank_id
+        descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
+
+        # If we already have a descriptor we can copy it and upload make sure to never expire it
+        my_descriptor = None
+        for descriptor in descriptors:
+            if descriptor["owner"] == self.te_api.app_id:
+                my_descriptor = descriptor
+
+        privacy_members = str(privacy_group_id)
+
+        postParams = {
+            "privacy_type": "HAS_PRIVACY_GROUP",
+            "expire_time": 0,
+            "privacy_members": privacy_members,
+            "review_status": "REVIEWED_MANUALLY",
+            "status": "MALICIOUS",
+        }
+
+        if my_descriptor:
+            members = my_descriptor.get("privacy_members", "")
+            if members and privacy_members not in members:
+                postParams["privacy_members"] += privacy_members + "," + members
+
+            postParams["descriptor_id"] = my_descriptor["id"]
+
+            response = self.te_api.copy_threat_descriptor(postParams, False, False)
+        else:
+            postParams["indicator"] = descriptors[0]["indicator"]["indicator"]
+            postParams["type"] = descriptors[0]["type"]
+            postParams["description"] = "A ThreatDescriptor uploaded via HMA"
+            postParams["share_level"] = "RED"
+            postParams["tags"] = TE_UPLOAD_TAG
+
+            response = self.te_api.upload_threat_descriptor(postParams, False, False)
+
+        error = response[1] or response[2].get("error", {}).get("message")
+
+        if error:
+            return f"""
+Error writing back TruePositive for indicator {writeback_signal.banked_content_id}
+Error: {error}
+""".strip()
+
+        return f"Wrote back TruePositive for indicator {writeback_signal.banked_content_id}\n Built/Updated descriptor: {response[2]['id']}"
 
 
 class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
@@ -223,18 +322,13 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         indicator_id = writeback_signal.banked_content_id
-        descriptor_ids = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
-
-        for id in descriptor_ids:
+        descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
+        other_desriptors = [d for d in descriptors if d["owner"] != self.te_api.app_id]
+        for descriptor in other_desriptors:
+            id = descriptor["id"]
             self.te_api.react_to_threat_descriptor(id, self.reaction)
             logger.info("reacted %s to descriptor %s", self.reaction, id)
-        return (
-            "reacted "
-            + self.reaction
-            + " to "
-            + str(len(descriptor_ids))
-            + " descriptors"
-        )
+        return f"reacted {self.reaction} to {str(len(other_desriptors))} descriptors : {','.join(d['id'] for d in other_desriptors)}"
 
 
 class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeReactionWritebacker):
@@ -247,7 +341,7 @@ class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeReactionWritebacker):
 
 
 # TODO: Currently writing back INGESTED fails becuase of API limits. Need to
-#       solve before sending reaction. Possible solution to allow batch reactions
+#       solve before sending reaction. Possible solution to create new batch react endpoint
 # class ThreatExchangeIngestedWritebacker(ThreatExchangeReactionWritebacker):
 #     reaction = "INGESTED"
 
