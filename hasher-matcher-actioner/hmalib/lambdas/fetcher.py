@@ -371,3 +371,4 @@ if __name__ == "__main__":
             SimpleDescriptorRollup.from_row(row[2:]),
         )
         print("serialized row")
+    lambda_handler(None, None)

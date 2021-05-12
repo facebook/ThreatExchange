@@ -63,6 +63,6 @@ class WritebackTypes:
     FalsePositive = WritebackType("FalsePositive")
     TruePositive = WritebackType("TruePositive")
     Ingested = WritebackType("Ingested")
-    RemoveTrueFalsePositive = WritebackType("RemoveTrueFalsePositive")
+    RemoveOpinion = WritebackType("RemoveOpinion")
 
     NoWriteback = WritebackType("NoWriteback")

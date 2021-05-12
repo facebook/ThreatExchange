@@ -15,6 +15,7 @@ from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import BankedSignal, WritebackMessage, WritebackTypes
 from .middleware import jsoninator, JSONifiable
+from hmalib.common.config import HMAConfig
 
 logger = get_logger(__name__)
 
@@ -149,7 +150,9 @@ def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
     return OpinionString.UNKNOWN
 
 
-def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bottle:
+def get_matches_api(
+    dynamodb_table: Table, image_folder_key: str, hma_config_table: str
+) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
     API that this API plugs into. Declare dependencies here, but initialize in
@@ -159,6 +162,7 @@ def get_matches_api(dynamodb_table: Table, image_folder_key: str) -> bottle.Bott
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/matches/'
     matches_api = bottle.Bottle()
+    HMAConfig.initialize(hma_config_table)
 
     @matches_api.get("/", apply=[jsoninator])
     def matches() -> MatchSummariesResponse:

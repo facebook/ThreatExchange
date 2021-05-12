@@ -106,7 +106,6 @@ class WritebackMessageConfig:
     @classmethod
     @lru_cache(maxsize=None)
     def get(cls):
-        HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
         return cls(
             writebacks_queue_url=os.environ["WRITEBACKS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
@@ -147,7 +146,7 @@ class WritebackMessage(HasAWSSerialization):
         opinion_change_to_writeback_type = {
             PendingOpinionChange.MARK_TRUE_POSITIVE: WritebackTypes.TruePositive,
             PendingOpinionChange.MARK_FALSE_POSITIVE: WritebackTypes.FalsePositive,
-            PendingOpinionChange.REMOVE_OPINION: WritebackTypes.RemoveTrueFalsePositive,
+            PendingOpinionChange.REMOVE_OPINION: WritebackTypes.RemoveOpinion,
         }
 
         writeback_type = opinion_change_to_writeback_type.get(

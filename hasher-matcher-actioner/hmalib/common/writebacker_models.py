@@ -12,10 +12,8 @@ from hmalib.common.classification_models import WritebackTypes
 from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.message_models import WritebackMessage
-from hmalib.aws_secrets import AWSSecrets
-
 from hmalib.common.fetcher_models import ThreatExchangeConfig
-
+from hmalib.aws_secrets import AWSSecrets
 
 from threatexchange.api import ThreatExchangeAPI
 
@@ -150,8 +148,6 @@ class ThreatExchangeWritebacker(Writebacker):
         }
 
     def writeback_is_enabled(self, writeback_signal: BankedSignal) -> bool:
-        ThreatExchangeConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
-
         privacy_group_id = writeback_signal.bank_id
         privacy_group_config = ThreatExchangeConfig.cached_get(privacy_group_id)
         if isinstance(privacy_group_config, ThreatExchangeConfig):
