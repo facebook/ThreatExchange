@@ -16,7 +16,7 @@ RUN groupadd --gid 1000 developers \
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
   apt-get -y install --no-install-recommends git make jq sudo \
   software-properties-common apt-transport-https ca-certificates curl \
-  gnupg lsb-release tmux zsh vim
+  gnupg lsb-release tmux zsh vim less
 
 # [Allow sudo] Need sudo later in post-create to open up docker socket
 ARG unixname
