@@ -63,30 +63,7 @@ class WritebackerTestCase(unittest.TestCase):
 
         os.environ["MOCK_TE_API"] = "False"
 
-    def test_ingested(self):
-        os.environ["MOCK_TE_API"] = "True"
-        os.environ["CONFIG_TABLE_NAME"] = "test-HMAConfig"
-
-        writeback = WritebackTypes.Ingested
-        writeback_message = WritebackMessage.from_match_message_and_type(
-            self.match_message, writeback
-        )
-        event = {"Records": [{"body": writeback_message.to_aws_json()}]}
-
-        result = lambda_handler(event, None)
-        assert result == {
-            "writebacks_performed": {
-                "te": [
-                    "reacted INGESTED to 2 descriptors",
-                    "reacted INGESTED to 2 descriptors",
-                    "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
-                ]
-            }
-        }
-
-        os.environ["MOCK_TE_API"] = "False"
-
-    def test_false_positve(self):
+    def test_false_positive(self):
         os.environ["MOCK_TE_API"] = "True"
         os.environ["CONFIG_TABLE_NAME"] = "test-HMAConfig"
 
@@ -100,8 +77,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "Wrote back false positive on indicator 2862392437204724",
-                    "Wrote back false positive on indicator 4194946153908639",
+                    "reacted DISAGREE_WITH_TAGS to 2 descriptors",
+                    "reacted DISAGREE_WITH_TAGS to 2 descriptors",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
@@ -123,8 +100,31 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "Wrote back true positive on indicator 2862392437204724",
-                    "Wrote back true positive on indicator 4194946153908639",
+                    "MOCKED: Wrote back TruePositive for indicator 2862392437204724",
+                    "MOCKED: Wrote back TruePositive for indicator 4194946153908639",
+                    "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
+                ]
+            }
+        }
+
+        os.environ["MOCK_TE_API"] = "False"
+
+    def test_remove_opinion(self):
+        os.environ["MOCK_TE_API"] = "True"
+        os.environ["CONFIG_TABLE_NAME"] = "test-HMAConfig"
+
+        writeback = WritebackTypes.RemoveOpinion
+        writeback_message = WritebackMessage.from_match_message_and_type(
+            self.match_message, writeback
+        )
+        event = {"Records": [{"body": writeback_message.to_aws_json()}]}
+
+        result = lambda_handler(event, None)
+        assert result == {
+            "writebacks_performed": {
+                "te": [
+                    "MOCKED: Removed opinion on indicator 2862392437204724",
+                    "MOCKED: Removed opinion on indicator 4194946153908639",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
