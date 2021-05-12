@@ -112,7 +112,7 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
                 count_with_graphs[metric].count,
                 metric_time_period,
                 count_with_graphs[metric].graph_data,
-                total_count,
+                total_count or 0,
             )
         )
 
