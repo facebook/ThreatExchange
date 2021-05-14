@@ -71,7 +71,7 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
             actions_response=[config.__dict__ for config in action_configs]
         )
 
-    @actions_api.post("/update", apply=[jsoninator(CreateUpdateActionRequest)])
+    @actions_api.put("/", apply=[jsoninator(CreateUpdateActionRequest)])
     def update_action(request: CreateUpdateActionRequest) -> UpdateActionResponse:
         """
         Update an action url and headers
@@ -84,7 +84,7 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
         hmaconfig.update_config(config)
         return UpdateActionResponse(response="The action config is updated.")
 
-    @actions_api.post("/create", apply=[jsoninator(CreateUpdateActionRequest)])
+    @actions_api.post("/", apply=[jsoninator(CreateUpdateActionRequest)])
     def create_action(request: CreateUpdateActionRequest) -> CreateActionResponse:
         """
         create an action
@@ -95,7 +95,7 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
         hmaconfig.create_config(config)
         return CreateActionResponse(response="The action config is created.")
 
-    @actions_api.post("/delete/<key>", apply=[jsoninator])
+    @actions_api.delete("/<key>", apply=[jsoninator])
     def delete_action(key=None) -> DeleteActionResponse:
         """
         Delete an action
