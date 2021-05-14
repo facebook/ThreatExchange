@@ -170,3 +170,7 @@ export function updateDataset(
     matcher_active: matcherActive,
   });
 }
+
+export function fetchHashCount() {
+  return apiGet('/hash-counts');
+}

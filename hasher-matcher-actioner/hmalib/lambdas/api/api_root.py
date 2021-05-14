@@ -115,6 +115,12 @@ def hash_count():
     """
     results = get_signal_hash_count()
     logger.debug(results)
+    for name in results.keys():
+        results[
+            name.replace(THREAT_EXCHANGE_PDQ_FILE_EXTENSION, "").replace(
+                THREAT_EXCHANGE_DATA_FOLDER, ""
+            )
+        ] = results.pop(name)
     return results if results else {}
 
 
@@ -177,7 +183,7 @@ def get_signals() -> t.List[SignalSourceSummary]:
                 SignalSourceSummary(
                     name=dataset_name,
                     # TODO remove hardcode and config mapping file extention to type
-                    signals=[SignalSourceType(type="HASH_PDQ", count=total)],
+                    signals=[SignalSourceType(type="HASH_PDQ", count=total[0])],
                     updated_at="TODO",
                 )
             )
@@ -185,7 +191,7 @@ def get_signals() -> t.List[SignalSourceSummary]:
 
 
 # TODO this method is expensive some cache or memoization method might be a good idea.
-def get_signal_hash_count() -> t.Dict[str, int]:
+def get_signal_hash_count() -> t.Dict[str, t.List[t.Any]]:
     s3_config = S3ThreatDataConfig(
         threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
         threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
@@ -195,8 +201,10 @@ def get_signal_hash_count() -> t.Dict[str, int]:
         config=s3_config, metrics_logger=metrics.names.api_hash_count()
     )
     pdq_data_files = pdq_storage.load_data()
-
-    return {file_name: len(rows) for file_name, rows in pdq_data_files.items()}
+    return {
+        file_name: [len(rows), pdq_storage.last_modified[file_name]]
+        for file_name, rows in pdq_data_files.items()
+    }
 
 
 app.mount(

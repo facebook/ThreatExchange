@@ -20,10 +20,12 @@ import {
   syncAllDatasets,
   updateDataset,
   deleteDataset,
+  fetchHashCount,
 } from '../../Api';
 
 export default function ThreatExchangeSettingsTab() {
   const [datasets, setDatasets] = useState([]);
+  const [hashCounts, setHashCount] = useState({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -88,8 +90,11 @@ export default function ThreatExchangeSettingsTab() {
   };
   useEffect(() => {
     fetchAllDatasets(setLoading(false)).then(response => {
-      setLoading(true);
-      setDatasets(response.datasets_response);
+      fetchHashCount().then(counts => {
+        setHashCount(counts);
+        setLoading(true);
+        setDatasets(response.datasets_response);
+      });
     });
   }, []);
   return (
@@ -146,13 +151,14 @@ export default function ThreatExchangeSettingsTab() {
                   inUse={dataset.in_use}
                   privacyGroupId={dataset.privacy_group_id}
                   writeBack={dataset.write_back}
+                  hashCount={hashCounts[dataset.privacy_group_id][0]}
+                  lastModified={hashCounts[dataset.privacy_group_id][1]}
                   onSave={onPrivacyGroupSave}
                   onDelete={onPrivacyGroupDelete}
                 />
               ))}
         </Row>
       </Card.Body>
-
       <Col className="mx-1" md="6">
         <HolidaysDatasetInformationBlock />
       </Col>
