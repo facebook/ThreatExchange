@@ -142,9 +142,9 @@ class ThreatExchangeWritebacker(Writebacker):
     ]:
         return {
             WritebackTypes.FalsePositive: ThreatExchangeFalsePositiveWritebacker,
-            WritebackTypes.TruePositive: ThreatExchangeTruePositivePositiveWritebacker,
-            WritebackTypes.Ingested: ThreatExchangeIngestedWritebacker,
+            WritebackTypes.TruePositive: ThreatExchangeTruePositiveWritebacker,
             WritebackTypes.SawThisToo: ThreatExchangeSawThisTooWritebacker,
+            WritebackTypes.RemoveOpinion: ThreatExchangeRemoveOpinionWritebacker,
         }
 
     def writeback_is_enabled(self, writeback_signal: BankedSignal) -> bool:
@@ -165,48 +165,52 @@ class ThreatExchangeWritebacker(Writebacker):
         return ThreatExchangeAPI(api_key)
 
 
-class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeWritebacker):
-    """
-    For writing back to ThreatExhcnage that the user belives the match was
-    a false positive.
-
-    Executing perform_writeback on this class will read the (indicator, privacy_group)
-    pairs for the match and, for each, add a new descriptor on that indicator
-    in that privacy group that adds the disagreement tag for the privacy group
-
-    """
-
-    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
-        # TODO Implement
-        return (
-            "Wrote back false positive on indicator "
-            + writeback_signal.banked_content_id
-        )
-
-
-class ThreatExchangeTruePositivePositiveWritebacker(ThreatExchangeWritebacker):
+class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
     """
     For writing back to ThreatExhcnage that the user belives the match was
     correct.
 
     Executing perform_writeback on this class will read the (indicator, privacy_group)
-    pairs for the match and, for each, add a new descriptor on that indicator
-    in that privacy group that adds the agreement tag for the privacy group
+    pairs for the signal and upsert a new descriptor for that indicator with the
+    privacy group for this collaboration
+    """
 
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
+        # TODO Implement
+        return f"MOCKED: Wrote back TruePositive for indicator {writeback_signal.banked_content_id}"
+
+
+class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
+    """
+    For writing back to ThreatExhcnage that the user belives the match was
+    correct.
+
+    Executing perform_writeback on this class will try to remove both
+    TruePositive and FalsePositive opinions if they exist.
+
+    To remove a FalsePositive opinion we load the indicator and find all
+    associated descriptors. Then, for each indicator, if the user has
+    reacted DISAGREE_WITH_TAGS, remove that reaction.
+
+    To remove a TruePositive opinion we need to remove the apps descriptor
+    from the collaboration. To do this, we load the (indicator, privacy_group)
+    and find a ThreatDescriptor that the user has created for that indicator.
+    We then remove the privacy group from that descriptor if it exists thereby
+    removing it from the collaboration. If there are no more privacy groups we
+    delete the indicator.
     """
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         # TODO Implement
         return (
-            "Wrote back true positive on indicator "
-            + writeback_signal.banked_content_id
+            f"MOCKED: Removed opinion on indicator {writeback_signal.banked_content_id}"
         )
 
 
 @dataclass
 class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
     """
-    For writebacks to ThreatExchange that are implemented as reactions.
+    For all writebacks to ThreatExchange that are implemented as adding reactions.
 
     Executing perform_writeback on this class will read the indicators
     from the match, load all related descriptors, and write the given reaction
@@ -233,11 +237,26 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
         )
 
 
-class ThreatExchangeIngestedWritebacker(ThreatExchangeReactionWritebacker):
-    reaction = "INGESTED"
+class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeReactionWritebacker):
+    """
+    For writing back to ThreatExhcnage that the user belives the match was
+    a false positive.
+    """
+
+    reaction = "DISAGREE_WITH_TAGS"
+
+
+# TODO: Currently writing back INGESTED fails becuase of API limits. Need to
+#       solve before sending reaction. Possible solution to allow batch reactions
+# class ThreatExchangeIngestedWritebacker(ThreatExchangeReactionWritebacker):
+#     reaction = "INGESTED"
 
 
 class ThreatExchangeSawThisTooWritebacker(ThreatExchangeReactionWritebacker):
+    """
+    For writing back to ThreatExhcnage that a Match has occurred
+    """
+
     reaction = "SAW_THIS_TOO"
 
 
