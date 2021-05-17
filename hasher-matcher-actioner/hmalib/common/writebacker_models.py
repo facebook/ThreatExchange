@@ -239,7 +239,7 @@ class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
     """
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
-
+        privacy_group_id = writeback_signal.bank_id
         indicator_id = writeback_signal.banked_content_id
         descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
         my_descriptor = self.my_descriptor(descriptors)
@@ -249,15 +249,40 @@ class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
         print(descriptors)
 
         if my_descriptor:
-            response = self.te_api.delete_threat_descriptor(
-                my_descriptor["id"], False, False
-            )
-            error = response[1] or response[2].get("error", {}).get("message")
-
-            if error:
-                ret += f"""Error writing back RemoveOpinion for indicator {writeback_signal.banked_content_id} Error: {error}"""
+            if my_descriptor["privacy_type"] != "HAS_PRIVACY_GROUP":
+                # We currently can't add/remove a true positive opinion if the descriptor has a
+                # privacy type other than HAS_PRIVACY_GROUP We will still try to remove fasle positive reaction type
+                ret += f"Error writing back RemoveOpinion for indicator  {writeback_signal.banked_content_id} Error: Cannot remove/edit descriptor {my_descriptor['id']} because the privacy type is not HAS_PRIVACY_GROUP"
             else:
-                ret += f"Deleted decriptor {my_descriptor['id']} for indicator {writeback_signal.banked_content_id}"
+                new_privacy_members: t.List[str] = [
+                    member
+                    for member in my_descriptor.get("privacy_members", "").split(",")
+                    if isinstance(member, str)
+                    and member.isnumeric()
+                    and member != privacy_group_id
+                ]
+                if not new_privacy_members:
+                    # No other privacy groups, delete descriptor
+                    response = self.te_api.delete_threat_descriptor(
+                        my_descriptor["id"], False, False
+                    )
+                    error = response[1] or response[2].get("error", {}).get("message")
+
+                    if error:
+                        ret += f"Error writing back RemoveOpinion for indicator {writeback_signal.banked_content_id} Error: {error}"
+                    else:
+                        ret += f"Deleted decriptor {my_descriptor['id']} for indicator {writeback_signal.banked_content_id}"
+                else:
+                    postParams = {
+                        "privacy_members": new_privacy_members.join(","),
+                        "privacy_type": "HAS_PRIVACY_GROUP",
+                        "descriptor_id": my_descriptor["id"],
+                    }
+
+                    response = self.te_api.copy_threat_descriptor(
+                        postParams, False, False
+                    )
+
         else:
             ret += f"""No descriptor to remove for indicator {writeback_signal.banked_content_id}"""
 
