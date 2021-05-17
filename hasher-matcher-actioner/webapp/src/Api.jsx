@@ -52,11 +52,19 @@ export function fetchMatchDetails(key) {
 }
 
 export function fetchHash(key) {
-  return apiGet(`/hash/${key}`);
+  return apiGet(`/content/hash/${key}`);
 }
 
 export function fetchImage(key) {
-  return apiGet(`/image/${key}`, {}, 'blob');
+  return apiGet(`/content/image/${key}`, {}, 'blob');
+}
+
+export function fetchContentActionHistory(key) {
+  return apiGet(`/content/action-history/${key}`);
+}
+
+export function fetchContentDetails(key) {
+  return apiGet(`/content/${key}`);
 }
 
 export function fetchSignalSummary() {
