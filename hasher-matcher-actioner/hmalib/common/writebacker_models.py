@@ -151,6 +151,14 @@ class ThreatExchangeWritebacker(Writebacker):
         api_key = AWSSecrets().te_api_key()
         return ThreatExchangeAPI(api_key)
 
+    def my_descriptor(
+        self, descriptors: t.List[t.Dict[str, t.Any]]
+    ) -> t.Optional[t.Dict[str, t.Any]]:
+        for descriptor in descriptors:
+            if descriptor["owner"]["id"] == str(self.te_api.app_id):
+                return descriptor
+        return None
+
 
 class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
     """
@@ -163,15 +171,11 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
     """
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
-        indicator_id = writeback_signal.banked_content_id
         privacy_group_id = writeback_signal.bank_id
-        descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
 
-        # If we already have a descriptor we can copy it and upload make sure to never expire it
-        my_descriptor = None
-        for descriptor in descriptors:
-            if descriptor["owner"]["id"] == str(self.te_api.app_id):
-                my_descriptor = descriptor
+        indicator_id = writeback_signal.banked_content_id
+        descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
+        my_descriptor = self.my_descriptor(descriptors)
 
         postParams = {
             "privacy_type": "HAS_PRIVACY_GROUP",
@@ -182,6 +186,7 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
         }
         print(descriptors)
 
+        # If we already have a descriptor we can copy it and upload make sure to never expire it
         if my_descriptor:
             members = {member for member in my_descriptor.get("privacy_members", [])}
 
@@ -234,10 +239,30 @@ class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
     """
 
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
-        # TODO Implement
-        return (
-            f"MOCKED: Removed opinion on indicator {writeback_signal.banked_content_id}"
-        )
+
+        indicator_id = writeback_signal.banked_content_id
+        descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
+        my_descriptor = self.my_descriptor(descriptors)
+
+        ret = ""
+
+        print(descriptors)
+
+        if my_descriptor:
+            response = self.te_api.delete_threat_descriptor(
+                my_descriptor["id"], False, False
+            )
+            error = response[1] or response[2].get("error", {}).get("message")
+
+            if error:
+                ret += f"""Error writing back RemoveOpinion for indicator {writeback_signal.banked_content_id} Error: {error}"""
+            else:
+                ret += f"Deleted decriptor {my_descriptor['id']} for indicator {writeback_signal.banked_content_id}"
+        else:
+            ret += f"""No descriptor to remove for indicator {writeback_signal.banked_content_id}"""
+
+        # TODO Implement remove reaction
+        return ret
 
 
 @dataclass
