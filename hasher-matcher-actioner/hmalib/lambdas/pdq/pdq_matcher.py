@@ -25,6 +25,7 @@ s3_client = boto3.client("s3")
 sns_client: SNSClient = boto3.client("sns")
 dynamodb = boto3.resource("dynamodb")
 
+CACHED_TIME = 300
 THRESHOLD = 31
 LOCAL_INDEX_FILENAME = "/tmp/hashes.index"
 
@@ -107,7 +108,7 @@ def lambda_handler(event, context):
                 privacy_group_list = metadata.get("privacy_groups", [])
                 metadata["privacy_groups"] = filter(
                     lambda x: get_privacy_group_matcher_active(
-                        str(x), time.time() // 300
+                        str(x), time.time() // CACHED_TIME
                     ),
                     privacy_group_list,
                 )
