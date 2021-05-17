@@ -3,7 +3,6 @@
 import unittest
 
 import os
-import typing as t
 from hmalib.lambdas.actions.writebacker import lambda_handler
 from hmalib.common.classification_models import WritebackTypes
 from hmalib.common.message_models import MatchMessage, WritebackMessage, BankedSignal
@@ -11,8 +10,6 @@ from hmalib.common.message_models import MatchMessage, WritebackMessage, BankedS
 from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 from hmalib.common import config as hmaconfig
-
-from hmalib.common.writebacker_models import Writebacker
 
 
 class WritebackerTestCase(unittest.TestCase):
@@ -100,8 +97,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "Wrote back TruePositive for indicator 2862392437204724\n Built/Updated descriptor: 11",
-                    "Wrote back TruePositive for indicator 4194946153908639\n Built/Updated descriptor: 12",
+                    "Wrote back TruePositive for indicator 2862392437204724\n Built descriptor 11 with privacy groups pg 4",
+                    "Wrote back TruePositive for indicator 4194946153908639\n Built descriptor 12 with privacy groups pg 4",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }

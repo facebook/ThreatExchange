@@ -1,20 +1,15 @@
-from requests import api
-from hmalib.common.signal_models import PDQSignalMetadata
 import typing as t
 import os
 
 from functools import lru_cache
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 
-from hmalib.common.message_models import BankedSignal, MatchMessage
 from hmalib.common.logging import get_logger
-
-from hmalib.common.actioner_models import ActionPerformer
 from hmalib.common.classification_models import WritebackTypes
-from hmalib.common.actioner_models import ActionPerformer
-from hmalib.common.evaluator_models import ActionLabel
-from hmalib.common.message_models import WritebackMessage
+from hmalib.common.message_models import WritebackMessage, BankedSignal
 from hmalib.common.fetcher_models import ThreatExchangeConfig
+from hmalib.common.mocks import MockedThreatExchangeAPI
+
 from hmalib.aws_secrets import AWSSecrets
 
 from threatexchange.api import ThreatExchangeAPI
@@ -22,69 +17,6 @@ from threatexchange.api import ThreatExchangeAPI
 logger = get_logger(__name__)
 
 TE_UPLOAD_TAG = "uploaded_by_hma"
-
-
-class MockedThreatExchangeAPI:
-
-    app_id = my_app_id = "a1"
-    other_app_id = "a2"
-    third_app_id = "a3"
-
-    indicator_to_desriptors = {
-        "2862392437204724": [
-            {"owner": my_app_id, "id": "11"},
-            {"owner": other_app_id, "id": "21"},
-            {"owner": third_app_id, "id": "31"},
-        ],
-        "4194946153908639": [
-            {"owner": my_app_id, "id": "12"},
-            {"owner": other_app_id, "id": "22"},
-            {"owner": third_app_id, "id": "32"},
-        ],
-        "3027465034605137": [
-            {"owner": my_app_id, "id": "13"},
-            {"owner": other_app_id, "id": "23"},
-            {"owner": third_app_id, "id": "33"},
-        ],
-    }
-
-    def get_threat_descriptors_from_indicator(
-        self, indicator
-    ) -> t.List[t.Dict[str, str]]:
-        return self.indicator_to_desriptors[indicator]
-
-    def react_to_threat_descriptor(self, descriptor, reaction) -> None:
-        # can only react to a descriptor that exists
-        assert descriptor in (
-            descriptor["id"]
-            for descriptor_set in self.indicator_to_desriptors.values()
-            for descriptor in descriptor_set
-        )
-        return None
-
-    def upload_threat_descriptor(self, postParams, *vargs):
-        # Find the indicator for the descriptor we're trying to copy
-        indicator = [
-            descriptor_set
-            for descriptor_set in self.indicator_to_desriptors.values()
-            if postParams["descriptor_id"]
-            in [descriptor["id"] for descriptor in descriptor_set]
-        ][0]
-        return [
-            None,
-            None,
-            {
-                "success": True,
-                "id": [
-                    descriptor["id"]
-                    for descriptor in indicator
-                    if descriptor["owner"] == self.my_app_id
-                ][0],
-            },
-        ]
-
-    def copy_threat_descriptor(self, postParams, *vargs):
-        return self.upload_threat_descriptor(postParams, *vargs)
 
 
 class Writebacker:
@@ -238,26 +170,28 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
         # If we already have a descriptor we can copy it and upload make sure to never expire it
         my_descriptor = None
         for descriptor in descriptors:
-            if descriptor["owner"] == self.te_api.app_id:
+            if descriptor["owner"]["id"] == str(self.te_api.app_id):
                 my_descriptor = descriptor
-
-        privacy_members = str(privacy_group_id)
 
         postParams = {
             "privacy_type": "HAS_PRIVACY_GROUP",
             "expire_time": 0,
-            "privacy_members": privacy_members,
+            "privacy_members": str(privacy_group_id),
             "review_status": "REVIEWED_MANUALLY",
             "status": "MALICIOUS",
         }
+        print(descriptors)
 
         if my_descriptor:
-            members = my_descriptor.get("privacy_members", "")
-            if members and privacy_members not in members:
-                postParams["privacy_members"] += privacy_members + "," + members
+            members = {member for member in my_descriptor.get("privacy_members", [])}
 
+            postParams["privacy_members"] = ",".join(
+                members.union({str(privacy_group_id)})
+            )
             postParams["descriptor_id"] = my_descriptor["id"]
 
+            # This doesnt actually copy to a new descriptor but acts like an upsert for
+            # the properties specified
             response = self.te_api.copy_threat_descriptor(postParams, False, False)
         else:
             postParams["indicator"] = descriptors[0]["indicator"]["indicator"]
@@ -276,7 +210,7 @@ Error writing back TruePositive for indicator {writeback_signal.banked_content_i
 Error: {error}
 """.strip()
 
-        return f"Wrote back TruePositive for indicator {writeback_signal.banked_content_id}\n Built/Updated descriptor: {response[2]['id']}"
+        return f"Wrote back TruePositive for indicator {writeback_signal.banked_content_id}\n {'Built' if my_descriptor else 'Updated'} descriptor {response[2]['id']} with privacy groups {postParams['privacy_members']}"
 
 
 class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
@@ -323,7 +257,9 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
     def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
         indicator_id = writeback_signal.banked_content_id
         descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
-        other_desriptors = [d for d in descriptors if d["owner"] != self.te_api.app_id]
+        other_desriptors = [
+            d for d in descriptors if d["owner"]["id"] != str(self.te_api.app_id)
+        ]
         for descriptor in other_desriptors:
             id = descriptor["id"]
             self.te_api.react_to_threat_descriptor(id, self.reaction)
