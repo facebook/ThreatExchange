@@ -1,5 +1,3 @@
-from requests import api
-from hmalib.common.signal_models import PDQSignalMetadata
 import typing as t
 import os
 
@@ -182,6 +180,7 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
             "review_status": "REVIEWED_MANUALLY",
             "status": "MALICIOUS",
         }
+        print(descriptors)
 
         if my_descriptor:
             members = {member for member in my_descriptor.get("privacy_members", [])}
