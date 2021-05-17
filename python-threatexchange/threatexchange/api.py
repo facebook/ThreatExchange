@@ -544,7 +544,7 @@ class ThreatExchangeAPI:
             self._base_url
             + "/"
             + str(indicator_id)
-            + "?fields=descriptors&access_token="
+            + "?fields=descriptors{privacy_members,indicator,type,owner}&access_token="
             + self.api_token
         )
 
