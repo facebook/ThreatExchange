@@ -61,6 +61,12 @@ locals {
   }
 }
 
+module "datastore" {
+  source          = "./datastore"
+  prefix          = var.prefix
+  additional_tags = merge(var.additional_tags, local.common_tags)
+}
+
 module "hashing_data" {
   source          = "./hashing-data"
   prefix          = var.prefix
@@ -78,10 +84,8 @@ module "pdq_signals" {
       indexer = "hmalib.lambdas.pdq.pdq_indexer.lambda_handler"
     }
   }
-  datastore = {
-    name = module.hashing_data.hma_datastore.name
-    arn  = module.hashing_data.hma_datastore.arn
-  }
+  datastore = module.datastore.primary_datastore
+
   images_input = {
     input_queue = aws_sqs_queue.pdq_images_queue.arn
     resource_list = [
@@ -118,10 +122,7 @@ module "fetcher" {
     }
   }
 
-  datastore = {
-    name = module.hashing_data.hma_datastore.name
-    arn  = module.hashing_data.hma_datastore.arn
-  }
+  datastore = module.datastore.primary_datastore
 
   threat_exchange_data = {
     bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
@@ -220,10 +221,7 @@ module "api" {
       api_auth = "hmalib.lambdas.api.api_auth.lambda_handler"
     }
   }
-  datastore = {
-    name = module.hashing_data.hma_datastore.name
-    arn  = module.hashing_data.hma_datastore.arn
-  }
+  datastore = module.datastore.primary_datastore
   image_data_storage = {
     bucket_name      = module.hashing_data.image_folder_info.bucket_name
     image_folder_key = module.hashing_data.image_folder_info.key
@@ -309,3 +307,5 @@ resource "aws_secretsmanager_secret_version" "te_api_token" {
   secret_id     = aws_secretsmanager_secret.te_api_token.id
   secret_string = var.te_api_token
 }
+
+
