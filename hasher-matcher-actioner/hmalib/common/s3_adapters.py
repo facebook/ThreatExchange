@@ -7,7 +7,7 @@ import codecs
 
 import typing as t
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 
@@ -39,9 +39,9 @@ class ThreatExchangeS3Adapter:
     """
 
     metrics_logger: metrics.lambda_with_datafiles
-
     S3FileT = t.Dict[str, t.Any]
     config: S3ThreatDataConfig
+    last_modified: t.Dict[str, str] = field(default_factory=dict)
 
     def load_data(self) -> t.Dict[str, t.List[HashRowT]]:
         """
@@ -115,6 +115,7 @@ class ThreatExchangeS3Adapter:
             codecs.getreader("utf-8")(data_file["Body"]),
             fieldnames=self.indicator_type_file_columns,
         )
+        self.last_modified[file_name] = data_file["LastModified"].isoformat()
         privacy_group = file_name.split("/")[-1].split(".")[0]
         return [
             (
