@@ -4,13 +4,14 @@
 
 import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
-import {Col, Row, Table, Container} from 'react-bootstrap';
+import {Col, Row, Table, Button} from 'react-bootstrap';
 
 import {fetchHash, fetchImage} from '../Api';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 import {BlurUntilHoverImage} from '../utils/ImageUtils';
 import ContentMatchTable from '../components/ContentMatchTable';
+import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
 export default function ContentDetails() {
   const history = useHistory();
@@ -37,14 +38,14 @@ export default function ContentDetails() {
   }, []);
 
   return (
-    <Container fluid>
-      <button
-        type="submit"
-        className="mt-4 float-right btn btn-primary"
-        onClick={() => history.goBack()}>
-        Back
-      </button>
-      <h1>Summary</h1>
+    <FixedWidthCenterAlignedLayout title="Summary">
+      <Row>
+        <Col className="mb-4">
+          <Button variant="link" href="#" onClick={() => history.goBack()}>
+            &larr; Back to Matches
+          </Button>
+        </Col>
+      </Row>
       <Row
         style={{
           minHeight: '450px',
@@ -90,6 +91,6 @@ export default function ContentDetails() {
         </Col>
       </Row>
       <ContentMatchTable contentKey={id} />
-    </Container>
+    </FixedWidthCenterAlignedLayout>
   );
 }

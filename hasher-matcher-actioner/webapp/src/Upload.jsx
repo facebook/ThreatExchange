@@ -8,6 +8,7 @@ import {Button, Col, Collapse, Image, Row} from 'react-bootstrap';
 import Spinner from 'react-bootstrap/Spinner';
 
 import {uploadPhoto} from './Api';
+import FixedWidthCenterAlignedLayout from './pages/layouts/FixedWidthCenterAlignedLayout';
 
 export default function Upload() {
   const [fileName, setFileName] = useState('Select Browse to choose a file.');
@@ -16,8 +17,7 @@ export default function Upload() {
   const [image, setImage] = useState({preview: '', raw: ''});
 
   return (
-    <>
-      <h1>Upload</h1>
+    <FixedWidthCenterAlignedLayout title="Upload">
       <Row className="mt-3" float>
         <Col md={6}>
           Checkout WIP{' '}
@@ -95,6 +95,6 @@ export default function Upload() {
           </Collapse>
         </Col>
       </Row>
-    </>
+    </FixedWidthCenterAlignedLayout>
   );
 }
