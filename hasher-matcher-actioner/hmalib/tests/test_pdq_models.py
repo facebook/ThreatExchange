@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from moto import mock_dynamodb2
 from hmalib import models
 from hmalib.common import signal_models
+from hmalib.common.count_models import MatchByPrivacyGroupCounter
 
 import boto3
 import datetime
@@ -387,3 +388,44 @@ class CountersTest(TestPDQModels):
             record.write_to_table(self.table)
 
             assert 0 == models.PDQMatchRecord.get_total_count(self.table)
+
+
+class MatchByPrivacyGroupCounterTestCase(CountersTest):
+    """
+    Better placed inside common, but unfortunately has to be here.
+
+    To be able to re-use the ddb schema definitions, must place things here.
+    tests are module free so can't be cross-referenced.
+    """
+
+    def test_full_flow(self):
+        with self.fresh_dynamodb():
+            # Before anything has been done.
+            self.assertEqual({}, MatchByPrivacyGroupCounter.get_all_counts(self.table))
+            self.assertEqual(
+                0, MatchByPrivacyGroupCounter.get_count(self.table, "specific-pg")
+            )
+
+            # Do an update
+            MatchByPrivacyGroupCounter.increment_counts(
+                self.table, {"a-privacy-group": 100, "another-privacy-group": 32}
+            )
+
+            self.assertEqual(
+                {"a-privacy-group": 100, "another-privacy-group": 32},
+                MatchByPrivacyGroupCounter.get_all_counts(self.table),
+            )
+
+            # Do another update
+            MatchByPrivacyGroupCounter.increment_counts(
+                self.table, {"a-privacy-group": 100, "another-privacy-group": 32}
+            )
+
+            self.assertEqual(
+                {"a-privacy-group": 200, "another-privacy-group": 64},
+                MatchByPrivacyGroupCounter.get_all_counts(self.table),
+            )
+
+            self.assertEqual(
+                200, MatchByPrivacyGroupCounter.get_count(self.table, "a-privacy-group")
+            )
