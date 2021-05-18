@@ -27,7 +27,7 @@ class ContentObjectBase(DynamoDBItem):
 
 
 @dataclass
-class ActionEventRecord(ContentObjectBase, JSONifiable):
+class ActionEvent(ContentObjectBase, JSONifiable):
     """
     Record of action events in the action performer
     keyed based on action_label and time of event.
@@ -38,18 +38,18 @@ class ActionEventRecord(ContentObjectBase, JSONifiable):
     ACTION_TIME_PREFIX = "action_time#"
     DEFAULT_PROJ_EXP = "PK, SK, ActionLabel, ActionRules"
 
-    time_performed: datetime.datetime
+    performed_at: datetime.datetime
     action_label: str
-    action_rules: t.List
+    action_rules: t.List[str]
 
     @staticmethod
-    def get_dynamodb_action_time_key(time_performed: datetime.datetime) -> str:
-        return f"{ActionEventRecord.ACTION_TIME_PREFIX}{time_performed.isoformat()}"
+    def get_dynamodb_action_time_key(performed_at: datetime.datetime) -> str:
+        return f"{ActionEvent.ACTION_TIME_PREFIX}{performed_at.isoformat()}"
 
     def to_dynamodb_item(self) -> dict:
         return {
             "PK": self.get_dynamodb_content_key(self.content_id),
-            "SK": self.get_dynamodb_action_time_key(self.time_performed),
+            "SK": self.get_dynamodb_action_time_key(self.performed_at),
             "ActionLabel": self.action_label,
             "ActionRules": self.action_rules,
         }
@@ -59,7 +59,7 @@ class ActionEventRecord(ContentObjectBase, JSONifiable):
         Used by '/content/action-history/<content-id>' in lambdas/api/content
         """
         result = asdict(self)
-        result.update(time_performed=self.time_performed.isoformat())
+        result.update(performed_at=self.performed_at.isoformat())
         return result
 
     @classmethod
@@ -67,7 +67,7 @@ class ActionEventRecord(ContentObjectBase, JSONifiable):
         cls,
         table: Table,
         content_id: str,
-    ) -> t.List["ActionEventRecord"]:
+    ) -> t.List["ActionEvent"]:
 
         items = table.query(
             KeyConditionExpression=Key("PK").eq(
@@ -77,19 +77,19 @@ class ActionEventRecord(ContentObjectBase, JSONifiable):
             ProjectionExpression=cls.DEFAULT_PROJ_EXP,
         ).get("Items", [])
 
-        return cls._result_item_to_action_record(items)
+        return cls._result_item_to_action_event(items)
 
     @classmethod
-    def _result_item_to_action_record(
+    def _result_item_to_action_event(
         cls,
         items: t.List[t.Dict],
-    ) -> t.List["ActionEventRecord"]:
+    ) -> t.List["ActionEvent"]:
         return [
-            ActionEventRecord(
+            ActionEvent(
                 content_id=cls.remove_content_key_prefix(
                     item["PK"],
                 ),
-                time_performed=datetime.datetime.fromisoformat(
+                performed_at=datetime.datetime.fromisoformat(
                     item["SK"][len(cls.ACTION_TIME_PREFIX) :]
                 ),
                 action_label=item["ActionLabel"],
@@ -116,10 +116,10 @@ class ContentObject(ContentObjectBase, JSONifiable):
     content_type: str
     content_ref: str
     content_ref_type: str
-    additional_fields: t.Optional[t.Set]
-    submissions: t.List
-    created_on: datetime.datetime
+    submission_times: t.List[datetime.datetime]
+    created_at: datetime.datetime
     updated_at: datetime.datetime
+    additional_fields: t.Set[str] = field(default_factory=set)
 
     @staticmethod
     def get_dynamodb_content_type_key(content_type: str) -> str:
@@ -127,15 +127,15 @@ class ContentObject(ContentObjectBase, JSONifiable):
 
     def to_json(self) -> t.Dict:
         """
-        TODO docstring
+        Used by '/content/<content-id>' in lambdas/api/content
         """
         result = asdict(self)
         result.update(
             additional_fields=list(
                 self.additional_fields if self.additional_fields else set()
             ),
-            submissions=[s.isoformat() for s in self.submissions],
-            created_on=self.created_on.isoformat(),
+            submission_times=[s.isoformat() for s in self.submission_times],
+            created_on=self.created_at.isoformat(),
             updated_at=self.updated_at.isoformat(),
         )
         return result
@@ -153,8 +153,8 @@ class ContentObject(ContentObjectBase, JSONifiable):
                 "ContentRef": self.content_ref,
                 "ContentRefType": self.content_ref_type,
                 "AdditionalFields": self.additional_fields,
-                "Submissions": [s.isoformat() for s in self.submissions],
-                "CreatedOn": self.created_on.isoformat(),
+                "SubmissionTimes": [s.isoformat() for s in self.submission_times],
+                "CreatedOn": self.created_at.isoformat(),
                 "UpdatedAt": self.updated_at.isoformat(),
             }
         """
@@ -166,15 +166,15 @@ class ContentObject(ContentObjectBase, JSONifiable):
             # If ContentRef exists it needs to match or BAD THING(tm) can happen...
             ConditionExpression=Or(Attr("ContentRef").not_exists(), Attr("ContentRef").eq(self.content_ref)),  # type: ignore
             # Unfortunately while prod is happy with this on multiple lines pytest breaks...
-            UpdateExpression="""SET ContentRef = :cr, ContentRefType = :crt, Submissions = list_append(if_not_exists(Submissions, :empty_list), :s), CreatedOn = if_not_exists(CreatedOn, :co), UpdatedAt = :u ADD AdditionalFields :af""",
+            UpdateExpression="""SET ContentRef = :cr, ContentRefType = :crt, SubmissionTimes = list_append(if_not_exists(SubmissionTimes, :empty_list), :s), CreatedAt = if_not_exists(CreatedAt, :c), UpdatedAt = :u ADD AdditionalFields :af""",
             ExpressionAttributeValues={
                 ":cr": self.content_ref,
                 ":crt": self.content_ref_type,
                 ":af": self.additional_fields
                 if self.additional_fields
                 else {"Placeholder"},
-                ":s": [s.isoformat() for s in self.submissions],
-                ":co": self.created_on.isoformat(),
+                ":s": [s.isoformat() for s in self.submission_times],
+                ":c": self.created_at.isoformat(),
                 ":u": self.updated_at.isoformat(),
                 ":empty_list": [],
             },
@@ -214,9 +214,9 @@ class ContentObject(ContentObjectBase, JSONifiable):
             additional_fields=item["AdditionalFields"],
             # Notes careful not using this version to write back to the table...
             # Will dup previous submissions...
-            submissions=[
-                datetime.datetime.fromisoformat(s) for s in item["Submissions"]
+            submission_times=[
+                datetime.datetime.fromisoformat(s) for s in item["SubmissionTimes"]
             ],
-            created_on=datetime.datetime.fromisoformat(item["CreatedOn"]),
+            created_at=datetime.datetime.fromisoformat(item["CreatedAt"]),
             updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
         )

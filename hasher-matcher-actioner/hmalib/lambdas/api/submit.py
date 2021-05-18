@@ -128,8 +128,8 @@ def record_content_submission(
         content_ref=f"{image_folder_key}{request.content_id}",  # raw bytes + tmp urls are a bad idea atm, assume s3 object for now
         content_ref_type=request.submission_type,
         additional_fields=set(request.metadata) if request.metadata else set(),
-        submissions=[submit_time],
-        created_on=submit_time,
+        submission_times=[submit_time],  # Note: custom write_to_table impl appends.
+        created_at=submit_time,
         updated_at=submit_time,
     ).write_to_table(dynamodb_table)
 
@@ -162,6 +162,8 @@ def get_submit_api(
             fileName = request.content_id
             fileContents = base64.b64decode(request.content_ref)
 
+            # We want to record the submission before triggering and processing on
+            # the content itself therefore we write to dynamo before s3
             record_content_submission(dynamodb_table, image_folder_key, request)
 
             # TODO a whole bunch more validation and error checking...
@@ -182,6 +184,8 @@ def get_submit_api(
             if response and response.content:
                 # TODO a whole bunch more validation and error checking...
 
+                # Again, We want to record the submission before triggering and processing on
+                # the content itself therefore we write to dynamo before s3
                 record_content_submission(dynamodb_table, image_folder_key, request)
 
                 # Right now this makes a local copy in s3 but future changes to

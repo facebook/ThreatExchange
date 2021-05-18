@@ -14,7 +14,7 @@ from hmalib.common.actioner_models import (
     WebhookPostActionPerformer,
 )
 from hmalib.common.evaluator_models import ActionLabel
-from hmalib.common.content_models import ActionEventRecord
+from hmalib.common.content_models import ActionEvent
 from hmalib.common.logging import get_logger
 from hmalib.common import config
 
@@ -69,9 +69,11 @@ def lambda_handler(event, context):
 
         perform_label_action(action_message, action_message.action_label)
 
-        ActionEventRecord(
+        ActionEvent(
             content_id=action_message.content_key,
-            time_performed=datetime.datetime.now(),
+            performed_at=datetime.datetime.now(),
+            # TODO this action_label is an indirection for ActionPerformer look up
+            # we probably also want to store its state (or at least it version once one exists)
             action_label=action_message.action_label.value,
             # Hack: the label rules model is not something I don't fully understand yet...
             # rn this just says f-it let's make a list of json blobs we can recover and store it.

@@ -3,7 +3,7 @@
 import unittest
 from contextlib import contextmanager
 from moto import mock_dynamodb2
-from hmalib.common.content_models import ContentObject, ActionEventRecord
+from hmalib.common.content_models import ContentObject, ActionEvent
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.message_models import BankedSignal, ActionMessage
 from hmalib.common.classification_models import ClassificationLabel
@@ -68,13 +68,13 @@ class TestContentModels(unittest.TestCase):
             content_ref="key_of_s3_bucket_object_123",
             content_ref_type="S3",
             additional_fields={"additional", "ham"},
-            submissions=[now],
-            created_on=now,
+            submission_times=[now],
+            created_at=now,
             updated_at=now,
         )  # .write_to_table(table)
 
     @staticmethod
-    def get_example_action_event_record():
+    def get_example_action_event():
         enqueue_mini_castle_for_review_action_label = ActionLabel(
             TestContentModels.TEST_ACTION_LABEL
         )
@@ -106,9 +106,9 @@ class TestContentModels(unittest.TestCase):
             action_rules=action_rules,
         )
 
-        return ActionEventRecord(
+        return ActionEvent(
             content_id=action_message.content_key,
-            time_performed=TestContentModels.TEST_TIME,
+            performed_at=TestContentModels.TEST_TIME,
             action_label=action_message.action_label.value,
             action_rules=[rule.to_aws_json() for rule in action_message.action_rules],
         )  # .write_to_table(table)
@@ -128,16 +128,16 @@ class TestContentModels(unittest.TestCase):
         )
         item = result.get("Item")
         AdditionalFields = item.get("AdditionalFields")
-        CreatedOn = item.get("CreatedOn")
+        CreatedOn = item.get("CreatedAt")
         assert AdditionalFields == obj.additional_fields
         assert TestContentModels.TEST_TIME.isoformat() == CreatedOn
 
-    def test_write_action_event_record(self):
+    def test_write_action_event(self):
         """
-        Test ActionEventRecord write
+        Test ActionEvent write
         """
-        record = self.get_example_action_event_record()
-        record.write_to_table(self.table)
+        event = self.get_example_action_event()
+        event.write_to_table(self.table)
 
         result = self.table.get_item(
             Key={
@@ -156,22 +156,22 @@ class TestContentModels(unittest.TestCase):
         obj = self.get_example_content_object()
         obj.write_to_table(self.table)
 
-        query_record = ContentObject.get_from_content_id(
+        query_obj = ContentObject.get_from_content_id(
             self.table, TestContentModels.TEST_CONTENT_ID
         )
 
-        assert obj == query_record
+        assert obj == query_obj
 
-    def test_query_action_event_record(self):
+    def test_query_action_event(self):
         """
-        Test ActionEventRecord write table with get_from_content_id query
+        Test ActionEvent write table with get_from_content_id query
         """
 
-        record = self.get_example_action_event_record()
-        record.write_to_table(self.table)
+        event = self.get_example_action_event()
+        event.write_to_table(self.table)
 
-        query_record = ActionEventRecord.get_from_content_id(
+        query_event = ActionEvent.get_from_content_id(
             self.table, TestContentModels.TEST_CONTENT_ID
         )[0]
 
-        assert record == query_record
+        assert event == query_event

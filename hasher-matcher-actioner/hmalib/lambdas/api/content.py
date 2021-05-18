@@ -15,7 +15,7 @@ import typing as t
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.models import PipelinePDQHashRecord
-from hmalib.common.content_models import ContentObject, ActionEventRecord
+from hmalib.common.content_models import ContentObject, ActionEvent
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -35,7 +35,7 @@ class HashResultResponse(JSONifiable):
 
 @dataclass
 class ActionHistoryResponse(JSONifiable):
-    action_records: t.List[ActionEventRecord]
+    action_records: t.List[ActionEvent]
 
     def to_json(self) -> t.Dict:
         return {"action_history": [record.to_json() for record in self.action_records]}
@@ -67,10 +67,10 @@ def get_content_api(
     def action_history(key=None) -> ActionHistoryResponse:
         """
         List of action event records for a given ID
-        see hmalib/common/content_models.ActionEventRecord for specific fields
+        see hmalib/common/content_models.ActionEvent for specific fields
         """
         return ActionHistoryResponse(
-            ActionEventRecord.get_from_content_id(dynamodb_table, key)
+            ActionEvent.get_from_content_id(dynamodb_table, key)
         )
 
     @content_api.get("/hash/<key>", apply=[jsoninator])
