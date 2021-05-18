@@ -4,16 +4,14 @@
 
 import {React, useState} from 'react';
 import {Card, Button} from 'react-bootstrap';
+import PropTypes from 'prop-types';
 import {createDataset} from '../Api';
 
 export const SAMPLE_PG_ID = 'inria-holidays-test';
 /**
  * Super simple informational component. Drop in anywhere.
  */
-export function HolidaysDatasetInformationBlock({
-  sample_pg_exists = false,
-  refresh = () => {},
-}) {
+export function HolidaysDatasetInformationBlock({samplePGExists, refresh}) {
   const [loading, setLoading] = useState(false);
 
   const createSampleDataPG = () => {
@@ -23,7 +21,7 @@ export function HolidaysDatasetInformationBlock({
       `This group will become disabled on "Sync" as it does not have TE
       counterpart. Simply delete and create again if you wish to keep match
       sample data after syncing`,
-    ).then(response => {});
+    ).then(() => {});
   };
 
   return (
@@ -49,7 +47,7 @@ export function HolidaysDatasetInformationBlock({
           <Button
             variant="secondary"
             className="float-right"
-            disabled={loading || sample_pg_exists}
+            disabled={loading || samplePGExists}
             onClick={() => {
               setLoading(true);
               createSampleDataPG();
@@ -59,10 +57,20 @@ export function HolidaysDatasetInformationBlock({
               }, 1000);
             }}
             style={{marginLeft: 10}}>
-            {sample_pg_exists ? 'Created' : 'Create'}
+            {samplePGExists ? 'Created' : 'Create'}
           </Button>
         </li>
       </ul>
     </Card>
   );
 }
+
+HolidaysDatasetInformationBlock.propTypes = {
+  samplePGExists: PropTypes.bool,
+  refresh: PropTypes.func,
+};
+
+HolidaysDatasetInformationBlock.defaultProps = {
+  samplePGExists: false,
+  refresh: () => {},
+};

@@ -175,7 +175,7 @@ export default function ThreatExchangeSettingsTab() {
       </Card.Body>
       <Col className="mx-1" md="6">
         <HolidaysDatasetInformationBlock
-          sample_pg_exists={datasets.some(
+          samplePGExists={datasets.some(
             ds => ds.privacy_group_id === SAMPLE_PG_ID,
           )}
           refresh={refreshDatasets}
