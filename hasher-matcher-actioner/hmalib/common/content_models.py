@@ -158,6 +158,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
                 "UpdatedAt": self.updated_at.isoformat(),
             }
         """
+        # put_item does not support UpdateExpression
         table.update_item(
             Key={
                 "PK": self.get_dynamodb_content_key(self.content_id),
