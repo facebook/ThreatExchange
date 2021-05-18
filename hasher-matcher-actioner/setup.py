@@ -10,7 +10,7 @@ setup(
     install_requires=[
         "boto3",
         "boto3-stubs[essential,sns]==1.17.14.0",
-        "threatexchange[faiss,pdq_hasher]>=0.0.19",
+        "threatexchange[faiss,pdq_hasher]>=0.0.20",
         "bottle",
         "apig_wsgi",
     ],
