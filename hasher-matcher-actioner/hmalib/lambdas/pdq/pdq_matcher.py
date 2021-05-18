@@ -109,7 +109,9 @@ def lambda_handler(event, context):
                 metadata["privacy_groups"] = list(
                     filter(
                         lambda x: get_privacy_group_matcher_active(
-                            str(x), time.time() // CACHED_TIME
+                            str(x),
+                            time.time() // CACHED_TIME,
+                            # CACHED_TIME default to 300 seconds, this will convert time.time() to an int parameter which changes every 300 seconds
                         ),
                         privacy_group_list,
                     )
