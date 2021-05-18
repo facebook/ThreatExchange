@@ -7,7 +7,7 @@ import requests
 import datetime
 
 from enum import Enum
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, Or
 from botocore.exceptions import ClientError
@@ -35,10 +35,10 @@ class HashResultResponse(JSONifiable):
 
 @dataclass
 class ActionHistoryResponse(JSONifiable):
-    action_records: t.List[ActionEvent]
+    action_events: t.List[ActionEvent] = field(default_factory=list)
 
     def to_json(self) -> t.Dict:
-        return {"action_history": [record.to_json() for record in self.action_records]}
+        return {"action_history": [record.to_json() for record in self.action_events]}
 
 
 def get_content_api(
@@ -55,33 +55,38 @@ def get_content_api(
     content_api = bottle.Bottle()
     image_folder_key_len = len(image_bucket_key)
 
-    @content_api.get("/<key>", apply=[jsoninator])
-    def content(key=None) -> t.Optional[ContentObject]:
+    @content_api.get("/", apply=[jsoninator])
+    def content() -> t.Optional[ContentObject]:
         """
         Content object for a given ID
         see hmalib/commom/content_models.ContentObject for specific fields
         """
-        return ContentObject.get_from_content_id(dynamodb_table, key)
+        if content_id := bottle.request.query.content_id or None:
+            return ContentObject.get_from_content_id(dynamodb_table, content_id)
+        return None
 
-    @content_api.get("/action-history/<key>", apply=[jsoninator])
-    def action_history(key=None) -> ActionHistoryResponse:
+    @content_api.get("/action-history/", apply=[jsoninator])
+    def action_history() -> ActionHistoryResponse:
         """
         List of action event records for a given ID
         see hmalib/common/content_models.ActionEvent for specific fields
         """
-        return ActionHistoryResponse(
-            ActionEvent.get_from_content_id(dynamodb_table, key)
-        )
+        if content_id := bottle.request.query.content_id or None:
+            return ActionHistoryResponse(
+                ActionEvent.get_from_content_id(dynamodb_table, content_id)
+            )
+        return ActionHistoryResponse()
 
-    @content_api.get("/hash/<key>", apply=[jsoninator])
-    def hashes(key=None) -> t.Optional[HashResultResponse]:
+    @content_api.get("/hash/", apply=[jsoninator])
+    def hashes() -> t.Optional[HashResultResponse]:
         """
         hash details for a given ID:
         """
-        if not key:
+        content_id = bottle.request.query.content_id or None
+        if not content_id:
             return None
         record = PipelinePDQHashRecord.get_from_content_id(
-            dynamodb_table, f"{image_folder_key}{key}"
+            dynamodb_table, f"{image_folder_key}{content_id}"
         )
         if not record:
             return None
@@ -91,18 +96,18 @@ def get_content_api(
             updated_at=record.updated_at.isoformat(),
         )
 
-    @content_api.get("/image/<key>")
-    def image(key=None):
+    @content_api.get("/image/")
+    def image():
         """
-        return the bytes of an image in the "image_folder_key" based on key
+        return the bytes of an image in the "image_folder_key" based on content_id
         TODO update return url to request directly from s3?
         """
-        logger.info(key)
-        if not key:
+        content_id = bottle.request.query.content_id or None
+        if not content_id:
             return
         # TODO a whole bunch of validation and error checking...
         bytes_: bytes = s3_client.get_object(
-            Bucket=image_bucket_key, Key=f"{image_folder_key}{key}"
+            Bucket=image_bucket_key, Key=f"{image_folder_key}{content_id}"
         )["Body"].read()
         # TODO make the content type dynamic
         bottle.response.set_header("Content-type", "image/jpeg")

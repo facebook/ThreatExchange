@@ -195,13 +195,15 @@ def get_matches_api(
             ]
         )
 
-    @matches_api.get("/match/<key>/", apply=[jsoninator])
-    def match_details(key=None) -> MatchDetailsResponse:
+    @matches_api.get("/match/", apply=[jsoninator])
+    def match_details() -> MatchDetailsResponse:
         """
         match details API endpoint:
         return format: match_details : [MatchDetailsResult]
         """
-        results = get_match_details(dynamodb_table, key, image_folder_key)
+        results = []
+        if content_id := bottle.request.query.content_id or None:
+            results = get_match_details(dynamodb_table, content_id, image_folder_key)
         return MatchDetailsResponse(match_details=results)
 
     @matches_api.post("/request-signal-opinion-change/")

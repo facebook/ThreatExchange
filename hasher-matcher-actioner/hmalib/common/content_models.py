@@ -135,7 +135,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
                 self.additional_fields if self.additional_fields else set()
             ),
             submission_times=[s.isoformat() for s in self.submission_times],
-            created_on=self.created_at.isoformat(),
+            created_at=self.created_at.isoformat(),
             updated_at=self.updated_at.isoformat(),
         )
         return result
