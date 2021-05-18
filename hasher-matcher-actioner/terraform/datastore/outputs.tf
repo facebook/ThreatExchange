@@ -7,5 +7,6 @@ output "primary_datastore" {
     value = {
         name = aws_dynamodb_table.hma_datastore.name
         arn  = aws_dynamodb_table.hma_datastore.arn
+        stream_arn = aws_dynamodb_table.hma_datastore.stream_arn
     }
 }
