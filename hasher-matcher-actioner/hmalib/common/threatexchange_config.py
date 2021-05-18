@@ -13,9 +13,45 @@ from hmalib.common.fetcher_models import ThreatExchangeConfig
 from botocore.exceptions import ClientError
 
 logger = get_logger(__name__)
+
+# TODO Currently default to True for testing purpose,
+# need to switch it to False before v0 launch
 FETCHER_ACTIVE_DEFAULT = True
 WRITE_BACK_DEFAULT = True
 MATCHER_ACTIVE_DEFAULT = True
+
+
+def create_privacy_group_if_not_exists(
+    privacy_group_id: str,
+    privacy_group_name: str,
+    description: str = "",
+    in_use: bool = True,
+    fetcher_active: bool = FETCHER_ACTIVE_DEFAULT,
+    matcher_active: bool = MATCHER_ACTIVE_DEFAULT,
+    write_back: bool = WRITE_BACK_DEFAULT,
+):
+    logger.info("Adding collaboration name %s", privacy_group_name)
+    config = ThreatExchangeConfig(
+        privacy_group_id,
+        fetcher_active=fetcher_active,
+        privacy_group_name=privacy_group_name,
+        in_use=in_use,
+        description=description,
+        matcher_active=matcher_active,
+        write_back=write_back,
+    )
+    try:
+        hmaconfig.create_config(config)
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            logger.warning(
+                "Can't insert duplicated config, %s",
+                e.response["Error"]["Message"],
+            )
+            if description:
+                update_privacy_group_description(privacy_group_id, description)
+        else:
+            raise
 
 
 def sync_privacy_groups():
@@ -31,32 +67,12 @@ def sync_privacy_groups():
             # HMA can only read from privacy groups that have threat_updates enabled.
             # # See here for more details:
             # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-updates/v9.0
-            logger.info("Adding collaboration name %s", privacy_group.name)
             priavcy_group_id_in_use.add(privacy_group.id)
-            config = ThreatExchangeConfig(
-                privacy_group.id,
-                # TODO Currently default to True for testing purpose,
-                # need to switch it to False before v0 launch
-                fetcher_active=FETCHER_ACTIVE_DEFAULT,
+            create_privacy_group_if_not_exists(
+                str(privacy_group.id),
                 privacy_group_name=privacy_group.name,
-                in_use=True,
                 description=privacy_group.description,
-                matcher_active=MATCHER_ACTIVE_DEFAULT,
-                write_back=WRITE_BACK_DEFAULT,
             )
-            try:
-                hmaconfig.create_config(config)
-            except ClientError as e:
-                if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
-                    logger.warning(
-                        "Can't insert duplicated config, %s",
-                        e.response["Error"]["Message"],
-                    )
-                    update_privacy_group_description(
-                        str(privacy_group.id), privacy_group.description
-                    )
-                else:
-                    raise
     update_privacy_groups_in_use(priavcy_group_id_in_use)
 
 

@@ -10,12 +10,15 @@ from .middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.fetcher_models import ThreatExchangeConfig
-from hmalib.common.threatexchange_config import sync_privacy_groups
+from hmalib.common.threatexchange_config import (
+    sync_privacy_groups,
+    create_privacy_group_if_not_exists,
+)
 
 
 @dataclass
 class Dataset(JSONifiable):
-    privacy_group_id: int
+    privacy_group_id: t.Union[int, str]
     privacy_group_name: str
     description: str
     fetcher_active: bool
@@ -81,7 +84,7 @@ class DeleteDatasetResponse(JSONifiable):
 
 @dataclass
 class UpdateDatasetRequest(DictParseable):
-    privacy_group_id: int
+    privacy_group_id: t.Union[int, str]
     fetcher_active: bool
     matcher_active: bool
     write_back: bool
@@ -94,6 +97,35 @@ class UpdateDatasetRequest(DictParseable):
             d["matcher_active"],
             d["write_back"],
         )
+
+
+@dataclass
+class CreateDatasetRequest(DictParseable):
+    privacy_group_id: t.Union[int, str]
+    privacy_group_name: str
+    description: str
+    fetcher_active: bool
+    matcher_active: bool
+    write_back: bool
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "CreateDatasetRequest":
+        return cls(
+            d["privacy_group_id"],
+            d["privacy_group_name"],
+            d["description"],
+            d["fetcher_active"],
+            d["matcher_active"],
+            d["write_back"],
+        )
+
+
+@dataclass
+class CreateDatasetResponse(JSONifiable):
+    response: str
+
+    def to_json(self) -> t.Dict:
+        return asdict(self)
 
 
 def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
@@ -123,6 +155,27 @@ def get_datasets_api(hma_config_table: str) -> bottle.Bottle:
         updated_config = hmaconfig.update_config(config).__dict__
         updated_config["privacy_group_id"] = updated_config["name"]
         return Dataset.from_dict(updated_config)
+
+    @datasets_api.post("/create", apply=[jsoninator(CreateDatasetRequest)])
+    def create_dataset(request: CreateDatasetRequest) -> CreateDatasetResponse:
+        """
+        Create a local dataset (defaults defined in CreateDatasetRequest)
+        """
+        assert isinstance(request, CreateDatasetRequest)
+
+        create_privacy_group_if_not_exists(
+            privacy_group_id=str(request.privacy_group_id),
+            privacy_group_name=request.privacy_group_name,
+            description=request.description,
+            in_use=True,
+            fetcher_active=request.fetcher_active,
+            matcher_active=request.matcher_active,
+            write_back=request.write_back,
+        )
+
+        return CreateDatasetResponse(
+            response=f"Created dataset {request.privacy_group_id}"
+        )
 
     @datasets_api.post("/sync", apply=[jsoninator])
     def sync_datasets() -> SyncDatasetResponse:

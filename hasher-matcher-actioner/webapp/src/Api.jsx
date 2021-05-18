@@ -171,6 +171,24 @@ export function updateDataset(
   });
 }
 
+export function createDataset(
+  privacyGroupId,
+  privacyGroupName,
+  description = '',
+  fetcherActive = false,
+  writeBack = false,
+  matcherActive = true,
+) {
+  return apiPost('/datasets/create', {
+    privacy_group_id: privacyGroupId,
+    privacy_group_name: privacyGroupName,
+    description,
+    fetcher_active: fetcherActive,
+    write_back: writeBack,
+    matcher_active: matcherActive,
+  });
+}
+
 export function fetchHashCount() {
   return apiGet('/hash-counts');
 }
