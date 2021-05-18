@@ -20,7 +20,9 @@ class MatchByPrivacyGroupCounter:
     def get_all_counts(cls, table: Table) -> t.Dict[str, int]:
         response = table.scan(FilterExpression=Attr("PK").eq(cls._get_pkey()))
         return {
-            item["SK"].split("#", 1)[1]: int(t.cast(Decimal, item["WriteCount"]))
+            t.cast(str, item["SK"]).split("#", 1)[1]: int(
+                t.cast(Decimal, item["WriteCount"])
+            )
             for item in response["Items"]
         }
 
