@@ -40,7 +40,8 @@ resource "aws_dynamodb_table" "hma_datastore" {
       "SignalHash",
       "SignalSource",
       "HashType",
-      "Labels"
+      "Labels",
+      "PrivacyGroups"
     ]
   }
 
@@ -54,7 +55,8 @@ resource "aws_dynamodb_table" "hma_datastore" {
       "SignalHash",
       "SignalSource",
       "HashType",
-      "Labels"
+      "Labels",
+      "PrivacyGroups"
     ]
   }
 

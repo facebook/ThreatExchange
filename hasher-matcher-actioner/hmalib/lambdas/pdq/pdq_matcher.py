@@ -97,14 +97,18 @@ def lambda_handler(event, context):
             match_ids = []
             matching_banked_signals: t.List[BankedSignal] = []
             for match in results:
+                # Each match object is for a single indicator_id. Each indicator
+                # id can be present in multiple privacy groups.
                 metadata = match.metadata
                 logger.info(
                     "Match found for key: %s, hash %s -> %s", key, hash_str, metadata
                 )
                 privacy_group_list = metadata.get("privacy_groups", [])
-                metadata["privacy_groups"] = filter(
-                    lambda x: get_privacy_group_matcher_active(str(x)),
-                    privacy_group_list,
+                metadata["privacy_groups"] = list(
+                    filter(
+                        lambda x: get_privacy_group_matcher_active(str(x)),
+                        privacy_group_list,
+                    )
                 )
                 signal_id = metadata["id"]
 
@@ -116,6 +120,7 @@ def lambda_handler(event, context):
                     signal_id,
                     metadata["source"],
                     metadata["hash"],
+                    metadata["privacy_groups"],
                 ).write_to_table(records_table)
 
                 for pg in metadata.get("privacy_groups", []):
