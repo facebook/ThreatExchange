@@ -483,13 +483,39 @@ class ThreatExchangeAPI:
 
         return self.upload_threat_descriptor(postParams, showURLs, dryRun)
 
+    def delete_threat_descriptor(
+        self, descriptor_id, showURLs, dryRun
+    ) -> t.List[t.Any]:
+        url = (
+            self._base_url
+            + "/"
+            + str(descriptor_id)
+            + "?access_token="
+            + self.api_token
+        )
+        if showURLs:
+            print()
+            print("(DELETE) URL:")
+            print(url)
+        if dryRun:
+            print("Not doing DELETE since --dry-run.")
+            return [None, None, ""]
+
+        try:
+            with self._get_session() as session:
+                return [None, None, session.delete(url).json()]
+
+        except urllib.error.HTTPError as e:
+            responseBody = json.loads(e.read().decode("utf-8"))
+            return [None, e, responseBody]
+
     def _postThreatDescriptor(self, url, postParams, showURLs, dryRun):
         """Code-reuse for submit and update"""
         for key, value in postParams.items():
             url += "&%s=%s" % (key, urllib.parse.quote(str(value)))
         if showURLs:
             print()
-            print("URL:")
+            print("(POST) URL:")
             print(url)
         if dryRun:
             print("Not doing POST since --dry-run.")
@@ -518,7 +544,7 @@ class ThreatExchangeAPI:
             self._base_url
             + "/"
             + str(indicator_id)
-            + "?fields=descriptors&access_token="
+            + "?fields=descriptors{privacy_members,indicator,type,owner}&access_token="
             + self.api_token
         )
 
