@@ -53,7 +53,7 @@ def get_index(bucket_name, key):
     return result
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=128)
 def get_privacy_group_matcher_active(privacy_group_id: str, _) -> bool:
     config = ThreatExchangeConfig.get(privacy_group_id)
     if not config:
@@ -106,11 +106,13 @@ def lambda_handler(event, context):
                     "Match found for key: %s, hash %s -> %s", key, hash_str, metadata
                 )
                 privacy_group_list = metadata.get("privacy_groups", [])
-                metadata["privacy_groups"] = filter(
-                    lambda x: get_privacy_group_matcher_active(
-                        str(x), time.time() // CACHED_TIME
-                    ),
-                    privacy_group_list,
+                metadata["privacy_groups"] = list(
+                    filter(
+                        lambda x: get_privacy_group_matcher_active(
+                            str(x), time.time() // CACHED_TIME
+                        ),
+                        privacy_group_list,
+                    )
                 )
                 if metadata["privacy_groups"]:
                     signal_id = metadata["id"]
