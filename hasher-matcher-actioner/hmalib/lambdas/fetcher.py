@@ -24,17 +24,19 @@ from pathlib import Path
 
 import boto3
 from botocore.errorfactory import ClientError
+import threatexchange
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import S3ThreatDataConfig
-from hmalib.common.signal_models import PDQSignalMetadata
+from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import HMASerialization
-from threatexchange.descriptor import SimpleDescriptorRollup
+from threatexchange.descriptor import SimpleDescriptorRollup, ThreatDescriptor
+
 from threatexchange.signal_type.pdq import PdqSignal
 
 logger = get_logger(__name__)
@@ -110,7 +112,7 @@ def lambda_handler(event, context):
         )
 
         indicator_store = ThreatUpdateS3PDQStore(
-            collab.privacy_group_id,
+            int(collab.privacy_group_id),
             api.app_id,
             te_data_bucket,
             config.s3_te_data_folder,
@@ -315,16 +317,41 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         table = dynamodb.Table(self.data_store_table)
 
         for update in updated.values():
-            row = update.as_csv_row()
+            row: t.List[str] = update.as_csv_row()
             # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
             # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+            new_tags = row[4].split(" ") if row[4] else []
+
+            # Figure out if we have a new opinion about this indicator and clear out a pending change if so
+            # If this is a new indicator without metadata we also should have no pending opinion about it
+            new_pending_opinion_change = PendingOpinionChange.NONE
+            for signal in PDQSignalMetadata.get_from_signal(
+                table, int(row[1]), S3ThreatDataConfig.SOURCE_STR
+            ):
+                # Find the metadata object for this privacy group if it exists
+                if signal.ds_id == str(self.privacy_group):
+
+                    # Threat Updates guarentees there is either 0 or 1 special tags on a descriptor
+                    opinion_tags = ThreatDescriptor.SPECIAL_TAGS
+                    old_opinion = [tag for tag in signal.tags if tag in opinion_tags]
+                    new_opinion = [tag for tag in new_tags if tag in opinion_tags]
+
+                    # If our opinion changed, set the pending opinion change to None
+                    # otherwise keep it unchanged
+                    new_pending_opinion_change = (
+                        PendingOpinionChange.NONE
+                        if old_opinion != new_opinion
+                        else signal.pending_opinion_change
+                    )
+
             if PDQSignalMetadata(
                 signal_id=int(row[1]),
                 ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
                 signal_source=S3ThreatDataConfig.SOURCE_STR,
                 signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
-                tags=row[4].split(" ") if row[4] else [],
+                tags=new_tags,
+                pending_opinion_change=new_pending_opinion_change,
             ).update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",

@@ -322,9 +322,9 @@ class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
 
     def remove_false_positive_from_descriptors(self, descriptors) -> t.List[str]:
         ret = []
+        reaction = ThreatExchangeFalsePositiveWritebacker.reaction
         for descriptor in descriptors:
             id = descriptor["id"]
-            reaction = ThreatExchangeFalsePositiveWritebacker.reaction
             self.te_api.remove_reaction_from_threat_descriptor(id, reaction)
             ret.append(f"Removed reaction {reaction} from descriptor {id}")
         return ret
