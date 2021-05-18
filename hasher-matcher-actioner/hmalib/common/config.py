@@ -138,6 +138,14 @@ class HMAConfig:
         return ret
 
     @classmethod
+    def exists(cls: t.Type[TConfig], name: str) -> bool:
+        _assert_initialized()
+        ret = cls.get(name)
+        if not ret:
+            return False
+        return True
+
+    @classmethod
     def _convert_item(cls, item):
         if not item:
             return None
