@@ -1,12 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from hmalib.common.classification_models import WritebackTypes
 import json
 import os
 
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.common.writebacker_models import Writebacker
-from hmalib.common.message_models import WritebackMessage
+from hmalib.common.message_models import BankedSignal, WritebackMessage
 
 logger = get_logger(__name__)
 
@@ -44,4 +45,16 @@ def lambda_handler(event, context):
 
 
 if __name__ == "__main__":
-    pass
+    # For basic debugging
+    # This will react to real descriptors if WRITEBACK_LOCAL is on
+    if os.environ.get("WRITEBACK_LOCAL"):
+        writeback_message = WritebackMessage(
+            [
+                BankedSignal("3744529885563965", "303636684709969", "te"),
+                BankedSignal("3744529885563965", "258601789084078", "te"),
+            ],
+            WritebackTypes.TruePositive,
+        )
+        event = {"Records": [{"body": writeback_message.to_aws_json()}]}
+        result = lambda_handler(event, None)
+        print(result)
