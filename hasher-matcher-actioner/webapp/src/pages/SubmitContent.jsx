@@ -67,7 +67,9 @@ export default function SubmitContent() {
   const packageMetadata = () => {
     const entries = [];
     Object.values(submissionMetadata).forEach(entry =>
-      entries.push({[entry.key]: entry.value}),
+      // store key:value for now to avoid collisions/overwrite of repeats
+      // exact extra additional fields spec should be established in documentation
+      entries.push(`${entry.key}:${entry.value}`),
     );
     return entries;
   };

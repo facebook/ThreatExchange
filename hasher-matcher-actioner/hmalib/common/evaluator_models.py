@@ -5,6 +5,7 @@ import typing as t
 from dataclasses import dataclass, field
 from hmalib.common.classification_models import Label, ActionLabel
 from hmalib.common.config import HMAConfig
+from hmalib.common.aws_dataclass import HasAWSSerialization
 
 
 @dataclass
@@ -15,7 +16,7 @@ class Action:
 
 
 @dataclass
-class ActionRule(HMAConfig):
+class ActionRule(HMAConfig, HasAWSSerialization):
     """
     Action rules are config-backed objects that have a set of labels (both
     "must have" and "must not have") which, when evaluated against the

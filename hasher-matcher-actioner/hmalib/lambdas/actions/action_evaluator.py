@@ -29,7 +29,6 @@ from hmalib.common.message_models import (
     MatchMessage,
     WritebackMessage,
 )
-from hmalib.lambdas.actions.action_performer import perform_label_action
 from mypy_boto3_sqs import SQSClient
 
 logger = get_logger(__name__)

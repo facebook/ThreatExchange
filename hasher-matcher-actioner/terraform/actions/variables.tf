@@ -58,3 +58,11 @@ variable "config_table" {
     name = string
   })
 }
+
+variable "datastore" {
+  description = "DynamoDB Table to store a record of actions"
+  type = object({
+    name = string
+    arn  = string
+  })
+}

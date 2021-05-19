@@ -13,18 +13,13 @@ from bottle import response, error
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
-from hmalib.models import (
-    PDQMatchRecord,
-    PipelinePDQHashRecord,
-    PDQRecordBase,
-)
-from hmalib.models import PipelinePDQHashRecord
 
 from .matches import get_matches_api
 from .datasets_api import get_datasets_api
 from .submit import get_submit_api
 from .stats import get_stats_api
 from .actions_api import get_actions_api
+from .content import get_content_api
 
 # Set to 10MB for images
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -44,7 +39,6 @@ HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
-IMAGE_FOLDER_KEY_LEN = len(IMAGE_FOLDER_KEY)
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -70,34 +64,6 @@ def root():
     return {
         "message": "Hello World, HMA",
     }
-
-
-@app.get("/image/<key>")
-def image(key=None):
-    """
-    return the bytes of an image in the "IMAGE_FOLDER_KEY" based on key
-    """
-    logger.info(key)
-    if not key:
-        return
-    # TODO a whole bunch of validation and error checking...
-    bytes_: bytes = s3_client.get_object(
-        Bucket=IMAGE_BUCKET_NAME, Key=f"{IMAGE_FOLDER_KEY}{key}"
-    )["Body"].read()
-    # TODO make the content type dynamic
-    response.set_header("Content-type", "image/jpeg")
-    return bytes_
-
-
-@app.get("/hash/<key>")
-def hashes(key=None):
-    """
-    hash details API endpoint:
-    return format: HashResult
-    """
-    results = get_hash(key)
-    logger.debug(results)
-    return results if results else {}
 
 
 @app.get("/signals")
@@ -132,28 +98,6 @@ def lambda_handler(event, context):
     response = apig_wsgi_handler(event, context)
     logger.info("Response event: " + json.dumps(response, indent=2))
     return response
-
-
-class HashResult(t.TypedDict):
-    content_id: str
-    content_hash: str
-    updated_at: str
-
-
-def get_hash(content_id: str) -> t.Optional[HashResult]:
-    if not content_id:
-        return None
-    table = dynamodb.Table(DYNAMODB_TABLE)
-    record = PipelinePDQHashRecord.get_from_content_id(
-        table, f"{IMAGE_FOLDER_KEY}{content_id}"
-    )
-    if not record:
-        return None
-    return {
-        "content_id": record.content_id[IMAGE_FOLDER_KEY_LEN:],
-        "content_hash": record.content_hash,
-        "updated_at": record.updated_at.isoformat(),
-    }
 
 
 class SignalSourceType(t.TypedDict):
@@ -213,6 +157,15 @@ app.mount(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_folder_key=IMAGE_FOLDER_KEY,
         hma_config_table=HMA_CONFIG_TABLE,
+    ),
+)
+
+app.mount(
+    "/content/",
+    get_content_api(
+        dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
+        image_bucket_key=IMAGE_BUCKET_NAME,
+        image_folder_key=IMAGE_FOLDER_KEY,
     ),
 )
 
