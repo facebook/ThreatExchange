@@ -45,7 +45,8 @@ export default function OpinionTableCell({
         <Dropdown.Item
           size="sm"
           disabled={
-            OPINION_STRING.FALSE_POSITIVE === opinion ||
+            opinion === OPINION_STRING.FALSE_POSITIVE ||
+            opinion === OPINION_STRING.TRUE_POSITIVE ||
             (updatePending &&
               pendingOpinionChange !==
                 PENDING_OPINION_CHANGE.MARK_FALSE_POSITIVE)
@@ -69,7 +70,8 @@ export default function OpinionTableCell({
         <Dropdown.Item
           size="sm"
           disabled={
-            OPINION_STRING.TRUE_POSITIVE === opinion ||
+            opinion === OPINION_STRING.FALSE_POSITIVE ||
+            opinion === OPINION_STRING.TRUE_POSITIVE ||
             (updatePending &&
               pendingOpinionChange !==
                 PENDING_OPINION_CHANGE.MARK_TRUE_POSITIVE)
