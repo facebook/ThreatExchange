@@ -197,6 +197,22 @@ resource "aws_apigatewayv2_route" "hma_apigateway_post" {
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
 
+resource "aws_apigatewayv2_route" "hma_apigateway_put" {
+  api_id             = aws_apigatewayv2_api.hma_apigateway.id
+  route_key          = "PUT /{proxy+}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
+  target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
+}
+
+resource "aws_apigatewayv2_route" "hma_apigateway_delete" {
+  api_id             = aws_apigatewayv2_api.hma_apigateway.id
+  route_key          = "DELETE /{proxy+}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
+  target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
+}
+
 resource "aws_apigatewayv2_integration" "hma_apigateway" {
   api_id                 = aws_apigatewayv2_api.hma_apigateway.id
   credentials_arn        = aws_iam_role.hma_apigateway.arn
