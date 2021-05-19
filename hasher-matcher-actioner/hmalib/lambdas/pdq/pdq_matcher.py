@@ -5,6 +5,7 @@ import os
 import pickle
 import boto3
 import datetime
+import time
 import typing as t
 from mypy_boto3_sns import SNSClient
 
@@ -17,12 +18,14 @@ from hmalib.common.signal_models import PDQSignalMetadata
 from hmalib.common.logging import get_logger
 from hmalib.common.config import HMAConfig
 from hmalib.common.fetcher_models import ThreatExchangeConfig
+from functools import lru_cache
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 sns_client: SNSClient = boto3.client("sns")
 dynamodb = boto3.resource("dynamodb")
 
+CACHED_TIME = 300
 THRESHOLD = 31
 LOCAL_INDEX_FILENAME = "/tmp/hashes.index"
 
@@ -50,7 +53,8 @@ def get_index(bucket_name, key):
     return result
 
 
-def get_privacy_group_matcher_active(privacy_group_id: str) -> bool:
+@lru_cache(maxsize=128)
+def get_privacy_group_matcher_active(privacy_group_id: str, _) -> bool:
     config = ThreatExchangeConfig.get(privacy_group_id)
     if not config:
         logger.warning("Privacy group %s is not found!", privacy_group_id)
@@ -102,59 +106,67 @@ def lambda_handler(event, context):
                     "Match found for key: %s, hash %s -> %s", key, hash_str, metadata
                 )
                 privacy_group_list = metadata.get("privacy_groups", [])
-                metadata["privacy_groups"] = filter(
-                    lambda x: get_privacy_group_matcher_active(str(x)),
-                    privacy_group_list,
+                metadata["privacy_groups"] = list(
+                    filter(
+                        lambda x: get_privacy_group_matcher_active(
+                            str(x),
+                            time.time() // CACHED_TIME,
+                            # CACHED_TIME default to 300 seconds, this will convert time.time() to an int parameter which changes every 300 seconds
+                        ),
+                        privacy_group_list,
+                    )
                 )
-                signal_id = metadata["id"]
+                if metadata["privacy_groups"]:
+                    signal_id = metadata["id"]
 
-                # TODO: Add source (threatexchange) tags to match record
-                PDQMatchRecord(
-                    key,
-                    hash_str,
-                    current_datetime,
-                    signal_id,
-                    metadata["source"],
-                    metadata["hash"],
-                ).write_to_table(records_table)
-
-                for pg in metadata.get("privacy_groups", []):
-                    # TODO: we might be able to get away with some 'if exists/upsert' here
-                    # TODO: @BarrettOlson Write if don't exist or only update given fields is now needed!
-                    PDQSignalMetadata(
-                        signal_id,
-                        pg,
+                    # TODO: Add source (threatexchange) tags to match record
+                    PDQMatchRecord(
+                        key,
+                        hash_str,
                         current_datetime,
+                        signal_id,
                         metadata["source"],
                         metadata["hash"],
-                        metadata["tags"].get(pg, []),
                     ).write_to_table(records_table)
 
-                match_ids.append(signal_id)
+                    for pg in metadata.get("privacy_groups", []):
+                        # TODO: we might be able to get away with some 'if exists/upsert' here
+                        # TODO: @BarrettOlson Write if don't exist or only update given fields is now needed!
+                        PDQSignalMetadata(
+                            signal_id,
+                            pg,
+                            current_datetime,
+                            metadata["source"],
+                            metadata["hash"],
+                            metadata["tags"].get(pg, []),
+                        ).write_to_table(records_table)
 
-                # TODO: change naming upstream and here from privacy_group[s]
-                # to dataset[s]
-                for privacy_group in metadata.get("privacy_groups", []):
-                    banked_signal = BankedSignal(
-                        str(signal_id), str(privacy_group), str(metadata["source"])
-                    )
-                    for tag in metadata["tags"].get(privacy_group, []):
-                        banked_signal.add_classification(tag)
-                    matching_banked_signals.append(banked_signal)
+                    match_ids.append(signal_id)
+
+                    # TODO: change naming upstream and here from privacy_group[s]
+                    # to dataset[s]
+                    for privacy_group in metadata.get("privacy_groups", []):
+                        banked_signal = BankedSignal(
+                            str(signal_id), str(privacy_group), str(metadata["source"])
+                        )
+                        for tag in metadata["tags"].get(privacy_group, []):
+                            banked_signal.add_classification(tag)
+                        matching_banked_signals.append(banked_signal)
 
             # TODO: Add source (threatexchange) tags to match message
-            match_message = MatchMessage(
-                content_key=key,
-                content_hash=hash_str,
-                matching_banked_signals=matching_banked_signals,
-            )
+            if matching_banked_signals:
+                match_message = MatchMessage(
+                    content_key=key,
+                    content_hash=hash_str,
+                    matching_banked_signals=matching_banked_signals,
+                )
 
-            logger.info(f"Publishing match_message: {match_message}")
+                logger.info(f"Publishing match_message: {match_message}")
 
-            # Publish one message for the set of matches.
-            sns_client.publish(
-                TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_aws_json()
-            )
+                # Publish one message for the set of matches.
+                sns_client.publish(
+                    TopicArn=OUTPUT_TOPIC_ARN, Message=match_message.to_aws_json()
+                )
 
         else:
             logger.info(f"No matches found for key: {key} hash: {hash_str}")
