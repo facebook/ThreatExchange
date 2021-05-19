@@ -119,15 +119,18 @@ def lambda_handler(event, context):
                 if metadata["privacy_groups"]:
                     signal_id = metadata["id"]
 
-                    # TODO: Add source (threatexchange) tags to match record
-                    PDQMatchRecord(
-                        key,
-                        hash_str,
-                        current_datetime,
-                        signal_id,
-                        metadata["source"],
-                        metadata["hash"],
-                    ).write_to_table(records_table)
+                    with metrics.timer(
+                        metrics.names.pdq_matcher_lambda.write_match_record
+                    ):
+                        # TODO: Add source (threatexchange) tags to match record
+                        PDQMatchRecord(
+                            key,
+                            hash_str,
+                            current_datetime,
+                            signal_id,
+                            metadata["source"],
+                            metadata["hash"],
+                        ).write_to_table(records_table)
 
                     for pg in metadata.get("privacy_groups", []):
                         # TODO: we might be able to get away with some 'if exists/upsert' here
