@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import os
+import traceback
 import bottle
 import boto3
 import json
@@ -43,19 +44,22 @@ IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
-def error404(error):
+def error404(e):
+    logger.error(f"{e}")
     response.content_type = "application/json"
     return json.dumps({"error": "404"})
 
 
 @error(405)
-def error405(error):
+def error405(e):
+    logger.error(f"{e}")
     response.content_type = "application/json"
     return json.dumps({"error": "405"})
 
 
 @error(500)
-def error500(error):
+def error500(e):
+    logger.exception("Exception raised", exc_info=e.exception)
     response.content_type = "application/json"
     return json.dumps({"error": "500"})
 
@@ -95,9 +99,7 @@ def lambda_handler(event, context):
     """
     root request handler
     """
-    logger.info("Received event: " + json.dumps(event, indent=2))
     response = apig_wsgi_handler(event, context)
-    logger.info("Response event: " + json.dumps(response, indent=2))
     return response
 
 
