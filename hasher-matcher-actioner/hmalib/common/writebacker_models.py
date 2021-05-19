@@ -78,7 +78,7 @@ class Writebacker:
         """
         raise NotImplementedError
 
-    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> t.List[str]:
         raise NotImplementedError
 
     def perform_writeback(self, writeback_message: WritebackMessage) -> t.List[str]:
@@ -104,13 +104,19 @@ class Writebacker:
                 if writebacker.writeback_is_enabled(writeback_signal):
                     result = writebacker._writeback_impl(writeback_signal)
                 else:
-                    result = (
-                        "No writeback performed for banked content id "
-                        + writeback_signal.banked_content_id
-                        + " becuase writebacks were disabled"
-                    )
-                logger.info(result)
-                results.append(result)
+                    result = [
+                        (
+                            "No writeback performed for banked content id "
+                            + writeback_signal.banked_content_id
+                            + " becuase writebacks were disabled"
+                        )
+                    ]
+                for log_message in result:
+                    if "Error" in log_message:
+                        logger.error(log_message)
+                    else:
+                        logger.info(log_message)
+                results.append("\n".join(result))
         return results
 
 
@@ -151,11 +157,14 @@ class ThreatExchangeWritebacker(Writebacker):
         api_key = AWSSecrets().te_api_key()
         return ThreatExchangeAPI(api_key)
 
-    def my_descriptor(
-        self, descriptors: t.List[t.Dict[str, t.Any]]
+    def my_descriptor_from_all_descriptors(
+        self, all_descriptors: t.List[t.Dict[str, t.Any]]
     ) -> t.Optional[t.Dict[str, t.Any]]:
-        print(descriptors)
-        for descriptor in descriptors:
+        """
+        Given all descriptors for an indicator, find the one my app owns
+        if it exists
+        """
+        for descriptor in all_descriptors:
             if descriptor["owner"]["id"] == str(self.te_api.app_id):
                 # some fields such as privacy_members can only be loaded for
                 # descriptors we own. We make another api call to load these
@@ -179,12 +188,12 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
     privacy group for this collaboration
     """
 
-    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> t.List[str]:
         privacy_group_id = writeback_signal.bank_id
 
         indicator_id = writeback_signal.banked_content_id
         descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
-        my_descriptor = self.my_descriptor(descriptors)
+        my_descriptor = self.my_descriptor_from_all_descriptors(descriptors)
 
         postParams = {
             "privacy_type": "HAS_PRIVACY_GROUP",
@@ -194,7 +203,7 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
             "status": "MALICIOUS",
         }
 
-        # If we already have a descriptor we can copy it and upload make sure to never expire it
+        # If we already have a descriptor we can copy it and re-upload to ensure it never expires
         if my_descriptor:
             members = {member for member in my_descriptor.get("privacy_members", [])}
 
@@ -218,12 +227,17 @@ class ThreatExchangeTruePositiveWritebacker(ThreatExchangeWritebacker):
         error = response[1] or response[2].get("error", {}).get("message")
 
         if error:
-            return f"""
+            return [
+                f"""
 Error writing back TruePositive for indicator {writeback_signal.banked_content_id}
 Error: {error}
 """.strip()
+            ]
 
-        return f"Wrote back TruePositive for indicator {writeback_signal.banked_content_id}\n {'Built' if my_descriptor else 'Updated'} descriptor {response[2]['id']} with privacy groups {postParams['privacy_members']}"
+        return [
+            f"Wrote back TruePositive for indicator {writeback_signal.banked_content_id}",
+            f"{'Built' if my_descriptor else 'Updated'} descriptor {response[2]['id']} with privacy groups {postParams['privacy_members']}",
+        ]
 
 
 class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
@@ -246,11 +260,11 @@ class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
     delete the indicator.
     """
 
-    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> t.List[str]:
         privacy_group_id = writeback_signal.bank_id
         indicator_id = writeback_signal.banked_content_id
         descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
-        my_descriptor = self.my_descriptor(descriptors)
+        my_descriptor = self.my_descriptor_from_all_descriptors(descriptors)
         other_desriptors = [
             d for d in descriptors if d["owner"]["id"] != str(self.te_api.app_id)
         ]
@@ -278,12 +292,7 @@ class ThreatExchangeRemoveOpinionWritebacker(ThreatExchangeWritebacker):
 
         logs.extend(self.remove_false_positive_from_descriptors(other_desriptors))
 
-        for log_message in logs:
-            if "Error" in log_message:
-                logger.error(log_message)
-            else:
-                logger.info(log_message)
-        return "\n".join(logs)
+        return logs
 
     def remove_descriptor_from_privacy_group(
         self, my_descriptor: t.Dict[str, t.Any], privacy_group_id: str
@@ -335,17 +344,25 @@ class ThreatExchangeReactionWritebacker(ThreatExchangeWritebacker):
     def reaction(self) -> str:
         raise NotImplementedError
 
-    def _writeback_impl(self, writeback_signal: BankedSignal) -> str:
+    def _writeback_impl(self, writeback_signal: BankedSignal) -> t.List[str]:
         indicator_id = writeback_signal.banked_content_id
         descriptors = self.te_api.get_threat_descriptors_from_indicator(indicator_id)
         other_desriptors = [
             d for d in descriptors if d["owner"]["id"] != str(self.te_api.app_id)
         ]
+        logs = []
         for descriptor in other_desriptors:
             id = descriptor["id"]
-            self.te_api.react_to_threat_descriptor(id, self.reaction)
-            logger.info("reacted %s to descriptor %s", self.reaction, id)
-        return f"reacted {self.reaction} to {str(len(other_desriptors))} descriptors : {','.join(d['id'] for d in other_desriptors)}"
+            result = self.te_api.react_to_threat_descriptor(id, self.reaction)
+            error = result[1] or result[2].get("error", {}).get("message")
+            if error:
+                logs.append(
+                    f"Error writing back Reacting {self.reaction} to descriptor {id} Error: {error}"
+                )
+            else:
+                logs.append(f"Reacted {self.reaction} to descriptor {id}")
+
+        return logs
 
 
 class ThreatExchangeFalsePositiveWritebacker(ThreatExchangeReactionWritebacker):

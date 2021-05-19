@@ -53,10 +53,10 @@ class MockedThreatExchangeAPI:
             )
         return descriptors
 
-    def react_to_threat_descriptor(self, descriptor_id, reaction) -> None:
+    def react_to_threat_descriptor(self, descriptor_id, reaction) -> t.List[t.Any]:
         # can only react to a descriptor that exists
         assert descriptor_id in (descriptor["id"] for descriptor in self.descriptors)
-        return None
+        return [None, None, {"success": True}]
 
     def upload_threat_descriptor(self, postParams, *vargs):
         # Find the indicator for the descriptor we're trying to copy

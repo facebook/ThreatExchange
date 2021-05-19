@@ -51,8 +51,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "reacted SAW_THIS_TOO to 2 descriptors : a2|2862392437204724,a3|2862392437204724",
-                    "reacted SAW_THIS_TOO to 2 descriptors : a2|4194946153908639,a3|4194946153908639",
+                    "Reacted SAW_THIS_TOO to descriptor a2|2862392437204724\nReacted SAW_THIS_TOO to descriptor a3|2862392437204724",
+                    "Reacted SAW_THIS_TOO to descriptor a2|4194946153908639\nReacted SAW_THIS_TOO to descriptor a3|4194946153908639",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
@@ -74,8 +74,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "reacted DISAGREE_WITH_TAGS to 2 descriptors : a2|2862392437204724,a3|2862392437204724",
-                    "reacted DISAGREE_WITH_TAGS to 2 descriptors : a2|4194946153908639,a3|4194946153908639",
+                    "Reacted DISAGREE_WITH_TAGS to descriptor a2|2862392437204724\nReacted DISAGREE_WITH_TAGS to descriptor a3|2862392437204724",
+                    "Reacted DISAGREE_WITH_TAGS to descriptor a2|4194946153908639\nReacted DISAGREE_WITH_TAGS to descriptor a3|4194946153908639",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
@@ -97,8 +97,8 @@ class WritebackerTestCase(unittest.TestCase):
         assert result == {
             "writebacks_performed": {
                 "te": [
-                    "Wrote back TruePositive for indicator 2862392437204724\n Built descriptor a1|2862392437204724 with privacy groups pg 4",
-                    "Wrote back TruePositive for indicator 4194946153908639\n Built descriptor a1|4194946153908639 with privacy groups pg 4",
+                    "Wrote back TruePositive for indicator 2862392437204724\nBuilt descriptor a1|2862392437204724 with privacy groups pg 4",
+                    "Wrote back TruePositive for indicator 4194946153908639\nBuilt descriptor a1|4194946153908639 with privacy groups pg 4",
                     "No writeback performed for banked content id 3027465034605137 becuase writebacks were disabled",
                 ]
             }
