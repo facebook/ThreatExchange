@@ -46,6 +46,18 @@ export default function ActionRulesTableRow({
     });
   };
 
+  const getAction = () => {
+    if (
+      actions === undefined ||
+      actions.length === 0 ||
+      actionId === undefined ||
+      actionId.length === 0
+    ) {
+      return <span>&mdash;</span>;
+    }
+    return actions.find(action => action.id === actionId).name;
+  };
+
   return (
     <>
       <tr hidden={editing}>
@@ -100,7 +112,7 @@ export default function ActionRulesTableRow({
             <span>&mdash;</span>
           )}
         </td>
-        <td>{actions.find(action => action.id === actionId).name}</td>
+        <td>{getAction()}</td>
       </tr>
       <tr hidden={!editing}>
         <td>

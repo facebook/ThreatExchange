@@ -6,7 +6,7 @@
 
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
@@ -14,7 +14,15 @@ import ActionRuleFormColumns from '../../components/settings/ActionRuleFormColum
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
+import {
+  actionRuleAdd,
+  actionRuleDelete,
+  actionRuleUpdate,
+  fetchActions,
+  fetchActionRules,
+} from '../../Api';
 
+/*
 const mockedActionRules = [
   {
     name: 'Bank ID 303636684709969 Except Sailboat',
@@ -43,6 +51,7 @@ const actions = [
     id: '2',
   },
 ];
+*/
 
 const defaultActionRule = {
   name: '',
@@ -52,12 +61,39 @@ const defaultActionRule = {
 };
 
 export default function ActionRuleSettingsTab() {
-  const [actionRules, setActionRules] = useState(mockedActionRules);
+  const [actionRules, setActionRules] = useState([]);
+  const [actions, setActions] = useState([]);
   const [adding, setAdding] = useState(false);
   const [newActionRule, setNewActionRule] = useState(defaultActionRule);
   const [showErrors, setShowErrors] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  useEffect(() => {
+    fetchActionRules().then(response => {
+      if (response && response.error_message === '') {
+        const mappedActionRules = response.action_rules.map(actionRule => ({
+          name: actionRule.name,
+          must_have_labels: JSON.stringify(actionRule.must_have_labels),
+          must_not_have_labels: JSON.stringify(actionRule.must_not_have_labels),
+          action_id: actionRule.action_label.value,
+        }));
+        setActionRules(mappedActionRules);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    fetchActions().then(response => {
+      if (response) {
+        const actns = response.actions_response.map(action => ({
+          name: action.name,
+          id: action.name,
+        }));
+        setActions(actns);
+      }
+    });
+  }, []);
 
   const onNewActionRuleChange = updatedField => {
     setNewActionRule({...newActionRule, ...updatedField});
@@ -92,33 +128,51 @@ export default function ActionRuleSettingsTab() {
     setNewActionRule(defaultActionRule);
   };
 
-  const addActionRule = actionRule => {
-    actionRules.push(actionRule);
-    actionRules.sort((a, b) =>
-      a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
-    );
-    setActionRules([...actionRules]);
-  };
-
   const displayToast = message => {
     setToastMessage(message);
     setShowToast(true);
   };
 
-  const deleteActionRule = (oldName, suppressToast) => {
+  const getAPIActionRule = actionRule => ({
+    name: actionRule.name,
+    must_have_labels: JSON.parse(actionRule.must_have_labels),
+    must_not_have_labels: JSON.parse(actionRule.must_not_have_labels),
+    action_label: {
+      key: 'Action',
+      value: actionRule.action_id,
+    },
+  });
+
+  const addActionRule = (actionRule, addToUIOnly) => {
+    actionRules.push(actionRule);
+    actionRules.sort((a, b) =>
+      a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
+    );
+    setActionRules([...actionRules]);
+    if (addToUIOnly === undefined) {
+      const apiActionRule = getAPIActionRule(actionRule);
+      actionRuleAdd(apiActionRule);
+      displayToast('A new action rule was added successfully.');
+    }
+  };
+
+  const deleteActionRule = (name, deleteFromUIOnly) => {
     const indexToDelete = actionRules.findIndex(
-      actionRule => actionRule.name === oldName,
+      actionRule => actionRule.name === name,
     );
     actionRules.splice(indexToDelete, 1);
     setActionRules([...actionRules]);
-    if (suppressToast === undefined) {
+    if (deleteFromUIOnly === undefined) {
+      actionRuleDelete(name);
       displayToast('The action rule was deleted successfully.');
     }
   };
 
   const updateActionRule = (oldName, updatedActionRule) => {
-    deleteActionRule(oldName, true);
-    addActionRule(updatedActionRule);
+    deleteActionRule(oldName, true); // deleteFromUIOnly
+    addActionRule(updatedActionRule, true); // addToUIOnly
+    const apiActionRule = getAPIActionRule(updatedActionRule);
+    actionRuleUpdate(oldName, apiActionRule);
     displayToast('The action rule was updated successfully.');
   };
 
@@ -177,9 +231,6 @@ export default function ActionRuleSettingsTab() {
                         addActionRule(newActionRule);
                         resetForm();
                         setAdding(false);
-                        displayToast(
-                          'A new action rule was added successfully.',
-                        );
                       } else {
                         setShowErrors(true);
                       }

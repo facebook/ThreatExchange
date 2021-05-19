@@ -42,9 +42,8 @@ async function apiPut(route, body, params = {}) {
   });
 }
 
-async function apiDelete(route, body, params = {}) {
+async function apiDelete(route, params = {}) {
   return API.del('hma_api', route, {
-    body,
     headers: {
       Authorization: await getAuthorizationToken(),
     },
@@ -222,7 +221,7 @@ export function fetchHashCount() {
 }
 
 export function fetchAllActions() {
-  return apiGet('/actions/');
+  return apiGet('actions/');
 }
 
 export function createAction(newAction) {
@@ -235,4 +234,24 @@ export function updateAction(updatedAction) {
 
 export function deleteAction(key) {
   return apiDelete(`/actions/${key}`);
+}
+
+export function fetchActionRules() {
+  return apiGet('action-rules/');
+}
+
+export function actionRuleAdd(actionRule) {
+  return apiPost('action-rules/', {
+    action_rule: actionRule,
+  });
+}
+
+export function actionRuleUpdate(oldName, actionRule) {
+  return apiPut(`action-rules/${oldName}`, {
+    action_rule: actionRule,
+  });
+}
+
+export function actionRuleDelete(name) {
+  return apiDelete(`action-rules/${name}`);
 }
