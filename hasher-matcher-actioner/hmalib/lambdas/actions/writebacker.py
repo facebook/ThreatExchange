@@ -50,10 +50,9 @@ if __name__ == "__main__":
     if os.environ.get("WRITEBACK_LOCAL"):
         writeback_message = WritebackMessage(
             [
-                BankedSignal("3744529885563965", "303636684709969", "te"),
-                BankedSignal("3744529885563965", "258601789084078", "te"),
+                BankedSignal("2915547128556957", "303636684709969", "te"),
             ],
-            WritebackTypes.TruePositive,
+            WritebackTypes.RemoveOpinion,
         )
         event = {"Records": [{"body": writeback_message.to_aws_json()}]}
         result = lambda_handler(event, None)
