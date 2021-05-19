@@ -124,7 +124,7 @@ def lambda_handler(event, context):
             logger.warning(
                 "Store for %s - %d stale! Resetting.",
                 collab.privacy_group_name,
-                collab.privacy_group_id,
+                int(collab.privacy_group_id),
             )
             indicator_store.reset()
 
@@ -344,17 +344,25 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                         else signal.pending_opinion_change
                     )
 
-            if PDQSignalMetadata(
-                signal_id=int(row[1]),
+            metadata = PDQSignalMetadata(
+                signal_id=row[1],
                 ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
                 signal_source=S3ThreatDataConfig.SOURCE_STR,
                 signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
                 tags=new_tags,
                 pending_opinion_change=new_pending_opinion_change,
-            ).update_tags_in_table_if_exists(table):
+            )
+            if metadata.update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
+                    row[1],
+                    S3ThreatDataConfig.SOURCE_STR,
+                    self.privacy_group,
+                )
+            if metadata.update_pending_opinion_change_in_table_if_exists(table):
+                logger.info(
+                    "Updated Pending Opinion in DB for indicator id: %s source: %s for privacy group: %d",
                     row[1],
                     S3ThreatDataConfig.SOURCE_STR,
                     self.privacy_group,
@@ -387,17 +395,4 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     # This will only kinda work for so long - eventually will
     # need to use a proper harness
-    csv.field_size_limit(65535)  # dodge field size problems
-    rows = [
-        "ced62bad954258f42e23904a6edc82a77db541622b598db6b124a6cb9496e7d3,1901095716680926,3170688743018501,2020-07-31T18:47:52+0000,true_positive hma_test",
-        "1eccc389c5db3db9b02647666bd24e8c9618e0e5342199de37104f1ef7659a87,2772434039524407,3226049650848873,2020-07-31T18:47:52+0000,true_positive hma_test",
-    ]
-    for row in csv.reader(rows):
-        HMASerialization(
-            row[0],
-            "HASH_PDQ",
-            row[1],
-            SimpleDescriptorRollup.from_row(row[2:]),
-        )
-        print("serialized row")
     lambda_handler(None, None)

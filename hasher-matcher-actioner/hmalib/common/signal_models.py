@@ -29,7 +29,7 @@ class SignalMetadataBase(DynamoDBItem):
 
     DATASET_PREFIX = "ds#"
 
-    signal_id: t.Union[str, int]
+    signal_id: str
     ds_id: str
     updated_at: datetime.datetime
     signal_source: str

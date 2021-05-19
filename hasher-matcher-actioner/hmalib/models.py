@@ -244,7 +244,7 @@ class PDQMatchRecord(PDQRecordBase):
     Successful execution at the matcher produces this record.
     """
 
-    signal_id: t.Union[str, int]
+    signal_id: str
     signal_source: str
     signal_hash: str
 
