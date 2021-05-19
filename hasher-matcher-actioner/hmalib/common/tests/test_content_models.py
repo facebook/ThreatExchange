@@ -7,7 +7,9 @@ from hmalib.common.content_models import ContentObject, ActionEvent
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.message_models import BankedSignal, ActionMessage
 from hmalib.common.classification_models import ClassificationLabel
-
+from hmalib.common.actioner_models import (
+    WebhookPostActionPerformer,
+)
 
 import boto3
 import datetime
@@ -98,6 +100,14 @@ class TestContentModels(unittest.TestCase):
         )
         banked_signal.add_classification("true_positive")
 
+        action_performer = WebhookPostActionPerformer(
+            name="EnqueueForReview",
+            url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",
+            headers='{"Connection":"keep-alive"}',
+            # monitoring page:
+            # https://webhook.site/#!/ff7ebc37-514a-439e-9a03-46f86989e195
+        )
+
         action_message = ActionMessage(
             content_key=TestContentModels.TEST_CONTENT_ID,
             content_hash="361da9e6cf1b72f5cea0344e5bb6e70939f4c70328ace762529cac704297354a",
@@ -110,6 +120,7 @@ class TestContentModels(unittest.TestCase):
             content_id=action_message.content_key,
             performed_at=TestContentModels.TEST_TIME,
             action_label=action_message.action_label.value,
+            action_performer=action_performer.to_aws_json(),
             action_rules=[rule.to_aws_json() for rule in action_message.action_rules],
         )  # .write_to_table(table)
 
