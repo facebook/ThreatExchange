@@ -19,18 +19,18 @@ logger = get_logger(__name__)
 
 
 @dataclass
-class ActionRulesAPIRequest(DictParseable):
+class ActionRulesRequest(DictParseable):
     action_rule: ActionRule
 
     @classmethod
-    def from_dict(cls, d: dict) -> "ActionRulesAPIRequest":
+    def from_dict(cls, d: dict) -> "ActionRulesRequest":
         ar = ActionRule.from_aws(d["action_rule"])
-        logger.info("Deserialized ActionRule: %s", ar)
+        logger.debug("Deserialized ActionRule: %s", ar)
         return cls(ar)
 
 
 @dataclass
-class ActionRulesAPIResponse(JSONifiable):
+class ActionRulesResponse(JSONifiable):
     error_message: str
     action_rules: t.List[ActionRule] = field(default_factory=list)
 
@@ -41,6 +41,7 @@ class ActionRulesAPIResponse(JSONifiable):
         }
 
 
+# TODO elevate this to some central place when working on Issue 599
 def handle_unexpected_error(e: Exception):
     logger.error("Unexpected error: %s", sys.exc_info()[0])
     logger.exception(e)
@@ -48,12 +49,12 @@ def handle_unexpected_error(e: Exception):
 
 
 def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
-    # The documentation below expects prefix to be '/action-rules/'
+    # The endpoints below imply a prefix of '/action-rules'
     action_rules_api = bottle.Bottle()
     HMAConfig.initialize(hma_config_table)
 
     @action_rules_api.get("/", apply=[jsoninator])
-    def get_action_rules() -> ActionRulesAPIResponse:
+    def get_action_rules() -> ActionRulesResponse:
         """
         Returns all action rules.
         """
@@ -67,12 +68,12 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
             error_message = "Unexpected error."
             handle_unexpected_error(e)
 
-        return ActionRulesAPIResponse(error_message, action_rules)
+        return ActionRulesResponse(error_message, action_rules)
 
-    @action_rules_api.post("/", apply=[jsoninator(ActionRulesAPIRequest)])
+    @action_rules_api.post("/", apply=[jsoninator(ActionRulesRequest)])
     def create_action_rule(
-        request: ActionRulesAPIRequest,
-    ) -> ActionRulesAPIResponse:
+        request: ActionRulesRequest,
+    ) -> ActionRulesResponse:
         """
         Creates an action rule.
         """
@@ -100,13 +101,13 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
             error_message = "Unexpected error."
             handle_unexpected_error(e)
 
-        return ActionRulesAPIResponse(error_message)
+        return ActionRulesResponse(error_message)
 
-    @action_rules_api.put("/<old_name>", apply=[jsoninator(ActionRulesAPIRequest)])
+    @action_rules_api.put("/<old_name>", apply=[jsoninator(ActionRulesRequest)])
     def update_action_rule(
-        request: ActionRulesAPIRequest,
+        request: ActionRulesRequest,
         old_name: str,
-    ) -> ActionRulesAPIResponse:
+    ) -> ActionRulesResponse:
         """
         Updates an action rule.
         """
@@ -136,10 +137,10 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
             )
             response.status = 500
 
-        return ActionRulesAPIResponse(error_message)
+        return ActionRulesResponse(error_message)
 
     @action_rules_api.delete("/<name>", apply=[jsoninator])
-    def delete_action_rule(name: str) -> ActionRulesAPIResponse:
+    def delete_action_rule(name: str) -> ActionRulesResponse:
         """
         Deletes an action rule.
         """
@@ -160,6 +161,6 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
             )
             response.status = 500
 
-        return ActionRulesAPIResponse(error_message)
+        return ActionRulesResponse(error_message)
 
     return action_rules_api
