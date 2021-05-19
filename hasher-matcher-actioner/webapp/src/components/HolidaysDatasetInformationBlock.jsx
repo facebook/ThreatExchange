@@ -2,13 +2,28 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from 'react';
-import {Card} from 'react-bootstrap';
+import {React, useState} from 'react';
+import {Card, Button} from 'react-bootstrap';
+import PropTypes from 'prop-types';
+import {createDataset} from '../Api';
 
+export const SAMPLE_PG_ID = 'inria-holidays-test';
 /**
  * Super simple informational component. Drop in anywhere.
  */
-export default function HolidaysDatasetInformationBlock() {
+export function HolidaysDatasetInformationBlock({samplePGExists, refresh}) {
+  const [loading, setLoading] = useState(false);
+
+  const createSampleDataPG = () => {
+    createDataset(
+      SAMPLE_PG_ID,
+      'Holiday Sample Set',
+      `This group will become disabled on "Sync" as it does not have TE
+      counterpart. Simply delete and create again if you wish to keep match
+      sample data after syncing`,
+    ).then(() => {});
+  };
+
   return (
     <Card bg="light" body style={{maxWidth: '720px'}}>
       <h2>Test Photos</h2>
@@ -17,7 +32,6 @@ export default function HolidaysDatasetInformationBlock() {
         hashes baked in. The images are from a dataset called the INRIA Holidays
         dataset.
       </p>
-
       <ul>
         <li>
           Go to{' '}
@@ -29,9 +43,34 @@ export default function HolidaysDatasetInformationBlock() {
         </li>
         <li>
           The matched photos will have a privacy group of{' '}
-          <code>inria-holidays-test</code>.
+          <code>{SAMPLE_PG_ID}</code>.{' '}
+          <Button
+            variant="secondary"
+            className="float-right"
+            disabled={loading || samplePGExists}
+            onClick={() => {
+              setLoading(true);
+              createSampleDataPG();
+              setTimeout(() => {
+                refresh();
+                setLoading(false);
+              }, 1000);
+            }}
+            style={{marginLeft: 10}}>
+            {samplePGExists ? 'Created' : 'Create'}
+          </Button>
         </li>
       </ul>
     </Card>
   );
 }
+
+HolidaysDatasetInformationBlock.propTypes = {
+  samplePGExists: PropTypes.bool,
+  refresh: PropTypes.func,
+};
+
+HolidaysDatasetInformationBlock.defaultProps = {
+  samplePGExists: false,
+  refresh: () => {},
+};

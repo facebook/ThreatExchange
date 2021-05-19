@@ -23,6 +23,6 @@ class ThreatExchangeConfig(HMAConfig):
     matcher_active: bool
 
     @property
-    def privacy_group_id(self) -> int:
+    def privacy_group_id(self) -> str:
         """TE Configs are keyed by their privacy group ID"""
-        return int(self.name)
+        return self.name

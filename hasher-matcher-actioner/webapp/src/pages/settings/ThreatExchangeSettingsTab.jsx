@@ -14,7 +14,10 @@ import {
   Col,
 } from 'react-bootstrap';
 import ThreatExchangePrivacyGroupCard from '../../components/settings/ThreatExchangePrivacyGroupCard';
-import HolidaysDatasetInformationBlock from '../../components/HolidaysDatasetInformationBlock';
+import {
+  HolidaysDatasetInformationBlock,
+  SAMPLE_PG_ID,
+} from '../../components/HolidaysDatasetInformationBlock';
 import {
   fetchAllDatasets,
   syncAllDatasets,
@@ -88,7 +91,7 @@ export default function ThreatExchangeSettingsTab() {
         setShowToast(true);
       });
   };
-  useEffect(() => {
+  const refreshDatasets = () => {
     fetchAllDatasets(setLoading(false)).then(response => {
       fetchHashCount().then(counts => {
         setHashCount(counts);
@@ -96,6 +99,9 @@ export default function ThreatExchangeSettingsTab() {
         setDatasets(response.datasets_response);
       });
     });
+  };
+  useEffect(() => {
+    refreshDatasets();
   }, []);
   return (
     <>
@@ -151,8 +157,16 @@ export default function ThreatExchangeSettingsTab() {
                   inUse={dataset.in_use}
                   privacyGroupId={dataset.privacy_group_id}
                   writeBack={dataset.write_back}
-                  hashCount={hashCounts[dataset.privacy_group_id][0]}
-                  lastModified={hashCounts[dataset.privacy_group_id][1]}
+                  hashCount={
+                    hashCounts[dataset.privacy_group_id]
+                      ? hashCounts[dataset.privacy_group_id][0]
+                      : 'Not yet calculated'
+                  }
+                  lastModified={
+                    hashCounts[dataset.privacy_group_id]
+                      ? hashCounts[dataset.privacy_group_id][1]
+                      : 'Unkown'
+                  }
                   onSave={onPrivacyGroupSave}
                   onDelete={onPrivacyGroupDelete}
                 />
@@ -160,7 +174,12 @@ export default function ThreatExchangeSettingsTab() {
         </Row>
       </Card.Body>
       <Col className="mx-1" md="6">
-        <HolidaysDatasetInformationBlock />
+        <HolidaysDatasetInformationBlock
+          samplePGExists={datasets.some(
+            ds => ds.privacy_group_id === SAMPLE_PG_ID,
+          )}
+          refresh={refreshDatasets}
+        />
       </Col>
     </>
   );

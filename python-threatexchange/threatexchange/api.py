@@ -197,6 +197,25 @@ class ThreatExchangeAPI:
         showURLs = kwargs.get("showURLs", False)
         includeIndicatorInOutput = kwargs.get("includeIndicatorInOutput", True)
 
+        default_fields = [
+            "raw_indicator",
+            "type",
+            "added_on",
+            "last_updated",
+            "confidence",
+            "owner",
+            "privacy_type",
+            "review_status",
+            "status",
+            "severity",
+            "share_level",
+            "tags",
+            "description",
+            "reactions",
+            "my_reactions",
+        ]
+        fields = kwargs.get("fields", default_fields)
+
         # Check well-formattedness of descriptor IDs (which may have come from
         # arbitrary data on stdin).
         for id in ids:
@@ -215,7 +234,8 @@ class ThreatExchangeAPI:
             + self.api_token
             + "&ids="
             + ",".join(ids)
-            + "&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description,reactions,my_reactions"
+            + "&fields="
+            + ",".join(fields)
         )
 
         if showURLs:
@@ -231,17 +251,23 @@ class ThreatExchangeAPI:
             if verbose:
                 print(json.dumps(descriptor))
 
-            tags = descriptor.get("tags", None)
-            if tags is None:
-                tags = []
-            else:
-                tags = tags["data"]
+            if "tags" in fields:
+                # tags is returned as a dict sturctred like:
+                # "tags": {
+                #   "data": [
+                #         {
+                #            "id": "03465026013486502",
+                #            "text": "uploaded_by_hma"
+                #         }
+                #      ]
+                #   },
+                #
+                # Canonicalize the tag ordering and simplify the
+                # structure to simply an array of tag-texts
+                tags = descriptor.get("tags", {"data": []})["data"]
+                descriptor["tags"] = sorted(tag["text"] for tag in tags)
 
-            # Canonicalize the tag ordering and simplify the
-            # structure to simply an array of tag-texts
-            descriptor["tags"] = sorted(tag["text"] for tag in tags)
-
-            if descriptor.get("description") is None:
+            if descriptor.get("description") is None and "description" in fields:
                 descriptor["description"] = ""
 
             descriptors.append(descriptor)
@@ -420,6 +446,27 @@ class ThreatExchangeAPI:
             dryRun=dryRun,
         )
 
+    def remove_reaction_from_threat_descriptor(
+        self, descriptor_id, reaction, *, showURLs=False, dryRun=False
+    ) -> t.List:
+        """
+        Does a POST to the reactions API.
+
+        See: https://developers.facebook.com/docs/threat-exchange/reference/reacting
+        """
+        return self._postThreatDescriptor(
+            "/".join(
+                (
+                    self._base_url,
+                    str(descriptor_id),
+                    f"?access_token={self.api_token}",
+                )
+            ),
+            {"reactions_to_remove": reaction},
+            showURLs=showURLs,
+            dryRun=dryRun,
+        )
+
     def upload_threat_descriptor(self, postParams, showURLs, dryRun):
         """
         Does a single POST to the threat_descriptors endpoint.  See also
@@ -544,7 +591,7 @@ class ThreatExchangeAPI:
             self._base_url
             + "/"
             + str(indicator_id)
-            + "?fields=descriptors{privacy_members,indicator,type,owner}&access_token="
+            + "?fields=descriptors&access_token="
             + self.api_token
         )
 

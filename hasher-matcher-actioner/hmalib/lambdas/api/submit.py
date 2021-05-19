@@ -4,6 +4,7 @@ import bottle
 import boto3
 import base64
 import requests
+import datetime
 
 from enum import Enum
 from dataclasses import dataclass, asdict
@@ -12,6 +13,7 @@ from botocore.exceptions import ClientError
 import typing as t
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.common.content_models import ContentObject
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -115,6 +117,23 @@ class SubmitContentError(JSONifiable):
         return asdict(self)
 
 
+def record_content_submission(
+    dynamodb_table: Table, image_folder_key: str, request: SubmitContentRequestBody
+):
+    # TODO add a confirm overwrite path for this
+    submit_time = datetime.datetime.now()
+    ContentObject(
+        content_id=request.content_id,
+        content_type="PHOTO",
+        content_ref=f"{image_folder_key}{request.content_id}",  # raw bytes + tmp urls are a bad idea atm, assume s3 object for now
+        content_ref_type=request.submission_type,
+        additional_fields=set(request.metadata) if request.metadata else set(),
+        submission_times=[submit_time],  # Note: custom write_to_table impl appends.
+        created_at=submit_time,
+        updated_at=submit_time,
+    ).write_to_table(dynamodb_table)
+
+
 def get_submit_api(
     dynamodb_table: Table, image_bucket_key: str, image_folder_key: str
 ) -> bottle.Bottle:
@@ -142,6 +161,11 @@ def get_submit_api(
         if request.submission_type == SubmissionType.UPLOAD.name:
             fileName = request.content_id
             fileContents = base64.b64decode(request.content_ref)
+
+            # We want to record the submission before triggering and processing on
+            # the content itself therefore we write to dynamo before s3
+            record_content_submission(dynamodb_table, image_folder_key, request)
+
             # TODO a whole bunch more validation and error checking...
             s3_client.put_object(
                 Body=fileContents,
@@ -159,6 +183,10 @@ def get_submit_api(
             # TODO better checks that the URL actually worked...
             if response and response.content:
                 # TODO a whole bunch more validation and error checking...
+
+                # Again, We want to record the submission before triggering and processing on
+                # the content itself therefore we write to dynamo before s3
+                record_content_submission(dynamodb_table, image_folder_key, request)
 
                 # Right now this makes a local copy in s3 but future changes to
                 # pdq_hasher should allow us to avoid storing to our own s3 bucket

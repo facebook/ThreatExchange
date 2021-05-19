@@ -309,7 +309,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         to any of the signals in data_store_table and if found update
         their tags.
 
-        Additionally, if writebacks are enabled for this privacy group write back
+        TODO: Additionally, if writebacks are enabled for this privacy group write back
         INGESTED to ThreatExchange
         """
         table = dynamodb.Table(self.data_store_table)
@@ -332,6 +332,8 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                     S3ThreatDataConfig.SOURCE_STR,
                     self.privacy_group,
                 )
+
+        # TODO: If writebacks are enabled for this privacy group write back INGESTED to ThreatExchange
 
 
 def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
