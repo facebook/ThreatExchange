@@ -4,19 +4,25 @@ import json
 import os
 import boto3
 import typing as t
+import datetime
 from functools import lru_cache
+from mypy_boto3_dynamodb import DynamoDBServiceResource
+
 from hmalib.common.message_models import BankedSignal, ActionMessage, MatchMessage
 from hmalib.common.actioner_models import (
     ActionPerformer,
     WebhookPostActionPerformer,
 )
 from hmalib.common.evaluator_models import ActionLabel
+from hmalib.common.content_models import ActionEvent
 from hmalib.common.logging import get_logger
-
 from hmalib.common import config
 
 
 logger = get_logger(__name__)
+dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
+
+DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 
 
 @lru_cache(maxsize=1)
@@ -52,6 +58,8 @@ def lambda_handler(event, context):
     an action message on the actions queue and here's where they're popped
     off and dealt with.
     """
+    records_table = dynamodb.Table(DYNAMODB_TABLE)
+
     lambda_init_once()
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
@@ -60,6 +68,17 @@ def lambda_handler(event, context):
         logger.info("Performing action: action_message = %s", action_message)
 
         perform_label_action(action_message, action_message.action_label)
+
+        ActionEvent(
+            content_id=action_message.content_key,
+            performed_at=datetime.datetime.now(),
+            # TODO this action_label is an indirection for ActionPerformer look up
+            # we probably also want to store its state (or at least it version once one exists)
+            action_label=action_message.action_label.value,
+            # Hack: the label rules model is not something I don't fully understand yet...
+            # rn this just says f-it let's make a list of json blobs we can recover and store it.
+            action_rules=[rule.to_aws_json() for rule in action_message.action_rules],
+        ).write_to_table(records_table)
 
     return {"action_performed": "true"}
 
