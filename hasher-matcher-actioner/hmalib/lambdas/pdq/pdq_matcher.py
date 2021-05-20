@@ -133,8 +133,8 @@ def lambda_handler(event, context):
                         ).write_to_table(records_table)
 
                     for pg in metadata.get("privacy_groups", []):
-                        # TODO: we might be able to get away with some 'if exists/upsert' here
-                        # TODO: @BarrettOlson Write if don't exist or only update given fields is now needed!
+                        # Only update the metadata if it is not found in the table
+                        # once intally created it is the fetcher's job to keep the item up to date
                         PDQSignalMetadata(
                             signal_id,
                             pg,
@@ -142,7 +142,7 @@ def lambda_handler(event, context):
                             metadata["source"],
                             metadata["hash"],
                             metadata["tags"].get(pg, []),
-                        ).write_to_table(records_table)
+                        ).write_to_table_if_not_found(records_table)
 
                     match_ids.append(signal_id)
 
