@@ -73,25 +73,6 @@ module "hashing_data" {
   additional_tags = merge(var.additional_tags, local.common_tags)
 }
 
-module "stream_processor" {
-  source          = "./stream-processor"
-  prefix          = var.prefix
-  additional_tags = merge(var.additional_tags, local.common_tags)
-  datastore       = module.datastore.primary_datastore
-  lambda_docker_info = {
-    uri = var.hma_lambda_docker_uri
-    commands = {
-      stream_processor = "hmalib.lambdas.stream.ddb_stream_processor.lambda_handler"
-    }
-  }
-  log_retention_in_days = var.log_retention_in_days
-  measure_performance   = var.measure_performance
-  config_table = {
-    name = aws_dynamodb_table.config_table.name
-    arn  = aws_dynamodb_table.config_table.arn
-  }
-}
-
 module "pdq_signals" {
   source = "./pdq-signals"
   prefix = var.prefix
