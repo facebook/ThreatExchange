@@ -219,6 +219,7 @@ def get_matches_api(
         if not signal_id or not signal_source or not ds_id or not opinion_change:
             return ChangeSignalOpinionResponse(False)
 
+        signal_id = str(signal_id)
         pending_opinion_change = PendingOpinionChange(opinion_change)
 
         writeback_message = WritebackMessage.from_banked_signal_and_opinion_change(

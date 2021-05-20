@@ -117,7 +117,7 @@ def lambda_handler(event, context):
                     )
                 )
                 if metadata["privacy_groups"]:
-                    signal_id = metadata["id"]
+                    signal_id = str(metadata["id"])
 
                     with metrics.timer(
                         metrics.names.pdq_matcher_lambda.write_match_record

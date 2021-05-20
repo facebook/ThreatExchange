@@ -24,17 +24,19 @@ from pathlib import Path
 
 import boto3
 from botocore.errorfactory import ClientError
+import threatexchange
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.common.s3_adapters import S3ThreatDataConfig
-from hmalib.common.signal_models import PDQSignalMetadata
+from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.fetcher_models import ThreatExchangeConfig
 
 from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import HMASerialization
-from threatexchange.descriptor import SimpleDescriptorRollup
+from threatexchange.descriptor import SimpleDescriptorRollup, ThreatDescriptor
+
 from threatexchange.signal_type.pdq import PdqSignal
 
 logger = get_logger(__name__)
@@ -110,7 +112,7 @@ def lambda_handler(event, context):
         )
 
         indicator_store = ThreatUpdateS3PDQStore(
-            collab.privacy_group_id,
+            int(collab.privacy_group_id),
             api.app_id,
             te_data_bucket,
             config.s3_te_data_folder,
@@ -122,7 +124,7 @@ def lambda_handler(event, context):
             logger.warning(
                 "Store for %s - %d stale! Resetting.",
                 collab.privacy_group_name,
-                collab.privacy_group_id,
+                int(collab.privacy_group_id),
             )
             indicator_store.reset()
 
@@ -303,6 +305,42 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
         post_apply_fn(updated)
 
+    def get_new_pending_opinion_change(
+        self, metadata: PDQSignalMetadata, new_tags: t.List[str]
+    ):
+        # Figure out if we have a new opinion about this indicator and clear out a pending change if so
+
+        # python-threatexchange.descriptor.ThreatDescriptor.from_te_json guarentees there is either
+        # 0 or 1 opinion tags on a descriptor
+        opinion_tags = ThreatDescriptor.SPECIAL_TAGS
+        old_opinion = [tag for tag in metadata.tags if tag in opinion_tags]
+        new_opinion = [tag for tag in new_tags if tag in opinion_tags]
+
+        # If our opinion changed or if our pending change has already happend,
+        # set the pending opinion change to None, otherwise keep it unchanged
+        if old_opinion != new_opinion:
+            return PendingOpinionChange.NONE
+        elif (
+            (
+                new_opinion == [ThreatDescriptor.TRUE_POSITIVE]
+                and metadata.pending_opinion_change
+                == PendingOpinionChange.MARK_TRUE_POSITIVE
+            )
+            or (
+                new_opinion == [ThreatDescriptor.FALSE_POSITIVE]
+                and metadata.pending_opinion_change
+                == PendingOpinionChange.MARK_FALSE_POSITIVE
+            )
+            or (
+                new_opinion == []
+                and metadata.pending_opinion_change
+                == PendingOpinionChange.REMOVE_OPINION
+            )
+        ):
+            return PendingOpinionChange.NONE
+        else:
+            return metadata.pending_opinion_change
+
     def post_apply(self, updated: t.Dict = {}):
         """
         After the fetcher applies an update, check for matches
@@ -315,25 +353,50 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         table = dynamodb.Table(self.data_store_table)
 
         for update in updated.values():
-            row = update.as_csv_row()
+            row: t.List[str] = update.as_csv_row()
             # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
             # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
-            if PDQSignalMetadata(
-                signal_id=int(row[1]),
+            new_tags = row[4].split(" ") if row[4] else []
+
+            metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
+                table,
+                int(row[1]),
+                S3ThreatDataConfig.SOURCE_STR,
+                str(self.privacy_group),
+            )
+
+            if metadata:
+                new_pending_opinion_change = self.get_new_pending_opinion_change(
+                    metadata, new_tags
+                )
+            else:
+                # If this is a new indicator without metadata we should have no pending opinion about it
+                new_pending_opinion_change = PendingOpinionChange.NONE
+
+            metadata = PDQSignalMetadata(
+                signal_id=row[1],
                 ds_id=str(self.privacy_group),
                 updated_at=datetime.now(),
                 signal_source=S3ThreatDataConfig.SOURCE_STR,
                 signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
-                tags=row[4].split(" ") if row[4] else [],
-            ).update_tags_in_table_if_exists(table):
+                tags=new_tags,
+                pending_opinion_change=new_pending_opinion_change,
+            )
+            # TODO: Combine 2 updates into single update
+            if metadata.update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
                     row[1],
                     S3ThreatDataConfig.SOURCE_STR,
                     self.privacy_group,
                 )
-
-        # TODO: If writebacks are enabled for this privacy group write back INGESTED to ThreatExchange
+            if metadata.update_pending_opinion_change_in_table_if_exists(table):
+                logger.info(
+                    "Updated Pending Opinion in DB for indicator id: %s source: %s for privacy group: %d",
+                    row[1],
+                    S3ThreatDataConfig.SOURCE_STR,
+                    self.privacy_group,
+                )
 
 
 def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
@@ -350,27 +413,3 @@ def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
 def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
     byte_content = io.BytesIO(txt_content.getvalue().encode())
     bucket.upload_fileobj(byte_content, key)
-
-
-# for silly testing purposes
-# run from hasher-matcher-actioner with
-# python3 -m hmalib.lambdas.fetcher
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    # This will only kinda work for so long - eventually will
-    # need to use a proper harness
-    csv.field_size_limit(65535)  # dodge field size problems
-    rows = [
-        "ced62bad954258f42e23904a6edc82a77db541622b598db6b124a6cb9496e7d3,1901095716680926,3170688743018501,2020-07-31T18:47:52+0000,true_positive hma_test",
-        "1eccc389c5db3db9b02647666bd24e8c9618e0e5342199de37104f1ef7659a87,2772434039524407,3226049650848873,2020-07-31T18:47:52+0000,true_positive hma_test",
-    ]
-    for row in csv.reader(rows):
-        HMASerialization(
-            row[0],
-            "HASH_PDQ",
-            row[1],
-            SimpleDescriptorRollup.from_row(row[2:]),
-        )
-        print("serialized row")
-    lambda_handler(None, None)
