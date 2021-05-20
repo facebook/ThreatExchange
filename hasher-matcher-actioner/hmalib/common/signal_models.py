@@ -55,7 +55,6 @@ class PDQSignalMetadata(SignalMetadataBase):
     """
 
     SIGNAL_TYPE = "pdq"
-    SIGNAL_TYPE_PROJECTION_EXPRESSION = "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags, PendingOpinionChange"
 
     def to_dynamodb_item(self) -> dict:
         return {
@@ -134,7 +133,7 @@ class PDQSignalMetadata(SignalMetadataBase):
             )
             & Key("SK").begins_with(cls.DATASET_PREFIX),
             FilterExpression=Attr("HashType").eq(cls.SIGNAL_TYPE),
-            ProjectionExpression=cls.SIGNAL_TYPE_PROJECTION_EXPRESSION,
+            ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags, PendingOpinionChange",
         ).get("Items", [])
         return cls._result_items_to_metadata(items)
 
@@ -147,7 +146,6 @@ class PDQSignalMetadata(SignalMetadataBase):
                 "PK": cls.get_dynamodb_signal_key(signal_source, signal_id),
                 "SK": cls.DATASET_PREFIX + ds_id,
             },
-            ProjectionExpression=cls.SIGNAL_TYPE_PROJECTION_EXPRESSION,
         ).get("Item")
         return cls._result_item_to_metadata(item) if item else None
 

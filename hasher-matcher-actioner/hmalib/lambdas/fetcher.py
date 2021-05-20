@@ -370,8 +370,8 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                     metadata, new_tags
                 )
             else:
-                # If this is a new indicator without metadata we should have no pending opinion about it
-                new_pending_opinion_change = PendingOpinionChange.NONE
+                # If this is a new indicator without metadata there is nothing for us to update
+                return
 
             metadata = PDQSignalMetadata(
                 signal_id=row[1],
@@ -382,7 +382,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 tags=new_tags,
                 pending_opinion_change=new_pending_opinion_change,
             )
-            # TODO: Combine 2 updates into single update
+            # TODO: Combine 2 update functions into single function
             if metadata.update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
