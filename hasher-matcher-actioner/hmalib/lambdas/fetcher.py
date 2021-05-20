@@ -305,6 +305,41 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
 
         post_apply_fn(updated)
 
+    def get_new_pending_opinion_change(
+        self, metadata: PDQSignalMetadata, new_tags: t.List[str]
+    ):
+        # Figure out if we have a new opinion about this indicator and clear out a pending change if so
+
+        # Threat Updates guarentees there is either 0 or 1 opinion tags on a descriptor
+        opinion_tags = ThreatDescriptor.SPECIAL_TAGS
+        old_opinion = [tag for tag in metadata.tags if tag in opinion_tags]
+        new_opinion = [tag for tag in new_tags if tag in opinion_tags]
+
+        # If our opinion changed or if our pending change has already happend,
+        # set the pending opinion change to None, otherwise keep it unchanged
+        if old_opinion != new_opinion:
+            return PendingOpinionChange.NONE
+        elif (
+            (
+                new_opinion == [ThreatDescriptor.TRUE_POSITIVE]
+                and metadata.pending_opinion_change
+                == PendingOpinionChange.MARK_TRUE_POSITIVE
+            )
+            or (
+                new_opinion == [ThreatDescriptor.FALSE_POSITIVE]
+                and metadata.pending_opinion_change
+                == PendingOpinionChange.MARK_FALSE_POSITIVE
+            )
+            or (
+                new_opinion == []
+                and metadata.pending_opinion_change
+                == PendingOpinionChange.REMOVE_OPINION
+            )
+        ):
+            return PendingOpinionChange.NONE
+        else:
+            return metadata.pending_opinion_change
+
     def post_apply(self, updated: t.Dict = {}):
         """
         After the fetcher applies an update, check for matches
@@ -322,27 +357,20 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
             # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
             new_tags = row[4].split(" ") if row[4] else []
 
-            # Figure out if we have a new opinion about this indicator and clear out a pending change if so
-            # If this is a new indicator without metadata we also should have no pending opinion about it
-            new_pending_opinion_change = PendingOpinionChange.NONE
-            for signal in PDQSignalMetadata.get_from_signal(
-                table, int(row[1]), S3ThreatDataConfig.SOURCE_STR
-            ):
-                # Find the metadata object for this privacy group if it exists
-                if signal.ds_id == str(self.privacy_group):
+            metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
+                table,
+                int(row[1]),
+                S3ThreatDataConfig.SOURCE_STR,
+                str(self.privacy_group),
+            )
 
-                    # Threat Updates guarentees there is either 0 or 1 special tags on a descriptor
-                    opinion_tags = ThreatDescriptor.SPECIAL_TAGS
-                    old_opinion = [tag for tag in signal.tags if tag in opinion_tags]
-                    new_opinion = [tag for tag in new_tags if tag in opinion_tags]
-
-                    # If our opinion changed, set the pending opinion change to None
-                    # otherwise keep it unchanged
-                    new_pending_opinion_change = (
-                        PendingOpinionChange.NONE
-                        if old_opinion != new_opinion
-                        else signal.pending_opinion_change
-                    )
+            if metadata:
+                new_pending_opinion_change = self.get_new_pending_opinion_change(
+                    metadata, new_tags
+                )
+            else:
+                # If this is a new indicator without metadata we should have no pending opinion about it
+                new_pending_opinion_change = PendingOpinionChange.NONE
 
             metadata = PDQSignalMetadata(
                 signal_id=row[1],

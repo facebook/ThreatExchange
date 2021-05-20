@@ -122,17 +122,36 @@ class PDQSignalMetadata(SignalMetadataBase):
         table: Table,
         signal_id: t.Union[str, int],
         signal_source: str,
+        ds_id: str = "",
     ) -> t.List["PDQSignalMetadata"]:
-
+        """
+        Load the metadata objects relaed to this signal.
+        Optionally provide a data set id to filter to
+        """
         items = table.query(
             KeyConditionExpression=Key("PK").eq(
                 cls.get_dynamodb_signal_key(signal_source, signal_id)
             )
-            & Key("SK").begins_with(cls.DATASET_PREFIX),
+            & Key("SK").begins_with(cls.DATASET_PREFIX + ds_id),
             ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags, PendingOpinionChange",
             FilterExpression=Attr("HashType").eq(cls.SIGNAL_TYPE),
         ).get("Items", [])
         return cls._result_items_to_metadata(items)
+
+    @classmethod
+    def get_from_signal_and_ds_id(
+        cls, table: Table, signal_id: t.Union[str, int], signal_source: str, ds_id: str
+    ) -> t.Optional["PDQSignalMetadata"]:
+        """
+        Same as get_from_signal but with a differnt return type and mandatory field
+        """
+        metadata_objects: t.List["PDQSignalMetadata"] = cls.get_from_signal(
+            table,
+            signal_id,
+            signal_source,
+            ds_id,
+        )
+        return metadata_objects[0] if metadata_objects else None
 
     @classmethod
     def _result_items_to_metadata(
