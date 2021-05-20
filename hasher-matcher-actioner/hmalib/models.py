@@ -247,7 +247,6 @@ class PDQMatchRecord(PDQRecordBase):
     signal_id: t.Union[str, int]
     signal_source: str
     signal_hash: str
-    privacy_groups: t.List[str]
 
     def to_dynamodb_item(self) -> dict:
         return {
@@ -261,7 +260,6 @@ class PDQMatchRecord(PDQRecordBase):
             "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
             "HashType": self.SIGNAL_TYPE,
             "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
-            "PrivacyGroups": self.privacy_groups,
         }
 
     def to_sqs_message(self) -> dict:
@@ -323,7 +321,6 @@ class PDQMatchRecord(PDQRecordBase):
                 ),
                 signal_source=item["SignalSource"],
                 signal_hash=item["SignalHash"],
-                privacy_groups=item["PrivacyGroups"],
             )
             for item in items
         ]
@@ -376,7 +373,9 @@ class MatchRecordQuery:
     Written to be agnostic to hash type so it can be reused by other types of 'MatchRecord's.
     """
 
-    DEFAULT_PROJ_EXP = "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Labels, PrivacyGroups"
+    DEFAULT_PROJ_EXP = (
+        "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Labels"
+    )
 
     @classmethod
     def from_content_key(

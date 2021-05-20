@@ -75,7 +75,6 @@ class TestPDQModels(unittest.TestCase):
                             "SignalHash",
                             "SignalSource",
                             "HashType",
-                            "PrivacyGroups",
                         ],
                     },
                 },
@@ -92,7 +91,6 @@ class TestPDQModels(unittest.TestCase):
                             "SignalHash",
                             "SignalSource",
                             "HashType",
-                            "PrivacyGroups",
                         ],
                     },
                 },
@@ -119,7 +117,6 @@ class TestPDQModels(unittest.TestCase):
             TestPDQModels.TEST_SIGNAL_ID,
             TestPDQModels.TEST_SIGNAL_SOURCE,
             signal_hash,
-            [],
         )
 
     @staticmethod
