@@ -236,22 +236,22 @@ export function deleteAction(key) {
   return apiDelete(`/actions/${key}`);
 }
 
-export function fetchActionRules() {
+export function fetchAllActionRules() {
   return apiGet('action-rules/');
 }
 
-export function actionRuleAdd(actionRule) {
+export function addActionRule(actionRule) {
   return apiPost('action-rules/', {
     action_rule: actionRule,
   });
 }
 
-export function actionRuleUpdate(oldName, actionRule) {
+export function updateActionRule(oldName, actionRule) {
   return apiPut(`action-rules/${oldName}`, {
     action_rule: actionRule,
   });
 }
 
-export function actionRuleDelete(name) {
+export function deleteActionRule(name) {
   return apiDelete(`action-rules/${name}`);
 }
