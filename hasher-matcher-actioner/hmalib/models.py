@@ -81,6 +81,20 @@ class DynamoDBItem(DynamoDBCountMixin):
     SIGNAL_KEY_PREFIX = "s#"
     TYPE_PREFIX = "type#"
 
+    def _get_count_update_transact_item(self, table: Table):
+        return {
+            "Update": {
+                "Key": {
+                    "PK": self._get_count_pkey(),
+                    "SK": self._get_count_skey(),
+                },
+                # if_not_exists takes care of initializing the count if it hasn't been done yet.
+                "UpdateExpression": "SET WriteCount = if_not_exists(WriteCount, :zero) + :one",
+                "TableName": table.table_name,
+                "ExpressionAttributeValues": {":one": 1, ":zero": 0},
+            },
+        }
+
     def write_to_table(self, table: Table):
         client: Client = table.meta.client
         transact_items: t.List[TransactWriteItemTypeDef] = [
@@ -93,22 +107,36 @@ class DynamoDBItem(DynamoDBCountMixin):
         ]
 
         if self.__class__.is_total_countable():
-            transact_items.append(
-                {
-                    "Update": {
-                        "Key": {
-                            "PK": self._get_count_pkey(),
-                            "SK": self._get_count_skey(),
-                        },
-                        # if_not_exists takes care of initializing the count if it hasn't been done yet.
-                        "UpdateExpression": "SET WriteCount = if_not_exists(WriteCount, :zero) + :one",
-                        "TableName": table.table_name,
-                        "ExpressionAttributeValues": {":one": 1, ":zero": 0},
-                    },
-                }
-            )
+            transact_items.append(self._get_count_update_transact_item(table))
 
         client.transact_write_items(TransactItems=transact_items)
+
+    def write_to_table_if_not_found(self, table: Table) -> bool:
+        client: Client = table.meta.client
+        transact_items: t.List[TransactWriteItemTypeDef] = [
+            {
+                "Put": {
+                    "Item": self.to_dynamodb_item(),
+                    "TableName": table.table_name,
+                    "ConditionExpression": "attribute_not_exists(PK) AND attribute_not_exists(SK)",
+                },
+            },
+        ]
+
+        if self.__class__.is_total_countable():
+            transact_items.append(self._get_count_update_transact_item(table))
+
+        try:
+            client.transact_write_items(TransactItems=transact_items)
+        except ClientError as e:
+            if (
+                e.response["Error"]["Code"] != "TransactionCanceledException"
+                and e.response["CancellationReasons"][0]["Code"]
+                != "ConditionalCheckFailed"
+            ):
+                raise e
+            return False
+        return True
 
     def to_dynamodb_item(self) -> t.Dict:
         raise NotImplementedError
