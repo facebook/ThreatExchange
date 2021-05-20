@@ -90,10 +90,10 @@ export default function ActionPerformerRows({
           </Modal>
         </td>
         <ActionPerformerColumns
-          key={name}
-          name={name}
-          type={type}
-          params={params}
+          key={updatedAction.name}
+          name={updatedAction.name}
+          type={updatedAction.config_subtype}
+          params={updatedAction.fields}
           editing={false}
           create={false}
           onChange={onUpdatedActionChange}
@@ -106,7 +106,6 @@ export default function ActionPerformerRows({
             className="mb-2 table-action-button"
             onClick={() => {
               onSave(updatedAction);
-              resetForm();
               setEditing(false);
             }}>
             <ion-icon
