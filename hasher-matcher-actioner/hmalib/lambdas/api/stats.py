@@ -60,7 +60,7 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
 
     stat_name_to_metric = {
         "hashes": metrics.names.pdq_hasher_lambda.hash,
-        "matches": metrics.names.pdq_matcher_lambda.search_index,
+        "matches": metrics.names.pdq_matcher_lambda.write_match_record,
     }
 
     # DynamoDBItem class is used to get total counts
