@@ -423,4 +423,14 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     # This will only kinda work for so long - eventually will
     # need to use a proper harness
-    lambda_handler(None, None)
+    # lambda_handler(None, None)
+    table = dynamodb.Table(os.environ["DYNAMODB_DATASTORE_TABLE"])
+    signal_id = "3323528337667513"
+    ds_id = "30363668470996"
+    metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
+        table,
+        signal_id,
+        S3ThreatDataConfig.SOURCE_STR,
+        ds_id,
+    )
+    print(metadata)

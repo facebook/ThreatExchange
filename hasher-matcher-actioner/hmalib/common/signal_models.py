@@ -55,6 +55,7 @@ class PDQSignalMetadata(SignalMetadataBase):
     """
 
     SIGNAL_TYPE = "pdq"
+    SIGNAL_TYPE_PROJECTION_EXPRESSION = "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags, PendingOpinionChange"
 
     def to_dynamodb_item(self) -> dict:
         return {
@@ -122,7 +123,6 @@ class PDQSignalMetadata(SignalMetadataBase):
         table: Table,
         signal_id: t.Union[str, int],
         signal_source: str,
-        ds_id: str = "",
     ) -> t.List["PDQSignalMetadata"]:
         """
         Load the metadata objects relaed to this signal.
@@ -132,9 +132,9 @@ class PDQSignalMetadata(SignalMetadataBase):
             KeyConditionExpression=Key("PK").eq(
                 cls.get_dynamodb_signal_key(signal_source, signal_id)
             )
-            & Key("SK").begins_with(cls.DATASET_PREFIX + ds_id),
-            ProjectionExpression="PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Tags, PendingOpinionChange",
+            & Key("SK").begins_with(cls.DATASET_PREFIX),
             FilterExpression=Attr("HashType").eq(cls.SIGNAL_TYPE),
+            ProjectionExpression=cls.SIGNAL_TYPE_PROJECTION_EXPRESSION,
         ).get("Items", [])
         return cls._result_items_to_metadata(items)
 
@@ -142,35 +142,35 @@ class PDQSignalMetadata(SignalMetadataBase):
     def get_from_signal_and_ds_id(
         cls, table: Table, signal_id: t.Union[str, int], signal_source: str, ds_id: str
     ) -> t.Optional["PDQSignalMetadata"]:
-        """
-        Same as get_from_signal but with a differnt return type and mandatory field
-        """
-        metadata_objects: t.List["PDQSignalMetadata"] = cls.get_from_signal(
-            table,
-            signal_id,
-            signal_source,
-            ds_id,
-        )
-        return metadata_objects[0] if metadata_objects else None
+        item = table.get_item(
+            Key={
+                "PK": cls.get_dynamodb_signal_key(signal_source, signal_id),
+                "SK": cls.DATASET_PREFIX + ds_id,
+            },
+            ProjectionExpression=cls.SIGNAL_TYPE_PROJECTION_EXPRESSION,
+        ).get("Item")
+        return cls._result_item_to_metadata(item) if item else None
 
     @classmethod
     def _result_items_to_metadata(
         cls,
         items: t.List[t.Dict],
     ) -> t.List["PDQSignalMetadata"]:
-        return [
-            PDQSignalMetadata(
-                signal_id=cls.remove_signal_key_prefix(
-                    item["PK"], item["SignalSource"]
-                ),
-                ds_id=item["SK"][len(cls.DATASET_PREFIX) :],
-                updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
-                signal_source=item["SignalSource"],
-                signal_hash=item["SignalHash"],
-                tags=item["Tags"],
-                pending_opinion_change=PendingOpinionChange(
-                    item.get("PendingOpinionChange", PendingOpinionChange.NONE.value)
-                ),
-            )
-            for item in items
-        ]
+        return [cls._result_item_to_metadata(item) for item in items]
+
+    @classmethod
+    def _result_item_to_metadata(
+        cls,
+        item: t.Dict,
+    ) -> "PDQSignalMetadata":
+        return PDQSignalMetadata(
+            signal_id=cls.remove_signal_key_prefix(item["PK"], item["SignalSource"]),
+            ds_id=item["SK"][len(cls.DATASET_PREFIX) :],
+            updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
+            signal_source=item["SignalSource"],
+            signal_hash=item["SignalHash"],
+            tags=item["Tags"],
+            pending_opinion_change=PendingOpinionChange(
+                item.get("PendingOpinionChange", PendingOpinionChange.NONE.value)
+            ),
+        )
