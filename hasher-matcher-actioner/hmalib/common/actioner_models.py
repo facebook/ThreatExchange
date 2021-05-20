@@ -8,6 +8,7 @@ from dataclasses import dataclass, field, fields
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import MatchMessage
 from hmalib.common.classification_models import ActionLabel, Label
+from hmalib.common.aws_dataclass import HasAWSSerialization
 from requests import get, post, put, delete, Response
 
 logger = get_logger(__name__)
@@ -16,7 +17,7 @@ logger = get_logger(__name__)
 TUrl = t.Union[t.Text, bytes]
 
 
-class ActionPerformer(config.HMAConfigWithSubtypes):
+class ActionPerformer(config.HMAConfigWithSubtypes, HasAWSSerialization):
     """
     An ActionPerfomer is the configuration + the code to perform an action.
 

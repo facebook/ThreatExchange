@@ -36,10 +36,11 @@ class ActionEvent(ContentObjectBase, JSONifiable):
     """
 
     ACTION_TIME_PREFIX = "action_time#"
-    DEFAULT_PROJ_EXP = "PK, SK, ActionLabel, ActionRules"
+    DEFAULT_PROJ_EXP = "PK, SK, ActionLabel, ActionPerformer, ActionRules"
 
     performed_at: datetime.datetime
     action_label: str
+    action_performer: str
     action_rules: t.List[str]
 
     @staticmethod
@@ -51,6 +52,7 @@ class ActionEvent(ContentObjectBase, JSONifiable):
             "PK": self.get_dynamodb_content_key(self.content_id),
             "SK": self.get_dynamodb_action_time_key(self.performed_at),
             "ActionLabel": self.action_label,
+            "ActionPerformer": self.action_performer,
             "ActionRules": self.action_rules,
         }
 
@@ -93,6 +95,7 @@ class ActionEvent(ContentObjectBase, JSONifiable):
                     item["SK"][len(cls.ACTION_TIME_PREFIX) :]
                 ),
                 action_label=item["ActionLabel"],
+                action_performer=item["ActionPerformer"],
                 action_rules=item["ActionRules"],
             )
             for item in items

@@ -43,15 +43,6 @@ def lambda_init_once():
     config.HMAConfig.initialize(config_table)
 
 
-def perform_label_action(
-    match_message: MatchMessage, action_label: ActionLabel
-) -> bool:
-    if action_performer := ActionPerformer.get(action_label.value):
-        action_performer.perform_action(match_message)
-        return True
-    return False
-
-
 def lambda_handler(event, context):
     """
     This is the main entry point for performing an action. The action evaluator puts
@@ -67,36 +58,19 @@ def lambda_handler(event, context):
 
         logger.info("Performing action: action_message = %s", action_message)
 
-        perform_label_action(action_message, action_message.action_label)
-
-        ActionEvent(
-            content_id=action_message.content_key,
-            performed_at=datetime.datetime.now(),
-            # TODO this action_label is an indirection for ActionPerformer look up
-            # we probably also want to store its state (or at least it version once one exists)
-            action_label=action_message.action_label.value,
-            # Hack: the label rules model is not something I don't fully understand yet...
-            # rn this just says f-it let's make a list of json blobs we can recover and store it.
-            action_rules=[rule.to_aws_json() for rule in action_message.action_rules],
-        ).write_to_table(records_table)
-
-    return {"action_performed": "true"}
-
-
-if __name__ == "__main__":
-    lambda_init_once()
-
-    banked_signals = [
-        BankedSignal("2862392437204724", "bank 4", "te"),
-        BankedSignal("4194946153908639", "bank 4", "te"),
-    ]
-    match_message = MatchMessage("key", "hash", banked_signals)
-
-    action_message = ActionMessage(
-        "key",
-        "hash",
-        matching_banked_signals=banked_signals,
-        action_label=ActionLabel("EnqueForReview"),
-    )
-    event = {"Records": [{"body": action_message.to_aws_json()}]}
-    lambda_handler(event, None)
+        if action_performer := ActionPerformer.get(action_message.action_label.value):
+            action_performer.perform_action(match_message)
+            ActionEvent(
+                content_id=action_message.content_key,
+                performed_at=datetime.datetime.now(),
+                action_label=action_message.action_label.value,
+                # v0 Hacks: the label rules model is super mutable we store basically the whole state
+                # for each action performed. (~gross but until we have a unique id and version
+                # it's what we've got).
+                # Right now this just make json blob for action_performer and a list of
+                # json blobs for action_rules that we can store and recover if needed.
+                action_performer=action_performer.to_aws_json(),
+                action_rules=[
+                    rule.to_aws_json() for rule in action_message.action_rules
+                ],
+            ).write_to_table(records_table)
