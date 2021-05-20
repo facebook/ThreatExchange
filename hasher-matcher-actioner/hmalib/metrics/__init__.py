@@ -74,6 +74,7 @@ class names:
         download_index = f"{_prefix}.download_index"
         parse_index = f"{_prefix}.parse_index"
         search_index = f"{_prefix}.search_index"
+        write_match_record = f"{_prefix}.write_match_record"
 
     class api_hash_count(lambda_with_datafiles):
         _prefix = "api.hashcount"
