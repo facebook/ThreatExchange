@@ -310,7 +310,8 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
     ):
         # Figure out if we have a new opinion about this indicator and clear out a pending change if so
 
-        # Threat Updates guarentees there is either 0 or 1 opinion tags on a descriptor
+        # python-threatexchange.descriptor.ThreatDescriptor.from_te_json guarentees there is either
+        # 0 or 1 opinion tags on a descriptor
         opinion_tags = ThreatDescriptor.SPECIAL_TAGS
         old_opinion = [tag for tag in metadata.tags if tag in opinion_tags]
         new_opinion = [tag for tag in new_tags if tag in opinion_tags]
@@ -381,6 +382,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                 tags=new_tags,
                 pending_opinion_change=new_pending_opinion_change,
             )
+            # TODO: Combine 2 updates into single update
             if metadata.update_tags_in_table_if_exists(table):
                 logger.info(
                     "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
@@ -395,8 +397,6 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
                     S3ThreatDataConfig.SOURCE_STR,
                     self.privacy_group,
                 )
-
-        # TODO: If writebacks are enabled for this privacy group write back INGESTED to ThreatExchange
 
 
 def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
@@ -413,24 +413,3 @@ def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
 def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
     byte_content = io.BytesIO(txt_content.getvalue().encode())
     bucket.upload_fileobj(byte_content, key)
-
-
-# for silly testing purposes
-# run from hasher-matcher-actioner with
-# python3 -m hmalib.lambdas.fetcher
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    # This will only kinda work for so long - eventually will
-    # need to use a proper harness
-    # lambda_handler(None, None)
-    table = dynamodb.Table(os.environ["DYNAMODB_DATASTORE_TABLE"])
-    signal_id = "3323528337667513"
-    ds_id = "30363668470996"
-    metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
-        table,
-        signal_id,
-        S3ThreatDataConfig.SOURCE_STR,
-        ds_id,
-    )
-    print(metadata)
