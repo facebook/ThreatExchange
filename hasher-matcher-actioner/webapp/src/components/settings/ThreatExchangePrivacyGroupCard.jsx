@@ -71,7 +71,7 @@ export default function ThreatExchangePrivacyGroupCard({
                     </Popover.Content>
                   </Popover>
                 }>
-                <Button class="btn btn-primary btn-circle">
+                <Button className="btn btn-primary btn-circle">
                   <ion-icon name="information-circle-outline" size="large" />
                 </Button>
               </OverlayTrigger>

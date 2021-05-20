@@ -2,14 +2,25 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-/* eslint-disable react/prop-types */
-
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import Card from 'react-bootstrap/Card';
-import Button from 'react-bootstrap/Button';
 import Table from 'react-bootstrap/Table';
-import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import Toast from 'react-bootstrap/Toast';
+import {
+  fetchAllActions,
+  updateAction,
+  createAction,
+  deleteAction,
+} from '../../Api';
+import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
+import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
 
+const defaultAction = {
+  name: '',
+  config_subtype: '',
+  fields: {url: '', headers: ''},
+};
 export default function ActionSettingsTab() {
   /**
    * TODO This used to have an ActionLabel Settings component here. The
@@ -18,265 +29,161 @@ export default function ActionSettingsTab() {
    * implementation of that component here. Not doing that now because
    * someone else is actively working in this space.
    */
-  return (
-    <>
-      <ActionPerformerSettings />
-    </>
-  );
-}
-
-const ActionerTypes = {
-  WebhookActioner: {
-    args: {
-      url: {description: 'The url to send a webhook to'},
-      webhookType: {
-        description: 'What type of webhook should be sent?',
-        default: 'POST',
-      },
-      headers: {
-        description: 'Optional json object of headers to include in webhook',
-        default: '{}',
-      },
-    },
-    description:
-      'When a match occurs, a webhook will be sent to the specified url with data describing the match',
-  },
-};
-
-function WebhookActioner({url, webhookType, headers}) {
-  const actionerDetails = ActionerTypes.WebhookActioner;
-
-  const [editing, setEditing] = useState(false);
-
-  const [savedURL, setURL] = useState(url);
-  const [savedWebhookType, setWebhookType] = useState(webhookType);
-  const [savedHeaders, setHeaders] = useState(headers);
-  const [tempURL, setTempURL] = useState(url);
-  const [tempWebhookType, setTempWebhookType] = useState(webhookType);
-  const [tempHeaders, setTempHeaders] = useState(headers);
-
-  return (
-    <Card>
-      <div hidden={editing}>
-        <Card.Header>
-          WebhookActioner
-          <br />
-          <Form.Text className="text-muted">
-            {ActionerTypes.WebhookActioner.description}
-          </Form.Text>
-        </Card.Header>
-        <Card.Body>
-          URL : {savedURL}
-          <br />
-          Webhook Type : {savedWebhookType}
-          <br />
-          Headers : {savedHeaders}
-          <br />
-        </Card.Body>
-        <Card.Footer>
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditing(true);
-            }}>
-            Edit
-          </Button>
-        </Card.Footer>
-      </div>
-
-      <div hidden={!editing}>
-        <Card.Header>
-          <Form>
-            <Form.Group>
-              <Form.Control as="select" size="lg">
-                <option>WebhookActioner</option>
-              </Form.Control>
-            </Form.Group>
-          </Form>
-        </Card.Header>
-        <Card.Body>
-          <Form>
-            <Form.Group>
-              <Form.Label>URL</Form.Label>
-              <Form.Text className="text-muted">
-                {actionerDetails.args.url.description}
-              </Form.Text>
-              <Form.Control
-                type="url"
-                value={tempURL}
-                onChange={e => {
-                  setTempURL(e.target.value);
-                }}
-              />
-              <Form.Label>Webhook Type</Form.Label>
-              <Form.Text className="text-muted">
-                {actionerDetails.args.webhookType.description}
-              </Form.Text>
-              <Form.Control
-                as="select"
-                value={tempWebhookType}
-                onChange={e => {
-                  setTempWebhookType(e.target.value);
-                }}>
-                <option>POST</option>
-                <option>GET</option>
-                <option>PUT</option>
-                <option>DELETE</option>
-              </Form.Control>
-
-              <Form.Label>Headers</Form.Label>
-              <Form.Text className="text-muted">
-                {actionerDetails.args.headers.description}
-              </Form.Text>
-              <Form.Control
-                type="text"
-                value={tempHeaders}
-                onChange={e => {
-                  setTempHeaders(e.target.value);
-                }}
-              />
-            </Form.Group>
-          </Form>
-        </Card.Body>
-        <Card.Footer>
-          <Button
-            variant="primary"
-            onClick={() => {
-              setURL(tempURL);
-              setWebhookType(tempWebhookType);
-              setHeaders(tempHeaders);
-              setEditing(false);
-            }}>
-            Save
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              setTempURL(savedURL);
-              setTempWebhookType(savedWebhookType);
-              setTempHeaders(savedHeaders);
-              setEditing(false);
-            }}>
-            Cancel
-          </Button>
-        </Card.Footer>
-      </div>
-    </Card>
-  );
-}
-
-const Actioners = {
-  WebhookActioner,
-};
-
-function ActionPerformerRow({name, type, params}) {
-  const [editing, setEditing] = useState(false);
-  const [savedName, setName] = useState(name);
-  const [tempName, setTempName] = useState(name);
-  return (
-    <tr key={name}>
-      <td>
-        <div hidden={editing}>
-          {savedName}
-          <br />
-          <Button
-            variant="primary"
-            onClick={() => {
-              setEditing(true);
-            }}>
-            Edit
-          </Button>
-        </div>
-
-        <div hidden={!editing}>
-          <Form>
-            <Form.Group controlId="formName">
-              <Form.Label>Action Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="New Action Name"
-                value={tempName}
-                onChange={e => {
-                  setTempName(e.target.value);
-                }}
-              />
-            </Form.Group>
-          </Form>
-
-          <Button
-            variant="primary"
-            onClick={() => {
-              setName(tempName);
-              setEditing(false);
-            }}>
-            Save
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => {
-              setTempName(savedName);
-              setEditing(false);
-            }}>
-            Cancel
-          </Button>
-        </div>
-      </td>
-      <td>{Actioners[type](params)}</td>
-    </tr>
-  );
-}
-
-function ActionPerformerSettings() {
-  const initPerformers = [
-    {
-      name: 'MyFirstAction',
-      type: 'WebhookActioner',
-      params: {
-        url: 'myurl.com',
-        webhookType: 'POST',
-        headers: '{"h1" : "header"}',
-      },
-      editing: {
-        name: false,
-        details: false,
-      },
-    },
-    {
-      name: 'MySecondAction',
-      type: 'WebhookActioner',
-      params: {
-        url: 'myotherurl.com',
-        webhookType: 'DELETE',
-        headers: '{"h4" : "header"}',
-      },
-      editing: {
-        name: false,
-        details: false,
-      },
-    },
-  ];
-  const [performers] = useState(initPerformers);
-  // const [editing, setEditing] = useState([false, false]);
-
-  const headerBlock = ['Action Name', 'Action Details'].map(header => (
-    <th key={header}>{header}</th>
-  ));
-  const performerBlocks = performers.map(performer =>
-    ActionPerformerRow(performer),
-  );
+  const [performers, setPerformers] = useState([]);
+  const [adding, setAdding] = useState(false);
+  const [newAction, setNewAction] = useState(defaultAction);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const rename = ({name, config_subtype: type, ...rest}) => ({
+    name,
+    type,
+    params: {...rest},
+  });
+  const resetForm = () => {
+    setNewAction(defaultAction);
+  };
+  const onNewActionChange = (key, value) => {
+    if (key === 'name' || key === 'config_subtype') {
+      setNewAction({...newAction, ...value});
+    } else {
+      setNewAction({...newAction, fields: {...newAction.fields, ...value}});
+    }
+  };
+  const displayToast = message => {
+    setToastMessage(message);
+    setShowToast(true);
+  };
+  const deleteActionUI = name => {
+    const filteredPerformers = performers.filter(item => item.name !== name);
+    setPerformers(filteredPerformers);
+  };
+  const refreshActions = () => {
+    fetchAllActions().then(response => {
+      const actionPerformers = response.actions_response.map(item =>
+        rename(item),
+      );
+      setPerformers(actionPerformers);
+    });
+  };
+  const onActionUpdate = updatedAction => {
+    updateAction(updatedAction)
+      .then(response => {
+        displayToast(response.response);
+        deleteActionUI(updateAction.name);
+        refreshActions();
+      })
+      .catch(() => {
+        displayToast('Errors when updating the action. Please try again later');
+      });
+  };
+  const onActionSave = () => {
+    createAction(newAction)
+      .then(response => {
+        displayToast(response.response);
+        refreshActions();
+        resetForm();
+        setAdding(false);
+      })
+      .catch(() => {
+        displayToast('Errors when creating the action. Please try again later');
+      });
+  };
+  const onActionDelete = name => {
+    deleteAction(name)
+      .then(response => {
+        displayToast(response.response);
+        deleteActionUI(name);
+      })
+      .catch(() => {
+        displayToast('Errors when deleting the action. Please try again later');
+      });
+  };
+  useEffect(() => {
+    refreshActions();
+  }, []);
   return (
     <>
       <Card>
         <Card.Header>
           <h2 className="mt-2">Action Definitions</h2>
           <h5 className="mt-5">Define what to do for different Actions</h5>
+          <div className="feedback-toast-container">
+            <Toast
+              onClose={() => setShowToast(false)}
+              show={showToast}
+              delay={5000}
+              autohide>
+              <Toast.Body>{toastMessage}</Toast.Body>
+            </Toast>
+          </div>
         </Card.Header>
         <Card.Body>
           <Table striped bordered hover>
             <thead>
-              <tr>{headerBlock}</tr>
+              <tr>
+                <th>
+                  <Button
+                    className="table-action-button"
+                    onClick={() => setAdding(true)}>
+                    <ion-icon name="add" size="large" />
+                  </Button>
+                </th>
+                <th>Action Name</th>
+                <th>Action Details</th>
+              </tr>
             </thead>
-            <tbody>{performerBlocks}</tbody>
+            <tbody>
+              <tr hidden={!adding}>
+                <td>
+                  <Button
+                    variant="outline-primary"
+                    className="mb-2 table-action-button"
+                    onClick={() => {
+                      onActionSave();
+                    }}>
+                    <ion-icon
+                      name="checkmark"
+                      size="large"
+                      className="ion-icon-white"
+                    />
+                  </Button>{' '}
+                  <Button
+                    variant="outline-secondary"
+                    className="table-action-button"
+                    onClick={() => {
+                      resetForm();
+                      setAdding(false);
+                    }}>
+                    <ion-icon
+                      name="close"
+                      size="large"
+                      className="ion-icon-white"
+                    />
+                  </Button>
+                </td>
+                <ActionPerformerColumns
+                  name={newAction.name}
+                  type={newAction.config_subtype}
+                  params={newAction.fields}
+                  editing
+                  create
+                  onChange={onNewActionChange}
+                />
+              </tr>
+              {performers.length === 0
+                ? null
+                : performers.map(performer => (
+                    <ActionPerformerRows
+                      key={performer.name}
+                      name={performer.name}
+                      type={performer.type}
+                      params={performer.params}
+                      edit={false}
+                      onSave={onActionUpdate}
+                      onDelete={onActionDelete}
+                    />
+                  ))}
+            </tbody>
           </Table>
         </Card.Body>
       </Card>

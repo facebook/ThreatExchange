@@ -32,6 +32,26 @@ async function apiPost(route, body, params = {}) {
   });
 }
 
+async function apiPut(route, body, params = {}) {
+  return API.put('hma_api', route, {
+    body,
+    headers: {
+      Authorization: await getAuthorizationToken(),
+    },
+    queryStringParameters: params,
+  });
+}
+
+async function apiDelete(route, body, params = {}) {
+  return API.del('hma_api', route, {
+    body,
+    headers: {
+      Authorization: await getAuthorizationToken(),
+    },
+    queryStringParameters: params,
+  });
+}
+
 export function fetchAllMatches() {
   return apiGet('/matches/');
 }
@@ -199,4 +219,20 @@ export function createDataset(
 
 export function fetchHashCount() {
   return apiGet('/hash-counts');
+}
+
+export function fetchAllActions() {
+  return apiGet('/actions/');
+}
+
+export function createAction(newAction) {
+  return apiPost('/actions/', newAction);
+}
+
+export function updateAction(updatedAction) {
+  return apiPut('/actions/', updatedAction);
+}
+
+export function deleteAction(key) {
+  return apiDelete(`/actions/${key}`);
 }
