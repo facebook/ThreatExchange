@@ -110,6 +110,26 @@ module "pdq_signals" {
   config_table          = local.config_table
 }
 
+module "counters" {
+  source          = "./counters"
+  prefix          = var.prefix
+  additional_tags = merge(var.additional_tags, local.common_tags)
+  datastore       = module.datastore.primary_datastore
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      match_counter = "hmalib.lambdas.match_counter.lambda_handler"
+    }
+  }
+  log_retention_in_days = var.log_retention_in_days
+  measure_performance   = var.measure_performance
+  matches_sns_topic_arn = aws_sns_topic.matches.arn
+  config_table = {
+    name = aws_dynamodb_table.config_table.name
+    arn  = aws_dynamodb_table.config_table.arn
+  }
+}
+
 module "fetcher" {
   source       = "./fetcher"
   prefix       = var.prefix
