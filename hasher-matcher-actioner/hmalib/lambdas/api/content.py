@@ -62,7 +62,9 @@ def get_content_api(
         see hmalib/commom/content_models.ContentObject for specific fields
         """
         if content_id := bottle.request.query.content_id or None:
-            return ContentObject.get_from_content_id(dynamodb_table, content_id)
+            return ContentObject.get_from_content_id(
+                dynamodb_table, f"{image_folder_key}{content_id}"
+            )
         return None
 
     @content_api.get("/action-history/", apply=[jsoninator])
@@ -73,7 +75,9 @@ def get_content_api(
         """
         if content_id := bottle.request.query.content_id or None:
             return ActionHistoryResponse(
-                ActionEvent.get_from_content_id(dynamodb_table, content_id)
+                ActionEvent.get_from_content_id(
+                    dynamodb_table, f"{image_folder_key}{content_id}"
+                )
             )
         return ActionHistoryResponse()
 

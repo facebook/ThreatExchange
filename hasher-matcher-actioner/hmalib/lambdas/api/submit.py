@@ -121,7 +121,7 @@ def record_content_submission(
     # TODO add a confirm overwrite path for this
     submit_time = datetime.datetime.now()
     ContentObject(
-        content_id=request.content_id,
+        content_id=f"{image_folder_key}{request.content_id}",
         content_type=request.content_type or "PHOTO",
         content_ref=f"{image_folder_key}{request.content_id}",  # raw bytes + tmp urls are a bad idea atm, assume s3 object for now
         content_ref_type=request.submission_type,
@@ -186,9 +186,8 @@ def get_submit_api(
             file_type=request.content_bytes_url_or_file_type,
         )
 
-        record_content_submission(dynamodb_table, image_folder_key, request)
-
         if presigned_url:
+            record_content_submission(dynamodb_table, image_folder_key, request)
             return InitUploadResponse(
                 content_id=request.content_id,
                 file_type=str(request.content_bytes_url_or_file_type),
