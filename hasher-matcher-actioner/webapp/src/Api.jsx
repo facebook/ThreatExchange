@@ -42,9 +42,8 @@ async function apiPut(route, body, params = {}) {
   });
 }
 
-async function apiDelete(route, body, params = {}) {
+async function apiDelete(route, params = {}) {
   return API.del('hma_api', route, {
-    body,
     headers: {
       Authorization: await getAuthorizationToken(),
     },
@@ -221,8 +220,10 @@ export function fetchHashCount() {
   return apiGet('/hash-counts');
 }
 
+// TODO remove the trailing slash from the API URL, then add back the leading slash for /actions/ and /action-rules/ endpoints.
+
 export function fetchAllActions() {
-  return apiGet('/actions/');
+  return apiGet('actions/');
 }
 
 export function createAction(newAction) {
@@ -235,4 +236,24 @@ export function updateAction(updatedAction) {
 
 export function deleteAction(key) {
   return apiDelete(`/actions/${key}`);
+}
+
+export function fetchAllActionRules() {
+  return apiGet('action-rules/');
+}
+
+export function addActionRule(actionRule) {
+  return apiPost('action-rules/', {
+    action_rule: actionRule,
+  });
+}
+
+export function updateActionRule(oldName, actionRule) {
+  return apiPut(`action-rules/${oldName}`, {
+    action_rule: actionRule,
+  });
+}
+
+export function deleteActionRule(name) {
+  return apiDelete(`action-rules/${name}`);
 }
