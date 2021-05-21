@@ -123,7 +123,6 @@ export default function ActionRulesTableRow({
               setShowErrors(false);
               if (ruleIsValid(updatedActionRule, name)) {
                 onUpdateActionRule(name, updatedActionRule);
-                resetForm();
                 setEditing(false);
               } else {
                 setShowErrors(true);

@@ -220,6 +220,8 @@ export function fetchHashCount() {
   return apiGet('/hash-counts');
 }
 
+// TODO remove the trailing slash from the API URL, then add back the leading slash for /actions/ and /action-rules/ endpoints.
+
 export function fetchAllActions() {
   return apiGet('actions/');
 }
