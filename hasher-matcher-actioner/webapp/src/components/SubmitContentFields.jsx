@@ -20,17 +20,17 @@ const inputsShape = {
   submissionType: PropTypes.oneOf(Object.keys(SUBMISSION_TYPE)),
   contentId: PropTypes.string,
   contentType: PropTypes.string,
-  contentRef: PropTypes.oneOfType([
+  content: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.shape({raw: PropTypes.file, preview: PropTypes.string}),
   ]),
 };
 
-export function ContentIdAndTypeField({inputs, handleInputChange}) {
+export function ContentUniqueIdField({inputs, handleInputChange}) {
   return (
     <Form.Group>
       <Form.Row>
-        <Form.Label>Content ID and Type</Form.Label>
+        <Form.Label>Unique ID for Content</Form.Label>
         <InputGroup>
           <Form.Control
             onChange={handleInputChange}
@@ -67,21 +67,19 @@ export function ContentIdAndTypeField({inputs, handleInputChange}) {
   );
 }
 
-ContentIdAndTypeField.propTypes = {
+ContentUniqueIdField.propTypes = {
   inputs: PropTypes.shape(inputsShape),
   handleInputChange: PropTypes.func.isRequired,
 };
 
-ContentIdAndTypeField.defaultProps = {
+ContentUniqueIdField.defaultProps = {
   inputs: undefined,
 };
 
 export function PhotoUploadField({inputs, handleInputChangeUpload}) {
   const fileNameIfExist = () =>
-    inputs.contentRef &&
-    inputs.contentRef.raw &&
-    inputs.contentRef.raw instanceof File
-      ? inputs.contentRef.raw.name
+    inputs.content && inputs.content.raw && inputs.content.raw instanceof File
+      ? inputs.content.raw.name
       : undefined;
 
   return (
@@ -91,7 +89,7 @@ export function PhotoUploadField({inputs, handleInputChangeUpload}) {
         <Form.File.Label>
           {fileNameIfExist() ?? 'Submitted file will be stored by HMA System'}
         </Form.File.Label>
-        <Form.File.Input onChange={handleInputChangeUpload} name="contentRef" />
+        <Form.File.Input onChange={handleInputChangeUpload} name="content" />
       </Form.File>
       <Form.Group>
         {fileNameIfExist() ? (
@@ -114,7 +112,7 @@ export function PhotoUploadField({inputs, handleInputChangeUpload}) {
                       maxHeight: '400px',
                       maxWidth: '400px',
                     }}
-                    src={fileNameIfExist() ? inputs.contentRef.preview : ''}
+                    src={fileNameIfExist() ? inputs.content.preview : ''}
                     fluid
                     rounded
                   />
@@ -137,28 +135,16 @@ PhotoUploadField.defaultProps = {
   inputs: undefined,
 };
 
-export function OptionalMetadataField({
-  submissionMetadata,
-  setSubmissionMetadata,
+export function OptionalAdditionalFields({
+  additionalFields,
+  setAdditionalFields,
 }) {
   return (
     <Form.Group>
       <Form.Row>
-        <Form.Label as={Col}>Optional Metadata (not recorded yet)</Form.Label>
-        <Form.Group>
-          <Button
-            variant="success"
-            onClick={() => {
-              setSubmissionMetadata({
-                ...submissionMetadata,
-                [Object.keys(submissionMetadata).length]: {},
-              });
-            }}>
-            +
-          </Button>
-        </Form.Group>
+        <Form.Label as={Col}>Optional Additional Fields</Form.Label>
       </Form.Row>
-      {Object.keys(submissionMetadata).map(entry => (
+      {Object.keys(additionalFields).map(entry => (
         <Form.Row key={entry}>
           <Form.Group as={Col}>
             <InputGroup>
@@ -167,9 +153,9 @@ export function OptionalMetadataField({
               </InputGroup.Prepend>
               <Form.Control
                 onChange={e => {
-                  const metadataCopy = {...submissionMetadata};
-                  metadataCopy[entry].key = e.target.value;
-                  setSubmissionMetadata(metadataCopy);
+                  const copy = {...additionalFields};
+                  copy[entry].key = e.target.value;
+                  setAdditionalFields(copy);
                 }}
               />
             </InputGroup>
@@ -181,9 +167,9 @@ export function OptionalMetadataField({
               </InputGroup.Prepend>
               <Form.Control
                 onChange={e => {
-                  const metadataCopy = {...submissionMetadata};
-                  metadataCopy[entry].value = e.target.value;
-                  setSubmissionMetadata(metadataCopy);
+                  const copy = {...additionalFields};
+                  copy[entry].value = e.target.value;
+                  setAdditionalFields(copy);
                 }}
               />
             </InputGroup>
@@ -193,26 +179,38 @@ export function OptionalMetadataField({
               variant="danger"
               className="float-right"
               onClick={() => {
-                const metadataCopy = {...submissionMetadata};
-                delete metadataCopy[entry];
-                setSubmissionMetadata(metadataCopy);
+                const copy = {...additionalFields};
+                delete copy[entry];
+                setAdditionalFields(copy);
               }}>
               -
             </Button>
           </Form.Group>
         </Form.Row>
       ))}
+      <Form.Group>
+        <Button
+          variant="success"
+          onClick={() => {
+            setAdditionalFields({
+              ...additionalFields,
+              [Object.keys(additionalFields).length]: {},
+            });
+          }}>
+          +
+        </Button>
+      </Form.Group>
     </Form.Group>
   );
 }
 
-OptionalMetadataField.propTypes = {
-  submissionMetadata: PropTypes.objectOf(PropTypes.string),
-  setSubmissionMetadata: PropTypes.func.isRequired,
+OptionalAdditionalFields.propTypes = {
+  additionalFields: PropTypes.objectOf(PropTypes.string),
+  setAdditionalFields: PropTypes.func.isRequired,
 };
 
-OptionalMetadataField.defaultProps = {
-  submissionMetadata: undefined,
+OptionalAdditionalFields.defaultProps = {
+  additionalFields: undefined,
 };
 
 export function NotYetSupportedField({label, handleInputChange}) {
@@ -221,7 +219,7 @@ export function NotYetSupportedField({label, handleInputChange}) {
       <Form.Label>{label}</Form.Label>
       <Form.Control
         onChange={handleInputChange}
-        name="contentRef"
+        name="content"
         placeholder="Not yet supported"
         required
       />

@@ -37,9 +37,9 @@ export default function Sidebar({className}) {
         <li className="nav-item">
           <NavLink
             activeClassName="text-white bg-secondary rounded"
-            to="/upload"
+            to="/submit"
             className="nav-link px-2">
-            Upload
+            Submit Content
           </NavLink>
         </li>
       </ul>
