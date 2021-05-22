@@ -45,14 +45,6 @@ variable "datastore" {
   })
 }
 
-variable "config_table" {
-  description = "The name and arn of the DynamoDB table used for persisting configs."
-  type = object({
-    arn  = string
-    name = string
-  })
-}
-
 variable "additional_tags" {
   description = "Additional resource tags"
   type        = map(string)

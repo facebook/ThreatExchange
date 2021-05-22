@@ -63,7 +63,6 @@ resource "aws_lambda_function" "match_counter" {
   environment {
     variables = {
       DYNAMODB_TABLE      = var.datastore.name
-      HMA_CONFIG_TABLE    = var.config_table.name
       MEASURE_PERFORMANCE = var.measure_performance ? "True" : "False"
     }
   }
@@ -112,13 +111,8 @@ resource "aws_iam_role" "match_counter_lambda_role" {
 data "aws_iam_policy_document" "match_counter_iam_policy_document" {
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:UpdateItem"]
+    actions   = ["dynamodb:UpdateItem"]
     resources = ["${var.datastore.arn}*"]
-  }
-  statement {
-    effect    = "Allow"
-    actions   = ["dynamodb:GetItem", "dynamodb:Query"]
-    resources = [var.config_table.arn]
   }
   statement {
     effect = "Allow"

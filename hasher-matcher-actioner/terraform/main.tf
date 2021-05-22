@@ -124,10 +124,6 @@ module "counters" {
   log_retention_in_days = var.log_retention_in_days
   measure_performance   = var.measure_performance
   matches_sns_topic_arn = aws_sns_topic.matches.arn
-  config_table = {
-    name = aws_dynamodb_table.config_table.name
-    arn  = aws_dynamodb_table.config_table.arn
-  }
 }
 
 module "fetcher" {
