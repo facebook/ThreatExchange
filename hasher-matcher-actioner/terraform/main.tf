@@ -309,11 +309,8 @@ module "actions" {
   config_table = {
     name = aws_dynamodb_table.config_table.name
     arn  = aws_dynamodb_table.config_table.arn
-  }
-  datastore = {
-    name = module.hashing_data.hma_datastore.name
-    arn  = module.hashing_data.hma_datastore.arn
-  }
+  }  
+  datastore = module.datastore.primary_datastore
 }
 
 ### ThreatExchange API Token Secret ###
