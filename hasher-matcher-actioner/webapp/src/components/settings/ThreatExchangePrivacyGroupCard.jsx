@@ -20,7 +20,7 @@ export default function ThreatExchangePrivacyGroupCard({
   description,
   writeBack,
   hashCount,
-  lastModified,
+  matchCount,
   onSave,
   onDelete,
 }) {
@@ -98,13 +98,13 @@ export default function ThreatExchangePrivacyGroupCard({
                   trigger="focus"
                   placement="bottom"
                   overlay={
-                    <Popover id={`popover-lastModified${privacyGroupId}`}>
-                      <Popover.Title as="h3">Last Modified Time</Popover.Title>
-                      <Popover.Content>{lastModified}</Popover.Content>
+                    <Popover id={`popover-hashCount${privacyGroupId}`}>
+                      <Popover.Title as="h3">Match Count</Popover.Title>
+                      <Popover.Content>{matchCount}</Popover.Content>
                     </Popover>
                   }>
-                  <Button variant="info">Last Modified Time</Button>
-                </OverlayTrigger>
+                  <Button variant="info">Match Count</Button>
+                </OverlayTrigger>{' '}
               </div>
               <Form.Switch
                 onChange={onSwitchFetcherActive}
@@ -179,7 +179,7 @@ ThreatExchangePrivacyGroupCard.propTypes = {
   description: PropTypes.string.isRequired,
   writeBack: PropTypes.bool.isRequired,
   hashCount: PropTypes.number.isRequired,
-  lastModified: PropTypes.string.isRequired,
+  matchCount: PropTypes.number.isRequired,
   onSave: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
 };
