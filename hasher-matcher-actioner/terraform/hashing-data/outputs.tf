@@ -22,10 +22,3 @@ output "index_folder_info" {
     key         = aws_s3_bucket_object.index.id
   }
 }
-
-output "hma_datastore" {
-  value = {
-    name = aws_dynamodb_table.datastore.id
-    arn  = aws_dynamodb_table.datastore.arn
-  }
-}

@@ -7,7 +7,7 @@ output "bucket_name" {
   value = module.hashing_data.image_folder_info.bucket_name
 }
 output "datastore_name" {
-  value = module.hashing_data.hma_datastore.name
+  value = module.datastore.primary_datastore.name
 }
 output "pdq_file_extension" {
   value = local.pdq_file_extension
