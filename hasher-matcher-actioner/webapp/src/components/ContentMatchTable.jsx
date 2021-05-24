@@ -27,28 +27,26 @@ export default function ContentMatchTable({contentKey}) {
       <Spinner hidden={matchDetails !== null} animation="border" role="status">
         <span className="sr-only">Loading...</span>
       </Spinner>
-      <Toast
-        onClose={() => setShowToast(false)}
-        show={showToast}
-        delay={5000}
-        autohide
-        style={{
-          position: 'absolute',
-          top: 300,
-        }}>
-        <Toast.Header>
-          <strong className="mr-auto">Submitted</strong>
-          <small>Thanks!</small>
-        </Toast.Header>
-        <Toast.Body>
-          Please wait for the requested change to propagate
-        </Toast.Body>
-      </Toast>
+      <div className="feedback-toast-container">
+        <Toast
+          onClose={() => setShowToast(false)}
+          show={showToast}
+          delay={5000}
+          autohide>
+          <Toast.Header>
+            <strong className="mr-auto">Submitted</strong>
+            <small>Thanks!</small>
+          </Toast.Header>
+          <Toast.Body>
+            Please wait for the requested change to propagate
+          </Toast.Body>
+        </Toast>
+      </div>
       <Collapse in={matchDetails !== null}>
         <Row>
           <Col md={12}>
             <h3>Matches</h3>
-            <Table responsive className="mt-4" title="Matches">
+            <Table responsive className="mt-2" title="Matches">
               <thead>
                 <tr>
                   <th>ID</th>
