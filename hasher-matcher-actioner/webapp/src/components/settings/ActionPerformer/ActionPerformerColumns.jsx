@@ -28,7 +28,7 @@ export default function ActionPerformerColumns({
 
         <div hidden={!editing}>
           <Form>
-            <Form.Group controlId={name}>
+            <Form.Group>
               <Form.Label>Action Name</Form.Label>
               <Form.Control
                 type="text"
