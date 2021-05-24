@@ -20,11 +20,11 @@ export default function Upload() {
     <FixedWidthCenterAlignedLayout title="Upload">
       <Row className="mt-3" float>
         <Col md={6}>
-          Checkout WIP{' '}
+          The{' '}
           <Link as="Button" to="/submit">
             Submit Page
           </Link>{' '}
-          that will soon replace this one!
+          has replaced this one.
         </Col>
       </Row>
       <Row className="mt-3">

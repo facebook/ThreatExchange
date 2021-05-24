@@ -64,21 +64,19 @@ class InitUploadRequestBody(DictParseable):
         return cls(d["content_id"], d["file_type"])
 
 
-# TODO use enum in storage class
 class SubmissionType(Enum):
-    UPLOAD = "Direct Upload"
-    URL = "URL"
-    RAW = "Raw Value (example only)"
-    S3_OBJECT = "S3 Object (example only)"
+    POST_URL_UPLOAD = "Upload"
+    DIRECT_UPLOAD = "Direct Upload (~faster but only works for images < 3.5MB)"
+    FROM_URL = "From URL"
 
 
 @dataclass
 class SubmitContentRequestBody(DictParseable):
-    submission_type: str  # TODO Enum
+    submission_type: str  # Enum SubmissionType names
     content_id: str
-    content_type: str  # TODO Enum
-    content_ref: t.Union[str, bytes]
-    metadata: t.Optional[t.List]
+    content_type: str  # Only photo supported
+    content_bytes_url_or_file_type: t.Union[str, bytes]
+    additional_fields: t.Optional[t.List]
 
     @classmethod
     def from_dict(cls, d):
@@ -87,8 +85,8 @@ class SubmitContentRequestBody(DictParseable):
             d["submission_type"],
             d["content_id"],
             d["content_type"],
-            d["content_ref"],
-            d["metadata"],
+            d["content_bytes_url_or_file_type"],
+            d["additional_fields"],
         )
 
 
@@ -123,11 +121,13 @@ def record_content_submission(
     # TODO add a confirm overwrite path for this
     submit_time = datetime.datetime.now()
     ContentObject(
-        content_id=request.content_id,
-        content_type="PHOTO",
+        content_id=f"{image_folder_key}{request.content_id}",
+        content_type=request.content_type or "PHOTO",
         content_ref=f"{image_folder_key}{request.content_id}",  # raw bytes + tmp urls are a bad idea atm, assume s3 object for now
         content_ref_type=request.submission_type,
-        additional_fields=set(request.metadata) if request.metadata else set(),
+        additional_fields=set(request.additional_fields)
+        if request.additional_fields
+        else set(),
         submission_times=[submit_time],  # Note: custom write_to_table impl appends.
         created_at=submit_time,
         updated_at=submit_time,
@@ -147,28 +147,81 @@ def get_submit_api(
     # The documentation below expects prefix to be '/submit/'
     submit_api = bottle.Bottle()
 
-    @submit_api.post("/", apply=[jsoninator(SubmitContentRequestBody)])
-    def submit(
+    # Set of helpers that could be split into there own submit endpoints depending on longterm design choices
+
+    def direct_upload(
         request: SubmitContentRequestBody,
     ) -> t.Union[SubmitContentResponse, SubmitContentError]:
         """
-        Endpoint to allow for the general submission of content to the system
+        Direct transfer of bits to system's s3 bucket
         """
+        fileName = request.content_id
+        fileContents = base64.b64decode(request.content_bytes_url_or_file_type)
 
-        assert isinstance(request, SubmitContentRequestBody)
-        logger.debug(f"Content Submit Request Received {request.content_id}")
+        # We want to record the submission before triggering and processing on
+        # the content itself therefore we write to dynamo before s3
+        record_content_submission(dynamodb_table, image_folder_key, request)
 
-        if request.submission_type == SubmissionType.UPLOAD.name:
-            fileName = request.content_id
-            fileContents = base64.b64decode(request.content_ref)
+        # TODO a whole bunch more validation and error checking...
+        s3_client.put_object(
+            Body=fileContents,
+            Bucket=image_bucket_key,
+            Key=f"{image_folder_key}{fileName}",
+        )
 
-            # We want to record the submission before triggering and processing on
+        return SubmitContentResponse(
+            content_id=request.content_id, submit_successful=True
+        )
+
+    def post_url_upload(
+        request: SubmitContentRequestBody,
+    ) -> t.Union[InitUploadResponse, SubmitContentError]:
+        """
+        Submission of content to the system's s3 bucket by providing a post url to client
+        """
+        # TODO error checking on if key already exist etc.
+        presigned_url = create_presigned_put_url(
+            bucket_name=image_bucket_key,
+            object_name=f"{image_folder_key}{request.content_id}",
+            file_type=request.content_bytes_url_or_file_type,
+        )
+
+        if presigned_url:
+            record_content_submission(dynamodb_table, image_folder_key, request)
+            return InitUploadResponse(
+                content_id=request.content_id,
+                file_type=str(request.content_bytes_url_or_file_type),
+                presigned_url=presigned_url,
+            )
+
+        bottle.response.status = 400
+        return SubmitContentError(
+            content_id=request.content_id,
+            message="not yet supported",
+        )
+
+    def from_url(
+        request: SubmitContentRequestBody,
+    ) -> t.Union[SubmitContentResponse, SubmitContentError]:
+        """
+        Submission via a url to content. Current behavior copies content into the system's s3 bucket.
+        """
+        fileName = request.content_id
+        url = request.content_bytes_url_or_file_type
+        response = requests.get(url)
+        # TODO better checks that the URL actually worked...
+        if response and response.content:
+            # TODO a whole bunch more validation and error checking...
+
+            # Again, We want to record the submission before triggering and processing on
             # the content itself therefore we write to dynamo before s3
             record_content_submission(dynamodb_table, image_folder_key, request)
 
-            # TODO a whole bunch more validation and error checking...
+            # Right now this makes a local copy in s3 but future changes to
+            # pdq_hasher should allow us to avoid storing to our own s3 bucket
+            # (or possibly give the api/user the option)
             s3_client.put_object(
-                Body=fileContents,
+                Body=response.content,
                 Bucket=image_bucket_key,
                 Key=f"{image_folder_key}{fileName}",
             )
@@ -176,36 +229,30 @@ def get_submit_api(
             return SubmitContentResponse(
                 content_id=request.content_id, submit_successful=True
             )
-        elif request.submission_type == SubmissionType.URL.name:
-            fileName = request.content_id
-            url = request.content_ref
-            response = requests.get(url)
-            # TODO better checks that the URL actually worked...
-            if response and response.content:
-                # TODO a whole bunch more validation and error checking...
+        else:
+            bottle.response.status = 400
+            return SubmitContentError(
+                content_id=request.content_id,
+                message="url submitted could not be read from",
+            )
 
-                # Again, We want to record the submission before triggering and processing on
-                # the content itself therefore we write to dynamo before s3
-                record_content_submission(dynamodb_table, image_folder_key, request)
+    @submit_api.post("/", apply=[jsoninator(SubmitContentRequestBody)])
+    def submit(
+        request: SubmitContentRequestBody,
+    ) -> t.Union[SubmitContentResponse, InitUploadResponse, SubmitContentError]:
+        """
+        Endpoint to allow for the general submission of content to the system
+        """
 
-                # Right now this makes a local copy in s3 but future changes to
-                # pdq_hasher should allow us to avoid storing to our own s3 bucket
-                # (or possibly give the api/user the option)
-                s3_client.put_object(
-                    Body=response.content,
-                    Bucket=image_bucket_key,
-                    Key=f"{image_folder_key}{fileName}",
-                )
+        assert isinstance(request, SubmitContentRequestBody)
+        logger.debug(f"Content Submit Request Received {request.content_id}")
 
-                return SubmitContentResponse(
-                    content_id=request.content_id, submit_successful=True
-                )
-            else:
-                bottle.response.status = 400
-                return SubmitContentError(
-                    content_id=request.content_id,
-                    message="url submitted could not be read from",
-                )
+        if request.submission_type == SubmissionType.DIRECT_UPLOAD.name:
+            return direct_upload(request)
+        elif request.submission_type == SubmissionType.POST_URL_UPLOAD.name:
+            return post_url_upload(request)
+        elif request.submission_type == SubmissionType.FROM_URL.name:
+            return from_url(request)
         else:
             # Other possible submission types are not supported so just echo content_id for testing
             bottle.response.status = 422
@@ -219,7 +266,7 @@ def get_submit_api(
         request: InitUploadRequestBody,
     ) -> t.Union[InitUploadResponse, SubmitContentError]:
         """
-        TODO Endpoint to provide requester with presigned url to upload a photo
+        Endpoint to provide requester with presigned url to upload a photo
         """
 
         # TODO error checking on if key already exist etc.

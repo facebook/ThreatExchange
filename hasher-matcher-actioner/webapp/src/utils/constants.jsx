@@ -20,10 +20,9 @@ export const PENDING_OPINION_CHANGE = Object.freeze({
 
 // Corseponds  SubmissionType in hmalib/api/submit.py
 export const SUBMISSION_TYPE = Object.freeze({
-  UPLOAD: 'Direct Upload',
-  URL: 'URL',
-  RAW: 'Raw Value (example only)',
-  S3_OBJECT: 'S3 Object (example only)',
+  POST_URL_UPLOAD: 'Upload',
+  DIRECT_UPLOAD: 'Direct Upload (~faster but only works for images < 3.5MB)',
+  FROM_URL: 'From URL',
 });
 
 // Matchtes MetricTimePeriod in hmalib/metrics/query.py

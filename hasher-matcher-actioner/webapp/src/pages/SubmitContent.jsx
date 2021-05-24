@@ -14,14 +14,17 @@ import {
 } from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 
-import {submitContent, submitContentUpload} from '../Api';
+import {
+  submitContent,
+  submitContentDirectUpload,
+  submitContentPostURLUpload,
+} from '../Api';
 import {SUBMISSION_TYPE} from '../utils/constants';
 
 import {
-  ContentIdAndTypeField,
+  ContentUniqueIdField,
   PhotoUploadField,
-  OptionalMetadataField,
-  NotYetSupportedField,
+  OptionalAdditionalFields,
 } from '../components/SubmitContentFields';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
@@ -29,14 +32,14 @@ const FORM_DEFAULTS = {
   submissionType: undefined,
   contentId: undefined,
   contentType: 'PHOTO',
-  contentRef: undefined,
+  content: undefined,
 };
 
 export default function SubmitContent() {
   const [submitting, setSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState(undefined);
   const [submissionType, setSubmissionType] = useState('');
-  const [submissionMetadata, setSubmissionMetadata] = useState({});
+  const [additionalFields, setAdditionalFields] = useState({});
   const [inputs, setInputs] = useState(FORM_DEFAULTS);
 
   // for most input changes we only need to take the input name and store the event value
@@ -64,9 +67,9 @@ export default function SubmitContent() {
     }));
   };
 
-  const packageMetadata = () => {
+  const packageAdditionalFields = () => {
     const entries = [];
-    Object.values(submissionMetadata).forEach(entry =>
+    Object.values(additionalFields).forEach(entry =>
       // store key:value for now to avoid collisions/overwrite of repeats
       // exact extra additional fields spec should be established in documentation
       entries.push(`${entry.key}:${entry.value}`),
@@ -77,13 +80,24 @@ export default function SubmitContent() {
   const handleSubmit = event => {
     event.preventDefault();
     setSubmitting(true);
-    if (inputs.submissionType === 'UPLOAD') {
-      submitContentUpload(
+    if (inputs.submissionType === 'DIRECT_UPLOAD') {
+      submitContentDirectUpload(
         inputs.submissionType,
         inputs.contentId,
         inputs.contentType,
-        inputs.contentRef.raw,
-        packageMetadata(),
+        inputs.content.raw,
+        packageAdditionalFields(),
+      ).then(() => {
+        setSubmitting(false);
+        setSubmittedId(inputs.contentId);
+      });
+    } else if (inputs.submissionType === 'POST_URL_UPLOAD') {
+      submitContentPostURLUpload(
+        inputs.submissionType,
+        inputs.contentId,
+        inputs.contentType,
+        inputs.content.raw,
+        packageAdditionalFields(),
       ).then(() => {
         setSubmitting(false);
         setSubmittedId(inputs.contentId);
@@ -93,8 +107,8 @@ export default function SubmitContent() {
         inputs.submissionType,
         inputs.contentId,
         inputs.contentType,
-        inputs.contentRef,
-        packageMetadata(),
+        inputs.content,
+        packageAdditionalFields(),
       ).then(() => {
         setSubmitting(false);
         setSubmittedId(inputs.contentId);
@@ -110,7 +124,7 @@ export default function SubmitContent() {
             <p>Provide content to the HMA system to match against.</p>
             <p>
               Currently only <b>images</b> using the submisson type{' '}
-              <b>Direct Upload</b> or <b>URL</b> are supported.
+              <b>Upload</b> or <b>URL</b> are supported.{' '}
             </p>
           </Alert>
 
@@ -139,22 +153,22 @@ export default function SubmitContent() {
               </Form.Control>
             </Form.Group>
 
-            <Form.Group className="mx-4">
+            <Form.Group>
               <Form.Row>
-                {submissionType === SUBMISSION_TYPE.UPLOAD && (
+                {submissionType === SUBMISSION_TYPE.DIRECT_UPLOAD && (
                   <PhotoUploadField
                     inputs={inputs}
                     handleInputChangeUpload={handleInputChangeUpload}
                   />
                 )}
 
-                {submissionType === SUBMISSION_TYPE.URL && (
+                {submissionType === SUBMISSION_TYPE.FROM_URL && (
                   <Form.Group>
                     <Form.Label>Provide a URL to the content</Form.Label>
                     <Form.Control
                       onChange={handleInputChange}
-                      name="contentRef"
-                      placeholder="presigned url"
+                      name="content"
+                      placeholder="url to content"
                       required
                     />
                     <Form.Text className="text-muted mt-0">
@@ -163,27 +177,20 @@ export default function SubmitContent() {
                   </Form.Group>
                 )}
 
-                {submissionType === SUBMISSION_TYPE.RAW && (
-                  <NotYetSupportedField
-                    label="Provide content as raw string"
-                    handleInputChange={handleInputChange}
-                  />
-                )}
-
-                {submissionType === SUBMISSION_TYPE.S3_OBJECT && (
-                  <NotYetSupportedField
-                    label="Existing S3 Object Name"
-                    handleInputChange={handleInputChange}
+                {submissionType === SUBMISSION_TYPE.POST_URL_UPLOAD && (
+                  <PhotoUploadField
+                    inputs={inputs}
+                    handleInputChangeUpload={handleInputChangeUpload}
                   />
                 )}
               </Form.Row>
-              <ContentIdAndTypeField
+              <ContentUniqueIdField
                 inputs={inputs}
                 handleInputChange={handleInputChange}
               />
-              <OptionalMetadataField
-                submissionMetadata={submissionMetadata}
-                setSubmissionMetadata={setSubmissionMetadata}
+              <OptionalAdditionalFields
+                additionalFields={additionalFields}
+                setAdditionalFields={setAdditionalFields}
               />
               <Form.Group as={Row}>
                 <Button

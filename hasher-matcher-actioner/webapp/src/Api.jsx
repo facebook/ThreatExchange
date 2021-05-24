@@ -139,24 +139,50 @@ export async function submitContent(
   submissionType,
   contentId,
   contentType,
-  contentRef,
-  metadata,
+  content,
+  additionalFields,
 ) {
   return apiPost('/submit/', {
     submission_type: submissionType,
     content_id: contentId,
     content_type: contentType,
-    content_ref: contentRef,
-    metadata,
+    content_bytes_url_or_file_type: content,
+    additional_fields: additionalFields,
   });
 }
 
-export async function submitContentUpload(
+export async function submitContentPostURLUpload(
   submissionType,
   contentId,
   contentType,
-  contentRef,
-  metadata,
+  content,
+  additionalFields,
+) {
+  const submitResponse = await apiPost('/submit/', {
+    submission_type: submissionType,
+    content_id: contentId,
+    content_type: contentType,
+    content_bytes_url_or_file_type: content.type,
+    additional_fields: additionalFields,
+  });
+
+  const requestOptions = {
+    method: 'PUT',
+    body: content,
+  };
+
+  // Content object was created. Now the content itself needs to be uploaded to s3
+  // using the post url in the response.
+  const result = await fetch(submitResponse.presigned_url, requestOptions);
+  return result;
+}
+
+export async function submitContentDirectUpload(
+  submissionType,
+  contentId,
+  contentType,
+  content,
+  additionalFields,
 ) {
   const fileReader = new FileReader();
   fileReader.onload = () => {
@@ -165,11 +191,11 @@ export async function submitContentUpload(
       submission_type: submissionType,
       content_id: contentId,
       content_type: contentType,
-      content_ref: fileContentsBase64Encoded,
-      metadata,
+      content_bytes_url_or_file_type: fileContentsBase64Encoded,
+      additional_fields: additionalFields,
     });
   };
-  return fileReader.readAsArrayBuffer(contentRef);
+  return fileReader.readAsArrayBuffer(content);
 }
 
 export function fetchAllDatasets() {
