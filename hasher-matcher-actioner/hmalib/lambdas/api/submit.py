@@ -204,7 +204,7 @@ def get_submit_api(
         request: SubmitContentRequestBody,
     ) -> t.Union[SubmitContentResponse, SubmitContentError]:
         """
-        TODO xyz doctring
+        Submission via a url to content. Current behavior copies content into the system's s3 bucket.
         """
         fileName = request.content_id
         url = request.content_bytes_url_or_file_type
