@@ -174,7 +174,7 @@ ThreatExchangePrivacyGroupCard.propTypes = {
   fetcherActive: PropTypes.bool.isRequired,
   matcherActive: PropTypes.bool.isRequired,
   inUse: PropTypes.bool.isRequired,
-  privacyGroupId: PropTypes.number.isRequired,
+  privacyGroupId: PropTypes.string.isRequired,
   privacyGroupName: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
   writeBack: PropTypes.bool.isRequired,
