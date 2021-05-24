@@ -1,19 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import os
-import traceback
 import bottle
 import boto3
 import json
-import base64
-import datetime
 import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 
-from hmalib import metrics
 from hmalib.common.logging import get_logger
-from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
 
 from .action_rules_api import get_action_rules_api
 from .actions_api import get_actions_api
@@ -71,30 +66,6 @@ def root():
     }
 
 
-@app.get("/signals")
-def signals():
-    """
-    Summary of all signal sources
-    """
-    return {"signals": get_signals()}
-
-
-@app.get("/hash-counts")
-def hash_count():
-    """
-    how many hashes exist in HMA
-    """
-    results = get_signal_hash_count()
-    logger.debug(results)
-    hash_counts = {
-        name.replace(THREAT_EXCHANGE_PDQ_FILE_EXTENSION, "").replace(
-            THREAT_EXCHANGE_DATA_FOLDER, ""
-        ): value
-        for name, value in results.items()
-    }
-    return hash_counts if hash_counts else {}
-
-
 def lambda_handler(event, context):
     """
     root request handler
@@ -112,46 +83,6 @@ class SignalSourceSummary(t.TypedDict):
     name: str
     signals: t.List[SignalSourceType]
     updated_at: str
-
-
-def get_signals() -> t.List[SignalSourceSummary]:
-    """
-    TODO this should be updated to check ThreatExchangeConfig
-    based on what it finds in the config it should then do a s3 select on the files
-    """
-    signals = []
-    counts = get_signal_hash_count()
-    for dataset, total in counts.items():
-        if dataset.endswith(THREAT_EXCHANGE_PDQ_FILE_EXTENSION):
-            dataset_name = dataset.replace(
-                THREAT_EXCHANGE_PDQ_FILE_EXTENSION, ""
-            ).replace(THREAT_EXCHANGE_DATA_FOLDER, "")
-            signals.append(
-                SignalSourceSummary(
-                    name=dataset_name,
-                    # TODO remove hardcode and config mapping file extention to type
-                    signals=[SignalSourceType(type="HASH_PDQ", count=total[0])],
-                    updated_at="TODO",
-                )
-            )
-    return signals
-
-
-# TODO this method is expensive some cache or memoization method might be a good idea.
-def get_signal_hash_count() -> t.Dict[str, t.Tuple[int, str]]:
-    s3_config = S3ThreatDataConfig(
-        threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
-        threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
-        threat_exchange_pdq_file_extension=THREAT_EXCHANGE_PDQ_FILE_EXTENSION,
-    )
-    pdq_storage = ThreatExchangeS3PDQAdapter(
-        config=s3_config, metrics_logger=metrics.names.api_hash_count()
-    )
-    pdq_data_files = pdq_storage.load_data()
-    return {
-        file_name: (len(rows), pdq_storage.last_modified[file_name])
-        for file_name, rows in pdq_data_files.items()
-    }
 
 
 app.mount(
@@ -188,7 +119,13 @@ app.mount(
 
 app.mount(
     "/datasets/",
-    get_datasets_api(hma_config_table=HMA_CONFIG_TABLE),
+    get_datasets_api(
+        hma_config_table=HMA_CONFIG_TABLE,
+        datastore_table=dynamodb.Table(DYNAMODB_TABLE),
+        threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
+        threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
+        threat_exchange_pdq_file_extension=THREAT_EXCHANGE_PDQ_FILE_EXTENSION,
+    ),
 )
 
 app.mount("/stats/", get_stats_api(dynamodb_table=dynamodb.Table(DYNAMODB_TABLE)))

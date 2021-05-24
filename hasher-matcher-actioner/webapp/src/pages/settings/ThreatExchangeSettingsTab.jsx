@@ -23,12 +23,10 @@ import {
   syncAllDatasets,
   updateDataset,
   deleteDataset,
-  fetchHashCount,
 } from '../../Api';
 
 export default function ThreatExchangeSettingsTab() {
   const [datasets, setDatasets] = useState([]);
-  const [hashCounts, setHashCount] = useState({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -91,15 +89,14 @@ export default function ThreatExchangeSettingsTab() {
         setShowToast(true);
       });
   };
+
   const refreshDatasets = () => {
     fetchAllDatasets(setLoading(false)).then(response => {
-      fetchHashCount().then(counts => {
-        setHashCount(counts);
-        setLoading(true);
-        setDatasets(response.datasets_response);
-      });
+      setLoading(true);
+      setDatasets(response.threat_exchange_datasets);
     });
   };
+
   useEffect(() => {
     refreshDatasets();
   }, []);
@@ -159,16 +156,8 @@ export default function ThreatExchangeSettingsTab() {
                   inUse={dataset.in_use}
                   privacyGroupId={dataset.privacy_group_id}
                   writeBack={dataset.write_back}
-                  hashCount={
-                    hashCounts[dataset.privacy_group_id]
-                      ? hashCounts[dataset.privacy_group_id][0]
-                      : 'Not yet calculated'
-                  }
-                  lastModified={
-                    hashCounts[dataset.privacy_group_id]
-                      ? hashCounts[dataset.privacy_group_id][1]
-                      : 'Unkown'
-                  }
+                  hashCount={dataset.hash_count}
+                  matchCount={dataset.match_count}
                   onSave={onPrivacyGroupSave}
                   onDelete={onPrivacyGroupDelete}
                 />
