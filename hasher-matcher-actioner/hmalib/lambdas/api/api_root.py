@@ -66,14 +66,6 @@ def root():
     }
 
 
-@app.get("/signals")
-def signals():
-    """
-    Summary of all signal sources
-    """
-    return {"signals": get_signals()}
-
-
 def lambda_handler(event, context):
     """
     root request handler
