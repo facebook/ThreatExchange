@@ -6,23 +6,18 @@ import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
 import {Col, Row, Table, Button} from 'react-bootstrap';
 
-import {
-  fetchHash,
-  fetchImage,
-  fetchContentActionHistory,
-  fetchContentDetails,
-} from '../Api';
+import {fetchHash, fetchImage, fetchContentDetails} from '../Api';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 import {BlurUntilHoverImage} from '../utils/ImageUtils';
 import ContentMatchTable from '../components/ContentMatchTable';
+import ActionHistoryTable from '../components/ActionHistoryTable';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
 export default function ContentDetails() {
   const history = useHistory();
   const {id} = useParams();
   const [contentDetails, setContentDetails] = useState(null);
-  const [actionHistory, setActionHistory] = useState([]);
   const [hashDetails, setHashDetails] = useState(null);
   const [img, setImage] = useState(null);
 
@@ -35,15 +30,6 @@ export default function ContentDetails() {
   useEffect(() => {
     fetchImage(id).then(result => {
       setImage(URL.createObjectURL(result));
-    });
-  }, []);
-
-  // TODO fetch actions once endpoint exists
-  useEffect(() => {
-    fetchContentActionHistory(id).then(result => {
-      if (result && result.action_history) {
-        setActionHistory(result.action_history);
-      }
     });
   }, []);
 
@@ -90,20 +76,6 @@ export default function ContentDetails() {
                     : 'No additional fields provided'}
                 </td>
               </tr>
-              <td className="pb-0" colSpan={2}>
-                <h4>Action History</h4>
-              </td>
-              <tr>
-                <td>Record:</td>
-                <td>
-                  {actionHistory.length
-                    ? actionHistory[0].action_label
-                    : 'No actions performed'}
-                </td>
-              </tr>
-              <td className="pb-0" colSpan={2}>
-                <h4>Hash Details</h4>
-              </td>
               <tr>
                 <td>Content Hash:</td>
                 <CopyableHashField
@@ -124,6 +96,7 @@ export default function ContentDetails() {
               </tr>
             </tbody>
           </Table>
+          <ActionHistoryTable contentKey={id} />
         </Col>
         <Col className="pt-4" md={6}>
           <BlurUntilHoverImage src={img} />
