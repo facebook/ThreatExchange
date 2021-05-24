@@ -105,6 +105,11 @@ export default function ThreatExchangeSettingsTab() {
   }, []);
   return (
     <>
+      <div className="feedback-toast-container">
+        <Toast onClose={() => setShowToast(false)} show={showToast} autohide>
+          <Toast.Body>{toastBody}</Toast.Body>
+        </Toast>
+      </div>
       <Card.Header>
         <Row className="mt-3">
           <h2 className="mt-2">ThreatExchange Privacy Groups </h2>
@@ -138,9 +143,6 @@ export default function ThreatExchangeSettingsTab() {
         </Row>
       </Card.Header>
       <Card.Body>
-        <Toast onClose={() => setShowToast(false)} show={showToast} autohide>
-          <Toast.Body>{toastBody}</Toast.Body>
-        </Toast>
         <Row className="mt-3">
           <Spinner hidden={loading} animation="border" role="status">
             <span className="sr-only">Loading...</span>
