@@ -18,8 +18,8 @@ export default function ActionPerformerRows({
 }) {
   const [editing, setEditing] = useState(edit);
   const [
-    showDeleteActionRuleConfirmation,
-    setShowDeleteActionRuleConfirmation,
+    showDeleteActionConfirmation,
+    setShowDeleteActionConfirmation,
   ] = useState(false);
   const [updatedAction, setUpdatedAction] = useState({
     name,
@@ -58,7 +58,7 @@ export default function ActionPerformerRows({
           <Button
             variant="secondary"
             className="table-action-button"
-            onClick={() => setShowDeleteActionRuleConfirmation(true)}>
+            onClick={() => setShowDeleteActionConfirmation(true)}>
             <ion-icon
               name="trash-bin"
               size="large"
@@ -66,8 +66,8 @@ export default function ActionPerformerRows({
             />
           </Button>
           <Modal
-            show={showDeleteActionRuleConfirmation}
-            onHide={() => setShowDeleteActionRuleConfirmation(false)}>
+            show={showDeleteActionConfirmation}
+            onHide={() => setShowDeleteActionConfirmation(false)}>
             <Modal.Header closeButton>
               <Modal.Title>Confirm Action Delete</Modal.Title>
             </Modal.Header>
@@ -80,7 +80,7 @@ export default function ActionPerformerRows({
             <Modal.Footer>
               <Button
                 variant="secondary"
-                onClick={() => setShowDeleteActionRuleConfirmation(false)}>
+                onClick={() => setShowDeleteActionConfirmation(false)}>
                 Cancel
               </Button>
               <Button variant="primary" onClick={() => onDelete(name)}>
@@ -95,7 +95,6 @@ export default function ActionPerformerRows({
           type={updatedAction.config_subtype}
           params={updatedAction.fields}
           editing={false}
-          create={false}
           onChange={onUpdatedActionChange}
         />
       </tr>
@@ -105,7 +104,7 @@ export default function ActionPerformerRows({
             variant="outline-primary"
             className="mb-2 table-action-button"
             onClick={() => {
-              onSave(updatedAction);
+              onSave({name, type, updatedAction});
               setEditing(false);
             }}>
             <ion-icon
@@ -129,7 +128,6 @@ export default function ActionPerformerRows({
           type={updatedAction.config_subtype}
           params={updatedAction.fields}
           editing
-          create={false}
           onChange={onUpdatedActionChange}
         />
       </tr>
