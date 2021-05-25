@@ -10,7 +10,7 @@ from hmalib.metrics.cloudwatch import AWSCloudWatchReporter
 Does not really have tests, but more of a demo. :)
 
 Run with
-$ MEASURE_PERFORMANCE=1 PYTHONPATH=. python tests/scripts/gen-fake-cloudwatch-metrics.py
+$ MEASURE_PERFORMANCE=1 PYTHONPATH=. python scripts/gen-fake-cloudwatch-metrics.py
 """
 
 
