@@ -43,12 +43,20 @@ def _send_single_submission_url(api_url: str, filepath: str, metadata: t.Dict) -
     Submit a single file by requesting a presigned url and return the time it took in ms.
     TODO: remove repeated code between this and _send_single_submission_b64
     """
-    submission_path = f"{api_url}submit/init-upload/"
+    submission_path = f"{api_url}submit/"
     file_name = os.path.split(filepath)[-1]
     start_time = perf_counter()
 
     with open(filepath, "rb") as f:
         submission_content_id = f"storm_url{SUBMISSION_SEPARATOR}{datetime.date.today().isoformat()}{SUBMISSION_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
+
+        payload = {
+            "submission_type": "POST_URL_UPLOAD",
+            "content_id": submission_content_id,
+            "content_type": "PHOTO",
+            "content_bytes_url_or_file_type": "image/jpeg",
+            "additional_fields": [],
+        }
 
         payload = {
             "content_id": submission_content_id,
@@ -81,11 +89,11 @@ def _send_single_submission_b64(api_url: str, filepath: str, metadata: t.Dict) -
 
     with open(filepath, "rb") as f:
         payload = {
-            "submission_type": "UPLOAD",
+            "submission_type": "DIRECT_UPLOAD",
             "content_id": f"storm{SUBMISSION_SEPARATOR}{datetime.date.today().isoformat()}{SUBMISSION_SEPARATOR}{str(uuid.uuid4())}-{file_name}",
-            "content_type": "photo",
-            "content_ref": str(base64.b64encode(f.read()), "utf-8"),
-            "metadata": [],
+            "content_type": "PHOTO",
+            "content_bytes_url_or_file_type": str(base64.b64encode(f.read()), "utf-8"),
+            "additional_fields": [],
         }
 
         req = request.Request(submission_path, method="POST")
