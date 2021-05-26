@@ -1,0 +1,72 @@
+#! /usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+"""
+Helper script for a developer to get an API token from cognito based on args
+See 
+https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-authentication-flow.html#amazon-cognito-user-pools-admin-authentication-flow
+
+Sample Usage:
+```
+$ export TMP_TOKEN=$(./scripts/get_auth_token) #if you elect to set values in the file
+"""
+
+import argparse
+import json
+import tempfile
+import subprocess
+import boto3
+
+client = boto3.client("cognito-idp")
+
+
+# Defaults (often it is easier to edit the script than provide the args)
+USERNAME = ""
+PWD = "-"
+POOL_ID = ""
+CLIENT_ID = ""
+
+
+def get_token(
+    username: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+) -> str:
+    resp = client.admin_initiate_auth(
+        AuthFlow="ADMIN_USER_PASSWORD_AUTH",
+        AuthParameters={"USERNAME": username, "PASSWORD": pwd},
+        UserPoolId=pool_id,
+        ClientId=client_id,
+    )
+    return resp["AuthenticationResult"]["IdToken"]
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Request a token for the storm scripts or other tests of the API. Rquires AWS account credentials be present locally. Additionally the UserPoolId must allow 'ADMIN_USER_PASSWORD_AUTH'"
+    )
+    parser.add_argument(
+        "--username",
+        help="username of user in pool",
+        default=USERNAME,
+    )
+    parser.add_argument(
+        "--pwd",
+        help="password of user in pool",
+        default=PWD,
+    )
+    parser.add_argument(
+        "--pool_id",
+        help="id of the user pool",
+        default=POOL_ID,
+    )
+    parser.add_argument(
+        "--client_id",
+        help="id of app client for the pool",
+        default=CLIENT_ID,
+    )
+
+    args = parser.parse_args()
+
+    print(get_token(args.username, args.pwd, args.pool_id, args.client_id))

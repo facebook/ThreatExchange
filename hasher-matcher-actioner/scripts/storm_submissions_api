@@ -31,14 +31,16 @@ from urllib import request
 import concurrent.futures
 from time import perf_counter
 
-STOLEN_JWT_TOKEN = "<STOLEN_JWT_TOKEN>"
+TOKEN = "<STOLEN_JWT_TOKEN>"
 
 # "/" does not work with react router preventing the content submission details from rendering.
 # However it can be used here for easier clean up between storms that do not need the UI.
 SUBMISSION_SEPARATOR = "-"
 
 
-def _send_single_submission_url(api_url: str, filepath: str, metadata: t.Dict) -> int:
+def _send_single_submission_url(
+    api_url: str, filepath: str, token: str, metadata: t.Dict
+) -> int:
     """
     Submit a single file by requesting a presigned url and return the time it took in ms.
     TODO: remove repeated code between this and _send_single_submission_b64
@@ -58,18 +60,12 @@ def _send_single_submission_url(api_url: str, filepath: str, metadata: t.Dict) -
             "additional_fields": [],
         }
 
-        payload = {
-            "content_id": submission_content_id,
-            "file_type": "image/jpeg",
-        }
-
         get_signed_url_req = request.Request(submission_path, method="POST")
         get_signed_url_req.add_header("Content-Type", "application/json")
-        get_signed_url_req.add_header("Authorization", STOLEN_JWT_TOKEN)
-        payload = json.dumps(payload)
-        payload = payload.encode()
+        get_signed_url_req.add_header("Authorization", token)
+        payload_bytes = json.dumps(payload).encode()
 
-        response = request.urlopen(get_signed_url_req, data=payload)
+        response = request.urlopen(get_signed_url_req, data=payload_bytes)
         response = json.loads(response.read().decode("utf-8"))
         put_response = requests.put(
             response["presigned_url"], data=f, headers={"content-type": "image/jpeg"}
@@ -79,7 +75,9 @@ def _send_single_submission_url(api_url: str, filepath: str, metadata: t.Dict) -
     return int((perf_counter() - start_time) * 1000)
 
 
-def _send_single_submission_b64(api_url: str, filepath: str, metadata: t.Dict) -> int:
+def _send_single_submission_b64(
+    api_url: str, filepath: str, token: str, metadata: t.Dict
+) -> int:
     """
     Submit a single file and return the time it took in ms.
     """
@@ -98,11 +96,10 @@ def _send_single_submission_b64(api_url: str, filepath: str, metadata: t.Dict) -
 
         req = request.Request(submission_path, method="POST")
         req.add_header("Content-Type", "application/json")
-        req.add_header("Authorization", STOLEN_JWT_TOKEN)
-        payload = json.dumps(payload)
-        payload = payload.encode()
+        req.add_header("Authorization", token)
+        payload_bytes = json.dumps(payload).encode()
 
-        r = request.urlopen(req, data=payload)
+        response = request.urlopen(req, data=payload_bytes)
 
     # convert seconds to miliseconds.
     return int((perf_counter() - start_time) * 1000)
@@ -112,6 +109,7 @@ def unleash_storm(
     api_url: str,
     filepath: str,
     msg_count: int,
+    token: str,
     url_mode: bool,
 ):
     sent_message_count = 0
@@ -126,7 +124,9 @@ def unleash_storm(
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         while sent_message_count < msg_count:
             jobs.append(
-                executor.submit(send_single_submission_func, api_url, filepath, {})
+                executor.submit(
+                    send_single_submission_func, api_url, filepath, token, {}
+                )
             )
 
             sent_message_count += 1
@@ -164,13 +164,16 @@ if __name__ == "__main__":
         help="Approximately how many times do we want to send this photo?",
     )
     parser.add_argument(
+        "--token",
+        help="token required to access the API",
+        default=TOKEN,
+    )
+    parser.add_argument(
         "--url_mode",
         action="store_true",
         help="Submit using presign putObject urls instead of base64 encoding json",
     )
 
     args = parser.parse_args()
-
-    api_url = args.api_url
-    file = args.file
-    unleash_storm(args.api_url, args.file, args.count, args.url_mode)
+    print(args.token)
+    # unleash_storm(args.api_url, args.file, args.count, args.token, args.url_mode)
