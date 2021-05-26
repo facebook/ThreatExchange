@@ -82,6 +82,8 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
         Update an action url and headers
         """
         if old_name != request.name or old_config_sub_stype != request.config_subtype:
+            # The name field can't be updated because it is the primary key
+            # The config sub type can't be updated because it is the config class level param
             delete_action(old_name)
             create_action(request)
         else:

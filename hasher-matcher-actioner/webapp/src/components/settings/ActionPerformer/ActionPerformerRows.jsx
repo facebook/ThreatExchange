@@ -21,6 +21,10 @@ export default function ActionPerformerRows({
     showDeleteActionConfirmation,
     setShowDeleteActionConfirmation,
   ] = useState(false);
+  const [
+    showUpdateActionConfirmation,
+    setShowUpdateActionConfirmation,
+  ] = useState(false);
   const [updatedAction, setUpdatedAction] = useState({
     name,
     config_subtype: type,
@@ -104,8 +108,7 @@ export default function ActionPerformerRows({
             variant="outline-primary"
             className="mb-2 table-action-button"
             onClick={() => {
-              onSave({name, type, updatedAction});
-              setEditing(false);
+              setShowUpdateActionConfirmation(true);
             }}>
             <ion-icon
               name="checkmark"
@@ -122,6 +125,35 @@ export default function ActionPerformerRows({
             }}>
             <ion-icon name="close" size="large" className="ion-icon-white" />
           </Button>
+          <Modal
+            show={showUpdateActionConfirmation}
+            onHide={() => setShowUpdateActionConfirmation(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Action Update</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <p>
+                Please confirm you want to update the action named{' '}
+                <strong>{name}</strong>.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => setShowUpdateActionConfirmation(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setEditing(false);
+                  onSave({name, type, updatedAction});
+                  setShowUpdateActionConfirmation(false);
+                }}>
+                Yes, Update This Action
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </td>
         <ActionPerformerColumns
           name={updatedAction.name}
