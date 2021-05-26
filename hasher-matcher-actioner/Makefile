@@ -34,34 +34,6 @@ dev_create_instance: dev_create_configs upload_docker
 	cd terraform/ && terraform init -var "prefix=${USER}"
 	cd terraform/ && terraform apply -var "prefix=${USER}"
 
-
-# TODO There is probably a better way to do this
-dev_test_instance:
-	TF_DYNAMODB_TABLE=$(call shell-or-die, cd terraform/ && terraform output -json datastore_name) \
-	TF_BUCKET_NAME=$(call shell-or-die, cd terraform/ &&  terraform output -json bucket_name) \
-	TF_PREFIX=$(call shell-or-die, cd terraform/ &&  terraform output -json prefix) \
-	TF_PDQ_FILE_EXTENSION=$(call shell-or-die, cd terraform/ &&  terraform output -json pdq_file_extension) \
-	TF_TE_DATA_FOLDER=$(call shell-or-die, cd terraform/ &&  terraform output -json te_data_folder) \
-	TF_IMAGE_FOLDER_KEY=$(call shell-or-die, cd terraform/ &&  terraform output -json image_folder_key) \
-	./tests/scripts/check_deployed_instance.py
-
-# TODO: This is broken after #552
-# dev_upload_test_signal:
-# 	@TF_BUCKET_NAME=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json bucket_name | tr -d '"') && \
-# 	TF_PDQ_FILE_EXTENSION=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json pdq_file_extension | tr -d '"') && \
-# 	TF_TE_DATA_FOLDER=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json te_data_folder | tr -d '"') && \
-# 	echo "Upload sample signals? [y/N] This will copy over $${TF_TE_DATA_FOLDER}sample_data$${TF_PDQ_FILE_EXTENSION} in $${TF_BUCKET_NAME}" && read ans && [ $${ans:-N} = y ] && \
-# 	aws s3 cp sample_data/pdq.csv s3://$${TF_BUCKET_NAME}/$${TF_TE_DATA_FOLDER}sample_data$${TF_PDQ_FILE_EXTENSION}
-
-dev_upload_test_content:
-	@TF_BUCKET_NAME=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json bucket_name | tr -d '"') && \
-	TF_IMAGE_FOLDER_KEY=$(call shell-or-die, set -o pipefail && cd terraform/ &&  terraform output -json image_folder_key | tr -d '"') && \
-	echo "Upload test photo? [y/N]  This will upload an images to $${TF_IMAGE_FOLDER_KEY} in s3 and will likely trigger the hasher (and matcher)" && read ans && [ $${ans:-N} = y ] && \
-	aws s3 cp tests/data/b.jpg s3://$${TF_BUCKET_NAME}/$${TF_IMAGE_FOLDER_KEY}
-
-dev_upload_test_data: dev_upload_test_signal dev_upload_test_content
-
-
 dev_destroy_instance:
 	cd terraform/ && terraform destroy -var "prefix=${USER}"
 
