@@ -253,15 +253,15 @@ export function fetchAllActions() {
 }
 
 export function createAction(newAction) {
-  return apiPost('/actions/', newAction);
+  return apiPost('actions/', newAction);
 }
 
-export function updateAction(updatedAction) {
-  return apiPut('/actions/', updatedAction);
+export function updateAction(name, type, updatedAction) {
+  return apiPut(`actions/${name}/${type}`, updatedAction);
 }
 
-export function deleteAction(key) {
-  return apiDelete(`/actions/${key}`);
+export function deleteAction(name) {
+  return apiDelete(`actions/${name}`);
 }
 
 export function fetchAllActionRules() {

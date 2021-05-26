@@ -12,7 +12,6 @@ export default function WebhookActioner({
   headers,
   webhookType,
   editing,
-  create,
   onChange,
 }) {
   const ActionerTypes = {
@@ -85,32 +84,26 @@ export default function WebhookActioner({
                 }}
               />
               <br />
-              {create ? (
-                <div>
-                  <Form.Label>Webhook Type</Form.Label>
-                  <Form.Text className="text-muted">
-                    {actionerDetails.args.webhookType.description}
-                  </Form.Text>
-                  <Form.Control
-                    as="select"
-                    value={webhookType}
-                    onChange={e => {
-                      onChange('config_subtype', {
-                        config_subtype: e.target.value,
-                      });
-                    }}>
-                    <option value="">Please select one option</option>
-                    <option value="WebhookPostActionPerformer">POST</option>
-                    <option value="WebhookGetActionPerformer">GET</option>
-                    <option value="WebhookPutActionPerformer">PUT</option>
-                    <option value="WebhookDeleteActionPerformer">DELETE</option>
-                  </Form.Control>
-                </div>
-              ) : (
-                <Form.Label>
-                  Webhook Type : {WebhookType[webhookType]}
-                </Form.Label>
-              )}
+              <div>
+                <Form.Label>Webhook Type</Form.Label>
+                <Form.Text className="text-muted">
+                  {actionerDetails.args.webhookType.description}
+                </Form.Text>
+                <Form.Control
+                  as="select"
+                  value={webhookType}
+                  onChange={e => {
+                    onChange('config_subtype', {
+                      config_subtype: e.target.value,
+                    });
+                  }}>
+                  <option value="">Please select one option</option>
+                  <option value="WebhookPostActionPerformer">POST</option>
+                  <option value="WebhookGetActionPerformer">GET</option>
+                  <option value="WebhookPutActionPerformer">PUT</option>
+                  <option value="WebhookDeleteActionPerformer">DELETE</option>
+                </Form.Control>
+              </div>
               <br />
               <Form.Label>Headers</Form.Label>
               <Form.Text className="text-muted">
@@ -135,7 +128,6 @@ WebhookActioner.propTypes = {
   url: PropTypes.string.isRequired,
   headers: PropTypes.string.isRequired,
   editing: PropTypes.bool.isRequired,
-  create: PropTypes.bool.isRequired,
   webhookType: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
 };

@@ -18,8 +18,12 @@ export default function ActionPerformerRows({
 }) {
   const [editing, setEditing] = useState(edit);
   const [
-    showDeleteActionRuleConfirmation,
-    setShowDeleteActionRuleConfirmation,
+    showDeleteActionConfirmation,
+    setShowDeleteActionConfirmation,
+  ] = useState(false);
+  const [
+    showUpdateActionConfirmation,
+    setShowUpdateActionConfirmation,
   ] = useState(false);
   const [updatedAction, setUpdatedAction] = useState({
     name,
@@ -58,7 +62,7 @@ export default function ActionPerformerRows({
           <Button
             variant="secondary"
             className="table-action-button"
-            onClick={() => setShowDeleteActionRuleConfirmation(true)}>
+            onClick={() => setShowDeleteActionConfirmation(true)}>
             <ion-icon
               name="trash-bin"
               size="large"
@@ -66,8 +70,8 @@ export default function ActionPerformerRows({
             />
           </Button>
           <Modal
-            show={showDeleteActionRuleConfirmation}
-            onHide={() => setShowDeleteActionRuleConfirmation(false)}>
+            show={showDeleteActionConfirmation}
+            onHide={() => setShowDeleteActionConfirmation(false)}>
             <Modal.Header closeButton>
               <Modal.Title>Confirm Action Delete</Modal.Title>
             </Modal.Header>
@@ -80,7 +84,7 @@ export default function ActionPerformerRows({
             <Modal.Footer>
               <Button
                 variant="secondary"
-                onClick={() => setShowDeleteActionRuleConfirmation(false)}>
+                onClick={() => setShowDeleteActionConfirmation(false)}>
                 Cancel
               </Button>
               <Button variant="primary" onClick={() => onDelete(name)}>
@@ -95,7 +99,6 @@ export default function ActionPerformerRows({
           type={updatedAction.config_subtype}
           params={updatedAction.fields}
           editing={false}
-          create={false}
           onChange={onUpdatedActionChange}
         />
       </tr>
@@ -105,8 +108,7 @@ export default function ActionPerformerRows({
             variant="outline-primary"
             className="mb-2 table-action-button"
             onClick={() => {
-              onSave(updatedAction);
-              setEditing(false);
+              setShowUpdateActionConfirmation(true);
             }}>
             <ion-icon
               name="checkmark"
@@ -123,13 +125,41 @@ export default function ActionPerformerRows({
             }}>
             <ion-icon name="close" size="large" className="ion-icon-white" />
           </Button>
+          <Modal
+            show={showUpdateActionConfirmation}
+            onHide={() => setShowUpdateActionConfirmation(false)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Confirm Action Update</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <p>
+                Please confirm you want to update the action named{' '}
+                <strong>{name}</strong>.
+              </p>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => setShowUpdateActionConfirmation(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setEditing(false);
+                  onSave({name, type, updatedAction});
+                  setShowUpdateActionConfirmation(false);
+                }}>
+                Yes, Update This Action
+              </Button>
+            </Modal.Footer>
+          </Modal>
         </td>
         <ActionPerformerColumns
           name={updatedAction.name}
           type={updatedAction.config_subtype}
           params={updatedAction.fields}
           editing
-          create={false}
           onChange={onUpdatedActionChange}
         />
       </tr>

@@ -66,10 +66,13 @@ export default function ActionSettingsTab() {
     });
   };
   const onActionUpdate = updatedAction => {
-    updateAction(updatedAction)
+    updateAction(
+      updatedAction.name,
+      updatedAction.type,
+      updatedAction.updatedAction,
+    )
       .then(response => {
         displayToast(response.response);
-        deleteActionUI(updateAction.name);
         refreshActions();
       })
       .catch(() => {
@@ -166,7 +169,6 @@ export default function ActionSettingsTab() {
                   type={newAction.config_subtype}
                   params={newAction.fields}
                   editing
-                  create
                   onChange={onNewActionChange}
                 />
               </tr>

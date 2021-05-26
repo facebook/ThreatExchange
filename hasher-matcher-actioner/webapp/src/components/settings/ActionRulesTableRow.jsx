@@ -55,7 +55,11 @@ export default function ActionRulesTableRow({
     ) {
       return <span>&mdash;</span>;
     }
-    return actions.find(action => action.id === actionId).name;
+    const actionPerformer = actions.find(action => action.id === actionId);
+    if (actionPerformer) {
+      return actionPerformer.name;
+    }
+    return <span>&mdash;</span>;
   };
 
   return (

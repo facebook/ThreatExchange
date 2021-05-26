@@ -4,7 +4,7 @@ import bottle
 import typing as t
 from dataclasses import dataclass, asdict
 from .middleware import jsoninator, JSONifiable, DictParseable
-from hmalib.common.config import HMAConfig, update_config
+from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.actioner_models import ActionPerformer
 
@@ -71,17 +71,28 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
             actions_response=[config.__dict__ for config in action_configs]
         )
 
-    @actions_api.put("/", apply=[jsoninator(CreateUpdateActionRequest)])
-    def update_action(request: CreateUpdateActionRequest) -> UpdateActionResponse:
+    @actions_api.put(
+        "/<old_name>/<old_config_sub_stype>",
+        apply=[jsoninator(CreateUpdateActionRequest)],
+    )
+    def update_action(
+        request: CreateUpdateActionRequest, old_name: str, old_config_sub_stype: str
+    ) -> UpdateActionResponse:
         """
         Update an action url and headers
         """
-        config = ActionPerformer._get_subtypes_by_name()[request.config_subtype].getx(
-            request.name
-        )
-        for key, value in request.fields.items():
-            setattr(config, key, value)
-        hmaconfig.update_config(config)
+        if old_name != request.name or old_config_sub_stype != request.config_subtype:
+            # The name field can't be updated because it is the primary key
+            # The config sub type can't be updated because it is the config class level param
+            delete_action(old_name)
+            create_action(request)
+        else:
+            config = ActionPerformer._get_subtypes_by_name()[
+                request.config_subtype
+            ].getx(request.name)
+            for key, value in request.fields.items():
+                setattr(config, key, value)
+            hmaconfig.update_config(config)
         return UpdateActionResponse(response="The action config is updated.")
 
     @actions_api.post("/", apply=[jsoninator(CreateUpdateActionRequest)])
@@ -95,13 +106,12 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
         hmaconfig.create_config(config)
         return CreateActionResponse(response="The action config is created.")
 
-    @actions_api.delete("/<key>", apply=[jsoninator])
-    def delete_action(key=None) -> DeleteActionResponse:
+    @actions_api.delete("/<name>", apply=[jsoninator])
+    def delete_action(name: str) -> DeleteActionResponse:
         """
         Delete an action
         """
-        config = ActionPerformer.getx(str(key))
-        hmaconfig.delete_config(config)
+        hmaconfig.delete_config_by_type_and_name("ActionPerformer", name)
         return DeleteActionResponse(response="The action config is deleted.")
 
     return actions_api
