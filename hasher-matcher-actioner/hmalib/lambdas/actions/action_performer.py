@@ -59,7 +59,7 @@ def lambda_handler(event, context):
         logger.info("Performing action: action_message = %s", action_message)
 
         if action_performer := ActionPerformer.get(action_message.action_label.value):
-            action_performer.perform_action(match_message)
+            action_performer.perform_action(action_message)
             ActionEvent(
                 content_id=action_message.content_key,
                 performed_at=datetime.datetime.now(),
