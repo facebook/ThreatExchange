@@ -27,6 +27,7 @@ import {timeAgo} from '../utils/DateTimeUtils';
 import ContentMatchPane from '../components/ContentMatchPane';
 import {useQuery} from '../utils/QueryParams';
 import FullWidthLocalScrollingLeftAlignedLayout from './layouts/FullWidthLocalScrollingLeftAlignedLayout';
+import {SeparatorBorder} from '../utils/constants';
 
 export default function Matches() {
   const query = useQuery();
@@ -56,14 +57,21 @@ export default function Matches() {
           {/* Each child of this row spans half the available space dividing into left and right pane. */}
           <Col
             md={6}
-            className="d-flex flex-column justify-content-start h-100 px-0">
+            className="d-flex flex-column justify-content-start h-100 px-0"
+            style={{borderRight: SeparatorBorder}}>
             {/* This column is vertically split into the search bar and the table of search results. */}
+            <div
+              className="flex-grow-0 bg-light px-2"
+              style={{borderBottom: SeparatorBorder}}>
               <MatchListFilters
                 searchInAttribute={searchInAttribute}
                 searchQuery={searchQuery}
               />
             </div>
-            <div className="flex-grow-1" style={{overflowY: 'auto'}}>
+            <div
+              className="flex-grow-1 px-3"
+              // Padding to align with search bar in match filters
+              style={{overflowY: 'auto', overflowX: 'hidden'}}>
               <MatchList
                 selection={selectedContentAndSignalIds}
                 onSelect={setSelectedContentAndSignalIds}
@@ -113,53 +121,28 @@ function MatchListFilters({searchInAttribute, searchQuery}) {
   const inputRef = React.createRef();
 
   return (
-    <Form onSubmit={loadSearchPage}>
-      <Form.Group>
-        <Row className="mt-1">
+    <Form className="mx-4" onSubmit={loadSearchPage}>
+      <Form.Group className="mb-0">
+        <Row className="my-2">
           <InputGroup>
+            <InputGroup.Prepend>
+              <Form.Control
+                as="select"
+                value={localSearchInAttribute}
+                onChange={e => setLocalSearchInAttribute(e.target.value)}>
+                <option value="contentId">Content ID</option>
+                <option value="signalId">Signal ID</option>
+              </Form.Control>
+            </InputGroup.Prepend>
             <FormControl
               ref={inputRef}
               onChange={e => setLocalSearchQuery(e.target.value)}
               value={localSearchQuery || ''}
-              htmlSize="40"
             />
             <InputGroup.Append>
-              <Button onClick={loadSearchPage}>Search</Button>
+              <Button onClick={loadSearchPage}>Filter</Button>
             </InputGroup.Append>
           </InputGroup>
-        </Row>
-        <Row className="justify-content-between mt-3">
-          <Col md="5">
-            <Form.Check
-              id="match-list-filter-radio-contentid"
-              type="radio"
-              value="contentId"
-              label="Content ID"
-              checked={localSearchInAttribute === 'contentId'}
-              onChange={e => setLocalSearchInAttribute(e.target.value)}
-            />
-          </Col>
-          <Col md="4">
-            <Form.Check
-              id="match-list-filter-radio-signalid"
-              type="radio"
-              value="signalId"
-              label="Signal ID"
-              checked={localSearchInAttribute === 'signalId'}
-              onChange={e => setLocalSearchInAttribute(e.target.value)}
-            />
-          </Col>
-          <Col md="3" className="push-right">
-            <Button
-              variant="light"
-              size="sm"
-              onClick={() => {
-                setLocalSearchQuery('');
-                inputRef.current.focus();
-              }}>
-              Clear
-            </Button>
-          </Col>
         </Row>
       </Form.Group>
     </Form>

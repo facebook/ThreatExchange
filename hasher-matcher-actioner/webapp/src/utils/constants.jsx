@@ -37,3 +37,5 @@ export const StatNames = Object.freeze({
   HASHES: 'hashes',
   MATCHES: 'matches',
 });
+
+export const SeparatorBorder = '1px solid #ececec';
