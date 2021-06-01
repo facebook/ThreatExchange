@@ -26,6 +26,7 @@ import {
 import {timeAgo} from '../utils/DateTimeUtils';
 import ContentMatchPane from '../components/ContentMatchPane';
 import {useQuery} from '../utils/QueryParams';
+import FullWidthLocalScrollingLeftAlignedLayout from './layouts/FullWidthLocalScrollingLeftAlignedLayout';
 
 export default function Matches() {
   const query = useQuery();
@@ -48,49 +49,43 @@ export default function Matches() {
   });
 
   return (
-    <div className="d-flex flex-column justify-content-start align-items-stretch h-100 w-100">
-      <div className="flex-grow-0">
-        <Container className="bg-dark text-light" fluid>
-          <Row className="d-flex flex-row justify-content-between align-items-end">
-            <div className="px-4 py-2">
-              <h1>Matches</h1>
-              <p>View content that has been flagged by the HMA system.</p>
-            </div>
-            <div className="px-4 py-2">
+    <FullWidthLocalScrollingLeftAlignedLayout title="Matches">
+      <Container className="h-100 v-100" fluid>
+        {/* ^ This container is everything below the header */}
+        <Row className="d-flex align-items-stretch h-100">
+          {/* Each child of this row spans half the available space dividing into left and right pane. */}
+          <Col
+            md={6}
+            className="d-flex flex-column justify-content-start h-100 px-0">
+            {/* This column is vertically split into the search bar and the table of search results. */}
               <MatchListFilters
                 searchInAttribute={searchInAttribute}
                 searchQuery={searchQuery}
               />
             </div>
-          </Row>
-        </Container>
-      </div>
-      <div className="flex-grow-1" style={{overflowY: 'hidden'}}>
-        <Container className="h-100 v-100" fluid>
-          <Row className="d-flex align-items-stretch h-100">
-            <Col className="h-100" style={{overflowY: 'auto'}} md={6}>
+            <div className="flex-grow-1" style={{overflowY: 'auto'}}>
               <MatchList
                 selection={selectedContentAndSignalIds}
                 onSelect={setSelectedContentAndSignalIds}
                 searchInAttribute={searchInAttribute}
                 searchQuery={searchQuery}
               />
-            </Col>
-            <Col md={6}>
-              {(selectedContentAndSignalIds.contentId === undefined && (
-                <p>Select a match to see its details.</p>
-              )) || (
-                <ContentMatchPane
-                  contentId={selectedContentAndSignalIds.contentId}
-                  signalId={selectedContentAndSignalIds.signalId}
-                  signalSource={selectedContentAndSignalIds.signalSource}
-                />
-              )}
-            </Col>
-          </Row>
-        </Container>
-      </div>
-    </div>
+            </div>
+          </Col>
+          <Col md={6}>
+            {(selectedContentAndSignalIds.contentId === undefined && (
+              <p>Select a match to see its details.</p>
+            )) || (
+              <ContentMatchPane
+                contentId={selectedContentAndSignalIds.contentId}
+                signalId={selectedContentAndSignalIds.signalId}
+                signalSource={selectedContentAndSignalIds.signalSource}
+              />
+            )}
+          </Col>
+        </Row>
+      </Container>
+    </FullWidthLocalScrollingLeftAlignedLayout>
   );
 }
 
@@ -208,7 +203,7 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
         <span className="sr-only">Loading...</span>
       </Spinner>
       <Collapse in={matchesData !== null}>
-        <Row className="mt-3">
+        <Row>
           <Col>
             <table className="table table-hover small">
               <thead>
