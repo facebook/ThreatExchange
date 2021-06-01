@@ -31,7 +31,7 @@ from urllib import request
 import concurrent.futures
 from time import perf_counter
 
-from script_utils import send_single_submission_url, send_single_submission_b64
+from script_utils import HasherMatcherActionerAPI
 
 # Token can be found using Postman or with developer credentials using script/get_auth_token
 TOKEN = ""
@@ -42,20 +42,21 @@ ID_SEPARATOR = "-"
 
 
 def _send_single_submission_url(
-    api_url: str, filepath: str, token: str, additional_fields: t.List[str]
+    api: HasherMatcherActionerAPI, filepath: str, additional_fields: t.List[str]
 ) -> int:
     """
     Submit a single file by requesting a presigned url and return the time it took in ms.
     """
-    submission_path = f"{api_url}submit/"
     file_name = os.path.split(filepath)[-1]
     content_id = f"storm_url{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
 
     start_time = perf_counter()
 
     with open(filepath, "rb") as file:
-        send_single_submission_url(
-            submission_path, content_id, file, token, additional_fields
+        api.send_single_submission_url(
+            content_id,
+            file,
+            additional_fields,
         )
 
     # convert seconds to miliseconds.
@@ -63,23 +64,20 @@ def _send_single_submission_url(
 
 
 def _send_single_submission_b64(
-    api_url: str, filepath: str, token: str, additional_fields: t.List[str]
+    api: HasherMatcherActionerAPI, filepath: str, additional_fields: t.List[str]
 ) -> int:
     """
     Submit a single file and return the time it took in ms.
     """
-    submission_path = f"{api_url}submit/"
     file_name = os.path.split(filepath)[-1]
     content_id = f"storm{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
 
     start_time = perf_counter()
 
     with open(filepath, "rb") as file:
-        send_single_submission_b64(
-            submission_path,
+        api.send_single_submission_b64(
             content_id,
             file,
-            token,
             additional_fields,
         )
 
@@ -103,11 +101,16 @@ def unleash_storm(
     if url_mode:
         send_single_submission_func = _send_single_submission_url
 
+    api = HasherMatcherActionerAPI(api_url, token)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         while sent_message_count < msg_count:
             jobs.append(
                 executor.submit(
-                    send_single_submission_func, api_url, filepath, token, []
+                    send_single_submission_func,
+                    api,
+                    filepath,
+                    [],
                 )
             )
 
