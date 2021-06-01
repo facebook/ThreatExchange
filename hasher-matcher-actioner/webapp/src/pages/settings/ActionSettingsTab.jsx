@@ -12,6 +12,7 @@ import {
   updateAction,
   createAction,
   deleteAction,
+  fetchAllActionRules,
 } from '../../Api';
 import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
 import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
@@ -30,6 +31,10 @@ export default function ActionSettingsTab() {
    * someone else is actively working in this space.
    */
   const [performers, setPerformers] = useState([]);
+  const [
+    actionRulesDependentActions,
+    setActionRulesDependentActions,
+  ] = useState([]);
   const [adding, setAdding] = useState(false);
   const [newAction, setNewAction] = useState(defaultAction);
   const [showToast, setShowToast] = useState(false);
@@ -63,6 +68,14 @@ export default function ActionSettingsTab() {
         rename(item),
       );
       setPerformers(actionPerformers);
+    });
+    fetchAllActionRules().then(response => {
+      if (response && response.error_message === '') {
+        const mappedActions = response.action_rules.map(
+          actionRule => actionRule.action_label.value,
+        );
+        setActionRulesDependentActions(mappedActions);
+      }
     });
   };
   const onActionUpdate = updatedAction => {
@@ -104,6 +117,7 @@ export default function ActionSettingsTab() {
   useEffect(() => {
     refreshActions();
   }, []);
+
   return (
     <>
       <Card>
@@ -170,6 +184,7 @@ export default function ActionSettingsTab() {
                   params={newAction.fields}
                   editing
                   onChange={onNewActionChange}
+                  canNotDeleteOrUpdateName={false}
                 />
               </tr>
               {performers.length === 0
@@ -183,6 +198,9 @@ export default function ActionSettingsTab() {
                       edit={false}
                       onSave={onActionUpdate}
                       onDelete={onActionDelete}
+                      canNotDeleteOrUpdateName={
+                        actionRulesDependentActions.indexOf(performer.name) >= 0
+                      }
                     />
                   ))}
             </tbody>
