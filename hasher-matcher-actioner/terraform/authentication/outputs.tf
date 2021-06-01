@@ -5,7 +5,8 @@ output "webapp_and_api_user_pool_id" {
 }
 
 output "webapp_and_api_user_pool_name" {
-  value = aws_cognito_user_pool.webapp_and_api_user_pool[0].name
+  # See terraform/authentication-shared/main.tf 
+  value = var.use_shared_user_pool ? "shared-hma-user-pool" : aws_cognito_user_pool.webapp_and_api_user_pool[0].name
 }
 
 output "webapp_and_api_user_pool_client_id" {
