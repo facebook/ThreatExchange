@@ -123,13 +123,10 @@ function StatCard({statName, timeSpan}) {
     </Spinner>
   ) : (
     <Card key={`stat-card-${statName}`} className="mb-4">
-      <Card.Header>
-        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
-      </Card.Header>
       <Card.Body>
         <Row>
           <Col xs={4}>
-            <h3 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h3>
+            <h2 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h2>
           </Col>
           <Col xs={4}>
             <h1>{getDisplayNumber(card.time_span_count)}</h1>
@@ -143,6 +140,9 @@ function StatCard({statName, timeSpan}) {
           </Col>
         </Row>
       </Card.Body>
+      <Card.Footer>
+        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
+      </Card.Footer>
     </Card>
   );
 }

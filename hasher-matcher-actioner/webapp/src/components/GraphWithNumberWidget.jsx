@@ -2,7 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from 'react';
+import React, {useState, useCallback} from 'react';
 import PropTypes from 'prop-types';
 
 // import uPlot from 'uplot';
@@ -25,16 +25,28 @@ const opts = {
   series: [
     {},
     {
-      stroke: 'rgba(5, 141, 199, 1)',
-      fill: 'rgba(255, 0, 0, 0.3)',
+      stroke: 'rgba(134, 182, 254, 1)',
+      fill: 'rgba(134, 182, 254, 0.3)',
     },
   ],
 };
 
 export default function GraphWithNumberWidget({graphData}) {
+  // Uses https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
+  //  to resize the graph on first render and on resizes
+  const [width, setWidth] = useState(0);
+
+  const measuredRef = useCallback(node => {
+    if (node !== null) {
+      setWidth(node.getBoundingClientRect().width);
+    }
+  }, []);
+
+  const myOpts = {...opts, width};
+
   return (
-    <div>
-      <UplotReact options={opts} data={graphData} />
+    <div ref={measuredRef}>
+      <UplotReact options={myOpts} data={graphData} />
     </div>
   );
 }
