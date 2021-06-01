@@ -25,3 +25,7 @@ output "prefix" {
 output "api_url" {
   value = module.api.invoke_url
 }
+
+output "cognito_user_pool_name" {
+  value = module.authentication.webapp_and_api_user_pool_name
+}
