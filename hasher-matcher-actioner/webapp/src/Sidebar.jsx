@@ -10,8 +10,10 @@ import './styles/_sidebar.scss';
 
 export default function Sidebar({className}) {
   return (
-    <div className={`${className} d-flex flex-column`}>
-      <div className="px-2 pt-2 pb-4">
+    <div
+      className={`${className} d-flex flex-column`}
+      style={{borderRight: '1px solid #ececec'}}>
+      <div className="px-2 pt-2 pb-4Right">
         <a className="navbar-brand alert-link" href="/">
           HMA
         </a>
