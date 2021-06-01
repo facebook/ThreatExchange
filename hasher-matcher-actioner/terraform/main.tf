@@ -309,7 +309,7 @@ module "actions" {
   config_table = {
     name = aws_dynamodb_table.config_table.name
     arn  = aws_dynamodb_table.config_table.arn
-  }  
+  }
   datastore = module.datastore.primary_datastore
 }
 

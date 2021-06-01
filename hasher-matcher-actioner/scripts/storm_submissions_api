@@ -31,44 +31,32 @@ from urllib import request
 import concurrent.futures
 from time import perf_counter
 
-TOKEN = "<STOLEN_JWT_TOKEN>"
+from script_utils import HasherMatcherActionerAPI
+
+# Token can be found using Postman or with developer credentials using script/get_auth_token
+TOKEN = ""
 
 # "/" does not work with react router preventing the content submission details from rendering.
 # However it can be used here for easier clean up between storms that do not need the UI.
-SUBMISSION_SEPARATOR = "-"
+ID_SEPARATOR = "-"
 
 
 def _send_single_submission_url(
-    api_url: str, filepath: str, token: str, metadata: t.Dict
+    api: HasherMatcherActionerAPI, filepath: str, additional_fields: t.List[str]
 ) -> int:
     """
     Submit a single file by requesting a presigned url and return the time it took in ms.
-    TODO: remove repeated code between this and _send_single_submission_b64
     """
-    submission_path = f"{api_url}submit/"
     file_name = os.path.split(filepath)[-1]
+    content_id = f"storm_url{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
+
     start_time = perf_counter()
 
-    with open(filepath, "rb") as f:
-        submission_content_id = f"storm_url{SUBMISSION_SEPARATOR}{datetime.date.today().isoformat()}{SUBMISSION_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
-
-        payload = {
-            "submission_type": "POST_URL_UPLOAD",
-            "content_id": submission_content_id,
-            "content_type": "PHOTO",
-            "content_bytes_url_or_file_type": "image/jpeg",
-            "additional_fields": [],
-        }
-
-        get_signed_url_req = request.Request(submission_path, method="POST")
-        get_signed_url_req.add_header("Content-Type", "application/json")
-        get_signed_url_req.add_header("Authorization", token)
-        payload_bytes = json.dumps(payload).encode()
-
-        response = request.urlopen(get_signed_url_req, data=payload_bytes)
-        response = json.loads(response.read().decode("utf-8"))
-        put_response = requests.put(
-            response["presigned_url"], data=f, headers={"content-type": "image/jpeg"}
+    with open(filepath, "rb") as file:
+        api.send_single_submission_url(
+            content_id,
+            file,
+            additional_fields,
         )
 
     # convert seconds to miliseconds.
@@ -76,30 +64,22 @@ def _send_single_submission_url(
 
 
 def _send_single_submission_b64(
-    api_url: str, filepath: str, token: str, metadata: t.Dict
+    api: HasherMatcherActionerAPI, filepath: str, additional_fields: t.List[str]
 ) -> int:
     """
     Submit a single file and return the time it took in ms.
     """
-    submission_path = f"{api_url}submit/"
     file_name = os.path.split(filepath)[-1]
+    content_id = f"storm{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
+
     start_time = perf_counter()
 
-    with open(filepath, "rb") as f:
-        payload = {
-            "submission_type": "DIRECT_UPLOAD",
-            "content_id": f"storm{SUBMISSION_SEPARATOR}{datetime.date.today().isoformat()}{SUBMISSION_SEPARATOR}{str(uuid.uuid4())}-{file_name}",
-            "content_type": "PHOTO",
-            "content_bytes_url_or_file_type": str(base64.b64encode(f.read()), "utf-8"),
-            "additional_fields": [],
-        }
-
-        req = request.Request(submission_path, method="POST")
-        req.add_header("Content-Type", "application/json")
-        req.add_header("Authorization", token)
-        payload_bytes = json.dumps(payload).encode()
-
-        response = request.urlopen(req, data=payload_bytes)
+    with open(filepath, "rb") as file:
+        api.send_single_submission_b64(
+            content_id,
+            file,
+            additional_fields,
+        )
 
     # convert seconds to miliseconds.
     return int((perf_counter() - start_time) * 1000)
@@ -121,11 +101,16 @@ def unleash_storm(
     if url_mode:
         send_single_submission_func = _send_single_submission_url
 
+    api = HasherMatcherActionerAPI(api_url, token)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         while sent_message_count < msg_count:
             jobs.append(
                 executor.submit(
-                    send_single_submission_func, api_url, filepath, token, {}
+                    send_single_submission_func,
+                    api,
+                    filepath,
+                    [],
                 )
             )
 
@@ -175,5 +160,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    print(args.token)
-    # unleash_storm(args.api_url, args.file, args.count, args.token, args.url_mode)
+    unleash_storm(args.api_url, args.file, args.count, args.token, args.url_mode)
