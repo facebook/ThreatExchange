@@ -82,7 +82,7 @@ export default function Matches() {
           </Col>
           <Col md={6}>
             {(selectedContentAndSignalIds.contentId === undefined && (
-              <p>Select a match to see its details.</p>
+              <EmptyContentMatchPane />
             )) || (
               <ContentMatchPane
                 contentId={selectedContentAndSignalIds.contentId}
@@ -94,6 +94,17 @@ export default function Matches() {
         </Row>
       </Container>
     </FullWidthLocalScrollingLeftAlignedLayout>
+  );
+}
+
+function EmptyContentMatchPane() {
+  return (
+    <div className="h-100" style={{textAlign: 'center', paddingTop: '40%'}}>
+      <h1 className="display-4 text-secondary">Nothing Selected!</h1>
+      <p className="lead">
+        Select a match on the left pane to see its details.
+      </p>
+    </div>
   );
 }
 
