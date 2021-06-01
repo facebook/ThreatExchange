@@ -10,8 +10,6 @@ import base64
 import requests
 import typing as t
 
-from hmalib.lambdas.api.submit import SubmissionType
-
 
 def send_single_submission_url(
     url: str,
@@ -22,7 +20,7 @@ def send_single_submission_url(
 ):
 
     payload = {
-        "submission_type": SubmissionType.POST_URL_UPLOAD.name,
+        "submission_type": "POST_URL_UPLOAD",
         "content_id": content_id,
         "content_type": "PHOTO",
         "content_bytes_url_or_file_type": "image/jpeg",
@@ -53,7 +51,7 @@ def send_single_submission_b64(
 ):
 
     payload = {
-        "submission_type": SubmissionType.DIRECT_UPLOAD.name,
+        "submission_type": "DIRECT_UPLOAD",
         "content_id": content_id,
         "content_type": "PHOTO",
         "content_bytes_url_or_file_type": str(base64.b64encode(file.read()), "utf-8"),
