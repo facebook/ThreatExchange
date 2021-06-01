@@ -31,12 +31,12 @@ import {SeparatorBorder} from '../utils/constants';
 
 export default function Matches() {
   const query = useQuery();
-  const searchQuery = query.get('contentId') || query.get('signalId');
-  let searchInAttribute;
+  const filterString = query.get('contentId') || query.get('signalId');
+  let filterAttribute;
 
   ['contentId', 'signalId'].forEach(attribute => {
     if (query.has(attribute)) {
-      searchInAttribute = attribute;
+      filterAttribute = attribute;
     }
   });
 
@@ -59,24 +59,24 @@ export default function Matches() {
             md={6}
             className="d-flex flex-column justify-content-start h-100 px-0"
             style={{borderRight: SeparatorBorder}}>
-            {/* This column is vertically split into the search bar and the table of search results. */}
+            {/* This column is vertically split into the filter input box and the table of filtered results. */}
             <div
               className="flex-grow-0 bg-light px-2"
               style={{borderBottom: SeparatorBorder}}>
               <MatchListFilters
-                searchInAttribute={searchInAttribute}
-                searchQuery={searchQuery}
+                filterAttribute={filterAttribute}
+                filterString={filterString}
               />
             </div>
             <div
               className="flex-grow-1 px-3"
-              // Padding to align with search bar in match filters
+              // Padding to align with input box in match filters
               style={{overflowY: 'auto', overflowX: 'hidden'}}>
               <MatchList
                 selection={selectedContentAndSignalIds}
                 onSelect={setSelectedContentAndSignalIds}
-                searchInAttribute={searchInAttribute}
-                searchQuery={searchQuery}
+                filterAttribute={filterAttribute}
+                filterString={filterString}
               />
             </div>
           </Col>
@@ -111,47 +111,47 @@ function EmptyContentMatchPane() {
 /**
  * A box of filters for the list of matches that appear on the match filters page.
  */
-function MatchListFilters({searchInAttribute, searchQuery}) {
-  const [localSearchInAttribute, setLocalSearchInAttribute] = useState(
-    searchInAttribute,
+function MatchListFilters({filterAttribute, filterString}) {
+  const [localFilterAttribute, setLocalFilterAttribute] = useState(
+    filterAttribute,
   );
-  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const [localFilterString, setLocalFilterString] = useState(filterString);
 
   useEffect(() => {
     /** Update state when props changed. */
-    setLocalSearchInAttribute(searchInAttribute);
-    setLocalSearchQuery(searchQuery);
-  }, [searchInAttribute, searchQuery]);
+    setLocalFilterAttribute(filterAttribute);
+    setLocalFilterString(filterString);
+  }, [filterAttribute, filterString]);
 
   const history = useHistory();
-  const loadSearchPage = e => {
-    history.push(`?${localSearchInAttribute}=${localSearchQuery}`);
+  const loadResults = e => {
+    history.push(`?${localFilterAttribute}=${localFilterString}`);
     e.preventDefault(); // Prevent form submit
   };
 
   const inputRef = React.createRef();
 
   return (
-    <Form className="mx-4" onSubmit={loadSearchPage}>
+    <Form className="mx-4" onSubmit={loadResults}>
       <Form.Group className="mb-0">
         <Row className="my-2">
           <InputGroup>
             <InputGroup.Prepend>
               <Form.Control
                 as="select"
-                value={localSearchInAttribute}
-                onChange={e => setLocalSearchInAttribute(e.target.value)}>
+                value={localFilterAttribute}
+                onChange={e => setLocalFilterAttribute(e.target.value)}>
                 <option value="contentId">Content ID</option>
                 <option value="signalId">Signal ID</option>
               </Form.Control>
             </InputGroup.Prepend>
             <FormControl
               ref={inputRef}
-              onChange={e => setLocalSearchQuery(e.target.value)}
-              value={localSearchQuery || ''}
+              onChange={e => setLocalFilterString(e.target.value)}
+              value={localFilterString || ''}
             />
             <InputGroup.Append>
-              <Button onClick={loadSearchPage}>Filter</Button>
+              <Button onClick={loadResults}>Filter</Button>
             </InputGroup.Append>
           </InputGroup>
         </Row>
@@ -161,27 +161,27 @@ function MatchListFilters({searchInAttribute, searchQuery}) {
 }
 
 MatchListFilters.propTypes = {
-  searchInAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  searchQuery: PropTypes.string,
+  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
+  filterString: PropTypes.string,
 };
 
 MatchListFilters.defaultProps = {
-  searchInAttribute: 'contentId',
-  searchQuery: undefined,
+  filterAttribute: 'contentId',
+  filterString: undefined,
 };
 
-function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
+function MatchList({selection, onSelect, filterAttribute, filterString}) {
   const [matchesData, setMatchesData] = useState(null);
 
   useEffect(() => {
     let apiPromise;
-    if (searchInAttribute === 'contentId') {
-      apiPromise = fetchMatchesFromContent(searchQuery);
-    } else if (searchInAttribute === 'signalId') {
+    if (filterAttribute === 'contentId') {
+      apiPromise = fetchMatchesFromContent(filterString);
+    } else if (filterAttribute === 'signalId') {
       /** Hack alert. This expects strings like
-       * "facebook/threatexchange|12312121" to be the searchQuery. A pipe
+       * "facebook/threatexchange|12312121" to be the filterString. A pipe
        * separates the source from the signal id */
-      const parts = searchQuery.split('|');
+      const parts = filterString.split('|');
       apiPromise = fetchMatchesFromSignal(parts[0], parts[1]);
     } else {
       apiPromise = fetchAllMatches();
@@ -189,7 +189,7 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
 
     apiPromise.then(matches => setMatchesData(matches.match_summaries));
     // .catch(err => console.log(err));
-  }, [searchInAttribute, searchQuery]);
+  }, [filterAttribute, filterString]);
 
   return (
     <>
@@ -256,12 +256,12 @@ MatchList.propTypes = {
   onSelect: PropTypes.func.isRequired,
 
   // Filter matches list
-  searchInAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  searchQuery: PropTypes.string,
+  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
+  filterString: PropTypes.string,
 };
 
 MatchList.defaultProps = {
   selection: {contentId: undefined, signalId: undefined},
-  searchInAttribute: 'contentId',
-  searchQuery: undefined,
+  filterAttribute: 'contentId',
+  filterString: undefined,
 };
