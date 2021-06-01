@@ -78,10 +78,12 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
             )}
 
             <p className="mt-4">
-              <Link to={`/matches/${contentId}`}>See all details</Link>
+              <Link to={`/matches/${contentId}`}>
+                Open the details page for content
+              </Link>
             </p>
 
-            <h4 className="mt-4">Filter search results</h4>
+            <h4 className="mt-4">Filter results on this page</h4>
             <li>
               <Link to={`?signalId=${signalSource}|${signalId}`}>
                 Show matches for this signal
