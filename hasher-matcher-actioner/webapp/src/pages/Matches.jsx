@@ -205,7 +205,7 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
                 <tr>
                   <th>Content Id</th>
                   <th>Matched in Dataset</th>
-                  <th>Seen</th>
+                  <th>Submitted</th>
                 </tr>
               </thead>
               <tbody>
