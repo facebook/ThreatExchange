@@ -22,7 +22,7 @@ client = boto3.client("cognito-idp")
 
 # Defaults (often it is easier to edit the script than provide the args)
 USERNAME = ""
-PWD = "-"
+PWD = ""
 POOL_ID = ""
 CLIENT_ID = ""
 
@@ -32,14 +32,14 @@ def get_token(
     pwd: str,
     pool_id: str,
     client_id: str,
-) -> str:
+):
     resp = client.admin_initiate_auth(
         AuthFlow="ADMIN_USER_PASSWORD_AUTH",
         AuthParameters={"USERNAME": username, "PASSWORD": pwd},
         UserPoolId=pool_id,
         ClientId=client_id,
     )
-    return resp["AuthenticationResult"]["IdToken"]
+    return resp
 
 
 if __name__ == "__main__":
@@ -66,7 +66,16 @@ if __name__ == "__main__":
         help="id of app client for the pool",
         default=CLIENT_ID,
     )
+    parser.add_argument(
+        "--refresh_token",
+        action="store_true",
+        help="Instead of the IdToken return the RefreshToken.",
+    )
 
     args = parser.parse_args()
+    resp = get_token(args.username, args.pwd, args.pool_id, args.client_id)
 
-    print(get_token(args.username, args.pwd, args.pool_id, args.client_id))
+    if args.refresh_token:
+        print(resp["AuthenticationResult"]["RefreshToken"])
+    else:
+        print(resp["AuthenticationResult"]["IdToken"])
