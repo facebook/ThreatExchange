@@ -53,7 +53,6 @@ export default function Sidebar({className}) {
             activeClassName="text-white bg-secondary rounded"
             to="/settings"
             className="nav-link px-2">
-            <span className="glyphicon glyphicon-cog" />
             Settings
           </NavLink>
         </li>
