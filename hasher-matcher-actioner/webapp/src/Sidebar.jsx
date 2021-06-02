@@ -7,13 +7,10 @@ import PropTypes from 'prop-types';
 import {NavLink} from 'react-router-dom';
 import {Auth} from 'aws-amplify';
 import './styles/_sidebar.scss';
-import {SeparatorBorder} from './utils/constants';
 
 export default function Sidebar({className}) {
   return (
-    <div
-      className={`${className} d-flex flex-column`}
-      style={{borderRight: SeparatorBorder}}>
+    <div className={`${className} d-flex flex-column`}>
       <div className="px-2 pt-2 pb-4Right">
         <a className="navbar-brand alert-link" href="/">
           HMA

@@ -5,7 +5,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Container, Row, Col} from 'react-bootstrap';
-import {SeparatorBorder} from '../../utils/constants';
 
 /**
  * Usage is exactly the same as FixedWidthCenterAlignedLayout. Might be worth it
@@ -23,16 +22,12 @@ export default function FullWidthLocalScrollingLeftAlignedLayout({
     <Container
       fluid
       className="d-flex flex-column justify-content-start align-items-stretch h-100 w-100 py-0">
-      <Row className="flex-grow-0">
+      <Row className="full-width-header flex-grow-0">
         <Col className="mt-4">
           <h1>{title}</h1>
         </Col>
       </Row>
-      <Row
-        className="flex-grow-1"
-        style={{overflowY: 'hidden', borderTop: SeparatorBorder}}>
-        {children}
-      </Row>
+      <Row className="flex-grow-1">{children}</Row>
     </Container>
   );
 }

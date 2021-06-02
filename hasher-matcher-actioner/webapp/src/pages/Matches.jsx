@@ -27,7 +27,7 @@ import {timeAgo} from '../utils/DateTimeUtils';
 import ContentMatchPane from '../components/ContentMatchPane';
 import {useQuery} from '../utils/QueryParams';
 import FullWidthLocalScrollingLeftAlignedLayout from './layouts/FullWidthLocalScrollingLeftAlignedLayout';
-import {SeparatorBorder} from '../utils/constants';
+import '../styles/_matches.scss';
 
 export default function Matches() {
   const query = useQuery();
@@ -57,12 +57,9 @@ export default function Matches() {
           {/* Each child of this row spans half the available space dividing into left and right pane. */}
           <Col
             md={6}
-            className="d-flex flex-column justify-content-start h-100 px-0"
-            style={{borderRight: SeparatorBorder}}>
+            className="left-pane d-flex flex-column justify-content-start h-100 px-0">
             {/* This column is vertically split into the filter input box and the table of filtered results. */}
-            <div
-              className="flex-grow-0 bg-light px-2"
-              style={{borderBottom: SeparatorBorder}}>
+            <div className="match-filter-box flex-grow-0 bg-light px-2">
               <MatchListFilters
                 filterAttribute={filterAttribute}
                 filterString={filterString}
