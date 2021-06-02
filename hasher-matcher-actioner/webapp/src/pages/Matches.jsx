@@ -26,15 +26,17 @@ import {
 import {timeAgo} from '../utils/DateTimeUtils';
 import ContentMatchPane from '../components/ContentMatchPane';
 import {useQuery} from '../utils/QueryParams';
+import FullWidthLocalScrollingLeftAlignedLayout from './layouts/FullWidthLocalScrollingLeftAlignedLayout';
+import '../styles/_matches.scss';
 
 export default function Matches() {
   const query = useQuery();
-  const searchQuery = query.get('contentId') || query.get('signalId');
-  let searchInAttribute;
+  const filterString = query.get('contentId') || query.get('signalId');
+  let filterAttribute;
 
   ['contentId', 'signalId'].forEach(attribute => {
     if (query.has(attribute)) {
-      searchInAttribute = attribute;
+      filterAttribute = attribute;
     }
   });
 
@@ -48,48 +50,57 @@ export default function Matches() {
   });
 
   return (
-    <div className="d-flex flex-column justify-content-start align-items-stretch h-100 w-100">
-      <div className="flex-grow-0">
-        <Container className="bg-dark text-light" fluid>
-          <Row className="d-flex flex-row justify-content-between align-items-end">
-            <div className="px-4 py-2">
-              <h1>Matches</h1>
-              <p>View content that has been flagged by the HMA system.</p>
-            </div>
-            <div className="px-4 py-2">
+    <FullWidthLocalScrollingLeftAlignedLayout title="Matches">
+      <Container className="h-100 v-100" fluid>
+        {/* ^ This container is everything below the header */}
+        <Row className="d-flex align-items-stretch h-100">
+          {/* Each child of this row spans half the available space dividing into left and right pane. */}
+          <Col
+            md={6}
+            className="left-pane d-flex flex-column justify-content-start h-100 px-0">
+            {/* This column is vertically split into the filter input box and the table of filtered results. */}
+            <div className="match-filter-box flex-grow-0 bg-light px-2">
               <MatchListFilters
-                searchInAttribute={searchInAttribute}
-                searchQuery={searchQuery}
+                filterAttribute={filterAttribute}
+                filterString={filterString}
               />
             </div>
-          </Row>
-        </Container>
-      </div>
-      <div className="flex-grow-1" style={{overflowY: 'hidden'}}>
-        <Container className="h-100 v-100" fluid>
-          <Row className="d-flex align-items-stretch h-100">
-            <Col className="h-100" style={{overflowY: 'auto'}} md={6}>
+            <div
+              className="flex-grow-1 px-3"
+              // Padding to align with input box in match filters
+              style={{overflowY: 'auto', overflowX: 'hidden'}}>
               <MatchList
                 selection={selectedContentAndSignalIds}
                 onSelect={setSelectedContentAndSignalIds}
-                searchInAttribute={searchInAttribute}
-                searchQuery={searchQuery}
+                filterAttribute={filterAttribute}
+                filterString={filterString}
               />
-            </Col>
-            <Col md={6}>
-              {(selectedContentAndSignalIds.contentId === undefined && (
-                <p>Select a match to see its details.</p>
-              )) || (
-                <ContentMatchPane
-                  contentId={selectedContentAndSignalIds.contentId}
-                  signalId={selectedContentAndSignalIds.signalId}
-                  signalSource={selectedContentAndSignalIds.signalSource}
-                />
-              )}
-            </Col>
-          </Row>
-        </Container>
-      </div>
+            </div>
+          </Col>
+          <Col md={6}>
+            {(selectedContentAndSignalIds.contentId === undefined && (
+              <EmptyContentMatchPane />
+            )) || (
+              <ContentMatchPane
+                contentId={selectedContentAndSignalIds.contentId}
+                signalId={selectedContentAndSignalIds.signalId}
+                signalSource={selectedContentAndSignalIds.signalSource}
+              />
+            )}
+          </Col>
+        </Row>
+      </Container>
+    </FullWidthLocalScrollingLeftAlignedLayout>
+  );
+}
+
+function EmptyContentMatchPane() {
+  return (
+    <div className="h-100" style={{textAlign: 'center', paddingTop: '40%'}}>
+      <h1 className="display-4 text-secondary">Nothing Selected!</h1>
+      <p className="lead">
+        Select a match on the left pane to see its details.
+      </p>
     </div>
   );
 }
@@ -97,74 +108,49 @@ export default function Matches() {
 /**
  * A box of filters for the list of matches that appear on the match filters page.
  */
-function MatchListFilters({searchInAttribute, searchQuery}) {
-  const [localSearchInAttribute, setLocalSearchInAttribute] = useState(
-    searchInAttribute,
+function MatchListFilters({filterAttribute, filterString}) {
+  const [localFilterAttribute, setLocalFilterAttribute] = useState(
+    filterAttribute,
   );
-  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const [localFilterString, setLocalFilterString] = useState(filterString);
 
   useEffect(() => {
     /** Update state when props changed. */
-    setLocalSearchInAttribute(searchInAttribute);
-    setLocalSearchQuery(searchQuery);
-  }, [searchInAttribute, searchQuery]);
+    setLocalFilterAttribute(filterAttribute);
+    setLocalFilterString(filterString);
+  }, [filterAttribute, filterString]);
 
   const history = useHistory();
-  const loadSearchPage = e => {
-    history.push(`?${localSearchInAttribute}=${localSearchQuery}`);
+  const loadResults = e => {
+    history.push(`?${localFilterAttribute}=${localFilterString}`);
     e.preventDefault(); // Prevent form submit
   };
 
   const inputRef = React.createRef();
 
   return (
-    <Form onSubmit={loadSearchPage}>
-      <Form.Group>
-        <Row className="mt-1">
+    <Form className="mx-4" onSubmit={loadResults}>
+      <Form.Group className="mb-0">
+        <Row className="my-2">
           <InputGroup>
+            <InputGroup.Prepend>
+              <Form.Control
+                as="select"
+                value={localFilterAttribute}
+                onChange={e => setLocalFilterAttribute(e.target.value)}>
+                <option value="contentId">Content ID</option>
+                <option value="signalId">Signal ID</option>
+              </Form.Control>
+            </InputGroup.Prepend>
             <FormControl
               ref={inputRef}
-              onChange={e => setLocalSearchQuery(e.target.value)}
-              value={localSearchQuery || ''}
-              htmlSize="40"
+              onChange={e => setLocalFilterString(e.target.value)}
+              value={localFilterString || ''}
             />
             <InputGroup.Append>
-              <Button onClick={loadSearchPage}>Search</Button>
+              <Button onClick={loadResults}>Filter</Button>
             </InputGroup.Append>
           </InputGroup>
-        </Row>
-        <Row className="justify-content-between mt-3">
-          <Col md="5">
-            <Form.Check
-              id="match-list-filter-radio-contentid"
-              type="radio"
-              value="contentId"
-              label="Content ID"
-              checked={localSearchInAttribute === 'contentId'}
-              onChange={e => setLocalSearchInAttribute(e.target.value)}
-            />
-          </Col>
-          <Col md="4">
-            <Form.Check
-              id="match-list-filter-radio-signalid"
-              type="radio"
-              value="signalId"
-              label="Signal ID"
-              checked={localSearchInAttribute === 'signalId'}
-              onChange={e => setLocalSearchInAttribute(e.target.value)}
-            />
-          </Col>
-          <Col md="3" className="push-right">
-            <Button
-              variant="light"
-              size="sm"
-              onClick={() => {
-                setLocalSearchQuery('');
-                inputRef.current.focus();
-              }}>
-              Clear
-            </Button>
-          </Col>
         </Row>
       </Form.Group>
     </Form>
@@ -172,27 +158,27 @@ function MatchListFilters({searchInAttribute, searchQuery}) {
 }
 
 MatchListFilters.propTypes = {
-  searchInAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  searchQuery: PropTypes.string,
+  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
+  filterString: PropTypes.string,
 };
 
 MatchListFilters.defaultProps = {
-  searchInAttribute: 'contentId',
-  searchQuery: undefined,
+  filterAttribute: 'contentId',
+  filterString: undefined,
 };
 
-function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
+function MatchList({selection, onSelect, filterAttribute, filterString}) {
   const [matchesData, setMatchesData] = useState(null);
 
   useEffect(() => {
     let apiPromise;
-    if (searchInAttribute === 'contentId') {
-      apiPromise = fetchMatchesFromContent(searchQuery);
-    } else if (searchInAttribute === 'signalId') {
+    if (filterAttribute === 'contentId') {
+      apiPromise = fetchMatchesFromContent(filterString);
+    } else if (filterAttribute === 'signalId') {
       /** Hack alert. This expects strings like
-       * "facebook/threatexchange|12312121" to be the searchQuery. A pipe
+       * "facebook/threatexchange|12312121" to be the filterString. A pipe
        * separates the source from the signal id */
-      const parts = searchQuery.split('|');
+      const parts = filterString.split('|');
       apiPromise = fetchMatchesFromSignal(parts[0], parts[1]);
     } else {
       apiPromise = fetchAllMatches();
@@ -200,7 +186,7 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
 
     apiPromise.then(matches => setMatchesData(matches.match_summaries));
     // .catch(err => console.log(err));
-  }, [searchInAttribute, searchQuery]);
+  }, [filterAttribute, filterString]);
 
   return (
     <>
@@ -208,7 +194,7 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
         <span className="sr-only">Loading...</span>
       </Spinner>
       <Collapse in={matchesData !== null}>
-        <Row className="mt-3">
+        <Row>
           <Col>
             <table className="table table-hover small">
               <thead>
@@ -216,7 +202,7 @@ function MatchList({selection, onSelect, searchInAttribute, searchQuery}) {
                 <tr>
                   <th>Content Id</th>
                   <th>Matched in Dataset</th>
-                  <th>Seen</th>
+                  <th>Submitted</th>
                 </tr>
               </thead>
               <tbody>
@@ -267,12 +253,12 @@ MatchList.propTypes = {
   onSelect: PropTypes.func.isRequired,
 
   // Filter matches list
-  searchInAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  searchQuery: PropTypes.string,
+  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
+  filterString: PropTypes.string,
 };
 
 MatchList.defaultProps = {
   selection: {contentId: undefined, signalId: undefined},
-  searchInAttribute: 'contentId',
-  searchQuery: undefined,
+  filterAttribute: 'contentId',
+  filterString: undefined,
 };

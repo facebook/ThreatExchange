@@ -11,7 +11,7 @@ import './styles/_sidebar.scss';
 export default function Sidebar({className}) {
   return (
     <div className={`${className} d-flex flex-column`}>
-      <div className="px-2 pt-2 pb-4">
+      <div className="px-2 pt-2 pb-4Right">
         <a className="navbar-brand alert-link" href="/">
           HMA
         </a>
@@ -50,7 +50,6 @@ export default function Sidebar({className}) {
             activeClassName="text-white bg-secondary rounded"
             to="/settings"
             className="nav-link px-2">
-            <span className="glyphicon glyphicon-cog" />
             Settings
           </NavLink>
         </li>
