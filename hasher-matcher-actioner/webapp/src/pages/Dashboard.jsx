@@ -192,7 +192,8 @@ function StatCardError({statName}) {
       <Card.Body>
         <Col>
           <h4 className="text-danger font-weight-light">
-            Failed to load stats for {statName}.
+            Failed to load stats for {statName}. This could be because the
+            configuration MEASURE_PERFORMANCE is disabled.
             {/* TODO: This will include a link to the wiki after we add an entry for MEASURE_PERFORMANCE. */}
           </h4>
         </Col>
