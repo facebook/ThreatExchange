@@ -8,10 +8,10 @@ import {
   Row,
   Col,
   Card,
-  Spinner,
   ButtonGroup,
   Dropdown,
   DropdownButton,
+  Spinner,
 } from 'react-bootstrap';
 
 import {fetchStats} from '../Api';
@@ -109,27 +109,33 @@ export default function Dashboard() {
 }
 
 function StatCard({statName, timeSpan}) {
+  // Card can be undefined, the card object, or 'failed' string.
+  // Failed string will have a different repr.
   const [card, setCard] = useState(undefined);
 
   useEffect(() => {
-    fetchStats(statName, timeSpan).then(response => {
-      setCard(response.card);
-    });
+    fetchStats(statName, timeSpan)
+      .then(response => {
+        setCard(response.card);
+      })
+      .catch(() => {
+        setCard('failed');
+      });
   }, [timeSpan]);
 
-  return card === undefined ? (
-    <Spinner animation="border" role="status">
-      <span className="sr-only">Loading...</span>
-    </Spinner>
-  ) : (
+  if (card === undefined) {
+    return <StatCardLoading statName={statName} />;
+  }
+  if (card === 'failed') {
+    return <StatCardError statName={statName} />;
+  }
+
+  return (
     <Card key={`stat-card-${statName}`} className="mb-4">
-      <Card.Header>
-        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
-      </Card.Header>
       <Card.Body>
         <Row>
           <Col xs={4}>
-            <h3 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h3>
+            <h2 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h2>
           </Col>
           <Col xs={4}>
             <h1>{getDisplayNumber(card.time_span_count)}</h1>
@@ -143,6 +149,9 @@ function StatCard({statName, timeSpan}) {
           </Col>
         </Row>
       </Card.Body>
+      <Card.Footer>
+        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
+      </Card.Footer>
     </Card>
   );
 }
@@ -150,4 +159,49 @@ function StatCard({statName, timeSpan}) {
 StatCard.propTypes = {
   statName: PropTypes.string.isRequired,
   timeSpan: PropTypes.string.isRequired,
+};
+
+function StatCardLoading({statName}) {
+  return (
+    <Card key={`stat-card-${statName}`} className="mb-4">
+      <Card.Body>
+        <Col>
+          <h4 className="text-muted font-weight-light">
+            <Spinner
+              as="span"
+              animation="border"
+              size="lg"
+              role="status"
+              aria-hidden="true"
+            />
+            <span>&nbsp;Loading stats for {statName}...</span>
+          </h4>
+        </Col>
+      </Card.Body>
+    </Card>
+  );
+}
+
+StatCardLoading.propTypes = {
+  statName: PropTypes.string.isRequired,
+};
+
+function StatCardError({statName}) {
+  return (
+    <Card key={`stat-card-${statName}`} className="mb-4">
+      <Card.Body>
+        <Col>
+          <h4 className="text-danger font-weight-light">
+            Failed to load stats for {statName}. This could be because the
+            configuration MEASURE_PERFORMANCE is disabled.
+            {/* TODO: This will include a link to the wiki after we add an entry for MEASURE_PERFORMANCE. */}
+          </h4>
+        </Col>
+      </Card.Body>
+    </Card>
+  );
+}
+
+StatCardError.propTypes = {
+  statName: PropTypes.string.isRequired,
 };
