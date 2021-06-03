@@ -72,7 +72,7 @@ resource "aws_cognito_user_pool_client" "webapp_and_api_shared_user_pool_client"
   user_pool_id                         = aws_cognito_user_pool.webapp_and_api_shared_user_pool.id
   generate_secret                      = false
   allowed_oauth_flows_user_pool_client = true
-  explicit_auth_flows                  = ["ADMIN_USER_PASSWORD_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
+  explicit_auth_flows                  = ["ALLOW_ADMIN_USER_PASSWORD_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"]
   allowed_oauth_scopes                 = ["openid"]
   allowed_oauth_flows                  = ["code"]
   callback_urls                        = ["https://localhost:3000"] # a shared user pool and its app client is for developers only
