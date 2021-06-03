@@ -5,6 +5,8 @@
 import React from 'react';
 import Form from 'react-bootstrap/Form';
 import {PropTypes} from 'prop-types';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 import WebhookActioner from './WebhookActioner';
 
 export default function ActionPerformerColumns({
@@ -13,6 +15,7 @@ export default function ActionPerformerColumns({
   params,
   editing,
   onChange,
+  canNotDeleteOrUpdateName,
 }) {
   const Actioners = {
     WebhookPostActionPerformer: WebhookActioner,
@@ -28,17 +31,31 @@ export default function ActionPerformerColumns({
 
         <div hidden={!editing}>
           <Form>
-            <Form.Group>
-              <Form.Label>Action Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="New Action Name"
-                value={name}
-                onChange={e => {
-                  onChange('name', {name: e.target.value});
-                }}
-              />
-            </Form.Group>
+            {canNotDeleteOrUpdateName ? (
+              <OverlayTrigger
+                overlay={
+                  <Tooltip id={`tooltip-disabled-${name}`}>
+                    The action {name}&apos;s name can not be modified because it
+                    is currently being used by one or more action rules. Please
+                    edit the rule(s) to refer to another action, or delete the
+                    rule(s), then retry.
+                  </Tooltip>
+                }>
+                <Form.Label>{name}</Form.Label>
+              </OverlayTrigger>
+            ) : (
+              <Form.Group>
+                <Form.Label>Action Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="New Action Name"
+                  value={name}
+                  onChange={e => {
+                    onChange('name', {name: e.target.value});
+                  }}
+                />
+              </Form.Group>
+            )}
           </Form>
         </div>
       </td>
@@ -63,4 +80,5 @@ ActionPerformerColumns.propTypes = {
     headers: PropTypes.string.isRequired,
   }).isRequired,
   onChange: PropTypes.func.isRequired,
+  canNotDeleteOrUpdateName: PropTypes.bool.isRequired,
 };

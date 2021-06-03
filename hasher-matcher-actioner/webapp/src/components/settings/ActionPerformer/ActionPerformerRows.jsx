@@ -6,6 +6,8 @@ import React, {useState} from 'react';
 import {PropTypes} from 'prop-types';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 import ActionPerformerColumns from './ActionPerformerColumns';
 
 export default function ActionPerformerRows({
@@ -15,6 +17,7 @@ export default function ActionPerformerRows({
   edit,
   onSave,
   onDelete,
+  canNotDeleteOrUpdateName,
 }) {
   const [editing, setEditing] = useState(edit);
   const [
@@ -58,10 +61,12 @@ export default function ActionPerformerRows({
             className="mb-2 table-action-button"
             onClick={() => setEditing(true)}>
             <ion-icon name="pencil" size="large" className="ion-icon-white" />
-          </Button>{' '}
+          </Button>
+          <br />
           <Button
             variant="secondary"
             className="table-action-button"
+            disabled={canNotDeleteOrUpdateName}
             onClick={() => setShowDeleteActionConfirmation(true)}>
             <ion-icon
               name="trash-bin"
@@ -69,6 +74,7 @@ export default function ActionPerformerRows({
               className="ion-icon-white"
             />
           </Button>
+          <br />
           <Modal
             show={showDeleteActionConfirmation}
             onHide={() => setShowDeleteActionConfirmation(false)}>
@@ -92,6 +98,25 @@ export default function ActionPerformerRows({
               </Button>
             </Modal.Footer>
           </Modal>
+          {canNotDeleteOrUpdateName ? (
+            <OverlayTrigger
+              overlay={
+                <Tooltip id={`tooltip-${name}`}>
+                  The action {name} can not be deleted because it is currently
+                  being used by one or more action rules. Please edit the
+                  rule(s) to refer to another action, or delete the rule(s),
+                  then retry.
+                </Tooltip>
+              }>
+              <Button variant="secondary" className="table-action-button">
+                <ion-icon
+                  name="help-outline"
+                  size="large"
+                  className="ion-icon-white"
+                />
+              </Button>
+            </OverlayTrigger>
+          ) : null}
         </td>
         <ActionPerformerColumns
           key={updatedAction.name}
@@ -100,6 +125,7 @@ export default function ActionPerformerRows({
           params={updatedAction.fields}
           editing={false}
           onChange={onUpdatedActionChange}
+          canNotDeleteOrUpdateName={canNotDeleteOrUpdateName}
         />
       </tr>
       <tr hidden={!editing}>
@@ -115,7 +141,8 @@ export default function ActionPerformerRows({
               size="large"
               className="ion-icon-white"
             />
-          </Button>{' '}
+          </Button>
+          <br />
           <Button
             variant="outline-secondary"
             className="table-action-button"
@@ -161,6 +188,7 @@ export default function ActionPerformerRows({
           params={updatedAction.fields}
           editing
           onChange={onUpdatedActionChange}
+          canNotDeleteOrUpdateName={canNotDeleteOrUpdateName}
         />
       </tr>
     </>
@@ -177,4 +205,5 @@ ActionPerformerRows.propTypes = {
   }).isRequired,
   onSave: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  canNotDeleteOrUpdateName: PropTypes.bool.isRequired,
 };
