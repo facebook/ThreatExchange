@@ -26,7 +26,6 @@ class MatchSummary(JSONifiable):
     signal_id: t.Union[str, int]
     signal_source: str
     updated_at: str
-    reactions: str
 
     def to_json(self) -> t.Dict:
         return asdict(self)
@@ -189,7 +188,6 @@ def get_matches_api(
                     signal_id=record.signal_id,
                     signal_source=record.signal_source,
                     updated_at=record.updated_at.isoformat(),
-                    reactions="Mocked",
                 )
                 for record in records
             ]
@@ -227,7 +225,7 @@ def get_matches_api(
         )
         writeback_message.send_to_queue()
         logger.info(
-            f"Reaction change enqueued for {signal_source}:{signal_id} in {ds_id} change={opinion_change}"
+            f"Opinion change enqueued for {signal_source}:{signal_id} in {ds_id} change={opinion_change}"
         )
 
         signal = PDQSignalMetadata(

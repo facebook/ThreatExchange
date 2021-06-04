@@ -21,11 +21,16 @@ output "image_folder_key" {
 output "prefix" {
   value = var.prefix
 }
-
 output "api_url" {
   value = module.api.invoke_url
 }
-
+output "cognito_user_pool_id" {
+  value = module.authentication.webapp_and_api_user_pool_id
+}
 output "cognito_user_pool_name" {
   value = module.authentication.webapp_and_api_user_pool_name
 }
+output "cognito_user_pool_client_id" {
+  value = module.authentication.webapp_and_api_user_pool_client_id
+}
+
