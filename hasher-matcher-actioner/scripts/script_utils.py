@@ -5,6 +5,7 @@
 Utilities for hma scripts
 """
 
+import os
 import json
 import base64
 import requests
@@ -29,9 +30,15 @@ class HasherMatcherActionerAPI:
         refresh_token: str = None,
     ) -> None:
         self.api_url = api_url
-        self.api_token = api_token
         self.client_id = client_id
         self.refresh_token = refresh_token
+        self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "content-type": "application/json",
+                "authorization": api_token,
+            }
+        )
 
     def _refresh_token(self):
         """
@@ -49,42 +56,20 @@ class HasherMatcherActionerAPI:
                 AuthParameters={"REFRESH_TOKEN": self.refresh_token},
                 ClientId=self.client_id,
             )
-            self.api_token = resp["AuthenticationResult"]["IdToken"]
-            return self.api_token
-        return "Refresh Token and/or client ID Missing"
-
-    def _get_header(self) -> t.Dict[str, str]:
-        return {
-            "Content-Type": "application/json",
-            "Authorization": self.api_token,
-        }
+            api_token = resp["AuthenticationResult"]["IdToken"]
+            self.session.headers["authorization"] = api_token
+            return api_token
+        return "Refresh Token and/or Client ID Missing"
 
     def _get_request_url(self, api_path: str) -> str:
         return urljoin(self.api_url, api_path)
 
-    def _get_with_auth(
-        self,
-        api_path: str = "",
-        params: t.Optional[t.Dict[str, str]] = None,
-    ) -> requests.Response:
-        return requests.get(
-            self._get_request_url(api_path),
-            headers=self._get_header(),
-        )
-
-    def _post_with_auth(
-        self,
-        api_path: str = "",
-        data: t.Optional[bytes] = None,
-    ) -> requests.Response:
-        return requests.post(
-            self._get_request_url(api_path),
-            headers=self._get_header(),
-            data=data,
-        )
+    def get(self, api_path: str = ""):
+        response = self.session.get(self._get_request_url(api_path))
+        return response.json()
 
     def get_all_matches(self, api_path: str = "/matches/"):
-        response = self._get_with_auth(api_path=api_path)
+        response = self.session.get(self._get_request_url(api_path))
         return response.json().get("match_summaries", [])
 
     def send_single_submission_b64(
@@ -103,8 +88,8 @@ class HasherMatcherActionerAPI:
             ),
             "additional_fields": additional_fields,
         }
-        self._post_with_auth(
-            api_path=api_path,
+        self.session.post(
+            self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
 
@@ -122,12 +107,11 @@ class HasherMatcherActionerAPI:
             "content_bytes_url_or_file_type": "image/jpeg",
             "additional_fields": [],
         }
-        response = self._post_with_auth(
-            api_path=api_path,
+        response_json = self.session.post(
+            self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
-        )
+        ).json()
 
-        response_json = response.json()
         put_response = requests.put(
             response_json["presigned_url"],
             data=file,
@@ -139,19 +123,18 @@ class HasherMatcherActionerAPI:
         content_id: str,
         api_path: str = "/content/hash/",
     ):
-        response = self._get_with_auth(
-            api_path=api_path,
+        return self.session.get(
+            self._get_request_url(api_path),
             params={"content_id": content_id},
-        )
-        return response.json()
+        ).json()
 
     def get_content_action_history(
         self,
         content_id: str,
         api_path: str = "/content/action-history/",
     ):
-        response = self._get_with_auth(
-            api_path=api_path,
+        response = self.session.get(
+            self._get_request_url(api_path),
             params={"content_id": content_id},
         )
         return response.json().get("action_history", [])
@@ -161,8 +144,8 @@ class HasherMatcherActionerAPI:
         content_id: str,
         api_path: str = "/matches/match/",
     ):
-        response = self._get_with_auth(
-            api_path=api_path,
+        response = self.session.get(
+            self._get_request_url(api_path),
             params={"content_id": content_id},
         )
         return response.json().get("match_details", [])
@@ -171,7 +154,7 @@ class HasherMatcherActionerAPI:
         self,
         api_path: str = "/datasets/",
     ):
-        response = self._get_with_auth(api_path=api_path)
+        response = self.session.get(self._get_request_url(api_path))
         return response.json().get("threat_exchange_datasets", [])
 
     def create_dataset_config(
@@ -192,8 +175,8 @@ class HasherMatcherActionerAPI:
             "matcher_active": matcher_active,
             "write_back": write_back,
         }
-        self._post_with_auth(
-            api_path=api_path,
+        self.session.post(
+            self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
 
@@ -201,7 +184,7 @@ class HasherMatcherActionerAPI:
         self,
         api_path: str = "/actions/",
     ):
-        response = self._get_with_auth(api_path=api_path)
+        response = self.session.get(self._get_request_url(api_path))
         return response.json().get("actions_response", [])
 
     def create_action(
@@ -216,8 +199,8 @@ class HasherMatcherActionerAPI:
             "config_subtype": config_subtype,
             "fields": fields,
         }
-        self._post_with_auth(
-            api_path=api_path,
+        self.session.post(
+            self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
 
@@ -225,7 +208,7 @@ class HasherMatcherActionerAPI:
         self,
         api_path: str = "/action-rules/",
     ):
-        response = self._get_with_auth(api_path=api_path)
+        response = self.session.get(self._get_request_url(api_path))
         return response.json().get("action_rules", [])
 
     def create_action_rule(
@@ -236,8 +219,8 @@ class HasherMatcherActionerAPI:
         payload = {
             "action_rule": action_rule,
         }
-        self._post_with_auth(
-            api_path=api_path,
+        self.session.post(
+            self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
 
@@ -250,21 +233,36 @@ if __name__ == "__main__":
     #   testing needs to be done manually. See below.
 
     # Add init values for the api:
+    # `os.environ.get(...)` will enable us pass values from `terraform output` in sh
 
-    TOKEN = ""
+    HMA_TOKEN = os.environ.get("HMA_TOKEN", "")
     # i.e. "https://<app-id>.execute-api.<region>.amazonaws.com/"
-    API_URL = ""
+    HMA_API_URL = os.environ.get(
+        "HMA_API_URL",
+        "",
+    )
     # See AWS Console: Cognito -> UserPools... -> App clients
-    CLIENT_ID = ""
+    HMA_CLIENT_ID = os.environ.get(
+        "HMA_CLIENT_ID",
+        "",
+    )
     # Can be created with dev certs `$ scripts/get_auth_token --refresh_token`
-    REFRESH_TOKEN = ""
+    HMA_REFRESH_TOKEN = os.environ.get(
+        "HMA_REFRESH_TOKEN",
+        "",
+    )
 
-    api = HasherMatcherActionerAPI(API_URL, TOKEN, CLIENT_ID, REFRESH_TOKEN)
+    api = HasherMatcherActionerAPI(
+        HMA_API_URL,
+        HMA_TOKEN,
+        HMA_CLIENT_ID,
+        HMA_REFRESH_TOKEN,
+    )
 
     print("Manual Test of API Request Methods:")
 
     # Space to test api
     # e.g. if auth is correct the following command should print:
-    # "{'message': 'Hello World, HMA <#>'}"
-
-    print(api._get_with_auth().json())
+    # "{'message': 'Hello World, HMA'}"
+    api._refresh_token()
+    print(api.get())
