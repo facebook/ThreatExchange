@@ -124,7 +124,7 @@ export default function ThreatExchangePrivacyGroupCard({
               <Form.Switch
                 onChange={onSwitchWriteBack}
                 id={`writeBackSwitch${privacyGroupId}`}
-                label="Write Back"
+                label="Writeback (Seen?)"
                 checked={localWriteBack}
                 disabled={!inUse}
               />
