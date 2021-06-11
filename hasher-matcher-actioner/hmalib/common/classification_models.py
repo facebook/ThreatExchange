@@ -46,6 +46,7 @@ class BankIDClassificationLabel(ClassificationLabel):
 
 @dataclass(unsafe_hash=True)
 class BankedContentIDClassificationLabel(ClassificationLabel):
+    # TODO name confusing. Should probably be SignalID...
     key: str = field(default="BankedContentIDClassification", init=False)
 
 

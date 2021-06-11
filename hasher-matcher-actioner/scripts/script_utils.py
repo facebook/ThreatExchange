@@ -97,7 +97,7 @@ class HasherMatcherActionerAPI:
         self,
         content_id: str,
         file: t.BinaryIO,
-        additional_fields: t.List[str],
+        additional_fields: t.List[str] = [],
         api_path: str = "/submit/",
     ):
         payload = {
@@ -105,7 +105,7 @@ class HasherMatcherActionerAPI:
             "content_id": content_id,
             "content_type": "PHOTO",
             "content_bytes_url_or_file_type": "image/jpeg",
-            "additional_fields": [],
+            "additional_fields": additional_fields,
         }
         response_json = self.session.post(
             self._get_request_url(api_path),
@@ -165,7 +165,7 @@ class HasherMatcherActionerAPI:
         matcher_active: bool = True,
         fetcher_active: bool = False,
         write_back: bool = False,
-        api_path: str = "/datasets/create/",
+        api_path: str = "/datasets/create",
     ):
         payload = {
             "privacy_group_id": privacy_group_id,
@@ -189,13 +189,13 @@ class HasherMatcherActionerAPI:
 
     def create_action(
         self,
-        action_name: str,
+        name: str,
         config_subtype: str,
         fields: t.Dict[str, t.Any],
         api_path: str = "/actions/",
     ):
         payload = {
-            "action_name": action_name,
+            "name": name,
             "config_subtype": config_subtype,
             "fields": fields,
         }
