@@ -72,10 +72,19 @@ export default function ThreatExchangeSettingsTab() {
   };
 
   const refreshDatasets = () => {
-    fetchAllDatasets(setLoading(false)).then(response => {
-      setLoading(true);
-      setDatasets(response.threat_exchange_datasets);
-    });
+    setLoading(false);
+    fetchAllDatasets()
+      .then(response => {
+        setLoading(true);
+        setDatasets(response.threat_exchange_datasets);
+      })
+      .catch(() => {
+        setLoading(true);
+        setToastBody(
+          'Errors when fetching privacy groups. Please try again later',
+        );
+        setShowToast(true);
+      });
   };
 
   const onSync = () => {
