@@ -70,6 +70,14 @@ export default function ThreatExchangeSettingsTab() {
         setShowToast(true);
       });
   };
+
+  const refreshDatasets = () => {
+    fetchAllDatasets(setLoading(false)).then(response => {
+      setLoading(true);
+      setDatasets(response.threat_exchange_datasets);
+    });
+  };
+
   const onSync = () => {
     setSyncing(true);
     syncAllDatasets()
@@ -77,9 +85,7 @@ export default function ThreatExchangeSettingsTab() {
         setSyncing(false);
         setToastBody(syncResponse.response);
         setShowToast(true);
-        fetchAllDatasets().then(response => {
-          setDatasets(response.datasets_response);
-        });
+        refreshDatasets();
       })
       .catch(() => {
         setSyncing(false);
@@ -88,13 +94,6 @@ export default function ThreatExchangeSettingsTab() {
         );
         setShowToast(true);
       });
-  };
-
-  const refreshDatasets = () => {
-    fetchAllDatasets(setLoading(false)).then(response => {
-      setLoading(true);
-      setDatasets(response.threat_exchange_datasets);
-    });
   };
 
   useEffect(() => {
