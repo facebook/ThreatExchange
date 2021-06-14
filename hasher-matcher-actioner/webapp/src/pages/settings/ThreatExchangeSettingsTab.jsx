@@ -77,7 +77,6 @@ export default function ThreatExchangeSettingsTab() {
       .then(response => {
         setLoading(false);
         setDatasets(response.threat_exchange_datasets);
-        setDatasets(undefined);
       })
       .catch(() => {
         setLoading(false);
