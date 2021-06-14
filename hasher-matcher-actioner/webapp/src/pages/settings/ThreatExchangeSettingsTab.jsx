@@ -27,7 +27,7 @@ import {
 
 export default function ThreatExchangeSettingsTab() {
   const [datasets, setDatasets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastBody, setToastBody] = useState(null);
@@ -70,6 +70,23 @@ export default function ThreatExchangeSettingsTab() {
         setShowToast(true);
       });
   };
+
+  const refreshDatasets = () => {
+    setLoading(true);
+    fetchAllDatasets()
+      .then(response => {
+        setLoading(false);
+        setDatasets(response.threat_exchange_datasets);
+      })
+      .catch(() => {
+        setLoading(false);
+        setToastBody(
+          'Errors when fetching privacy groups. Please try again later',
+        );
+        setShowToast(true);
+      });
+  };
+
   const onSync = () => {
     setSyncing(true);
     syncAllDatasets()
@@ -77,9 +94,7 @@ export default function ThreatExchangeSettingsTab() {
         setSyncing(false);
         setToastBody(syncResponse.response);
         setShowToast(true);
-        fetchAllDatasets().then(response => {
-          setDatasets(response.datasets_response);
-        });
+        refreshDatasets();
       })
       .catch(() => {
         setSyncing(false);
@@ -88,13 +103,6 @@ export default function ThreatExchangeSettingsTab() {
         );
         setShowToast(true);
       });
-  };
-
-  const refreshDatasets = () => {
-    fetchAllDatasets(setLoading(false)).then(response => {
-      setLoading(true);
-      setDatasets(response.threat_exchange_datasets);
-    });
   };
 
   useEffect(() => {
@@ -141,7 +149,7 @@ export default function ThreatExchangeSettingsTab() {
       </Card.Header>
       <Card.Body>
         <Row className="mt-3">
-          <Spinner hidden={loading} animation="border" role="status">
+          <Spinner hidden={!loading} animation="border" role="status">
             <span className="sr-only">Loading...</span>
           </Spinner>
           {datasets.length === 0
