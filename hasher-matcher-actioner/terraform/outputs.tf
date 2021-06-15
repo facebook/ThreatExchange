@@ -34,3 +34,7 @@ output "cognito_user_pool_client_id" {
   value = module.authentication.webapp_and_api_user_pool_client_id
 }
 
+output "ui_url" {
+  value = module.webapp.ui_url
+}
+
