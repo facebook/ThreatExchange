@@ -67,7 +67,7 @@ class WebhookPostActionPerformer(WebhookActionPerformer):
 class WebhookGetActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a GET"""
 
-    def call(self, _data: str) -> Response:
+    def call(self, data: str) -> Response:
         return get(self.url, headers=json.loads(self.headers))
 
 
@@ -83,5 +83,5 @@ class WebhookPutActionPerformer(WebhookActionPerformer):
 class WebhookDeleteActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a DELETE"""
 
-    def call(self, _data: str) -> Response:
+    def call(self, data: str) -> Response:
         return delete(self.url, headers=json.loads(self.headers))
