@@ -8,7 +8,7 @@ shell-or-die = $\
 
 USER ?= $(call shell-or-die,whoami)
 REPOSITORY_NAME = hma-lambda-dev
-DOCKER_TAG ?= ${USER} # todo - change to ${USER}-latest?
+DOCKER_TAG ?= ${USER}# todo - change to ${USER}-latest?
 DOCKER_URI = $(call shell-or-die,docker images --filter=reference='*/${REPOSITORY_NAME}:${DOCKER_TAG}' --format='{{.Repository}}')
 
 
@@ -24,6 +24,7 @@ upload_docker:
 
 terraform/terraform.tfvars:
 	echo 'hma_lambda_docker_uri = "${DOCKER_URI}:${DOCKER_TAG}"' > terraform/terraform.tfvars
+	echo 'organization = "${USER}-org"' >> terraform/terraform.tfvars
 
 terraform/backend.tf:
 	./scripts/write_backend_config.sh > terraform/backend.tf
