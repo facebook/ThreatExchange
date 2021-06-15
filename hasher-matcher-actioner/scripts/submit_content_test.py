@@ -12,16 +12,16 @@ from script_utils import HasherMatcherActionerAPI
 
 from hmalib.common.evaluator_models import Action, ActionRule
 from hmalib.common.classification_models import Label, ActionLabel, ClassificationLabel
-from hmalib.common.actioner_models import ActionPerformer, WebhookGetActionPerformer
+from hmalib.common.actioner_models import ActionPerformer, WebhookPutActionPerformer
 
 
 class DeployedInstanceTestHelper:
     """
     Class around testing a deployed instance of HMA from Content Submission to Hash - Match - Action
     by checking that the expected values are found
-    """
 
-    SAMPLE_PG_ID = "inria-holidays-test"
+    This class is structed in a way to have script_utils.py avoid importing hmalib itself.
+    """
 
     def __init__(
         self,
@@ -31,16 +31,19 @@ class DeployedInstanceTestHelper:
         refresh_token: str = None,
     ) -> None:
         if not api_token and (not client_id or not refresh_token):
-            print(
+            raise ValueError(
                 "Test requires an api_token OR a client_id + refresh_token to function"
             )
-            exit(1)
 
         self.api = HasherMatcherActionerAPI(
             api_url, api_token, client_id, refresh_token
         )
 
-    def _refresh_token(self):
+    def refresh_api_token(self):
+        """
+        Manually refresh api's token
+        TODO Make staleness of the token an internal matter for the API class to handle.
+        """
         self.api._refresh_token()
 
     def create_dataset_config(
@@ -84,13 +87,23 @@ class DeployedInstanceTestHelper:
 
 
 def set_up(helper: DeployedInstanceTestHelper):
+    """
+    Set up/Create the following:
+    - Dataset (Privacy Group Config)
+    - Test Action (Action Performer Config)
+    - Test Action Rule (Action Rule Config)
+
+    Method is idempotent because the API will error when trying
+    to create configs that already exist.
+
+    """
     helper.create_dataset_config(
-        privacy_group_id=helper.SAMPLE_PG_ID,
+        privacy_group_id="inria-holidays-test",
         privacy_group_name="Holiday Sample Set",
     )
 
-    action_performer = WebhookGetActionPerformer(
-        name="TestActionWebhookGet",
+    action_performer = WebhookPutActionPerformer(
+        name="TestActionWebhookPut",
         url="not_a_real_url",
         headers='{"this-is-a":"test-header"}',
     )
@@ -100,8 +113,8 @@ def set_up(helper: DeployedInstanceTestHelper):
     )
 
     action_rule = ActionRule(
-        name="Trigger for holidays_jpg1_dataset tag 2",
-        action_label=ActionLabel("TestActionWebhookGet"),
+        name="Trigger for holidays_jpg1_dataset tag",
+        action_label=ActionLabel("TestActionWebhookPut"),
         must_have_labels=set(
             [
                 ClassificationLabel("holidays_jpg1_dataset"),
@@ -138,24 +151,30 @@ if __name__ == "__main__":
     # Add init values for the api:
     # `os.environ.get(...)` will enable us pass values from `terraform output` in sh
 
-    HMA_TOKEN = os.environ.get("HMA_TOKEN", "")
     # i.e. "https://<app-id>.execute-api.<region>.amazonaws.com/"
-    HMA_API_URL = os.environ.get(
+    api_url = os.environ.get(
         "HMA_API_URL",
         "",
     )
+    token = os.environ.get(
+        "HMA_TOKEN",
+        "",
+    )
+
     # See AWS Console: Cognito -> UserPools... -> App clients
-    HMA_CLIENT_ID = os.environ.get(
+    client_id = os.environ.get(
         "HMA_CLIENT_ID",
         "",
     )
-    # Can be created with dev certs `$ scripts/get_auth_token --refresh_token`
-    HMA_REFRESH_TOKEN = os.environ.get("HMA_REFRESH_TOKEN", "")
 
-    helper = DeployedInstanceTestHelper(
-        HMA_API_URL, HMA_TOKEN, HMA_CLIENT_ID, HMA_REFRESH_TOKEN
+    # Can be created with dev certs `$ scripts/get_auth_token --refresh_token`
+    refresh_token = os.environ.get(
+        "HMA_REFRESH_TOKEN",
+        "",
     )
-    helper._refresh_token()
+
+    helper = DeployedInstanceTestHelper(api_url, token, client_id, refresh_token)
+    helper.refresh_api_token()
 
     set_up(helper)
 
