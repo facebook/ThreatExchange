@@ -24,7 +24,6 @@ upload_docker:
 
 terraform/terraform.tfvars:
 	echo 'hma_lambda_docker_uri = "${DOCKER_URI}:${DOCKER_TAG}"' > terraform/terraform.tfvars
-	echo 'organization = "${USER}-org"' >> terraform/terraform.tfvars
 
 terraform/backend.tf:
 	./scripts/write_backend_config.sh > terraform/backend.tf
