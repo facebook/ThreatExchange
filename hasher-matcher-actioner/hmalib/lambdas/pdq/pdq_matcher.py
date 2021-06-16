@@ -38,6 +38,7 @@ HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 HMAConfig.initialize(HMA_CONFIG_TABLE)
 
 
+@lru_cache(maxsize=None)
 def get_index(bucket_name, key):
     """
     Load the given index from the s3 bucket and deserialize it

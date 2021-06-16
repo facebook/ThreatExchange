@@ -16,7 +16,8 @@ TODO:
 [x] Make a single successful request with a stolen JWT
 [x] Make threadpooled requests
 [x] Simple Stats for the submission API calls
-[ ] Get JWT without stealing from browser/postman
+[X] Get JWT without stealing from browser/postman (see scripts/get_auth_token)
+[ ] Exponential Backoff if errors are encoutered
 """
 
 import os
@@ -29,7 +30,9 @@ import datetime
 import requests
 from urllib import request
 import concurrent.futures
+import functools
 from time import perf_counter
+import socket
 
 from script_utils import HasherMatcherActionerAPI
 
@@ -40,6 +43,12 @@ TOKEN = ""
 # However it can be used here for easier clean up between storms that do not need the UI.
 ID_SEPARATOR = "-"
 
+# hostnames are especially useful when storming form more than one instance
+hostname = socket.gethostname()
+
+# Value to incorperate into content_id as an attempt to get greater prefix.
+# bucket_prefix_known = int(socket.gethostname()[-2:]) % 5
+
 
 def _send_single_submission_url(
     api: HasherMatcherActionerAPI, filepath: str, additional_fields: t.List[str]
@@ -48,19 +57,34 @@ def _send_single_submission_url(
     Submit a single file by requesting a presigned url and return the time it took in ms.
     """
     file_name = os.path.split(filepath)[-1]
-    content_id = f"storm_url{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
+    content_id = f"storm_url-{hostname}{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
 
     start_time = perf_counter()
 
     with open(filepath, "rb") as file:
-        api.send_single_submission_url(
-            content_id,
-            file,
-            additional_fields,
-        )
+        try:
+            api.send_single_submission_url(
+                content_id,
+                file,
+                additional_fields,
+            )  # api method calls raise_for_status to check for error
+        except requests.exceptions.HTTPError as errh:
+            print("Http Error:", errh)
+        except requests.exceptions.ConnectionError as errc:
+            print("Error Connecting:", errc)
+        except requests.exceptions.Timeout as errt:
+            print("Timeout Error:", errt)
+        except requests.exceptions.RequestException as err:
+            print("OOps: Something Else", err)
 
     # convert seconds to miliseconds.
     return int((perf_counter() - start_time) * 1000)
+
+
+@functools.lru_cache(maxsize=None)
+def _get_b64_contents(filepath):
+    with open(filepath, "rb") as file:
+        return str(base64.b64encode(file.read()), "utf-8")
 
 
 def _send_single_submission_b64(
@@ -70,16 +94,22 @@ def _send_single_submission_b64(
     Submit a single file and return the time it took in ms.
     """
     file_name = os.path.split(filepath)[-1]
-    content_id = f"storm{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
+    content_id = f"storm-{hostname}{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}-{file_name}"
 
     start_time = perf_counter()
 
-    with open(filepath, "rb") as file:
+    try:
         api.send_single_submission_b64(
-            content_id,
-            file,
-            additional_fields,
-        )
+            content_id, _get_b64_contents(filepath), additional_fields
+        )  # api method calls raise_for_status to check for error
+    except requests.exceptions.HTTPError as errh:
+        print("Http Error:", errh)
+    except requests.exceptions.ConnectionError as errc:
+        print("Error Connecting:", errc)
+    except requests.exceptions.Timeout as errt:
+        print("Timeout Error:", errt)
+    except requests.exceptions.RequestException as err:
+        print("OOps: Something Else", err)
 
     # convert seconds to miliseconds.
     return int((perf_counter() - start_time) * 1000)
@@ -91,6 +121,7 @@ def unleash_storm(
     msg_count: int,
     token: str,
     url_mode: bool,
+    verbose: bool,
 ):
     sent_message_count = 0
     jobs = []
@@ -103,7 +134,15 @@ def unleash_storm(
 
     api = HasherMatcherActionerAPI(api_url, token)
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+    # Need to compute script level RequestsPerSecond so that we can estimate
+    # benchmark performance. For that, storing the start time every 200
+    # requests and reporting the QPS between that and current.
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=48) as executor:
+        if verbose:
+            print("Adding tasks to executor")
+        chunk_start_time_200 = perf_counter()
+
         while sent_message_count < msg_count:
             jobs.append(
                 executor.submit(
@@ -115,23 +154,38 @@ def unleash_storm(
             )
 
             sent_message_count += 1
+            if verbose:
+                print(f"{sent_message_count} requests prepared", end="\r")
+
+        if verbose:
+            print("Done")
 
         for i, completed_future in enumerate(concurrent.futures.as_completed(jobs)):
             execution_times.append(completed_future.result())
-            # Report progress
-            print(f"{i} of {msg_count} sent!", end="\r")
+            if verbose:
+                progress_report_string = f"{i} of {msg_count} sent!"
 
-    print(f"Sent all {msg_count} submissions.")
+                rps_report_string = f"Current 200 chunk has QPS of {(i % 200) / (perf_counter() - chunk_start_time_200)}"
 
-    # Compute some beginner stats.
-    execution_times = sorted(execution_times)
-    print(
-        f"""Percentiles in ms:
-  p75: {execution_times[int(len(execution_times)*0.75)]}
-  p95: {execution_times[int(len(execution_times)*0.95)]}
-  p99: {execution_times[int(len(execution_times)*0.99)]}
-    """
-    )
+                # Report progress and RPS
+                print(f"{progress_report_string}! {rps_report_string}", end="\r")
+
+            if i % 200 == 0:
+                # Reset chunk start time
+                chunk_start_time_200 = perf_counter()
+
+    if verbose:
+        print(f"Sent all {msg_count} submissions.")
+
+        # Compute some beginner stats.
+        execution_times = sorted(execution_times)
+        print(
+            f"""Percentiles in ms:
+    p75: {execution_times[int(len(execution_times)*0.75)]}
+    p95: {execution_times[int(len(execution_times)*0.95)]}
+    p99: {execution_times[int(len(execution_times)*0.99)]}
+        """
+        )
 
 
 if __name__ == "__main__":
@@ -158,6 +212,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Submit using presign putObject urls instead of base64 encoding json",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print progress and percentile times for submission sets.",
+    )
 
     args = parser.parse_args()
-    unleash_storm(args.api_url, args.file, args.count, args.token, args.url_mode)
+    unleash_storm(
+        args.api_url, args.file, args.count, args.token, args.url_mode, args.verbose
+    )
