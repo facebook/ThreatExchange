@@ -6,7 +6,7 @@ For full details on ThreatExchange and best practices are available in the [Thre
 
 ## API Reference Examples
 
-The `api-reference-examples` folder contains example implementations in various languages for using the API. These implementations are at various stages of completeness and may not all implement every endpoint availible on the ThreatExchange API. For full details on the ThreatExchange API and UI, data formats, and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
+The `api-reference-examples` folder contains example implementations in various languages for using the API. These implementations are at various stages of completeness and may not all implement every endpoint available on the ThreatExchange API. For full details on the ThreatExchange API and UI, data formats, and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
 
 ## python-threatexchange
 
@@ -18,7 +18,7 @@ ThreatExchange supports a variety of hashing algorithms for photos and videos. T
 
 ## Hasher-Matcher-Actioner (HMA)
 
-This is a deployable project for bootstrapping content moderation, containing many subpieces. The initial capabilities support shared banks of image hashes kept in sync via ThreatExchange. Uses docker images (including proof-of-concept HMA-lite), as well as terraform configuration for setting up on AWS.
+This is a deployable project for bootstrapping content moderation, containing many sub parts. The initial capabilities support shared banks of image hashes kept in sync via ThreatExchange. Uses docker images (including proof-of-concept HMA-lite), as well as terraform configuration for setting up on AWS.
 
 
 ## Get All Available Data
