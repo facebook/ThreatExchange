@@ -8,7 +8,7 @@ shell-or-die = $\
 
 USER ?= $(call shell-or-die,whoami)
 REPOSITORY_NAME = hma-lambda-dev
-DOCKER_TAG ?= ${USER} # todo - change to ${USER}-latest?
+DOCKER_TAG ?= ${USER}# todo - change to ${USER}-latest?
 DOCKER_URI = $(call shell-or-die,docker images --filter=reference='*/${REPOSITORY_NAME}:${DOCKER_TAG}' --format='{{.Repository}}')
 
 
