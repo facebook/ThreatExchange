@@ -109,13 +109,6 @@ export default function ActionRulesTableRow({
         </td>
         <td>{name}</td>
         <td className="action-rule-classification-column">{mustHaveLabels}</td>
-        <td className="action-rule-classification-column">
-          {mustNotHaveLabels.length > 0 ? (
-            mustNotHaveLabels
-          ) : (
-            <span>&mdash;</span>
-          )}
-        </td>
         <td>{getAction()}</td>
       </tr>
       <tr hidden={!editing}>

@@ -56,16 +56,7 @@ export default function ActionRuleFormColumns({
           required
           value={mustHaveLabels}
           onChange={e => onChange({must_have_labels: e.target.value})}
-          isInvalid={showErrors && !mustHaveLabels}
-        />
-      </td>
-      <td>
-        <Form.Label>Not Labeled As</Form.Label>
-        <Form.Control
-          as="textarea"
-          rows={4}
-          value={mustNotHaveLabels}
-          onChange={e => onChange({must_not_have_labels: e.target.value})}
+          isInvalid={showErrors && !mustNotHaveLabels}
         />
       </td>
       <td>

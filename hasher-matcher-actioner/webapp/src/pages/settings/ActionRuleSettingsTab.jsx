@@ -183,8 +183,7 @@ export default function ActionRuleSettingsTab() {
                   </Button>
                 </th>
                 <th>Name</th>
-                <th>Labeled As</th>
-                <th>Not Labeled As</th>
+                <th>Classifications</th>
                 <th>Action</th>
               </tr>
             </thead>
