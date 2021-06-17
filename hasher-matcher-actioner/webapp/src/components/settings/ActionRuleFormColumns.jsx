@@ -11,21 +11,20 @@ import Col from 'react-bootstrap/Col';
 export default function ActionRuleFormColumns({
   actions,
   name,
-  mustHaveLabels,
-  mustNotHaveLabels,
+  classifications,
   actionId,
   showErrors,
   nameIsUnique,
   oldName,
   onChange,
 }) {
-  const classifications = [
-    {
-      classification_type: 'BankSourceClassification',
-      equals: true,
-      classification_value: mustHaveLabels + mustNotHaveLabels,
-    },
-  ];
+  // const classifications = [
+  //   {
+  //     classification_type: 'BankSourceClassification',
+  //     equals: true,
+  //     classification_value: mustHaveLabels + mustNotHaveLabels,
+  //   },
+  // ];
 
   const classificationOptions = [
     <option key="Dataset Source" value="BankSourceClassification">
@@ -214,8 +213,13 @@ ActionRuleFormColumns.propTypes = {
     }),
   ).isRequired,
   name: PropTypes.string.isRequired,
-  mustHaveLabels: PropTypes.string.isRequired,
-  mustNotHaveLabels: PropTypes.string.isRequired,
+  classifications: PropTypes.arrayOf(
+    PropTypes.shape({
+      classification_type: PropTypes.string.isRequired,
+      equals: PropTypes.bool.isRequired,
+      classification_value: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
   actionId: PropTypes.string.isRequired,
   showErrors: PropTypes.bool.isRequired,
   nameIsUnique: PropTypes.func.isRequired,

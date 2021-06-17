@@ -20,19 +20,6 @@ export default function ActionRulesTableRow({
   ruleIsValid,
   nameIsUnique,
 }) {
-  const [editing, setEditing] = useState(false);
-  const [
-    showDeleteActionRuleConfirmation,
-    setShowDeleteActionRuleConfirmation,
-  ] = useState(false);
-  const [updatedActionRule, setUpdatedActionRule] = useState({
-    name,
-    must_have_labels: mustHaveLabels,
-    must_not_have_labels: mustNotHaveLabels,
-    action_id: actionId,
-  });
-  const [showErrors, setShowErrors] = useState(false);
-
   console.log('logging');
   console.log(mustHaveLabels);
   console.log(mustNotHaveLabels);
@@ -51,8 +38,40 @@ export default function ActionRulesTableRow({
     );
   console.log(classifications);
 
+  const [editing, setEditing] = useState(false);
+  const [
+    showDeleteActionRuleConfirmation,
+    setShowDeleteActionRuleConfirmation,
+  ] = useState(false);
+  const [updatedActionRule, setUpdatedActionRule] = useState({
+    name,
+    must_have_labels: mustHaveLabels,
+    must_not_have_labels: mustNotHaveLabels,
+    action_id: actionId,
+  });
+  const [showErrors, setShowErrors] = useState(false);
+
   const onUpdatedActionRuleChange = updatedField => {
-    setUpdatedActionRule({...updatedActionRule, ...updatedField});
+    if (updatedField.classifications) {
+      const updatedMustHaveLabels = updatedField.classifications
+        .filter(classification => classification.equals)
+        .map(classification => ({
+          key: classification.classification_type,
+          value: classification.classification_value,
+        }));
+      const updatedMustNotHaveLabels = updatedField.classifications
+        .filter(classification => !classification.equals)
+        .map(classification => ({
+          key: classification.classification_type,
+          value: classification.classification_value,
+        }));
+      updatedActionRule.must_have_labels = updatedMustHaveLabels;
+      updatedActionRule.must_not_have_labels = updatedMustNotHaveLabels;
+
+      setUpdatedActionRule(updatedActionRule);
+    } else {
+      setUpdatedActionRule({...updatedActionRule, ...updatedField});
+    }
   };
 
   const resetForm = () => {
@@ -78,6 +97,46 @@ export default function ActionRulesTableRow({
       return actionPerformer.name;
     }
     return <span>&mdash;</span>;
+  };
+
+  const getClassifications = () => {
+    const classificationDescriptions = classifications.map(classification => {
+      let ret = 'the';
+      switch (classification.classification_type) {
+        case 'BankSourceClassification':
+          ret += ' Dataset Source';
+          break;
+        case 'BankIDClassification':
+          ret += ' Dataset ID';
+          break;
+
+        case 'BankedContentIDClassification':
+          ret += ' MatchedContent ID';
+          break;
+
+        case 'Classification':
+          ret += ' MatchedContent';
+          if (classification.equals) {
+            ret += ' has been';
+          } else {
+            ret += ' has not been';
+          }
+          ret += ` classified ${classification.classification_value}`;
+          return ret;
+        default:
+          ret += ` ${classification.classification_type}`;
+          break;
+      }
+
+      if (classification.equals) {
+        ret += ' is';
+      } else {
+        ret += ' is not';
+      }
+      ret += ` ${classification.classification_value}`;
+      return ret;
+    });
+    return `Run the action if ${classificationDescriptions.join('; and ')}`;
   };
 
   return (
@@ -126,7 +185,9 @@ export default function ActionRulesTableRow({
           </Modal>
         </td>
         <td>{name}</td>
-        <td className="action-rule-classification-column">{mustHaveLabels}</td>
+        <td className="action-rule-classification-column">
+          {getClassifications()}
+        </td>
         <td>{getAction()}</td>
       </tr>
       <tr hidden={!editing}>
@@ -163,8 +224,7 @@ export default function ActionRulesTableRow({
         <ActionRuleFormColumns
           actions={actions}
           name={updatedActionRule.name}
-          mustHaveLabels={updatedActionRule.must_have_labels}
-          mustNotHaveLabels={updatedActionRule.must_not_have_labels}
+          classifications={updatedActionRule.classifications}
           actionId={updatedActionRule.action_id}
           showErrors={showErrors}
           nameIsUnique={nameIsUnique}
