@@ -33,6 +33,24 @@ export default function ActionRulesTableRow({
   });
   const [showErrors, setShowErrors] = useState(false);
 
+  console.log('logging');
+  console.log(mustHaveLabels);
+  console.log(mustNotHaveLabels);
+  const classifications = JSON.parse(mustHaveLabels)
+    .map(mustHaveLabel => ({
+      classification_type: mustHaveLabel.key,
+      equals: true,
+      classification_value: mustHaveLabel.value,
+    }))
+    .concat(
+      JSON.parse(mustNotHaveLabels).map(mustHaveLabel => ({
+        classification_type: mustHaveLabel.key,
+        equals: false,
+        classification_value: mustHaveLabel.value,
+      })),
+    );
+  console.log(classifications);
+
   const onUpdatedActionRuleChange = updatedField => {
     setUpdatedActionRule({...updatedActionRule, ...updatedField});
   };
