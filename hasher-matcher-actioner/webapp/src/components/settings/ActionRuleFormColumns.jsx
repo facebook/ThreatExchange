@@ -8,6 +8,20 @@ import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
+const classificationOptions = [
+  <option key="Dataset Source" value="BankSourceClassification">
+    Dataset Source
+  </option>,
+  <option key="Dataset ID" value="BankIDClassification">
+    Dataset ID
+  </option>,
+  <option key="MatchedContent ID" value="BankedContentIDClassification">
+    MatchedContent ID
+  </option>,
+  <option key="MatchedContent Classification" value="Classification">
+    MatchedContent Classification
+  </option>,
+];
 export default function ActionRuleFormColumns({
   actions,
   name,
@@ -18,62 +32,12 @@ export default function ActionRuleFormColumns({
   oldName,
   onChange,
 }) {
-  const classificationOptions = [
-    <option key="Dataset Source" value="BankSourceClassification">
-      Dataset Source
-    </option>,
-    <option key="Dataset ID" value="BankIDClassification">
-      Dataset ID
-    </option>,
-    <option key="Matched Content ID" value="BankedContentIDClassification">
-      Matched Content ID
-    </option>,
-    <option key="Matched Content Tag" value="Classification">
-      Matched Content Tag
-    </option>,
-  ];
-
-  // const classificationOptionValues = {
-  //   BankSourceClassification: {
-  //     form_type: 'select',
-  //     options: [
-  //       <option key="te" value="te">
-  //         ThreatExchange
-  //       </option>,
-  //     ],
-  //   },
-  //   BankIDClassification: {
-  //     form_type: 'select',
-  //     options: [
-  //       <option key="1" value="1">
-  //         DS 1
-  //       </option>,
-  //       <option key="2" value="2">
-  //         DS 2
-  //       </option>,
-  //     ],
-  //   },
-  //   BankedContentIDClassification: {
-  //     form_type: 'text',
-  //   },
-  //   Classification: {
-  //     form_type: 'select',
-  //     options: [
-  //       <option key="1a" value="1">
-  //         Tag 1
-  //       </option>,
-  //       <option key="2a" value="2">
-  //         DS 2
-  //       </option>,
-  //     ],
-  //   },
-  // };
-
-  const renderClassificationRow = (classification, onClassificationChange) => (
-    <Row
-      key={
-        classification.classification_type + classification.classification_value
-      }>
+  const renderClassificationRow = (
+    classification,
+    onClassificationChange,
+    index,
+  ) => (
+    <Row key={index}>
       <Col key="select-classification-type">
         <Form.Control
           as="select"
@@ -94,13 +58,13 @@ export default function ActionRuleFormColumns({
           value={classification.equals}
           onChange={e => {
             const newClassification = classification;
-            newClassification.equals = e.target.value;
+            newClassification.equals = e.target.value === 'true';
             onClassificationChange(newClassification);
           }}>
-          <option key="Equal" value>
+          <option key="Equal" value="true">
             =
           </option>
-          <option key="NotEqual" value={false}>
+          <option key="NotEqual" value="false">
             ≠
           </option>
         </Form.Control>
@@ -115,6 +79,8 @@ export default function ActionRuleFormColumns({
             newClassification.classification_value = e.target.value;
             onClassificationChange(newClassification);
           }}
+          selected
+          isInvalid={showErrors && !classification.classification_value}
         />
       </Col>
     </Row>
@@ -162,14 +128,12 @@ export default function ActionRuleFormColumns({
                 const onClassificationChange = newClassification => {
                   const newClassifications = classifications;
                   newClassifications[index] = newClassification;
-                  console.log('onChange called');
-                  console.log(newClassifications);
-
                   onChange({classifications: newClassifications});
                 };
                 return renderClassificationRow(
                   classification,
                   onClassificationChange,
+                  index,
                 );
               })
             : []}
@@ -210,9 +174,7 @@ ActionRuleFormColumns.propTypes = {
       equals: PropTypes.bool.isRequired,
       classification_value: PropTypes.string.isRequired,
     }),
-  ).isRequired,
-  // mustHaveLabels: PropTypes.string.isRequired,
-  // mustNotHaveLabels: PropTypes.string,
+  ),
   actionId: PropTypes.string.isRequired,
   showErrors: PropTypes.bool.isRequired,
   nameIsUnique: PropTypes.func.isRequired,
@@ -222,4 +184,5 @@ ActionRuleFormColumns.propTypes = {
 
 ActionRuleFormColumns.defaultProps = {
   oldName: undefined,
+  classifications: [],
 };

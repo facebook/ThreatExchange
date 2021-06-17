@@ -9,6 +9,20 @@ import Modal from 'react-bootstrap/Modal';
 import ActionRuleFormColumns from './ActionRuleFormColumns';
 import '../../styles/_settings.scss';
 
+const classificationsFromLabels = (mustHaveLabels, mustNotHaveLabels) =>
+  mustHaveLabels
+    .map(mustHaveLabel => ({
+      classification_type: mustHaveLabel.key,
+      equals: true,
+      classification_value: mustHaveLabel.value,
+    }))
+    .concat(
+      mustNotHaveLabels.map(mustNotHaveLabel => ({
+        classification_type: mustNotHaveLabel.key,
+        equals: false,
+        classification_value: mustNotHaveLabel.value,
+      })),
+    );
 export default function ActionRulesTableRow({
   actions,
   name,
@@ -25,23 +39,13 @@ export default function ActionRulesTableRow({
     showDeleteActionRuleConfirmation,
     setShowDeleteActionRuleConfirmation,
   ] = useState(false);
+
   const [updatedActionRule, setUpdatedActionRule] = useState({
     name,
-    // must_have_labels: mustHaveLabels,
-    // must_not_have_labels: mustNotHaveLabels,
-    classifications: JSON.parse(mustHaveLabels)
-      .map(mustHaveLabel => ({
-        classification_type: mustHaveLabel.key,
-        equals: true,
-        classification_value: mustHaveLabel.value,
-      }))
-      .concat(
-        JSON.parse(mustNotHaveLabels).map(mustHaveLabel => ({
-          classification_type: mustHaveLabel.key,
-          equals: false,
-          classification_value: mustHaveLabel.value,
-        })),
-      ),
+    classifications: classificationsFromLabels(
+      mustHaveLabels,
+      mustNotHaveLabels,
+    ),
     action_id: actionId,
   });
   const [showErrors, setShowErrors] = useState(false);
@@ -53,19 +57,10 @@ export default function ActionRulesTableRow({
   const resetForm = () => {
     setUpdatedActionRule({
       name,
-      classifications: JSON.parse(mustHaveLabels)
-        .map(mustHaveLabel => ({
-          classification_type: mustHaveLabel.key,
-          equals: true,
-          classification_value: mustHaveLabel.value,
-        }))
-        .concat(
-          JSON.parse(mustNotHaveLabels).map(mustHaveLabel => ({
-            classification_type: mustHaveLabel.key,
-            equals: false,
-            classification_value: mustHaveLabel.value,
-          })),
-        ),
+      classifications: classificationsFromLabels(
+        mustHaveLabels,
+        mustNotHaveLabels,
+      ),
       action_id: actionId,
     });
   };
@@ -186,30 +181,27 @@ export default function ActionRulesTableRow({
             className="mb-2 table-action-button"
             onClick={() => {
               setShowErrors(false);
-              if (ruleIsValid(updatedActionRule, name)) {
-                const updatedMustHaveLabels = updatedActionRule.classifications
-                  .filter(classification => classification.equals)
-                  .map(classification => ({
-                    key: classification.classification_type,
-                    value: classification.classification_value,
-                  }));
-                const updatedMustNotHaveLabels = updatedActionRule.classifications
-                  .filter(classification => !classification.equals)
-                  .map(classification => ({
-                    key: classification.classification_type,
-                    value: classification.classification_value,
-                  }));
 
-                updatedActionRule.must_have_labels = JSON.stringify(
-                  updatedMustHaveLabels,
-                );
-                updatedActionRule.must_not_have_labels = JSON.stringify(
-                  updatedMustNotHaveLabels,
-                );
+              // Convert classifications into Label sets which the backend understands
+              const updatedMustHaveLabels = updatedActionRule.classifications
+                .filter(classification => classification.equals)
+                .map(classification => ({
+                  key: classification.classification_type,
+                  value: classification.classification_value,
+                }));
+              const updatedMustNotHaveLabels = updatedActionRule.classifications
+                .filter(classification => !classification.equals)
+                .map(classification => ({
+                  key: classification.classification_type,
+                  value: classification.classification_value,
+                }));
+
+              updatedActionRule.must_have_labels = updatedMustHaveLabels;
+              updatedActionRule.must_not_have_labels = updatedMustNotHaveLabels;
+              if (ruleIsValid(updatedActionRule, name)) {
                 onUpdateActionRule(name, updatedActionRule);
                 setEditing(false);
               } else {
-                console.log('showing errors');
                 setShowErrors(true);
               }
             }}>
@@ -233,8 +225,6 @@ export default function ActionRulesTableRow({
         <ActionRuleFormColumns
           actions={actions}
           name={updatedActionRule.name}
-          // mustHaveLabels={updatedActionRule.must_have_labels}
-          // mustNotHaveLabels={updatedActionRule.must_not_have_labels}
           classifications={updatedActionRule.classifications}
           actionId={updatedActionRule.action_id}
           showErrors={showErrors}
@@ -255,8 +245,18 @@ ActionRulesTableRow.propTypes = {
     }),
   ).isRequired,
   name: PropTypes.string.isRequired,
-  mustHaveLabels: PropTypes.string.isRequired,
-  mustNotHaveLabels: PropTypes.string,
+  mustHaveLabels: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
+  mustNotHaveLabels: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+    }),
+  ),
   actionId: PropTypes.string.isRequired,
   onDeleteActionRule: PropTypes.func.isRequired,
   onUpdateActionRule: PropTypes.func.isRequired,
