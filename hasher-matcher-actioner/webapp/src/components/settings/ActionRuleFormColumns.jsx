@@ -18,14 +18,6 @@ export default function ActionRuleFormColumns({
   oldName,
   onChange,
 }) {
-  // const classifications = [
-  //   {
-  //     classification_type: 'BankSourceClassification',
-  //     equals: true,
-  //     classification_value: mustHaveLabels + mustNotHaveLabels,
-  //   },
-  // ];
-
   const classificationOptions = [
     <option key="Dataset Source" value="BankSourceClassification">
       Dataset Source
@@ -41,104 +33,92 @@ export default function ActionRuleFormColumns({
     </option>,
   ];
 
-  const classificationOptionValues = {
-    BankSourceClassification: {
-      form_type: 'select',
-      options: [
-        <option key="te" value="te">
-          ThreatExchange
-        </option>,
-      ],
-    },
-    BankIDClassification: {
-      form_type: 'select',
-      options: [
-        <option key="1" value="1">
-          DS 1
-        </option>,
-        <option key="2" value="2">
-          DS 2
-        </option>,
-      ],
-    },
-    BankedContentIDClassification: {
-      form_type: 'text',
-    },
-    Classification: {
-      form_type: 'select',
-      options: [
-        <option key="1a" value="1">
-          Tag 1
-        </option>,
-        <option key="2a" value="2">
-          DS 2
-        </option>,
-      ],
-    },
-  };
+  // const classificationOptionValues = {
+  //   BankSourceClassification: {
+  //     form_type: 'select',
+  //     options: [
+  //       <option key="te" value="te">
+  //         ThreatExchange
+  //       </option>,
+  //     ],
+  //   },
+  //   BankIDClassification: {
+  //     form_type: 'select',
+  //     options: [
+  //       <option key="1" value="1">
+  //         DS 1
+  //       </option>,
+  //       <option key="2" value="2">
+  //         DS 2
+  //       </option>,
+  //     ],
+  //   },
+  //   BankedContentIDClassification: {
+  //     form_type: 'text',
+  //   },
+  //   Classification: {
+  //     form_type: 'select',
+  //     options: [
+  //       <option key="1a" value="1">
+  //         Tag 1
+  //       </option>,
+  //       <option key="2a" value="2">
+  //         DS 2
+  //       </option>,
+  //     ],
+  //   },
+  // };
 
-  const renderClassificationRow = (classification, index) => {
-    const onClassificationChange = newClassification => {
-      const newClassifications = classifications;
-      newClassifications[index] = newClassification;
-      onChange({must_have_labels: newClassifications});
-    };
-
-    return (
-      <Row key={index}>
-        <Col key="select-classification-type">
-          <Form.Control
-            as="select"
-            required
-            onChange={e => {
-              const newClassification = classification;
-              newClassification.classification_type = e.target.value;
-              onClassificationChange(newClassification);
-            }}
-            isInvalid={showErrors && classifications.length > 0}>
-            {classificationOptions}
-          </Form.Control>
-        </Col>
-        <Col xs="auto" key="select-classification-equals">
-          <Form.Control
-            as="select"
-            required
-            onChange={e => {
-              const newClassification = classification;
-              newClassification.equals = e.target.value;
-              onClassificationChange(newClassification);
-            }}>
-            <option key="Equal" value>
-              =
-            </option>
-            <option key="NotEqual" value={false}>
-              ≠
-            </option>
-          </Form.Control>
-        </Col>
-        <Col key="select-classification-value">
-          <Form.Control
-            // as={
-            //   classificationOptionValues[
-            //     classifications[0].classification_type
-            //   ].form_type
-            // }
-            as="select"
-            required
-            onChange={e => {
-              const newClassification = classification;
-              newClassification.classification_value = e.target.value;
-              onClassificationChange(newClassification);
-            }}>
-            {
-              classificationOptionValues[classifications[0].classification_type]
-                .options
-            }
-          </Form.Control>
-        </Col>
-      </Row>
-    );
-  };
+  const renderClassificationRow = (classification, onClassificationChange) => (
+    <Row
+      key={
+        classification.classification_type + classification.classification_value
+      }>
+      <Col key="select-classification-type">
+        <Form.Control
+          as="select"
+          required
+          value={classification.classification_type}
+          onChange={e => {
+            const newClassification = classification;
+            newClassification.classification_type = e.target.value;
+            onClassificationChange(newClassification);
+          }}>
+          {classificationOptions}
+        </Form.Control>
+      </Col>
+      <Col xs="auto" key="select-classification-equals">
+        <Form.Control
+          as="select"
+          required
+          value={classification.equals}
+          onChange={e => {
+            const newClassification = classification;
+            newClassification.equals = e.target.value;
+            onClassificationChange(newClassification);
+          }}>
+          <option key="Equal" value>
+            =
+          </option>
+          <option key="NotEqual" value={false}>
+            ≠
+          </option>
+        </Form.Control>
+      </Col>
+      <Col key="select-classification-value">
+        <Form.Control
+          type="text"
+          value={classification.classification_value}
+          required
+          onChange={e => {
+            const newClassification = classification;
+            newClassification.classification_value = e.target.value;
+            onClassificationChange(newClassification);
+          }}
+        />
+      </Col>
+    </Row>
+  );
 
   const actionOptions = actions
     ? actions.map(action => (
@@ -178,9 +158,20 @@ export default function ActionRuleFormColumns({
             </span>
           </Form.Label>
           {classifications
-            ? classifications.map((classification, index) =>
-                renderClassificationRow(classification, index),
-              )
+            ? classifications.map((classification, index) => {
+                const onClassificationChange = newClassification => {
+                  const newClassifications = classifications;
+                  newClassifications[index] = newClassification;
+                  console.log('onChange called');
+                  console.log(newClassifications);
+
+                  onChange({classifications: newClassifications});
+                };
+                return renderClassificationRow(
+                  classification,
+                  onClassificationChange,
+                );
+              })
             : []}
         </Form>
       </td>
@@ -220,6 +211,8 @@ ActionRuleFormColumns.propTypes = {
       classification_value: PropTypes.string.isRequired,
     }),
   ).isRequired,
+  // mustHaveLabels: PropTypes.string.isRequired,
+  // mustNotHaveLabels: PropTypes.string,
   actionId: PropTypes.string.isRequired,
   showErrors: PropTypes.bool.isRequired,
   nameIsUnique: PropTypes.func.isRequired,
