@@ -326,3 +326,26 @@ resource "aws_secretsmanager_secret_version" "te_api_token" {
 }
 
 
+### Basic Dashboard ###
+module "dashboard" {
+  depends_on = [
+    module.api.api_root_function_name,
+    module.datastore.primary_datastore,
+  ]
+  source    = "./dashboard"
+  prefix    = var.prefix
+  datastore = module.datastore.primary_datastore
+  lambdas_to_monitor = [module.api.api_root_function_name,
+    module.pdq_signals.pdq_hasher_function_name,
+    module.fetcher.fetcher_function_name,
+    module.pdq_signals.pdq_matcher_function_name,
+    module.actions.action_evaluator_function_name,
+    module.actions.action_performer_function_name
+  ] # Not currently included indexer, writebacker, and counter functions
+  queues_to_monitor = [aws_sqs_queue.pdq_images_queue.name,
+    module.pdq_signals.hashes_queue_name,
+    module.actions.matches_queue_name,
+    module.actions.actions_queue_name
+  ] # Could also monitor sns topics
+  api_gateway_id = module.api.api_gateway_id
+}
