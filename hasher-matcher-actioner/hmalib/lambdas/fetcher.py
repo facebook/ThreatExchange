@@ -85,7 +85,7 @@ class FetcherConfig:
         )
 
 
-def is_int(int_string):
+def is_int(int_string: str):
     """
     Checks if string is convertible to int.
     """
