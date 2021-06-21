@@ -8,20 +8,6 @@ import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
-const classificationOptions = [
-  <option key="Dataset Source" value="BankSourceClassification">
-    Dataset Source
-  </option>,
-  <option key="Dataset ID" value="BankIDClassification">
-    Dataset ID
-  </option>,
-  <option key="MatchedContent ID" value="BankedContentIDClassification">
-    MatchedContent ID
-  </option>,
-  <option key="MatchedContent Classification" value="Classification">
-    MatchedContent Classification
-  </option>,
-];
 export default function ActionRuleFormColumns({
   actions,
   name,
@@ -37,8 +23,8 @@ export default function ActionRuleFormColumns({
     onClassificationChange,
     index,
   ) => (
-    <Row key={index}>
-      <Col key="select-classification-type">
+    <Row key={index} style={{marginBottom: 3, marginLeft: 3}}>
+      <Col>
         <Form.Control
           as="select"
           required
@@ -48,10 +34,15 @@ export default function ActionRuleFormColumns({
             newClassification.classification_type = e.target.value;
             onClassificationChange(newClassification);
           }}>
-          {classificationOptions}
+          <option value="BankSourceClassification">Dataset Source</option>
+          <option value="BankIDClassification">Dataset ID</option>
+          <option value="BankedContentIDClassification">
+            MatchedSignal ID
+          </option>
+          <option value="Classification">MatchedSignal</option>
         </Form.Control>
       </Col>
-      <Col xs="auto" key="select-classification-equals">
+      <Col>
         <Form.Control
           as="select"
           required
@@ -61,15 +52,19 @@ export default function ActionRuleFormColumns({
             newClassification.equals = e.target.value === 'true';
             onClassificationChange(newClassification);
           }}>
-          <option key="Equal" value="true">
-            =
+          <option value="true">
+            {classification.classification_type === 'Classification'
+              ? 'Classified As'
+              : '='}
           </option>
-          <option key="NotEqual" value="false">
-            ≠
+          <option value="false">
+            {classification.classification_type === 'Classification'
+              ? 'Not Classified As'
+              : '≠'}
           </option>
         </Form.Control>
       </Col>
-      <Col key="select-classification-value">
+      <Col>
         <Form.Control
           type="text"
           value={classification.classification_value}
@@ -115,29 +110,24 @@ export default function ActionRuleFormColumns({
         </Form.Text>
       </td>
       <td>
-        <Form>
-          <Form.Label>
-            Classifications
-            <span hidden={!showErrors || classifications.length === 0}>
-              {' '}
-              (required)
-            </span>
-          </Form.Label>
-          {classifications
-            ? classifications.map((classification, index) => {
-                const onClassificationChange = newClassification => {
-                  const newClassifications = classifications;
-                  newClassifications[index] = newClassification;
-                  onChange({classifications: newClassifications});
-                };
-                return renderClassificationRow(
-                  classification,
-                  onClassificationChange,
-                  index,
-                );
-              })
-            : []}
-        </Form>
+        <Form.Label>
+          Classifications
+          <span hidden={!showErrors || classifications}> (required)</span>
+        </Form.Label>
+        {classifications
+          ? classifications.map((classification, index) => {
+              const onClassificationChange = newClassification => {
+                const newClassifications = classifications;
+                newClassifications[index] = newClassification;
+                onChange({classifications: newClassifications});
+              };
+              return renderClassificationRow(
+                classification,
+                onClassificationChange,
+                index,
+              );
+            })
+          : []}
       </td>
       <td>
         <Form.Label>

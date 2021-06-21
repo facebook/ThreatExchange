@@ -99,22 +99,22 @@ export default function ActionRulesTableRow({
 
           case 'Classification':
             ret += ' MatchedContent';
-            if (classification.equals) {
-              ret += ' has been';
-            } else {
-              ret += ' has not been';
-            }
-            ret += ` classified ${classification.classification_value}`;
-            return ret;
+            break;
           default:
             ret += ` ${classification.classification_type}`;
             break;
         }
 
         if (classification.equals) {
-          ret += ' is';
+          ret +=
+            classification.classification_type === 'Classification'
+              ? ' has been classified'
+              : ' is';
         } else {
-          ret += ' is not';
+          ret +=
+            classification.classification_type === 'Classification'
+              ? ' has not been classified'
+              : ' is not';
         }
         ret += ` ${classification.classification_value}`;
         return ret;
