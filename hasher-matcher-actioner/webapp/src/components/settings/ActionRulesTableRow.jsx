@@ -9,6 +9,20 @@ import Modal from 'react-bootstrap/Modal';
 import ActionRuleFormColumns from './ActionRuleFormColumns';
 import '../../styles/_settings.scss';
 
+const classificationsFromLabels = (mustHaveLabels, mustNotHaveLabels) =>
+  mustHaveLabels
+    .map(mustHaveLabel => ({
+      classification_type: mustHaveLabel.key,
+      equals: true,
+      classification_value: mustHaveLabel.value,
+    }))
+    .concat(
+      mustNotHaveLabels.map(mustNotHaveLabel => ({
+        classification_type: mustNotHaveLabel.key,
+        equals: false,
+        classification_value: mustNotHaveLabel.value,
+      })),
+    );
 export default function ActionRulesTableRow({
   actions,
   name,
@@ -25,10 +39,13 @@ export default function ActionRulesTableRow({
     showDeleteActionRuleConfirmation,
     setShowDeleteActionRuleConfirmation,
   ] = useState(false);
+
   const [updatedActionRule, setUpdatedActionRule] = useState({
     name,
-    must_have_labels: mustHaveLabels,
-    must_not_have_labels: mustNotHaveLabels,
+    classifications: classificationsFromLabels(
+      mustHaveLabels,
+      mustNotHaveLabels,
+    ),
     action_id: actionId,
   });
   const [showErrors, setShowErrors] = useState(false);
@@ -40,8 +57,10 @@ export default function ActionRulesTableRow({
   const resetForm = () => {
     setUpdatedActionRule({
       name,
-      must_have_labels: mustHaveLabels,
-      must_not_have_labels: mustNotHaveLabels,
+      classifications: classificationsFromLabels(
+        mustHaveLabels,
+        mustNotHaveLabels,
+      ),
       action_id: actionId,
     });
   };
@@ -60,6 +79,48 @@ export default function ActionRulesTableRow({
       return actionPerformer.name;
     }
     return <span>&mdash;</span>;
+  };
+
+  const getClassificationDescriptions = () => {
+    const classificationDescriptions = updatedActionRule.classifications.map(
+      classification => {
+        let ret = 'the';
+        switch (classification.classification_type) {
+          case 'BankSourceClassification':
+            ret += ' Dataset Source';
+            break;
+          case 'BankIDClassification':
+            ret += ' Dataset ID';
+            break;
+
+          case 'BankedContentIDClassification':
+            ret += ' MatchedContent ID';
+            break;
+
+          case 'Classification':
+            ret += ' MatchedContent';
+            break;
+          default:
+            ret += ` ${classification.classification_type}`;
+            break;
+        }
+
+        if (classification.equals) {
+          ret +=
+            classification.classification_type === 'Classification'
+              ? ' has been classified'
+              : ' is';
+        } else {
+          ret +=
+            classification.classification_type === 'Classification'
+              ? ' has not been classified'
+              : ' is not';
+        }
+        ret += ` ${classification.classification_value}`;
+        return ret;
+      },
+    );
+    return `Run the action if ${classificationDescriptions.join('; and ')}`;
   };
 
   return (
@@ -108,13 +169,8 @@ export default function ActionRulesTableRow({
           </Modal>
         </td>
         <td>{name}</td>
-        <td className="action-rule-classification-column">{mustHaveLabels}</td>
         <td className="action-rule-classification-column">
-          {mustNotHaveLabels.length > 0 ? (
-            mustNotHaveLabels
-          ) : (
-            <span>&mdash;</span>
-          )}
+          {getClassificationDescriptions()}
         </td>
         <td>{getAction()}</td>
       </tr>
@@ -125,6 +181,23 @@ export default function ActionRulesTableRow({
             className="mb-2 table-action-button"
             onClick={() => {
               setShowErrors(false);
+
+              // Convert classifications into Label sets which the backend understands
+              const updatedMustHaveLabels = updatedActionRule.classifications
+                .filter(classification => classification.equals)
+                .map(classification => ({
+                  key: classification.classification_type,
+                  value: classification.classification_value,
+                }));
+              const updatedMustNotHaveLabels = updatedActionRule.classifications
+                .filter(classification => !classification.equals)
+                .map(classification => ({
+                  key: classification.classification_type,
+                  value: classification.classification_value,
+                }));
+
+              updatedActionRule.must_have_labels = updatedMustHaveLabels;
+              updatedActionRule.must_not_have_labels = updatedMustNotHaveLabels;
               if (ruleIsValid(updatedActionRule, name)) {
                 onUpdateActionRule(name, updatedActionRule);
                 setEditing(false);
@@ -152,8 +225,7 @@ export default function ActionRulesTableRow({
         <ActionRuleFormColumns
           actions={actions}
           name={updatedActionRule.name}
-          mustHaveLabels={updatedActionRule.must_have_labels}
-          mustNotHaveLabels={updatedActionRule.must_not_have_labels}
+          classifications={updatedActionRule.classifications}
           actionId={updatedActionRule.action_id}
           showErrors={showErrors}
           nameIsUnique={nameIsUnique}
@@ -173,8 +245,18 @@ ActionRulesTableRow.propTypes = {
     }),
   ).isRequired,
   name: PropTypes.string.isRequired,
-  mustHaveLabels: PropTypes.string.isRequired,
-  mustNotHaveLabels: PropTypes.string,
+  mustHaveLabels: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
+  mustNotHaveLabels: PropTypes.arrayOf(
+    PropTypes.shape({
+      key: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+    }),
+  ),
   actionId: PropTypes.string.isRequired,
   onDeleteActionRule: PropTypes.func.isRequired,
   onUpdateActionRule: PropTypes.func.isRequired,

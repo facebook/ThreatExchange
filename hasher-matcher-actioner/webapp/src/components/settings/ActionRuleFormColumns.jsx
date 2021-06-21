@@ -5,18 +5,74 @@
 import React from 'react';
 import {PropTypes} from 'prop-types';
 import Form from 'react-bootstrap/Form';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 
 export default function ActionRuleFormColumns({
   actions,
   name,
-  mustHaveLabels,
-  mustNotHaveLabels,
+  classifications,
   actionId,
   showErrors,
   nameIsUnique,
   oldName,
   onChange,
 }) {
+  const renderClassificationRow = (
+    classification,
+    onClassificationChange,
+    index,
+  ) => (
+    <Row key={index} style={{marginBottom: 3, marginLeft: 3}}>
+      <Col>
+        <Form.Control
+          as="select"
+          required
+          value={classification.classification_type}
+          onChange={e => {
+            const newClassification = classification;
+            newClassification.classification_type = e.target.value;
+            onClassificationChange(newClassification);
+          }}>
+          <option value="BankSourceClassification">Dataset Source</option>
+          <option value="BankIDClassification">Dataset ID</option>
+          <option value="BankedContentIDClassification">
+            MatchedSignal ID
+          </option>
+          <option value="Classification">MatchedSignal</option>
+        </Form.Control>
+      </Col>
+      <Col xs={2}>
+        <Form.Control
+          as="select"
+          required
+          value={classification.equals}
+          onChange={e => {
+            const newClassification = classification;
+            newClassification.equals = e.target.value === 'true';
+            onClassificationChange(newClassification);
+          }}>
+          <option value="true">=</option>
+          <option value="false">≠</option>
+        </Form.Control>
+      </Col>
+      <Col>
+        <Form.Control
+          type="text"
+          value={classification.classification_value}
+          required
+          onChange={e => {
+            const newClassification = classification;
+            newClassification.classification_value = e.target.value;
+            onClassificationChange(newClassification);
+          }}
+          selected
+          isInvalid={showErrors && !classification.classification_value}
+        />
+      </Col>
+    </Row>
+  );
+
   const actionOptions = actions
     ? actions.map(action => (
         <option key={action.id} value={action.id}>
@@ -47,26 +103,23 @@ export default function ActionRuleFormColumns({
       </td>
       <td>
         <Form.Label>
-          Labeled As
-          <span hidden={!showErrors || mustHaveLabels}> (required)</span>
+          Classifications
+          <span hidden={!showErrors || classifications}> (required)</span>
         </Form.Label>
-        <Form.Control
-          as="textarea"
-          rows={4}
-          required
-          value={mustHaveLabels}
-          onChange={e => onChange({must_have_labels: e.target.value})}
-          isInvalid={showErrors && !mustHaveLabels}
-        />
-      </td>
-      <td>
-        <Form.Label>Not Labeled As</Form.Label>
-        <Form.Control
-          as="textarea"
-          rows={4}
-          value={mustNotHaveLabels}
-          onChange={e => onChange({must_not_have_labels: e.target.value})}
-        />
+        {classifications
+          ? classifications.map((classification, index) => {
+              const onClassificationChange = newClassification => {
+                const newClassifications = classifications;
+                newClassifications[index] = newClassification;
+                onChange({classifications: newClassifications});
+              };
+              return renderClassificationRow(
+                classification,
+                onClassificationChange,
+                index,
+              );
+            })
+          : []}
       </td>
       <td>
         <Form.Label>
@@ -97,8 +150,13 @@ ActionRuleFormColumns.propTypes = {
     }),
   ).isRequired,
   name: PropTypes.string.isRequired,
-  mustHaveLabels: PropTypes.string.isRequired,
-  mustNotHaveLabels: PropTypes.string.isRequired,
+  classifications: PropTypes.arrayOf(
+    PropTypes.shape({
+      classification_type: PropTypes.string.isRequired,
+      equals: PropTypes.bool.isRequired,
+      classification_value: PropTypes.string.isRequired,
+    }),
+  ),
   actionId: PropTypes.string.isRequired,
   showErrors: PropTypes.bool.isRequired,
   nameIsUnique: PropTypes.func.isRequired,
@@ -108,4 +166,5 @@ ActionRuleFormColumns.propTypes = {
 
 ActionRuleFormColumns.defaultProps = {
   oldName: undefined,
+  classifications: [],
 };

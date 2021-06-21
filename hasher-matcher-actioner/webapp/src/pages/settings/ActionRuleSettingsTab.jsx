@@ -43,8 +43,8 @@ export default function ActionRuleSettingsTab() {
       if (response && response.error_message === '') {
         const mappedActionRules = response.action_rules.map(actionRule => ({
           name: actionRule.name,
-          must_have_labels: JSON.stringify(actionRule.must_have_labels),
-          must_not_have_labels: JSON.stringify(actionRule.must_not_have_labels),
+          must_have_labels: actionRule.must_have_labels,
+          must_not_have_labels: actionRule.must_not_have_labels,
           action_id: actionRule.action_label.value,
         }));
         setActionRules(mappedActionRules);
@@ -104,8 +104,8 @@ export default function ActionRuleSettingsTab() {
 
   const getAPIActionRule = actionRule => ({
     name: actionRule.name,
-    must_have_labels: JSON.parse(actionRule.must_have_labels),
-    must_not_have_labels: JSON.parse(actionRule.must_not_have_labels),
+    must_have_labels: actionRule.must_have_labels,
+    must_not_have_labels: actionRule.must_not_have_labels,
     action_label: {
       key: 'Action',
       value: actionRule.action_id,
@@ -183,8 +183,7 @@ export default function ActionRuleSettingsTab() {
                   </Button>
                 </th>
                 <th>Name</th>
-                <th>Labeled As</th>
-                <th>Not Labeled As</th>
+                <th>Classifications</th>
                 <th>Action</th>
               </tr>
             </thead>
