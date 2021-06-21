@@ -42,7 +42,7 @@ export default function ActionRuleFormColumns({
           <option value="Classification">MatchedSignal</option>
         </Form.Control>
       </Col>
-      <Col>
+      <Col xs={2}>
         <Form.Control
           as="select"
           required
@@ -52,16 +52,8 @@ export default function ActionRuleFormColumns({
             newClassification.equals = e.target.value === 'true';
             onClassificationChange(newClassification);
           }}>
-          <option value="true">
-            {classification.classification_type === 'Classification'
-              ? 'Classified As'
-              : '='}
-          </option>
-          <option value="false">
-            {classification.classification_type === 'Classification'
-              ? 'Not Classified As'
-              : '≠'}
-          </option>
+          <option value="true">=</option>
+          <option value="false">≠</option>
         </Form.Control>
       </Col>
       <Col>
