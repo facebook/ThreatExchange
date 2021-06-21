@@ -70,12 +70,13 @@ class HasherMatcherActionerAPI:
 
     def get_all_matches(self, api_path: str = "/matches/"):
         response = self.session.get(self._get_request_url(api_path))
+        response.raise_for_status()
         return response.json().get("match_summaries", [])
 
     def send_single_submission_b64(
         self,
         content_id: str,
-        file: t.BinaryIO,
+        b64_file_contents: str,
         additional_fields: t.List[str] = [],
         api_path: str = "/submit/",
     ):
@@ -83,15 +84,14 @@ class HasherMatcherActionerAPI:
             "submission_type": "DIRECT_UPLOAD",
             "content_id": content_id,
             "content_type": "PHOTO",
-            "content_bytes_url_or_file_type": str(
-                base64.b64encode(file.read()), "utf-8"
-            ),
+            "content_bytes_url_or_file_type": b64_file_contents,
             "additional_fields": additional_fields,
         }
-        self.session.post(
+        response = self.session.post(
             self._get_request_url(api_path),
-            data=json.dumps(payload).encode(),
+            data=json.dumps(payload).encode("utf-8"),
         )
+        response.raise_for_status()
 
     def send_single_submission_url(
         self,
@@ -107,16 +107,20 @@ class HasherMatcherActionerAPI:
             "content_bytes_url_or_file_type": "image/jpeg",
             "additional_fields": additional_fields,
         }
-        response_json = self.session.post(
+        response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
-        ).json()
+        )
+        response.raise_for_status()
+
+        response_json = response.json()
 
         put_response = requests.put(
             response_json["presigned_url"],
             data=file,
             headers={"content-type": "image/jpeg"},
         )
+        put_response.raise_for_status()
 
     def get_content_hash_details(
         self,
@@ -235,28 +239,33 @@ if __name__ == "__main__":
     # Add init values for the api:
     # `os.environ.get(...)` will enable us pass values from `terraform output` in sh
 
-    HMA_TOKEN = os.environ.get("HMA_TOKEN", "")
     # i.e. "https://<app-id>.execute-api.<region>.amazonaws.com/"
-    HMA_API_URL = os.environ.get(
+    api_url = os.environ.get(
         "HMA_API_URL",
         "",
     )
+    token = os.environ.get(
+        "HMA_TOKEN",
+        "",
+    )
+
     # See AWS Console: Cognito -> UserPools... -> App clients
-    HMA_CLIENT_ID = os.environ.get(
+    client_id = os.environ.get(
         "HMA_CLIENT_ID",
         "",
     )
+
     # Can be created with dev certs `$ scripts/get_auth_token --refresh_token`
-    HMA_REFRESH_TOKEN = os.environ.get(
+    refresh_token = os.environ.get(
         "HMA_REFRESH_TOKEN",
         "",
     )
 
     api = HasherMatcherActionerAPI(
-        HMA_API_URL,
-        HMA_TOKEN,
-        HMA_CLIENT_ID,
-        HMA_REFRESH_TOKEN,
+        api_url,
+        token,
+        client_id,
+        refresh_token,
     )
 
     print("Manual Test of API Request Methods:")
