@@ -85,6 +85,17 @@ class FetcherConfig:
         )
 
 
+def is_int(int_string: str):
+    """
+    Checks if string is convertible to int.
+    """
+    try:
+        int(int_string)
+        return True
+    except ValueError:
+        return False
+
+
 def lambda_handler(event, context):
     lambda_init_once()
     config = FetcherConfig.get()
@@ -110,6 +121,12 @@ def lambda_handler(event, context):
         logger.info(
             "Processing updates for collaboration %s", collab.privacy_group_name
         )
+
+        if not is_int(collab.privacy_group_id):
+            logger.info(
+                f"Fetch skipped because privacy_group_id({collab.privacy_group_id}) is not an int"
+            )
+            continue
 
         indicator_store = ThreatUpdateS3PDQStore(
             int(collab.privacy_group_id),
@@ -151,10 +168,6 @@ def lambda_handler(event, context):
                 )
             else:
                 logging.error("Failed before fetching any records")
-
-    # TODO add TE data to indexer
-
-    return {"statusCode": 200, "body": "Sure Yeah why not"}
 
 
 class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
