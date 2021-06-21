@@ -51,6 +51,8 @@ def lambda_handler(event, context):
             logger.info("Disregarding S3 Test Event")
             continue
 
+        hash_records = []
+
         for s3_record in message["Records"]:
             bucket_name = s3_record["s3"]["bucket"]["name"]
             key = unquote_plus(s3_record["s3"]["object"]["key"])
@@ -70,18 +72,19 @@ def lambda_handler(event, context):
             with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
                 pdq_hash, quality = pdq_hasher.pdq_from_bytes(bytes_)
 
-            hash_record = PipelinePDQHashRecord(
-                key, pdq_hash, datetime.datetime.now(), quality
+            hash_records.append(
+                PipelinePDQHashRecord(key, pdq_hash, datetime.datetime.now(), quality)
             )
 
-            hash_record.write_to_table(records_table)
+    for hash_record in hash_records:
+        hash_record.write_to_table(records_table)
 
-            # Publish to SQS queue
-            sqs_client.send_message(
-                QueueUrl=OUTPUT_QUEUE_URL,
-                MessageBody=json.dumps(hash_record.to_sqs_message()),
-            )
-
-            logger.info("Published new PDQ hash")
+        # Publish to SQS queue
+        sqs_client.send_message(
+            QueueUrl=OUTPUT_QUEUE_URL,
+            MessageBody=json.dumps(hash_record.to_sqs_message()),
+        )
+    if hash_records:
+        logger.info(f"Published {len(hash_records)} new PDQ hash(es)")
 
     metrics.flush()

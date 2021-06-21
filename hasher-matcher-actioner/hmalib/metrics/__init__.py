@@ -137,6 +137,8 @@ if measure_performance:
     def _metrics_flush(namespace: str = METRICS_NAMESPACE):
         """
         Flushes metrics to an AWS Reporter.
+        Warning not flush will not go through if it would hit
+        PutMetricData's Limit See AWSCloudWatchReporter.PUT_METRIC_DATA_VALUES_LIMIT
         """
         try:
             reporter = AWSCloudWatchReporter(namespace)

@@ -3,8 +3,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import typing as t
+import logging
 
 from hmalib import metrics
+
+logger = logging.getLogger(__name__)
 
 
 class AWSCloudWatchUnit(Enum):
@@ -81,6 +84,10 @@ class AWSCloudWatchReporter(object):
     need to measure performance of functions.
     """
 
+    # https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricData.html
+    # TODO Something better than 'hit limit=skip'
+    PUT_METRIC_DATA_VALUES_LIMIT = 150
+
     def __init__(self, namespace: str):
         self.client = boto3.client("cloudwatch")
         self.namespace = namespace
@@ -107,6 +114,14 @@ class AWSCloudWatchReporter(object):
             5: 1
         }
         """
+        if len(value_count_mapping) >= self.PUT_METRIC_DATA_VALUES_LIMIT:
+            logger.warning(
+                "Skipping `AWSCloudWatchReporter.get_multi_value_datums`:  number of metric subvalues would have errored on write."
+            )
+            return AWSCloudWatchMetricDatum(
+                metric_name=name, values=[], counts=[], unit=unit
+            )
+
         values = []
         counts = []
 
@@ -132,7 +147,12 @@ class AWSCloudWatchReporter(object):
 
     def report(self, metric_datums: t.List[AWSCloudWatchMetricDatum]):
         # Publish metric datums to cloudwatch
-        self._put_metric_data(self.namespace, metric_datums)
+        if metric_datums and len(metric_datums) < self.PUT_METRIC_DATA_VALUES_LIMIT:
+            self._put_metric_data(self.namespace, metric_datums)
+        else:
+            logger.warning(
+                "Skipping `AWSCloudWatchReporter.report`: number of metrics datums would have errored on write."
+            )
 
     def _put_metric_data(
         self, namespace: str, metric_datums: t.List[AWSCloudWatchMetricDatum]
