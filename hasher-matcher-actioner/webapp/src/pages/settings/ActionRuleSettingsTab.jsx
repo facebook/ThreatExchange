@@ -10,7 +10,10 @@ import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
-import ActionRuleFormColumns from '../../components/settings/ActionRuleFormColumns';
+import ActionRuleFormColumns, {
+  classificationTypeTBD,
+} from '../../components/settings/ActionRuleFormColumns';
+
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
@@ -24,8 +27,8 @@ import {
 
 const defaultActionRule = {
   name: '',
-  must_have_labels: '',
-  must_not_have_labels: '',
+  must_have_labels: [{key: classificationTypeTBD, value: ''}],
+  must_not_have_labels: [],
   action_id: '0',
 };
 
@@ -87,6 +90,12 @@ export default function ActionRuleSettingsTab() {
   const actionRuleIsValid = (actionRule, actionrules, oldName) =>
     actionRule.name &&
     actionRule.must_have_labels &&
+    actionRule.must_have_labels.every(
+      label => label.key !== classificationTypeTBD && label.value,
+    ) &&
+    actionRule.must_not_have_labels.every(
+      label => label.key !== classificationTypeTBD && label.value,
+    ) &&
     actionRule.action_id !== '0' &&
     actionRuleNameIsUnique(actionRule.name, oldName, actionrules);
 

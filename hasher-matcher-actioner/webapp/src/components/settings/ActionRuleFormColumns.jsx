@@ -7,6 +7,15 @@ import {PropTypes} from 'prop-types';
 import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Button from 'react-bootstrap/Button';
+
+// const defaultClassification = {
+//   classification_type: 'BankSourceClassification',
+//   equals: true,
+//   classification_value: 'nah',
+// };
+
+export const classificationTypeTBD = 'TBD';
 
 export default function ActionRuleFormColumns({
   actions,
@@ -21,9 +30,15 @@ export default function ActionRuleFormColumns({
   const renderClassificationRow = (
     classification,
     onClassificationChange,
+    onClassificationDelete,
     index,
   ) => (
-    <Row key={index} style={{marginBottom: 3, marginLeft: 3}}>
+    <Row key={index} style={{marginBottom: 3}}>
+      <Col xs={1}>
+        <Button variant="danger" onClick={onClassificationDelete}>
+          -
+        </Button>
+      </Col>
       <Col>
         <Form.Control
           as="select"
@@ -33,7 +48,12 @@ export default function ActionRuleFormColumns({
             const newClassification = classification;
             newClassification.classification_type = e.target.value;
             onClassificationChange(newClassification);
-          }}>
+          }}
+          isInvalid={
+            showErrors &&
+            classification.classification_type === classificationTypeTBD
+          }>
+          <option value={classificationTypeTBD}> - </option>
           <option value="BankSourceClassification">Dataset Source</option>
           <option value="BankIDClassification">Dataset ID</option>
           <option value="BankedContentIDClassification">
@@ -113,13 +133,32 @@ export default function ActionRuleFormColumns({
                 newClassifications[index] = newClassification;
                 onChange({classifications: newClassifications});
               };
+              const onClassificationDelete = () => {
+                const newClassifications = classifications;
+                newClassifications.splice(index, 1);
+                onChange({classifications: newClassifications});
+              };
               return renderClassificationRow(
                 classification,
                 onClassificationChange,
+                onClassificationDelete,
                 index,
               );
             })
           : []}
+        <Button
+          variant="success"
+          onClick={() => {
+            const newClassifications = classifications;
+            newClassifications.push({
+              classification_type: classificationTypeTBD,
+              equals: true,
+              classification_value: '',
+            });
+            onChange({classifications: newClassifications});
+          }}>
+          +
+        </Button>
       </td>
       <td>
         <Form.Label>
