@@ -11,13 +11,6 @@ Sample Usage:
 ```
 $ ./storm_submissions_api https://m....f.execute-api.us-east-1.amazonaws.com/ ../copydays-extended/200100.jpg 100
 ```
-
-TODO:
-[x] Make a single successful request with a stolen JWT
-[x] Make threadpooled requests
-[x] Simple Stats for the submission API calls
-[X] Get JWT without stealing from browser/postman (see scripts/get_auth_token)
-[ ] Exponential Backoff if errors are encoutered
 """
 
 import os
@@ -28,11 +21,13 @@ import json
 import uuid
 import datetime
 import requests
-from urllib import request
+import urllib3
 import concurrent.futures
 import functools
-from time import perf_counter
 import socket
+from time import perf_counter
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 from script_utils import HasherMatcherActionerAPI
 
@@ -43,10 +38,10 @@ TOKEN = ""
 # However it can be used here for easier clean up between storms that do not need the UI.
 ID_SEPARATOR = "-"
 
-# hostnames are especially useful when storming form more than one instance
+# hostnames are especially useful when storming from more than one instance.
 hostname = socket.gethostname()
 
-# Value to incorperate into content_id as an attempt to get greater prefix.
+# Value to incorperate into content_id as an attempt to get greater prefix optimizations (ymmv).
 # bucket_prefix_known = int(socket.gethostname()[-2:]) % 5
 
 
@@ -68,6 +63,8 @@ def _send_single_submission_url(
                 file,
                 additional_fields,
             )  # api method calls raise_for_status to check for error
+        except urllib3.exceptions.MaxRetryError as errmr:
+            print("MaxRetry Error:", errmr)
         except requests.exceptions.HTTPError as errh:
             print("Http Error:", errh)
         except requests.exceptions.ConnectionError as errc:
@@ -102,6 +99,8 @@ def _send_single_submission_b64(
         api.send_single_submission_b64(
             content_id, _get_b64_contents(filepath), additional_fields
         )  # api method calls raise_for_status to check for error
+    except urllib3.exceptions.MaxRetryError as errmr:
+        print("MaxRetry Error:", errmr)
     except requests.exceptions.HTTPError as errh:
         print("Http Error:", errh)
     except requests.exceptions.ConnectionError as errc:
@@ -122,6 +121,7 @@ def unleash_storm(
     token: str,
     url_mode: bool,
     verbose: bool,
+    retry: bool,
 ):
     sent_message_count = 0
     jobs = []
@@ -132,7 +132,22 @@ def unleash_storm(
     if url_mode:
         send_single_submission_func = _send_single_submission_url
 
-    api = HasherMatcherActionerAPI(api_url, token)
+    if retry:
+        retry_strategy = Retry(
+            total=5,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=[
+                "GET",
+                "PUT",
+                "POST",
+            ],  # Including POST as the API should not perform an insert if an error is returned
+        )
+        api = HasherMatcherActionerAPI(
+            api_url, token, transport_adapter=HTTPAdapter(max_retries=retry_strategy)
+        )
+    else:
+        api = HasherMatcherActionerAPI(api_url, token)
 
     # Need to compute script level RequestsPerSecond so that we can estimate
     # benchmark performance. For that, storing the start time every 200
@@ -181,10 +196,10 @@ def unleash_storm(
         execution_times = sorted(execution_times)
         print(
             f"""Percentiles in ms:
-    p75: {execution_times[int(len(execution_times)*0.75)]}
-    p95: {execution_times[int(len(execution_times)*0.95)]}
-    p99: {execution_times[int(len(execution_times)*0.99)]}
-        """
+                p75: {execution_times[int(len(execution_times)*0.75)]}
+                p95: {execution_times[int(len(execution_times)*0.95)]}
+                p99: {execution_times[int(len(execution_times)*0.99)]}
+            """
         )
 
 
@@ -217,8 +232,19 @@ if __name__ == "__main__":
         action="store_true",
         help="Print progress and percentile times for submission sets.",
     )
+    parser.add_argument(
+        "--retry",
+        action="store_true",
+        help="Have request retry (with exponential backoff) if errors are encoutered.",
+    )
 
     args = parser.parse_args()
     unleash_storm(
-        args.api_url, args.file, args.count, args.token, args.url_mode, args.verbose
+        args.api_url,
+        args.file,
+        args.count,
+        args.token,
+        args.url_mode,
+        args.verbose,
+        args.retry,
     )

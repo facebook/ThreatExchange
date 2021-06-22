@@ -10,6 +10,7 @@ import json
 import base64
 import requests
 import typing as t
+from requests.adapters import HTTPAdapter
 from urllib.parse import urljoin
 
 
@@ -28,6 +29,7 @@ class HasherMatcherActionerAPI:
         api_token: str,
         client_id: str = None,
         refresh_token: str = None,
+        transport_adapter: HTTPAdapter = None,
     ) -> None:
         self.api_url = api_url
         self.client_id = client_id
@@ -39,6 +41,8 @@ class HasherMatcherActionerAPI:
                 "authorization": api_token,
             }
         )
+        if transport_adapter:
+            self.session.mount(api_url, transport_adapter)
 
     def _refresh_token(self):
         """
@@ -46,20 +50,21 @@ class HasherMatcherActionerAPI:
         RefreshToken as a default ttl of 30 days
         Only works in boto3 is install and optional values are set.
         """
-        if self.client_id and self.refresh_token:
-            import boto3
+        if not self.client_id or not self.refresh_token:
+            raise ValueError("Refresh Token and/or Client ID Missing")
 
-            client = boto3.client("cognito-idp")
+        import boto3
 
-            resp = client.initiate_auth(
-                AuthFlow="REFRESH_TOKEN_AUTH",
-                AuthParameters={"REFRESH_TOKEN": self.refresh_token},
-                ClientId=self.client_id,
-            )
-            api_token = resp["AuthenticationResult"]["IdToken"]
-            self.session.headers["authorization"] = api_token
-            return api_token
-        return "Refresh Token and/or Client ID Missing"
+        client = boto3.client("cognito-idp")
+
+        resp = client.initiate_auth(
+            AuthFlow="REFRESH_TOKEN_AUTH",
+            AuthParameters={"REFRESH_TOKEN": self.refresh_token},
+            ClientId=self.client_id,
+        )
+        api_token = resp["AuthenticationResult"]["IdToken"]
+        self.session.headers["authorization"] = api_token
+        return api_token
 
     def _get_request_url(self, api_path: str) -> str:
         return urljoin(self.api_url, api_path)
@@ -244,6 +249,7 @@ if __name__ == "__main__":
         "HMA_API_URL",
         "",
     )
+
     token = os.environ.get(
         "HMA_TOKEN",
         "",
@@ -251,7 +257,7 @@ if __name__ == "__main__":
 
     # See AWS Console: Cognito -> UserPools... -> App clients
     client_id = os.environ.get(
-        "HMA_CLIENT_ID",
+        "HMA_COGNITO_USER_POOL_CLIENT_ID",
         "",
     )
 
@@ -273,5 +279,5 @@ if __name__ == "__main__":
     # Space to test api
     # e.g. if auth is correct the following command should print:
     # "{'message': 'Hello World, HMA'}"
-    api._refresh_token()
+    print(api._refresh_token())
     print(api.get())

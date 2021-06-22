@@ -135,7 +135,7 @@ def submit_content(helper: DeployedInstanceTestHelper):
     with open(filepath, "rb") as file:
         helper.api.send_single_submission_b64(
             content_id,
-            file,
+            str(base64.b64encode(file.read()), "utf-8"),
             additional_fields,
         )
 
@@ -163,7 +163,7 @@ if __name__ == "__main__":
 
     # See AWS Console: Cognito -> UserPools... -> App clients
     client_id = os.environ.get(
-        "HMA_CLIENT_ID",
+        "HMA_COGNITO_USER_POOL_CLIENT_ID",
         "",
     )
 
