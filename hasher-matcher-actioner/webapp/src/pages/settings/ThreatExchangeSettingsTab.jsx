@@ -152,7 +152,7 @@ export default function ThreatExchangeSettingsTab() {
           <Spinner hidden={!loading} animation="border" role="status">
             <span className="sr-only">Loading...</span>
           </Spinner>
-          {datasets.length === 0
+          {!datasets || datasets.length === 0
             ? null
             : datasets.map(dataset => (
                 <ThreatExchangePrivacyGroupCard
@@ -174,9 +174,11 @@ export default function ThreatExchangeSettingsTab() {
       </Card.Body>
       <Col className="mx-1" md="6">
         <HolidaysDatasetInformationBlock
-          samplePGExists={datasets.some(
-            ds => ds.privacy_group_id === SAMPLE_PG_ID,
-          )}
+          samplePGExists={
+            datasets
+              ? datasets.some(ds => ds.privacy_group_id === SAMPLE_PG_ID)
+              : false
+          }
           refresh={refreshDatasets}
         />
       </Col>
