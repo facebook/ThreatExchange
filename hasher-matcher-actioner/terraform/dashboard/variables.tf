@@ -19,19 +19,34 @@ variable "datastore" {
   })
 }
 
-variable "lambdas_to_monitor" {
-  type    = list(string)
-  default = null
+variable "pipeline_lambdas" {
+  description = "Main set of lambdas used in processing content"
+  type        = list(tuple([string, string]))
+  default     = null
+}
+
+variable "api_lambda_name" {
+  description = "Name of lambda used as the root api"
+  type        = string
+  default     = null
+}
+
+variable "other_lambdas" {
+  description = "Extra lambdas to be included in set of concurrent counts"
+  type        = list(string)
+  default     = null
 }
 
 variable "queues_to_monitor" {
-  type    = list(string)
-  default = null
+  description = "Main set of sqs queues used in processing content"
+  type        = list(tuple([string, string]))
+  default     = null
 }
 
 variable "api_gateway_id" {
-  type    = string
-  default = null
+  description = "Id of gateway used to send requests to the api_lambda"
+  type        = string
+  default     = null
 }
 
 
