@@ -259,13 +259,17 @@ module "api" {
 
 # Build and deploy webapp
 
+locals {
+  aws_dashboard_url = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.default.name}#dashboards:name=${module.dashboard.dashboard_name}"
+}
+
 resource "local_file" "webapp_env" {
   depends_on = [
     module.api.invoke_url,
     module.authentication.webapp_and_api_user_pool_id,
     module.authentication.webapp_and_api_user_pool_client_id
   ]
-  sensitive_content = "REACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
+  sensitive_content = "REACT_APP_AWS_DASHBOARD_URL=${local.aws_dashboard_url}\nREACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
   filename          = "../webapp/.env"
 }
 
