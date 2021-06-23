@@ -50,6 +50,8 @@ def start_listening_web_server(
     port: int = 8080,
     handler: t.Type[BaseHTTPRequestHandler] = Handler,
 ) -> ThreadingHTTPServer:
+    with Handler.threadLock:
+        Handler.post_counter = 0
     web_server = ThreadingHTTPServer((hostname, port), handler)
     server_thread = threading.Thread(target=web_server.serve_forever)
     server_thread.daemon = True
