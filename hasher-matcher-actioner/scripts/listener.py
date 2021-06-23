@@ -48,7 +48,7 @@ class Handler(BaseHTTPRequestHandler):
 def start_listening_web_server(
     hostname: str = "localhost",
     port: int = 8080,
-    handler: t.Type[BaseHTTPRequestHandler] = Handler,
+    handler=Handler,
 ) -> ThreadingHTTPServer:
     with Handler.threadLock:
         Handler.post_counter = 0
