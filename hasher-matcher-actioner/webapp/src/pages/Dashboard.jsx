@@ -107,8 +107,8 @@ export default function Dashboard() {
       <Row>
         <Col>
           <Alert variant="secondary">
-            Additional metrics for the system's underlying implementation can be
-            found{' '}
+            Additional metrics for the system&apos;s underlying implementation
+            can be found{' '}
             <a
               href={process.env.REACT_APP_AWS_DASHBOARD_URL}
               target="_blank"
