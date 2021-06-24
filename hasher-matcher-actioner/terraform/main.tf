@@ -260,7 +260,8 @@ module "api" {
 # Build and deploy webapp
 
 locals {
-  aws_dashboard_url = "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.default.name}#dashboards:name=${module.dashboard.dashboard_name}"
+  dashboard_name    = "${var.prefix}-dashboard"
+  aws_dashboard_url = var.measure_performance ? "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.default.name}#dashboards:name=${local.dashboard_name}" : ""
 }
 
 resource "local_file" "webapp_env" {
@@ -332,10 +333,12 @@ resource "aws_secretsmanager_secret_version" "te_api_token" {
 
 ### Basic Dashboard ###
 module "dashboard" {
+  count = var.measure_performance ? 1 : 0
   depends_on = [
     module.api.api_root_function_name,
     module.datastore.primary_datastore,
   ]
+  name      = local.dashboard_name
   source    = "./dashboard"
   prefix    = var.prefix
   datastore = module.datastore.primary_datastore
