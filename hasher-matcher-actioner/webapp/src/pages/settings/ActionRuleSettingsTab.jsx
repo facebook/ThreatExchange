@@ -165,8 +165,9 @@ export default function ActionRuleSettingsTab() {
       <Row className="mt-3">
         <Col>
           <p>
-            Each rule indicates an action to be taken based on labels (e.g.,
-            classification labels of a matching signal)
+            ActionRules are a configurable algorithm which takes a Match and,
+            based on the Classifications on the Match, determines what Actions,
+            if any, should be performed as a result.
           </p>
         </Col>
       </Row>

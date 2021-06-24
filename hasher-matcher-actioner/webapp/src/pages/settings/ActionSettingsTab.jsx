@@ -123,7 +123,14 @@ export default function ActionSettingsTab() {
       <Card>
         <Card.Header>
           <h2 className="mt-2">Action Definitions</h2>
-          <h5 className="mt-5">Define what to do for different Actions</h5>
+          <h5 className="mt-5">
+            Actions are how HMA notifies another system (such as your platform)
+            that a Match has occurred. For example, there is a Dataset of cat
+            images and our platform does not allow cat images, after a piece of
+            Content matches the Dataset, our Platform should be notified so that
+            we can review the Content and, if it is truly a cat, remove it for
+            violating our Platform&apos;s Community Standards.
+          </h5>
           <div className="feedback-toast-container">
             <Toast
               onClose={() => setShowToast(false)}

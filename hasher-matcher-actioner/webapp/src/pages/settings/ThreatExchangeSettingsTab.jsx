@@ -117,13 +117,14 @@ export default function ThreatExchangeSettingsTab() {
       </div>
       <Card.Header>
         <Row className="mt-3">
-          <h2 className="mt-2">ThreatExchange Privacy Groups </h2>
+          <h2 className="mt-2">ThreatExchange Datasets </h2>
           <OverlayTrigger
             key="syncButton"
             placement="right"
             overlay={
               <Tooltip id="tooltip-right">
-                Fetch privacy groups from ThreatExchange
+                Read PrivacyGroup metatdata from ThreatExchange to build new
+                Datasets
               </Tooltip>
             }>
             <Button
