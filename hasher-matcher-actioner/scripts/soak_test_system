@@ -61,6 +61,7 @@ def start_soak(
     counter = 0
     while True:
         print(f"Beginning Submit Test:{counter}")
+        # ToDo we should we decouple the 'submission' from the 'counting' (I.e. break up this function at make it async)
         helper.run_basic_test_with_webhook_listener(hostname, port)
         print(f"Completed Submit Test:{counter}")
         counter += 1
@@ -100,7 +101,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--interal",
         help="number of seconds between completed submit tests",
-        default=300,
+        default=60,
     )
 
     args = parser.parse_args()

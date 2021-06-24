@@ -12,8 +12,8 @@ from urllib.parse import urljoin
 from script_utils import HasherMatcherActionerAPI
 from listener import start_listening_web_server
 
-from hmalib.common.evaluator_models import Action, ActionRule
-from hmalib.common.classification_models import Label, ActionLabel, ClassificationLabel
+from hmalib.common.evaluator_models import ActionRule
+from hmalib.common.classification_models import ActionLabel, ClassificationLabel
 from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
 
 
@@ -172,7 +172,15 @@ class DeployedInstanceTestHelper:
         web_server.shutdown()
         print("Server stopped.")
 
-    ### End Basic Test Methods  ####
+
+def clean_up_basic_test(self, hostname: str, port: int):
+    """
+    ToDo Delete (at least a subset of) what was created in set_up_basic_test
+    """
+    raise NotImplementedError
+
+
+### End Basic Test Methods  ####
 
 
 if __name__ == "__main__":

@@ -10,6 +10,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
 class Handler(BaseHTTPRequestHandler):
+    """
+    Request handler that counts the number of post request it receives.
+    """
+
+    # ToDo Currently multiple instances cannot operating without taking a lock on the class attribute
     threadLock: threading.Lock = threading.Lock()
     post_counter: int = 0
 
