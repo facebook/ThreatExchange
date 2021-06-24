@@ -89,7 +89,7 @@ export default function ActionRuleSettingsTab() {
 
   const actionRuleIsValid = (actionRule, actionrules, oldName) =>
     actionRule.name &&
-    actionRule.must_have_labels &&
+    actionRule.must_have_labels.length &&
     actionRule.must_have_labels.every(
       label => label.key !== classificationTypeTBD && label.value,
     ) &&
@@ -174,8 +174,9 @@ export default function ActionRuleSettingsTab() {
       <Row className="mt-3">
         <Col>
           <p>
-            Each rule indicates an action to be taken based on labels (e.g.,
-            classification labels of a matching signal)
+            ActionRules are a configurable algorithm which takes a Match and,
+            based on the Classifications on the Match, determine what Actions,
+            if any, should be performed as a result
           </p>
         </Col>
       </Row>
@@ -204,6 +205,22 @@ export default function ActionRuleSettingsTab() {
                     className="mb-2 table-action-button"
                     onClick={() => {
                       setShowErrors(false);
+                      // Convert classifications into Label sets which the backend understands
+                      const newMustHaveLabels = newActionRule.classifications
+                        .filter(classification => classification.equals)
+                        .map(classification => ({
+                          key: classification.classification_type,
+                          value: classification.classification_value,
+                        }));
+                      const newMustNotHaveLabels = newActionRule.classifications
+                        .filter(classification => !classification.equals)
+                        .map(classification => ({
+                          key: classification.classification_type,
+                          value: classification.classification_value,
+                        }));
+
+                      newActionRule.must_have_labels = newMustHaveLabels;
+                      newActionRule.must_not_have_labels = newMustNotHaveLabels;
                       if (actionRuleIsValid(newActionRule, actionRules)) {
                         onAddActionRule(newActionRule);
                         resetForm();

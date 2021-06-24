@@ -9,12 +9,6 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 
-// const defaultClassification = {
-//   classification_type: 'BankSourceClassification',
-//   equals: true,
-//   classification_value: 'nah',
-// };
-
 export const classificationTypeTBD = 'TBD';
 
 export default function ActionRuleFormColumns({
@@ -67,6 +61,7 @@ export default function ActionRuleFormColumns({
           as="select"
           required
           value={classification.equals}
+          isInvalid={showErrors && classifications.every(clsf => !clsf.equals)}
           onChange={e => {
             const newClassification = classification;
             newClassification.equals = e.target.value === 'true';
@@ -118,13 +113,20 @@ export default function ActionRuleFormColumns({
         <Form.Text
           hidden={!showErrors || nameIsUnique(name, oldName)}
           className="text-danger">
-          An action rule&rsquo;s name must be unique.
+          An ActionRule&rsquo;s name must be unique.
         </Form.Text>
       </td>
       <td>
         <Form.Label>
-          Classifications
-          <span hidden={!showErrors || classifications}> (required)</span>
+          Classifications{' '}
+          <span
+            hidden={
+              !showErrors ||
+              (classifications.length &&
+                classifications.some(classification => classification.equals))
+            }>
+            (at least one &ldquo;equals&rdquo; Classification required)
+          </span>
         </Form.Label>
         {classifications
           ? classifications.map((classification, index) => {
