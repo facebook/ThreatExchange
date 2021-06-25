@@ -11,7 +11,7 @@ import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
 import ActionRuleFormColumns from '../../components/settings/ActionRuleFormColumns.tsx';
-import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
+import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow.tsx';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {

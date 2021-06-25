@@ -29,69 +29,6 @@ import {useQuery} from '../utils/QueryParams';
 import FullWidthLocalScrollingLeftAlignedLayout from './layouts/FullWidthLocalScrollingLeftAlignedLayout';
 import '../styles/_matches.scss';
 
-export default function Matches() {
-  const query = useQuery();
-  const filterString = query.get('contentId') || query.get('signalId');
-  let filterAttribute;
-
-  ['contentId', 'signalId'].forEach(attribute => {
-    if (query.has(attribute)) {
-      filterAttribute = attribute;
-    }
-  });
-
-  const [selectedContentAndSignalIds, setSelectedContentAndSignalIds] =
-    useState({
-      contentId: undefined,
-      signalId: undefined,
-      signalSource: undefined,
-    });
-
-  return (
-    <FullWidthLocalScrollingLeftAlignedLayout title="Matches">
-      <Container className="h-100 v-100" fluid>
-        {/* ^ This container is everything below the header */}
-        <Row className="d-flex align-items-stretch h-100">
-          {/* Each child of this row spans half the available space dividing into left and right pane. */}
-          <Col
-            md={6}
-            className="left-pane d-flex flex-column justify-content-start h-100 px-0">
-            {/* This column is vertically split into the filter input box and the table of filtered results. */}
-            <div className="match-filter-box flex-grow-0 bg-light px-2">
-              <MatchListFilters
-                filterAttribute={filterAttribute}
-                filterString={filterString}
-              />
-            </div>
-            <div
-              className="flex-grow-1 px-3"
-              // Padding to align with input box in match filters
-              style={{overflowY: 'auto', overflowX: 'hidden'}}>
-              <MatchList
-                selection={selectedContentAndSignalIds}
-                onSelect={setSelectedContentAndSignalIds}
-                filterAttribute={filterAttribute}
-                filterString={filterString}
-              />
-            </div>
-          </Col>
-          <Col md={6}>
-            {(selectedContentAndSignalIds.contentId === undefined && (
-              <EmptyContentMatchPane />
-            )) || (
-              <ContentMatchPane
-                contentId={selectedContentAndSignalIds.contentId}
-                signalId={selectedContentAndSignalIds.signalId}
-                signalSource={selectedContentAndSignalIds.signalSource}
-              />
-            )}
-          </Col>
-        </Row>
-      </Container>
-    </FullWidthLocalScrollingLeftAlignedLayout>
-  );
-}
-
 function EmptyContentMatchPane() {
   return (
     <div className="h-100" style={{textAlign: 'center', paddingTop: '40%'}}>
@@ -153,16 +90,6 @@ function MatchListFilters({filterAttribute, filterString}) {
     </Form>
   );
 }
-
-MatchListFilters.propTypes = {
-  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  filterString: PropTypes.string,
-};
-
-MatchListFilters.defaultProps = {
-  filterAttribute: 'contentId',
-  filterString: undefined,
-};
 
 function MatchList({selection, onSelect, filterAttribute, filterString}) {
   const [matchesData, setMatchesData] = useState(null);
@@ -241,6 +168,79 @@ function MatchList({selection, onSelect, filterAttribute, filterString}) {
     </>
   );
 }
+
+export default function Matches() {
+  const query = useQuery();
+  const filterString = query.get('contentId') || query.get('signalId');
+  let filterAttribute;
+
+  ['contentId', 'signalId'].forEach(attribute => {
+    if (query.has(attribute)) {
+      filterAttribute = attribute;
+    }
+  });
+
+  const [selectedContentAndSignalIds, setSelectedContentAndSignalIds] =
+    useState({
+      contentId: undefined,
+      signalId: undefined,
+      signalSource: undefined,
+    });
+
+  return (
+    <FullWidthLocalScrollingLeftAlignedLayout title="Matches">
+      <Container className="h-100 v-100" fluid>
+        {/* ^ This container is everything below the header */}
+        <Row className="d-flex align-items-stretch h-100">
+          {/* Each child of this row spans half the available space dividing into left and right pane. */}
+          <Col
+            md={6}
+            className="left-pane d-flex flex-column justify-content-start h-100 px-0">
+            {/* This column is vertically split into the filter input box and the table of filtered results. */}
+            <div className="match-filter-box flex-grow-0 bg-light px-2">
+              <MatchListFilters
+                filterAttribute={filterAttribute}
+                filterString={filterString}
+              />
+            </div>
+            <div
+              className="flex-grow-1 px-3"
+              // Padding to align with input box in match filters
+              style={{overflowY: 'auto', overflowX: 'hidden'}}>
+              <MatchList
+                selection={selectedContentAndSignalIds}
+                onSelect={setSelectedContentAndSignalIds}
+                filterAttribute={filterAttribute}
+                filterString={filterString}
+              />
+            </div>
+          </Col>
+          <Col md={6}>
+            {(selectedContentAndSignalIds.contentId === undefined && (
+              <EmptyContentMatchPane />
+            )) || (
+              <ContentMatchPane
+                contentId={selectedContentAndSignalIds.contentId}
+                signalId={selectedContentAndSignalIds.signalId}
+                signalSource={selectedContentAndSignalIds.signalSource}
+              />
+            )}
+          </Col>
+        </Row>
+      </Container>
+    </FullWidthLocalScrollingLeftAlignedLayout>
+  );
+}
+
+MatchListFilters.propTypes = {
+  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
+  filterString: PropTypes.string,
+};
+
+MatchListFilters.defaultProps = {
+  filterAttribute: 'contentId',
+  filterString: undefined,
+};
 
 MatchList.propTypes = {
   selection: PropTypes.shape({
