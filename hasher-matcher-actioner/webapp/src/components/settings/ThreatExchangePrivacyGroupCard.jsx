@@ -24,13 +24,11 @@ export default function ThreatExchangePrivacyGroupCard({
   onSave,
   onDelete,
 }) {
-  const [originalFetcherActive, setOriginalFetcherActive] = useState(
-    fetcherActive,
-  );
+  const [originalFetcherActive, setOriginalFetcherActive] =
+    useState(fetcherActive);
   const [originalWriteBack, setOriginalWriteBack] = useState(writeBack);
-  const [originalMatcherActive, setOriginalMatcherActive] = useState(
-    matcherActive,
-  );
+  const [originalMatcherActive, setOriginalMatcherActive] =
+    useState(matcherActive);
   const [localFetcherActive, setLocalFetcherActive] = useState(fetcherActive);
   const [localWriteBack, setLocalWriteBack] = useState(writeBack);
   const [localMatcherActive, setLocalMatcherActive] = useState(matcherActive);

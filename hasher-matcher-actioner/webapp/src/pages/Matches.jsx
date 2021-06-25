@@ -40,14 +40,12 @@ export default function Matches() {
     }
   });
 
-  const [
-    selectedContentAndSignalIds,
-    setSelectedContentAndSignalIds,
-  ] = useState({
-    contentId: undefined,
-    signalId: undefined,
-    signalSource: undefined,
-  });
+  const [selectedContentAndSignalIds, setSelectedContentAndSignalIds] =
+    useState({
+      contentId: undefined,
+      signalId: undefined,
+      signalSource: undefined,
+    });
 
   return (
     <FullWidthLocalScrollingLeftAlignedLayout title="Matches">
@@ -109,9 +107,8 @@ function EmptyContentMatchPane() {
  * A box of filters for the list of matches that appear on the match filters page.
  */
 function MatchListFilters({filterAttribute, filterString}) {
-  const [localFilterAttribute, setLocalFilterAttribute] = useState(
-    filterAttribute,
-  );
+  const [localFilterAttribute, setLocalFilterAttribute] =
+    useState(filterAttribute);
   const [localFilterString, setLocalFilterString] = useState(filterString);
 
   useEffect(() => {

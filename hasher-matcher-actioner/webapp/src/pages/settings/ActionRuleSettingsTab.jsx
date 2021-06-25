@@ -10,7 +10,7 @@ import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
-import ActionRuleFormColumns from '../../components/settings/ActionRuleFormColumns';
+import ActionRuleFormColumns from '../../components/settings/ActionRuleFormColumns.tsx';
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';

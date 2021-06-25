@@ -57,7 +57,7 @@ Please run the following checks/formating before submitting a PR.
 
 ```
 # linter
-npx eslint src --ext .js,.jsx --fix
+npx eslint src --ext .js,.jsx,.tsx --fix
 # formatter
 npx prettier --write src
 # ensure app builds
