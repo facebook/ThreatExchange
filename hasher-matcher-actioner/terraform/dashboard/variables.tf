@@ -11,6 +11,11 @@ variable "prefix" {
   type        = string
 }
 
+variable "name" {
+  description = "Name of generated dashboard"
+  type        = string
+}
+
 variable "datastore" {
   description = "DynamoDB Table to store hash and match information into"
   type = object({
