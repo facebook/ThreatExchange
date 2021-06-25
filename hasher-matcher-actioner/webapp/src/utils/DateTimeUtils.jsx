@@ -1,11 +1,14 @@
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ * the timestamps passed to this file originate from python however
+ * https://stackoverflow.com/questions/19654578/python-utc-datetime-objects-iso-format-doesnt-include-z-zulu-or-zero-offset
+ *  so we ~hack-ly add a Z to the isoDateStrings
  */
 
 import {formatDistanceToNow, parseISO} from 'date-fns';
 
-export function formatTimestamp(timestamp) {
-  if (!timestamp) {
+export function formatTimestamp(isoDateString) {
+  if (!isoDateString) {
     return 'Unknown';
   }
   return new Intl.DateTimeFormat('default', {
@@ -16,7 +19,8 @@ export function formatTimestamp(timestamp) {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-  }).format(new Date(timestamp));
+    timeZoneName: 'short',
+  }).format(parseISO(`${isoDateString}Z`));
 }
 
 /**
@@ -27,5 +31,7 @@ export function formatTimestamp(timestamp) {
  * @returns string
  */
 export function timeAgo(isoDateString) {
-  return formatDistanceToNow(parseISO(isoDateString), {addSuffix: true});
+  return formatDistanceToNow(parseISO(`${isoDateString}Z`), {
+    addSuffix: true,
+  });
 }
