@@ -61,14 +61,14 @@ class SubmittingThread(threading.Thread):
         self,
         helper: DeployedInstanceTestHelper,
         submission_batch_size=10,
-        second_between_batches=10,
+        seconds_between_batches=10,
         **kwargs,
     ):
         super(SubmittingThread, self).__init__(**kwargs)
         self.daemon = True
         self._stop_signal = threading.Event()
         self.submission_batch_size = submission_batch_size
-        self.second_between_batches = second_between_batches
+        self.seconds_between_batches = seconds_between_batches
         self.helper = helper
 
     def stop(self):
@@ -89,7 +89,7 @@ class SubmittingThread(threading.Thread):
                 self.helper.submit_test_content(content_id)
                 total_submitted += 1
             print(f"Submitter: total submission count {total_submitted}")
-            time.sleep(self.second_between_batches)
+            time.sleep(self.seconds_between_batches)
             self.helper.refresh_api_token()
 
 
@@ -99,13 +99,13 @@ class ListeningThread(threading.Thread):
         helper: DeployedInstanceTestHelper,
         hostname,
         port,
-        second_between_checks=5,
+        seconds_between_checks=5,
         **kwargs,
     ):
         super(ListeningThread, self).__init__(**kwargs)
         self.daemon = True
         self._stop_signal = threading.Event()
-        self.second_between_checks = second_between_checks
+        self.seconds_between_checks = seconds_between_checks
         self.helper = helper
         self.hostname = hostname
         self.port = port
@@ -129,7 +129,7 @@ class ListeningThread(threading.Thread):
             if prev != request_count:
                 print(f"Listener: total POST requests received {request_count}")
                 prev = request_count
-            time.sleep(self.second_between_checks)
+            time.sleep(self.seconds_between_checks)
 
 
 def start_soak(
@@ -139,14 +139,14 @@ def start_soak(
     hostname: str,
     port: int,
     submission_batch_size: int,
-    second_between_batches: int,
+    seconds_between_batches: int,
 ):
     helper = DeployedInstanceTestHelper(api_url, "", client_id, refresh_token)
     helper.refresh_api_token()
     helper.set_up_test(hostname, port)
 
     submitting_thread = SubmittingThread(
-        helper, submission_batch_size, second_between_batches
+        helper, submission_batch_size, seconds_between_batches
     )
     listening_thread = ListeningThread(helper, hostname, port)
 
@@ -183,7 +183,7 @@ def start_soak(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Start a soak test on a delployed HMA instance and submit until cancelled"
+        description="Start a soak test on a deployed HMA instance and submit until cancelled"
     )
     parser.add_argument(
         "--api_url",
@@ -216,7 +216,7 @@ if __name__ == "__main__":
         default=10,
     )
     parser.add_argument(
-        "--second_between_batches",
+        "--seconds_between_batches",
         help="number of seconds between completed submission batches",
         default=10,
     )
@@ -230,5 +230,5 @@ if __name__ == "__main__":
         args.hostname,
         int(args.port),
         int(args.submission_batch_size),
-        int(args.second_between_batches),
+        int(args.seconds_between_batches),
     )
