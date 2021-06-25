@@ -259,13 +259,18 @@ module "api" {
 
 # Build and deploy webapp
 
+locals {
+  dashboard_name    = "${var.prefix}-dashboard"
+  aws_dashboard_url = var.measure_performance ? "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.default.name}#dashboards:name=${local.dashboard_name}" : ""
+}
+
 resource "local_file" "webapp_env" {
   depends_on = [
     module.api.invoke_url,
     module.authentication.webapp_and_api_user_pool_id,
     module.authentication.webapp_and_api_user_pool_client_id
   ]
-  sensitive_content = "REACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
+  sensitive_content = "REACT_APP_AWS_DASHBOARD_URL=${local.aws_dashboard_url}\nREACT_APP_REGION=${data.aws_region.default.name}\nREACT_APP_USER_POOL_ID=${module.authentication.webapp_and_api_user_pool_id}\nREACT_APP_USER_POOL_APP_CLIENT_ID=${module.authentication.webapp_and_api_user_pool_client_id}\nREACT_APP_HMA_API_ENDPOINT=${module.api.invoke_url}\n"
   filename          = "../webapp/.env"
 }
 
@@ -326,3 +331,35 @@ resource "aws_secretsmanager_secret_version" "te_api_token" {
 }
 
 
+### Basic Dashboard ###
+module "dashboard" {
+  count = var.measure_performance ? 1 : 0
+  depends_on = [
+    module.api.api_root_function_name,
+    module.datastore.primary_datastore,
+  ]
+  name      = local.dashboard_name
+  source    = "./dashboard"
+  prefix    = var.prefix
+  datastore = module.datastore.primary_datastore
+  pipeline_lambdas = [
+    (["Hash", module.pdq_signals.pdq_hasher_function_name]),
+    (["Match", module.pdq_signals.pdq_matcher_function_name]),
+    (["Action Evaluator", module.actions.action_evaluator_function_name]),
+    (["Action Performer", module.actions.action_performer_function_name])
+  ] # Not currently included fetcher, indexer, writebacker, and counter functions
+  api_lambda_name = module.api.api_root_function_name
+  other_lambdas = [
+    module.fetcher.fetcher_function_name,
+    module.pdq_signals.pdq_indexer_function_name,
+    module.actions.writebacker_function_name,
+    module.counters.match_counter_function_name
+  ]
+  queues_to_monitor = [
+    (["ImageQueue", aws_sqs_queue.pdq_images_queue.name]),
+    (["HashQueue", module.pdq_signals.hashes_queue_name]),
+    (["MatchQueue", module.actions.matches_queue_name]),
+    (["ActionQueue", module.actions.actions_queue_name])
+  ] # Could also monitor sns topics
+  api_gateway_id = module.api.api_gateway_id
+}

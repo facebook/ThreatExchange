@@ -5,6 +5,7 @@
 import React, {useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
 import {
+  Alert,
   Row,
   Col,
   Card,
@@ -13,7 +14,6 @@ import {
   DropdownButton,
   Spinner,
 } from 'react-bootstrap';
-
 import {fetchStats} from '../Api';
 import {StatNames, StatsTimeSpans} from '../utils/constants';
 import GraphWithNumberWidget from '../components/GraphWithNumberWidget';
@@ -102,6 +102,27 @@ export default function Dashboard() {
         <Col>
           <StatCard statName={StatNames.HASHES} timeSpan={timeSpan} />
           <StatCard statName={StatNames.MATCHES} timeSpan={timeSpan} />
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          {process.env.REACT_APP_AWS_DASHBOARD_URL ? (
+            <Alert variant="secondary">
+              Additional metrics for the system&apos;s underlying implementation
+              can be found{' '}
+              <a
+                href={process.env.REACT_APP_AWS_DASHBOARD_URL}
+                target="_blank"
+                rel="noreferrer">
+                here.
+              </a>{' '}
+              (AWS Console authentication required)
+            </Alert>
+          ) : (
+            <Alert variant="secondary">
+              Detailed metrics need to be enabled during deployment.
+            </Alert>
+          )}
         </Col>
       </Row>
     </FixedWidthCenterAlignedLayout>

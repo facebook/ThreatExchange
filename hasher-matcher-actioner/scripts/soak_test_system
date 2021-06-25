@@ -1,0 +1,116 @@
+#! /usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+"""
+Soak/endurance test a deployed instance of HMA
+
+Besides deploying what is needed:
+- A Cognito User that has access to the deloyed system
+- Local AWS certs (if you were able to run tf apply you should be fine)  
+- A place to set off the test (ec2 instance + long running tmux session)
+
+Structure of the soak test
+
+Initial set up (no point in a long running test if this doesn't work)
+- Access to API via refresh token (+ client_id) 
+- Image used has a hash that will match the systems index
+- PR Configs (and associated signals) exist so match records will be created
+- Action Rules (and associated actions) exist so action will send post request
+
+Run
+- Submit Content Test (done every interval=seconds)
+- Sleep
+- Refresh Token
+- Repeat
+
+ToDo Missing more involed checks (between submit and webhook):
+  - The content record was created (with the expected metadata/additional fields) 
+  - Brief wait: hash was created of that image and it matches the expected
+  - wait: match record was created (if expected) and maps to correct signal values
+  - longer wait: action record was created and maps to correct action label
+
+"""
+
+
+import argparse
+import time
+
+from submit_content_test import DeployedInstanceTestHelper
+
+
+# Defaults (often it is easier to edit the script than provide the args)
+API_URL = ""
+REFRESH_TOKEN = ""
+CLIENT_ID = ""
+
+LISTENER_EXTERNAL_HOSTNAME = ""
+LISTENER_PORT = 8080
+
+
+def start_soak(
+    api_url: str,
+    refresh_token: str,
+    client_id: str,
+    hostname: str,
+    port: int,
+    interval: int,
+):
+    helper = DeployedInstanceTestHelper(api_url, "", client_id, refresh_token)
+    helper.refresh_api_token()
+    helper.set_up_basic_test(hostname, port)
+    counter = 0
+    while True:
+        print(f"Beginning Submit Test:{counter}")
+        # ToDo we should we decouple the 'submission' from the 'counting' (I.e. break up this function at make it async)
+        helper.run_basic_test_with_webhook_listener(hostname, port)
+        print(f"Completed Submit Test:{counter}")
+        counter += 1
+        time.sleep(interval)
+        helper.refresh_api_token()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Start a soak test on a delployed HMA instance and submit until cancelled"
+    )
+    parser.add_argument(
+        "--api_url",
+        help="HMA's API URL",
+        default=API_URL,
+    )
+    parser.add_argument(
+        "--refresh_token",
+        help="refresh token to be used throughout a long running test",
+        default=REFRESH_TOKEN,
+    )
+    parser.add_argument(
+        "--client_id",
+        help="id of app client for the pool of the refresh token",
+        default=CLIENT_ID,
+    )
+    parser.add_argument(
+        "--hostname",
+        help="external hostname used to listen for the actioner",
+        default=LISTENER_EXTERNAL_HOSTNAME,
+    )
+    parser.add_argument(
+        "--port",
+        help="port used to listen for the actioner",
+        default=LISTENER_PORT,
+    )
+    parser.add_argument(
+        "--interal",
+        help="number of seconds between completed submit tests",
+        default=60,
+    )
+
+    args = parser.parse_args()
+
+    start_soak(
+        args.api_url,
+        args.refresh_token,
+        args.client_id,
+        args.hostname,
+        args.port,
+        args.interal,
+    )

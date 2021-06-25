@@ -55,7 +55,7 @@ class HasherMatcherActionerAPI:
 
         import boto3
 
-        client = boto3.client("cognito-idp")
+        client = boto3.client("cognito-idp", region_name="us-east-1")
 
         resp = client.initiate_auth(
             AuthFlow="REFRESH_TOKEN_AUTH",
@@ -276,8 +276,10 @@ if __name__ == "__main__":
 
     print("Manual Test of API Request Methods:")
 
-    # Space to test api
+    # if we can lets go ahead and refresh
+    if refresh_token and client_id:
+        print(api._refresh_token())
+
     # e.g. if auth is correct the following command should print:
     # "{'message': 'Hello World, HMA'}"
-    print(api._refresh_token())
     print(api.get())
