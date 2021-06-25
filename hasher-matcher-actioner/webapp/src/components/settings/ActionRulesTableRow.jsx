@@ -12,15 +12,15 @@ import '../../styles/_settings.scss';
 const classificationsFromLabels = (mustHaveLabels, mustNotHaveLabels) =>
   mustHaveLabels
     .map(mustHaveLabel => ({
-      classification_type: mustHaveLabel.key,
+      classificationType: mustHaveLabel.key,
       equals: true,
-      classification_value: mustHaveLabel.value,
+      classificationValue: mustHaveLabel.value,
     }))
     .concat(
       mustNotHaveLabels.map(mustNotHaveLabel => ({
-        classification_type: mustNotHaveLabel.key,
+        classificationType: mustNotHaveLabel.key,
         equals: false,
-        classification_value: mustNotHaveLabel.value,
+        classificationValue: mustNotHaveLabel.value,
       })),
     );
 export default function ActionRulesTableRow({
@@ -85,7 +85,7 @@ export default function ActionRulesTableRow({
     const classificationDescriptions = updatedActionRule.classifications.map(
       classification => {
         let ret = 'the';
-        switch (classification.classification_type) {
+        switch (classification.classificationType) {
           case 'BankSourceClassification':
             ret += ' Dataset Source';
             break;
@@ -101,22 +101,22 @@ export default function ActionRulesTableRow({
             ret += ' MatchedContent';
             break;
           default:
-            ret += ` ${classification.classification_type}`;
+            ret += ` ${classification.classificationType}`;
             break;
         }
 
         if (classification.equals) {
           ret +=
-            classification.classification_type === 'Classification'
+            classification.classificationType === 'Classification'
               ? ' has been classified'
               : ' is';
         } else {
           ret +=
-            classification.classification_type === 'Classification'
+            classification.classificationType === 'Classification'
               ? ' has not been classified'
               : ' is not';
         }
-        ret += ` ${classification.classification_value}`;
+        ret += ` ${classification.classificationValue}`;
         return ret;
       },
     );
@@ -186,14 +186,14 @@ export default function ActionRulesTableRow({
               const updatedMustHaveLabels = updatedActionRule.classifications
                 .filter(classification => classification.equals)
                 .map(classification => ({
-                  key: classification.classification_type,
-                  value: classification.classification_value,
+                  key: classification.classificationType,
+                  value: classification.classificationValue,
                 }));
               const updatedMustNotHaveLabels = updatedActionRule.classifications
                 .filter(classification => !classification.equals)
                 .map(classification => ({
-                  key: classification.classification_type,
-                  value: classification.classification_value,
+                  key: classification.classificationType,
+                  value: classification.classificationValue,
                 }));
 
               updatedActionRule.must_have_labels = updatedMustHaveLabels;

@@ -10,16 +10,10 @@ import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
-<<<<<<< HEAD
 import ActionRuleFormColumns, {
   classificationTypeTBD,
 } from '../../components/settings/ActionRuleFormColumns.tsx';
-
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
-=======
-import ActionRuleFormColumns from '../../components/settings/ActionRuleFormColumns.tsx';
-import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow.tsx';
->>>>>>> bd814ff
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {
@@ -214,14 +208,14 @@ export default function ActionRuleSettingsTab() {
                       const newMustHaveLabels = newActionRule.classifications
                         .filter(classification => classification.equals)
                         .map(classification => ({
-                          key: classification.classification_type,
-                          value: classification.classification_value,
+                          key: classification.classificationType,
+                          value: classification.classificationValue,
                         }));
                       const newMustNotHaveLabels = newActionRule.classifications
                         .filter(classification => !classification.equals)
                         .map(classification => ({
-                          key: classification.classification_type,
-                          value: classification.classification_value,
+                          key: classification.classificationType,
+                          value: classification.classificationValue,
                         }));
 
                       newActionRule.must_have_labels = newMustHaveLabels;
