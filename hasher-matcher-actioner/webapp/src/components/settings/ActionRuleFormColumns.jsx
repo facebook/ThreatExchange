@@ -47,7 +47,7 @@ export default function ActionRuleFormColumns({
             showErrors &&
             classification.classification_type === classificationTypeTBD
           }>
-          <option value={classificationTypeTBD}> - </option>
+          <option value={classificationTypeTBD}> Select... </option>
           <option value="BankSourceClassification">Dataset Source</option>
           <option value="BankIDClassification">Dataset ID</option>
           <option value="BankedContentIDClassification">
@@ -148,6 +148,7 @@ export default function ActionRuleFormColumns({
               );
             })
           : []}
+        <br />
         <Button
           variant="success"
           onClick={() => {
@@ -174,7 +175,7 @@ export default function ActionRuleFormColumns({
           onChange={e => onChange({action_id: e.target.value})}
           isInvalid={showErrors && actionId === '0'}>
           <option value="0" key="0">
-            Select an action...
+            Select ...
           </option>
           {actionOptions}
         </Form.Control>
