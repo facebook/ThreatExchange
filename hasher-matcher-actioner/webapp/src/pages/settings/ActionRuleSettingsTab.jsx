@@ -10,11 +10,16 @@ import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
+<<<<<<< HEAD
 import ActionRuleFormColumns, {
   classificationTypeTBD,
 } from '../../components/settings/ActionRuleFormColumns.tsx';
 
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
+=======
+import ActionRuleFormColumns from '../../components/settings/ActionRuleFormColumns.tsx';
+import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow.tsx';
+>>>>>>> bd814ff
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {

@@ -6,16 +6,6 @@ import React, {useState, useEffect, useCallback} from 'react';
 import {Popover, OverlayTrigger} from 'react-bootstrap';
 import copy from 'clipboard-copy';
 
-// eslint-disable-next-line react/prop-types
-export function CopyableHashField({text, tooltip = 'Copy hash to clipboard?'}) {
-  return (
-    <td style={{maxWidth: '250px', overflow: 'hidden'}}>
-      <span style={{overflow: 'hidden'}} />
-      <CopyableTextField text={text} tooltip={tooltip} />
-    </td>
-  );
-}
-
 const UpdatingPopover = React.forwardRef(
   // eslint-disable-next-line react/prop-types
   ({popper, children, ...props}, ref) => {
@@ -76,5 +66,15 @@ export function CopyableTextField({text, tooltip, color}) {
         {text}
       </button>
     </OverlayTrigger>
+  );
+}
+
+// eslint-disable-next-line react/prop-types
+export function CopyableHashField({text, tooltip = 'Copy hash to clipboard?'}) {
+  return (
+    <td style={{maxWidth: '250px', overflow: 'hidden'}}>
+      <span style={{overflow: 'hidden'}} />
+      <CopyableTextField text={text} tooltip={tooltip} />
+    </td>
   );
 }
