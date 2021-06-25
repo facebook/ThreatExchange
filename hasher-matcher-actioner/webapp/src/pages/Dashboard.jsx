@@ -106,17 +106,23 @@ export default function Dashboard() {
       </Row>
       <Row>
         <Col>
-          <Alert variant="secondary">
-            Additional metrics for the system&apos;s underlying implementation
-            can be found{' '}
-            <a
-              href={process.env.REACT_APP_AWS_DASHBOARD_URL}
-              target="_blank"
-              rel="noreferrer">
-              here.
-            </a>{' '}
-            (AWS Console authentication required)
-          </Alert>
+          {process.env.REACT_APP_AWS_DASHBOARD_URL ? (
+            <Alert variant="secondary">
+              Additional metrics for the system&apos;s underlying implementation
+              can be found{' '}
+              <a
+                href={process.env.REACT_APP_AWS_DASHBOARD_URL}
+                target="_blank"
+                rel="noreferrer">
+                here.
+              </a>{' '}
+              (AWS Console authentication required)
+            </Alert>
+          ) : (
+            <Alert variant="secondary">
+              Detailed metrics need to be enabled during deployment.
+            </Alert>
+          )}
         </Col>
       </Row>
     </FixedWidthCenterAlignedLayout>

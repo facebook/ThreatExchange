@@ -1,10 +1,10 @@
 ${jsonencode({
   width  = 6
   type   = "metric"
-  period = 60
   properties = {
     title  = "${lambda_title} λ Invocations & Duration"
     region = "${region}"
+    period = 60
     stat   = "Sum"
     metrics = [
       [
