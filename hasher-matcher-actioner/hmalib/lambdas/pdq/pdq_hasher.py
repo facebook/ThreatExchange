@@ -2,10 +2,8 @@
 
 import json
 import os
-import tempfile
-from pathlib import Path
-from urllib.parse import unquote_plus
 import datetime
+import typing as t
 
 import boto3
 from mypy_boto3_dynamodb import DynamoDBServiceResource
@@ -13,7 +11,13 @@ from threatexchange.hashing import pdq_hasher
 
 from hmalib import metrics
 from hmalib.models import PipelinePDQHashRecord
+from hmalib.common.message_models import (
+    S3ImageSubmission,
+    S3ImageSubmissionBatchMessage,
+    URLImageSubmissionMessage,
+)
 from hmalib.common.logging import get_logger
+from hmalib.common import image_sources
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
@@ -29,49 +33,57 @@ def lambda_handler(event, context):
     Listens to SQS events generated when new files are added to S3. Downloads
     files to temp-storage, generates PDQ hash and quality from the file.
 
+    The SQS events could be from S3 or directly from the Submission API lambdas
+    in case of a URL submission.
+
     Saves hash output to dynamodb.
 
     Sends a message on an output queue.
 
-    Note: Lambdas have pretty strong tempfile storage limits (512MB as of this
-    writing) [1]. We are using the tempfile module in a context manager block,
-    so the file gets deleted after use. If additional files are created, ensure
-    they are inside their own context managers otherwise the lambda can run out
-    of disk-space.
-
-    1: https://docs.aws.amazon.com/lambda/latest/dg/images-create.html
+    Note: The image is brought into memory and then handed over to the hasher.
+    If you are hashing large images, you may need to increase the memory
+    allocated to the lambda. Also remember that images that look small on disk
+    (eg. low quality jpegs) still occupy a lot of space in memory. The
+    pixel-size of the image is a better indicator of the space it will take in
+    memory.
     """
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
     for sqs_record in event["Records"]:
-        sns_notification = json.loads(sqs_record["body"])
-        message = json.loads(sns_notification["Message"])
+        message_body = json.loads(sqs_record["body"])
+        message = json.loads(message_body["Message"])
 
-        if message.get("Event") == "s3:TestEvent":
+        if message.get("Event", None) == "s3:TestEvent":
             logger.info("Disregarding S3 Test Event")
             continue
 
-        for s3_record in message["Records"]:
-            bucket_name = s3_record["s3"]["bucket"]["name"]
-            key = unquote_plus(s3_record["s3"]["object"]["key"])
+        images_to_process: t.List[
+            t.Union[URLImageSubmissionMessage, S3ImageSubmission]
+        ] = []
 
-            # Ignore Folders and Empty Files
-            if s3_record["s3"]["object"]["size"] == 0:
-                logger.info("Disregarding empty file or directory: %s", key)
-                continue
+        if URLImageSubmissionMessage.could_be(message):
+            images_to_process.append(
+                URLImageSubmissionMessage.from_sqs_message(message)
+            )
+        elif S3ImageSubmissionBatchMessage.could_be(message):
+            images_to_process.extend(
+                S3ImageSubmissionBatchMessage.from_sqs_message(
+                    message
+                ).image_submissions
+            )
 
-            logger.info("generating pdq hash for %s/%s", bucket_name, key)
-
+        for image in images_to_process:
+            logger.info("Getting bytes for submission:  %s", repr(image))
             with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
-                bytes_: bytes = s3_client.get_object(Bucket=bucket_name, Key=key)[
-                    "Body"
-                ].read()
+                bytes_: bytes = image_sources.get_image_bytes(image)
+
+            logger.info("Generating PDQ hash for submission: %s", repr(image))
 
             with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
                 pdq_hash, quality = pdq_hasher.pdq_from_bytes(bytes_)
 
             hash_record = PipelinePDQHashRecord(
-                key, pdq_hash, datetime.datetime.now(), quality
+                image.content_id, pdq_hash, datetime.datetime.now(), quality
             )
 
             hash_record.write_to_table(records_table)
