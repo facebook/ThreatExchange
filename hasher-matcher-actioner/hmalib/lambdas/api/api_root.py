@@ -36,6 +36,7 @@ HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
+IMAGES_TOPIC_ARN = os.environ["IMAGES_TOPIC_ARN"]
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -114,6 +115,7 @@ app.mount(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_bucket_key=IMAGE_BUCKET_NAME,
         image_folder_key=IMAGE_FOLDER_KEY,
+        images_topic_arn=IMAGES_TOPIC_ARN,
     ),
 )
 

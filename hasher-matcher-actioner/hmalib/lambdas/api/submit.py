@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import functools
 import bottle
 import boto3
 import base64
-import requests
+import json
 import datetime
 
 from enum import Enum
@@ -15,10 +16,16 @@ import typing as t
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.content_models import ContentObject
 from hmalib.common.logging import get_logger
+from hmalib.common.message_models import URLImageSubmissionMessage
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
+
+
+@functools.lru_cache(maxsize=None)
+def _get_sns_client():
+    return boto3.client("sns")
 
 
 def create_presigned_put_url(bucket_name, object_name, file_type, expiration=3600):
@@ -135,7 +142,10 @@ def record_content_submission(
 
 
 def get_submit_api(
-    dynamodb_table: Table, image_bucket_key: str, image_folder_key: str
+    dynamodb_table: Table,
+    image_bucket_key: str,
+    image_folder_key: str,
+    images_topic_arn: str,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -206,35 +216,22 @@ def get_submit_api(
         """
         Submission via a url to content. Current behavior copies content into the system's s3 bucket.
         """
-        fileName = request.content_id
+        content_id = request.content_id
         url = request.content_bytes_url_or_file_type
-        response = requests.get(url)
-        # TODO better checks that the URL actually worked...
-        if response and response.content:
-            # TODO a whole bunch more validation and error checking...
 
-            # Again, We want to record the submission before triggering and processing on
-            # the content itself therefore we write to dynamo before s3
-            record_content_submission(dynamodb_table, image_folder_key, request)
+        # Again, We want to record the submission before triggering and processing on
+        # the content itself therefore we write to dynamo before s3
+        record_content_submission(dynamodb_table, image_folder_key, request)
 
-            # Right now this makes a local copy in s3 but future changes to
-            # pdq_hasher should allow us to avoid storing to our own s3 bucket
-            # (or possibly give the api/user the option)
-            s3_client.put_object(
-                Body=response.content,
-                Bucket=image_bucket_key,
-                Key=f"{image_folder_key}{fileName}",
-            )
+        url_submission_message = URLImageSubmissionMessage(content_id, url)
+        _get_sns_client().publish(
+            TopicArn=images_topic_arn,
+            Message=json.dumps(url_submission_message.to_sqs_message()),
+        )
 
-            return SubmitContentResponse(
-                content_id=request.content_id, submit_successful=True
-            )
-        else:
-            bottle.response.status = 400
-            return SubmitContentError(
-                content_id=request.content_id,
-                message="url submitted could not be read from",
-            )
+        return SubmitContentResponse(
+            content_id=request.content_id, submit_successful=True
+        )
 
     @submit_api.post("/", apply=[jsoninator(SubmitContentRequestBody)])
     def submit(

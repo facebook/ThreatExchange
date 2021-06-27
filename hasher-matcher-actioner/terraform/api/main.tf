@@ -46,6 +46,7 @@ resource "aws_lambda_function" "api_root" {
       THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
       MEASURE_PERFORMANCE                   = var.measure_performance ? "True" : "False"
       WRITEBACKS_QUEUE_URL                  = var.writebacks_queue.url
+      IMAGES_TOPIC_ARN                      = var.images_topic_arn
     }
   }
   tags = merge(
@@ -138,6 +139,12 @@ data "aws_iam_policy_document" "api_root" {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
     resources = [var.writebacks_queue.arn]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["SNS:Publish"]
+    resources = [var.images_topic_arn]
   }
 }
 

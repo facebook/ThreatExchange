@@ -255,6 +255,7 @@ module "api" {
   te_api_token_secret   = aws_secretsmanager_secret.te_api_token
 
   writebacks_queue = module.actions.writebacks_queue
+  images_topic_arn = module.hashing_data.image_folder_info.notification_topic
 }
 
 # Build and deploy webapp
