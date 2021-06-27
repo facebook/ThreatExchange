@@ -223,7 +223,7 @@ def get_submit_api(
         # the content itself therefore we write to dynamo before s3
         record_content_submission(dynamodb_table, image_folder_key, request)
 
-        url_submission_message = URLImageSubmissionMessage(content_id, url)
+        url_submission_message = URLImageSubmissionMessage(content_id, t.cast(str, url))
         _get_sns_client().publish(
             TopicArn=images_topic_arn,
             Message=json.dumps(url_submission_message.to_sqs_message()),
