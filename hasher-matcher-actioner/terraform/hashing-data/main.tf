@@ -77,26 +77,6 @@ resource "aws_s3_bucket_object" "threat_exchange_data" {
     }
   )
 }
-resource "null_resource" "provide_sample_pdq_data_holidays" {
-  # To force-update on existing deployment, taint and apply terraform again
-  # $ terraform taint module.hashing_data.null_resource.provide_sample_pdq_data_holidays
-  # $ terraform apply
-
-  # To get a sensible privacy group value, we reverse engineer the filename split at
-  # hmalib.common.s3_adapters.ThreatExchangeS3Adapter._parse_file at line 118
-  depends_on = [
-    aws_s3_bucket_object.threat_exchange_data
-  ]
-
-  provisioner "local-exec" {
-    environment = {
-      PRIVACY_GROUP = "inria-holidays-test"
-    }
-
-    command = "aws s3 cp ../sample_data/holidays-jpg1-pdq-hashes.csv s3://${aws_s3_bucket_object.threat_exchange_data.bucket}/${aws_s3_bucket_object.threat_exchange_data.key}$PRIVACY_GROUP.holidays-jpg1-pdq-hashes.pdq.te"
-  }
-}
-
 
 resource "aws_sns_topic" "threat_exchange_data" {
   name_prefix = "${var.prefix}-threatexchange-data"
