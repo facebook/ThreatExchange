@@ -9,12 +9,12 @@ locals {
   )]
 
   queues_to_monitor_items = [for queue in var.queues_to_monitor : jsonencode({
-    width  = 6
-    type   = "metric"
-    period = 60
+    width = 6
+    type  = "metric"
     properties = {
       title  = "${queue[0]}: Age of Oldest Item"
       region = "${var.region}"
+      period = 60
       stat   = "Maximum"
       metrics = [
         [
@@ -32,14 +32,14 @@ locals {
   ])
 
   total_concurrent_lambda = jsonencode({
-    width  = 6
-    type   = "metric"
-    period = 60
+    width = 6
+    type  = "metric"
     properties = {
       title   = "Total Concurrent λ Executions"
       region  = "${var.region}"
       stacked = true
       stat    = "Maximum"
+      period  = 60
       metrics = [for lambda in local.all_lambda_names : ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", "${lambda}"]]
     }
   })
@@ -47,12 +47,12 @@ locals {
   api_lambda_widget = templatefile("${path.module}/lambda_widget.tpl", { region = var.region, lambda_name = var.api_lambda_name, lambda_title = "API" })
 
   api_gateway_widget = jsonencode({
-    width  = 6
-    type   = "metric"
-    period = 60
+    width = 6
+    type  = "metric"
     properties = {
       title  = "API Gateway (${var.api_gateway_id})"
       region = "${var.region}"
+      period = 60
       stat   = "Sum"
       metrics = [
         ["AWS/ApiGateway", "4xx", "Stage", "$default", "ApiId", "${var.api_gateway_id}"],
@@ -70,6 +70,7 @@ locals {
     properties = {
       title  = "DynamoDB R/W Units (WIP: Consult ${var.datastore.name} for actual numbers)",
       region = "${var.region}",
+      period = 60
       stat   = "Average",
       metrics = [
         ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "${var.datastore.name}", { yAxis = "right" }],
@@ -83,12 +84,12 @@ locals {
   })
 
   datastore_widgets_errors = jsonencode({
-    width  = 6
-    type   = "metric"
-    period = 60
+    width = 6
+    type  = "metric"
     properties = {
       title  = "DynamoDB Errors, Throttles, & Conflicts",
       region = "${var.region}",
+      period = 60
       stat   = "Sum",
       metrics = [
         ["AWS/DynamoDB", "ThrottledRequests", "TableName", "${var.datastore.name}", "Operation", "TransactWriteItems"],
@@ -116,7 +117,7 @@ JSON
 }
 
 resource "aws_cloudwatch_dashboard" "basic_dashboard" {
-  dashboard_name = "${var.prefix}-dashboard"
+  dashboard_name = var.name
   // tf converts numbers to strings when putting them in a list.
   // this strip quotes around numbers, so that {"value": "123"} turns into {"value": 123}
   dashboard_body = replace(local.dashboard_body, "/\"([0-9]+)\"/", "$1")

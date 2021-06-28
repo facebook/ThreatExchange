@@ -21,7 +21,7 @@ export function HolidaysDatasetInformationBlock({samplePGExists, refresh}) {
       `This group will become disabled on "Sync" as it does not have TE
       counterpart. Simply delete and create again if you wish to keep match
       sample data after syncing`,
-    ).then(() => {});
+    );
   };
 
   return (
@@ -52,7 +52,9 @@ export function HolidaysDatasetInformationBlock({samplePGExists, refresh}) {
               setLoading(true);
               createSampleDataPG();
               setTimeout(() => {
-                refresh();
+                if (refresh) {
+                  refresh();
+                }
                 setLoading(false);
               }, 1000);
             }}
@@ -72,5 +74,5 @@ HolidaysDatasetInformationBlock.propTypes = {
 
 HolidaysDatasetInformationBlock.defaultProps = {
   samplePGExists: false,
-  refresh: () => {},
+  refresh: null,
 };

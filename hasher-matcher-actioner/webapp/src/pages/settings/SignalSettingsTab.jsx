@@ -10,11 +10,48 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
 
-export default function SignalSettingsTab() {
+function DataSet() {
   return (
     <>
-      <DataSets />
-      <ExternalSignalSources />
+      <Col lg={4} sm={6} xs={12} className="mb-4">
+        <Card className="text-center">
+          <Card.Header className="text-white bg-success">
+            <h4 className="mb-0">Collboration on Cat Imagery</h4>
+          </Card.Header>
+          <Card.Subtitle className="mt-0 mb-0 text-muted">Shared</Card.Subtitle>
+          <Card.Body className="text-left">
+            <Card.Text>
+              <h5>Labels</h5>
+              <Badge pill variant="primary">
+                cat
+              </Badge>{' '}
+              <Badge pill variant="primary">
+                unverified
+              </Badge>{' '}
+              <Badge pill variant="info">
+                low_precision
+              </Badge>
+              <h5>Matching</h5>
+              <div>
+                <Badge variant="success">PDQ</Badge> Distance 17
+              </div>
+            </Card.Text>
+          </Card.Body>
+          <ListGroup variant="flush" className="text-left">
+            <ListGroup.Item>
+              <h5>Shared From: Cat Dataset</h5>
+              <h6>Label Map</h6>
+              {'low_precision → '}
+              <Badge pill variant="info">
+                low_precision
+              </Badge>
+            </ListGroup.Item>
+          </ListGroup>
+          <Button variant="primary" block>
+            Edit
+          </Button>
+        </Card>
+      </Col>
     </>
   );
 }
@@ -95,61 +132,6 @@ function DataSets() {
   );
 }
 
-function DataSet() {
-  return (
-    <>
-      <Col lg={4} sm={6} xs={12} className="mb-4">
-        <Card className="text-center">
-          <Card.Header className="text-white bg-success">
-            <h4 className="mb-0">Collboration on Cat Imagery</h4>
-          </Card.Header>
-          <Card.Subtitle className="mt-0 mb-0 text-muted">Shared</Card.Subtitle>
-          <Card.Body className="text-left">
-            <Card.Text>
-              <h5>Labels</h5>
-              <Badge pill variant="primary">
-                cat
-              </Badge>{' '}
-              <Badge pill variant="primary">
-                unverified
-              </Badge>{' '}
-              <Badge pill variant="info">
-                low_precision
-              </Badge>
-              <h5>Matching</h5>
-              <div>
-                <Badge variant="success">PDQ</Badge> Distance 17
-              </div>
-            </Card.Text>
-          </Card.Body>
-          <ListGroup variant="flush" className="text-left">
-            <ListGroup.Item>
-              <h5>Shared From: Cat Dataset</h5>
-              <h6>Label Map</h6>
-              {'low_precision → '}
-              <Badge pill variant="info">
-                low_precision
-              </Badge>
-            </ListGroup.Item>
-          </ListGroup>
-          <Button variant="primary" block>
-            Edit
-          </Button>
-        </Card>
-      </Col>
-    </>
-  );
-}
-
-function ExternalSignalSources() {
-  return (
-    <>
-      <h2>External Signal Sources</h2>
-      <SignalSource />
-    </>
-  );
-}
-
 function SignalSource() {
   return (
     <>
@@ -182,6 +164,24 @@ function SignalSource() {
           </Card>
         </Col>
       </Row>
+    </>
+  );
+}
+
+function ExternalSignalSources() {
+  return (
+    <>
+      <h2>External Signal Sources</h2>
+      <SignalSource />
+    </>
+  );
+}
+
+export default function SignalSettingsTab() {
+  return (
+    <>
+      <DataSets />
+      <ExternalSignalSources />
     </>
   );
 }

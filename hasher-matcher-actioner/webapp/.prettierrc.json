@@ -7,7 +7,7 @@
   "endOfLine": "auto",
   "overrides": [
     {
-      "files": ["*.js", "*.jsx"]
+      "files": ["*.js", "*.jsx", "*.tsx", "*.ts"]
     }
   ]
 }

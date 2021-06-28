@@ -69,6 +69,103 @@ function toUFlotFormat(graphData) {
   return [timestamps, values];
 }
 
+function StatCardLoading({statName}) {
+  return (
+    <Card key={`stat-card-${statName}`} className="mb-4">
+      <Card.Body>
+        <Col>
+          <h4 className="text-muted font-weight-light">
+            <Spinner
+              as="span"
+              animation="border"
+              size="lg"
+              role="status"
+              aria-hidden="true"
+            />
+            <span>&nbsp;Loading stats for {statName}...</span>
+          </h4>
+        </Col>
+      </Card.Body>
+    </Card>
+  );
+}
+
+function StatCardError({statName}) {
+  return (
+    <Card key={`stat-card-${statName}`} className="mb-4">
+      <Card.Body>
+        <Col>
+          {process.env.REACT_APP_AWS_DASHBOARD_URL ? (
+            <Alert variant="secondary">
+              Additional metrics for the system&apos;s underlying implementation
+              can be found{' '}
+              <a
+                href={process.env.REACT_APP_AWS_DASHBOARD_URL}
+                target="_blank"
+                rel="noreferrer">
+                here.
+              </a>{' '}
+              (AWS Console authentication required)
+            </Alert>
+          ) : (
+            <Alert variant="secondary">
+              Detailed metrics need to be enabled during deployment.
+            </Alert>
+          )}
+        </Col>
+      </Card.Body>
+    </Card>
+  );
+}
+
+function StatCard({statName, timeSpan}) {
+  // Card can be undefined, the card object, or 'failed' string.
+  // Failed string will have a different repr.
+  const [card, setCard] = useState(undefined);
+
+  useEffect(() => {
+    fetchStats(statName, timeSpan)
+      .then(response => {
+        setCard(response.card);
+      })
+      .catch(() => {
+        setCard('failed');
+      });
+  }, [timeSpan]);
+
+  if (card === undefined) {
+    return <StatCardLoading statName={statName} />;
+  }
+  if (card === 'failed') {
+    return <StatCardError statName={statName} />;
+  }
+
+  return (
+    <Card key={`stat-card-${statName}`} className="mb-4">
+      <Card.Body>
+        <Row>
+          <Col xs={4}>
+            <h2 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h2>
+          </Col>
+          <Col xs={4}>
+            <h1>{getDisplayNumber(card.time_span_count)}</h1>
+            <small className="text-muted">
+              in the last {getDisplayTimeSpan(card.time_span)}.
+            </small>
+          </Col>
+          <Col xs={4}>
+            <h1>{getDisplayNumber(card.total_count)}</h1>
+            <small className="text-muted">since HMA is online.</small>
+          </Col>
+        </Row>
+      </Card.Body>
+      <Card.Footer>
+        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
+      </Card.Footer>
+    </Card>
+  );
+}
+
 /**
  * Will be renamed as Dashboard.jsx once we replace it.
  */
@@ -123,99 +220,14 @@ export default function Dashboard() {
   );
 }
 
-function StatCard({statName, timeSpan}) {
-  // Card can be undefined, the card object, or 'failed' string.
-  // Failed string will have a different repr.
-  const [card, setCard] = useState(undefined);
-
-  useEffect(() => {
-    fetchStats(statName, timeSpan)
-      .then(response => {
-        setCard(response.card);
-      })
-      .catch(() => {
-        setCard('failed');
-      });
-  }, [timeSpan]);
-
-  if (card === undefined) {
-    return <StatCardLoading statName={statName} />;
-  }
-  if (card === 'failed') {
-    return <StatCardError statName={statName} />;
-  }
-
-  return (
-    <Card key={`stat-card-${statName}`} className="mb-4">
-      <Card.Body>
-        <Row>
-          <Col xs={4}>
-            <h2 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h2>
-          </Col>
-          <Col xs={4}>
-            <h1>{getDisplayNumber(card.time_span_count)}</h1>
-            <small className="text-muted">
-              in the last {getDisplayTimeSpan(card.time_span)}.
-            </small>
-          </Col>
-          <Col xs={4}>
-            <h1>{getDisplayNumber(card.total_count)}</h1>
-            <small className="text-muted">since HMA is online.</small>
-          </Col>
-        </Row>
-      </Card.Body>
-      <Card.Footer>
-        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
-      </Card.Footer>
-    </Card>
-  );
-}
-
 StatCard.propTypes = {
   statName: PropTypes.string.isRequired,
   timeSpan: PropTypes.string.isRequired,
 };
 
-function StatCardLoading({statName}) {
-  return (
-    <Card key={`stat-card-${statName}`} className="mb-4">
-      <Card.Body>
-        <Col>
-          <h4 className="text-muted font-weight-light">
-            <Spinner
-              as="span"
-              animation="border"
-              size="lg"
-              role="status"
-              aria-hidden="true"
-            />
-            <span>&nbsp;Loading stats for {statName}...</span>
-          </h4>
-        </Col>
-      </Card.Body>
-    </Card>
-  );
-}
-
 StatCardLoading.propTypes = {
   statName: PropTypes.string.isRequired,
 };
-
-function StatCardError({statName}) {
-  return (
-    <Card key={`stat-card-${statName}`} className="mb-4">
-      <Card.Body>
-        <Col>
-          <h4 className="text-danger font-weight-light">
-            Failed to load stats for {statName}. This could be because the
-            configuration MEASURE_PERFORMANCE is disabled.
-            {/* TODO: This will include a link to the wiki after we add an entry for MEASURE_PERFORMANCE. */}
-          </h4>
-        </Col>
-      </Card.Body>
-    </Card>
-  );
-}
 
 StatCardError.propTypes = {
   statName: PropTypes.string.isRequired,

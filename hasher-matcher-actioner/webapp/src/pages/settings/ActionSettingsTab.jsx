@@ -31,10 +31,8 @@ export default function ActionSettingsTab() {
    * someone else is actively working in this space.
    */
   const [performers, setPerformers] = useState([]);
-  const [
-    actionRulesDependentActions,
-    setActionRulesDependentActions,
-  ] = useState([]);
+  const [actionRulesDependentActions, setActionRulesDependentActions] =
+    useState([]);
   const [adding, setAdding] = useState(false);
   const [newAction, setNewAction] = useState(defaultAction);
   const [showToast, setShowToast] = useState(false);
