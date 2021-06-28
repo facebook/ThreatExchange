@@ -29,14 +29,21 @@ ToDo Missing more involed checks (between submit and webhook):
   - wait: match record was created (if expected) and maps to correct signal values
   - longer wait: action record was created and maps to correct action label
 
+
+```
+python3 scripts/soak_test_system --api_url "https://abcd1234.execute-api.us-east-1.amazonaws.com/" --submission_batch_size 5 --second_between_batches 5
+```
+
 """
 
 
 import argparse
 import time
+import threading
+import uuid
+import datetime
 
 from submit_content_test import DeployedInstanceTestHelper
-
 
 # Defaults (often it is easier to edit the script than provide the args)
 API_URL = ""
@@ -46,6 +53,84 @@ CLIENT_ID = ""
 LISTENER_EXTERNAL_HOSTNAME = ""
 LISTENER_PORT = 8080
 
+ID_SEPARATOR = "-"
+
+
+class SubmittingThread(threading.Thread):
+    def __init__(
+        self,
+        helper: DeployedInstanceTestHelper,
+        submission_batch_size=10,
+        seconds_between_batches=10,
+        **kwargs,
+    ):
+        super(SubmittingThread, self).__init__(**kwargs)
+        self.daemon = True
+        self._stop_signal = threading.Event()
+        self.submission_batch_size = submission_batch_size
+        self.seconds_between_batches = seconds_between_batches
+        self.helper = helper
+
+    def stop(self):
+        self._stop_signal.set()
+
+    def stopped(self):
+        return self._stop_signal.is_set()
+
+    def run(self):
+        total_submitted = 0
+        while True:
+            if self.stopped():
+                print(f"Submissions stopped. TOTAL SUBMITTED: {total_submitted}")
+                return
+            batch_prefix = f"soak_test{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}"
+            for i in range(self.submission_batch_size):
+                content_id = f"{batch_prefix}-{i}"
+                self.helper.submit_test_content(content_id)
+                total_submitted += 1
+            print(f"Submitter: total submission count {total_submitted}")
+            time.sleep(self.seconds_between_batches)
+            self.helper.refresh_api_token()
+
+
+class ListeningThread(threading.Thread):
+    def __init__(
+        self,
+        helper: DeployedInstanceTestHelper,
+        hostname,
+        port,
+        seconds_between_checks=5,
+        **kwargs,
+    ):
+        super(ListeningThread, self).__init__(**kwargs)
+        self.daemon = True
+        self._stop_signal = threading.Event()
+        self.seconds_between_checks = seconds_between_checks
+        self.helper = helper
+        self.hostname = hostname
+        self.port = port
+
+    def stop(self):
+        self._stop_signal.set()
+
+    def stopped(self):
+        return self._stop_signal.is_set()
+
+    def run(self):
+        self.helper.start_listening_for_action_post_requests(self.hostname, self.port)
+        time.sleep(5)
+        prev = 0
+        while True:
+            if self.stopped():
+                self.helper.stop_listening_for_action_post_requests()
+                print(f"Listener stopped. TOTAL RECEIVED: ~{prev}")
+                return
+            request_count = self.helper.get_post_count_so_far_requests()
+            if prev != request_count:
+                print(f"Listener: total POST requests received {request_count}")
+                prev = request_count
+            time.sleep(self.seconds_between_checks)
+
 
 def start_soak(
     api_url: str,
@@ -53,25 +138,52 @@ def start_soak(
     client_id: str,
     hostname: str,
     port: int,
-    interval: int,
+    submission_batch_size: int,
+    seconds_between_batches: int,
 ):
     helper = DeployedInstanceTestHelper(api_url, "", client_id, refresh_token)
     helper.refresh_api_token()
-    helper.set_up_basic_test(hostname, port)
-    counter = 0
-    while True:
-        print(f"Beginning Submit Test:{counter}")
-        # ToDo we should we decouple the 'submission' from the 'counting' (I.e. break up this function at make it async)
-        helper.run_basic_test_with_webhook_listener(hostname, port)
-        print(f"Completed Submit Test:{counter}")
-        counter += 1
-        time.sleep(interval)
-        helper.refresh_api_token()
+    helper.set_up_test(hostname, port)
+
+    submitting_thread = SubmittingThread(
+        helper, submission_batch_size, seconds_between_batches
+    )
+    listening_thread = ListeningThread(helper, hostname, port)
+
+    print(
+        f"Beginning Soak Test: enter 'q' to stop submissions and again to stop listening."
+    )
+    listening_thread.start()
+    time.sleep(3)
+    submitting_thread.start()
+
+    cmd = ""
+    try:
+        while cmd != "q":
+            cmd = input("Enter 'q' to stop submitter: ")
+    except KeyboardInterrupt:
+        pass
+
+    submitting_thread.stop()
+    print("Submissions stopping")
+    cmd = ""
+    try:
+        while cmd != "q":
+            cmd = input("Enter 'q' to stop listener: ")
+    except KeyboardInterrupt:
+        pass
+
+    # ToDo helper.clean_up_test(hostname, port)
+    listening_thread.stop()
+
+    submitting_thread.join()
+    listening_thread.join()
+    print(f"Soak Test Stopped")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Start a soak test on a delployed HMA instance and submit until cancelled"
+        description="Start a soak test on a deployed HMA instance and submit until cancelled"
     )
     parser.add_argument(
         "--api_url",
@@ -99,9 +211,14 @@ if __name__ == "__main__":
         default=LISTENER_PORT,
     )
     parser.add_argument(
-        "--interal",
-        help="number of seconds between completed submit tests",
-        default=60,
+        "--submission_batch_size",
+        help="How many images to submit in each batch",
+        default=10,
+    )
+    parser.add_argument(
+        "--seconds_between_batches",
+        help="number of seconds between completed submission batches",
+        default=10,
     )
 
     args = parser.parse_args()
@@ -111,6 +228,7 @@ if __name__ == "__main__":
         args.refresh_token,
         args.client_id,
         args.hostname,
-        args.port,
-        args.interal,
+        int(args.port),
+        int(args.submission_batch_size),
+        int(args.seconds_between_batches),
     )

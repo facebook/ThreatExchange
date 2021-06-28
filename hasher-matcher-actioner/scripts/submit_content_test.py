@@ -5,12 +5,14 @@ import os
 import json
 import base64
 import requests
+import urllib3
 import time
 import dataclasses
 import typing as t
 from urllib.parse import urljoin
+
 from script_utils import HasherMatcherActionerAPI
-from listener import start_listening_web_server
+from listener import Listener
 
 from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
@@ -40,6 +42,7 @@ class DeployedInstanceTestHelper:
         self.api = HasherMatcherActionerAPI(
             api_url, api_token, client_id, refresh_token
         )
+        self.listener = Listener()
 
     def refresh_api_token(self):
         """
@@ -93,7 +96,7 @@ class DeployedInstanceTestHelper:
 
     ### Start Basic Test Methods  ####
 
-    def set_up_basic_test(self, hostname: str, port: int):
+    def set_up_test(self, hostname: str, port: int):
         """
         Set up/Create the following:
         - Dataset (Privacy Group Config)
@@ -104,13 +107,16 @@ class DeployedInstanceTestHelper:
         to create configs that already exist.
 
         """
+
+        # Possible it already exists which is fine.
         self.create_dataset_config(
             privacy_group_id="inria-holidays-test",
             privacy_group_name="Holiday Sample Set",
         )
 
+        # ToDo These actions should be cleaned up with clean_up_basic_test
         action_performer = WebhookPostActionPerformer(
-            name="TestActionWebhookPost",
+            name="SubmitContentTestActionWebhookPost",
             url=f"http://{hostname}:{port}",
             headers='{"this-is-a":"test-header"}',
         )
@@ -120,8 +126,8 @@ class DeployedInstanceTestHelper:
         )
 
         action_rule = ActionRule(
-            name="Trigger for holidays_jpg1_dataset tag",
-            action_label=ActionLabel("TestActionWebhookPost"),
+            name="trigger-on-tag-holidays_jpg1_dataset",
+            action_label=ActionLabel("SubmitContentTestActionWebhookPost"),
             must_have_labels=set(
                 [
                     ClassificationLabel("holidays_jpg1_dataset"),
@@ -134,16 +140,45 @@ class DeployedInstanceTestHelper:
             action_rule=action_rule,
         )
 
-    def _submit_for_basic_test(self):
-        content_id = "submit_content_test_id_1"
-        filepath = "sample_data/b.jpg"
-        additional_fields = ["i-am:a-bridge", "this-is:a-test"]
-        with open(filepath, "rb") as file:
-            self.api.send_single_submission_b64(
-                content_id,
-                str(base64.b64encode(file.read()), "utf-8"),
-                additional_fields,
-            )
+    def clean_up_test(self, hostname: str, port: int):
+        """
+        Deletes specific action and action rules
+        """
+        raise NotImplementedError
+
+    def submit_test_content(
+        self,
+        content_id="submit_content_test_id_1",
+        filepath="sample_data/b.jpg",
+        additional_fields=[
+            "this-is:a-test",
+            "submitted-from:submit_content_test.py",
+        ],
+    ):
+        try:
+            with open(filepath, "rb") as file:
+                self.api.send_single_submission_url(
+                    content_id,
+                    file,
+                    additional_fields,
+                )
+        except (
+            urllib3.exceptions.MaxRetryError,
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as err:
+            print("Error:", err)
+
+    def start_listening_for_action_post_requests(self, hostname: str, port: int):
+        self.listener.start_listening(hostname, port)
+
+    def stop_listening_for_action_post_requests(self):
+        self.listener.stop_listening()
+
+    def get_post_count_so_far_requests(self) -> int:
+        return self.listener.get_post_request_count()
 
     def run_basic_test_with_webhook_listener(self, hostname: str, port: int):
         """
@@ -156,35 +191,24 @@ class DeployedInstanceTestHelper:
         Test needs to be run from a computer (likely ec2), that can bind and then receive request at
         (external) 'hostname' and 'port'
         """
-        web_server = start_listening_web_server(hostname, port)
-        server_url = f"http://{hostname}:{port}"
-        print(f"Server started {server_url}")
+        self.start_listening_for_action_post_requests(hostname, port)
 
-        self._submit_for_basic_test()
+        self.submit_test_content()
 
         post_counter = 0
         while post_counter < 1:
             time.sleep(10)
-            r = requests.get(server_url)
-            post_counter = int(r.json().get("post_counter", 0))
+            post_counter = self.get_post_count_so_far_requests()
 
         time.sleep(5)
-        web_server.shutdown()
-        print("Server stopped.")
-
-
-def clean_up_basic_test(self, hostname: str, port: int):
-    """
-    ToDo Delete (at least a subset of) what was created in set_up_basic_test
-    """
-    raise NotImplementedError
+        self.stop_listening_for_action_post_requests()
 
 
 ### End Basic Test Methods  ####
 
 
 if __name__ == "__main__":
-    # If you want hard code tests, you can do so here:
+    # If you want manually test the lib, you can do so here:
 
     # i.e. "https://<app-id>.execute-api.<region>.amazonaws.com/"
     api_url = os.environ.get(
@@ -226,6 +250,6 @@ if __name__ == "__main__":
     if refresh_token and client_id:
         helper.refresh_api_token()
 
-    helper.set_up_basic_test(hostname, port)
+    helper.set_up_test(hostname, port)
 
     helper.run_basic_test_with_webhook_listener(hostname, port)
