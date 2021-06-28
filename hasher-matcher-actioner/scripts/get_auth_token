@@ -6,25 +6,34 @@ Helper script for a developer to get an API token from cognito based on args
 See 
 https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-authentication-flow.html#amazon-cognito-user-pools-admin-authentication-flow
 
-Sample Usage:
+Sample Usage (manually editing file):
 ```
-$ export TMP_TOKEN=$(./scripts/get_auth_token) #if you elect to set values in the file
+# If you elect to set values in the file
+$ export HMA_TMP_TOKEN=$(./scripts/get_auth_token) 
+$ export HMA_REFRESH_TOKEN=$(./scripts/get_auth_token --refresh_token) 
+```
+
+
+Sample Usage (setting values in ENV)
+```
+# Set PREFIX and POOL_IDs
+$ source scripts/set_tf_outputs_in_local_env.sh
+
+# First time to create prefixTestUser (by first deleting the old one if needed)
+$ export HMA_TMP_TOKEN=$(./scripts/get_auth_token --pwd 'Example$Passw0rd' --delete_and_create_user --email 'example@org.com') 
+
+# Once the user exists 
+$ export HMA_TMP_TOKEN=$(./scripts/get_auth_token --pwd 'Example$Passw0rd') 
+$ export HMA_REFRESH_TOKEN=$(./scripts/get_auth_token --pwd 'Example$Passw0rd' --refresh_token) 
+```
 """
 
+import os
 import argparse
-import json
-import tempfile
-import subprocess
 import boto3
+from botocore.exceptions import ClientError
 
 client = boto3.client("cognito-idp")
-
-
-# Defaults (often it is easier to edit the script than provide the args)
-USERNAME = ""
-PWD = ""
-POOL_ID = ""
-CLIENT_ID = ""
 
 
 def get_token(
@@ -42,29 +51,90 @@ def get_token(
     return resp
 
 
+def create_user(
+    username: str,
+    email: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    client.admin_create_user(
+        UserPoolId=pool_id,
+        Username=username,
+        UserAttributes=[
+            {"Name": "email_verified", "Value": "True"},
+            {"Name": "email", "Value": email},
+        ],
+        ForceAliasCreation=False,
+        MessageAction="SUPPRESS",
+    )
+    client.admin_set_user_password(
+        UserPoolId=pool_id,
+        Username=username,
+        Password=pwd,
+        Permanent=True,
+    )
+
+
+def delete_user(
+    username: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    try:
+        resp = client.admin_delete_user(
+            UserPoolId=pool_id,
+            Username=username,
+        )
+    except ClientError as err:
+        # if the user is not found.
+        pass
+
+
 if __name__ == "__main__":
+
+    PWD = ""
+    EMAIL = ""
+
     parser = argparse.ArgumentParser(
-        description="Request a token for the storm scripts or other tests of the API. Rquires AWS account credentials be present locally. Additionally the UserPoolId must allow 'ADMIN_USER_PASSWORD_AUTH'"
+        description="Request an access token for various test scripts of the API. Rquires AWS account credentials be present locally. Additionally the UserPoolId must allow 'ADMIN_USER_PASSWORD_AUTH'"
     )
     parser.add_argument(
         "--username",
         help="username of user in pool",
-        default=USERNAME,
+        default=f'{os.environ.get("HMA_PREFIX","")}TestUser',
     )
     parser.add_argument(
         "--pwd",
-        help="password of user in pool",
+        help="password of user in pool (see user pool for requirements)",
         default=PWD,
     )
     parser.add_argument(
         "--pool_id",
         help="id of the user pool",
-        default=POOL_ID,
+        default=os.environ.get(
+            "HMA_COGNITO_USER_POOL_ID",
+            "",
+        ),
     )
     parser.add_argument(
         "--client_id",
         help="id of app client for the pool",
-        default=CLIENT_ID,
+        default=os.environ.get(
+            "HMA_COGNITO_USER_POOL_CLIENT_ID",
+            "",
+        ),
+    )
+    parser.add_argument(
+        "--email",
+        help="email of user in pool (required for delete_and_create_user)",
+        default=EMAIL,
+    )
+    parser.add_argument(
+        "--delete_and_create_user",
+        action="store_true",
+        help="When generating the token attempt to delete and create the user specified first.",
     )
     parser.add_argument(
         "--refresh_token",
@@ -73,6 +143,24 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+
+    if not args.pwd:
+        print(
+            'PWD is required. It can be set in the script itself (PWD="<password>") or via --pwd "<password>"'
+        )
+        parser.print_usage()
+        exit()
+
+    if args.delete_and_create_user:
+        if not args.email:
+            print(
+                'EMAIL is required for delete_and_create_user. It can be set in the script itself (EMAIL="<valid-email>") or via --email "<valid-email>"'
+            )
+            parser.print_usage()
+            exit()
+        delete_user(args.username, args.pwd, args.pool_id, args.client_id)
+        create_user(args.username, args.email, args.pwd, args.pool_id, args.client_id)
+
     resp = get_token(args.username, args.pwd, args.pool_id, args.client_id)
 
     if args.refresh_token:
