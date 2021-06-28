@@ -11,6 +11,7 @@ import time
 import datetime
 import dataclasses
 import typing as t
+from time import perf_counter
 from urllib.parse import urljoin
 
 from script_utils import HasherMatcherActionerAPI
@@ -203,47 +204,38 @@ class DeployedInstanceTestHelper:
     def get_post_count_so_far_requests(self) -> int:
         return self.listener.get_post_request_count()
 
-    def run_basic_test_with_listener(self, hostname: str, port: int):
+    def run_basic_test(self, wait_time_seconds=5, retry_limit=25):
         """
-        As the test suggests it is pretty basic:
-        - spin up a webserver to listen for a webhook
-        - submits a piece of content we expect to match
-        - every 5 second ask the webserver if it has received a post request
-        - if a post request was received shutdown server and return
-
-        Test needs to be run from a computer (likely ec2), that can bind and then receive request at
-        (external) 'hostname' and 'port'
+        Basic e2e (minus webhook listener) test:
+        - Create the configurations needed :
+        - Submit a piece of content expected to match/action
+        - Check action history via the API for the content submitted
+            - repeat until found or retry_limit hit
         """
-        self.set_up_test(f"http://{hostname}:{port}")
+        start_time = perf_counter()
 
-        self.start_listening_for_action_post_requests(hostname, port)
-
-        self.submit_test_content()
-
-        post_counter = 0
-        while post_counter < 1:
-            time.sleep(10)
-            post_counter = self.get_post_count_so_far_requests()
-
-        time.sleep(5)
-        self.stop_listening_for_action_post_requests()
-        self.clean_up_test()
-
-    def run_basic_test_with_check_for_action_record(self):
-        """
-        As the test suggests it is pretty basic:
-        - submits a piece of content we expect to match
-        - every 5 second ask the API if it has recorded an action
-        - if so return
-        """
         self.set_up_test()
-        content_id = f"submit-content-test-{datetime.date.today().isoformat()}-{str(uuid.uuid4())}"
+        print("Added configurations to HMA instance for test")
+
+        content_id = f"e2e-test-{datetime.date.today().isoformat()}-{str(uuid.uuid4())}"
         self.submit_test_content(content_id)
+        print(f"Submitted content_id {content_id}")
 
-        while not len(self.api.get_content_action_history(content_id)):
-            time.sleep(5)
+        print("Waiting for action history of sumbitted content_id")
+        print(
+            f"Checking every {wait_time_seconds} seconds; maximum tries = {retry_limit}"
+        )
+        while retry_limit and not len(self.api.get_content_action_history(content_id)):
+            time.sleep(wait_time_seconds)
+            retry_limit -= 0
 
+        if retry_limit < 1:
+            print("Error: hit retry limit on checking actions history")
+        else:
+            print("Success action event found in history!")
         self.clean_up_test()
+        print("Removed actions configurations used in test")
+        print(f"Test completed in {int((perf_counter() - start_time))} seconds")
 
 
 ### End Basic Test Methods  ####
@@ -294,6 +286,6 @@ if __name__ == "__main__":
 
     helper.set_up_test()
 
-    helper.run_basic_test_with_check_for_action_record()
+    helper.run_basic_test()
 
     helper.clean_up_test()
