@@ -206,13 +206,13 @@ export default function ActionRuleSettingsTab() {
                       setShowErrors(false);
                       // Convert classifications into Label sets which the backend understands
                       const newMustHaveLabels = newActionRule.classifications
-                        .filter(classification => classification.equals)
+                        .filter(classification => classification.equalTo)
                         .map(classification => ({
                           key: classification.classificationType,
                           value: classification.classificationValue,
                         }));
                       const newMustNotHaveLabels = newActionRule.classifications
-                        .filter(classification => !classification.equals)
+                        .filter(classification => !classification.equalTo)
                         .map(classification => ({
                           key: classification.classificationType,
                           value: classification.classificationValue,

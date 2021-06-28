@@ -13,13 +13,13 @@ const classificationsFromLabels = (mustHaveLabels, mustNotHaveLabels) =>
   mustHaveLabels
     .map(mustHaveLabel => ({
       classificationType: mustHaveLabel.key,
-      equals: true,
+      equalTo: true,
       classificationValue: mustHaveLabel.value,
     }))
     .concat(
       mustNotHaveLabels.map(mustNotHaveLabel => ({
         classificationType: mustNotHaveLabel.key,
-        equals: false,
+        equalTo: false,
         classificationValue: mustNotHaveLabel.value,
       })),
     );
@@ -105,7 +105,7 @@ export default function ActionRulesTableRow({
             break;
         }
 
-        if (classification.equals) {
+        if (classification.equalTo) {
           ret +=
             classification.classificationType === 'Classification'
               ? ' has been classified'
@@ -184,13 +184,13 @@ export default function ActionRulesTableRow({
 
               // Convert classifications into Label sets which the backend understands
               const updatedMustHaveLabels = updatedActionRule.classifications
-                .filter(classification => classification.equals)
+                .filter(classification => classification.equalTo)
                 .map(classification => ({
                   key: classification.classificationType,
                   value: classification.classificationValue,
                 }));
               const updatedMustNotHaveLabels = updatedActionRule.classifications
-                .filter(classification => !classification.equals)
+                .filter(classification => !classification.equalTo)
                 .map(classification => ({
                   key: classification.classificationType,
                   value: classification.classificationValue,

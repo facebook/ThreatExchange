@@ -16,16 +16,16 @@ type Action = {
   name: string;
 };
 
-type Classification = {
+type ClassificationCondition = {
   classificationType: string;
-  equals: boolean;
   classificationValue: string;
+  equalTo: boolean;
 };
 
 type Input = {
   actions: Action[];
   name: string;
-  classifications: Classification[];
+  classifications: ClassificationCondition[];
   actionId: string;
   showErrors: boolean;
   nameIsUnique: (newName: string, oldName: string) => boolean;
@@ -44,9 +44,11 @@ export default function ActionRuleFormColumns({
   onChange,
 }: Input) {
   const renderClassificationRow = (
-    classification: Classification,
+    classification: ClassificationCondition,
     index: number,
-    onClassificationChange: (newClassification: Classification) => void,
+    onClassificationChange: (
+      newClassification: ClassificationCondition,
+    ) => void,
     onClassificationDelete: () => void,
   ) => (
     <Row key={index} style={{marginBottom: 3}}>
@@ -82,15 +84,15 @@ export default function ActionRuleFormColumns({
         <Form.Control
           as="select"
           required
-          value={classification.equals ? 'true' : 'false'}
-          isInvalid={showErrors && classifications.every(clsf => !clsf.equals)}
+          value={classification.equalTo ? 'Equals' : 'Not Equals'}
+          isInvalid={showErrors && classifications.every(clsf => !clsf.equalTo)}
           onChange={e => {
             const newClassification = classification;
-            newClassification.equals = e.target.value === 'true';
+            newClassification.equalTo = e.target.value === 'Equals';
             onClassificationChange(newClassification);
           }}>
-          <option value="true">=</option>
-          <option value="false">≠</option>
+          <option value="Equals">=</option>
+          <option value="Not Equals">≠</option>
         </Form.Control>
       </Col>
       <Col>
@@ -145,7 +147,7 @@ export default function ActionRuleFormColumns({
             hidden={
               !showErrors ||
               (!!classifications.length &&
-                classifications.some(classification => classification.equals))
+                classifications.some(classification => classification.equalTo))
             }>
             (at least one &ldquo;equals&rdquo; Classification required)
           </span>
@@ -153,7 +155,7 @@ export default function ActionRuleFormColumns({
         {classifications
           ? classifications.map((classification, index) => {
               const onClassificationChange = (
-                newClassification: Classification,
+                newClassification: ClassificationCondition,
               ) => {
                 const newClassifications = classifications;
                 newClassifications[index] = newClassification;
@@ -179,7 +181,7 @@ export default function ActionRuleFormColumns({
             const newClassifications = classifications;
             newClassifications.push({
               classificationType: classificationTypeTBD,
-              equals: true,
+              equalTo: true,
               classificationValue: '',
             });
             onChange({classifications: newClassifications});
@@ -219,7 +221,7 @@ ActionRuleFormColumns.propTypes = {
   classifications: PropTypes.arrayOf(
     PropTypes.shape({
       classificationType: PropTypes.string.isRequired,
-      equals: PropTypes.bool.isRequired,
+      equalTo: PropTypes.bool.isRequired,
       classificationValue: PropTypes.string.isRequired,
     }),
   ),
