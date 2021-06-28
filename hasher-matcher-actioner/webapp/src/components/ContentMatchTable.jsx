@@ -49,13 +49,13 @@ export default function ContentMatchTable({contentKey}) {
             <Table responsive className="mt-2" title="Matches">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Type</th>
-                  <th>Indicator</th>
+                  <th>MatchedSignal ID</th>
+                  <th>MatchedSignal Type</th>
+                  <th>MatchedSignal</th>
                   <th>Last Updated</th>
                   <th>Dataset</th>
                   <th>Opinion</th>
-                  <th>Tags</th>
+                  <th>Classifications</th>
                 </tr>
               </thead>
               {matchDetails !== null && matchDetails.length ? (
@@ -104,7 +104,7 @@ export default function ContentMatchTable({contentKey}) {
               ) : (
                 <tbody>
                   <tr>
-                    <td colSpan={5}>No matches found for Content.</td>
+                    <td colSpan={5}>No Matches found for this Content.</td>
                   </tr>
                 </tbody>
               )}

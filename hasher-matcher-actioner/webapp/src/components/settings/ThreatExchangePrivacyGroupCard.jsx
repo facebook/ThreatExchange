@@ -76,7 +76,7 @@ export default function ThreatExchangePrivacyGroupCard({
             </h4>
           </Card.Header>
           <Card.Subtitle className="mt-2 mb-2 text-muted">
-            <CopyableTextField text={privacyGroupId} />
+            Dataset ID: <CopyableTextField text={privacyGroupId} />
           </Card.Subtitle>
           <Card.Body className="text-left">
             <Form>
@@ -122,7 +122,7 @@ export default function ThreatExchangePrivacyGroupCard({
               <Form.Switch
                 onChange={onSwitchWriteBack}
                 id={`writeBackSwitch${privacyGroupId}`}
-                label="Writeback (Seen?)"
+                label="Writeback Seen"
                 checked={localWriteBack}
                 disabled={!inUse}
               />

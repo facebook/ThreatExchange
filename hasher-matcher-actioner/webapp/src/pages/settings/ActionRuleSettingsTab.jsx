@@ -174,8 +174,8 @@ export default function ActionRuleSettingsTab() {
         <Col>
           <p>
             ActionRules are a configurable algorithm which takes a Match and,
-            based on the Classifications on the Match, determine what Actions,
-            if any, should be performed as a result
+            based on the Classifications on the Match, determines what Actions,
+            if any, should be performed as a result.
           </p>
         </Col>
       </Row>
