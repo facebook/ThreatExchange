@@ -162,16 +162,14 @@ class DeployedInstanceTestHelper:
                     file,
                     additional_fields,
                 )
-        except urllib3.exceptions.MaxRetryError as errmr:
-            print("MaxRetry Error:", errmr)
-        except requests.exceptions.HTTPError as errh:
-            print("Http Error:", errh)
-        except requests.exceptions.ConnectionError as errc:
-            print("Error Connecting:", errc)
-        except requests.exceptions.Timeout as errt:
-            print("Timeout Error:", errt)
-        except requests.exceptions.RequestException as err:
-            print("OOps: Something Else", err)
+        except (
+            urllib3.exceptions.MaxRetryError,
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as err:
+            print("Error:", err)
 
     def start_listening_for_action_post_requests(self, hostname: str, port: int):
         self.listener.start_listening(hostname, port)

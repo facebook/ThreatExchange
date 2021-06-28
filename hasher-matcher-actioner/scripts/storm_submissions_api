@@ -63,16 +63,14 @@ def _send_single_submission_url(
                 file,
                 additional_fields,
             )  # api method calls raise_for_status to check for error
-        except urllib3.exceptions.MaxRetryError as errmr:
-            print("MaxRetry Error:", errmr)
-        except requests.exceptions.HTTPError as errh:
-            print("Http Error:", errh)
-        except requests.exceptions.ConnectionError as errc:
-            print("Error Connecting:", errc)
-        except requests.exceptions.Timeout as errt:
-            print("Timeout Error:", errt)
-        except requests.exceptions.RequestException as err:
-            print("OOps: Something Else", err)
+        except (
+            urllib3.exceptions.MaxRetryError,
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as err:
+            print("Error:", err)
 
     # convert seconds to miliseconds.
     return int((perf_counter() - start_time) * 1000)
@@ -99,16 +97,14 @@ def _send_single_submission_b64(
         api.send_single_submission_b64(
             content_id, _get_b64_contents(filepath), additional_fields
         )  # api method calls raise_for_status to check for error
-    except urllib3.exceptions.MaxRetryError as errmr:
-        print("MaxRetry Error:", errmr)
-    except requests.exceptions.HTTPError as errh:
-        print("Http Error:", errh)
-    except requests.exceptions.ConnectionError as errc:
-        print("Error Connecting:", errc)
-    except requests.exceptions.Timeout as errt:
-        print("Timeout Error:", errt)
-    except requests.exceptions.RequestException as err:
-        print("OOps: Something Else", err)
+    except (
+        urllib3.exceptions.MaxRetryError,
+        requests.exceptions.HTTPError,
+        requests.exceptions.ConnectionError,
+        requests.exceptions.Timeout,
+        requests.exceptions.RequestException,
+    ) as err:
+        print("Error:", err)
 
     # convert seconds to miliseconds.
     return int((perf_counter() - start_time) * 1000)

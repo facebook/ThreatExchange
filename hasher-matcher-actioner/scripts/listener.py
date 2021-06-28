@@ -90,8 +90,6 @@ class Listener:
         if not self.web_server:
             print("Warning: Listener server not found")
             return -1
-        # Could use a queue instead of a lock+count and use queue.qsize()
-        # to avoid blocking the handler when getting the count
         with _Handler.count_lock:
             return _Handler.post_counter
 
