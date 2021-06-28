@@ -17,4 +17,4 @@ pdq/java/bazel-out/
 pdq/java/bazel-testlogs/
 .mypy_cache/
 .vscode/
-*q.d.ts
+*.d.ts
