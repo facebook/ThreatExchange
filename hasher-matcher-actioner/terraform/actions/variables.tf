@@ -66,3 +66,15 @@ variable "datastore" {
     arn  = string
   })
 }
+
+variable "queue_batch_size" {
+  description = "Batch size for the matches queue to wait for before sending messages to lambda."
+  type        = number
+  default     = 100
+}
+
+variable "queue_window_in_seconds" {
+  description = "Maximum batching window in seconds to wait before sending messages to lambda"
+  type        = number
+  default     = 30
+}

@@ -108,6 +108,9 @@ module "pdq_signals" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
   config_table          = local.config_table
+
+  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : null
+  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : null
 }
 
 module "counters" {
@@ -316,6 +319,9 @@ module "actions" {
     arn  = aws_dynamodb_table.config_table.arn
   }
   datastore = module.datastore.primary_datastore
+
+  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : null
+  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : null
 }
 
 ### ThreatExchange API Token Secret ###

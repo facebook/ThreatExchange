@@ -363,20 +363,20 @@ resource "aws_iam_role_policy_attachment" "writebacker" {
 resource "aws_lambda_event_source_mapping" "matches_queue_to_action_evaluator" {
   event_source_arn                   = aws_sqs_queue.matches_queue.arn
   function_name                      = aws_lambda_function.action_evaluator.arn
-  batch_size                         = 100
-  maximum_batching_window_in_seconds = 30
+  batch_size                         = var.queue_batch_size
+  maximum_batching_window_in_seconds = var.queue_window_in_seconds
 }
 
 resource "aws_lambda_event_source_mapping" "actions_queue_to_action_performer" {
   event_source_arn                   = aws_sqs_queue.actions_queue.arn
   function_name                      = aws_lambda_function.action_performer.arn
-  batch_size                         = 100
-  maximum_batching_window_in_seconds = 30
+  batch_size                         = var.queue_batch_size
+  maximum_batching_window_in_seconds = var.queue_window_in_seconds
 }
 
 resource "aws_lambda_event_source_mapping" "writebacks_queue_to_writebacker" {
   event_source_arn                   = aws_sqs_queue.writebacks_queue.arn
   function_name                      = aws_lambda_function.writebacker.arn
-  batch_size                         = 100
-  maximum_batching_window_in_seconds = 30
+  batch_size                         = var.queue_batch_size
+  maximum_batching_window_in_seconds = var.queue_window_in_seconds
 }
