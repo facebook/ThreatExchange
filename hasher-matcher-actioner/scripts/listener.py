@@ -56,14 +56,16 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 class Listener:
-    def __init__(self) -> None:
-        self.web_server: t.Optional[ThreadingHTTPServer] = None
-
-    def start_listening(
+    def __init__(
         self,
         hostname: str = "localhost",
         port: int = 8080,
-    ):
+    ) -> None:
+        self.hostname = hostname
+        self.port = port
+        self.web_server: t.Optional[ThreadingHTTPServer] = None
+
+    def start_listening(self):
         if self.web_server:
             print(
                 "Listener already started\nTo reset counter call `stop_listening` first."
@@ -71,12 +73,11 @@ class Listener:
 
         with _Handler.count_lock:
             _Handler.post_counter = 0
-        self.web_server = ThreadingHTTPServer((hostname, port), _Handler)
+        self.web_server = ThreadingHTTPServer((self.hostname, self.port), _Handler)
         server_thread = threading.Thread(target=self.web_server.serve_forever)
         server_thread.daemon = True
         server_thread.start()
-        self.server_url = f"http://{hostname}:{port}"
-        print(f"Listener server started {self.server_url}")
+        print(f"Listener server started http://{self.hostname}:{self.port}")
 
     def stop_listening(self):
         if self.web_server:
@@ -100,8 +101,8 @@ if __name__ == "__main__":
         "EXTERNAL_HOSTNAME",
         "localhost",
     )
-    listener = Listener()
-    listener.start_listening(hostname, port=8080)
+    listener = Listener(hostname)
+    listener.start_listening()
 
     cmd = ""
     while cmd != "q":

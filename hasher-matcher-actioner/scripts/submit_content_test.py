@@ -15,7 +15,6 @@ from time import perf_counter
 from urllib.parse import urljoin
 
 from script_utils import HasherMatcherActionerAPI
-from listener import Listener
 
 from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
@@ -45,7 +44,6 @@ class DeployedInstanceTestHelper:
         self.api = HasherMatcherActionerAPI(
             api_url, api_token, client_id, refresh_token
         )
-        self.listener = Listener()
 
     def refresh_api_token(self):
         """
@@ -194,15 +192,6 @@ class DeployedInstanceTestHelper:
             requests.exceptions.RequestException,
         ) as err:
             print("Error:", err)
-
-    def start_listening_for_action_post_requests(self, hostname: str, port: int):
-        self.listener.start_listening(hostname, port)
-
-    def stop_listening_for_action_post_requests(self):
-        self.listener.stop_listening()
-
-    def get_post_count_so_far_requests(self) -> int:
-        return self.listener.get_post_request_count()
 
     def run_basic_test(self, wait_time_seconds=5, retry_limit=25):
         """

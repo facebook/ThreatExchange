@@ -44,6 +44,7 @@ import uuid
 import datetime
 
 from submit_content_test import DeployedInstanceTestHelper
+from listener import Listener
 
 # Defaults (often it is easier to edit the script than provide the args)
 API_URL = ""
@@ -96,7 +97,6 @@ class SubmittingThread(threading.Thread):
 class ListeningThread(threading.Thread):
     def __init__(
         self,
-        helper: DeployedInstanceTestHelper,
         hostname,
         port,
         seconds_between_checks=5,
@@ -106,9 +106,7 @@ class ListeningThread(threading.Thread):
         self.daemon = True
         self._stop_signal = threading.Event()
         self.seconds_between_checks = seconds_between_checks
-        self.helper = helper
-        self.hostname = hostname
-        self.port = port
+        self.listener = Listener(hostname, port)
 
     def stop(self):
         self._stop_signal.set()
@@ -117,15 +115,15 @@ class ListeningThread(threading.Thread):
         return self._stop_signal.is_set()
 
     def run(self):
-        self.helper.start_listening_for_action_post_requests(self.hostname, self.port)
+        self.listener.start_listening()
         time.sleep(5)
         prev = 0
         while True:
             if self.stopped():
-                self.helper.stop_listening_for_action_post_requests()
+                self.listener.stop_listening()
                 print(f"Listener stopped. TOTAL RECEIVED: ~{prev}")
                 return
-            request_count = self.helper.get_post_count_so_far_requests()
+            request_count = self.listener.get_post_request_count()
             if prev != request_count:
                 print(f"Listener: total POST requests received {request_count}")
                 prev = request_count
@@ -148,7 +146,7 @@ def start_soak(
     submitting_thread = SubmittingThread(
         helper, submission_batch_size, seconds_between_batches
     )
-    listening_thread = ListeningThread(helper, hostname, port)
+    listening_thread = ListeningThread(hostname, port)
 
     print(
         f"Beginning Soak Test: enter 'q' to stop submissions and again to stop listening."
