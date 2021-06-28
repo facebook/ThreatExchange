@@ -36,7 +36,7 @@ python3 scripts/soak_test_system --api_url "https://abcd1234.execute-api.us-east
 
 """
 
-
+import os
 import argparse
 import time
 import threading
@@ -51,8 +51,7 @@ API_URL = ""
 REFRESH_TOKEN = ""
 CLIENT_ID = ""
 
-LISTENER_EXTERNAL_HOSTNAME = ""
-LISTENER_PORT = 8080
+EXTERNAL_HOSTNAME = ""
 
 ID_SEPARATOR = "-"
 
@@ -187,27 +186,39 @@ if __name__ == "__main__":
     parser.add_argument(
         "--api_url",
         help="HMA's API URL",
-        default=API_URL,
+        default=os.environ.get(
+            "HMA_API_URL",
+            API_URL,
+        ),
     )
     parser.add_argument(
         "--refresh_token",
         help="refresh token to be used throughout a long running test",
-        default=REFRESH_TOKEN,
+        default=os.environ.get(
+            "HMA_REFRESH_TOKEN",
+            REFRESH_TOKEN,
+        ),
     )
     parser.add_argument(
         "--client_id",
-        help="id of app client for the pool of the refresh token",
-        default=CLIENT_ID,
+        help="id of app client for the pool",
+        default=os.environ.get(
+            "HMA_COGNITO_USER_POOL_CLIENT_ID",
+            CLIENT_ID,
+        ),
     )
     parser.add_argument(
         "--hostname",
         help="external hostname used to listen for the actioner",
-        default=LISTENER_EXTERNAL_HOSTNAME,
+        default=os.environ.get(
+            "EXTERNAL_HOSTNAME",
+            EXTERNAL_HOSTNAME,
+        ),
     )
     parser.add_argument(
         "--port",
         help="port used to listen for the actioner",
-        default=LISTENER_PORT,
+        default=8080,
     )
     parser.add_argument(
         "--submission_batch_size",
