@@ -210,7 +210,7 @@ class DeployedInstanceTestHelper:
         self.submit_test_content(content_id)
         print(f"Submitted content_id {content_id}")
 
-        print("Waiting for action history of sumbitted content_id")
+        print("Waiting for action history of submitted content_id")
         print(
             f"Checking every {wait_time_seconds} seconds; maximum tries = {retry_limit}"
         )
@@ -254,18 +254,6 @@ if __name__ == "__main__":
     refresh_token = os.environ.get(
         "HMA_REFRESH_TOKEN",
         "",
-    )
-
-    hostname = os.environ.get(
-        "LISTENER_EXTERNAL_HOSTNAME",
-        "localhost",
-    )
-
-    port = int(
-        os.environ.get(
-            "LISTENER_PORT",
-            "8080",
-        )
     )
 
     helper = DeployedInstanceTestHelper(api_url, token, client_id, refresh_token)
