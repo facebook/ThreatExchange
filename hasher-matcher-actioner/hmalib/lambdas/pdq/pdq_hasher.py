@@ -71,6 +71,10 @@ def lambda_handler(event, context):
                     message
                 ).image_submissions
             )
+        else:
+            logger.warn(
+                "PDQ Hahser could not process incoming message %s", repr(message)
+            )
 
         for image in images_to_process:
             logger.info("Getting bytes for submission:  %s", repr(image))

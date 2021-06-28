@@ -68,6 +68,11 @@ class URLImageSource(ImageSource):
 def get_image_bytes(
     submission_message: t.Union[URLImageSubmissionMessage, S3ImageSubmission]
 ):
+    """
+    Takes a submission_message, identifies how best to get its bytes. Future
+    work on re-using sessions for `requests` or any possible optimization must
+    go here.
+    """
     if isinstance(submission_message, URLImageSubmissionMessage):
         return URLImageSource().get_image_bytes(submission_message.url)
     else:

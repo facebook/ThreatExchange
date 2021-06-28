@@ -210,6 +210,12 @@ class URLImageSubmissionMessage:
 
 @dataclass
 class S3ImageSubmission:
+    """
+    S3 -> SNS batches events together. This represents one of the events. An
+    `S3ImageSubmissionBatchMessage` event is emitted. Each batch has one or more
+    of these objects.
+    """
+
     content_id: str
     bucket: str
     key: str
