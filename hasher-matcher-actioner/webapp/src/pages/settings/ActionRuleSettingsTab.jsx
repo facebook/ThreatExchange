@@ -12,8 +12,7 @@ import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
 import ActionRuleFormColumns, {
   classificationTypeTBD,
-} from '../../components/settings/ActionRuleFormColumns';
-
+} from '../../components/settings/ActionRuleFormColumns.tsx';
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
@@ -207,16 +206,16 @@ export default function ActionRuleSettingsTab() {
                       setShowErrors(false);
                       // Convert classifications into Label sets which the backend understands
                       const newMustHaveLabels = newActionRule.classifications
-                        .filter(classification => classification.equals)
+                        .filter(classification => classification.equalTo)
                         .map(classification => ({
-                          key: classification.classification_type,
-                          value: classification.classification_value,
+                          key: classification.classificationType,
+                          value: classification.classificationValue,
                         }));
                       const newMustNotHaveLabels = newActionRule.classifications
-                        .filter(classification => !classification.equals)
+                        .filter(classification => !classification.equalTo)
                         .map(classification => ({
-                          key: classification.classification_type,
-                          value: classification.classification_value,
+                          key: classification.classificationType,
+                          value: classification.classificationValue,
                         }));
 
                       newActionRule.must_have_labels = newMustHaveLabels;

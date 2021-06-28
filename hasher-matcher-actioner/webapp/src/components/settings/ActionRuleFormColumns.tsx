@@ -3,13 +3,35 @@
  */
 
 import React from 'react';
-import {PropTypes} from 'prop-types';
+import PropTypes from 'prop-types';
 import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 
 export const classificationTypeTBD = 'TBD';
+
+type Action = {
+  id: string;
+  name: string;
+};
+
+type ClassificationCondition = {
+  classificationType: string;
+  classificationValue: string;
+  equalTo: boolean;
+};
+
+type Input = {
+  actions: Action[];
+  name: string;
+  classifications: ClassificationCondition[];
+  actionId: string;
+  showErrors: boolean;
+  nameIsUnique: (newName: string, oldName: string) => boolean;
+  oldName: string;
+  onChange: (updatedField: Record<string, unknown>) => void;
+};
 
 export default function ActionRuleFormColumns({
   actions,
@@ -20,12 +42,14 @@ export default function ActionRuleFormColumns({
   nameIsUnique,
   oldName,
   onChange,
-}) {
+}: Input) {
   const renderClassificationRow = (
-    classification,
-    onClassificationChange,
-    onClassificationDelete,
-    index,
+    classification: ClassificationCondition,
+    index: number,
+    onClassificationChange: (
+      newClassification: ClassificationCondition,
+    ) => void,
+    onClassificationDelete: () => void,
   ) => (
     <Row key={index} style={{marginBottom: 3}}>
       <Col xs={1}>
@@ -37,15 +61,15 @@ export default function ActionRuleFormColumns({
         <Form.Control
           as="select"
           required
-          value={classification.classification_type}
+          value={classification.classificationType}
           onChange={e => {
             const newClassification = classification;
-            newClassification.classification_type = e.target.value;
+            newClassification.classificationType = e.target.value;
             onClassificationChange(newClassification);
           }}
           isInvalid={
             showErrors &&
-            classification.classification_type === classificationTypeTBD
+            classification.classificationType === classificationTypeTBD
           }>
           <option value={classificationTypeTBD}> Select... </option>
           <option value="BankSourceClassification">Dataset Source</option>
@@ -60,29 +84,29 @@ export default function ActionRuleFormColumns({
         <Form.Control
           as="select"
           required
-          value={classification.equals}
-          isInvalid={showErrors && classifications.every(clsf => !clsf.equals)}
+          value={classification.equalTo ? 'Equals' : 'Not Equals'}
+          isInvalid={showErrors && classifications.every(clsf => !clsf.equalTo)}
           onChange={e => {
             const newClassification = classification;
-            newClassification.equals = e.target.value === 'true';
+            newClassification.equalTo = e.target.value === 'Equals';
             onClassificationChange(newClassification);
           }}>
-          <option value="true">=</option>
-          <option value="false">≠</option>
+          <option value="Equals">=</option>
+          <option value="Not Equals">≠</option>
         </Form.Control>
       </Col>
       <Col>
         <Form.Control
           type="text"
-          value={classification.classification_value}
+          value={classification.classificationValue}
           required
           onChange={e => {
             const newClassification = classification;
-            newClassification.classification_value = e.target.value;
+            newClassification.classificationValue = e.target.value;
             onClassificationChange(newClassification);
           }}
-          selected
-          isInvalid={showErrors && !classification.classification_value}
+          // selected
+          isInvalid={showErrors && !classification.classificationValue}
         />
       </Col>
     </Row>
@@ -101,7 +125,7 @@ export default function ActionRuleFormColumns({
       <td>
         <Form.Label>
           Name
-          <span hidden={!showErrors || name}> (required)</span>
+          <span hidden={!showErrors || !!name}> (required)</span>
         </Form.Label>
         <Form.Control
           type="text"
@@ -122,15 +146,17 @@ export default function ActionRuleFormColumns({
           <span
             hidden={
               !showErrors ||
-              (classifications.length &&
-                classifications.some(classification => classification.equals))
+              (!!classifications.length &&
+                classifications.some(classification => classification.equalTo))
             }>
             (at least one &ldquo;equals&rdquo; Classification required)
           </span>
         </Form.Label>
         {classifications
           ? classifications.map((classification, index) => {
-              const onClassificationChange = newClassification => {
+              const onClassificationChange = (
+                newClassification: ClassificationCondition,
+              ) => {
                 const newClassifications = classifications;
                 newClassifications[index] = newClassification;
                 onChange({classifications: newClassifications});
@@ -142,9 +168,9 @@ export default function ActionRuleFormColumns({
               };
               return renderClassificationRow(
                 classification,
+                index,
                 onClassificationChange,
                 onClassificationDelete,
-                index,
               );
             })
           : []}
@@ -154,9 +180,9 @@ export default function ActionRuleFormColumns({
           onClick={() => {
             const newClassifications = classifications;
             newClassifications.push({
-              classification_type: classificationTypeTBD,
-              equals: true,
-              classification_value: '',
+              classificationType: classificationTypeTBD,
+              equalTo: true,
+              classificationValue: '',
             });
             onChange({classifications: newClassifications});
           }}>
@@ -194,9 +220,9 @@ ActionRuleFormColumns.propTypes = {
   name: PropTypes.string.isRequired,
   classifications: PropTypes.arrayOf(
     PropTypes.shape({
-      classification_type: PropTypes.string.isRequired,
-      equals: PropTypes.bool.isRequired,
-      classification_value: PropTypes.string.isRequired,
+      classificationType: PropTypes.string.isRequired,
+      equalTo: PropTypes.bool.isRequired,
+      classificationValue: PropTypes.string.isRequired,
     }),
   ),
   actionId: PropTypes.string.isRequired,

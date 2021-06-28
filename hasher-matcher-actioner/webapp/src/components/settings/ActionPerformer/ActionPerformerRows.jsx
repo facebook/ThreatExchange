@@ -20,14 +20,10 @@ export default function ActionPerformerRows({
   canNotDeleteOrUpdateName,
 }) {
   const [editing, setEditing] = useState(edit);
-  const [
-    showDeleteActionConfirmation,
-    setShowDeleteActionConfirmation,
-  ] = useState(false);
-  const [
-    showUpdateActionConfirmation,
-    setShowUpdateActionConfirmation,
-  ] = useState(false);
+  const [showDeleteActionConfirmation, setShowDeleteActionConfirmation] =
+    useState(false);
+  const [showUpdateActionConfirmation, setShowUpdateActionConfirmation] =
+    useState(false);
   const [updatedAction, setUpdatedAction] = useState({
     name,
     config_subtype: type,

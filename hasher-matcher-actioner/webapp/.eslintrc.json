@@ -1,24 +1,39 @@
 {
+  "parser": "@typescript-eslint/parser",
   "env": {
     "browser": true,
     "node": true,
     "commonjs": true,
     "es6": true
   },
-  "extends": ["plugin:react/recommended", "airbnb", "prettier"],
+  "extends": [
+    "plugin:react/recommended",
+    "airbnb",
+    "prettier",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
   "parserOptions": {
     "ecmaFeatures": {
-      "jsx": true
+      "jsx": true,
+      "tsx": true
     },
     "ecmaVersion": 12,
     "sourceType": "module"
   },
-  "plugins": ["react", "prettier"],
+  "plugins": ["react", "prettier", "@typescript-eslint"],
   "rules": {
+    // The eslint error no-use-before-define breaks when using the typescript-eslint
+    // parser so we override it with typescript-eslint's own version of the error.
+    // This is direct from the typescript-eslint documentation:
+    // https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-use-before-define.md#how-to-use
+    "no-use-before-define": "off",
+    "@typescript-eslint/no-use-before-define": ["error"],
     "react/jsx-filename-extension": [
       "warn",
       {
-        "extensions": [".js", ".jsx"]
+        "extensions": [".js", ".jsx", ".tsx", ".ts"]
       }
     ],
     "prettier/prettier": [

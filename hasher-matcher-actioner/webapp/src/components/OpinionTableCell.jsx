@@ -55,16 +55,14 @@ export default function OpinionTableCell({
             updatePending &&
             pendingOpinionChange === PENDING_OPINION_CHANGE.MARK_FALSE_POSITIVE
           }
-          onClick={
-            updatePending
-              ? () => {}
-              : () => {
-                  setNewPendingOpinionChange(
-                    PENDING_OPINION_CHANGE.MARK_FALSE_POSITIVE,
-                  );
-                  setShowModal(true);
-                }
-          }>
+          onClick={() => {
+            if (!updatePending) {
+              setNewPendingOpinionChange(
+                PENDING_OPINION_CHANGE.MARK_FALSE_POSITIVE,
+              );
+              setShowModal(true);
+            }
+          }}>
           Mark False Positive
         </Dropdown.Item>
         <Dropdown.Item
@@ -80,16 +78,14 @@ export default function OpinionTableCell({
             updatePending &&
             pendingOpinionChange === PENDING_OPINION_CHANGE.MARK_TRUE_POSITIVE
           }
-          onClick={
-            updatePending
-              ? () => {}
-              : () => {
-                  setNewPendingOpinionChange(
-                    PENDING_OPINION_CHANGE.MARK_TRUE_POSITIVE,
-                  );
-                  setShowModal(true);
-                }
-          }>
+          onClick={() => {
+            if (!updatePending) {
+              setNewPendingOpinionChange(
+                PENDING_OPINION_CHANGE.MARK_TRUE_POSITIVE,
+              );
+              setShowModal(true);
+            }
+          }}>
           Mark True Positive
         </Dropdown.Item>
         <Dropdown.Item
@@ -104,16 +100,12 @@ export default function OpinionTableCell({
             updatePending &&
             pendingOpinionChange === PENDING_OPINION_CHANGE.REMOVE_OPINION
           }
-          onClick={
-            updatePending
-              ? () => {}
-              : () => {
-                  setNewPendingOpinionChange(
-                    PENDING_OPINION_CHANGE.REMOVE_OPINION,
-                  );
-                  setShowModal(true);
-                }
-          }>
+          onClick={() => {
+            if (!updatePending) {
+              setNewPendingOpinionChange(PENDING_OPINION_CHANGE.REMOVE_OPINION);
+              setShowModal(true);
+            }
+          }}>
           Remove My Opinion
         </Dropdown.Item>
       </DropdownButton>

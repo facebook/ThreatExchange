@@ -27,6 +27,12 @@
     "python.formatting.blackPath": "black",
     "[javascriptreact]": {
       "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
     }
   },
   // Add the IDs of extensions you want installed when the container is created.

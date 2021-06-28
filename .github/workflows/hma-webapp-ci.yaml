@@ -26,7 +26,7 @@ jobs:
         run: npm install
       - name: Run ESLint
         run: |
-          npx eslint src --ext .js,.jsx  
+          npx eslint src --ext .js,.jsx,.tsx
       - name: Run Prettier
         run: |
-          npx prettier --check src 
+          npx prettier --check src
