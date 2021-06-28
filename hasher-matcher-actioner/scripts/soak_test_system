@@ -143,7 +143,7 @@ def start_soak(
 ):
     helper = DeployedInstanceTestHelper(api_url, "", client_id, refresh_token)
     helper.refresh_api_token()
-    helper.set_up_test(hostname, port)
+    helper.set_up_test(f"http://{hostname}:{port}")
 
     submitting_thread = SubmittingThread(
         helper, submission_batch_size, seconds_between_batches
@@ -173,11 +173,12 @@ def start_soak(
     except KeyboardInterrupt:
         pass
 
-    # ToDo helper.clean_up_test(hostname, port)
     listening_thread.stop()
 
     submitting_thread.join()
     listening_thread.join()
+
+    helper.clean_up_test()
     print(f"Soak Test Stopped")
 
 

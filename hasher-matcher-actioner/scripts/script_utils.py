@@ -213,6 +213,13 @@ class HasherMatcherActionerAPI:
             data=json.dumps(payload).encode(),
         )
 
+    def delete_action(
+        self,
+        action_name: str,
+        api_path: str = "/actions/",
+    ):
+        self.session.delete(self._get_request_url(api_path + action_name))
+
     def get_action_rules(
         self,
         api_path: str = "/action-rules/",
@@ -232,6 +239,13 @@ class HasherMatcherActionerAPI:
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
+
+    def delete_action_rule(
+        self,
+        action_rule_name: str,
+        api_path: str = "/action-rules/",
+    ):
+        self.session.delete(self._get_request_url(api_path + action_rule_name))
 
 
 if __name__ == "__main__":
