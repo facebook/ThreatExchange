@@ -375,3 +375,24 @@ resource "aws_lambda_event_source_mapping" "pdq_matcher" {
   batch_size                         = 100
   maximum_batching_window_in_seconds = 30
 }
+
+
+resource "null_resource" "provide_sample_pdq_data_holidays" {
+  # To force-update on existing deployment, taint and apply terraform again
+  # $ terraform taint module.hashing_data.null_resource.provide_sample_pdq_data_holidays
+  # $ terraform apply
+
+  # To get a sensible privacy group value, we reverse engineer the filename split at
+  # hmalib.common.s3_adapters.ThreatExchangeS3Adapter._parse_file at line 118
+  depends_on = [
+    aws_lambda_function.pdq_indexer
+  ]
+
+  provisioner "local-exec" {
+    environment = {
+      PRIVACY_GROUP = "inria-holidays-test"
+    }
+
+    command = "aws s3 cp ../sample_data/holidays-jpg1-pdq-hashes.csv s3://${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}$PRIVACY_GROUP.holidays-jpg1-pdq-hashes.pdq.te"
+  }
+}
