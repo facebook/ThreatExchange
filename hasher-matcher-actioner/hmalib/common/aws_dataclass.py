@@ -64,27 +64,27 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
             f"Expected {check_type} got {type(py_field)} ({py_field!r})"
         )
 
-    if in_type is int:  # N
+    if in_type == int:  # N
         # Technically, this also needs to be converted to decimal,
         # but the boto3 translater seems to handle it fine
         return py_field  # type: ignore # mypy/issues/10003
-    if in_type is float:  # N
+    if in_type == float:  # N
         # WARNING WARNING
         # floating point is not truly supported in dynamodb
         # We can fake it for numbers without too much precision
         # but Decimal("3.4") != float(3.4)
         return Decimal(str(py_field))  # type: ignore # mypy/issues/10003
-    if in_type is Decimal:  # N
+    if in_type == Decimal:  # N
         return py_field  # type: ignore # mypy/issues/10003
-    if in_type is str:  # S
+    if in_type == str:  # S
         return py_field  # type: ignore # mypy/issues/10003
-    if in_type is bool:  # BOOL
+    if in_type == bool:  # BOOL
         return py_field  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[str]:  # SS
+    if in_type == t.Set[str]:  # SS
         return py_field  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[int]:  # SN
+    if in_type == t.Set[int]:  # SN
         return {i for i in py_field}  # type: ignore # mypy/issues/10003
-    if in_type is t.Set[float]:  # SN
+    if in_type == t.Set[float]:  # SN
         # WARNING WARNING
         # floating point is not truly supported in dynamodb
         # See note above
@@ -131,6 +131,9 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
             check_type = list
 
     if not isinstance(aws_field, check_type or in_type):
+        # If you are getting random deserialization errors in tests that you did
+        # not touch, have a look at
+        # https://github.com/facebook/ThreatExchange/issues/697
         raise AWSSerializationFailure(
             "Deserialization error: "
             f"Expected {in_type} got {type(aws_field)} ({aws_field!r})"
