@@ -6,13 +6,15 @@ import json
 import base64
 import requests
 import urllib3
+import uuid
 import time
+import datetime
 import dataclasses
 import typing as t
+from time import perf_counter
 from urllib.parse import urljoin
 
 from script_utils import HasherMatcherActionerAPI
-from listener import Listener
 
 from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
@@ -42,7 +44,6 @@ class DeployedInstanceTestHelper:
         self.api = HasherMatcherActionerAPI(
             api_url, api_token, client_id, refresh_token
         )
-        self.listener = Listener()
 
     def refresh_api_token(self):
         """
@@ -85,6 +86,12 @@ class DeployedInstanceTestHelper:
             },
         )
 
+    def delete_action(
+        self,
+        action_name: str,
+    ):
+        self.api.delete_action(action_name)
+
     def create_action_rule(
         self,
         action_rule: ActionRule,
@@ -92,11 +99,23 @@ class DeployedInstanceTestHelper:
         # Need to give the api a json like dict object (just like is used in aws)
         self.api.create_action_rule(action_rule.to_aws())
 
+    def delete_action_rule(
+        self,
+        action_rule_name: str,
+    ):
+        self.api.delete_action_rule(action_rule_name)
+
     ### End HMA API wrapper ###
 
     ### Start Basic Test Methods  ####
 
-    def set_up_test(self, hostname: str, port: int):
+    # Submit Content Test Set Up Defaults
+    PRIVACY_GROUP_ID = "inria-holidays-test"
+    ACTION_NAME = "SubmitContentTestActionWebhookPost"
+    ACTION_CLASSIFICATION_LABEL = "holidays_jpg1_dataset"
+    ACTION_RULE_PREFIX = "trigger-on-tag-"
+
+    def set_up_test(self, action_hook_url="http://httpstat.us/404"):
         """
         Set up/Create the following:
         - Dataset (Privacy Group Config)
@@ -110,14 +129,13 @@ class DeployedInstanceTestHelper:
 
         # Possible it already exists which is fine.
         self.create_dataset_config(
-            privacy_group_id="inria-holidays-test",
-            privacy_group_name="Holiday Sample Set",
+            privacy_group_id=self.PRIVACY_GROUP_ID,
+            privacy_group_name="Test Sample Set",
         )
 
-        # ToDo These actions should be cleaned up with clean_up_basic_test
         action_performer = WebhookPostActionPerformer(
-            name="SubmitContentTestActionWebhookPost",
-            url=f"http://{hostname}:{port}",
+            name=self.ACTION_NAME,
+            url=action_hook_url,
             headers='{"this-is-a":"test-header"}',
         )
 
@@ -126,11 +144,11 @@ class DeployedInstanceTestHelper:
         )
 
         action_rule = ActionRule(
-            name="trigger-on-tag-holidays_jpg1_dataset",
-            action_label=ActionLabel("SubmitContentTestActionWebhookPost"),
+            name=f"{self.ACTION_RULE_PREFIX}{self.ACTION_CLASSIFICATION_LABEL}",
+            action_label=ActionLabel(self.ACTION_NAME),
             must_have_labels=set(
                 [
-                    ClassificationLabel("holidays_jpg1_dataset"),
+                    ClassificationLabel(self.ACTION_CLASSIFICATION_LABEL),
                 ]
             ),
             must_not_have_labels=set(),
@@ -140,11 +158,15 @@ class DeployedInstanceTestHelper:
             action_rule=action_rule,
         )
 
-    def clean_up_test(self, hostname: str, port: int):
+    def clean_up_test(self):
         """
         Deletes specific action and action rules
+        but does not delete the sample privacy group
         """
-        raise NotImplementedError
+        self.api.delete_action_rule(
+            f"{self.ACTION_RULE_PREFIX}{self.ACTION_CLASSIFICATION_LABEL}"
+        )
+        self.api.delete_action(self.ACTION_NAME)
 
     def submit_test_content(
         self,
@@ -171,37 +193,38 @@ class DeployedInstanceTestHelper:
         ) as err:
             print("Error:", err)
 
-    def start_listening_for_action_post_requests(self, hostname: str, port: int):
-        self.listener.start_listening(hostname, port)
-
-    def stop_listening_for_action_post_requests(self):
-        self.listener.stop_listening()
-
-    def get_post_count_so_far_requests(self) -> int:
-        return self.listener.get_post_request_count()
-
-    def run_basic_test_with_webhook_listener(self, hostname: str, port: int):
+    def run_basic_test(self, wait_time_seconds=5, retry_limit=25):
         """
-        As the test suggests it is pretty basic:
-        - spin up a webserver to listen for a webhook
-        - submits a piece of content we expect to match
-        - every 5 second ask the webserver if it has received a post request
-        - if a post request was received shutdown server and return
-
-        Test needs to be run from a computer (likely ec2), that can bind and then receive request at
-        (external) 'hostname' and 'port'
+        Basic e2e (minus webhook listener) test:
+        - Create the configurations needed :
+        - Submit a piece of content expected to match/action
+        - Check action history via the API for the content submitted
+            - repeat until found or retry_limit hit
         """
-        self.start_listening_for_action_post_requests(hostname, port)
+        start_time = perf_counter()
 
-        self.submit_test_content()
+        self.set_up_test()
+        print("Added configurations to HMA instance for test")
 
-        post_counter = 0
-        while post_counter < 1:
-            time.sleep(10)
-            post_counter = self.get_post_count_so_far_requests()
+        content_id = f"e2e-test-{datetime.date.today().isoformat()}-{str(uuid.uuid4())}"
+        self.submit_test_content(content_id)
+        print(f"Submitted content_id {content_id}")
 
-        time.sleep(5)
-        self.stop_listening_for_action_post_requests()
+        print("Waiting for action history of submitted content_id")
+        print(
+            f"Checking every {wait_time_seconds} seconds; maximum tries = {retry_limit}"
+        )
+        while retry_limit and not len(self.api.get_content_action_history(content_id)):
+            time.sleep(wait_time_seconds)
+            retry_limit -= 0
+
+        if retry_limit < 1:
+            print("Error: hit retry limit on checking actions history")
+        else:
+            print("Success action event found in history!")
+        self.clean_up_test()
+        print("Removed actions configurations used in test")
+        print(f"Test completed in {int((perf_counter() - start_time))} seconds")
 
 
 ### End Basic Test Methods  ####
@@ -233,23 +256,13 @@ if __name__ == "__main__":
         "",
     )
 
-    hostname = os.environ.get(
-        "LISTENER_EXTERNAL_HOSTNAME",
-        "localhost",
-    )
-
-    port = int(
-        os.environ.get(
-            "LISTENER_PORT",
-            "8080",
-        )
-    )
-
     helper = DeployedInstanceTestHelper(api_url, token, client_id, refresh_token)
 
     if refresh_token and client_id:
         helper.refresh_api_token()
 
-    helper.set_up_test(hostname, port)
+    helper.set_up_test()
 
-    helper.run_basic_test_with_webhook_listener(hostname, port)
+    helper.run_basic_test()
+
+    helper.clean_up_test()

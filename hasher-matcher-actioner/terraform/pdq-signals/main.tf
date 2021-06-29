@@ -372,8 +372,8 @@ resource "aws_iam_role_policy_attachment" "pdq_matcher" {
 resource "aws_lambda_event_source_mapping" "pdq_matcher" {
   event_source_arn                   = aws_sqs_queue.hashes_queue.arn
   function_name                      = aws_lambda_function.pdq_matcher.arn
-  batch_size                         = 100
-  maximum_batching_window_in_seconds = 30
+  batch_size                         = var.queue_batch_size
+  maximum_batching_window_in_seconds = var.queue_window_in_seconds
 }
 
 

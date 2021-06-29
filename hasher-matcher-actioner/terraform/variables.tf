@@ -81,3 +81,9 @@ variable "webapp_and_api_shared_user_pool_client_id" {
   type        = string
   default     = ""
 }
+
+variable "set_sqs_windows_to_min" {
+  description = "The system's SQS Queues have a batch_size and timeout window configured for a production use case. If this var is set to true those values will be overridden and set to the minimum (helpful for fast one off testing)."
+  type        = bool
+  default     = false
+}

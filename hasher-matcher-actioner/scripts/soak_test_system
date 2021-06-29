@@ -36,7 +36,7 @@ python3 scripts/soak_test_system --api_url "https://abcd1234.execute-api.us-east
 
 """
 
-
+import os
 import argparse
 import time
 import threading
@@ -44,14 +44,14 @@ import uuid
 import datetime
 
 from submit_content_test import DeployedInstanceTestHelper
+from listener import Listener
 
 # Defaults (often it is easier to edit the script than provide the args)
 API_URL = ""
 REFRESH_TOKEN = ""
 CLIENT_ID = ""
 
-LISTENER_EXTERNAL_HOSTNAME = ""
-LISTENER_PORT = 8080
+EXTERNAL_HOSTNAME = ""
 
 ID_SEPARATOR = "-"
 
@@ -96,7 +96,6 @@ class SubmittingThread(threading.Thread):
 class ListeningThread(threading.Thread):
     def __init__(
         self,
-        helper: DeployedInstanceTestHelper,
         hostname,
         port,
         seconds_between_checks=5,
@@ -106,9 +105,7 @@ class ListeningThread(threading.Thread):
         self.daemon = True
         self._stop_signal = threading.Event()
         self.seconds_between_checks = seconds_between_checks
-        self.helper = helper
-        self.hostname = hostname
-        self.port = port
+        self.listener = Listener(hostname, port)
 
     def stop(self):
         self._stop_signal.set()
@@ -117,15 +114,15 @@ class ListeningThread(threading.Thread):
         return self._stop_signal.is_set()
 
     def run(self):
-        self.helper.start_listening_for_action_post_requests(self.hostname, self.port)
+        self.listener.start_listening()
         time.sleep(5)
         prev = 0
         while True:
             if self.stopped():
-                self.helper.stop_listening_for_action_post_requests()
+                self.listener.stop_listening()
                 print(f"Listener stopped. TOTAL RECEIVED: ~{prev}")
                 return
-            request_count = self.helper.get_post_count_so_far_requests()
+            request_count = self.listener.get_post_request_count()
             if prev != request_count:
                 print(f"Listener: total POST requests received {request_count}")
                 prev = request_count
@@ -143,12 +140,12 @@ def start_soak(
 ):
     helper = DeployedInstanceTestHelper(api_url, "", client_id, refresh_token)
     helper.refresh_api_token()
-    helper.set_up_test(hostname, port)
+    helper.set_up_test(f"http://{hostname}:{port}")
 
     submitting_thread = SubmittingThread(
         helper, submission_batch_size, seconds_between_batches
     )
-    listening_thread = ListeningThread(helper, hostname, port)
+    listening_thread = ListeningThread(hostname, port)
 
     print(
         f"Beginning Soak Test: enter 'q' to stop submissions and again to stop listening."
@@ -173,11 +170,12 @@ def start_soak(
     except KeyboardInterrupt:
         pass
 
-    # ToDo helper.clean_up_test(hostname, port)
     listening_thread.stop()
 
     submitting_thread.join()
     listening_thread.join()
+
+    helper.clean_up_test()
     print(f"Soak Test Stopped")
 
 
@@ -188,27 +186,39 @@ if __name__ == "__main__":
     parser.add_argument(
         "--api_url",
         help="HMA's API URL",
-        default=API_URL,
+        default=os.environ.get(
+            "HMA_API_URL",
+            API_URL,
+        ),
     )
     parser.add_argument(
         "--refresh_token",
         help="refresh token to be used throughout a long running test",
-        default=REFRESH_TOKEN,
+        default=os.environ.get(
+            "HMA_REFRESH_TOKEN",
+            REFRESH_TOKEN,
+        ),
     )
     parser.add_argument(
         "--client_id",
-        help="id of app client for the pool of the refresh token",
-        default=CLIENT_ID,
+        help="id of app client for the pool",
+        default=os.environ.get(
+            "HMA_COGNITO_USER_POOL_CLIENT_ID",
+            CLIENT_ID,
+        ),
     )
     parser.add_argument(
         "--hostname",
         help="external hostname used to listen for the actioner",
-        default=LISTENER_EXTERNAL_HOSTNAME,
+        default=os.environ.get(
+            "EXTERNAL_HOSTNAME",
+            EXTERNAL_HOSTNAME,
+        ),
     )
     parser.add_argument(
         "--port",
         help="port used to listen for the actioner",
-        default=LISTENER_PORT,
+        default=8080,
     )
     parser.add_argument(
         "--submission_batch_size",
