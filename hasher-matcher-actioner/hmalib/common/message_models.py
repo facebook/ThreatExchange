@@ -17,6 +17,7 @@ from hmalib.common.classification_models import (
 )
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.aws_dataclass import HasAWSSerialization
+from hmalib.common.image_sources import S3BucketImageSource
 from hmalib.common.logging import get_logger
 
 from mypy_boto3_sqs import SQSClient
@@ -237,7 +238,9 @@ class S3ImageSubmissionBatchMessage:
     image_submissions: t.List[S3ImageSubmission]
 
     @classmethod
-    def from_sqs_message(cls, d: dict) -> "S3ImageSubmissionBatchMessage":
+    def from_sqs_message(
+        cls, d: dict, image_prefix: str
+    ) -> "S3ImageSubmissionBatchMessage":
         result = []
 
         for s3_record in d["Records"]:
@@ -249,7 +252,10 @@ class S3ImageSubmissionBatchMessage:
                 logger.info("Disregarding empty file or directory: %s", key)
                 continue
 
-            result.append(S3ImageSubmission(key, bucket_name, key))
+            content_id = S3BucketImageSource.get_content_id_from_s3_key(
+                key, image_prefix
+            )
+            result.append(S3ImageSubmission(content_id, bucket_name, key))
 
         return cls(image_submissions=result)
 

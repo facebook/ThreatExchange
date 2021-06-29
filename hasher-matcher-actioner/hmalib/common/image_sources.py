@@ -4,15 +4,12 @@ import functools
 import boto3
 import requests
 import typing as t
-from hmalib.common.message_models import (
-    S3ImageSubmission,
-    URLImageSubmissionMessage,
-)
 
 
 class ImageSource:
     """
-    An interface that is used during hashing to get an image's bytes.
+    An interface that is used during hashing to get an image's bytes. Subclasses
+    may be potentially used to store the image bytes at submission.
     """
 
     def get_image_bytes(self, identifier: str) -> bytes:
@@ -30,21 +27,45 @@ def _get_s3_client():
 
 class S3BucketImageSource(ImageSource):
     """
-    Get images from a single S3 bucket.
+    Get images from a single S3 bucket. Formalizes the convention of including
+    the content_id in the S3 key. If you find yourself relying on the structure
+    of the s3 key to do any inference, consider moving that piece of code here.
 
     Potential enhancements:
     - Customize retry behavior, with backoff
     - Parameterized credentials rather than relying on boto inference
     """
 
-    def __init__(self, bucket: str) -> None:
+    def __init__(self, bucket: str, image_prefix: str) -> None:
         self.bucket = bucket
+        self.image_prefix = image_prefix
 
-    def get_image_bytes(self, identifier: str) -> bytes:
+    def get_image_bytes(self, content_id: str) -> bytes:
         return (
             _get_s3_client()
-            .get_object(Bucket=self.bucket, Key=identifier)["Body"]
+            .get_object(Bucket=self.bucket, Key=self.get_s3_key(content_id))["Body"]
             .read()
+        )
+
+    @staticmethod
+    def get_content_id_from_s3_key(s3_key: str, image_prefix: str) -> str:
+        """
+        Useful when you have received an s3 event, so you don't have content_id,
+        but need to infer it.
+        """
+        return s3_key[len(image_prefix) :]
+
+    def get_s3_key(self, content_id) -> str:
+        return f"{self.image_prefix}{content_id}"
+
+    def put_image_bytes(self, content_id: str, contents: bytes):
+        """
+        This is not part of the ImageSource interface. But S3 keys have some
+        built in structure that must be formalized. See class docstring for
+        more.
+        """
+        _get_s3_client().put_object(
+            Body=contents, Bucket=self.bucket, Key=self.get_s3_key(content_id)
         )
 
 
@@ -63,19 +84,3 @@ class URLImageSource(ImageSource):
         r = requests.get(identifier)
         r.raise_for_status()
         return r.content
-
-
-def get_image_bytes(
-    submission_message: t.Union[URLImageSubmissionMessage, S3ImageSubmission]
-):
-    """
-    Takes a submission_message, identifies how best to get its bytes. Future
-    work on re-using sessions for `requests` or any possible optimization must
-    go here.
-    """
-    if isinstance(submission_message, URLImageSubmissionMessage):
-        return URLImageSource().get_image_bytes(submission_message.url)
-    else:
-        return S3BucketImageSource(submission_message.bucket).get_image_bytes(
-            submission_message.key
-        )

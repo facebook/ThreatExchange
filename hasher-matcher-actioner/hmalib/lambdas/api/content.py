@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from hmalib.common.image_sources import S3BucketImageSource
 import bottle
 import boto3
 import base64
@@ -15,7 +16,12 @@ import typing as t
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.models import PipelinePDQHashRecord
-from hmalib.common.content_models import ContentObject, ActionEvent
+from hmalib.common.content_models import (
+    ContentObject,
+    ActionEvent,
+    ContentRefType,
+    ContentType,
+)
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -42,7 +48,7 @@ class ActionHistoryResponse(JSONifiable):
 
 
 def get_content_api(
-    dynamodb_table: Table, image_bucket_key: str, image_folder_key: str
+    dynamodb_table: Table, image_bucket: str, image_prefix: str
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -53,7 +59,6 @@ def get_content_api(
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/content/'
     content_api = bottle.Bottle()
-    image_folder_key_len = len(image_bucket_key)
 
     @content_api.get("/", apply=[jsoninator])
     def content() -> t.Optional[ContentObject]:
@@ -62,9 +67,7 @@ def get_content_api(
         see hmalib/commom/content_models.ContentObject for specific fields
         """
         if content_id := bottle.request.query.content_id or None:
-            return ContentObject.get_from_content_id(
-                dynamodb_table, f"{image_folder_key}{content_id}"
-            )
+            return ContentObject.get_from_content_id(dynamodb_table, f"{content_id}")
         return None
 
     @content_api.get("/action-history/", apply=[jsoninator])
@@ -75,9 +78,7 @@ def get_content_api(
         """
         if content_id := bottle.request.query.content_id or None:
             return ActionHistoryResponse(
-                ActionEvent.get_from_content_id(
-                    dynamodb_table, f"{image_folder_key}{content_id}"
-                )
+                ActionEvent.get_from_content_id(dynamodb_table, f"{content_id}")
             )
         return ActionHistoryResponse()
 
@@ -90,12 +91,12 @@ def get_content_api(
         if not content_id:
             return None
         record = PipelinePDQHashRecord.get_from_content_id(
-            dynamodb_table, f"{image_folder_key}{content_id}"
+            dynamodb_table, f"{content_id}"
         )
         if not record:
             return None
         return HashResultResponse(
-            content_id=record.content_id[len(image_folder_key) :],
+            content_id=record.content_id,
             content_hash=record.content_hash,
             updated_at=record.updated_at.isoformat(),
         )
@@ -107,14 +108,25 @@ def get_content_api(
         TODO update return url to request directly from s3?
         """
         content_id = bottle.request.query.content_id or None
+
         if not content_id:
-            return
-        # TODO a whole bunch of validation and error checking...
-        bytes_: bytes = s3_client.get_object(
-            Bucket=image_bucket_key, Key=f"{image_folder_key}{content_id}"
-        )["Body"].read()
-        # TODO make the content type dynamic
-        bottle.response.set_header("Content-type", "image/jpeg")
-        return bytes_
+            return bottle.abort(400, "content_id must be provided")
+
+        content_object: ContentObject = ContentObject.get_from_content_id(
+            dynamodb_table, content_id, ContentType.PHOTO
+        )
+
+        if not content_object:
+            return bottle.abort(404, "content_id does not exist.")
+        content_object = t.cast(ContentObject, content_object)
+
+        if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
+            bytes_: bytes = S3BucketImageSource(
+                image_bucket, image_prefix
+            ).get_image_bytes(content_id)
+            bottle.response.set_header("Content-type", "image/jpeg")
+            return bytes_
+        elif content_object.content_ref_type == ContentRefType.URL:
+            return bottle.redirect(content_object.content_ref)
 
     return content_api

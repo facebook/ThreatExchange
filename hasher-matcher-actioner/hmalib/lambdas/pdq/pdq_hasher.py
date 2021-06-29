@@ -17,15 +17,37 @@ from hmalib.common.message_models import (
     URLImageSubmissionMessage,
 )
 from hmalib.common.logging import get_logger
-from hmalib.common import image_sources
+from hmalib.common.image_sources import URLImageSource, S3BucketImageSource
 
 logger = get_logger(__name__)
-s3_client = boto3.client("s3")
 sqs_client = boto3.client("sqs")
 dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
 OUTPUT_QUEUE_URL = os.environ["PDQ_HASHES_QUEUE_URL"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
+IMAGE_FOLDER_KEY = os.environ[
+    "IMAGE_FOLDER_KEY"
+]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
+
+
+def get_image_bytes(
+    submission_message: t.Union[URLImageSubmissionMessage, S3ImageSubmission],
+    default_s3_bucket_image_prefix: str,
+):
+    """
+    Takes a submission_message, identifies how best to get its bytes. Future
+    work on re-using sessions for `requests` or any possible optimization must
+    go here.
+
+    Once we have more hashing lambdas that need access to media, this could be
+    moved into its own module.
+    """
+    if isinstance(submission_message, URLImageSubmissionMessage):
+        return URLImageSource().get_image_bytes(submission_message.url)
+    else:
+        return S3BucketImageSource(
+            submission_message.bucket, default_s3_bucket_image_prefix
+        ).get_image_bytes(submission_message.content_id)
 
 
 def lambda_handler(event, context):
@@ -68,7 +90,7 @@ def lambda_handler(event, context):
         elif S3ImageSubmissionBatchMessage.could_be(message):
             images_to_process.extend(
                 S3ImageSubmissionBatchMessage.from_sqs_message(
-                    message
+                    message, image_prefix=IMAGE_FOLDER_KEY
                 ).image_submissions
             )
         else:
@@ -79,7 +101,7 @@ def lambda_handler(event, context):
         for image in images_to_process:
             logger.info("Getting bytes for submission:  %s", repr(image))
             with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
-                bytes_: bytes = image_sources.get_image_bytes(image)
+                bytes_: bytes = get_image_bytes(image, IMAGE_FOLDER_KEY)
 
             logger.info("Generating PDQ hash for submission: %s", repr(image))
 
