@@ -79,6 +79,9 @@ module "hashing_integrations" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
   local_image_buckets   = var.local_image_buckets
   log_retention_in_days = var.log_retention_in_days
+  datastore             = module.datastore.primary_datastore
+  images_topic_arn      = module.hashing_data.image_folder_info.notification_topic
+
 
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri

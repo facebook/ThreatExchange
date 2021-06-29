@@ -47,3 +47,16 @@ variable "log_retention_in_days" {
   type        = number
 }
 
+variable "datastore" {
+  description = "DynamoDB Table to store a record of actions"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
+variable "images_topic_arn" {
+  description = "SNS Topic for publishing image submission requests"
+  type        = string
+}
+

@@ -29,6 +29,13 @@ resource "aws_lambda_function" "hasher_integrations" {
   timeout     = 300
   memory_size = 512
 
+  environment {
+    variables = {
+      DYNAMODB_TABLE   = var.datastore.name
+      IMAGES_TOPIC_ARN = var.images_topic_arn
+    }
+  }
+
 }
 
 resource "aws_iam_role" "hasher_integrations" {
@@ -75,6 +82,26 @@ data "aws_iam_policy_document" "hasher_integrations" {
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"]
   }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:Get*",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem"
+    ]
+    resources = [var.datastore.arn]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "SNS:Publish"
+    ]
+    resources = [var.images_topic_arn]
+  }
+
+  
 }
 
 resource "aws_cloudwatch_log_group" "hasher_integrations" {
