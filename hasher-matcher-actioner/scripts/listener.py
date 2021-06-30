@@ -3,7 +3,7 @@
 
 import os
 import json
-import time
+import datetime
 import threading
 import requests
 import typing as t
@@ -18,6 +18,9 @@ class _Handler(BaseHTTPRequestHandler):
 
     count_lock: threading.Lock = threading.Lock()
     post_counter: int = 0
+    latency_lock: threading.Lock = threading.Lock()
+    # ToDo do we want this to grow without bound or be limted to x most recent items?
+    submission_latencies: t.List[float] = []
 
     def _set_response(self):
         self.send_response(200)
@@ -53,6 +56,18 @@ class _Handler(BaseHTTPRequestHandler):
             _Handler.post_counter += 1
         self._set_response()
         self.wfile.write(json.dumps(payload).encode("utf-8"))
+
+        present = datetime.datetime.now()
+        if content_id := json.loads(post_data).get("content_key"):
+            try:
+                submit_time = datetime.datetime.fromisoformat(
+                    content_id.split("-time-")[0]
+                )
+                latency = present - submit_time
+                with self.latency_lock:
+                    self.submission_latencies.append(latency.total_seconds())
+            except ValueError:
+                pass
 
 
 class Listener:
@@ -93,6 +108,10 @@ class Listener:
             return 0
         with _Handler.count_lock:
             return _Handler.post_counter
+
+    def get_submission_latencies(self) -> t.List[float]:
+        with _Handler.latency_lock:
+            return _Handler.submission_latencies.copy()
 
 
 if __name__ == "__main__":

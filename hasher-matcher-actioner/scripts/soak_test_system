@@ -42,6 +42,7 @@ import time
 import threading
 import uuid
 import datetime
+import numpy as np
 import typing as t
 from submit_content_test import DeployedInstanceTestHelper
 from listener import Listener
@@ -50,8 +51,6 @@ from listener import Listener
 API_URL = ""
 REFRESH_TOKEN = ""
 CLIENT_ID = ""
-
-ID_SEPARATOR = "-"
 
 
 class SubmittingThread(threading.Thread):
@@ -85,9 +84,11 @@ class SubmittingThread(threading.Thread):
                 self._lock.release()
                 return
             try:
-                batch_prefix = f"soak_test{ID_SEPARATOR}{datetime.date.today().isoformat()}{ID_SEPARATOR}{str(uuid.uuid4())}"
+                batch_prefix = f"soak-test-{str(uuid.uuid4())}"
                 for i in range(self.batch_size):
-                    content_id = f"{batch_prefix}-{i}"
+                    content_id = (
+                        f"{datetime.datetime.now().isoformat()}-time-{batch_prefix}-{i}"
+                    )
                     if self.filepaths:
                         self.helper.submit_test_content(
                             content_id, filepath=self.filepaths[i % len(self.filepaths)]
@@ -145,6 +146,20 @@ class SoakShell(cmd.Cmd):
             print(
                 f"TOTAL POST requests received: {self.listener.get_post_request_count()}"
             )
+
+    def do_latency(self, arg):
+        "Get the latency of submissions: latency"
+        if self.listener:
+            latencies = np.array(self.listener.get_submission_latencies())
+            if latencies.size:
+                print("Rough delay between submit to action request received")
+                print(f"p90: {np.percentile(latencies, 90)} seconds")
+                print(f"p50: {np.percentile(latencies, 50)} seconds")
+                print(f"avg: {latencies.mean()} seconds")
+            else:
+                print("No requests received yet.")
+        else:
+            print("No listener found.")
 
     def do_start(self, arg):
         "Start submitting thread: start"
