@@ -102,12 +102,36 @@ class ActionEvent(ContentObjectBase, JSONifiable):
         ]
 
 
+class ContentType(Enum):
+    PHOTO = "PHOTO"
+    VIDEO = "VIDEO"
+    TEXT = "TEXT"
+
+
+class ContentRefType(Enum):
+    """
+    How must we get follow the content-ref. Where is this content stored?
+    """
+
+    # Stored in HMA owned default S3 bucket. ContentRef only needs key
+    DEFAULT_S3_BUCKET = "DEFAULT_S3_BUCKET"
+
+    # Stored outside of HMA, only ref is a URL
+    URL = "URL"
+
+    # Stored in an S3 bucket not owned by HMA. Has considerable overlap with
+    # URL, but explicit is better than implicit. ContentRef would need key and
+    # bucket.
+    S3_BUCKET = "S3_BUCKET"
+
+
 @dataclass
 class ContentObject(ContentObjectBase, JSONifiable):
     """
     Content object that stores the values related to a specific
     content_id and content_type.
-    Note/TODO: Something like an override flag should be added to the submit API
+
+    TODO: Something like an override flag should be added to the submit API
     as ContentRef equality check on bytes is impractical so instead
     something like:
      "This content_id exists, [x] overwrite? (I know what you're doing)"
@@ -116,17 +140,25 @@ class ContentObject(ContentObjectBase, JSONifiable):
 
     CONTENT_TYPE_PREFIX = "content_type#"
 
-    content_type: str
+    # Used to create the SK in DDB. An example would be "PHOTO"
+    content_type: ContentType
+
+    # Raw value of the content reference. eg. An s3 url, s3 key, url
     content_ref: str
-    content_ref_type: str
+
+    # How must the content be followed, eg to download for hashing, to render a
+    # preview, etc.
+    content_ref_type: ContentRefType
+
     submission_times: t.List[datetime.datetime]
+
     created_at: datetime.datetime
     updated_at: datetime.datetime
     additional_fields: t.Set[str] = field(default_factory=set)
 
     @staticmethod
-    def get_dynamodb_content_type_key(content_type: str) -> str:
-        return f"{ContentObject.CONTENT_TYPE_PREFIX}{content_type}"
+    def get_dynamodb_content_type_key(content_type: ContentType) -> str:
+        return f"{ContentObject.CONTENT_TYPE_PREFIX}{content_type.value}"
 
     def to_json(self) -> t.Dict:
         """
@@ -137,6 +169,8 @@ class ContentObject(ContentObjectBase, JSONifiable):
             additional_fields=list(
                 self.additional_fields if self.additional_fields else set()
             ),
+            content_type=self.content_type.value,
+            content_ref_type=self.content_ref_type.value,
             submission_times=[s.isoformat() for s in self.submission_times],
             created_at=self.created_at.isoformat(),
             updated_at=self.updated_at.isoformat(),
@@ -173,7 +207,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
             UpdateExpression="""SET ContentRef = :cr, ContentRefType = :crt, SubmissionTimes = list_append(if_not_exists(SubmissionTimes, :empty_list), :s), CreatedAt = if_not_exists(CreatedAt, :c), UpdatedAt = :u ADD AdditionalFields :af""",
             ExpressionAttributeValues={
                 ":cr": self.content_ref,
-                ":crt": self.content_ref_type,
+                ":crt": self.content_ref_type.value,
                 ":af": self.additional_fields
                 if self.additional_fields
                 else {"Placeholder"},
@@ -189,7 +223,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls,
         table: Table,
         content_id: str,
-        content_type: str = "PHOTO",
+        content_type: ContentType = ContentType.PHOTO,
     ) -> t.Optional["ContentObject"]:
         if not content_id:
             return None
@@ -208,13 +242,16 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls,
         item: t.Dict,
     ) -> "ContentObject":
+        content_type = ContentType(item["SK"][len(cls.CONTENT_TYPE_PREFIX) :])
+        content_ref_type = ContentRefType(item["ContentRefType"])
+
         return ContentObject(
             content_id=cls.remove_content_key_prefix(
                 item["PK"],
             ),
-            content_type=item["SK"][len(cls.CONTENT_TYPE_PREFIX) :],
+            content_type=content_type,
             content_ref=item["ContentRef"],
-            content_ref_type=item["ContentRefType"],
+            content_ref_type=content_ref_type,
             additional_fields=item["AdditionalFields"],
             # Notes careful not using this version to write back to the table...
             # Will dup previous submissions...

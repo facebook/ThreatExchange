@@ -25,6 +25,13 @@
     },
     "editor.formatOnSave": true,
     "python.formatting.blackPath": "black",
+    "python.formatting.provider": "black",
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true,
     "[javascriptreact]": {
       "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
     },

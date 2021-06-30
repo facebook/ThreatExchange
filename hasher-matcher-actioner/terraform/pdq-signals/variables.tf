@@ -40,8 +40,9 @@ variable "datastore" {
 variable "images_input" {
   description = "Configuration information for the image content that will be process for PDQ hashes"
   type = object({
-    input_queue   = string
-    resource_list = list(string)
+    input_queue      = string
+    resource_list    = list(string)
+    image_folder_key = string
   })
 }
 

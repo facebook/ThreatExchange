@@ -4,3 +4,4 @@ mypy==0.812
 black
 moto
 WebTest==2.0.35
+Pillow==8.2.0

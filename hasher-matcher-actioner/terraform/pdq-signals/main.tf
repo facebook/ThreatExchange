@@ -177,6 +177,7 @@ resource "aws_lambda_function" "pdq_hasher" {
       DYNAMODB_TABLE       = var.datastore.name
       MEASURE_PERFORMANCE  = var.measure_performance ? "True" : "False"
       METRICS_NAMESPACE    = var.metrics_namespace
+      IMAGE_FOLDER_KEY     = var.images_input.image_folder_key
     }
   }
   tags = merge(

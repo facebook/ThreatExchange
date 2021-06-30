@@ -1,9 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import functools
+from hmalib.common.image_sources import S3BucketImageSource
 import bottle
 import boto3
 import base64
-import requests
+import json
 import datetime
 
 from enum import Enum
@@ -13,15 +15,21 @@ from botocore.exceptions import ClientError
 import typing as t
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
-from hmalib.common.content_models import ContentObject
+from hmalib.common.content_models import ContentObject, ContentRefType, ContentType
 from hmalib.common.logging import get_logger
+from hmalib.common.message_models import URLImageSubmissionMessage
 
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 dynamodb = boto3.resource("dynamodb")
 
 
-def create_presigned_put_url(bucket_name, object_name, file_type, expiration=3600):
+@functools.lru_cache(maxsize=None)
+def _get_sns_client():
+    return boto3.client("sns")
+
+
+def create_presigned_put_url(bucket_name, key, file_type, expiration=3600):
     """
     Generate a presigned URL to share an S3 object
     """
@@ -32,7 +40,7 @@ def create_presigned_put_url(bucket_name, object_name, file_type, expiration=360
             "put_object",
             Params={
                 "Bucket": bucket_name,
-                "Key": object_name,
+                "Key": key,
                 "ContentType": file_type,
             },
             ExpiresIn=expiration,
@@ -115,16 +123,27 @@ class SubmitContentError(JSONifiable):
         return asdict(self)
 
 
-def record_content_submission(
-    dynamodb_table: Table, image_folder_key: str, request: SubmitContentRequestBody
-):
+def record_content_submission(dynamodb_table: Table, request: SubmitContentRequestBody):
     # TODO add a confirm overwrite path for this
     submit_time = datetime.datetime.now()
+    if request.submission_type in (
+        SubmissionType.FROM_URL,
+        SubmissionType.FROM_URL.name,
+    ):
+        # ^ Someday we'll have type inference between enum and enum values,
+        # until then, this is how it is.
+        content_ref_type = ContentRefType.URL
+        content_ref = t.cast(str, request.content_bytes_url_or_file_type)
+    else:
+        # defaults to DEFAULT_S3_BUCKET
+        content_ref_type = ContentRefType.DEFAULT_S3_BUCKET
+        content_ref = request.content_id
+
     ContentObject(
-        content_id=f"{image_folder_key}{request.content_id}",
-        content_type=request.content_type or "PHOTO",
-        content_ref=f"{image_folder_key}{request.content_id}",  # raw bytes + tmp urls are a bad idea atm, assume s3 object for now
-        content_ref_type=request.submission_type,
+        content_id=request.content_id,
+        content_type=ContentType(request.content_type or ContentType.PHOTO),
+        content_ref=content_ref,
+        content_ref_type=content_ref_type,
         additional_fields=set(request.additional_fields)
         if request.additional_fields
         else set(),
@@ -135,7 +154,10 @@ def record_content_submission(
 
 
 def get_submit_api(
-    dynamodb_table: Table, image_bucket_key: str, image_folder_key: str
+    dynamodb_table: Table,
+    image_bucket: str,
+    image_prefix: str,
+    images_topic_arn: str,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -146,6 +168,7 @@ def get_submit_api(
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/submit/'
     submit_api = bottle.Bottle()
+    s3_bucket_image_source = S3BucketImageSource(image_bucket, image_prefix)
 
     # Set of helpers that could be split into there own submit endpoints depending on longterm design choices
 
@@ -155,19 +178,15 @@ def get_submit_api(
         """
         Direct transfer of bits to system's s3 bucket
         """
-        fileName = request.content_id
-        fileContents = base64.b64decode(request.content_bytes_url_or_file_type)
+        content_id = request.content_id
+        file_contents = base64.b64decode(request.content_bytes_url_or_file_type)
 
         # We want to record the submission before triggering and processing on
         # the content itself therefore we write to dynamo before s3
-        record_content_submission(dynamodb_table, image_folder_key, request)
+        record_content_submission(dynamodb_table, request)
 
         # TODO a whole bunch more validation and error checking...
-        s3_client.put_object(
-            Body=fileContents,
-            Bucket=image_bucket_key,
-            Key=f"{image_folder_key}{fileName}",
-        )
+        s3_bucket_image_source.put_image_bytes(content_id, file_contents)
 
         return SubmitContentResponse(
             content_id=request.content_id, submit_successful=True
@@ -181,13 +200,13 @@ def get_submit_api(
         """
         # TODO error checking on if key already exist etc.
         presigned_url = create_presigned_put_url(
-            bucket_name=image_bucket_key,
-            object_name=f"{image_folder_key}{request.content_id}",
+            bucket_name=image_bucket,
+            key=s3_bucket_image_source.get_s3_key(request.content_id),
             file_type=request.content_bytes_url_or_file_type,
         )
 
         if presigned_url:
-            record_content_submission(dynamodb_table, image_folder_key, request)
+            record_content_submission(dynamodb_table, request)
             return InitUploadResponse(
                 content_id=request.content_id,
                 file_type=str(request.content_bytes_url_or_file_type),
@@ -206,35 +225,22 @@ def get_submit_api(
         """
         Submission via a url to content. Current behavior copies content into the system's s3 bucket.
         """
-        fileName = request.content_id
+        content_id = request.content_id
         url = request.content_bytes_url_or_file_type
-        response = requests.get(url)
-        # TODO better checks that the URL actually worked...
-        if response and response.content:
-            # TODO a whole bunch more validation and error checking...
 
-            # Again, We want to record the submission before triggering and processing on
-            # the content itself therefore we write to dynamo before s3
-            record_content_submission(dynamodb_table, image_folder_key, request)
+        # Again, We want to record the submission before triggering and processing on
+        # the content itself therefore we write to dynamo before s3
+        record_content_submission(dynamodb_table, request)
 
-            # Right now this makes a local copy in s3 but future changes to
-            # pdq_hasher should allow us to avoid storing to our own s3 bucket
-            # (or possibly give the api/user the option)
-            s3_client.put_object(
-                Body=response.content,
-                Bucket=image_bucket_key,
-                Key=f"{image_folder_key}{fileName}",
-            )
+        url_submission_message = URLImageSubmissionMessage(content_id, t.cast(str, url))
+        _get_sns_client().publish(
+            TopicArn=images_topic_arn,
+            Message=json.dumps(url_submission_message.to_sqs_message()),
+        )
 
-            return SubmitContentResponse(
-                content_id=request.content_id, submit_successful=True
-            )
-        else:
-            bottle.response.status = 400
-            return SubmitContentError(
-                content_id=request.content_id,
-                message="url submitted could not be read from",
-            )
+        return SubmitContentResponse(
+            content_id=request.content_id, submit_successful=True
+        )
 
     @submit_api.post("/", apply=[jsoninator(SubmitContentRequestBody)])
     def submit(
@@ -271,8 +277,8 @@ def get_submit_api(
 
         # TODO error checking on if key already exist etc.
         presigned_url = create_presigned_put_url(
-            bucket_name=image_bucket_key,
-            object_name=f"{image_folder_key}{request.content_id}",
+            bucket_name=image_bucket,
+            key=s3_bucket_image_source.get_s3_key(request.content_id),
             file_type=request.file_type,
         )
         if presigned_url:

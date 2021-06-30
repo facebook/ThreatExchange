@@ -91,6 +91,7 @@ module "pdq_signals" {
     resource_list = [
       "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
     ]
+    image_folder_key = module.hashing_data.image_folder_info.key
   }
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
@@ -258,6 +259,7 @@ module "api" {
   te_api_token_secret   = aws_secretsmanager_secret.te_api_token
 
   writebacks_queue = module.actions.writebacks_queue
+  images_topic_arn = module.hashing_data.image_folder_info.notification_topic
 }
 
 # Build and deploy webapp

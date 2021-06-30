@@ -35,7 +35,10 @@ THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENS
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
-IMAGE_FOLDER_KEY = os.environ["IMAGE_FOLDER_KEY"]
+IMAGE_FOLDER_KEY = os.environ[
+    "IMAGE_FOLDER_KEY"
+]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
+IMAGES_TOPIC_ARN = os.environ["IMAGES_TOPIC_ARN"]
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -94,7 +97,6 @@ app.mount(
     "/matches/",
     get_matches_api(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
-        image_folder_key=IMAGE_FOLDER_KEY,
         hma_config_table=HMA_CONFIG_TABLE,
     ),
 )
@@ -103,8 +105,8 @@ app.mount(
     "/content/",
     get_content_api(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
-        image_bucket_key=IMAGE_BUCKET_NAME,
-        image_folder_key=IMAGE_FOLDER_KEY,
+        image_bucket=IMAGE_BUCKET_NAME,
+        image_prefix=IMAGE_FOLDER_KEY,
     ),
 )
 
@@ -112,8 +114,9 @@ app.mount(
     "/submit/",
     get_submit_api(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
-        image_bucket_key=IMAGE_BUCKET_NAME,
-        image_folder_key=IMAGE_FOLDER_KEY,
+        image_bucket=IMAGE_BUCKET_NAME,
+        image_prefix=IMAGE_FOLDER_KEY,
+        images_topic_arn=IMAGES_TOPIC_ARN,
     ),
 )
 

@@ -63,6 +63,11 @@ variable "datastore" {
   })
 }
 
+variable "images_topic_arn" {
+  description = "SNS Topic for publishing image submission requests"
+  type        = string
+}
+
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number

@@ -3,7 +3,12 @@
 import unittest
 from contextlib import contextmanager
 from moto import mock_dynamodb2
-from hmalib.common.content_models import ContentObject, ActionEvent
+from hmalib.common.content_models import (
+    ContentObject,
+    ActionEvent,
+    ContentRefType,
+    ContentType,
+)
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.message_models import BankedSignal, ActionMessage
 from hmalib.common.classification_models import ClassificationLabel
@@ -66,9 +71,9 @@ class TestContentModels(unittest.TestCase):
         now = TestContentModels.TEST_TIME
         return ContentObject(
             content_id=TestContentModels.TEST_CONTENT_ID,
-            content_type="PHOTO",
+            content_type=ContentType.PHOTO,
             content_ref="key_of_s3_bucket_object_123",
-            content_ref_type="S3",
+            content_ref_type=ContentRefType.DEFAULT_S3_BUCKET,
             additional_fields={"additional", "ham"},
             submission_times=[now],
             created_at=now,
