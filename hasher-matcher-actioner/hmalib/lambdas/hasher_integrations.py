@@ -13,6 +13,7 @@ def lambda_handler(event, context):
 def is_s3_event(event) -> bool:
     return all("s3" in record for record in event["Records"])
 
+
 def process_s3_event(event) -> dict:
     logger.info(event)
     return {"result": "successfully sent s3 event to hasher [MOCKED]", "event": event}
