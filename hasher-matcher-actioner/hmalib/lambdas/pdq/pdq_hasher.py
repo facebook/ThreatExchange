@@ -75,7 +75,7 @@ def lambda_handler(event, context):
         message_body = json.loads(sqs_record["body"])
         message = json.loads(message_body["Message"])
 
-        if message.get("Event", None) == "s3:TestEvent":
+        if message.get("Event") == "s3:TestEvent":
             logger.info("Disregarding S3 Test Event")
             continue
 

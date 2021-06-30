@@ -141,7 +141,7 @@ def record_content_submission(dynamodb_table: Table, request: SubmitContentReque
 
     ContentObject(
         content_id=request.content_id,
-        content_type=ContentType(request.content_type or "PHOTO"),
+        content_type=ContentType(request.content_type or ContentType.PHOTO),
         content_ref=content_ref,
         content_ref_type=content_ref_type,
         additional_fields=set(request.additional_fields)

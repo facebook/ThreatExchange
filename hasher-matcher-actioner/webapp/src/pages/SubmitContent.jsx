@@ -31,7 +31,7 @@ import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayo
 const FORM_DEFAULTS = {
   submissionType: undefined,
   contentId: undefined,
-  contentType: 'PHOTO',
+  contentType: 'PHOTO', // Maps to hmalib.common.content_models.ContentType
   content: undefined,
 };
 
