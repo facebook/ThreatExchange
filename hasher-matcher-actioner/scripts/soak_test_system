@@ -90,7 +90,7 @@ class SubmittingThread(threading.Thread):
                     content_id = f"{batch_prefix}-{i}"
                     if self.filepaths:
                         self.helper.submit_test_content(
-                            content_id, filepath=self.filepaths[i % len(self.filepath)]
+                            content_id, filepath=self.filepaths[i % len(self.filepaths)]
                         )
                     else:
                         self.helper.submit_test_content(content_id)
@@ -239,7 +239,7 @@ class SoakShell(cmd.Cmd):
                     while submitted - received > 0:
                         if received > prev:
                             print(
-                                f"\tWaiting on {submitted-received} more requests\n",
+                                f"\tWaiting on {submitted-received} more requests",
                                 end="\r",
                             )
                             prev = received
