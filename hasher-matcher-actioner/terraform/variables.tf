@@ -89,7 +89,7 @@ variable "set_sqs_windows_to_min" {
 }
 
 variable "local_image_buckets" {
-  description = "Names and arns of Terraform s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
+  description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
   type        = list(object({
     name = string
     arn  = string

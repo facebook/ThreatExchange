@@ -22,28 +22,3 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
-
-variable "local_image_buckets" {
-  description = "Names and arns of Terraform s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
-  type        = list(object({
-    name = string
-    arn  = string
-  }))
-  default     = []
-}
-
-variable "lambda_docker_info" {
-  description = "Docker container information for lambda functions"
-  type = object({
-    uri = string
-    commands = object({
-      bucket_hasher = string
-    })
-  })
-}
-
-variable "log_retention_in_days" {
-  description = "How long to retain cloudwatch logs for lambda functions in days"
-  type        = number
-}
-
