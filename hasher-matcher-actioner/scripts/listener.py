@@ -90,7 +90,7 @@ class Listener:
     def get_post_request_count(self) -> int:
         if not self.web_server:
             print("Warning: Listener server not found")
-            return -1
+            return 0
         with _Handler.count_lock:
             return _Handler.post_counter
 
