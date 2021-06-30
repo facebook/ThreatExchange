@@ -85,19 +85,15 @@ class ChangeSignalOpinionResponse(JSONifiable):
         return {"change_requested": self.success}
 
 
-def get_match_details(
-    table: Table, content_id: str, image_folder_key: str
-) -> t.List[MatchDetail]:
+def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
     if not content_id:
         return []
 
-    records = PDQMatchRecord.get_from_content_id(
-        table, f"{image_folder_key}{content_id}"
-    )
+    records = PDQMatchRecord.get_from_content_id(table, f"{content_id}")
 
     return [
         MatchDetail(
-            content_id=record.content_id[len(image_folder_key) :],
+            content_id=record.content_id,
             content_hash=record.content_hash,
             signal_id=record.signal_id,
             signal_hash=record.signal_hash,
@@ -149,9 +145,7 @@ def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
     return OpinionString.UNKNOWN
 
 
-def get_matches_api(
-    dynamodb_table: Table, image_folder_key: str, hma_config_table: str
-) -> bottle.Bottle:
+def get_matches_api(dynamodb_table: Table, hma_config_table: str) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
     API that this API plugs into. Declare dependencies here, but initialize in
@@ -184,7 +178,7 @@ def get_matches_api(
         return MatchSummariesResponse(
             match_summaries=[
                 MatchSummary(
-                    content_id=record.content_id[len(image_folder_key) :],
+                    content_id=record.content_id,
                     signal_id=record.signal_id,
                     signal_source=record.signal_source,
                     updated_at=record.updated_at.isoformat(),
@@ -201,7 +195,7 @@ def get_matches_api(
         """
         results = []
         if content_id := bottle.request.query.content_id or None:
-            results = get_match_details(dynamodb_table, content_id, image_folder_key)
+            results = get_match_details(dynamodb_table, content_id)
         return MatchDetailsResponse(match_details=results)
 
     @matches_api.post("/request-signal-opinion-change/")
