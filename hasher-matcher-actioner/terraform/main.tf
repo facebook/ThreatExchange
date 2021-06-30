@@ -110,8 +110,8 @@ module "pdq_signals" {
   measure_performance   = var.measure_performance
   config_table          = local.config_table
 
-  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : null
-  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : null
+  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : 100
+  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : 30
 }
 
 module "counters" {
@@ -322,8 +322,8 @@ module "actions" {
   }
   datastore = module.datastore.primary_datastore
 
-  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : null
-  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : null
+  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : 100
+  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : 30
 }
 
 ### ThreatExchange API Token Secret ###
