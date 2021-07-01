@@ -50,12 +50,12 @@ class S3BucketSubmitter:
         bucket: str,
         api: HasherMatcherActionerAPI,
         prefix: t.Optional[str] = None,
-        loop: bool = False,
+        storm: bool = False,
     ):
         self.bucket = bucket
         self.prefix = prefix
         self.api = api
-        self.loop = loop
+        self.storm = storm
 
     def map_object_presigned_urls(self, callable: t.Callable):
         paginator = _get_s3_client().get_paginator("list_objects_v2")
@@ -78,27 +78,25 @@ class S3BucketSubmitter:
                 callable(presigned_url)
 
     def run(self):
-        if self.loop:
-            i = 0
-            while True:
-                i += 1
+        # max_workers = 60 gave 14k / minute from a docker container with 8 gigs of ram and 8 vCPUs
+        # max_workers = 40 gave 15k / minute from a docker container " "
+        # max_workers = 20 gave me 9.6k / minute from a docker container  " "
+        with concurrent.futures.ThreadPoolExecutor(max_workers=60) as executor:
+            if self.storm:
+                i = 0
+                while True:
+                    i += 1
+                    self.run_one_iteration(executor)
+                    print(f"Submitted {i} batches.")
+            else:
                 self.run_one_iteration()
-                print(f"Submitted {i} batches.")
-        else:
-            self.run_one_iteration()
 
-    def run_one_iteration(self):
-        jobs = []
+    def run_one_iteration(self, executor):
+        def submit_one(presigned_url: str):
+            content_id = str(uuid.uuid4())
+            executor.submit(self.api.submit_from_url, presigned_url, content_id)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-
-            def submit_one(presigned_url: str):
-                content_id = str(uuid.uuid4())
-                jobs.append(
-                    executor.submit(self.api.submit_from_url, presigned_url, content_id)
-                )
-
-            self.map_object_presigned_urls(submit_one)
+        self.map_object_presigned_urls(submit_one)
 
 
 def get_argparser():
@@ -125,7 +123,7 @@ def get_argparser():
         required=True,
     )
     parser.add_argument(
-        "--loop",
+        "--storm",
         action="store_true",
         help="Loop over the same set of S3 objects and submit copies until Ctrl-C'd.",
     )
@@ -139,6 +137,6 @@ if __name__ == "__main__":
     api = _get_hma_api(args.api_url, args.token)
 
     submitter = S3BucketSubmitter(
-        args.bucket_name, api, prefix=args.prefix, loop=args.loop
+        args.bucket_name, api, prefix=args.prefix, storm=args.storm
     )
     submitter.run()
