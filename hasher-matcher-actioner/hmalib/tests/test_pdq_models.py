@@ -343,7 +343,14 @@ class TestPDQModels(unittest.TestCase):
         )
 
 
-class CountersTest(TestPDQModels):
+class MatchByPrivacyGroupCounterTestCase(TestPDQModels):
+    """
+    Better placed inside common, but unfortunately has to be here.
+
+    To be able to re-use the ddb schema definitions, must place things here.
+    tests are module free so can't be cross-referenced.
+    """
+
     @contextmanager
     def fresh_dynamodb(self):
         # Code to acquire resource, e.g.:
@@ -352,51 +359,6 @@ class CountersTest(TestPDQModels):
             yield
         finally:
             self.__class__.tearDownClass()
-
-    def test_writes_init_counters(self):
-        """
-        Test that the first write creates a counter.
-        """
-        with self.fresh_dynamodb():
-            record = self.get_example_pdq_hash_record()
-            record.write_to_table(self.table)
-
-            assert 1 == models.PipelinePDQHashRecord.get_total_count(self.table)
-
-    def test_writes_inc_counters(self):
-        """
-        Test that subsequent writes increment counters.
-        """
-        with self.fresh_dynamodb():
-            record = self.get_example_pdq_hash_record()
-            record.write_to_table(self.table)
-            record.write_to_table(self.table)
-            record.write_to_table(self.table)
-            record.write_to_table(self.table)
-
-            assert 4 == models.PipelinePDQHashRecord.get_total_count(self.table)
-
-    def test_writes_inc_counters_only_for_the_updated_class(self):
-        """
-        Test that the writes do not increment counters for other classes.
-        """
-        with self.fresh_dynamodb():
-            record = self.get_example_pdq_hash_record()
-            record.write_to_table(self.table)
-            record.write_to_table(self.table)
-            record.write_to_table(self.table)
-            record.write_to_table(self.table)
-
-            assert 0 == models.PDQMatchRecord.get_total_count(self.table)
-
-
-class MatchByPrivacyGroupCounterTestCase(CountersTest):
-    """
-    Better placed inside common, but unfortunately has to be here.
-
-    To be able to re-use the ddb schema definitions, must place things here.
-    tests are module free so can't be cross-referenced.
-    """
 
     def test_full_flow(self):
         with self.fresh_dynamodb():
