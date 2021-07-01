@@ -127,7 +127,7 @@ class HasherMatcherActionerAPI:
         )
         put_response.raise_for_status()
 
-    def submit_single_url(
+    def submit_from_url(
         self,
         url: str,
         content_id: str,
