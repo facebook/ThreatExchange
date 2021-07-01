@@ -78,27 +78,25 @@ class S3BucketSubmitter:
                 callable(presigned_url)
 
     def run(self):
-        if self.loop:
-            i = 0
-            while True:
-                i += 1
+        # max_workers = 60 gave 14k / minute from my mac
+        # max_workers = 40 gave 15k / minute from my mac
+        # max_workers = 20 gave me 9.6k / minute from my mac
+        with concurrent.futures.ThreadPoolExecutor(max_workers=60) as executor:
+            if self.loop:
+                i = 0
+                while True:
+                    i += 1
+                    self.run_one_iteration(executor)
+                    print(f"Submitted {i} batches.")
+            else:
                 self.run_one_iteration()
-                print(f"Submitted {i} batches.")
-        else:
-            self.run_one_iteration()
 
-    def run_one_iteration(self):
-        jobs = []
+    def run_one_iteration(self, executor):
+        def submit_one(presigned_url: str):
+            content_id = str(uuid.uuid4())
+            executor.submit(self.api.submit_from_url, presigned_url, content_id)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-
-            def submit_one(presigned_url: str):
-                content_id = str(uuid.uuid4())
-                jobs.append(
-                    executor.submit(self.api.submit_from_url, presigned_url, content_id)
-                )
-
-            self.map_object_presigned_urls(submit_one)
+        self.map_object_presigned_urls(submit_one)
 
 
 def get_argparser():
