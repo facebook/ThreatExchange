@@ -127,6 +127,30 @@ class HasherMatcherActionerAPI:
         )
         put_response.raise_for_status()
 
+    def submit_from_url(
+        self,
+        url: str,
+        content_id: str,
+        additional_fields: t.List[str] = [],
+    ):
+        """
+        Distinct from send_single_submission_url(), It uses the URL only path
+        and bypasses s3 completely.
+        """
+        payload = {
+            "submission_type": "FROM_URL",
+            "content_id": content_id,
+            "content_type": "PHOTO",
+            "content_bytes_url_or_file_type": url,
+            "additional_fields": additional_fields,
+        }
+        api_path: str = "/submit/"
+        response = self.session.post(
+            self._get_request_url(api_path),
+            data=json.dumps(payload).encode(),
+        )
+        response.raise_for_status()
+
     def get_content_hash_details(
         self,
         content_id: str,
