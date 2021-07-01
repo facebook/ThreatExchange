@@ -68,9 +68,24 @@ module "datastore" {
 }
 
 module "hashing_data" {
-  source          = "./hashing-data"
-  prefix          = var.prefix
-  additional_tags = merge(var.additional_tags, local.common_tags)
+  source                = "./hashing-data"
+  prefix                = var.prefix
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+}
+
+module "hashing_integrations" {
+  source                = "./hashing-integrations"
+  prefix                = var.prefix
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  local_image_buckets   = var.local_image_buckets
+  log_retention_in_days = var.log_retention_in_days
+
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      hasher_integrations = "hmalib.lambdas.hasher_integrations.lambda_handler"
+    }
+  }
 }
 
 module "pdq_signals" {

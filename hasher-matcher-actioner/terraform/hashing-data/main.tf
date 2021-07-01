@@ -63,7 +63,6 @@ resource "aws_s3_bucket_notification" "bucket_notifications" {
   }
 }
 
-
 # ThreatExchange Data File Folder
 
 resource "aws_s3_bucket_object" "threat_exchange_data" {
