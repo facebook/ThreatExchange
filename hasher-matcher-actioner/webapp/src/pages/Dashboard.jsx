@@ -144,18 +144,14 @@ function StatCard({statName, timeSpan}) {
     <Card key={`stat-card-${statName}`} className="mb-4">
       <Card.Body>
         <Row>
-          <Col xs={4}>
+          <Col xs={8}>
             <h2 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h2>
           </Col>
-          <Col xs={4}>
+          <Col xs={4} className="text-right">
             <h1>{getDisplayNumber(card.time_span_count)}</h1>
             <small className="text-muted">
               in the last {getDisplayTimeSpan(card.time_span)}.
             </small>
-          </Col>
-          <Col xs={4}>
-            <h1>{getDisplayNumber(card.total_count)}</h1>
-            <small className="text-muted">since HMA is online.</small>
           </Col>
         </Row>
       </Card.Body>
