@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 variable "matches_sns_topic_arn" {
   description = "ARN for the topic that collects matches from matchers."
   type        = string

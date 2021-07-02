@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 ### Primary hashing / matching / actions datastore 
 resource "aws_dynamodb_table" "hma_datastore" {
   name         = "${var.prefix}-HMADataStore"

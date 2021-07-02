@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 import boto3
 from dataclasses import dataclass, field
 from datetime import datetime

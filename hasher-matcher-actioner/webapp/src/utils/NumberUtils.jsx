@@ -1,4 +1,8 @@
 /**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ */
+
+/**
  * Reduces the width required for displaying a number. eg. 4,000 -> 4k.
  * 2,000,000 -> 2m etc.
  */
