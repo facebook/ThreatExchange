@@ -1,3 +1,7 @@
+/**
+ * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ */
+
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
 import {
