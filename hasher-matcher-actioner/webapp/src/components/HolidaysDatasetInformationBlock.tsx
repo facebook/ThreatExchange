@@ -2,7 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import {React, useState} from 'react';
+import React, {useState} from 'react';
 import {Card, Button} from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import {createDataset} from '../Api';
@@ -11,7 +11,16 @@ export const SAMPLE_PG_ID = 'inria-holidays-test';
 /**
  * Super simple informational component. Drop in anywhere.
  */
-export function HolidaysDatasetInformationBlock({samplePGExists, refresh}) {
+
+type HolidaysDatasetInformationBlock = {
+  samplePGExists: boolean;
+  refresh: () => void;
+};
+
+export function HolidaysDatasetInformationBlock({
+  samplePGExists,
+  refresh,
+}: HolidaysDatasetInformationBlock) {
   const [loading, setLoading] = useState(false);
 
   const createSampleDataPG = () => {

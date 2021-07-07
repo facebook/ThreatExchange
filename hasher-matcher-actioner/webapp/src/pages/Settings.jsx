@@ -8,7 +8,7 @@ import Tabs from 'react-bootstrap/Tabs';
 import {useHistory, useParams} from 'react-router-dom';
 import ActionRuleSettingsTab from './settings/ActionRuleSettingsTab';
 import ActionSettingsTab from './settings/ActionSettingsTab';
-import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
+import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab.tsx';
 
 // This array must include the eventKey attribute value of any Tab in Tabs as
 // a part of the implementation to give each tab its own route.
