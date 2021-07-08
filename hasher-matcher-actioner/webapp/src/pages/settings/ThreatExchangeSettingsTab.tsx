@@ -25,13 +25,13 @@ import {
   deleteDataset,
 } from '../../Api';
 
-type privacyGroupType = {
+type PrivacyGroup = {
   privacyGroupId: string;
   localFetcherActive: boolean;
   localWriteBack: boolean;
   localMatcherActive: boolean;
 };
-type datasetType = {
+type Dataset = {
   privacy_group_id: string;
   privacy_group_name: string;
   description: string;
@@ -43,12 +43,12 @@ type datasetType = {
   match_count: number;
 };
 export default function ThreatExchangeSettingsTab() {
-  const [datasets, setDatasets] = useState<datasetType[] | []>([]);
+  const [datasets, setDatasets] = useState<Dataset[] | []>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastBody, setToastBody] = useState('');
-  const onPrivacyGroupSave = (privacyGroup: privacyGroupType) => {
+  const onPrivacyGroupSave = (privacyGroup: PrivacyGroup) => {
     updateDataset(
       privacyGroup.privacyGroupId,
       privacyGroup.localFetcherActive,
