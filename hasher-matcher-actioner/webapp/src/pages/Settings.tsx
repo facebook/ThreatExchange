@@ -15,10 +15,10 @@ import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 const tabEventKeys = ['threatexchange', 'actions', 'action-rules'];
 
 export default function Settings() {
-  const {tab} = useParams();
+  const {tab} = useParams<{tab: string}>();
   const history = useHistory();
   if (tab === undefined || !tab || !tabEventKeys.includes(tab)) {
-    window.location = '/settings/threatexchange';
+    window.location.href = '/settings/threatexchange';
   }
   return (
     <>

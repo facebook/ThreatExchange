@@ -35,7 +35,7 @@ class Dataset(JSONifiable):
     @classmethod
     def from_dict(cls, d: dict) -> "Dataset":
         return cls(
-            int(d["privacy_group_id"]),
+            d["privacy_group_id"],
             d["privacy_group_name"],
             d["description"],
             d["fetcher_active"],

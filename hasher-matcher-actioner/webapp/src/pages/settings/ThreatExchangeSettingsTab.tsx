@@ -25,13 +25,30 @@ import {
   deleteDataset,
 } from '../../Api';
 
+type PrivacyGroup = {
+  privacyGroupId: string;
+  localFetcherActive: boolean;
+  localWriteBack: boolean;
+  localMatcherActive: boolean;
+};
+type Dataset = {
+  privacy_group_id: string;
+  privacy_group_name: string;
+  description: string;
+  fetcher_active: boolean;
+  matcher_active: boolean;
+  in_use: boolean;
+  write_back: boolean;
+  hash_count: number;
+  match_count: number;
+};
 export default function ThreatExchangeSettingsTab() {
-  const [datasets, setDatasets] = useState([]);
+  const [datasets, setDatasets] = useState<Dataset[] | []>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [showToast, setShowToast] = useState(false);
-  const [toastBody, setToastBody] = useState(null);
-  const onPrivacyGroupSave = privacyGroup => {
+  const [toastBody, setToastBody] = useState('');
+  const onPrivacyGroupSave = (privacyGroup: PrivacyGroup) => {
     updateDataset(
       privacyGroup.privacyGroupId,
       privacyGroup.localFetcherActive,
@@ -53,7 +70,7 @@ export default function ThreatExchangeSettingsTab() {
         setShowToast(true);
       });
   };
-  const onPrivacyGroupDelete = privacyGroupId => {
+  const onPrivacyGroupDelete = (privacyGroupId: string) => {
     deleteDataset(privacyGroupId)
       .then(response => {
         setToastBody(response.response);
@@ -177,7 +194,10 @@ export default function ThreatExchangeSettingsTab() {
         <HolidaysDatasetInformationBlock
           samplePGExists={
             datasets
-              ? datasets.some(ds => ds.privacy_group_id === SAMPLE_PG_ID)
+              ? datasets.some(
+                  (ds: {privacy_group_id: string}) =>
+                    ds.privacy_group_id === SAMPLE_PG_ID,
+                )
               : false
           }
           refresh={refreshDatasets}
