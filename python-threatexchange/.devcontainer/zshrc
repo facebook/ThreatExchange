@@ -14,6 +14,6 @@ export PATH=$PATH:~/.local/bin
 
 # Add directory containing hmalib to PYTHONPATH. This allows vscode
 # testdiscovery to work
-export PYTHONPATH=$PYTHONPATH:/workspaces/ThreatExchange/hasher-matcher-actioner
+export PYTHONPATH=$PYTHONPATH:/workspaces/ThreatExchange/python-threatexchange
 
 # Last line must have a newline char!

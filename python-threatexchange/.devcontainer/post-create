@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Install python dependencies, including dev dep
+make local_install
