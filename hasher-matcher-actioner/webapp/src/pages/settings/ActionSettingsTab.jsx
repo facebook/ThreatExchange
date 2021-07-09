@@ -124,10 +124,10 @@ export default function ActionSettingsTab() {
           <p className="mt-5">
             Actions are how HMA notifies another system (such as your platform)
             that a Match has occurred. For example, there is a Dataset of cat
-            images and our platform does not allow cat images, after a piece of
-            Content matches the Dataset, our Platform should be notified so that
-            we can review the Content and, if it is truly a cat, remove it for
-            violating our Platform&apos;s Community Standards.
+            images and your platform does not allow cat images, after a piece of
+            Content matches the Dataset, your Platform should be notified so
+            that you can review the Content and, if it is truly a cat, remove it
+            for violating your Platform&apos;s Community Standards.
           </p>
           <div className="feedback-toast-container">
             <Toast
