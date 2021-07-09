@@ -4,10 +4,28 @@
 
 import React from 'react';
 import Form from 'react-bootstrap/Form';
-import {PropTypes} from 'prop-types';
+import PropTypes from 'prop-types';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
-import WebhookActioner from './WebhookActioner';
+import WebhookActioner, {Map} from './WebhookActioner';
+
+export type Params = {
+  url: string;
+  headers: string;
+};
+
+type ActionPerformerColumn = {
+  name: string;
+  type: string;
+  params: Params;
+  editing: boolean;
+  onChange: (arg0: string, arg1: Map) => void;
+  canNotDeleteOrUpdateName: boolean;
+};
+
+interface ActionerMap {
+  [key: string]: typeof WebhookActioner;
+}
 
 export default function ActionPerformerColumns({
   name,
@@ -16,8 +34,8 @@ export default function ActionPerformerColumns({
   editing,
   onChange,
   canNotDeleteOrUpdateName,
-}) {
-  const Actioners = {
+}: ActionPerformerColumn) {
+  const Actioners: ActionerMap = {
     WebhookPostActionPerformer: WebhookActioner,
     WebhookGetActionPerformer: WebhookActioner,
     WebhookDeleteActionPerformer: WebhookActioner,

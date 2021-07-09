@@ -5,7 +5,19 @@
 import React from 'react';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
-import {PropTypes} from 'prop-types';
+import PropTypes from 'prop-types';
+
+export interface Map {
+  [key: string]: string;
+}
+
+type WebhookActioner = {
+  url: string;
+  headers: string;
+  webhookType: string;
+  editing: boolean;
+  onChange: (arg0: string, arg1: Map) => void;
+};
 
 export default function WebhookActioner({
   url,
@@ -13,7 +25,7 @@ export default function WebhookActioner({
   webhookType,
   editing,
   onChange,
-}) {
+}: WebhookActioner) {
   const ActionerTypes = {
     WebhookActioner: {
       args: {
@@ -31,7 +43,7 @@ export default function WebhookActioner({
         'When a match occurs, a webhook will be sent to the specified url with data describing the match',
     },
   };
-  const WebhookType = {
+  const WebhookType: Map = {
     WebhookPostActionPerformer: 'POST',
     WebhookGetActionPerformer: 'GET',
     WebhookDeleteActionPerformer: 'DELETE',
