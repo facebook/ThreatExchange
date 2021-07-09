@@ -1,0 +1,54 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+  "name": "python-threatexchange-devserver",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "unixname": "${env:USER}"
+    }
+  },
+  // Set *default* container specific settings.json values on container create.
+  "settings": {
+    "terminal.integrated.profiles.linux": {
+      "bash": {
+        "path": "/bin/bash",
+        "args": [
+          "-l"
+        ]
+      },
+      "zsh": {
+        "path": "/bin/zsh",
+        "args": [
+          "-l"
+        ]
+      }
+    },
+    "editor.formatOnSave": true,
+    "python.formatting.blackPath": "black",
+    "python.formatting.provider": "black",
+    "python.testing.pytestArgs": [
+      "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true,
+  },
+  // Add the IDs of extensions you want installed when the container is created.
+  "extensions": [
+    "ms-python.python",
+    "ms-azuretools.vscode-docker",
+    "eamodio.gitlens",
+    "stkb.rewrap"
+  ],
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.pytx-cmdhist,target=/commandhistory,type=bind"
+  ],
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "sh .devcontainer/post-create",
+  "remoteEnv": {
+    "IN_DEVCONTAINER": "true"
+  },
+  "remoteUser": "${localEnv:USER}"
+}
