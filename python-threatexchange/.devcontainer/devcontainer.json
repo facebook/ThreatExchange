@@ -45,7 +45,8 @@
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.pytx-cmdhist,target=/commandhistory,type=bind"
   ],
-  // Use 'portsAttributes' to set default properties for specific forwarded ports.
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "sh .devcontainer/post-create",
   "remoteEnv": {
     "IN_DEVCONTAINER": "true"
   },
