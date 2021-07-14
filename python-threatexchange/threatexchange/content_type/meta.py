@@ -17,9 +17,11 @@ def get_all_content_types() -> t.List[t.Type[content_base.ContentType]]:
     """Returns all content_type implementations for commands"""
     return [text.TextContent, video.VideoContent, photo.PhotoContent]
 
+
 @functools.lru_cache(1)
 def get_content_types_by_name() -> t.Dict[str, content_base.ContentType]:
     return {c.get_name(): c for c in get_all_content_types()}
+
 
 @functools.lru_cache(1)
 def get_all_signal_types() -> t.Set[t.Type[signal_base.SignalType]]:

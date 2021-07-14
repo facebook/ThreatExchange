@@ -107,9 +107,15 @@ class DatasetCommand(command_base.Command):
                 k: v
                 for k, v in indicators.items()
                 if v.indicator_type == self.only_type
-                or (signal_types
-                and any(sig_type.indicator_applies(v.indicator_type, v.rollup.labels) for sig_type in signal_types))
+                or (
+                    signal_types
+                    and any(
+                        sig_type.indicator_applies(v.indicator_type, v.rollup.labels)
+                        for sig_type in signal_types
+                    )
+                )
             }
+
         if self.rebuild_indices:
             generate_cli_indices(dataset, stores)
         if self.print_records:
