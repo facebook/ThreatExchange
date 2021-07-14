@@ -91,6 +91,7 @@ class DatasetCommand(command_base.Command):
         indicators = {}
         for store in stores:
             indicators.update(store.load_state())
+
         if self.only_type:
             signal_types = []
             s_type = meta.get_signal_types_by_name().get(self.only_type)
@@ -114,6 +115,12 @@ class DatasetCommand(command_base.Command):
                         for sig_type in signal_types
                     )
                 )
+            }
+
+        if self.only_tag:
+            self.signal_summary = True
+            indicators = {
+                k: v for k, v in indicators.items() if self.only_tag in v.rollup.labels
             }
 
         if self.rebuild_indices:
