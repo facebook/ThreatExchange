@@ -11,7 +11,7 @@ export interface Map {
   [key: string]: string;
 }
 
-interface WebhookType extends Record<string, any> {
+interface WebhookTypeInterface extends Record<string, any> {
   WebhookPostActionPerformer: string;
   WebhookGetActionPerformer: string;
   WebhookDeleteActionPerformer: string;
@@ -50,7 +50,7 @@ export default function WebhookActioner({
         'When a match occurs, a webhook will be sent to the specified url with data describing the match',
     },
   };
-  const WebhookType: WebhookType = {
+  const WebhookType: WebhookTypeInterface = {
     WebhookPostActionPerformer: 'POST',
     WebhookGetActionPerformer: 'GET',
     WebhookDeleteActionPerformer: 'DELETE',
