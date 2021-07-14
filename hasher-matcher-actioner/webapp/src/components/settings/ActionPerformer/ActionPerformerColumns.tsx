@@ -9,7 +9,7 @@ import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import WebhookActioner, {Map} from './WebhookActioner';
 
-export type Params = {
+export type WebhookActionPerformerParams = {
   url: string;
   headers: string;
 };
@@ -17,9 +17,9 @@ export type Params = {
 type ActionPerformerColumn = {
   name: string;
   type: string;
-  params: Params;
+  params: WebhookActionPerformerParams;
   editing: boolean;
-  onChange: (arg0: string, arg1: Map) => void;
+  onChange: (key: string, keyValueMap: Map) => void;
   canNotDeleteOrUpdateName: boolean;
 };
 

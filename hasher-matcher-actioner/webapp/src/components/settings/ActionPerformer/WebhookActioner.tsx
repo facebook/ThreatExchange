@@ -11,12 +11,19 @@ export interface Map {
   [key: string]: string;
 }
 
+interface WebhookType extends Record<string, any> {
+  WebhookPostActionPerformer: string;
+  WebhookGetActionPerformer: string;
+  WebhookDeleteActionPerformer: string;
+  WebhookPutActionPerformer: string;
+}
+
 type WebhookActioner = {
   url: string;
   headers: string;
   webhookType: string;
   editing: boolean;
-  onChange: (arg0: string, arg1: Map) => void;
+  onChange: (key: string, keyValueMap: Map) => void;
 };
 
 export default function WebhookActioner({
@@ -43,7 +50,7 @@ export default function WebhookActioner({
         'When a match occurs, a webhook will be sent to the specified url with data describing the match',
     },
   };
-  const WebhookType: Map = {
+  const WebhookType: WebhookType = {
     WebhookPostActionPerformer: 'POST',
     WebhookGetActionPerformer: 'GET',
     WebhookDeleteActionPerformer: 'DELETE',
