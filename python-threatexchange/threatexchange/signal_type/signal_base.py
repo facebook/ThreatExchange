@@ -11,7 +11,6 @@ import pickle
 import typing as t
 
 from .. import common
-from .. import dataset
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import index
 
