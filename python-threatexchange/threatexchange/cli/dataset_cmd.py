@@ -43,7 +43,14 @@ class DatasetCommand(command_base.Command):
             "-t",
             dest="only_type",
             metavar="STR",
-            help="only process one type of indicators (or signals)",
+            help="only process one type of indicator (eg HASH_MD5), signal (eg photo_md5), or content (eg photo); specifying a signal or content type implies '--signal-summary'",
+        )
+        ap.add_argument(
+            "--tag",
+            "-g",
+            dest="only_tag",
+            metavar="STR",
+            help="only process a single tag; implies '--signal-summary'",
         )
         ap.add_argument(
             "--indicator-only", "-i", action="store_true", help="only print indicators"
@@ -59,12 +66,14 @@ class DatasetCommand(command_base.Command):
         self,
         rebuild_indices: bool,
         only_type: t.Optional[str],
+        only_tag: t.Optional[str],
         indicator_only: bool,
         signal_summary: bool,
         print_records: bool,
     ) -> None:
         self.rebuild_indices = rebuild_indices
         self.only_type = only_type
+        self.only_tag = only_tag
         self.indicator_only = indicator_only
         self.signal_summary = signal_summary
         self.print_records = print_records
@@ -82,18 +91,38 @@ class DatasetCommand(command_base.Command):
         indicators = {}
         for store in stores:
             indicators.update(store.load_state())
+
         if self.only_type:
+            signal_types = []
             s_type = meta.get_signal_types_by_name().get(self.only_type)
             if s_type:
+                signal_types.append(s_type)
+                self.signal_summary = True
+
+            content_type = meta.get_content_types_by_name().get(self.only_type)
+            if content_type:
+                signal_types.extend(content_type.get_signal_types())
                 self.signal_summary = True
 
             indicators = {
                 k: v
                 for k, v in indicators.items()
                 if v.indicator_type == self.only_type
-                or s_type
-                and s_type.indicator_applies(v.indicator_type, v.rollup.labels)
+                or (
+                    signal_types
+                    and any(
+                        sig_type.indicator_applies(v.indicator_type, v.rollup.labels)
+                        for sig_type in signal_types
+                    )
+                )
             }
+
+        if self.only_tag:
+            self.signal_summary = True
+            indicators = {
+                k: v for k, v in indicators.items() if self.only_tag in v.rollup.labels
+            }
+
         if self.rebuild_indices:
             generate_cli_indices(dataset, stores)
         if self.print_records:
