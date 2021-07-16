@@ -20,14 +20,6 @@ from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
 from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
 
-"""
-ToDo Missing more involed checks (between submit and webhook):
-  - The content record was created (with the expected metadata/additional fields) 
-  - Brief wait: hash was created of that image and it matches the expected
-  - wait: match record was created (if expected) and maps to correct signal values
-  - longer wait: action record was created and maps to correct action label
-"""
-
 
 class DeployedInstanceTestHelper:
     """
