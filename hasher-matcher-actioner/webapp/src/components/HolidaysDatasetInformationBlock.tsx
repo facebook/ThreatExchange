@@ -8,10 +8,10 @@ import PropTypes from 'prop-types';
 import {createDataset} from '../Api';
 
 export const SAMPLE_PG_ID = 'inria-holidays-test';
+
 /**
  * Super simple informational component. Drop in anywhere.
  */
-
 type HolidaysDatasetInformationBlock = {
   samplePGExists: boolean;
   refresh: () => void;
@@ -20,7 +20,7 @@ type HolidaysDatasetInformationBlock = {
 export function HolidaysDatasetInformationBlock({
   samplePGExists,
   refresh,
-}: HolidaysDatasetInformationBlock) {
+}: HolidaysDatasetInformationBlock): JSX.Element {
   const [loading, setLoading] = useState(false);
 
   const createSampleDataPG = () => {

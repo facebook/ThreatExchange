@@ -14,7 +14,7 @@ import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 // a part of the implementation to give each tab its own route.
 const tabEventKeys = ['threatexchange', 'actions', 'action-rules'];
 
-export default function Settings() {
+export default function Settings(): JSX.Element {
   const {tab} = useParams<{tab: string}>();
   const history = useHistory();
   if (tab === undefined || !tab || !tabEventKeys.includes(tab)) {
