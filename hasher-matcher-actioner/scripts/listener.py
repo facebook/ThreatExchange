@@ -63,14 +63,14 @@ class _Handler(BaseHTTPRequestHandler):
         if content_id := json.loads(post_data).get("content_key"):
             try:
                 submit_time = datetime.datetime.fromisoformat(
-                    content_id.split("-time-")[0]
+                    content_id.split("-time-")[1]
                 )
                 latency = present - submit_time
                 with self.latency_lock:
                     self.submission_latencies.append(
                         (submit_time, present, latency.total_seconds())
                     )
-            except ValueError:
+            except ValueError and IndexError:
                 pass
 
 

@@ -43,9 +43,7 @@ class Submitter(threading.Thread):
             try:
                 batch_prefix = f"soak-test-{str(uuid.uuid4())}"
                 for i in range(self.batch_size):
-                    content_id = (
-                        f"{datetime.datetime.now().isoformat()}-time-{batch_prefix}-{i}"
-                    )
+                    content_id = f"{batch_prefix}{i}-time-{datetime.datetime.now().isoformat()}-time-"
                     if self.filepaths:
                         self.helper.submit_test_content(
                             content_id, filepath=self.filepaths[i % len(self.filepaths)]
