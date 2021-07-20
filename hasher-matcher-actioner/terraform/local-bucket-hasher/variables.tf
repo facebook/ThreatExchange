@@ -36,7 +36,7 @@ variable "lambda_docker_info" {
   type = object({
     uri = string
     commands = object({
-      hasher_integrations = string
+      local_bucket_hasher = string
     })
   })
 }

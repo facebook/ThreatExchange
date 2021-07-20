@@ -73,8 +73,8 @@ module "hashing_data" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
 }
 
-module "hashing_integrations" {
-  source                = "./hashing-integrations"
+module "local_bucket_hasher" {
+  source                = "./local-bucket-hasher"
   prefix                = var.prefix
   additional_tags       = merge(var.additional_tags, local.common_tags)
   local_image_buckets   = var.local_image_buckets
@@ -86,7 +86,7 @@ module "hashing_integrations" {
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
-      hasher_integrations = "hmalib.lambdas.hasher_integrations.lambda_handler"
+      local_bucket_hasher = "hmalib.lambdas.local_bucket_hasher.lambda_handler"
     }
   }
 }

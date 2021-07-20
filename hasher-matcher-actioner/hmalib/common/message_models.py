@@ -317,12 +317,12 @@ class S3LocalImageSubmission(ImageSubmission):
 class S3LocalImageSubmissionBatchMessage:
     """
     An image has been uploaded to a Partner's S3 bucket that they configured
-    HMA to read all uploades to. The hasher_integrations lambda was notified
+    HMA to read all uploads to. The local_bucket_hasher lambda was notified
     of the upload and added an image to the images SQS queue for the pdq_hasher
     to hash.
 
     If the s3 path structure convention were to change, you'd make changes
-    in the hasher_integrations lambda and here, but not need to make changes
+    in the local_bucket_hasher lambda and here, but no need to make changes
     in any of the hasher lambdas.
     """
 
