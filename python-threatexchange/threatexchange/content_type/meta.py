@@ -30,9 +30,12 @@ def get_signal_types_by_name() -> t.Dict[str, signal_base.SignalType]:
     return {s.get_name(): s for s in get_all_signal_types()}
 
 
-_content_type_map = {
-    content_type.get_name(): content_type for content_type in get_all_content_types()
-}
+@functools.lru_cache(maxsize=None)
+def _get_content_type_map():
+    return {
+        content_type.get_name(): content_type
+        for content_type in get_all_content_types()
+    }
 
 
 def get_content_type_for_name(name: str) -> t.Type[content_base.ContentType]:
@@ -42,4 +45,4 @@ def get_content_type_for_name(name: str) -> t.Type[content_base.ContentType]:
 
     Note: Raises KeyError if not found.
     """
-    return _content_type_map[name]
+    return _get_content_type_map[name]

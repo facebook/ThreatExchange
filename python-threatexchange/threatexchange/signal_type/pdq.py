@@ -13,6 +13,13 @@ from . import signal_base
 from ..hashing.pdq_utils import pdq_match, BITS_IN_PDQ
 
 
+def _raise_pillow_warning():
+    warnings.warn(
+        "PDQ from raw image data requires Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
+        category=UserWarning,
+    )
+
+
 class PdqSignal(
     signal_base.SimpleSignalType, signal_base.FileHasher, signal_base.BytesHasher
 ):
@@ -42,10 +49,7 @@ class PdqSignal(
         try:
             from threatexchange.hashing.pdq_hasher import pdq_from_file
         except:
-            warnings.warn(
-                "PDQ from file require Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
-                category=UserWarning,
-            )
+            _raise_pillow_warning()
             return ""
         pdq_hash, _quality = pdq_from_file(file)
         return pdq_hash
@@ -68,10 +72,7 @@ class PdqSignal(
         try:
             from threatexchange.hashing.pdq_hasher import pdq_from_bytes
         except:
-            warnings.warn(
-                "PDQ from file require Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
-                category=UserWarning,
-            )
+            _raise_pillow_warning()
             return ""
         pdq_hash, quality = pdq_from_bytes(bytes_)
         return pdq_hash
