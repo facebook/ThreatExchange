@@ -13,5 +13,6 @@ setup(
         "threatexchange[faiss,pdq_hasher]>=0.0.20",
         "bottle",
         "apig_wsgi",
+        "requests==2.25.1",
     ],
 )

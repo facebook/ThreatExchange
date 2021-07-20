@@ -15,3 +15,7 @@ output "pdq_matcher_function_name" {
 output "hashes_queue_name" {
   value = aws_sqs_queue.hashes_queue.name
 }
+
+output "hashes_queue_url" {
+  value = aws_sqs_queue.hashes_queue.id
+}

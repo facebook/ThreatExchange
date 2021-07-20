@@ -10,6 +10,8 @@ from boto3.dynamodb.conditions import Attr, Key, Or
 from botocore.exceptions import ClientError
 import typing as t
 
+from threatexchange.content_type.photo import PhotoContent
+
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.models import PipelinePDQHashRecord
 from hmalib.common.content_models import (
@@ -119,7 +121,7 @@ def get_content_api(
             return bottle.abort(400, "content_id must be provided")
 
         content_object: ContentObject = ContentObject.get_from_content_id(
-            dynamodb_table, content_id, ContentType.PHOTO
+            dynamodb_table, content_id, PhotoContent.get_name()
         )
 
         if not content_object:

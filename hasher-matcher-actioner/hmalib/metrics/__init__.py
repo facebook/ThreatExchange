@@ -82,6 +82,12 @@ class names:
         def prefix_impl(self):
             return self._prefix
 
+    class hasher:
+        _prefix = "lambdas.hasher"
+
+        download_file = f"{_prefix}.download_file"
+        hash = f"{_prefix}.hash"
+
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
 METRICS_NAMESPACE = os.getenv(_METRICS_NAMESPACE_ENVVAR, names.hma_namespace)

@@ -109,3 +109,11 @@ variable "writebacks_queue" {
   })
 }
 
+variable "submissions_queue" {
+  description = "URL and ARN for submissions queue. Messages from the submission APIs will be dropped on this queue"
+  type = object({
+    url = string
+    arn = string
+  })
+}
+

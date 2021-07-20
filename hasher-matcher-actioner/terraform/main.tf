@@ -68,9 +68,9 @@ module "datastore" {
 }
 
 module "hashing_data" {
-  source                = "./hashing-data"
-  prefix                = var.prefix
-  additional_tags       = merge(var.additional_tags, local.common_tags)
+  source          = "./hashing-data"
+  prefix          = var.prefix
+  additional_tags = merge(var.additional_tags, local.common_tags)
 }
 
 module "hashing_integrations" {
@@ -242,6 +242,154 @@ module "authentication" {
   webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
 }
 
+/*
+ * # Submissions SQS:
+ * Submissions from the API are routed directly into a queue. Doing an SNS
+ * indirection **could** allow multiple lambdas to be listening for submissions,
+ * but, that would be costly because the lambda invocation would cost money.
+ *
+ * Instead, we will have a single hashing lambda capable of handling all
+ * content_types. If the content, because of its size or because of compute
+ * complexity can't be handled by this "base" lambda, it will be routed to
+ * another specially capable lambda queue.
+ *
+ * - This should soon absorb the pdq_images queue + SNS topic as the only queue
+ *   that we will publish submissions on.
+ *   If we have proven that the generic lambda can generate PDQ signals, we can 
+ *   do away with the PDQ specific infrastructure altogether.
+*/
+resource "aws_sqs_queue" "submissions_queue" {
+  name_prefix                = "${var.prefix}-submissions"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600
+  tags = merge(
+    var.additional_tags,
+    local.common_tags,
+    {
+      Name = "SubmissionsQueue"
+    }
+  )
+}
+
+
+/* Hashing Lambda Configuration Begins
+ *
+ * Pipe the submissions queue into the hashing lambda.
+ */
+resource "aws_lambda_function" "hashing_lambda" {
+  function_name = "${var.prefix}_hasher"
+  package_type  = "Image"
+  role          = aws_iam_role.hashing_lambda_role.arn
+  image_uri     = var.hma_lambda_docker_uri
+  image_config {
+    command = ["hmalib.lambdas.hashing.lambda_handler"]
+  }
+
+  timeout     = 300
+  memory_size = 512
+
+  environment {
+    variables = {
+      DYNAMODB_TABLE      = module.datastore.primary_datastore.name
+      METRICS_NAMESPACE   = var.metrics_namespace
+      MEASURE_PERFORMANCE = var.measure_performance ? "True" : "False"
+      # HASHES_QUEUE_URL    = module.pdq_signals.hashes_queue_url
+    }
+  }
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HashingLambda"
+    }
+  )
+}
+
+data "aws_iam_policy_document" "lambda_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "hashing_lambda_policy" {
+  name_prefix = "${var.prefix}_hasher_policy"
+  description = "Permissions for Hashing Lambda"
+  policy      = data.aws_iam_policy_document.hashing_lambda.json
+}
+resource "aws_iam_role" "hashing_lambda_role" {
+  name_prefix        = "${var.prefix}_hasher"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HashingLambda"
+    }
+  )
+}
+
+resource "aws_cloudwatch_log_group" "hashing_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.hashing_lambda.function_name}"
+  retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HasherLambdaLogGroup"
+    }
+  )
+}
+
+data "aws_iam_policy_document" "hashing_lambda" {
+  statement {
+    effect    = "Allow"
+    actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
+    resources = [aws_sqs_queue.submissions_queue.arn]
+  }
+  /*statement {
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
+    resources = [aws_sqs_queue.hashes_queue.arn]
+  }*/
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
+    resources = [module.datastore.primary_datastore.arn]
+  }
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams"
+    ]
+    resources = ["${aws_cloudwatch_log_group.hashing_logs.arn}:*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["cloudwatch:PutMetricData"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "hashing_lambda_permissions" {
+  role       = aws_iam_role.hashing_lambda_role.name
+  policy_arn = aws_iam_policy.hashing_lambda_policy.arn
+}
+
+resource "aws_lambda_event_source_mapping" "submissions_to_hasher" {
+  event_source_arn                   = aws_sqs_queue.submissions_queue.arn
+  function_name                      = aws_lambda_function.hashing_lambda.arn
+  batch_size                         = 10
+  maximum_batching_window_in_seconds = 10
+}
+/* Hashing Lambda Configuration Ends */
+
+
+
 # Set up api
 
 module "api" {
@@ -275,6 +423,11 @@ module "api" {
 
   writebacks_queue = module.actions.writebacks_queue
   images_topic_arn = module.hashing_data.image_folder_info.notification_topic
+
+  submissions_queue = {
+    url = aws_sqs_queue.submissions_queue.id,
+    arn = aws_sqs_queue.submissions_queue.arn
+  }
 }
 
 # Build and deploy webapp
