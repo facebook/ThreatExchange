@@ -51,8 +51,6 @@ def lambda_handler(event, context):
     """
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
-    logger.info(event)
-
     for sqs_record in event["Records"]:
         message_body = json.loads(sqs_record["body"])
         message = json.loads(message_body["Message"])
@@ -70,7 +68,7 @@ def lambda_handler(event, context):
         elif S3ImageSubmissionBatchMessage.could_be(message):
             images_to_process.extend(
                 S3ImageSubmissionBatchMessage.from_sqs_message(
-                    message, IMAGE_FOLDER_KEY
+                    message, image_prefix=IMAGE_FOLDER_KEY
                 ).image_submissions
             )
         elif S3LocalImageSubmissionBatchMessage.could_be(message):

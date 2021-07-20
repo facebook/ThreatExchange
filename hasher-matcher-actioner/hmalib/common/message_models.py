@@ -321,11 +321,7 @@ class S3LocalImageSubmissionBatchMessage:
     of the upload and added an image to the images SQS queue for the pdq_hasher
     to hash.
 
-    An event has been emitted by S3 to SNS. This converts that into a set of
-    messages each representing one image and its content id based on convention
-    used by the submission lambda.
-
-    eg. If the s3 path structure convention were to change, you'd make changes
+    If the s3 path structure convention were to change, you'd make changes
     in the hasher_integrations lambda and here, but not need to make changes
     in any of the hasher lambdas.
     """
