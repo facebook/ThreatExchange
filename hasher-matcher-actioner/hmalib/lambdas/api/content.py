@@ -1,11 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from hmalib.common.image_sources import S3BucketImageSource
 import bottle
 import boto3
-import base64
-import requests
-import datetime
 
 from enum import Enum
 from dataclasses import dataclass, asdict, field
@@ -22,6 +18,7 @@ from hmalib.common.content_models import (
     ContentRefType,
     ContentType,
 )
+from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -130,7 +127,7 @@ def get_content_api(
         content_object = t.cast(ContentObject, content_object)
 
         if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
-            bytes_: bytes = S3BucketImageSource(
+            bytes_: bytes = S3BucketContentSource(
                 image_bucket, image_prefix
             ).get_image_bytes(content_id)
             bottle.response.set_header("Content-type", "image/jpeg")

@@ -20,7 +20,7 @@ from hmalib.common.classification_models import (
 )
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.aws_dataclass import HasAWSSerialization
-from hmalib.common.image_sources import S3BucketImageSource
+from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.logging import get_logger
 
 from mypy_boto3_sqs import SQSClient
@@ -266,7 +266,7 @@ class S3ImageSubmissionBatchMessage:
                 logger.info("Disregarding empty file or directory: %s", key)
                 continue
 
-            content_id = S3BucketImageSource.get_content_id_from_s3_key(
+            content_id = S3BucketContentSource.get_content_id_from_s3_key(
                 key, image_prefix
             )
             result.append(S3ImageSubmission(content_id, bucket_name, key))
