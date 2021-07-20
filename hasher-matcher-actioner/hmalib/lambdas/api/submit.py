@@ -153,30 +153,6 @@ def record_content_submission(dynamodb_table: Table, request: SubmitContentReque
     ).write_to_table(dynamodb_table)
 
 
-def from_url(
-    request: SubmitContentRequestBody,
-    dynamodb_table: Table,
-    images_topic_arn: str,
-) -> t.Union[SubmitContentResponse, SubmitContentError]:
-    """
-    Submission via a url to content. Current behavior copies content into the system's s3 bucket.
-    """
-    content_id = request.content_id
-    url = request.content_bytes_url_or_file_type
-
-    # Again, We want to record the submission before triggering and processing on
-    # the content itself therefore we write to dynamo before s3
-    record_content_submission(dynamodb_table, request)
-
-    url_submission_message = URLImageSubmissionMessage(content_id, t.cast(str, url))
-    _get_sns_client().publish(
-        TopicArn=images_topic_arn,
-        Message=json.dumps(url_submission_message.to_sqs_message()),
-    )
-
-    return SubmitContentResponse(content_id=request.content_id, submit_successful=True)
-
-
 def get_submit_api(
     dynamodb_table: Table,
     image_bucket: str,
@@ -282,7 +258,7 @@ def get_submit_api(
         elif request.submission_type == SubmissionType.POST_URL_UPLOAD.name:
             return post_url_upload(request)
         elif request.submission_type == SubmissionType.FROM_URL.name:
-            return from_url(request, dynamodb_table, images_topic_arn)
+            return from_url(request)
         else:
             # Other possible submission types are not supported so just echo content_id for testing
             bottle.response.status = 422
