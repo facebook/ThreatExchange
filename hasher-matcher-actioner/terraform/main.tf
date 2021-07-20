@@ -81,7 +81,7 @@ module "hashing_integrations" {
   log_retention_in_days = var.log_retention_in_days
   datastore             = module.datastore.primary_datastore
   images_topic_arn      = module.hashing_data.image_folder_info.notification_topic
-
+  pdq_images_queue      = aws_sqs_queue.pdq_images_queue
 
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
@@ -106,9 +106,11 @@ module "pdq_signals" {
 
   images_input = {
     input_queue = aws_sqs_queue.pdq_images_queue.arn
-    resource_list = [
+    resource_list = concat([
       "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
-    ]
+    ],
+      [for local_bucket in var.local_image_buckets: "${local_bucket.arn}/*"]
+    )
     image_folder_key = module.hashing_data.image_folder_info.key
   }
   threat_exchange_data = {

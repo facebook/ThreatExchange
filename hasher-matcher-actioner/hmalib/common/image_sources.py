@@ -80,7 +80,27 @@ class URLImageSource(ImageSource):
       defaults)
     """
 
-    def get_image_bytes(self, identifier: str) -> bytes:
-        r = requests.get(identifier)
+    def get_image_bytes(self, url: str) -> bytes:
+        r = requests.get(url)
         r.raise_for_status()
         return r.content
+
+
+class S3LocalImageSource(ImageSource):
+    """
+    Get images from a single S3 bucket controlled by a partner directly not by HMA.
+
+    Distinct from S3ImageSource becuase content_ids are stored differently
+    """
+
+    def get_image_bytes(self, content_id: str) -> bytes:
+        """
+        Get bytes for the image.
+
+        Assumes content_id is stored as <bucket_id>/key based on
+        S3LocalImageSubmissionBatchMessage.
+        """
+        bucket = content_id[: content_id.find("/")]
+        key = content_id[content_id.find("/") + 1 :]
+
+        return _get_s3_client().get_object(Bucket=bucket, Key=key)["Body"].read()

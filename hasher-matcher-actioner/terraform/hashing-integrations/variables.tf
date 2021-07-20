@@ -29,7 +29,6 @@ variable "local_image_buckets" {
     name = string
     arn  = string
   }))
-  default     = []
 }
 
 variable "lambda_docker_info" {
@@ -58,5 +57,13 @@ variable "datastore" {
 variable "images_topic_arn" {
   description = "SNS Topic for publishing image submission requests"
   type        = string
+}
+
+variable "pdq_images_queue" {
+  description = "SQS queue to send images to the pdq_hasher"
+  type        = object({
+    id = string
+    arn  = string
+  })
 }
 

@@ -12,12 +12,12 @@ from threatexchange.hashing import pdq_hasher
 from hmalib import metrics
 from hmalib.models import PipelinePDQHashRecord
 from hmalib.common.message_models import (
-    S3ImageSubmission,
     S3ImageSubmissionBatchMessage,
+    S3LocalImageSubmissionBatchMessage,
     URLImageSubmissionMessage,
+    ImageSubmission,
 )
 from hmalib.common.logging import get_logger
-from hmalib.common.image_sources import URLImageSource, S3BucketImageSource
 
 logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
@@ -28,26 +28,6 @@ DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_FOLDER_KEY = os.environ[
     "IMAGE_FOLDER_KEY"
 ]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
-
-
-def get_image_bytes(
-    submission_message: t.Union[URLImageSubmissionMessage, S3ImageSubmission],
-    default_s3_bucket_image_prefix: str,
-):
-    """
-    Takes a submission_message, identifies how best to get its bytes. Future
-    work on re-using sessions for `requests` or any possible optimization must
-    go here.
-
-    Once we have more hashing lambdas that need access to media, this could be
-    moved into its own module.
-    """
-    if isinstance(submission_message, URLImageSubmissionMessage):
-        return URLImageSource().get_image_bytes(submission_message.url)
-    else:
-        return S3BucketImageSource(
-            submission_message.bucket, default_s3_bucket_image_prefix
-        ).get_image_bytes(submission_message.content_id)
 
 
 def lambda_handler(event, context):
@@ -71,6 +51,8 @@ def lambda_handler(event, context):
     """
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
+    logger.info(event)
+
     for sqs_record in event["Records"]:
         message_body = json.loads(sqs_record["body"])
         message = json.loads(message_body["Message"])
@@ -79,9 +61,7 @@ def lambda_handler(event, context):
             logger.info("Disregarding S3 Test Event")
             continue
 
-        images_to_process: t.List[
-            t.Union[URLImageSubmissionMessage, S3ImageSubmission]
-        ] = []
+        images_to_process: t.List[ImageSubmission] = []
 
         if URLImageSubmissionMessage.could_be(message):
             images_to_process.append(
@@ -90,7 +70,13 @@ def lambda_handler(event, context):
         elif S3ImageSubmissionBatchMessage.could_be(message):
             images_to_process.extend(
                 S3ImageSubmissionBatchMessage.from_sqs_message(
-                    message, image_prefix=IMAGE_FOLDER_KEY
+                    message, IMAGE_FOLDER_KEY
+                ).image_submissions
+            )
+        elif S3LocalImageSubmissionBatchMessage.could_be(message):
+            images_to_process.extend(
+                S3LocalImageSubmissionBatchMessage.from_sqs_message(
+                    message
                 ).image_submissions
             )
         else:
@@ -101,7 +87,7 @@ def lambda_handler(event, context):
         for image in images_to_process:
             logger.info("Getting bytes for submission:  %s", repr(image))
             with metrics.timer(metrics.names.pdq_hasher_lambda.download_file):
-                bytes_: bytes = get_image_bytes(image, IMAGE_FOLDER_KEY)
+                bytes_: bytes = image.get_bytes()
 
             logger.info("Generating PDQ hash for submission: %s", repr(image))
 
@@ -123,3 +109,22 @@ def lambda_handler(event, context):
             logger.info("Published new PDQ hash")
 
     metrics.flush()
+
+
+if __name__ == "__main__":
+    s3_local_upload_event = {
+        "Records": [
+            {
+                "s3": {
+                    "object": {"key": "200000.jpg", "size": 500},
+                    "bucket": {"name": "jesses-separate-aws-bucket"},
+                }
+            }
+        ]
+    }
+    event = {
+        "Records": [
+            {"body": json.dumps({"Message": json.dumps(s3_local_upload_event)})}
+        ]
+    }
+    print(lambda_handler(event, None))

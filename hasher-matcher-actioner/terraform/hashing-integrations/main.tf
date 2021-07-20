@@ -31,8 +31,7 @@ resource "aws_lambda_function" "hasher_integrations" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE   = var.datastore.name
-      IMAGES_TOPIC_ARN = var.images_topic_arn
+      PDQ_IMAGES_QUEUE_URL = var.pdq_images_queue.id
     }
   }
 
@@ -85,8 +84,8 @@ data "aws_iam_policy_document" "hasher_integrations" {
 
   statement {
     effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = [for local_bucket in var.local_image_buckets: "${local_bucket.arn}/*"]
+    actions   = ["sqs:SendMessage"]
+    resources = [var.pdq_images_queue.arn]
   }
 
   statement {
