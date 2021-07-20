@@ -1,0 +1,73 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+import typing as t
+from dataclasses import dataclass
+
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.signal_type.signal_base import SignalType, BytesHasher
+
+
+@dataclass
+class SignalValue:
+    """
+    Envelope for a signal type and signal's value.
+
+    TODO: assumption that a signal value can only be string is inaccurate. Even
+    simple algorithms like PDQ emit a tuple. Quality and Hash value.
+
+    Need to figure out a way for this to be extensible or flexible for all kinds
+    of hashes.
+    """
+
+    signal_type: SignalType
+    signal_value: str
+
+
+class UnifiedHasher:
+    """
+    A hasher that can generate signal_type from content_type as long as they are
+    in its 'supported_signal_types' and 'supported_content_types' lists
+    respectively.
+
+    The workhorse is get_hashes() which is a generator for SignalValues.
+
+    Why this class, why not do everything in the hasher lambda itself?
+    a) the lambda is aws specific, want to keep business logic out of it
+    b) to allow different configurations of the generic hasher to exist without
+       rewriting lambdas. Imagine the same lambda python function has two AWS
+       lambda instances. The only difference is an environment variable which
+       allows different signal or content types to be processable. For the video
+       processor, we allocate more memory and compute etc.
+    """
+
+    def __init__(
+        self,
+        supported_content_types: t.List[t.Type[ContentType]],
+        supported_signal_types: t.List[t.Type[SignalType]],
+    ):
+        self.supported_content_types = supported_content_types
+
+        # Not enforced in typing because python does not yet have t.Intersect,
+        # but all supported_signal_types must also implement BytesHasher
+        assert all([issubclass(t, BytesHasher) for t in supported_signal_types])
+
+        self.supported_signal_types = supported_signal_types
+
+    def supports(self, content_type: t.Type[ContentType]) -> bool:
+        """
+        Can this hasher produce signals for content of `content_type`?
+        """
+        return content_type in self.supported_content_types
+
+    def get_hashes(
+        self, content_type: t.Type[ContentType], bytes_: bytes
+    ) -> t.Generator[SignalValue, None, None]:
+        """
+        Yields signals for content_type. Emitted signals are an intersection of
+        content_type.get_signal_types() and self.supported_signal_types.
+        """
+        for signal_type in content_type.get_signal_types():
+            if signal_type in self.supported_signal_types and issubclass(
+                signal_type, BytesHasher
+            ):
+                yield SignalValue(signal_type, signal_type.hash_from_bytes(bytes_))

@@ -381,8 +381,11 @@ resource "aws_iam_role_policy_attachment" "hashing_lambda_permissions" {
 }
 
 resource "aws_lambda_event_source_mapping" "submissions_to_hasher" {
-  event_source_arn                   = aws_sqs_queue.submissions_queue.arn
-  function_name                      = aws_lambda_function.hashing_lambda.arn
+  event_source_arn = aws_sqs_queue.submissions_queue.arn
+  function_name    = aws_lambda_function.hashing_lambda.arn
+
+  # Evidently, once set, batch-size and max-batching-window must always
+  # be provided. Else terraform warns.
   batch_size                         = 10
   maximum_batching_window_in_seconds = 10
 }

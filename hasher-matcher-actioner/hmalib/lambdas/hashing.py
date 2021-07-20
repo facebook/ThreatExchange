@@ -18,7 +18,7 @@ from threatexchange.signal_type.pdq import PdqSignal
 from hmalib.common.logging import get_logger
 from hmalib import metrics
 from hmalib.common.message_models import URLSubmissionMessage
-from hmalib.hashing import Hasher
+from hmalib.hashing.unified_hasher import UnifiedHasher
 
 logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
@@ -39,7 +39,7 @@ DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 
 # If you want to support additional content or signal types, they can be added
 # here.
-hasher = Hasher(
+hasher = UnifiedHasher(
     supported_content_types=[PhotoContent, VideoContent],
     supported_signal_types=[PdqSignal, VideoMD5Signal],
 )

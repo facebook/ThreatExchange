@@ -88,7 +88,7 @@ class HasherMatcherActionerAPI:
         payload = {
             "submission_type": "DIRECT_UPLOAD",
             "content_id": content_id,
-            "content_type": "PHOTO",
+            "content_type": "photo",
             "content_bytes_url_or_file_type": b64_file_contents,
             "additional_fields": additional_fields,
         }
@@ -108,7 +108,7 @@ class HasherMatcherActionerAPI:
         payload = {
             "submission_type": "POST_URL_UPLOAD",
             "content_id": content_id,
-            "content_type": "PHOTO",
+            "content_type": "photo",
             "content_bytes_url_or_file_type": "image/jpeg",
             "additional_fields": additional_fields,
         }
@@ -140,7 +140,7 @@ class HasherMatcherActionerAPI:
         payload = {
             "submission_type": "FROM_URL",
             "content_id": content_id,
-            "content_type": "PHOTO",
+            "content_type": "photo",
             "content_bytes_url_or_file_type": url,
             "additional_fields": additional_fields,
         }

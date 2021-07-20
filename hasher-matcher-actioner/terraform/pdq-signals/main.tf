@@ -259,8 +259,10 @@ resource "aws_iam_role_policy_attachment" "pdq_hasher" {
 }
 
 resource "aws_lambda_event_source_mapping" "pdq_hasher" {
-  event_source_arn = var.images_input.input_queue
-  function_name    = aws_lambda_function.pdq_hasher.arn
+  event_source_arn                   = var.images_input.input_queue
+  function_name                      = aws_lambda_function.pdq_hasher.arn
+  batch_size                         = 10
+  maximum_batching_window_in_seconds = 10
 }
 
 # PDQ Matcher

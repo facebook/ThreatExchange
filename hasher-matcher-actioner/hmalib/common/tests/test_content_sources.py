@@ -20,7 +20,7 @@ class URLContentSourceTestCase(unittest.TestCase):
         # This can get flaky if the FB_LOGO URL changes, replace with a more
         # durable URL if you can find one.
         provider = URLContentSource()
-        _bytes = provider.get_image_bytes(FB_LOGO_URL)
+        _bytes = provider.get_bytes(FB_LOGO_URL)
 
         self.assertIsNotNone(_bytes)
 
@@ -31,5 +31,5 @@ class URLContentSourceTestCase(unittest.TestCase):
     def test_get_known_404(self):
         provider = URLContentSource()
         self.assertRaises(
-            requests.exceptions.HTTPError, provider.get_image_bytes, HTTP_404_URL
+            requests.exceptions.HTTPError, provider.get_bytes, HTTP_404_URL
         )
