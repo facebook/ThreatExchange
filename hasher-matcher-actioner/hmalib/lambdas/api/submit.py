@@ -13,6 +13,8 @@ from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 from botocore.exceptions import ClientError
 import typing as t
+from threatexchange.content_type.meta import get_content_type_for_name
+
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.content_models import ContentObject, ContentRefType, ContentType
@@ -141,7 +143,7 @@ def record_content_submission(dynamodb_table: Table, request: SubmitContentReque
 
     ContentObject(
         content_id=request.content_id,
-        content_type=ContentType(request.content_type or ContentType.PHOTO),
+        content_type=get_content_type_for_name(request.content_type),
         content_ref=content_ref,
         content_ref_type=content_ref_type,
         additional_fields=set(request.additional_fields)

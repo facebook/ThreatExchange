@@ -63,11 +63,20 @@ def get_content_api(
     @content_api.get("/", apply=[jsoninator])
     def content() -> t.Optional[ContentObject]:
         """
-        Content object for a given ID
-        see hmalib/commom/content_models.ContentObject for specific fields
+        Content object for a given ID see
+        hmalib/commom/content_models.ContentObject for specific fields
+
+        TODO: Change the data model so that it does not require content_type,
+        uniqueness and references should be maintainable without requiring
+        content_type.
         """
-        if content_id := bottle.request.query.content_id or None:
-            return ContentObject.get_from_content_id(dynamodb_table, f"{content_id}")
+        content_id = bottle.request.query.content_id or None
+        content_type = bottle.request.query.content_type
+
+        if content_id and content_type:
+            return ContentObject.get_from_content_id(
+                dynamodb_table, f"{content_id}", content_type=content_type
+            )
         return None
 
     @content_api.get("/action-history/", apply=[jsoninator])
