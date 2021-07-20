@@ -186,9 +186,9 @@ export default function ActionRuleSettingsTab(): JSX.Element {
     });
   }, []);
 
-  const onNewActionRuleChange = (field_name: string, new_value: any) => {
+  const onNewActionRuleChange = (update_name: string, new_value: any) => {
     const newNewActionRule = newActionRule.copyAndProcessUpdate(
-      field_name,
+      update_name,
       new_value,
     );
     setNewActionRule(newNewActionRule);

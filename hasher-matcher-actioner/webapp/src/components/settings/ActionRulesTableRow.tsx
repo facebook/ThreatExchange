@@ -39,9 +39,9 @@ export default function ActionRulesTableRow({
   const [updatedActionRule, setUpdatedActionRule] = useState(actionRule);
   const [showErrors, setShowErrors] = useState(false);
 
-  const onUpdatedActionRuleChange = (field_name: string, new_value: any) => {
+  const onUpdatedActionRuleChange = (update_name: string, new_value: any) => {
     const newUpdatedActionRule = updatedActionRule.copyAndProcessUpdate(
-      field_name,
+      update_name,
       new_value,
     );
     setUpdatedActionRule(newUpdatedActionRule);
