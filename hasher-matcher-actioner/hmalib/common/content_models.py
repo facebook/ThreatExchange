@@ -10,6 +10,7 @@ from boto3.dynamodb.conditions import Attr, Key, Or
 from botocore.exceptions import ClientError
 
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.meta import get_content_type_for_name
 
 from hmalib.lambdas.api.middleware import JSONifiable
 from hmalib.models import DynamoDBItem
@@ -238,7 +239,9 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls,
         item: t.Dict,
     ) -> "ContentObject":
-        content_type = ContentType(item["SK"][len(cls.CONTENT_TYPE_PREFIX) :])
+        content_type = get_content_type_for_name(
+            item["SK"][len(cls.CONTENT_TYPE_PREFIX) :]
+        )
         content_ref_type = ContentRefType(item["ContentRefType"])
 
         return ContentObject(

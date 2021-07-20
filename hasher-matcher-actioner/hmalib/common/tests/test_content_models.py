@@ -3,6 +3,7 @@
 import unittest
 from contextlib import contextmanager
 from moto import mock_dynamodb2
+from threatexchange.content_type.photo import PhotoContent
 from hmalib.common.content_models import (
     ContentObject,
     ActionEvent,
@@ -71,7 +72,7 @@ class TestContentModels(unittest.TestCase):
         now = TestContentModels.TEST_TIME
         return ContentObject(
             content_id=TestContentModels.TEST_CONTENT_ID,
-            content_type=ContentType.PHOTO,
+            content_type=PhotoContent,
             content_ref="key_of_s3_bucket_object_123",
             content_ref_type=ContentRefType.DEFAULT_S3_BUCKET,
             additional_fields={"additional", "ham"},
@@ -139,7 +140,7 @@ class TestContentModels(unittest.TestCase):
         result = self.table.get_item(
             Key={
                 "PK": f"c#{TestContentModels.TEST_CONTENT_ID}",
-                "SK": "content_type#PHOTO",
+                "SK": "content_type#photo",
             }
         )
         item = result.get("Item")
@@ -173,7 +174,7 @@ class TestContentModels(unittest.TestCase):
         obj.write_to_table(self.table)
 
         query_obj = ContentObject.get_from_content_id(
-            self.table, TestContentModels.TEST_CONTENT_ID
+            self.table, TestContentModels.TEST_CONTENT_ID, PhotoContent
         )
 
         assert obj == query_obj
