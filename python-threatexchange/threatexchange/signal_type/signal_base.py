@@ -6,14 +6,11 @@ Core abstractions for signal types.
 """
 
 import csv
-import os
 import pathlib
 import pickle
-import re
 import typing as t
 
 from .. import common
-from .. import dataset
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import index
 
@@ -136,6 +133,15 @@ class FileMatcher:
         raise NotImplementedError
 
 
+class BytesMatcher:
+    def match_bytes(self, bytes_: bytes) -> t.List[SignalMatch]:
+        """
+        If you have already brought the file to memory, don't write it to disk,
+        hash it right there.
+        """
+        raise NotImplementedError
+
+
 class StrMatcher(FileMatcher):
     def match(self, content: str) -> t.List[SignalMatch]:
         """
@@ -181,6 +187,21 @@ class FileHasher(HashMatcher, FileMatcher):
     def match_file(self, path: pathlib.Path) -> t.List[SignalMatch]:
         file_hash = self.hash_from_file(path)
         return self.match_hash(file_hash)
+
+
+class BytesHasher(HashMatcher, BytesMatcher):
+    """
+    This class can hash bytes.
+    """
+
+    @classmethod
+    def hash_from_bytes(self, bytes_: bytes) -> str:
+        """Get a string representation of the hash from bytes."""
+        raise NotImplementedError
+
+    def match_bytes(self, bytes_: bytes) -> t.List[SignalMatch]:
+        bytes_hash = self.hash_from_bytes(bytes_)
+        return self.match_hash(bytes_hash)
 
 
 class SimpleSignalType(SignalType, HashMatcher):

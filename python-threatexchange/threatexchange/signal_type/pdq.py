@@ -9,12 +9,20 @@ import typing as t
 import pathlib
 import warnings
 
-from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
 from ..hashing.pdq_utils import pdq_match, BITS_IN_PDQ
 
 
-class PdqSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
+def _raise_pillow_warning():
+    warnings.warn(
+        "PDQ from raw image data requires Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
+        category=UserWarning,
+    )
+
+
+class PdqSignal(
+    signal_base.SimpleSignalType, signal_base.FileHasher, signal_base.BytesHasher
+):
     """
     PDQ is an open source photo similarity algorithm.
 
@@ -41,10 +49,7 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         try:
             from threatexchange.hashing.pdq_hasher import pdq_from_file
         except:
-            warnings.warn(
-                "PDQ from file require Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
-                category=UserWarning,
-            )
+            _raise_pillow_warning()
             return ""
         pdq_hash, _quality = pdq_from_file(file)
         return pdq_hash
@@ -61,3 +66,13 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
             for pdq_hash, signal_attr in self.state.items()
             if pdq_match(pdq_hash, signal_str, self.PDQ_CONFIDENT_MATCH_THRESHOLD)
         ]
+
+    @classmethod
+    def hash_from_bytes(self, bytes_: bytes) -> str:
+        try:
+            from threatexchange.hashing.pdq_hasher import pdq_from_bytes
+        except:
+            _raise_pillow_warning()
+            return ""
+        pdq_hash, quality = pdq_from_bytes(bytes_)
+        return pdq_hash

@@ -13,7 +13,9 @@ from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
 
 
-class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileHasher):
+class VideoMD5Signal(
+    signal_base.SimpleSignalType, signal_base.FileHasher, signal_base.BytesHasher
+):
     """
     Simple signal type for Video MD5s.
 
@@ -38,6 +40,12 @@ class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.FileHasher):
                 file_hash.update(chunk)
                 chunk = f.read(blocksize)
         return file_hash.hexdigest()
+
+    @classmethod
+    def hash_from_bytes(self, bytes_: bytes) -> str:
+        bytes_hash = hashlib.md5()
+        bytes_hash.update(bytes_)
+        return bytes_hash.hexdigest()
 
 
 class PhotoMD5Signal(VideoMD5Signal):

@@ -2,6 +2,8 @@
 
 import unittest
 import pickle
+import typing as t
+import functools
 
 from threatexchange.signal_type.index import IndexMatch
 from threatexchange.signal_type.pdq_index import PDQIndex
@@ -63,9 +65,41 @@ class TestPDQIndex(unittest.TestCase):
         self.assertEqual(
             len(result), len(expected), "search results not of expected length"
         )
-        for (r, e) in zip(result, expected):
-            assert r.distance == e.distance, "result distance does not match"
-            self.assertDictEqual(r.metadata, e.metadata)
+
+        # Between python 3.8.6 and 3.8.11, something caused the order of results
+        # from the index to change. This was noticed for items which had the
+        # same distance. To allow for this, we convert result and expected
+        # arrays from
+        #   [IndexMatch, IndexMatch] to { distance: <set of IndexMatch.metadata hash> }
+        # This allows you to compare [IndexMatch A, IndexMatch B] with
+        # [IndexMatch B, IndexMatch A] as long as A.distance == B.distance.
+
+        def quality_indexed_dict_reducer(acc, item):
+            acc[item.distance] = acc.get(item.distance, set())
+            # Instead of storing the unhashable item.metadata dict, store its
+            # hash so we can compare using self.assertSetEqual
+            acc[item.distance].add(hash(frozenset(item.metadata)))
+            return acc
+
+        # Convert results to distance -> set of metadata map
+        distance_to_result_items_map: t.Dict[int, t.Set[t.Dict]] = functools.reduce(
+            quality_indexed_dict_reducer, result, dict()
+        )
+
+        # Convert expected to distance -> set of metadata map
+        distance_to_expected_items_map: t.Dict[int, t.Set[t.Dict]] = functools.reduce(
+            quality_indexed_dict_reducer, result, dict()
+        )
+
+        assert len(distance_to_expected_items_map) == len(
+            distance_to_result_items_map
+        ), "Unequal number of items in expected and results."
+
+        for distance, result_items in distance_to_result_items_map.items():
+            assert (
+                distance in distance_to_expected_items_map
+            ), f"Unexpected distance {distance} found"
+            self.assertSetEqual(result_items, distance_to_expected_items_map[distance])
 
     def test_search_index_for_matches(self):
         entry_hash = test_entries[1][0]
