@@ -23,12 +23,11 @@ logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
 dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
-# OUTPUT_QUEUE_URL = os.environ["PDQ_HASHES_QUEUE_URL"]
+OUTPUT_QUEUE_URL = os.environ["PDQ_HASHES_QUEUE_URL"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
-# IMAGE_FOLDER_KEY = os.environ[
-#     "IMAGE_FOLDER_KEY"
-# ]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
-IMAGE_FOLDER_KEY = ""
+IMAGE_FOLDER_KEY = os.environ[
+    "IMAGE_FOLDER_KEY"
+]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
 
 
 def get_image_bytes(
@@ -116,10 +115,10 @@ def lambda_handler(event, context):
             hash_record.write_to_table(records_table)
 
             # Publish to SQS queue
-            # sqs_client.send_message(
-            #     QueueUrl=OUTPUT_QUEUE_URL,
-            #     MessageBody=json.dumps(hash_record.to_sqs_message()),
-            # )
+            sqs_client.send_message(
+                QueueUrl=OUTPUT_QUEUE_URL,
+                MessageBody=json.dumps(hash_record.to_sqs_message()),
+            )
 
             logger.info("Published new PDQ hash")
 
