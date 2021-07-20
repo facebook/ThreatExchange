@@ -84,6 +84,12 @@ data "aws_iam_policy_document" "hasher_integrations" {
   }
 
   statement {
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = [for local_bucket in var.local_image_buckets: "${local_bucket.arn}/*"]
+  }
+
+  statement {
     effect = "Allow"
     actions = [
       "dynamodb:Get*",
