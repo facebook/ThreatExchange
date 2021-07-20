@@ -19,7 +19,7 @@ import {
   submitContentDirectUpload,
   submitContentPostURLUpload,
 } from '../Api';
-import {SUBMISSION_TYPE} from '../utils/constants';
+import {ContentType, SUBMISSION_TYPE} from '../utils/constants';
 
 import {
   ContentUniqueIdField,
@@ -31,7 +31,7 @@ import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayo
 const FORM_DEFAULTS = {
   submissionType: undefined,
   contentId: undefined,
-  contentType: 'PHOTO', // Maps to hmalib.common.content_models.ContentType
+  contentType: ContentType.PHOTO,
   content: undefined,
 };
 

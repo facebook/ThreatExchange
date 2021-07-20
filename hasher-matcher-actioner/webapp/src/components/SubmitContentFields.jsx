@@ -47,14 +47,14 @@ export function ContentUniqueIdField({inputs, handleInputChange}) {
               required
               as="select"
               name="contentType"
-              defaultValue="PHOTO"
+              defaultValue="photo"
               custom>
               {/* (defaults to photo for now) */}
               <option key="empty" value="" hidden>
                 Select content type...
               </option>
-              <option key="1" value="PHOTO">
-                PHOTO
+              <option key="1" value="photo">
+                Photo
               </option>
             </Form.Control>
           </Form.Group>
