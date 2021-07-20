@@ -3,78 +3,66 @@
  */
 
 import React, {useState} from 'react';
-import {PropTypes} from 'prop-types';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
-import ActionRuleFormColumns from './ActionRuleFormColumns.tsx';
-import '../../styles/_settings.scss';
 
-const classificationsFromLabels = (mustHaveLabels, mustNotHaveLabels) =>
-  mustHaveLabels
-    .map(mustHaveLabel => ({
-      classificationType: mustHaveLabel.key,
-      equalTo: true,
-      classificationValue: mustHaveLabel.value,
-    }))
-    .concat(
-      mustNotHaveLabels.map(mustNotHaveLabel => ({
-        classificationType: mustNotHaveLabel.key,
-        equalTo: false,
-        classificationValue: mustNotHaveLabel.value,
-      })),
-    );
+import ActionRuleFormColumns from './ActionRuleFormColumns';
+import '../../styles/_settings.scss';
+import type {
+  Action,
+  ActionRule,
+} from '../../pages/settings/ActionRuleSettingsTab';
+
+type Input = {
+  actionRule: ActionRule;
+  actions: Action[];
+  onDeleteActionRule: (name: string, deleteFromUIOnly: boolean) => void;
+  onUpdateActionRule: (oldName: string, updatedActionRule: ActionRule) => void;
+  ruleIsValid: (actionRule: ActionRule, oldName: string) => boolean;
+  nameIsUnique: (newName: string, oldName: string) => boolean;
+};
+
 export default function ActionRulesTableRow({
+  actionRule,
   actions,
-  name,
-  mustHaveLabels,
-  mustNotHaveLabels,
-  actionId,
   onDeleteActionRule,
   onUpdateActionRule,
   ruleIsValid,
   nameIsUnique,
-}) {
+}: Input): JSX.Element {
   const [editing, setEditing] = useState(false);
   const [
     showDeleteActionRuleConfirmation,
     setShowDeleteActionRuleConfirmation,
   ] = useState(false);
 
-  const [updatedActionRule, setUpdatedActionRule] = useState({
-    name,
-    classifications: classificationsFromLabels(
-      mustHaveLabels,
-      mustNotHaveLabels,
-    ),
-    action_id: actionId,
-  });
+  const [updatedActionRule, setUpdatedActionRule] = useState(actionRule);
   const [showErrors, setShowErrors] = useState(false);
 
-  const onUpdatedActionRuleChange = updatedField => {
-    setUpdatedActionRule({...updatedActionRule, ...updatedField});
+  const onUpdatedActionRuleChange = (update_name: string, new_value: any) => {
+    const newUpdatedActionRule = updatedActionRule.copyAndProcessUpdate(
+      update_name,
+      new_value,
+    );
+    setUpdatedActionRule(newUpdatedActionRule);
   };
 
   const resetForm = () => {
-    setUpdatedActionRule({
-      name,
-      classifications: classificationsFromLabels(
-        mustHaveLabels,
-        mustNotHaveLabels,
-      ),
-      action_id: actionId,
-    });
+    setUpdatedActionRule(actionRule);
   };
 
   const getAction = () => {
     if (
       actions === undefined ||
       actions.length === 0 ||
-      actionId === undefined ||
-      actionId.length === 0
+      actionRule.action_id === undefined ||
+      actionRule.action_id.length === 0
     ) {
       return <span>&mdash;</span>;
     }
-    const actionPerformer = actions.find(action => action.id === actionId);
+    const actionPerformer = actions.find(
+      action => action.id === actionRule.action_id,
+    );
     if (actionPerformer) {
       return actionPerformer.name;
     }
@@ -82,8 +70,14 @@ export default function ActionRulesTableRow({
   };
 
   const getClassificationDescriptions = () => {
-    const classificationDescriptions = updatedActionRule.classifications.map(
-      classification => {
+    if (
+      updatedActionRule.classification_conditions === undefined ||
+      updatedActionRule.classification_conditions.length === 0
+    ) {
+      return 'No Rules defined';
+    }
+    const classificationDescriptions =
+      updatedActionRule.classification_conditions.map(classification => {
         let ret = 'the';
         switch (classification.classificationType) {
           case 'BankSourceClassification':
@@ -118,8 +112,7 @@ export default function ActionRulesTableRow({
         }
         ret += ` ${classification.classificationValue}`;
         return ret;
-      },
-    );
+      });
     return `Run the action if ${classificationDescriptions.join('; and ')}`;
   };
 
@@ -130,12 +123,15 @@ export default function ActionRulesTableRow({
           <Button
             className="mb-2 table-action-button"
             onClick={() => setEditing(true)}>
+            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
+
             <ion-icon name="pencil" size="large" className="ion-icon-white" />
           </Button>{' '}
           <Button
             variant="secondary"
             className="table-action-button"
             onClick={() => setShowDeleteActionRuleConfirmation(true)}>
+            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
             <ion-icon
               name="trash-bin"
               size="large"
@@ -151,7 +147,7 @@ export default function ActionRulesTableRow({
             <Modal.Body>
               <p>
                 Please confirm you want to delete the action rule named{' '}
-                <strong>{name}</strong>.
+                <strong>{actionRule.name}</strong>.
               </p>
             </Modal.Body>
             <Modal.Footer>
@@ -162,13 +158,13 @@ export default function ActionRulesTableRow({
               </Button>
               <Button
                 variant="primary"
-                onClick={() => onDeleteActionRule(name)}>
+                onClick={() => onDeleteActionRule(actionRule.name, false)}>
                 Yes, Delete This Action Rule
               </Button>
             </Modal.Footer>
           </Modal>
         </td>
-        <td>{name}</td>
+        <td>{actionRule.name}</td>
         <td className="action-rule-classification-column">
           {getClassificationDescriptions()}
         </td>
@@ -181,30 +177,14 @@ export default function ActionRulesTableRow({
             className="mb-2 table-action-button"
             onClick={() => {
               setShowErrors(false);
-
-              // Convert classifications into Label sets which the backend understands
-              const updatedMustHaveLabels = updatedActionRule.classifications
-                .filter(classification => classification.equalTo)
-                .map(classification => ({
-                  key: classification.classificationType,
-                  value: classification.classificationValue,
-                }));
-              const updatedMustNotHaveLabels = updatedActionRule.classifications
-                .filter(classification => !classification.equalTo)
-                .map(classification => ({
-                  key: classification.classificationType,
-                  value: classification.classificationValue,
-                }));
-
-              updatedActionRule.must_have_labels = updatedMustHaveLabels;
-              updatedActionRule.must_not_have_labels = updatedMustNotHaveLabels;
-              if (ruleIsValid(updatedActionRule, name)) {
-                onUpdateActionRule(name, updatedActionRule);
+              if (ruleIsValid(updatedActionRule, actionRule.name)) {
+                onUpdateActionRule(actionRule.name, updatedActionRule);
                 setEditing(false);
               } else {
                 setShowErrors(true);
               }
             }}>
+            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
             <ion-icon
               name="checkmark"
               size="large"
@@ -219,51 +199,19 @@ export default function ActionRulesTableRow({
               resetForm();
               setEditing(false);
             }}>
+            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
             <ion-icon name="close" size="large" className="ion-icon-white" />
           </Button>
         </td>
         <ActionRuleFormColumns
           actions={actions}
-          name={updatedActionRule.name}
-          classifications={updatedActionRule.classifications}
-          actionId={updatedActionRule.action_id}
+          actionRule={updatedActionRule}
           showErrors={showErrors}
           nameIsUnique={nameIsUnique}
-          oldName={name}
+          oldName={actionRule.name}
           onChange={onUpdatedActionRuleChange}
         />
       </tr>
     </>
   );
 }
-
-ActionRulesTableRow.propTypes = {
-  actions: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    }),
-  ).isRequired,
-  name: PropTypes.string.isRequired,
-  mustHaveLabels: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      value: PropTypes.string.isRequired,
-    }),
-  ).isRequired,
-  mustNotHaveLabels: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      value: PropTypes.string.isRequired,
-    }),
-  ),
-  actionId: PropTypes.string.isRequired,
-  onDeleteActionRule: PropTypes.func.isRequired,
-  onUpdateActionRule: PropTypes.func.isRequired,
-  ruleIsValid: PropTypes.func.isRequired,
-  nameIsUnique: PropTypes.func.isRequired,
-};
-
-ActionRulesTableRow.defaultProps = {
-  mustNotHaveLabels: '',
-};

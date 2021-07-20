@@ -32,7 +32,7 @@ export default function WebhookActioner({
   webhookType,
   editing,
   onChange,
-}: WebhookActioner) {
+}: WebhookActioner): JSX.Element {
   const ActionerTypes = {
     WebhookActioner: {
       args: {

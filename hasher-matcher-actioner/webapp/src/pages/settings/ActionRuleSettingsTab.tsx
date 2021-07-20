@@ -10,9 +10,10 @@ import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
+
 import ActionRuleFormColumns, {
   classificationTypeTBD,
-} from '../../components/settings/ActionRuleFormColumns.tsx';
+} from '../../components/settings/ActionRuleFormColumns';
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
@@ -24,16 +25,127 @@ import {
   updateActionRule,
 } from '../../Api';
 
-const defaultActionRule = {
-  name: '',
-  must_have_labels: [{key: classificationTypeTBD, value: ''}],
-  must_not_have_labels: [],
-  action_id: '0',
+export type Label = {
+  key: string;
+  value: string;
 };
 
-export default function ActionRuleSettingsTab() {
-  const [actionRules, setActionRules] = useState([]);
-  const [actions, setActions] = useState([]);
+export type ClassificationCondition = {
+  classificationType: string;
+  classificationValue: string;
+  equalTo: boolean;
+};
+
+export class ActionRule {
+  name: string;
+
+  must_have_labels: Label[];
+
+  must_not_have_labels: Label[];
+
+  action_id: string;
+
+  classification_conditions: ClassificationCondition[];
+
+  constructor(
+    name: string,
+    must_have_labels: Label[],
+    must_not_have_labels: Label[],
+    action_id: string,
+  ) {
+    this.name = name;
+    this.must_have_labels = must_have_labels;
+    this.must_not_have_labels = must_not_have_labels;
+    this.action_id = action_id;
+
+    this.classification_conditions = this.classificationsFromLabels(
+      this.must_have_labels,
+      this.must_not_have_labels,
+    );
+  }
+
+  copyAndProcessUpdate = (update_name: string, new_value: any): ActionRule => {
+    if (
+      !['name', 'action_id', 'classification_conditions'].includes(update_name)
+    ) {
+      throw Error(`Unknown ActionRule update: ${update_name}`);
+    }
+
+    const must_have_labels =
+      update_name === 'classification_conditions'
+        ? this.mustHaveLabelsFromClassifications(new_value)
+        : this.must_have_labels;
+
+    const must_not_have_labels =
+      update_name === 'classification_conditions'
+        ? this.mustNotHaveLabelsFromClassifications(new_value)
+        : this.must_not_have_labels;
+
+    return new ActionRule(
+      update_name === 'name' ? new_value : this.name,
+      must_have_labels,
+      must_not_have_labels,
+      update_name === 'action_id' ? new_value : this.action_id,
+    );
+  };
+
+  mustHaveLabelsFromClassifications = (
+    classification_conditions: ClassificationCondition[],
+  ): Label[] =>
+    classification_conditions
+      .filter(classification => classification.equalTo)
+      .map(classification => ({
+        key: classification.classificationType,
+        value: classification.classificationValue,
+      }));
+
+  mustNotHaveLabelsFromClassifications = (
+    classification_conditions: ClassificationCondition[],
+  ): Label[] =>
+    classification_conditions
+      .filter(classification => !classification.equalTo)
+      .map(classification => ({
+        key: classification.classificationType,
+        value: classification.classificationValue,
+      }));
+
+  classificationsFromLabels = (
+    mustHaveLabels: Label[],
+    mustNotHaveLabels: Label[],
+  ): ClassificationCondition[] =>
+    mustHaveLabels
+      .map(mustHaveLabel => ({
+        classificationType: mustHaveLabel.key,
+        equalTo: true,
+        classificationValue: mustHaveLabel.value,
+      }))
+      .concat(
+        mustNotHaveLabels.map(mustNotHaveLabel => ({
+          classificationType: mustNotHaveLabel.key,
+          equalTo: false,
+          classificationValue: mustNotHaveLabel.value,
+        })),
+      );
+}
+
+export type Action = {
+  name: string;
+  id: string;
+};
+
+const defaultActionRule = new ActionRule(
+  '',
+  [{key: classificationTypeTBD, value: ''}],
+  [],
+  '0',
+);
+
+const defaultActionRules: ActionRule[] = [];
+
+export default function ActionRuleSettingsTab(): JSX.Element {
+  const [actionRules, setActionRules] =
+    useState<ActionRule[]>(defaultActionRules);
+  const [actions, setActions] = useState<Action[]>([]);
   const [adding, setAdding] = useState(false);
   const [newActionRule, setNewActionRule] = useState(defaultActionRule);
   const [showErrors, setShowErrors] = useState(false);
@@ -43,12 +155,20 @@ export default function ActionRuleSettingsTab() {
   useEffect(() => {
     fetchAllActionRules().then(response => {
       if (response && response.error_message === '') {
-        const mappedActionRules = response.action_rules.map(actionRule => ({
-          name: actionRule.name,
-          must_have_labels: actionRule.must_have_labels,
-          must_not_have_labels: actionRule.must_not_have_labels,
-          action_id: actionRule.action_label.value,
-        }));
+        const mappedActionRules = response.action_rules.map(
+          (actionRule: {
+            name: string;
+            must_have_labels: Label[];
+            must_not_have_labels: Label[];
+            action_label: Label;
+          }) =>
+            new ActionRule(
+              actionRule.name,
+              actionRule.must_have_labels,
+              actionRule.must_not_have_labels,
+              actionRule.action_label.value,
+            ),
+        );
         setActionRules(mappedActionRules);
       }
     });
@@ -57,7 +177,7 @@ export default function ActionRuleSettingsTab() {
   useEffect(() => {
     fetchAllActions().then(response => {
       if (response) {
-        const actns = response.actions_response.map(action => ({
+        const actns = response.actions_response.map((action: Action) => ({
           name: action.name,
           id: action.name,
         }));
@@ -66,15 +186,19 @@ export default function ActionRuleSettingsTab() {
     });
   }, []);
 
-  const onNewActionRuleChange = updatedField => {
-    setNewActionRule({...newActionRule, ...updatedField});
+  const onNewActionRuleChange = (update_name: string, new_value: any) => {
+    const newNewActionRule = newActionRule.copyAndProcessUpdate(
+      update_name,
+      new_value,
+    );
+    setNewActionRule(newNewActionRule);
   };
 
-  const actionRuleNameIsUnique = (newName, oldName, actionrules) => {
+  const actionRuleNameIsUnique = (newName: string, oldName: string) => {
     if (newName) {
       const nameLower = newName.toLowerCase();
 
-      const actionRuleIndex = actionrules.findIndex(
+      const actionRuleIndex = actionRules.findIndex(
         actionRule => actionRule.name.toLowerCase() === nameLower,
       );
 
@@ -83,34 +207,34 @@ export default function ActionRuleSettingsTab() {
     return true;
   };
 
-  const nameIsUnique = (newName, oldName) =>
-    actionRuleNameIsUnique(newName, oldName, actionRules);
+  const nameIsUnique = (newName: string, oldName: string) =>
+    actionRuleNameIsUnique(newName, oldName);
 
-  const actionRuleIsValid = (actionRule, actionrules, oldName) =>
-    actionRule.name &&
-    actionRule.must_have_labels.length &&
-    actionRule.must_have_labels.every(
-      label => label.key !== classificationTypeTBD && label.value,
-    ) &&
-    actionRule.must_not_have_labels.every(
-      label => label.key !== classificationTypeTBD && label.value,
-    ) &&
-    actionRule.action_id !== '0' &&
-    actionRuleNameIsUnique(actionRule.name, oldName, actionrules);
+  const actionRuleIsValid = (actionRule: ActionRule, oldName: string) =>
+    (actionRule.name &&
+      actionRule.must_have_labels.length &&
+      actionRule.must_have_labels.every(
+        label => label.key !== classificationTypeTBD && label.value,
+      ) &&
+      actionRule.must_not_have_labels.every(
+        label => label.key !== classificationTypeTBD && label.value,
+      ) &&
+      actionRule.action_id !== '0' &&
+      actionRuleNameIsUnique(actionRule.name, oldName)) as boolean;
 
-  const ruleIsValid = (actionRule, oldName) =>
-    actionRuleIsValid(actionRule, actionRules, oldName);
+  const ruleIsValid = (actionRule: ActionRule, oldName: string) =>
+    actionRuleIsValid(actionRule, oldName);
 
   const resetForm = () => {
     setNewActionRule(defaultActionRule);
   };
 
-  const displayToast = message => {
+  const displayToast = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
   };
 
-  const getAPIActionRule = actionRule => ({
+  const getAPIActionRule = (actionRule: ActionRule) => ({
     name: actionRule.name,
     must_have_labels: actionRule.must_have_labels,
     must_not_have_labels: actionRule.must_not_have_labels,
@@ -120,32 +244,35 @@ export default function ActionRuleSettingsTab() {
     },
   });
 
-  const onAddActionRule = (actionRule, addToUIOnly) => {
+  const onAddActionRule = (actionRule: ActionRule, addToUIOnly: boolean) => {
     actionRules.push(actionRule);
     actionRules.sort((a, b) =>
       a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1,
     );
     setActionRules([...actionRules]);
-    if (addToUIOnly === undefined) {
+    if (!addToUIOnly) {
       const apiActionRule = getAPIActionRule(actionRule);
       addActionRule(apiActionRule);
       displayToast('A new action rule was added successfully.');
     }
   };
 
-  const onDeleteActionRule = (name, deleteFromUIOnly) => {
+  const onDeleteActionRule = (name: string, deleteFromUIOnly: boolean) => {
     const indexToDelete = actionRules.findIndex(
       actionRule => actionRule.name === name,
     );
     actionRules.splice(indexToDelete, 1);
     setActionRules([...actionRules]);
-    if (deleteFromUIOnly === undefined) {
+    if (!deleteFromUIOnly) {
       deleteActionRule(name);
       displayToast('The action rule was deleted successfully.');
     }
   };
 
-  const onUpdateActionRule = (oldName, updatedActionRule) => {
+  const onUpdateActionRule = (
+    oldName: string,
+    updatedActionRule: ActionRule,
+  ) => {
     onDeleteActionRule(oldName, true); // deleteFromUIOnly
     onAddActionRule(updatedActionRule, true); // addToUIOnly
     const apiActionRule = getAPIActionRule(updatedActionRule);
@@ -156,11 +283,8 @@ export default function ActionRuleSettingsTab() {
   const actionRulesTableRows = actionRules.map(actionRule => (
     <ActionRulesTableRow
       key={actionRule.name}
+      actionRule={actionRule}
       actions={actions}
-      name={actionRule.name}
-      mustHaveLabels={actionRule.must_have_labels}
-      mustNotHaveLabels={actionRule.must_not_have_labels}
-      actionId={actionRule.action_id}
       onDeleteActionRule={onDeleteActionRule}
       onUpdateActionRule={onUpdateActionRule}
       ruleIsValid={ruleIsValid}
@@ -188,6 +312,7 @@ export default function ActionRuleSettingsTab() {
                   <Button
                     className="table-action-button"
                     onClick={() => setAdding(true)}>
+                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
                     <ion-icon name="add" size="large" />
                   </Button>
                 </th>
@@ -203,31 +328,15 @@ export default function ActionRuleSettingsTab() {
                     variant="outline-primary"
                     className="mb-2 table-action-button"
                     onClick={() => {
-                      setShowErrors(false);
-                      // Convert classifications into Label sets which the backend understands
-                      const newMustHaveLabels = newActionRule.classifications
-                        .filter(classification => classification.equalTo)
-                        .map(classification => ({
-                          key: classification.classificationType,
-                          value: classification.classificationValue,
-                        }));
-                      const newMustNotHaveLabels = newActionRule.classifications
-                        .filter(classification => !classification.equalTo)
-                        .map(classification => ({
-                          key: classification.classificationType,
-                          value: classification.classificationValue,
-                        }));
-
-                      newActionRule.must_have_labels = newMustHaveLabels;
-                      newActionRule.must_not_have_labels = newMustNotHaveLabels;
-                      if (actionRuleIsValid(newActionRule, actionRules)) {
-                        onAddActionRule(newActionRule);
+                      if (actionRuleIsValid(newActionRule, '')) {
+                        onAddActionRule(newActionRule, false);
                         resetForm();
                         setAdding(false);
                       } else {
                         setShowErrors(true);
                       }
                     }}>
+                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
                     <ion-icon
                       name="checkmark"
                       size="large"
@@ -242,6 +351,7 @@ export default function ActionRuleSettingsTab() {
                       resetForm();
                       setAdding(false);
                     }}>
+                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
                     <ion-icon
                       name="close"
                       size="large"
@@ -251,13 +361,10 @@ export default function ActionRuleSettingsTab() {
                 </td>
                 <ActionRuleFormColumns
                   actions={actions}
-                  name={newActionRule.name}
-                  mustHaveLabels={newActionRule.must_have_labels}
-                  mustNotHaveLabels={newActionRule.must_not_have_labels}
-                  actionId={newActionRule.action_id}
+                  actionRule={newActionRule}
                   showErrors={showErrors}
                   nameIsUnique={nameIsUnique}
-                  oldName={undefined}
+                  oldName=""
                   onChange={onNewActionRuleChange}
                 />
               </tr>

@@ -34,7 +34,7 @@ export default function ActionPerformerColumns({
   editing,
   onChange,
   canNotDeleteOrUpdateName,
-}: ActionPerformerColumn) {
+}: ActionPerformerColumn): JSX.Element {
   const Actioners: ActionerMap = {
     WebhookPostActionPerformer: WebhookActioner,
     WebhookGetActionPerformer: WebhookActioner,
