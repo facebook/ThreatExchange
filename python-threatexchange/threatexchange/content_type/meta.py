@@ -50,4 +50,4 @@ def get_content_type_for_name(name: str) -> t.Type[content_base.ContentType]:
 
     Note: Raises KeyError if not found.
     """
-    return _get_content_type_map[name]
+    return _get_content_type_map()[name]
