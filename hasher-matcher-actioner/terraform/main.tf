@@ -92,7 +92,7 @@ module "pdq_signals" {
       [
         "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
       ],
-      [for local_bucket in var.local_image_buckets: "${local_bucket.arn}/*"]
+      [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
     )
     image_folder_key = module.hashing_data.image_folder_info.key
   }
@@ -264,7 +264,7 @@ module "api" {
   writebacks_queue = module.actions.writebacks_queue
   images_topic_arn = module.hashing_data.image_folder_info.notification_topic
 
-  local_image_buckets = var.local_image_buckets
+  partner_image_buckets = var.partner_image_buckets
 }
 
 # Build and deploy webapp

@@ -110,7 +110,7 @@ data "aws_iam_policy_document" "api_root" {
     actions = [
       "s3:GetObject",
     ]
-    resources = [for local_bucket in var.local_image_buckets: "${local_bucket.arn}/*"]
+    resources = [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
   }
   statement {
     effect = "Allow"
@@ -315,19 +315,19 @@ resource "aws_iam_role_policy_attachment" "hma_apigateway" {
 # Connect partner s3 buckets to api_root 
 
 resource "aws_lambda_permission" "allow_bucket" {
-  count = length(var.local_image_buckets)
+  count = length(var.partner_image_buckets)
 
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api_root.arn
   principal     = "s3.amazonaws.com"
-  source_arn    = var.local_image_buckets[count.index].arn
+  source_arn    = var.partner_image_buckets[count.index].arn
 }
 
 resource "aws_s3_bucket_notification" "bucket_notification" {
-  count = length(var.local_image_buckets)
+  count = length(var.partner_image_buckets)
 
-  bucket = var.local_image_buckets[count.index].name
+  bucket = var.partner_image_buckets[count.index].name
 
   lambda_function {
     lambda_function_arn = aws_lambda_function.api_root.arn

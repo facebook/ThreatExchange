@@ -88,7 +88,7 @@ variable "set_sqs_windows_to_min" {
   default     = false
 }
 
-variable "local_image_buckets" {
+variable "partner_image_buckets" {
   description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
   type        = list(object({
     name = string
