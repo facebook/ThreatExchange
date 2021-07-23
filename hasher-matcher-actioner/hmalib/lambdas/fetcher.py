@@ -10,12 +10,12 @@ be fed into various indices.
 
 import collections
 import csv
+import functools
+import warnings
 import io
 import json
 import logging
 import os
-import sys
-import tempfile
 import typing as t
 from dataclasses import dataclass
 from datetime import datetime
@@ -24,7 +24,6 @@ from pathlib import Path
 
 import boto3
 from botocore.errorfactory import ClientError
-import threatexchange
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
@@ -36,8 +35,10 @@ from threatexchange import threat_updates as tu
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.cli.dataset.simple_serialization import HMASerialization
 from threatexchange.descriptor import SimpleDescriptorRollup, ThreatDescriptor
-
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
+
 
 logger = get_logger(__name__)
 s3 = boto3.resource("s3")
@@ -116,7 +117,6 @@ def lambda_handler(event, context):
 
     te_data_bucket = s3.Bucket(config.s3_bucket)
 
-    stores = []
     for collab in collabs:
         logger.info(
             "Processing updates for collaboration %s", collab.privacy_group_name
@@ -128,15 +128,17 @@ def lambda_handler(event, context):
             )
             continue
 
-        indicator_store = ThreatUpdateS3PDQStore(
+        indicator_store = ThreatUpdateS3Store(
             int(collab.privacy_group_id),
             api.app_id,
             te_data_bucket,
             config.s3_te_data_folder,
             config.data_store_table,
+            supported_signal_types=[VideoMD5Signal, PdqSignal],
         )
-        stores.append(indicator_store)
+
         indicator_store.load_checkpoint()
+
         if indicator_store.stale:
             logger.warning(
                 "Store for %s - %d stale! Resetting.",
@@ -170,9 +172,9 @@ def lambda_handler(event, context):
                 logging.error("Failed before fetching any records")
 
 
-class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
+class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
     """
-    Store files in S3!
+    ThreatUpdatesStore, but stores files in S3 instead of local filesystem.
     """
 
     def __init__(
@@ -182,6 +184,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         s3_bucket: t.Any,  # Not typable?
         s3_te_data_folder: str,
         data_store_table: str,
+        supported_signal_types: t.List[SignalType],
     ) -> None:
         super().__init__(privacy_group)
         self.app_id = app_id
@@ -189,31 +192,47 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         self.s3_bucket = s3_bucket
         self.s3_te_data_folder = s3_te_data_folder
         self.data_store_table = data_store_table
+        self.supported_signal_types = supported_signal_types
+
+    @functools.lru_cache(maxsize=None)
+    def _get_supported_indicator_types(self):
+        """
+        For supported self.signal_types, get their corresponding indicator_types.
+        """
+        indicator_types = [
+            "HASH_VIDEO_MD5"
+        ]  # hardcoding this because md5 currently points to HASH_MD5
+
+        for signal_type in self.supported_signal_types:
+            indicator_type = getattr(signal_type, "INDICATOR_TYPE", None)
+            if indicator_type:
+                indicator_types.append(indicator_type)
+            else:
+                warnings.warn(
+                    f"SignalType: {signal_type} does not provide an indicator type."
+                )
+
+        return indicator_types
 
     @property
     def checkpoint_s3_key(self) -> str:
         return f"{self.s3_te_data_folder}{self.privacy_group}.checkpoint"
 
-    @property
-    def data_s3_key(self) -> str:
+    def get_s3_object_key(self, indicator_type) -> str:
         """
         Creates a 'file_name' structure that is dependent on downstream (see s3_adapters.py)
-        TODO replace ".pdq.te" with os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
         """
-        return f"{self.s3_te_data_folder}{self.privacy_group}.pdq.te"
+        extension = f"{indicator_type.lower()}.te"
+        return f"{self.s3_te_data_folder}{self.privacy_group}.{extension}"
 
     @property
     def next_delta(self) -> tu.ThreatUpdatesDelta:
         """
-        Hacky - we only support PDQ right now, force to only fetch that
-        Eventually want to always download everything and choose what to
-        do with it later, though checkpoints will need to be reset
-
-        IF YOU CHANGE THIS, OLD CHECKPOINTS NEED TO BE INVALIDATED TO
-        GET THE NON-PDQ DATA!
+        IF YOU CHANGE SUPPORTED_SIGNALS, OLD CHECKPOINTS NEED TO BE INVALIDATED
+        TO GET THE NON-PDQ DATA!
         """
         delta = super().next_delta
-        delta.types = ["HASH_PDQ"]
+        delta.types = self._get_supported_indicator_types()
         return delta
 
     def reset(self):
@@ -223,6 +242,7 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
     def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
         txt_content = read_s3_text(self.s3_bucket, self.checkpoint_s3_key)
+
         if txt_content is None:
             logger.warning("No s3 checkpoint for %d. First run?", self.privacy_group)
             return tu.ThreatUpdateCheckpoint()
@@ -287,12 +307,25 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         for item in contents:
             row_by_type[item.indicator_type].append(item)
         # Discard all updates except PDQ
-        items = row_by_type.get("HASH_PDQ", [])
-        with io.StringIO(newline="") as txt_content:
-            writer = csv.writer(txt_content)
-            writer.writerows(item.as_csv_row() for item in items)
-            write_s3_text(txt_content, self.s3_bucket, self.data_s3_key)
-            logger.info("%d rows stored for %d", len(items), self.privacy_group)
+
+        for indicator_type in row_by_type:
+            # Write one file per indicator type.
+            items = row_by_type.get(indicator_type, [])
+
+            with io.StringIO(newline="") as txt_content:
+                writer = csv.writer(txt_content)
+                writer.writerows(item.as_csv_row() for item in items)
+
+                write_s3_text(
+                    txt_content, self.s3_bucket, self.get_s3_object_key(indicator_type)
+                )
+
+                logger.info(
+                    "IndicatorType:%s, %d rows stored in PrivacyGroup %d",
+                    indicator_type,
+                    len(items),
+                    self.privacy_group,
+                )
 
     def _apply_updates_impl(
         self,
@@ -366,50 +399,59 @@ class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
         table = dynamodb.Table(self.data_store_table)
 
         for update in updated.values():
-            row: t.List[str] = update.as_csv_row()
-            # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
-            # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
-            new_tags = row[4].split(" ") if row[4] else []
+            if update.indicator_type == "HASH_PDQ":
+                # To remain backwards compatible, only handle PDQ here. SME:
+                # @schatten, @barrettolson
 
-            metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
-                table,
-                int(row[1]),
-                S3ThreatDataConfig.SOURCE_STR,
-                str(self.privacy_group),
-            )
+                # TODO: Once Signal storage is generified, remove this
+                # conditional and handle multiple indicator_types.
 
-            if metadata:
-                new_pending_opinion_change = self.get_new_pending_opinion_change(
-                    metadata, new_tags
-                )
-            else:
-                # If this is a new indicator without metadata there is nothing for us to update
-                return
+                row: t.List[str] = update.as_csv_row()
+                # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
+                # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+                new_tags = row[4].split(" ") if row[4] else []
 
-            metadata = PDQSignalMetadata(
-                signal_id=row[1],
-                ds_id=str(self.privacy_group),
-                updated_at=datetime.now(),
-                signal_source=S3ThreatDataConfig.SOURCE_STR,
-                signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
-                tags=new_tags,
-                pending_opinion_change=new_pending_opinion_change,
-            )
-            # TODO: Combine 2 update functions into single function
-            if metadata.update_tags_in_table_if_exists(table):
-                logger.info(
-                    "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
-                    row[1],
+                metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
+                    table,
+                    int(row[1]),
                     S3ThreatDataConfig.SOURCE_STR,
-                    self.privacy_group,
+                    str(self.privacy_group),
                 )
-            if metadata.update_pending_opinion_change_in_table_if_exists(table):
-                logger.info(
-                    "Updated Pending Opinion in DB for indicator id: %s source: %s for privacy group: %d",
-                    row[1],
-                    S3ThreatDataConfig.SOURCE_STR,
-                    self.privacy_group,
+
+                if metadata:
+                    new_pending_opinion_change = self.get_new_pending_opinion_change(
+                        metadata, new_tags
+                    )
+                else:
+                    # If this is a new indicator without metadata there is nothing for us to update
+                    return
+
+                metadata = PDQSignalMetadata(
+                    signal_id=row[1],
+                    ds_id=str(self.privacy_group),
+                    updated_at=datetime.now(),
+                    signal_source=S3ThreatDataConfig.SOURCE_STR,
+                    signal_hash=row[
+                        0
+                    ],  # note: not used by update_tags_in_table_if_exists
+                    tags=new_tags,
+                    pending_opinion_change=new_pending_opinion_change,
                 )
+                # TODO: Combine 2 update functions into single function
+                if metadata.update_tags_in_table_if_exists(table):
+                    logger.info(
+                        "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
+                        row[1],
+                        S3ThreatDataConfig.SOURCE_STR,
+                        self.privacy_group,
+                    )
+                if metadata.update_pending_opinion_change_in_table_if_exists(table):
+                    logger.info(
+                        "Updated Pending Opinion in DB for indicator id: %s source: %s for privacy group: %d",
+                        row[1],
+                        S3ThreatDataConfig.SOURCE_STR,
+                        self.privacy_group,
+                    )
 
 
 def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
