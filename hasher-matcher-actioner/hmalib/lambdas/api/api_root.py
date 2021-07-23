@@ -90,35 +90,28 @@ def lambda_handler(event, context):
         logger.info(
             "Lambda triggered with S3 event. Converting to submit content request."
         )
-        for record in event["Records"]:
-            record = record["s3"]
-            if record["object"]["size"] == 0:
-                # ignore folders and empty files
-                continue
-            response = submit_from_url(
-                submit_content_request_from_s3_event_record(record),
-                dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
-                images_topic_arn=IMAGES_TOPIC_ARN,
-            )
-            if (
-                isinstance(response, SubmitContentResponse)
-                and response.submit_successful
-            ):
-                logger.info(f"Sucessfully submitted s3 event record as url upload.")
-            else:
-                logger.info(
-                    "Failed to submit s3 event record as url upload. "
-                    + response.message
-                    if isinstance(response, SubmitContentError)
-                    else ""
-                )
-        return
+        return process_s3_event(event)
+
     response = apig_wsgi_handler(event, context)
     return response
 
 
 def is_s3_event(event: dict) -> bool:
     return "Records" in event and all("s3" in record for record in event["Records"])
+
+
+def process_s3_event(event: dict) -> None:
+    for record in event["Records"]:
+        record = record["s3"]
+        if record["object"]["size"] == 0:
+            # ignore folders and empty files
+            continue
+        submit_from_url(
+            submit_content_request_from_s3_event_record(record),
+            dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
+            images_topic_arn=IMAGES_TOPIC_ARN,
+        )
+        logger.info(f"Sucessfully submitted s3 event record as url upload.")
 
 
 def submit_content_request_from_s3_event_record(

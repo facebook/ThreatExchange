@@ -162,9 +162,12 @@ def record_content_submission(dynamodb_table: Table, request: SubmitContentReque
 
 def submit_from_url(
     request: SubmitContentRequestBody, dynamodb_table: Table, images_topic_arn: str
-) -> t.Union[SubmitContentResponse, SubmitContentError]:
+) -> SubmitContentResponse:
     """
     Submission via a url to content. This does not store a copy of the content in s3
+
+    This function is also called directly by api_root when handling s3 uploads to partner
+    banks. If editing, ensure the logic in api_root.process_s3_event is still correct
     """
     content_id = request.content_id
     url = request.content_bytes_url_or_file_type
