@@ -17,8 +17,6 @@ from .datasets_api import get_datasets_api
 from .matches import get_matches_api
 from .stats import get_stats_api
 from .submit import (
-    SubmitContentError,
-    SubmitContentResponse,
     get_submit_api,
     submit_from_url,
     SubmitContentRequestBody,
