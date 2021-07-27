@@ -104,6 +104,14 @@ data "aws_iam_policy_document" "api_root" {
       "arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}*",
     ]
   }
+
+    statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
+  }
   statement {
     effect = "Allow"
     actions = [
@@ -302,4 +310,35 @@ resource "aws_iam_policy" "hma_apigateway" {
 resource "aws_iam_role_policy_attachment" "hma_apigateway" {
   role       = aws_iam_role.hma_apigateway.name
   policy_arn = aws_iam_policy.hma_apigateway.arn
+}
+
+# Connect partner s3 buckets to api_root 
+
+resource "aws_lambda_permission" "allow_bucket" {
+  count = length(var.partner_image_buckets)
+
+  statement_id  = "AllowExecutionFromS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api_root.arn
+  principal     = "s3.amazonaws.com"
+  source_arn    = var.partner_image_buckets[count.index].arn
+}
+
+resource "aws_s3_bucket_notification" "bucket_notification" {
+  count = length(var.partner_image_buckets)
+
+  bucket = var.partner_image_buckets[count.index].name
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.api_root.arn
+    events              = ["s3:ObjectCreated:*"]
+
+    # TODO: Allow filtering to enable hashing to only certain f
+    # olders and file types. eg...
+    #
+    # filter_prefix       = "images/"
+    # filter_suffix       = ".jpg"
+  }
+
+  depends_on = [aws_lambda_permission.allow_bucket]
 }

@@ -30,19 +30,26 @@ def _get_sns_client():
 
 
 def create_presigned_put_url(bucket_name, key, file_type, expiration=3600):
+    return create_presigned_url(bucket_name, key, file_type, expiration, "put_object")
+
+
+def create_presigned_url(bucket_name, key, file_type, expiration, client_method):
     """
     Generate a presigned URL to share an S3 object
     """
 
     s3_client = boto3.client("s3")
+    params = {
+        "Bucket": bucket_name,
+        "Key": key,
+    }
+    if file_type:
+        params["ContentType"] = file_type
+
     try:
         response = s3_client.generate_presigned_url(
-            "put_object",
-            Params={
-                "Bucket": bucket_name,
-                "Key": key,
-                "ContentType": file_type,
-            },
+            client_method,
+            Params=params,
             ExpiresIn=expiration,
         )
     except ClientError as e:
@@ -82,7 +89,7 @@ class SubmissionType(Enum):
 class SubmitContentRequestBody(DictParseable):
     submission_type: str  # Enum SubmissionType names
     content_id: str
-    content_type: str  # Only photo supported
+    content_type: str  # Only PHOTO supported. TODO: @schatten change to content_type enum
     content_bytes_url_or_file_type: t.Union[str, bytes]
     additional_fields: t.Optional[t.List]
 
@@ -153,6 +160,31 @@ def record_content_submission(dynamodb_table: Table, request: SubmitContentReque
     ).write_to_table(dynamodb_table)
 
 
+def submit_from_url(
+    request: SubmitContentRequestBody, dynamodb_table: Table, images_topic_arn: str
+) -> SubmitContentResponse:
+    """
+    Submission via a url to content. This does not store a copy of the content in s3
+
+    This function is also called directly by api_root when handling s3 uploads to partner
+    banks. If editing, ensure the logic in api_root.process_s3_event is still correct
+    """
+    content_id = request.content_id
+    url = request.content_bytes_url_or_file_type
+
+    # Again, We want to record the submission before triggering and processing on
+    # the content itself therefore we write to dynamo before s3
+    record_content_submission(dynamodb_table, request)
+
+    url_submission_message = URLImageSubmissionMessage(content_id, t.cast(str, url))
+    _get_sns_client().publish(
+        TopicArn=images_topic_arn,
+        Message=json.dumps(url_submission_message.to_sqs_message()),
+    )
+
+    return SubmitContentResponse(content_id=request.content_id, submit_successful=True)
+
+
 def get_submit_api(
     dynamodb_table: Table,
     image_bucket: str,
@@ -198,7 +230,6 @@ def get_submit_api(
         """
         Submission of content to the system's s3 bucket by providing a post url to client
         """
-        # TODO error checking on if key already exist etc.
         presigned_url = create_presigned_put_url(
             bucket_name=image_bucket,
             key=s3_bucket_image_source.get_s3_key(request.content_id),
@@ -223,24 +254,9 @@ def get_submit_api(
         request: SubmitContentRequestBody,
     ) -> t.Union[SubmitContentResponse, SubmitContentError]:
         """
-        Submission via a url to content. Current behavior copies content into the system's s3 bucket.
+        Submission via a url to content. This does not store a copy of the content in s3
         """
-        content_id = request.content_id
-        url = request.content_bytes_url_or_file_type
-
-        # Again, We want to record the submission before triggering and processing on
-        # the content itself therefore we write to dynamo before s3
-        record_content_submission(dynamodb_table, request)
-
-        url_submission_message = URLImageSubmissionMessage(content_id, t.cast(str, url))
-        _get_sns_client().publish(
-            TopicArn=images_topic_arn,
-            Message=json.dumps(url_submission_message.to_sqs_message()),
-        )
-
-        return SubmitContentResponse(
-            content_id=request.content_id, submit_successful=True
-        )
+        return submit_from_url(request, dynamodb_table, images_topic_arn)
 
     @submit_api.post("/", apply=[jsoninator(SubmitContentRequestBody)])
     def submit(

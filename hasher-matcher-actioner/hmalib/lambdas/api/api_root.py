@@ -16,7 +16,12 @@ from .content import get_content_api
 from .datasets_api import get_datasets_api
 from .matches import get_matches_api
 from .stats import get_stats_api
-from .submit import get_submit_api
+from .submit import (
+    get_submit_api,
+    submit_from_url,
+    SubmitContentRequestBody,
+    create_presigned_url,
+)
 
 # Set to 10MB for images
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -71,10 +76,63 @@ def root():
 
 def lambda_handler(event, context):
     """
-    root request handler
+    This lambda is invoked in 2 situations:
+
+    1. When the API is called, it uses bottle to process the request and send it to the direct function
+
+    2. Platforms can connect their AWS S3 Buckets directly to HMA so that uploads to those buckets are
+    fed directly into the system. When an upload occurs, this lambda is invoked with an s3 event. We then
+    convert the event into a URL which we submit to the hasher (via SNS)
     """
+    if is_s3_event(event):
+        logger.info(
+            "Lambda triggered with S3 event. Converting to submit content request."
+        )
+        return process_s3_event(event)
+
     response = apig_wsgi_handler(event, context)
     return response
+
+
+def is_s3_event(event: dict) -> bool:
+    return "Records" in event and all("s3" in record for record in event["Records"])
+
+
+def process_s3_event(event: dict) -> None:
+    for record in event["Records"]:
+        record = record["s3"]
+        if record["object"]["size"] == 0:
+            # ignore folders and empty files
+            continue
+        submit_from_url(
+            submit_content_request_from_s3_event_record(record),
+            dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
+            images_topic_arn=IMAGES_TOPIC_ARN,
+        )
+        logger.info(f"Sucessfully submitted s3 event record as url upload.")
+
+
+def submit_content_request_from_s3_event_record(
+    record: dict,
+) -> SubmitContentRequestBody:
+    """
+    Converts s3 event into a SubmitContentRequestBody object with a URL to the content
+    """
+    # For partner buckets we use the full bucket name and key as the content ID to avoid collisions with
+    # existing objects
+    bucket = record["bucket"]["name"]
+    key = record["object"]["key"]
+    content_id = bucket + "/" + key
+
+    url = create_presigned_url(bucket, key, None, 3600, "get_object")
+
+    return SubmitContentRequestBody(
+        submission_type="FROM_URL",
+        content_id=content_id,
+        content_type="PHOTO",
+        content_bytes_url_or_file_type=url,
+        additional_fields=None,
+    )
 
 
 class SignalSourceType(t.TypedDict):

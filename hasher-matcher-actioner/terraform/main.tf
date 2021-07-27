@@ -73,21 +73,6 @@ module "hashing_data" {
   additional_tags       = merge(var.additional_tags, local.common_tags)
 }
 
-module "hashing_integrations" {
-  source                = "./hashing-integrations"
-  prefix                = var.prefix
-  additional_tags       = merge(var.additional_tags, local.common_tags)
-  local_image_buckets   = var.local_image_buckets
-  log_retention_in_days = var.log_retention_in_days
-
-  lambda_docker_info = {
-    uri = var.hma_lambda_docker_uri
-    commands = {
-      hasher_integrations = "hmalib.lambdas.hasher_integrations.lambda_handler"
-    }
-  }
-}
-
 module "pdq_signals" {
   source = "./pdq-signals"
   prefix = var.prefix
@@ -103,9 +88,12 @@ module "pdq_signals" {
 
   images_input = {
     input_queue = aws_sqs_queue.pdq_images_queue.arn
-    resource_list = [
-      "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
-    ]
+    resource_list = concat(
+      [
+        "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
+      ],
+      [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
+    )
     image_folder_key = module.hashing_data.image_folder_info.key
   }
   threat_exchange_data = {
@@ -275,6 +263,8 @@ module "api" {
 
   writebacks_queue = module.actions.writebacks_queue
   images_topic_arn = module.hashing_data.image_folder_info.notification_topic
+
+  partner_image_buckets = var.partner_image_buckets
 }
 
 # Build and deploy webapp
