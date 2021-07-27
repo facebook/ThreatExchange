@@ -21,6 +21,8 @@ from threatexchange import threat_updates as tu
 from threatexchange.cli.dataset.simple_serialization import HMASerialization
 from threatexchange.descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.signal_type.pdq import PdqSignal
 
 
 from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
@@ -32,6 +34,9 @@ logger = get_logger(__name__)
 dynamodb = boto3.resource("dynamodb")
 s3_client = boto3.client("s3")
 HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
+
+# Signal types that s3_adapters should support
+KNOWN_SIGNAL_TYPES: t.Type[SignalType] = [VideoMD5Signal, PdqSignal]
 
 
 @dataclass
@@ -220,10 +225,42 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
 
     def get_s3_object_key(self, indicator_type) -> str:
         """
-        Creates a 'file_name' structure that is dependent on downstream (see s3_adapters.py)
+        For self.privacy_group, creates an s3_key that stores data for
+        `indicator_type`. If changing, be mindful to change
+        get_signal_type_from_object_key() as well.
         """
         extension = f"{indicator_type.lower()}.te"
         return f"{self.s3_te_data_folder}{self.privacy_group}.{extension}"
+
+    @classmethod
+    def get_signal_type_from_object_key(
+        cls, key: str
+    ) -> t.Optional[t.Type[SignalType]]:
+        """
+        Inverses get_s3_object_key. Given an object key (potentially generated
+        by this class), extracts the extension, compares that against known
+        signal_types to see if any of them have the same indicator_type and
+        returns that signal_type.
+        """
+        # given s3://<foo_bucket>/threat_exchange_data/258601789084078.hash_pdq.te
+        # .te and everything other than hash_pdq can be ignored.
+        try:
+            _, extension, _ = key.rsplit(".", 2)
+        except ValueError:
+            # key does not meet the structure necessary. Impossible to determine
+            # signal_type
+            return None
+
+        for signal_type in KNOWN_SIGNAL_TYPES:
+            if signal_type.INDICATOR_TYPE.lower() == extension:
+                return signal_type
+
+        # Hardcode for HASH_VIDEO_MD5 because threatexchange's VideoMD5 still
+        # has HASH_MD5 as indicator_type
+        if extension == "hash_video_md5":
+            return VideoMD5Signal
+
+        return None
 
     @property
     def next_delta(self) -> tu.ThreatUpdatesDelta:
