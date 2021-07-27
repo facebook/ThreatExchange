@@ -55,7 +55,7 @@ class PDQIndex(SignalTypeIndex):
         """
         Build an PDQ index from a set of entries.
         """
-        return PDQIndex(entries)
+        return cls(entries)
 
     def serialize(self, fout: t.BinaryIO) -> None:
         """
