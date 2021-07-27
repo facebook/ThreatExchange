@@ -166,7 +166,7 @@ class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
 
     @property
     def indicator_type_file_extension(self):
-        return self.config.threat_exchange_pdq_file_extension
+        return f"{PdqSignal.INDICATOR_TYPE.lower()}.te"
 
     @property
     def indicator_type_file_columns(self):
@@ -175,6 +175,24 @@ class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):
     @property
     def file_type_str_name(self):
         return "PDQ"
+
+
+class ThreatExchangeS3VideoMD5Adapter(ThreatExchangeS3Adapter):
+    """
+    Read ThreatExchange Video MD5 files in CSV from S3.
+    """
+
+    @property
+    def indicator_type_file_extension(self):
+        return f"{VideoMD5Signal.INDICATOR_TYPE.lower()}.te"
+
+    @property
+    def indicator_type_file_columns(self):
+        return ["hash", "indicator_id", "descriptor_id", "timestamp", "tags"]
+
+    @property
+    def file_type_str_name(self):
+        return "MD5"
 
 
 class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
