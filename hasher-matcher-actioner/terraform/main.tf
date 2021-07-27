@@ -68,9 +68,9 @@ module "datastore" {
 }
 
 module "hashing_data" {
-  source                = "./hashing-data"
-  prefix                = var.prefix
-  additional_tags       = merge(var.additional_tags, local.common_tags)
+  source          = "./hashing-data"
+  prefix          = var.prefix
+  additional_tags = merge(var.additional_tags, local.common_tags)
 }
 
 module "hashing_integrations" {
@@ -86,6 +86,31 @@ module "hashing_integrations" {
       hasher_integrations = "hmalib.lambdas.hasher_integrations.lambda_handler"
     }
   }
+}
+
+module "indexer" {
+  source = "./indexer"
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+
+    commands = {
+      indexer = "hmalib.lambdas.unified_indexer.lambda_handler"
+    }
+  }
+  threat_exchange_data = {
+    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    data_folder        = local.te_data_folder
+    notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
+  }
+  index_data_storage = {
+    bucket_name      = module.hashing_data.index_folder_info.bucket_name
+    index_folder_key = module.hashing_data.index_folder_info.key
+  }
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  measure_performance   = var.measure_performance
 }
 
 module "pdq_signals" {
@@ -374,7 +399,7 @@ module "dashboard" {
   api_lambda_name = module.api.api_root_function_name
   other_lambdas = [
     module.fetcher.fetcher_function_name,
-    module.pdq_signals.pdq_indexer_function_name,
+    module.indexer.indexer_function_name,
     module.actions.writebacker_function_name,
     module.counters.match_counter_function_name
   ]

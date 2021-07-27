@@ -1,9 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-output "pdq_indexer_function_name" {
-  value = aws_lambda_function.pdq_indexer.function_name
-}
-
 output "pdq_hasher_function_name" {
   value = aws_lambda_function.pdq_hasher.function_name
 }
