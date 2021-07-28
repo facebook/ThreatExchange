@@ -215,10 +215,13 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         self.s3_bucket = s3_bucket
         self.s3_te_data_folder = s3_te_data_folder
         self.data_store_table = data_store_table
-        self.supported_signal_types = supported_signal_types
+        self.supported_indicator_types = self._get_supported_indicator_types(
+            supported_signal_types
+        )
 
-    @functools.lru_cache(maxsize=None)
-    def _get_supported_indicator_types(self):
+    def _get_supported_indicator_types(
+        self, supported_signal_types: t.List[t.Type[SignalType]]
+    ):
         """
         For supported self.signal_types, get their corresponding indicator_types.
         """
@@ -226,7 +229,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
             "HASH_VIDEO_MD5"
         ]  # hardcoding this because md5 currently points to HASH_MD5
 
-        for signal_type in self.supported_signal_types:
+        for signal_type in supported_signal_types:
             indicator_type = getattr(signal_type, "INDICATOR_TYPE", None)
             if indicator_type:
                 indicator_types.append(indicator_type)
@@ -287,7 +290,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         TO GET THE NON-PDQ DATA!
         """
         delta = super().next_delta
-        delta.types = self._get_supported_indicator_types()
+        delta.types = self.supported_indicator_types
         return delta
 
     def reset(self):
