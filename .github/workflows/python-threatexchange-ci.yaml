@@ -2,13 +2,13 @@ name: python-threatexchange CI
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "python-threatexchange/**"
       - ".github/workflows/python-threatexchange-ci.yaml"
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "python-threatexchange/**"
       - ".github/workflows/python-threatexchange-ci.yaml"

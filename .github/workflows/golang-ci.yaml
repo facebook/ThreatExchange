@@ -2,13 +2,13 @@ name: API Reference Examples CI - Go
 on:
   push:
     branches:
-    - master
+    - main
     paths:
     - 'api-reference-examples/go/**'
     - '.github/workflows/golang-ci.yaml'
   pull_request:
     branches:
-    - master
+    - main
     paths:
     - 'api-reference-examples/go/**'
     - '.github/workflows/golang-ci.yaml'

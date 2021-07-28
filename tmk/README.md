@@ -3,7 +3,7 @@
 TMK (for *Temporal Match Kernel*) is a video-similarity-detection algorithm
 produced in conjunction with Facebook AI Research ('FAIR').
 
-* Full details are located in the [hashing.pdf](https://github.com/facebook/ThreatExchange/blob/master/hashing/hashing.pdf) document.
+* Full details are located in the [hashing.pdf](https://github.com/facebook/ThreatExchange/blob/main/hashing/hashing.pdf) document.
 
 * See https://newsroom.fb.com/news/2019/08/open-source-photo-video-matching for context.
 
@@ -207,7 +207,7 @@ OK, now that we've sanity-checked a few sample videos from the repo, now let's
 broaden our scope. Here we can look at shared hashes -- no videos, only hashes
 -- which are delivered separately depending on with whom you're sharing hashes.
 (See
-https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-java/README.md
+https://github.com/facebook/ThreatExchange/blob/main/hashing/te-tag-query-java/README.md
 for example.) Then you can compute hashes of some of your own videos. Then,
 look to see what (if anything) is in common.
 
@@ -264,7 +264,7 @@ $ tmk-query --c1 0.7 --c2 0.7 needles.txt haystack.txt | sort -n
 1.000000 1.000000 chair-orig-22-hd-no-bar.tmk chair-orig-22-hd-no-bar.tmk
 ```
 
-There is another query tool called `tmk-query-with-faiss` which is more efficient than `tmk-query` and uses [faiss](https://github.com/facebookresearch/faiss) for running queries efficiently. See [README-more.md](https://github.com/facebook/ThreatExchange/blob/master/hashing/tmk/README-more.md)
+There is another query tool called `tmk-query-with-faiss` which is more efficient than `tmk-query` and uses [faiss](https://github.com/facebookresearch/faiss) for running queries efficiently. See [README-more.md](https://github.com/facebook/ThreatExchange/blob/main/hashing/tmk/README-more.md)
 
 ## Look for duplicates within your own hashes
 
@@ -282,7 +282,7 @@ $ find /path/to/shared/hashes -name '*.tmk' | tmk-clusterize --min 2 -i
 ```
 
 This concludes the walkthrough.  Please see
-[README-more.md](https://github.com/facebook/ThreatExchange/blob/master/hashing/tmk/README-more.md)
+[README-more.md](https://github.com/facebook/ThreatExchange/blob/main/hashing/tmk/README-more.md)
 for more detailed reference information.
 
 # Some scoring data

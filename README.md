@@ -23,7 +23,7 @@ This is a deployable project for bootstrapping content moderation, containing ma
 
 ## Get All Available Data
 
-For tag-driven workloads, supporting either bulk download or incremental updates, our currently recommended best practice is a [Java reference design](https://github.com/facebook/ThreatExchange/blob/master/api-reference-examples/java/te-tag-query/README.md).
+For tag-driven workloads, supporting either bulk download or incremental updates, our currently recommended best practice is a [Java reference design](https://github.com/facebook/ThreatExchange/blob/main/api-reference-examples/java/te-tag-query/README.md).
 
 You can also explore the dataset using the hosted [ThreatExchange UI](https://developers.facebook.com/docs/threat-exchange/ui)
 
@@ -33,7 +33,7 @@ To request access to ThreatExchange, please submit an application via [https://d
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING](https://github.com/facebook/ThreatExchange/blob/master/CONTRIBUTING.md) for details on how to get started, and our [Code of Conduct](https://github.com/facebook/ThreatExchange/blob/master/CODE_OF_CONDUCT.md).
+We welcome contributions! See [CONTRIBUTING](https://github.com/facebook/ThreatExchange/blob/main/CONTRIBUTING.md) for details on how to get started, and our [Code of Conduct](https://github.com/facebook/ThreatExchange/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
