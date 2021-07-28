@@ -195,4 +195,4 @@ As noted at the top of this document, the `TETagQuery` program is intended to be
 
 For reference, we show what those bare-curl commands look like if you're not using the Ruby code:
 
-https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-curl/README.md
+https://github.com/facebook/ThreatExchange/blob/main/hashing/te-tag-query-curl/README.md

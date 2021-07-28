@@ -52,7 +52,7 @@ docstrings where appropriate.
 
 ## Submit a PR
 Once you are happy with your changes and ready for a PR, you can submit a PR to
-the main project. In most cases you’ll be looking to compare against the Master
+the main project. In most cases you’ll be looking to compare against the Main
 branch, but there are instances where you’re making changes that you want to go
 into a specific branch. Make sure when submitting your PR that you choose the
 right destination branch.

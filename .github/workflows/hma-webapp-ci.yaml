@@ -2,13 +2,13 @@ name: hasher-matcher-actioner-webapp CI
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "hasher-matcher-actioner/webapp/**"
       - ".github/workflows/hma-webapp-ci.yaml"
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "hasher-matcher-actioner/webapp/**"
       - ".github/workflows/hma-webapp-ci.yaml"

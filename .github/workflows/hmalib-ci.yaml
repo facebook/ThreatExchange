@@ -2,13 +2,13 @@ name: hasher-matcher-actioner-hmalib CI
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "hasher-matcher-actioner/hmalib/**"
       - ".github/workflows/hamlib-ci.yaml"
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "hasher-matcher-actioner/hmalib/**"
       - ".github/workflows/hamlib-ci.yaml"

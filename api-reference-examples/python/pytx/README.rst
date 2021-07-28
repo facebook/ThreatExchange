@@ -65,8 +65,8 @@ See Also
 
 We now offer tag-based, descriptor-focused reference designs in
 
-* **Python**: <https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-python>
-* **Ruby**: <https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-ruby>
-* **Java**: <https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-java>
+* **Python**: <https://github.com/facebook/ThreatExchange/blob/main/hashing/te-tag-query-python>
+* **Ruby**: <https://github.com/facebook/ThreatExchange/blob/main/hashing/te-tag-query-ruby>
+* **Java**: <https://github.com/facebook/ThreatExchange/blob/main/hashing/te-tag-query-java>
 
 The common context to all these is that since early 2018 ThreatExchange has moved beyond malware/phishing into cross-company integrity-signal sharing. This newer tooling largely overlaps the old (such as pytx), but with an added focus on more interactive tooling for a broader, more diverse userbase; a strong threat-descriptor focus (vs malware analyses); and enhanced support for cross-company feedback mechanisms.
