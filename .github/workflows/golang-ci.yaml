@@ -26,8 +26,9 @@ jobs:
       with:
         go-version: '^1.15.0'
     - name: Install testify
-      run: go get github.com/stretchr/testify
-    - name: Run tests
       run: |
         go env -w GO111MODULE=auto
+        go get github.com/stretchr/testify
+    - name: Run tests
+      run: |
         go test ./...
