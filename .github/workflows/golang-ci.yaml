@@ -28,4 +28,6 @@ jobs:
     - name: Install testify
       run: go get github.com/stretchr/testify
     - name: Run tests
-      run: go test ./...
+      run: |
+        go env -w GO111MODULE=auto
+        go test ./...
