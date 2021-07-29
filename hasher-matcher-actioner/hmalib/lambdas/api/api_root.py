@@ -118,12 +118,10 @@ def submit_content_request_from_s3_event_record(
     """
     Converts s3 event into a SubmitContentRequestBody object with a URL to the content
     """
-    # For partner buckets we use the full bucket name and key as the content ID to avoid collisions with
-    # existing objects
     bucket = record["bucket"]["name"]
     key = record["object"]["key"]
-    content_id = bucket + "/" + key
 
+    content_id = get_content_id_from_bucket_and_key(bucket, key)
     url = create_presigned_url(bucket, key, None, 3600, "get_object")
 
     return SubmitContentRequestBody(
@@ -133,6 +131,22 @@ def submit_content_request_from_s3_event_record(
         content_bytes_url_or_file_type=url,
         additional_fields=None,
     )
+
+
+def get_content_id_from_bucket_and_key(bucket: str, key: str) -> str:
+    """
+    For partner buckets, we use the full bucket name and key as the content ID to avoid
+    ContentID collisions between buckets.
+
+    There is still a threat of collision between partner bucket submissions and API/UI
+    submissions which is why we encourage (but dont enforce) partners to only use a single
+    submission method in production
+
+    The Matches UI page will work incorrectly if the content id includes / or ? so we replace
+    These chars with . when generating content ids.
+    """
+
+    return bucket + ":" + key.replace("/", ".").replace("?", ".")
 
 
 class SignalSourceType(t.TypedDict):
