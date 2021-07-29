@@ -57,8 +57,8 @@ class ActionEvaluatorConfig:
             os.environ["DYNAMODB_TABLE"],
         )
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
-        dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
 
+        dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
         dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
         return cls(
