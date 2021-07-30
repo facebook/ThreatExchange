@@ -1,14 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
-from enum import Enum
 import typing as t
-import json
-from dataclasses import dataclass, field
-from decimal import Decimal
-from boto3 import client
+from dataclasses import dataclass
 from mypy_boto3_dynamodb.service_resource import Table
-from boto3.dynamodb.conditions import Attr, Key, And
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 """
