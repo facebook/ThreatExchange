@@ -114,6 +114,7 @@ variable "partner_image_buckets" {
   type        = list(object({
     name = string
     arn  = string
+    params = map(string)
   }))
 }
 

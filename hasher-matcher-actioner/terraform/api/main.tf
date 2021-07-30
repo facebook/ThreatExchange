@@ -333,11 +333,19 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
     lambda_function_arn = aws_lambda_function.api_root.arn
     events              = ["s3:ObjectCreated:*"]
 
-    # TODO: Allow filtering to enable hashing to only certain f
-    # olders and file types. eg...
-    #
-    # filter_prefix       = "images/"
-    # filter_suffix       = ".jpg"
+    # Check if a prefix filter (or the aliases folder, path) was specified
+    # Otherwise no prefix constraint
+    filter_prefix = lookup(var.partner_image_buckets[count.index].params, "prefix", 
+                      lookup(var.partner_image_buckets[count.index].params, "folder", 
+                        lookup(var.partner_image_buckets[count.index].params, "path", "")
+                      )
+                    )
+
+    # Check if a suffix filter (or the alias extension) was specified
+    # Otherwise no suffix constraint
+    filter_suffix = lookup(var.partner_image_buckets[count.index].params, "suffix", 
+                      lookup(var.partner_image_buckets[count.index].params, "extension", "")
+                    ) 
   }
 
   depends_on = [aws_lambda_permission.allow_bucket]
