@@ -5,18 +5,13 @@ import json
 import os
 import typing as t
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import lru_cache
 from hmalib.common.logging import get_logger
 from hmalib.common.classification_models import (
-    BankedContentIDClassificationLabel,
-    BankIDClassificationLabel,
-    BankSourceClassificationLabel,
-    ClassificationLabel,
     WritebackTypes,
     Label,
 )
-from hmalib.common.writebacker_models import ThreatExchangeSawThisTooWritebacker
 from hmalib.common.config import HMAConfig
 from hmalib.common.evaluator_models import (
     Action,
@@ -29,9 +24,13 @@ from hmalib.common.message_models import (
     MatchMessage,
     WritebackMessage,
 )
+from hmalib.common.content_models import ContentObject
 from mypy_boto3_sqs import SQSClient
+from mypy_boto3_dynamodb.service_resource import Table, DynamoDBServiceResource
+
 
 logger = get_logger(__name__)
+dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
 
 @dataclass
@@ -42,6 +41,7 @@ class ActionEvaluatorConfig:
 
     actions_queue_url: str
     sqs_client: SQSClient
+    dynamdo_db_table: Table
 
     @classmethod
     @lru_cache(maxsize=None)
@@ -49,10 +49,17 @@ class ActionEvaluatorConfig:
         logger.info(
             "Initializing configs using table name %s", os.environ["CONFIG_TABLE_NAME"]
         )
+        logger.info(
+            "Initializing dynamo table using table name %s",
+            os.environ["DYNAMODB_TABLE"],
+        )
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
+        dynamdo_db_table_name = (os.environ["DYNAMODB_TABLE"],)
+
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
+            dynamdo_db_table=dynamodb.Table(dynamdo_db_table_name),
         )
 
 
@@ -78,7 +85,16 @@ def lambda_handler(event, context):
 
         logger.info("Evaluating against action_rules: %s", action_rules)
 
-        action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
+        submitted_content = ContentObject.get_from_content_id(
+            ActionEvaluatorConfig.dynamdo_db_table,
+            match_message.content_key,
+        )
+
+        action_label_to_action_rules = get_actions_to_take(
+            match_message,
+            action_rules,
+            submitted_content.additional_fields,
+        )
         action_labels = list(action_label_to_action_rules.keys())
         for action_label in action_labels:
             action_message = (
@@ -86,6 +102,7 @@ def lambda_handler(event, context):
                     match_message,
                     action_label,
                     action_label_to_action_rules[action_label],
+                    submitted_content.additional_fields,
                 )
             )
 
@@ -104,16 +121,24 @@ def lambda_handler(event, context):
 
 
 def get_actions_to_take(
-    match_message: MatchMessage, action_rules: t.List[ActionRule]
+    match_message: MatchMessage,
+    action_rules: t.List[ActionRule],
+    additional_fields_on_content: t.List[str],
 ) -> t.Dict[ActionLabel, t.List[ActionRule]]:
     """
     Returns action labels for each action rule that applies to a match message.
     """
     action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]] = dict()
+
+    # Content Classifications are derived from additional_fields
+    content_classifications = {
+        Label(*field.split(":", 1)) for field in additional_fields_on_content
+    }
+
     for banked_signal in match_message.matching_banked_signals:
         for action_rule in action_rules:
             if action_rule_applies_to_classifications(
-                action_rule, banked_signal.classifications
+                action_rule, banked_signal.classifications | content_classifications
             ):
                 if action_rule.action_label in action_label_to_action_rules:
                     action_label_to_action_rules[action_rule.action_label].append(
