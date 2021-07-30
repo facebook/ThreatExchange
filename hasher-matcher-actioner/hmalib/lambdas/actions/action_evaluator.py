@@ -34,6 +34,7 @@ from mypy_boto3_dynamodb.service_resource import Table, DynamoDBServiceResource
 
 
 logger = get_logger(__name__)
+dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
 
 @dataclass
@@ -57,8 +58,8 @@ class ActionEvaluatorConfig:
             os.environ["DYNAMODB_TABLE"],
         )
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
-        dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
 
+        dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
         dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
         return cls(
@@ -102,11 +103,13 @@ def lambda_handler(event, context):
         )
         action_labels = list(action_label_to_action_rules.keys())
         for action_label in action_labels:
-            action_message = ActionMessage.from_match_message_action_label_action_rules_and_additional_fields(
-                match_message,
-                action_label,
-                action_label_to_action_rules[action_label],
-                list(submitted_content.additional_fields),
+            action_message = (
+                ActionMessage.from_match_message_action_label_and_action_rules(
+                    match_message,
+                    action_label,
+                    action_label_to_action_rules[action_label],
+                    submitted_content.additional_fields,
+                )
             )
 
             logger.info("Sending Action message: %s", action_message)
