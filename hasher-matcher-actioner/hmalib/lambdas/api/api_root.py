@@ -7,6 +7,7 @@ import json
 import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
+from uuid import UUID
 
 from hmalib.common.logging import get_logger
 
@@ -121,32 +122,20 @@ def submit_content_request_from_s3_event_record(
     bucket = record["bucket"]["name"]
     key = record["object"]["key"]
 
-    content_id = get_content_id_from_bucket_and_key(bucket, key)
-    url = create_presigned_url(bucket, key, None, 3600, "get_object")
+    # For partner bucket uploads the content IDs are unique but not human readable. The original contnet
+    # key+bucket is stored in the reference url which is passed to the webhook via additional_fields
+    content_id = UUID("{bucket},{key}").hex
+
+    presigned_url = create_presigned_url(bucket, key, None, 3600, "get_object")
+    reference_url = f"https://{bucket}.s3.amazonaws.com/{key}"
 
     return SubmitContentRequestBody(
         submission_type="FROM_URL",
         content_id=content_id,
         content_type="PHOTO",
-        content_bytes_url_or_file_type=url,
-        additional_fields=None,
+        content_bytes_url_or_file_type=presigned_url,
+        additional_fields=[f"partner_s3_reference_url:{reference_url}"],
     )
-
-
-def get_content_id_from_bucket_and_key(bucket: str, key: str) -> str:
-    """
-    For partner buckets, we use the full bucket name and key as the content ID to avoid
-    ContentID collisions between buckets.
-
-    There is still a threat of collision between partner bucket submissions and API/UI
-    submissions which is why we encourage (but dont enforce) partners to only use a single
-    submission method in production
-
-    The Matches UI page will work incorrectly if the content id includes / or ? so we replace
-    These chars with . when generating content ids.
-    """
-
-    return bucket + ":" + key.replace("/", ".").replace("?", ".")
 
 
 class SignalSourceType(t.TypedDict):
