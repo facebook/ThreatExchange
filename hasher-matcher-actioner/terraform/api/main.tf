@@ -100,18 +100,14 @@ data "aws_iam_policy_document" "api_root" {
     actions = [
       "s3:GetObject",
     ]
-    resources = [
+    resources = concat(
+      [
       "arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}*",
-    ]
+    ],
+    [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
+    )
   }
-
-    statement {
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-    ]
-    resources = [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
-  }
+  
   statement {
     effect = "Allow"
     actions = [
