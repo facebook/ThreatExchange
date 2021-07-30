@@ -1,10 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from hmalib.indexers.s3_indexers import (
-    S3BackedInstrumentedIndexMixin,
-    S3BackedMD5Index,
-    S3BackedPDQIndex,
-)
 import os
 import json
 import typing as t
@@ -26,6 +21,10 @@ from hmalib.common.s3_adapters import (
 )
 from hmalib.common.logging import get_logger
 from hmalib import metrics
+from hmalib.common.mappings import INDEX_MAPPING
+from hmalib.indexers.s3_indexers import (
+    S3BackedInstrumentedIndexMixin,
+)
 
 logger = get_logger(__name__)
 
@@ -106,8 +105,6 @@ _ADAPTER_MAPPING = {
     VideoMD5Signal: ThreatExchangeS3VideoMD5Adapter,
 }
 
-_INDEX_MAPPING = {PdqSignal: S3BackedPDQIndex, VideoMD5Signal: S3BackedMD5Index}
-
 
 def lambda_handler(event, context):
     """
@@ -162,7 +159,7 @@ def lambda_handler(event, context):
 
         with metrics.timer(metrics.names.indexer.build_index):
             logger.info(f"Rebuilding {updated_signal_type} Index")
-            index_class = _INDEX_MAPPING[updated_signal_type]
+            index_class = INDEX_MAPPING[updated_signal_type]
             index: S3BackedInstrumentedIndexMixin = index_class.build(merged_data)
 
             logger.info(f"Putting {updated_signal_type} index in S3")
