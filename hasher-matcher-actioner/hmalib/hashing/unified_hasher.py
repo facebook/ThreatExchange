@@ -8,9 +8,10 @@ from threatexchange.signal_type.signal_base import SignalType, BytesHasher
 
 
 @dataclass
-class SignalValue:
+class ContentSignal:
     """
-    Envelope for a signal type and signal's value.
+    Envelope for a signal type and signal's value. Has been extracted from a
+    piece of content.
 
     TODO: assumption that a signal value can only be string is inaccurate. Even
     simple algorithms like PDQ emit a tuple. Quality and Hash value.
@@ -19,7 +20,9 @@ class SignalValue:
     of hashes.
     """
 
-    signal_type: SignalType
+    content_type: t.Type[ContentType]
+    content_id: str
+    signal_type: t.Type[SignalType]
     signal_value: str
 
 
@@ -60,8 +63,8 @@ class UnifiedHasher:
         return content_type in self.supported_content_types
 
     def get_hashes(
-        self, content_type: t.Type[ContentType], bytes_: bytes
-    ) -> t.Generator[SignalValue, None, None]:
+        self, content_id: str, content_type: t.Type[ContentType], bytes_: bytes
+    ) -> t.Generator[ContentSignal, None, None]:
         """
         Yields signals for content_type. Emitted signals are an intersection of
         content_type.get_signal_types() and self.supported_signal_types.
@@ -70,4 +73,9 @@ class UnifiedHasher:
             if signal_type in self.supported_signal_types and issubclass(
                 signal_type, BytesHasher
             ):
-                yield SignalValue(signal_type, signal_type.hash_from_bytes(bytes_))
+                yield ContentSignal(
+                    content_type,
+                    content_id,
+                    signal_type,
+                    signal_type.hash_from_bytes(bytes_),
+                )

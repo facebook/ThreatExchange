@@ -80,6 +80,8 @@ def lambda_handler(event, context):
 
         with metrics.timer(metrics.names.hasher.download_file):
             bytes_: bytes = URLContentSource().get_bytes(submission_message.url)
-            for signal in hasher.get_hashes(content_type, bytes_):
+            for signal in hasher.get_hashes(
+                submission_message.content_id, content_type, bytes_
+            ):
                 # TODO: Actually Publish to matcher.
                 print(f"{signal}")
