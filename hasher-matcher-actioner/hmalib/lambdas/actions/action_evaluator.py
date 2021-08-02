@@ -41,7 +41,7 @@ class ActionEvaluatorConfig:
 
     actions_queue_url: str
     sqs_client: SQSClient
-    dynamdo_db_table: Table
+    dynamo_db_table: Table
 
     @classmethod
     @lru_cache(maxsize=None)
@@ -54,12 +54,12 @@ class ActionEvaluatorConfig:
             os.environ["DYNAMODB_TABLE"],
         )
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
-        dynamdo_db_table_name = (os.environ["DYNAMODB_TABLE"],)
+        dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
 
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
-            dynamdo_db_table=dynamodb.Table(dynamdo_db_table_name),
+            dynamo_db_table=dynamodb.Table(dynamo_db_table_name),
         )
 
 
@@ -86,7 +86,7 @@ def lambda_handler(event, context):
         logger.info("Evaluating against action_rules: %s", action_rules)
 
         submitted_content = ContentObject.get_from_content_id(
-            ActionEvaluatorConfig.dynamdo_db_table,
+            config.dynamo_db_table,
             match_message.content_key,
         )
 
@@ -123,7 +123,7 @@ def lambda_handler(event, context):
 def get_actions_to_take(
     match_message: MatchMessage,
     action_rules: t.List[ActionRule],
-    additional_fields_on_content: t.List[str],
+    additional_fields_on_content: t.Dict[str, str],
 ) -> t.Dict[ActionLabel, t.List[ActionRule]]:
     """
     Returns action labels for each action rule that applies to a match message.
@@ -132,7 +132,7 @@ def get_actions_to_take(
 
     # Content Classifications are derived from additional_fields
     content_classifications = {
-        Label(*field.split(":", 1)) for field in additional_fields_on_content
+        Label(*field) for field in additional_fields_on_content.items()
     }
 
     for banked_signal in match_message.matching_banked_signals:
@@ -226,5 +226,7 @@ if __name__ == "__main__":
             )
         ],
     )
-    action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
+    action_label_to_action_rules = get_actions_to_take(
+        match_message, action_rules, {"Added": "field"}
+    )
     action_labels = list(action_label_to_action_rules.keys())
