@@ -39,9 +39,6 @@ dev_destroy_instance:
 	cd terraform/ && terraform destroy -var "prefix=${USER}"
 
 dev_test_instance:
-	@echo "Attempting to run submit_content_test, due to make limitations you may need to run additional commands first."
-	@echo "This simple tests should take a little over 2 minutes to complete (due to sqs timeout)." 
-	@echo
 	python3 scripts/submit_content_test.py
 
 dev_clear_configs:

@@ -256,6 +256,13 @@ if __name__ == "__main__":
         "",
     )
 
+    print(
+        "Attempting to run submit_content_test,gs you may need to run additional commands first."
+    )
+    print(
+        "This simple tests should take a little over 2 minutes to complete (due to sqs timeout).\n"
+    )
+
     if not api_url:
         print("Error: Failed to find HMA_API_URL in environ.")
         print(
@@ -277,7 +284,7 @@ if __name__ == "__main__":
         print(
             "Easiest way to add either to your environment is to export the result `scripts/get_auth_token`"
         )
-        print("See script for usage.")
+        print("See script (get_auth_token) for usage.")
         exit()
 
     helper = DeployedInstanceTestHelper(api_url, token, client_id, refresh_token)
