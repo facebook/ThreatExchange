@@ -30,7 +30,6 @@ from mypy_boto3_dynamodb.service_resource import Table, DynamoDBServiceResource
 
 
 logger = get_logger(__name__)
-dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
 
 @dataclass
@@ -55,6 +54,8 @@ class ActionEvaluatorConfig:
         )
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
         dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
+
+        dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
