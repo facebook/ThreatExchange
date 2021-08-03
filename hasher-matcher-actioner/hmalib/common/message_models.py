@@ -86,15 +86,15 @@ class ActionMessage(MatchMessage):
     action_rules: t.List[ActionRule] = field(default_factory=list)
 
     # from content
-    additional_fields: t.List[str] = field(default_factory=list)
+    additional_fields: t.Dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_match_message_action_label_and_action_rules(
+    def from_match_message_action_label_action_rules_and_additional_fields(
         cls,
         match_message: MatchMessage,
         action_label: ActionLabel,
         action_rules: t.List[ActionRule],
-        additional_fileds=t.List[str],
+        additional_fields=t.Dict[str, str],
     ) -> "ActionMessage":
         return cls(
             match_message.content_key,
@@ -102,7 +102,7 @@ class ActionMessage(MatchMessage):
             match_message.matching_banked_signals,
             action_label,
             action_rules,
-            additional_fileds,
+            additional_fields,
         )
 
 
