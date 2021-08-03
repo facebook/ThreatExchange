@@ -1,9 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-from contextlib import contextmanager
-from moto import mock_dynamodb2
+import typing as t
+import datetime
+
 from threatexchange.content_type.photo import PhotoContent
+
 from hmalib.common.content_models import (
     ContentObject,
     ActionEvent,
@@ -17,55 +19,33 @@ from hmalib.common.actioner_models import (
     WebhookPostActionPerformer,
 )
 
-import boto3
-import datetime
-import os
+
+from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase
 
 
-class TestContentModels(unittest.TestCase):
-    table = None
+class TestContentModels(DynamoDBTableTestBase, unittest.TestCase):
+
     TEST_CONTENT_ID = "test_content_id_1"
     TEST_TIME = datetime.datetime(2021, 5, 17, 13, 38, 56, 965173)
     TEST_ACTION_LABEL = "TestEnqueueMiniCastleForReview"
 
-    @staticmethod
-    def mock_aws_credentials():
-        """
-        Mocked AWS Credentials for moto.
-        (likely not needed based on local testing but just incase)
-        """
-        os.environ["AWS_ACCESS_KEY_ID"] = "testing"
-        os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-        os.environ["AWS_SECURITY_TOKEN"] = "testing"
-        os.environ["AWS_SESSION_TOKEN"] = "testing"
-
     @classmethod
-    def setUpClass(cls):
-        cls.mock_aws_credentials()
-        cls.mock_dynamodb2 = mock_dynamodb2()
-        cls.mock_dynamodb2.start()
-        cls.create_mocked_table()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.mock_dynamodb2.stop()
-
-    @classmethod
-    def create_mocked_table(cls):
-        dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+    def get_table_definition(cls) -> t.Any:
+        """Overrides from DynamoDBTableTestBase"""
         table_name = "test-table"
-        cls.table = dynamodb.create_table(
-            AttributeDefinitions=[
+
+        return {
+            "AttributeDefinitions": [
                 {"AttributeName": "PK", "AttributeType": "S"},
                 {"AttributeName": "SK", "AttributeType": "S"},
             ],
-            TableName=table_name,
-            BillingMode="PAY_PER_REQUEST",
-            KeySchema=[
+            "TableName": table_name,
+            "BillingMode": "PAY_PER_REQUEST",
+            "KeySchema": [
                 {"AttributeName": "PK", "KeyType": "HASH"},
                 {"AttributeName": "SK", "KeyType": "RANGE"},
             ],
-        )
+        }
 
     @staticmethod
     def get_example_content_object():
@@ -135,9 +115,9 @@ class TestContentModels(unittest.TestCase):
         Test ContentObject's custom write_to_table
         """
         obj = self.get_example_content_object()
-        obj.write_to_table(self.table)
+        obj.write_to_table(self.get_table())
 
-        result = self.table.get_item(
+        result = self.get_table().get_item(
             Key={
                 "PK": f"c#{TestContentModels.TEST_CONTENT_ID}",
                 "SK": "content_type#photo",
@@ -154,9 +134,9 @@ class TestContentModels(unittest.TestCase):
         Test ActionEvent write
         """
         event = self.get_example_action_event()
-        event.write_to_table(self.table)
+        event.write_to_table(self.get_table())
 
-        result = self.table.get_item(
+        result = self.get_table().get_item(
             Key={
                 "PK": f"c#{TestContentModels.TEST_CONTENT_ID}",
                 "SK": f"action_time#{TestContentModels.TEST_TIME.isoformat()}",
@@ -171,10 +151,10 @@ class TestContentModels(unittest.TestCase):
         Test ContentObject write table with get_from_content_id query
         """
         obj = self.get_example_content_object()
-        obj.write_to_table(self.table)
+        obj.write_to_table(self.get_table())
 
         query_obj = ContentObject.get_from_content_id(
-            self.table, TestContentModels.TEST_CONTENT_ID, PhotoContent
+            self.get_table(), TestContentModels.TEST_CONTENT_ID, PhotoContent
         )
 
         assert obj == query_obj
@@ -185,10 +165,10 @@ class TestContentModels(unittest.TestCase):
         """
 
         event = self.get_example_action_event()
-        event.write_to_table(self.table)
+        event.write_to_table(self.get_table())
 
         query_event = ActionEvent.get_from_content_id(
-            self.table, TestContentModels.TEST_CONTENT_ID
+            self.get_table(), TestContentModels.TEST_CONTENT_ID
         )[0]
 
         assert event == query_event
