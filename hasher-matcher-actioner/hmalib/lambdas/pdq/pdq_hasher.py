@@ -7,10 +7,12 @@ import typing as t
 
 import boto3
 from mypy_boto3_dynamodb import DynamoDBServiceResource
+
 from threatexchange.hashing import pdq_hasher
+from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib import metrics
-from hmalib.models import PipelinePDQHashRecord
+from hmalib.models import PipelineHashRecord
 from hmalib.common.message_models import (
     S3ImageSubmission,
     S3ImageSubmissionBatchMessage,
@@ -99,8 +101,8 @@ def lambda_handler(event, context):
             with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
                 pdq_hash, quality = pdq_hasher.pdq_from_bytes(bytes_)
 
-            hash_record = PipelinePDQHashRecord(
-                image.content_id, pdq_hash, datetime.datetime.now(), quality
+            hash_record = PipelineHashRecord(
+                image.content_id, PdqSignal, pdq_hash, datetime.datetime.now(), {"Quality":quality}
             )
 
             hash_record.write_to_table(records_table)

@@ -13,7 +13,7 @@ import typing as t
 from threatexchange.content_type.photo import PhotoContent
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
-from hmalib.models import PipelinePDQHashRecord
+from hmalib.models import PipelineHashRecord
 from hmalib.common.content_models import (
     ContentObject,
     ActionEvent,
@@ -98,11 +98,14 @@ def get_content_api(
         content_id = bottle.request.query.content_id or None
         if not content_id:
             return None
-        record = PipelinePDQHashRecord.get_from_content_id(
+
+        # FIXME: Presently, hash API can only support one hash per content_id
+        record = PipelineHashRecord.get_from_content_id(
             dynamodb_table, f"{content_id}"
-        )
+        )[0]
         if not record:
             return None
+
         return HashResultResponse(
             content_id=record.content_id,
             content_hash=record.content_hash,

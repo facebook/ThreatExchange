@@ -10,7 +10,7 @@ from enum import Enum
 from logging import Logger
 
 from threatexchange.descriptor import ThreatDescriptor
-from hmalib.models import PDQMatchRecord
+from hmalib.models import MatchRecord
 from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import BankedSignal, WritebackMessage, WritebackTypes
@@ -89,7 +89,7 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
     if not content_id:
         return []
 
-    records = PDQMatchRecord.get_from_content_id(table, f"{content_id}")
+    records = MatchRecord.get_from_content_id(table, f"{content_id}")
 
     return [
         MatchDetail(
@@ -98,7 +98,7 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
             signal_id=record.signal_id,
             signal_hash=record.signal_hash,
             signal_source=record.signal_source,
-            signal_type=record.SIGNAL_TYPE,
+            signal_type=record.signal_type.get_name(),
             updated_at=record.updated_at.isoformat(),
             metadata=get_signal_details(table, record.signal_id, record.signal_source),
         )
@@ -167,13 +167,14 @@ def get_matches_api(dynamodb_table: Table, hma_config_table: str) -> bottle.Bott
         content_q = bottle.request.query.content_q or None
 
         if content_q:
-            records = PDQMatchRecord.get_from_content_id(dynamodb_table, content_q)
+            records = MatchRecord.get_from_content_id(dynamodb_table, content_q)
         elif signal_q:
-            records = PDQMatchRecord.get_from_signal(
+            records = MatchRecord.get_from_signal(
                 dynamodb_table, signal_q, signal_source or ""
             )
         else:
-            records = PDQMatchRecord.get_from_time_range(dynamodb_table)
+            # TODO: Support pagination after implementing in UI.
+            records = MatchRecord.get_recent_items_page(dynamodb_table).items
 
         return MatchSummariesResponse(
             match_summaries=[

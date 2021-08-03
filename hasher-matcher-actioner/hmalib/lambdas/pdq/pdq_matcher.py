@@ -10,9 +10,10 @@ import typing as t
 from mypy_boto3_sns import SNSClient
 
 from threatexchange.signal_type.pdq_index import PDQIndex
+from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib import metrics
-from hmalib.models import PDQMatchRecord
+from hmalib.models import MatchRecord
 from hmalib.common.message_models import BankedSignal, MatchMessage
 from hmalib.common.signal_models import PDQSignalMetadata
 from hmalib.common.logging import get_logger
@@ -124,8 +125,9 @@ def lambda_handler(event, context):
                         metrics.names.pdq_matcher_lambda.write_match_record
                     ):
                         # TODO: Add source (threatexchange) tags to match record
-                        PDQMatchRecord(
+                        MatchRecord(
                             key,
+                            PdqSignal,
                             hash_str,
                             current_datetime,
                             signal_id,
