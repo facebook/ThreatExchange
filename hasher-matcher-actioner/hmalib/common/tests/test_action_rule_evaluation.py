@@ -48,7 +48,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
 
         action_label_to_action_rules: t.Dict[
             ActionLabel, t.List[ActionRule]
-        ] = get_actions_to_take(match_message_without_foo, action_rules)
+        ] = get_actions_to_take(match_message_without_foo, action_rules, set())
 
         assert len(action_label_to_action_rules) == 1
         self.assertIn(
@@ -58,7 +58,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         )
 
         action_label_to_action_rules = get_actions_to_take(
-            match_message_with_foo, action_rules
+            match_message_with_foo, action_rules, set()
         )
 
         assert len(action_label_to_action_rules) == 0
@@ -125,7 +125,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         )
 
         action_label_to_action_rules = get_actions_to_take(
-            mini_castle_match_message, action_rules
+            mini_castle_match_message, action_rules, set()
         )
 
         assert len(action_label_to_action_rules) == 1
@@ -136,7 +136,7 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         )
 
         action_label_to_action_rules = get_actions_to_take(
-            sailboat_match_message, action_rules
+            sailboat_match_message, action_rules, set()
         )
 
         assert len(action_label_to_action_rules) == 1

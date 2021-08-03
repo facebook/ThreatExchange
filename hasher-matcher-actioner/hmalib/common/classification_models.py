@@ -51,6 +51,11 @@ class BankedContentIDClassificationLabel(ClassificationLabel):
 
 
 @dataclass(unsafe_hash=True)
+class SubmittedContentClassification(ClassificationLabel):
+    key: str = field(default="SubmittedContent", init=False)
+
+
+@dataclass(unsafe_hash=True)
 class ActionLabel(Label):
     key: str = field(default="Action", init=False)
 
