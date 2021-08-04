@@ -56,7 +56,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
         "python-Levenshtein",
-        "requests",
+        "requests>=2.26.0",
         "dataclasses",
         "python-dateutil",
     ],
