@@ -86,7 +86,7 @@ class ActionMessage(MatchMessage):
     action_rules: t.List[ActionRule] = field(default_factory=list)
 
     # from content
-    additional_fields: t.Dict[str, str] = field(default_factory=dict)
+    additional_fields: t.List[str] = field(default_factory=list)
 
     @classmethod
     def from_match_message_action_label_action_rules_and_additional_fields(
@@ -94,7 +94,7 @@ class ActionMessage(MatchMessage):
         match_message: MatchMessage,
         action_label: ActionLabel,
         action_rules: t.List[ActionRule],
-        additional_fields=t.Dict[str, str],
+        additional_fields=t.List[str],
     ) -> "ActionMessage":
         return cls(
             match_message.content_key,

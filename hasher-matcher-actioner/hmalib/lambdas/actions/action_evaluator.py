@@ -91,12 +91,6 @@ def lambda_handler(event, context):
             match_message.content_key,
         )
 
-        # Convert to dict becuase JSON can't serialize Sets for Action Message
-        # plus we think of these fields as key: value anyways
-        additional_fields: t.Dict[str, str] = dict(
-            field.split(":", 1) for field in submitted_content.additional_fields
-        )
-
         # TODO: Convert AdditionalFields to ActionRules for determining if rule should be processed
         action_label_to_action_rules = get_actions_to_take(
             match_message,
@@ -108,7 +102,7 @@ def lambda_handler(event, context):
                 match_message,
                 action_label,
                 action_label_to_action_rules[action_label],
-                additional_fields,
+                list(submitted_content.additional_fields),
             )
 
             logger.info("Sending Action message: %s", action_message)
