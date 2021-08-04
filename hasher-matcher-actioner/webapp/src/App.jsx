@@ -18,7 +18,6 @@ import ContentDetails from './pages/ContentDetails';
 import Matches from './pages/Matches';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
-import Upload from './Upload';
 import SubmitContent from './pages/SubmitContent';
 
 export default function App() {
@@ -43,9 +42,6 @@ export default function App() {
               </Route>
               <Route path="/matches">
                 <Matches />
-              </Route>
-              <Route path="/upload">
-                <Upload />
               </Route>
               <Route path="/submit">
                 <SubmitContent />

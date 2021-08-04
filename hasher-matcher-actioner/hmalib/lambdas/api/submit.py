@@ -283,31 +283,4 @@ def get_submit_api(
                 message="submission_type not yet supported",
             )
 
-    @submit_api.post("/init-upload/", apply=[jsoninator(InitUploadRequestBody)])
-    def init_upload(
-        request: InitUploadRequestBody,
-    ) -> t.Union[InitUploadResponse, SubmitContentError]:
-        """
-        Endpoint to provide requester with presigned url to upload a photo
-        """
-
-        # TODO error checking on if key already exist etc.
-        presigned_url = create_presigned_put_url(
-            bucket_name=image_bucket,
-            key=s3_bucket_image_source.get_s3_key(request.content_id),
-            file_type=request.file_type,
-        )
-        if presigned_url:
-            return InitUploadResponse(
-                content_id=request.content_id,
-                file_type=request.file_type,
-                presigned_url=presigned_url,
-            )
-
-        bottle.response.status = 400
-        return SubmitContentError(
-            content_id=request.content_id,
-            message="not yet supported",
-        )
-
     return submit_api
