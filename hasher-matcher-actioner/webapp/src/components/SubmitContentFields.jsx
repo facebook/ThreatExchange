@@ -149,21 +149,7 @@ export function OptionalAdditionalFields({
           <Form.Group as={Col}>
             <InputGroup>
               <InputGroup.Prepend>
-                <InputGroup.Text>Key</InputGroup.Text>
-              </InputGroup.Prepend>
-              <Form.Control
-                onChange={e => {
-                  const copy = {...additionalFields};
-                  copy[entry].key = e.target.value;
-                  setAdditionalFields(copy);
-                }}
-              />
-            </InputGroup>
-          </Form.Group>
-          <Form.Group as={Col}>
-            <InputGroup>
-              <InputGroup.Prepend>
-                <InputGroup.Text>Value</InputGroup.Text>
+                <InputGroup.Text>Field</InputGroup.Text>
               </InputGroup.Prepend>
               <Form.Control
                 onChange={e => {

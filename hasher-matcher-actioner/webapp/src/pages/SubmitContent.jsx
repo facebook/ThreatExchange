@@ -70,9 +70,8 @@ export default function SubmitContent() {
   const packageAdditionalFields = () => {
     const entries = [];
     Object.values(additionalFields).forEach(entry =>
-      // store key:value for now to avoid collisions/overwrite of repeats
-      // exact extra additional fields spec should be established in documentation
-      entries.push(`${entry.key}:${entry.value}`),
+      // TODO extra additional fields spec should be established in documentation
+      entries.push(`${entry.value}`),
     );
     return entries;
   };
