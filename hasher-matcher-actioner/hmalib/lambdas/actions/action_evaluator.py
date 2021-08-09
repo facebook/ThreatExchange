@@ -103,13 +103,11 @@ def lambda_handler(event, context):
         )
         action_labels = list(action_label_to_action_rules.keys())
         for action_label in action_labels:
-            action_message = (
-                ActionMessage.from_match_message_action_label_and_action_rules(
-                    match_message,
-                    action_label,
-                    action_label_to_action_rules[action_label],
-                    submitted_content.additional_fields,
-                )
+            action_message = ActionMessage.from_match_message_action_label_action_rules_and_additional_fields(
+                match_message,
+                action_label,
+                action_label_to_action_rules[action_label],
+                list(submitted_content.additional_fields),
             )
 
             logger.info("Sending Action message: %s", action_message)

@@ -7,7 +7,7 @@ import json
 import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
-from uuid import UUID
+from uuid import uuid4
 
 from hmalib.common.logging import get_logger
 
@@ -118,13 +118,22 @@ def submit_content_request_from_s3_event_record(
 ) -> SubmitContentRequestBody:
     """
     Converts s3 event into a SubmitContentRequestBody object with a URL to the content
-    """
-    bucket = record["bucket"]["name"]
-    key = record["object"]["key"]
 
-    # For partner bucket uploads the content IDs are unique but not human readable. The original contnet
-    # key+bucket is stored in the reference url which is passed to the webhook via additional_fields
-    content_id = UUID("{bucket},{key}").hex
+    For partner bucket uploads the content IDs are unique and human understandable but
+    not reversable
+      * uniqueness is provided by uuid4 which has a collision rate of 2^-36
+      * human understandbility is provided by including the (slightly modified key)
+      * modifications to the key mean that the original content bucket and key are
+        not derivable from the content ID alon
+
+    The original contnet (bucket and key) is stored in the reference url which is passed
+    to the webhook via additional_fields
+    """
+    bucket: str = record["bucket"]["name"]
+    key: str = record["object"]["key"]
+
+    readable_key = key.replace("/", ".").replace("?", ".").replace("&", ".")
+    content_id = f"{uuid4()}-{readable_key}"
 
     presigned_url = create_presigned_url(bucket, key, None, 3600, "get_object")
     reference_url = f"https://{bucket}.s3.amazonaws.com/{key}"
