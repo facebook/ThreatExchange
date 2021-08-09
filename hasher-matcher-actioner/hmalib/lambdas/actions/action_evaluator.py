@@ -19,7 +19,6 @@ from hmalib.common.classification_models import (
 )
 from hmalib.common.config import HMAConfig
 from hmalib.common.evaluator_models import (
-    Action,
     ActionLabel,
     ActionRule,
 )
