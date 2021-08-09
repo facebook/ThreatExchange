@@ -9,12 +9,16 @@ from dataclasses import dataclass
 from functools import lru_cache
 from hmalib.common.logging import get_logger
 from hmalib.common.classification_models import (
+    BankIDClassificationLabel,
+    BankSourceClassificationLabel,
+    BankedContentIDClassificationLabel,
+    ClassificationLabel,
+    SubmittedContentClassificationLabel,
     WritebackTypes,
     Label,
 )
 from hmalib.common.config import HMAConfig
 from hmalib.common.evaluator_models import (
-    Action,
     ActionLabel,
     ActionRule,
 )
@@ -91,10 +95,10 @@ def lambda_handler(event, context):
             match_message.content_key,
         )
 
-        # TODO: Convert AdditionalFields to ActionRules for determining if rule should be processed
         action_label_to_action_rules = get_actions_to_take(
             match_message,
             action_rules,
+            submitted_content.additional_fields,
         )
         action_labels = list(action_label_to_action_rules.keys())
         for action_label in action_labels:
@@ -122,16 +126,27 @@ def lambda_handler(event, context):
 def get_actions_to_take(
     match_message: MatchMessage,
     action_rules: t.List[ActionRule],
+    additional_fields_on_content: t.Set[str],
 ) -> t.Dict[ActionLabel, t.List[ActionRule]]:
     """
     Returns action labels for each action rule that applies to a match message.
     """
     action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]] = dict()
 
+    content_classifications = {
+        SubmittedContentClassificationLabel(field)
+        for field in additional_fields_on_content
+    }
+
+    logger.info(
+        "Adding SubmittedContentClassificationLabel(s): %s", content_classifications
+    )
+
     for banked_signal in match_message.matching_banked_signals:
         for action_rule in action_rules:
             if action_rule_applies_to_classifications(
-                action_rule, banked_signal.classifications
+                action_rule,
+                banked_signal.classifications.union(content_classifications),
             ):
                 if action_rule.action_label in action_label_to_action_rules:
                     action_label_to_action_rules[action_rule.action_label].append(
@@ -185,7 +200,7 @@ if __name__ == "__main__":
     HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
     action_rules = get_action_rules()
     match_message = MatchMessage(
-        content_key="c6",
+        content_key="m2",
         content_hash="361da9e6cf1b72f5cea0344e5bb6e70939f4c70328ace762529cac704297354a",
         matching_banked_signals=[
             BankedSignal(
@@ -193,12 +208,10 @@ if __name__ == "__main__":
                 bank_id="258601789084078",
                 bank_source="te",
                 classifications={
-                    Label(key="BankIDClassification", value="258601789084078"),
-                    Label(key="Classification", value="true_positive"),
-                    Label(key="BankSourceClassification", value="te"),
-                    Label(
-                        key="BankedContentIDClassification", value="3534976909868947"
-                    ),
+                    BankedContentIDClassificationLabel(value="258601789084078"),
+                    ClassificationLabel(value="true_positive"),
+                    BankSourceClassificationLabel(value="te"),
+                    BankIDClassificationLabel(value="3534976909868947"),
                 },
             )
         ],

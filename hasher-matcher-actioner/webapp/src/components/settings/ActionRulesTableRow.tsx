@@ -94,6 +94,9 @@ export default function ActionRulesTableRow({
           case 'Classification':
             ret += ' MatchedContent';
             break;
+          case 'SubmittedContent':
+            ret += ' SubmittedContent';
+            break;
           default:
             ret += ` ${classification.classificationType}`;
             break;
@@ -101,12 +104,14 @@ export default function ActionRulesTableRow({
 
         if (classification.equalTo) {
           ret +=
-            classification.classificationType === 'Classification'
+            classification.classificationType === 'Classification' ||
+            classification.classificationType === 'SubmittedContent'
               ? ' has been classified'
               : ' is';
         } else {
           ret +=
-            classification.classificationType === 'Classification'
+            classification.classificationType === 'Classification' ||
+            classification.classificationType === 'SubmittedContent'
               ? ' has not been classified'
               : ' is not';
         }
