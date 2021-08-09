@@ -5,18 +5,13 @@ import json
 import os
 import typing as t
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import lru_cache
 from hmalib.common.logging import get_logger
 from hmalib.common.classification_models import (
-    BankedContentIDClassificationLabel,
-    BankIDClassificationLabel,
-    BankSourceClassificationLabel,
-    ClassificationLabel,
     WritebackTypes,
     Label,
 )
-from hmalib.common.writebacker_models import ThreatExchangeSawThisTooWritebacker
 from hmalib.common.config import HMAConfig
 from hmalib.common.evaluator_models import (
     Action,
@@ -29,7 +24,10 @@ from hmalib.common.message_models import (
     MatchMessage,
     WritebackMessage,
 )
+from hmalib.common.content_models import ContentObject
 from mypy_boto3_sqs import SQSClient
+from mypy_boto3_dynamodb.service_resource import Table, DynamoDBServiceResource
+
 
 logger = get_logger(__name__)
 
@@ -42,6 +40,7 @@ class ActionEvaluatorConfig:
 
     actions_queue_url: str
     sqs_client: SQSClient
+    dynamo_db_table: Table
 
     @classmethod
     @lru_cache(maxsize=None)
@@ -49,10 +48,19 @@ class ActionEvaluatorConfig:
         logger.info(
             "Initializing configs using table name %s", os.environ["CONFIG_TABLE_NAME"]
         )
+        logger.info(
+            "Initializing dynamo table using table name %s",
+            os.environ["DYNAMODB_TABLE"],
+        )
         HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
+        dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
+
+        dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
+
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
+            dynamo_db_table=dynamodb.Table(dynamo_db_table_name),
         )
 
 
@@ -78,15 +86,23 @@ def lambda_handler(event, context):
 
         logger.info("Evaluating against action_rules: %s", action_rules)
 
-        action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
+        submitted_content = ContentObject.get_from_content_id(
+            config.dynamo_db_table,
+            match_message.content_key,
+        )
+
+        # TODO: Convert AdditionalFields to ActionRules for determining if rule should be processed
+        action_label_to_action_rules = get_actions_to_take(
+            match_message,
+            action_rules,
+        )
         action_labels = list(action_label_to_action_rules.keys())
         for action_label in action_labels:
-            action_message = (
-                ActionMessage.from_match_message_action_label_and_action_rules(
-                    match_message,
-                    action_label,
-                    action_label_to_action_rules[action_label],
-                )
+            action_message = ActionMessage.from_match_message_action_label_action_rules_and_additional_fields(
+                match_message,
+                action_label,
+                action_label_to_action_rules[action_label],
+                list(submitted_content.additional_fields),
             )
 
             logger.info("Sending Action message: %s", action_message)
@@ -104,12 +120,14 @@ def lambda_handler(event, context):
 
 
 def get_actions_to_take(
-    match_message: MatchMessage, action_rules: t.List[ActionRule]
+    match_message: MatchMessage,
+    action_rules: t.List[ActionRule],
 ) -> t.Dict[ActionLabel, t.List[ActionRule]]:
     """
     Returns action labels for each action rule that applies to a match message.
     """
     action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]] = dict()
+
     for banked_signal in match_message.matching_banked_signals:
         for action_rule in action_rules:
             if action_rule_applies_to_classifications(
@@ -150,22 +168,6 @@ def action_rule_applies_to_classifications(
     ) and action_rule.must_not_have_labels.isdisjoint(classifications)
 
 
-def get_actions() -> t.List[Action]:
-    """
-    TODO implement
-    Returns the Action objects stored in the config repository. Each Action will have
-    the following attributes: ActionLabel, Priority, SupersededByActionLabel (Priority
-    and SupersededByActionLabel are used by remove_superseded_actions).
-    """
-    return [
-        Action(
-            ActionLabel("EnqueueForReview"),
-            1,
-            [ActionLabel("A_MORE_IMPORTANT_ACTION")],
-        )
-    ]
-
-
 def remove_superseded_actions(
     action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]],
 ) -> t.Dict[ActionLabel, t.List[ActionRule]]:
@@ -183,15 +185,15 @@ if __name__ == "__main__":
     HMAConfig.initialize(os.environ["CONFIG_TABLE_NAME"])
     action_rules = get_action_rules()
     match_message = MatchMessage(
-        content_key="images/200200.jpg",
-        content_hash="20f66f3a2e6eff06d895a8f421c045e1c76f0bf87652d72ce7249412d8d52acc",
+        content_key="c6",
+        content_hash="361da9e6cf1b72f5cea0344e5bb6e70939f4c70328ace762529cac704297354a",
         matching_banked_signals=[
             BankedSignal(
-                banked_content_id="3534976909868947",
-                bank_id="303636684709969",
+                banked_content_id="3070359009741438",
+                bank_id="258601789084078",
                 bank_source="te",
                 classifications={
-                    Label(key="BankIDClassification", value="303636684709969"),
+                    Label(key="BankIDClassification", value="258601789084078"),
                     Label(key="Classification", value="true_positive"),
                     Label(key="BankSourceClassification", value="te"),
                     Label(
@@ -201,5 +203,8 @@ if __name__ == "__main__":
             )
         ],
     )
-    action_label_to_action_rules = get_actions_to_take(match_message, action_rules)
-    action_labels = list(action_label_to_action_rules.keys())
+
+    event = {
+        "Records": [{"body": json.dumps({"Message": match_message.to_aws_json()})}]
+    }
+    lambda_handler(event, None)

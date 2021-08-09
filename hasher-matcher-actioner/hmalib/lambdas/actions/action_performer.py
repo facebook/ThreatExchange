@@ -1,19 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import json
 import os
 import boto3
-import typing as t
 import datetime
 from functools import lru_cache
 from mypy_boto3_dynamodb import DynamoDBServiceResource
 
-from hmalib.common.message_models import BankedSignal, ActionMessage, MatchMessage
+from hmalib.common.message_models import ActionMessage
 from hmalib.common.actioner_models import (
     ActionPerformer,
-    WebhookPostActionPerformer,
 )
-from hmalib.common.evaluator_models import ActionLabel
 from hmalib.common.content_models import ActionEvent
 from hmalib.common.logging import get_logger
 from hmalib.common import config
