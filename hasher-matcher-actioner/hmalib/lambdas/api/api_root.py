@@ -122,9 +122,10 @@ def submit_content_request_from_s3_event_record(
     For partner bucket uploads the content IDs are unique and human understandable but
     not reversable
       * uniqueness is provided by uuid4 which has a collision rate of 2^-36
-      * human understandbility is provided by including the (slightly modified key)
+      * human understandbility is provided by including the (slightly modified) key
+        in the content id
       * modifications to the key mean that the original content bucket and key are
-        not derivable from the content ID alon
+        not derivable from the content ID alone
 
     The original contnet (bucket and key) is stored in the reference url which is passed
     to the webhook via additional_fields
