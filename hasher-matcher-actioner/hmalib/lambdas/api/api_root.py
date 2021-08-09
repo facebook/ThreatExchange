@@ -119,21 +119,23 @@ def submit_content_request_from_s3_event_record(
     """
     Converts s3 event into a SubmitContentRequestBody object with a URL to the content
 
-    For partner bucket uploads the content IDs are unique and human understandable but
+    For partner bucket uploads, the content IDs are unique and (somewhat) readable but
     not reversable
       * uniqueness is provided by uuid4 which has a collision rate of 2^-36
-      * human understandbility is provided by including the (slightly modified) key
-        in the content id
+      * readability is provided by including part of the key in the content id
       * modifications to the key mean that the original content bucket and key are
         not derivable from the content ID alone
 
     The original contnet (bucket and key) is stored in the reference url which is passed
     to the webhook via additional_fields
+
+    Q: Why not include full key and bucket in content_id?
+    A: Bucket keys often have "/" which dont work well with ContentDetails UI page
     """
     bucket: str = record["bucket"]["name"]
     key: str = record["object"]["key"]
 
-    readable_key = key.replace("/", ".").replace("?", ".").replace("&", ".")
+    readable_key = key.split("/")[-1].replace("?", ".").replace("&", ".")
     content_id = f"{uuid4()}-{readable_key}"
 
     presigned_url = create_presigned_url(bucket, key, None, 3600, "get_object")
