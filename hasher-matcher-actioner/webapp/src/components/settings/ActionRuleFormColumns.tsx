@@ -67,7 +67,7 @@ export default function ActionRuleFormColumns({
             MatchedSignal ID
           </option>
           <option value="Classification">MatchedSignal</option>
-          <option value="SubmittedContent">Submitted Content Label</option>
+          <option value="SubmittedContent">SubmittedContent Label</option>
         </Form.Control>
       </Col>
       <Col xs={2}>
