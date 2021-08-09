@@ -34,3 +34,18 @@ variable "webapp_and_api_shared_user_pool_client_id" {
   description = "The id of the shared user pool app client. Used in conjunction with use_shared_user_pool set to true. Generate by running terraform init & apply from /authentication-shared."
   type        = string
 }
+
+variable "lambda_docker_info" {
+  description = "Docker container information for lambda functions"
+  type = object({
+    uri = string
+    commands = object({
+      integrations = string
+    })
+  })
+}
+
+variable "log_retention_in_days" {
+  description = "How long to retain cloudwatch logs for lambda functions in days"
+  type        = number
+}
