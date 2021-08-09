@@ -13,10 +13,9 @@ from hmalib.common.classification_models import (
     ClassificationLabel,
     Label,
     WritebackTypes,
-    PendingOpinionChange,
 )
+from hmalib.common.signal_models import PendingOpinionChange
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
-from hmalib.common.content_models import ContentObject
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from hmalib.common.image_sources import S3BucketImageSource
 from hmalib.common.logging import get_logger

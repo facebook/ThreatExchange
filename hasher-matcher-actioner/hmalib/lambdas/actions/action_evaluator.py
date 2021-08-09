@@ -13,7 +13,7 @@ from hmalib.common.classification_models import (
     BankSourceClassificationLabel,
     BankedContentIDClassificationLabel,
     ClassificationLabel,
-    SubmittedContentClassification,
+    SubmittedContentClassificationLabel,
     WritebackTypes,
     Label,
 )
@@ -134,17 +134,19 @@ def get_actions_to_take(
     action_label_to_action_rules: t.Dict[ActionLabel, t.List[ActionRule]] = dict()
 
     content_classifications = {
-        SubmittedContentClassification(field) for field in additional_fields_on_content
+        SubmittedContentClassificationLabel(field)
+        for field in additional_fields_on_content
     }
 
     logger.info(
-        "Adding SubmittedContentClassification Labels: %s", content_classifications
+        "Adding SubmittedContentClassificationLabel(s): %s", content_classifications
     )
 
     for banked_signal in match_message.matching_banked_signals:
         for action_rule in action_rules:
             if action_rule_applies_to_classifications(
-                action_rule, banked_signal.classifications | content_classifications
+                action_rule,
+                banked_signal.classifications.union(content_classifications),
             ):
                 if action_rule.action_label in action_label_to_action_rules:
                     action_label_to_action_rules[action_rule.action_label].append(
