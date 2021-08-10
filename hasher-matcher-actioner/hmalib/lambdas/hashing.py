@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import functools
-from hmalib.common.content_sources import URLContentSource
 import boto3
 import os
+import datetime
 import json
 
 from mypy_boto3_dynamodb import DynamoDBServiceResource
@@ -19,6 +19,8 @@ from hmalib.common.logging import get_logger
 from hmalib import metrics
 from hmalib.common.message_models import URLSubmissionMessage
 from hmalib.hashing.unified_hasher import UnifiedHasher
+from hmalib.models import PipelineHashRecord
+from hmalib.common.content_sources import URLContentSource
 
 logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
@@ -34,7 +36,7 @@ def get_sqs_client() -> SQSClient:
     return boto3.client("sqs")
 
 
-# OUTPUT_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
+OUTPUT_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 
 # If you want to support additional content or signal types, they can be added
@@ -42,6 +44,7 @@ DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 hasher = UnifiedHasher(
     supported_content_types=[PhotoContent, VideoContent],
     supported_signal_types=[PdqSignal, VideoMD5Signal],
+    output_queue_url=OUTPUT_QUEUE_URL,
 )
 
 
@@ -60,9 +63,9 @@ def lambda_handler(event, context):
     [1]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-console.html
     """
     records_table = get_dynamodb().Table(DYNAMODB_TABLE)
+    sqs_client = get_sqs_client()
 
     for sqs_record in event["Records"]:
-        logger.info(f"Body: {sqs_record}")
         message = json.loads(sqs_record["body"])
 
         if message.get("Event") == "s3:TestEvent":
@@ -80,8 +83,18 @@ def lambda_handler(event, context):
 
         with metrics.timer(metrics.names.hasher.download_file):
             bytes_: bytes = URLContentSource().get_bytes(submission_message.url)
-            for signal in hasher.get_hashes(
-                submission_message.content_id, content_type, bytes_
-            ):
-                # TODO: Actually Publish to matcher.
-                print(f"{signal}")
+
+        for signal in hasher.get_hashes(
+            submission_message.content_id, content_type, bytes_
+        ):
+            hash_record = PipelineHashRecord(
+                content_id=submission_message.content_id,
+                signal_type=signal.signal_type,
+                content_hash=signal.signal_value,
+                updated_at=datetime.datetime.now(),
+            )
+
+            hasher.write_hash_record(records_table, hash_record)
+            hasher.publish_hash_message(sqs_client, hash_record)
+
+    metrics.flush()

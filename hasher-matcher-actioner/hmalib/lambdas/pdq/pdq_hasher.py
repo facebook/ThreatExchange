@@ -102,7 +102,11 @@ def lambda_handler(event, context):
                 pdq_hash, quality = pdq_hasher.pdq_from_bytes(bytes_)
 
             hash_record = PipelineHashRecord(
-                image.content_id, PdqSignal, pdq_hash, datetime.datetime.now(), {"Quality":quality}
+                image.content_id,
+                PdqSignal,
+                pdq_hash,
+                datetime.datetime.now(),
+                {"Quality": quality},
             )
 
             hash_record.write_to_table(records_table)
@@ -110,7 +114,7 @@ def lambda_handler(event, context):
             # Publish to SQS queue
             sqs_client.send_message(
                 QueueUrl=OUTPUT_QUEUE_URL,
-                MessageBody=json.dumps(hash_record.to_sqs_message()),
+                MessageBody=json.dumps(hash_record.to_legacy_sqs_message()),
             )
 
             logger.info("Published new PDQ hash")

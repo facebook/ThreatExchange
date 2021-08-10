@@ -1,10 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import typing as t
+import json
 from dataclasses import dataclass
+from mypy_boto3_dynamodb.service_resource import Table
+from mypy_boto3_sqs.client import SQSClient
 
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType, BytesHasher
+
+from hmalib.models import PipelineHashRecord
+from hmalib import metrics
 
 
 @dataclass
@@ -47,6 +53,7 @@ class UnifiedHasher:
         self,
         supported_content_types: t.List[t.Type[ContentType]],
         supported_signal_types: t.List[t.Type[SignalType]],
+        output_queue_url: str,
     ):
         self.supported_content_types = supported_content_types
 
@@ -55,6 +62,8 @@ class UnifiedHasher:
         assert all([issubclass(t, BytesHasher) for t in supported_signal_types])
 
         self.supported_signal_types = supported_signal_types
+
+        self.output_queue_url = output_queue_url
 
     def supports(self, content_type: t.Type[ContentType]) -> bool:
         """
@@ -66,16 +75,35 @@ class UnifiedHasher:
         self, content_id: str, content_type: t.Type[ContentType], bytes_: bytes
     ) -> t.Generator[ContentSignal, None, None]:
         """
-        Yields signals for content_type. Emitted signals are an intersection of
-        content_type.get_signal_types() and self.supported_signal_types.
+        Yields signals for content_type.
         """
         for signal_type in content_type.get_signal_types():
             if signal_type in self.supported_signal_types and issubclass(
                 signal_type, BytesHasher
             ):
-                yield ContentSignal(
-                    content_type,
-                    content_id,
-                    signal_type,
-                    signal_type.hash_from_bytes(bytes_),
-                )
+                with metrics.timer(metrics.names.hasher.hash(signal_type.get_name())):
+                    hash_value = signal_type.hash_from_bytes(bytes_)
+
+                yield ContentSignal(content_type, content_id, signal_type, hash_value)
+
+    def write_hash_record(self, table: Table, hash_record: PipelineHashRecord):
+        """
+        Once a content signal has been created, write its corresponding hash
+        record. These records can be used to do retroaction in case a new signal
+        is obtained from sources.
+        """
+        with metrics.timer(metrics.names.hasher.write_record):
+            hash_record.write_to_table(table)
+
+    def publish_hash_message(
+        self, sqs_client: SQSClient, hash_record: PipelineHashRecord
+    ):
+        """
+        Once you've written the hash record, publish a message to the matcher's
+        input queue.
+        """
+        with metrics.timer(metrics.names.hasher.publish_message):
+            sqs_client.send_message(
+                QueueUrl=self.output_queue_url,
+                MessageBody=json.dumps(hash_record.to_sqs_message()),
+            )

@@ -225,12 +225,38 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
             },
         )
 
-    def to_sqs_message(self) -> dict:
+    def to_legacy_sqs_message(self) -> dict:
         return {
             "hash": self.content_hash,
             "type": self.signal_type.get_name(),
             "key": self.content_id,
         }
+
+    def to_sqs_message(self) -> dict:
+        return {
+            "ContentId": self.content_id,
+            "SignalType": self.signal_type.get_name(),
+            "ContentHash": self.content_hash,
+            "SignalSpecificAttributes": self.signal_specific_attributes,
+            "UpdatedAt": self.updated_at.isoformat(),
+        }
+
+    @classmethod
+    def from_sqs_message(cls, d: dict) -> "PipelineHashRecord":
+        return cls(
+            content_id=d["ContentId"],
+            signal_type=get_signal_types_by_name()[d["SignalType"]],
+            content_hash=d["ContentHash"],
+            signal_specific_attributes=d["SignalSpecificAttributes"],
+            updated_at=datetime.datetime.fromisoformat(d["UpdatedAt"]),
+        )
+
+    @classmethod
+    def could_be(cls, d: dict) -> bool:
+        """
+        Return True if this dict can be converted to a PipelineHashRecord
+        """
+        return "ContentId" in d and "SignalType" in d and "ContentHash" in d
 
     @classmethod
     def get_from_content_id(
