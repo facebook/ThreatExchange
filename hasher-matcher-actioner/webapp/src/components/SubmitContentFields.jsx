@@ -53,8 +53,12 @@ export function ContentUniqueIdField({inputs, handleInputChange}) {
               <option key="empty" value="" hidden>
                 Select content type...
               </option>
+              {/* TODO: Use an enum here. */}
               <option key="1" value="photo">
                 Photo
+              </option>
+              <option key="2" value="video">
+                Video
               </option>
             </Form.Control>
           </Form.Group>
