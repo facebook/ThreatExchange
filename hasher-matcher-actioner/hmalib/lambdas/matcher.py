@@ -88,13 +88,14 @@ def lambda_handler(event, context):
                 table=table, signal_type=hash_record.signal_type, match=match
             )
 
-        # Publish all messages together
-        matcher.publish_match_message(
-            content_id=hash_record.content_id,
-            content_hash=hash_record.content_hash,
-            matches=matches,
-            sns_client=get_sns_client(),
-            topic_arn=MATCHES_TOPIC_ARN,
-        )
+        if len(matches) != 0:
+            # Publish all messages together
+            matcher.publish_match_message(
+                content_id=hash_record.content_id,
+                content_hash=hash_record.content_hash,
+                matches=matches,
+                sns_client=get_sns_client(),
+                topic_arn=MATCHES_TOPIC_ARN,
+            )
 
         metrics.flush()
