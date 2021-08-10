@@ -296,130 +296,72 @@ resource "aws_sqs_queue" "submissions_queue" {
   )
 }
 
-
-/* Hashing Lambda Configuration Begins
- *
- * Pipe the submissions queue into the hashing lambda.
- */
-resource "aws_lambda_function" "hashing_lambda" {
-  function_name = "${var.prefix}_hasher"
-  package_type  = "Image"
-  role          = aws_iam_role.hashing_lambda_role.arn
-  image_uri     = var.hma_lambda_docker_uri
-  image_config {
-    command = ["hmalib.lambdas.hashing.lambda_handler"]
-  }
-
-  timeout     = 300
-  memory_size = 512
-
-  environment {
-    variables = {
-      DYNAMODB_TABLE      = module.datastore.primary_datastore.name
-      METRICS_NAMESPACE   = var.metrics_namespace
-      MEASURE_PERFORMANCE = var.measure_performance ? "True" : "False"
-      # HASHES_QUEUE_URL    = module.pdq_signals.hashes_queue_url
-    }
-  }
-
+resource "aws_sqs_queue" "hashes_queue" {
+  name_prefix                = "${var.prefix}-hashes"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600
   tags = merge(
     var.additional_tags,
+    local.common_tags,
     {
-      Name = "HashingLambda"
+      Name = "HashesQueue"
     }
   )
 }
 
-data "aws_iam_policy_document" "lambda_assume_role" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
+module "hasher" {
+  source = "./hasher"
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
   }
-}
 
-resource "aws_iam_policy" "hashing_lambda_policy" {
-  name_prefix = "${var.prefix}_hasher_policy"
-  description = "Permissions for Hashing Lambda"
-  policy      = data.aws_iam_policy_document.hashing_lambda.json
-}
-resource "aws_iam_role" "hashing_lambda_role" {
-  name_prefix        = "${var.prefix}_hasher"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
-  tags = merge(
-    var.additional_tags,
-    {
-      Name = "HashingLambda"
-    }
-  )
-}
-
-resource "aws_cloudwatch_log_group" "hashing_logs" {
-  name              = "/aws/lambda/${aws_lambda_function.hashing_lambda.function_name}"
-  retention_in_days = var.log_retention_in_days
-  tags = merge(
-    var.additional_tags,
-    {
-      Name = "HasherLambdaLogGroup"
-    }
-  )
-}
-
-data "aws_iam_policy_document" "hashing_lambda" {
-  statement {
-    effect    = "Allow"
-    actions   = ["sqs:GetQueueAttributes", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
-    resources = [aws_sqs_queue.submissions_queue.arn]
+  datastore = module.datastore.primary_datastore
+  submissions_queue = {
+    arn = aws_sqs_queue.submissions_queue.arn
   }
-  /*statement {
-    effect    = "Allow"
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.hashes_queue.arn]
-  }*/
-  statement {
-    effect    = "Allow"
-    actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
-    resources = [module.datastore.primary_datastore.arn]
+
+  hashes_queue = {
+    arn = aws_sqs_queue.hashes_queue.arn
+    url = aws_sqs_queue.hashes_queue.id
   }
-  statement {
-    effect = "Allow"
-    actions = [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-      "logs:DescribeLogStreams"
-    ]
-    resources = ["${aws_cloudwatch_log_group.hashing_logs.arn}:*"]
-  }
-  statement {
-    effect    = "Allow"
-    actions   = ["cloudwatch:PutMetricData"]
-    resources = ["*"]
-  }
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  config_table          = local.config_table
+  measure_performance   = var.measure_performance
 }
 
-resource "aws_iam_role_policy_attachment" "hashing_lambda_permissions" {
-  role       = aws_iam_role.hashing_lambda_role.name
-  policy_arn = aws_iam_policy.hashing_lambda_policy.arn
+module "matcher" {
+  source = "./matcher"
+  prefix = var.prefix
+
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+  }
+
+  datastore = module.datastore.primary_datastore
+
+  hashes_queue = {
+    arn = aws_sqs_queue.hashes_queue.arn
+    url = aws_sqs_queue.hashes_queue.id
+  }
+
+  matches_topic_arn = aws_sns_topic.matches.arn
+
+  index_data_storage = {
+    bucket_name      = module.hashing_data.index_folder_info.bucket_name
+    index_folder_key = module.hashing_data.index_folder_info.key
+  }
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  config_table          = local.config_table
+  measure_performance   = var.measure_performance
 }
-
-resource "aws_lambda_event_source_mapping" "submissions_to_hasher" {
-  event_source_arn = aws_sqs_queue.submissions_queue.arn
-  function_name    = aws_lambda_function.hashing_lambda.arn
-
-  # Evidently, once set, batch-size and max-batching-window must always
-  # be provided. Else terraform warns.
-  batch_size                         = 10
-  maximum_batching_window_in_seconds = 10
-}
-/* Hashing Lambda Configuration Ends */
-
 
 
 # Set up api
-
 module "api" {
   source                    = "./api"
   prefix                    = var.prefix
