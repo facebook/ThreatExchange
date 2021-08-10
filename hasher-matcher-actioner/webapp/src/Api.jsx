@@ -98,25 +98,6 @@ export function fetchStats(statName, timeSpan) {
   return apiGet('/stats/', {stat_name: statName, time_span: timeSpan});
 }
 
-function initPhotoUpload(contentId, content) {
-  return apiPost('/submit/init-upload/', {
-    content_id: contentId,
-    file_type: content.type,
-  });
-}
-
-export async function uploadPhoto(contentId, content) {
-  const initResult = await initPhotoUpload(contentId, content);
-
-  const requestOptions = {
-    method: 'PUT',
-    body: content,
-  };
-
-  const result = await fetch(initResult.presigned_url, requestOptions);
-  return result;
-}
-
 export async function requestSignalOpinionChange(
   signalId,
   signalSource,
