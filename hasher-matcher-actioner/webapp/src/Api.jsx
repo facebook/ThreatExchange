@@ -3,7 +3,6 @@
  */
 
 import {Auth, API} from 'aws-amplify';
-import {encode} from 'base64-arraybuffer';
 
 async function getAuthorizationToken() {
   const currentSession = await Auth.currentSession();
@@ -116,35 +115,31 @@ export async function requestSignalOpinionChange(
   );
 }
 
-export async function submitContent(
-  submissionType,
+export async function submitContentViaURL(
   contentId,
   contentType,
-  content,
   additionalFields,
+  content,
 ) {
-  return apiPost('/submit/', {
-    submission_type: submissionType,
+  return apiPost('/submit/url/', {
     content_id: contentId,
     content_type: contentType,
-    content_bytes_url_or_file_type: content,
     additional_fields: additionalFields,
+    content_url: content,
   });
 }
 
-export async function submitContentPostURLUpload(
-  submissionType,
+export async function submitContentViaPostURLUpload(
   contentId,
   contentType,
-  content,
   additionalFields,
+  content,
 ) {
-  const submitResponse = await apiPost('/submit/', {
-    submission_type: submissionType,
+  const submitResponse = await apiPost('/submit/post_url/', {
     content_id: contentId,
     content_type: contentType,
-    content_bytes_url_or_file_type: content.type,
     additional_fields: additionalFields,
+    file_type: content.type,
   });
 
   const requestOptions = {
