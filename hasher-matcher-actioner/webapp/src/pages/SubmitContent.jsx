@@ -51,7 +51,7 @@ export default function SubmitContent() {
   // - give a preview of the image to user
   // - auto populate the content id if it is currently empty
   const handleInputChangeUpload = event => {
-    const file = event.nativeEvent.path[0].files[0];
+    const file = event.target.files[0];
     const contentId = inputs.contentId ?? file.name;
     setInputs(inputs_ => ({
       ...inputs_,

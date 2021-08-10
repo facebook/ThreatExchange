@@ -21,22 +21,38 @@ export default function ContentDetails() {
   const [hashDetails, setHashDetails] = useState(null);
   const [img, setImage] = useState(null);
 
+  // Catch the following promises because it is possible for the endpoint to
+  // return error codes if the content values are not yet populated if users come
+  /// to this page right after submit
   useEffect(() => {
-    fetchHash(id).then(hash => {
-      setHashDetails(hash);
-    });
+    fetchHash(id)
+      .then(hash => {
+        setHashDetails(hash);
+      })
+      .catch(_ => {
+        setHashDetails(null);
+      });
   }, []);
 
   useEffect(() => {
-    fetchImage(id).then(result => {
-      setImage(URL.createObjectURL(result));
-    });
+    fetchImage(id)
+      .then(result => {
+        setImage(URL.createObjectURL(result));
+      })
+      .catch(_ => {
+        // ToDo put a 'not found' image
+        setImage(null);
+      });
   }, []);
 
   useEffect(() => {
-    fetchContentDetails(id).then(result => {
-      setContentDetails(result);
-    });
+    fetchContentDetails(id)
+      .then(result => {
+        setContentDetails(result);
+      })
+      .catch(_ => {
+        setContentDetails(null);
+      });
   }, []);
 
   return (
