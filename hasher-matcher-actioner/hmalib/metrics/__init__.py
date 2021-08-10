@@ -83,10 +83,15 @@ class names:
             return self._prefix
 
     class hasher:
-        _prefix = "lambdas.hasher"
+        _prefix = "hasher"
 
         download_file = f"{_prefix}.download_file"
-        hash = f"{_prefix}.hash"
+        write_record = f"{_prefix}.write_record"
+        publish_message = f"{_prefix}.publish_message"
+
+        @classmethod
+        def hash(cls, hash_type: str):
+            return f"{cls._prefix}.hash.{hash_type}"
 
     class indexer:
         _prefix = "indexer"
