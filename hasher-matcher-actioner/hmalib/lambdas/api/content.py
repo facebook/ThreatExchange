@@ -124,7 +124,7 @@ def get_content_api(
             return bottle.abort(400, "content_id must be provided")
 
         content_object: ContentObject = ContentObject.get_from_content_id(
-            dynamodb_table, content_id, PhotoContent.get_name()
+            dynamodb_table, content_id, PhotoContent
         )
 
         if not content_object:
