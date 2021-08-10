@@ -14,11 +14,7 @@ import {
 } from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 
-import {
-  submitContent,
-  submitContentDirectUpload,
-  submitContentPostURLUpload,
-} from '../Api';
+import {submitContent, submitContentPostURLUpload} from '../Api';
 import {SUBMISSION_TYPE} from '../utils/constants';
 
 import {
@@ -79,18 +75,7 @@ export default function SubmitContent() {
   const handleSubmit = event => {
     event.preventDefault();
     setSubmitting(true);
-    if (inputs.submissionType === 'DIRECT_UPLOAD') {
-      submitContentDirectUpload(
-        inputs.submissionType,
-        inputs.contentId,
-        inputs.contentType,
-        inputs.content.raw,
-        packageAdditionalFields(),
-      ).then(() => {
-        setSubmitting(false);
-        setSubmittedId(inputs.contentId);
-      });
-    } else if (inputs.submissionType === 'POST_URL_UPLOAD') {
+    if (inputs.submissionType === 'POST_URL_UPLOAD') {
       submitContentPostURLUpload(
         inputs.submissionType,
         inputs.contentId,
@@ -154,13 +139,6 @@ export default function SubmitContent() {
 
             <Form.Group>
               <Form.Row>
-                {submissionType === SUBMISSION_TYPE.DIRECT_UPLOAD && (
-                  <PhotoUploadField
-                    inputs={inputs}
-                    handleInputChangeUpload={handleInputChangeUpload}
-                  />
-                )}
-
                 {submissionType === SUBMISSION_TYPE.FROM_URL && (
                   <Form.Group>
                     <Form.Label>Provide a URL to the content</Form.Label>
