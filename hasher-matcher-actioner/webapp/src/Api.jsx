@@ -158,27 +158,6 @@ export async function submitContentPostURLUpload(
   return result;
 }
 
-export async function submitContentDirectUpload(
-  submissionType,
-  contentId,
-  contentType,
-  content,
-  additionalFields,
-) {
-  const fileReader = new FileReader();
-  fileReader.onload = () => {
-    const fileContentsBase64Encoded = encode(fileReader.result);
-    apiPost('/submit/', {
-      submission_type: submissionType,
-      content_id: contentId,
-      content_type: contentType,
-      content_bytes_url_or_file_type: fileContentsBase64Encoded,
-      additional_fields: additionalFields,
-    });
-  };
-  return fileReader.readAsArrayBuffer(content);
-}
-
 export function fetchAllDatasets() {
   return apiGet('/datasets/');
 }
