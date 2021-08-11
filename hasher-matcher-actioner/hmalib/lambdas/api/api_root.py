@@ -8,8 +8,10 @@ import typing as t
 from apig_wsgi import make_lambda_handler
 from bottle import response, error
 from uuid import uuid4
+from mypy_boto3_dynamodb.service_resource import Table
 
 from hmalib.common.logging import get_logger
+from hmalib.common.content_models import ContentRefType, ContentType
 
 from .action_rules_api import get_action_rules_api
 from .actions_api import get_actions_api
@@ -19,9 +21,9 @@ from .matches import get_matches_api
 from .stats import get_stats_api
 from .submit import (
     get_submit_api,
-    submit_from_url,
-    SubmitContentRequestBody,
     create_presigned_url,
+    record_content_submission,
+    send_submission_to_url_queue,
 )
 
 # Set to 10MB for images
@@ -105,8 +107,8 @@ def process_s3_event(event: dict) -> None:
         if record["object"]["size"] == 0:
             # ignore folders and empty files
             continue
-        submit_from_url(
-            submit_content_request_from_s3_event_record(record),
+        submit_content_request_from_s3_event_record(
+            record,
             dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
             images_topic_arn=IMAGES_TOPIC_ARN,
         )
@@ -115,9 +117,12 @@ def process_s3_event(event: dict) -> None:
 
 def submit_content_request_from_s3_event_record(
     record: dict,
-) -> SubmitContentRequestBody:
+    dynamodb_table: Table,
+    images_topic_arn: str,
+):
     """
-    Converts s3 event into a SubmitContentRequestBody object with a URL to the content
+    Converts s3 event into a ContentObject and url_submission_message using helpers
+    from submit.py
 
     For partner bucket uploads, the content IDs are unique and (somewhat) readable but
     not reversable
@@ -126,7 +131,7 @@ def submit_content_request_from_s3_event_record(
       * modifications to the key mean that the original content bucket and key are
         not derivable from the content ID alone
 
-    The original contnet (bucket and key) is stored in the reference url which is passed
+    The original content (bucket and key) is stored in the reference url which is passed
     to the webhook via additional_fields
 
     Q: Why not include full key and bucket in content_id?
@@ -141,12 +146,16 @@ def submit_content_request_from_s3_event_record(
     presigned_url = create_presigned_url(bucket, key, None, 3600, "get_object")
     reference_url = f"https://{bucket}.s3.amazonaws.com/{key}"
 
-    return SubmitContentRequestBody(
-        submission_type="FROM_URL",
-        content_id=content_id,
-        content_type="PHOTO",
-        content_bytes_url_or_file_type=presigned_url,
-        additional_fields=[f"partner_s3_reference_url:{reference_url}"],
+    record_content_submission(
+        dynamodb_table,
+        content_id,
+        ContentType.PHOTO,
+        content_ref=presigned_url,
+        content_ref_type=ContentRefType.URL,
+        additional_fields={f"partner_s3_reference_url:{reference_url}"},
+    )
+    send_submission_to_url_queue(
+        dynamodb_table, images_topic_arn, content_id, presigned_url
     )
 
 
