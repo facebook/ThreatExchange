@@ -1,0 +1,179 @@
+#! /usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+"""
+Prototype of shell wrapper for HMA utils for interactive manual testings
+
+```
+python3 scripts/hma_shell --pwd <password-of-user>
+```
+
+"""
+import cmd
+import os
+import argparse
+import time
+import threading
+import uuid
+import json
+import datetime
+from dataclasses import dataclass
+import numpy as np
+import pandas as pd
+import typing as t
+
+import script_utils
+from submit_content_test import DeployedInstanceTestHelper
+
+from listener import Listener
+from submitter import Submitter
+
+from hmalib.common.evaluator_models import ActionRule
+from hmalib.common.classification_models import ActionLabel, ClassificationLabel
+from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
+
+# Defaults (often it is easier to edit the script than provide the args)
+USER = ""
+PWD = ""
+EMAIL = ""
+
+
+class HMAShell(cmd.Cmd):
+    intro = "Welcome! Type help or ? to list commands.\n"
+    prompt = "> "
+
+    def __init__(self, api_url: str, refresh_token: str, client_id: str):
+        super(HMAShell, self).__init__()
+        self.api = script_utils.HasherMatcherActionerAPI(
+            api_url, api_token="", client_id=client_id, refresh_token=refresh_token
+        )
+        self.api._refresh_token()
+
+    def do_dataset_configs(self, arg):
+        "Get list of current dataset configs: dataset_configs"
+        print(self._format_json_object_to_str(self.api.get_dataset_configs()))
+
+    def do_create_sample_ds_config(self, arg):
+        "Create sample dataset config"
+        pass
+
+    def do_actions(self, arg):
+        "Get list of current actions: actions"
+        print(self._format_json_object_to_str(self.api.get_actions()))
+
+    def do_action_rules(self, arg):
+        "Get list of current action_rules: action_rules"
+        print(self._format_json_object_to_str(self.api.get_action_rules()))
+
+    def do_create_sample_action_config(self, arg):
+        "Create sample dataset config"
+        action_hook_url = "http://httpstat.us/404"
+
+        action_performer = WebhookPostActionPerformer(
+            name="SubmitContentTestActionWebhookPost",
+            url=action_hook_url,
+            headers='{"this-is-a":"test-header"}',
+        )
+        self.api.create_action(
+            name=action_performer.name,
+            config_subtype=action_performer.get_config_subtype(),
+            fields={
+                key: value
+                for key, value in vars(action_performer).items()
+                if key not in {"name", "config_subtype"}
+            },
+        )
+
+    def do_refresh(self, arg):
+        "Refresh token (only needed if shell is open for a long time) status of the test: refresh"
+        self.api._refresh_token()
+
+    def do_exit(self, arg):
+        "Close the shell: exit"
+        print("\nClosing Shell...\n")
+        return True
+
+    def _format_json_object_to_str(self, json_object):
+        return json.dumps(json_object, indent=2)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Start a HMA Shell to intract with a deployed HMA instance."
+    )
+    parser.add_argument(
+        "--username",
+        help="username of test user, defaults to '<prefix_in_tf_vars>testuser'",
+        default=USER,
+    )
+    parser.add_argument(
+        "--pwd",
+        help="password of test user",
+        default=PWD,
+    )
+    parser.add_argument(
+        "--email",
+        help="email for test user (required if creating a test user otherwise ignorable)",
+        default=EMAIL,
+    )
+    parser.add_argument(
+        "--tf_output_file",
+        help="Instead of using a python helper get_terraform_outputs, read output from a file\n e.g. via 'terraform -chdir=terraform output -json >> tf_outputs.json'",
+    )
+    parser.add_argument(
+        "--create_user",
+        action="store_true",
+        help="Creates a new test user. Require values for 'username', 'pwd', and 'email' args.",
+    )
+    parser.add_argument(
+        "--filepaths",
+        action="extend",
+        nargs="*",
+        type=str,
+        help="List of filepaths for submit use (will start each batch at the start of the list).",
+    )
+
+    args = parser.parse_args()
+
+    if args.filepaths:
+        for filepath in args.filepaths:
+            if not os.path.isfile(filepath):
+                print(f"Filepath: {filepath} not found.")
+                parser.print_usage()
+                exit()
+
+    if args.tf_output_file:
+        tf_outputs = script_utils.get_terraform_outputs_from_file(args.tf_output_file)
+    else:
+        tf_outputs = script_utils.get_terraform_outputs()
+
+    pwd = args.pwd
+    if not pwd:
+        print("The shell script needs a password to authenticate.")
+        pwd = input("Enter passord: ")
+
+    user = args.username
+    if not user:
+        prefix = tf_outputs["prefix"]["value"]
+        user = f"{prefix}testuser"
+
+    pool_id = tf_outputs["cognito_user_pool_id"]["value"]
+    client_id = tf_outputs["cognito_user_pool_client_id"]["value"]
+
+    if args.create_user:
+        if not args.email:
+            print("email required to create user")
+            parser.print_usage()
+            exit()
+
+        script_utils.create_user(
+            args.username, args.email, pool_id=pool_id, client_id=client_id
+        )
+
+    refresh_token = script_utils.get_token(user, pwd, pool_id, client_id)[
+        "AuthenticationResult"
+    ]["RefreshToken"]
+
+    api_url = tf_outputs["api_url"]["value"]
+
+    HMAShell(api_url, refresh_token, client_id).cmdloop()

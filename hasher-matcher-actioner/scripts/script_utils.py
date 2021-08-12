@@ -9,9 +9,13 @@ import os
 import json
 import base64
 import requests
+import boto3
+import subprocess
+import functools
 import typing as t
 from requests.adapters import HTTPAdapter
 from urllib.parse import urljoin
+from botocore.exceptions import ClientError
 
 
 class HasherMatcherActionerAPI:
@@ -267,6 +271,83 @@ class HasherMatcherActionerAPI:
         api_path: str = "/action-rules/",
     ):
         self.session.delete(self._get_request_url(api_path + action_rule_name))
+
+
+def get_terraform_outputs(
+    directory: str = "/workspaces/ThreatExchange/hasher-matcher-actioner/terraform",
+):
+    cmd = ["terraform"]
+    cmd.extend(["output", "-json"])
+    out = subprocess.check_output(cmd, cwd=directory)
+    return json.loads(out)
+
+
+def get_terraform_outputs_from_file(
+    path: str = "/workspaces/ThreatExchange/hasher-matcher-actioner/tmp.out",
+):
+    with open(path) as f:
+        return json.loads(f.read())
+
+
+@functools.lru_cache(maxsize=None)
+def _get_cognito_client():
+    return boto3.client("cognito-idp")
+
+
+def get_token(
+    username: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    resp = _get_cognito_client().admin_initiate_auth(
+        AuthFlow="ADMIN_USER_PASSWORD_AUTH",
+        AuthParameters={"USERNAME": username, "PASSWORD": pwd},
+        UserPoolId=pool_id,
+        ClientId=client_id,
+    )
+    return resp
+
+
+def create_user(
+    username: str,
+    email: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    _get_cognito_client().admin_create_user(
+        UserPoolId=pool_id,
+        Username=username,
+        UserAttributes=[
+            {"Name": "email_verified", "Value": "True"},
+            {"Name": "email", "Value": email},
+        ],
+        ForceAliasCreation=False,
+        MessageAction="SUPPRESS",
+    )
+    _get_cognito_client().admin_set_user_password(
+        UserPoolId=pool_id,
+        Username=username,
+        Password=pwd,
+        Permanent=True,
+    )
+
+
+def delete_user(
+    username: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    try:
+        resp = _get_cognito_client().admin_delete_user(
+            UserPoolId=pool_id,
+            Username=username,
+        )
+    except ClientError as err:
+        # if the user is not found.
+        pass
 
 
 if __name__ == "__main__":

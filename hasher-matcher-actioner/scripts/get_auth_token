@@ -33,64 +33,7 @@ import argparse
 import boto3
 from botocore.exceptions import ClientError
 
-client = boto3.client("cognito-idp")
-
-
-def get_token(
-    username: str,
-    pwd: str,
-    pool_id: str,
-    client_id: str,
-):
-    resp = client.admin_initiate_auth(
-        AuthFlow="ADMIN_USER_PASSWORD_AUTH",
-        AuthParameters={"USERNAME": username, "PASSWORD": pwd},
-        UserPoolId=pool_id,
-        ClientId=client_id,
-    )
-    return resp
-
-
-def create_user(
-    username: str,
-    email: str,
-    pwd: str,
-    pool_id: str,
-    client_id: str,
-):
-    client.admin_create_user(
-        UserPoolId=pool_id,
-        Username=username,
-        UserAttributes=[
-            {"Name": "email_verified", "Value": "True"},
-            {"Name": "email", "Value": email},
-        ],
-        ForceAliasCreation=False,
-        MessageAction="SUPPRESS",
-    )
-    client.admin_set_user_password(
-        UserPoolId=pool_id,
-        Username=username,
-        Password=pwd,
-        Permanent=True,
-    )
-
-
-def delete_user(
-    username: str,
-    pwd: str,
-    pool_id: str,
-    client_id: str,
-):
-    try:
-        resp = client.admin_delete_user(
-            UserPoolId=pool_id,
-            Username=username,
-        )
-    except ClientError as err:
-        # if the user is not found.
-        pass
-
+from script_utils import get_token, create_user, delete_user
 
 if __name__ == "__main__":
 
