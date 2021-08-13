@@ -256,6 +256,37 @@ if __name__ == "__main__":
         "",
     )
 
+    print(
+        "Attempting to run submit_content_test,gs you may need to run additional commands first."
+    )
+    print(
+        "This simple tests should take a little over 2 minutes to complete (due to sqs timeout).\n"
+    )
+
+    if not api_url:
+        print("Error: Failed to find HMA_API_URL in environ.")
+        print(
+            "Easiest way to add this to your environment is `source scripts/set_tf_outputs_in_local_env.sh`"
+        )
+        exit()
+
+    if refresh_token and not client_id:
+        print(
+            "Error: Failed to find HMA_COGNITO_USER_POOL_CLIENT_ID in environ. (Required to use HMA_REFRESH_TOKEN)"
+        )
+        print(
+            "Easiest way to add this to your environment is `source scripts/set_tf_outputs_in_local_env.sh`"
+        )
+        exit()
+
+    if not token and not refresh_token:
+        print("Error: Failed to find HMA_TOKEN or HMA_REFRESH_TOKEN in environ.")
+        print(
+            "Easiest way to add either to your environment is to export the result `scripts/get_auth_token`"
+        )
+        print("See script (get_auth_token) for usage.")
+        exit()
+
     helper = DeployedInstanceTestHelper(api_url, token, client_id, refresh_token)
 
     if refresh_token and client_id:

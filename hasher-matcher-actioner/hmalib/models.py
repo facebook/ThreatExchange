@@ -6,7 +6,7 @@ import typing as t
 from dataclasses import dataclass, field
 
 from mypy_boto3_dynamodb.service_resource import Table
-from boto3.dynamodb.conditions import Attr, Key, And
+from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
 
 from threatexchange import signal_type

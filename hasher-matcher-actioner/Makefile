@@ -1,4 +1,4 @@
-.PHONY: all docker upload_docker dev_create_configs dev_create_instance dev_test_instance dev_upload_test_signal dev_upload_test_content dev_upload_test_data dev_destroy_instance dev_clear_configs clean
+.PHONY: all docker upload_docker dev_create_configs dev_create_instance dev_test_instance dev_destroy_instance dev_clear_configs clean
 
 shell-or-die = $\
 	$(eval sod_out := $(shell $(1); echo $$?))$\
@@ -37,6 +37,9 @@ dev_create_instance: dev_create_configs upload_docker
 
 dev_destroy_instance:
 	cd terraform/ && terraform destroy -var "prefix=${USER}"
+
+dev_test_instance:
+	python3 scripts/submit_content_test.py
 
 dev_clear_configs:
 	-rm terraform/terraform.tfvars terraform/backend.tf

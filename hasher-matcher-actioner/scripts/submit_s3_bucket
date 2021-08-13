@@ -6,6 +6,11 @@ Given an S3 bucket, and enough permissions on the credentials, iterates through
 all items and submits them as presigned URLs to HMA.
 
 Run without arguments for help.
+
+Requires you have AWS credentials to 'get_object' from the bucket passed to the script.    
+Example usage:
+$ ./scripts/submit_s3_bucket --token `cat .authtoken` --prefix "<redacted/s3-object/prefix/>" --api_url https://<redacted>.execute-api.us-east-1.amazonaws.com/ --storm <redacted_bucketname> 
+
 """
 
 import uuid

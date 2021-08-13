@@ -43,9 +43,9 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ### Running the Webapp Locally
 
-Even when running the UI locally, the API will need to serve from a full instance of HMA. Follow the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md) for details on how to spin up an instance.
+Even when running the UI locally, the API will need to serve from a full instance of HMA. Follow the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/main/hasher-matcher-actioner/README.md) for details on how to spin up an instance.
 
-After deploying an instance, build and then start your instance locally. It may take a few refreshes, but you should be directed to the same login page as the one as the instance you deployed. If you haven't set up an account yet, see the note on how to do that in the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/master/hasher-matcher-actioner/README.md).
+After deploying an instance, build and then start your instance locally. It may take a few refreshes, but you should be directed to the same login page as the one as the instance you deployed. If you haven't set up an account yet, see the note on how to do that in the [Hasher-Matcher-Actioner README](https://github.com/facebook/ThreatExchange/blob/main/hasher-matcher-actioner/README.md).
 
 Once you have done that, the pages you are served should match your local copy, and you can develop on the UI.
 

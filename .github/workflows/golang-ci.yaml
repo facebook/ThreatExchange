@@ -2,13 +2,13 @@ name: API Reference Examples CI - Go
 on:
   push:
     branches:
-    - master
+    - main
     paths:
     - 'api-reference-examples/go/**'
     - '.github/workflows/golang-ci.yaml'
   pull_request:
     branches:
-    - master
+    - main
     paths:
     - 'api-reference-examples/go/**'
     - '.github/workflows/golang-ci.yaml'
@@ -26,6 +26,9 @@ jobs:
       with:
         go-version: '^1.15.0'
     - name: Install testify
-      run: go get github.com/stretchr/testify
+      run: |
+        go env -w GO111MODULE=auto
+        go get github.com/stretchr/testify
     - name: Run tests
-      run: go test ./...
+      run: |
+        go test ./...

@@ -1,11 +1,11 @@
-name: HMA Master push
+name: HMA Main push
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "hasher-matcher-actioner/**"
-      - ".github/workflows/hma-ci-master-push.yaml"
+      - ".github/workflows/hma-ci-main-push.yaml"
 defaults:
   run:
     working-directory: hasher-matcher-actioner/terraform

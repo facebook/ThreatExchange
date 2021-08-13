@@ -1,13 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from hmalib.common.signal_models import PendingOpinionChange
-import hmalib.common.config as config
-import json
-import typing as t
-
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from requests import get, post, put, delete, Response
 
 logger = get_logger(__name__)
 
@@ -48,6 +42,11 @@ class BankIDClassificationLabel(ClassificationLabel):
 class BankedContentIDClassificationLabel(ClassificationLabel):
     # TODO name confusing. Should probably be SignalID...
     key: str = field(default="BankedContentIDClassification", init=False)
+
+
+@dataclass(unsafe_hash=True)
+class SubmittedContentClassificationLabel(ClassificationLabel):
+    key: str = field(default="SubmittedContent", init=False)
 
 
 @dataclass(unsafe_hash=True)

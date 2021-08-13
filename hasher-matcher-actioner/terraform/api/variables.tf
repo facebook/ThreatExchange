@@ -117,3 +117,11 @@ variable "submissions_queue" {
   })
 }
 
+variable "partner_image_buckets" {
+  description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
+  type        = list(object({
+    name = string
+    arn  = string
+    params = map(string)
+  }))
+}
