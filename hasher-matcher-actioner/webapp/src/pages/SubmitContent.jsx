@@ -14,7 +14,7 @@ import {
 } from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 
-import {submitContent, submitContentPostURLUpload} from '../Api';
+import {submitContentViaURL, submitContentViaPostURLUpload} from '../Api';
 import {SUBMISSION_TYPE} from '../utils/constants';
 
 import {
@@ -76,23 +76,21 @@ export default function SubmitContent() {
     event.preventDefault();
     setSubmitting(true);
     if (inputs.submissionType === 'POST_URL_UPLOAD') {
-      submitContentPostURLUpload(
-        inputs.submissionType,
+      submitContentViaPostURLUpload(
         inputs.contentId,
         inputs.contentType,
-        inputs.content.raw,
         packageAdditionalFields(),
+        inputs.content.raw,
       ).then(() => {
         setSubmitting(false);
         setSubmittedId(inputs.contentId);
       });
     } else {
-      submitContent(
-        inputs.submissionType,
+      submitContentViaURL(
         inputs.contentId,
         inputs.contentType,
-        inputs.content,
         packageAdditionalFields(),
+        inputs.content,
       ).then(() => {
         setSubmitting(false);
         setSubmittedId(inputs.contentId);
@@ -174,11 +172,7 @@ export default function SubmitContent() {
                   style={{maxHeight: 38}}
                   className="ml-3"
                   variant="primary"
-                  disabled={
-                    submitting ||
-                    submissionType === SUBMISSION_TYPE.RAW ||
-                    submissionType === SUBMISSION_TYPE.S3_OBJECT
-                  }
+                  disabled={submitting}
                   type="submit">
                   Submit
                 </Button>

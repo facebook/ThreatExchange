@@ -83,15 +83,14 @@ class HasherMatcherActionerAPI:
         content_id: str,
         b64_file_contents: str,
         additional_fields: t.List[str] = [],
-        api_path: str = "/submit/",
     ):
         payload = {
-            "submission_type": "DIRECT_UPLOAD",
             "content_id": content_id,
             "content_type": "PHOTO",
-            "content_bytes_url_or_file_type": b64_file_contents,
             "additional_fields": additional_fields,
+            "content_bytes": b64_file_contents,
         }
+        api_path: str = "/submit/bytes/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode("utf-8"),
@@ -103,15 +102,14 @@ class HasherMatcherActionerAPI:
         content_id: str,
         file: t.BinaryIO,
         additional_fields: t.List[str] = [],
-        api_path: str = "/submit/",
     ):
         payload = {
-            "submission_type": "POST_URL_UPLOAD",
             "content_id": content_id,
             "content_type": "PHOTO",
-            "content_bytes_url_or_file_type": "image/jpeg",
             "additional_fields": additional_fields,
+            "file_type": "image/jpeg",
         }
+        api_path: str = "/submit/post_url/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
@@ -138,13 +136,12 @@ class HasherMatcherActionerAPI:
         and bypasses s3 completely.
         """
         payload = {
-            "submission_type": "FROM_URL",
             "content_id": content_id,
             "content_type": "PHOTO",
-            "content_bytes_url_or_file_type": url,
             "additional_fields": additional_fields,
+            "content_url": url,
         }
-        api_path: str = "/submit/"
+        api_path: str = "/submit/url/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
