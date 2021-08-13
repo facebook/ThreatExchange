@@ -6,6 +6,7 @@ from contextlib import contextmanager
 import datetime
 
 from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.md5 import PhotoMD5Signal
 
 from hmalib import models
 from hmalib.common import signal_models
@@ -13,6 +14,7 @@ from hmalib.common.count_models import MatchByPrivacyGroupCounter
 
 from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase
 
+# These should change in tandem with terraform/datastore/main.tf
 DATASTORE_TABLE_DEF = {
     "AttributeDefinitions": [
         {"AttributeName": "PK", "AttributeType": "S"},
@@ -89,6 +91,16 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         )
 
     @staticmethod
+    def get_example_md5_hash_record():
+        # Use this somewhere
+        return models.PipelineHashRecord(
+            TestPDQModels.TEST_CONTENT_ID,
+            PhotoMD5Signal,
+            "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0",
+            datetime.datetime.now(),
+        )
+
+    @staticmethod
     def get_example_pdq_match_record():
         pdq_hash = "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
         signal_hash = "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f1"
@@ -131,6 +143,21 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         content_hash = items.get("ContentHash")
         assert record.content_hash == content_hash
 
+    def test_write_md5_hash_record(self):
+        """
+        Test PipelineHashRecord write table with hardcode query
+        """
+        record = self.get_example_md5_hash_record()
+
+        record.write_to_table(self.table)
+
+        result = self.table.get_item(
+            Key={"PK": f"c#{TestPDQModels.TEST_CONTENT_ID}", "SK": "type#photo_md5"}
+        )
+        items = result.get("Item")
+        content_hash = items.get("ContentHash")
+        assert record.content_hash == content_hash
+
     def test_query_hash_record(self):
         """
         Test PipelineHashRecord write table with get_from_content_key query
@@ -139,11 +166,27 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         record = self.get_example_pdq_hash_record()
         record.write_to_table(self.table)
 
-        query_record = models.PipelineHashRecord.get_from_content_id(
-            self.table, TestPDQModels.TEST_CONTENT_ID
-        )[0]
+        assert any(
+            [
+                record == item
+                for item in models.PipelineHashRecord.get_from_content_id(
+                    self.table, TestPDQModels.TEST_CONTENT_ID
+                )
+            ]
+        )
 
-        assert record == query_record
+    def test_query_md5_hash_record(self):
+        record = self.get_example_md5_hash_record()
+        record.write_to_table(self.table)
+
+        assert any(
+            [
+                record == item
+                for item in models.PipelineHashRecord.get_from_content_id(
+                    self.table, TestPDQModels.TEST_CONTENT_ID
+                )
+            ]
+        )
 
     def test_query_recent_hash_records(self):
         record = self.get_example_pdq_hash_record()

@@ -226,6 +226,13 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
         )
 
     def to_legacy_sqs_message(self) -> dict:
+        """
+        Prior to supporting MD5, the hash message was simplistic and did not
+        support all fields in the PipelineHashRecord. This is inconsistent with
+        almost all other message models.
+
+        We can remove this once pdq_hasher and pdq_matcher are removed.
+        """
         return {
             "hash": self.content_hash,
             "type": self.signal_type.get_name(),

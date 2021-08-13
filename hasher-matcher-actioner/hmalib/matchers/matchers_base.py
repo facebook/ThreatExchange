@@ -61,7 +61,8 @@ class Matcher:
     Match against any signal type defined on threatexchange and stored in s3.
 
     Once created, indexes used by this are cached on the index. Do not create
-    multiple Matcher instances for the same signal_type.
+    multiple Matcher instances in the same python runtime for the same
+    signal_type. This would take up more RAM than necessary.
 
     Indexes are pulled from S3 on first call for a signal_type.
     """
@@ -80,6 +81,9 @@ class Matcher:
     ) -> t.List[MatchMessage]:
         """
         Returns MatchMessage which can be directly published to a queue.
+
+        Note, this also filters out matches that are from datasets that have
+        been de-activated.
         """
         index = self.get_index(signal_type)
 
@@ -148,6 +152,12 @@ class Matcher:
         Write the signal to the datastore. Only signals that have matched are
         written to the DB. The fetcher takes care of updating the signal with
         opinions or updates from the source.
+
+        TODO: Move this out of matchers.
+
+        This is not matcher specific functionality. Signals could benefit from
+        their own store. Perhaps the API could be useful when building local
+        banks. Who knows! :)
         """
         # TODO: Abstract out MD5SignalMetadata
         if signal_type == PdqSignal:
