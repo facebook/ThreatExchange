@@ -103,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--username",
         help="username of user in pool",
-        default=f'{os.environ.get("HMA_PREFIX","")}TestUser',
+        default=f'{os.environ.get("HMA_PREFIX","")}testuser',
     )
     parser.add_argument(
         "--pwd",

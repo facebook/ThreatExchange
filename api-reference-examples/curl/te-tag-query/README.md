@@ -6,8 +6,8 @@ You can use this for downloading/uploading hashes from/to ThreatExchange, found 
 
 Construting URLs by hand is tedious and error-prone; hence we recommend
 
-* https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-java
-* https://github.com/facebook/ThreatExchange/blob/master/hashing/te-tag-query-ruby
+* https://github.com/facebook/ThreatExchange/blob/main/hashing/te-tag-query-java
+* https://github.com/facebook/ThreatExchange/blob/main/hashing/te-tag-query-ruby
 
 Nonetheless, for those wanting to use curls directly, the URLs in this document were prepared using the `-s` output from the Java reference design, and those URLs were dropped into a browser to obtain the raw JSON responses shown below.
 

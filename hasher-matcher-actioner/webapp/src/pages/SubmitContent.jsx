@@ -14,11 +14,7 @@ import {
 } from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 
-import {
-  submitContent,
-  submitContentDirectUpload,
-  submitContentPostURLUpload,
-} from '../Api';
+import {submitContentViaURL, submitContentViaPostURLUpload} from '../Api';
 import {ContentType, SUBMISSION_TYPE} from '../utils/constants';
 
 import {
@@ -55,7 +51,7 @@ export default function SubmitContent() {
   // - give a preview of the image to user
   // - auto populate the content id if it is currently empty
   const handleInputChangeUpload = event => {
-    const file = event.nativeEvent.path[0].files[0];
+    const file = event.target.files[0];
     const contentId = inputs.contentId ?? file.name;
     setInputs(inputs_ => ({
       ...inputs_,
@@ -70,9 +66,8 @@ export default function SubmitContent() {
   const packageAdditionalFields = () => {
     const entries = [];
     Object.values(additionalFields).forEach(entry =>
-      // store key:value for now to avoid collisions/overwrite of repeats
-      // exact extra additional fields spec should be established in documentation
-      entries.push(`${entry.key}:${entry.value}`),
+      // TODO extra additional fields spec should be established in documentation
+      entries.push(`${entry.value}`),
     );
     return entries;
   };
@@ -80,35 +75,22 @@ export default function SubmitContent() {
   const handleSubmit = event => {
     event.preventDefault();
     setSubmitting(true);
-    if (inputs.submissionType === 'DIRECT_UPLOAD') {
-      submitContentDirectUpload(
-        inputs.submissionType,
+    if (inputs.submissionType === 'POST_URL_UPLOAD') {
+      submitContentViaPostURLUpload(
         inputs.contentId,
         inputs.contentType,
-        inputs.content.raw,
         packageAdditionalFields(),
-      ).then(() => {
-        setSubmitting(false);
-        setSubmittedId(inputs.contentId);
-      });
-    } else if (inputs.submissionType === 'POST_URL_UPLOAD') {
-      submitContentPostURLUpload(
-        inputs.submissionType,
-        inputs.contentId,
-        inputs.contentType,
         inputs.content.raw,
-        packageAdditionalFields(),
       ).then(() => {
         setSubmitting(false);
         setSubmittedId(inputs.contentId);
       });
     } else {
-      submitContent(
-        inputs.submissionType,
+      submitContentViaURL(
         inputs.contentId,
         inputs.contentType,
-        inputs.content,
         packageAdditionalFields(),
+        inputs.content,
       ).then(() => {
         setSubmitting(false);
         setSubmittedId(inputs.contentId);
@@ -155,13 +137,6 @@ export default function SubmitContent() {
 
             <Form.Group>
               <Form.Row>
-                {submissionType === SUBMISSION_TYPE.DIRECT_UPLOAD && (
-                  <PhotoUploadField
-                    inputs={inputs}
-                    handleInputChangeUpload={handleInputChangeUpload}
-                  />
-                )}
-
                 {submissionType === SUBMISSION_TYPE.FROM_URL && (
                   <Form.Group>
                     <Form.Label>Provide a URL to the content</Form.Label>
@@ -197,11 +172,7 @@ export default function SubmitContent() {
                   style={{maxHeight: 38}}
                   className="ml-3"
                   variant="primary"
-                  disabled={
-                    submitting ||
-                    submissionType === SUBMISSION_TYPE.RAW ||
-                    submissionType === SUBMISSION_TYPE.S3_OBJECT
-                  }
+                  disabled={submitting}
                   type="submit">
                   Submit
                 </Button>

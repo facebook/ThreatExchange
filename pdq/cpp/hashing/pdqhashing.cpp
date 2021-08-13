@@ -8,7 +8,7 @@
 
 // ================================================================
 // PDQ algorithm description:
-// https://github.com/facebookexternal/ThreatExchange-PDQ/blob/master/pdqhash-2017-10-09.pdf
+// https://github.com/facebookexternal/ThreatExchange-PDQ/blob/main/pdqhash-2017-10-09.pdf
 // ================================================================
 
 #include <cassert>

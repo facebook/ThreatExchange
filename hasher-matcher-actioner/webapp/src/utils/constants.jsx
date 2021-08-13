@@ -25,7 +25,6 @@ export const PENDING_OPINION_CHANGE = Object.freeze({
 // Corseponds  SubmissionType in hmalib/api/submit.py
 export const SUBMISSION_TYPE = Object.freeze({
   POST_URL_UPLOAD: 'Upload',
-  DIRECT_UPLOAD: 'Direct Upload (~faster but only works for images < 3.5MB)',
   FROM_URL: 'From URL',
 });
 

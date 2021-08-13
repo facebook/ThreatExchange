@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 FETCHER_ACTIVE_DEFAULT = True
 WRITE_BACK_DEFAULT = True
 MATCHER_ACTIVE_DEFAULT = True
+SAMPLE_DATASET_PRIVACY_GROUP_ID = ["inria-holidays-test"]
 
 
 def create_privacy_group_if_not_exists(
@@ -60,14 +61,16 @@ def sync_privacy_groups():
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()
     unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
-    priavcy_group_id_in_use = set()
+    priavcy_group_id_in_use = set(
+        SAMPLE_DATASET_PRIVACY_GROUP_ID
+    )  # add sample test dataset id to avoid disable it when syncing from HMA UI
 
     for privacy_group in unique_privacy_groups:
         if privacy_group.threat_updates_enabled:
             # HMA can only read from privacy groups that have threat_updates enabled.
             # # See here for more details:
             # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-updates/v9.0
-            priavcy_group_id_in_use.add(privacy_group.id)
+            priavcy_group_id_in_use.add(str(privacy_group.id))
             create_privacy_group_if_not_exists(
                 str(privacy_group.id),
                 privacy_group_name=privacy_group.name,

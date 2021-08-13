@@ -103,6 +103,7 @@ resource "aws_lambda_function" "action_evaluator" {
       ACTIONS_QUEUE_URL    = aws_sqs_queue.actions_queue.id,
       WRITEBACKS_QUEUE_URL = aws_sqs_queue.writebacks_queue.id,
       CONFIG_TABLE_NAME    = var.config_table.name,
+      DYNAMODB_TABLE       = var.datastore.name
     }
   }
 }
@@ -244,6 +245,14 @@ data "aws_iam_policy_document" "action_evaluator" {
     effect    = "Allow"
     actions   = ["cloudwatch:PutMetricData"]
     resources = ["*"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:Get*",
+    ]
+    resources = [var.datastore.arn]
   }
 }
 

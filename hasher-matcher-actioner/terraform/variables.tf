@@ -88,11 +88,31 @@ variable "set_sqs_windows_to_min" {
   default     = false
 }
 
-variable "local_image_buckets" {
+variable "partner_image_buckets" {
   description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
   type        = list(object({
     name = string
     arn  = string
+    params = map(string)
   }))
   default     = []
+
+  # Ensure only correct params are used
+  validation {
+    condition = alltrue(
+      [
+        for partner_bucket in var.partner_image_buckets: 
+        alltrue(
+          [
+            for param_key in keys(partner_bucket.params):
+            # 'prefix' is the prefered term but we also accept 'folder' or 'path'. All these options are processed in the same way
+            # similarly, 'suffix' is the prefered term but we also accept 'extension'
+            param_key == "prefix" || param_key == "folder" || param_key == "path" || param_key == "suffix" || param_key == "extension"
+          ]
+        )
+      ]
+    )
+
+    error_message = "The only accepted params are 'prefix' to specify a prefix/folder/path string where only uploads with that prefix should be sent to HMA and 'suffix' to restrict uploads to only files with a specific extension."
+  }
 }

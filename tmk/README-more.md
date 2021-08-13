@@ -1,5 +1,5 @@
 This file contains reference information.  Please see 
-[README.md](https://github.com/facebook/ThreatExchange/blob/master/hashing/tmk/README.md)
+[README.md](https://github.com/facebook/ThreatExchange/blob/main/hashing/tmk/README.md)
 for a higher-level walkthrough. 
 
 # Important executables

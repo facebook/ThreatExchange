@@ -2,7 +2,7 @@
 
 This code is a node.js implementation of the Facebook Threat Exchange.
 
-Documentation referenced in this project is located [here](https://github.com/facebook/ThreatExchange/blob/master/doc/threat_exchange.md)
+Documentation referenced in this project is located [here](https://github.com/facebook/ThreatExchange/blob/main/doc/threat_exchange.md)
 
 ## Usage
 

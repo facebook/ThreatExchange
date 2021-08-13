@@ -115,25 +115,6 @@ export function fetchStats(statName, timeSpan) {
   return apiGet('/stats/', {stat_name: statName, time_span: timeSpan});
 }
 
-function initPhotoUpload(contentId, content) {
-  return apiPost('/submit/init-upload/', {
-    content_id: contentId,
-    file_type: content.type,
-  });
-}
-
-export async function uploadPhoto(contentId, content) {
-  const initResult = await initPhotoUpload(contentId, content);
-
-  const requestOptions = {
-    method: 'PUT',
-    body: content,
-  };
-
-  const result = await fetch(initResult.presigned_url, requestOptions);
-  return result;
-}
-
 export async function requestSignalOpinionChange(
   signalId,
   signalSource,
@@ -152,35 +133,31 @@ export async function requestSignalOpinionChange(
   );
 }
 
-export async function submitContent(
-  submissionType,
+export async function submitContentViaURL(
   contentId,
   contentType,
-  content,
   additionalFields,
+  content,
 ) {
-  return apiPost('/submit/', {
-    submission_type: submissionType,
+  return apiPost('/submit/url/', {
     content_id: contentId,
     content_type: contentType,
-    content_bytes_url_or_file_type: content,
     additional_fields: additionalFields,
+    content_url: content,
   });
 }
 
-export async function submitContentPostURLUpload(
-  submissionType,
+export async function submitContentViaPostURLUpload(
   contentId,
   contentType,
-  content,
   additionalFields,
+  content,
 ) {
-  const submitResponse = await apiPost('/submit/', {
-    submission_type: submissionType,
+  const submitResponse = await apiPost('/submit/post_url/', {
     content_id: contentId,
     content_type: contentType,
-    content_bytes_url_or_file_type: content.type,
     additional_fields: additionalFields,
+    file_type: content.type,
   });
 
   const requestOptions = {
@@ -192,27 +169,6 @@ export async function submitContentPostURLUpload(
   // using the post url in the response.
   const result = await fetch(submitResponse.presigned_url, requestOptions);
   return result;
-}
-
-export async function submitContentDirectUpload(
-  submissionType,
-  contentId,
-  contentType,
-  content,
-  additionalFields,
-) {
-  const fileReader = new FileReader();
-  fileReader.onload = () => {
-    const fileContentsBase64Encoded = encode(fileReader.result);
-    apiPost('/submit/', {
-      submission_type: submissionType,
-      content_id: contentId,
-      content_type: contentType,
-      content_bytes_url_or_file_type: fileContentsBase64Encoded,
-      additional_fields: additionalFields,
-    });
-  };
-  return fileReader.readAsArrayBuffer(content);
 }
 
 export function fetchAllDatasets() {

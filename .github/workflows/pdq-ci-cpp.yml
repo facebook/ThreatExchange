@@ -2,13 +2,13 @@ name: pdq CI - cpp
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "pdq/cpp/**"
       - ".github/workflows/pdq-ci-cpp.yml"
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "pdq/cpp/**"
       - ".github/workflows/pdq-ci-cpp.yml"

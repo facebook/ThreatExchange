@@ -1,8 +1,8 @@
 # ================================================================
 CC=g++ -g -std=c++11
 IFLAGS=-I../.. -I.
-# -Wno-char-subscripts is because of CImg.h
-WFLAGS=-Wall -Wno-char-subscripts -Werror
+# -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess is because of CImg.h
+WFLAGS=-Wall -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Werror
 LFLAGS=-lm
 
 CCOPT=$(CC) $(CFLAGS) $(IFLAGS) $(WFLAGS) -O3

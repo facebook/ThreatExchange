@@ -128,9 +128,12 @@ module "pdq_signals" {
 
   images_input = {
     input_queue = aws_sqs_queue.pdq_images_queue.arn
-    resource_list = [
-      "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
-    ]
+    resource_list = concat(
+      [
+        "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
+      ],
+      [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
+    )
     image_folder_key = module.hashing_data.image_folder_info.key
   }
   threat_exchange_data = {
@@ -398,6 +401,7 @@ module "api" {
     url = aws_sqs_queue.submissions_queue.id,
     arn = aws_sqs_queue.submissions_queue.arn
   }
+  partner_image_buckets = var.partner_image_buckets
 }
 
 # Build and deploy webapp

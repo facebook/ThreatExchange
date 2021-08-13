@@ -16,8 +16,8 @@ from hmalib.common.classification_models import (
     ClassificationLabel,
     Label,
     WritebackTypes,
-    PendingOpinionChange,
 )
+from hmalib.common.signal_models import PendingOpinionChange
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from hmalib.common.content_sources import S3BucketContentSource
@@ -87,12 +87,16 @@ class ActionMessage(MatchMessage):
     action_label: ActionLabel = ActionLabel("UnspecifiedAction")
     action_rules: t.List[ActionRule] = field(default_factory=list)
 
+    # from content
+    additional_fields: t.List[str] = field(default_factory=list)
+
     @classmethod
-    def from_match_message_action_label_and_action_rules(
+    def from_match_message_action_label_action_rules_and_additional_fields(
         cls,
         match_message: MatchMessage,
         action_label: ActionLabel,
         action_rules: t.List[ActionRule],
+        additional_fields=t.List[str],
     ) -> "ActionMessage":
         return cls(
             match_message.content_key,
@@ -100,6 +104,7 @@ class ActionMessage(MatchMessage):
             match_message.matching_banked_signals,
             action_label,
             action_rules,
+            additional_fields,
         )
 
 
