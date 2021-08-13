@@ -14,7 +14,9 @@ from mypy_boto3_dynamodb.service_resource import Table
 from mypy_boto3_sqs import SQSClient
 from botocore.exceptions import ClientError
 import typing as t
+
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.meta import get_content_type_for_name
 
 
@@ -168,8 +170,8 @@ def record_content_submission(
     # TODO add a confirm overwrite path for this
     submit_time = datetime.datetime.now()
     ContentObject(
-        content_id=request.content_id,
-        content_type=get_content_type_for_name(request.content_type),
+        content_id=content_id,
+        content_type=content_type,
         content_ref=content_ref,
         content_ref_type=content_ref_type,
         additional_fields=additional_fields,
@@ -192,7 +194,9 @@ def send_submission_to_url_queue(
     banks. If editing, ensure the logic in api_root.process_s3_event is still correct
     """
 
-    url_submission_message = URLImageSubmissionMessage(content_id, t.cast(str, url))
+    url_submission_message = URLSubmissionMessage(
+        content_type=PhotoContent, content_id=content_id, url=t.cast(str, url)
+    )
     _get_sns_client().publish(
         TopicArn=images_topic_arn,
         Message=json.dumps(url_submission_message.to_sqs_message()),
@@ -262,13 +266,19 @@ def get_submit_api(
         Submission via a url to content. This does not store a copy of the content in s3
         """
         content_id = request.content_id
-        url = request.content_bytes_url_or_file_type
+        url = request.get_content_ref_details()
+        content_type = get_content_type_for_name(request.content_type)
 
         # Again, We want to record the submission before triggering and processing on
         # the content itself therefore we write to dynamo before s3
-        record_content_submission(dynamodb_table, request)
-
-        content_type = get_content_type_for_name(request.content_type)
+        record_content_submission(
+            dynamodb_table=dynamodb_table,
+            content_id=request.content_id,
+            content_type=content_type,
+            content_ref=request.content_url,
+            content_ref_type=ContentRefType.URL,
+            additional_fields=set(),
+        )
 
         url_submission_message = URLSubmissionMessage(
             content_type, content_id, t.cast(str, url)
