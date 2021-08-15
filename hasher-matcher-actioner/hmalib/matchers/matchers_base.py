@@ -78,7 +78,7 @@ class Matcher:
 
     def match(
         self, signal_type: t.Type[SignalType], signal_value: str
-    ) -> t.List[MatchMessage]:
+    ) -> t.List[IndexMatch]:
         """
         Returns MatchMessage which can be directly published to a queue.
 

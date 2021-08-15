@@ -266,7 +266,7 @@ def get_submit_api(
         Submission via a url to content. This does not store a copy of the content in s3
         """
         content_id = request.content_id
-        url = request.get_content_ref_details()
+        url = request.content_url
         content_type = get_content_type_for_name(request.content_type)
 
         # Again, We want to record the submission before triggering and processing on

@@ -31,8 +31,17 @@ from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
 
-dynamodb = boto3.resource("dynamodb")
-s3_client = boto3.client("s3")
+
+@functools.lru_cache(maxsize=None)
+def get_dynamodb():
+    return boto3.resource("dynamodb")
+
+
+@functools.lru_cache(maxsize=None)
+def get_s3_client():
+    return boto3.client("s3")
+
+
 HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
 
 # Signal types that s3_adapters should support
@@ -76,7 +85,7 @@ class ThreatExchangeS3Adapter:
             # S3 doesnt have a built in concept of folders but the AWS UI
             # implements folder-like functionality using prefixes. We follow
             # this same convension here using folder name in a prefix search
-            s3_bucket_files = s3_client.list_objects_v2(
+            s3_bucket_files = get_s3_client().list_objects_v2(
                 Bucket=self.config.threat_exchange_data_bucket_name,
                 Prefix=self.config.threat_exchange_data_folder,
             )["Contents"]
@@ -127,7 +136,7 @@ class ThreatExchangeS3Adapter:
     def _get_file(self, file_name: str) -> t.Dict[str, t.Any]:
         return {
             "file_name": file_name,
-            "data_file": s3_client.get_object(
+            "data_file": get_s3_client().get_object(
                 Bucket=self.config.threat_exchange_data_bucket_name, Key=file_name
             ),
         }
@@ -454,7 +463,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         TODO: Additionally, if writebacks are enabled for this privacy group write back
         INGESTED to ThreatExchange
         """
-        table = dynamodb.Table(self.data_store_table)
+        table = get_dynamodb().Table(self.data_store_table)
 
         for update in updated.values():
             if update.indicator_type == "HASH_PDQ":
