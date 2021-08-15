@@ -47,7 +47,7 @@ export default function ContentDetails() {
   }, []);
 
   useEffect(() => {
-    fetchContentDetails(ContentType.PHOTO, id)
+    fetchContentDetails(id)
       .then(result => {
         setContentDetails(result);
       })

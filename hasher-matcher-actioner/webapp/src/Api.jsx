@@ -3,8 +3,6 @@
  */
 
 import {Auth, API} from 'aws-amplify';
-import {encode} from 'base64-arraybuffer';
-import {ContentType} from './utils/constants';
 
 async function getAuthorizationToken() {
   const currentSession = await Auth.currentSession();
@@ -83,23 +81,9 @@ export function fetchContentActionHistory(contentId) {
   return apiGet('/content/action-history/', {content_id: contentId});
 }
 
-const acceptableContentTypes = Object.values(ContentType);
-
-/**
- * @param {string} contentType [One of utils/constants.jsx:ContentType]
- * @param {string} contentId
- * @returns
- */
-export function fetchContentDetails(contentType, contentId) {
-  if (acceptableContentTypes.indexOf(contentType) === -1) {
-    return Promise.reject(
-      new Error(`contentType must be one of ${acceptableContentTypes}`),
-    );
-  }
-
+export function fetchContentDetails(contentId) {
   return apiGet('/content/', {
     content_id: contentId,
-    content_type: contentType,
   });
 }
 
