@@ -120,7 +120,7 @@ class TestContentModels(DynamoDBTableTestBase, unittest.TestCase):
         result = self.get_table().get_item(
             Key={
                 "PK": f"c#{TestContentModels.TEST_CONTENT_ID}",
-                "SK": "content_type#photo",
+                "SK": ContentObject.CONTENT_STATIC_SK,
             }
         )
         item = result.get("Item")
@@ -154,7 +154,7 @@ class TestContentModels(DynamoDBTableTestBase, unittest.TestCase):
         obj.write_to_table(self.get_table())
 
         query_obj = ContentObject.get_from_content_id(
-            self.get_table(), TestContentModels.TEST_CONTENT_ID, PhotoContent
+            self.get_table(), TestContentModels.TEST_CONTENT_ID
         )
 
         assert obj == query_obj

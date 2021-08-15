@@ -10,7 +10,6 @@ from boto3.dynamodb.conditions import Attr, Key, Or
 from botocore.exceptions import ClientError
 import typing as t
 
-from threatexchange.content_type.photo import PhotoContent
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.models import PipelineHashRecord
@@ -18,7 +17,6 @@ from hmalib.common.content_models import (
     ContentObject,
     ActionEvent,
     ContentRefType,
-    ContentType,
 )
 from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.logging import get_logger
@@ -64,18 +62,11 @@ def get_content_api(
         """
         Content object for a given ID see
         hmalib/commom/content_models.ContentObject for specific fields
-
-        TODO: Change the data model so that it does not require content_type,
-        uniqueness and references should be maintainable without requiring
-        content_type.
         """
         content_id = bottle.request.query.content_id or None
-        content_type = bottle.request.query.content_type
 
-        if content_id and content_type:
-            return ContentObject.get_from_content_id(
-                dynamodb_table, f"{content_id}", content_type=content_type
-            )
+        if content_id:
+            return ContentObject.get_from_content_id(dynamodb_table, content_id)
         return None
 
     @content_api.get("/action-history/", apply=[jsoninator])
@@ -124,7 +115,7 @@ def get_content_api(
             return bottle.abort(400, "content_id must be provided")
 
         content_object: ContentObject = ContentObject.get_from_content_id(
-            table=dynamodb_table, content_id=content_id, content_type=PhotoContent
+            table=dynamodb_table, content_id=content_id
         )
 
         if not content_object:
