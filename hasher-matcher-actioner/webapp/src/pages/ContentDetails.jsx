@@ -7,6 +7,7 @@ import {useHistory, useParams} from 'react-router-dom';
 import {Col, Row, Table, Button} from 'react-bootstrap';
 
 import {fetchHash, fetchImage, fetchContentDetails} from '../Api';
+import {ContentType} from '../utils/constants';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 import {BlurUntilHoverImage} from '../utils/ImageUtils';
@@ -46,7 +47,7 @@ export default function ContentDetails() {
   }, []);
 
   useEffect(() => {
-    fetchContentDetails(id)
+    fetchContentDetails(ContentType.PHOTO, id)
       .then(result => {
         setContentDetails(result);
       })

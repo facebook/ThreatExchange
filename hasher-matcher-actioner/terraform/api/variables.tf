@@ -109,6 +109,14 @@ variable "writebacks_queue" {
   })
 }
 
+variable "submissions_queue" {
+  description = "URL and ARN for submissions queue. Messages from the submission APIs will be dropped on this queue"
+  type = object({
+    url = string
+    arn = string
+  })
+}
+
 variable "partner_image_buckets" {
   description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
   type        = list(object({
@@ -117,4 +125,3 @@ variable "partner_image_buckets" {
     params = map(string)
   }))
 }
-

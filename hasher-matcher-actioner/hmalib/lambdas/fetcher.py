@@ -8,36 +8,24 @@ signals to synchronize a local copy of the database, which will then
 be fed into various indices.
 """
 
-import collections
-import csv
-import io
-import json
 import logging
 import os
-import sys
-import tempfile
 import typing as t
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path
 
 import boto3
-from botocore.errorfactory import ClientError
-import threatexchange
+from threatexchange.api import ThreatExchangeAPI
+from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
+
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
-from hmalib.common.s3_adapters import S3ThreatDataConfig
-from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.fetcher_models import ThreatExchangeConfig
+from hmalib.common.s3_adapters import ThreatUpdateS3Store
 
-from threatexchange import threat_updates as tu
-from threatexchange.api import ThreatExchangeAPI
-from threatexchange.cli.dataset.simple_serialization import HMASerialization
-from threatexchange.descriptor import SimpleDescriptorRollup, ThreatDescriptor
-
-from threatexchange.signal_type.pdq import PdqSignal
 
 logger = get_logger(__name__)
 s3 = boto3.resource("s3")
@@ -116,7 +104,6 @@ def lambda_handler(event, context):
 
     te_data_bucket = s3.Bucket(config.s3_bucket)
 
-    stores = []
     for collab in collabs:
         logger.info(
             "Processing updates for collaboration %s", collab.privacy_group_name
@@ -128,15 +115,17 @@ def lambda_handler(event, context):
             )
             continue
 
-        indicator_store = ThreatUpdateS3PDQStore(
+        indicator_store = ThreatUpdateS3Store(
             int(collab.privacy_group_id),
             api.app_id,
             te_data_bucket,
             config.s3_te_data_folder,
             config.data_store_table,
+            supported_signal_types=[VideoMD5Signal, PdqSignal],
         )
-        stores.append(indicator_store)
+
         indicator_store.load_checkpoint()
+
         if indicator_store.stale:
             logger.warning(
                 "Store for %s - %d stale! Resetting.",
@@ -168,261 +157,3 @@ def lambda_handler(event, context):
                 )
             else:
                 logging.error("Failed before fetching any records")
-
-
-class ThreatUpdateS3PDQStore(tu.ThreatUpdatesStore):
-    """
-    Store files in S3!
-    """
-
-    def __init__(
-        self,
-        privacy_group: int,
-        app_id: int,
-        s3_bucket: t.Any,  # Not typable?
-        s3_te_data_folder: str,
-        data_store_table: str,
-    ) -> None:
-        super().__init__(privacy_group)
-        self.app_id = app_id
-        self._cached_state: t.Optional[t.Dict] = None
-        self.s3_bucket = s3_bucket
-        self.s3_te_data_folder = s3_te_data_folder
-        self.data_store_table = data_store_table
-
-    @property
-    def checkpoint_s3_key(self) -> str:
-        return f"{self.s3_te_data_folder}{self.privacy_group}.checkpoint"
-
-    @property
-    def data_s3_key(self) -> str:
-        """
-        Creates a 'file_name' structure that is dependent on downstream (see s3_adapters.py)
-        TODO replace ".pdq.te" with os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
-        """
-        return f"{self.s3_te_data_folder}{self.privacy_group}.pdq.te"
-
-    @property
-    def next_delta(self) -> tu.ThreatUpdatesDelta:
-        """
-        Hacky - we only support PDQ right now, force to only fetch that
-        Eventually want to always download everything and choose what to
-        do with it later, though checkpoints will need to be reset
-
-        IF YOU CHANGE THIS, OLD CHECKPOINTS NEED TO BE INVALIDATED TO
-        GET THE NON-PDQ DATA!
-        """
-        delta = super().next_delta
-        delta.types = ["HASH_PDQ"]
-        return delta
-
-    def reset(self):
-        super().reset()
-        self._cached_state = None
-
-    def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
-        """Load the state of the threat_updates checkpoints from state directory"""
-        txt_content = read_s3_text(self.s3_bucket, self.checkpoint_s3_key)
-        if txt_content is None:
-            logger.warning("No s3 checkpoint for %d. First run?", self.privacy_group)
-            return tu.ThreatUpdateCheckpoint()
-        checkpoint_json = json.load(txt_content)
-
-        ret = tu.ThreatUpdateCheckpoint(
-            checkpoint_json["last_fetch_time"],
-            checkpoint_json["fetch_checkpoint"],
-        )
-        logger.info(
-            "Loaded checkpoint for privacy group %d. last_fetch_time=%d fetch_checkpoint=%d",
-            self.privacy_group,
-            ret.last_fetch_time,
-            ret.fetch_checkpoint,
-        )
-
-        return ret
-
-    def _store_checkpoint(self, checkpoint: tu.ThreatUpdateCheckpoint) -> None:
-        txt_content = io.StringIO()
-        json.dump(
-            {
-                "last_fetch_time": checkpoint.last_fetch_time,
-                "fetch_checkpoint": checkpoint.fetch_checkpoint,
-            },
-            txt_content,
-            indent=2,
-        )
-        write_s3_text(txt_content, self.s3_bucket, self.checkpoint_s3_key)
-        logger.info(
-            "Stored checkpoint for privacy group %d. last_fetch_time=%d fetch_checkpoint=%d",
-            self.privacy_group,
-            checkpoint.last_fetch_time,
-            checkpoint.fetch_checkpoint,
-        )
-
-    def load_state(self, allow_cached=True):
-        if not allow_cached or self._cached_state is None:
-            txt_content = read_s3_text(self.s3_bucket, self.data_s3_key)
-            items = []
-            if txt_content is None:
-                logger.warning("No TE state for %d. First run?", self.privacy_group)
-            else:
-                # Violate your warranty with module state!
-                csv.field_size_limit(65535)  # dodge field size problems
-                for row in csv.reader(txt_content):
-                    items.append(
-                        HMASerialization(
-                            row[0],
-                            "HASH_PDQ",
-                            row[1],
-                            SimpleDescriptorRollup.from_row(row[2:]),
-                        )
-                    )
-                logger.info("%d rows loaded for %d", len(items), self.privacy_group)
-            # Do all in one assignment just in case of threads
-            self._cached_state = {item.key: item for item in items}
-        return self._cached_state
-
-    def _store_state(self, contents: t.Iterable["HMASerialization"]):
-        row_by_type: t.DefaultDict = collections.defaultdict(list)
-        for item in contents:
-            row_by_type[item.indicator_type].append(item)
-        # Discard all updates except PDQ
-        items = row_by_type.get("HASH_PDQ", [])
-        with io.StringIO(newline="") as txt_content:
-            writer = csv.writer(txt_content)
-            writer.writerows(item.as_csv_row() for item in items)
-            write_s3_text(txt_content, self.s3_bucket, self.data_s3_key)
-            logger.info("%d rows stored for %d", len(items), self.privacy_group)
-
-    def _apply_updates_impl(
-        self,
-        delta: tu.ThreatUpdatesDelta,
-        post_apply_fn=lambda x: None,
-    ) -> None:
-        state: t.Dict = {}
-        updated: t.Dict = {}
-        if delta.start > 0:
-            state = self.load_state()
-        for update in delta:
-            item = HMASerialization.from_threat_updates_json(
-                self.app_id, update.raw_json
-            )
-            if update.should_delete:
-                state.pop(item.key, None)
-            else:
-                state[item.key] = item
-                updated[item.key] = item
-
-        self._store_state(state.values())
-        self._cached_state = state
-
-        post_apply_fn(updated)
-
-    def get_new_pending_opinion_change(
-        self, metadata: PDQSignalMetadata, new_tags: t.List[str]
-    ):
-        # Figure out if we have a new opinion about this indicator and clear out a pending change if so
-
-        # python-threatexchange.descriptor.ThreatDescriptor.from_te_json guarentees there is either
-        # 0 or 1 opinion tags on a descriptor
-        opinion_tags = ThreatDescriptor.SPECIAL_TAGS
-        old_opinion = [tag for tag in metadata.tags if tag in opinion_tags]
-        new_opinion = [tag for tag in new_tags if tag in opinion_tags]
-
-        # If our opinion changed or if our pending change has already happend,
-        # set the pending opinion change to None, otherwise keep it unchanged
-        if old_opinion != new_opinion:
-            return PendingOpinionChange.NONE
-        elif (
-            (
-                new_opinion == [ThreatDescriptor.TRUE_POSITIVE]
-                and metadata.pending_opinion_change
-                == PendingOpinionChange.MARK_TRUE_POSITIVE
-            )
-            or (
-                new_opinion == [ThreatDescriptor.FALSE_POSITIVE]
-                and metadata.pending_opinion_change
-                == PendingOpinionChange.MARK_FALSE_POSITIVE
-            )
-            or (
-                new_opinion == []
-                and metadata.pending_opinion_change
-                == PendingOpinionChange.REMOVE_OPINION
-            )
-        ):
-            return PendingOpinionChange.NONE
-        else:
-            return metadata.pending_opinion_change
-
-    def post_apply(self, updated: t.Dict = {}):
-        """
-        After the fetcher applies an update, check for matches
-        to any of the signals in data_store_table and if found update
-        their tags.
-
-        TODO: Additionally, if writebacks are enabled for this privacy group write back
-        INGESTED to ThreatExchange
-        """
-        table = dynamodb.Table(self.data_store_table)
-
-        for update in updated.values():
-            row: t.List[str] = update.as_csv_row()
-            # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
-            # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
-            new_tags = row[4].split(" ") if row[4] else []
-
-            metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
-                table,
-                int(row[1]),
-                S3ThreatDataConfig.SOURCE_STR,
-                str(self.privacy_group),
-            )
-
-            if metadata:
-                new_pending_opinion_change = self.get_new_pending_opinion_change(
-                    metadata, new_tags
-                )
-            else:
-                # If this is a new indicator without metadata there is nothing for us to update
-                return
-
-            metadata = PDQSignalMetadata(
-                signal_id=row[1],
-                ds_id=str(self.privacy_group),
-                updated_at=datetime.now(),
-                signal_source=S3ThreatDataConfig.SOURCE_STR,
-                signal_hash=row[0],  # note: not used by update_tags_in_table_if_exists
-                tags=new_tags,
-                pending_opinion_change=new_pending_opinion_change,
-            )
-            # TODO: Combine 2 update functions into single function
-            if metadata.update_tags_in_table_if_exists(table):
-                logger.info(
-                    "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
-                    row[1],
-                    S3ThreatDataConfig.SOURCE_STR,
-                    self.privacy_group,
-                )
-            if metadata.update_pending_opinion_change_in_table_if_exists(table):
-                logger.info(
-                    "Updated Pending Opinion in DB for indicator id: %s source: %s for privacy group: %d",
-                    row[1],
-                    S3ThreatDataConfig.SOURCE_STR,
-                    self.privacy_group,
-                )
-
-
-def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
-    byte_content = io.BytesIO()
-    try:
-        bucket.download_fileobj(key, byte_content)
-    except ClientError as ce:
-        if ce.response["Error"]["Code"] != "404":
-            raise
-        return None
-    return io.StringIO(byte_content.getvalue().decode())
-
-
-def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
-    byte_content = io.BytesIO(txt_content.getvalue().encode())
-    bucket.upload_fileobj(byte_content, key)

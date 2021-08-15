@@ -1,14 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-
 import os
+
+
 from hmalib.lambdas.actions.writebacker import lambda_handler
 from hmalib.common.classification_models import WritebackTypes
 from hmalib.common.message_models import MatchMessage, WritebackMessage, BankedSignal
-
 from hmalib.common.fetcher_models import ThreatExchangeConfig
-
 from hmalib.common import config as hmaconfig
 
 

@@ -9,6 +9,9 @@ from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, Or
 from botocore.exceptions import ClientError
 
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.meta import get_content_type_for_name
+
 from hmalib.lambdas.api.middleware import JSONifiable
 from hmalib.models import DynamoDBItem
 
@@ -102,12 +105,6 @@ class ActionEvent(ContentObjectBase, JSONifiable):
         ]
 
 
-class ContentType(Enum):
-    PHOTO = "PHOTO"
-    VIDEO = "VIDEO"
-    TEXT = "TEXT"
-
-
 class ContentRefType(Enum):
     """
     How must we get follow the content-ref. Where is this content stored?
@@ -140,8 +137,8 @@ class ContentObject(ContentObjectBase, JSONifiable):
 
     CONTENT_TYPE_PREFIX = "content_type#"
 
-    # Used to create the SK in DDB. An example would be "PHOTO"
-    content_type: ContentType
+    # Used to create the SK in DDB.
+    content_type: t.Type[ContentType]
 
     # Raw value of the content reference. eg. An s3 url, s3 key, url
     content_ref: str
@@ -158,7 +155,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
 
     @staticmethod
     def get_dynamodb_content_type_key(content_type: ContentType) -> str:
-        return f"{ContentObject.CONTENT_TYPE_PREFIX}{content_type.value}"
+        return f"{ContentObject.CONTENT_TYPE_PREFIX}{content_type.get_name()}"
 
     def to_json(self) -> t.Dict:
         """
@@ -169,7 +166,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
             additional_fields=list(
                 self.additional_fields if self.additional_fields else set()
             ),
-            content_type=self.content_type.value,
+            content_type=self.content_type.get_name(),
             content_ref_type=self.content_ref_type.value,
             submission_times=[s.isoformat() for s in self.submission_times],
             created_at=self.created_at.isoformat(),
@@ -223,7 +220,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls,
         table: Table,
         content_id: str,
-        content_type: ContentType = ContentType.PHOTO,
+        content_type: ContentType,
     ) -> t.Optional["ContentObject"]:
         if not content_id:
             return None
@@ -242,7 +239,9 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls,
         item: t.Dict,
     ) -> "ContentObject":
-        content_type = ContentType(item["SK"][len(cls.CONTENT_TYPE_PREFIX) :])
+        content_type = get_content_type_for_name(
+            item["SK"][len(cls.CONTENT_TYPE_PREFIX) :]
+        )
         content_ref_type = ContentRefType(item["ContentRefType"])
 
         return ContentObject(

@@ -4,9 +4,11 @@ import boto3
 import json
 import os
 import typing as t
-
 from dataclasses import dataclass
 from functools import lru_cache
+
+from threatexchange.content_type.photo import PhotoContent
+
 from hmalib.common.logging import get_logger
 from hmalib.common.classification_models import (
     BankIDClassificationLabel,
@@ -90,9 +92,10 @@ def lambda_handler(event, context):
 
         logger.info("Evaluating against action_rules: %s", action_rules)
 
+        # TODO: This is hardcoded to photos for now. #756 requires that we
+        # remove the need for content_type for ContentObject queries.
         submitted_content = ContentObject.get_from_content_id(
-            config.dynamo_db_table,
-            match_message.content_key,
+            config.dynamo_db_table, match_message.content_key, PhotoContent
         )
 
         action_label_to_action_rules = get_actions_to_take(

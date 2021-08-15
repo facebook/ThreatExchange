@@ -47,6 +47,7 @@ IMAGE_FOLDER_KEY = os.environ[
     "IMAGE_FOLDER_KEY"
 ]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
 IMAGES_TOPIC_ARN = os.environ["IMAGES_TOPIC_ARN"]
+SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -199,6 +200,7 @@ app.mount(
         image_bucket=IMAGE_BUCKET_NAME,
         image_prefix=IMAGE_FOLDER_KEY,
         images_topic_arn=IMAGES_TOPIC_ARN,
+        submissions_queue_url=SUBMISSIONS_QUEUE_URL,
     ),
 )
 

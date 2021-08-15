@@ -1,5 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+# Global Secondary Index definitions need to change in tandem with
+# hmalib/tests/test_pipeline_models.py::DATASTORE_TABLE_DEF
+
 ### Primary hashing / matching / actions datastore 
 resource "aws_dynamodb_table" "hma_datastore" {
   name         = "${var.prefix}-HMADataStore"
@@ -42,7 +45,8 @@ resource "aws_dynamodb_table" "hma_datastore" {
       "SignalHash",
       "SignalSource",
       "HashType",
-      "Labels"
+      "Labels",
+      "SignalType",
     ]
   }
 
@@ -56,7 +60,8 @@ resource "aws_dynamodb_table" "hma_datastore" {
       "SignalHash",
       "SignalSource",
       "HashType",
-      "Labels"
+      "Labels",
+      "SignalType",
     ]
   }
 

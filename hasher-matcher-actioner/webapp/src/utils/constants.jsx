@@ -1,5 +1,9 @@
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ *
+ * TODO: typescript supports enums. However, all files that use enums from here
+ * need to be converted to typescript before we can change this file into
+ * typescript.
  */
 
 // Matchtes OpinionString in hmalib/lambdas/api/matches.py
@@ -35,4 +39,13 @@ export const StatsTimeSpans = Object.freeze({
 export const StatNames = Object.freeze({
   HASHES: 'hashes',
   MATCHES: 'matches',
+});
+
+// Matches threatexchange.content_type.* for each subclass of ContentType, get_name()
+// >>> from threatexchange.content_type.meta import get_all_content_types
+// >>> [content_type.get_name() for content_type in get_all_content_types()]
+export const ContentType = Object.freeze({
+  PHOTO: 'photo',
+  TEXT: 'text',
+  VIDEO: 'video',
 });

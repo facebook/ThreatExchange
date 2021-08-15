@@ -1,122 +1,119 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from decimal import Decimal
 import unittest
 from contextlib import contextmanager
-from moto import mock_dynamodb2
+import datetime
+
+from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.md5 import PhotoMD5Signal
+
 from hmalib import models
 from hmalib.common import signal_models
 from hmalib.common.count_models import MatchByPrivacyGroupCounter
 
-import boto3
-import datetime
-import os
+from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase
+
+# These should change in tandem with terraform/datastore/main.tf
+DATASTORE_TABLE_DEF = {
+    "AttributeDefinitions": [
+        {"AttributeName": "PK", "AttributeType": "S"},
+        {"AttributeName": "SK", "AttributeType": "S"},
+        {"AttributeName": "GSI1-PK", "AttributeType": "S"},
+        {"AttributeName": "GSI1-SK", "AttributeType": "S"},
+        {"AttributeName": "GSI2-PK", "AttributeType": "S"},
+        {"AttributeName": "UpdatedAt", "AttributeType": "S"},
+    ],
+    "TableName": "test_table",
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+        {"AttributeName": "PK", "KeyType": "HASH"},
+        {"AttributeName": "SK", "KeyType": "RANGE"},
+    ],
+    "GlobalSecondaryIndexes": [
+        {
+            "IndexName": "GSI-1",
+            "KeySchema": [
+                {"AttributeName": "GSI1-PK", "KeyType": "HASH"},
+                {"AttributeName": "GSI1-SK", "KeyType": "RANGE"},
+            ],
+            "Projection": {
+                "ProjectionType": "INCLUDE",
+                "NonKeyAttributes": [
+                    "ContentHash",
+                    "UpdatedAt",
+                    "SignalHash",
+                    "SignalSource",
+                    "HashType",
+                    "SignalType",
+                ],
+            },
+        },
+        {
+            "IndexName": "GSI-2",
+            "KeySchema": [
+                {"AttributeName": "GSI2-PK", "KeyType": "HASH"},
+                {"AttributeName": "UpdatedAt", "KeyType": "RANGE"},
+            ],
+            "Projection": {
+                "ProjectionType": "INCLUDE",
+                "NonKeyAttributes": [
+                    "ContentHash",
+                    "SignalHash",
+                    "SignalSource",
+                    "HashType",
+                    "SignalType",
+                ],
+            },
+        },
+    ],
+}
 
 
-class TestPDQModels(unittest.TestCase):
-    table = None
+class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
     TEST_CONTENT_ID = "image/test_photo.jpg"
     TEST_SIGNAL_ID = "5555555555555555"
     TEST_SIGNAL_SOURCE = "test_source"
     TEST_DATASET_ID = "sample_data"
 
-    @staticmethod
-    def mock_aws_credentials():
-        """
-        Mocked AWS Credentials for moto.
-        (likely not needed based on local testing but just incase)
-        """
-        os.environ["AWS_ACCESS_KEY_ID"] = "testing"
-        os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-        os.environ["AWS_SECURITY_TOKEN"] = "testing"
-        os.environ["AWS_SESSION_TOKEN"] = "testing"
-
     @classmethod
-    def setUpClass(cls):
-        cls.mock_aws_credentials()
-        cls.mock_dynamodb2 = mock_dynamodb2()
-        cls.mock_dynamodb2.start()
-        cls.create_mocked_table()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.mock_dynamodb2.stop()
-
-    @classmethod
-    def create_mocked_table(cls):
-        dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-        table_name = "test-table"
-        cls.table = dynamodb.create_table(
-            AttributeDefinitions=[
-                {"AttributeName": "PK", "AttributeType": "S"},
-                {"AttributeName": "SK", "AttributeType": "S"},
-                {"AttributeName": "GSI1-PK", "AttributeType": "S"},
-                {"AttributeName": "GSI1-SK", "AttributeType": "S"},
-                {"AttributeName": "GSI2-PK", "AttributeType": "S"},
-                {"AttributeName": "UpdatedAt", "AttributeType": "S"},
-            ],
-            TableName=table_name,
-            BillingMode="PAY_PER_REQUEST",
-            KeySchema=[
-                {"AttributeName": "PK", "KeyType": "HASH"},
-                {"AttributeName": "SK", "KeyType": "RANGE"},
-            ],
-            GlobalSecondaryIndexes=[
-                {
-                    "IndexName": "GSI-1",
-                    "KeySchema": [
-                        {"AttributeName": "GSI1-PK", "KeyType": "HASH"},
-                        {"AttributeName": "GSI1-SK", "KeyType": "RANGE"},
-                    ],
-                    "Projection": {
-                        "ProjectionType": "INCLUDE",
-                        "NonKeyAttributes": [
-                            "ContentHash",
-                            "UpdatedAt",
-                            "SignalHash",
-                            "SignalSource",
-                            "HashType",
-                        ],
-                    },
-                },
-                {
-                    "IndexName": "GSI-2",
-                    "KeySchema": [
-                        {"AttributeName": "GSI2-PK", "KeyType": "HASH"},
-                        {"AttributeName": "UpdatedAt", "KeyType": "RANGE"},
-                    ],
-                    "Projection": {
-                        "ProjectionType": "INCLUDE",
-                        "NonKeyAttributes": [
-                            "ContentHash",
-                            "SignalHash",
-                            "SignalSource",
-                            "HashType",
-                        ],
-                    },
-                },
-            ],
-        )
+    def get_table_definition(cls):
+        return DATASTORE_TABLE_DEF
 
     @staticmethod
     def get_example_pdq_hash_record():
-        return models.PipelinePDQHashRecord(
+        return models.PipelineHashRecord(
             TestPDQModels.TEST_CONTENT_ID,
+            PdqSignal,
             "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0",
             datetime.datetime.now(),
-            100,
+            {"Quality": Decimal("100")},
+        )
+
+    @staticmethod
+    def get_example_md5_hash_record():
+        # Use this somewhere
+        return models.PipelineHashRecord(
+            TestPDQModels.TEST_CONTENT_ID,
+            PhotoMD5Signal,
+            "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0",
+            datetime.datetime.now(),
         )
 
     @staticmethod
     def get_example_pdq_match_record():
         pdq_hash = "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
         signal_hash = "f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f1"
-        return models.PDQMatchRecord(
+
+        return models.MatchRecord(
             TestPDQModels.TEST_CONTENT_ID,
+            PdqSignal,
             pdq_hash,
             datetime.datetime.now(),
             TestPDQModels.TEST_SIGNAL_ID,
             TestPDQModels.TEST_SIGNAL_SOURCE,
             signal_hash,
+            {"Distance": "29"},
         )
 
     @staticmethod
@@ -133,7 +130,7 @@ class TestPDQModels(unittest.TestCase):
 
     def test_write_hash_record(self):
         """
-        Test PipelinePDQHashRecord write table with hardcode query
+        Test PipelineHashRecord write table with hardcode query
         """
         record = self.get_example_pdq_hash_record()
 
@@ -146,36 +143,69 @@ class TestPDQModels(unittest.TestCase):
         content_hash = items.get("ContentHash")
         assert record.content_hash == content_hash
 
+    def test_write_md5_hash_record(self):
+        """
+        Test PipelineHashRecord write table with hardcode query
+        """
+        record = self.get_example_md5_hash_record()
+
+        record.write_to_table(self.table)
+
+        result = self.table.get_item(
+            Key={"PK": f"c#{TestPDQModels.TEST_CONTENT_ID}", "SK": "type#photo_md5"}
+        )
+        items = result.get("Item")
+        content_hash = items.get("ContentHash")
+        assert record.content_hash == content_hash
+
     def test_query_hash_record(self):
         """
-        Test PipelinePDQHashRecord write table with get_from_content_key query
+        Test PipelineHashRecord write table with get_from_content_key query
         """
 
         record = self.get_example_pdq_hash_record()
         record.write_to_table(self.table)
 
-        query_record = models.PipelinePDQHashRecord.get_from_content_id(
-            self.table, TestPDQModels.TEST_CONTENT_ID
+        assert any(
+            [
+                record == item
+                for item in models.PipelineHashRecord.get_from_content_id(
+                    self.table, TestPDQModels.TEST_CONTENT_ID
+                )
+            ]
         )
 
-        assert record == query_record
+    def test_query_md5_hash_record(self):
+        record = self.get_example_md5_hash_record()
+        record.write_to_table(self.table)
 
-    def test_query_hash_record_by_time(self):
-        """
-        Test PipelinePDQHashRecord write table with get_from_content_key query by time
-        """
+        assert any(
+            [
+                record == item
+                for item in models.PipelineHashRecord.get_from_content_id(
+                    self.table, TestPDQModels.TEST_CONTENT_ID
+                )
+            ]
+        )
 
+    def test_query_recent_hash_records(self):
         record = self.get_example_pdq_hash_record()
 
         record.write_to_table(self.table)
 
-        query_record = models.PipelinePDQHashRecord.get_from_time_range(self.table)[0]
+        query_record = models.PipelineHashRecord.get_recent_items_page(
+            self.table
+        ).items[0]
+
+        record.signal_specific_attributes = {}
+        # While signal_specific_attributes are stored in the table, the index
+        # does not store them. I do not think they need to either.
 
         assert record == query_record
 
     def test_write_match_record(self):
         """
-        Test PDQMatchRecord write table with hardcode query
+        Test MatchRecord write table with hardcode query
         """
 
         record = self.get_example_pdq_match_record()
@@ -194,14 +224,14 @@ class TestPDQModels(unittest.TestCase):
 
     def test_query_match_record_by_content_id(self):
         """
-        Test PDQMatchRecord write table with get_from_content_key query
+        Test MatchRecord write table with get_from_content_key query
         """
 
         record = self.get_example_pdq_match_record()
 
         record.write_to_table(self.table)
 
-        query_record = models.PDQMatchRecord.get_from_content_id(
+        query_record = models.MatchRecord.get_from_content_id(
             self.table, TestPDQModels.TEST_CONTENT_ID
         )[0]
 
@@ -209,29 +239,37 @@ class TestPDQModels(unittest.TestCase):
 
     def test_query_match_record_by_signal_id(self):
         """
-        Test PDQMatchRecord write table with get_from_content_key query by signal
+        Test MatchRecord write table with get_from_content_key query by signal
         """
 
         record = self.get_example_pdq_match_record()
 
+        record.signal_specific_attributes = {}
+        #  GSI-1: Signal ID index does not contain signal_specific attributes
+        # yet. I'm not yet sure whether to include them.
+
         record.write_to_table(self.table)
 
-        query_record = models.PDQMatchRecord.get_from_signal(
+        query_record = models.MatchRecord.get_from_signal(
             self.table, TestPDQModels.TEST_SIGNAL_ID, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
 
         assert record == query_record
 
-    def test_query_match_record_by_time(self):
+    def test_query_match_recent_record(self):
         """
-        Test PDQMatchRecord write table with get_from_content_key query by time
+        Test MatchRecord write table with get_from_content_key query by recency
         """
 
         record = self.get_example_pdq_match_record()
 
         record.write_to_table(self.table)
 
-        query_record = models.PDQMatchRecord.get_from_time_range(self.table)[0]
+        query_record = models.MatchRecord.get_recent_items_page(self.table).items[0]
+
+        record.signal_specific_attributes = {}
+        # While signal_specific_attributes are stored in the table, the index
+        # does not store them. I do not think they need to either.
 
         assert record == query_record
 
@@ -343,13 +381,10 @@ class TestPDQModels(unittest.TestCase):
         )
 
 
-class MatchByPrivacyGroupCounterTestCase(TestPDQModels):
-    """
-    Better placed inside common, but unfortunately has to be here.
-
-    To be able to re-use the ddb schema definitions, must place things here.
-    tests are module free so can't be cross-referenced.
-    """
+class MatchByPrivacyGroupCounterTestCase(DynamoDBTableTestBase, unittest.TestCase):
+    @classmethod
+    def get_table_definition(cls):
+        return DATASTORE_TABLE_DEF
 
     @contextmanager
     def fresh_dynamodb(self):

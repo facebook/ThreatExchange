@@ -1,11 +1,17 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
+from decimal import Decimal
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key
 from botocore.exceptions import ClientError
+
+from threatexchange import signal_type
+from threatexchange.content_type.meta import get_signal_types_by_name
+from threatexchange.signal_type.signal_base import SignalType
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -75,16 +81,53 @@ class AWSMessage:
         raise NotImplementedError
 
 
-@dataclass
-class PDQRecordBase(DynamoDBItem):
-    """
-    Abstract Base Record for PDQ releated items.
-    """
+# DDB's internal LastEvaluatedKey and ExclusiveStartKey both follow this type.
+# Naming Struggle: Is this a "real" cursor, dunno, but "DynamoDBKey" is too
+# confusable. Needed to add something to distinguish. Using "Cursor" now.
+DynamoDBCursorKey = t.NewType(
+    "DynamoDBCursorKey",
+    t.Dict[
+        str,
+        t.Union[
+            bytes,
+            bytearray,
+            str,
+            int,
+            bool,
+            Decimal,
+            t.Set[int],
+            t.Set[Decimal],
+            t.Set[str],
+            t.Set[bytes],
+            t.Set[bytearray],
+            t.List[t.Any],
+            t.Dict[str, t.Any],
+            None,
+        ],
+    ],
+)
 
-    SIGNAL_TYPE = "pdq"
+
+@dataclass
+class RecentItems:
+    last_evaluated_key: DynamoDBCursorKey
+
+    # TODO: Can be generified for stronger typing.
+    items: t.List[t.Any]
+
+
+@dataclass
+class PipelineRecordBase(DynamoDBItem):
+    """
+    Base Class for records of pieces of content going through the
+    hashing/matching pipeline.
+    """
 
     content_id: str
+
+    signal_type: t.Type[SignalType]
     content_hash: str
+
     updated_at: datetime.datetime
 
     def to_dynamodb_item(self) -> dict:
@@ -94,76 +137,222 @@ class PDQRecordBase(DynamoDBItem):
         raise NotImplementedError
 
     @classmethod
-    def get_from_time_range(
-        cls, table: Table, start_time: str = None, end_time: str = None
-    ) -> t.List:
+    def get_recent_items_page(
+        cls, table: Table, ExclusiveStartKey: t.Optional[DynamoDBCursorKey] = None
+    ) -> RecentItems:
+        """
+        Get a paginated list of recent items. The API is purposefully kept
+        """
         raise NotImplementedError
 
 
 @dataclass
-class PipelinePDQHashRecord(PDQRecordBase):
+class PipelineRecordDefaultsBase:
+    """
+    Hash and match records may have signal_type specific attributes that are not
+    universal. eg. PDQ hashes have quality and PDQ matches have distance while
+    MD5 has neither. Assuming such signal_type specific attributes will not be
+    indexed, we are choosing to put them into a bag of variables. See
+    PipelineRecordBase.[de]serialize_signal_specific_attributes() to understand
+    storage.
+
+    Ideally, this would be an attribute with defaults, but that would make
+    inheritance complicated because default_values would precede non-default
+    values in the sub class.
+    """
+
+    signal_specific_attributes: t.Dict[str, t.Union[int, float, str]] = field(
+        default_factory=dict
+    )
+
+    def serialize_signal_specific_attributes(self) -> dict:
+        """
+        Converts signal_specific_attributes into a dict. Uses the signal_type as
+        a prefix.
+
+        So for PDQ hash records, `item.signal_specific_attributes.quality` will
+        become `item.pdq_quality`. Storing as top-level item attributes allows
+        indexing if we need it later. You can't do that with nested elements.
+        """
+        # Note on Typing: PipelineRecordDefaultsBase is meant to be used with
+        # PipelineRecordBase. So it will have access to all fields from
+        # PipelineRecordBase. This is (impossible?) to express using mypy. So
+        # ignore self.signal_type
+
+        return {
+            f"{self.signal_type.get_name()}_{key}": value  # type:ignore
+            for key, value in self.signal_specific_attributes.items()
+        }
+
+    @staticmethod
+    def _signal_specific_attribute_remove_prefix(prefix: str, k: str) -> str:
+        return k[len(prefix) :]
+
+    @classmethod
+    def deserialize_signal_specific_attributes(
+        cls, d: t.Dict[str, t.Any]
+    ) -> t.Dict[str, t.Union[int, float, str]]:
+        """
+        Reverses serialize_signal_specific_attributes.
+        """
+        signal_type = d["SignalType"]
+        signal_type_prefix = f"{signal_type}_"
+
+        return {
+            cls._signal_specific_attribute_remove_prefix(signal_type_prefix, key): value
+            for key, value in d.items()
+            if key.startswith(signal_type_prefix)
+        }
+
+
+@dataclass
+class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
     """
     Successful execution at the hasher produces this record.
     """
 
-    quality: int
-
     def to_dynamodb_item(self) -> dict:
+        top_level_overrides = self.serialize_signal_specific_attributes()
+        return dict(
+            **top_level_overrides,
+            **{
+                "PK": self.get_dynamodb_content_key(self.content_id),
+                "SK": self.get_dynamodb_type_key(self.signal_type.get_name()),
+                "ContentHash": self.content_hash,
+                "SignalType": self.signal_type.get_name(),
+                "GSI2-PK": self.get_dynamodb_type_key(self.__class__.__name__),
+                "UpdatedAt": self.updated_at.isoformat(),
+            },
+        )
+
+    def to_legacy_sqs_message(self) -> dict:
+        """
+        Prior to supporting MD5, the hash message was simplistic and did not
+        support all fields in the PipelineHashRecord. This is inconsistent with
+        almost all other message models.
+
+        We can remove this once pdq_hasher and pdq_matcher are removed.
+        """
         return {
-            "PK": self.get_dynamodb_content_key(self.content_id),
-            "SK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
-            "ContentHash": self.content_hash,
-            "Quality": self.quality,
-            "UpdatedAt": self.updated_at.isoformat(),
-            "HashType": self.SIGNAL_TYPE,
+            "hash": self.content_hash,
+            "type": self.signal_type.get_name(),
+            "key": self.content_id,
         }
 
     def to_sqs_message(self) -> dict:
         return {
-            "hash": self.content_hash,
-            "type": self.SIGNAL_TYPE,
-            "key": self.content_id,
+            "ContentId": self.content_id,
+            "SignalType": self.signal_type.get_name(),
+            "ContentHash": self.content_hash,
+            "SignalSpecificAttributes": self.signal_specific_attributes,
+            "UpdatedAt": self.updated_at.isoformat(),
         }
 
     @classmethod
-    def get_from_content_id(
-        cls, table: Table, content_key: str
-    ) -> t.Optional["PipelinePDQHashRecord"]:
-        items = HashRecordQuery.from_content_key(
-            table,
-            cls.get_dynamodb_content_key(content_key),
-            cls.get_dynamodb_type_key(cls.SIGNAL_TYPE),
+    def from_sqs_message(cls, d: dict) -> "PipelineHashRecord":
+        return cls(
+            content_id=d["ContentId"],
+            signal_type=get_signal_types_by_name()[d["SignalType"]],
+            content_hash=d["ContentHash"],
+            signal_specific_attributes=d["SignalSpecificAttributes"],
+            updated_at=datetime.datetime.fromisoformat(d["UpdatedAt"]),
         )
-        records = cls._result_items_to_records(items)
-        return None if not records else records[0]
 
     @classmethod
-    def get_from_time_range(
-        cls, table: Table, start_time: str = None, end_time: str = None
-    ) -> t.List["PipelinePDQHashRecord"]:
-        items = HashRecordQuery.from_time_range(
-            table, cls.get_dynamodb_type_key(cls.SIGNAL_TYPE), start_time, end_time
+    def could_be(cls, d: dict) -> bool:
+        """
+        Return True if this dict can be converted to a PipelineHashRecord
+        """
+        return "ContentId" in d and "SignalType" in d and "ContentHash" in d
+
+    @classmethod
+    def get_from_content_id(
+        cls,
+        table: Table,
+        content_id: str,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+    ) -> t.List["PipelineHashRecord"]:
+        """
+        Returns all available PipelineHashRecords for a content_id.
+        """
+        expected_pk = cls.get_dynamodb_content_key(content_id)
+
+        if signal_type is None:
+            condition_expression = Key("PK").eq(expected_pk) & Key("SK").begins_with(
+                DynamoDBItem.TYPE_PREFIX
+            )
+        else:
+            condition_expression = Key("PK").eq(expected_pk) & Key("SK").eq(
+                DynamoDBItem.get_dynamodb_type_key(signal_type.get_name())
+            )
+
+        return cls._result_items_to_records(
+            table.query(
+                KeyConditionExpression=condition_expression,
+            ).get("Items", [])
         )
-        return cls._result_items_to_records(items)
+
+    @classmethod
+    def get_recent_items_page(
+        cls, table: Table, exclusive_start_key: t.Optional[DynamoDBCursorKey] = None
+    ) -> RecentItems:
+        """
+        Get a paginated list of recent items.
+        """
+        if not exclusive_start_key:
+            # Evidently, https://github.com/boto/boto3/issues/2813 boto is able
+            # to distinguish fun(Parameter=None) from fun(). So, we can't use
+            # exclusive_start_key's optionality. We have to do an if clause!
+            # Fun!
+            result = table.query(
+                IndexName="GSI-2",
+                ScanIndexForward=False,
+                Limit=100,
+                KeyConditionExpression=Key("GSI2-PK").eq(
+                    DynamoDBItem.get_dynamodb_type_key(cls.__name__)
+                ),
+            )
+        else:
+            result = table.query(
+                IndexName="GSI-2",
+                ExclusiveStartKey=exclusive_start_key,
+                ScanIndexForward=False,
+                Limit=100,
+                KeyConditionExpression=Key("GSI2-PK").eq(
+                    DynamoDBItem.get_dynamodb_type_key(cls.__name__)
+                ),
+            )
+
+        return RecentItems(
+            t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
+            cls._result_items_to_records(result["Items"]),
+        )
 
     @classmethod
     def _result_items_to_records(
         cls,
         items: t.List[t.Dict],
-    ) -> t.List["PipelinePDQHashRecord"]:
+    ) -> t.List["PipelineHashRecord"]:
+        """
+        Get a paginated list of recent hash records. Subsequent calls must use
+        `return_value.last_evaluated_key`.
+        """
         return [
-            PipelinePDQHashRecord(
+            PipelineHashRecord(
                 content_id=item["PK"][len(cls.CONTENT_KEY_PREFIX) :],
+                signal_type=get_signal_types_by_name()[item["SignalType"]],
                 content_hash=item["ContentHash"],
                 updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
-                quality=item["Quality"],
+                signal_specific_attributes=cls.deserialize_signal_specific_attributes(
+                    item
+                ),
             )
             for item in items
         ]
 
 
 @dataclass
-class PDQMatchRecord(PDQRecordBase):
+class _MatchRecord(PipelineRecordBase):
     """
     Successful execution at the matcher produces this record.
     """
@@ -172,19 +361,39 @@ class PDQMatchRecord(PDQRecordBase):
     signal_source: str
     signal_hash: str
 
+
+@dataclass
+class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
+    """
+    Weird, innit? You can't introduce non-default fields after default fields.
+    All default fields in PipelineRecordBase are actually in
+    PipelineRecordDefaultsBase and this complex inheritance chain allows you to
+    create an MRO that is legal.
+
+    H/T:
+    https://stackoverflow.com/questions/51575931/class-inheritance-in-python-3-7-dataclasses
+    """
+
     def to_dynamodb_item(self) -> dict:
-        return {
-            "PK": self.get_dynamodb_content_key(self.content_id),
-            "SK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
-            "ContentHash": self.content_hash,
-            "UpdatedAt": self.updated_at.isoformat(),
-            "SignalHash": self.signal_hash,
-            "SignalSource": self.signal_source,
-            "GSI1-PK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
-            "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
-            "HashType": self.SIGNAL_TYPE,
-            "GSI2-PK": self.get_dynamodb_type_key(self.SIGNAL_TYPE),
-        }
+        top_level_overrides = self.serialize_signal_specific_attributes()
+        return dict(
+            **top_level_overrides,
+            **{
+                "PK": self.get_dynamodb_content_key(self.content_id),
+                "SK": self.get_dynamodb_signal_key(self.signal_source, self.signal_id),
+                "ContentHash": self.content_hash,
+                "UpdatedAt": self.updated_at.isoformat(),
+                "SignalHash": self.signal_hash,
+                "SignalSource": self.signal_source,
+                "SignalType": self.signal_type.get_name(),
+                "GSI1-PK": self.get_dynamodb_signal_key(
+                    self.signal_source, self.signal_id
+                ),
+                "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
+                "HashType": self.signal_type.get_name(),
+                "GSI2-PK": self.get_dynamodb_type_key(self.__class__.__name__),
+            },
+        )
 
     def to_sqs_message(self) -> dict:
         # TODO add method for when matches are added to a sqs
@@ -193,164 +402,95 @@ class PDQMatchRecord(PDQRecordBase):
     @classmethod
     def get_from_content_id(
         cls, table: Table, content_id: str
-    ) -> t.List["PDQMatchRecord"]:
-        items = MatchRecordQuery.from_content_key(
-            table,
-            cls.get_dynamodb_content_key(content_id),
-            cls.SIGNAL_KEY_PREFIX,
-            cls.SIGNAL_TYPE,
+    ) -> t.List["MatchRecord"]:
+        """
+        Return all matches for a content_id.
+        """
+
+        content_key = DynamoDBItem.get_dynamodb_content_key(content_id)
+        source_prefix = DynamoDBItem.SIGNAL_KEY_PREFIX
+
+        return cls._result_items_to_records(
+            table.query(
+                KeyConditionExpression=Key("PK").eq(content_key)
+                & Key("SK").begins_with(source_prefix),
+            ).get("Items", [])
         )
-        return cls._result_items_to_records(items)
 
     @classmethod
     def get_from_signal(
         cls, table: Table, signal_id: t.Union[str, int], signal_source: str
-    ) -> t.List["PDQMatchRecord"]:
-        items = MatchRecordQuery.from_signal_key(
-            table,
-            cls.get_dynamodb_signal_key(signal_source, signal_id),
-            cls.SIGNAL_TYPE,
+    ) -> t.List["MatchRecord"]:
+        """
+        Return all matches for a signal. Needs source and id to uniquely
+        identify a signal.
+        """
+
+        signal_key = DynamoDBItem.get_dynamodb_signal_key(signal_source, signal_id)
+
+        return cls._result_items_to_records(
+            table.query(
+                IndexName="GSI-1",
+                KeyConditionExpression=Key("GSI1-PK").eq(signal_key),
+            ).get("Items", [])
         )
-        return cls._result_items_to_records(items)
 
     @classmethod
-    def get_from_time_range(
-        cls, table: Table, start_time: str = None, end_time: str = None
-    ) -> t.List["PDQMatchRecord"]:
-        items = MatchRecordQuery.from_time_range(
-            table, cls.get_dynamodb_type_key(cls.SIGNAL_TYPE), start_time, end_time
+    def get_recent_items_page(
+        cls, table: Table, exclusive_start_key: t.Optional[DynamoDBCursorKey] = None
+    ) -> RecentItems:
+        """
+        Get a paginated list of recent match records. Subsequent calls must use
+        `return_value.last_evaluated_key`.
+        """
+        if not exclusive_start_key:
+            # Evidently, https://github.com/boto/boto3/issues/2813 boto is able
+            # to distinguish fun(Parameter=None) from fun(). So, we can't use
+            # exclusive_start_key's optionality. We have to do an if clause!
+            # Fun!
+            result = table.query(
+                IndexName="GSI-2",
+                Limit=100,
+                ScanIndexForward=False,
+                KeyConditionExpression=Key("GSI2-PK").eq(
+                    DynamoDBItem.get_dynamodb_type_key(cls.__name__)
+                ),
+            )
+        else:
+            result = table.query(
+                IndexName="GSI-2",
+                Limit=100,
+                ExclusiveStartKey=exclusive_start_key,
+                ScanIndexForward=False,
+                KeyConditionExpression=Key("GSI2-PK").eq(
+                    DynamoDBItem.get_dynamodb_type_key(cls.__name__)
+                ),
+            )
+
+        return RecentItems(
+            t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
+            cls._result_items_to_records(result["Items"]),
         )
-        return cls._result_items_to_records(items)
 
     @classmethod
     def _result_items_to_records(
         cls,
         items: t.List[t.Dict],
-    ) -> t.List["PDQMatchRecord"]:
+    ) -> t.List["MatchRecord"]:
         return [
-            PDQMatchRecord(
+            MatchRecord(
                 content_id=cls.remove_content_key_prefix(item["PK"]),
                 content_hash=item["ContentHash"],
                 updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
+                signal_type=get_signal_types_by_name()[item["SignalType"]],
                 signal_id=cls.remove_signal_key_prefix(
                     item["SK"], item["SignalSource"]
                 ),
                 signal_source=item["SignalSource"],
                 signal_hash=item["SignalHash"],
+                signal_specific_attributes=cls.deserialize_signal_specific_attributes(
+                    item
+                ),
             )
             for item in items
         ]
-
-
-class HashRecordQuery:
-    DEFAULT_PROJ_EXP = "PK, ContentHash, UpdatedAt, Quality"
-
-    @classmethod
-    def from_content_key(
-        cls, table: Table, content_key: str, hash_type_key: str = None
-    ) -> t.List[t.Dict]:
-        """
-        Given a content key (and optional hash type), return its content hash (for that type).
-        Written to be agnostic to hash type so it can be reused by other types of 'HashRecord's.
-        """
-        if hash_type_key is None:
-            key_con_exp = Key("PK").eq(content_key) & Key("SK").begins_with(
-                DynamoDBItem.SIGNAL_KEY_PREFIX
-            )
-        else:
-            key_con_exp = Key("PK").eq(content_key) & Key("SK").eq(hash_type_key)
-
-        return table.query(
-            KeyConditionExpression=key_con_exp,
-            ProjectionExpression=cls.DEFAULT_PROJ_EXP,
-        ).get("Items", [])
-
-    @classmethod
-    def from_time_range(
-        cls, table: Table, hash_type: str, start_time: str = None, end_time: str = None
-    ) -> t.List[t.Dict]:
-        """
-        Given a hash type and time range, give me all the hashes found for that type and time range
-        """
-        if start_time is None:
-            start_time = datetime.datetime.min.isoformat()
-        if end_time is None:
-            end_time = datetime.datetime.max.isoformat()
-        return table.scan(
-            FilterExpression=Key("SK").eq(hash_type)
-            & Key("UpdatedAt").between(start_time, end_time),
-            ProjectionExpression=cls.DEFAULT_PROJ_EXP,
-        ).get("Items", [])
-
-
-class MatchRecordQuery:
-
-    """
-    Written to be agnostic to hash type so it can be reused by other types of 'MatchRecord's.
-    """
-
-    DEFAULT_PROJ_EXP = (
-        "PK, ContentHash, UpdatedAt, SK, SignalSource, SignalHash, Labels"
-    )
-
-    @classmethod
-    def from_content_key(
-        cls,
-        table: Table,
-        content_key: str,
-        source_prefix: str = DynamoDBItem.SIGNAL_KEY_PREFIX,
-        hash_type: str = None,
-    ) -> t.List[t.Dict]:
-        """
-        Given a content key (and optional hash type), give me its content hash (for that type).
-
-        """
-        filter_exp = None
-        if not hash_type is None:
-            filter_exp = Attr("HashType").eq(hash_type)
-
-        return table.query(
-            KeyConditionExpression=Key("PK").eq(content_key)
-            & Key("SK").begins_with(source_prefix),
-            ProjectionExpression=cls.DEFAULT_PROJ_EXP,
-            FilterExpression=filter_exp,
-        ).get("Items", [])
-
-    @classmethod
-    def from_signal_key(
-        cls,
-        table: Table,
-        signal_key: str,
-        hash_type: str = None,
-    ) -> t.List[t.Dict]:
-        """
-        Given a Signal ID/Key (and optional hash type), give me any content matches found
-        """
-        filter_exp = None
-        if not hash_type is None:
-            filter_exp = Attr("HashType").eq(hash_type)
-
-        return table.query(
-            IndexName="GSI-1",
-            KeyConditionExpression=Key("GSI1-PK").eq(signal_key),
-            ProjectionExpression=cls.DEFAULT_PROJ_EXP,
-            FilterExpression=filter_exp,
-        ).get("Items", [])
-
-    @classmethod
-    def from_time_range(
-        cls, table: Table, hash_type: str, start_time: str = None, end_time: str = None
-    ) -> t.List[t.Dict]:
-        """
-        Given a hash type and time range, give me all the matches found for that type and time range
-        """
-        if start_time is None:
-            start_time = datetime.datetime.min.isoformat()
-        if end_time is None:
-            end_time = datetime.datetime.max.isoformat()
-        return table.query(
-            IndexName="GSI-2",
-            KeyConditionExpression=Key("GSI2-PK").eq(hash_type)
-            & Key("UpdatedAt").between(start_time, end_time),
-            ProjectionExpression=cls.DEFAULT_PROJ_EXP,
-        ).get("Items", [])

@@ -7,17 +7,19 @@ import typing as t
 
 import boto3
 from mypy_boto3_dynamodb import DynamoDBServiceResource
+
 from threatexchange.hashing import pdq_hasher
+from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib import metrics
-from hmalib.models import PipelinePDQHashRecord
+from hmalib.models import PipelineHashRecord
 from hmalib.common.message_models import (
     S3ImageSubmission,
     S3ImageSubmissionBatchMessage,
-    URLImageSubmissionMessage,
+    URLSubmissionMessage,
 )
 from hmalib.common.logging import get_logger
-from hmalib.common.image_sources import URLImageSource, S3BucketImageSource
+from hmalib.common.content_sources import S3BucketContentSource
 
 logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
@@ -31,7 +33,7 @@ IMAGE_FOLDER_KEY = os.environ[
 
 
 def get_image_bytes(
-    submission_message: t.Union[URLImageSubmissionMessage, S3ImageSubmission],
+    submission_message: S3ImageSubmission,
     default_s3_bucket_image_prefix: str,
 ):
     """
@@ -42,12 +44,9 @@ def get_image_bytes(
     Once we have more hashing lambdas that need access to media, this could be
     moved into its own module.
     """
-    if isinstance(submission_message, URLImageSubmissionMessage):
-        return URLImageSource().get_image_bytes(submission_message.url)
-    else:
-        return S3BucketImageSource(
-            submission_message.bucket, default_s3_bucket_image_prefix
-        ).get_image_bytes(submission_message.content_id)
+    return S3BucketContentSource(
+        submission_message.bucket, default_s3_bucket_image_prefix
+    ).get_bytes(submission_message.content_id)
 
 
 def lambda_handler(event, context):
@@ -55,8 +54,8 @@ def lambda_handler(event, context):
     Listens to SQS events generated when new files are added to S3. Downloads
     files to temp-storage, generates PDQ hash and quality from the file.
 
-    The SQS events could be from S3 or directly from the Submission API lambdas
-    in case of a URL submission.
+    The SQS events would be from S3. URL only submissions are routed to
+    hmalib.lambdas.hashing instead.
 
     Saves hash output to dynamodb.
 
@@ -79,15 +78,9 @@ def lambda_handler(event, context):
             logger.info("Disregarding S3 Test Event")
             continue
 
-        images_to_process: t.List[
-            t.Union[URLImageSubmissionMessage, S3ImageSubmission]
-        ] = []
+        images_to_process: t.List[t.Union[S3ImageSubmission]] = []
 
-        if URLImageSubmissionMessage.could_be(message):
-            images_to_process.append(
-                URLImageSubmissionMessage.from_sqs_message(message)
-            )
-        elif S3ImageSubmissionBatchMessage.could_be(message):
+        if S3ImageSubmissionBatchMessage.could_be(message):
             images_to_process.extend(
                 S3ImageSubmissionBatchMessage.from_sqs_message(
                     message, image_prefix=IMAGE_FOLDER_KEY
@@ -108,8 +101,12 @@ def lambda_handler(event, context):
             with metrics.timer(metrics.names.pdq_hasher_lambda.hash):
                 pdq_hash, quality = pdq_hasher.pdq_from_bytes(bytes_)
 
-            hash_record = PipelinePDQHashRecord(
-                image.content_id, pdq_hash, datetime.datetime.now(), quality
+            hash_record = PipelineHashRecord(
+                image.content_id,
+                PdqSignal,
+                pdq_hash,
+                datetime.datetime.now(),
+                {"Quality": quality},
             )
 
             hash_record.write_to_table(records_table)
@@ -117,7 +114,7 @@ def lambda_handler(event, context):
             # Publish to SQS queue
             sqs_client.send_message(
                 QueueUrl=OUTPUT_QUEUE_URL,
-                MessageBody=json.dumps(hash_record.to_sqs_message()),
+                MessageBody=json.dumps(hash_record.to_legacy_sqs_message()),
             )
 
             logger.info("Published new PDQ hash")

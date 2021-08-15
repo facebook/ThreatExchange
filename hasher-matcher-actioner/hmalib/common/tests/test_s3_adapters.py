@@ -1,0 +1,22 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+from unittest import TestCase
+
+from hmalib.common.s3_adapters import ThreatUpdateS3Store, KNOWN_SIGNAL_TYPES
+
+
+class S3AdaptersTestCase(TestCase):
+    def test_key_indicator_type_mapping(self):
+        for signal_type in KNOWN_SIGNAL_TYPES:
+            store = ThreatUpdateS3Store(
+                1,
+                1,
+                "does-not-matter",
+                "does-not-matter",
+                "does-not-matter",
+                KNOWN_SIGNAL_TYPES,
+            )
+
+            assert signal_type == ThreatUpdateS3Store.get_signal_type_from_object_key(
+                store.get_s3_object_key(signal_type.INDICATOR_TYPE)
+            )

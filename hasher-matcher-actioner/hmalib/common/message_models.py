@@ -6,6 +6,9 @@ import boto3
 import typing as t
 from dataclasses import dataclass, field
 
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.meta import get_all_content_types
+
 from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
@@ -17,7 +20,7 @@ from hmalib.common.classification_models import (
 from hmalib.common.signal_models import PendingOpinionChange
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.aws_dataclass import HasAWSSerialization
-from hmalib.common.image_sources import S3BucketImageSource
+from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.logging import get_logger
 
 from mypy_boto3_sqs import SQSClient
@@ -181,29 +184,40 @@ class WritebackMessage(HasAWSSerialization):
 
 
 @dataclass
-class URLImageSubmissionMessage:
+class URLSubmissionMessage:
     """
-    An image has been submitted using a URL. Used by submission API lambda and
+    Content has been submitted using a URL. Used by submission API lambda and
     hasher lambdas to communicate via SNS / SQS.
+
+    Includes the type of content as threatexchange ContentTypes. Used to
+    identify the signals to be generated for content.
     """
 
+    content_type: t.Type[ContentType]
     content_id: str
+
     url: str
 
     # Used to distinguish these messages from S3 Upload events. Leave it alone
     # if you don't know what you are doing.
-    event_type: str = "URLImageSubmission"
+    event_type: str = "URLSubmission"
 
     def to_sqs_message(self) -> dict:
         return {
-            "EventType": self.event_type,
-            "URL": self.url,
+            "ContentType": self.content_type.get_name(),
             "ContentId": self.content_id,
+            "URL": self.url,
+            "EventType": self.event_type,
         }
 
     @classmethod
-    def from_sqs_message(cls, d: dict) -> "URLImageSubmissionMessage":
-        return cls(content_id=d["ContentId"], url=d["URL"], event_type=d["EventType"])
+    def from_sqs_message(cls, d: dict) -> "URLSubmissionMessage":
+        return cls(
+            content_type=d["ContentType"],
+            content_id=d["ContentId"],
+            url=d["URL"],
+            event_type=d["EventType"],
+        )
 
     @classmethod
     def could_be(cls, d: dict) -> bool:
@@ -257,7 +271,7 @@ class S3ImageSubmissionBatchMessage:
                 logger.info("Disregarding empty file or directory: %s", key)
                 continue
 
-            content_id = S3BucketImageSource.get_content_id_from_s3_key(
+            content_id = S3BucketContentSource.get_content_id_from_s3_key(
                 key, image_prefix
             )
             result.append(S3ImageSubmission(content_id, bucket_name, key))

@@ -68,9 +68,49 @@ module "datastore" {
 }
 
 module "hashing_data" {
-  source                = "./hashing-data"
+  source          = "./hashing-data"
+  prefix          = var.prefix
+  additional_tags = merge(var.additional_tags, local.common_tags)
+}
+
+module "hashing_integrations" {
+  source                = "./hashing-integrations"
   prefix                = var.prefix
   additional_tags       = merge(var.additional_tags, local.common_tags)
+  local_image_buckets   = var.local_image_buckets
+  log_retention_in_days = var.log_retention_in_days
+
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      hasher_integrations = "hmalib.lambdas.hasher_integrations.lambda_handler"
+    }
+  }
+}
+
+module "indexer" {
+  source = "./indexer"
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+
+    commands = {
+      indexer = "hmalib.lambdas.unified_indexer.lambda_handler"
+    }
+  }
+  threat_exchange_data = {
+    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    data_folder        = local.te_data_folder
+    notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
+  }
+  index_data_storage = {
+    bucket_name      = module.hashing_data.index_folder_info.bucket_name
+    index_folder_key = module.hashing_data.index_folder_info.key
+  }
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  measure_performance   = var.measure_performance
 }
 
 module "pdq_signals" {
@@ -230,8 +270,101 @@ module "authentication" {
   webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
 }
 
-# Set up api
+/*
+ * # Submissions SQS:
+ * Submissions from the API are routed directly into a queue. Doing an SNS
+ * indirection **could** allow multiple lambdas to be listening for submissions,
+ * but, that would be costly because the lambda invocation would cost money.
+ *
+ * Instead, we will have a single hashing lambda capable of handling all
+ * content_types. If the content, because of its size or because of compute
+ * complexity can't be handled by this "base" lambda, it will be routed to
+ * another specially capable lambda queue.
+ *
+ * - This should soon absorb the pdq_images queue + SNS topic as the only queue
+ *   that we will publish submissions on.
+ *   If we have proven that the generic lambda can generate PDQ signals, we can 
+ *   do away with the PDQ specific infrastructure altogether.
+*/
+resource "aws_sqs_queue" "submissions_queue" {
+  name_prefix                = "${var.prefix}-submissions"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600
+  tags = merge(
+    var.additional_tags,
+    local.common_tags,
+    {
+      Name = "SubmissionsQueue"
+    }
+  )
+}
 
+resource "aws_sqs_queue" "hashes_queue" {
+  name_prefix                = "${var.prefix}-hashes"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 1209600
+  tags = merge(
+    var.additional_tags,
+    local.common_tags,
+    {
+      Name = "HashesQueue"
+    }
+  )
+}
+
+module "hasher" {
+  source = "./hasher"
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+  }
+
+  datastore = module.datastore.primary_datastore
+  submissions_queue = {
+    arn = aws_sqs_queue.submissions_queue.arn
+  }
+
+  hashes_queue = {
+    arn = aws_sqs_queue.hashes_queue.arn
+    url = aws_sqs_queue.hashes_queue.id
+  }
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  config_table          = local.config_table
+  measure_performance   = var.measure_performance
+}
+
+module "matcher" {
+  source = "./matcher"
+  prefix = var.prefix
+
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+  }
+
+  datastore = module.datastore.primary_datastore
+
+  hashes_queue = {
+    arn = aws_sqs_queue.hashes_queue.arn
+    url = aws_sqs_queue.hashes_queue.id
+  }
+
+  matches_topic_arn = aws_sns_topic.matches.arn
+
+  index_data_storage = {
+    bucket_name      = module.hashing_data.index_folder_info.bucket_name
+    index_folder_key = module.hashing_data.index_folder_info.key
+  }
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+  config_table          = local.config_table
+  measure_performance   = var.measure_performance
+}
+
+
+# Set up api
 module "api" {
   source                    = "./api"
   prefix                    = var.prefix
@@ -264,6 +397,10 @@ module "api" {
   writebacks_queue = module.actions.writebacks_queue
   images_topic_arn = module.hashing_data.image_folder_info.notification_topic
 
+  submissions_queue = {
+    url = aws_sqs_queue.submissions_queue.id,
+    arn = aws_sqs_queue.submissions_queue.arn
+  }
   partner_image_buckets = var.partner_image_buckets
 }
 
@@ -364,7 +501,7 @@ module "dashboard" {
   api_lambda_name = module.api.api_root_function_name
   other_lambdas = [
     module.fetcher.fetcher_function_name,
-    module.pdq_signals.pdq_indexer_function_name,
+    module.indexer.indexer_function_name,
     module.actions.writebacker_function_name,
     module.counters.match_counter_function_name
   ]

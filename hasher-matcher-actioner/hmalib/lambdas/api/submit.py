@@ -11,14 +11,20 @@ import dataclasses
 from enum import Enum
 from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
+from mypy_boto3_sqs import SQSClient
 from botocore.exceptions import ClientError
 import typing as t
 
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
+from threatexchange.content_type.meta import get_content_type_for_name
+
+
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
-from hmalib.common.image_sources import S3BucketImageSource
-from hmalib.common.content_models import ContentObject, ContentRefType, ContentType
+from hmalib.common.content_sources import S3BucketContentSource
+from hmalib.common.content_models import ContentObject, ContentRefType
 from hmalib.common.logging import get_logger
-from hmalib.common.message_models import URLImageSubmissionMessage
+from hmalib.common.message_models import URLSubmissionMessage
 
 logger = get_logger(__name__)
 
@@ -26,6 +32,11 @@ logger = get_logger(__name__)
 @functools.lru_cache(maxsize=None)
 def _get_sns_client():
     return boto3.client("sns")
+
+
+@functools.lru_cache(maxsize=None)
+def _get_submissions_queue() -> SQSClient:
+    return boto3.client("sqs")
 
 
 def create_presigned_put_url(bucket_name, key, file_type, expiration=3600):
@@ -183,7 +194,9 @@ def send_submission_to_url_queue(
     banks. If editing, ensure the logic in api_root.process_s3_event is still correct
     """
 
-    url_submission_message = URLImageSubmissionMessage(content_id, t.cast(str, url))
+    url_submission_message = URLSubmissionMessage(
+        content_type=PhotoContent, content_id=content_id, url=t.cast(str, url)
+    )
     _get_sns_client().publish(
         TopicArn=images_topic_arn,
         Message=json.dumps(url_submission_message.to_sqs_message()),
@@ -195,6 +208,7 @@ def get_submit_api(
     image_bucket: str,
     image_prefix: str,
     images_topic_arn: str,
+    submissions_queue_url: str,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -205,7 +219,7 @@ def get_submit_api(
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/submit/'
     submit_api = bottle.Bottle()
-    s3_bucket_image_source = S3BucketImageSource(image_bucket, image_prefix)
+    s3_bucket_image_source = S3BucketContentSource(image_bucket, image_prefix)
 
     def _record_content_submission_from_request(
         request: SubmitRequestBodyBase,
@@ -251,9 +265,27 @@ def get_submit_api(
         """
         Submission via a url to content. This does not store a copy of the content in s3
         """
-        _record_content_submission_from_request(request)
-        send_submission_to_url_queue(
-            dynamodb_table, images_topic_arn, request.content_id, request.content_url
+        content_id = request.content_id
+        url = request.content_url
+        content_type = get_content_type_for_name(request.content_type)
+
+        # Again, We want to record the submission before triggering and processing on
+        # the content itself therefore we write to dynamo before s3
+        record_content_submission(
+            dynamodb_table=dynamodb_table,
+            content_id=request.content_id,
+            content_type=content_type,
+            content_ref=request.content_url,
+            content_ref_type=ContentRefType.URL,
+            additional_fields=set(),
+        )
+
+        url_submission_message = URLSubmissionMessage(
+            content_type, content_id, t.cast(str, url)
+        )
+        _get_submissions_queue().send_message(
+            QueueUrl=submissions_queue_url,
+            MessageBody=json.dumps(url_submission_message.to_sqs_message()),
         )
 
         return SubmitResponse(content_id=request.content_id, submit_successful=True)

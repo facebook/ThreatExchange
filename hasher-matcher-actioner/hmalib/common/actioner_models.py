@@ -59,6 +59,7 @@ class WebhookPostActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a POST"""
 
     def call(self, data: str) -> Response:
+        logger.info(f"Performing a POST request to URL. {self.url}")
         return post(self.url, data, headers=json.loads(self.headers))
 
 
@@ -67,6 +68,7 @@ class WebhookGetActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a GET"""
 
     def call(self, data: str) -> Response:
+        logger.info(f"Performing a GET request to URL. {self.url}")
         return get(self.url, headers=json.loads(self.headers))
 
 
@@ -75,6 +77,7 @@ class WebhookPutActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a PUT"""
 
     def call(self, data: str) -> Response:
+        logger.info(f"Performing a PUT request to URL. {self.url}")
         return put(self.url, data, headers=json.loads(self.headers))
 
 
@@ -83,4 +86,5 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a DELETE"""
 
     def call(self, data: str) -> Response:
+        logger.info(f"Performing a DELETE request to URL. {self.url}")
         return delete(self.url, headers=json.loads(self.headers))

@@ -47,6 +47,7 @@ resource "aws_lambda_function" "api_root" {
       MEASURE_PERFORMANCE                   = var.measure_performance ? "True" : "False"
       WRITEBACKS_QUEUE_URL                  = var.writebacks_queue.url
       IMAGES_TOPIC_ARN                      = var.images_topic_arn
+      SUBMISSIONS_QUEUE_URL                 = var.submissions_queue.url
     }
   }
   tags = merge(
@@ -142,7 +143,7 @@ data "aws_iam_policy_document" "api_root" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
-    resources = [var.writebacks_queue.arn]
+    resources = [var.writebacks_queue.arn, var.submissions_queue.arn]
   }
 
   statement {

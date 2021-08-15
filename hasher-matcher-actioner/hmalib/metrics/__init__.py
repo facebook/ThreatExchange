@@ -82,6 +82,28 @@ class names:
         def prefix_impl(self):
             return self._prefix
 
+    class hasher:
+        _prefix = "hasher"
+
+        download_file = f"{_prefix}.download_file"
+        write_record = f"{_prefix}.write_record"
+        publish_message = f"{_prefix}.publish_message"
+
+        @classmethod
+        def hash(cls, hash_type: str):
+            return f"{cls._prefix}.hash.{hash_type}"
+
+    class indexer:
+        _prefix = "indexer"
+
+        download_datafiles = f"{_prefix}.download_datafiles"
+        parse_datafiles = f"{_prefix}.parse_datafiles"
+        build_index = f"{_prefix}.build_index"
+        upload_index = f"{_prefix}.upload_index"
+        merge_datafiles = f"{_prefix}.merge_datafiles"
+        search_index = f"{_prefix}.search_index"
+        download_index = f"{_prefix}.download_index"
+
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
 METRICS_NAMESPACE = os.getenv(_METRICS_NAMESPACE_ENVVAR, names.hma_namespace)
