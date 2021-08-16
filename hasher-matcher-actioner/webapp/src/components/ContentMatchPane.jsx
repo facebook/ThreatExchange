@@ -40,7 +40,7 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
   }, [contentId]);
 
   useEffect(() => {
-    fetchContentDetails(ContentType.PHOTO, contentId).then(result => {
+    fetchContentDetails(contentId).then(result => {
       // Ensure placeholders don't get displayed. TODO: Move this to the API.
       const additionalFields = result.additional_fields.filter(
         x => x !== 'Placeholder',

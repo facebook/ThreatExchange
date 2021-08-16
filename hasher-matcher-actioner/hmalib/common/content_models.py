@@ -135,9 +135,9 @@ class ContentObject(ContentObjectBase, JSONifiable):
     is likely better.
     """
 
-    CONTENT_TYPE_PREFIX = "content_type#"
+    CONTENT_STATIC_SK = "#content_object"
 
-    # Used to create the SK in DDB.
+    # Is this a photo, a video, a piece of text? etc.
     content_type: t.Type[ContentType]
 
     # Raw value of the content reference. eg. An s3 url, s3 key, url
@@ -154,8 +154,8 @@ class ContentObject(ContentObjectBase, JSONifiable):
     additional_fields: t.Set[str] = field(default_factory=set)
 
     @staticmethod
-    def get_dynamodb_content_type_key(content_type: ContentType) -> str:
-        return f"{ContentObject.CONTENT_TYPE_PREFIX}{content_type.get_name()}"
+    def get_dynamodb_content_type_key() -> str:
+        return ContentObject.CONTENT_STATIC_SK
 
     def to_json(self) -> t.Dict:
         """
@@ -183,7 +183,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
         def to_dynamodb_item(self) -> dict:
             return {
                 "PK": self.get_dynamodb_content_key(self.content_id),
-                "SK": self.get_dynamodb_content_type_key(self.content_type),
+                "SK": self.get_dynamodb_content_type_key(),
                 "ContentRef": self.content_ref,
                 "ContentRefType": self.content_ref_type,
                 "AdditionalFields": self.additional_fields,
@@ -196,13 +196,14 @@ class ContentObject(ContentObjectBase, JSONifiable):
         table.update_item(
             Key={
                 "PK": self.get_dynamodb_content_key(self.content_id),
-                "SK": self.get_dynamodb_content_type_key(self.content_type),
+                "SK": self.get_dynamodb_content_type_key(),
             },
             # If ContentRef exists it needs to match or BAD THING(tm) can happen...
             ConditionExpression=Or(Attr("ContentRef").not_exists(), Attr("ContentRef").eq(self.content_ref)),  # type: ignore
             # Unfortunately while prod is happy with this on multiple lines pytest breaks...
-            UpdateExpression="""SET ContentRef = :cr, ContentRefType = :crt, SubmissionTimes = list_append(if_not_exists(SubmissionTimes, :empty_list), :s), CreatedAt = if_not_exists(CreatedAt, :c), UpdatedAt = :u ADD AdditionalFields :af""",
+            UpdateExpression="""SET ContentType = :ct, ContentRef = :cr, ContentRefType = :crt, SubmissionTimes = list_append(if_not_exists(SubmissionTimes, :empty_list), :s), CreatedAt = if_not_exists(CreatedAt, :c), UpdatedAt = :u ADD AdditionalFields :af""",
             ExpressionAttributeValues={
+                ":ct": self.content_type.get_name(),
                 ":cr": self.content_ref,
                 ":crt": self.content_ref_type.value,
                 ":af": self.additional_fields
@@ -220,14 +221,13 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls,
         table: Table,
         content_id: str,
-        content_type: ContentType,
     ) -> t.Optional["ContentObject"]:
         if not content_id:
             return None
         item = table.get_item(
             Key={
                 "PK": cls.get_dynamodb_content_key(content_id),
-                "SK": cls.get_dynamodb_content_type_key(content_type),
+                "SK": cls.get_dynamodb_content_type_key(),
             }
         ).get("Item", None)
         if item:
@@ -239,10 +239,8 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls,
         item: t.Dict,
     ) -> "ContentObject":
-        content_type = get_content_type_for_name(
-            item["SK"][len(cls.CONTENT_TYPE_PREFIX) :]
-        )
         content_ref_type = ContentRefType(item["ContentRefType"])
+        content_type = get_content_type_for_name(item["ContentType"])
 
         return ContentObject(
             content_id=cls.remove_content_key_prefix(
