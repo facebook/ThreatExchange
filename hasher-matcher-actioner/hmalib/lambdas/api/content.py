@@ -123,9 +123,9 @@ def get_content_api(
         content_object = t.cast(ContentObject, content_object)
 
         if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
-            bytes_: bytes = S3BucketContentSource(
-                image_bucket, image_prefix
-            ).get_image_bytes(content_id)
+            bytes_: bytes = S3BucketContentSource(image_bucket, image_prefix).get_bytes(
+                content_id
+            )
             bottle.response.set_header("Content-type", "image/jpeg")
             return bytes_
         elif content_object.content_ref_type == ContentRefType.URL:

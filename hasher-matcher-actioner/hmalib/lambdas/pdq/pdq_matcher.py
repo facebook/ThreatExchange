@@ -21,6 +21,8 @@ from hmalib.common.config import HMAConfig
 from hmalib.common.fetcher_models import ThreatExchangeConfig
 from functools import lru_cache
 
+from hmalib.indexers.s3_indexers import S3BackedPDQIndex
+
 logger = get_logger(__name__)
 s3_client = boto3.client("s3")
 sns_client: SNSClient = boto3.client("sns")
@@ -31,7 +33,6 @@ THRESHOLD = 31
 LOCAL_INDEX_FILENAME = "/tmp/hashes.index"
 
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
-PDQ_INDEX_KEY = os.environ["PDQ_INDEX_KEY"]
 OUTPUT_TOPIC_ARN = os.environ["PDQ_MATCHES_TOPIC_ARN"]
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
@@ -40,14 +41,16 @@ HMAConfig.initialize(HMA_CONFIG_TABLE)
 
 
 @lru_cache(maxsize=None)
-def get_index(bucket_name, key):
+def get_index(bucket_name):
     """
     Load the given index from the s3 bucket and deserialize it
     """
     # TODO Cache this index for a period of time to reduce S3 calls and bandwidth.
     with metrics.timer(metrics.names.pdq_matcher_lambda.download_index):
         with open(LOCAL_INDEX_FILENAME, "wb") as index_file:
-            s3_client.download_fileobj(bucket_name, key, index_file)
+            s3_client.download_fileobj(
+                bucket_name, S3BackedPDQIndex._get_index_s3_key(), index_file
+            )
 
     with metrics.timer(metrics.names.pdq_matcher_lambda.parse_index):
         result = pickle.load(open(LOCAL_INDEX_FILENAME, "rb"))
@@ -67,12 +70,14 @@ def get_privacy_group_matcher_active(privacy_group_id: str, _) -> bool:
 
 def lambda_handler(event, context):
     """
+    TODO/FIXME migrate this lambda to be a part of matcher.py
+
     Listens to SQS events fired when new hash is generated. Loads the index
     stored in an S3 bucket and looks for a match.
 
     As per the default configuration
     - the index data bucket is INDEXES_BUCKET_NAME
-    - the key name must be PDQ_INDEX_KEY
+    - the key name must be S3BackedPDQIndex._get_index_s3_key()
 
     When matched, publishes a notification to an SNS endpoint. Note this is in
     contrast with hasher and indexer. They publish to SQS directly. Publishing
@@ -83,7 +88,7 @@ def lambda_handler(event, context):
     """
     records_table = dynamodb.Table(DYNAMODB_TABLE)
 
-    hash_index: PDQIndex = get_index(INDEXES_BUCKET_NAME, PDQ_INDEX_KEY)
+    hash_index: PDQIndex = get_index(INDEXES_BUCKET_NAME)
     logger.info("loaded_hash_index")
 
     for sqs_record in event["Records"]:
