@@ -46,7 +46,6 @@ resource "aws_lambda_function" "api_root" {
       THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
       MEASURE_PERFORMANCE                   = var.measure_performance ? "True" : "False"
       WRITEBACKS_QUEUE_URL                  = var.writebacks_queue.url
-      IMAGES_TOPIC_ARN                      = var.images_topic_arn
       SUBMISSIONS_QUEUE_URL                 = var.submissions_queue.url
     }
   }
@@ -103,12 +102,12 @@ data "aws_iam_policy_document" "api_root" {
     ]
     resources = concat(
       [
-      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}*",
-    ],
-    [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
+        "arn:aws:s3:::${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}*",
+      ],
+      [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
     )
   }
-  
+
   statement {
     effect = "Allow"
     actions = [
@@ -146,11 +145,6 @@ data "aws_iam_policy_document" "api_root" {
     resources = [var.writebacks_queue.arn, var.submissions_queue.arn]
   }
 
-  statement {
-    effect    = "Allow"
-    actions   = ["SNS:Publish"]
-    resources = [var.images_topic_arn]
-  }
 }
 
 resource "aws_iam_policy" "api_root" {
@@ -332,17 +326,17 @@ resource "aws_s3_bucket_notification" "bucket_notification" {
 
     # Check if a prefix filter (or the aliases folder, path) was specified
     # Otherwise no prefix constraint
-    filter_prefix = lookup(var.partner_image_buckets[count.index].params, "prefix", 
-                      lookup(var.partner_image_buckets[count.index].params, "folder", 
-                        lookup(var.partner_image_buckets[count.index].params, "path", "")
-                      )
-                    )
+    filter_prefix = lookup(var.partner_image_buckets[count.index].params, "prefix",
+      lookup(var.partner_image_buckets[count.index].params, "folder",
+        lookup(var.partner_image_buckets[count.index].params, "path", "")
+      )
+    )
 
     # Check if a suffix filter (or the alias extension) was specified
     # Otherwise no suffix constraint
-    filter_suffix = lookup(var.partner_image_buckets[count.index].params, "suffix", 
-                      lookup(var.partner_image_buckets[count.index].params, "extension", "")
-                    ) 
+    filter_suffix = lookup(var.partner_image_buckets[count.index].params, "suffix",
+      lookup(var.partner_image_buckets[count.index].params, "extension", "")
+    )
   }
 
   depends_on = [aws_lambda_permission.allow_bucket]

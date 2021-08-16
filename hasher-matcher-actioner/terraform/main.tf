@@ -117,7 +117,7 @@ module "pdq_signals" {
       [
         "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
       ],
-      [for partner_bucket in var.partner_image_buckets: "${partner_bucket.arn}/*"]
+      [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
     )
     image_folder_key = module.hashing_data.image_folder_info.key
   }
@@ -380,7 +380,6 @@ module "api" {
   te_api_token_secret   = aws_secretsmanager_secret.te_api_token
 
   writebacks_queue = module.actions.writebacks_queue
-  images_topic_arn = module.hashing_data.image_folder_info.notification_topic
 
   submissions_queue = {
     url = aws_sqs_queue.submissions_queue.id,

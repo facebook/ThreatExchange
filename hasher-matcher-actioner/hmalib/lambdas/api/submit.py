@@ -30,12 +30,7 @@ logger = get_logger(__name__)
 
 
 @functools.lru_cache(maxsize=None)
-def _get_sns_client():
-    return boto3.client("sns")
-
-
-@functools.lru_cache(maxsize=None)
-def _get_submissions_queue() -> SQSClient:
+def _get_sqs_client() -> SQSClient:
     return boto3.client("sqs")
 
 
@@ -73,7 +68,7 @@ def create_presigned_url(bucket_name, key, file_type, expiration, client_method)
 @dataclass
 class SubmitRequestBodyBase(DictParseable):
     content_id: str
-    content_type: str  # TODO: change to content_type enum from TE
+    content_type: t.Type[ContentType]
     additional_fields: t.Optional[t.List]
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
@@ -81,7 +76,9 @@ class SubmitRequestBodyBase(DictParseable):
 
     @classmethod
     def from_dict(cls, d):
-        return cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base.content_type = get_content_type_for_name(base.content_type)
+        return base
 
 
 @dataclass
@@ -183,8 +180,9 @@ def record_content_submission(
 
 def send_submission_to_url_queue(
     dynamodb_table: Table,
-    images_topic_arn: str,
+    submissions_queue_url: str,
     content_id: str,
+    content_type: ContentType,
     url: str,
 ):
     """
@@ -195,11 +193,11 @@ def send_submission_to_url_queue(
     """
 
     url_submission_message = URLSubmissionMessage(
-        content_type=PhotoContent, content_id=content_id, url=t.cast(str, url)
+        content_type=content_type, content_id=content_id, url=t.cast(str, url)
     )
-    _get_sns_client().publish(
-        TopicArn=images_topic_arn,
-        Message=json.dumps(url_submission_message.to_sqs_message()),
+    _get_sqs_client().send_message(
+        QueueUrl=submissions_queue_url,
+        MessageBody=json.dumps(url_submission_message.to_sqs_message()),
     )
 
 
@@ -207,7 +205,6 @@ def get_submit_api(
     dynamodb_table: Table,
     image_bucket: str,
     image_prefix: str,
-    images_topic_arn: str,
     submissions_queue_url: str,
 ) -> bottle.Bottle:
     """
@@ -235,7 +232,7 @@ def get_submit_api(
         record_content_submission(
             dynamodb_table,
             content_id=request.content_id,
-            content_type=ContentType(request.content_type or ContentType.PHOTO),
+            content_type=request.content_type,
             content_ref=content_ref,
             content_ref_type=content_ref_type,
             additional_fields=set(request.additional_fields)
@@ -265,27 +262,13 @@ def get_submit_api(
         """
         Submission via a url to content. This does not store a copy of the content in s3
         """
-        content_id = request.content_id
-        url = request.content_url
-        content_type = get_content_type_for_name(request.content_type)
-
-        # Again, We want to record the submission before triggering and processing on
-        # the content itself therefore we write to dynamo before s3
-        record_content_submission(
-            dynamodb_table=dynamodb_table,
-            content_id=request.content_id,
-            content_type=content_type,
-            content_ref=request.content_url,
-            content_ref_type=ContentRefType.URL,
-            additional_fields=set(),
-        )
-
-        url_submission_message = URLSubmissionMessage(
-            content_type, content_id, t.cast(str, url)
-        )
-        _get_submissions_queue().send_message(
-            QueueUrl=submissions_queue_url,
-            MessageBody=json.dumps(url_submission_message.to_sqs_message()),
+        _record_content_submission_from_request(request)
+        send_submission_to_url_queue(
+            dynamodb_table,
+            submissions_queue_url,
+            request.content_id,
+            request.content_type,
+            request.content_url,
         )
 
         return SubmitResponse(content_id=request.content_id, submit_successful=True)

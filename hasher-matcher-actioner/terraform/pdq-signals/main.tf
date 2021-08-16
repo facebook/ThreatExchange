@@ -21,13 +21,8 @@ data "aws_iam_policy_document" "lambda_assume_role" {
     }
   }
 }
-locals {
-  pdq_index_key = "${var.index_data_storage.index_folder_key}pdq_hashes.index"
-  pdq_index_arn = "arn:aws:s3:::${var.index_data_storage.bucket_name}/${local.pdq_index_key}"
-}
 
 # PDQ Hasher
-
 resource "aws_sqs_queue" "hashes_queue" {
   name_prefix                = "${var.prefix}-pdq-hashes"
   visibility_timeout_seconds = 300
@@ -160,7 +155,6 @@ resource "aws_lambda_function" "pdq_matcher" {
     variables = {
       PDQ_MATCHES_TOPIC_ARN = var.matches_sns_topic_arn
       INDEXES_BUCKET_NAME   = var.index_data_storage.bucket_name
-      PDQ_INDEX_KEY         = local.pdq_index_key
       DYNAMODB_TABLE        = var.datastore.name
       MEASURE_PERFORMANCE   = var.measure_performance ? "True" : "False"
       METRICS_NAMESPACE     = var.metrics_namespace
@@ -209,9 +203,10 @@ data "aws_iam_policy_document" "pdq_matcher" {
     resources = [var.matches_sns_topic_arn]
   }
   statement {
-    effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = [local.pdq_index_arn]
+    effect  = "Allow"
+    actions = ["s3:GetObject"]
+    resources = ["arn:aws:s3:::${var.index_data_storage.bucket_name}/${var.index_data_storage.index_folder_key}*"
+    ]
   }
   statement {
     effect    = "Allow"

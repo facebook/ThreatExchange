@@ -10,6 +10,8 @@ from bottle import response, error
 from uuid import uuid4
 from mypy_boto3_dynamodb.service_resource import Table
 
+from threatexchange.content_type.photo import PhotoContent
+
 from hmalib.common.logging import get_logger
 from hmalib.common.content_models import ContentRefType, ContentType
 
@@ -46,7 +48,6 @@ IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_FOLDER_KEY = os.environ[
     "IMAGE_FOLDER_KEY"
 ]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
-IMAGES_TOPIC_ARN = os.environ["IMAGES_TOPIC_ARN"]
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 
 # Override common errors codes to return json instead of bottle's default html
@@ -111,7 +112,7 @@ def process_s3_event(event: dict) -> None:
         submit_content_request_from_s3_event_record(
             record,
             dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
-            images_topic_arn=IMAGES_TOPIC_ARN,
+            submissions_queue_url=SUBMISSIONS_QUEUE_URL,
         )
         logger.info(f"Sucessfully submitted s3 event record as url upload.")
 
@@ -119,7 +120,7 @@ def process_s3_event(event: dict) -> None:
 def submit_content_request_from_s3_event_record(
     record: dict,
     dynamodb_table: Table,
-    images_topic_arn: str,
+    submissions_queue_url: str,
 ):
     """
     Converts s3 event into a ContentObject and url_submission_message using helpers
@@ -150,13 +151,13 @@ def submit_content_request_from_s3_event_record(
     record_content_submission(
         dynamodb_table,
         content_id,
-        ContentType.PHOTO,
+        PhotoContent,
         content_ref=presigned_url,
         content_ref_type=ContentRefType.URL,
         additional_fields={f"partner_s3_reference_url:{reference_url}"},
     )
     send_submission_to_url_queue(
-        dynamodb_table, images_topic_arn, content_id, presigned_url
+        dynamodb_table, submissions_queue_url, content_id, PhotoContent, presigned_url
     )
 
 
@@ -199,7 +200,6 @@ app.mount(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_bucket=IMAGE_BUCKET_NAME,
         image_prefix=IMAGE_FOLDER_KEY,
-        images_topic_arn=IMAGES_TOPIC_ARN,
         submissions_queue_url=SUBMISSIONS_QUEUE_URL,
     ),
 )
