@@ -33,7 +33,7 @@ import argparse
 import boto3
 from botocore.exceptions import ClientError
 
-from script_utils import get_token, create_user, delete_user
+from hma_script_utils import get_token, create_user, delete_user
 
 if __name__ == "__main__":
 

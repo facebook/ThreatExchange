@@ -14,19 +14,19 @@ import typing as t
 from time import perf_counter
 from urllib.parse import urljoin
 
-from script_utils import HasherMatcherActionerAPI
+from hma_script_utils import HasherMatcherActionerAPI
 
 from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
 from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
 
 
-class DeployedInstanceTestHelper:
+class DeployedInstanceClient:
     """
     Class around testing a deployed instance of HMA from Content Submission to Hash - Match - Action
     by checking that the expected values are found
 
-    This class is structed in a way to have script_utils.py avoid importing hmalib itself.
+    This class is structed in a way to have hma_script_utils.py avoid importing hmalib itself.
     """
 
     def __init__(
@@ -287,7 +287,7 @@ if __name__ == "__main__":
         print("See script (get_auth_token) for usage.")
         exit()
 
-    helper = DeployedInstanceTestHelper(api_url, token, client_id, refresh_token)
+    helper = DeployedInstanceClient(api_url, token, client_id, refresh_token)
 
     if refresh_token and client_id:
         helper.refresh_api_token()

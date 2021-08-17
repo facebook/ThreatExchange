@@ -22,8 +22,8 @@ import numpy as np
 import pandas as pd
 import typing as t
 
-import script_utils
-from submit_content_test import DeployedInstanceTestHelper
+import hma_script_utils
+from submit_content_test import DeployedInstanceClient
 
 from listener import Listener
 from submitter import Submitter
@@ -44,7 +44,7 @@ class HMAShell(cmd.Cmd):
 
     def __init__(self, api_url: str, refresh_token: str, client_id: str):
         super(HMAShell, self).__init__()
-        self.api = script_utils.HasherMatcherActionerAPI(
+        self.api = hma_script_utils.HasherMatcherActionerAPI(
             api_url, api_token="", client_id=client_id, refresh_token=refresh_token
         )
         self.api._refresh_token()
@@ -143,9 +143,11 @@ if __name__ == "__main__":
                 exit()
 
     if args.tf_output_file:
-        tf_outputs = script_utils.get_terraform_outputs_from_file(args.tf_output_file)
+        tf_outputs = hma_script_utils.get_terraform_outputs_from_file(
+            args.tf_output_file
+        )
     else:
-        tf_outputs = script_utils.get_terraform_outputs()
+        tf_outputs = hma_script_utils.get_terraform_outputs()
 
     pwd = args.pwd
     if not pwd:
@@ -166,11 +168,11 @@ if __name__ == "__main__":
             parser.print_usage()
             exit()
 
-        script_utils.create_user(
+        hma_script_utils.create_user(
             args.username, args.email, pool_id=pool_id, client_id=client_id
         )
 
-    refresh_token = script_utils.get_token(user, pwd, pool_id, client_id)[
+    refresh_token = hma_script_utils.get_token(user, pwd, pool_id, client_id)[
         "AuthenticationResult"
     ]["RefreshToken"]
 
