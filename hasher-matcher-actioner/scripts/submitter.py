@@ -7,7 +7,7 @@ import threading
 import uuid
 import datetime
 import typing as t
-from submit_content_test import DeployedInstanceClient
+from hma_client_lib import DeployedInstanceClient
 
 
 class Submitter(threading.Thread):

@@ -23,7 +23,7 @@ import pandas as pd
 import typing as t
 
 import hma_script_utils
-from submit_content_test import DeployedInstanceClient
+from hma_client_lib import DeployedInstanceClient
 
 from listener import Listener
 from submitter import Submitter
@@ -31,11 +31,6 @@ from submitter import Submitter
 from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
 from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
-
-# Defaults (often it is easier to edit the script than provide the args)
-USER = ""
-PWD = ""
-EMAIL = ""
 
 
 class HMAShell(cmd.Cmd):
@@ -49,13 +44,16 @@ class HMAShell(cmd.Cmd):
         )
         self.api._refresh_token()
 
+    # Query Commands
     def do_dataset_configs(self, arg):
         "Get list of current dataset configs: dataset_configs"
         print(self._format_json_object_to_str(self.api.get_dataset_configs()))
 
-    def do_create_sample_ds_config(self, arg):
-        "Create sample dataset config"
-        pass
+    def do_matches(self, arg):
+        "Get list of current match objects: matches"
+        matches = self.api.get_all_matches()
+        print(self._format_json_object_to_str(matches))
+        print(f"Total Matches: {len(matches)}")
 
     def do_actions(self, arg):
         "Get list of current actions: actions"
@@ -65,25 +63,29 @@ class HMAShell(cmd.Cmd):
         "Get list of current action_rules: action_rules"
         print(self._format_json_object_to_str(self.api.get_action_rules()))
 
-    def do_create_sample_action_config(self, arg):
-        "Create sample dataset config"
-        action_hook_url = "http://httpstat.us/404"
+    # Query Content Commands
+    def do_hash_details_for_id(self, arg):
+        "Get hash_details for content id: hash_details_for_id <content id>"
+        print(self._format_json_object_to_str(self.api.get_content_hash_details(arg)))
 
-        action_performer = WebhookPostActionPerformer(
-            name="SubmitContentTestActionWebhookPost",
-            url=action_hook_url,
-            headers='{"this-is-a":"test-header"}',
-        )
-        self.api.create_action(
-            name=action_performer.name,
-            config_subtype=action_performer.get_config_subtype(),
-            fields={
-                key: value
-                for key, value in vars(action_performer).items()
-                if key not in {"name", "config_subtype"}
-            },
-        )
+    def do_matches_for_id(self, arg):
+        "Get matches for content id: matches_for_id <content id>"
+        print(self._format_json_object_to_str(self.api.get_content_matches(arg)))
 
+    def do_action_history_for_id(self, arg):
+        "Get action_history for content id: action_history_for_id <content id>"
+        print(self._format_json_object_to_str(self.api.get_content_action_history(arg)))
+
+    # Create Commands
+    # Submit Commands
+    # TODO
+
+    # Test Commands
+    def do_run_basic_test(self, arg):
+        "Set up, run, and cleanup a basic test: run_basic_test"
+        DeployedInstanceClient(api=self.api).run_basic_test()
+
+    # Utility commands
     def do_refresh(self, arg):
         "Refresh token (only needed if shell is open for a long time) status of the test: refresh"
         self.api._refresh_token()
@@ -104,17 +106,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--username",
         help="username of test user, defaults to '<prefix_in_tf_vars>testuser'",
-        default=USER,
+        default="",
     )
     parser.add_argument(
         "--pwd",
         help="password of test user",
-        default=PWD,
+        default="",
     )
     parser.add_argument(
         "--email",
         help="email for test user (required if creating a test user otherwise ignored)",
-        default=EMAIL,
+        default="",
     )
     parser.add_argument(
         "--tf_output_file",

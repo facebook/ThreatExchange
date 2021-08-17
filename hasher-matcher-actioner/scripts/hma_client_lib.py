@@ -35,19 +35,23 @@ class DeployedInstanceClient:
 
     def __init__(
         self,
-        api_url: str,
+        api_url: str = "",
         api_token: str = "",
         client_id: str = None,
         refresh_token: str = None,
+        api: HasherMatcherActionerAPI = None,
     ) -> None:
-        if not api_token and (not client_id or not refresh_token):
-            raise ValueError(
-                "Test requires an api_token OR a client_id + refresh_token to function"
-            )
+        if api:
+            self.api = api
+        else:
+            if not api_token and (not client_id or not refresh_token):
+                raise ValueError(
+                    "Test requires an api_token OR a client_id + refresh_token to function"
+                )
 
-        self.api = HasherMatcherActionerAPI(
-            api_url, api_token, client_id, refresh_token
-        )
+            self.api = HasherMatcherActionerAPI(
+                api_url, api_token, client_id, refresh_token
+            )
 
     def refresh_api_token(self):
         """
@@ -137,6 +141,9 @@ class DeployedInstanceClient:
             privacy_group_name="Test Sample Set",
         )
 
+        self.set_up_test_actions(action_hook_url)
+
+    def set_up_test_actions(self, action_hook_url="http://httpstat.us/404"):
         action_performer = WebhookPostActionPerformer(
             name=self.ACTION_NAME,
             url=action_hook_url,
@@ -178,7 +185,7 @@ class DeployedInstanceClient:
         filepath="sample_data/b.jpg",
         additional_fields=[
             "this-is:a-test",
-            "submitted-from:submit_content_test.py",
+            "submitted-from:hma_client_lib.py",
         ],
     ):
         try:
