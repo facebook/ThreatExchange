@@ -113,7 +113,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--email",
-        help="email for test user (required if creating a test user otherwise ignorable)",
+        help="email for test user (required if creating a test user otherwise ignored)",
         default=EMAIL,
     )
     parser.add_argument(
@@ -125,22 +125,8 @@ if __name__ == "__main__":
         action="store_true",
         help="Creates a new test user. Require values for 'username', 'pwd', and 'email' args.",
     )
-    parser.add_argument(
-        "--filepaths",
-        action="extend",
-        nargs="*",
-        type=str,
-        help="List of filepaths for submit use (will start each batch at the start of the list).",
-    )
 
     args = parser.parse_args()
-
-    if args.filepaths:
-        for filepath in args.filepaths:
-            if not os.path.isfile(filepath):
-                print(f"Filepath: {filepath} not found.")
-                parser.print_usage()
-                exit()
 
     if args.tf_output_file:
         tf_outputs = hma_script_utils.get_terraform_outputs_from_file(
@@ -150,31 +136,27 @@ if __name__ == "__main__":
         tf_outputs = hma_script_utils.get_terraform_outputs()
 
     pwd = args.pwd
-    if not pwd:
-        print("The shell script needs a password to authenticate.")
-        pwd = input("Enter passord: ")
-
     user = args.username
-    if not user:
-        prefix = tf_outputs["prefix"]["value"]
-        user = f"{prefix}testuser"
-
-    pool_id = tf_outputs["cognito_user_pool_id"]["value"]
-    client_id = tf_outputs["cognito_user_pool_client_id"]["value"]
 
     if args.create_user:
-        if not args.email:
-            print("email required to create user")
+        if not args.email or not pwd:
+            print("Email and pwd required to create user")
             parser.print_usage()
             exit()
+
+        if not user:
+            user = hma_script_utils.get_default_user_name(tf_outputs["prefix"]["value"])
+
+        pool_id = tf_outputs["cognito_user_pool_id"]["value"]
+        client_id = tf_outputs["cognito_user_pool_client_id"]["value"]
 
         hma_script_utils.create_user(
             args.username, args.email, pool_id=pool_id, client_id=client_id
         )
 
-    refresh_token = hma_script_utils.get_token(user, pwd, pool_id, client_id)[
-        "AuthenticationResult"
-    ]["RefreshToken"]
+    token, refresh_token, client_id = hma_script_utils.get_auth_from_env(
+        tf_outputs, pwd_override=pwd, user_override=user, prompt_for_pwd=True
+    )
 
     api_url = tf_outputs["api_url"]["value"]
 

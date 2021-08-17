@@ -14,7 +14,11 @@ import typing as t
 from time import perf_counter
 from urllib.parse import urljoin
 
-from hma_script_utils import HasherMatcherActionerAPI
+from hma_script_utils import (
+    HasherMatcherActionerAPI,
+    get_terraform_outputs,
+    get_auth_from_env,
+)
 
 from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
@@ -233,59 +237,13 @@ class DeployedInstanceClient:
 if __name__ == "__main__":
     # If you want manually test the lib, you can do so here:
 
-    # i.e. "https://<app-id>.execute-api.<region>.amazonaws.com/"
-    api_url = os.environ.get(
-        "HMA_API_URL",
-        "",
-    )
+    tf_outputs = get_terraform_outputs()
+    api_url = tf_outputs["api_url"]["value"]
+    token, refresh_token, client_id = get_auth_from_env(tf_outputs)
 
-    token = os.environ.get(
-        "HMA_TOKEN",
-        "",
-    )
-
-    # See AWS Console: Cognito -> UserPools... -> App clients
-    client_id = os.environ.get(
-        "HMA_COGNITO_USER_POOL_CLIENT_ID",
-        "",
-    )
-
-    # Can be created with dev certs `$ scripts/get_auth_token --refresh_token`
-    refresh_token = os.environ.get(
-        "HMA_REFRESH_TOKEN",
-        "",
-    )
-
-    print(
-        "Attempting to run submit_content_test,gs you may need to run additional commands first."
-    )
     print(
         "This simple tests should take a little over 2 minutes to complete (due to sqs timeout).\n"
     )
-
-    if not api_url:
-        print("Error: Failed to find HMA_API_URL in environ.")
-        print(
-            "Easiest way to add this to your environment is `source scripts/set_tf_outputs_in_local_env.sh`"
-        )
-        exit()
-
-    if refresh_token and not client_id:
-        print(
-            "Error: Failed to find HMA_COGNITO_USER_POOL_CLIENT_ID in environ. (Required to use HMA_REFRESH_TOKEN)"
-        )
-        print(
-            "Easiest way to add this to your environment is `source scripts/set_tf_outputs_in_local_env.sh`"
-        )
-        exit()
-
-    if not token and not refresh_token:
-        print("Error: Failed to find HMA_TOKEN or HMA_REFRESH_TOKEN in environ.")
-        print(
-            "Easiest way to add either to your environment is to export the result `scripts/get_auth_token`"
-        )
-        print("See script (get_auth_token) for usage.")
-        exit()
 
     helper = DeployedInstanceClient(api_url, token, client_id, refresh_token)
 
