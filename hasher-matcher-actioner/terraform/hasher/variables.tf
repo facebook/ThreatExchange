@@ -40,7 +40,7 @@ variable "submissions_queue" {
 }
 
 variable "hashes_queue" {
-  description = "Output Queue to publish topic to publish new hashes to"
+  description = "Output queue to push new hashes on"
   type = object({
     arn = string
     url = string
