@@ -5,12 +5,17 @@
 import React, {useState} from 'react';
 import {Button, Col, Container, Row} from 'react-bootstrap';
 
-import {BlurImage} from '../utils/ImageUtils';
+import {BlurImage, BlurVideo} from '../utils/MediaUtils';
 import {ContentType} from '../utils/constants';
 import {CopyableTextField} from '../utils/TextFieldsUtils';
 
 function renderImage(url: string, revealed: boolean): JSX.Element {
   return <BlurImage src={url} override={!revealed} />;
+}
+
+function renderVideo(url: string, revealed: boolean): JSX.Element {
+  /* eslint-disable jsx-a11y/media-has-caption */
+  return <BlurVideo src={url} override={!revealed} />;
 }
 
 function swtchContentTypeRenderers(
@@ -22,8 +27,10 @@ function swtchContentTypeRenderers(
   switch (contentType) {
     case ContentType.Photo:
       return renderImage(url!, revealed);
+    case ContentType.Video:
+      return renderVideo(url!, revealed);
     default:
-      return <div>`No renderer found for type ${contentType}`</div>;
+      return <div>{`No renderer found for type ${contentType}`}</div>;
   }
 }
 

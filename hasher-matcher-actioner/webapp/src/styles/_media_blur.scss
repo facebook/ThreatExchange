@@ -1,0 +1,25 @@
+/*
+ * Copyright (c) Facebook, Inc. and its affiliates.All Rights Reserved
+ */
+
+$max-dimension: '450px';
+
+.image-preview,
+.video-preview-container {
+  border: 'none';
+  margin: '4px 4px 4px 4px';
+  max-width: $max-dimension;
+}
+
+.image-preview.blur {
+  filter: blur(10px) grayscale(100%);
+}
+
+.video-preview-container video {
+  width: 100%;
+  height: auto;
+
+  &.blur {
+    filter: blur(10px) grayscale(100%);
+  }
+}

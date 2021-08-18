@@ -7,7 +7,7 @@ import {Link} from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {Container, Row, Col} from 'react-bootstrap';
 import {fetchHash, fetchImage, fetchContentDetails} from '../Api';
-import {BlurImage} from '../utils/ImageUtils';
+import {BlurImage} from '../utils/MediaUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 
 /**
