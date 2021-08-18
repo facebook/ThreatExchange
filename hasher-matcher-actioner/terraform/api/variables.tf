@@ -111,6 +111,7 @@ variable "submissions_queue" {
     arn = string
   })
 }
+
 variable "hashes_queue" {
   description = "URL and ARN for unified hashes queue. Messages from the submission APIs will be dropped on this queue"
   type = object({
@@ -118,15 +119,6 @@ variable "hashes_queue" {
     arn = string
   })
 }
-
-variable "pdq_hashes_queue" {
-  description = "URL and ARN for pdq hashes queue. Messages from the submission APIs will be dropped on this queue"
-  type = object({
-    url = string
-    arn = string
-  })
-}
-
 
 variable "partner_image_buckets" {
   description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"

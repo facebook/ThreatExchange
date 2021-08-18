@@ -15,11 +15,3 @@ output "hashes_queue_name" {
 output "hashes_queue_url" {
   value = aws_sqs_queue.hashes_queue.id
 }
-
-output "hashes_queue" {
-  description = "URL and ARN for pdq hashes queue"
-  value = {
-    id  = aws_sqs_queue.hashes_queue.id
-    arn = aws_sqs_queue.hashes_queue.arn
-  }
-}

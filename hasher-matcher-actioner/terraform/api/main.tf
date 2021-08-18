@@ -48,7 +48,6 @@ resource "aws_lambda_function" "api_root" {
       WRITEBACKS_QUEUE_URL                  = var.writebacks_queue.url
       SUBMISSIONS_QUEUE_URL                 = var.submissions_queue.url
       HASHES_QUEUE_URL                      = var.hashes_queue.url
-      PDQ_HASHES_QUEUE_URL                  = var.pdq_hashes_queue.url
     }
   }
   tags = merge(
@@ -144,7 +143,7 @@ data "aws_iam_policy_document" "api_root" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
-    resources = [var.writebacks_queue.arn, var.submissions_queue.arn, var.pdq_hashes_queue.arn, var.hashes_queue.arn]
+    resources = [var.writebacks_queue.arn, var.submissions_queue.arn, var.hashes_queue.arn]
   }
 
 }

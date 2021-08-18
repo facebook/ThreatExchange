@@ -221,7 +221,6 @@ def get_submit_api(
     image_prefix: str,
     submissions_queue_url: str,
     hash_queue_url: str,
-    pdq_hash_queue_url: str,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -361,8 +360,8 @@ def get_submit_api(
         # Send hash directly to matcher
         # todo this could maybe try and reuse the methods in UnifiedHasher in #749
         _get_sqs_client().send_message(
-            QueueUrl=pdq_hash_queue_url,
-            MessageBody=json.dumps(hash_record.to_legacy_sqs_message()),
+            QueueUrl=hash_queue_url,
+            MessageBody=json.dumps(hash_record.to_sqs_message()),
         )
 
         return SubmitResponse(content_id=request.content_id, submit_successful=True)
