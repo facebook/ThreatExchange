@@ -87,6 +87,12 @@ export function fetchContentDetails(contentId) {
   });
 }
 
+export function fetchContentPipelineProgress(contentId) {
+  return apiGet('/content/pipeline-progress/', {
+    content_id: contentId,
+  });
+}
+
 export function fetchSignalSummary() {
   return apiGet('/signals');
 }

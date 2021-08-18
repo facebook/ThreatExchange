@@ -5,7 +5,11 @@
  *  so we ~hack-ly add a Z to the isoDateStrings
  */
 
-import {formatDistanceToNow, parseISO} from 'date-fns';
+import {formatDistanceToNow, parseISO, isToday, format} from 'date-fns';
+
+export function toDate(isoDateString) {
+  return parseISO(`${isoDateString}Z`);
+}
 
 export function formatTimestamp(isoDateString) {
   if (!isoDateString) {
@@ -34,4 +38,15 @@ export function timeAgo(isoDateString) {
   return formatDistanceToNow(parseISO(`${isoDateString}Z`), {
     addSuffix: true,
   });
+}
+
+/**
+ * If date is of today, return an hh:mm:ss AM/PM style. If not, return a fuller
+ * string.
+ */
+export function timeOnlyIfToday(date) {
+  if (isToday(date)) {
+    return format(date, 'pp');
+  }
+  return format(date, 'PPpp');
 }

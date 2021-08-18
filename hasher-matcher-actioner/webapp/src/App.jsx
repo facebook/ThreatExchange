@@ -19,6 +19,7 @@ import Matches from './pages/Matches';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import SubmitContent from './pages/SubmitContent';
+import ContentDetailsWithStepper from './pages/ContentDetailsWithStepper';
 
 export default function App() {
   return (
@@ -39,6 +40,9 @@ export default function App() {
             <Switch>
               <Route path="/matches/:id">
                 <ContentDetails />
+              </Route>
+              <Route path="/pipeline-progress/:id">
+                <ContentDetailsWithStepper />
               </Route>
               <Route path="/matches">
                 <Matches />
