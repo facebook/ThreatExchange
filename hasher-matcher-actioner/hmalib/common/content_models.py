@@ -121,6 +121,9 @@ class ContentRefType(Enum):
     # bucket.
     S3_BUCKET = "S3_BUCKET"
 
+    # No content ref was provided for the submission
+    NONE = "NONE"
+
 
 @dataclass
 class ContentObject(ContentObjectBase, JSONifiable):
