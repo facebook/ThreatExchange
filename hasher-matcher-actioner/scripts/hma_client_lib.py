@@ -190,7 +190,7 @@ class DeployedInstanceClient:
     ):
         try:
             with open(filepath, "rb") as file:
-                self.api.send_single_submission_url(
+                self.api.submit_via_upload_put_url(
                     content_id,
                     file,
                     additional_fields,

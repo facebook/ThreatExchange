@@ -88,7 +88,7 @@ class HasherMatcherActionerAPI:
         response.raise_for_status()
         return response.json().get("match_summaries", [])
 
-    def send_single_submission_b64(
+    def submit_via_encoded_bytes(
         self,
         content_id: str,
         b64_file_contents: str,
@@ -107,7 +107,7 @@ class HasherMatcherActionerAPI:
         )
         response.raise_for_status()
 
-    def send_single_submission_url(
+    def submit_via_upload_put_url(
         self,
         content_id: str,
         file: t.BinaryIO,
@@ -135,14 +135,14 @@ class HasherMatcherActionerAPI:
         )
         put_response.raise_for_status()
 
-    def submit_from_url(
+    def submit_via_external_url(
         self,
         url: str,
         content_id: str,
         additional_fields: t.List[str] = [],
     ):
         """
-        Distinct from send_single_submission_url(), It uses the URL only path
+        Distinct from submit_via_upload_put_url(), It uses the URL only path
         and bypasses s3 completely.
         """
         payload = {
