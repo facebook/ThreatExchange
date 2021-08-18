@@ -204,6 +204,30 @@ class DeployedInstanceClient:
         ) as err:
             print("Error:", err)
 
+    def submit_test_content_hash(
+        self,
+        content_id="submit_content_test_hash_id_1",
+        signal_value="f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",  # pdq of "sample_data/b.jpg"
+        additional_fields=[
+            "this-is:a-test-hash",
+            "submitted-from:hma_client_lib.py",
+        ],
+    ):
+        try:
+            self.api.submit_hash(
+                content_id=content_id,
+                signal_value=signal_value,
+                additional_fields=additional_fields,
+            )
+        except (
+            urllib3.exceptions.MaxRetryError,
+            requests.exceptions.HTTPError,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.RequestException,
+        ) as err:
+            print("Error:", err)
+
     def run_basic_test(self, wait_time_seconds=5, retry_limit=25):
         """
         Basic e2e (minus webhook listener) test:

@@ -12,7 +12,6 @@ from enum import Enum
 from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 from mypy_boto3_sqs import SQSClient
-from mypy_boto3_sns import SNSClient
 from botocore.exceptions import ClientError
 import typing as t
 

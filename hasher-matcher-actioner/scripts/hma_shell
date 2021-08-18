@@ -5,7 +5,7 @@
 Prototype of shell wrapper for HMA utils for interactive manual testings
 
 ```
-python3 scripts/hma_shell --pwd <password-of-user>
+python3 scripts/hma_shell --pwd <password-of-user-created-in-pool>
 ```
 
 """
