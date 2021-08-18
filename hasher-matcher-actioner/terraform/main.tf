@@ -367,6 +367,11 @@ module "api" {
     bucket_name      = module.hashing_data.image_folder_info.bucket_name
     image_folder_key = module.hashing_data.image_folder_info.key
   }
+
+  index_data_storage = {
+    bucket_name      = module.hashing_data.index_folder_info.bucket_name
+    index_folder_key = module.hashing_data.index_folder_info.key
+  }
   threat_exchange_data = {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_file_extension = local.pdq_file_extension

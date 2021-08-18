@@ -46,6 +46,14 @@ variable "image_data_storage" {
   })
 }
 
+variable "index_data_storage" {
+  description = "Configuration information for the S3 Bucket that will hold PDQ Index data"
+  type = object({
+    bucket_name      = string
+    index_folder_key = string
+  })
+}
+
 variable "threat_exchange_data" {
   description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data"
   type = object({
