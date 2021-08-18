@@ -27,7 +27,7 @@ import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayo
 const FORM_DEFAULTS = {
   submissionType: undefined,
   contentId: undefined,
-  contentType: ContentType.PHOTO,
+  contentType: ContentType.Photo,
   content: undefined,
 };
 
