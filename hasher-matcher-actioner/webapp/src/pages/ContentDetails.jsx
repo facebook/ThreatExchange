@@ -9,10 +9,11 @@ import {Col, Row, Table, Button} from 'react-bootstrap';
 import {fetchHash, fetchImage, fetchContentDetails} from '../Api';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
-import {BlurImage} from '../utils/ImageUtils';
+import {getContentTypeForString} from '../utils/constants';
 import ContentMatchTable from '../components/ContentMatchTable';
 import ActionHistoryTable from '../components/ActionHistoryTable';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
+import ContentPreview from '../components/ContentPreview';
 
 export default function ContentDetails() {
   const history = useHistory();
@@ -37,7 +38,8 @@ export default function ContentDetails() {
   useEffect(() => {
     fetchImage(id)
       .then(result => {
-        setImage(URL.createObjectURL(result));
+        console.log(result);
+        setImage(result.preview_url);
       })
       .catch(_ => {
         // ToDo put a 'not found' image
@@ -115,7 +117,13 @@ export default function ContentDetails() {
           <ActionHistoryTable contentKey={id} />
         </Col>
         <Col className="pt-4" md={6}>
-          <BlurImage src={img} />
+          {img && contentDetails && contentDetails.content_type ? (
+            <ContentPreview
+              contentId={id}
+              contentType={getContentTypeForString(contentDetails.content_type)}
+              url={img}
+            />
+          ) : null}
         </Col>
       </Row>
       <ContentMatchTable contentKey={id} />

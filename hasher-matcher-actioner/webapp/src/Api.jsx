@@ -74,7 +74,7 @@ export function fetchHash(contentId) {
 }
 
 export function fetchImage(contentId) {
-  return apiGet('/content/image/', {content_id: contentId}, 'blob');
+  return apiGet('/content/image/', {content_id: contentId});
 }
 
 export function fetchContentActionHistory(contentId) {

@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from hmalib.lambdas.api.submit import create_presigned_url
 import bottle
 import boto3
 from datetime import datetime
@@ -32,6 +33,14 @@ class HashResultResponse(JSONifiable):
     content_id: str
     content_hash: str
     updated_at: str
+
+    def to_json(self) -> t.Dict:
+        return asdict(self)
+
+
+@dataclass
+class ImageResponse(JSONifiable):
+    preview_url: str
 
     def to_json(self) -> t.Dict:
         return asdict(self)
@@ -206,11 +215,11 @@ def get_content_api(
             updated_at=record.updated_at.isoformat(),
         )
 
-    @content_api.get("/image/")
+    @content_api.get("/image/", apply=[jsoninator])
     def image():
         """
-        return the bytes of an image in the "image_folder_key" based on content_id
-        TODO update return url to request directly from s3?
+        Returns the URL if content was a URL submission. Uses a signed URL for
+        s3 uploads. Also works for videos.
         """
         content_id = bottle.request.query.content_id or None
 
@@ -226,12 +235,14 @@ def get_content_api(
         content_object = t.cast(ContentObject, content_object)
 
         if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
-            bytes_: bytes = S3BucketContentSource(image_bucket, image_prefix).get_bytes(
-                content_id
+            source = S3BucketContentSource(image_bucket, image_prefix)
+
+            preview_url = create_presigned_url(
+                image_bucket, source.get_s3_key(content_id), None, 3600, "get_object"
             )
-            bottle.response.set_header("Content-type", "image/jpeg")
-            return bytes_
         elif content_object.content_ref_type == ContentRefType.URL:
-            return bottle.redirect(content_object.content_ref)
+            preview_url = content_object.content_ref
+
+        return ImageResponse(preview_url)
 
     return content_api
