@@ -49,3 +49,20 @@ export enum ContentType {
   Text = 'text',
   Video = 'video',
 }
+
+/**
+ * String enums do not define an automatic reverse mapping. This fills the gap.
+ * Throws an error if it can't process content type.
+ */
+export function getContentTypeForString(st: string): ContentType {
+  switch (st) {
+    case ContentType.Photo:
+      return ContentType.Photo;
+    case ContentType.Text:
+      return ContentType.Text;
+    case ContentType.Video:
+      return ContentType.Video;
+    default:
+      throw new Error(`String: "${st}" can't be converted to ContentType.`);
+  }
+}

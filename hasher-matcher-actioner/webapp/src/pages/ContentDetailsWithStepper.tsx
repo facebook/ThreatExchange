@@ -8,7 +8,7 @@ import {useParams} from 'react-router-dom';
 import {fetchContentPipelineProgress} from '../Api';
 import ContentPreview from '../components/ContentPreview';
 import ContentProgressStepper from '../components/ContentProgressStepper';
-import {ContentType} from '../utils/constants';
+import {ContentType, getContentTypeForString} from '../utils/constants';
 import {toDate} from '../utils/DateTimeUtils';
 
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
@@ -87,10 +87,10 @@ export default function ContentDetailsWithStepper(): JSX.Element {
     <FixedWidthCenterAlignedLayout title="Progress">
       <Row>
         <Col md={{span: 6}}>
-          {contentPreviewURL ? (
+          {contentPreviewURL && contentType ? (
             <ContentPreview
               contentId={id}
-              contentType={ContentType.Photo}
+              contentType={getContentTypeForString(contentType!)}
               url={contentPreviewURL!}
             />
           ) : null}
