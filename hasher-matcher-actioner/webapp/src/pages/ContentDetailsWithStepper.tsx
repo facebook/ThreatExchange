@@ -13,6 +13,8 @@ import {toDate} from '../utils/DateTimeUtils';
 
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
+const POLL_INTERVAL_IN_SECONDS = 5;
+
 function getStepperLoadingPane(): JSX.Element {
   return (
     <div>
@@ -27,6 +29,8 @@ export default function ContentDetailsWithStepper(): JSX.Element {
   const {id} = useParams<{id: string}>();
   const [contentType, setContentType] = useState(null);
   const [contentPreviewURL, setContentPreviewURL] = useState(null);
+
+  const [pollBuster, setPollBuster] = useState(1);
 
   // Stage Times
   const [submittedAt, setSubmittedAt] = useState();
@@ -43,6 +47,7 @@ export default function ContentDetailsWithStepper(): JSX.Element {
   const [actionPerformResults, setActionPerformResults] = useState([]);
 
   useEffect(() => {
+    // This effect is rerun every time the value of poll buster changes.
     fetchContentPipelineProgress(id).then(pipelineProgress => {
       setContentType(pipelineProgress.content_type);
       setContentPreviewURL(pipelineProgress.content_preview_url);
@@ -65,8 +70,18 @@ export default function ContentDetailsWithStepper(): JSX.Element {
         pipelineProgress.action_performed_at &&
           toDate(pipelineProgress.action_performed_at),
       );
+
+      if (pipelineProgress.action_performed_at === undefined) {
+        // The pipeline has not yet finished, so setup a poller to call this
+        // effect again. If we start storing null records, ie. match produced no
+        // results, then we need to revisit how we evaluate that the pipeline is
+        // "done".
+        setTimeout(() => {
+          setPollBuster(pollBuster + 1);
+        }, POLL_INTERVAL_IN_SECONDS * 1000);
+      }
     });
-  }, []);
+  }, [pollBuster]);
 
   return (
     <FixedWidthCenterAlignedLayout title="Progress">
