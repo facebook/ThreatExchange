@@ -158,6 +158,33 @@ class HasherMatcherActionerAPI:
         )
         response.raise_for_status()
 
+    def submit_hash(
+        self,
+        content_id: str,
+        signal_value: str,
+        signal_type: str = "pdq",
+        content_type: str = "photo",
+        url="",
+        additional_fields: t.List[str] = [],
+    ):
+        """
+        Submit hash directy
+        """
+        payload = {
+            "content_id": content_id,
+            "content_type": content_type,
+            "additional_fields": additional_fields,
+            "signal_value": signal_value,
+            "signal_type": signal_type,
+            "content_url": url,
+        }
+        api_path: str = "/submit/hash/"
+        response = self.session.post(
+            self._get_request_url(api_path),
+            data=json.dumps(payload).encode(),
+        )
+        response.raise_for_status()
+
     def get_content_hash_details(
         self,
         content_id: str,

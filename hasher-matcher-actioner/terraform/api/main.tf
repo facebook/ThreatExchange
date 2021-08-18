@@ -47,6 +47,7 @@ resource "aws_lambda_function" "api_root" {
       MEASURE_PERFORMANCE                   = var.measure_performance ? "True" : "False"
       WRITEBACKS_QUEUE_URL                  = var.writebacks_queue.url
       SUBMISSIONS_QUEUE_URL                 = var.submissions_queue.url
+      HASHES_QUEUE_URL                      = var.hashes_queue.url
     }
   }
   tags = merge(
@@ -82,7 +83,7 @@ resource "aws_iam_role" "api_root" {
 data "aws_iam_policy_document" "api_root" {
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:UpdateItem"]
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem"]
     resources = ["${var.datastore.arn}*"]
   }
   statement {
@@ -142,7 +143,7 @@ data "aws_iam_policy_document" "api_root" {
   statement {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
-    resources = [var.writebacks_queue.arn, var.submissions_queue.arn]
+    resources = [var.writebacks_queue.arn, var.submissions_queue.arn, var.hashes_queue.arn]
   }
 
 }

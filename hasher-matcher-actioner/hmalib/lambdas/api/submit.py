@@ -18,6 +18,7 @@ import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.meta import get_content_type_for_name
+from threatexchange.signal_type.pdq import PdqSignal
 
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
@@ -25,6 +26,7 @@ from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.content_models import ContentObject, ContentRefType
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import URLSubmissionMessage
+from hmalib.models import PipelineHashRecord
 
 logger = get_logger(__name__)
 
@@ -95,6 +97,18 @@ class SubmitContentBytesRequestBody(SubmitRequestBodyBase):
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         return (self.content_id, ContentRefType.DEFAULT_S3_BUCKET)
+
+
+@dataclass
+class SubmitContentHashRequestBody(SubmitRequestBodyBase):
+    signal_value: str
+    signal_type: str  # SignalType.getname() values
+    content_url: t.Optional[str]
+
+    def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
+        if self.content_url:
+            return (self.content_url, ContentRefType.URL)
+        return ("", ContentRefType.NONE)
 
 
 @dataclass
@@ -206,6 +220,7 @@ def get_submit_api(
     image_bucket: str,
     image_prefix: str,
     submissions_queue_url: str,
+    hash_queue_url: str,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -319,5 +334,36 @@ def get_submit_api(
             content_id=request.content_id,
             message="Failed to generate upload url",
         )
+
+    @submit_api.post("/hash/", apply=[jsoninator(SubmitContentHashRequestBody)])
+    def submit_hash(
+        request: SubmitContentHashRequestBody,
+    ) -> t.Union[SubmitResponse, SubmitError]:
+        """
+        Endpoint to submit a hash of a piece of content
+        """
+
+        # Record content object (even though we don't store anything just like with url)
+        _record_content_submission_from_request(request)
+
+        # Record hash
+        # todo add MD5 support and branch based on request.hash_type
+        #   note: quality of PDQ hashes should part of `signal_specific_attributes` after #749/related is merged
+        hash_record = PipelineHashRecord(
+            content_id=request.content_id,
+            signal_type=PdqSignal,
+            content_hash=request.signal_value,
+            updated_at=datetime.datetime.now(),
+        )
+        hash_record.write_to_table(dynamodb_table)
+
+        # Send hash directly to matcher
+        # todo this could maybe try and reuse the methods in UnifiedHasher in #749
+        _get_sqs_client().send_message(
+            QueueUrl=hash_queue_url,
+            MessageBody=json.dumps(hash_record.to_sqs_message()),
+        )
+
+        return SubmitResponse(content_id=request.content_id, submit_successful=True)
 
     return submit_api

@@ -41,7 +41,7 @@ variable "hashes_queue" {
 }
 
 variable "matches_topic_arn" {
-  description = "SNS Toipc to which we'll publish matches."
+  description = "SNS Topic to which we'll publish matches"
   type        = string
 }
 

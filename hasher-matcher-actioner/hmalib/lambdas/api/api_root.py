@@ -49,6 +49,8 @@ IMAGE_FOLDER_KEY = os.environ[
     "IMAGE_FOLDER_KEY"
 ]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
+HASHES_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
+
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -161,17 +163,6 @@ def submit_content_request_from_s3_event_record(
     )
 
 
-class SignalSourceType(t.TypedDict):
-    type: str
-    count: int
-
-
-class SignalSourceSummary(t.TypedDict):
-    name: str
-    signals: t.List[SignalSourceType]
-    updated_at: str
-
-
 app.mount(
     "/action-rules/",
     get_action_rules_api(hma_config_table=HMA_CONFIG_TABLE),
@@ -201,6 +192,7 @@ app.mount(
         image_bucket=IMAGE_BUCKET_NAME,
         image_prefix=IMAGE_FOLDER_KEY,
         submissions_queue_url=SUBMISSIONS_QUEUE_URL,
+        hash_queue_url=HASHES_QUEUE_URL,
     ),
 )
 

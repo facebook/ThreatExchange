@@ -380,7 +380,10 @@ module "api" {
   te_api_token_secret   = aws_secretsmanager_secret.te_api_token
 
   writebacks_queue = module.actions.writebacks_queue
-
+  hashes_queue = {
+    url = aws_sqs_queue.hashes_queue.id,
+    arn = aws_sqs_queue.hashes_queue.arn
+  }
   submissions_queue = {
     url = aws_sqs_queue.submissions_queue.id,
     arn = aws_sqs_queue.submissions_queue.arn
