@@ -7,8 +7,7 @@ import {Link} from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {Container, Row, Col} from 'react-bootstrap';
 import {fetchHash, fetchImage, fetchContentDetails} from '../Api';
-import {ContentType} from '../utils/constants';
-import {BlurUntilHoverImage} from '../utils/ImageUtils';
+import {BlurImage} from '../utils/ImageUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 
 /**
@@ -56,7 +55,7 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
         <Row>
           {/* Avoid explicit padding if possible when re-doing this page. */}
           <Col className="p-4 text-center" style={{minHeight: '200px'}}>
-            <BlurUntilHoverImage src={img} />
+            <BlurImage src={img} />
           </Col>
         </Row>
         <Row>

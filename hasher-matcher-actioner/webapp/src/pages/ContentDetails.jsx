@@ -7,10 +7,9 @@ import {useHistory, useParams} from 'react-router-dom';
 import {Col, Row, Table, Button} from 'react-bootstrap';
 
 import {fetchHash, fetchImage, fetchContentDetails} from '../Api';
-import {ContentType} from '../utils/constants';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
-import {BlurUntilHoverImage} from '../utils/ImageUtils';
+import {BlurImage} from '../utils/ImageUtils';
 import ContentMatchTable from '../components/ContentMatchTable';
 import ActionHistoryTable from '../components/ActionHistoryTable';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
@@ -116,7 +115,7 @@ export default function ContentDetails() {
           <ActionHistoryTable contentKey={id} />
         </Col>
         <Col className="pt-4" md={6}>
-          <BlurUntilHoverImage src={img} />
+          <BlurImage src={img} />
         </Col>
       </Row>
       <ContentMatchTable contentKey={id} />
