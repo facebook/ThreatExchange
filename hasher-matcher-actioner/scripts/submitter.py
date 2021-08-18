@@ -7,13 +7,13 @@ import threading
 import uuid
 import datetime
 import typing as t
-from submit_content_test import DeployedInstanceTestHelper
+from hma_client_lib import DeployedInstanceClient
 
 
 class Submitter(threading.Thread):
     def __init__(
         self,
-        helper: DeployedInstanceTestHelper,
+        client: DeployedInstanceClient,
         batch_size: int,
         seconds_between_batches: int,
         filepaths: t.List[str] = [],
@@ -23,7 +23,7 @@ class Submitter(threading.Thread):
         self.daemon = True
         self._stop_signal = threading.Event()
         self._lock = threading.Lock()
-        self.helper = helper
+        self.client = client
         self.batch_size = batch_size
         self.seconds_between_batches = seconds_between_batches
         self.filepaths = filepaths
@@ -45,16 +45,16 @@ class Submitter(threading.Thread):
                 for i in range(self.batch_size):
                     content_id = f"{batch_prefix}{i}-time-{datetime.datetime.now().isoformat()}-time-"
                     if self.filepaths:
-                        self.helper.submit_test_content(
+                        self.client.submit_test_content(
                             content_id, filepath=self.filepaths[i % len(self.filepaths)]
                         )
                     else:
-                        self.helper.submit_test_content(content_id)
+                        self.client.submit_test_content(content_id)
                     self.total_submitted += 1
             finally:
                 self._lock.release()
             time.sleep(self.seconds_between_batches)
-            self.helper.refresh_api_token()
+            self.client.refresh_api_token()
 
     def get_total_submit_count(self) -> int:
         with self._lock:
@@ -91,9 +91,9 @@ if __name__ == "__main__":
         "HMA_COGNITO_USER_POOL_CLIENT_ID",
         CLIENT_ID,
     )
-    helper = DeployedInstanceTestHelper(api_url, "", client_id, refresh_token)
+    client = DeployedInstanceClient(api_url, "", client_id, refresh_token)
 
-    submitter = Submitter(helper, batch_size=5, seconds_between_batches=5)
+    submitter = Submitter(client, batch_size=5, seconds_between_batches=5)
     submitter.start()
 
     cmd = ""

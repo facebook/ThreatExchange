@@ -1,0 +1,165 @@
+#! /usr/bin/env python3
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+"""
+Prototype of shell wrapper for HMA utils for interactive manual testings
+
+```
+python3 scripts/hma_shell --pwd <password-of-user>
+```
+
+"""
+import cmd
+import os
+import argparse
+import time
+import threading
+import uuid
+import json
+import datetime
+from dataclasses import dataclass
+import numpy as np
+import pandas as pd
+import typing as t
+
+import hma_script_utils
+from hma_client_lib import DeployedInstanceClient
+
+from listener import Listener
+from submitter import Submitter
+
+from hmalib.common.evaluator_models import ActionRule
+from hmalib.common.classification_models import ActionLabel, ClassificationLabel
+from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
+
+
+class HMAShell(cmd.Cmd):
+    intro = "Welcome! Type help or ? to list commands.\n"
+    prompt = "> "
+
+    def __init__(self, api_url: str, refresh_token: str, client_id: str):
+        super(HMAShell, self).__init__()
+        self.api = hma_script_utils.HasherMatcherActionerAPI(
+            api_url, api_token="", client_id=client_id, refresh_token=refresh_token
+        )
+        self.api._refresh_token()
+
+    # Query Commands
+    def do_dataset_configs(self, arg):
+        "Get list of current dataset configs: dataset_configs"
+        print(self._format_json_object_to_str(self.api.get_dataset_configs()))
+
+    def do_matches(self, arg):
+        "Get list of current match objects: matches"
+        matches = self.api.get_all_matches()
+        print(self._format_json_object_to_str(matches))
+        print(f"Total Matches: {len(matches)}")
+
+    def do_actions(self, arg):
+        "Get list of current actions: actions"
+        print(self._format_json_object_to_str(self.api.get_actions()))
+
+    def do_action_rules(self, arg):
+        "Get list of current action_rules: action_rules"
+        print(self._format_json_object_to_str(self.api.get_action_rules()))
+
+    # Query Content Commands
+    def do_hash_details_for_id(self, arg):
+        "Get hash_details for content id: hash_details_for_id <content id>"
+        print(self._format_json_object_to_str(self.api.get_content_hash_details(arg)))
+
+    def do_matches_for_id(self, arg):
+        "Get matches for content id: matches_for_id <content id>"
+        print(self._format_json_object_to_str(self.api.get_content_matches(arg)))
+
+    def do_action_history_for_id(self, arg):
+        "Get action_history for content id: action_history_for_id <content id>"
+        print(self._format_json_object_to_str(self.api.get_content_action_history(arg)))
+
+    # Create Commands
+    # Submit Commands
+    # TODO
+
+    # Test Commands
+    def do_run_basic_test(self, arg):
+        "Set up, run, and cleanup a basic test: run_basic_test"
+        DeployedInstanceClient(api=self.api).run_basic_test()
+
+    # Utility commands
+    def do_refresh(self, arg):
+        "Refresh token (only needed if shell is open for a long time) status of the test: refresh"
+        self.api._refresh_token()
+
+    def do_exit(self, arg):
+        "Close the shell: exit"
+        print("\nClosing Shell...\n")
+        return True
+
+    def _format_json_object_to_str(self, json_object):
+        return json.dumps(json_object, indent=2)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Start a HMA Shell to intract with a deployed HMA instance."
+    )
+    parser.add_argument(
+        "--username",
+        help="username of test user, defaults to '<prefix_in_tf_vars>testuser'",
+        default="",
+    )
+    parser.add_argument(
+        "--pwd",
+        help="password of test user",
+        default="",
+    )
+    parser.add_argument(
+        "--email",
+        help="email for test user (required if creating a test user otherwise ignored)",
+        default="",
+    )
+    parser.add_argument(
+        "--tf_output_file",
+        help="Instead of using a python helper get_terraform_outputs, read output from a file\n e.g. via 'terraform -chdir=terraform output -json >> tf_outputs.json'",
+    )
+    parser.add_argument(
+        "--create_user",
+        action="store_true",
+        help="Creates a new test user. Require values for 'username', 'pwd', and 'email' args.",
+    )
+
+    args = parser.parse_args()
+
+    if args.tf_output_file:
+        tf_outputs = hma_script_utils.get_terraform_outputs_from_file(
+            args.tf_output_file
+        )
+    else:
+        tf_outputs = hma_script_utils.get_terraform_outputs()
+
+    pwd = args.pwd
+    user = args.username
+
+    if args.create_user:
+        if not args.email or not pwd:
+            print("Email and pwd required to create user")
+            parser.print_usage()
+            exit()
+
+        if not user:
+            user = hma_script_utils.get_default_user_name(tf_outputs["prefix"]["value"])
+
+        pool_id = tf_outputs["cognito_user_pool_id"]["value"]
+        client_id = tf_outputs["cognito_user_pool_client_id"]["value"]
+
+        hma_script_utils.create_user(
+            args.username, args.email, pool_id=pool_id, client_id=client_id
+        )
+
+    token, refresh_token, client_id = hma_script_utils.get_auth_from_env(
+        tf_outputs, pwd_override=pwd, user_override=user, prompt_for_pwd=True
+    )
+
+    api_url = tf_outputs["api_url"]["value"]
+
+    HMAShell(api_url, refresh_token, client_id).cmdloop()

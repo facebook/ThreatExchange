@@ -14,36 +14,44 @@ import typing as t
 from time import perf_counter
 from urllib.parse import urljoin
 
-from script_utils import HasherMatcherActionerAPI
+from hma_script_utils import (
+    HasherMatcherActionerAPI,
+    get_terraform_outputs,
+    get_auth_from_env,
+)
 
 from hmalib.common.evaluator_models import ActionRule
 from hmalib.common.classification_models import ActionLabel, ClassificationLabel
 from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
 
 
-class DeployedInstanceTestHelper:
+class DeployedInstanceClient:
     """
     Class around testing a deployed instance of HMA from Content Submission to Hash - Match - Action
     by checking that the expected values are found
 
-    This class is structed in a way to have script_utils.py avoid importing hmalib itself.
+    This class is structed in a way to have hma_script_utils.py avoid importing hmalib itself.
     """
 
     def __init__(
         self,
-        api_url: str,
+        api_url: str = "",
         api_token: str = "",
         client_id: str = None,
         refresh_token: str = None,
+        api: HasherMatcherActionerAPI = None,
     ) -> None:
-        if not api_token and (not client_id or not refresh_token):
-            raise ValueError(
-                "Test requires an api_token OR a client_id + refresh_token to function"
-            )
+        if api:
+            self.api = api
+        else:
+            if not api_token and (not client_id or not refresh_token):
+                raise ValueError(
+                    "Test requires an api_token OR a client_id + refresh_token to function"
+                )
 
-        self.api = HasherMatcherActionerAPI(
-            api_url, api_token, client_id, refresh_token
-        )
+            self.api = HasherMatcherActionerAPI(
+                api_url, api_token, client_id, refresh_token
+            )
 
     def refresh_api_token(self):
         """
@@ -133,6 +141,9 @@ class DeployedInstanceTestHelper:
             privacy_group_name="Test Sample Set",
         )
 
+        self.set_up_test_actions(action_hook_url)
+
+    def set_up_test_actions(self, action_hook_url="http://httpstat.us/404"):
         action_performer = WebhookPostActionPerformer(
             name=self.ACTION_NAME,
             url=action_hook_url,
@@ -174,12 +185,12 @@ class DeployedInstanceTestHelper:
         filepath="sample_data/b.jpg",
         additional_fields=[
             "this-is:a-test",
-            "submitted-from:submit_content_test.py",
+            "submitted-from:hma_client_lib.py",
         ],
     ):
         try:
             with open(filepath, "rb") as file:
-                self.api.send_single_submission_url(
+                self.api.submit_via_upload_put_url(
                     content_id,
                     file,
                     additional_fields,
@@ -233,61 +244,15 @@ class DeployedInstanceTestHelper:
 if __name__ == "__main__":
     # If you want manually test the lib, you can do so here:
 
-    # i.e. "https://<app-id>.execute-api.<region>.amazonaws.com/"
-    api_url = os.environ.get(
-        "HMA_API_URL",
-        "",
-    )
+    tf_outputs = get_terraform_outputs()
+    api_url = tf_outputs["api_url"]["value"]
+    token, refresh_token, client_id = get_auth_from_env(tf_outputs)
 
-    token = os.environ.get(
-        "HMA_TOKEN",
-        "",
-    )
-
-    # See AWS Console: Cognito -> UserPools... -> App clients
-    client_id = os.environ.get(
-        "HMA_COGNITO_USER_POOL_CLIENT_ID",
-        "",
-    )
-
-    # Can be created with dev certs `$ scripts/get_auth_token --refresh_token`
-    refresh_token = os.environ.get(
-        "HMA_REFRESH_TOKEN",
-        "",
-    )
-
-    print(
-        "Attempting to run submit_content_test,gs you may need to run additional commands first."
-    )
     print(
         "This simple tests should take a little over 2 minutes to complete (due to sqs timeout).\n"
     )
 
-    if not api_url:
-        print("Error: Failed to find HMA_API_URL in environ.")
-        print(
-            "Easiest way to add this to your environment is `source scripts/set_tf_outputs_in_local_env.sh`"
-        )
-        exit()
-
-    if refresh_token and not client_id:
-        print(
-            "Error: Failed to find HMA_COGNITO_USER_POOL_CLIENT_ID in environ. (Required to use HMA_REFRESH_TOKEN)"
-        )
-        print(
-            "Easiest way to add this to your environment is `source scripts/set_tf_outputs_in_local_env.sh`"
-        )
-        exit()
-
-    if not token and not refresh_token:
-        print("Error: Failed to find HMA_TOKEN or HMA_REFRESH_TOKEN in environ.")
-        print(
-            "Easiest way to add either to your environment is to export the result `scripts/get_auth_token`"
-        )
-        print("See script (get_auth_token) for usage.")
-        exit()
-
-    helper = DeployedInstanceTestHelper(api_url, token, client_id, refresh_token)
+    helper = DeployedInstanceClient(api_url, token, client_id, refresh_token)
 
     if refresh_token and client_id:
         helper.refresh_api_token()

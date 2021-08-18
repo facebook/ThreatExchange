@@ -39,7 +39,7 @@ import datetime
 import numpy as np
 import pandas as pd
 import typing as t
-from submit_content_test import DeployedInstanceTestHelper
+from hma_client_lib import DeployedInstanceClient
 from listener import Listener
 from submitter import Submitter
 
@@ -267,7 +267,7 @@ def start_soak(
     skip_listener: bool = False,
     filepaths: t.List[str] = [],
 ):
-    helper = DeployedInstanceTestHelper(api_url, "", client_id, refresh_token)
+    helper = DeployedInstanceClient(api_url, "", client_id, refresh_token)
     helper.refresh_api_token()
     if skip_listener:
         helper.set_up_test("http://httpstat.us/404")

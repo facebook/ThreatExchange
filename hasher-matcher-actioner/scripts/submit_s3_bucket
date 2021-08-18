@@ -23,7 +23,7 @@ import concurrent.futures
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from script_utils import HasherMatcherActionerAPI
+from hma_script_utils import HasherMatcherActionerAPI
 
 
 @functools.lru_cache(maxsize=None)
@@ -99,7 +99,7 @@ class S3BucketSubmitter:
     def run_one_iteration(self, executor):
         def submit_one(presigned_url: str):
             content_id = str(uuid.uuid4())
-            executor.submit(self.api.submit_from_url, presigned_url, content_id)
+            executor.submit(self.api.submit_via_external_url, presigned_url, content_id)
 
         self.map_object_presigned_urls(submit_one)
 

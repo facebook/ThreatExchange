@@ -13,12 +13,8 @@ $ export HMA_TMP_TOKEN=$(./scripts/get_auth_token)
 $ export HMA_REFRESH_TOKEN=$(./scripts/get_auth_token --refresh_token) 
 ```
 
-
-Sample Usage (setting values in ENV)
+Sample Usage 
 ```
-# Set PREFIX and POOL_IDs
-$ source scripts/set_tf_outputs_in_local_env.sh
-
 # First time to create prefixTestUser (by first deleting the old one if needed)
 $ export HMA_TMP_TOKEN=$(./scripts/get_auth_token --pwd 'Example$Passw0rd' --delete_and_create_user --email 'example@org.com') 
 
@@ -33,67 +29,17 @@ import argparse
 import boto3
 from botocore.exceptions import ClientError
 
-client = boto3.client("cognito-idp")
-
-
-def get_token(
-    username: str,
-    pwd: str,
-    pool_id: str,
-    client_id: str,
-):
-    resp = client.admin_initiate_auth(
-        AuthFlow="ADMIN_USER_PASSWORD_AUTH",
-        AuthParameters={"USERNAME": username, "PASSWORD": pwd},
-        UserPoolId=pool_id,
-        ClientId=client_id,
-    )
-    return resp
-
-
-def create_user(
-    username: str,
-    email: str,
-    pwd: str,
-    pool_id: str,
-    client_id: str,
-):
-    client.admin_create_user(
-        UserPoolId=pool_id,
-        Username=username,
-        UserAttributes=[
-            {"Name": "email_verified", "Value": "True"},
-            {"Name": "email", "Value": email},
-        ],
-        ForceAliasCreation=False,
-        MessageAction="SUPPRESS",
-    )
-    client.admin_set_user_password(
-        UserPoolId=pool_id,
-        Username=username,
-        Password=pwd,
-        Permanent=True,
-    )
-
-
-def delete_user(
-    username: str,
-    pwd: str,
-    pool_id: str,
-    client_id: str,
-):
-    try:
-        resp = client.admin_delete_user(
-            UserPoolId=pool_id,
-            Username=username,
-        )
-    except ClientError as err:
-        # if the user is not found.
-        pass
-
+from hma_script_utils import (
+    get_token,
+    create_user,
+    delete_user,
+    get_terraform_outputs,
+    get_default_user_name,
+)
 
 if __name__ == "__main__":
 
+    USER = ""
     PWD = ""
     EMAIL = ""
 
@@ -103,28 +49,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--username",
         help="username of user in pool",
-        default=f'{os.environ.get("HMA_PREFIX","")}testuser',
+        default=USER,
     )
     parser.add_argument(
         "--pwd",
         help="password of user in pool (see user pool for requirements)",
         default=PWD,
-    )
-    parser.add_argument(
-        "--pool_id",
-        help="id of the user pool",
-        default=os.environ.get(
-            "HMA_COGNITO_USER_POOL_ID",
-            "",
-        ),
-    )
-    parser.add_argument(
-        "--client_id",
-        help="id of app client for the pool",
-        default=os.environ.get(
-            "HMA_COGNITO_USER_POOL_CLIENT_ID",
-            "",
-        ),
     )
     parser.add_argument(
         "--email",
@@ -144,6 +74,15 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    tf_outputs = get_terraform_outputs()
+
+    pool_id = tf_outputs["cognito_user_pool_id"]["value"]
+    client_id = tf_outputs["cognito_user_pool_client_id"]["value"]
+
+    user = args.username
+    if not user:
+        user = get_default_user_name(tf_outputs["prefix"]["value"])
+
     if not args.pwd:
         print(
             'PWD is required. It can be set in the script itself (PWD="<password>") or via --pwd "<password>"'
@@ -158,10 +97,10 @@ if __name__ == "__main__":
             )
             parser.print_usage()
             exit()
-        delete_user(args.username, args.pwd, args.pool_id, args.client_id)
-        create_user(args.username, args.email, args.pwd, args.pool_id, args.client_id)
+        delete_user(user, args.pwd, pool_id, client_id)
+        create_user(user, args.email, args.pwd, pool_id, client_id)
 
-    resp = get_token(args.username, args.pwd, args.pool_id, args.client_id)
+    resp = get_token(user, args.pwd, pool_id, client_id)
 
     if args.refresh_token:
         print(resp["AuthenticationResult"]["RefreshToken"])

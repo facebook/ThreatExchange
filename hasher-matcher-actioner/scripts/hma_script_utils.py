@@ -9,9 +9,21 @@ import os
 import json
 import base64
 import requests
+import boto3
+import subprocess
+import functools
 import typing as t
 from requests.adapters import HTTPAdapter
 from urllib.parse import urljoin
+from botocore.exceptions import ClientError
+
+# Defaults to override values in tf outputs or ENV
+API_URL = ""
+TOKEN = ""
+REFRESH_TOKEN = ""
+CLIENT_ID = ""
+USER = ""
+PWD = ""
 
 
 class HasherMatcherActionerAPI:
@@ -53,8 +65,6 @@ class HasherMatcherActionerAPI:
         if not self.client_id or not self.refresh_token:
             raise ValueError("Refresh Token and/or Client ID Missing")
 
-        import boto3
-
         client = boto3.client("cognito-idp", region_name="us-east-1")
 
         resp = client.initiate_auth(
@@ -78,7 +88,7 @@ class HasherMatcherActionerAPI:
         response.raise_for_status()
         return response.json().get("match_summaries", [])
 
-    def send_single_submission_b64(
+    def submit_via_encoded_bytes(
         self,
         content_id: str,
         b64_file_contents: str,
@@ -97,7 +107,7 @@ class HasherMatcherActionerAPI:
         )
         response.raise_for_status()
 
-    def send_single_submission_url(
+    def submit_via_upload_put_url(
         self,
         content_id: str,
         file: t.BinaryIO,
@@ -125,14 +135,14 @@ class HasherMatcherActionerAPI:
         )
         put_response.raise_for_status()
 
-    def submit_from_url(
+    def submit_via_external_url(
         self,
         url: str,
         content_id: str,
         additional_fields: t.List[str] = [],
     ):
         """
-        Distinct from send_single_submission_url(), It uses the URL only path
+        Distinct from submit_via_upload_put_url(), It uses the URL only path
         and bypasses s3 completely.
         """
         payload = {
@@ -269,38 +279,156 @@ class HasherMatcherActionerAPI:
         self.session.delete(self._get_request_url(api_path + action_rule_name))
 
 
+def get_terraform_outputs(
+    directory: str = "/workspaces/ThreatExchange/hasher-matcher-actioner/terraform",
+):
+    cmd = ["terraform"]
+    cmd.extend(["output", "-json"])
+    out = subprocess.check_output(cmd, cwd=directory)
+    return json.loads(out)
+
+
+def get_terraform_outputs_from_file(
+    path: str = "/workspaces/ThreatExchange/hasher-matcher-actioner/tmp.out",
+):
+    with open(path) as f:
+        return json.loads(f.read())
+
+
+@functools.lru_cache(maxsize=None)
+def _get_cognito_client():
+    return boto3.client("cognito-idp")
+
+
+def get_token(
+    username: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    resp = _get_cognito_client().admin_initiate_auth(
+        AuthFlow="ADMIN_USER_PASSWORD_AUTH",
+        AuthParameters={"USERNAME": username, "PASSWORD": pwd},
+        UserPoolId=pool_id,
+        ClientId=client_id,
+    )
+    return resp
+
+
+def create_user(
+    username: str,
+    email: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    _get_cognito_client().admin_create_user(
+        UserPoolId=pool_id,
+        Username=username,
+        UserAttributes=[
+            {"Name": "email_verified", "Value": "True"},
+            {"Name": "email", "Value": email},
+        ],
+        ForceAliasCreation=False,
+        MessageAction="SUPPRESS",
+    )
+    _get_cognito_client().admin_set_user_password(
+        UserPoolId=pool_id,
+        Username=username,
+        Password=pwd,
+        Permanent=True,
+    )
+
+
+def delete_user(
+    username: str,
+    pwd: str,
+    pool_id: str,
+    client_id: str,
+):
+    try:
+        resp = _get_cognito_client().admin_delete_user(
+            UserPoolId=pool_id,
+            Username=username,
+        )
+    except ClientError as err:
+        # if the user is not found.
+        pass
+
+
+def get_default_user_name(prefix: str):
+    return f"{prefix}testuser"
+
+
+def get_auth_from_env(
+    tf_outputs: t.Dict,
+    token_default: str = TOKEN,
+    refresh_token_default: str = REFRESH_TOKEN,
+    pwd_override: str = PWD,
+    client_id_override: str = CLIENT_ID,
+    user_override: str = USER,
+    prompt_for_pwd: bool = False,
+):
+
+    # Can be created with dev certs: `export HMA_TOKEN=$(./scripts/get_auth_token --pwd <pwd>)`
+    token = os.environ.get(
+        "HMA_TOKEN",
+        token_default,
+    )
+
+    # Can be created with dev certs: `export HMA_REFRESH_TOKEN=$(./scripts/get_auth_token --refresh_token --pwd <pwd>)`
+    refresh_token = os.environ.get(
+        "HMA_REFRESH_TOKEN",
+        refresh_token_default,
+    )
+
+    # Password that if found in ENV can be used to get a token
+    pwd = pwd_override or os.environ.get(
+        "HMA_USER_PWD",
+        "",
+    )
+
+    client_id = client_id_override or tf_outputs["cognito_user_pool_client_id"]["value"]
+
+    if not token and not refresh_token:
+        user = user_override or get_default_user_name(tf_outputs["prefix"]["value"])
+        if not pwd:
+            if prompt_for_pwd:
+                print(f"Needs a password for user: {user} to authenticate.")
+                pwd = input("Enter password: ")
+            else:
+                print(
+                    "Authentication requires at least one of HMA_TOKEN, HMA_REFRESH_TOKEN, or HMA_USER_PWD be present in ENV."
+                )
+                print(
+                    "You can also hard code these values and others in scripts/hma_script_utils.py if you are trying to set outside of our development ENV (e.g. on an ec2 instance)."
+                )
+                print(
+                    "See: `script/get_auth_token` these values are associated with a user if you don't have one you can create one with the script as well."
+                )
+                exit()
+
+        pool_id = tf_outputs["cognito_user_pool_id"]["value"]
+        resp = get_token(user, pwd, pool_id, client_id)
+        token = resp["AuthenticationResult"]["IdToken"]
+        refresh_token = resp["AuthenticationResult"]["RefreshToken"]
+
+    return (token, refresh_token, client_id)
+
+
 if __name__ == "__main__":
     # If you want hard code tests for methods you can do so here:
 
     # Testing HasherMatcherActionerAPI
     #   Since the API requries a deployed instance the majority of
     #   testing needs to be done manually. See below.
+    print("Manual Test of API Request Methods:")
 
-    # Add init values for the api:
-    # `os.environ.get(...)` will enable us pass values from `terraform output` in sh
+    tf_outputs = get_terraform_outputs()
 
-    # i.e. "https://<app-id>.execute-api.<region>.amazonaws.com/"
-    api_url = os.environ.get(
-        "HMA_API_URL",
-        "",
-    )
+    api_url = tf_outputs["api_url"]["value"]
 
-    token = os.environ.get(
-        "HMA_TOKEN",
-        "",
-    )
-
-    # See AWS Console: Cognito -> UserPools... -> App clients
-    client_id = os.environ.get(
-        "HMA_COGNITO_USER_POOL_CLIENT_ID",
-        "",
-    )
-
-    # Can be created with dev certs `$ scripts/get_auth_token --refresh_token`
-    refresh_token = os.environ.get(
-        "HMA_REFRESH_TOKEN",
-        "",
-    )
+    token, refresh_token, client_id = get_auth_from_env(tf_outputs)
 
     api = HasherMatcherActionerAPI(
         api_url,
@@ -309,11 +437,9 @@ if __name__ == "__main__":
         refresh_token,
     )
 
-    print("Manual Test of API Request Methods:")
-
     # if we can lets go ahead and refresh
     if refresh_token and client_id:
-        print(api._refresh_token())
+        api._refresh_token()
 
     # e.g. if auth is correct the following command should print:
     # "{'message': 'Hello World, HMA'}"

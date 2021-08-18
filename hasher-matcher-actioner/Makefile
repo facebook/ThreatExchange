@@ -39,7 +39,7 @@ dev_destroy_instance:
 	cd terraform/ && terraform destroy -var "prefix=${USER}"
 
 dev_test_instance:
-	python3 scripts/submit_content_test.py
+	python3 scripts/hma_client_lib.py
 
 dev_clear_configs:
 	-rm terraform/terraform.tfvars terraform/backend.tf

@@ -29,7 +29,7 @@ from time import perf_counter
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from script_utils import HasherMatcherActionerAPI
+from hma_script_utils import HasherMatcherActionerAPI
 
 # Token can be found using Postman or with developer credentials using script/get_auth_token
 TOKEN = ""
@@ -45,7 +45,7 @@ hostname = socket.gethostname()
 # bucket_prefix_known = int(socket.gethostname()[-2:]) % 5
 
 
-def _send_single_submission_url(
+def _submit_via_upload_put_url(
     api: HasherMatcherActionerAPI, filepath: str, additional_fields: t.List[str]
 ) -> int:
     """
@@ -58,7 +58,7 @@ def _send_single_submission_url(
 
     with open(filepath, "rb") as file:
         try:
-            api.send_single_submission_url(
+            api.submit_via_upload_put_url(
                 content_id,
                 file,
                 additional_fields,
@@ -82,7 +82,7 @@ def _get_b64_contents(filepath):
         return str(base64.b64encode(file.read()), "utf-8")
 
 
-def _send_single_submission_b64(
+def _submit_via_encoded_bytes(
     api: HasherMatcherActionerAPI, filepath: str, additional_fields: t.List[str]
 ) -> int:
     """
@@ -94,7 +94,7 @@ def _send_single_submission_b64(
     start_time = perf_counter()
 
     try:
-        api.send_single_submission_b64(
+        api.submit_via_encoded_bytes(
             content_id, _get_b64_contents(filepath), additional_fields
         )  # api method calls raise_for_status to check for error
     except (
@@ -124,9 +124,9 @@ def unleash_storm(
 
     execution_times = []
 
-    send_single_submission_func = _send_single_submission_b64
+    send_single_submission_func = _submit_via_encoded_bytes
     if url_mode:
-        send_single_submission_func = _send_single_submission_url
+        send_single_submission_func = _submit_via_upload_put_url
 
     if retry:
         retry_strategy = Retry(
