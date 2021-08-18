@@ -135,7 +135,16 @@ def get_content_api(
         a UI. This is not optimized for performance.
         """
         content_id = bottle.request.query.content_id or None
+
+        if not content_id:
+            return bottle.abort(400, "content_id must be provided.")
+        content_id = t.cast(str, content_id)
+
         content_object = ContentObject.get_from_content_id(dynamodb_table, content_id)
+        if not content_object:
+            return bottle.abort(400, f"Content with id '{content_id}' not found.")
+        content_object = t.cast(ContentObject, content_object)
+
         preview_url = content_object.content_ref
 
         # The result object will be gradually built up as records are retrieved.
