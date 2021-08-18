@@ -14,7 +14,7 @@ import {
 } from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 
-import {submitContentViaURL, submitContentViaPostURLUpload} from '../Api';
+import {submitContentViaURL, submitContentViaPutURLUpload} from '../Api';
 import {ContentType, SUBMISSION_TYPE} from '../utils/constants';
 
 import {
@@ -75,8 +75,8 @@ export default function SubmitContent() {
   const handleSubmit = event => {
     event.preventDefault();
     setSubmitting(true);
-    if (inputs.submissionType === 'POST_URL_UPLOAD') {
-      submitContentViaPostURLUpload(
+    if (inputs.submissionType === 'PUT_URL_UPLOAD') {
+      submitContentViaPutURLUpload(
         inputs.contentId,
         inputs.contentType,
         packageAdditionalFields(),
@@ -152,7 +152,7 @@ export default function SubmitContent() {
                   </Form.Group>
                 )}
 
-                {submissionType === SUBMISSION_TYPE.POST_URL_UPLOAD && (
+                {submissionType === SUBMISSION_TYPE.PUT_URL_UPLOAD && (
                   <PhotoUploadField
                     inputs={inputs}
                     handleInputChangeUpload={handleInputChangeUpload}
