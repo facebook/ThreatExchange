@@ -140,6 +140,13 @@ class ContentObject(ContentObjectBase, JSONifiable):
 
     CONTENT_STATIC_SK = "#content_object"
 
+    # Because of the way update expressions work with `ADD` for sets
+    # if an empty set is given to additional fields it will error
+    # which is a shame because otherwise `ADD` is exactly what we want.
+    # the addition and (removal) of this placeholder when translating to
+    # (and from) ddb gets around this.
+    ADDITIONAL_FIELDS_PLACE_HOLDER = "_ADDITIONAL_FIELDS_PLACE_HOLDER"
+
     # Is this a photo, a video, a piece of text? etc.
     content_type: t.Type[ContentType]
 
@@ -211,7 +218,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
                 ":crt": self.content_ref_type.value,
                 ":af": self.additional_fields
                 if self.additional_fields
-                else {"Placeholder"},
+                else {self.ADDITIONAL_FIELDS_PLACE_HOLDER},
                 ":s": [s.isoformat() for s in self.submission_times],
                 ":c": self.created_at.isoformat(),
                 ":u": self.updated_at.isoformat(),
@@ -245,6 +252,9 @@ class ContentObject(ContentObjectBase, JSONifiable):
         content_ref_type = ContentRefType(item["ContentRefType"])
         content_type = get_content_type_for_name(item["ContentType"])
 
+        # This value is added in the case that no additional fields
+        # were provided and can be safely discarded.
+        item["AdditionalFields"].discard(cls.ADDITIONAL_FIELDS_PLACE_HOLDER)
         return ContentObject(
             content_id=cls.remove_content_key_prefix(
                 item["PK"],
