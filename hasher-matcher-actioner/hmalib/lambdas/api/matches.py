@@ -286,6 +286,8 @@ def get_matches_api(
     def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
         """
         For a given hash/signal check the index(es) for matches and return the details
+        NOTE: currently metadata returned will not be written to the dynamodb table
+        unlike in the case of a pipeline match based on submissions.
         """
         signal_type = None
         if request.signal_type == "pdq":
