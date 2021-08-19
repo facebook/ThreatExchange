@@ -4,7 +4,7 @@
 """
 For multi-part Pull Requests, generates basic information in markdown.
 
-Identifies commits between current branch and master, for each, outputs.
+Identifies commits between current branch and main, for each, outputs.
 
 <h3> Link, Commit Message
 
@@ -18,11 +18,11 @@ import subprocess
 
 def build_template(pr_number):
     GIT_LOG_COMMAND = (
-        "git log $(git rev-parse --abbrev-ref HEAD) ^master --pretty=oneline"
+        "git log $(git rev-parse --abbrev-ref HEAD) ^main --pretty=oneline"
     )
     output = subprocess.run(GIT_LOG_COMMAND, shell=True, capture_output=True).stdout
 
-    for line in output.decode("utf-8").split("\n"):
+    for line in reversed(output.decode("utf-8").split("\n")):
         if not line.strip():
             # if line is empty, ignore
             continue
