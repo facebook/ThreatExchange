@@ -180,7 +180,7 @@ def get_content_api(
             dynamodb_table, content_id
         )
         if len(hash_records) != 0:
-            result.hashed_at = min(hash_records, key=lambda r: r.updated_at).updated_at
+            result.hashed_at = max(hash_records, key=lambda r: r.updated_at).updated_at
             for hash_record in hash_records:
                 # Assume that each signal type has a single hash
                 if hash_record.signal_type.get_name() in result.hash_results:
@@ -195,7 +195,7 @@ def get_content_api(
 
         match_records = MatchRecord.get_from_content_id(dynamodb_table, content_id)
         if len(match_records) != 0:
-            result.matched_at = min(
+            result.matched_at = max(
                 match_records, key=lambda r: r.updated_at
             ).updated_at
 
@@ -209,7 +209,7 @@ def get_content_api(
 
         action_records = ActionEvent.get_from_content_id(dynamodb_table, content_id)
         if len(action_records) != 0:
-            result.action_performed_at = min(
+            result.action_performed_at = max(
                 action_records, key=lambda r: r.performed_at
             ).performed_at
             result.action_perform_results = [r.action_label for r in action_records]

@@ -79,8 +79,8 @@ type StageTimeViewProps = {
 function StageTimeView({stage, completedAt}: StageTimeViewProps): JSX.Element {
   const label = new Map([
     [StepperStages.Submitted, 'Submitted at'],
-    [StepperStages.Hashed, 'First Hash Recorded at'],
-    [StepperStages.Matched, 'First Matched at'],
+    [StepperStages.Hashed, 'Hash Recorded at'],
+    [StepperStages.Matched, 'Matched at'],
     [StepperStages.ActionEvaluated, 'Action Evaluated at'],
     [StepperStages.ActionPerformed, 'Action Performed at'],
   ]).get(stage);
