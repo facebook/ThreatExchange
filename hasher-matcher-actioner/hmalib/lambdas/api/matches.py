@@ -2,6 +2,8 @@
 
 import bottle
 import datetime
+import functools
+import dataclasses
 
 from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
@@ -10,14 +12,32 @@ from enum import Enum
 from logging import Logger
 
 from threatexchange.descriptor import ThreatDescriptor
+
+from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.signal_type.pdq import PdqSignal
+
 from hmalib.models import MatchRecord
-from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
+from hmalib.common.signal_models import (
+    PDQSignalMetadata,
+    PendingOpinionChange,
+    SignalMetadataBase,
+)
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import BankedSignal, WritebackMessage, WritebackTypes
-from .middleware import jsoninator, JSONifiable
+from .middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
+from hmalib.matchers.matchers_base import Matcher
+
 
 logger = get_logger(__name__)
+
+
+@functools.lru_cache(maxsize=None)
+def _get_matcher(index_bucket_name: str) -> Matcher:
+    return Matcher(
+        index_bucket_name=index_bucket_name,
+        supported_signal_types=[PdqSignal, VideoMD5Signal],
+    )
 
 
 @dataclass
@@ -145,7 +165,29 @@ def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
     return OpinionString.UNKNOWN
 
 
-def get_matches_api(dynamodb_table: Table, hma_config_table: str) -> bottle.Bottle:
+@dataclass
+class MatchesForHashRequest(DictParseable):
+    signal_value: str
+    signal_type: str
+
+    @classmethod
+    def from_dict(cls, d):
+        # todo translate signal type to actual type
+        return cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+
+
+@dataclass
+class MatchesForHashResponse(JSONifiable):
+    matches: t.List[t.Union[PDQSignalMetadata]]
+    signal_value: str
+
+    def to_json(self) -> t.Dict:
+        return {"matches": [match.to_json() for match in self.matches]}
+
+
+def get_matches_api(
+    dynamodb_table: Table, hma_config_table: str, indexes_bucket_name: str
+) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
     API that this API plugs into. Declare dependencies here, but initialize in
@@ -239,5 +281,35 @@ def get_matches_api(dynamodb_table: Table, hma_config_table: str) -> bottle.Bott
             logger.info(f"Attempting to update {signal} in db failed")
 
         return ChangeSignalOpinionResponse(success)
+
+    @matches_api.get("/for-hash/", apply=[jsoninator(MatchesForHashRequest)])
+    def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
+        """
+        For a given hash/signal check the index(es) for matches and return the details
+        NOTE: currently metadata returned will not be written to the dynamodb table
+        unlike in the case of a pipeline match based on submissions.
+        """
+        signal_type = None
+        if request.signal_type == "pdq":
+            # todo translate in MatchesForHashRequest and extend to cover MD5
+            signal_type = PdqSignal
+
+        if not signal_type:
+            # only support PDQ at the moment
+            bottle.response.status = 400
+            return MatchesForHashResponse([], request.signal_value)
+
+        matches = _get_matcher(indexes_bucket_name).match(
+            signal_type, request.signal_value
+        )
+
+        match_objects = []
+
+        for match in matches:
+            match_objects.extend(
+                Matcher.get_metadata_objects_from_match(signal_type, match)
+            )
+
+        return MatchesForHashResponse(match_objects, request.signal_value)
 
     return matches_api

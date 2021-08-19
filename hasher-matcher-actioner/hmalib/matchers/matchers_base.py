@@ -142,8 +142,9 @@ class Matcher:
             match.metadata["hash"],
         ).write_to_table(table)
 
+    @classmethod
     def write_signal_if_not_found(
-        self,
+        cls,
         table: Table,
         signal_type: t.Type[SignalType],
         match: IndexMatch,
@@ -159,9 +160,24 @@ class Matcher:
         their own store. Perhaps the API could be useful when building local
         banks. Who knows! :)
         """
+        for signal in cls.get_metadata_objects_from_match(signal_type, match):
+            signal.write_to_table_if_not_found(table)
+
+    @classmethod
+    def get_metadata_objects_from_match(
+        cls,
+        signal_type: t.Type[SignalType],
+        match: IndexMatch,
+    ) -> t.List[t.Union[PDQSignalMetadata]]:
+        """
+        See docstring of `write_signal_if_not_found` we will likely want to move
+        this outside of Matcher. However while the MD5 expansion is still on going
+        better to have it all in once place.
+        Note: changes made here will have an effect on api.matches.get_match_for_hash
+        """
         # TODO: Abstract out MD5SignalMetadata
         if signal_type == PdqSignal:
-            for privacy_group_id in match.metadata.get("privacy_groups", []):
+            return [
                 PDQSignalMetadata(
                     str(match.metadata["id"]),
                     privacy_group_id,
@@ -169,7 +185,10 @@ class Matcher:
                     match.metadata["source"],
                     match.metadata["hash"],
                     match.metadata["tags"].get(privacy_group_id, []),
-                ).write_to_table_if_not_found(table)
+                )
+                for privacy_group_id in match.metadata.get("privacy_groups", [])
+            ]
+        return []  # todo add md5 support
 
     def get_index(self, signal_type: t.Type[SignalType]) -> SignalTypeIndex:
         # If cached, return an index instance for the signal_type. If not, build

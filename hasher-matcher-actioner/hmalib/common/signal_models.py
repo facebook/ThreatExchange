@@ -4,7 +4,7 @@ import datetime
 from enum import Enum
 import typing as t
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
@@ -40,6 +40,17 @@ class SignalMetadataBase(DynamoDBItem):
     @staticmethod
     def get_dynamodb_ds_key(ds_id: str) -> str:
         return f"{SignalMetadataBase.DATASET_PREFIX}{ds_id}"
+
+    def to_json(self) -> t.Dict:
+        """
+        Used by '/matches/for-hash' in lambdas/api/matches
+        """
+        result = asdict(self)
+        result.update(
+            updated_at=self.updated_at.isoformat(),
+            pending_opinion_change=self.pending_opinion_change.value,
+        )
+        return result
 
 
 @dataclass

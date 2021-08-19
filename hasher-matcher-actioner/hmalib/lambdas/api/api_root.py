@@ -51,6 +51,7 @@ IMAGE_FOLDER_KEY = os.environ[
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 HASHES_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 
+INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -173,6 +174,7 @@ app.mount(
     get_matches_api(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         hma_config_table=HMA_CONFIG_TABLE,
+        indexes_bucket_name=INDEXES_BUCKET_NAME,
     ),
 )
 
