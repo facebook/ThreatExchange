@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from threatexchange import signal_type
 from hmalib.lambdas.api.submit import create_presigned_url
 import bottle
 import boto3
@@ -39,7 +40,7 @@ class HashResultResponse(JSONifiable):
 
 
 @dataclass
-class ImageResponse(JSONifiable):
+class ContentPreviewResponse(JSONifiable):
     preview_url: str
 
     def to_json(self) -> t.Dict:
@@ -111,6 +112,23 @@ def get_content_api(
     the root API alone.
     """
 
+    def get_preview_url(content_id, content_object):
+        """
+        Given a content_id and a content_object, returns a URL you can use to
+        preview it.
+        """
+        content_object = t.cast(ContentObject, content_object)
+
+        if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
+            source = S3BucketContentSource(image_bucket, image_prefix)
+
+            preview_url = create_presigned_url(
+                image_bucket, source.get_s3_key(content_id), None, 3600, "get_object"
+            )
+        elif content_object.content_ref_type == ContentRefType.URL:
+            preview_url = content_object.content_ref
+        return preview_url
+
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/content/'
     content_api = bottle.Bottle()
@@ -130,6 +148,8 @@ def get_content_api(
     @content_api.get("/pipeline-progress/", apply=[jsoninator])
     def pipeline_progress() -> ContentPipelineProgress:
         """
+        WARNING: UNOPTIMIZED. DO NOT CALL FROM AUTOMATED SYSTEMS.
+
         Build a history of the stages that this piece of content has gone
         through and what their results were. Do not call this from anything but
         a UI. This is not optimized for performance.
@@ -145,7 +165,7 @@ def get_content_api(
             return bottle.abort(400, f"Content with id '{content_id}' not found.")
         content_object = t.cast(ContentObject, content_object)
 
-        preview_url = content_object.content_ref
+        preview_url = get_preview_url(content_id, content_object)
 
         # The result object will be gradually built up as records are retrieved.
         result = ContentPipelineProgress(
@@ -163,6 +183,12 @@ def get_content_api(
             result.hashed_at = min(hash_records, key=lambda r: r.updated_at).updated_at
             for hash_record in hash_records:
                 # Assume that each signal type has a single hash
+                if hash_record.signal_type.get_name() in result.hash_results:
+                    return bottle.abort(
+                        500,
+                        f"Content with id '{content_id}' has multiple hash records for signal-type: '{hash_record.signal_type.get_name()}'.",
+                    )
+
                 result.hash_results[
                     hash_record.signal_type.get_name()
                 ] = hash_record.content_hash
@@ -224,7 +250,7 @@ def get_content_api(
             updated_at=record.updated_at.isoformat(),
         )
 
-    @content_api.get("/image/", apply=[jsoninator])
+    @content_api.get("/preview-url/", apply=[jsoninator])
     def image():
         """
         Returns the URL if content was a URL submission. Uses a signed URL for
@@ -241,17 +267,8 @@ def get_content_api(
 
         if not content_object:
             return bottle.abort(404, "content_id does not exist.")
-        content_object = t.cast(ContentObject, content_object)
+        preview_url = get_preview_url(content_id, content_object)
 
-        if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
-            source = S3BucketContentSource(image_bucket, image_prefix)
-
-            preview_url = create_presigned_url(
-                image_bucket, source.get_s3_key(content_id), None, 3600, "get_object"
-            )
-        elif content_object.content_ref_type == ContentRefType.URL:
-            preview_url = content_object.content_ref
-
-        return ImageResponse(preview_url)
+        return ContentPreviewResponse(preview_url)
 
     return content_api

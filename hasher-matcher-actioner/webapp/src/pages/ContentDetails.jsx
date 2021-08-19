@@ -6,7 +6,7 @@ import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
 import {Col, Row, Table, Button} from 'react-bootstrap';
 
-import {fetchHash, fetchImage, fetchContentDetails} from '../Api';
+import {fetchHash, fetchPreviewURL, fetchContentDetails} from '../Api';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 import {getContentTypeForString} from '../utils/constants';
@@ -36,9 +36,8 @@ export default function ContentDetails() {
   }, []);
 
   useEffect(() => {
-    fetchImage(id)
+    fetchPreviewURL(id)
       .then(result => {
-        console.log(result);
         setImage(result.preview_url);
       })
       .catch(_ => {
