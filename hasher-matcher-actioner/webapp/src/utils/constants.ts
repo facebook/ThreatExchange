@@ -44,8 +44,25 @@ export const StatNames = Object.freeze({
 // Matches threatexchange.content_type.* for each subclass of ContentType, get_name()
 // >>> from threatexchange.content_type.meta import get_all_content_types
 // >>> [content_type.get_name() for content_type in get_all_content_types()]
-export const ContentType = Object.freeze({
-  PHOTO: 'photo',
-  TEXT: 'text',
-  VIDEO: 'video',
-});
+export enum ContentType {
+  Photo = 'photo',
+  Text = 'text',
+  Video = 'video',
+}
+
+/**
+ * String enums do not define an automatic reverse mapping. This fills the gap.
+ * Throws an error if it can't process content type.
+ */
+export function getContentTypeForString(st: string): ContentType {
+  switch (st) {
+    case ContentType.Photo:
+      return ContentType.Photo;
+    case ContentType.Text:
+      return ContentType.Text;
+    case ContentType.Video:
+      return ContentType.Video;
+    default:
+      throw new Error(`String: "${st}" can't be converted to ContentType.`);
+  }
+}

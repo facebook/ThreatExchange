@@ -22,20 +22,31 @@
     "ecmaVersion": 12,
     "sourceType": "module"
   },
-  "plugins": ["react", "prettier", "@typescript-eslint"],
+  "plugins": [
+    "react",
+    "prettier",
+    "@typescript-eslint"
+  ],
   "rules": {
     // The eslint error no-use-before-define breaks when using the typescript-eslint
     // parser so we override it with typescript-eslint's own version of the error.
     // This is direct from the typescript-eslint documentation:
     // https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-use-before-define.md#how-to-use
     "no-use-before-define": "off",
-    "@typescript-eslint/no-use-before-define": ["error"],
+    "@typescript-eslint/no-use-before-define": [
+      "error"
+    ],
     "camelcase": "off",
     "import/extensions": "off",
     "react/jsx-filename-extension": [
       "warn",
       {
-        "extensions": [".js", ".jsx", ".tsx", ".ts"]
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".tsx",
+          ".ts"
+        ]
       }
     ],
     "prettier/prettier": [
@@ -48,7 +59,10 @@
       "error",
       {
         "required": {
-          "some": ["nesting", "id"]
+          "some": [
+            "nesting",
+            "id"
+          ]
         }
       }
     ],
@@ -56,16 +70,32 @@
       "error",
       {
         "required": {
-          "some": ["nesting", "id"]
+          "some": [
+            "nesting",
+            "id"
+          ]
         }
       }
     ],
-    "quotes": ["error", "single"]
+    "quotes": [
+      "error",
+      "single"
+    ],
+    // The following rules make using typescript enums impossible
+    "no-shadow": "off",
+    "@typescript-eslint/no-shadow": [
+      "error"
+    ]
   },
   "settings": {
     "import/resolver": {
       "node": {
-        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+        "extensions": [
+          ".js",
+          ".jsx",
+          ".ts",
+          ".tsx"
+        ]
       }
     }
   }

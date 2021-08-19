@@ -3,8 +3,12 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {Container, Row, Col} from 'react-bootstrap';
+
+type FixedWidthCenterAlignedLayoutProps = {
+  title: string;
+  children: JSX.Element | JSX.Element[];
+};
 
 /**
  * Uses a bootstrap container to put all content in the center of the main area.
@@ -29,7 +33,10 @@ import {Container, Row, Col} from 'react-bootstrap';
  * Centralizing the layouts like this allows page authors to focus on the
  * page.
  */
-export default function FixedWidthCenterAlignedLayout({title, children}) {
+export default function FixedWidthCenterAlignedLayout({
+  title,
+  children = [],
+}: FixedWidthCenterAlignedLayoutProps) {
   return (
     <Container>
       <Row>
@@ -41,12 +48,3 @@ export default function FixedWidthCenterAlignedLayout({title, children}) {
     </Container>
   );
 }
-
-FixedWidthCenterAlignedLayout.propTypes = {
-  title: PropTypes.string.isRequired,
-  children: PropTypes.arrayOf(PropTypes.node),
-};
-
-FixedWidthCenterAlignedLayout.defaultProps = {
-  children: [],
-};

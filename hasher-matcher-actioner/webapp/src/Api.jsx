@@ -73,8 +73,8 @@ export function fetchHash(contentId) {
   return apiGet('/content/hash/', {content_id: contentId});
 }
 
-export function fetchImage(contentId) {
-  return apiGet('/content/image/', {content_id: contentId}, 'blob');
+export function fetchPreviewURL(contentId) {
+  return apiGet('/content/preview-url/', {content_id: contentId});
 }
 
 export function fetchContentActionHistory(contentId) {
@@ -83,6 +83,12 @@ export function fetchContentActionHistory(contentId) {
 
 export function fetchContentDetails(contentId) {
   return apiGet('/content/', {
+    content_id: contentId,
+  });
+}
+
+export function fetchContentPipelineProgress(contentId) {
+  return apiGet('/content/pipeline-progress/', {
     content_id: contentId,
   });
 }
