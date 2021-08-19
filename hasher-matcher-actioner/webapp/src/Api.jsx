@@ -131,13 +131,13 @@ export async function submitContentViaURL(
   });
 }
 
-export async function submitContentViaPostURLUpload(
+export async function submitContentViaPutURLUpload(
   contentId,
   contentType,
   additionalFields,
   content,
 ) {
-  const submitResponse = await apiPost('/submit/post_url/', {
+  const submitResponse = await apiPost('/submit/put-url/', {
     content_id: contentId,
     content_type: contentType,
     additional_fields: additionalFields,
@@ -150,7 +150,7 @@ export async function submitContentViaPostURLUpload(
   };
 
   // Content object was created. Now the content itself needs to be uploaded to s3
-  // using the post url in the response.
+  // using the put url in the response.
   const result = await fetch(submitResponse.presigned_url, requestOptions);
   return result;
 }

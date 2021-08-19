@@ -119,7 +119,7 @@ class HasherMatcherActionerAPI:
             "additional_fields": additional_fields,
             "file_type": "image/jpeg",
         }
-        api_path: str = "/submit/post_url/"
+        api_path: str = "/submit/put-url/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),

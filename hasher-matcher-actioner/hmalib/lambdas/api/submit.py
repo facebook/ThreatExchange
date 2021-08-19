@@ -112,7 +112,7 @@ class SubmitContentHashRequestBody(SubmitRequestBodyBase):
 
 
 @dataclass
-class SubmitContentViaPostURLUploadRequestBody(SubmitRequestBodyBase):
+class SubmitContentViaPutURLUploadRequestBody(SubmitRequestBodyBase):
     file_type: str
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
@@ -307,13 +307,13 @@ def get_submit_api(
         return SubmitResponse(content_id=request.content_id, submit_successful=True)
 
     @submit_api.post(
-        "/post_url/", apply=[jsoninator(SubmitContentViaPostURLUploadRequestBody)]
+        "/put-url/", apply=[jsoninator(SubmitContentViaPutURLUploadRequestBody)]
     )
-    def submit_post_url(
-        request: SubmitContentViaPostURLUploadRequestBody,
+    def submit_put_url(
+        request: SubmitContentViaPutURLUploadRequestBody,
     ) -> t.Union[SubmitViaUploadUrlResponse, SubmitError]:
         """
-        Submission of content to the system's s3 bucket by providing a post url to client
+        Submission of content to the system's s3 bucket by providing a put url to client
         """
         presigned_url = create_presigned_put_url(
             bucket_name=image_bucket,

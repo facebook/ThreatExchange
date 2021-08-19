@@ -24,7 +24,7 @@ export const PENDING_OPINION_CHANGE = Object.freeze({
 
 // Corseponds  SubmissionType in hmalib/api/submit.py
 export const SUBMISSION_TYPE = Object.freeze({
-  POST_URL_UPLOAD: 'Upload',
+  PUT_URL_UPLOAD: 'Upload',
   FROM_URL: 'From URL',
 });
 
