@@ -237,10 +237,3 @@ class Matcher:
         )
 
         sns_client.publish(TopicArn=topic_arn, Message=match_message.to_aws_json())
-
-    def flatten_matches(
-        self,
-        signal_type: t.Type[SignalType],
-        matches: t.List[IndexMatch],
-    ):
-        pass
