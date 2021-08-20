@@ -11,6 +11,7 @@ class S3AdaptersTestCase(TestCase):
             store = ThreatUpdateS3Store(
                 1,
                 1,
+                None,
                 "does-not-matter",
                 "does-not-matter",
                 "does-not-matter",
