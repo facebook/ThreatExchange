@@ -34,6 +34,7 @@ const FORM_DEFAULTS = {
 export default function SubmitContent() {
   const [submitting, setSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState(undefined);
+  const [submissionError, setSubmissionError] = useState(undefined);
   const [submissionType, setSubmissionType] = useState('');
   const [additionalFields, setAdditionalFields] = useState({});
   const [inputs, setInputs] = useState(FORM_DEFAULTS);
@@ -75,26 +76,39 @@ export default function SubmitContent() {
   const handleSubmit = event => {
     event.preventDefault();
     setSubmitting(true);
+    setSubmissionError(false);
     if (inputs.submissionType === 'PUT_URL_UPLOAD') {
       submitContentViaPutURLUpload(
         inputs.contentId,
         inputs.contentType,
         packageAdditionalFields(),
         inputs.content.raw,
-      ).then(() => {
-        setSubmitting(false);
-        setSubmittedId(inputs.contentId);
-      });
+        inputs.resubmit,
+      )
+        .then(() => {
+          setSubmitting(false);
+          setSubmittedId(inputs.contentId);
+        })
+        .catch(error => {
+          setSubmitting(false);
+          setSubmissionError(true);
+        });
     } else {
       submitContentViaURL(
         inputs.contentId,
         inputs.contentType,
         packageAdditionalFields(),
         inputs.content,
-      ).then(() => {
-        setSubmitting(false);
-        setSubmittedId(inputs.contentId);
-      });
+        inputs.resubmit,
+      )
+        .then(() => {
+          setSubmitting(false);
+          setSubmittedId(inputs.contentId);
+        })
+        .catch(error => {
+          setSubmitting(false);
+          setSubmissionError(true);
+        });
     }
   };
 
@@ -167,10 +181,26 @@ export default function SubmitContent() {
                 additionalFields={additionalFields}
                 setAdditionalFields={setAdditionalFields}
               />
+              <Form.Group>
+                <Form.Row>
+                  <Form.Check
+                    disabled={submitting || submittedId}
+                    name="resubmit"
+                    inline
+                    label="Resubmit if content id already present in system"
+                    type="checkbox"
+                    onChange={handleInputChange}
+                  />
+                </Form.Row>
+                <Form.Text className="text-muted mt-0">
+                  Be careful submitting different content with the same id is
+                  not supported and will likely error.
+                </Form.Text>
+              </Form.Group>
               <Form.Group as={Row}>
                 <Button
                   style={{maxHeight: 38}}
-                  className="ml-3"
+                  className="ml-2"
                   variant="primary"
                   disabled={submitting}
                   type="submit">
@@ -195,6 +225,14 @@ export default function SubmitContent() {
                         Once created, the hash and any matches found can be
                         viewed here.
                       </Link>
+                    </Row>
+                  </Col>
+                </Collapse>
+                <Collapse in={submissionError}>
+                  <Col className="ml-4">
+                    <Row>
+                      Error submitting. This can occur if content with that id
+                      already exists.
                     </Row>
                   </Col>
                 </Collapse>
