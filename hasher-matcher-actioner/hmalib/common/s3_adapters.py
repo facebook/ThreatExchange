@@ -271,7 +271,10 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
 
     def get_privacy_group_prefix(self) -> str:
         """
-        Gets the prefix for all data files for self.privacy_group.
+        Gets the prefix for all data files for self.privacy_group. Note that the
+        '.' is necessary. Otherwise for a case where privacy group ids are like
+        123 and 1234, a list_objects() call for 123 will return 123 and 1234
+        objects.
         """
         return f"{self.s3_te_data_folder}{self.privacy_group}."
 
@@ -400,16 +403,22 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
                     self.s3_client, self.s3_bucket_name, datafile
                 )
                 signal_type = self.get_signal_type_from_object_key(datafile)
+                indicator_type = self.indicator_type_str_from_signal_type(signal_type)
 
                 if txt_content is None:
                     logger.warning("No TE state for %d. First run?", self.privacy_group)
+                elif indicator_type is None:
+                    logger.warning(
+                        "Could not identify indicator type for signal with type: %s. Will not process.",
+                        signal_type.get_name(),
+                    )
                 else:
                     csv.field_size_limit(65535)  # dodge field size problems
                     for row in csv.reader(txt_content):
                         items.append(
                             HMASerialization(
                                 row[0],
-                                self.indicator_type_str_from_signal_type(signal_type),
+                                indicator_type,
                                 row[1],
                                 SimpleDescriptorRollup.from_row(row[2:]),
                             )
