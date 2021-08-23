@@ -6,7 +6,7 @@ from hmalib.common.classification_models import (
     BankIDClassificationLabel,
     ClassificationLabel,
 )
-from hmalib.common.evaluator_models import ActionLabel, ActionRule
+from hmalib.common.configs.evaluator import ActionLabel, ActionRule
 from hmalib.common.message_models import BankedSignal, ActionMessage
 
 

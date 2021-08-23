@@ -11,7 +11,7 @@ from hmalib.common.models.content import (
     ActionEvent,
     ContentRefType,
 )
-from hmalib.common.evaluator_models import ActionLabel, ActionRule
+from hmalib.common.configs.evaluator import ActionLabel, ActionRule
 from hmalib.common.message_models import BankedSignal, ActionMessage
 from hmalib.common.classification_models import ClassificationLabel
 from hmalib.common.configs.actioner import WebhookPostActionPerformer
