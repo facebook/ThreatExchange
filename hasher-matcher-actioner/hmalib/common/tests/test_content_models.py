@@ -6,11 +6,10 @@ import datetime
 
 from threatexchange.content_type.photo import PhotoContent
 
-from hmalib.common.content_models import (
+from hmalib.common.models.content import (
     ContentObject,
     ActionEvent,
     ContentRefType,
-    ContentType,
 )
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.message_models import BankedSignal, ActionMessage

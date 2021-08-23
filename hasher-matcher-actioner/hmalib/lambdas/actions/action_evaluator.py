@@ -30,7 +30,7 @@ from hmalib.common.message_models import (
     MatchMessage,
     WritebackMessage,
 )
-from hmalib.common.content_models import ContentObject
+from hmalib.common.models.content import ContentObject
 from mypy_boto3_sqs import SQSClient
 from mypy_boto3_dynamodb.service_resource import Table, DynamoDBServiceResource
 

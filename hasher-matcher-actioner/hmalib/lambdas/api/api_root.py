@@ -13,7 +13,7 @@ from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange.content_type.photo import PhotoContent
 
 from hmalib.common.logging import get_logger
-from hmalib.common.content_models import ContentRefType, ContentType
+from hmalib.common.models.content import ContentRefType, ContentType
 
 from .action_rules_api import get_action_rules_api
 from .actions_api import get_actions_api

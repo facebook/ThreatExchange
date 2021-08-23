@@ -16,7 +16,7 @@ from threatexchange.content_type.content_base import ContentType
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.models import MatchRecord, PipelineHashRecord
-from hmalib.common.content_models import (
+from hmalib.common.models.content import (
     ContentObject,
     ActionEvent,
     ContentRefType,
