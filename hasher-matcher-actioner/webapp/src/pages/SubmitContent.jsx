@@ -11,8 +11,9 @@ import {
   Collapse,
   Spinner,
   Alert,
+  Card,
 } from 'react-bootstrap';
-import {Link} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 
 import {submitContentViaURL, submitContentViaPutURLUpload} from '../Api';
 import {ContentType, SUBMISSION_TYPE} from '../utils/constants';
@@ -26,7 +27,7 @@ import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayo
 
 const FORM_DEFAULTS = {
   submissionType: undefined,
-  contentId: undefined,
+  contentId: '',
   contentType: ContentType.Photo,
   content: undefined,
   force_resubmit: false,
@@ -39,6 +40,7 @@ export default function SubmitContent() {
   const [submissionType, setSubmissionType] = useState('');
   const [additionalFields, setAdditionalFields] = useState({});
   const [inputs, setInputs] = useState(FORM_DEFAULTS);
+  const history = useHistory();
 
   // for most input changes we only need to take the input name and store the event value
   const handleInputChange = event => {
@@ -111,6 +113,16 @@ export default function SubmitContent() {
           setSubmissionError(true);
         });
     }
+  };
+
+  const handleSubmitAnother = event => {
+    // Does not change submission type, clears out additional fields. Depending
+    // on feedback we may want to keep additional fields at their current
+    // values.
+    setSubmittedId(undefined);
+    setSubmitting(false);
+    setAdditionalFields({});
+    setInputs(FORM_DEFAULTS);
   };
 
   return (
@@ -199,14 +211,6 @@ export default function SubmitContent() {
                 </Form.Text>
               </Form.Group>
               <Form.Group as={Row}>
-                <Button
-                  style={{maxHeight: 38}}
-                  className="ml-2"
-                  variant="primary"
-                  disabled={submitting}
-                  type="submit">
-                  Submit
-                </Button>
                 <Collapse in={submitting}>
                   <Spinner
                     as="span"
@@ -215,26 +219,46 @@ export default function SubmitContent() {
                     variant="primary"
                   />
                 </Collapse>
+                <Collapse in={!submittedId}>
+                  <Button
+                    style={{maxHeight: 38}}
+                    className="ml-3"
+                    variant="primary"
+                    disabled={submitting}
+                    type="submit">
+                    Submit
+                  </Button>
+                </Collapse>
                 <Collapse in={submittedId}>
-                  <Col className="ml-4">
-                    <Row>
-                      Submitted! It will take a few minutes for the hash to be
-                      generated.
-                    </Row>
-                    <Row>
-                      <Link to={`/matches/${submittedId}`}>
-                        Once created, the hash and any matches found can be
-                        viewed here.
-                      </Link>
-                    </Row>
+                  <Col>
+                    <Card>
+                      <Card.Header>Your content is submitted!</Card.Header>
+                      <Card.Body>
+                        <Button
+                          variant="primary"
+                          onClick={() =>
+                            history.push(`/pipeline-progress/${submittedId}`)
+                          }>
+                          Track Submission
+                        </Button>{' '}
+                        <Button
+                          variant="secondary"
+                          onClick={handleSubmitAnother}>
+                          Submit Another
+                        </Button>
+                      </Card.Body>
+                    </Card>
                   </Col>
                 </Collapse>
                 <Collapse in={submissionError}>
                   <Col className="ml-4">
-                    <Row>
-                      Error submitting. This can occur if content with that id
-                      already exists.
-                    </Row>
+                    <Card border="danger">
+                      <Card.Header>Error when submitting.</Card.Header>
+                      <Card.Body>
+                        Error submitting. This can occur if content with that id
+                        already exists.
+                      </Card.Body>
+                    </Card>
                   </Col>
                 </Collapse>
               </Form.Group>

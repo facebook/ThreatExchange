@@ -40,14 +40,13 @@ export function ContentUniqueIdField({inputs, handleInputChange}) {
             required
             value={inputs.contentId}
           />
-
           <Form.Group className="mb-0">
             <Form.Control
               onChange={handleInputChange}
               required
               as="select"
               name="contentType"
-              defaultValue="photo"
+              value={inputs.contentType}
               custom>
               {/* (defaults to photo for now) */}
               <option key="empty" value="" hidden>
