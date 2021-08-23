@@ -6,7 +6,7 @@ from dataclasses import dataclass, asdict
 from .middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
-from hmalib.common.actioner_models import ActionPerformer
+from hmalib.common.configs.actioner import ActionPerformer
 
 
 @dataclass

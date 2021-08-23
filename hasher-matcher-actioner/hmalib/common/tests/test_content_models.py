@@ -15,9 +15,7 @@ from hmalib.common.content_models import (
 from hmalib.common.evaluator_models import ActionLabel, ActionRule
 from hmalib.common.message_models import BankedSignal, ActionMessage
 from hmalib.common.classification_models import ClassificationLabel
-from hmalib.common.actioner_models import (
-    WebhookPostActionPerformer,
-)
+from hmalib.common.configs.actioner import WebhookPostActionPerformer
 
 
 from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase
