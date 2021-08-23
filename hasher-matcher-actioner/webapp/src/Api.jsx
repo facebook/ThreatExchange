@@ -128,12 +128,14 @@ export async function submitContentViaURL(
   contentType,
   additionalFields,
   content,
+  force_resubmit,
 ) {
   return apiPost('/submit/url/', {
     content_id: contentId,
     content_type: contentType,
     additional_fields: additionalFields,
     content_url: content,
+    force_resubmit,
   });
 }
 
@@ -142,12 +144,14 @@ export async function submitContentViaPutURLUpload(
   contentType,
   additionalFields,
   content,
+  force_resubmit,
 ) {
   const submitResponse = await apiPost('/submit/put-url/', {
     content_id: contentId,
     content_type: contentType,
     additional_fields: additionalFields,
     file_type: content.type,
+    force_resubmit,
   });
 
   const requestOptions = {

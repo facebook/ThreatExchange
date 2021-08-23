@@ -72,6 +72,7 @@ class SubmitRequestBodyBase(DictParseable):
     content_id: str
     content_type: t.Type[ContentType]
     additional_fields: t.Optional[t.List]
+    force_resubmit: bool = False
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         raise NotImplementedError
@@ -85,7 +86,7 @@ class SubmitRequestBodyBase(DictParseable):
 
 @dataclass
 class SubmitContentViaURLRequestBody(SubmitRequestBodyBase):
-    content_url: str
+    content_url: str = ""
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         return (self.content_url, ContentRefType.URL)
@@ -93,7 +94,7 @@ class SubmitContentViaURLRequestBody(SubmitRequestBodyBase):
 
 @dataclass
 class SubmitContentBytesRequestBody(SubmitRequestBodyBase):
-    content_bytes: bytes
+    content_bytes: bytes = b""
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         return (self.content_id, ContentRefType.DEFAULT_S3_BUCKET)
@@ -101,9 +102,9 @@ class SubmitContentBytesRequestBody(SubmitRequestBodyBase):
 
 @dataclass
 class SubmitContentHashRequestBody(SubmitRequestBodyBase):
-    signal_value: str
-    signal_type: str  # SignalType.getname() values
-    content_url: t.Optional[str]
+    signal_value: str = ""
+    signal_type: str = ""  # SignalType.getname() values
+    content_url: str = ""
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         if self.content_url:
@@ -113,7 +114,7 @@ class SubmitContentHashRequestBody(SubmitRequestBodyBase):
 
 @dataclass
 class SubmitContentViaPutURLUploadRequestBody(SubmitRequestBodyBase):
-    file_type: str
+    file_type: str = ""
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         # Treat this as an S3 submission because
@@ -164,7 +165,8 @@ def record_content_submission(
     content_ref: str,
     content_ref_type: ContentRefType,
     additional_fields: t.Set = set(),
-):
+    force_resubmit: bool = False,
+) -> bool:
     """
     Write a content object that is submitted to the dynamodb_table.
 
@@ -177,10 +179,12 @@ def record_content_submission(
 
     This function is also called directly by api_root when handling s3 uploads to partner
     banks. If editing, ensure the logic in api_root.process_s3_event is still correct
+
+    Return True with recording was successful.
     """
-    # TODO add a confirm overwrite path for this
+
     submit_time = datetime.datetime.now()
-    ContentObject(
+    content_obj = ContentObject(
         content_id=content_id,
         content_type=content_type,
         content_ref=content_ref,
@@ -189,7 +193,14 @@ def record_content_submission(
         submission_times=[submit_time],  # Note: custom write_to_table impl appends.
         created_at=submit_time,
         updated_at=submit_time,
-    ).write_to_table(dynamodb_table)
+    )
+
+    if force_resubmit:
+        # Allow an overwrite or resubmission of content objects
+        content_obj.write_to_table(dynamodb_table)
+        return True
+
+    return content_obj.write_to_table_if_not_found(dynamodb_table)
 
 
 def send_submission_to_url_queue(
@@ -233,9 +244,15 @@ def get_submit_api(
     submit_api = bottle.Bottle()
     s3_bucket_image_source = S3BucketContentSource(image_bucket, image_prefix)
 
+    def _content_exist_error(content_id: str):
+        return bottle.abort(
+            400,
+            f"Content with id '{content_id}' already exists if you want to resubmit `force_resubmit=True` must be included in payload.",
+        )
+
     def _record_content_submission_from_request(
         request: SubmitRequestBodyBase,
-    ):
+    ) -> bool:
         """
         Given a request object submission record the content object to the table passed to
         the API using 'record_content_submission'
@@ -244,7 +261,7 @@ def get_submit_api(
 
         content_ref, content_ref_type = request.get_content_ref_details()
 
-        record_content_submission(
+        return record_content_submission(
             dynamodb_table,
             content_id=request.content_id,
             content_type=request.content_type,
@@ -253,6 +270,7 @@ def get_submit_api(
             additional_fields=set(request.additional_fields)
             if request.additional_fields
             else set(),
+            force_resubmit=request.force_resubmit,
         )
 
     @submit_api.post("/", apply=[jsoninator])
@@ -277,7 +295,9 @@ def get_submit_api(
         """
         Submission via a url to content. This does not store a copy of the content in s3
         """
-        _record_content_submission_from_request(request)
+        if not _record_content_submission_from_request(request):
+            return _content_exist_error(request.content_id)
+
         send_submission_to_url_queue(
             dynamodb_table,
             submissions_queue_url,
@@ -300,7 +320,8 @@ def get_submit_api(
 
         # We want to record the submission before triggering and processing on
         # the content itself therefore we write to dynamodb before s3
-        _record_content_submission_from_request(request)
+        if not _record_content_submission_from_request(request):
+            return _content_exist_error(request.content_id)
 
         s3_bucket_image_source.put_image_bytes(content_id, file_contents)
 
@@ -322,7 +343,9 @@ def get_submit_api(
         )
 
         if presigned_url:
-            _record_content_submission_from_request(request)
+            if not _record_content_submission_from_request(request):
+                return _content_exist_error(request.content_id)
+
             return SubmitViaUploadUrlResponse(
                 content_id=request.content_id,
                 file_type=str(request.file_type),
@@ -344,7 +367,8 @@ def get_submit_api(
         """
 
         # Record content object (even though we don't store anything just like with url)
-        _record_content_submission_from_request(request)
+        if not _record_content_submission_from_request(request):
+            return _content_exist_error(request.content_id)
 
         # Record hash
         # todo add MD5 support and branch based on request.hash_type

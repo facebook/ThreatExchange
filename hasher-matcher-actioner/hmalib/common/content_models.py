@@ -187,20 +187,8 @@ class ContentObject(ContentObjectBase, JSONifiable):
     def write_to_table(self, table: Table):
         """
         Write operations for this object need to be special cased (to avoid overwritting)
-        Therefore we do not implement `to_dynamodb_item`
-
-        If you're curious it would ~look like this:
-        def to_dynamodb_item(self) -> dict:
-            return {
-                "PK": self.get_dynamodb_content_key(self.content_id),
-                "SK": self.get_dynamodb_content_type_key(),
-                "ContentRef": self.content_ref,
-                "ContentRefType": self.content_ref_type,
-                "AdditionalFields": self.additional_fields,
-                "SubmissionTimes": [s.isoformat() for s in self.submission_times],
-                "CreatedOn": self.created_at.isoformat(),
-                "UpdatedAt": self.updated_at.isoformat(),
-            }
+        Therefore we do not implement `to_dynamodb_item` however basically the body of that
+        method is used in this class's impl of `write_to_table_if_not_found`
         """
         # put_item does not support UpdateExpression
         table.update_item(
@@ -225,6 +213,45 @@ class ContentObject(ContentObjectBase, JSONifiable):
                 ":empty_list": [],
             },
         )
+
+    def write_to_table_if_not_found(self, table: Table) -> bool:
+        """
+        Write operations for this object need to be special cased (to avoid overwritting)
+        Therefore we do not implement `to_dynamodb_item` however basically the body of that
+        method is used here
+
+        Returns false if a content object with that Id is already present
+        and does not write to table. True is write was successful.
+        """
+        try:
+            table.put_item(
+                Item={
+                    "PK": self.get_dynamodb_content_key(self.content_id),
+                    "SK": self.get_dynamodb_content_type_key(),
+                    "ContentType": self.content_type.get_name(),
+                    "ContentRef": self.content_ref,
+                    "ContentRefType": self.content_ref_type.value,
+                    "AdditionalFields": self.additional_fields
+                    if self.additional_fields
+                    else {self.ADDITIONAL_FIELDS_PLACE_HOLDER},
+                    "SubmissionTimes": [s.isoformat() for s in self.submission_times],
+                    "CreatedAt": self.created_at.isoformat(),
+                    "UpdatedAt": self.updated_at.isoformat(),
+                },
+                ConditionExpression="attribute_not_exists(PK) AND attribute_not_exists(SK)",
+            )
+        except ClientError as client_error:
+            # boto3 exception handling https://imgflip.com/i/5f5zfj
+            if (
+                client_error.response.get("Error", {"Code", "Unknown"}).get(
+                    "Code", "Unknown"
+                )
+                == "ConditionalCheckFailedException"
+            ):
+                return False
+            else:
+                raise client_error
+        return True
 
     @classmethod
     def get_from_content_id(
