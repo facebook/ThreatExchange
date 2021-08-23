@@ -234,26 +234,31 @@ export default function SubmitContent() {
                     <Card>
                       <Card.Header>Your content is submitted!</Card.Header>
                       <Card.Body>
-                        <Button variant="primary" onClick={handleSubmitAnother}>
-                          Submit Another
-                        </Button>{' '}
                         <Button
-                          variant="secondary"
+                          variant="primary"
                           onClick={() =>
                             history.push(`/pipeline-progress/${submittedId}`)
                           }>
                           Track Submission
                         </Button>{' '}
+                        <Button
+                          variant="secondary"
+                          onClick={handleSubmitAnother}>
+                          Submit Another
+                        </Button>
                       </Card.Body>
                     </Card>
                   </Col>
                 </Collapse>
                 <Collapse in={submissionError}>
                   <Col className="ml-4">
-                    <Row>
-                      Error submitting. This can occur if content with that id
-                      already exists.
-                    </Row>
+                    <Card border="danger">
+                      <Card.Header>Error when submitting.</Card.Header>
+                      <Card.Body>
+                        Error submitting. This can occur if content with that id
+                        already exists.
+                      </Card.Body>
+                    </Card>
                   </Col>
                 </Collapse>
               </Form.Group>
