@@ -29,6 +29,7 @@ const FORM_DEFAULTS = {
   contentId: undefined,
   contentType: ContentType.Photo,
   content: undefined,
+  force_resubmit: false,
 };
 
 export default function SubmitContent() {
@@ -83,7 +84,7 @@ export default function SubmitContent() {
         inputs.contentType,
         packageAdditionalFields(),
         inputs.content.raw,
-        inputs.resubmit,
+        inputs.force_resubmit,
       )
         .then(() => {
           setSubmitting(false);
@@ -99,7 +100,7 @@ export default function SubmitContent() {
         inputs.contentType,
         packageAdditionalFields(),
         inputs.content,
-        inputs.resubmit,
+        inputs.force_resubmit,
       )
         .then(() => {
           setSubmitting(false);
@@ -185,7 +186,7 @@ export default function SubmitContent() {
                 <Form.Row>
                   <Form.Check
                     disabled={submitting || submittedId}
-                    name="resubmit"
+                    name="force_resubmit"
                     inline
                     label="Resubmit if content id already present in system"
                     type="checkbox"

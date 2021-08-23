@@ -215,6 +215,14 @@ class ContentObject(ContentObjectBase, JSONifiable):
         )
 
     def write_to_table_if_not_found(self, table: Table) -> bool:
+        """
+        Write operations for this object need to be special cased (to avoid overwritting)
+        Therefore we do not implement `to_dynamodb_item` however basically the body of that
+        method is used here
+
+        Returns false if a content object with that Id is already present
+        and does not write to table. True is write was successful.
+        """
         try:
             table.put_item(
                 Item={

@@ -72,7 +72,7 @@ class SubmitRequestBodyBase(DictParseable):
     content_id: str
     content_type: t.Type[ContentType]
     additional_fields: t.Optional[t.List]
-    resubmit: bool = False
+    force_resubmit: bool = False
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         raise NotImplementedError
@@ -165,7 +165,7 @@ def record_content_submission(
     content_ref: str,
     content_ref_type: ContentRefType,
     additional_fields: t.Set = set(),
-    resubmit: bool = False,
+    force_resubmit: bool = False,
 ) -> bool:
     """
     Write a content object that is submitted to the dynamodb_table.
@@ -195,7 +195,7 @@ def record_content_submission(
         updated_at=submit_time,
     )
 
-    if resubmit:
+    if force_resubmit:
         # Allow an overwrite or resubmission of content objects
         content_obj.write_to_table(dynamodb_table)
         return True
@@ -246,8 +246,8 @@ def get_submit_api(
 
     def _content_exist_error(content_id: str):
         return bottle.abort(
-            500,
-            f"Content with id '{content_id}' already exists if you want to resubmit `resubmit=True` must be included in payload.",
+            400,
+            f"Content with id '{content_id}' already exists if you want to resubmit `force_resubmit=True` must be included in payload.",
         )
 
     def _record_content_submission_from_request(
@@ -270,7 +270,7 @@ def get_submit_api(
             additional_fields=set(request.additional_fields)
             if request.additional_fields
             else set(),
-            resubmit=request.resubmit,
+            force_resubmit=request.force_resubmit,
         )
 
     @submit_api.post("/", apply=[jsoninator])
