@@ -1,4 +1,4 @@
-name: HMA Pull Request Terraform Validator
+name: HMA CI
 on:
   pull_request:
     paths:
@@ -17,6 +17,7 @@ defaults:
 
 jobs:
   terraform-checks:
+    name: Format & Validate Terraform Configuration
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -34,6 +35,7 @@ jobs:
       - name: Validate terraform files
         run: terraform validate -no-color
   lint-and-types:
+    name: Lint and Type-Check python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -51,6 +53,7 @@ jobs:
         run: |
           python -m mypy hmalib
   test:
+    name: Run python tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
