@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 import typing as t
 
 from botocore.errorfactory import ClientError
+from mypy_boto3_s3 import Client as S3Client
 from mypy_boto3_s3.service_resource import Bucket
 from threatexchange import threat_updates as tu
 from threatexchange.cli.dataset.simple_serialization import HMASerialization
@@ -209,11 +210,14 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
     ThreatUpdatesStore, but stores files in S3 instead of local filesystem.
     """
 
+    CHECKPOINT_SUFFIX = ".checkpoint"
+
     def __init__(
         self,
         privacy_group: int,
         app_id: int,
-        s3_bucket: Bucket,  # Not typable?
+        s3_client: S3Client,
+        s3_bucket_name: str,
         s3_te_data_folder: str,
         data_store_table: str,
         supported_signal_types: t.List[SignalType],
@@ -221,12 +225,26 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         super().__init__(privacy_group)
         self.app_id = app_id
         self._cached_state: t.Optional[t.Dict] = None
-        self.s3_bucket = s3_bucket
         self.s3_te_data_folder = s3_te_data_folder
         self.data_store_table = data_store_table
         self.supported_indicator_types = self._get_supported_indicator_types(
             supported_signal_types
         )
+        self.s3_client = s3_client
+        self.s3_bucket_name = s3_bucket_name
+
+    @classmethod
+    def indicator_type_str_from_signal_type(
+        cls, signal_type: t.Type[SignalType]
+    ) -> str:
+        """
+        This mapping is only necessary for types that are in the process of
+        being migrated. eg. VideoMD5.
+        """
+        if signal_type == VideoMD5Signal:
+            return "HASH_VIDEO_MD5"
+
+        return getattr(signal_type, "INDICATOR_TYPE", None)
 
     def _get_supported_indicator_types(
         self, supported_signal_types: t.List[t.Type[SignalType]]
@@ -234,12 +252,10 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         """
         For supported self.signal_types, get their corresponding indicator_types.
         """
-        indicator_types = [
-            "HASH_VIDEO_MD5"
-        ]  # hardcoding this because md5 currently points to HASH_MD5
+        indicator_types = []
 
         for signal_type in supported_signal_types:
-            indicator_type = getattr(signal_type, "INDICATOR_TYPE", None)
+            indicator_type = self.indicator_type_str_from_signal_type(signal_type)
             if indicator_type:
                 indicator_types.append(indicator_type)
             else:
@@ -251,7 +267,16 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
 
     @property
     def checkpoint_s3_key(self) -> str:
-        return f"{self.s3_te_data_folder}{self.privacy_group}.checkpoint"
+        return f"{self.s3_te_data_folder}{self.privacy_group}{self.CHECKPOINT_SUFFIX}"
+
+    def get_privacy_group_prefix(self) -> str:
+        """
+        Gets the prefix for all data files for self.privacy_group. Note that the
+        '.' is necessary. Otherwise for a case where privacy group ids are like
+        123 and 1234, a list_objects() call for 123 will return 123 and 1234
+        objects.
+        """
+        return f"{self.s3_te_data_folder}{self.privacy_group}."
 
     def get_s3_object_key(self, indicator_type) -> str:
         """
@@ -260,7 +285,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         get_signal_type_from_object_key() as well.
         """
         extension = f"{indicator_type.lower()}.te"
-        return f"{self.s3_te_data_folder}{self.privacy_group}.{extension}"
+        return f"{self.get_privacy_group_prefix()}{extension}"
 
     @classmethod
     def get_signal_type_from_object_key(
@@ -308,7 +333,9 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
 
     def _load_checkpoint(self) -> tu.ThreatUpdateCheckpoint:
         """Load the state of the threat_updates checkpoints from state directory"""
-        txt_content = read_s3_text(self.s3_bucket, self.checkpoint_s3_key)
+        txt_content = read_s3_text(
+            self.s3_client, self.s3_bucket_name, self.checkpoint_s3_key
+        )
 
         if txt_content is None:
             logger.warning("No s3 checkpoint for %d. First run?", self.privacy_group)
@@ -338,7 +365,12 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
             txt_content,
             indent=2,
         )
-        write_s3_text(txt_content, self.s3_bucket, self.checkpoint_s3_key)
+        write_s3_text(
+            s3_client=self.s3_client,
+            bucket_name=self.s3_bucket_name,
+            key=self.checkpoint_s3_key,
+            txt_content=txt_content,
+        )
         logger.info(
             "Stored checkpoint for privacy group %d. last_fetch_time=%d fetch_checkpoint=%d",
             self.privacy_group,
@@ -346,30 +378,61 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
             checkpoint.fetch_checkpoint,
         )
 
+    def _get_datafile_object_keys(self) -> t.Iterable[str]:
+        """
+        Returns all non-checkpoint datafile objects for the current privacy group.
+        """
+        return [
+            item["Key"]
+            for item in self.s3_client.list_objects_v2(
+                Bucket=self.s3_bucket_name, Prefix=self.get_privacy_group_prefix()
+            )["Contents"]
+            if not item["Key"].endswith(self.CHECKPOINT_SUFFIX)
+        ]
+
     def load_state(self, allow_cached=True):
         if not allow_cached or self._cached_state is None:
-            txt_content = read_s3_text(self.s3_bucket, self.data_s3_key)
+            # First, get a list of all files
+            all_datafile_keys = self._get_datafile_object_keys()
+
             items = []
-            if txt_content is None:
-                logger.warning("No TE state for %d. First run?", self.privacy_group)
-            else:
-                # Violate your warranty with module state!
-                csv.field_size_limit(65535)  # dodge field size problems
-                for row in csv.reader(txt_content):
-                    items.append(
-                        HMASerialization(
-                            row[0],
-                            "HASH_PDQ",
-                            row[1],
-                            SimpleDescriptorRollup.from_row(row[2:]),
-                        )
+
+            # Then for each datafile, append to items
+            for datafile in all_datafile_keys:
+                txt_content = read_s3_text(
+                    self.s3_client, self.s3_bucket_name, datafile
+                )
+                signal_type = self.get_signal_type_from_object_key(datafile)
+                indicator_type = self.indicator_type_str_from_signal_type(signal_type)
+
+                if txt_content is None:
+                    logger.warning("No TE state for %d. First run?", self.privacy_group)
+                elif indicator_type is None:
+                    logger.warning(
+                        "Could not identify indicator type for signal with type: %s. Will not process.",
+                        signal_type.get_name(),
                     )
-                logger.info("%d rows loaded for %d", len(items), self.privacy_group)
+                else:
+                    csv.field_size_limit(65535)  # dodge field size problems
+                    for row in csv.reader(txt_content):
+                        items.append(
+                            HMASerialization(
+                                row[0],
+                                indicator_type,
+                                row[1],
+                                SimpleDescriptorRollup.from_row(row[2:]),
+                            )
+                        )
+                    logger.info("%d rows loaded for %d", len(items), self.privacy_group)
+
             # Do all in one assignment just in case of threads
             self._cached_state = {item.key: item for item in items}
         return self._cached_state
 
     def _store_state(self, contents: t.Iterable["HMASerialization"]):
+        """
+        Stores indicator data in CSV format with one file per indicator type.
+        """
         row_by_type: t.DefaultDict = collections.defaultdict(list)
         for item in contents:
             row_by_type[item.indicator_type].append(item)
@@ -384,7 +447,10 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
                 writer.writerows(item.as_csv_row() for item in items)
 
                 write_s3_text(
-                    txt_content, self.s3_bucket, self.get_s3_object_key(indicator_type)
+                    s3_client=self.s3_client,
+                    bucket_name=self.s3_bucket_name,
+                    key=self.get_s3_object_key(indicator_type),
+                    txt_content=txt_content,
                 )
 
                 logger.info(
@@ -521,10 +587,12 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
                     )
 
 
-def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
+def read_s3_text(
+    s3_client: S3Client, bucket_name: str, key: str
+) -> t.Optional[io.StringIO]:
     byte_content = io.BytesIO()
     try:
-        bucket.download_fileobj(key, byte_content)
+        s3_client.download_fileobj(bucket_name, key, byte_content)
     except ClientError as ce:
         if ce.response["Error"]["Code"] != "404":
             raise
@@ -532,6 +600,8 @@ def read_s3_text(bucket, key: str) -> t.Optional[io.StringIO]:
     return io.StringIO(byte_content.getvalue().decode())
 
 
-def write_s3_text(txt_content: io.StringIO, bucket, key: str) -> None:
+def write_s3_text(
+    s3_client: S3Client, bucket_name: str, key: str, txt_content: io.StringIO
+) -> None:
     byte_content = io.BytesIO(txt_content.getvalue().encode())
-    bucket.upload_fileobj(byte_content, key)
+    s3_client.upload_fileobj(byte_content, bucket_name, key)

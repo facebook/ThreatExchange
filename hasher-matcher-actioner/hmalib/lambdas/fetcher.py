@@ -28,8 +28,13 @@ from hmalib.common.s3_adapters import ThreatUpdateS3Store
 
 
 logger = get_logger(__name__)
-s3 = boto3.resource("s3")
 dynamodb = boto3.resource("dynamodb")
+
+
+@lru_cache(maxsize=None)
+def get_s3_client():
+    return boto3.client("s3")
+
 
 # Lambda init tricks
 @lru_cache(maxsize=1)
@@ -102,8 +107,6 @@ def lambda_handler(event, context):
     api_key = AWSSecrets().te_api_key()
     api = ThreatExchangeAPI(api_key)
 
-    te_data_bucket = s3.Bucket(config.s3_bucket)
-
     for collab in collabs:
         logger.info(
             "Processing updates for collaboration %s", collab.privacy_group_name
@@ -118,9 +121,10 @@ def lambda_handler(event, context):
         indicator_store = ThreatUpdateS3Store(
             int(collab.privacy_group_id),
             api.app_id,
-            te_data_bucket,
-            config.s3_te_data_folder,
-            config.data_store_table,
+            s3_client=get_s3_client(),
+            s3_bucket_name=config.s3_bucket,
+            s3_te_data_folder=config.s3_te_data_folder,
+            data_store_table=config.data_store_table,
             supported_signal_types=[VideoMD5Signal, PdqSignal],
         )
 
