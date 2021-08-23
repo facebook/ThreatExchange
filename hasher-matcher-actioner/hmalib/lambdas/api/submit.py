@@ -25,7 +25,7 @@ from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.models.content import ContentObject, ContentRefType
 from hmalib.common.logging import get_logger
-from hmalib.common.message_models import URLSubmissionMessage
+from hmalib.common.messages.submit import URLSubmissionMessage
 from hmalib.models import PipelineHashRecord
 
 logger = get_logger(__name__)

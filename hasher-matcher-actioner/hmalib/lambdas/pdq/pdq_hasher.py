@@ -13,10 +13,9 @@ from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib import metrics
 from hmalib.models import PipelineHashRecord
-from hmalib.common.message_models import (
+from hmalib.common.messages.submit import (
     S3ImageSubmission,
     S3ImageSubmissionBatchMessage,
-    URLSubmissionMessage,
 )
 from hmalib.common.logging import get_logger
 from hmalib.common.content_sources import S3BucketContentSource

@@ -17,7 +17,7 @@ from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib.common.logging import get_logger
 from hmalib import metrics
-from hmalib.common.message_models import URLSubmissionMessage
+from hmalib.common.messages.submit import URLSubmissionMessage
 from hmalib.hashing.unified_hasher import UnifiedHasher
 from hmalib.models import PipelineHashRecord
 from hmalib.common.content_sources import URLContentSource
