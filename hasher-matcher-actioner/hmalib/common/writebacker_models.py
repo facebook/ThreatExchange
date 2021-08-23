@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from hmalib.common.logging import get_logger
 from hmalib.common.classification_models import WritebackTypes
 from hmalib.common.message_models import WritebackMessage, BankedSignal
-from hmalib.common.fetcher_models import ThreatExchangeConfig
+from hmalib.common.configs.fetcher import ThreatExchangeConfig
 from hmalib.common.mocks import MockedThreatExchangeAPI
 
 from hmalib.aws_secrets import AWSSecrets

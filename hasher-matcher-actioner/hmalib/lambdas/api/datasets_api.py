@@ -10,7 +10,7 @@ from hmalib import metrics
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
-from hmalib.common.fetcher_models import ThreatExchangeConfig
+from hmalib.common.configs.fetcher import ThreatExchangeConfig
 from hmalib.common.threatexchange_config import (
     sync_privacy_groups,
     create_privacy_group_if_not_exists,

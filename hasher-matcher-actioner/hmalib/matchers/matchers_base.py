@@ -24,8 +24,7 @@ from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.mappings import INDEX_MAPPING
 from hmalib.common.message_models import BankedSignal, MatchMessage
-from hmalib.common.fetcher_models import ThreatExchangeConfig
-from hmalib.hashing.unified_hasher import ContentSignal
+from hmalib.common.configs.fetcher import ThreatExchangeConfig
 
 
 logger = get_logger(__name__)
