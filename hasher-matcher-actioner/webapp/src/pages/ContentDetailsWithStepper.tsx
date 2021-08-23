@@ -3,8 +3,8 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Col, Row, Spinner} from 'react-bootstrap';
-import {useParams} from 'react-router-dom';
+import {Col, Container, Row, Spinner} from 'react-bootstrap';
+import {Link, useParams} from 'react-router-dom';
 import {fetchContentPipelineProgress} from '../Api';
 import ContentPreview from '../components/ContentPreview';
 import ContentProgressStepper from '../components/ContentProgressStepper';
@@ -107,6 +107,18 @@ export default function ContentDetailsWithStepper(): JSX.Element {
               actionPerformedAt={actionPerformedAt}
             />
           )}
+
+          <hr />
+
+          <Container>
+            <Row>
+              <Col className="mt-2" xs={{offset: 1}}>
+                <Link to="/matches/{contentId}">
+                  Go to Content Details Page
+                </Link>
+              </Col>
+            </Row>
+          </Container>
         </Col>
       </Row>
     </FixedWidthCenterAlignedLayout>
