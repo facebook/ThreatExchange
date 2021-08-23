@@ -6,7 +6,7 @@ import os
 
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
-from hmalib.common.writebacker_models import Writebacker
+from hmalib.writebacker.writebacker_base import Writebacker
 from hmalib.common.message_models import BankedSignal, WritebackMessage
 
 logger = get_logger(__name__)
