@@ -3,6 +3,14 @@
 
 When adding new files here, ask yourself if it's truly common, or might be specialized for specific components, and consider putting it there instead.
 
+# Submodules
+
+| Module Name   | Classes in this module should be .... |
+| ------------- | ------------- |
+| `configs`  | Direct or indirect subclasses of `hmalib.common.config.HMAConfig`. Represent some user-configurable, database backed entity.  |
+| `messages`  | Request or Response classes for HTTP APIs supported by HMA. Alternatively Messages passed between systems using a queue. These classes should support serialization/deserialization, but not persistent storage.   |
+| `models`  | Direct or indirect subclasses of `hmalib.common.model.DynamoDBItem`. These are database backed entities with methods for querying / scanning / writing instances of this class. |
+
 # config.py
 ## HMAConfig
 A quick interface for simple configs backed by dynamodb.
