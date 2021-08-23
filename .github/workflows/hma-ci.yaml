@@ -1,9 +1,15 @@
-name: HMA Pull Request Terraform Validator
+name: HMA CI
 on:
   pull_request:
     paths:
       - "hasher-matcher-actioner/**"
-      - ".github/workflows/hma-ci-pull-request.yaml"
+      - ".github/workflows/hma-ci.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "hasher-matcher-actioner/**"
+      - ".github/workflows/hma-ci.yaml"
 
 defaults:
   run:
@@ -11,7 +17,11 @@ defaults:
 
 jobs:
   terraform-checks:
+    name: Format & Validate Terraform Configuration
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: hasher-matcher-actioner/terraform
     steps:
       - uses: actions/checkout@v2
       - uses: hashicorp/setup-terraform@v1
@@ -24,21 +34,8 @@ jobs:
         run: terraform init
       - name: Validate terraform files
         run: terraform validate -no-color
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "3.8"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install black
-      - name: Check code format
-        run: |
-          black --check .
-  type-validation:
+  lint-and-types:
+    name: Lint and Type-Check python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -49,10 +46,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
+      - name: Check code format
+        run: |
+          black --check .
       - name: Check python types
         run: |
           python -m mypy hmalib
   test:
+    name: Run python tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
