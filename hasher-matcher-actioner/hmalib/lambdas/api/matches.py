@@ -17,11 +17,7 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib.models import MatchRecord
-from hmalib.common.signal_models import (
-    PDQSignalMetadata,
-    PendingOpinionChange,
-    SignalMetadataBase,
-)
+from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.logging import get_logger
 from hmalib.common.message_models import BankedSignal, WritebackMessage, WritebackTypes
 from .middleware import jsoninator, JSONifiable, DictParseable

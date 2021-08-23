@@ -9,7 +9,7 @@ from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.signal_type.md5 import PhotoMD5Signal
 
 from hmalib import models
-from hmalib.common import signal_models
+from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.count_models import MatchByPrivacyGroupCounter
 
 from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase
@@ -119,7 +119,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
     @staticmethod
     def get_example_pdq_signal_metadata():
         pdq_hash = "a0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0"
-        return signal_models.PDQSignalMetadata(
+        return PDQSignalMetadata(
             signal_id=TestPDQModels.TEST_SIGNAL_ID,
             ds_id=TestPDQModels.TEST_DATASET_ID,
             updated_at=datetime.datetime.now(),
@@ -301,7 +301,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
 
         metadata.write_to_table(self.table)
 
-        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
+        query_metadata = PDQSignalMetadata.get_from_signal(
             self.table, TestPDQModels.TEST_SIGNAL_ID, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
 
@@ -324,7 +324,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
 
         metadata.write_to_table(self.table)
 
-        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
+        query_metadata = PDQSignalMetadata.get_from_signal(
             self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
         assert metadata.signal_hash == query_metadata.signal_hash
@@ -336,7 +336,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
 
         # second attmept at update should succeed
         assert metadata.update_tags_in_table_if_exists(self.table)
-        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
+        query_metadata = PDQSignalMetadata.get_from_signal(
             self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
         for tag in replaced_tags:
@@ -357,26 +357,24 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
 
         metadata.write_to_table(self.table)
 
-        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
+        query_metadata = PDQSignalMetadata.get_from_signal(
             self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
         assert metadata.signal_hash == query_metadata.signal_hash
         assert (
-            signal_models.PendingOpinionChange.NONE.value
+            PendingOpinionChange.NONE.value
             == query_metadata.pending_opinion_change.value
         )
 
-        metadata.pending_opinion_change = (
-            signal_models.PendingOpinionChange.MARK_TRUE_POSITIVE
-        )
+        metadata.pending_opinion_change = PendingOpinionChange.MARK_TRUE_POSITIVE
 
         # second attmept at update should succeed
         assert metadata.update_pending_opinion_change_in_table_if_exists(self.table)
-        query_metadata = signal_models.PDQSignalMetadata.get_from_signal(
+        query_metadata = PDQSignalMetadata.get_from_signal(
             self.table, new_signal_id, TestPDQModels.TEST_SIGNAL_SOURCE
         )[0]
         assert (
-            signal_models.PendingOpinionChange.MARK_TRUE_POSITIVE.value
+            PendingOpinionChange.MARK_TRUE_POSITIVE.value
             == query_metadata.pending_opinion_change.value
         )
 

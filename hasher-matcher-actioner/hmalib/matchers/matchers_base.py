@@ -9,7 +9,7 @@ import datetime
 import functools
 
 from mypy_boto3_sns.client import SNSClient
-from hmalib.common.signal_models import PDQSignalMetadata
+from hmalib.common.models.signal import PDQSignalMetadata
 
 from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange.signal_type.pdq import PdqSignal

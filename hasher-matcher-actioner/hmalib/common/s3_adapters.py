@@ -26,7 +26,7 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
 
-from hmalib.common.signal_models import PDQSignalMetadata, PendingOpinionChange
+from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 
