@@ -351,10 +351,10 @@ module "matcher" {
 
 # Set up api
 module "api" {
-  source                    = "./api"
-  prefix                    = var.prefix
-  api_authorizer_jwt_issuer = "https://cognito-idp.${data.aws_region.default.name}.amazonaws.com/${module.authentication.webapp_and_api_user_pool_id}"
-  api_authorizer_audience   = module.authentication.webapp_and_api_user_pool_client_id
+  source                      = "./api"
+  prefix                      = var.prefix
+  api_and_webapp_user_pool_id = module.authentication.webapp_and_api_user_pool_id
+  api_authorizer_audience     = module.authentication.webapp_and_api_user_pool_client_id
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
@@ -393,7 +393,8 @@ module "api" {
     url = aws_sqs_queue.submissions_queue.id,
     arn = aws_sqs_queue.submissions_queue.arn
   }
-  partner_image_buckets = var.partner_image_buckets
+  partner_image_buckets        = var.partner_image_buckets
+  integration_api_access_token = var.integration_api_access_token
 }
 
 # Build and deploy webapp

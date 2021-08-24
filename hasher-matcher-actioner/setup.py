@@ -13,6 +13,7 @@ setup(
         "threatexchange[faiss,pdq_hasher]>=0.0.23",
         "bottle",
         "apig_wsgi",
+        "pyjwt[crypto]",
         "requests==2.25.1",
     ],
 )
