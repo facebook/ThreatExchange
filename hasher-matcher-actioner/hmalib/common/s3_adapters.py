@@ -197,7 +197,11 @@ class ThreatExchangeS3VideoMD5Adapter(ThreatExchangeS3Adapter):
 
     @property
     def indicator_type_file_extension(self):
-        return f"{VideoMD5Signal.INDICATOR_TYPE.lower()}.te"
+        # Hardcode because of indicator_type migration. This is extra weird
+        # because adapters do not write data, they only read data. One datafile
+        # read and write are both done via s3_adapters, this should no longer be
+        # necessary.
+        return f"hash_video_md5.te"
 
     @property
     def indicator_type_file_columns(self):
