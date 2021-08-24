@@ -13,7 +13,7 @@ from hmalib.common.models.signal import PDQSignalMetadata
 
 from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange.signal_type.pdq import PdqSignal
-from hmalib.models import MatchRecord
+from hmalib.common.models.pipeline import MatchRecord
 import typing as t
 import time
 

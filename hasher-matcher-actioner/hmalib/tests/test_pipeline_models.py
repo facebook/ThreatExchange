@@ -8,7 +8,7 @@ import datetime
 from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.signal_type.md5 import PhotoMD5Signal
 
-from hmalib import models
+from hmalib.common.models import pipeline as models
 from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.count_models import MatchByPrivacyGroupCounter
 

@@ -9,7 +9,7 @@ from mypy_boto3_sqs.client import SQSClient
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType, BytesHasher
 
-from hmalib.models import PipelineHashRecord
+from hmalib.common.models.pipeline import PipelineHashRecord
 from hmalib import metrics
 
 
