@@ -9,7 +9,7 @@ from hmalib.common.classification_models import (
     WritebackTypes,
 )
 from hmalib.common.messages.match import MatchMessage, BankedSignal
-from hmalib.common.models.signal import PendingOpinionChange
+from hmalib.common.models.signal import PendingThreatExchangeOpinionChange
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from hmalib.common.logging import get_logger
 
@@ -48,12 +48,14 @@ class WritebackMessage(HasAWSSerialization):
 
     @classmethod
     def from_banked_signal_and_opinion_change(
-        cls, banked_signal: BankedSignal, opinion_change: PendingOpinionChange
+        cls,
+        banked_signal: BankedSignal,
+        opinion_change: PendingThreatExchangeOpinionChange,
     ) -> "WritebackMessage":
         opinion_change_to_writeback_type = {
-            PendingOpinionChange.MARK_TRUE_POSITIVE: WritebackTypes.TruePositive,
-            PendingOpinionChange.MARK_FALSE_POSITIVE: WritebackTypes.FalsePositive,
-            PendingOpinionChange.REMOVE_OPINION: WritebackTypes.RemoveOpinion,
+            PendingThreatExchangeOpinionChange.MARK_TRUE_POSITIVE: WritebackTypes.TruePositive,
+            PendingThreatExchangeOpinionChange.MARK_FALSE_POSITIVE: WritebackTypes.FalsePositive,
+            PendingThreatExchangeOpinionChange.REMOVE_OPINION: WritebackTypes.RemoveOpinion,
         }
 
         writeback_type = opinion_change_to_writeback_type.get(
