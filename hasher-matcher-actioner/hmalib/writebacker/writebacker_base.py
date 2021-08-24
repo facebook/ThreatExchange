@@ -8,7 +8,8 @@ from dataclasses import dataclass
 
 from hmalib.common.logging import get_logger
 from hmalib.common.classification_models import WritebackTypes
-from hmalib.common.message_models import WritebackMessage, BankedSignal
+from hmalib.common.messages.match import BankedSignal
+from hmalib.common.messages.writeback import WritebackMessage
 from hmalib.common.configs.fetcher import ThreatExchangeConfig
 from hmalib.common.mocks import MockedThreatExchangeAPI
 

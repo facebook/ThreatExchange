@@ -23,7 +23,7 @@ from threatexchange.signal_type.signal_base import SignalType
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.mappings import INDEX_MAPPING
-from hmalib.common.message_models import BankedSignal, MatchMessage
+from hmalib.common.messages.match import BankedSignal, MatchMessage
 from hmalib.common.configs.fetcher import ThreatExchangeConfig
 
 

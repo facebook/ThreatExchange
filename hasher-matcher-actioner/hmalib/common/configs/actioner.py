@@ -6,7 +6,7 @@ import typing as t
 
 from dataclasses import dataclass
 from hmalib.common.logging import get_logger
-from hmalib.common.message_models import MatchMessage
+from hmalib.common.messages.match import MatchMessage
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from requests import get, post, put, delete, Response
 

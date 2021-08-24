@@ -52,6 +52,7 @@ SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 HASHES_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
+WRITEBACK_QUEUE_URL = os.environ["WRITEBACKS_QUEUE_URL"]
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -175,6 +176,7 @@ app.mount(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         hma_config_table=HMA_CONFIG_TABLE,
         indexes_bucket_name=INDEXES_BUCKET_NAME,
+        writeback_queue_url=WRITEBACK_QUEUE_URL,
     ),
 )
 

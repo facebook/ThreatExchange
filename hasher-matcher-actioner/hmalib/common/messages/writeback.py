@@ -20,24 +20,6 @@ logger = get_logger(__name__)
 
 
 @dataclass
-class WritebackMessageConfig:
-    """
-    Simple holder for getting typed environment variables
-    """
-
-    writebacks_queue_url: str
-    sqs_client: SQSClient
-
-    @classmethod
-    @lru_cache(maxsize=None)
-    def get(cls):
-        return cls(
-            writebacks_queue_url=os.environ["WRITEBACKS_QUEUE_URL"],
-            sqs_client=boto3.client("sqs"),
-        )
-
-
-@dataclass
 class WritebackMessage(HasAWSSerialization):
     """
     Writebacks happen on a collection of BankedSignals. To perform a write back,
@@ -83,12 +65,11 @@ class WritebackMessage(HasAWSSerialization):
             writeback_type,
         )
 
-    def send_to_queue(self) -> None:
+    def send_to_queue(self, sqs_client: SQSClient, queue_url: str) -> None:
         if self.writeback_type == WritebackTypes.NoWriteback:
             return
 
-        config = WritebackMessageConfig.get()
-        config.sqs_client.send_message(
-            QueueUrl=config.writebacks_queue_url,
+        sqs_client.send_message(
+            QueueUrl=queue_url,
             MessageBody=self.to_aws_json(),
         )

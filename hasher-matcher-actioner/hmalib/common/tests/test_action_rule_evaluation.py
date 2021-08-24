@@ -12,7 +12,7 @@ from hmalib.common.classification_models import (
     BankIDClassificationLabel,
     ClassificationLabel,
 )
-from hmalib.common.message_models import BankedSignal, MatchMessage
+from hmalib.common.messages.match import BankedSignal, MatchMessage
 from hmalib.lambdas.actions.action_evaluator import get_actions_to_take
 
 
