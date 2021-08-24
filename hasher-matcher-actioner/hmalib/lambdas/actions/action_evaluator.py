@@ -24,12 +24,10 @@ from hmalib.common.configs.evaluator import (
     ActionLabel,
     ActionRule,
 )
-from hmalib.common.message_models import (
-    ActionMessage,
-    BankedSignal,
-    MatchMessage,
-    WritebackMessage,
-)
+from hmalib.common.messages.action import ActionMessage
+from hmalib.common.messages.match import BankedSignal, MatchMessage
+
+from hmalib.common.message_models import WritebackMessage
 from hmalib.common.models.content import ContentObject
 from mypy_boto3_sqs import SQSClient
 from mypy_boto3_dynamodb.service_resource import Table, DynamoDBServiceResource
