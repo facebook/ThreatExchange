@@ -12,7 +12,7 @@ from hmalib.common.models import pipeline as models
 from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.count_models import MatchByPrivacyGroupCounter
 
-from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase
+from ddb_test_common import DynamoDBTableTestBase
 
 # These should change in tandem with terraform/datastore/main.tf
 DATASTORE_TABLE_DEF = {

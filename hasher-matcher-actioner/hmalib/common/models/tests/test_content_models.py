@@ -18,7 +18,7 @@ from hmalib.common.classification_models import ClassificationLabel
 from hmalib.common.configs.actioner import WebhookPostActionPerformer
 
 
-from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase
+from ddb_test_common import DynamoDBTableTestBase
 
 
 class TestContentModels(DynamoDBTableTestBase, unittest.TestCase):
