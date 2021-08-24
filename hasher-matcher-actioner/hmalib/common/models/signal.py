@@ -9,7 +9,7 @@ from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
 
-from hmalib.models import DynamoDBItem
+from hmalib.common.models.models_base import DynamoDBItem
 
 
 class PendingOpinionChange(Enum):

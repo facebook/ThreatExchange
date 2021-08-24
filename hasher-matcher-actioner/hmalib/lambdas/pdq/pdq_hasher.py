@@ -12,7 +12,7 @@ from threatexchange.hashing import pdq_hasher
 from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib import metrics
-from hmalib.models import PipelineHashRecord
+from hmalib.common.models.pipeline import PipelineHashRecord
 from hmalib.common.messages.submit import (
     S3ImageSubmission,
     S3ImageSubmissionBatchMessage,

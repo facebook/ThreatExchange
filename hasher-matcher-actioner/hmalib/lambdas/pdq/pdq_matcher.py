@@ -13,7 +13,7 @@ from threatexchange.signal_type.pdq_index import PDQIndex
 from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib import metrics
-from hmalib.models import MatchRecord
+from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.messages.match import BankedSignal, MatchMessage
 from hmalib.common.models.signal import PDQSignalMetadata
 from hmalib.common.logging import get_logger

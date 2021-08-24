@@ -13,7 +13,7 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.meta import get_content_type_for_name
 
 from hmalib.lambdas.api.middleware import JSONifiable
-from hmalib.models import DynamoDBItem
+from hmalib.common.models.models_base import DynamoDBItem
 
 
 @dataclass
