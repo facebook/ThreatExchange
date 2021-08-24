@@ -113,9 +113,7 @@ export default function ContentDetailsWithStepper(): JSX.Element {
           <Container>
             <Row>
               <Col className="mt-2" xs={{offset: 1}}>
-                <Link to="/matches/{contentId}">
-                  Go to Content Details Page
-                </Link>
+                <Link to={`/matches/${id}`}>Go to Content Details Page</Link>
               </Col>
             </Row>
           </Container>

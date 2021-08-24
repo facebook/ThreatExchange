@@ -6,8 +6,9 @@ from hmalib.common.classification_models import (
     BankIDClassificationLabel,
     ClassificationLabel,
 )
-from hmalib.common.evaluator_models import ActionLabel, ActionRule
-from hmalib.common.message_models import BankedSignal, ActionMessage
+from hmalib.common.configs.evaluator import ActionLabel, ActionRule
+from hmalib.common.messages.match import BankedSignal
+from hmalib.common.messages.action import ActionMessage
 
 
 class ActionMessageTestCase(unittest.TestCase):

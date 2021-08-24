@@ -9,7 +9,7 @@ import datetime
 import functools
 
 from mypy_boto3_sns.client import SNSClient
-from hmalib.common.signal_models import PDQSignalMetadata
+from hmalib.common.models.signal import PDQSignalMetadata
 
 from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange.signal_type.pdq import PdqSignal
@@ -23,9 +23,8 @@ from threatexchange.signal_type.signal_base import SignalType
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.mappings import INDEX_MAPPING
-from hmalib.common.message_models import BankedSignal, MatchMessage
-from hmalib.common.fetcher_models import ThreatExchangeConfig
-from hmalib.hashing.unified_hasher import ContentSignal
+from hmalib.common.messages.match import BankedSignal, MatchMessage
+from hmalib.common.configs.fetcher import ThreatExchangeConfig
 
 
 logger = get_logger(__name__)

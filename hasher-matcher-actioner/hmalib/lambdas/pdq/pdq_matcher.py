@@ -14,11 +14,11 @@ from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib import metrics
 from hmalib.models import MatchRecord
-from hmalib.common.message_models import BankedSignal, MatchMessage
-from hmalib.common.signal_models import PDQSignalMetadata
+from hmalib.common.messages.match import BankedSignal, MatchMessage
+from hmalib.common.models.signal import PDQSignalMetadata
 from hmalib.common.logging import get_logger
 from hmalib.common.config import HMAConfig
-from hmalib.common.fetcher_models import ThreatExchangeConfig
+from hmalib.common.configs.fetcher import ThreatExchangeConfig
 from functools import lru_cache
 
 from hmalib.indexers.s3_indexers import S3BackedPDQIndex

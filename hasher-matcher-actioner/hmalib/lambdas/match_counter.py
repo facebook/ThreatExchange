@@ -7,7 +7,7 @@ from collections import defaultdict
 import boto3
 
 from hmalib.common.count_models import MatchByPrivacyGroupCounter
-from hmalib.common.message_models import MatchMessage
+from hmalib.common.messages.match import MatchMessage
 from hmalib.common.logging import get_logger
 
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]

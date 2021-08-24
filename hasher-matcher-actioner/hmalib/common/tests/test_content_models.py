@@ -6,18 +6,16 @@ import datetime
 
 from threatexchange.content_type.photo import PhotoContent
 
-from hmalib.common.content_models import (
+from hmalib.common.models.content import (
     ContentObject,
     ActionEvent,
     ContentRefType,
-    ContentType,
 )
-from hmalib.common.evaluator_models import ActionLabel, ActionRule
-from hmalib.common.message_models import BankedSignal, ActionMessage
+from hmalib.common.configs.evaluator import ActionLabel, ActionRule
+from hmalib.common.messages.action import ActionMessage
+from hmalib.common.messages.match import BankedSignal
 from hmalib.common.classification_models import ClassificationLabel
-from hmalib.common.actioner_models import (
-    WebhookPostActionPerformer,
-)
+from hmalib.common.configs.actioner import WebhookPostActionPerformer
 
 
 from hmalib.common.tests.ddb_test_common import DynamoDBTableTestBase

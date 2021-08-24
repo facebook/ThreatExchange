@@ -23,7 +23,7 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
-from hmalib.common.fetcher_models import ThreatExchangeConfig
+from hmalib.common.configs.fetcher import ThreatExchangeConfig
 from hmalib.common.s3_adapters import ThreatUpdateS3Store
 
 

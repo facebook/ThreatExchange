@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import boto3
 import bottle
 import datetime
 import functools
@@ -10,6 +11,7 @@ from mypy_boto3_dynamodb.service_resource import Table
 import typing as t
 from enum import Enum
 from logging import Logger
+from mypy_boto3_sqs.client import SQSClient
 
 from threatexchange.descriptor import ThreatDescriptor
 
@@ -17,19 +19,21 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib.models import MatchRecord
-from hmalib.common.signal_models import (
-    PDQSignalMetadata,
-    PendingOpinionChange,
-    SignalMetadataBase,
-)
+from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
 from hmalib.common.logging import get_logger
-from hmalib.common.message_models import BankedSignal, WritebackMessage, WritebackTypes
+from hmalib.common.messages.match import BankedSignal
+from hmalib.common.messages.writeback import WritebackMessage
 from .middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.matchers.matchers_base import Matcher
 
 
 logger = get_logger(__name__)
+
+
+@functools.lru_cache(maxsize=None)
+def _get_sqs_client() -> SQSClient:
+    return boto3.client("sqs")
 
 
 @functools.lru_cache(maxsize=None)
@@ -186,7 +190,10 @@ class MatchesForHashResponse(JSONifiable):
 
 
 def get_matches_api(
-    dynamodb_table: Table, hma_config_table: str, indexes_bucket_name: str
+    dynamodb_table: Table,
+    hma_config_table: str,
+    indexes_bucket_name: str,
+    writeback_queue_url: str,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -260,7 +267,7 @@ def get_matches_api(
         writeback_message = WritebackMessage.from_banked_signal_and_opinion_change(
             BankedSignal(signal_id, ds_id, signal_source), pending_opinion_change
         )
-        writeback_message.send_to_queue()
+        writeback_message.send_to_queue(_get_sqs_client(), writeback_queue_url)
         logger.info(
             f"Opinion change enqueued for {signal_source}:{signal_id} in {ds_id} change={opinion_change}"
         )

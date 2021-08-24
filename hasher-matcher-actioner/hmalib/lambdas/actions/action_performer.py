@@ -6,11 +6,9 @@ import datetime
 from functools import lru_cache
 from mypy_boto3_dynamodb import DynamoDBServiceResource
 
-from hmalib.common.message_models import ActionMessage
-from hmalib.common.actioner_models import (
-    ActionPerformer,
-)
-from hmalib.common.content_models import ActionEvent
+from hmalib.common.messages.action import ActionMessage
+from hmalib.common.configs.actioner import ActionPerformer
+from hmalib.common.models.content import ActionEvent
 from hmalib.common.logging import get_logger
 from hmalib.common import config
 

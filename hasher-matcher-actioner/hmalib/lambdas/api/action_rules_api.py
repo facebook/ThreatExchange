@@ -11,8 +11,7 @@ from hmalib.common.logging import get_logger
 from .middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
-from hmalib.common.evaluator_models import ActionRule
-from hmalib.common.classification_models import Label, ActionLabel
+from hmalib.common.configs.evaluator import ActionRule
 
 
 logger = get_logger(__name__)

@@ -20,17 +20,15 @@ from hmalib.common.classification_models import (
     Label,
 )
 from hmalib.common.config import HMAConfig
-from hmalib.common.evaluator_models import (
+from hmalib.common.configs.evaluator import (
     ActionLabel,
     ActionRule,
 )
-from hmalib.common.message_models import (
-    ActionMessage,
-    BankedSignal,
-    MatchMessage,
-    WritebackMessage,
-)
-from hmalib.common.content_models import ContentObject
+from hmalib.common.messages.action import ActionMessage
+from hmalib.common.messages.match import BankedSignal, MatchMessage
+
+from hmalib.common.messages.writeback import WritebackMessage
+from hmalib.common.models.content import ContentObject
 from mypy_boto3_sqs import SQSClient
 from mypy_boto3_dynamodb.service_resource import Table, DynamoDBServiceResource
 
@@ -47,6 +45,7 @@ class ActionEvaluatorConfig:
     actions_queue_url: str
     sqs_client: SQSClient
     dynamo_db_table: Table
+    writeback_queue_url: str
 
     @classmethod
     @lru_cache(maxsize=None)
@@ -63,10 +62,13 @@ class ActionEvaluatorConfig:
         dynamo_db_table_name = os.environ["DYNAMODB_TABLE"]
         dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb")
 
+        writeback_queue_url = os.environ["WRITEBACKS_QUEUE_URL"]
+
         return cls(
             actions_queue_url=os.environ["ACTIONS_QUEUE_URL"],
             sqs_client=boto3.client("sqs"),
             dynamo_db_table=dynamodb.Table(dynamo_db_table_name),
+            writeback_queue_url=writeback_queue_url,
         )
 
 
@@ -119,7 +121,7 @@ def lambda_handler(event, context):
         writeback_message = WritebackMessage.from_match_message_and_type(
             match_message, WritebackTypes.SawThisToo
         )
-        writeback_message.send_to_queue()
+        writeback_message.send_to_queue(config.sqs_client, config.writeback_queue_url)
 
     return {"evaluation_completed": "true"}
 

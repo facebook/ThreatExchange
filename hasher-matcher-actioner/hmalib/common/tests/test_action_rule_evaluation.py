@@ -3,7 +3,7 @@
 import typing as t
 import unittest
 
-from hmalib.common.evaluator_models import (
+from hmalib.common.configs.evaluator import (
     ActionLabel,
     ActionRule,
 )
@@ -11,9 +11,8 @@ from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     ClassificationLabel,
-    Label,
 )
-from hmalib.common.message_models import BankedSignal, MatchMessage
+from hmalib.common.messages.match import BankedSignal, MatchMessage
 from hmalib.lambdas.actions.action_evaluator import get_actions_to_take
 
 
