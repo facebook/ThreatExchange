@@ -13,7 +13,7 @@ export default function OpinionChangeConfirmModal({
   show,
   onHide,
   onSubmit,
-  dataset,
+  privacyGroupId,
   signalId,
   signalSource,
   opinion,
@@ -54,7 +54,7 @@ export default function OpinionChangeConfirmModal({
           <Row className="mb-2">
             Signal ID: {`(${signalSource}) ${signalId} `}
           </Row>
-          <Row className="mb-2">Dataset ID: {dataset}</Row>
+          <Row className="mb-2">PrivacyGroup ID: {privacyGroupId}</Row>
           <Row as="strong" className="mb-2">
             Current Opinion: {opinion}
           </Row>
@@ -75,7 +75,7 @@ export default function OpinionChangeConfirmModal({
             requestSignalOpinionChange(
               signalId,
               signalSource,
-              dataset,
+              privacyGroupId,
               pendingOpinionChange,
             ).then(() => {
               setSubmitting(false);
@@ -94,7 +94,7 @@ OpinionChangeConfirmModal.propTypes = {
   show: PropTypes.bool,
   onHide: PropTypes.func,
   onSubmit: PropTypes.func,
-  dataset: PropTypes.string,
+  privacyGroupId: PropTypes.string,
   signalId: PropTypes.string,
   signalSource: PropTypes.string,
   opinion: PropTypes.oneOf(Object.values(OPINION_STRING)),
@@ -105,7 +105,7 @@ OpinionChangeConfirmModal.defaultProps = {
   show: false,
   onHide: undefined,
   onSubmit: undefined,
-  dataset: undefined,
+  privacyGroupId: undefined,
   signalId: undefined,
   signalSource: undefined,
   opinion: undefined,
