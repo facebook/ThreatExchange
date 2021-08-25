@@ -21,7 +21,7 @@ CLIENT_ID = os.environ["CLIENT_ID"]
 KEYS_URL = f"{USER_POOL_URL}/.well-known/jwks.json"
 
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 
 @functools.lru_cache(maxsize=1)
@@ -32,7 +32,6 @@ def _get_public_keys():
 
 
 def validate_jwt(token: str):
-    logger = get_logger()
     keys = _get_public_keys()
     try:
         if not keys:
@@ -62,6 +61,7 @@ def validate_jwt(token: str):
 def validate_access_token(token: str):
     response = {"isAuthorized": False, "context": {"AuthInfo": "ServiceAccessToken"}}
     if not ACCESS_TOKEN or not token:
+        logger.debug("Rejected empty values")
         return response
 
     if token == ACCESS_TOKEN:
