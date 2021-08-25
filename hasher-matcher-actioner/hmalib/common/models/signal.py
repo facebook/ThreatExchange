@@ -203,8 +203,8 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
         pk = cls.get_dynamodb_signal_key(cls.SIGNAL_SOURCE_SHORTCODE, signal_id)
         sk = cls.get_sort_key(privacy_group_id)
 
-        item = table.get_item(Key={"PK": pk, "SK": sk})["Item"]
-        return item and cls._result_item_to_metadata(item) or None
+        item = table.get_item(Key={"PK": pk, "SK": sk})
+        return "Item" in item and cls._result_item_to_metadata(item["Item"]) or None
 
     @classmethod
     def _result_items_to_metadata(
