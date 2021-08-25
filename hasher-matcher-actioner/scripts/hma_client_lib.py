@@ -20,9 +20,9 @@ from hma_script_utils import (
     get_auth_from_env,
 )
 
-from hmalib.common.evaluator_models import ActionRule
-from hmalib.common.classification_models import ActionLabel, ClassificationLabel
-from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
+from hmalib.common.classification_models import ClassificationLabel
+from hmalib.common.configs.evaluator import ActionLabel, ActionRule
+from hmalib.common.configs.actioner import ActionPerformer, WebhookPostActionPerformer
 
 
 class DeployedInstanceClient:

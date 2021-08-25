@@ -50,7 +50,7 @@ class HasherMatcherActionerAPI:
         self.session.headers.update(
             {
                 "content-type": "application/json",
-                "authorization": api_token,
+                "Authorization": api_token,
             }
         )
         if transport_adapter:
@@ -58,7 +58,7 @@ class HasherMatcherActionerAPI:
 
     def _refresh_token(self):
         """
-        IdToken has a default ttl of 60 minutes
+        AccessToken has a default ttl of 60 minutes
         RefreshToken as a default ttl of 30 days
         Only works in boto3 is install and optional values are set.
         """
@@ -72,7 +72,7 @@ class HasherMatcherActionerAPI:
             AuthParameters={"REFRESH_TOKEN": self.refresh_token},
             ClientId=self.client_id,
         )
-        api_token = resp["AuthenticationResult"]["IdToken"]
+        api_token = resp["AuthenticationResult"]["AccessToken"]
         self.session.headers["authorization"] = api_token
         return api_token
 
@@ -437,7 +437,7 @@ def get_auth_from_env(
 
         pool_id = tf_outputs["cognito_user_pool_id"]["value"]
         resp = get_token(user, pwd, pool_id, client_id)
-        token = resp["AuthenticationResult"]["IdToken"]
+        token = resp["AuthenticationResult"]["AccessToken"]
         refresh_token = resp["AuthenticationResult"]["RefreshToken"]
 
     return (token, refresh_token, client_id)
