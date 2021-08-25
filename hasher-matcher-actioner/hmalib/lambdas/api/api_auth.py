@@ -64,7 +64,7 @@ def validate_access_token(token: str):
     if not ACCESS_TOKEN or not token:
         return response
 
-    if token in ACCESS_TOKEN:
+    if token == ACCESS_TOKEN:
         logger.debug("Access token approved")
         response["isAuthorized"] = True
 

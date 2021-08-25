@@ -174,8 +174,8 @@ resource "aws_lambda_function" "api_auth" {
   image_config {
     command = [var.lambda_docker_info.commands.api_auth]
   }
-  timeout     = 300
-  memory_size = 512
+  timeout     = 30
+  memory_size = 128
   environment {
     variables = {
       ACCESS_TOKEN  = var.integration_api_access_token
