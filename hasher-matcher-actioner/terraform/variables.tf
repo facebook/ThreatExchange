@@ -121,4 +121,5 @@ variable "integration_api_access_token" {
   description = "Access token checked for in authorizer api as an alternative to cognito user tokens."
   type        = string
   sensitive   = true
+  default     = ""
 }
