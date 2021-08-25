@@ -10,7 +10,7 @@ import {OPINION_STRING, PENDING_OPINION_CHANGE} from '../utils/constants';
 import OpinionChangeConfirmModal from './OpinionChangeConfirmModal';
 
 export default function OpinionTableCell({
-  dataset,
+  privacyGroupId,
   signalId,
   signalSource,
   opinion,
@@ -116,7 +116,7 @@ export default function OpinionTableCell({
           setShowToast(true);
           setUpdatePending(true);
         }}
-        dataset={dataset}
+        privacyGroupId={privacyGroupId}
         signalId={signalId}
         signalSource={signalSource}
         opinion={opinion}
@@ -127,7 +127,7 @@ export default function OpinionTableCell({
 }
 
 OpinionTableCell.propTypes = {
-  dataset: PropTypes.string,
+  privacyGroupId: PropTypes.string,
   signalId: PropTypes.string,
   signalSource: PropTypes.string,
   opinion: PropTypes.oneOf(Object.values(OPINION_STRING)),
@@ -136,7 +136,7 @@ OpinionTableCell.propTypes = {
 };
 
 OpinionTableCell.defaultProps = {
-  dataset: undefined,
+  privacyGroupId: undefined,
   signalId: undefined,
   signalSource: undefined,
   opinion: OPINION_STRING.UKNOWN,

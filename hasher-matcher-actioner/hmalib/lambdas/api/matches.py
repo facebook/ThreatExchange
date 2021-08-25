@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import json
 import boto3
 import bottle
 import datetime
@@ -19,7 +20,10 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib.common.models.pipeline import MatchRecord
-from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
+from hmalib.common.models.signal import (
+    ThreatExchangeSignalMetadata,
+    PendingThreatExchangeOpinionChange,
+)
 from hmalib.common.logging import get_logger
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.messages.writeback import WritebackMessage
@@ -66,8 +70,8 @@ class MatchSummariesResponse(JSONifiable):
 
 
 @dataclass
-class MatchDetailMetadata(JSONifiable):
-    dataset: str
+class ThreatExchangeMatchDetailMetadata(JSONifiable):
+    privacy_group_id: str
     tags: t.List[str]
     opinion: str
     pending_opinion_change: str
@@ -85,7 +89,7 @@ class MatchDetail(JSONifiable):
     signal_source: str
     signal_type: str
     updated_at: str
-    metadata: t.List[MatchDetailMetadata]
+    metadata: t.List[ThreatExchangeMatchDetailMetadata]
 
     def to_json(self) -> t.Dict:
         result = asdict(self)
@@ -132,22 +136,21 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
 
 def get_signal_details(
     table: Table, signal_id: t.Union[str, int], signal_source: str
-) -> t.List[MatchDetailMetadata]:
+) -> t.List[ThreatExchangeMatchDetailMetadata]:
+    # TODO: Remove need for signal_source. That's part of the *SignalMetadata class now.
     if not signal_id or not signal_source:
         return []
 
     return [
-        MatchDetailMetadata(
-            dataset=metadata.ds_id,
+        ThreatExchangeMatchDetailMetadata(
+            privacy_group_id=metadata.privacy_group_id,
             tags=[
                 tag for tag in metadata.tags if tag not in ThreatDescriptor.SPECIAL_TAGS
             ],
             opinion=get_opinion_from_tags(metadata.tags).value,
             pending_opinion_change=metadata.pending_opinion_change.value,
         )
-        for metadata in PDQSignalMetadata.get_from_signal(
-            table, signal_id, signal_source
-        )
+        for metadata in ThreatExchangeSignalMetadata.get_from_signal(table, signal_id)
     ]
 
 
@@ -182,7 +185,7 @@ class MatchesForHashRequest(DictParseable):
 
 @dataclass
 class MatchesForHashResponse(JSONifiable):
-    matches: t.List[t.Union[PDQSignalMetadata]]
+    matches: t.List[t.Union[ThreatExchangeSignalMetadata]]
     signal_value: str
 
     def to_json(self) -> t.Dict:
@@ -248,44 +251,51 @@ def get_matches_api(
             results = get_match_details(dynamodb_table, content_id)
         return MatchDetailsResponse(match_details=results)
 
-    @matches_api.post("/request-signal-opinion-change/")
+    @matches_api.post("/request-signal-opinion-change/", apply=[jsoninator])
     def request_signal_opinion_change() -> ChangeSignalOpinionResponse:
         """
         request a change to the opinion for a signal in a dataset
         """
-        signal_id = bottle.request.query.signal_q or None
+        signal_id = bottle.request.query.signal_id or None
         signal_source = bottle.request.query.signal_source or None
-        ds_id = bottle.request.query.dataset_q or None
+        privacy_group_id = bottle.request.query.privacy_group_id or None
         opinion_change = bottle.request.query.opinion_change or None
 
-        if not signal_id or not signal_source or not ds_id or not opinion_change:
+        if (
+            not signal_id
+            or not signal_source
+            or not privacy_group_id
+            or not opinion_change
+        ):
             return ChangeSignalOpinionResponse(False)
 
         signal_id = str(signal_id)
-        pending_opinion_change = PendingOpinionChange(opinion_change)
+        pending_opinion_change = PendingThreatExchangeOpinionChange(opinion_change)
 
         writeback_message = WritebackMessage.from_banked_signal_and_opinion_change(
-            BankedSignal(signal_id, ds_id, signal_source), pending_opinion_change
+            BankedSignal(signal_id, privacy_group_id, signal_source),
+            pending_opinion_change,
         )
         writeback_message.send_to_queue(_get_sqs_client(), writeback_queue_url)
         logger.info(
-            f"Opinion change enqueued for {signal_source}:{signal_id} in {ds_id} change={opinion_change}"
+            f"Opinion change enqueued for {signal_source}:{signal_id} in {privacy_group_id} change={opinion_change}"
         )
 
-        signal = PDQSignalMetadata(
-            signal_id=signal_id,
-            ds_id=ds_id,
-            updated_at=datetime.datetime.now(),
-            signal_source=signal_source,
-            signal_hash="",  # SignalHash not needed for update
-            tags=[],  # Tags not needed for update
-            pending_opinion_change=pending_opinion_change,
+        signal = ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
+            dynamodb_table, signal_id=signal_id, privacy_group_id=privacy_group_id
         )
+
+        if not signal:
+            logger.error("Signal not found.")
+
+        signal = t.cast(ThreatExchangeSignalMetadata, signal)
+        signal.pending_opinion_change = pending_opinion_change
         success = signal.update_pending_opinion_change_in_table_if_exists(
             dynamodb_table
         )
+
         if not success:
-            logger.info(f"Attempting to update {signal} in db failed")
+            logger.error(f"Attempting to update {signal} in db failed")
 
         return ChangeSignalOpinionResponse(success)
 

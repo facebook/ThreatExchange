@@ -26,7 +26,10 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
 
-from hmalib.common.models.signal import PDQSignalMetadata, PendingOpinionChange
+from hmalib.common.models.signal import (
+    ThreatExchangeSignalMetadata,
+    PendingThreatExchangeOpinionChange,
+)
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 
@@ -485,7 +488,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         post_apply_fn(updated)
 
     def get_new_pending_opinion_change(
-        self, metadata: PDQSignalMetadata, new_tags: t.List[str]
+        self, metadata: ThreatExchangeSignalMetadata, new_tags: t.List[str]
     ):
         # Figure out if we have a new opinion about this indicator and clear out a pending change if so
 
@@ -498,25 +501,25 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         # If our opinion changed or if our pending change has already happend,
         # set the pending opinion change to None, otherwise keep it unchanged
         if old_opinion != new_opinion:
-            return PendingOpinionChange.NONE
+            return PendingThreatExchangeOpinionChange.NONE
         elif (
             (
                 new_opinion == [ThreatDescriptor.TRUE_POSITIVE]
                 and metadata.pending_opinion_change
-                == PendingOpinionChange.MARK_TRUE_POSITIVE
+                == PendingThreatExchangeOpinionChange.MARK_TRUE_POSITIVE
             )
             or (
                 new_opinion == [ThreatDescriptor.FALSE_POSITIVE]
                 and metadata.pending_opinion_change
-                == PendingOpinionChange.MARK_FALSE_POSITIVE
+                == PendingThreatExchangeOpinionChange.MARK_FALSE_POSITIVE
             )
             or (
                 new_opinion == []
                 and metadata.pending_opinion_change
-                == PendingOpinionChange.REMOVE_OPINION
+                == PendingThreatExchangeOpinionChange.REMOVE_OPINION
             )
         ):
-            return PendingOpinionChange.NONE
+            return PendingThreatExchangeOpinionChange.NONE
         else:
             return metadata.pending_opinion_change
 
@@ -544,11 +547,12 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
                 # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
                 new_tags = row[4].split(" ") if row[4] else []
 
-                metadata = PDQSignalMetadata.get_from_signal_and_ds_id(
-                    table,
-                    int(row[1]),
-                    S3ThreatDataConfig.SOURCE_STR,
-                    str(self.privacy_group),
+                metadata = (
+                    ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
+                        table,
+                        int(row[1]),  # indicator-id or signal-id
+                        str(self.privacy_group),
+                    )
                 )
 
                 if metadata:
@@ -559,11 +563,11 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
                     # If this is a new indicator without metadata there is nothing for us to update
                     return
 
-                metadata = PDQSignalMetadata(
+                metadata = ThreatExchangeSignalMetadata(
                     signal_id=row[1],
-                    ds_id=str(self.privacy_group),
+                    privacy_group_id=str(self.privacy_group),
                     updated_at=datetime.now(),
-                    signal_source=S3ThreatDataConfig.SOURCE_STR,
+                    signal_type=PdqSignal,
                     signal_hash=row[
                         0
                     ],  # note: not used by update_tags_in_table_if_exists

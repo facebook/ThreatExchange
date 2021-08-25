@@ -108,16 +108,16 @@ export function fetchStats(statName, timeSpan) {
 export async function requestSignalOpinionChange(
   signalId,
   signalSource,
-  dataset,
+  privacyGroupId,
   opinionChange,
 ) {
   apiPost(
     '/matches/request-signal-opinion-change/',
     {},
     {
-      signal_q: signalId,
+      signal_id: signalId,
       signal_source: signalSource,
-      dataset_q: dataset,
+      privacy_group_id: privacyGroupId,
       opinion_change: opinionChange,
     },
   );

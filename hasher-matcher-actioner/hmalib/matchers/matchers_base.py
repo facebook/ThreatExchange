@@ -9,7 +9,7 @@ import datetime
 import functools
 
 from mypy_boto3_sns.client import SNSClient
-from hmalib.common.models.signal import PDQSignalMetadata
+from hmalib.common.models.signal import ThreatExchangeSignalMetadata
 
 from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange.signal_type.pdq import PdqSignal
@@ -167,7 +167,7 @@ class Matcher:
         cls,
         signal_type: t.Type[SignalType],
         match: IndexMatch,
-    ) -> t.List[t.Union[PDQSignalMetadata]]:
+    ) -> t.List[t.Union[ThreatExchangeSignalMetadata]]:
         """
         See docstring of `write_signal_if_not_found` we will likely want to move
         this outside of Matcher. However while the MD5 expansion is still on going
@@ -175,15 +175,19 @@ class Matcher:
         Note: changes made here will have an effect on api.matches.get_match_for_hash
         """
         # TODO: Abstract out MD5SignalMetadata
-        if signal_type == PdqSignal:
+        if (
+            signal_type == PdqSignal
+            and match.metadata["source"]
+            == ThreatExchangeSignalMetadata.SIGNAL_SOURCE_SHORTCODE
+        ):
             return [
-                PDQSignalMetadata(
-                    str(match.metadata["id"]),
-                    privacy_group_id,
-                    datetime.datetime.now(),
-                    match.metadata["source"],
-                    match.metadata["hash"],
-                    match.metadata["tags"].get(privacy_group_id, []),
+                ThreatExchangeSignalMetadata(
+                    signal_id=str(match.metadata["id"]),
+                    privacy_group_id=privacy_group_id,
+                    updated_at=datetime.datetime.now(),
+                    signal_type=PdqSignal,
+                    signal_hash=match.metadata["hash"],
+                    tags=match.metadata["tags"].get(privacy_group_id, []),
                 )
                 for privacy_group_id in match.metadata.get("privacy_groups", [])
             ]

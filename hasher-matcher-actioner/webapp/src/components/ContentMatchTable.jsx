@@ -53,7 +53,7 @@ export default function ContentMatchTable({contentKey}) {
                   <th>MatchedSignal Type</th>
                   <th>MatchedSignal</th>
                   <th>Last Updated</th>
-                  <th>Dataset</th>
+                  <th>Privacy Group</th>
                   <th>Opinion</th>
                   <th>Classifications</th>
                 </tr>
@@ -83,10 +83,10 @@ export default function ContentMatchTable({contentKey}) {
                             <td />
                           </>
                         )}
-                        <td>{metadata.dataset}</td>
+                        <td>{metadata.privacy_group_id}</td>
                         <td>
                           <OpinionTableCell
-                            dataset={metadata.dataset}
+                            privacyGroupId={metadata.privacy_group_id}
                             signalId={match.signal_id}
                             signalSource={match.signal_source}
                             opinion={metadata.opinion}
