@@ -80,12 +80,6 @@ class ThreatExchangeMatchDetailMetadata(JSONifiable):
         return asdict(self)
 
 
-# For when we support multiple signal sources.
-AnyMatchDetailMetadata = t.NewType(
-    "AnyMatchDetailMetadata", t.Union[ThreatExchangeSignalMetadata]
-)
-
-
 @dataclass
 class MatchDetail(JSONifiable):
     content_id: str
@@ -95,7 +89,7 @@ class MatchDetail(JSONifiable):
     signal_source: str
     signal_type: str
     updated_at: str
-    metadata: t.List[AnyMatchDetailMetadata]
+    metadata: t.List[ThreatExchangeMatchDetailMetadata]
 
     def to_json(self) -> t.Dict:
         result = asdict(self)
