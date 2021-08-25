@@ -136,14 +136,10 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
 def get_signal_details(
     table: Table, signal_id: t.Union[str, int], signal_source: str
 ) -> t.List[MatchDetailMetadata]:
+    # TODO: Remove need for signal_source. That's part of the *SignalMetadata class now.
     if not signal_id or not signal_source:
         return []
 
-    metadata = ThreatExchangeSignalMetadata.get_from_signal(table, signal_id)
-    if not metadata:
-        return []
-
-    metadata = t.cast(ThreatExchangeSignalMetadata, metadata)
     return [
         MatchDetailMetadata(
             dataset=metadata.privacy_group_id,
@@ -153,6 +149,7 @@ def get_signal_details(
             opinion=get_opinion_from_tags(metadata.tags).value,
             pending_opinion_change=metadata.pending_opinion_change.value,
         )
+        for metadata in ThreatExchangeSignalMetadata.get_from_signal(table, signal_id)
     ]
 
 
@@ -277,8 +274,8 @@ def get_matches_api(
             f"Opinion change enqueued for {signal_source}:{signal_id} in {ds_id} change={opinion_change}"
         )
 
-        signal = ThreatExchangeSignalMetadata.get_from_signal(
-            dynamodb_table, signal_id=signal_id
+        signal = ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
+            dynamodb_table, signal_id=signal_id, privacy_group_id=ds_id
         )
 
         if not signal:

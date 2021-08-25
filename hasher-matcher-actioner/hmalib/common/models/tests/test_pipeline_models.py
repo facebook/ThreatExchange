@@ -287,7 +287,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         result = self.table.get_item(
             Key={
                 "PK": f"s#{ThreatExchangeSignalMetadata.SIGNAL_SOURCE_SHORTCODE}#{TestPDQModels.TEST_SIGNAL_ID}",
-                "SK": f"{ThreatExchangeSignalMetadata.get_sort_key()}",
+                "SK": f"{ThreatExchangeSignalMetadata.get_sort_key(TestPDQModels.TEST_DATASET_ID)}",
             },
         )
         items = result.get("Item")
@@ -306,7 +306,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
 
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
             self.table, TestPDQModels.TEST_SIGNAL_ID
-        )
+        )[0]
 
         assert metadata.signal_hash == query_metadata.signal_hash
         for tag in metadata.tags:
@@ -329,7 +329,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
 
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
             self.table, new_signal_id
-        )
+        )[0]
         assert metadata.signal_hash == query_metadata.signal_hash
         for tag in metadata.tags:
             assert tag in query_metadata.tags
@@ -341,7 +341,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         assert metadata.update_tags_in_table_if_exists(self.table)
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
             self.table, new_signal_id
-        )
+        )[0]
         for tag in replaced_tags:
             assert tag in query_metadata.tags
 
@@ -362,7 +362,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
 
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
             self.table, new_signal_id
-        )
+        )[0]
         assert metadata.signal_hash == query_metadata.signal_hash
         assert (
             PendingThreatExchangeOpinionChange.NONE.value
@@ -377,7 +377,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         assert metadata.update_pending_opinion_change_in_table_if_exists(self.table)
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
             self.table, new_signal_id
-        )
+        )[0]
         assert (
             PendingThreatExchangeOpinionChange.MARK_TRUE_POSITIVE.value
             == query_metadata.pending_opinion_change.value

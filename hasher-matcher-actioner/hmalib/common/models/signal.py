@@ -63,18 +63,24 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
     Once the opinion is written to threatexchange and synced back, the 'pending'
     opinion is cleared.
 
+    As clarified in the module's doc, it is okay to expose the threatexchange
+    specific attribute 'privacy_group_id' because the capabilities that an
+    exchange offers is going to be varied enough that abstracting might be
+    impossible.
+
     Storage
     ---
     PK: s#{source_short_code}#{signal_id}
-    SK: #threatexchange-signal-metadata
+    SK: pg#{privacy_group_id}
 
     Where
     {source_short_code} = "te"
     and signal_id = {indicator_id} in threatexchange.
+    and privacy_group_id is privacy_group_id in threatexchange.
     """
 
     SIGNAL_SOURCE_SHORTCODE = "te"
-    DATASET_PREFIX = "ds#"
+    PRIVACY_GROUP_PREFIX = "pg#"
 
     signal_id: str
     privacy_group_id: str
@@ -88,9 +94,9 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
 
     PROJECTION_EXPRESSION = "PK, SignalHash, SignalSource, SignalType, PrivacyGroup, Tags, PendingThreatExchangeOpinionChange, UpdatedAt"
 
-    @staticmethod
-    def get_sort_key() -> str:
-        return "#threatexchange-signal-metadata"
+    @classmethod
+    def get_sort_key(self, privacy_group_id: str) -> str:
+        return f"pg#{privacy_group_id}"
 
     def to_json(self) -> t.Dict:
         """
@@ -108,7 +114,7 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
             "PK": self.get_dynamodb_signal_key(
                 self.SIGNAL_SOURCE_SHORTCODE, self.signal_id
             ),
-            "SK": self.get_sort_key(),
+            "SK": self.get_sort_key(self.privacy_group_id),
             "SignalHash": self.signal_hash,
             "SignalSource": self.SIGNAL_SOURCE_SHORTCODE,
             "UpdatedAt": self.updated_at.isoformat(),
@@ -146,7 +152,7 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
                     "PK": self.get_dynamodb_signal_key(
                         self.SIGNAL_SOURCE_SHORTCODE, self.signal_id
                     ),
-                    "SK": self.get_sort_key(),
+                    "SK": self.get_sort_key(self.privacy_group_id),
                 },
                 # service_resource.Table.update_item's ConditionExpression params is not typed to use its own objects here...
                 ConditionExpression=And(Attr("PK").exists(), Attr("SK").exists()),  # type: ignore
@@ -171,19 +177,34 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
         cls,
         table: Table,
         signal_id: t.Union[str, int],
+    ) -> t.List["ThreatExchangeSignalMetadata"]:
+        """
+        Load objects for this signal across all privacy groups. A signal_id,
+        which maps to indicator_id on threatexchange, can be part of multiple
+        privacy groups. Opinions are registered on a (privacy_group,
+        indicator_id) tuple. Not exactly, but kind of.
+        """
+        pk = cls.get_dynamodb_signal_key(cls.SIGNAL_SOURCE_SHORTCODE, signal_id)
+
+        items = table.query(
+            KeyConditionExpression=Key("PK").eq(pk)
+            & Key("SK").begins_with(cls.PRIVACY_GROUP_PREFIX),
+            ProjectionExpression=cls.PROJECTION_EXPRESSION,
+        ).get("Items")
+        return cls._result_items_to_metadata(items or [])
+
+    @classmethod
+    def get_from_signal_and_privacy_group(
+        cls, table: Table, signal_id: t.Union[str, int], privacy_group_id: str
     ) -> t.Optional["ThreatExchangeSignalMetadata"]:
         """
-        Load the metadata object related to this signal.
+        Load object for this signal and privacy_group combination.
         """
-        item = table.get_item(
-            Key={
-                "PK": cls.get_dynamodb_signal_key(
-                    cls.SIGNAL_SOURCE_SHORTCODE, signal_id
-                ),
-                "SK": cls.get_sort_key(),
-            },
-        ).get("Item")
-        return cls._result_item_to_metadata(item) if item else None
+        pk = cls.get_dynamodb_signal_key(cls.SIGNAL_SOURCE_SHORTCODE, signal_id)
+        sk = cls.get_sort_key(privacy_group_id)
+
+        item = table.get_item(Key={"PK": pk, "SK": sk})["Item"]
+        return item and cls._result_item_to_metadata(item) or None
 
     @classmethod
     def _result_items_to_metadata(

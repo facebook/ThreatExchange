@@ -547,9 +547,12 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
                 # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
                 new_tags = row[4].split(" ") if row[4] else []
 
-                metadata = ThreatExchangeSignalMetadata.get_from_signal(
-                    table,
-                    int(row[1]),
+                metadata = (
+                    ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
+                        table,
+                        int(row[1]),  # indicator-id or signal-id
+                        str(self.privacy_group),
+                    )
                 )
 
                 if metadata:
