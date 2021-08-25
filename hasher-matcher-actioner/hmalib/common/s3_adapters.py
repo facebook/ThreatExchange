@@ -197,7 +197,11 @@ class ThreatExchangeS3VideoMD5Adapter(ThreatExchangeS3Adapter):
 
     @property
     def indicator_type_file_extension(self):
-        return f"{VideoMD5Signal.INDICATOR_TYPE.lower()}.te"
+        # Hardcode because of indicator_type migration. This is extra weird
+        # because adapters do not write data, they only read data. One datafile
+        # read and write are both done via s3_adapters, this should no longer be
+        # necessary.
+        return f"hash_video_md5.te"
 
     @property
     def indicator_type_file_columns(self):
@@ -535,60 +539,42 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         table = get_dynamodb().Table(self.data_store_table)
 
         for update in updated.values():
-            if update.indicator_type == "HASH_PDQ":
-                # To remain backwards compatible, only handle PDQ here. SME:
-                # @schatten, @barrettolson
+            row: t.List[str] = update.as_csv_row()
+            # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
+            # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
+            new_tags = row[4].split(" ") if row[4] else []
+            metadata = ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
+                table,
+                int(row[1]),  # indicator-id or signal-id
+                str(self.privacy_group),
+            )
 
-                # TODO: Once Signal storage is generified, remove this
-                # conditional and handle multiple indicator_types.
-
-                row: t.List[str] = update.as_csv_row()
-                # example row format: ('<raw_indicator>', '<indicator-id>', '<descriptor-id>', '<time added>', '<space-separated-tags>')
-                # e.g (10736405276340','096a6f9...064f', '1234567890', '2020-07-31T18:47:45+0000', 'true_positive hma_test')
-                new_tags = row[4].split(" ") if row[4] else []
-
-                metadata = (
-                    ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
-                        table,
-                        int(row[1]),  # indicator-id or signal-id
-                        str(self.privacy_group),
-                    )
+            if metadata:
+                new_pending_opinion_change = self.get_new_pending_opinion_change(
+                    metadata, new_tags
                 )
+            else:
+                # If this is a new indicator without metadata there is nothing for us to update
+                return
 
-                if metadata:
-                    new_pending_opinion_change = self.get_new_pending_opinion_change(
-                        metadata, new_tags
-                    )
-                else:
-                    # If this is a new indicator without metadata there is nothing for us to update
-                    return
+            metadata.tags = new_tags
+            metadata.pending_opinion_change = new_pending_opinion_change
 
-                metadata = ThreatExchangeSignalMetadata(
-                    signal_id=row[1],
-                    privacy_group_id=str(self.privacy_group),
-                    updated_at=datetime.now(),
-                    signal_type=PdqSignal,
-                    signal_hash=row[
-                        0
-                    ],  # note: not used by update_tags_in_table_if_exists
-                    tags=new_tags,
-                    pending_opinion_change=new_pending_opinion_change,
+            # TODO: Combine 2 update functions into single function
+            if metadata.update_tags_in_table_if_exists(table):
+                logger.info(
+                    "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
+                    row[1],
+                    S3ThreatDataConfig.SOURCE_STR,
+                    self.privacy_group,
                 )
-                # TODO: Combine 2 update functions into single function
-                if metadata.update_tags_in_table_if_exists(table):
-                    logger.info(
-                        "Updated Signal Tags in DB for indicator id: %s source: %s for privacy group: %d",
-                        row[1],
-                        S3ThreatDataConfig.SOURCE_STR,
-                        self.privacy_group,
-                    )
-                if metadata.update_pending_opinion_change_in_table_if_exists(table):
-                    logger.info(
-                        "Updated Pending Opinion in DB for indicator id: %s source: %s for privacy group: %d",
-                        row[1],
-                        S3ThreatDataConfig.SOURCE_STR,
-                        self.privacy_group,
-                    )
+            if metadata.update_pending_opinion_change_in_table_if_exists(table):
+                logger.info(
+                    "Updated Pending Opinion in DB for indicator id: %s source: %s for privacy group: %d",
+                    row[1],
+                    S3ThreatDataConfig.SOURCE_STR,
+                    self.privacy_group,
+                )
 
 
 def read_s3_text(

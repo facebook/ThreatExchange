@@ -72,7 +72,14 @@ def lambda_handler(event, context):
             continue
 
         hash_record = PipelineHashRecord.from_sqs_message(message)
+        logger.info(
+            "HashRecord for contentId: %s with contentHash: %s",
+            hash_record.content_id,
+            hash_record.content_hash,
+        )
+
         matches = matcher.match(hash_record.signal_type, hash_record.content_hash)
+        logger.info("Found %d matches.", len(matches))
 
         for match in matches:
             matcher.write_match_record_for_result(

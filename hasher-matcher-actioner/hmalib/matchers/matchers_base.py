@@ -174,24 +174,26 @@ class Matcher:
         better to have it all in once place.
         Note: changes made here will have an effect on api.matches.get_match_for_hash
         """
-        # TODO: Abstract out MD5SignalMetadata
         if (
-            signal_type == PdqSignal
-            and match.metadata["source"]
-            == ThreatExchangeSignalMetadata.SIGNAL_SOURCE_SHORTCODE
+            match.metadata["source"]
+            != ThreatExchangeSignalMetadata.SIGNAL_SOURCE_SHORTCODE
         ):
-            return [
-                ThreatExchangeSignalMetadata(
-                    signal_id=str(match.metadata["id"]),
-                    privacy_group_id=privacy_group_id,
-                    updated_at=datetime.datetime.now(),
-                    signal_type=PdqSignal,
-                    signal_hash=match.metadata["hash"],
-                    tags=match.metadata["tags"].get(privacy_group_id, []),
-                )
-                for privacy_group_id in match.metadata.get("privacy_groups", [])
-            ]
-        return []  # todo add md5 support
+            logger.warn(
+                "Matched against signal that is not sourced from threatexchange. Not writing metadata object."
+            )
+            return []
+
+        return [
+            ThreatExchangeSignalMetadata(
+                signal_id=str(match.metadata["id"]),
+                privacy_group_id=privacy_group_id,
+                updated_at=datetime.datetime.now(),
+                signal_type=signal_type,
+                signal_hash=match.metadata["hash"],
+                tags=match.metadata["tags"].get(privacy_group_id, []),
+            )
+            for privacy_group_id in match.metadata.get("privacy_groups", [])
+        ]
 
     def get_index(self, signal_type: t.Type[SignalType]) -> SignalTypeIndex:
         # If cached, return an index instance for the signal_type. If not, build
