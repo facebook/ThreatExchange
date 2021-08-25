@@ -17,6 +17,8 @@ The bundled cli tool of the same name is meant to demonstrate the library, as we
 
 ## Installation
 
+If you don't have `pip`, learn how to install it [here](https://pip.pypa.io/en/stable/installation/).
+
 ```bash
 $ python3 -m pip install threatexchange [--upgrade]
 ```
