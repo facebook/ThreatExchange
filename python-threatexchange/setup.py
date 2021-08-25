@@ -57,6 +57,7 @@ setup(
     install_requires=[
         "python-Levenshtein",
         "requests>=2.26.0",
+        "urllib3>=1.26.0",  # For allow_methods
         "dataclasses",
         "python-dateutil",
     ],
