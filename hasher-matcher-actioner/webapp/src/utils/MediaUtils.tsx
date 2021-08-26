@@ -2,7 +2,6 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import {findAllByTestId} from '@testing-library/react';
 import classNames from 'classnames';
 import React, {useState} from 'react';
 import {Image} from 'react-bootstrap';

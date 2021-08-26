@@ -2,8 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect, useCallback, CSSProperties} from 'react';
-import {Popover, OverlayTrigger, PopoverProps} from 'react-bootstrap';
+import React, {useState, useCallback, CSSProperties} from 'react';
+import {Popover, OverlayTrigger} from 'react-bootstrap';
 import copy from 'clipboard-copy';
 
 type CopyableFieldProps = {
@@ -19,7 +19,7 @@ export function CopyableTextField({
   text,
   tooltip,
   color,
-}: CopyableFieldPropsWithColor) {
+}: CopyableFieldPropsWithColor): JSX.Element {
   const helpText = tooltip ?? 'Copy to clipboard?';
   const [message, setMessage] = useState(helpText);
 
@@ -71,7 +71,7 @@ CopyableTextField.defaultProps = {
 export function CopyableHashField({
   text,
   tooltip = 'Copy hash to clipboard?',
-}: CopyableFieldProps) {
+}: CopyableFieldProps): JSX.Element {
   return (
     <td style={{maxWidth: '250px', overflow: 'hidden'}}>
       <span style={{overflow: 'hidden'}} />

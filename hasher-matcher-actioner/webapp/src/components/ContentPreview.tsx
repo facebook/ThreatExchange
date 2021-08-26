@@ -22,7 +22,6 @@ function swtchContentTypeRenderers(
   revealed: boolean,
   contentType: ContentType,
   url?: string,
-  raw?: string,
 ) {
   switch (contentType) {
     case ContentType.Photo:
@@ -38,7 +37,6 @@ type ContentPreviewProps = {
   contentType: ContentType;
   contentId: string;
   url?: string;
-  raw?: string;
 };
 
 /**
@@ -51,7 +49,6 @@ export default function ContentPreview({
   contentType,
   contentId,
   url,
-  raw,
 }: ContentPreviewProps) {
   const [revealed, setRevealed] = useState(false);
 
@@ -77,7 +74,7 @@ export default function ContentPreview({
         </Col>
       </Row>
       <Row className="my-2">
-        <Col>{swtchContentTypeRenderers(revealed, contentType, url, raw)}</Col>
+        <Col>{swtchContentTypeRenderers(revealed, contentType, url)}</Col>
       </Row>
     </Container>
   );
@@ -85,5 +82,4 @@ export default function ContentPreview({
 
 ContentPreview.defaultProps = {
   url: undefined,
-  raw: undefined,
 };

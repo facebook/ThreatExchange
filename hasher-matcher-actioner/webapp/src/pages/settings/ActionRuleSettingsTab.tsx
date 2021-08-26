@@ -64,7 +64,10 @@ export class ActionRule {
     );
   }
 
-  copyAndProcessUpdate = (update_name: string, new_value: any): ActionRule => {
+  copyAndProcessUpdate = (
+    update_name: string,
+    new_value: ClassificationCondition[] | string,
+  ): ActionRule => {
     if (
       !['name', 'action_id', 'classification_conditions'].includes(update_name)
     ) {
@@ -73,19 +76,23 @@ export class ActionRule {
 
     const must_have_labels =
       update_name === 'classification_conditions'
-        ? this.mustHaveLabelsFromClassifications(new_value)
+        ? this.mustHaveLabelsFromClassifications(
+            new_value as ClassificationCondition[],
+          )
         : this.must_have_labels;
 
     const must_not_have_labels =
       update_name === 'classification_conditions'
-        ? this.mustNotHaveLabelsFromClassifications(new_value)
+        ? this.mustNotHaveLabelsFromClassifications(
+            new_value as ClassificationCondition[],
+          )
         : this.must_not_have_labels;
 
     return new ActionRule(
-      update_name === 'name' ? new_value : this.name,
+      update_name === 'name' ? (new_value as string) : this.name,
       must_have_labels,
       must_not_have_labels,
-      update_name === 'action_id' ? new_value : this.action_id,
+      update_name === 'action_id' ? (new_value as string) : this.action_id,
     );
   };
 
@@ -186,7 +193,10 @@ export default function ActionRuleSettingsTab(): JSX.Element {
     });
   }, []);
 
-  const onNewActionRuleChange = (update_name: string, new_value: any) => {
+  const onNewActionRuleChange = (
+    update_name: string,
+    new_value: ClassificationCondition[] | string,
+  ) => {
     const newNewActionRule = newActionRule.copyAndProcessUpdate(
       update_name,
       new_value,

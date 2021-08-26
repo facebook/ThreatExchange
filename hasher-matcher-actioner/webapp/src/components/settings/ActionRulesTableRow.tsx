@@ -11,6 +11,7 @@ import '../../styles/_settings.scss';
 import type {
   Action,
   ActionRule,
+  ClassificationCondition,
 } from '../../pages/settings/ActionRuleSettingsTab';
 
 type Input = {
@@ -39,7 +40,10 @@ export default function ActionRulesTableRow({
   const [updatedActionRule, setUpdatedActionRule] = useState(actionRule);
   const [showErrors, setShowErrors] = useState(false);
 
-  const onUpdatedActionRuleChange = (update_name: string, new_value: any) => {
+  const onUpdatedActionRuleChange = (
+    update_name: string,
+    new_value: string | ClassificationCondition[],
+  ) => {
     const newUpdatedActionRule = updatedActionRule.copyAndProcessUpdate(
       update_name,
       new_value,

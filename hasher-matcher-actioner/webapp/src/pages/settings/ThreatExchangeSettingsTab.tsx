@@ -42,6 +42,7 @@ type Dataset = {
   hash_count: number;
   match_count: number;
 };
+
 export default function ThreatExchangeSettingsTab(): JSX.Element {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(false);
