@@ -28,7 +28,7 @@ from ..dataset import Dataset
 from . import (
     command_base as base,
     fetch,
-    experimental_fetch,
+    tag_fetch,
     label,
     match,
     dataset_cmd,
@@ -39,11 +39,11 @@ from . import (
 def get_subcommands() -> t.List[t.Type[base.Command]]:
     return [
         fetch.FetchCommand,
-        experimental_fetch.ExperimentalFetchCommand,
         match.MatchCommand,
         label.LabelCommand,
         dataset_cmd.DatasetCommand,
         hash_cmd.HashCommand,
+        tag_fetch.TagFetchCommand,
     ]
 
 
