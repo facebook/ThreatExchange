@@ -6,7 +6,7 @@ import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
 import {Col, Row, Table, Button} from 'react-bootstrap';
 
-import {fetchHash, fetchPreviewURL, fetchContentDetails} from '../Api';
+import {fetchHashDetails, fetchPreviewURL, fetchContentDetails} from '../Api';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 import {getContentTypeForString} from '../utils/constants';
@@ -26,7 +26,7 @@ export default function ContentDetails() {
   // return error codes if the content values are not yet populated if users come
   /// to this page right after submit
   useEffect(() => {
-    fetchHash(id)
+    fetchHashDetails(id)
       .then(hash => {
         setHashDetails(hash);
       })

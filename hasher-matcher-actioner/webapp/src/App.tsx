@@ -12,6 +12,7 @@ import {
 import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 
 import './styles/_app.scss';
+import 'ionicons';
 
 import Sidebar from './Sidebar';
 import ContentDetails from './pages/ContentDetails';

@@ -82,25 +82,73 @@ export function fetchMatchesFromContent(
   return apiGet('/matches/', {content_q: contentId});
 }
 
-export function fetchMatchDetails(contentId: string): Promise<Response> {
+export type MatchDetails = {
+  content_id: string;
+  content_hash: string;
+  signal_id: string;
+  signal_hash: string;
+  signal_source: string;
+  signal_type: string;
+  updated_at: string;
+  metadata: {
+    privacy_group_id: string;
+    tags: string[];
+    opinion: string;
+    pending_opinion_change: string;
+  }[];
+};
+
+type Matches = {match_details: MatchDetails[]};
+
+export function fetchMatchDetails(contentId: string): Promise<Matches> {
   return apiGet('/matches/match/', {content_id: contentId});
 }
 
-export function fetchHash(contentId: string): Promise<Response> {
+type HashDetails = {
+  content_hash: string;
+  updated_at: string;
+};
+
+export function fetchHashDetails(contentId: string): Promise<HashDetails> {
   return apiGet('/content/hash/', {content_id: contentId});
 }
 
-export function fetchPreviewURL(contentId: string): Promise<Response> {
+export function fetchPreviewURL(contentId: string): Promise<string> {
   return apiGet('/content/preview-url/', {content_id: contentId});
 }
 
+export type ContentActionHistoryRecord = {
+  action_label: string;
+  performed_at: string;
+};
+
+type ContentActionHistoryRecords = {
+  action_history: Array<ContentActionHistoryRecord>;
+};
+
 export function fetchContentActionHistory(
   contentId: string,
-): Promise<Response> {
+): Promise<ContentActionHistoryRecords> {
   return apiGet('/content/action-history/', {content_id: contentId});
 }
 
-export function fetchContentDetails(contentId: string): Promise<Response> {
+export type ContentDetails = {
+  content_id: string;
+  content_type: string;
+
+  content_ref: string;
+  content_ref_type: string;
+
+  submission_times: Array<string>;
+
+  created_at: string;
+  updated_at: string;
+  additional_fields: Array<string>;
+};
+
+export function fetchContentDetails(
+  contentId: string,
+): Promise<ContentDetails> {
   return apiGet('/content/', {
     content_id: contentId,
   });

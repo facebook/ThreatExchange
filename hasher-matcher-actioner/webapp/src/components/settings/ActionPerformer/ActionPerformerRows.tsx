@@ -2,13 +2,34 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
+import {IonIcon} from '@ionic/react';
 import React, {useState} from 'react';
-import {PropTypes} from 'prop-types';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import ActionPerformerColumns from './ActionPerformerColumns';
+
+type Params = {
+  url: string;
+  headers: string;
+};
+
+type Action = {
+  name: string;
+  type: string;
+  updatedAction: any;
+};
+
+type ActionPerformerRowsProps = {
+  name: string;
+  type: string;
+  params: Params;
+  edit: boolean;
+  onSave: (key: Action) => void;
+  onDelete: (key: string) => void;
+  canNotDeleteOrUpdateName: boolean;
+};
 
 export default function ActionPerformerRows({
   name,
@@ -18,7 +39,7 @@ export default function ActionPerformerRows({
   onSave,
   onDelete,
   canNotDeleteOrUpdateName,
-}) {
+}: ActionPerformerRowsProps) {
   const [editing, setEditing] = useState(edit);
   const [showDeleteActionConfirmation, setShowDeleteActionConfirmation] =
     useState(false);
@@ -30,7 +51,10 @@ export default function ActionPerformerRows({
     fields: params,
   });
 
-  const onUpdatedActionChange = (key, value) => {
+  const onUpdatedActionChange = (
+    key: string,
+    value: {[key: string]: string},
+  ) => {
     if (key === 'name' || key === 'config_subtype') {
       setUpdatedAction({...updatedAction, ...value});
     } else {
@@ -56,7 +80,7 @@ export default function ActionPerformerRows({
           <Button
             className="mb-2 table-action-button"
             onClick={() => setEditing(true)}>
-            <ion-icon name="pencil" size="large" className="ion-icon-white" />
+            <IonIcon name="pencil" size="large" className="ion-icon-white" />
           </Button>
           <br />
           <Button
@@ -64,11 +88,7 @@ export default function ActionPerformerRows({
             className="table-action-button"
             disabled={canNotDeleteOrUpdateName}
             onClick={() => setShowDeleteActionConfirmation(true)}>
-            <ion-icon
-              name="trash-bin"
-              size="large"
-              className="ion-icon-white"
-            />
+            <IonIcon name="trash-bin" size="large" className="ion-icon-white" />
           </Button>
           <br />
           <Modal
@@ -105,7 +125,7 @@ export default function ActionPerformerRows({
                 </Tooltip>
               }>
               <Button variant="secondary" className="table-action-button">
-                <ion-icon
+                <IonIcon
                   name="help-outline"
                   size="large"
                   className="ion-icon-white"
@@ -132,11 +152,7 @@ export default function ActionPerformerRows({
             onClick={() => {
               setShowUpdateActionConfirmation(true);
             }}>
-            <ion-icon
-              name="checkmark"
-              size="large"
-              className="ion-icon-white"
-            />
+            <IonIcon name="checkmark" size="large" className="ion-icon-white" />
           </Button>
           <br />
           <Button
@@ -146,7 +162,7 @@ export default function ActionPerformerRows({
               resetForm();
               setEditing(false);
             }}>
-            <ion-icon name="close" size="large" className="ion-icon-white" />
+            <IonIcon name="close" size="large" className="ion-icon-white" />
           </Button>
           <Modal
             show={showUpdateActionConfirmation}
@@ -190,16 +206,3 @@ export default function ActionPerformerRows({
     </>
   );
 }
-
-ActionPerformerRows.propTypes = {
-  name: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
-  edit: PropTypes.bool.isRequired,
-  params: PropTypes.shape({
-    url: PropTypes.string.isRequired,
-    headers: PropTypes.string.isRequired,
-  }).isRequired,
-  onSave: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired,
-  canNotDeleteOrUpdateName: PropTypes.bool.isRequired,
-};

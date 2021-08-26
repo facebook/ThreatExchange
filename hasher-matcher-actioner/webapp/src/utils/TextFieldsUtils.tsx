@@ -7,20 +7,19 @@ import {Popover, OverlayTrigger} from 'react-bootstrap';
 import copy from 'clipboard-copy';
 
 type CopyableFieldProps = {
-  tooltip: string;
   text: string;
+  tooltip?: string;
 };
 
 type CopyableFieldPropsWithColor = CopyableFieldProps & {
   color?: string;
 };
-
 export function CopyableTextField({
   text,
   tooltip,
   color,
 }: CopyableFieldPropsWithColor): JSX.Element {
-  const helpText = tooltip ?? 'Copy to clipboard?';
+  const helpText = tooltip;
   const [message, setMessage] = useState(helpText);
 
   const copyText = useCallback(() => {
@@ -65,12 +64,13 @@ export function CopyableTextField({
 }
 
 CopyableTextField.defaultProps = {
+  tooltip: 'Copy to clipboard?',
   color: undefined,
 };
 
 export function CopyableHashField({
   text,
-  tooltip = 'Copy hash to clipboard?',
+  tooltip,
 }: CopyableFieldProps): JSX.Element {
   return (
     <td style={{maxWidth: '250px', overflow: 'hidden'}}>
@@ -79,3 +79,7 @@ export function CopyableHashField({
     </td>
   );
 }
+
+CopyableHashField.defaultProps = {
+  tooltip: 'Copy to clipboard?',
+};

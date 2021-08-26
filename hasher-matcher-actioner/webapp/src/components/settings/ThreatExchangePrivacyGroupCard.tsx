@@ -2,8 +2,9 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import PropTypes from 'prop-types';
 import React, {useState} from 'react';
+import {IonIcon} from '@ionic/react';
+
 import {
   Col,
   Button,
@@ -14,6 +15,20 @@ import {
 } from 'react-bootstrap';
 import DOMPurify from 'dompurify';
 import {CopyableTextField} from '../../utils/TextFieldsUtils';
+
+type ThreatExchangePrivacyGroupCardProps = {
+  fetcherActive: boolean;
+  matcherActive: boolean;
+  inUse: boolean;
+  privacyGroupId: string;
+  privacyGroupName: string;
+  description: string;
+  writeBack: boolean;
+  hashCount: number;
+  matchCount: number;
+  onSave: (pg: any) => void;
+  onDelete: (privacyGroupId: string) => void;
+};
 
 export default function ThreatExchangePrivacyGroupCard({
   fetcherActive,
@@ -27,7 +42,7 @@ export default function ThreatExchangePrivacyGroupCard({
   matchCount,
   onSave,
   onDelete,
-}) {
+}: ThreatExchangePrivacyGroupCardProps) {
   const [originalFetcherActive, setOriginalFetcherActive] =
     useState(fetcherActive);
   const [originalWriteBack, setOriginalWriteBack] = useState(writeBack);
@@ -74,7 +89,7 @@ export default function ThreatExchangePrivacyGroupCard({
                   </Popover>
                 }>
                 <Button variant={inUse ? 'primary' : 'secondary'}>
-                  <ion-icon name="information-circle-outline" size="large" />
+                  <IonIcon name="information-circle-outline" size="large" />
                 </Button>
               </OverlayTrigger>
             </h4>
@@ -171,17 +186,3 @@ export default function ThreatExchangePrivacyGroupCard({
     </>
   );
 }
-
-ThreatExchangePrivacyGroupCard.propTypes = {
-  fetcherActive: PropTypes.bool.isRequired,
-  matcherActive: PropTypes.bool.isRequired,
-  inUse: PropTypes.bool.isRequired,
-  privacyGroupId: PropTypes.string.isRequired,
-  privacyGroupName: PropTypes.string.isRequired,
-  description: PropTypes.string.isRequired,
-  writeBack: PropTypes.bool.isRequired,
-  hashCount: PropTypes.number.isRequired,
-  matchCount: PropTypes.number.isRequired,
-  onSave: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired,
-};

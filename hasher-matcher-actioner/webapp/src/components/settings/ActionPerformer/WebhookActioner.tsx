@@ -7,10 +7,6 @@ import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import PropTypes from 'prop-types';
 
-export interface Map {
-  [key: string]: string;
-}
-
 interface WebhookTypeInterface extends Record<string, any> {
   WebhookPostActionPerformer: string;
   WebhookGetActionPerformer: string;
@@ -23,7 +19,7 @@ type WebhookActioner = {
   headers: string;
   webhookType: string;
   editing: boolean;
-  onChange: (key: string, keyValueMap: Map) => void;
+  onChange: (key: string, keyValueMap: {[key: string]: string}) => void;
 };
 
 export default function WebhookActioner({

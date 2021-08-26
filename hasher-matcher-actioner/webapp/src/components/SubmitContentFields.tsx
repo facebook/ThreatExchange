@@ -16,17 +16,22 @@ import PropTypes from 'prop-types';
 
 import {SUBMISSION_TYPE} from '../utils/constants';
 
-const inputsShape = {
-  submissionType: PropTypes.oneOf(Object.keys(SUBMISSION_TYPE)),
-  contentId: PropTypes.string,
-  contentType: PropTypes.string,
-  content: PropTypes.oneOfType([
-    PropTypes.string,
-    PropTypes.shape({raw: PropTypes.file, preview: PropTypes.string}),
-  ]),
+type Inputs = {
+  submissionType: string;
+  contentId: string;
+  contentType: string;
+  content: string | {raw: File; preview: string};
 };
 
-export function ContentUniqueIdField({inputs, handleInputChange}) {
+type ContentFieldProps = {
+  inputs: Inputs;
+  handleInputChange: React.ChangeEventHandler<any>;
+};
+
+export function ContentUniqueIdField({
+  inputs,
+  handleInputChange,
+}: ContentFieldProps) {
   return (
     <Form.Group>
       <Form.Row>
@@ -70,19 +75,14 @@ export function ContentUniqueIdField({inputs, handleInputChange}) {
   );
 }
 
-ContentUniqueIdField.propTypes = {
-  inputs: PropTypes.shape(inputsShape),
-  handleInputChange: PropTypes.func.isRequired,
-};
-
-ContentUniqueIdField.defaultProps = {
-  inputs: undefined,
-};
-
-export function PhotoUploadField({inputs, handleInputChangeUpload}) {
+export function PhotoUploadField({
+  inputs,
+  handleInputChange,
+}: ContentFieldProps) {
+  const content = inputs.content as {raw: File; preview: string};
   const fileNameIfExist = () =>
-    inputs.content && inputs.content.raw && inputs.content.raw instanceof File
-      ? inputs.content.raw.name
+    content && content.raw && content.raw instanceof File
+      ? content.raw.name
       : undefined;
 
   return (
@@ -92,7 +92,7 @@ export function PhotoUploadField({inputs, handleInputChangeUpload}) {
         <Form.File.Label>
           {fileNameIfExist() ?? 'Submitted file will be stored by HMA System'}
         </Form.File.Label>
-        <Form.File.Input onChange={handleInputChangeUpload} name="content" />
+        <Form.File.Input onChange={handleInputChange} name="content" />
       </Form.File>
       <Form.Group>
         {fileNameIfExist() ? (
@@ -115,7 +115,7 @@ export function PhotoUploadField({inputs, handleInputChangeUpload}) {
                       maxHeight: '400px',
                       maxWidth: '400px',
                     }}
-                    src={fileNameIfExist() ? inputs.content.preview : ''}
+                    src={fileNameIfExist() ? content.preview : ''}
                     fluid
                     rounded
                   />
@@ -129,19 +129,17 @@ export function PhotoUploadField({inputs, handleInputChangeUpload}) {
   );
 }
 
-PhotoUploadField.propTypes = {
-  inputs: PropTypes.shape(inputsShape),
-  handleInputChangeUpload: PropTypes.func.isRequired,
-};
+type AdditionalFields = {[key: string]: {value: string}};
 
-PhotoUploadField.defaultProps = {
-  inputs: undefined,
+type OptionalAdditionalFieldsProps = {
+  additionalFields: AdditionalFields;
+  setAdditionalFields: (additionalFields: AdditionalFields) => void;
 };
 
 export function OptionalAdditionalFields({
   additionalFields,
   setAdditionalFields,
-}) {
+}: OptionalAdditionalFieldsProps) {
   return (
     <Form.Group>
       <Form.Row>
@@ -155,7 +153,7 @@ export function OptionalAdditionalFields({
                 <InputGroup.Text>Field</InputGroup.Text>
               </InputGroup.Prepend>
               <Form.Control
-                onChange={e => {
+                onChange={(e: any) => {
                   const copy = {...additionalFields};
                   copy[entry].value = e.target.value;
                   setAdditionalFields(copy);
@@ -192,35 +190,3 @@ export function OptionalAdditionalFields({
     </Form.Group>
   );
 }
-
-OptionalAdditionalFields.propTypes = {
-  additionalFields: PropTypes.objectOf(PropTypes.string),
-  setAdditionalFields: PropTypes.func.isRequired,
-};
-
-OptionalAdditionalFields.defaultProps = {
-  additionalFields: undefined,
-};
-
-export function NotYetSupportedField({label, handleInputChange}) {
-  return (
-    <Form.Group>
-      <Form.Label>{label}</Form.Label>
-      <Form.Control
-        onChange={handleInputChange}
-        name="content"
-        placeholder="Not yet supported"
-        required
-      />
-    </Form.Group>
-  );
-}
-
-NotYetSupportedField.propTypes = {
-  label: PropTypes.string,
-  handleInputChange: PropTypes.func.isRequired,
-};
-
-NotYetSupportedField.defaultProps = {
-  label: undefined,
-};

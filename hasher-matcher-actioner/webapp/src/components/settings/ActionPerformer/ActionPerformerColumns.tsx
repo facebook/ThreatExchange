@@ -7,7 +7,7 @@ import Form from 'react-bootstrap/Form';
 import PropTypes from 'prop-types';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
-import WebhookActioner, {Map} from './WebhookActioner';
+import WebhookActioner from './WebhookActioner';
 
 export type WebhookActionPerformerParams = {
   url: string;
@@ -19,7 +19,7 @@ type ActionPerformerColumn = {
   type: string;
   params: WebhookActionPerformerParams;
   editing: boolean;
-  onChange: (key: string, keyValueMap: Map) => void;
+  onChange: (key: string, keyValueMap: {[key: string]: string}) => void;
   canNotDeleteOrUpdateName: boolean;
 };
 
