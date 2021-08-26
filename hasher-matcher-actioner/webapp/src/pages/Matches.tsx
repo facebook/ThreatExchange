@@ -2,9 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, RefObject} from 'react';
 import {useHistory} from 'react-router-dom';
-import {PropTypes} from 'prop-types';
 import {
   Container,
   Col,
@@ -40,10 +39,18 @@ function EmptyContentMatchPane() {
   );
 }
 
+type MatchListFiltersProps = {
+  filterAttribute: 'contentId' | 'signalId';
+  filterString?: string;
+};
+
 /**
  * A box of filters for the list of matches that appear on the match filters page.
  */
-function MatchListFilters({filterAttribute, filterString}) {
+function MatchListFilters({
+  filterAttribute = 'contentId',
+  filterString = undefined,
+}: MatchListFiltersProps) {
   const [localFilterAttribute, setLocalFilterAttribute] =
     useState(filterAttribute);
   const [localFilterString, setLocalFilterString] = useState(filterString);
@@ -55,12 +62,12 @@ function MatchListFilters({filterAttribute, filterString}) {
   }, [filterAttribute, filterString]);
 
   const history = useHistory();
-  const loadResults = e => {
+  const loadResults = (e: any) => {
     history.push(`?${localFilterAttribute}=${localFilterString}`);
     e.preventDefault(); // Prevent form submit
   };
 
-  const inputRef = React.createRef();
+  const inputRef: RefObject<HTMLInputElement> = React.createRef();
 
   return (
     <Form className="mx-4" onSubmit={loadResults}>
@@ -71,14 +78,14 @@ function MatchListFilters({filterAttribute, filterString}) {
               <Form.Control
                 as="select"
                 value={localFilterAttribute}
-                onChange={e => setLocalFilterAttribute(e.target.value)}>
+                onChange={(e: any) => setLocalFilterAttribute(e.target.value)}>
                 <option value="contentId">Content ID</option>
                 <option value="signalId">Signal ID</option>
               </Form.Control>
             </InputGroup.Prepend>
             <FormControl
               ref={inputRef}
-              onChange={e => setLocalFilterString(e.target.value)}
+              onChange={(e: any) => setLocalFilterString(e.target.value)}
               value={localFilterString || ''}
             />
             <InputGroup.Append>
@@ -91,7 +98,27 @@ function MatchListFilters({filterAttribute, filterString}) {
   );
 }
 
-function MatchList({selection, onSelect, filterAttribute, filterString}) {
+MatchListFilters.defaultProps = {
+  filterString: undefined,
+};
+
+type MatchListProps = {
+  selection: {
+    contentId?: string;
+    signalId?: string;
+  };
+  onSelect: (contentId: string, signalId: string, signalSource: string) => void;
+
+  filterAttribute: 'contentId' | 'signalId';
+  filterString: string;
+};
+
+function MatchList({
+  selection,
+  onSelect,
+  filterAttribute = 'contentId',
+  filterString = '',
+}: MatchListProps) {
   const [matchesData, setMatchesData] = useState(null);
 
   useEffect(() => {
@@ -169,7 +196,7 @@ function MatchList({selection, onSelect, filterAttribute, filterString}) {
   );
 }
 
-export default function Matches() {
+export default function Matches(): JSX.Element {
   const query = useQuery();
   const filterString = query.get('contentId') || query.get('signalId');
   let filterAttribute;
@@ -231,31 +258,3 @@ export default function Matches() {
     </FullWidthLocalScrollingLeftAlignedLayout>
   );
 }
-
-MatchListFilters.propTypes = {
-  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  filterString: PropTypes.string,
-};
-
-MatchListFilters.defaultProps = {
-  filterAttribute: 'contentId',
-  filterString: undefined,
-};
-
-MatchList.propTypes = {
-  selection: PropTypes.shape({
-    contentId: PropTypes.string,
-    signalId: PropTypes.string,
-  }),
-  onSelect: PropTypes.func.isRequired,
-
-  // Filter matches list
-  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  filterString: PropTypes.string,
-};
-
-MatchList.defaultProps = {
-  selection: {contentId: undefined, signalId: undefined},
-  filterAttribute: 'contentId',
-  filterString: undefined,
-};

@@ -21,7 +21,7 @@ import Settings from './pages/Settings';
 import SubmitContent from './pages/SubmitContent';
 import ContentDetailsWithStepper from './pages/ContentDetailsWithStepper';
 
-export default function App() {
+export default function App(): JSX.Element {
   return (
     <AmplifyAuthenticator className="container-fluid">
       <div slot="sign-in">
