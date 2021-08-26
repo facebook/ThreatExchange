@@ -17,8 +17,8 @@ variable "prefix" {
   type        = string
 }
 
-variable "api_authorizer_jwt_issuer" {
-  description = "A URL to the JWT issuer (used by the api gateway authorizer)"
+variable "api_and_webapp_user_pool_id" {
+  description = "user pool id that can be used to create a URL to the JWT issuer (used by the api gateway authorizer)"
   type        = string
 }
 
@@ -135,4 +135,10 @@ variable "partner_image_buckets" {
     arn    = string
     params = map(string)
   }))
+}
+
+variable "integration_api_access_token" {
+  description = "Access token checked for in authorizer api as an alternative to cognito user tokens."
+  type        = string
+  sensitive   = true
 }

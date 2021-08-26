@@ -160,6 +160,82 @@ resource "aws_iam_role_policy_attachment" "api_root" {
   policy_arn = aws_iam_policy.api_root.arn
 }
 
+# Authorizer API Lambda
+
+locals {
+  user_pool_url = "https://cognito-idp.${var.region}.amazonaws.com/${var.api_and_webapp_user_pool_id}"
+}
+
+resource "aws_lambda_function" "api_auth" {
+  function_name = "${var.prefix}_api_auth"
+  package_type  = "Image"
+  role          = aws_iam_role.api_auth.arn
+  image_uri     = var.lambda_docker_info.uri
+  image_config {
+    command = [var.lambda_docker_info.commands.api_auth]
+  }
+  timeout     = 30
+  memory_size = 128
+  environment {
+    variables = {
+      ACCESS_TOKEN  = var.integration_api_access_token
+      USER_POOL_URL = local.user_pool_url
+      CLIENT_ID     = var.api_authorizer_audience
+    }
+  }
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "AuthAPIFunction"
+    }
+  )
+}
+
+resource "aws_cloudwatch_log_group" "api_auth" {
+  name              = "/aws/lambda/${aws_lambda_function.api_auth.function_name}"
+  retention_in_days = var.log_retention_in_days
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "AuthAPILambdaLogGroup"
+    }
+  )
+}
+
+resource "aws_iam_role" "api_auth" {
+  name_prefix        = "${var.prefix}_api_auth"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "AuthAPILambdaRole"
+    }
+  )
+}
+
+data "aws_iam_policy_document" "api_auth" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+      "logs:DescribeLogStreams"
+    ]
+    resources = ["${aws_cloudwatch_log_group.api_auth.arn}:*"]
+  }
+}
+
+resource "aws_iam_policy" "api_auth" {
+  name_prefix = "${var.prefix}_api_auth_role_policy"
+  description = "Permissions for Auth API Lambda"
+  policy      = data.aws_iam_policy_document.api_auth.json
+}
+
+resource "aws_iam_role_policy_attachment" "api_auth" {
+  role       = aws_iam_role.api_auth.name
+  policy_arn = aws_iam_policy.api_auth.arn
+}
+
 # API Gateway
 
 resource "aws_apigatewayv2_api" "hma_apigateway" {
@@ -192,7 +268,7 @@ resource "aws_apigatewayv2_stage" "hma_apigateway" {
 resource "aws_apigatewayv2_route" "hma_apigateway_get" {
   api_id             = aws_apigatewayv2_api.hma_apigateway.id
   route_key          = "GET /{proxy+}"
-  authorization_type = "JWT"
+  authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
@@ -200,7 +276,7 @@ resource "aws_apigatewayv2_route" "hma_apigateway_get" {
 resource "aws_apigatewayv2_route" "hma_apigateway_post" {
   api_id             = aws_apigatewayv2_api.hma_apigateway.id
   route_key          = "POST /{proxy+}"
-  authorization_type = "JWT"
+  authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
@@ -208,7 +284,7 @@ resource "aws_apigatewayv2_route" "hma_apigateway_post" {
 resource "aws_apigatewayv2_route" "hma_apigateway_put" {
   api_id             = aws_apigatewayv2_api.hma_apigateway.id
   route_key          = "PUT /{proxy+}"
-  authorization_type = "JWT"
+  authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
@@ -216,7 +292,7 @@ resource "aws_apigatewayv2_route" "hma_apigateway_put" {
 resource "aws_apigatewayv2_route" "hma_apigateway_delete" {
   api_id             = aws_apigatewayv2_api.hma_apigateway.id
   route_key          = "DELETE /{proxy+}"
-  authorization_type = "JWT"
+  authorization_type = "CUSTOM"
   authorizer_id      = aws_apigatewayv2_authorizer.hma_apigateway.id
   target             = "integrations/${aws_apigatewayv2_integration.hma_apigateway.id}"
 }
@@ -230,16 +306,30 @@ resource "aws_apigatewayv2_integration" "hma_apigateway" {
   payload_format_version = "2.0"
 }
 
-resource "aws_apigatewayv2_authorizer" "hma_apigateway" {
-  api_id           = aws_apigatewayv2_api.hma_apigateway.id
-  authorizer_type  = "JWT"
-  identity_sources = ["$request.header.Authorization"]
-  name             = "${var.prefix}-jwt-authorizer"
+# Old Authorizer that just handles JWT tokens
+# 
+# resource "aws_apigatewayv2_authorizer" "hma_apigateway" {
+#   api_id           = aws_apigatewayv2_api.hma_apigateway.id
+#   authorizer_type  = "JWT"
+#   identity_sources = ["$request.header.Authorization"]
+#   name             = "${var.prefix}-jwt-authorizer"
 
-  jwt_configuration {
-    audience = [var.api_authorizer_audience]
-    issuer   = var.api_authorizer_jwt_issuer
-  }
+#   jwt_configuration {
+#     audience = [var.api_authorizer_audience]
+#     issuer   = local.user_pool_url
+#   }
+# }
+
+resource "aws_apigatewayv2_authorizer" "hma_apigateway" {
+  api_id                            = aws_apigatewayv2_api.hma_apigateway.id
+  authorizer_type                   = "REQUEST"
+  authorizer_credentials_arn        = aws_iam_role.hma_apigateway.arn
+  authorizer_uri                    = aws_lambda_function.api_auth.invoke_arn
+  identity_sources                  = ["$request.header.Authorization"]
+  authorizer_payload_format_version = "2.0"
+  enable_simple_responses           = true
+  authorizer_result_ttl_in_seconds  = 0
+  name                              = "${aws_apigatewayv2_api.hma_apigateway.name}_authorizer"
 }
 
 resource "aws_cloudwatch_log_group" "hma_apigateway" {
@@ -290,7 +380,7 @@ data "aws_iam_policy_document" "hma_apigateway" {
   statement {
     effect    = "Allow"
     actions   = ["lambda:InvokeFunction", ]
-    resources = [aws_lambda_function.api_root.arn]
+    resources = [aws_lambda_function.api_root.arn, aws_lambda_function.api_auth.arn]
   }
 }
 

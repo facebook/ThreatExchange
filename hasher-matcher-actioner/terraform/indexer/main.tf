@@ -139,7 +139,7 @@ resource "aws_lambda_permission" "indexer" {
 
 resource "null_resource" "provide_sample_pdq_data_holidays" {
   # To force-update on existing deployment, taint and apply terraform again
-  # $ terraform taint module.hashing_data.null_resource.provide_sample_pdq_data_holidays
+  # $ terraform taint module.indexer.null_resource.provide_sample_pdq_data_holidays
   # $ terraform apply
 
   # To get a sensible privacy group value, we reverse engineer the filename split at
@@ -153,6 +153,6 @@ resource "null_resource" "provide_sample_pdq_data_holidays" {
       PRIVACY_GROUP = "inria-holidays-test"
     }
 
-    command = "aws s3 cp ../sample_data/holidays-jpg1-pdq-hashes.csv s3://${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}$PRIVACY_GROUP.holidays-jpg1-pdq-hashes.hash_pdq.te"
+    command = "aws s3 cp ../sample_data/holidays-jpg1-pdq-hashes.csv s3://${var.threat_exchange_data.bucket_name}/${var.threat_exchange_data.data_folder}$PRIVACY_GROUP.hash_pdq.te"
   }
 }
