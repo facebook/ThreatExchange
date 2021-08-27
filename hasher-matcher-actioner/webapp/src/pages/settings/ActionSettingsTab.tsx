@@ -8,6 +8,7 @@ import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
+import {add, checkmark, close} from 'ionicons/icons';
 import {
   fetchAllActions,
   updateAction,
@@ -150,7 +151,7 @@ export default function ActionSettingsTab() {
                   <Button
                     className="table-action-button"
                     onClick={() => setAdding(true)}>
-                    <IonIcon name="add" size="large" />
+                    <IonIcon icon={add} size="large" />
                   </Button>
                 </th>
                 <th>Action Name</th>
@@ -166,11 +167,7 @@ export default function ActionSettingsTab() {
                     onClick={() => {
                       onActionSave();
                     }}>
-                    <IonIcon
-                      name="checkmark"
-                      size="large"
-                      className="ion-icon-white"
-                    />
+                    <IonIcon icon={checkmark} size="large" color="white" />
                   </Button>{' '}
                   <Button
                     variant="outline-secondary"
@@ -179,11 +176,7 @@ export default function ActionSettingsTab() {
                       resetForm();
                       setAdding(false);
                     }}>
-                    <IonIcon
-                      name="close"
-                      size="large"
-                      className="ion-icon-white"
-                    />
+                    <IonIcon icon={close} size="large" color="white" />
                   </Button>
                 </td>
                 <ActionPerformerColumns

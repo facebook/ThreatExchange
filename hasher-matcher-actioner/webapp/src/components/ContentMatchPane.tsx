@@ -94,7 +94,7 @@ export default function ContentMatchPane({
             </li>
 
             <li>
-              <Link to={`?contentId=images/${contentId}`}>
+              <Link to={`?contentId=${contentId}`}>
                 Show all matches for this content
               </Link>
             </li>

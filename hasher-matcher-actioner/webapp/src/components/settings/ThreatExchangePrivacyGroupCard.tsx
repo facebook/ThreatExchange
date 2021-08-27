@@ -4,6 +4,7 @@
 
 import React, {useState} from 'react';
 import {IonIcon} from '@ionic/react';
+import {informationCircleOutline} from 'ionicons/icons';
 
 import {
   Col,
@@ -89,7 +90,7 @@ export default function ThreatExchangePrivacyGroupCard({
                   </Popover>
                 }>
                 <Button variant={inUse ? 'primary' : 'secondary'}>
-                  <IonIcon name="information-circle-outline" size="large" />
+                  <IonIcon icon={informationCircleOutline} size="large" />
                 </Button>
               </OverlayTrigger>
             </h4>

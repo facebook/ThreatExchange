@@ -2,9 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from 'react';
 import {Auth, API} from 'aws-amplify';
-import {StatNames, StatsTimeSpans} from './utils/constants';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -168,10 +166,6 @@ export function fetchContentPipelineProgress(
   return apiGet('/content/pipeline-progress/', {
     content_id: contentId,
   });
-}
-
-export function fetchSignalSummary() {
-  return apiGet('/signals');
 }
 
 export function fetchDashboardCardSummary(path: string): Promise<Response> {

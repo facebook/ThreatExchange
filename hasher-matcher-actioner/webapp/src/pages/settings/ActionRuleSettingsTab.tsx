@@ -10,7 +10,8 @@ import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
-
+import {IonIcon} from '@ionic/react';
+import {add, checkmark, close} from 'ionicons/icons';
 import ActionRuleFormColumns, {
   classificationTypeTBD,
 } from '../../components/settings/ActionRuleFormColumns';
@@ -322,8 +323,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
                   <Button
                     className="table-action-button"
                     onClick={() => setAdding(true)}>
-                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-                    <ion-icon name="add" size="large" />
+                    <IonIcon icon={add} size="large" />
                   </Button>
                 </th>
                 <th>Name</th>
@@ -346,12 +346,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
                         setShowErrors(true);
                       }
                     }}>
-                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-                    <ion-icon
-                      name="checkmark"
-                      size="large"
-                      className="ion-icon-white"
-                    />
+                    <IonIcon icon={checkmark} size="large" color="white" />
                   </Button>{' '}
                   <Button
                     variant="outline-secondary"
@@ -361,12 +356,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
                       resetForm();
                       setAdding(false);
                     }}>
-                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-                    <ion-icon
-                      name="close"
-                      size="large"
-                      className="ion-icon-white"
-                    />
+                    <IonIcon icon={close} size="large" color="white" />
                   </Button>
                 </td>
                 <ActionRuleFormColumns

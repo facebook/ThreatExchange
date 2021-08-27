@@ -208,7 +208,7 @@ export default function SubmitContent() {
               <Form.Group>
                 <Form.Row>
                   <Form.Check
-                    disabled={submitting || submittedId === ''}
+                    disabled={submitting || submittedId !== ''}
                     name="force_resubmit"
                     inline
                     label="Resubmit if content id already present in system"
@@ -240,7 +240,7 @@ export default function SubmitContent() {
                     Submit
                   </Button>
                 </Collapse>
-                <Collapse in={submittedId === ''}>
+                <Collapse in={submittedId !== ''}>
                   <Col>
                     <Card>
                       <Card.Header>Your content is submitted!</Card.Header>

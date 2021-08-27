@@ -12,7 +12,6 @@ import {
   Accordion,
   Card,
 } from 'react-bootstrap';
-import PropTypes from 'prop-types';
 
 import {SubmissionType} from '../utils/constants';
 

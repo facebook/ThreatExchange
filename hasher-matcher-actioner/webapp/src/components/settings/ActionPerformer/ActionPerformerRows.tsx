@@ -3,6 +3,7 @@
  */
 
 import {IonIcon} from '@ionic/react';
+import {checkmark, trashBin, pencil, helpOutline, open} from 'ionicons/icons';
 import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
@@ -80,7 +81,7 @@ export default function ActionPerformerRows({
           <Button
             className="mb-2 table-action-button"
             onClick={() => setEditing(true)}>
-            <IonIcon name="pencil" size="large" className="ion-icon-white" />
+            <IonIcon icon={pencil} size="large" />
           </Button>
           <br />
           <Button
@@ -88,7 +89,7 @@ export default function ActionPerformerRows({
             className="table-action-button"
             disabled={canNotDeleteOrUpdateName}
             onClick={() => setShowDeleteActionConfirmation(true)}>
-            <IonIcon name="trash-bin" size="large" className="ion-icon-white" />
+            <IonIcon icon={trashBin} size="large" color="white" />
           </Button>
           <br />
           <Modal
@@ -125,11 +126,7 @@ export default function ActionPerformerRows({
                 </Tooltip>
               }>
               <Button variant="secondary" className="table-action-button">
-                <IonIcon
-                  name="help-outline"
-                  size="large"
-                  className="ion-icon-white"
-                />
+                <IonIcon icon={helpOutline} size="large" color="white" />
               </Button>
             </OverlayTrigger>
           ) : null}
@@ -152,7 +149,7 @@ export default function ActionPerformerRows({
             onClick={() => {
               setShowUpdateActionConfirmation(true);
             }}>
-            <IonIcon name="checkmark" size="large" className="ion-icon-white" />
+            <IonIcon icon={checkmark} size="large" color="white" />
           </Button>
           <br />
           <Button
@@ -162,7 +159,7 @@ export default function ActionPerformerRows({
               resetForm();
               setEditing(false);
             }}>
-            <IonIcon name="close" size="large" className="ion-icon-white" />
+            <IonIcon icon={open} size="large" />
           </Button>
           <Modal
             show={showUpdateActionConfirmation}
