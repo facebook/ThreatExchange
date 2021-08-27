@@ -260,7 +260,7 @@ export default function Matches(): JSX.Element {
             </div>
           </Col>
           <Col md={6}>
-            {(selectedContentAndSignalIds.contentId === undefined && (
+            {(selectedContentAndSignalIds.contentId === '' && (
               <EmptyContentMatchPane />
             )) || (
               <ContentMatchPane

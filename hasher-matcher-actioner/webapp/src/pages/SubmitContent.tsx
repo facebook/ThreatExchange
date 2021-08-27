@@ -15,7 +15,6 @@ import {
 } from 'react-bootstrap';
 import {useHistory} from 'react-router-dom';
 
-import {input} from 'aws-amplify';
 import {submitContentViaURL, submitContentViaPutURLUpload} from '../Api';
 import {ContentType, SubmissionType} from '../utils/constants';
 

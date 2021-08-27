@@ -31,7 +31,7 @@ export default function ContentMatchPane({
   useEffect(() => {
     fetchPreviewURL(contentId)
       .then(result => {
-        setImage(URL.createObjectURL(result));
+        setImage(result.preview_url);
       })
       .catch(() => {
         setImage(
@@ -53,7 +53,7 @@ export default function ContentMatchPane({
   }, [contentId]);
 
   return (
-    (contentDetails === null && <p>Loading...</p>) || (
+    (!contentDetails && <p>Loading...</p>) || (
       <Container>
         <Row>
           {/* Avoid explicit padding if possible when re-doing this page. */}
