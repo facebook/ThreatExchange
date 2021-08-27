@@ -58,18 +58,6 @@ class Dataset(JSONifiable):
 
 
 @dataclass
-class DatasetsResponse(JSONifiable):
-    datasets_response: t.List[Dataset]
-
-    def to_json(self) -> t.Dict:
-        return {
-            "datasets_response": [
-                dataset.to_json() for dataset in self.datasets_response
-            ]
-        }
-
-
-@dataclass
 class SyncDatasetResponse(JSONifiable):
     response: str
 
@@ -156,7 +144,6 @@ class ThreatExchangeDatasetSummary(Dataset):
 @dataclass
 class DatasetSummariesResponse(JSONifiable):
     threat_exchange_datasets: t.List[ThreatExchangeDatasetSummary]
-    test_datasets: t.List[ThreatExchangeDatasetSummary]  # re-using same class for
 
     def to_json(self) -> t.Dict:
         return {
@@ -251,8 +238,7 @@ def get_datasets_api(
                 threat_exchange_data_bucket_name,
                 threat_exchange_data_folder,
                 threat_exchange_pdq_file_extension,
-            ),
-            test_datasets=[],
+            )
         )
 
     @datasets_api.post("/update", apply=[jsoninator(UpdateDatasetRequest)])
