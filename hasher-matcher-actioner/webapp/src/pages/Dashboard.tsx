@@ -20,7 +20,7 @@ import GraphWithNumberWidget from '../components/GraphWithNumberWidget';
 import shortenNumRepr from '../utils/NumberUtils';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
-function getDisplayTitle(statName) {
+function getDisplayTitle(statName: string) {
   return (
     {
       hashes: 'Photos Processed',
@@ -30,7 +30,7 @@ function getDisplayTitle(statName) {
   );
 }
 
-function getDisplayTimeSpan(timeSpan) {
+function getDisplayTimeSpan(timeSpan: string) {
   return (
     {
       '24h': '24 hours',
@@ -47,29 +47,31 @@ function getDisplayTimeSpan(timeSpan) {
  * @param {int} number
  * @returns string
  */
-function getDisplayNumber(number) {
+function getDisplayNumber(number: number) {
   return shortenNumRepr(number);
 }
 
 /**
  * Returns a list of two lists. First one is timestamps, second one is values.
  */
-function toUFlotFormat(graphData) {
-  const timestamps = [];
-  const values = [];
+function toUFlotFormat(
+  graphData: Array<[number, number]>,
+): [number[], number[]] {
+  const timestamps = [] as number[];
+  const values = [] as number[];
 
   graphData.forEach(entry => {
     timestamps.push(entry[0]);
     values.push(entry[1]);
   });
 
-  values[0] = null;
-  values[values.length - 1] = null;
+  values[0] = 0;
+  values[values.length - 1] = 0;
 
   return [timestamps, values];
 }
 
-function StatCardLoading({statName}) {
+function StatCardLoading({statName}: {statName: string}) {
   return (
     <Card key={`stat-card-${statName}`} className="mb-4">
       <Card.Body>
@@ -78,7 +80,6 @@ function StatCardLoading({statName}) {
             <Spinner
               as="span"
               animation="border"
-              size="lg"
               role="status"
               aria-hidden="true"
             />
@@ -90,7 +91,7 @@ function StatCardLoading({statName}) {
   );
 }
 
-function StatCardError({statName}) {
+function StatCardError({statName}: {statName: string}) {
   return (
     <Card key={`stat-card-${statName}`} className="mb-4">
       <Card.Body>
@@ -118,10 +119,10 @@ function StatCardError({statName}) {
   );
 }
 
-function StatCard({statName, timeSpan}) {
+function StatCard({statName, timeSpan}: {statName: string; timeSpan: string}) {
   // Card can be undefined, the card object, or 'failed' string.
   // Failed string will have a different repr.
-  const [card, setCard] = useState(undefined);
+  const [card, setCard] = useState<any>(undefined);
 
   useEffect(() => {
     fetchStats(statName, timeSpan)

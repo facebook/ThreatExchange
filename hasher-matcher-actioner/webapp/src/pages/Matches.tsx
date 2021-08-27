@@ -21,6 +21,7 @@ import {
   fetchAllMatches,
   fetchMatchesFromContent,
   fetchMatchesFromSignal,
+  MatchDetails,
 } from '../Api';
 import {timeAgo} from '../utils/DateTimeUtils';
 import ContentMatchPane from '../components/ContentMatchPane';
@@ -40,7 +41,7 @@ function EmptyContentMatchPane() {
 }
 
 type MatchListFiltersProps = {
-  filterAttribute: 'contentId' | 'signalId';
+  filterAttribute: string;
   filterString?: string;
 };
 
@@ -48,8 +49,8 @@ type MatchListFiltersProps = {
  * A box of filters for the list of matches that appear on the match filters page.
  */
 function MatchListFilters({
-  filterAttribute = 'contentId',
-  filterString = undefined,
+  filterAttribute,
+  filterString,
 }: MatchListFiltersProps) {
   const [localFilterAttribute, setLocalFilterAttribute] =
     useState(filterAttribute);
@@ -107,10 +108,18 @@ type MatchListProps = {
     contentId?: string;
     signalId?: string;
   };
-  onSelect: (contentId: string, signalId: string, signalSource: string) => void;
+  onSelect: ({
+    contentId,
+    signalId,
+    signalSource,
+  }: {
+    contentId: string;
+    signalId: string;
+    signalSource: string;
+  }) => void;
 
-  filterAttribute: 'contentId' | 'signalId';
-  filterString: string;
+  filterAttribute: string;
+  filterString?: string;
 };
 
 function MatchList({
@@ -119,7 +128,7 @@ function MatchList({
   filterAttribute = 'contentId',
   filterString = '',
 }: MatchListProps) {
-  const [matchesData, setMatchesData] = useState(null);
+  const [matchesData, setMatchesData] = useState<MatchDetails[]>();
 
   useEffect(() => {
     let apiPromise;
@@ -141,10 +150,13 @@ function MatchList({
 
   return (
     <>
-      <Spinner hidden={matchesData !== null} animation="border" role="status">
+      <Spinner
+        hidden={matchesData !== undefined}
+        animation="border"
+        role="status">
         <span className="sr-only">Loading...</span>
       </Spinner>
-      <Collapse in={matchesData !== null}>
+      <Collapse in={matchesData !== undefined}>
         <Row>
           <Col>
             <table className="table table-hover small">
@@ -157,7 +169,7 @@ function MatchList({
                 </tr>
               </thead>
               <tbody>
-                {matchesData !== null && matchesData.length ? (
+                {matchesData && matchesData.length ? (
                   matchesData.map(match => (
                     <tr
                       className={classNames('align-middle', {
@@ -165,7 +177,7 @@ function MatchList({
                           match.content_id === selection.contentId &&
                           match.signal_id === selection.signalId,
                       })}
-                      onClick={e =>
+                      onClick={(e: any) =>
                         onSelect({
                           contentId: match.content_id,
                           signalId: match.signal_id,
@@ -196,10 +208,15 @@ function MatchList({
   );
 }
 
+MatchList.defaultProps = {
+  filterString: undefined,
+};
+
 export default function Matches(): JSX.Element {
   const query = useQuery();
-  const filterString = query.get('contentId') || query.get('signalId');
-  let filterAttribute;
+  const filterString =
+    query.get('contentId') || query.get('signalId') || undefined;
+  let filterAttribute = 'contentId';
 
   ['contentId', 'signalId'].forEach(attribute => {
     if (query.has(attribute)) {
@@ -209,9 +226,9 @@ export default function Matches(): JSX.Element {
 
   const [selectedContentAndSignalIds, setSelectedContentAndSignalIds] =
     useState({
-      contentId: undefined,
-      signalId: undefined,
-      signalSource: undefined,
+      contentId: '',
+      signalId: '',
+      signalSource: '',
     });
 
   return (

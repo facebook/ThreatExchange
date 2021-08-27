@@ -7,6 +7,7 @@ import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 import Toast from 'react-bootstrap/Toast';
+import {IonIcon} from '@ionic/react';
 import {
   fetchAllActions,
   updateAction,
@@ -30,14 +31,14 @@ export default function ActionSettingsTab() {
    * implementation of that component here. Not doing that now because
    * someone else is actively working in this space.
    */
-  const [performers, setPerformers] = useState([]);
+  const [performers, setPerformers] = useState<any[]>([]);
   const [actionRulesDependentActions, setActionRulesDependentActions] =
-    useState([]);
+    useState<any[]>([]);
   const [adding, setAdding] = useState(false);
   const [newAction, setNewAction] = useState(defaultAction);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const rename = ({name, config_subtype: type, ...rest}) => ({
+  const rename = ({name, config_subtype: type, ...rest}: any) => ({
     name,
     type,
     params: {...rest},
@@ -45,19 +46,21 @@ export default function ActionSettingsTab() {
   const resetForm = () => {
     setNewAction(defaultAction);
   };
-  const onNewActionChange = (key, value) => {
+  const onNewActionChange = (key: string, value: any) => {
     if (key === 'name' || key === 'config_subtype') {
       setNewAction({...newAction, ...value});
     } else {
       setNewAction({...newAction, fields: {...newAction.fields, ...value}});
     }
   };
-  const displayToast = message => {
+  const displayToast = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
   };
-  const deleteActionUI = name => {
-    const filteredPerformers = performers.filter(item => item.name !== name);
+  const deleteActionUI = (name: string) => {
+    const filteredPerformers = performers.filter(
+      (item: any) => item.name !== name,
+    );
     setPerformers(filteredPerformers);
   };
   const refreshActions = () => {
@@ -76,7 +79,7 @@ export default function ActionSettingsTab() {
       }
     });
   };
-  const onActionUpdate = updatedAction => {
+  const onActionUpdate = (updatedAction: any) => {
     updateAction(
       updatedAction.name,
       updatedAction.type,
@@ -102,7 +105,7 @@ export default function ActionSettingsTab() {
         displayToast('Errors when creating the action. Please try again later');
       });
   };
-  const onActionDelete = name => {
+  const onActionDelete = (name: string) => {
     deleteAction(name)
       .then(response => {
         displayToast(response.response);
@@ -147,7 +150,7 @@ export default function ActionSettingsTab() {
                   <Button
                     className="table-action-button"
                     onClick={() => setAdding(true)}>
-                    <ion-icon name="add" size="large" />
+                    <IonIcon name="add" size="large" />
                   </Button>
                 </th>
                 <th>Action Name</th>
@@ -163,7 +166,7 @@ export default function ActionSettingsTab() {
                     onClick={() => {
                       onActionSave();
                     }}>
-                    <ion-icon
+                    <IonIcon
                       name="checkmark"
                       size="large"
                       className="ion-icon-white"
@@ -176,7 +179,7 @@ export default function ActionSettingsTab() {
                       resetForm();
                       setAdding(false);
                     }}>
-                    <ion-icon
+                    <IonIcon
                       name="close"
                       size="large"
                       className="ion-icon-white"

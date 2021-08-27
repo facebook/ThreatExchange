@@ -35,7 +35,7 @@ const opts = {
 export default function GraphWithNumberWidget({
   graphData,
 }: {
-  graphData: Array<number>;
+  graphData: [number[], number[]];
 }) {
   // Uses https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
   //  to resize the graph on first render and on resizes
@@ -51,7 +51,7 @@ export default function GraphWithNumberWidget({
 
   return (
     <div ref={measuredRef}>
-      <UplotReact options={myOpts} data={[graphData] as uPlot.AlignedData} />
+      <UplotReact options={myOpts} data={graphData} />
     </div>
   );
 }

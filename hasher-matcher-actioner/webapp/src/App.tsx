@@ -12,10 +12,9 @@ import {
 import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 
 import './styles/_app.scss';
-import 'ionicons';
 
 import Sidebar from './Sidebar';
-import ContentDetails from './pages/ContentDetails';
+import ContentDetailsSummary from './pages/ContentDetails';
 import Matches from './pages/Matches';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
@@ -40,7 +39,7 @@ export default function App(): JSX.Element {
             style={{overflow: 'auto'}}>
             <Switch>
               <Route path="/matches/:id">
-                <ContentDetails />
+                <ContentDetailsSummary />
               </Route>
               <Route path="/pipeline-progress/:id">
                 <ContentDetailsWithStepper />

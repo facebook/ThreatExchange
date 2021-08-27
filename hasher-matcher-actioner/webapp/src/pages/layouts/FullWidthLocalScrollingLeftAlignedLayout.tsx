@@ -17,6 +17,9 @@ import {Container, Row, Col} from 'react-bootstrap';
 export default function FullWidthLocalScrollingLeftAlignedLayout({
   title,
   children,
+}: {
+  title: string;
+  children: JSX.Element;
 }) {
   return (
     <Container

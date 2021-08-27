@@ -22,11 +22,10 @@ export const PENDING_OPINION_CHANGE = Object.freeze({
   NONE: 'none',
 });
 
-// Corseponds  SubmissionType in hmalib/api/submit.py
-export const SUBMISSION_TYPE = Object.freeze({
-  PUT_URL_UPLOAD: 'Upload',
-  FROM_URL: 'From URL',
-});
+export enum SubmissionType {
+  PUT_URL_UPLOAD = 'Upload',
+  FROM_URL = 'From URL',
+}
 
 // Matchtes MetricTimePeriod in hmalib/metrics/query.py
 export const StatsTimeSpans = Object.freeze({

@@ -14,10 +14,10 @@ import {
 } from 'react-bootstrap';
 import PropTypes from 'prop-types';
 
-import {SUBMISSION_TYPE} from '../utils/constants';
+import {SubmissionType} from '../utils/constants';
 
 type Inputs = {
-  submissionType: string;
+  submissionType?: SubmissionType;
   contentId: string;
   contentType: string;
   content: string | {raw: File; preview: string};
@@ -129,7 +129,7 @@ export function PhotoUploadField({
   );
 }
 
-type AdditionalFields = {[key: string]: {value: string}};
+export type AdditionalFields = {[key: string]: {value: string}};
 
 type OptionalAdditionalFieldsProps = {
   additionalFields: AdditionalFields;
