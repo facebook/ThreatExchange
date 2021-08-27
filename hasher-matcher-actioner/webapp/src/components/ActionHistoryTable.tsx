@@ -4,7 +4,6 @@
 
 import React, {useState, useEffect} from 'react';
 import {Col, Collapse, Row, Table, Button} from 'react-bootstrap';
-import PropTypes from 'prop-types';
 import Spinner from 'react-bootstrap/Spinner';
 
 import {fetchContentActionHistory, ContentActionHistoryRecord} from '../Api';
@@ -13,11 +12,15 @@ import {formatTimestamp} from '../utils/DateTimeUtils';
 
 const DEFAULT_NUM_ROWS = 2;
 
-export default function ActionHistoryTable({
-  contentKey,
-}: {
+type ActionHistoryTableProps = {
   contentKey: string;
-}): JSX.Element {
+};
+
+export default function ActionHistoryTable(
+  {contentKey}: ActionHistoryTableProps = {
+    contentKey: '',
+  },
+): JSX.Element {
   const [actionHistory, setActionHistory] =
     useState<ContentActionHistoryRecord[]>();
   const [showAll, setShowAll] = useState(false);
@@ -100,11 +103,3 @@ export default function ActionHistoryTable({
     </>
   );
 }
-
-ActionHistoryTable.propTypes = {
-  contentKey: PropTypes.string,
-};
-
-ActionHistoryTable.defaultProps = {
-  contentKey: undefined,
-};

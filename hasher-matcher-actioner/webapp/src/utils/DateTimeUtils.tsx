@@ -7,7 +7,7 @@
 
 import {formatDistanceToNow, parseISO, isToday, format} from 'date-fns';
 
-export function toDate(isoDateString: string | undefined): Date | undefined {
+export function toDate(isoDateString: string): Date | undefined {
   return isoDateString ? parseISO(`${isoDateString}Z`) : undefined;
 }
 

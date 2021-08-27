@@ -209,7 +209,7 @@ function MatchList({
 }
 
 MatchList.defaultProps = {
-  filterString: undefined,
+  filterString: '',
 };
 
 export default function Matches(): JSX.Element {

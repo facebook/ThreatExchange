@@ -56,11 +56,11 @@ async function apiDelete<T>(route: string, params = {}): Promise<T> {
 
 type MatchSummaries = {match_summaries: MatchDetails[]};
 
-export function fetchAllMatches(): Promise<MatchSummaries> {
+export async function fetchAllMatches(): Promise<MatchSummaries> {
   return apiGet('/matches/');
 }
 
-export function fetchMatchesFromSignal(
+export async function fetchMatchesFromSignal(
   signalSource: string,
   signalId: string,
 ): Promise<MatchSummaries> {
@@ -70,7 +70,7 @@ export function fetchMatchesFromSignal(
   });
 }
 
-export function fetchMatchesFromContent(
+export async function fetchMatchesFromContent(
   contentId: string,
 ): Promise<MatchSummaries> {
   return apiGet('/matches/', {content_q: contentId});
@@ -94,7 +94,7 @@ export type MatchDetails = {
 
 type Matches = {match_details: MatchDetails[]};
 
-export function fetchMatchDetails(contentId: string): Promise<Matches> {
+export async function fetchMatchDetails(contentId: string): Promise<Matches> {
   return apiGet('/matches/match/', {content_id: contentId});
 }
 
@@ -103,11 +103,13 @@ export type HashDetails = {
   updated_at: string;
 };
 
-export function fetchHashDetails(contentId: string): Promise<HashDetails> {
+export async function fetchHashDetails(
+  contentId: string,
+): Promise<HashDetails> {
   return apiGet('/content/hash/', {content_id: contentId});
 }
 
-export function fetchPreviewURL(
+export async function fetchPreviewURL(
   contentId: string,
 ): Promise<{preview_url: string}> {
   return apiGet('/content/preview-url/', {content_id: contentId});
@@ -122,7 +124,7 @@ type ContentActionHistoryRecords = {
   action_history: Array<ContentActionHistoryRecord>;
 };
 
-export function fetchContentActionHistory(
+export async function fetchContentActionHistory(
   contentId: string,
 ): Promise<ContentActionHistoryRecords> {
   return apiGet('/content/action-history/', {content_id: contentId});
@@ -142,7 +144,7 @@ export type ContentDetails = {
   additional_fields: Array<string>;
 };
 
-export function fetchContentDetails(
+export async function fetchContentDetails(
   contentId: string,
 ): Promise<ContentDetails> {
   return apiGet('/content/', {
@@ -160,7 +162,7 @@ type ContentPipelineProgress = {
   action_performed_at: string;
 };
 
-export function fetchContentPipelineProgress(
+export async function fetchContentPipelineProgress(
   contentId: string,
 ): Promise<ContentPipelineProgress> {
   return apiGet('/content/pipeline-progress/', {
@@ -168,7 +170,9 @@ export function fetchContentPipelineProgress(
   });
 }
 
-export function fetchDashboardCardSummary(path: string): Promise<Response> {
+export async function fetchDashboardCardSummary(
+  path: string,
+): Promise<Response> {
   return apiGet(`/${path}`);
 }
 
@@ -183,7 +187,7 @@ type StatsResponse = {
   card: StatsCard;
 };
 
-export function fetchStats(
+export async function fetchStats(
   statName: string,
   timeSpan: string,
 ): Promise<StatsResponse> {
@@ -212,15 +216,15 @@ export async function submitContentViaURL(
   contentId: string,
   contentType: string,
   additionalFields: string[],
-  content_url: string,
-  force_resubmit: boolean,
+  contentURL: string,
+  forceResubmit: boolean,
 ): Promise<Response> {
   return apiPost('/submit/url/', {
     content_id: contentId,
     content_type: contentType,
     additional_fields: additionalFields,
-    content_url,
-    force_resubmit,
+    content_url: contentURL,
+    force_resubmit: forceResubmit,
   });
 }
 
@@ -229,7 +233,7 @@ export async function submitContentViaPutURLUpload(
   contentType: string,
   additionalFields: string[],
   content: File,
-  force_resubmit: boolean,
+  forceResubmit: boolean,
 ): Promise<Response> {
   const submitResponse = await apiPost<{presigned_url: string}>(
     '/submit/put-url/',
@@ -238,7 +242,7 @@ export async function submitContentViaPutURLUpload(
       content_type: contentType,
       additional_fields: additionalFields,
       file_type: content.type,
-      force_resubmit,
+      force_resubmit: forceResubmit,
     },
   );
 
@@ -256,15 +260,15 @@ export async function submitContentViaPutURLUpload(
 type DatasetSummariesResponse = {
   threat_exchange_datasets: Array<Dataset>;
 };
-export function fetchAllDatasets(): Promise<DatasetSummariesResponse> {
+export async function fetchAllDatasets(): Promise<DatasetSummariesResponse> {
   return apiGet('/datasets/');
 }
 
-export function syncAllDatasets(): Promise<{response: string}> {
+export async function syncAllDatasets(): Promise<{response: string}> {
   return apiPost('/datasets/sync');
 }
 
-export function deleteDataset(key: string): Promise<{response: string}> {
+export async function deleteDataset(key: string): Promise<{response: string}> {
   return apiPost(`/datasets/delete/${key}`);
 }
 
@@ -280,7 +284,7 @@ type Dataset = {
   match_count: number;
 };
 
-export function updateDataset(
+export async function updateDataset(
   privacyGroupId: string,
   fetcherActive: boolean,
   writeBack: boolean,
@@ -294,7 +298,7 @@ export function updateDataset(
   });
 }
 
-export function createDataset(
+export async function createDataset(
   privacyGroupId: string,
   privacyGroupName: string,
   description = '',
@@ -312,7 +316,7 @@ export function createDataset(
   });
 }
 
-export function fetchHashCount(): Promise<Response> {
+export async function fetchHashCount(): Promise<Response> {
   return apiGet('/hash-counts');
 }
 
@@ -323,15 +327,17 @@ type AllActions = {
   actions_response: Array<any>;
 };
 
-export function fetchAllActions(): Promise<AllActions> {
+export async function fetchAllActions(): Promise<AllActions> {
   return apiGet('actions/');
 }
 
-export function createAction(newAction = {}): Promise<{response: string}> {
+export async function createAction(
+  newAction = {},
+): Promise<{response: string}> {
   return apiPost('actions/', newAction);
 }
 
-export function updateAction(
+export async function updateAction(
   name: string,
   type: string,
   updatedAction = {},
@@ -339,7 +345,7 @@ export function updateAction(
   return apiPut(`actions/${name}/${type}`, updatedAction);
 }
 
-export function deleteAction(name: string): Promise<{response: string}> {
+export async function deleteAction(name: string): Promise<{response: string}> {
   return apiDelete(`actions/${name}`);
 }
 
@@ -348,17 +354,17 @@ type AllActionRules = {
   action_rules: Array<any>;
 };
 
-export function fetchAllActionRules(): Promise<AllActionRules> {
+export async function fetchAllActionRules(): Promise<AllActionRules> {
   return apiGet('action-rules/');
 }
 
-export function addActionRule(actionRule = {}): Promise<Response> {
+export async function addActionRule(actionRule = {}): Promise<Response> {
   return apiPost('action-rules/', {
     action_rule: actionRule,
   });
 }
 
-export function updateActionRule(
+export async function updateActionRule(
   oldName: string,
   actionRule = {},
 ): Promise<Response> {
@@ -367,6 +373,6 @@ export function updateActionRule(
   });
 }
 
-export function deleteActionRule(name: string): Promise<Response> {
+export async function deleteActionRule(name: string): Promise<Response> {
   return apiDelete(`action-rules/${name}`);
 }
