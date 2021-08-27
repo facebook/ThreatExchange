@@ -25,7 +25,7 @@ type PageParam = {
   id: string;
 };
 
-export default function ContentDetailsSummary() {
+export default function ContentDetailsSummary(): JSX.Element {
   const history = useHistory();
   const {id} = useParams<PageParam>();
   const [contentDetails, setContentDetails] = useState<ContentDetails>();
@@ -40,7 +40,7 @@ export default function ContentDetailsSummary() {
       .then(hash => {
         setHashDetails(hash);
       })
-      .catch(_ => {
+      .catch(() => {
         setHashDetails(undefined);
       });
   }, []);
@@ -50,7 +50,7 @@ export default function ContentDetailsSummary() {
       .then(result => {
         setImage(result.preview_url);
       })
-      .catch(_ => {
+      .catch(() => {
         // ToDo put a 'not found' image
         setImage('');
       });
@@ -61,7 +61,7 @@ export default function ContentDetailsSummary() {
       .then(result => {
         setContentDetails(result);
       })
-      .catch(_ => {
+      .catch(() => {
         setContentDetails(undefined);
       });
   }, []);

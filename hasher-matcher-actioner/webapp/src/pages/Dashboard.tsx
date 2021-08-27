@@ -14,7 +14,7 @@ import {
   DropdownButton,
   Spinner,
 } from 'react-bootstrap';
-import {fetchStats} from '../Api';
+import {fetchStats, StatsCard} from '../Api';
 import {StatNames, StatsTimeSpans} from '../utils/constants';
 import GraphWithNumberWidget from '../components/GraphWithNumberWidget';
 import shortenNumRepr from '../utils/NumberUtils';
@@ -71,7 +71,7 @@ function toUFlotFormat(
   return [timestamps, values];
 }
 
-function StatCardLoading({statName}: {statName: string}) {
+function StatCardLoading({statName}: {statName: string}): JSX.Element {
   return (
     <Card key={`stat-card-${statName}`} className="mb-4">
       <Card.Body>
@@ -91,7 +91,7 @@ function StatCardLoading({statName}: {statName: string}) {
   );
 }
 
-function StatCardError({statName}: {statName: string}) {
+function StatCardError({statName}: {statName: string}): JSX.Element {
   return (
     <Card key={`stat-card-${statName}`} className="mb-4">
       <Card.Body>
@@ -119,10 +119,16 @@ function StatCardError({statName}: {statName: string}) {
   );
 }
 
-function StatCard({statName, timeSpan}: {statName: string; timeSpan: string}) {
+function StatCard({
+  statName,
+  timeSpan,
+}: {
+  statName: string;
+  timeSpan: string;
+}): JSX.Element {
   // Card can be undefined, the card object, or 'failed' string.
   // Failed string will have a different repr.
-  const [card, setCard] = useState<any>(undefined);
+  const [card, setCard] = useState<string | StatsCard>('');
 
   useEffect(() => {
     fetchStats(statName, timeSpan)
@@ -134,7 +140,7 @@ function StatCard({statName, timeSpan}: {statName: string; timeSpan: string}) {
       });
   }, [timeSpan]);
 
-  if (card === undefined) {
+  if (card === '') {
     return <StatCardLoading statName={statName} />;
   }
   if (card === 'failed') {
@@ -149,15 +155,17 @@ function StatCard({statName, timeSpan}: {statName: string; timeSpan: string}) {
             <h2 style={{fontWeight: 300}}>{getDisplayTitle(statName)}</h2>
           </Col>
           <Col xs={4} className="text-right">
-            <h1>{getDisplayNumber(card.time_span_count)}</h1>
+            <h1>{getDisplayNumber((card as StatsCard).time_span_count)}</h1>
             <small className="text-muted">
-              in the last {getDisplayTimeSpan(card.time_span)}.
+              in the last {getDisplayTimeSpan((card as StatsCard).time_span)}.
             </small>
           </Col>
         </Row>
       </Card.Body>
       <Card.Footer>
-        <GraphWithNumberWidget graphData={toUFlotFormat(card.graph_data)} />
+        <GraphWithNumberWidget
+          graphData={toUFlotFormat((card as StatsCard).graph_data)}
+        />
       </Card.Footer>
     </Card>
   );
@@ -166,7 +174,7 @@ function StatCard({statName, timeSpan}: {statName: string; timeSpan: string}) {
 /**
  * Will be renamed as Dashboard.jsx once we replace it.
  */
-export default function Dashboard() {
+export default function Dashboard(): JSX.Element {
   const [timeSpan, setTimeSpan] = useState(StatsTimeSpans.HOURS_24);
 
   return (

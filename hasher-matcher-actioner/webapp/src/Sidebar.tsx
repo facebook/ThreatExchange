@@ -13,7 +13,7 @@ type SidebarProps = {
 
 export default function Sidebar(
   {className}: SidebarProps = {className: 'sidebar'},
-) {
+): JSX.Element {
   return (
     <div className={`${className} d-flex flex-column`}>
       <div className="px-2 pt-2 pb-4Right">

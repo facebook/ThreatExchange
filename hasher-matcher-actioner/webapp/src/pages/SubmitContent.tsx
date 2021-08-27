@@ -34,7 +34,7 @@ const FORM_DEFAULTS = {
   force_resubmit: false,
 };
 
-export default function SubmitContent() {
+export default function SubmitContent(): JSX.Element {
   const [submitting, setSubmitting] = useState(false);
   const [submittedId, setSubmittedId] = useState('');
   const [submissionError, setSubmissionError] = useState(false);
@@ -46,24 +46,32 @@ export default function SubmitContent() {
   const history = useHistory();
 
   // for most input changes we only need to take the input name and store the event value
-  const handleInputChange = (event: any) => {
-    event.persist();
+  const handleInputChange = (e: React.SyntheticEvent) => {
+    e.persist();
+    const target = e.target as typeof e.target & {
+      name: string;
+      value: string;
+    };
     setInputs(inputs_ => ({
       ...inputs_,
-      [event.target.name]: event.target.value,
+      [target.name]: target.value,
     }));
   };
 
   // image upload is a special case so that we can do the following:
   // - give a preview of the image to user
   // - auto populate the content id if it is currently empty
-  const handleInputChangeUpload = (event: any) => {
-    const file = event.target.files[0];
+  const handleInputChangeUpload = (e: React.SyntheticEvent) => {
+    const target = e.target as typeof e.target & {
+      name: string;
+      files: File[];
+    };
+    const file = target.files[0];
     const contentId = inputs.contentId ?? file.name;
     setInputs(inputs_ => ({
       ...inputs_,
       contentId,
-      [event.target.name]: {
+      [target.name]: {
         preview: URL.createObjectURL(file),
         raw: file,
       },
@@ -79,7 +87,7 @@ export default function SubmitContent() {
     return entries;
   };
 
-  const handleSubmit = (event: any) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     setSubmissionError(false);
@@ -99,7 +107,7 @@ export default function SubmitContent() {
           setSubmitting(false);
           setSubmittedId(inputs.contentId);
         })
-        .catch(error => {
+        .catch(() => {
           setSubmitting(false);
           setSubmissionError(true);
         });
@@ -115,14 +123,14 @@ export default function SubmitContent() {
           setSubmitting(false);
           setSubmittedId(inputs.contentId);
         })
-        .catch(error => {
+        .catch(() => {
           setSubmitting(false);
           setSubmissionError(true);
         });
     }
   };
 
-  const handleSubmitAnother = (event: any) => {
+  const handleSubmitAnother = () => {
     // Does not change submission type, clears out additional fields. Depending
     // on feedback we may want to keep additional fields at their current
     // values.
@@ -152,12 +160,11 @@ export default function SubmitContent() {
                 required
                 className="mr-sm-2"
                 name="submissionType"
-                onChange={(e: any) => {
-                  setSubmissionType(
-                    SubmissionType[
-                      e.target.value as keyof typeof SubmissionType
-                    ],
-                  );
+                onChange={(e: React.FormEvent) => {
+                  const target = e.target as typeof e.target & {
+                    value: keyof typeof SubmissionType;
+                  };
+                  setSubmissionType(SubmissionType[target.value]);
                   handleInputChange(e);
                 }}
                 defaultValue=""

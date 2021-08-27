@@ -13,7 +13,11 @@ import {formatTimestamp} from '../utils/DateTimeUtils';
 
 const DEFAULT_NUM_ROWS = 2;
 
-export default function ActionHistoryTable({contentKey}: {contentKey: string}) {
+export default function ActionHistoryTable({
+  contentKey,
+}: {
+  contentKey: string;
+}): JSX.Element {
   const [actionHistory, setActionHistory] =
     useState<ContentActionHistoryRecord[]>();
   const [showAll, setShowAll] = useState(false);

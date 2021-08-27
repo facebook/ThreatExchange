@@ -172,7 +172,21 @@ export function fetchDashboardCardSummary(path: string): Promise<Response> {
   return apiGet(`/${path}`);
 }
 
-export function fetchStats(statName: string, timeSpan: string): Promise<any> {
+export type StatsCard = {
+  time_span_count: number;
+  time_span: string;
+  graph_data: Array<[number, number]>;
+  last_updated: string;
+};
+
+type StatsResponse = {
+  card: StatsCard;
+};
+
+export function fetchStats(
+  statName: string,
+  timeSpan: string,
+): Promise<StatsResponse> {
   return apiGet('/stats/', {stat_name: statName, time_span: timeSpan});
 }
 
@@ -240,7 +254,7 @@ export async function submitContentViaPutURLUpload(
 }
 
 type DatasetSummariesResponse = {
-  threat_exchange_datasets: Array<any>;
+  threat_exchange_datasets: Array<Dataset>;
 };
 export function fetchAllDatasets(): Promise<DatasetSummariesResponse> {
   return apiGet('/datasets/');

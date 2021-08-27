@@ -4,7 +4,7 @@
 
 import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
-import PropTypes, {string} from 'prop-types';
+import PropTypes from 'prop-types';
 import {Container, Row, Col} from 'react-bootstrap';
 import {fetchPreviewURL, fetchContentDetails, ContentDetails} from '../Api';
 import {BlurImage} from '../utils/MediaUtils';
@@ -24,7 +24,7 @@ export default function ContentMatchPane({
   contentId,
   signalId,
   signalSource,
-}: ContentMatchPaneProps) {
+}: ContentMatchPaneProps): JSX.Element {
   const [contentDetails, setContentDetails] = useState<ContentDetails>();
   const [img, setImage] = useState<string>('');
 

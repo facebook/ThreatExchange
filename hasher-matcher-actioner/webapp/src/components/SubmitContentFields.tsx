@@ -24,13 +24,13 @@ type Inputs = {
 
 type ContentFieldProps = {
   inputs: Inputs;
-  handleInputChange: React.ChangeEventHandler<any>;
+  handleInputChange: (e: React.SyntheticEvent) => void;
 };
 
 export function ContentUniqueIdField({
   inputs,
   handleInputChange,
-}: ContentFieldProps) {
+}: ContentFieldProps): JSX.Element {
   return (
     <Form.Group>
       <Form.Row>
@@ -77,7 +77,7 @@ export function ContentUniqueIdField({
 export function PhotoUploadField({
   inputs,
   handleInputChange,
-}: ContentFieldProps) {
+}: ContentFieldProps): JSX.Element {
   const content = inputs.content as {raw: File; preview: string};
   const fileNameIfExist = () =>
     content && content.raw && content.raw instanceof File
@@ -138,7 +138,7 @@ type OptionalAdditionalFieldsProps = {
 export function OptionalAdditionalFields({
   additionalFields,
   setAdditionalFields,
-}: OptionalAdditionalFieldsProps) {
+}: OptionalAdditionalFieldsProps): JSX.Element {
   return (
     <Form.Group>
       <Form.Row>
@@ -152,9 +152,12 @@ export function OptionalAdditionalFields({
                 <InputGroup.Text>Field</InputGroup.Text>
               </InputGroup.Prepend>
               <Form.Control
-                onChange={(e: any) => {
+                onChange={(e: React.FormEvent) => {
+                  const target = e.target as typeof e.target & {
+                    value: string;
+                  };
                   const copy = {...additionalFields};
-                  copy[entry].value = e.target.value;
+                  copy[entry].value = target.value;
                   setAdditionalFields(copy);
                 }}
               />

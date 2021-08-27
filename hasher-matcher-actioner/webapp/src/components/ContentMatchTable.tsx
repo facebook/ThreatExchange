@@ -13,7 +13,11 @@ import {formatTimestamp} from '../utils/DateTimeUtils';
 
 import OpinionTableCell from './OpinionTableCell';
 
-export default function ContentMatchTable({contentKey}: {contentKey: string}) {
+export default function ContentMatchTable({
+  contentKey,
+}: {
+  contentKey: string;
+}): JSX.Element {
   const [matchDetails, setMatchDetails] = useState<MatchDetails[]>();
   useEffect(() => {
     fetchMatchDetails(contentKey).then(matches => {

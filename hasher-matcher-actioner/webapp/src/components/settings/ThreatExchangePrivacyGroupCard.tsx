@@ -43,7 +43,7 @@ export default function ThreatExchangePrivacyGroupCard({
   matchCount,
   onSave,
   onDelete,
-}: ThreatExchangePrivacyGroupCardProps) {
+}: ThreatExchangePrivacyGroupCardProps): JSX.Element {
   const [originalFetcherActive, setOriginalFetcherActive] =
     useState(fetcherActive);
   const [originalWriteBack, setOriginalWriteBack] = useState(writeBack);

@@ -24,7 +24,7 @@ const defaultAction = {
   config_subtype: '',
   fields: {url: '', headers: ''},
 };
-export default function ActionSettingsTab() {
+export default function ActionSettingsTab(): JSX.Element {
   /**
    * TODO This used to have an ActionLabel Settings component here. The
    * action rules are now in a separate tab. We can now rename this

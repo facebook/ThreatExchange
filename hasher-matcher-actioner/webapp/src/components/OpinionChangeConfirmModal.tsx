@@ -5,7 +5,7 @@
 import React, {useState} from 'react';
 import {Button, Col, Row, Modal, Container} from 'react-bootstrap';
 
-import {OPINION_STRING, PENDING_OPINION_CHANGE} from '../utils/constants';
+import {PENDING_OPINION_CHANGE} from '../utils/constants';
 import {requestSignalOpinionChange} from '../Api';
 
 type OpinionChangeConfirmModalProps = {
@@ -28,7 +28,7 @@ export default function OpinionChangeConfirmModal({
   signalSource,
   opinion,
   pendingOpinionChange,
-}: OpinionChangeConfirmModalProps) {
+}: OpinionChangeConfirmModalProps): JSX.Element {
   const [submitting, setSubmitting] = useState(false);
 
   let changeText = '';

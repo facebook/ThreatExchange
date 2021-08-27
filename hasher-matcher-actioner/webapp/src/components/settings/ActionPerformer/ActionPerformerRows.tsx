@@ -3,7 +3,7 @@
  */
 
 import {IonIcon} from '@ionic/react';
-import {checkmark, trashBin, pencil, helpOutline, open} from 'ionicons/icons';
+import {checkmark, trashBin, pencil, helpOutline, close} from 'ionicons/icons';
 import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
@@ -40,7 +40,7 @@ export default function ActionPerformerRows({
   onSave,
   onDelete,
   canNotDeleteOrUpdateName,
-}: ActionPerformerRowsProps) {
+}: ActionPerformerRowsProps): JSX.Element {
   const [editing, setEditing] = useState(edit);
   const [showDeleteActionConfirmation, setShowDeleteActionConfirmation] =
     useState(false);
@@ -159,7 +159,7 @@ export default function ActionPerformerRows({
               resetForm();
               setEditing(false);
             }}>
-            <IonIcon icon={open} size="large" />
+            <IonIcon icon={close} size="large" />
           </Button>
           <Modal
             show={showUpdateActionConfirmation}

@@ -24,7 +24,7 @@ export default function OpinionTableCell({
   opinion,
   pendingOpinionChange,
   setShowToast,
-}: OpinionChangeConfirmModalProps) {
+}: OpinionChangeConfirmModalProps): JSX.Element {
   const [newPendingOpinionChange, setNewPendingOpinionChange] = useState(
     PENDING_OPINION_CHANGE.NONE,
   );

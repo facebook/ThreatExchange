@@ -20,7 +20,7 @@ export default function FullWidthLocalScrollingLeftAlignedLayout({
 }: {
   title: string;
   children: JSX.Element;
-}) {
+}): JSX.Element {
   return (
     <Container
       fluid
