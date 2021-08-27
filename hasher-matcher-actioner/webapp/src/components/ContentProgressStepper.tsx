@@ -139,10 +139,16 @@ function getStepperStatus(
     [StepperStages.ActionPerformed, 4],
   ]);
 
-  if (stageNumber.get(stage)! <= stageNumber.get(currentStage)!) {
+  if (
+    (stageNumber.get(stage) as number) <=
+    (stageNumber.get(currentStage) as number)
+  ) {
     return StepperStatus.Completed;
   }
-  if (stageNumber.get(stage)! + 1 === stageNumber.get(currentStage)!) {
+  if (
+    (stageNumber.get(stage) as number) + 1 ===
+    (stageNumber.get(currentStage) as number)
+  ) {
     return StepperStatus.InProgress;
   }
   return StepperStatus.Pending;
@@ -162,7 +168,7 @@ export default function ContentProgressStepper({
   matchedAt,
   actionEvaluatedAt,
   actionPerformedAt,
-}: ContentProgressStepperProps) {
+}: ContentProgressStepperProps): JSX.Element {
   const currentStage = getStageFromTimestamps(
     hashedAt,
     matchedAt,

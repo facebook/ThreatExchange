@@ -4,10 +4,20 @@
 
 import React, {useState} from 'react';
 import {Button, Col, Row, Modal, Container} from 'react-bootstrap';
-import PropTypes from 'prop-types';
 
-import {OPINION_STRING, PENDING_OPINION_CHANGE} from '../utils/constants';
+import {PENDING_OPINION_CHANGE} from '../utils/constants';
 import {requestSignalOpinionChange} from '../Api';
+
+type OpinionChangeConfirmModalProps = {
+  show?: boolean;
+  onHide: () => void;
+  onSubmit: () => void;
+  privacyGroupId: string;
+  signalId: string;
+  signalSource: string;
+  opinion?: string; // TODO enum
+  pendingOpinionChange?: string; // TODO enum
+};
 
 export default function OpinionChangeConfirmModal({
   show,
@@ -18,7 +28,7 @@ export default function OpinionChangeConfirmModal({
   signalSource,
   opinion,
   pendingOpinionChange,
-}) {
+}: OpinionChangeConfirmModalProps): JSX.Element {
   const [submitting, setSubmitting] = useState(false);
 
   let changeText = '';
@@ -76,7 +86,7 @@ export default function OpinionChangeConfirmModal({
               signalId,
               signalSource,
               privacyGroupId,
-              pendingOpinionChange,
+              pendingOpinionChange as string,
             ).then(() => {
               setSubmitting(false);
               onSubmit();
@@ -90,24 +100,8 @@ export default function OpinionChangeConfirmModal({
   );
 }
 
-OpinionChangeConfirmModal.propTypes = {
-  show: PropTypes.bool,
-  onHide: PropTypes.func,
-  onSubmit: PropTypes.func,
-  privacyGroupId: PropTypes.string,
-  signalId: PropTypes.string,
-  signalSource: PropTypes.string,
-  opinion: PropTypes.oneOf(Object.values(OPINION_STRING)),
-  pendingOpinionChange: PropTypes.oneOf(Object.values(PENDING_OPINION_CHANGE)),
-};
-
 OpinionChangeConfirmModal.defaultProps = {
   show: false,
-  onHide: undefined,
-  onSubmit: undefined,
-  privacyGroupId: undefined,
-  signalId: undefined,
-  signalSource: undefined,
   opinion: undefined,
   pendingOpinionChange: PENDING_OPINION_CHANGE.NONE,
 };

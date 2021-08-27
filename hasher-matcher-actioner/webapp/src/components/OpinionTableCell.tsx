@@ -4,10 +4,18 @@
 
 import React, {useState} from 'react';
 import {Dropdown, DropdownButton, ButtonGroup} from 'react-bootstrap';
-import PropTypes from 'prop-types';
 import {OPINION_STRING, PENDING_OPINION_CHANGE} from '../utils/constants';
 
 import OpinionChangeConfirmModal from './OpinionChangeConfirmModal';
+
+type OpinionChangeConfirmModalProps = {
+  privacyGroupId: string;
+  signalId: string;
+  signalSource: string;
+  opinion?: string;
+  pendingOpinionChange?: string;
+  setShowToast: (x: boolean) => void;
+};
 
 export default function OpinionTableCell({
   privacyGroupId,
@@ -16,7 +24,7 @@ export default function OpinionTableCell({
   opinion,
   pendingOpinionChange,
   setShowToast,
-}) {
+}: OpinionChangeConfirmModalProps): JSX.Element {
   const [newPendingOpinionChange, setNewPendingOpinionChange] = useState(
     PENDING_OPINION_CHANGE.NONE,
   );
@@ -126,20 +134,7 @@ export default function OpinionTableCell({
   );
 }
 
-OpinionTableCell.propTypes = {
-  privacyGroupId: PropTypes.string,
-  signalId: PropTypes.string,
-  signalSource: PropTypes.string,
-  opinion: PropTypes.oneOf(Object.values(OPINION_STRING)),
-  pendingOpinionChange: PropTypes.oneOf(Object.values(PENDING_OPINION_CHANGE)),
-  setShowToast: PropTypes.func,
-};
-
 OpinionTableCell.defaultProps = {
-  privacyGroupId: undefined,
-  signalId: undefined,
-  signalSource: undefined,
   opinion: OPINION_STRING.UKNOWN,
   pendingOpinionChange: PENDING_OPINION_CHANGE.NONE,
-  setShowToast: undefined,
 };

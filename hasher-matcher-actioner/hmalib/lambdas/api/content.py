@@ -112,7 +112,7 @@ def get_content_api(
     the root API alone.
     """
 
-    def get_preview_url(content_id, content_object):
+    def get_preview_url(content_id, content_object) -> str:
         """
         Given a content_id and a content_object, returns a URL you can use to
         preview it.

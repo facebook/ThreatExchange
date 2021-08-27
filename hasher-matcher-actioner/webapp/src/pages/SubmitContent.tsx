@@ -16,12 +16,13 @@ import {
 import {useHistory} from 'react-router-dom';
 
 import {submitContentViaURL, submitContentViaPutURLUpload} from '../Api';
-import {ContentType, SUBMISSION_TYPE} from '../utils/constants';
+import {ContentType, SubmissionType} from '../utils/constants';
 
 import {
   ContentUniqueIdField,
   PhotoUploadField,
   OptionalAdditionalFields,
+  AdditionalFields,
 } from '../components/SubmitContentFields';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 
@@ -29,38 +30,48 @@ const FORM_DEFAULTS = {
   submissionType: undefined,
   contentId: '',
   contentType: ContentType.Photo,
-  content: undefined,
+  content: '',
   force_resubmit: false,
 };
 
-export default function SubmitContent() {
+export default function SubmitContent(): JSX.Element {
   const [submitting, setSubmitting] = useState(false);
-  const [submittedId, setSubmittedId] = useState(undefined);
-  const [submissionError, setSubmissionError] = useState(undefined);
+  const [submittedId, setSubmittedId] = useState('');
+  const [submissionError, setSubmissionError] = useState(false);
   const [submissionType, setSubmissionType] = useState('');
-  const [additionalFields, setAdditionalFields] = useState({});
+  const [additionalFields, setAdditionalFields] = useState<AdditionalFields>(
+    {},
+  );
   const [inputs, setInputs] = useState(FORM_DEFAULTS);
   const history = useHistory();
 
   // for most input changes we only need to take the input name and store the event value
-  const handleInputChange = event => {
-    event.persist();
+  const handleInputChange = (e: React.SyntheticEvent) => {
+    e.persist();
+    const target = e.target as typeof e.target & {
+      name: string;
+      value: string;
+    };
     setInputs(inputs_ => ({
       ...inputs_,
-      [event.target.name]: event.target.value,
+      [target.name]: target.value,
     }));
   };
 
   // image upload is a special case so that we can do the following:
   // - give a preview of the image to user
   // - auto populate the content id if it is currently empty
-  const handleInputChangeUpload = event => {
-    const file = event.target.files[0];
+  const handleInputChangeUpload = (e: React.SyntheticEvent) => {
+    const target = e.target as typeof e.target & {
+      name: string;
+      files: File[];
+    };
+    const file = target.files[0];
     const contentId = inputs.contentId ?? file.name;
     setInputs(inputs_ => ({
       ...inputs_,
       contentId,
-      [event.target.name]: {
+      [target.name]: {
         preview: URL.createObjectURL(file),
         raw: file,
       },
@@ -68,7 +79,7 @@ export default function SubmitContent() {
   };
 
   const packageAdditionalFields = () => {
-    const entries = [];
+    const entries = [] as string[];
     Object.values(additionalFields).forEach(entry =>
       // TODO extra additional fields spec should be established in documentation
       entries.push(`${entry.value}`),
@@ -76,23 +87,27 @@ export default function SubmitContent() {
     return entries;
   };
 
-  const handleSubmit = event => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setSubmitting(true);
     setSubmissionError(false);
+    if (inputs.content === undefined) {
+      return;
+    }
+
     if (inputs.submissionType === 'PUT_URL_UPLOAD') {
       submitContentViaPutURLUpload(
         inputs.contentId,
         inputs.contentType,
         packageAdditionalFields(),
-        inputs.content.raw,
+        (inputs.content as unknown as {raw: File}).raw,
         inputs.force_resubmit,
       )
         .then(() => {
           setSubmitting(false);
           setSubmittedId(inputs.contentId);
         })
-        .catch(error => {
+        .catch(() => {
           setSubmitting(false);
           setSubmissionError(true);
         });
@@ -108,18 +123,18 @@ export default function SubmitContent() {
           setSubmitting(false);
           setSubmittedId(inputs.contentId);
         })
-        .catch(error => {
+        .catch(() => {
           setSubmitting(false);
           setSubmissionError(true);
         });
     }
   };
 
-  const handleSubmitAnother = event => {
+  const handleSubmitAnother = () => {
     // Does not change submission type, clears out additional fields. Depending
     // on feedback we may want to keep additional fields at their current
     // values.
-    setSubmittedId(undefined);
+    setSubmittedId('');
     setSubmitting(false);
     setAdditionalFields({});
     setInputs(FORM_DEFAULTS);
@@ -145,8 +160,11 @@ export default function SubmitContent() {
                 required
                 className="mr-sm-2"
                 name="submissionType"
-                onChange={e => {
-                  setSubmissionType(SUBMISSION_TYPE[e.target.value]);
+                onChange={(e: React.FormEvent) => {
+                  const target = e.target as typeof e.target & {
+                    value: keyof typeof SubmissionType;
+                  };
+                  setSubmissionType(SubmissionType[target.value]);
                   handleInputChange(e);
                 }}
                 defaultValue=""
@@ -154,9 +172,9 @@ export default function SubmitContent() {
                 <option key="empty" value="" disabled>
                   Select type...
                 </option>
-                {Object.keys(SUBMISSION_TYPE).map(submitType => (
+                {Object.keys(SubmissionType).map(submitType => (
                   <option key={submitType} value={submitType}>
-                    {SUBMISSION_TYPE[submitType]}
+                    {SubmissionType[submitType as keyof typeof SubmissionType]}
                   </option>
                 ))}
               </Form.Control>
@@ -164,7 +182,7 @@ export default function SubmitContent() {
 
             <Form.Group>
               <Form.Row>
-                {submissionType === SUBMISSION_TYPE.FROM_URL && (
+                {submissionType === SubmissionType.FROM_URL && (
                   <Form.Group>
                     <Form.Label>Provide a URL to the content</Form.Label>
                     <Form.Control
@@ -179,10 +197,10 @@ export default function SubmitContent() {
                   </Form.Group>
                 )}
 
-                {submissionType === SUBMISSION_TYPE.PUT_URL_UPLOAD && (
+                {submissionType === SubmissionType.PUT_URL_UPLOAD && (
                   <PhotoUploadField
                     inputs={inputs}
-                    handleInputChangeUpload={handleInputChangeUpload}
+                    handleInputChange={handleInputChangeUpload}
                   />
                 )}
               </Form.Row>
@@ -197,7 +215,7 @@ export default function SubmitContent() {
               <Form.Group>
                 <Form.Row>
                   <Form.Check
-                    disabled={submitting || submittedId}
+                    disabled={submitting || submittedId !== ''}
                     name="force_resubmit"
                     inline
                     label="Resubmit if content id already present in system"
@@ -229,7 +247,7 @@ export default function SubmitContent() {
                     Submit
                   </Button>
                 </Collapse>
-                <Collapse in={submittedId}>
+                <Collapse in={submittedId !== ''}>
                   <Col>
                     <Card>
                       <Card.Header>Your content is submitted!</Card.Header>

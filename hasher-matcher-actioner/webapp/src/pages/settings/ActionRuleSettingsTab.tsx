@@ -10,7 +10,8 @@ import React, {useEffect, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
-
+import {IonIcon} from '@ionic/react';
+import {add, checkmark, close} from 'ionicons/icons';
 import ActionRuleFormColumns, {
   classificationTypeTBD,
 } from '../../components/settings/ActionRuleFormColumns';
@@ -64,7 +65,10 @@ export class ActionRule {
     );
   }
 
-  copyAndProcessUpdate = (update_name: string, new_value: any): ActionRule => {
+  copyAndProcessUpdate = (
+    update_name: string,
+    new_value: ClassificationCondition[] | string,
+  ): ActionRule => {
     if (
       !['name', 'action_id', 'classification_conditions'].includes(update_name)
     ) {
@@ -73,19 +77,23 @@ export class ActionRule {
 
     const must_have_labels =
       update_name === 'classification_conditions'
-        ? this.mustHaveLabelsFromClassifications(new_value)
+        ? this.mustHaveLabelsFromClassifications(
+            new_value as ClassificationCondition[],
+          )
         : this.must_have_labels;
 
     const must_not_have_labels =
       update_name === 'classification_conditions'
-        ? this.mustNotHaveLabelsFromClassifications(new_value)
+        ? this.mustNotHaveLabelsFromClassifications(
+            new_value as ClassificationCondition[],
+          )
         : this.must_not_have_labels;
 
     return new ActionRule(
-      update_name === 'name' ? new_value : this.name,
+      update_name === 'name' ? (new_value as string) : this.name,
       must_have_labels,
       must_not_have_labels,
-      update_name === 'action_id' ? new_value : this.action_id,
+      update_name === 'action_id' ? (new_value as string) : this.action_id,
     );
   };
 
@@ -186,7 +194,10 @@ export default function ActionRuleSettingsTab(): JSX.Element {
     });
   }, []);
 
-  const onNewActionRuleChange = (update_name: string, new_value: any) => {
+  const onNewActionRuleChange = (
+    update_name: string,
+    new_value: ClassificationCondition[] | string,
+  ) => {
     const newNewActionRule = newActionRule.copyAndProcessUpdate(
       update_name,
       new_value,
@@ -312,8 +323,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
                   <Button
                     className="table-action-button"
                     onClick={() => setAdding(true)}>
-                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-                    <ion-icon name="add" size="large" />
+                    <IonIcon icon={add} size="large" />
                   </Button>
                 </th>
                 <th>Name</th>
@@ -336,12 +346,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
                         setShowErrors(true);
                       }
                     }}>
-                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-                    <ion-icon
-                      name="checkmark"
-                      size="large"
-                      className="ion-icon-white"
-                    />
+                    <IonIcon icon={checkmark} size="large" color="white" />
                   </Button>{' '}
                   <Button
                     variant="outline-secondary"
@@ -351,12 +356,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
                       resetForm();
                       setAdding(false);
                     }}>
-                    {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-                    <ion-icon
-                      name="close"
-                      size="large"
-                      className="ion-icon-white"
-                    />
+                    <IonIcon icon={close} size="large" color="white" />
                   </Button>
                 </td>
                 <ActionRuleFormColumns

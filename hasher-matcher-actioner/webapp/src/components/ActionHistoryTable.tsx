@@ -4,17 +4,25 @@
 
 import React, {useState, useEffect} from 'react';
 import {Col, Collapse, Row, Table, Button} from 'react-bootstrap';
-import PropTypes from 'prop-types';
 import Spinner from 'react-bootstrap/Spinner';
 
-import {fetchContentActionHistory} from '../Api';
+import {fetchContentActionHistory, ContentActionHistoryRecord} from '../Api';
 import {CopyableTextField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 
 const DEFAULT_NUM_ROWS = 2;
 
-export default function ActionHistoryTable({contentKey}) {
-  const [actionHistory, setActionHistory] = useState(null);
+type ActionHistoryTableProps = {
+  contentKey: string;
+};
+
+export default function ActionHistoryTable(
+  {contentKey}: ActionHistoryTableProps = {
+    contentKey: '',
+  },
+): JSX.Element {
+  const [actionHistory, setActionHistory] =
+    useState<ContentActionHistoryRecord[]>();
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
@@ -41,7 +49,7 @@ export default function ActionHistoryTable({contentKey}) {
             <h3>Action History</h3>
 
             <Table responsive className="mt-2" title="Action History">
-              {actionHistory !== null && actionHistory.length ? (
+              {actionHistory && actionHistory.length ? (
                 <>
                   <thead>
                     <tr>
@@ -95,11 +103,3 @@ export default function ActionHistoryTable({contentKey}) {
     </>
   );
 }
-
-ActionHistoryTable.propTypes = {
-  contentKey: PropTypes.string,
-};
-
-ActionHistoryTable.defaultProps = {
-  contentKey: undefined,
-};

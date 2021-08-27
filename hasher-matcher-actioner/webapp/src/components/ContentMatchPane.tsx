@@ -6,29 +6,32 @@ import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {Container, Row, Col} from 'react-bootstrap';
-import {fetchHash, fetchPreviewURL, fetchContentDetails} from '../Api';
+import {fetchPreviewURL, fetchContentDetails, ContentDetails} from '../Api';
 import {BlurImage} from '../utils/MediaUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
+
+type ContentMatchPaneProps = {
+  contentId: string;
+  signalId: string;
+  signalSource: string;
+};
 
 /**
  * For a content key that matched a signal, show a summary and link to other
  * routes that show more information.
  */
-export default function ContentMatchPane({contentId, signalId, signalSource}) {
-  const [hashDetails, setHashDetails] = useState(null);
-  const [contentDetails, setContentDetails] = useState(null);
-  const [img, setImage] = useState(null);
-
-  useEffect(() => {
-    fetchHash(contentId).then(hash => {
-      setHashDetails(hash);
-    });
-  }, [contentId]);
+export default function ContentMatchPane({
+  contentId,
+  signalId,
+  signalSource,
+}: ContentMatchPaneProps): JSX.Element {
+  const [contentDetails, setContentDetails] = useState<ContentDetails>();
+  const [img, setImage] = useState<string>('');
 
   useEffect(() => {
     fetchPreviewURL(contentId)
       .then(result => {
-        setImage(URL.createObjectURL(result));
+        setImage(result.preview_url);
       })
       .catch(() => {
         setImage(
@@ -50,7 +53,7 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
   }, [contentId]);
 
   return (
-    (hashDetails === null && <p>Loading...</p>) || (
+    (!contentDetails && <p>Loading...</p>) || (
       <Container>
         <Row>
           {/* Avoid explicit padding if possible when re-doing this page. */}
@@ -91,7 +94,7 @@ export default function ContentMatchPane({contentId, signalId, signalSource}) {
             </li>
 
             <li>
-              <Link to={`?contentId=images/${contentId}`}>
+              <Link to={`?contentId=${contentId}`}>
                 Show all matches for this content
               </Link>
             </li>

@@ -21,14 +21,13 @@ function renderVideo(url: string, revealed: boolean): JSX.Element {
 function swtchContentTypeRenderers(
   revealed: boolean,
   contentType: ContentType,
-  url?: string,
-  raw?: string,
+  url = '',
 ) {
   switch (contentType) {
     case ContentType.Photo:
-      return renderImage(url!, revealed);
+      return renderImage(url, revealed);
     case ContentType.Video:
-      return renderVideo(url!, revealed);
+      return renderVideo(url, revealed);
     default:
       return <div>{`No renderer found for type ${contentType}`}</div>;
   }
@@ -38,7 +37,6 @@ type ContentPreviewProps = {
   contentType: ContentType;
   contentId: string;
   url?: string;
-  raw?: string;
 };
 
 /**
@@ -51,8 +49,7 @@ export default function ContentPreview({
   contentType,
   contentId,
   url,
-  raw,
-}: ContentPreviewProps) {
+}: ContentPreviewProps): JSX.Element {
   const [revealed, setRevealed] = useState(false);
 
   return (
@@ -77,7 +74,7 @@ export default function ContentPreview({
         </Col>
       </Row>
       <Row className="my-2">
-        <Col>{swtchContentTypeRenderers(revealed, contentType, url, raw)}</Col>
+        <Col>{swtchContentTypeRenderers(revealed, contentType, url)}</Col>
       </Row>
     </Container>
   );
@@ -85,5 +82,4 @@ export default function ContentPreview({
 
 ContentPreview.defaultProps = {
   url: undefined,
-  raw: undefined,
 };

@@ -2,9 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, RefObject} from 'react';
 import {useHistory} from 'react-router-dom';
-import {PropTypes} from 'prop-types';
 import {
   Container,
   Col,
@@ -22,6 +21,7 @@ import {
   fetchAllMatches,
   fetchMatchesFromContent,
   fetchMatchesFromSignal,
+  MatchDetails,
 } from '../Api';
 import {timeAgo} from '../utils/DateTimeUtils';
 import ContentMatchPane from '../components/ContentMatchPane';
@@ -40,10 +40,18 @@ function EmptyContentMatchPane() {
   );
 }
 
+type MatchListFiltersProps = {
+  filterAttribute: string;
+  filterString?: string;
+};
+
 /**
  * A box of filters for the list of matches that appear on the match filters page.
  */
-function MatchListFilters({filterAttribute, filterString}) {
+function MatchListFilters({
+  filterAttribute,
+  filterString,
+}: MatchListFiltersProps) {
   const [localFilterAttribute, setLocalFilterAttribute] =
     useState(filterAttribute);
   const [localFilterString, setLocalFilterString] = useState(filterString);
@@ -55,12 +63,12 @@ function MatchListFilters({filterAttribute, filterString}) {
   }, [filterAttribute, filterString]);
 
   const history = useHistory();
-  const loadResults = e => {
+  const loadResults = (e: any) => {
     history.push(`?${localFilterAttribute}=${localFilterString}`);
     e.preventDefault(); // Prevent form submit
   };
 
-  const inputRef = React.createRef();
+  const inputRef: RefObject<HTMLInputElement> = React.createRef();
 
   return (
     <Form className="mx-4" onSubmit={loadResults}>
@@ -71,14 +79,14 @@ function MatchListFilters({filterAttribute, filterString}) {
               <Form.Control
                 as="select"
                 value={localFilterAttribute}
-                onChange={e => setLocalFilterAttribute(e.target.value)}>
+                onChange={(e: any) => setLocalFilterAttribute(e.target.value)}>
                 <option value="contentId">Content ID</option>
                 <option value="signalId">Signal ID</option>
               </Form.Control>
             </InputGroup.Prepend>
             <FormControl
               ref={inputRef}
-              onChange={e => setLocalFilterString(e.target.value)}
+              onChange={(e: any) => setLocalFilterString(e.target.value)}
               value={localFilterString || ''}
             />
             <InputGroup.Append>
@@ -91,8 +99,36 @@ function MatchListFilters({filterAttribute, filterString}) {
   );
 }
 
-function MatchList({selection, onSelect, filterAttribute, filterString}) {
-  const [matchesData, setMatchesData] = useState(null);
+MatchListFilters.defaultProps = {
+  filterString: undefined,
+};
+
+type MatchListProps = {
+  selection: {
+    contentId?: string;
+    signalId?: string;
+  };
+  onSelect: ({
+    contentId,
+    signalId,
+    signalSource,
+  }: {
+    contentId: string;
+    signalId: string;
+    signalSource: string;
+  }) => void;
+
+  filterAttribute: string;
+  filterString?: string;
+};
+
+function MatchList({
+  selection,
+  onSelect,
+  filterAttribute = 'contentId',
+  filterString = '',
+}: MatchListProps) {
+  const [matchesData, setMatchesData] = useState<MatchDetails[]>();
 
   useEffect(() => {
     let apiPromise;
@@ -114,10 +150,13 @@ function MatchList({selection, onSelect, filterAttribute, filterString}) {
 
   return (
     <>
-      <Spinner hidden={matchesData !== null} animation="border" role="status">
+      <Spinner
+        hidden={matchesData !== undefined}
+        animation="border"
+        role="status">
         <span className="sr-only">Loading...</span>
       </Spinner>
-      <Collapse in={matchesData !== null}>
+      <Collapse in={matchesData !== undefined}>
         <Row>
           <Col>
             <table className="table table-hover small">
@@ -130,7 +169,7 @@ function MatchList({selection, onSelect, filterAttribute, filterString}) {
                 </tr>
               </thead>
               <tbody>
-                {matchesData !== null && matchesData.length ? (
+                {matchesData && matchesData.length ? (
                   matchesData.map(match => (
                     <tr
                       className={classNames('align-middle', {
@@ -138,7 +177,7 @@ function MatchList({selection, onSelect, filterAttribute, filterString}) {
                           match.content_id === selection.contentId &&
                           match.signal_id === selection.signalId,
                       })}
-                      onClick={e =>
+                      onClick={(e: any) =>
                         onSelect({
                           contentId: match.content_id,
                           signalId: match.signal_id,
@@ -169,10 +208,15 @@ function MatchList({selection, onSelect, filterAttribute, filterString}) {
   );
 }
 
-export default function Matches() {
+MatchList.defaultProps = {
+  filterString: '',
+};
+
+export default function Matches(): JSX.Element {
   const query = useQuery();
-  const filterString = query.get('contentId') || query.get('signalId');
-  let filterAttribute;
+  const filterString =
+    query.get('contentId') || query.get('signalId') || undefined;
+  let filterAttribute = 'contentId';
 
   ['contentId', 'signalId'].forEach(attribute => {
     if (query.has(attribute)) {
@@ -182,9 +226,9 @@ export default function Matches() {
 
   const [selectedContentAndSignalIds, setSelectedContentAndSignalIds] =
     useState({
-      contentId: undefined,
-      signalId: undefined,
-      signalSource: undefined,
+      contentId: '',
+      signalId: '',
+      signalSource: '',
     });
 
   return (
@@ -216,7 +260,7 @@ export default function Matches() {
             </div>
           </Col>
           <Col md={6}>
-            {(selectedContentAndSignalIds.contentId === undefined && (
+            {(selectedContentAndSignalIds.contentId === '' && (
               <EmptyContentMatchPane />
             )) || (
               <ContentMatchPane
@@ -231,31 +275,3 @@ export default function Matches() {
     </FullWidthLocalScrollingLeftAlignedLayout>
   );
 }
-
-MatchListFilters.propTypes = {
-  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  filterString: PropTypes.string,
-};
-
-MatchListFilters.defaultProps = {
-  filterAttribute: 'contentId',
-  filterString: undefined,
-};
-
-MatchList.propTypes = {
-  selection: PropTypes.shape({
-    contentId: PropTypes.string,
-    signalId: PropTypes.string,
-  }),
-  onSelect: PropTypes.func.isRequired,
-
-  // Filter matches list
-  filterAttribute: PropTypes.oneOf(['contentId', 'signalId']),
-  filterString: PropTypes.string,
-};
-
-MatchList.defaultProps = {
-  selection: {contentId: undefined, signalId: undefined},
-  filterAttribute: 'contentId',
-  filterString: undefined,
-};

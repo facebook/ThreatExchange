@@ -27,9 +27,7 @@ export function HolidaysDatasetInformationBlock({
     createDataset(
       SAMPLE_PG_ID,
       'Holiday Sample Set',
-      `This group will become disabled on "Sync" as it does not have TE
-      counterpart. Simply delete and create again if you wish to keep match
-      sample data after syncing`,
+      'Sample set of hashes from the file in open source',
     );
   };
 

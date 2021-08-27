@@ -14,14 +14,14 @@ import {AmplifyAuthenticator, AmplifySignIn} from '@aws-amplify/ui-react';
 import './styles/_app.scss';
 
 import Sidebar from './Sidebar';
-import ContentDetails from './pages/ContentDetails';
+import ContentDetailsSummary from './pages/ContentDetails';
 import Matches from './pages/Matches';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import SubmitContent from './pages/SubmitContent';
 import ContentDetailsWithStepper from './pages/ContentDetailsWithStepper';
 
-export default function App() {
+export default function App(): JSX.Element {
   return (
     <AmplifyAuthenticator className="container-fluid">
       <div slot="sign-in">
@@ -39,7 +39,7 @@ export default function App() {
             style={{overflow: 'auto'}}>
             <Switch>
               <Route path="/matches/:id">
-                <ContentDetails />
+                <ContentDetailsSummary />
               </Route>
               <Route path="/pipeline-progress/:id">
                 <ContentDetailsWithStepper />

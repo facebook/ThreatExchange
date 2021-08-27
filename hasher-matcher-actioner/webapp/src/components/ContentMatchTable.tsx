@@ -7,14 +7,18 @@ import {Col, Collapse, Row, Table, Toast} from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import Spinner from 'react-bootstrap/Spinner';
 
-import {fetchMatchDetails} from '../Api';
+import {fetchMatchDetails, MatchDetails} from '../Api';
 import {CopyableHashField, CopyableTextField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 
 import OpinionTableCell from './OpinionTableCell';
 
-export default function ContentMatchTable({contentKey}) {
-  const [matchDetails, setMatchDetails] = useState(null);
+export default function ContentMatchTable({
+  contentKey,
+}: {
+  contentKey: string;
+}): JSX.Element {
+  const [matchDetails, setMatchDetails] = useState<MatchDetails[]>();
   useEffect(() => {
     fetchMatchDetails(contentKey).then(matches => {
       setMatchDetails(matches.match_details);
@@ -58,14 +62,14 @@ export default function ContentMatchTable({contentKey}) {
                   <th>Classifications</th>
                 </tr>
               </thead>
-              {matchDetails !== null && matchDetails.length ? (
+              {matchDetails && matchDetails.length ? (
                 matchDetails.map((match, index) => (
                   <tbody key={match.signal_id}>
                     {match.metadata.map((metadata, subIndex) => (
                       <tr
                         style={index % 2 ? {} : {background: '#dddddd'}}
                         className="align-middle"
-                        key={match.signal_id + metadata.dataset}>
+                        key={match.signal_id + metadata.privacy_group_id}>
                         {subIndex === 0 ? (
                           <>
                             <td>

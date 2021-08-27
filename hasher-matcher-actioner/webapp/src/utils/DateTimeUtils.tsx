@@ -7,11 +7,11 @@
 
 import {formatDistanceToNow, parseISO, isToday, format} from 'date-fns';
 
-export function toDate(isoDateString) {
-  return parseISO(`${isoDateString}Z`);
+export function toDate(isoDateString: string): Date | undefined {
+  return isoDateString ? parseISO(`${isoDateString}Z`) : undefined;
 }
 
-export function formatTimestamp(isoDateString) {
+export function formatTimestamp(isoDateString: string): string {
   if (!isoDateString) {
     return 'Unknown';
   }
@@ -34,7 +34,7 @@ export function formatTimestamp(isoDateString) {
  * @param {string} isoDateString
  * @returns string
  */
-export function timeAgo(isoDateString) {
+export function timeAgo(isoDateString: string): string {
   return formatDistanceToNow(parseISO(`${isoDateString}Z`), {
     addSuffix: true,
   });
@@ -44,7 +44,7 @@ export function timeAgo(isoDateString) {
  * If date is of today, return an hh:mm:ss AM/PM style. If not, return a fuller
  * string.
  */
-export function timeOnlyIfToday(date) {
+export function timeOnlyIfToday(date: Date): string {
   if (isToday(date)) {
     return format(date, 'pp');
   }

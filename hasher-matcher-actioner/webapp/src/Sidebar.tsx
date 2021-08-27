@@ -3,12 +3,17 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {NavLink} from 'react-router-dom';
 import {Auth} from 'aws-amplify';
 import './styles/_sidebar.scss';
 
-export default function Sidebar({className}) {
+type SidebarProps = {
+  className: string;
+};
+
+export default function Sidebar(
+  {className}: SidebarProps = {className: 'sidebar'},
+): JSX.Element {
   return (
     <div className={`${className} d-flex flex-column`}>
       <div className="px-2 pt-2 pb-4Right">
@@ -62,11 +67,3 @@ export default function Sidebar({className}) {
     </div>
   );
 }
-
-Sidebar.propTypes = {
-  className: PropTypes.string,
-};
-
-Sidebar.defaultProps = {
-  className: 'sidebar',
-};

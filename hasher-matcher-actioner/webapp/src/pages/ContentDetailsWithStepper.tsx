@@ -8,7 +8,7 @@ import {Link, useParams} from 'react-router-dom';
 import {fetchContentPipelineProgress} from '../Api';
 import ContentPreview from '../components/ContentPreview';
 import ContentProgressStepper from '../components/ContentProgressStepper';
-import {ContentType, getContentTypeForString} from '../utils/constants';
+import {getContentTypeForString} from '../utils/constants';
 import {toDate} from '../utils/DateTimeUtils';
 
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
@@ -27,24 +27,26 @@ function getStepperLoadingPane(): JSX.Element {
 
 export default function ContentDetailsWithStepper(): JSX.Element {
   const {id} = useParams<{id: string}>();
-  const [contentType, setContentType] = useState(null);
-  const [contentPreviewURL, setContentPreviewURL] = useState(null);
+  const [contentType, setContentType] = useState<string | null>(null);
+  const [contentPreviewURL, setContentPreviewURL] = useState<string | null>(
+    null,
+  );
 
   const [pollBuster, setPollBuster] = useState(1);
 
   // Stage Times
-  const [submittedAt, setSubmittedAt] = useState();
-  const [hashedAt, setHashedAt] = useState();
-  const [matchedAt, setMatchedAt] = useState();
-  const [actionEvaluatedAt, setActionEvaluatedAt] = useState();
-  const [actionPerformedAt, setActionPerformedAt] = useState();
+  const [submittedAt, setSubmittedAt] = useState<Date>();
+  const [hashedAt, setHashedAt] = useState<Date>();
+  const [matchedAt, setMatchedAt] = useState<Date>();
+  const [actionEvaluatedAt, setActionEvaluatedAt] = useState<Date>();
+  const [actionPerformedAt, setActionPerformedAt] = useState<Date>();
 
-  // Stage Details
-  const [additionalFields, setAdditionalFields] = useState([]);
-  const [hashResults, setHashResults] = useState({});
-  const [matchResults, setMatchResults] = useState({});
-  const [actionEvaluationResults, setActionEvaluationResults] = useState([]);
-  const [actionPerformResults, setActionPerformResults] = useState([]);
+  // // Stage Details
+  // const [additionalFields, setAdditionalFields] = useState([]);
+  // const [hashResults, setHashResults] = useState({});
+  // const [matchResults, setMatchResults] = useState({});
+  // const [actionEvaluationResults, setActionEvaluationResults] = useState([]);
+  // const [actionPerformResults, setActionPerformResults] = useState([]);
 
   useEffect(() => {
     // This effect is rerun every time the value of poll buster changes.
@@ -53,23 +55,11 @@ export default function ContentDetailsWithStepper(): JSX.Element {
       setContentPreviewURL(pipelineProgress.content_preview_url);
 
       // Handle date times
-      setSubmittedAt(
-        pipelineProgress.submitted_at && toDate(pipelineProgress.submitted_at),
-      );
-      setHashedAt(
-        pipelineProgress.hashed_at && toDate(pipelineProgress.hashed_at),
-      );
-      setMatchedAt(
-        pipelineProgress.matched_at && toDate(pipelineProgress.matched_at),
-      );
-      setActionEvaluatedAt(
-        pipelineProgress.action_evaluated_at &&
-          toDate(pipelineProgress.action_evaluated_at),
-      );
-      setActionPerformedAt(
-        pipelineProgress.action_performed_at &&
-          toDate(pipelineProgress.action_performed_at),
-      );
+      setSubmittedAt(toDate(pipelineProgress.submitted_at));
+      setHashedAt(toDate(pipelineProgress.hashed_at));
+      setMatchedAt(toDate(pipelineProgress.matched_at));
+      setActionEvaluatedAt(toDate(pipelineProgress.action_evaluated_at));
+      setActionPerformedAt(toDate(pipelineProgress.action_performed_at));
 
       if (pipelineProgress.action_performed_at === undefined) {
         // The pipeline has not yet finished, so setup a poller to call this
@@ -90,22 +80,22 @@ export default function ContentDetailsWithStepper(): JSX.Element {
           {contentPreviewURL && contentType ? (
             <ContentPreview
               contentId={id}
-              contentType={getContentTypeForString(contentType!)}
-              url={contentPreviewURL!}
+              contentType={getContentTypeForString(contentType as string)}
+              url={contentPreviewURL}
             />
           ) : null}
         </Col>
         <Col md={{span: 6}}>
-          {submittedAt === null ? (
-            getStepperLoadingPane()
-          ) : (
+          {submittedAt ? (
             <ContentProgressStepper
-              submittedAt={submittedAt!}
+              submittedAt={submittedAt as Date}
               hashedAt={hashedAt}
               matchedAt={matchedAt}
               actionEvaluatedAt={actionEvaluatedAt}
               actionPerformedAt={actionPerformedAt}
             />
+          ) : (
+            getStepperLoadingPane()
           )}
 
           <hr />

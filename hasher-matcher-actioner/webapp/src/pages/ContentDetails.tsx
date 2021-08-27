@@ -6,7 +6,13 @@ import React, {useState, useEffect} from 'react';
 import {useHistory, useParams} from 'react-router-dom';
 import {Col, Row, Table, Button} from 'react-bootstrap';
 
-import {fetchHash, fetchPreviewURL, fetchContentDetails} from '../Api';
+import {
+  HashDetails,
+  fetchHashDetails,
+  fetchPreviewURL,
+  ContentDetails,
+  fetchContentDetails,
+} from '../Api';
 import {CopyableHashField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 import {getContentTypeForString} from '../utils/constants';
@@ -15,23 +21,27 @@ import ActionHistoryTable from '../components/ActionHistoryTable';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 import ContentPreview from '../components/ContentPreview';
 
-export default function ContentDetails() {
+type PageParam = {
+  id: string;
+};
+
+export default function ContentDetailsSummary(): JSX.Element {
   const history = useHistory();
-  const {id} = useParams();
-  const [contentDetails, setContentDetails] = useState(null);
-  const [hashDetails, setHashDetails] = useState(null);
-  const [img, setImage] = useState(null);
+  const {id} = useParams<PageParam>();
+  const [contentDetails, setContentDetails] = useState<ContentDetails>();
+  const [hashDetails, setHashDetails] = useState<HashDetails>();
+  const [img, setImage] = useState('');
 
   // Catch the following promises because it is possible for the endpoint to
   // return error codes if the content values are not yet populated if users come
   /// to this page right after submit
   useEffect(() => {
-    fetchHash(id)
+    fetchHashDetails(id)
       .then(hash => {
         setHashDetails(hash);
       })
-      .catch(_ => {
-        setHashDetails(null);
+      .catch(() => {
+        setHashDetails(undefined);
       });
   }, []);
 
@@ -40,9 +50,9 @@ export default function ContentDetails() {
       .then(result => {
         setImage(result.preview_url);
       })
-      .catch(_ => {
+      .catch(() => {
         // ToDo put a 'not found' image
-        setImage(null);
+        setImage('');
       });
   }, []);
 
@@ -51,8 +61,8 @@ export default function ContentDetails() {
       .then(result => {
         setContentDetails(result);
       })
-      .catch(_ => {
-        setContentDetails(null);
+      .catch(() => {
+        setContentDetails(undefined);
       });
   }, []);
 

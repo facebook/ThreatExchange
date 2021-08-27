@@ -2,25 +2,24 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect, useCallback, CSSProperties} from 'react';
-import {Popover, OverlayTrigger, PopoverProps} from 'react-bootstrap';
+import React, {useState, useCallback, CSSProperties} from 'react';
+import {Popover, OverlayTrigger} from 'react-bootstrap';
 import copy from 'clipboard-copy';
 
 type CopyableFieldProps = {
-  tooltip: string;
   text: string;
+  tooltip?: string;
 };
 
 type CopyableFieldPropsWithColor = CopyableFieldProps & {
   color?: string;
 };
-
 export function CopyableTextField({
   text,
   tooltip,
   color,
-}: CopyableFieldPropsWithColor) {
-  const helpText = tooltip ?? 'Copy to clipboard?';
+}: CopyableFieldPropsWithColor): JSX.Element {
+  const helpText = tooltip;
   const [message, setMessage] = useState(helpText);
 
   const copyText = useCallback(() => {
@@ -65,13 +64,14 @@ export function CopyableTextField({
 }
 
 CopyableTextField.defaultProps = {
+  tooltip: 'Copy to clipboard?',
   color: undefined,
 };
 
 export function CopyableHashField({
   text,
-  tooltip = 'Copy hash to clipboard?',
-}: CopyableFieldProps) {
+  tooltip,
+}: CopyableFieldProps): JSX.Element {
   return (
     <td style={{maxWidth: '250px', overflow: 'hidden'}}>
       <span style={{overflow: 'hidden'}} />
@@ -79,3 +79,7 @@ export function CopyableHashField({
     </td>
   );
 }
+
+CopyableHashField.defaultProps = {
+  tooltip: 'Copy to clipboard?',
+};

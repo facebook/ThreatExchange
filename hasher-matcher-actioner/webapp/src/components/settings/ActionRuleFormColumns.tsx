@@ -21,7 +21,10 @@ type Input = {
   showErrors: boolean;
   nameIsUnique: (newName: string, oldName: string) => boolean;
   oldName: string;
-  onChange: (field_name: string, new_value: any) => void;
+  onChange: (
+    field_name: string,
+    new_value: string | ClassificationCondition[],
+  ) => void;
 };
 
 export default function ActionRuleFormColumns({

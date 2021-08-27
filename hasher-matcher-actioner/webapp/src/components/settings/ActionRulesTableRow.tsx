@@ -3,6 +3,8 @@
  */
 
 import React, {useState} from 'react';
+import {IonIcon} from '@ionic/react';
+import {close, trashBin, pencil, checkmark} from 'ionicons/icons';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 
@@ -11,6 +13,7 @@ import '../../styles/_settings.scss';
 import type {
   Action,
   ActionRule,
+  ClassificationCondition,
 } from '../../pages/settings/ActionRuleSettingsTab';
 
 type Input = {
@@ -39,7 +42,10 @@ export default function ActionRulesTableRow({
   const [updatedActionRule, setUpdatedActionRule] = useState(actionRule);
   const [showErrors, setShowErrors] = useState(false);
 
-  const onUpdatedActionRuleChange = (update_name: string, new_value: any) => {
+  const onUpdatedActionRuleChange = (
+    update_name: string,
+    new_value: string | ClassificationCondition[],
+  ) => {
     const newUpdatedActionRule = updatedActionRule.copyAndProcessUpdate(
       update_name,
       new_value,
@@ -128,20 +134,13 @@ export default function ActionRulesTableRow({
           <Button
             className="mb-2 table-action-button"
             onClick={() => setEditing(true)}>
-            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-
-            <ion-icon name="pencil" size="large" className="ion-icon-white" />
+            <IonIcon icon={pencil} size="large" color="white" />
           </Button>{' '}
           <Button
             variant="secondary"
             className="table-action-button"
             onClick={() => setShowDeleteActionRuleConfirmation(true)}>
-            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-            <ion-icon
-              name="trash-bin"
-              size="large"
-              className="ion-icon-white"
-            />
+            <IonIcon icon={trashBin} size="large" className="white" />
           </Button>
           <Modal
             show={showDeleteActionRuleConfirmation}
@@ -189,12 +188,7 @@ export default function ActionRulesTableRow({
                 setShowErrors(true);
               }
             }}>
-            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-            <ion-icon
-              name="checkmark"
-              size="large"
-              className="ion-icon-white"
-            />
+            <IonIcon icon={checkmark} size="large" color="white" />
           </Button>{' '}
           <Button
             variant="outline-secondary"
@@ -204,8 +198,7 @@ export default function ActionRulesTableRow({
               resetForm();
               setEditing(false);
             }}>
-            {/* @ts-expect-error TODO: ts doenst recognize that ion-icon has been imported */}
-            <ion-icon name="close" size="large" className="ion-icon-white" />
+            <IonIcon icon={close} size="large" color="white" />
           </Button>
         </td>
         <ActionRuleFormColumns

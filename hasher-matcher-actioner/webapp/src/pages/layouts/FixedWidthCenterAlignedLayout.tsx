@@ -36,7 +36,7 @@ type FixedWidthCenterAlignedLayoutProps = {
 export default function FixedWidthCenterAlignedLayout({
   title,
   children = [],
-}: FixedWidthCenterAlignedLayoutProps) {
+}: FixedWidthCenterAlignedLayoutProps): JSX.Element {
   return (
     <Container>
       <Row>

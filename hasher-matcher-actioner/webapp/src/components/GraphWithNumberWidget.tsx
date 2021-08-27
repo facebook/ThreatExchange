@@ -3,9 +3,7 @@
  */
 
 import React, {useState, useCallback} from 'react';
-import PropTypes from 'prop-types';
 
-// import uPlot from 'uplot';
 import UplotReact from 'uplot-react';
 import '../../node_modules/uplot/dist/uPlot.min.css';
 import shortenNumRepr from '../utils/NumberUtils';
@@ -18,7 +16,7 @@ const opts = {
   axes: [
     {},
     {
-      values: (_, vals) => vals.map(shortenNumRepr),
+      values: (_: uPlot, vals: number[]) => vals.map(shortenNumRepr),
       space: 20,
     },
   ],
@@ -31,7 +29,11 @@ const opts = {
   ],
 };
 
-export default function GraphWithNumberWidget({graphData}) {
+export default function GraphWithNumberWidget({
+  graphData,
+}: {
+  graphData: [number[], number[]];
+}): JSX.Element {
   // Uses https://reactjs.org/docs/hooks-faq.html#how-can-i-measure-a-dom-node
   //  to resize the graph on first render and on resizes
   const [width, setWidth] = useState(0);
@@ -50,7 +52,3 @@ export default function GraphWithNumberWidget({graphData}) {
     </div>
   );
 }
-
-GraphWithNumberWidget.propTypes = {
-  graphData: PropTypes.arrayOf(PropTypes.number).isRequired,
-};
