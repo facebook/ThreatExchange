@@ -60,6 +60,8 @@ setup(
         "urllib3>=1.26.0",  # For allow_methods
         "dataclasses",
         "python-dateutil",
+        "py-tlsh",
+        "PyMuPDF",
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},
