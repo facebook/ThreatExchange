@@ -15,7 +15,13 @@ from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
 
 TLSH_CONFIDENT_MATCH_THRESHOLD = 30
-temp_db = [["T1B7B2759FD708166211A2026277C7AAE5FF35806C7366E5BA2C2C815C33A1F39537B3E5", ["test", 1]]]
+temp_db = [
+    [
+        "T1B7B2759FD708166211A2026277C7AAE5FF35806C7366E5BA2C2C815C33A1F39537B3E5",
+        ["test", 1],
+    ]
+]
+
 
 class TLSHSignal(
     signal_base.SimpleSignalType, signal_base.FileHasher, signal_base.BytesHasher
@@ -37,7 +43,7 @@ class TLSHSignal(
             for page in pdf_file:
                 page_text = page.getText()
                 if len(page_text) > 0:
-                    text +=page_text
+                    text += page_text
         return str(tlsh.hash(text.encode()))
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
