@@ -46,4 +46,3 @@ class TLSHSignal(
                 if tlsh.diffxlen(x[0], signal_str) <= TLSH_CONFIDENT_MATCH_THRESHOLD:
                     return x
         return []
-        

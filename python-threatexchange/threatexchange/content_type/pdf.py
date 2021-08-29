@@ -22,4 +22,3 @@ class PdfContent(ContentType):
     @classmethod
     def get_signal_types(cls) -> t.List[t.Type[SignalType]]:
         return [tlsh_pdf.TLSHSignal]
-        
