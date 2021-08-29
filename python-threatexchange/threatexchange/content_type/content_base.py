@@ -10,7 +10,7 @@ This records all the valid signal types for a piece of content.
 import typing as t
 
 from .. import common
-from ..signal_type import signal_base, raw_text, trend_query, url
+from ..signal_type import signal_base, raw_text, trend_query, url, tlsh_pdf
 
 
 class ContentType:
