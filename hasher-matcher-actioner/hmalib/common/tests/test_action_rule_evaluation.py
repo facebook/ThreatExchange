@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from hmalib.common.configs.actioner import WebhookActionPerformer
 import typing as t
 import unittest
 
@@ -144,3 +145,33 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
             action_label_to_action_rules,
             "enqueue_sailboat_for_review_action_label should be in action_label_to_action_rules",
         )
+
+    def test_webhook_action_repalcement(self):
+        content_id = "cid1"
+        content_hash = "0374f1g34f12g34f8"
+
+        banked_signal = BankedSignal(
+            banked_content_id="4169895076385542",
+            bank_id="303636684709969",
+            bank_source="te",
+        )
+
+        match_message = MatchMessage(
+            content_id,
+            content_hash,
+            [banked_signal],
+        )
+
+        action_performers = [
+            performer_class(
+                name="EnqueueForReview",
+                url="https://webhook.site/d0dbb19d-2a6f-40be-ad4d-fa9c8b34c8df/<content-id>",
+                headers='{"Connection":"keep-alive"}',
+                # monitoring page:
+                # https://webhook.site/#!/d0dbb19d-2a6f-40be-ad4d-fa9c8b34c8df
+            )
+            for performer_class in WebhookActionPerformer.__subclasses__()
+        ]
+
+        for action_performer in action_performers:
+            action_performer.perform_action(match_message)

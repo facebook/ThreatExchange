@@ -40,6 +40,13 @@ class ActionPerformer(config.HMAConfigWithSubtypes, HasAWSSerialization):
         raise NotImplementedError
 
 
+# at match time, these strings are replaced by the result of running the associated
+# function on the match message
+WEBHOOK_ACTION_PERFORMER_REPLACEMENTS: t.Dict[str, t.Callable[[MatchMessage], str]] = {
+    "<content-id>": lambda match_message: match_message.content_key,
+}
+
+
 @dataclass
 class WebhookActionPerformer(ActionPerformer):
     """Superclass for webhooks"""
@@ -48,9 +55,17 @@ class WebhookActionPerformer(ActionPerformer):
     headers: str
 
     def perform_action(self, match_message: MatchMessage) -> None:
-        self.call(data=json.dumps(match_message.to_aws()))
+        parsed_url = self.url
+        for (
+            replacement_str,
+            replacement_func,
+        ) in WEBHOOK_ACTION_PERFORMER_REPLACEMENTS.items():
+            parsed_url = parsed_url.replace(
+                replacement_str, replacement_func(match_message)
+            )
+        self.call(parsed_url, data=json.dumps(match_message.to_aws()))
 
-    def call(self, data: str) -> Response:
+    def call(self, url: str, data: str) -> Response:
         raise NotImplementedError()
 
 
@@ -58,33 +73,33 @@ class WebhookActionPerformer(ActionPerformer):
 class WebhookPostActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a POST"""
 
-    def call(self, data: str) -> Response:
-        logger.info(f"Performing a POST request to URL. {self.url}")
-        return post(self.url, data, headers=json.loads(self.headers))
+    def call(self, url: str, data: str) -> Response:
+        logger.info(f"Performing a POST request to URL. {url}")
+        return post(url, data, headers=json.loads(self.headers))
 
 
 @dataclass
 class WebhookGetActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a GET"""
 
-    def call(self, data: str) -> Response:
-        logger.info(f"Performing a GET request to URL. {self.url}")
-        return get(self.url, headers=json.loads(self.headers))
+    def call(self, url: str, data: str) -> Response:
+        logger.info(f"Performing a GET request to URL. {url}")
+        return get(url, headers=json.loads(self.headers))
 
 
 @dataclass
 class WebhookPutActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a PUT"""
 
-    def call(self, data: str) -> Response:
-        logger.info(f"Performing a PUT request to URL. {self.url}")
-        return put(self.url, data, headers=json.loads(self.headers))
+    def call(self, url: str, data: str) -> Response:
+        logger.info(f"Performing a PUT request to URL. {url}")
+        return put(url, data, headers=json.loads(self.headers))
 
 
 @dataclass
 class WebhookDeleteActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a DELETE"""
 
-    def call(self, data: str) -> Response:
-        logger.info(f"Performing a DELETE request to URL. {self.url}")
-        return delete(self.url, headers=json.loads(self.headers))
+    def call(self, url: str, data: str) -> Response:
+        logger.info(f"Performing a DELETE request to URL. {url}")
+        return delete(url, headers=json.loads(self.headers))
