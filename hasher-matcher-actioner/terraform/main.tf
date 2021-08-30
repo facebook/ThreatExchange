@@ -108,47 +108,11 @@ module "indexer" {
 }
 
 module "pdq_signals" {
+  # 2021/08/30: Retain this module until developers have all updated their
+  # deployments or we've fixed #755. If you remove this, states might not be
+  # cleaned up and we'll be left with vestigial infra from this module.
+
   source = "./pdq-signals"
-  prefix = var.prefix
-  lambda_docker_info = {
-    uri = var.hma_lambda_docker_uri
-    commands = {
-      matcher = "hmalib.lambdas.pdq.pdq_matcher.lambda_handler"
-      hasher  = "hmalib.lambdas.pdq.pdq_hasher.lambda_handler"
-      indexer = "hmalib.lambdas.pdq.pdq_indexer.lambda_handler"
-    }
-  }
-  datastore = module.datastore.primary_datastore
-
-  images_input = {
-    input_queue = aws_sqs_queue.pdq_images_queue.arn
-    resource_list = concat(
-      [
-        "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
-      ],
-      [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
-    )
-    image_folder_key = module.hashing_data.image_folder_info.key
-  }
-  threat_exchange_data = {
-    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_file_extension = local.pdq_file_extension
-    data_folder        = local.te_data_folder
-    notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
-  }
-  index_data_storage = {
-    bucket_name      = module.hashing_data.index_folder_info.bucket_name
-    index_folder_key = module.hashing_data.index_folder_info.key
-  }
-  matches_sns_topic_arn = aws_sns_topic.matches.arn
-
-  log_retention_in_days = var.log_retention_in_days
-  additional_tags       = merge(var.additional_tags, local.common_tags)
-  measure_performance   = var.measure_performance
-  config_table          = local.config_table
-
-  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : 100
-  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : 30
 }
 
 module "counters" {
