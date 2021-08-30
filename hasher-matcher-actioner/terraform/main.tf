@@ -364,8 +364,8 @@ module "api" {
   }
   datastore = module.datastore.primary_datastore
   image_data_storage = {
-    bucket_name      = module.hashing_data.image_folder_info.bucket_name
-    image_folder_key = module.hashing_data.image_folder_info.key
+    bucket_name  = module.hashing_data.image_folder_info.bucket_name
+    image_prefix = module.hashing_data.image_folder_info.key
   }
 
   index_data_storage = {

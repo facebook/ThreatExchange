@@ -39,7 +39,7 @@ resource "aws_lambda_function" "api_root" {
       DYNAMODB_TABLE                        = var.datastore.name
       HMA_CONFIG_TABLE                      = var.config_table.name
       IMAGE_BUCKET_NAME                     = var.image_data_storage.bucket_name
-      IMAGE_FOLDER_KEY                      = var.image_data_storage.image_folder_key
+      IMAGE_PREFIX                          = var.image_data_storage.image_prefix
       THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
       THREAT_EXCHANGE_DATA_FOLDER           = var.threat_exchange_data.data_folder
       THREAT_EXCHANGE_PDQ_FILE_EXTENSION    = var.threat_exchange_data.pdq_file_extension
@@ -95,7 +95,7 @@ data "aws_iam_policy_document" "api_root" {
   statement {
     effect    = "Allow"
     actions   = ["s3:GetObject", "s3:PutObject"]
-    resources = ["arn:aws:s3:::${var.image_data_storage.bucket_name}/${var.image_data_storage.image_folder_key}*", "arn:aws:s3:::${var.index_data_storage.bucket_name}/${var.index_data_storage.index_folder_key}*"]
+    resources = ["arn:aws:s3:::${var.image_data_storage.bucket_name}/${var.image_data_storage.image_prefix}*", "arn:aws:s3:::${var.index_data_storage.bucket_name}/${var.index_data_storage.index_folder_key}*"]
   }
   statement {
     effect = "Allow"
