@@ -8,8 +8,14 @@ Wrapper around the pdf signal type.
 import hashlib
 import pathlib
 import typing as t
+from io import StringIO
 import tlsh
-import fitz
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfdocument import PDFDocument
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfparser import PDFParser
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
@@ -17,7 +23,7 @@ from . import signal_base
 TLSH_CONFIDENT_MATCH_THRESHOLD = 30
 temp_db = [
     [
-        "T1B7B2759FD708166211A2026277C7AAE5FF35806C7366E5BA2C2C815C33A1F39537B3E5",
+        "T145B2859FE708266211A3026277C7AEE5FF76402C636AD5BA2C2CC11C23A1F2957773D5",
         ["test", 1],
     ]
 ]
@@ -29,7 +35,7 @@ class TLSHSignal(
     """
     Simple signal type for PDFs using TLSH
 
-    Extracts the text from a given pdf using PyMuPDF and hashes it with TLSH
+    Extracts the text from a given pdf using pdfminer.six and hashes it with TLSH
 
     """
 
@@ -38,13 +44,18 @@ class TLSHSignal(
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
-        text = ""
-        with fitz.open(file) as pdf_file:
-            for page in pdf_file:
-                page_text = page.getText()
-                if len(page_text) > 0:
-                    text += page_text
-        return str(tlsh.hash(text.encode()))
+        if str(file).endswith(".pdf"):
+            text = StringIO()
+            in_file = open(file, "rb")
+            parser = PDFParser(in_file)
+            doc = PDFDocument(parser)
+            rsrcmgr = PDFResourceManager()
+            device = TextConverter(rsrcmgr, text, laparams=LAParams())
+            interpreter = PDFPageInterpreter(rsrcmgr, device)
+            for page in PDFPage.create_pages(doc):
+                interpreter.process_page(page)
+            return str(tlsh.hash(text.getvalue().encode()))
+        print("Please provide a pdf")
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
         if len(signal_str) == 72:
