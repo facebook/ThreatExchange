@@ -297,6 +297,7 @@ resource "aws_s3_bucket" "data_bucket" {
   # Could also be set with a variable
   force_destroy = true
 }
+
 /*
  * # Submissions SQS:
  * Submissions from the API are routed directly into a queue. Doing an SNS
@@ -355,6 +356,17 @@ module "hasher" {
   hashes_queue = {
     arn = aws_sqs_queue.hashes_queue.arn
     url = aws_sqs_queue.hashes_queue.id
+  }
+
+  image_data_storage = {
+    bucket_name  = module.hashing_data.image_folder_info.bucket_name
+    image_prefix = module.hashing_data.image_folder_info.key
+    all_bucket_arns = concat(
+      [
+        "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
+      ],
+      [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
+    )
   }
 
   log_retention_in_days = var.log_retention_in_days
