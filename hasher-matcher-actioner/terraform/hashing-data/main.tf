@@ -23,22 +23,20 @@ resource "aws_s3_bucket_public_access_block" "data_bucket" {
 resource "aws_sqs_queue_policy" "allow_create_events_from_primary_bucket" {
   queue_url = var.submissions_queue.queue_url
 
-  policy = <<POLICY
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": "*",
-      "Action": "sqs:SendMessage",
-      "Resource": "${var.submissions_queue.queue_arn}",
-      "Condition": {
-        "ArnEquals": { "aws:SourceArn": "${var.data_bucket.bucket_arn}" }
-      }
-    }
-  ]
+  policy = data.aws_iam_policy_document.allow_create_events_from_primary_bucket_policy.json
 }
-POLICY
+
+data "aws_iam_policy_document" "allow_create_events_from_primary_bucket_policy" {
+  statement {
+    effect    = "Allow"
+    actions   = ["sqs:SendMessage"]
+    resources = [var.submissions_queue.queue_arn]
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [var.data_bucket.bucket_arn]
+    }
+  }
 }
 
 

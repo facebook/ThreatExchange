@@ -234,8 +234,8 @@ module "authentication" {
  * Jack-of-all-trades S3 bucket. Used for storing raw data from threatexchange,
  * checkpoints, and upload-type media submissions.
  *
- * Because other modules use this bucket, it is defined in the main terraform
- * file. TODO: Explain the cyclic dependency.
+ * Inside another module (hashing-data), we create a couple of notification
+ * configs on this bucket.
  */
 resource "aws_s3_bucket" "data_bucket" {
   bucket_prefix = "${var.prefix}-hashing-data"
