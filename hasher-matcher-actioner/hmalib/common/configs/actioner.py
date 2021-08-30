@@ -6,7 +6,7 @@ import typing as t
 
 from dataclasses import dataclass
 from hmalib.common.logging import get_logger
-from hmalib.common.messages.match import BankedSignal, MatchMessage
+from hmalib.common.messages.match import MatchMessage
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from requests import get, post, put, delete, Response
 
@@ -78,7 +78,7 @@ class WebhookPostActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a POST"""
 
     def call(self, url: str, headers: str, data: str) -> Response:
-        logger.info(f"Performing a POST request to URL. {self.url}")
+        logger.info(f"Performing a POST request to URL. {url}")
         return post(url, data, headers=json.loads(headers))
 
 
@@ -87,8 +87,8 @@ class WebhookGetActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a GET"""
 
     def call(self, url: str, headers: str, data: str) -> Response:
-        logger.info(f"Performing a GET request to URL. {self.url}")
-        return get(url, data, headers=json.loads(headers))
+        logger.info(f"Performing a GET request to URL. {url}")
+        return get(url, headers=json.loads(headers))
 
 
 @dataclass
@@ -96,7 +96,7 @@ class WebhookPutActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a PUT"""
 
     def call(self, url: str, headers: str, data: str) -> Response:
-        logger.info(f"Performing a PUT request to URL. {self.url}")
+        logger.info(f"Performing a PUT request to URL. {url}")
         return put(url, data, headers=json.loads(headers))
 
 
@@ -104,33 +104,6 @@ class WebhookPutActionPerformer(WebhookActionPerformer):
 class WebhookDeleteActionPerformer(WebhookActionPerformer):
     """Hit an arbitrary endpoint with a DELETE"""
 
-    def call(self, url: str, headers: str, _data: str) -> Response:
-        logger.info(f"Performing a DELETE request to URL. {self.url}")
+    def call(self, url: str, headers: str, data: str) -> Response:
+        logger.info(f"Performing a DELETE request to URL. {url}")
         return delete(url, headers=json.loads(headers))
-
-
-if __name__ == "__main__":
-    content_id = "cid1"
-    content_hash = "0374f1g34f12g34f8"
-
-    banked_signal = BankedSignal(
-        banked_content_id="4169895076385542",
-        bank_id="303636684709969",
-        bank_source="te",
-    )
-
-    action_performer = WebhookPostActionPerformer(
-        name="EnqueueForReview",
-        url="https://webhook.site/d0dbb19d-2a6f-40be-ad4d-fa9c8b34c8df",
-        headers='{"Connection":"keep-alive", "content-id" : "<content-id>", "content-hash" : "<content-hash>"}',
-        # monitoring page:
-        # https://webhook.site/#!/d0dbb19d-2a6f-40be-ad4d-fa9c8b34c8df
-    )
-
-    match_message = MatchMessage(
-        content_id,
-        content_hash,
-        [banked_signal],
-    )
-
-    action_performer.perform_action(match_message)
