@@ -11,35 +11,8 @@ provider "aws" {
   profile = var.profile
 }
 
-# S3 Bucket
-
-resource "aws_s3_bucket" "data_bucket" {
-  bucket_prefix = "${var.prefix}-hashing-data"
-  acl           = "private"
-  tags = merge(
-    var.additional_tags,
-    {
-      Name = "HashingDataBucket"
-    }
-  )
-  cors_rule {
-    allowed_headers = ["*"]
-    allowed_methods = ["PUT"]
-    allowed_origins = ["*"]
-    max_age_seconds = 3000
-  }
-
-  versioning {
-    enabled = true
-  }
-  # For development, this makes cleanup easier
-  # If deploying for real, this should not be used
-  # Could also be set with a variable
-  force_destroy = true
-}
-
 resource "aws_s3_bucket_public_access_block" "data_bucket" {
-  bucket = aws_s3_bucket.data_bucket.id
+  bucket = var.data_bucket.bucket_name
 
   block_public_acls       = true
   block_public_policy     = true
@@ -47,11 +20,36 @@ resource "aws_s3_bucket_public_access_block" "data_bucket" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_notification" "bucket_notifications" {
-  bucket = aws_s3_bucket.data_bucket.id
+resource "aws_sqs_queue_policy" "allow_create_events_from_primary_bucket" {
+  queue_url = var.submissions_queue.queue_url
 
-  topic {
-    topic_arn     = aws_sns_topic.image_notification_topic.arn
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "sqs:SendMessage",
+      "Resource": "${var.submissions_queue.queue_arn}",
+      "Condition": {
+        "ArnEquals": { "aws:SourceArn": "${var.data_bucket.bucket_arn}" }
+      }
+    }
+  ]
+}
+POLICY
+}
+
+
+resource "aws_s3_bucket_notification" "bucket_notifications" {
+  bucket = var.data_bucket.bucket_name
+  depends_on = [
+    aws_sqs_queue_policy.allow_create_events_from_primary_bucket
+  ]
+
+  queue {
+    queue_arn     = var.submissions_queue.queue_arn
     events        = ["s3:ObjectCreated:*"]
     filter_prefix = "images/"
   }
@@ -66,7 +64,7 @@ resource "aws_s3_bucket_notification" "bucket_notifications" {
 # ThreatExchange Data File Folder
 
 resource "aws_s3_bucket_object" "threat_exchange_data" {
-  bucket       = aws_s3_bucket.data_bucket.id
+  bucket       = var.data_bucket.bucket_name
   key          = "threat_exchange_data/"
   content_type = "application/x-directory"
   tags = merge(
@@ -99,7 +97,7 @@ data "aws_iam_policy_document" "threat_exchange_data" {
     condition {
       test     = "ArnLike"
       variable = "aws:SourceArn"
-      values   = [aws_s3_bucket.data_bucket.arn]
+      values   = [var.data_bucket.bucket_arn]
     }
   }
 }
@@ -113,7 +111,7 @@ resource "aws_sns_topic_policy" "threat_exchange_data" {
 # Index File Folder
 
 resource "aws_s3_bucket_object" "index" {
-  bucket       = aws_s3_bucket.data_bucket.id
+  bucket       = var.data_bucket.bucket_name
   key          = "index/"
   content_type = "application/x-directory"
   tags = merge(
@@ -127,7 +125,7 @@ resource "aws_s3_bucket_object" "index" {
 # Image File Notifications
 
 resource "aws_s3_bucket_object" "images" {
-  bucket       = aws_s3_bucket.data_bucket.id
+  bucket       = var.data_bucket.bucket_name
   key          = "images/"
   content_type = "application/x-directory"
   tags = merge(
@@ -146,28 +144,5 @@ resource "aws_sns_topic" "image_notification_topic" {
       Name = "ImagesContentFolderUpdated"
     }
   )
-}
-
-data "aws_iam_policy_document" "image_notification_topic_policy" {
-  statement {
-    effect    = "Allow"
-    actions   = ["SNS:Publish"]
-    resources = [aws_sns_topic.image_notification_topic.arn]
-    principals {
-      type        = "Service"
-      identifiers = ["s3.amazonaws.com"]
-    }
-    condition {
-      test     = "ArnLike"
-      variable = "aws:SourceArn"
-      values   = [aws_s3_bucket.data_bucket.arn]
-    }
-  }
-}
-
-resource "aws_sns_topic_policy" "image_notification_topic_policy" {
-  arn = aws_sns_topic.image_notification_topic.arn
-
-  policy = data.aws_iam_policy_document.image_notification_topic_policy.json
 }
 

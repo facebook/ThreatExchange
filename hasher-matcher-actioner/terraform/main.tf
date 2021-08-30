@@ -71,6 +71,15 @@ module "hashing_data" {
   source          = "./hashing-data"
   prefix          = var.prefix
   additional_tags = merge(var.additional_tags, local.common_tags)
+
+  data_bucket = {
+    bucket_name = aws_s3_bucket.data_bucket.id
+    bucket_arn  = aws_s3_bucket.data_bucket.arn
+  }
+  submissions_queue = {
+    queue_arn = aws_sqs_queue.submissions_queue.arn
+    queue_url = aws_sqs_queue.submissions_queue.id
+  }
 }
 
 module "indexer" {
@@ -255,6 +264,39 @@ module "authentication" {
   webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
 }
 
+
+/**
+ * # Primary S3 Bucket:
+ * Jack-of-all-trades S3 bucket. Used for storing raw data from threatexchange,
+ * checkpoints, and upload-type media submissions.
+ *
+ * Because other modules use this bucket, it is defined in the main terraform
+ * file. TODO: Explain the cyclic dependency.
+ */
+resource "aws_s3_bucket" "data_bucket" {
+  bucket_prefix = "${var.prefix}-hashing-data"
+  acl           = "private"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HashingDataBucket"
+    }
+  )
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT"]
+    allowed_origins = ["*"]
+    max_age_seconds = 3000
+  }
+
+  versioning {
+    enabled = true
+  }
+  # For development, this makes cleanup easier
+  # If deploying for real, this should not be used
+  # Could also be set with a variable
+  force_destroy = true
+}
 /*
  * # Submissions SQS:
  * Submissions from the API are routed directly into a queue. Doing an SNS
@@ -275,6 +317,7 @@ resource "aws_sqs_queue" "submissions_queue" {
   name_prefix                = "${var.prefix}-submissions"
   visibility_timeout_seconds = 300
   message_retention_seconds  = 1209600
+
   tags = merge(
     var.additional_tags,
     local.common_tags,
