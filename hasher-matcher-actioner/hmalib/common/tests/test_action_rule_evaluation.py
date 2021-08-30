@@ -165,8 +165,8 @@ class ActionRuleEvaluationTestCase(unittest.TestCase):
         action_performers = [
             performer_class(
                 name="EnqueueForReview",
-                url="https://webhook.site/d0dbb19d-2a6f-40be-ad4d-fa9c8b34c8df",
-                headers='{"Connection":"keep-alive", "content-id" : "<content-id>", "content-hash" : "<content-hash>"}',
+                url="https://webhook.site/d0dbb19d-2a6f-40be-ad4d-fa9c8b34c8df/<content-id>",
+                headers='{"Connection":"keep-alive"}',
                 # monitoring page:
                 # https://webhook.site/#!/d0dbb19d-2a6f-40be-ad4d-fa9c8b34c8df
             )
