@@ -22,6 +22,7 @@ resource "aws_lambda_function" "hashing_lambda" {
       METRICS_NAMESPACE   = var.metrics_namespace
       MEASURE_PERFORMANCE = var.measure_performance ? "True" : "False"
       HASHES_QUEUE_URL    = var.hashes_queue.url
+      IMAGE_PREFIX        = var.image_data_storage.image_prefix
     }
   }
 
@@ -86,6 +87,11 @@ data "aws_iam_policy_document" "hashing_lambda" {
     effect    = "Allow"
     actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
     resources = [var.datastore.arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = ["arn:aws:s3:::${var.image_data_storage.bucket_name}/${var.image_data_storage.image_prefix}*"]
   }
   statement {
     effect = "Allow"

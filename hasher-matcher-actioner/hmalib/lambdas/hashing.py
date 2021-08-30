@@ -5,6 +5,7 @@ import boto3
 import os
 import datetime
 import json
+import typing as t
 
 from mypy_boto3_dynamodb import DynamoDBServiceResource
 from mypy_boto3_sqs import SQSClient
@@ -17,10 +18,14 @@ from threatexchange.signal_type.pdq import PdqSignal
 
 from hmalib.common.logging import get_logger
 from hmalib import metrics
-from hmalib.common.messages.submit import URLSubmissionMessage
+from hmalib.common.messages.submit import (
+    S3ImageSubmission,
+    S3ImageSubmissionBatchMessage,
+    URLSubmissionMessage,
+)
 from hmalib.hashing.unified_hasher import UnifiedHasher
 from hmalib.common.models.pipeline import PipelineHashRecord
-from hmalib.common.content_sources import URLContentSource
+from hmalib.common.content_sources import S3BucketContentSource, URLContentSource
 
 logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
@@ -38,6 +43,8 @@ def get_sqs_client() -> SQSClient:
 
 OUTPUT_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
+IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
+
 
 # If you want to support additional content or signal types, they can be added
 # here.
@@ -71,30 +78,46 @@ def lambda_handler(event, context):
         if message.get("Event") == "s3:TestEvent":
             continue
 
+        media_to_process: t.List[t.Union[S3ImageSubmission, URLSubmissionMessage]] = []
+
         if URLSubmissionMessage.could_be(message):
-            submission_message = URLSubmissionMessage.from_sqs_message(message)
+            media_to_process.append(URLSubmissionMessage.from_sqs_message(message))
+        elif S3ImageSubmissionBatchMessage.could_be(message):
+            # S3 submissions can only be images for now.
+            media_to_process.extend(
+                S3ImageSubmissionBatchMessage.from_sqs_message(
+                    message, image_prefix=IMAGE_PREFIX
+                ).image_submissions
+            )
         else:
             logger.warn(f"Unprocessable Message: {message}")
 
-        content_type = get_content_type_for_name(submission_message.content_type)
-        if not hasher.supports(content_type):
-            logger.warn(f"Unprocessable content type: {content_type}")
-            continue
+        for media in media_to_process:
+            if not hasher.supports(media.content_type):
+                logger.warn(f"Unprocessable content type: {media.content_type}")
+                continue
 
-        with metrics.timer(metrics.names.hasher.download_file):
-            bytes_: bytes = URLContentSource().get_bytes(submission_message.url)
+            with metrics.timer(metrics.names.hasher.download_file):
+                if hasattr(media, "key") and hasattr(media, "bucket"):
+                    # Classic duck-typing. If it has key and bucket, must be an
+                    # S3 submission.
+                    bytes_: bytes = S3BucketContentSource(
+                        media.bucket, IMAGE_PREFIX
+                    ).get_bytes(media.content_id)
+                else:
+                    bytes_: bytes = URLContentSource().get_bytes(media.url)
 
-        for signal in hasher.get_hashes(
-            submission_message.content_id, content_type, bytes_
-        ):
-            hash_record = PipelineHashRecord(
-                content_id=submission_message.content_id,
-                signal_type=signal.signal_type,
-                content_hash=signal.signal_value,
-                updated_at=datetime.datetime.now(),
-            )
+            for signal in hasher.get_hashes(
+                media.content_id, media.content_type, bytes_
+            ):
+                hash_record = PipelineHashRecord(
+                    content_id=media.content_id,
+                    signal_type=signal.signal_type,
+                    content_hash=signal.signal_value,
+                    updated_at=datetime.datetime.now(),
+                )
 
-            hasher.write_hash_record(records_table, hash_record)
-            hasher.publish_hash_message(sqs_client, hash_record)
+                hasher.write_hash_record(records_table, hash_record)
+                hasher.publish_hash_message(sqs_client, hash_record)
 
     metrics.flush()

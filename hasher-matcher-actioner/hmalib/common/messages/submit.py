@@ -5,6 +5,8 @@ import typing as t
 from dataclasses import dataclass
 
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.meta import get_content_type_for_name
+from threatexchange.content_type.photo import PhotoContent
 
 from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.logging import get_logger
@@ -43,7 +45,7 @@ class URLSubmissionMessage:
     @classmethod
     def from_sqs_message(cls, d: dict) -> "URLSubmissionMessage":
         return cls(
-            content_type=d["ContentType"],
+            content_type=get_content_type_for_name(d["ContentType"]),
             content_id=d["ContentId"],
             url=d["URL"],
             event_type=d["EventType"],
@@ -69,6 +71,8 @@ class S3ImageSubmission:
     content_id: str
     bucket: str
     key: str
+
+    content_type: t.Type[ContentType] = PhotoContent
 
 
 @dataclass

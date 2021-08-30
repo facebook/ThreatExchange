@@ -41,8 +41,8 @@ variable "lambda_docker_info" {
 variable "image_data_storage" {
   description = "Configuration information for the S3 Bucket that will hold uploaded content"
   type = object({
-    bucket_name      = string
-    image_folder_key = string
+    bucket_name  = string
+    image_prefix = string
   })
 }
 

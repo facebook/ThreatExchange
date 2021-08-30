@@ -71,4 +71,11 @@ resource "aws_dynamodb_table" "hma_datastore" {
       Name = "HMADataStore"
     }
   )
+
+  lifecycle {
+    # To prevent execution of plans which would cause this datastore to get
+    # destroyed. Once in the hands of partners, we have to be extra careful to
+    # not accidentally delete their data. 
+    prevent_destroy = true
+  }
 }

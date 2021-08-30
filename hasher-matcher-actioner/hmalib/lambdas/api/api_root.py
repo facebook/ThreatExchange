@@ -45,9 +45,7 @@ THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENS
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
-IMAGE_FOLDER_KEY = os.environ[
-    "IMAGE_FOLDER_KEY"
-]  # Misnamed, this is a prefix, not a key, if renaming, use IMAGE_PREFIX
+IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 HASHES_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 
@@ -185,7 +183,7 @@ app.mount(
     get_content_api(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_bucket=IMAGE_BUCKET_NAME,
-        image_prefix=IMAGE_FOLDER_KEY,
+        image_prefix=IMAGE_PREFIX,
     ),
 )
 
@@ -194,7 +192,7 @@ app.mount(
     get_submit_api(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_bucket=IMAGE_BUCKET_NAME,
-        image_prefix=IMAGE_FOLDER_KEY,
+        image_prefix=IMAGE_PREFIX,
         submissions_queue_url=SUBMISSIONS_QUEUE_URL,
         hash_queue_url=HASHES_QUEUE_URL,
     ),

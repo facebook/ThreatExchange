@@ -71,6 +71,15 @@ module "hashing_data" {
   source          = "./hashing-data"
   prefix          = var.prefix
   additional_tags = merge(var.additional_tags, local.common_tags)
+
+  data_bucket = {
+    bucket_name = aws_s3_bucket.data_bucket.id
+    bucket_arn  = aws_s3_bucket.data_bucket.arn
+  }
+  submissions_queue = {
+    queue_arn = aws_sqs_queue.submissions_queue.arn
+    queue_url = aws_sqs_queue.submissions_queue.id
+  }
 }
 
 module "indexer" {
@@ -99,47 +108,11 @@ module "indexer" {
 }
 
 module "pdq_signals" {
+  # 2021/08/30: Retain this module until developers have all updated their
+  # deployments or we've fixed #755. If you remove this, states might not be
+  # cleaned up and we'll be left with vestigial infra from this module.
+
   source = "./pdq-signals"
-  prefix = var.prefix
-  lambda_docker_info = {
-    uri = var.hma_lambda_docker_uri
-    commands = {
-      matcher = "hmalib.lambdas.pdq.pdq_matcher.lambda_handler"
-      hasher  = "hmalib.lambdas.pdq.pdq_hasher.lambda_handler"
-      indexer = "hmalib.lambdas.pdq.pdq_indexer.lambda_handler"
-    }
-  }
-  datastore = module.datastore.primary_datastore
-
-  images_input = {
-    input_queue = aws_sqs_queue.pdq_images_queue.arn
-    resource_list = concat(
-      [
-        "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
-      ],
-      [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
-    )
-    image_folder_key = module.hashing_data.image_folder_info.key
-  }
-  threat_exchange_data = {
-    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_file_extension = local.pdq_file_extension
-    data_folder        = local.te_data_folder
-    notification_topic = module.hashing_data.threat_exchange_data_folder_info.notification_topic
-  }
-  index_data_storage = {
-    bucket_name      = module.hashing_data.index_folder_info.bucket_name
-    index_folder_key = module.hashing_data.index_folder_info.key
-  }
-  matches_sns_topic_arn = aws_sns_topic.matches.arn
-
-  log_retention_in_days = var.log_retention_in_days
-  additional_tags       = merge(var.additional_tags, local.common_tags)
-  measure_performance   = var.measure_performance
-  config_table          = local.config_table
-
-  queue_batch_size        = var.set_sqs_windows_to_min ? 10 : 100
-  queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : 30
 }
 
 module "counters" {
@@ -255,6 +228,40 @@ module "authentication" {
   webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
 }
 
+
+/**
+ * # Primary S3 Bucket:
+ * Jack-of-all-trades S3 bucket. Used for storing raw data from threatexchange,
+ * checkpoints, and upload-type media submissions.
+ *
+ * Inside another module (hashing-data), we create a couple of notification
+ * configs on this bucket.
+ */
+resource "aws_s3_bucket" "data_bucket" {
+  bucket_prefix = "${var.prefix}-hashing-data"
+  acl           = "private"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HashingDataBucket"
+    }
+  )
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT"]
+    allowed_origins = ["*"]
+    max_age_seconds = 3000
+  }
+
+  versioning {
+    enabled = true
+  }
+  # For development, this makes cleanup easier
+  # If deploying for real, this should not be used
+  # Could also be set with a variable
+  force_destroy = true
+}
+
 /*
  * # Submissions SQS:
  * Submissions from the API are routed directly into a queue. Doing an SNS
@@ -275,6 +282,7 @@ resource "aws_sqs_queue" "submissions_queue" {
   name_prefix                = "${var.prefix}-submissions"
   visibility_timeout_seconds = 300
   message_retention_seconds  = 1209600
+
   tags = merge(
     var.additional_tags,
     local.common_tags,
@@ -312,6 +320,17 @@ module "hasher" {
   hashes_queue = {
     arn = aws_sqs_queue.hashes_queue.arn
     url = aws_sqs_queue.hashes_queue.id
+  }
+
+  image_data_storage = {
+    bucket_name  = module.hashing_data.image_folder_info.bucket_name
+    image_prefix = module.hashing_data.image_folder_info.key
+    all_bucket_arns = concat(
+      [
+        "arn:aws:s3:::${module.hashing_data.image_folder_info.bucket_name}/${module.hashing_data.image_folder_info.key}*"
+      ],
+      [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
+    )
   }
 
   log_retention_in_days = var.log_retention_in_days
@@ -364,8 +383,8 @@ module "api" {
   }
   datastore = module.datastore.primary_datastore
   image_data_storage = {
-    bucket_name      = module.hashing_data.image_folder_info.bucket_name
-    image_folder_key = module.hashing_data.image_folder_info.key
+    bucket_name  = module.hashing_data.image_folder_info.bucket_name
+    image_prefix = module.hashing_data.image_folder_info.key
   }
 
   index_data_storage = {
@@ -486,8 +505,8 @@ module "dashboard" {
   prefix    = var.prefix
   datastore = module.datastore.primary_datastore
   pipeline_lambdas = [
-    (["Hash", module.pdq_signals.pdq_hasher_function_name]),
-    (["Match", module.pdq_signals.pdq_matcher_function_name]),
+    (["Hash", module.hasher.hasher_function_name]),
+    (["Match", module.matcher.matcher_function_name]),
     (["Action Evaluator", module.actions.action_evaluator_function_name]),
     (["Action Performer", module.actions.action_performer_function_name])
   ] # Not currently included fetcher, indexer, writebacker, and counter functions
@@ -499,8 +518,8 @@ module "dashboard" {
     module.counters.match_counter_function_name
   ]
   queues_to_monitor = [
-    (["ImageQueue", aws_sqs_queue.pdq_images_queue.name]),
-    (["HashQueue", module.pdq_signals.hashes_queue_name]),
+    (["ImageQueue", aws_sqs_queue.submissions_queue.name]),
+    (["HashQueue", aws_sqs_queue.hashes_queue.name]),
     (["MatchQueue", module.actions.matches_queue_name]),
     (["ActionQueue", module.actions.actions_queue_name])
   ] # Could also monitor sns topics

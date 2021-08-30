@@ -77,3 +77,13 @@ variable "config_table" {
     name = string
   })
 }
+
+variable "image_data_storage" {
+  description = "Where does the submission API upload images? all_bucket_arns must include image storage bucket and all partner buckets."
+
+  type = object({
+    bucket_name     = string
+    image_prefix    = string
+    all_bucket_arns = list(string)
+  })
+}
