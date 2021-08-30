@@ -31,6 +31,10 @@ data "aws_iam_policy_document" "allow_create_events_from_primary_bucket_policy" 
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]
     resources = [var.submissions_queue.queue_arn]
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
     condition {
       test     = "ArnEquals"
       variable = "aws:SourceArn"
