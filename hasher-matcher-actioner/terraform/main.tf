@@ -540,8 +540,8 @@ module "dashboard" {
   prefix    = var.prefix
   datastore = module.datastore.primary_datastore
   pipeline_lambdas = [
-    (["Hash", module.pdq_signals.pdq_hasher_function_name]),
-    (["Match", module.pdq_signals.pdq_matcher_function_name]),
+    (["Hash", module.hasher.hasher_function_name]),
+    (["Match", module.matcher.matcher_function_name]),
     (["Action Evaluator", module.actions.action_evaluator_function_name]),
     (["Action Performer", module.actions.action_performer_function_name])
   ] # Not currently included fetcher, indexer, writebacker, and counter functions
@@ -553,8 +553,8 @@ module "dashboard" {
     module.counters.match_counter_function_name
   ]
   queues_to_monitor = [
-    (["ImageQueue", aws_sqs_queue.pdq_images_queue.name]),
-    (["HashQueue", module.pdq_signals.hashes_queue_name]),
+    (["ImageQueue", aws_sqs_queue.submissions_queue.name]),
+    (["HashQueue", aws_sqs_queue.hashes_queue.name]),
     (["MatchQueue", module.actions.matches_queue_name]),
     (["ActionQueue", module.actions.actions_queue_name])
   ] # Could also monitor sns topics
