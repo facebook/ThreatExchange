@@ -71,4 +71,8 @@ resource "aws_dynamodb_table" "hma_datastore" {
       Name = "HMADataStore"
     }
   )
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
