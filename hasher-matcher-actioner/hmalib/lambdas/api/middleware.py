@@ -66,7 +66,8 @@ class DictParseable:
 def jsoninator(
     view_fn_or_request_type: t.Union[
         t.Callable[[int, int], JSONifiable], t.Type[DictParseable]
-    ]
+    ],
+    from_query=False,
 ):
     """
     Bottle plugin which allows you to create 'typed' views.
@@ -115,14 +116,17 @@ def jsoninator(
             def wrapper(*args, **kwargs):
                 try:
                     # Try to extract request
-                    request_object = request_type.from_dict(bottle.request.json)
+                    if from_query:
+                        request_object = request_type.from_dict(bottle.request.query)
+                    else:
+                        request_object = request_type.from_dict(bottle.request.json)
                 except Exception as e:
                     logger.error(
-                        "Failed to deserialize JSON for type: %s", str(request_type)
+                        "Failed to deserialize request for type: %s", str(request_type)
                     )
                     logger.exception(e)
                     bottle.response.status = 400
-                    return "Could not parse JSON."
+                    return "Could not parse request."
 
                 response_object = view_fn(request_object, *args, **kwargs)
 

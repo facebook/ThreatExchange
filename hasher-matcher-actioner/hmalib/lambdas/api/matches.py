@@ -188,7 +188,7 @@ class MatchesForHashRequest(DictParseable):
 
 @dataclass
 class MatchesForHashResponse(JSONifiable):
-    matches: t.List[t.Union[ThreatExchangeSignalMetadata]]
+    matches: t.List[ThreatExchangeSignalMetadata]
     signal_value: str
 
     def to_json(self) -> t.Dict:
@@ -302,7 +302,9 @@ def get_matches_api(
 
         return ChangeSignalOpinionResponse(success)
 
-    @matches_api.get("/for-hash/", apply=[jsoninator(MatchesForHashRequest)])
+    @matches_api.get(
+        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True)]
+    )
     def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
         """
         For a given hash/signal check the index(es) for matches and return the details
@@ -314,7 +316,8 @@ def get_matches_api(
             request.signal_type, request.signal_value
         )
 
-        match_objects = []
+        match_objects: t.List[ThreatExchangeSignalMetadata] = []
+
         for match in matches:
             match_objects.extend(
                 Matcher.get_metadata_objects_from_match(request.signal_type, match)
