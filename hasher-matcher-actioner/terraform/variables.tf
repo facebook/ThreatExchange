@@ -117,9 +117,9 @@ variable "partner_image_buckets" {
   }
 }
 
-variable "integration_api_access_token" {
-  description = "Access token checked for in authorizer api as an alternative to cognito user tokens."
-  type        = string
+variable "integration_api_access_tokens" {
+  description = "Access tokens checked for in authorizer api as an alternative to cognito user tokens."
+  type        = list(string)
   sensitive   = true
-  default     = ""
+  default     = []
 }

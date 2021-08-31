@@ -19,9 +19,10 @@ locals {
   common_tags = {
     "HMAPrefix" = var.prefix
   }
-  pdq_file_extension       = ".pdq.te"
-  te_data_folder           = module.hashing_data.threat_exchange_data_folder_info.key
-  te_api_token_secret_name = "threatexchange/${var.prefix}_api_tokens"
+  pdq_file_extension         = ".pdq.te"
+  te_data_folder             = module.hashing_data.threat_exchange_data_folder_info.key
+  te_api_token_secret_name   = "threatexchange/${var.prefix}_api_tokens"
+  hma_api_tokens_secret_name = "hma/${var.prefix}_api_tokens"
 }
 
 ### Config storage ###
@@ -132,9 +133,8 @@ module "counters" {
 }
 
 module "fetcher" {
-  source       = "./fetcher"
-  prefix       = var.prefix
-  te_api_token = var.te_api_token
+  source = "./fetcher"
+  prefix = var.prefix
 
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
@@ -214,6 +214,28 @@ module "webapp" {
   organization                    = var.organization
   include_cloudfront_distribution = var.include_cloudfront_distribution && !var.use_shared_user_pool
 }
+
+/**
+ * # Authentication:
+ * authentication is currently handled in two ways:
+ * 1) list of permanent access tokens stored in aws secrets
+ * 2) user accesss via a dedicated or shared Cognito user pool   
+ * 
+ * Both methods are validated in an lambda: module.api.aws_lambda_function.api_auth
+ * before being sent along to the rests of the system.
+ */
+
+
+resource "aws_secretsmanager_secret" "hma_api_tokens" {
+  name                    = local.hma_api_tokens_secret_name
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "hma_api_tokens" {
+  secret_id     = aws_secretsmanager_secret.hma_api_tokens.id
+  secret_string = jsonencode(var.integration_api_access_tokens)
+}
+
 
 # Set up Cognito for authenticating webapp and api (unless shared setup is indicated in terraform.tfvars)
 
@@ -397,11 +419,12 @@ module "api" {
     data_folder        = local.te_data_folder
   }
 
-  log_retention_in_days = var.log_retention_in_days
-  additional_tags       = merge(var.additional_tags, local.common_tags)
-  config_table          = local.config_table
-  measure_performance   = var.measure_performance
-  te_api_token_secret   = aws_secretsmanager_secret.te_api_token
+  log_retention_in_days        = var.log_retention_in_days
+  additional_tags              = merge(var.additional_tags, local.common_tags)
+  config_table                 = local.config_table
+  measure_performance          = var.measure_performance
+  te_api_token_secret          = aws_secretsmanager_secret.te_api_token
+  hma_api_access_tokens_secret = aws_secretsmanager_secret.hma_api_tokens
 
   writebacks_queue = module.actions.writebacks_queue
   hashes_queue = {
@@ -412,8 +435,7 @@ module "api" {
     url = aws_sqs_queue.submissions_queue.id,
     arn = aws_sqs_queue.submissions_queue.arn
   }
-  partner_image_buckets        = var.partner_image_buckets
-  integration_api_access_token = var.integration_api_access_token
+  partner_image_buckets = var.partner_image_buckets
 }
 
 # Build and deploy webapp

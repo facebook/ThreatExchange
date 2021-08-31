@@ -98,6 +98,14 @@ variable "te_api_token_secret" {
   })
 }
 
+variable "hma_api_access_tokens_secret" {
+  description = "The aws secret to the set of access tokens checked for in authorizer api as an alternative to cognito user tokens."
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
 variable "measure_performance" {
   description = "Send metrics to cloudwatch. Useful for benchmarking, but can incur costs. Set to string True for this to work."
   type        = bool
@@ -135,10 +143,4 @@ variable "partner_image_buckets" {
     arn    = string
     params = map(string)
   }))
-}
-
-variable "integration_api_access_token" {
-  description = "Access token checked for in authorizer api as an alternative to cognito user tokens."
-  type        = string
-  sensitive   = true
 }

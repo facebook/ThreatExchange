@@ -178,9 +178,9 @@ resource "aws_lambda_function" "api_auth" {
   memory_size = 128
   environment {
     variables = {
-      ACCESS_TOKEN  = var.integration_api_access_token
-      USER_POOL_URL = local.user_pool_url
-      CLIENT_ID     = var.api_authorizer_audience
+      HMA_ACCESS_TOKEN_SECRET_NAME = var.hma_api_access_tokens_secret.name
+      USER_POOL_URL                = local.user_pool_url
+      CLIENT_ID                    = var.api_authorizer_audience
     }
   }
   tags = merge(
@@ -222,6 +222,11 @@ data "aws_iam_policy_document" "api_auth" {
       "logs:DescribeLogStreams"
     ]
     resources = ["${aws_cloudwatch_log_group.api_auth.arn}:*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [var.hma_api_access_tokens_secret.arn]
   }
 }
 

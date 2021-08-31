@@ -9,10 +9,8 @@ import base64
 import functools
 from jwt.algorithms import RSAAlgorithm
 
+from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.logging import get_logger
-
-# ToDo have this eventually be a stored in aws secrets as well as support multiple.
-ACCESS_TOKEN = os.environ["ACCESS_TOKEN"]
 
 USER_POOL_URL = os.environ["USER_POOL_URL"]
 CLIENT_ID = os.environ["CLIENT_ID"]
@@ -60,11 +58,13 @@ def validate_jwt(token: str):
 
 def validate_access_token(token: str):
     response = {"isAuthorized": False, "context": {"AuthInfo": "ServiceAccessToken"}}
-    if not ACCESS_TOKEN or not token:
+
+    access_tokens = AWSSecrets().hma_api_tokens()
+    if not access_tokens or not token:
         logger.debug("Rejected empty values")
         return response
 
-    if token == ACCESS_TOKEN:
+    if token in access_tokens:
         logger.debug("Access token approved")
         response["isAuthorized"] = True
 
