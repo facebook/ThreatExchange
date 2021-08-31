@@ -60,7 +60,6 @@ def validate_access_token(token: str):
     response = {"isAuthorized": False, "context": {"AuthInfo": "ServiceAccessToken"}}
 
     access_tokens = AWSSecrets().hma_api_tokens()
-    logger.info(access_tokens)
     if not access_tokens or not token:
         logger.debug("Rejected empty values")
         return response
