@@ -37,12 +37,12 @@ class HMAShell(cmd.Cmd):
     intro = "Welcome! Type help or ? to list commands.\n"
     prompt = "> "
 
-    def __init__(self, api_url: str, refresh_token: str, client_id: str):
+    def __init__(self, api_url: str, token: str):
         super(HMAShell, self).__init__()
         self.api = hma_script_utils.HasherMatcherActionerAPI(
-            api_url, api_token="", client_id=client_id, refresh_token=refresh_token
+            api_url,
+            api_token=token,
         )
-        self.api._refresh_token()
 
     # Query Commands
     def do_dataset_configs(self, arg):
@@ -104,28 +104,13 @@ if __name__ == "__main__":
         description="Start a HMA Shell to intract with a deployed HMA instance."
     )
     parser.add_argument(
-        "--username",
-        help="username of test user, defaults to '<prefix_in_tf_vars>testuser'",
-        default="",
-    )
-    parser.add_argument(
-        "--pwd",
-        help="password of test user",
-        default="",
-    )
-    parser.add_argument(
-        "--email",
-        help="email for test user (required if creating a test user otherwise ignored)",
+        "--access_token",
+        help="access token to be used to authenticate request to HMA API",
         default="",
     )
     parser.add_argument(
         "--tf_output_file",
         help="Instead of using a python helper get_terraform_outputs, read output from a file\n e.g. via 'terraform -chdir=terraform output -json >> tf_outputs.json'",
-    )
-    parser.add_argument(
-        "--create_user",
-        action="store_true",
-        help="Creates a new test user. Require values for 'username', 'pwd', and 'email' args.",
     )
 
     args = parser.parse_args()
@@ -137,29 +122,10 @@ if __name__ == "__main__":
     else:
         tf_outputs = hma_script_utils.get_terraform_outputs()
 
-    pwd = args.pwd
-    user = args.username
-
-    if args.create_user:
-        if not args.email or not pwd:
-            print("Email and pwd required to create user")
-            parser.print_usage()
-            exit()
-
-        if not user:
-            user = hma_script_utils.get_default_user_name(tf_outputs["prefix"]["value"])
-
-        pool_id = tf_outputs["cognito_user_pool_id"]["value"]
-        client_id = tf_outputs["cognito_user_pool_client_id"]["value"]
-
-        hma_script_utils.create_user(
-            args.username, args.email, pool_id=pool_id, client_id=client_id
-        )
-
-    token, refresh_token, client_id = hma_script_utils.get_auth_from_env(
-        tf_outputs, pwd_override=pwd, user_override=user, prompt_for_pwd=True
+    token = hma_script_utils.get_auth_from_env(
+        token_default=args.access_token, prompt_for_pwd=True
     )
 
     api_url = tf_outputs["api_url"]["value"]
 
-    HMAShell(api_url, refresh_token, client_id).cmdloop()
+    HMAShell(api_url, token).cmdloop()

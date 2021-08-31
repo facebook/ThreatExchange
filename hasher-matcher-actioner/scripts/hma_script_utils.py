@@ -20,10 +20,6 @@ from botocore.exceptions import ClientError
 # Defaults to override values in tf outputs or ENV
 API_URL = ""
 TOKEN = ""
-REFRESH_TOKEN = ""
-CLIENT_ID = ""
-USER = ""
-PWD = ""
 
 
 class HasherMatcherActionerAPI:
@@ -39,13 +35,9 @@ class HasherMatcherActionerAPI:
         self,
         api_url: str,
         api_token: str,
-        client_id: str = None,
-        refresh_token: str = None,
         transport_adapter: HTTPAdapter = None,
     ) -> None:
         self.api_url = api_url
-        self.client_id = client_id
-        self.refresh_token = refresh_token
         self.session = requests.Session()
         self.session.headers.update(
             {
@@ -55,26 +47,6 @@ class HasherMatcherActionerAPI:
         )
         if transport_adapter:
             self.session.mount(api_url, transport_adapter)
-
-    def _refresh_token(self):
-        """
-        AccessToken has a default ttl of 60 minutes
-        RefreshToken as a default ttl of 30 days
-        Only works in boto3 is install and optional values are set.
-        """
-        if not self.client_id or not self.refresh_token:
-            raise ValueError("Refresh Token and/or Client ID Missing")
-
-        client = boto3.client("cognito-idp", region_name="us-east-1")
-
-        resp = client.initiate_auth(
-            AuthFlow="REFRESH_TOKEN_AUTH",
-            AuthParameters={"REFRESH_TOKEN": self.refresh_token},
-            ClientId=self.client_id,
-        )
-        api_token = resp["AuthenticationResult"]["AccessToken"]
-        self.session.headers["authorization"] = api_token
-        return api_token
 
     def _get_request_url(self, api_path: str) -> str:
         return urljoin(self.api_url, api_path)
@@ -388,59 +360,24 @@ def get_default_user_name(prefix: str):
 
 
 def get_auth_from_env(
-    tf_outputs: t.Dict,
     token_default: str = TOKEN,
-    refresh_token_default: str = REFRESH_TOKEN,
-    pwd_override: str = PWD,
-    client_id_override: str = CLIENT_ID,
-    user_override: str = USER,
-    prompt_for_pwd: bool = False,
+    prompt_for_token: bool = False,
 ):
 
-    # Can be created with dev certs: `export HMA_TOKEN=$(./scripts/get_auth_token --pwd <pwd>)`
     token = os.environ.get(
         "HMA_TOKEN",
         token_default,
     )
 
-    # Can be created with dev certs: `export HMA_REFRESH_TOKEN=$(./scripts/get_auth_token --refresh_token --pwd <pwd>)`
-    refresh_token = os.environ.get(
-        "HMA_REFRESH_TOKEN",
-        refresh_token_default,
-    )
+    if not token:
+        if prompt_for_token:
+            print("Need an access token to authenticate.")
+            token = input("Enter token: ")
+        else:
+            print("Authentication requires HMA_TOKEN be present in ENV.")
+            exit()
 
-    # Password that if found in ENV can be used to get a token
-    pwd = pwd_override or os.environ.get(
-        "HMA_USER_PWD",
-        "",
-    )
-
-    client_id = client_id_override or tf_outputs["cognito_user_pool_client_id"]["value"]
-
-    if not token and not refresh_token:
-        user = user_override or get_default_user_name(tf_outputs["prefix"]["value"])
-        if not pwd:
-            if prompt_for_pwd:
-                print(f"Needs a password for user: {user} to authenticate.")
-                pwd = input("Enter password: ")
-            else:
-                print(
-                    "Authentication requires at least one of HMA_TOKEN, HMA_REFRESH_TOKEN, or HMA_USER_PWD be present in ENV."
-                )
-                print(
-                    "You can also hard code these values and others in scripts/hma_script_utils.py if you are trying to set outside of our development ENV (e.g. on an ec2 instance)."
-                )
-                print(
-                    "See: `script/get_auth_token` these values are associated with a user if you don't have one you can create one with the script as well."
-                )
-                exit()
-
-        pool_id = tf_outputs["cognito_user_pool_id"]["value"]
-        resp = get_token(user, pwd, pool_id, client_id)
-        token = resp["AuthenticationResult"]["AccessToken"]
-        refresh_token = resp["AuthenticationResult"]["RefreshToken"]
-
-    return (token, refresh_token, client_id)
+    return token
 
 
 if __name__ == "__main__":
@@ -455,19 +392,12 @@ if __name__ == "__main__":
 
     api_url = tf_outputs["api_url"]["value"]
 
-    token, refresh_token, client_id = get_auth_from_env(tf_outputs)
+    token = get_auth_from_env()
 
     api = HasherMatcherActionerAPI(
         api_url,
         token,
-        client_id,
-        refresh_token,
     )
-
-    # if we can lets go ahead and refresh
-    if refresh_token and client_id:
-        api._refresh_token()
-
     # e.g. if auth is correct the following command should print:
     # "{'message': 'Hello World, HMA'}"
     print(api.get())

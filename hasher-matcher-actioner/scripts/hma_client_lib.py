@@ -37,28 +37,17 @@ class DeployedInstanceClient:
         self,
         api_url: str = "",
         api_token: str = "",
-        client_id: str = None,
-        refresh_token: str = None,
         api: HasherMatcherActionerAPI = None,
     ) -> None:
         if api:
             self.api = api
         else:
-            if not api_token and (not client_id or not refresh_token):
+            if not api_token:
                 raise ValueError(
                     "Test requires an api_token OR a client_id + refresh_token to function"
                 )
 
-            self.api = HasherMatcherActionerAPI(
-                api_url, api_token, client_id, refresh_token
-            )
-
-    def refresh_api_token(self):
-        """
-        Manually refresh api's token
-        TODO Make staleness of the token an internal matter for the API class to handle.
-        """
-        self.api._refresh_token()
+            self.api = HasherMatcherActionerAPI(api_url, api_token)
 
     ### Start HMA API wrapper ###
 
@@ -270,16 +259,12 @@ if __name__ == "__main__":
 
     tf_outputs = get_terraform_outputs()
     api_url = tf_outputs["api_url"]["value"]
-    token, refresh_token, client_id = get_auth_from_env(tf_outputs)
-
+    token = get_auth_from_env(prompt_for_token=True)
     print(
         "This simple tests should take a little over 2 minutes to complete (due to sqs timeout).\n"
     )
 
-    helper = DeployedInstanceClient(api_url, token, client_id, refresh_token)
-
-    if refresh_token and client_id:
-        helper.refresh_api_token()
+    helper = DeployedInstanceClient(api_url, token)
 
     helper.set_up_test()
 

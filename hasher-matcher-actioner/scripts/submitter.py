@@ -54,7 +54,6 @@ class Submitter(threading.Thread):
             finally:
                 self._lock.release()
             time.sleep(self.seconds_between_batches)
-            self.client.refresh_api_token()
 
     def get_total_submit_count(self) -> int:
         with self._lock:
@@ -76,23 +75,18 @@ class Submitter(threading.Thread):
 if __name__ == "__main__":
 
     API_URL = ""
-    REFRESH_TOKEN = ""
-    CLIENT_ID = ""
+    TOKEN = ""
 
     api_url = os.environ.get(
         "HMA_API_URL",
         API_URL,
     )
-    refresh_token = os.environ.get(
-        "HMA_REFRESH_TOKEN",
-        REFRESH_TOKEN,
+    token = os.environ.get(
+        "HMA_TOKEN",
+        TOKEN,
     )
-    client_id = os.environ.get(
-        "HMA_COGNITO_USER_POOL_CLIENT_ID",
-        CLIENT_ID,
-    )
-    client = DeployedInstanceClient(api_url, "", client_id, refresh_token)
 
+    client = DeployedInstanceClient(api_url, token)
     submitter = Submitter(client, batch_size=5, seconds_between_batches=5)
     submitter.start()
 

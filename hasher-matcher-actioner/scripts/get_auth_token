@@ -6,6 +6,8 @@ Helper script for a developer to get an API token from cognito based on args
 See 
 https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-authentication-flow.html#amazon-cognito-user-pools-admin-authentication-flow
 
+If you use a more permanent access token via values passed to `integration_api_access_token` in .tfvars you can skip using this script.
+
 Sample Usage (manually editing file):
 ```
 # If you elect to set values in the file
@@ -44,7 +46,7 @@ if __name__ == "__main__":
     EMAIL = ""
 
     parser = argparse.ArgumentParser(
-        description="Request an access token for various test scripts of the API. Rquires AWS account credentials be present locally. Additionally the UserPoolId must allow 'ADMIN_USER_PASSWORD_AUTH'"
+        description="Request an user access token for various test scripts of the API or create a user. Requires AWS account credentials be present locally. Additionally the UserPoolId must allow 'ADMIN_USER_PASSWORD_AUTH'"
     )
     parser.add_argument(
         "--username",
