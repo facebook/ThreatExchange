@@ -15,9 +15,11 @@ from logging import Logger
 from mypy_boto3_sqs.client import SQSClient
 
 from threatexchange.descriptor import ThreatDescriptor
-
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.content_type.meta import get_signal_types_by_name
+
 
 from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.models.signal import (
@@ -175,17 +177,18 @@ def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
 @dataclass
 class MatchesForHashRequest(DictParseable):
     signal_value: str
-    signal_type: str
+    signal_type: t.Type[SignalType]
 
     @classmethod
     def from_dict(cls, d):
-        # todo translate signal type to actual type
-        return cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base.signal_type = get_signal_types_by_name()[base.signal_type]
+        return base
 
 
 @dataclass
 class MatchesForHashResponse(JSONifiable):
-    matches: t.List[t.Union[ThreatExchangeSignalMetadata]]
+    matches: t.List[ThreatExchangeSignalMetadata]
     signal_value: str
 
     def to_json(self) -> t.Dict:
@@ -299,32 +302,25 @@ def get_matches_api(
 
         return ChangeSignalOpinionResponse(success)
 
-    @matches_api.get("/for-hash/", apply=[jsoninator(MatchesForHashRequest)])
+    @matches_api.get(
+        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True)]
+    )
     def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
         """
         For a given hash/signal check the index(es) for matches and return the details
         NOTE: currently metadata returned will not be written to the dynamodb table
         unlike in the case of a pipeline match based on submissions.
         """
-        signal_type = None
-        if request.signal_type == "pdq":
-            # todo translate in MatchesForHashRequest and extend to cover MD5
-            signal_type = PdqSignal
-
-        if not signal_type:
-            # only support PDQ at the moment
-            bottle.response.status = 400
-            return MatchesForHashResponse([], request.signal_value)
 
         matches = _get_matcher(indexes_bucket_name).match(
-            signal_type, request.signal_value
+            request.signal_type, request.signal_value
         )
 
-        match_objects = []
+        match_objects: t.List[ThreatExchangeSignalMetadata] = []
 
         for match in matches:
             match_objects.extend(
-                Matcher.get_metadata_objects_from_match(signal_type, match)
+                Matcher.get_metadata_objects_from_match(request.signal_type, match)
             )
 
         return MatchesForHashResponse(match_objects, request.signal_value)

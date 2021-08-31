@@ -104,6 +104,7 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
         """
         result = asdict(self)
         result.update(
+            signal_type=self.signal_type.get_name(),
             updated_at=self.updated_at.isoformat(),
             pending_opinion_change=self.pending_opinion_change.value,
         )
