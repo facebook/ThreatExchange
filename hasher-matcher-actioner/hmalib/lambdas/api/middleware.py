@@ -79,6 +79,9 @@ def jsoninator(
 
     If request type provided like jsoninator(RequestType), will de-serialize
     request payload into the first argument to the view function.
+
+    Additionlly if `from_query` is set to True then the `from_dict` call will
+    be attempted on the query params instead of the json body of the request.
     """
 
     # I feel like I'm doing a lot of work to support a common API for typed
