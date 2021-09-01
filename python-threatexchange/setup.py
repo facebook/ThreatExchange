@@ -28,6 +28,10 @@ extras_require = {
     "ocr": [
         "pytesseract",
     ],
+    "pdf": [
+        "py-tlsh",
+        "pdfminer.six",
+    ],
 }
 
 all_extras = set(sum(extras_require.values(), []))
@@ -60,8 +64,6 @@ setup(
         "urllib3>=1.26.0",  # For allow_methods
         "dataclasses",
         "python-dateutil",
-        "py-tlsh",
-        "pdfminer.six",
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},
