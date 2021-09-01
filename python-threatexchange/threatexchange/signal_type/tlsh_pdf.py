@@ -5,9 +5,9 @@
 Wrapper around the pdf signal type.
 """
 
-import hashlib
 import pathlib
 import typing as t
+import warnings
 from io import StringIO
 import tlsh
 from pdfminer.converter import TextConverter
@@ -21,7 +21,14 @@ from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
 
 TLSH_CONFIDENT_MATCH_THRESHOLD = 30
-temp_db = [
+EXPECT_TLSH_HASH_LENGTH = 72
+""" 
+This is a new signal type not found on ThreatExchange, in order to test the implementation we
+override this set of hashes we want to match with here.
+ 
+ToDo: @BarrettOlson: make this override cleaner and configurable by signal type in the future 
+"""
+TEMP_MATCH_IMPLEMNTATION_CHECK_DB = [
     [
         "T145B2859FE708266211A3026277C7AEE5FF76402C636AD5BA2C2CC11C23A1F2957773D5",
         ["test", 1],
@@ -44,9 +51,11 @@ class TLSHSignal(
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
-        if str(file).endswith(".pdf"):
-            text = StringIO()
-            in_file = open(file, "rb")
+        if not str(file).endswith(".pdf"):
+            warnings.warn("File does not appear to be a pdf. ", category=UserWarning)
+            return ""
+        text = StringIO()
+        with open(file, "rb") as in_file:
             parser = PDFParser(in_file)
             doc = PDFDocument(parser)
             rsrcmgr = PDFResourceManager()
@@ -55,11 +64,11 @@ class TLSHSignal(
             for page in PDFPage.create_pages(doc):
                 interpreter.process_page(page)
             return str(tlsh.hash(text.getvalue().encode()))
-        print("Please provide a pdf")
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
-        if len(signal_str) == 72:
-            for x in temp_db:
+        matches = []
+        if len(signal_str) == EXPECT_TLSH_HASH_LENGTH:
+            for x in TEMP_MATCH_IMPLEMNTATION_CHECK_DB:
                 if tlsh.diffxlen(x[0], signal_str) <= TLSH_CONFIDENT_MATCH_THRESHOLD:
-                    return x
-        return []
+                    matches.append(x)
+        return matches

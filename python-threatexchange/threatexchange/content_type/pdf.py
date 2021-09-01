@@ -11,7 +11,7 @@ from ..signal_type.signal_base import SignalType
 from .content_base import ContentType
 
 
-class PdfContent(ContentType):
+class PDFContent(ContentType):
     """
     Content that represents text in Portable Document Format.
 

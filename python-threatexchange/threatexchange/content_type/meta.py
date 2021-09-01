@@ -15,7 +15,7 @@ from ..signal_type import signal_base
 @functools.lru_cache(1)
 def get_all_content_types() -> t.List[t.Type[content_base.ContentType]]:
     """Returns all content_type implementations for commands"""
-    return [text.TextContent, video.VideoContent, photo.PhotoContent, pdf.PdfContent]
+    return [text.TextContent, video.VideoContent, photo.PhotoContent, pdf.PDFContent]
 
 
 @functools.lru_cache(1)
