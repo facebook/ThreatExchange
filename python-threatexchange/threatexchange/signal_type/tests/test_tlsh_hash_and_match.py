@@ -1,13 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-
-import base64
-import pathlib
-import tempfile
 import unittest
 
 from threatexchange.signal_type import tlsh_pdf
 
-RANDOM_PDF_TLSH = (
+TEST_PDF_COMPLETE_TLSH = (
     "T145B2859FE708266211A3026277C7AEE5FF76402C636AD5BA2C2CC11C23A1F2957773D5"
 )
 
@@ -26,6 +22,6 @@ class TLSHHasherModuleUnitTest(unittest.TestCase):
         tlsh_half_complete_match = tlsh_pdf.TLSHSignal.match_hash(
             self, tlsh_half_data_hash
         )
-        assert tlsh_complete_data_hash == RANDOM_PDF_TLSH
+        assert tlsh_complete_data_hash == TEST_PDF_COMPLETE_TLSH
         assert tlsh_complete_match != []
         assert tlsh_half_complete_match != []
