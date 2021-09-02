@@ -11,10 +11,10 @@ import Modal from 'react-bootstrap/Modal';
 import ActionRuleFormColumns from './ActionRuleFormColumns';
 import '../../styles/_settings.scss';
 import type {
-  Action,
   ActionRule,
   ClassificationCondition,
 } from '../../pages/settings/ActionRuleSettingsTab';
+import {Action} from '../../pages/settings/ActionSettingsTab';
 
 type Input = {
   actionRule: ActionRule;
@@ -43,7 +43,7 @@ export default function ActionRulesTableRow({
   const [showErrors, setShowErrors] = useState(false);
 
   const onUpdatedActionRuleChange = (
-    update_name: string,
+    update_name: 'name' | 'action_id' | 'classification_conditions',
     new_value: string | ClassificationCondition[],
   ) => {
     const newUpdatedActionRule = updatedActionRule.copyAndProcessUpdate(
@@ -61,13 +61,13 @@ export default function ActionRulesTableRow({
     if (
       actions === undefined ||
       actions.length === 0 ||
-      actionRule.action_id === undefined ||
-      actionRule.action_id.length === 0
+      actionRule.action === undefined ||
+      actionRule.action.length === 0
     ) {
       return <span>&mdash;</span>;
     }
     const actionPerformer = actions.find(
-      action => action.id === actionRule.action_id,
+      action => action.name === actionRule.action,
     );
     if (actionPerformer) {
       return actionPerformer.name;

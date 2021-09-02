@@ -2,48 +2,63 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
 import {add, checkmark, close} from 'ionicons/icons';
-import {
-  fetchAllActions,
-  updateAction,
-  createAction,
-  deleteAction,
-  fetchAllActionRules,
-} from '../../Api';
-import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
+import {updateAction, createAction, deleteAction} from '../../Api';
+import ActionPerformerColumns, {
+  WebhookActionPerformerParams,
+} from '../../components/settings/ActionPerformer/ActionPerformerColumns';
 import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
+import {ActionRule} from './ActionRuleSettingsTab';
 
-const defaultAction = {
-  name: '',
-  config_subtype: '',
-  fields: {url: '', headers: ''},
+type Input = {
+  actions: Action[];
+  setActions: (actions: Action[]) => void;
+  actionRules: ActionRule[];
 };
-export default function ActionSettingsTab(): JSX.Element {
-  /**
-   * TODO This used to have an ActionLabel Settings component here. The
-   * action rules are now in a separate tab. We can now rename this
-   * outer component to ActionPerformerSettingsTab and start the
-   * implementation of that component here. Not doing that now because
-   * someone else is actively working in this space.
-   */
-  const [performers, setPerformers] = useState<any[]>([]);
-  const [actionRulesDependentActions, setActionRulesDependentActions] =
-    useState<any[]>([]);
+
+export class Action {
+  name: string;
+
+  config_subtype: string;
+
+  params: WebhookActionPerformerParams;
+
+  constructor(
+    name: string,
+    config_subtype: string,
+    url: string,
+    headers: string,
+  ) {
+    this.name = name;
+    this.config_subtype = config_subtype;
+    this.params = {url, headers};
+  }
+}
+
+const defaultAction = new Action('', '', '', '');
+
+/**
+ * TODO This used to have an ActionLabel Settings component here. The
+ * action rules are now in a separate tab. We can now rename this
+ * outer component to ActionPerformerSettingsTab and start the
+ * implementation of that component here. Not doing that now because
+ * someone else is actively working in this space.
+ */
+export default function ActionSettingsTab({
+  actions,
+  setActions,
+  actionRules,
+}: Input): JSX.Element {
   const [adding, setAdding] = useState(false);
-  const [newAction, setNewAction] = useState(defaultAction);
+  const [newAction, setNewAction] = useState<Action>(defaultAction);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const rename = ({name, config_subtype: type, ...rest}: any) => ({
-    name,
-    type,
-    params: {...rest},
-  });
   const resetForm = () => {
     setNewAction(defaultAction);
   };
@@ -59,28 +74,12 @@ export default function ActionSettingsTab(): JSX.Element {
     setShowToast(true);
   };
   const deleteActionUI = (name: string) => {
-    const filteredPerformers = performers.filter(
-      (item: any) => item.name !== name,
+    const filteredActions = actions.filter(
+      (action: Action) => action.name !== name,
     );
-    setPerformers(filteredPerformers);
+    setActions(filteredActions);
   };
-  const refreshActions = () => {
-    fetchAllActions().then(response => {
-      const actionPerformers = response.actions_response.map(item =>
-        rename(item),
-      );
-      setPerformers(actionPerformers);
-    });
-    fetchAllActionRules().then(response => {
-      if (response && response.error_message === '') {
-        const mappedActions = response.action_rules.map(
-          actionRule => actionRule.action_label.value,
-        );
-        setActionRulesDependentActions(mappedActions);
-      }
-    });
-  };
-  const onActionUpdate = (updatedAction: any) => {
+  const onActionUpdate = (updatedAction: Action) => {
     updateAction(
       updatedAction.name,
       updatedAction.type,
@@ -88,7 +87,6 @@ export default function ActionSettingsTab(): JSX.Element {
     )
       .then(response => {
         displayToast(response.response);
-        refreshActions();
       })
       .catch(() => {
         displayToast('Errors when updating the action. Please try again later');
@@ -98,7 +96,6 @@ export default function ActionSettingsTab(): JSX.Element {
     createAction(newAction)
       .then(response => {
         displayToast(response.response);
-        refreshActions();
         resetForm();
         setAdding(false);
       })
@@ -116,9 +113,6 @@ export default function ActionSettingsTab(): JSX.Element {
         displayToast('Errors when deleting the action. Please try again later');
       });
   };
-  useEffect(() => {
-    refreshActions();
-  }, []);
 
   return (
     <>
@@ -188,19 +182,19 @@ export default function ActionSettingsTab(): JSX.Element {
                   canNotDeleteOrUpdateName={false}
                 />
               </tr>
-              {performers.length === 0
+              {actions.length === 0
                 ? null
-                : performers.map(performer => (
+                : actions.map(action => (
                     <ActionPerformerRows
-                      key={performer.name}
-                      name={performer.name}
-                      type={performer.type}
-                      params={performer.params}
+                      action={action}
                       edit={false}
                       onSave={onActionUpdate}
                       onDelete={onActionDelete}
                       canNotDeleteOrUpdateName={
-                        actionRulesDependentActions.indexOf(performer.name) >= 0
+                        // Check if any ActionRule is using this Action
+                        actionRules.findIndex(
+                          action_rule => action_rule.action === action.name,
+                        ) >= 0
                       }
                     />
                   ))}

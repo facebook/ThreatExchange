@@ -8,10 +8,10 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Button from 'react-bootstrap/Button';
 import type {
-  Action,
   ActionRule,
   ClassificationCondition,
 } from '../../pages/settings/ActionRuleSettingsTab';
+import {Action} from '../../pages/settings/ActionSettingsTab';
 
 export const classificationTypeTBD = 'TBD';
 
@@ -22,7 +22,7 @@ type Input = {
   nameIsUnique: (newName: string, oldName: string) => boolean;
   oldName: string;
   onChange: (
-    field_name: string,
+    field_name: 'name' | 'action_id' | 'classification_conditions',
     new_value: string | ClassificationCondition[],
   ) => void;
 };
@@ -63,14 +63,29 @@ export default function ActionRuleFormColumns({
             showErrors &&
             classification.classificationType === classificationTypeTBD
           }>
-          <option value={classificationTypeTBD}> Select... </option>
-          <option value="BankSourceClassification">Dataset Source</option>
-          <option value="BankIDClassification">Dataset ID</option>
-          <option value="BankedContentIDClassification">
+          <option key="tbd" value={classificationTypeTBD}>
+            {' '}
+            Select...{' '}
+          </option>
+          <option
+            key="BankSourceClassification"
+            value="BankSourceClassification">
+            Dataset Source
+          </option>
+          <option key="BankIDClassification" value="BankIDClassification">
+            Dataset ID
+          </option>
+          <option
+            key="BankedContentIDClassification"
+            value="BankedContentIDClassification">
             MatchedSignal ID
           </option>
-          <option value="Classification">MatchedSignal</option>
-          <option value="SubmittedContent">SubmittedContent Label</option>
+          <option key="Classification" value="Classification">
+            MatchedSignal
+          </option>
+          <option key="SubmittedContent" value="SubmittedContent">
+            SubmittedContent Label
+          </option>
         </Form.Control>
       </Col>
       <Col xs={2}>
@@ -87,8 +102,12 @@ export default function ActionRuleFormColumns({
             newClassification.equalTo = e.target.value === 'Equals';
             onClassificationChange(newClassification);
           }}>
-          <option value="Equals">=</option>
-          <option value="Not Equals">≠</option>
+          <option key="e" value="Equals">
+            =
+          </option>
+          <option key="ne" value="Not Equals">
+            ≠
+          </option>
         </Form.Control>
       </Col>
       <Col>
@@ -110,7 +129,7 @@ export default function ActionRuleFormColumns({
 
   const actionOptions = actions
     ? actions.map(action => (
-        <option key={action.id} value={action.id}>
+        <option key={action.name} value={action.name}>
           {action.name}
         </option>
       ))
@@ -194,7 +213,7 @@ export default function ActionRuleFormColumns({
       <td>
         <Form.Label>
           Action
-          <span hidden={!showErrors || actionRule.action_id !== '0'}>
+          <span hidden={!showErrors || actionRule.action !== '0'}>
             {' '}
             (required)
           </span>
@@ -202,9 +221,9 @@ export default function ActionRuleFormColumns({
         <Form.Control
           as="select"
           required
-          value={actionRule.action_id}
+          value={actionRule.action}
           onChange={e => onChange('action_id', e.target.value)}
-          isInvalid={showErrors && actionRule.action_id === '0'}>
+          isInvalid={showErrors && actionRule.action === '0'}>
           <option value="0" key="0">
             Select ...
           </option>
