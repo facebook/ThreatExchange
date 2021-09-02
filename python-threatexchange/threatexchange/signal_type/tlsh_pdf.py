@@ -31,7 +31,7 @@ ToDo: @BarrettOlson: make this override cleaner and configurable by signal type 
 TEMP_MATCH_IMPLEMNTATION_CHECK_DB = [
     [
         "T145B2859FE708266211A3026277C7AEE5FF76402C636AD5BA2C2CC11C23A1F2957773D5",
-        ["test", 1],
+        [["test"], 1],
     ]
 ]
 
@@ -46,7 +46,6 @@ class TLSHSignal(
 
     """
 
-    INDICATOR_TYPE = "HASH_PDF"
     TYPE_TAG = "media_type_pdf"
 
     @classmethod
@@ -70,5 +69,5 @@ class TLSHSignal(
         if len(signal_str) == EXPECT_TLSH_HASH_LENGTH:
             for x in TEMP_MATCH_IMPLEMNTATION_CHECK_DB:
                 if tlsh.diffxlen(x[0], signal_str) <= TLSH_CONFIDENT_MATCH_THRESHOLD:
-                    matches.append(x)
+                    matches.append(signal_base.SignalMatch(x[1][0], x[1][1]))
         return matches
