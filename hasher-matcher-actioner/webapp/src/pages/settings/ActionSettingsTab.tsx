@@ -41,7 +41,11 @@ export class Action {
   }
 }
 
-const defaultAction = new Action('', '', '', '');
+const defaultAction = {
+  name: '',
+  config_subtype: '',
+  params: {url: '', headers: ''},
+};
 
 /**
  * TODO This used to have an ActionLabel Settings component here. The
@@ -56,7 +60,7 @@ export default function ActionSettingsTab({
   actionRules,
 }: Input): JSX.Element {
   const [adding, setAdding] = useState(false);
-  const [newAction, setNewAction] = useState<Action>(defaultAction);
+  const [newAction, setNewAction] = useState(defaultAction);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const resetForm = () => {
@@ -66,7 +70,7 @@ export default function ActionSettingsTab({
     if (key === 'name' || key === 'config_subtype') {
       setNewAction({...newAction, ...value});
     } else {
-      setNewAction({...newAction, fields: {...newAction.fields, ...value}});
+      setNewAction({...newAction, params: {...newAction.params, ...value}});
     }
   };
   const displayToast = (message: string) => {
@@ -79,12 +83,12 @@ export default function ActionSettingsTab({
     );
     setActions(filteredActions);
   };
-  const onActionUpdate = (updatedAction: Action) => {
-    updateAction(
-      updatedAction.name,
-      updatedAction.type,
-      updatedAction.updatedAction,
-    )
+  const onActionUpdate = (key: {
+    name: string;
+    type: string;
+    updatedAction: any;
+  }) => {
+    updateAction(key.name, key.type, key.updatedAction)
       .then(response => {
         displayToast(response.response);
       })
@@ -176,7 +180,7 @@ export default function ActionSettingsTab({
                 <ActionPerformerColumns
                   name={newAction.name}
                   type={newAction.config_subtype}
-                  params={newAction.fields}
+                  params={newAction.params}
                   editing
                   onChange={onNewActionChange}
                   canNotDeleteOrUpdateName={false}
@@ -186,7 +190,9 @@ export default function ActionSettingsTab({
                 ? null
                 : actions.map(action => (
                     <ActionPerformerRows
-                      action={action}
+                      name={action.name}
+                      type={action.config_subtype}
+                      params={action.params}
                       edit={false}
                       onSave={onActionUpdate}
                       onDelete={onActionDelete}
