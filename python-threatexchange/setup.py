@@ -28,6 +28,10 @@ extras_require = {
     "ocr": [
         "pytesseract",
     ],
+    "pdf": [
+        "py-tlsh",
+        "pdfminer.six",
+    ],
 }
 
 all_extras = set(sum(extras_require.values(), []))
