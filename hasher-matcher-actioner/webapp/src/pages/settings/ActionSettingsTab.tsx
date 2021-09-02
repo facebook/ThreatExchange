@@ -41,11 +41,7 @@ export class Action {
   }
 }
 
-const defaultAction = {
-  name: '',
-  config_subtype: '',
-  params: {url: '', headers: ''},
-};
+const defaultAction = new Action('', '', '', '');
 
 /**
  * TODO This used to have an ActionLabel Settings component here. The
@@ -66,40 +62,39 @@ export default function ActionSettingsTab({
   const resetForm = () => {
     setNewAction(defaultAction);
   };
-  const onNewActionChange = (key: string, value: any) => {
-    if (key === 'name' || key === 'config_subtype') {
-      setNewAction({...newAction, ...value});
-    } else {
-      setNewAction({...newAction, params: {...newAction.params, ...value}});
-    }
-  };
   const displayToast = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
   };
-  const deleteActionUI = (name: string) => {
-    const filteredActions = actions.filter(
-      (action: Action) => action.name !== name,
-    );
-    setActions(filteredActions);
-  };
-  const onActionUpdate = (key: {
-    name: string;
-    type: string;
-    updatedAction: any;
-  }) => {
-    updateAction(key.name, key.type, key.updatedAction)
+  const onActionUpdate = (
+    old_name: string,
+    old_type: string,
+    updatedAction: any,
+  ) => {
+    updateAction(old_name, old_type, updatedAction)
       .then(response => {
+        actions.unshift(
+          new Action(
+            updatedAction.name,
+            updatedAction.config_subtype,
+            updatedAction.fields.url,
+            updatedAction.fields.headers,
+          ),
+        );
+        setActions(actions);
         displayToast(response.response);
       })
       .catch(() => {
         displayToast('Errors when updating the action. Please try again later');
       });
   };
-  const onActionSave = () => {
+  const onActionCreate = () => {
     createAction(newAction)
       .then(response => {
         displayToast(response.response);
+        const newActions = actions;
+        newActions.unshift(newAction);
+        setActions(newActions);
         resetForm();
         setAdding(false);
       })
@@ -107,11 +102,14 @@ export default function ActionSettingsTab({
         displayToast('Errors when creating the action. Please try again later');
       });
   };
-  const onActionDelete = (name: string) => {
-    deleteAction(name)
+  const onActionDelete = (actionToDelete: Action) => {
+    deleteAction(actionToDelete.name)
       .then(response => {
+        const filteredActions = actions.filter(
+          (action: Action) => action.name !== actionToDelete.name,
+        );
+        setActions(filteredActions);
         displayToast(response.response);
-        deleteActionUI(name);
       })
       .catch(() => {
         displayToast('Errors when deleting the action. Please try again later');
@@ -163,7 +161,7 @@ export default function ActionSettingsTab({
                     variant="outline-primary"
                     className="mb-2 table-action-button"
                     onClick={() => {
-                      onActionSave();
+                      onActionCreate();
                     }}>
                     <IonIcon icon={checkmark} size="large" color="white" />
                   </Button>{' '}
@@ -178,11 +176,9 @@ export default function ActionSettingsTab({
                   </Button>
                 </td>
                 <ActionPerformerColumns
-                  name={newAction.name}
-                  type={newAction.config_subtype}
-                  params={newAction.params}
+                  action={newAction}
                   editing
-                  onChange={onNewActionChange}
+                  updateAction={setNewAction}
                   canNotDeleteOrUpdateName={false}
                 />
               </tr>
@@ -190,12 +186,15 @@ export default function ActionSettingsTab({
                 ? null
                 : actions.map(action => (
                     <ActionPerformerRows
-                      name={action.name}
-                      type={action.config_subtype}
-                      params={action.params}
-                      edit={false}
-                      onSave={onActionUpdate}
-                      onDelete={onActionDelete}
+                      action={action}
+                      saveAction={updatedAction =>
+                        onActionUpdate(
+                          action.name,
+                          action.config_subtype,
+                          updatedAction,
+                        )
+                      }
+                      deleteAction={onActionDelete}
                       canNotDeleteOrUpdateName={
                         // Check if any ActionRule is using this Action
                         actionRules.findIndex(

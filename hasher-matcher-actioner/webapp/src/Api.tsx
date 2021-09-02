@@ -347,9 +347,13 @@ export async function fetchAllActions(): Promise<Action[]> {
 }
 
 export async function createAction(
-  newAction = {},
+  newAction: Action,
 ): Promise<{response: string}> {
-  return apiPost('actions/', newAction);
+  return apiPost('actions/', {
+    name: newAction.name,
+    config_subtype: newAction.config_subtype,
+    fields: newAction.params,
+  });
 }
 
 export async function updateAction(
@@ -357,7 +361,11 @@ export async function updateAction(
   old_config_subtype: string,
   updatedAction: Action,
 ): Promise<{response: string}> {
-  return apiPut(`actions/${old_name}/${old_config_subtype}`, updatedAction);
+  return apiPut(`actions/${old_name}/${old_config_subtype}`, {
+    name: updatedAction.name,
+    config_subtype: updatedAction.config_subtype,
+    fields: updatedAction.params,
+  });
 }
 
 export async function deleteAction(name: string): Promise<{response: string}> {

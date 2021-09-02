@@ -2,10 +2,10 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
-import PropTypes from 'prop-types';
+import {Action} from '../../../pages/settings/ActionSettingsTab';
 
 interface WebhookTypeInterface extends Record<string, any> {
   WebhookPostActionPerformer: string;
@@ -14,45 +14,45 @@ interface WebhookTypeInterface extends Record<string, any> {
   WebhookPutActionPerformer: string;
 }
 
+const ActionerTypes = {
+  WebhookActioner: {
+    args: {
+      url: {description: 'The url to send a webhook to'},
+      webhookType: {
+        description: 'What type of webhook should be sent?',
+        default: 'POST',
+      },
+      headers: {
+        description: 'Optional json object of headers to include in webhook',
+        default: '{}',
+      },
+    },
+    description:
+      'When a match occurs, a webhook will be sent to the specified url with data describing the match',
+  },
+};
+const WebhookType: WebhookTypeInterface = {
+  WebhookPostActionPerformer: 'POST',
+  WebhookGetActionPerformer: 'GET',
+  WebhookDeleteActionPerformer: 'DELETE',
+  WebhookPutActionPerformer: 'PUT',
+};
+const actionerDetails = ActionerTypes.WebhookActioner;
+
 type WebhookActioner = {
-  url: string;
-  headers: string;
-  webhookType: string;
+  action: Action;
   editing: boolean;
-  onChange: (key: string, keyValueMap: {[key: string]: string}) => void;
+  updateAction: (action: Action) => void;
 };
 
 export default function WebhookActioner({
-  url,
-  headers,
-  webhookType,
+  action,
   editing,
-  onChange,
+  updateAction,
 }: WebhookActioner): JSX.Element {
-  const ActionerTypes = {
-    WebhookActioner: {
-      args: {
-        url: {description: 'The url to send a webhook to'},
-        webhookType: {
-          description: 'What type of webhook should be sent?',
-          default: 'POST',
-        },
-        headers: {
-          description: 'Optional json object of headers to include in webhook',
-          default: '{}',
-        },
-      },
-      description:
-        'When a match occurs, a webhook will be sent to the specified url with data describing the match',
-    },
-  };
-  const WebhookType: WebhookTypeInterface = {
-    WebhookPostActionPerformer: 'POST',
-    WebhookGetActionPerformer: 'GET',
-    WebhookDeleteActionPerformer: 'DELETE',
-    WebhookPutActionPerformer: 'PUT',
-  };
-  const actionerDetails = ActionerTypes.WebhookActioner;
+  const [url, setURL] = useState(action.params.url);
+  const [headers, setHeaders] = useState(action.params.headers);
+  const [webhookType, setWebhookType] = useState(action.config_subtype);
 
   return (
     <Card>
@@ -65,11 +65,11 @@ export default function WebhookActioner({
           </Form.Text>
         </Card.Header>
         <Card.Body>
-          URL : {url}
+          URL : {action.params.url}
           <br />
-          Webhook Type : {WebhookType[webhookType]}
+          Webhook Type : {WebhookType[action.config_subtype]}
           <br />
-          Headers : {headers}
+          Headers : {action.params.headers}
           <br />
         </Card.Body>
       </div>
@@ -93,9 +93,12 @@ export default function WebhookActioner({
               </Form.Text>
               <Form.Control
                 type="url"
-                value={url}
+                value={action.params.url}
                 onChange={e => {
-                  onChange('url', {url: e.target.value});
+                  setURL(e.target.value);
+                  const newAction = action;
+                  newAction.params.url = e.target.value;
+                  updateAction(newAction);
                 }}
               />
               <br />
@@ -106,11 +109,12 @@ export default function WebhookActioner({
                 </Form.Text>
                 <Form.Control
                   as="select"
-                  value={webhookType}
+                  value={action.config_subtype}
                   onChange={e => {
-                    onChange('config_subtype', {
-                      config_subtype: e.target.value,
-                    });
+                    setWebhookType(e.target.value);
+                    const newAction = action;
+                    newAction.config_subtype = e.target.value;
+                    updateAction(newAction);
                   }}>
                   <option value="">Please select one option</option>
                   <option value="WebhookPostActionPerformer">POST</option>
@@ -126,9 +130,12 @@ export default function WebhookActioner({
               </Form.Text>
               <Form.Control
                 type="text"
-                value={headers}
+                value={action.params.headers}
                 onChange={e => {
-                  onChange('headers', {headers: e.target.value});
+                  setHeaders(e.target.value);
+                  const newAction = action;
+                  newAction.params.headers = e.target.value;
+                  updateAction(newAction);
                 }}
               />
             </Form.Group>
@@ -138,11 +145,3 @@ export default function WebhookActioner({
     </Card>
   );
 }
-
-WebhookActioner.propTypes = {
-  url: PropTypes.string.isRequired,
-  headers: PropTypes.string.isRequired,
-  editing: PropTypes.bool.isRequired,
-  webhookType: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
