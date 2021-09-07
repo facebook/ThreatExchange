@@ -69,22 +69,22 @@ export default function ActionSettingsTab({
   const onActionUpdate = (
     old_name: string,
     old_type: string,
-    updatedAction: any,
+    updatedAction: Action,
   ) => {
     updateAction(old_name, old_type, updatedAction)
       .then(response => {
-        actions.unshift(
-          new Action(
-            updatedAction.name,
-            updatedAction.config_subtype,
-            updatedAction.fields.url,
-            updatedAction.fields.headers,
-          ),
-        );
-        setActions(actions);
+        const updatedActions = actions.map(action => {
+          if (action.name === old_name) {
+            return updatedAction;
+          }
+          return action;
+        });
+        setActions(updatedActions);
         displayToast(response.response);
       })
-      .catch(() => {
+      .catch(e => {
+        /* eslint-disable-next-line no-console */
+        console.log(e);
         displayToast('Errors when updating the action. Please try again later');
       });
   };
@@ -186,6 +186,7 @@ export default function ActionSettingsTab({
                 ? null
                 : actions.map(action => (
                     <ActionPerformerRows
+                      key={action.name}
                       action={action}
                       saveAction={updatedAction =>
                         onActionUpdate(

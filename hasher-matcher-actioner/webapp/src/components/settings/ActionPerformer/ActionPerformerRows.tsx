@@ -30,7 +30,14 @@ export default function ActionPerformerRows({
     useState(false);
   const [showUpdateActionConfirmation, setShowUpdateActionConfirmation] =
     useState(false);
-  const [updatedAction, setUpdatedAction] = useState(action);
+  const [updatedAction, setUpdatedAction] = useState(
+    new Action(
+      action.name,
+      action.config_subtype,
+      action.params.url,
+      action.params.headers,
+    ),
+  );
 
   const resetForm = () => {
     setUpdatedAction(action);
@@ -99,7 +106,7 @@ export default function ActionPerformerRows({
           ) : null}
         </td>
         <ActionPerformerColumns
-          action={action}
+          action={updatedAction}
           editing={false}
           updateAction={setUpdatedAction}
           canNotDeleteOrUpdateName={canNotDeleteOrUpdateName}

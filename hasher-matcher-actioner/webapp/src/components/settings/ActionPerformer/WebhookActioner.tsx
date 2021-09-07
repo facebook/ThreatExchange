@@ -50,9 +50,9 @@ export default function WebhookActioner({
   editing,
   updateAction,
 }: WebhookActioner): JSX.Element {
-  const [url, setURL] = useState(action.params.url);
-  const [headers, setHeaders] = useState(action.params.headers);
-  const [webhookType, setWebhookType] = useState(action.config_subtype);
+  const [, setURL] = useState(action.params.url);
+  const [, setHeaders] = useState(action.params.headers);
+  const [, setWebhookType] = useState(action.config_subtype);
 
   return (
     <Card>
