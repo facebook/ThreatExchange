@@ -63,7 +63,7 @@ locals {
   ]
 
   all_lambda_names = flatten([
-    [for lambda in var.pipeline_lambdas : lambda[1]], [var.api_lambda_name], var.other_lambdas
+    [for lambda in var.pipeline_lambdas : lambda[1]], [var.api_lambda_name, var.auth_lambda_name], var.other_lambdas
   ])
 
   total_concurrent_lambda = jsonencode({
@@ -81,7 +81,7 @@ locals {
 
   api_lambda_widget = jsonencode({
     height = 6,
-    width  = 12,
+    width  = 6,
     type   = "metric",
     properties = {
       metrics = [
@@ -94,6 +94,28 @@ locals {
       region  = "${var.region}",
       stat    = "Sum",
       title   = "API Requests & λ Concurrency ",
+      view    = "timeSeries",
+      stacked = false
+    }
+  })
+
+  # Currently copies api_lambda_widget. Elected to not create another .tpl file 
+  # as the metrics we care about for each might soon differ.
+  api_auth_lambda_widget = jsonencode({
+    height = 6,
+    width  = 6,
+    type   = "metric",
+    properties = {
+      metrics = [
+        ["AWS/Lambda", "Invocations", "FunctionName", "${var.auth_lambda_name}", { label = "Requests" }],
+        [".", "Errors", ".", ".", { color = "#d62728", yAxis = "left" }],
+        [".", "ConcurrentExecutions", ".", ".", { stat = "Maximum", yAxis = "right" }],
+        [".", "Throttles", ".", ".", { color = "#ff9896", label = "Throttles" }]
+      ],
+      period  = 60,
+      region  = "${var.region}",
+      stat    = "Sum",
+      title   = "Auth Requests & λ Concurrency ",
       view    = "timeSeries",
       stacked = false
     }
@@ -188,6 +210,7 @@ locals {
       ${join(", ", local.queues_to_monitor_items)},
 
       ${local.title_api},
+      ${local.api_auth_lambda_widget},
       ${local.api_lambda_widget},
       ${local.api_response_times},
       ${local.api_gateway_widget},

@@ -56,32 +56,36 @@ def validate_jwt(token: str):
     return {"isAuthorized": False, "context": {"AuthInfo": "JWTTokenCheck"}}
 
 
-def validate_access_token(token: str):
-    response = {"isAuthorized": False, "context": {"AuthInfo": "ServiceAccessToken"}}
+# 10 is ~arbitrary: maxsize > 1 because it is possible for their to be more than one
+# access token in use that we want to cache, however a large number is unlikely.
+@functools.lru_cache(maxsize=10)
+def validate_access_token(token: str) -> bool:
 
     access_tokens = AWSSecrets().hma_api_tokens()
     if not access_tokens or not token:
-        logger.debug("Rejected empty values")
-        return response
+        logger.debug("No access tokens found")
+        return False
 
     if token in access_tokens:
-        logger.debug("Access token approved")
-        response["isAuthorized"] = True
+        return True
 
-    return response
+    return False
 
 
 def lambda_handler(event, context):
 
     token = event["identitySource"][0]
 
+    if validate_access_token(token):
+        return {"isAuthorized": True, "context": {"AuthInfo": "ServiceAccessToken"}}
+
     try:
         # try to decode without any validation just to see if it is a JWT
         jwt.decode(token, algorithms=["RS256"], options={"verify_signature": False})
         return validate_jwt(token)
     except jwt.DecodeError:
-        # Does not appear to be a JWT, attempt alternative auth check(s)
-        return validate_access_token(token)
+        logger.debug("JWT decode failed.")
+        return {"isAuthorized": False}
 
 
 if __name__ == "__main__":

@@ -36,6 +36,12 @@ variable "api_lambda_name" {
   default     = null
 }
 
+variable "auth_lambda_name" {
+  description = "Name of lambda used as the root api"
+  type        = string
+  default     = null
+}
+
 variable "other_lambdas" {
   description = "Extra lambdas to be included in set of concurrent counts"
   type        = list(string)

@@ -333,7 +333,6 @@ resource "aws_apigatewayv2_authorizer" "hma_apigateway" {
   identity_sources                  = ["$request.header.Authorization"]
   authorizer_payload_format_version = "2.0"
   enable_simple_responses           = true
-  authorizer_result_ttl_in_seconds  = 0
   name                              = "${aws_apigatewayv2_api.hma_apigateway.name}_authorizer"
 }
 

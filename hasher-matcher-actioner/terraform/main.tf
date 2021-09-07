@@ -532,7 +532,8 @@ module "dashboard" {
     (["Action Evaluator", module.actions.action_evaluator_function_name]),
     (["Action Performer", module.actions.action_performer_function_name])
   ] # Not currently included fetcher, indexer, writebacker, and counter functions
-  api_lambda_name = module.api.api_root_function_name
+  api_lambda_name  = module.api.api_root_function_name
+  auth_lambda_name = module.api.api_auth_function_name
   other_lambdas = [
     module.fetcher.fetcher_function_name,
     module.indexer.indexer_function_name,
