@@ -56,6 +56,8 @@ def validate_jwt(token: str):
     return {"isAuthorized": False, "context": {"AuthInfo": "JWTTokenCheck"}}
 
 
+# 10 is ~arbitrary: maxsize > 1 because it is possible for their to be more than one
+# access token in use that we want to cache, however a large number is unlikely.
 @functools.lru_cache(maxsize=10)
 def validate_access_token(token: str) -> bool:
 
