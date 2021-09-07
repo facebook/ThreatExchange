@@ -19,18 +19,16 @@ import subprocess
 import typing as t
 import re
 from botocore.exceptions import ClientError
-from hmalib.common.fetcher_models import ThreatExchangeConfig
-from hmalib.common.evaluator_models import (
-    ActionLabel,
-    ActionRule,
-)
+from hmalib.common.configs.fetcher import ThreatExchangeConfig
+from hmalib.common.configs.evaluator import ActionRule
 from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
     BankIDClassificationLabel,
     ClassificationLabel,
+    ActionLabel,
 )
 from hmalib.common import config as hmaconfig
-from hmalib.common.actioner_models import WebhookPostActionPerformer
+from hmalib.common.configs.actioner import WebhookPostActionPerformer
 
 SUPPORTED_CONFIGS = [
     ThreatExchangeConfig,
