@@ -8,6 +8,10 @@ output "api_root_function_name" {
   value = aws_lambda_function.api_root.function_name
 }
 
+output "api_auth_function_name" {
+  value = aws_lambda_function.api_auth.function_name
+}
+
 output "api_gateway_id" {
   value = aws_apigatewayv2_api.hma_apigateway.id
 }
