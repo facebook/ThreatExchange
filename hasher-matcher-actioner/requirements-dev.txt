@@ -5,4 +5,4 @@ black
 moto
 pandas
 WebTest==2.0.35
-Pillow==8.2.0
+Pillow==8.3.2
