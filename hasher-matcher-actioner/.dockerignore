@@ -1,0 +1,14 @@
+webapp/
+terraform/
+tests/
+scripts/
+sample_data/
+docs/
+build/
+dist/
+.vscode/
+.mypy_cache/
+.pytest_cache/
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
