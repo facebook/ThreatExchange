@@ -23,7 +23,7 @@ def print_endpoints(app, with_doc=True):
             if prefixes
             else ""
         )
-        print(f"{path}{route.rule}", route.method, route.callback.__qualname__)
+        print(route.method, f"{path}{route.rule}", route.callback.__qualname__)
         if with_doc:
             print(route.callback.__doc__)
 
