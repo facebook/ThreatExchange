@@ -9,69 +9,38 @@ import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
+import {Action} from '../../../pages/settings/ActionSettingsTab';
 import ActionPerformerColumns from './ActionPerformerColumns';
 
-type Params = {
-  url: string;
-  headers: string;
-};
-
-type Action = {
-  name: string;
-  type: string;
-  updatedAction: any;
-};
-
 type ActionPerformerRowsProps = {
-  name: string;
-  type: string;
-  params: Params;
-  edit: boolean;
-  onSave: (key: Action) => void;
-  onDelete: (key: string) => void;
+  action: Action;
+  saveAction: (newAction: Action) => void;
+  deleteAction: (oldAction: Action) => void;
   canNotDeleteOrUpdateName: boolean;
 };
 
 export default function ActionPerformerRows({
-  name,
-  type,
-  params,
-  edit,
-  onSave,
-  onDelete,
+  action,
+  saveAction,
+  deleteAction,
   canNotDeleteOrUpdateName,
 }: ActionPerformerRowsProps): JSX.Element {
-  const [editing, setEditing] = useState(edit);
+  const [editing, setEditing] = useState(false);
   const [showDeleteActionConfirmation, setShowDeleteActionConfirmation] =
     useState(false);
   const [showUpdateActionConfirmation, setShowUpdateActionConfirmation] =
     useState(false);
-  const [updatedAction, setUpdatedAction] = useState({
-    name,
-    config_subtype: type,
-    fields: params,
-  });
-
-  const onUpdatedActionChange = (
-    key: string,
-    value: {[key: string]: string},
-  ) => {
-    if (key === 'name' || key === 'config_subtype') {
-      setUpdatedAction({...updatedAction, ...value});
-    } else {
-      setUpdatedAction({
-        ...updatedAction,
-        fields: {...updatedAction.fields, ...value},
-      });
-    }
-  };
+  const [updatedAction, setUpdatedAction] = useState(
+    new Action(
+      action.name,
+      action.config_subtype,
+      action.params.url,
+      action.params.headers,
+    ),
+  );
 
   const resetForm = () => {
-    setUpdatedAction({
-      name,
-      config_subtype: type,
-      fields: params,
-    });
+    setUpdatedAction(action);
   };
 
   return (
@@ -101,7 +70,7 @@ export default function ActionPerformerRows({
             <Modal.Body>
               <p>
                 Please confirm you want to delete the action named{' '}
-                <strong>{name}</strong>.
+                <strong>{action.name}</strong>.
               </p>
             </Modal.Body>
             <Modal.Footer>
@@ -110,7 +79,12 @@ export default function ActionPerformerRows({
                 onClick={() => setShowDeleteActionConfirmation(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={() => onDelete(name)}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  deleteAction(action);
+                  setShowDeleteActionConfirmation(false);
+                }}>
                 Yes, Delete This Action
               </Button>
             </Modal.Footer>
@@ -118,10 +92,10 @@ export default function ActionPerformerRows({
           {canNotDeleteOrUpdateName ? (
             <OverlayTrigger
               overlay={
-                <Tooltip id={`tooltip-${name}`}>
-                  The action {name} can not be deleted because it is currently
-                  being used by one or more action rules. Please edit the
-                  rule(s) to refer to another action, or delete the rule(s),
+                <Tooltip id={`tooltip-${action.name}`}>
+                  The action {action.name} can not be deleted because it is
+                  currently being used by one or more action rules. Please edit
+                  the rule(s) to refer to another action, or delete the rule(s),
                   then retry.
                 </Tooltip>
               }>
@@ -132,12 +106,9 @@ export default function ActionPerformerRows({
           ) : null}
         </td>
         <ActionPerformerColumns
-          key={updatedAction.name}
-          name={updatedAction.name}
-          type={updatedAction.config_subtype}
-          params={updatedAction.fields}
+          action={updatedAction}
           editing={false}
-          onChange={onUpdatedActionChange}
+          updateAction={setUpdatedAction}
           canNotDeleteOrUpdateName={canNotDeleteOrUpdateName}
         />
       </tr>
@@ -170,7 +141,7 @@ export default function ActionPerformerRows({
             <Modal.Body>
               <p>
                 Please confirm you want to update the action named{' '}
-                <strong>{name}</strong>.
+                <strong>{action.name}</strong>.
               </p>
             </Modal.Body>
             <Modal.Footer>
@@ -183,7 +154,7 @@ export default function ActionPerformerRows({
                 variant="primary"
                 onClick={() => {
                   setEditing(false);
-                  onSave({name, type, updatedAction});
+                  saveAction(updatedAction);
                   setShowUpdateActionConfirmation(false);
                 }}>
                 Yes, Update This Action
@@ -192,11 +163,9 @@ export default function ActionPerformerRows({
           </Modal>
         </td>
         <ActionPerformerColumns
-          name={updatedAction.name}
-          type={updatedAction.config_subtype}
-          params={updatedAction.fields}
+          action={updatedAction}
           editing
-          onChange={onUpdatedActionChange}
+          updateAction={setUpdatedAction}
           canNotDeleteOrUpdateName={canNotDeleteOrUpdateName}
         />
       </tr>

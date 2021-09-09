@@ -3,6 +3,8 @@
  */
 
 import {Auth, API} from 'aws-amplify';
+import {ActionRule, Label} from './pages/settings/ActionRuleSettingsTab';
+import {Action} from './pages/settings/ActionSettingsTab';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -324,38 +326,85 @@ export async function fetchHashCount(): Promise<Response> {
 
 type AllActions = {
   error_message: string;
-  actions_response: Array<any>;
+  actions_response: Array<{
+    name: string;
+    config_subtype: string;
+    url: string;
+    headers: string;
+  }>;
 };
 
-export async function fetchAllActions(): Promise<AllActions> {
-  return apiGet('actions/');
+export async function fetchAllActions(): Promise<Action[]> {
+  return apiGet<AllActions>('actions/').then(response => {
+    if (response && !response.error_message && response.actions_response) {
+      return response.actions_response.map(
+        ({name, config_subtype, url, headers}) =>
+          new Action(name, config_subtype, url, headers),
+      );
+    }
+    return [];
+  });
 }
 
 export async function createAction(
-  newAction = {},
+  newAction: Action,
 ): Promise<{response: string}> {
-  return apiPost('actions/', newAction);
+  return apiPost('actions/', {
+    name: newAction.name,
+    config_subtype: newAction.config_subtype,
+    fields: newAction.params,
+  });
 }
 
 export async function updateAction(
-  name: string,
-  type: string,
-  updatedAction = {},
+  old_name: string,
+  old_config_subtype: string,
+  updatedAction: Action,
 ): Promise<{response: string}> {
-  return apiPut(`actions/${name}/${type}`, updatedAction);
+  return apiPut(`actions/${old_name}/${old_config_subtype}`, {
+    name: updatedAction.name,
+    config_subtype: updatedAction.config_subtype,
+    fields: updatedAction.params,
+  });
 }
 
 export async function deleteAction(name: string): Promise<{response: string}> {
   return apiDelete(`actions/${name}`);
 }
 
-type AllActionRules = {
-  error_message: string;
-  action_rules: Array<any>;
+// We need two different ActionRule types because the mackend model (must (not) have labels) is different
+// from the Frontend model (classification conditions)
+type APIActionRule = {
+  name: string;
+  must_have_labels: Label[];
+  must_not_have_labels: Label[];
+  action_label: {
+    key: string;
+    value: string;
+  };
 };
 
-export async function fetchAllActionRules(): Promise<AllActionRules> {
-  return apiGet('action-rules/');
+type AllActionRules = {
+  error_message: string;
+  action_rules: Array<APIActionRule>;
+};
+
+export async function fetchAllActionRules(): Promise<ActionRule[]> {
+  return apiGet<AllActionRules>('action-rules/').then(response => {
+    if (response && response.error_message === '' && response.action_rules) {
+      const fetchedActionRules = response.action_rules.map(
+        action_rule =>
+          new ActionRule(
+            action_rule.name,
+            action_rule.must_have_labels,
+            action_rule.must_not_have_labels,
+            action_rule.action_label,
+          ),
+      );
+      return fetchedActionRules;
+    }
+    return [];
+  });
 }
 
 export async function addActionRule(actionRule = {}): Promise<Response> {

@@ -2,103 +2,99 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
 import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
 import {add, checkmark, close} from 'ionicons/icons';
-import {
-  fetchAllActions,
-  updateAction,
-  createAction,
-  deleteAction,
-  fetchAllActionRules,
-} from '../../Api';
-import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
+import {updateAction, createAction, deleteAction} from '../../Api';
+import ActionPerformerColumns, {
+  WebhookActionPerformerParams,
+} from '../../components/settings/ActionPerformer/ActionPerformerColumns';
 import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
+import {ActionRule} from './ActionRuleSettingsTab';
 
-const defaultAction = {
-  name: '',
-  config_subtype: '',
-  fields: {url: '', headers: ''},
+type Input = {
+  actions: Action[];
+  setActions: (actions: Action[]) => void;
+  actionRules: ActionRule[];
 };
-export default function ActionSettingsTab(): JSX.Element {
-  /**
-   * TODO This used to have an ActionLabel Settings component here. The
-   * action rules are now in a separate tab. We can now rename this
-   * outer component to ActionPerformerSettingsTab and start the
-   * implementation of that component here. Not doing that now because
-   * someone else is actively working in this space.
-   */
-  const [performers, setPerformers] = useState<any[]>([]);
-  const [actionRulesDependentActions, setActionRulesDependentActions] =
-    useState<any[]>([]);
+
+export class Action {
+  name: string;
+
+  config_subtype: string;
+
+  params: WebhookActionPerformerParams;
+
+  constructor(
+    name: string,
+    config_subtype: string,
+    url: string,
+    headers: string,
+  ) {
+    this.name = name;
+    this.config_subtype = config_subtype;
+    this.params = {url, headers};
+  }
+}
+
+const defaultAction = new Action('', '', '', '');
+
+/**
+ * TODO This used to have an ActionLabel Settings component here. The
+ * action rules are now in a separate tab. We can now rename this
+ * outer component to ActionPerformerSettingsTab and start the
+ * implementation of that component here. Not doing that now because
+ * someone else is actively working in this space.
+ */
+export default function ActionSettingsTab({
+  actions,
+  setActions,
+  actionRules,
+}: Input): JSX.Element {
   const [adding, setAdding] = useState(false);
   const [newAction, setNewAction] = useState(defaultAction);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const rename = ({name, config_subtype: type, ...rest}: any) => ({
-    name,
-    type,
-    params: {...rest},
-  });
   const resetForm = () => {
     setNewAction(defaultAction);
-  };
-  const onNewActionChange = (key: string, value: any) => {
-    if (key === 'name' || key === 'config_subtype') {
-      setNewAction({...newAction, ...value});
-    } else {
-      setNewAction({...newAction, fields: {...newAction.fields, ...value}});
-    }
   };
   const displayToast = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
   };
-  const deleteActionUI = (name: string) => {
-    const filteredPerformers = performers.filter(
-      (item: any) => item.name !== name,
-    );
-    setPerformers(filteredPerformers);
-  };
-  const refreshActions = () => {
-    fetchAllActions().then(response => {
-      const actionPerformers = response.actions_response.map(item =>
-        rename(item),
-      );
-      setPerformers(actionPerformers);
-    });
-    fetchAllActionRules().then(response => {
-      if (response && response.error_message === '') {
-        const mappedActions = response.action_rules.map(
-          actionRule => actionRule.action_label.value,
-        );
-        setActionRulesDependentActions(mappedActions);
-      }
-    });
-  };
-  const onActionUpdate = (updatedAction: any) => {
-    updateAction(
-      updatedAction.name,
-      updatedAction.type,
-      updatedAction.updatedAction,
-    )
+  const onActionUpdate = (
+    old_name: string,
+    old_type: string,
+    updatedAction: Action,
+  ) => {
+    updateAction(old_name, old_type, updatedAction)
       .then(response => {
+        const updatedActions = actions.map(action => {
+          if (action.name === old_name) {
+            return updatedAction;
+          }
+          return action;
+        });
+        setActions(updatedActions);
         displayToast(response.response);
-        refreshActions();
       })
-      .catch(() => {
+      .catch(e => {
+        /* eslint-disable-next-line no-console */
+        console.log(e);
         displayToast('Errors when updating the action. Please try again later');
       });
   };
-  const onActionSave = () => {
+  const onActionCreate = () => {
     createAction(newAction)
       .then(response => {
         displayToast(response.response);
-        refreshActions();
+        const newActions = actions;
+        newActions.unshift(newAction);
+        setActions(newActions);
         resetForm();
         setAdding(false);
       })
@@ -106,19 +102,19 @@ export default function ActionSettingsTab(): JSX.Element {
         displayToast('Errors when creating the action. Please try again later');
       });
   };
-  const onActionDelete = (name: string) => {
-    deleteAction(name)
+  const onActionDelete = (actionToDelete: Action) => {
+    deleteAction(actionToDelete.name)
       .then(response => {
+        const filteredActions = actions.filter(
+          (action: Action) => action.name !== actionToDelete.name,
+        );
+        setActions(filteredActions);
         displayToast(response.response);
-        deleteActionUI(name);
       })
       .catch(() => {
         displayToast('Errors when deleting the action. Please try again later');
       });
   };
-  useEffect(() => {
-    refreshActions();
-  }, []);
 
   return (
     <>
@@ -165,7 +161,7 @@ export default function ActionSettingsTab(): JSX.Element {
                     variant="outline-primary"
                     className="mb-2 table-action-button"
                     onClick={() => {
-                      onActionSave();
+                      onActionCreate();
                     }}>
                     <IonIcon icon={checkmark} size="large" color="white" />
                   </Button>{' '}
@@ -180,27 +176,31 @@ export default function ActionSettingsTab(): JSX.Element {
                   </Button>
                 </td>
                 <ActionPerformerColumns
-                  name={newAction.name}
-                  type={newAction.config_subtype}
-                  params={newAction.fields}
+                  action={newAction}
                   editing
-                  onChange={onNewActionChange}
+                  updateAction={setNewAction}
                   canNotDeleteOrUpdateName={false}
                 />
               </tr>
-              {performers.length === 0
+              {actions.length === 0
                 ? null
-                : performers.map(performer => (
+                : actions.map(action => (
                     <ActionPerformerRows
-                      key={performer.name}
-                      name={performer.name}
-                      type={performer.type}
-                      params={performer.params}
-                      edit={false}
-                      onSave={onActionUpdate}
-                      onDelete={onActionDelete}
+                      key={action.name}
+                      action={action}
+                      saveAction={updatedAction =>
+                        onActionUpdate(
+                          action.name,
+                          action.config_subtype,
+                          updatedAction,
+                        )
+                      }
+                      deleteAction={onActionDelete}
                       canNotDeleteOrUpdateName={
-                        actionRulesDependentActions.indexOf(performer.name) >= 0
+                        // Check if any ActionRule is using this Action
+                        actionRules.findIndex(
+                          action_rule => action_rule.action === action.name,
+                        ) >= 0
                       }
                     />
                   ))}
