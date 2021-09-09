@@ -62,7 +62,6 @@ export default function ActionRulesTableRow({
       actions === undefined ||
       actions.length === 0 ||
       actionRule.action === undefined ||
-      actionRule.action === null ||
       actionRule.action.length === 0
     ) {
       return <span>&mdash;</span>;

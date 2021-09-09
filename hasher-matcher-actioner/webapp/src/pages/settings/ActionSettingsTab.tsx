@@ -9,12 +9,7 @@ import Button from 'react-bootstrap/Button';
 import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
 import {add, checkmark, close} from 'ionicons/icons';
-import {
-  updateAction,
-  createAction,
-  deleteAction,
-  APIActionPerformer,
-} from '../../Api';
+import {updateAction, createAction, deleteAction} from '../../Api';
 import ActionPerformerColumns, {
   WebhookActionPerformerParams,
 } from '../../components/settings/ActionPerformer/ActionPerformerColumns';
@@ -27,26 +22,19 @@ type Input = {
   actionRules: ActionRule[];
 };
 
-export class Action {
+export type Action = {
   name: string;
 
   config_subtype: string;
 
   params: WebhookActionPerformerParams;
+};
 
-  constructor(action: APIActionPerformer) {
-    this.name = action.name;
-    this.config_subtype = action.config_subtype;
-    this.params = {url: action.url, headers: action.headers};
-  }
-}
-
-const defaultAction = new Action({
+const defaultAction: Action = {
   name: '',
   config_subtype: '',
-  url: '',
-  headers: '',
-});
+  params: {url: '', headers: ''},
+};
 
 /**
  * TODO This used to have an ActionLabel Settings component here. The

@@ -218,7 +218,7 @@ export default function ActionRuleFormColumns({
         <Form.Control
           as="select"
           required
-          value={actionRule.action || ''}
+          value={actionRule.action}
           onChange={e => onChange('action_id', e.target.value)}
           isInvalid={showErrors && !actionRule.action}>
           <option value="" key="null">
