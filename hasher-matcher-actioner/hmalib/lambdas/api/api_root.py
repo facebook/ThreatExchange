@@ -89,7 +89,8 @@ def root():
     )["LastModified"]
 
     return {
-        "message": f"Welcome to the HMA API! Last Modified/Deployed: {last_modified}",
+        "message": "Welcome to the HMA API!",
+        "last_modified": last_modified,
     }
 
 
