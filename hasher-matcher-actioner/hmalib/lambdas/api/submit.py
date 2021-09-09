@@ -16,9 +16,11 @@ from botocore.exceptions import ClientError
 import typing as t
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.photo import PhotoContent
-from threatexchange.content_type.meta import get_content_type_for_name
-from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.content_type.meta import (
+    get_content_type_for_name,
+    get_signal_types_by_name,
+)
 
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
@@ -103,8 +105,14 @@ class SubmitContentBytesRequestBody(SubmitRequestBodyBase):
 @dataclass
 class SubmitContentHashRequestBody(SubmitRequestBodyBase):
     signal_value: str = ""
-    signal_type: str = ""  # SignalType.getname() values
+    signal_type: t.Union[t.Type[SignalType], str] = ""  # SignalType.getname() values
     content_url: str = ""
+
+    @classmethod
+    def from_dict(cls, d):
+        base = super().from_dict(d)
+        base.signal_type = get_signal_types_by_name()[base.signal_type]
+        return base
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         if self.content_url:
@@ -371,11 +379,10 @@ def get_submit_api(
             return _content_exist_error(request.content_id)
 
         # Record hash
-        # todo add MD5 support and branch based on request.hash_type
-        #   note: quality of PDQ hashes should part of `signal_specific_attributes` after #749/related is merged
+        #   ToDo expand submit hash API to include `signal_specific_attributes`
         hash_record = PipelineHashRecord(
             content_id=request.content_id,
-            signal_type=PdqSignal,
+            signal_type=t.cast(t.Type[SignalType], request.signal_type),
             content_hash=request.signal_value,
             updated_at=datetime.datetime.now(),
         )

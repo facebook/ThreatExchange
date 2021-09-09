@@ -196,7 +196,9 @@ class DeployedInstanceClient:
     def submit_test_content_hash(
         self,
         content_id="submit_content_test_hash_id_1",
+        content_type="photo",
         signal_value="f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",  # pdq of "sample_data/b.jpg"
+        signal_type="pdq",
         additional_fields=[
             "this-is:a-test-hash",
             "submitted-from:hma_client_lib.py",
@@ -205,7 +207,9 @@ class DeployedInstanceClient:
         try:
             self.api.submit_hash(
                 content_id=content_id,
+                content_type=content_type,
                 signal_value=signal_value,
+                signal_type=signal_type,
                 additional_fields=additional_fields,
             )
         except (
@@ -217,7 +221,7 @@ class DeployedInstanceClient:
         ) as err:
             print("Error:", err)
 
-    def run_basic_test(self, wait_time_seconds=5, retry_limit=25):
+    def run_basic_test(self, wait_time_seconds=5, retry_limit=25, hash_submit=False):
         """
         Basic e2e (minus webhook listener) test:
         - Create the configurations needed :
@@ -231,7 +235,10 @@ class DeployedInstanceClient:
         print("Added configurations to HMA instance for test")
 
         content_id = f"e2e-test-{datetime.date.today().isoformat()}-{str(uuid.uuid4())}"
-        self.submit_test_content(content_id)
+        if hash_submit:
+            self.submit_test_content_hash(content_id)
+        else:
+            self.submit_test_content(content_id)
         print(f"Submitted content_id {content_id}")
 
         print("Waiting for action history of submitted content_id")
@@ -268,6 +275,15 @@ if __name__ == "__main__":
 
     helper.set_up_test()
 
-    helper.run_basic_test()
+    helper.run_basic_test(hash_submit=True)
+
+    # Test video_md5 hash submit
+    #
+    # helper.submit_test_content_hash(
+    #     content_id="submit_content_test_md5_id_1",
+    #     content_type="video",
+    #     signal_value="2a12f2972373fbd3f693a74adc9042fe",
+    #     signal_type="video_md5",
+    # )
 
     helper.clean_up_test()
