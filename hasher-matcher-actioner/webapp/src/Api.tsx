@@ -372,6 +372,8 @@ export async function deleteAction(name: string): Promise<{response: string}> {
   return apiDelete(`actions/${name}`);
 }
 
+// We need two different ActionRule types because the mackend model (must (not) have labels) is different
+// from the Frontend model (classification conditions)
 type APIActionRule = {
   name: string;
   must_have_labels: Label[];
