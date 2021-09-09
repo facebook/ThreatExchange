@@ -16,7 +16,7 @@ from hmalib.common.threatexchange_config import (
     create_privacy_group_if_not_exists,
 )
 
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 
 
 @dataclass

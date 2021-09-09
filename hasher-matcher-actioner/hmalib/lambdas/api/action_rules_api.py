@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 from bottle import response
 from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.configs.evaluator import ActionRule

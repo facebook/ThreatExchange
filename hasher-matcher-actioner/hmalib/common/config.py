@@ -17,7 +17,7 @@ import typing as t
 import boto3
 from boto3.dynamodb.conditions import Attr
 
-from .aws_dataclass import py_to_aws, aws_to_py
+from hmalib.common.aws_dataclass import py_to_aws, aws_to_py
 
 T = t.TypeVar("T")
 TConfig = t.TypeVar("TConfig", bound="HMAConfig")

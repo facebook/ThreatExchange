@@ -29,7 +29,11 @@ from hmalib.common.models.signal import (
 from hmalib.common.logging import get_logger
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.messages.writeback import WritebackMessage
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+)
 from hmalib.common.config import HMAConfig
 from hmalib.matchers.matchers_base import Matcher
 

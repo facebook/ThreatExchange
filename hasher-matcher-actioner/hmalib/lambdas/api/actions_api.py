@@ -3,7 +3,7 @@
 import bottle
 import typing as t
 from dataclasses import dataclass, asdict
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.configs.actioner import ActionPerformer
