@@ -136,8 +136,7 @@ def get_content_api(
     @content_api.get("/", apply=[jsoninator])
     def content() -> t.Optional[ContentObject]:
         """
-        Content object for a given ID see
-        hmalib/commom/content_models.ContentObject for specific fields
+        Return content object for given ID.
         """
         content_id = bottle.request.query.content_id or None
 
@@ -219,8 +218,7 @@ def get_content_api(
     @content_api.get("/action-history/", apply=[jsoninator])
     def action_history() -> ActionHistoryResponse:
         """
-        List of action event records for a given ID
-        see hmalib/common/content_models.ActionEvent for specific fields
+        Return list of action event records for a given ID.
         """
         if content_id := bottle.request.query.content_id or None:
             return ActionHistoryResponse(
@@ -231,7 +229,7 @@ def get_content_api(
     @content_api.get("/hash/", apply=[jsoninator])
     def hashes() -> t.Optional[HashResultResponse]:
         """
-        hash details for a given ID:
+        Return the hash details for a given ID.
         """
         content_id = bottle.request.query.content_id or None
         if not content_id:
@@ -253,13 +251,15 @@ def get_content_api(
     @content_api.get("/preview-url/", apply=[jsoninator])
     def image():
         """
-        Returns the URL if content was a URL submission. Uses a signed URL for
-        s3 uploads. Also works for videos.
+        Return the a URL to submitted media for a given ID.
+        If URL was submitted is it returned
+        else creates a signed URL for s3 uploads.
+        Also works for videos.
         """
         content_id = bottle.request.query.content_id or None
 
         if not content_id:
-            return bottle.abort(400, "content_id must be provided")
+            return bottle.abort(400, "content_id must be provided.")
 
         content_object: ContentObject = ContentObject.get_from_content_id(
             table=dynamodb_table, content_id=content_id

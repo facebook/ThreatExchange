@@ -306,7 +306,7 @@ def get_submit_api(
         request: SubmitContentBytesRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
         """
-        Direct transfer of bits to system's s3 bucket
+        Submit of media to HMA via a direct transfer of bytes to the system's s3 bucket.
         """
         content_id = request.content_id
         file_contents = base64.b64decode(request.content_bytes)
@@ -327,7 +327,9 @@ def get_submit_api(
         request: SubmitContentViaPutURLUploadRequestBody,
     ) -> t.Union[SubmitViaUploadUrlResponse, SubmitError]:
         """
-        Submission of content to the system's s3 bucket by providing a put url to client
+        Submission of content to HMA in two steps
+        1st the creation to a content record and put url based on request body
+        2nd Upload to the system's s3 bucket by said put url returned by this method
         """
         presigned_url = create_presigned_put_url(
             bucket_name=image_bucket,
@@ -356,7 +358,9 @@ def get_submit_api(
         request: SubmitContentHashRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
         """
-        Endpoint to submit a hash of a piece of content
+        Submission of a hash from a piece of content.
+        Functions the same as other submission endpoint but skips
+        the hasher and media storage.
         """
 
         # Record content object (even though we don't store anything just like with url)
