@@ -281,21 +281,6 @@ def get_submit_api(
             force_resubmit=request.force_resubmit,
         )
 
-    @submit_api.post("/", apply=[jsoninator])
-    def submit() -> SubmitError:
-        """
-        Root for the general submission of content to the system.
-        Currently just provides 400 error code (todo delete, leaving now for debug help)
-        """
-
-        logger.info(f"Submit attempted on root submit endpoint.")
-
-        bottle.response.status = 400
-        return SubmitError(
-            content_id="",
-            message="Submission not supported from just /submit/.",
-        )
-
     @submit_api.post("/url/", apply=[jsoninator(SubmitContentViaURLRequestBody)])
     def submit_url(
         request: SubmitContentViaURLRequestBody,

@@ -28,9 +28,9 @@ from hma_client_lib import DeployedInstanceClient
 from listener import Listener
 from submitter import Submitter
 
-from hmalib.common.evaluator_models import ActionRule
-from hmalib.common.classification_models import ActionLabel, ClassificationLabel
-from hmalib.common.actioner_models import ActionPerformer, WebhookPostActionPerformer
+from hmalib.common.classification_models import ClassificationLabel
+from hmalib.common.configs.evaluator import ActionLabel, ActionRule
+from hmalib.common.configs.actioner import ActionPerformer, WebhookPostActionPerformer
 
 
 class HMAShell(cmd.Cmd):
@@ -86,9 +86,6 @@ class HMAShell(cmd.Cmd):
         DeployedInstanceClient(api=self.api).run_basic_test()
 
     # Utility commands
-    def do_refresh(self, arg):
-        "Refresh token (only needed if shell is open for a long time) status of the test: refresh"
-        self.api._refresh_token()
 
     def do_exit(self, arg):
         "Close the shell: exit"
@@ -123,7 +120,7 @@ if __name__ == "__main__":
         tf_outputs = hma_script_utils.get_terraform_outputs()
 
     token = hma_script_utils.get_auth_from_env(
-        token_default=args.access_token, prompt_for_pwd=True
+        token_default=args.access_token, prompt_for_token=True
     )
 
     api_url = tf_outputs["api_url"]["value"]
