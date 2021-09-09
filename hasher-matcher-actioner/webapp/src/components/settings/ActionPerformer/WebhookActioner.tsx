@@ -50,9 +50,9 @@ export default function WebhookActioner({
   editing,
   updateAction,
 }: WebhookActioner): JSX.Element {
-  const [, setURL] = useState(action.params.url);
-  const [, setHeaders] = useState(action.params.headers);
-  const [, setWebhookType] = useState(action.config_subtype);
+  const [url, setURL] = useState(action.params.url);
+  const [headers, setHeaders] = useState(action.params.headers);
+  const [webhookType, setWebhookType] = useState(action.config_subtype);
 
   return (
     <Card>
@@ -65,11 +65,11 @@ export default function WebhookActioner({
           </Form.Text>
         </Card.Header>
         <Card.Body>
-          URL : {action.params.url}
+          URL : {url}
           <br />
-          Webhook Type : {WebhookType[action.config_subtype]}
+          Webhook Type : {WebhookType[webhookType]}
           <br />
-          Headers : {action.params.headers}
+          Headers : {headers}
           <br />
         </Card.Body>
       </div>
@@ -93,7 +93,7 @@ export default function WebhookActioner({
               </Form.Text>
               <Form.Control
                 type="url"
-                value={action.params.url}
+                value={url}
                 onChange={e => {
                   setURL(e.target.value);
                   const newAction = action;
@@ -109,7 +109,7 @@ export default function WebhookActioner({
                 </Form.Text>
                 <Form.Control
                   as="select"
-                  value={action.config_subtype}
+                  value={webhookType}
                   onChange={e => {
                     setWebhookType(e.target.value);
                     const newAction = action;
@@ -130,7 +130,7 @@ export default function WebhookActioner({
               </Form.Text>
               <Form.Control
                 type="text"
-                value={action.params.headers}
+                value={headers}
                 onChange={e => {
                   setHeaders(e.target.value);
                   const newAction = action;
