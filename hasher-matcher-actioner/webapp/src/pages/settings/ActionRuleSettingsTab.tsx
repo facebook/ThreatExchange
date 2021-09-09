@@ -18,7 +18,13 @@ import ActionRuleFormColumns, {
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
-import {addActionRule, deleteActionRule, updateActionRule} from '../../Api';
+import {
+  addActionRule,
+  APIActionPerformer,
+  APIActionRule,
+  deleteActionRule,
+  updateActionRule,
+} from '../../Api';
 import {Action} from './ActionSettingsTab';
 
 export type Label = {
@@ -43,19 +49,11 @@ export class ActionRule {
 
   action: string;
 
-  constructor(
-    name: string,
-    must_have_labels: Label[],
-    must_not_have_labels: Label[],
-    action_label: {
-      key: string;
-      value: string;
-    },
-  ) {
-    this.name = name;
-    this.action = action_label.value;
-    this.must_have_labels = must_have_labels;
-    this.must_not_have_labels = must_not_have_labels;
+  constructor(apiActionRule: APIActionRule) {
+    this.name = apiActionRule.name;
+    this.action = apiActionRule.action_label.value;
+    this.must_have_labels = apiActionRule.must_have_labels;
+    this.must_not_have_labels = apiActionRule.must_not_have_labels;
 
     this.classification_conditions = this.classificationsFromLabels(
       this.must_have_labels,
@@ -81,16 +79,16 @@ export class ActionRule {
           )
         : this.must_not_have_labels;
 
-    return new ActionRule(
-      update_name === 'name' ? (new_value as string) : this.name,
+    return new ActionRule({
+      name: update_name === 'name' ? (new_value as string) : this.name,
       must_have_labels,
       must_not_have_labels,
-      {
+      action_label: {
         key: 'ActionLabel',
         value:
           update_name === 'action_id' ? (new_value as string) : this.action,
       },
-    );
+    });
   };
 
   mustHaveLabelsFromClassifications = (
@@ -130,14 +128,24 @@ export class ActionRule {
           classificationValue: mustNotHaveLabel.value,
         })),
       );
+
+  asAPIActionRule = (): APIActionRule => ({
+    name: this.name,
+    must_have_labels: this.must_have_labels,
+    must_not_have_labels: this.must_not_have_labels,
+    action_label: {
+      key: 'Action',
+      value: this.action,
+    },
+  });
 }
 
-const defaultActionRule = new ActionRule(
-  '',
-  [{key: classificationTypeTBD, value: ''}],
-  [],
-  {key: 'ActionLabel', value: '0'},
-);
+const defaultActionRule = new ActionRule({
+  name: '',
+  must_have_labels: [{key: classificationTypeTBD, value: ''}],
+  must_not_have_labels: [],
+  action_label: {key: 'ActionLabel', value: ''},
+});
 
 type Input = {
   actions: Action[];
@@ -207,16 +215,6 @@ export default function ActionRuleSettingsTab({
     setShowToast(true);
   };
 
-  const getAPIActionRule = (actionRule: ActionRule) => ({
-    name: actionRule.name,
-    must_have_labels: actionRule.must_have_labels,
-    must_not_have_labels: actionRule.must_not_have_labels,
-    action_label: {
-      key: 'Action',
-      value: actionRule.action,
-    },
-  });
-
   const onAddActionRule = (actionRule: ActionRule, addToUIOnly: boolean) => {
     actionRules.push(actionRule);
     actionRules.sort((a, b) =>
@@ -224,7 +222,7 @@ export default function ActionRuleSettingsTab({
     );
     setActionRules([...actionRules]);
     if (!addToUIOnly) {
-      const apiActionRule = getAPIActionRule(actionRule);
+      const apiActionRule = actionRule.asAPIActionRule();
       addActionRule(apiActionRule);
       displayToast('A new action rule was added successfully.');
     }
@@ -248,7 +246,7 @@ export default function ActionRuleSettingsTab({
   ) => {
     onDeleteActionRule(oldName, true); // deleteFromUIOnly
     onAddActionRule(updatedActionRule, true); // addToUIOnly
-    const apiActionRule = getAPIActionRule(updatedActionRule);
+    const apiActionRule = updatedActionRule.asAPIActionRule();
     updateActionRule(oldName, apiActionRule);
     displayToast('The action rule was updated successfully.');
   };

@@ -213,18 +213,15 @@ export default function ActionRuleFormColumns({
       <td>
         <Form.Label>
           Action
-          <span hidden={!showErrors || actionRule.action !== '0'}>
-            {' '}
-            (required)
-          </span>
+          <span hidden={!showErrors || !!actionRule.action}> (required)</span>
         </Form.Label>
         <Form.Control
           as="select"
           required
-          value={actionRule.action}
+          value={actionRule.action || ''}
           onChange={e => onChange('action_id', e.target.value)}
-          isInvalid={showErrors && actionRule.action === '0'}>
-          <option value="0" key="0">
+          isInvalid={showErrors && !actionRule.action}>
+          <option value="" key="null">
             Select ...
           </option>
           {actionOptions}

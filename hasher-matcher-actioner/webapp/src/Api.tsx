@@ -324,23 +324,23 @@ export async function fetchHashCount(): Promise<Response> {
 
 // TODO remove the trailing slash from the API URL, then add back the leading slash for /actions/ and /action-rules/ endpoints.
 
+// This class should be kept in sync with python class ActionPerformer
+export type APIActionPerformer = {
+  name: string;
+  config_subtype: string;
+  url: string;
+  headers: string;
+};
+
 type AllActions = {
   error_message: string;
-  actions_response: Array<{
-    name: string;
-    config_subtype: string;
-    url: string;
-    headers: string;
-  }>;
+  actions_response: Array<APIActionPerformer>;
 };
 
 export async function fetchAllActions(): Promise<Action[]> {
   return apiGet<AllActions>('actions/').then(response => {
     if (response && !response.error_message && response.actions_response) {
-      return response.actions_response.map(
-        ({name, config_subtype, url, headers}) =>
-          new Action(name, config_subtype, url, headers),
-      );
+      return response.actions_response.map(action => new Action(action));
     }
     return [];
   });
@@ -373,8 +373,9 @@ export async function deleteAction(name: string): Promise<{response: string}> {
 }
 
 // We need two different ActionRule types because the mackend model (must (not) have labels) is different
-// from the Frontend model (classification conditions)
-type APIActionRule = {
+// from the Frontend model (classification conditions).
+// This class should be kept in sync with python class ActionRule
+export type APIActionRule = {
   name: string;
   must_have_labels: Label[];
   must_not_have_labels: Label[];
@@ -394,12 +395,12 @@ export async function fetchAllActionRules(): Promise<ActionRule[]> {
     if (response && response.error_message === '' && response.action_rules) {
       const fetchedActionRules = response.action_rules.map(
         action_rule =>
-          new ActionRule(
-            action_rule.name,
-            action_rule.must_have_labels,
-            action_rule.must_not_have_labels,
-            action_rule.action_label,
-          ),
+          new ActionRule({
+            name: action_rule.name,
+            must_have_labels: action_rule.must_have_labels,
+            must_not_have_labels: action_rule.must_not_have_labels,
+            action_label: action_rule.action_label,
+          }),
       );
       return fetchedActionRules;
     }
@@ -407,7 +408,9 @@ export async function fetchAllActionRules(): Promise<ActionRule[]> {
   });
 }
 
-export async function addActionRule(actionRule = {}): Promise<Response> {
+export async function addActionRule(
+  actionRule: APIActionRule,
+): Promise<Response> {
   return apiPost('action-rules/', {
     action_rule: actionRule,
   });
@@ -415,7 +418,7 @@ export async function addActionRule(actionRule = {}): Promise<Response> {
 
 export async function updateActionRule(
   oldName: string,
-  actionRule = {},
+  actionRule: APIActionRule,
 ): Promise<Response> {
   return apiPut(`action-rules/${oldName}`, {
     action_rule: actionRule,

@@ -9,7 +9,12 @@ import Button from 'react-bootstrap/Button';
 import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
 import {add, checkmark, close} from 'ionicons/icons';
-import {updateAction, createAction, deleteAction} from '../../Api';
+import {
+  updateAction,
+  createAction,
+  deleteAction,
+  APIActionPerformer,
+} from '../../Api';
 import ActionPerformerColumns, {
   WebhookActionPerformerParams,
 } from '../../components/settings/ActionPerformer/ActionPerformerColumns';
@@ -29,19 +34,19 @@ export class Action {
 
   params: WebhookActionPerformerParams;
 
-  constructor(
-    name: string,
-    config_subtype: string,
-    url: string,
-    headers: string,
-  ) {
-    this.name = name;
-    this.config_subtype = config_subtype;
-    this.params = {url, headers};
+  constructor(action: APIActionPerformer) {
+    this.name = action.name;
+    this.config_subtype = action.config_subtype;
+    this.params = {url: action.url, headers: action.headers};
   }
 }
 
-const defaultAction = new Action('', '', '', '');
+const defaultAction = new Action({
+  name: '',
+  config_subtype: '',
+  url: '',
+  headers: '',
+});
 
 /**
  * TODO This used to have an ActionLabel Settings component here. The
@@ -83,9 +88,9 @@ export default function ActionSettingsTab({
         displayToast(response.response);
       })
       .catch(e => {
-        /* eslint-disable-next-line no-console */
-        console.log(e);
-        displayToast('Errors when updating the action. Please try again later');
+        displayToast(
+          `Errors when updating the action. Please try again later\n${e.message}`,
+        );
       });
   };
   const onActionCreate = () => {
@@ -98,8 +103,10 @@ export default function ActionSettingsTab({
         resetForm();
         setAdding(false);
       })
-      .catch(() => {
-        displayToast('Errors when creating the action. Please try again later');
+      .catch(e => {
+        displayToast(
+          `Errors when creating the action. Please try again later\n${e.message}`,
+        );
       });
   };
   const onActionDelete = (actionToDelete: Action) => {
@@ -111,8 +118,10 @@ export default function ActionSettingsTab({
         setActions(filteredActions);
         displayToast(response.response);
       })
-      .catch(() => {
-        displayToast('Errors when deleting the action. Please try again later');
+      .catch(e => {
+        displayToast(
+          `Errors when deleting the action. Please try again later\n${e.message}`,
+        );
       });
   };
 
