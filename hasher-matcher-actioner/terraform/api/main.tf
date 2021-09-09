@@ -153,6 +153,11 @@ data "aws_iam_policy_document" "api_root" {
     resources = [var.writebacks_queue.arn, var.submissions_queue.arn, var.hashes_queue.arn]
   }
 
+  statement {
+    effect    = "Allow"
+    actions   = ["lambda:GetFunctionConfiguration"]
+    resources = [aws_lambda_function.api_root.arn]
+  }
 }
 
 resource "aws_iam_policy" "api_root" {
