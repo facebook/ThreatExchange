@@ -47,6 +47,14 @@ export default function Sidebar(
             Submit Content
           </NavLink>
         </li>
+        <li className="nav-item">
+          <NavLink
+            activeClassName="text-white bg-secondary rounded"
+            to="/banks/"
+            className="nav-link px-2">
+            Banks
+          </NavLink>
+        </li>
       </ul>
 
       <ul className="navbar-nav push-down pb-2 pt-1">

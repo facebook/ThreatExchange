@@ -22,7 +22,7 @@ function BlurMedia(
   ) => JSX.Element,
 ): ({src, override}: BlurUntilHoverImageProps) => JSX.Element {
   function BlurMediaInner({src, override}: BlurUntilHoverImageProps) {
-    const [blurred, setBlurred] = useState(false);
+    const [blurred, setBlurred] = useState(true);
 
     function handleMouseLeave() {
       if (override === undefined) {
