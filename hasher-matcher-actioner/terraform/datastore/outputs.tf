@@ -9,3 +9,10 @@ output "primary_datastore" {
     arn  = aws_dynamodb_table.hma_datastore.arn
   }
 }
+
+output "banks_datastore" {
+  value = {
+    name = aws_dynamodb_table.hma_banks.name
+    arn  = aws_dynamodb_table.hma_banks.arn
+  }
+}

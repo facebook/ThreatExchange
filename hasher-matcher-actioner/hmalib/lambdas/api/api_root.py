@@ -17,6 +17,7 @@ from hmalib.common.models.content import ContentRefType, ContentType
 
 from .action_rules_api import get_action_rules_api
 from .actions_api import get_actions_api
+from .bank import get_bank_api
 from .content import get_content_api
 from .datasets_api import get_datasets_api
 from .matches import get_matches_api
@@ -44,6 +45,7 @@ THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
+BANKS_TABLE = os.environ["BANKS_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
@@ -215,6 +217,8 @@ app.mount(
     "/actions/",
     get_actions_api(hma_config_table=HMA_CONFIG_TABLE),
 )
+
+app.mount("/banks/", get_bank_api(dynamodb.Table(BANKS_TABLE)))
 
 if __name__ == "__main__":
     app.run()
