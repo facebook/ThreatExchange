@@ -191,8 +191,30 @@ class MatchesForHashResponse(JSONifiable):
     matches: t.List[ThreatExchangeSignalMetadata]
     signal_value: str
 
+    UNSUPPORTED_FIELDS = ["updated_at", "pending_opinion_change"]
+
     def to_json(self) -> t.Dict:
-        return {"matches": [match.to_json() for match in self.matches]}
+        return {
+            "matches": [
+                self._remove_unsupported_fields(match.to_json())
+                for match in self.matches
+            ]
+        }
+
+    @classmethod
+    def _remove_unsupported_fields(cls, match_dict: t.Dict) -> t.Dict:
+        """
+        ThreatExchangeSignalMetadata is used to store metadata in dynamodb
+        and handle opinion changes on said signal. However the request this object
+        responds to only handles directly accessing the index. Because of this
+        not all fields of the object are relevant or accurate.
+        """
+        for field in cls.UNSUPPORTED_FIELDS:
+            try:
+                del match_dict[field]
+            except KeyError:
+                pass
+        return match_dict
 
 
 def get_matches_api(
