@@ -29,7 +29,11 @@ from hmalib.common.models.signal import (
 from hmalib.common.logging import get_logger
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.messages.writeback import WritebackMessage
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+)
 from hmalib.common.config import HMAConfig
 from hmalib.matchers.matchers_base import Matcher
 
@@ -237,7 +241,7 @@ def get_matches_api(
     @matches_api.get("/", apply=[jsoninator])
     def matches() -> MatchSummariesResponse:
         """
-        Returns all, or a filtered list of matches.
+        Return all, or a filtered list of matches based on query params.
         """
         signal_q = bottle.request.query.signal_q or None
         signal_source = bottle.request.query.signal_source or None
@@ -268,8 +272,7 @@ def get_matches_api(
     @matches_api.get("/match/", apply=[jsoninator])
     def match_details() -> MatchDetailsResponse:
         """
-        match details API endpoint:
-        return format: match_details : [MatchDetailsResult]
+        Return the match details for a given content id.
         """
         results = []
         if content_id := bottle.request.query.content_id or None:
@@ -279,7 +282,7 @@ def get_matches_api(
     @matches_api.post("/request-signal-opinion-change/", apply=[jsoninator])
     def request_signal_opinion_change() -> ChangeSignalOpinionResponse:
         """
-        request a change to the opinion for a signal in a dataset
+        Request a change to the opinion for a signal in a given privacy_group.
         """
         signal_id = bottle.request.query.signal_id or None
         signal_source = bottle.request.query.signal_source or None
@@ -329,9 +332,10 @@ def get_matches_api(
     )
     def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
         """
-        For a given hash/signal check the index(es) for matches and return the details
-        NOTE: currently metadata returned will not be written to the dynamodb table
-        unlike in the case of a pipeline match based on submissions.
+        For a given hash/signal check the index(es) for matches and return the details.
+
+        This does not change system state, metadata returned will not be written any tables
+        unlike when matches are found for submissions.
         """
 
         matches = _get_matcher(indexes_bucket_name).match(

@@ -16,9 +16,11 @@ from botocore.exceptions import ClientError
 import typing as t
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.photo import PhotoContent
-from threatexchange.content_type.meta import get_content_type_for_name
-from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.content_type.meta import (
+    get_content_type_for_name,
+    get_signal_types_by_name,
+)
 
 
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
@@ -103,8 +105,14 @@ class SubmitContentBytesRequestBody(SubmitRequestBodyBase):
 @dataclass
 class SubmitContentHashRequestBody(SubmitRequestBodyBase):
     signal_value: str = ""
-    signal_type: str = ""  # SignalType.getname() values
+    signal_type: t.Union[t.Type[SignalType], str] = ""  # SignalType.getname() values
     content_url: str = ""
+
+    @classmethod
+    def from_dict(cls, d):
+        base = super().from_dict(d)
+        base.signal_type = get_signal_types_by_name()[base.signal_type]
+        return base
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
         if self.content_url:
@@ -273,21 +281,6 @@ def get_submit_api(
             force_resubmit=request.force_resubmit,
         )
 
-    @submit_api.post("/", apply=[jsoninator])
-    def submit() -> SubmitError:
-        """
-        Root for the general submission of content to the system.
-        Currently just provides 400 error code (todo delete, leaving now for debug help)
-        """
-
-        logger.info(f"Submit attempted on root submit endpoint.")
-
-        bottle.response.status = 400
-        return SubmitError(
-            content_id="",
-            message="Submission not supported from just /submit/.",
-        )
-
     @submit_api.post("/url/", apply=[jsoninator(SubmitContentViaURLRequestBody)])
     def submit_url(
         request: SubmitContentViaURLRequestBody,
@@ -313,7 +306,7 @@ def get_submit_api(
         request: SubmitContentBytesRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
         """
-        Direct transfer of bits to system's s3 bucket
+        Submit of media to HMA via a direct transfer of bytes to the system's s3 bucket.
         """
         content_id = request.content_id
         file_contents = base64.b64decode(request.content_bytes)
@@ -334,7 +327,9 @@ def get_submit_api(
         request: SubmitContentViaPutURLUploadRequestBody,
     ) -> t.Union[SubmitViaUploadUrlResponse, SubmitError]:
         """
-        Submission of content to the system's s3 bucket by providing a put url to client
+        Submission of content to HMA in two steps
+        1st the creation to a content record and put url based on request body
+        2nd Upload to the system's s3 bucket by said put url returned by this method
         """
         presigned_url = create_presigned_put_url(
             bucket_name=image_bucket,
@@ -363,7 +358,9 @@ def get_submit_api(
         request: SubmitContentHashRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
         """
-        Endpoint to submit a hash of a piece of content
+        Submission of a hash from a piece of content.
+        Functions the same as other submission endpoint but skips
+        the hasher and media storage.
         """
 
         # Record content object (even though we don't store anything just like with url)
@@ -371,11 +368,10 @@ def get_submit_api(
             return _content_exist_error(request.content_id)
 
         # Record hash
-        # todo add MD5 support and branch based on request.hash_type
-        #   note: quality of PDQ hashes should part of `signal_specific_attributes` after #749/related is merged
+        #   ToDo expand submit hash API to include `signal_specific_attributes`
         hash_record = PipelineHashRecord(
             content_id=request.content_id,
-            signal_type=PdqSignal,
+            signal_type=t.cast(t.Type[SignalType], request.signal_type),
             content_hash=request.signal_value,
             updated_at=datetime.datetime.now(),
         )

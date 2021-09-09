@@ -15,14 +15,15 @@ from threatexchange.content_type.photo import PhotoContent
 from hmalib.common.logging import get_logger
 from hmalib.common.models.content import ContentRefType, ContentType
 
-from .action_rules_api import get_action_rules_api
-from .actions_api import get_actions_api
-from .bank import get_bank_api
-from .content import get_content_api
-from .datasets_api import get_datasets_api
-from .matches import get_matches_api
-from .stats import get_stats_api
-from .submit import (
+
+from hmalib.lambdas.api.bank import get_bank_api
+from hmalib.lambdas.api.action_rules import get_action_rules_api
+from hmalib.lambdas.api.actions import get_actions_api
+from hmalib.lambdas.api.content import get_content_api
+from hmalib.lambdas.api.datasets import get_datasets_api
+from hmalib.lambdas.api.matches import get_matches_api
+from hmalib.lambdas.api.stats import get_stats_api
+from hmalib.lambdas.api.submit import (
     get_submit_api,
     create_presigned_url,
     record_content_submission,
