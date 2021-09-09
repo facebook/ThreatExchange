@@ -25,12 +25,13 @@ This is enforced by the 4th type of entry in the default table index.
 ## Indices
 
 1. Default Table Index
-PK                        SK                             Item
-#bank_object              <bank_id>                      Bank
-<bank_id>                 member#<bank_member_id>        BankMember
-<bank_id>                 signal#<signal_id>             BankMemberSignal
-signal_type#<signal_type> signal_value#<signal_value>    <signal_id>
-
+Item                  | PK                        | SK                             
+----------------------|---------------------------|------------------------------
+Bank                  | #bank_object              | <bank_id>                      
+BankMember            | <bank_id>                 | member#<bank_member_id>        
+BankMemberSignal      | <bank_id>                 | signal#<signal_id>             
+<signal_id>           | signal_type#<signal_type> | signal_value#<signal_value>    
+|
 Bank objects are all stored under the same partition key because all bank
 information is expected to be less than 10GB. Also, when a bank is deleted, it
 is removed from the (2) BankNameIndex. To be able to find it, there must be
@@ -119,6 +120,56 @@ class Bank(DynamoDBItem):
         return result
 
 
+@dataclass
+class BankMember(DynamoDBItem):
+    """
+    Describes a bank member. A bank member is a piece of content. eg. text,
+    video, photo that a partner wants to match against.
+    """
+
+    bank_id: str
+    bank_member_id: str
+
+    content_type: t.Type[ContentType]
+
+    # Will contain either the media_url (in case of photos / videos / pdfs) or
+    # the raw_content in case of plain text.
+    media_url: str
+    raw_content: str
+
+    notes: str
+
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass
+class BankMemberSignal(DynamoDBItem):
+    """
+    Describes a signal extracted from a bank member.
+    """
+
+    bank_id: str
+    signal_id: str
+
+    signal_type: t.Type[ContentType]
+    signal_value: str
+
+    updated_at: datetime
+
+
+@dataclass
+class BankedSignalEntry(DynamoDBItem):
+    """
+    Enforces uniqueness for a signal_type and signal_vlaue.
+    """
+
+    signal_type: t.Type[SignalType]
+    signal_value: str
+
+    signal_id: str
+
+
 class BanksTable:
     """
     Provides query + update methods on the entire table.
@@ -156,3 +207,13 @@ class BanksTable:
             Bank.from_dynamodb_item(item)
             for item in self._table.scan(IndexName="BankNameIndex")["Items"]
         ]
+
+    def add_bank_member(
+        self,
+        bank_id: str,
+        content_type: t.Type[ContentType],
+        media_url: t.Optional[str],
+        raw_content: t.Optional[str],
+        notes: str,
+    ) -> BankMember:
+        pass
