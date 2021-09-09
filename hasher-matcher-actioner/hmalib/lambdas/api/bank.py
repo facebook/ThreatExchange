@@ -43,4 +43,12 @@ def get_bank_api(bank_table: Table) -> bottle.Bottle:
             bank_description=bottle.request.json["bank_description"],
         )
 
+    @bank_api.post("/update-bank/<bank_id>", apply=[jsoninator])
+    def update_bank(bank_id=None) -> Bank:
+        return table_manager.update_bank(
+            bank_id=bank_id,
+            bank_name=bottle.request.json["bank_name"],
+            bank_description=bottle.request.json["bank_description"],
+        )
+
     return bank_api
