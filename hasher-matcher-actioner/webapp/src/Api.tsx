@@ -428,18 +428,37 @@ export async function deleteActionRule(name: string): Promise<Response> {
   return apiDelete(`action-rules/${name}`);
 }
 
+type BankWithStringDates = Bank & {
+  created_at: string;
+  updated_at: string;
+};
+
+type AllBanksResponse = {
+  banks: BankWithStringDates[];
+};
+
 export async function fetchAllBanks(): Promise<Bank[]> {
-  return apiGet('banks/get-all-banks').then((response: any) => response.banks);
+  return apiGet<AllBanksResponse>('banks/get-all-banks').then(response =>
+    response.banks.map(item => ({
+      bank_id: item.bank_id!,
+      bank_name: item.bank_name!,
+      bank_description: item.bank_description!,
+      created_at: toDate(item.created_at)!,
+      updated_at: toDate(item.updated_at)!,
+    })),
+  );
 }
 
 export async function fetchBank(bankId: string): Promise<Bank> {
-  return apiGet(`banks/get-bank/${bankId}`).then((response: any) => ({
-    bank_id: response.bank_id!,
-    bank_name: response.bank_name!,
-    bank_description: response.bank_description!,
-    created_at: toDate(response.created_at)!,
-    updated_at: toDate(response.updated_at)!,
-  }));
+  return apiGet<BankWithStringDates>(`banks/get-bank/${bankId}`).then(
+    response => ({
+      bank_id: response.bank_id!,
+      bank_name: response.bank_name!,
+      bank_description: response.bank_description!,
+      created_at: toDate(response.created_at)!,
+      updated_at: toDate(response.updated_at)!,
+    }),
+  );
 }
 
 export async function createBank(
@@ -457,10 +476,10 @@ export async function updateBank(
   bankName: string,
   bankDescription: string,
 ): Promise<Bank> {
-  return apiPost(`banks/update-bank/${bankId}`, {
+  return apiPost<BankWithStringDates>(`banks/update-bank/${bankId}`, {
     bank_name: bankName,
     bank_description: bankDescription,
-  }).then((response: any) => ({
+  }).then(response => ({
     bank_id: response.bank_id!,
     bank_name: response.bank_name!,
     bank_description: response.bank_description!,
