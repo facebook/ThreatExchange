@@ -5,6 +5,8 @@
 import {Auth, API} from 'aws-amplify';
 import {ActionRule, Label} from './pages/settings/ActionRuleSettingsTab';
 import {Action} from './pages/settings/ActionSettingsTab';
+import {Bank} from './messages/BankMessages';
+import {toDate} from './utils/DateTimeUtils';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -424,4 +426,64 @@ export async function updateActionRule(
 
 export async function deleteActionRule(name: string): Promise<Response> {
   return apiDelete(`action-rules/${name}`);
+}
+
+type BankWithStringDates = Bank & {
+  created_at: string;
+  updated_at: string;
+};
+
+type AllBanksResponse = {
+  banks: BankWithStringDates[];
+};
+
+export async function fetchAllBanks(): Promise<Bank[]> {
+  return apiGet<AllBanksResponse>('banks/get-all-banks').then(response =>
+    response.banks.map(item => ({
+      bank_id: item.bank_id!,
+      bank_name: item.bank_name!,
+      bank_description: item.bank_description!,
+      created_at: toDate(item.created_at)!,
+      updated_at: toDate(item.updated_at)!,
+    })),
+  );
+}
+
+export async function fetchBank(bankId: string): Promise<Bank> {
+  return apiGet<BankWithStringDates>(`banks/get-bank/${bankId}`).then(
+    response => ({
+      bank_id: response.bank_id!,
+      bank_name: response.bank_name!,
+      bank_description: response.bank_description!,
+      created_at: toDate(response.created_at)!,
+      updated_at: toDate(response.updated_at)!,
+    }),
+  );
+}
+
+export async function createBank(
+  bankName: string,
+  bankDescription: string,
+): Promise<void> {
+  return apiPost('banks/create-bank', {
+    bank_name: bankName,
+    bank_description: bankDescription,
+  });
+}
+
+export async function updateBank(
+  bankId: string,
+  bankName: string,
+  bankDescription: string,
+): Promise<Bank> {
+  return apiPost<BankWithStringDates>(`banks/update-bank/${bankId}`, {
+    bank_name: bankName,
+    bank_description: bankDescription,
+  }).then(response => ({
+    bank_id: response.bank_id!,
+    bank_name: response.bank_name!,
+    bank_description: response.bank_description!,
+    created_at: toDate(response.created_at)!,
+    updated_at: toDate(response.updated_at)!,
+  }));
 }

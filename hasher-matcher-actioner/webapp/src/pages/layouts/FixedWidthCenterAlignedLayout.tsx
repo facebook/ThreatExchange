@@ -6,13 +6,16 @@ import React from 'react';
 import {Container, Row, Col} from 'react-bootstrap';
 
 type FixedWidthCenterAlignedLayoutProps = {
-  title: string;
+  title?: string;
   children: JSX.Element | JSX.Element[];
 };
 
 /**
  * Uses a bootstrap container to put all content in the center of the main area.
  * Supports a title and any children.
+ *
+ * If title is not provided, does not provide the top row. You should provide
+ * your own.
  *
  * Does not provide rows and cols. That is for pages to provide.
  *
@@ -30,8 +33,7 @@ type FixedWidthCenterAlignedLayoutProps = {
  * )
  * ```
  *
- * Centralizing the layouts like this allows page authors to focus on the
- * page.
+ * Centralizing the layouts like this allows page authors to focus on the page.
  */
 export default function FixedWidthCenterAlignedLayout({
   title,
@@ -39,12 +41,18 @@ export default function FixedWidthCenterAlignedLayout({
 }: FixedWidthCenterAlignedLayoutProps): JSX.Element {
   return (
     <Container>
-      <Row>
-        <Col className="mt-4">
-          <h1>{title}</h1>
-        </Col>
-      </Row>
+      {title !== undefined ? (
+        <Row>
+          <Col className="mt-4">
+            <h1>{title}</h1>
+          </Col>
+        </Row>
+      ) : null}
       {children}
     </Container>
   );
 }
+
+FixedWidthCenterAlignedLayout.defaultProps = {
+  title: undefined,
+};

@@ -208,6 +208,30 @@ class BanksTable:
             for item in self._table.scan(IndexName="BankNameIndex")["Items"]
         ]
 
+    def update_bank(
+        self,
+        bank_id: str,
+        bank_name: t.Optional[str],
+        bank_description: t.Optional[str],
+    ) -> Bank:
+        bank = Bank.from_dynamodb_item(
+            self._table.get_item(
+                Key={"SK": bank_id, "PK": Bank.BANK_OBJECT_PARTITION_KEY}
+            )["Item"]
+        )
+
+        if bank_name:
+            bank.bank_name = bank_name
+
+        if bank_description:
+            bank.bank_description = bank_description
+
+        if bank_name or bank_description:
+            bank.updated_at = datetime.now()
+            bank.write_to_table(table=self._table)
+
+        return bank
+
     def add_bank_member(
         self,
         bank_id: str,

@@ -20,6 +20,8 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import SubmitContent from './pages/SubmitContent';
 import ContentDetailsWithStepper from './pages/ContentDetailsWithStepper';
+import ViewAllBanks from './pages/bank-management/ViewAllBanks';
+import ViewBank from './pages/bank-management/ViewBank';
 
 export default function App(): JSX.Element {
   return (
@@ -55,6 +57,12 @@ export default function App(): JSX.Element {
               </Route>
               <Route path="/settings">
                 <Redirect to="/settings/signals" />
+              </Route>
+              <Route path="/banks/bank/:bankId/:tab">
+                <ViewBank />
+              </Route>
+              <Route path="/banks/">
+                <ViewAllBanks />
               </Route>
               <Route path="/">
                 <Dashboard />

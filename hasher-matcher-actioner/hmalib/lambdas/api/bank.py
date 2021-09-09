@@ -29,16 +29,36 @@ def get_bank_api(bank_table: Table) -> bottle.Bottle:
 
     @bank_api.get("/get-all-banks", apply=[jsoninator])
     def get_all_banks() -> AllBanksEnvelope:
+        """
+        Get all banks.
+        """
         return AllBanksEnvelope(banks=table_manager.get_all_banks())
 
     @bank_api.get("/get-bank/<bank_id>", apply=[jsoninator])
     def get_bank(bank_id=None) -> Bank:
+        """
+        Get a specific bank from a bank_id.
+        """
         bank = table_manager.get_bank(bank_id=bank_id)
         return bank
 
     @bank_api.post("/create-bank", apply=[jsoninator])
     def create_bank() -> Bank:
+        """
+        Create a bank using only the name and description.
+        """
         return table_manager.create_bank(
+            bank_name=bottle.request.json["bank_name"],
+            bank_description=bottle.request.json["bank_description"],
+        )
+
+    @bank_api.post("/update-bank/<bank_id>", apply=[jsoninator])
+    def update_bank(bank_id=None) -> Bank:
+        """
+        Update name and description for a bank_id.
+        """
+        return table_manager.update_bank(
+            bank_id=bank_id,
             bank_name=bottle.request.json["bank_name"],
             bank_description=bottle.request.json["bank_description"],
         )
