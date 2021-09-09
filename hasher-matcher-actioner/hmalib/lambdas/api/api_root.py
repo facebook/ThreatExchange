@@ -78,8 +78,18 @@ def error500(e):
 
 @app.get("/")
 def root():
+    """
+    root endpoint to make sure the API is live and check when it was last updated
+    """
+    context = bottle.request.environ.get("apig_wsgi.context")
+    invoked_function_arn = context.invoked_function_arn
+    client = boto3.client("lambda")
+    last_modified = client.get_function_configuration(
+        FunctionName=invoked_function_arn
+    )["LastModified"]
+
     return {
-        "message": "Hello World, HMA",
+        "message": f"Welcome to the HMA API! Last Modified/Deployed: {last_modified}",
     }
 
 
