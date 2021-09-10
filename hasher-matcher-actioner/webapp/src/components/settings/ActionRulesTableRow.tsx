@@ -43,7 +43,7 @@ export default function ActionRulesTableRow({
   const [showErrors, setShowErrors] = useState(false);
 
   const onUpdatedActionRuleChange = (
-    update_name: 'name' | 'action_id' | 'classification_conditions',
+    update_name: 'name' | 'action_name' | 'classification_conditions',
     new_value: string | ClassificationCondition[],
   ) => {
     const newUpdatedActionRule = updatedActionRule.copyAndProcessUpdate(
@@ -61,13 +61,13 @@ export default function ActionRulesTableRow({
     if (
       actions === undefined ||
       actions.length === 0 ||
-      actionRule.action === undefined ||
-      actionRule.action.length === 0
+      actionRule.action_name === undefined ||
+      actionRule.action_name.length === 0
     ) {
       return <span>&mdash;</span>;
     }
     const actionPerformer = actions.find(
-      action => action.name === actionRule.action,
+      action => action.name === actionRule.action_name,
     );
     if (actionPerformer) {
       return actionPerformer.name;

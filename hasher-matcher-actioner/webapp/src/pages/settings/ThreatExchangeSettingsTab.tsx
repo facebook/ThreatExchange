@@ -96,10 +96,10 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
         setLoading(false);
         setDatasets(response.threat_exchange_datasets);
       })
-      .catch(() => {
+      .catch(e => {
         setLoading(false);
         setToastBody(
-          'Errors when fetching privacy groups. Please try again later',
+          `Errors when fetching privacy groups. Please try again later\n ${e.message}`,
         );
         setShowToast(true);
       });

@@ -324,7 +324,7 @@ export async function fetchHashCount(): Promise<Response> {
 
 // TODO remove the trailing slash from the API URL, then add back the leading slash for /actions/ and /action-rules/ endpoints.
 
-// This class should be kept in sync with python class ActionPerformer
+// This class should be kept in sync with python class ActionPerformer (hmalib.common.configs.actioner.ActionPerformer)
 type BackendActionPerformer = {
   name: string;
   config_subtype: string;
@@ -381,7 +381,7 @@ export async function deleteAction(name: string): Promise<{response: string}> {
 
 // We need two different ActionRule types because the mackend model (must (not) have labels) is different
 // from the Frontend model (classification conditions).
-// This class should be kept in sync with python class ActionRule
+// This class should be kept in sync with python class ActionRule (hmalib.common.configs.evaluator.ActionRule)
 type BackendActionRule = {
   name: string;
   must_have_labels: Label[];
@@ -399,7 +399,7 @@ const convertToBackendActionRule = (frontend_action_rule: ActionRule) =>
     must_not_have_labels: frontend_action_rule.must_not_have_labels,
     action_label: {
       key: 'Action',
-      value: frontend_action_rule.action,
+      value: frontend_action_rule.action_name,
     },
   } as BackendActionRule);
 
@@ -412,12 +412,12 @@ export async function fetchAllActionRules(): Promise<ActionRule[]> {
   return apiGet<AllActionRules>('action-rules/').then(response => {
     if (response && response.error_message === '' && response.action_rules) {
       const fetchedActionRules = response.action_rules.map(
-        action_rule =>
+        backend_action_rule =>
           new ActionRule(
-            action_rule.name,
-            action_rule.action_label.value,
-            action_rule.must_have_labels,
-            action_rule.must_not_have_labels,
+            backend_action_rule.name,
+            backend_action_rule.action_label.value,
+            backend_action_rule.must_have_labels,
+            backend_action_rule.must_not_have_labels,
           ),
       );
       return fetchedActionRules;

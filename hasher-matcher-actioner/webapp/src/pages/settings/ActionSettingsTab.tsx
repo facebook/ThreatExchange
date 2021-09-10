@@ -196,7 +196,8 @@ export default function ActionSettingsTab({
                       canNotDeleteOrUpdateName={
                         // Check if any ActionRule is using this Action
                         actionRules.findIndex(
-                          action_rule => action_rule.action === action.name,
+                          action_rule =>
+                            action_rule.action_name === action.name,
                         ) >= 0
                       }
                     />
