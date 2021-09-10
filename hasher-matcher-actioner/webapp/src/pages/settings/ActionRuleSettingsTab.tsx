@@ -41,19 +41,16 @@ export class ActionRule {
 
   classification_conditions: ClassificationCondition[];
 
-  action: string;
+  action_name: string;
 
   constructor(
     name: string,
+    action_name: string,
     must_have_labels: Label[],
     must_not_have_labels: Label[],
-    action_label: {
-      key: string;
-      value: string;
-    },
   ) {
     this.name = name;
-    this.action = action_label.value;
+    this.action_name = action_name;
     this.must_have_labels = must_have_labels;
     this.must_not_have_labels = must_not_have_labels;
 
@@ -64,7 +61,7 @@ export class ActionRule {
   }
 
   copyAndProcessUpdate = (
-    update_name: 'name' | 'action_id' | 'classification_conditions',
+    update_name: 'name' | 'action_name' | 'classification_conditions',
     new_value: ClassificationCondition[] | string,
   ): ActionRule => {
     const must_have_labels =
@@ -83,13 +80,9 @@ export class ActionRule {
 
     return new ActionRule(
       update_name === 'name' ? (new_value as string) : this.name,
+      update_name === 'action_name' ? (new_value as string) : this.action_name,
       must_have_labels,
       must_not_have_labels,
-      {
-        key: 'ActionLabel',
-        value:
-          update_name === 'action_id' ? (new_value as string) : this.action,
-      },
     );
   };
 
@@ -134,9 +127,9 @@ export class ActionRule {
 
 const defaultActionRule = new ActionRule(
   '',
+  '',
   [{key: classificationTypeTBD, value: ''}],
   [],
-  {key: 'ActionLabel', value: '0'},
 );
 
 type Input = {
@@ -157,7 +150,7 @@ export default function ActionRuleSettingsTab({
   const [toastMessage, setToastMessage] = useState('');
 
   const onNewActionRuleChange = (
-    update_name: 'name' | 'action_id' | 'classification_conditions',
+    update_name: 'name' | 'action_name' | 'classification_conditions',
     new_value: ClassificationCondition[] | string,
   ) => {
     const newNewActionRule = newActionRule.copyAndProcessUpdate(
@@ -192,7 +185,7 @@ export default function ActionRuleSettingsTab({
       actionRule.must_not_have_labels.every(
         label => label.key !== classificationTypeTBD && label.value,
       ) &&
-      actionRule.action !== defaultActionRule.action &&
+      actionRule.action_name !== defaultActionRule.action_name &&
       actionRuleNameIsUnique(actionRule.name, oldName)) as boolean;
 
   const ruleIsValid = (actionRule: ActionRule, oldName: string) =>
@@ -207,16 +200,6 @@ export default function ActionRuleSettingsTab({
     setShowToast(true);
   };
 
-  const getAPIActionRule = (actionRule: ActionRule) => ({
-    name: actionRule.name,
-    must_have_labels: actionRule.must_have_labels,
-    must_not_have_labels: actionRule.must_not_have_labels,
-    action_label: {
-      key: 'Action',
-      value: actionRule.action,
-    },
-  });
-
   const onAddActionRule = (actionRule: ActionRule, addToUIOnly: boolean) => {
     actionRules.push(actionRule);
     actionRules.sort((a, b) =>
@@ -224,8 +207,7 @@ export default function ActionRuleSettingsTab({
     );
     setActionRules([...actionRules]);
     if (!addToUIOnly) {
-      const apiActionRule = getAPIActionRule(actionRule);
-      addActionRule(apiActionRule);
+      addActionRule(actionRule);
       displayToast('A new action rule was added successfully.');
     }
   };
@@ -248,8 +230,7 @@ export default function ActionRuleSettingsTab({
   ) => {
     onDeleteActionRule(oldName, true); // deleteFromUIOnly
     onAddActionRule(updatedActionRule, true); // addToUIOnly
-    const apiActionRule = getAPIActionRule(updatedActionRule);
-    updateActionRule(oldName, apiActionRule);
+    updateActionRule(oldName, updatedActionRule);
     displayToast('The action rule was updated successfully.');
   };
 

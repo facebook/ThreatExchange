@@ -22,26 +22,19 @@ type Input = {
   actionRules: ActionRule[];
 };
 
-export class Action {
+export type Action = {
   name: string;
 
   config_subtype: string;
 
   params: WebhookActionPerformerParams;
+};
 
-  constructor(
-    name: string,
-    config_subtype: string,
-    url: string,
-    headers: string,
-  ) {
-    this.name = name;
-    this.config_subtype = config_subtype;
-    this.params = {url, headers};
-  }
-}
-
-const defaultAction = new Action('', '', '', '');
+const defaultAction: Action = {
+  name: '',
+  config_subtype: '',
+  params: {url: '', headers: ''},
+};
 
 /**
  * TODO This used to have an ActionLabel Settings component here. The
@@ -83,9 +76,9 @@ export default function ActionSettingsTab({
         displayToast(response.response);
       })
       .catch(e => {
-        /* eslint-disable-next-line no-console */
-        console.log(e);
-        displayToast('Errors when updating the action. Please try again later');
+        displayToast(
+          `Errors when updating the action. Please try again later\n${e.message}`,
+        );
       });
   };
   const onActionCreate = () => {
@@ -98,8 +91,10 @@ export default function ActionSettingsTab({
         resetForm();
         setAdding(false);
       })
-      .catch(() => {
-        displayToast('Errors when creating the action. Please try again later');
+      .catch(e => {
+        displayToast(
+          `Errors when creating the action. Please try again later\n${e.message}`,
+        );
       });
   };
   const onActionDelete = (actionToDelete: Action) => {
@@ -111,8 +106,10 @@ export default function ActionSettingsTab({
         setActions(filteredActions);
         displayToast(response.response);
       })
-      .catch(() => {
-        displayToast('Errors when deleting the action. Please try again later');
+      .catch(e => {
+        displayToast(
+          `Errors when deleting the action. Please try again later\n${e.message}`,
+        );
       });
   };
 
@@ -199,7 +196,8 @@ export default function ActionSettingsTab({
                       canNotDeleteOrUpdateName={
                         // Check if any ActionRule is using this Action
                         actionRules.findIndex(
-                          action_rule => action_rule.action === action.name,
+                          action_rule =>
+                            action_rule.action_name === action.name,
                         ) >= 0
                       }
                     />

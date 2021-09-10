@@ -15,6 +15,7 @@ class Action:
     superseded_by: t.List[ActionLabel]
 
 
+# This class should be kept in sync with TypeScript type BackendActionRule in API.tsx
 @dataclass
 class ActionRule(HMAConfig, HasAWSSerialization):
     """

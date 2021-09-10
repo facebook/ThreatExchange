@@ -30,14 +30,7 @@ export default function ActionPerformerRows({
     useState(false);
   const [showUpdateActionConfirmation, setShowUpdateActionConfirmation] =
     useState(false);
-  const [updatedAction, setUpdatedAction] = useState(
-    new Action(
-      action.name,
-      action.config_subtype,
-      action.params.url,
-      action.params.headers,
-    ),
-  );
+  const [updatedAction, setUpdatedAction] = useState(action);
 
   const resetForm = () => {
     setUpdatedAction(action);

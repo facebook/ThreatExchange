@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 TUrl = t.Union[t.Text, bytes]
 
-
+# This class should be kept in sync with typescript class BackendActionPerformer in API.tsx
 class ActionPerformer(config.HMAConfigWithSubtypes, HasAWSSerialization):
     """
     An ActionPerfomer is the configuration + the code to perform an action.

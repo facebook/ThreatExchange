@@ -22,7 +22,7 @@ type Input = {
   nameIsUnique: (newName: string, oldName: string) => boolean;
   oldName: string;
   onChange: (
-    field_name: 'name' | 'action_id' | 'classification_conditions',
+    field_name: 'name' | 'action_name' | 'classification_conditions',
     new_value: string | ClassificationCondition[],
   ) => void;
 };
@@ -213,7 +213,7 @@ export default function ActionRuleFormColumns({
       <td>
         <Form.Label>
           Action
-          <span hidden={!showErrors || actionRule.action !== '0'}>
+          <span hidden={!showErrors || !!actionRule.action_name}>
             {' '}
             (required)
           </span>
@@ -221,10 +221,10 @@ export default function ActionRuleFormColumns({
         <Form.Control
           as="select"
           required
-          value={actionRule.action}
-          onChange={e => onChange('action_id', e.target.value)}
-          isInvalid={showErrors && actionRule.action === '0'}>
-          <option value="0" key="0">
+          value={actionRule.action_name}
+          onChange={e => onChange('action_name', e.target.value)}
+          isInvalid={showErrors && !actionRule.action_name}>
+          <option value="" key="null">
             Select ...
           </option>
           {actionOptions}

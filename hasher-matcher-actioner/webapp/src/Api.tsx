@@ -326,22 +326,29 @@ export async function fetchHashCount(): Promise<Response> {
 
 // TODO remove the trailing slash from the API URL, then add back the leading slash for /actions/ and /action-rules/ endpoints.
 
+// This class should be kept in sync with python class ActionPerformer (hmalib.common.configs.actioner.ActionPerformer)
+type BackendActionPerformer = {
+  name: string;
+  config_subtype: string;
+  url: string;
+  headers: string;
+};
+
 type AllActions = {
   error_message: string;
-  actions_response: Array<{
-    name: string;
-    config_subtype: string;
-    url: string;
-    headers: string;
-  }>;
+  actions_response: Array<BackendActionPerformer>;
 };
 
 export async function fetchAllActions(): Promise<Action[]> {
   return apiGet<AllActions>('actions/').then(response => {
     if (response && !response.error_message && response.actions_response) {
       return response.actions_response.map(
-        ({name, config_subtype, url, headers}) =>
-          new Action(name, config_subtype, url, headers),
+        action =>
+          ({
+            name: action.name,
+            config_subtype: action.config_subtype,
+            params: {url: action.url, headers: action.headers},
+          } as Action),
       );
     }
     return [];
@@ -375,8 +382,9 @@ export async function deleteAction(name: string): Promise<{response: string}> {
 }
 
 // We need two different ActionRule types because the mackend model (must (not) have labels) is different
-// from the Frontend model (classification conditions)
-type APIActionRule = {
+// from the Frontend model (classification conditions).
+// This class should be kept in sync with python class ActionRule (hmalib.common.configs.evaluator.ActionRule)
+type BackendActionRule = {
   name: string;
   must_have_labels: Label[];
   must_not_have_labels: Label[];
@@ -386,21 +394,32 @@ type APIActionRule = {
   };
 };
 
+const convertToBackendActionRule = (frontend_action_rule: ActionRule) =>
+  ({
+    name: frontend_action_rule.name,
+    must_have_labels: frontend_action_rule.must_have_labels,
+    must_not_have_labels: frontend_action_rule.must_not_have_labels,
+    action_label: {
+      key: 'Action',
+      value: frontend_action_rule.action_name,
+    },
+  } as BackendActionRule);
+
 type AllActionRules = {
   error_message: string;
-  action_rules: Array<APIActionRule>;
+  action_rules: Array<BackendActionRule>;
 };
 
 export async function fetchAllActionRules(): Promise<ActionRule[]> {
   return apiGet<AllActionRules>('action-rules/').then(response => {
     if (response && response.error_message === '' && response.action_rules) {
       const fetchedActionRules = response.action_rules.map(
-        action_rule =>
+        backend_action_rule =>
           new ActionRule(
-            action_rule.name,
-            action_rule.must_have_labels,
-            action_rule.must_not_have_labels,
-            action_rule.action_label,
+            backend_action_rule.name,
+            backend_action_rule.action_label.value,
+            backend_action_rule.must_have_labels,
+            backend_action_rule.must_not_have_labels,
           ),
       );
       return fetchedActionRules;
@@ -409,18 +428,20 @@ export async function fetchAllActionRules(): Promise<ActionRule[]> {
   });
 }
 
-export async function addActionRule(actionRule = {}): Promise<Response> {
+export async function addActionRule(actionRule: ActionRule): Promise<Response> {
+  const backendActionRule = convertToBackendActionRule(actionRule);
   return apiPost('action-rules/', {
-    action_rule: actionRule,
+    action_rule: backendActionRule,
   });
 }
 
 export async function updateActionRule(
   oldName: string,
-  actionRule = {},
+  actionRule: ActionRule,
 ): Promise<Response> {
+  const backendActionRule = convertToBackendActionRule(actionRule);
   return apiPut(`action-rules/${oldName}`, {
-    action_rule: actionRule,
+    action_rule: backendActionRule,
   });
 }
 
