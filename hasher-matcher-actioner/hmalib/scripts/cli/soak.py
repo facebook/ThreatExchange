@@ -107,9 +107,9 @@ class SoakCommand(base.Command):
         filepaths: t.List[str] = [],
     ) -> None:
         self.hostname = hostname
-        self.port = port
-        self.batch_size = batch_size
-        self.seconds_between_batches = seconds_between_batches
+        self.port = int(port)
+        self.batch_size = int(batch_size)
+        self.seconds_between_batches = int(seconds_between_batches)
         self.auto_start = auto_start
         self.skip_listener = skip_listener
         self.filepaths = filepaths
