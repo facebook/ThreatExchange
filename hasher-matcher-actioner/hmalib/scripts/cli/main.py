@@ -14,13 +14,15 @@ import re
 import sys
 import typing as t
 
+import hmalib.scripts.common.utils as utils
 
 import hmalib.scripts.cli.command_base as base
 import hmalib.scripts.cli.soak as soak
+import hmalib.scripts.cli.shell as shell
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
-    return [soak.SoakCommand]
+    return [soak.SoakCommand, shell.ShellCommand]
 
 
 def get_argparse() -> argparse.ArgumentParser:
@@ -30,13 +32,14 @@ def get_argparse() -> argparse.ArgumentParser:
     ap.add_argument(
         "--access-token",
         "-a",
-        metavar="TOKEN",
+        metavar="HMA_TOKEN",
         help="the acccess token for HMA API",
     )
     ap.add_argument(
         "--api-endpoint",
-        "-E",
-        help=argparse.SUPPRESS,
+        "-e",
+        metavar="HMA_API_URL",
+        help="the url of the HMA API",
     )
     subparsers = ap.add_subparsers(title="sub_commands", help="which action to do")
     for command in get_subcommands():
@@ -52,7 +55,10 @@ def execute_command(namespace) -> None:
     command_cls = namespace.command_cls
     try:
         # Init Values
-        api = "Hi"
+        api = utils.HasherMatcherActionerAPI(
+            get_api_url(namespace.api_endpoint),
+            api_token=get_access_token(namespace.access_token),
+        )
 
         command_argspec = inspect.getfullargspec(command_cls.__init__)
         arg_names = set(command_argspec[0])
@@ -75,21 +81,17 @@ def get_access_token(cli_option: str = None) -> str:
     file_loc = pathlib.Path("~/.hmatoken").expanduser()
     environment_var = "HMA_TOKEN"
     token = ""
-    source = ""
     if cli_option:
-        source = "cli argument"
         token = cli_option
     elif os.environ.get(environment_var):
-        source = f"{environment_var} environment variable"
         token = os.environ[environment_var]
     elif file_loc.exists() and file_loc.read_text():
-        source = str(file_loc)
         token = file_loc.read_text()
     else:
         raise base.CommandError(
             (
                 "Can't find Access Token, pass it in using one of: \n"
-                "  * a cli argument\n"
+                "  * a cli argument (-a)\n"
                 f"  * in the environment as {environment_var}\n"
                 f"  * in a file at {file_loc}\n"
             ),
@@ -97,6 +99,27 @@ def get_access_token(cli_option: str = None) -> str:
         )
     token = token.strip()
     return token
+
+
+def get_api_url(cli_option: str = None) -> str:
+    """Get the API url cli args, environment_var, or tf outputs"""
+
+    environment_var = "HMA_API_URL"
+    url = ""
+    if cli_option:
+        url = cli_option
+    elif os.environ.get(environment_var):
+        url = os.environ[environment_var]
+    else:
+        print(
+            "Trying to get API_URL from tf outputs.\n"
+            "You can also pass it in using one of: \n"
+            "  * a cli argument (-e)\n"
+            f"  * in the environment as {environment_var}\n"
+        )
+        tf_outputs = utils.get_terraform_outputs()
+        url = tf_outputs["api_url"]["value"]
+    return url
 
 
 def main(args: t.Optional[t.Sequence[t.Text]] = None) -> None:
