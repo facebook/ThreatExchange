@@ -31,7 +31,7 @@ import argparse
 import boto3
 from botocore.exceptions import ClientError
 
-from hma_script_utils import (
+from hmalib.scripts.common.utils import (
     get_token,
     create_user,
     delete_user,

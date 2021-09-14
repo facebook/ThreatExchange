@@ -14,7 +14,7 @@ import typing as t
 from time import perf_counter
 from urllib.parse import urljoin
 
-from hma_script_utils import (
+from hmalib.scripts.common.utils import (
     HasherMatcherActionerAPI,
     get_terraform_outputs,
     get_auth_from_env,
@@ -30,7 +30,7 @@ class DeployedInstanceClient:
     Class around testing a deployed instance of HMA from Content Submission to Hash - Match - Action
     by checking that the expected values are found
 
-    This class is structed in a way to have hma_script_utils.py avoid importing hmalib itself.
+    This class is structured in a way to have hma_script_utils.py avoid importing hmalib itself.
     """
 
     def __init__(
