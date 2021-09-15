@@ -3,6 +3,10 @@
  */
 
 import {Auth, API} from 'aws-amplify';
+import {ActionRule, Label} from './pages/settings/ActionRuleSettingsTab';
+import {Action} from './pages/settings/ActionSettingsTab';
+import {Bank} from './messages/BankMessages';
+import {toDate} from './utils/DateTimeUtils';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -322,57 +326,185 @@ export async function fetchHashCount(): Promise<Response> {
 
 // TODO remove the trailing slash from the API URL, then add back the leading slash for /actions/ and /action-rules/ endpoints.
 
-type AllActions = {
-  error_message: string;
-  actions_response: Array<any>;
+// This class should be kept in sync with python class ActionPerformer (hmalib.common.configs.actioner.ActionPerformer)
+type BackendActionPerformer = {
+  name: string;
+  config_subtype: string;
+  url: string;
+  headers: string;
 };
 
-export async function fetchAllActions(): Promise<AllActions> {
-  return apiGet('actions/');
+type AllActions = {
+  error_message: string;
+  actions_response: Array<BackendActionPerformer>;
+};
+
+export async function fetchAllActions(): Promise<Action[]> {
+  return apiGet<AllActions>('actions/').then(response => {
+    if (response && !response.error_message && response.actions_response) {
+      return response.actions_response.map(
+        action =>
+          ({
+            name: action.name,
+            config_subtype: action.config_subtype,
+            params: {url: action.url, headers: action.headers},
+          } as Action),
+      );
+    }
+    return [];
+  });
 }
 
 export async function createAction(
-  newAction = {},
+  newAction: Action,
 ): Promise<{response: string}> {
-  return apiPost('actions/', newAction);
+  return apiPost('actions/', {
+    name: newAction.name,
+    config_subtype: newAction.config_subtype,
+    fields: newAction.params,
+  });
 }
 
 export async function updateAction(
-  name: string,
-  type: string,
-  updatedAction = {},
+  old_name: string,
+  old_config_subtype: string,
+  updatedAction: Action,
 ): Promise<{response: string}> {
-  return apiPut(`actions/${name}/${type}`, updatedAction);
+  return apiPut(`actions/${old_name}/${old_config_subtype}`, {
+    name: updatedAction.name,
+    config_subtype: updatedAction.config_subtype,
+    fields: updatedAction.params,
+  });
 }
 
 export async function deleteAction(name: string): Promise<{response: string}> {
   return apiDelete(`actions/${name}`);
 }
 
-type AllActionRules = {
-  error_message: string;
-  action_rules: Array<any>;
+// We need two different ActionRule types because the mackend model (must (not) have labels) is different
+// from the Frontend model (classification conditions).
+// This class should be kept in sync with python class ActionRule (hmalib.common.configs.evaluator.ActionRule)
+type BackendActionRule = {
+  name: string;
+  must_have_labels: Label[];
+  must_not_have_labels: Label[];
+  action_label: {
+    key: string;
+    value: string;
+  };
 };
 
-export async function fetchAllActionRules(): Promise<AllActionRules> {
-  return apiGet('action-rules/');
+const convertToBackendActionRule = (frontend_action_rule: ActionRule) =>
+  ({
+    name: frontend_action_rule.name,
+    must_have_labels: frontend_action_rule.must_have_labels,
+    must_not_have_labels: frontend_action_rule.must_not_have_labels,
+    action_label: {
+      key: 'Action',
+      value: frontend_action_rule.action_name,
+    },
+  } as BackendActionRule);
+
+type AllActionRules = {
+  error_message: string;
+  action_rules: Array<BackendActionRule>;
+};
+
+export async function fetchAllActionRules(): Promise<ActionRule[]> {
+  return apiGet<AllActionRules>('action-rules/').then(response => {
+    if (response && response.error_message === '' && response.action_rules) {
+      const fetchedActionRules = response.action_rules.map(
+        backend_action_rule =>
+          new ActionRule(
+            backend_action_rule.name,
+            backend_action_rule.action_label.value,
+            backend_action_rule.must_have_labels,
+            backend_action_rule.must_not_have_labels,
+          ),
+      );
+      return fetchedActionRules;
+    }
+    return [];
+  });
 }
 
-export async function addActionRule(actionRule = {}): Promise<Response> {
+export async function addActionRule(actionRule: ActionRule): Promise<Response> {
+  const backendActionRule = convertToBackendActionRule(actionRule);
   return apiPost('action-rules/', {
-    action_rule: actionRule,
+    action_rule: backendActionRule,
   });
 }
 
 export async function updateActionRule(
   oldName: string,
-  actionRule = {},
+  actionRule: ActionRule,
 ): Promise<Response> {
+  const backendActionRule = convertToBackendActionRule(actionRule);
   return apiPut(`action-rules/${oldName}`, {
-    action_rule: actionRule,
+    action_rule: backendActionRule,
   });
 }
 
 export async function deleteActionRule(name: string): Promise<Response> {
   return apiDelete(`action-rules/${name}`);
+}
+
+type BankWithStringDates = Bank & {
+  created_at: string;
+  updated_at: string;
+};
+
+type AllBanksResponse = {
+  banks: BankWithStringDates[];
+};
+
+export async function fetchAllBanks(): Promise<Bank[]> {
+  return apiGet<AllBanksResponse>('banks/get-all-banks').then(response =>
+    response.banks.map(item => ({
+      bank_id: item.bank_id!,
+      bank_name: item.bank_name!,
+      bank_description: item.bank_description!,
+      created_at: toDate(item.created_at)!,
+      updated_at: toDate(item.updated_at)!,
+    })),
+  );
+}
+
+export async function fetchBank(bankId: string): Promise<Bank> {
+  return apiGet<BankWithStringDates>(`banks/get-bank/${bankId}`).then(
+    response => ({
+      bank_id: response.bank_id!,
+      bank_name: response.bank_name!,
+      bank_description: response.bank_description!,
+      created_at: toDate(response.created_at)!,
+      updated_at: toDate(response.updated_at)!,
+    }),
+  );
+}
+
+export async function createBank(
+  bankName: string,
+  bankDescription: string,
+): Promise<void> {
+  return apiPost('banks/create-bank', {
+    bank_name: bankName,
+    bank_description: bankDescription,
+  });
+}
+
+export async function updateBank(
+  bankId: string,
+  bankName: string,
+  bankDescription: string,
+): Promise<Bank> {
+  return apiPost<BankWithStringDates>(`banks/update-bank/${bankId}`, {
+    bank_name: bankName,
+    bank_description: bankDescription,
+  }).then(response => ({
+    bank_id: response.bank_id!,
+    bank_name: response.bank_name!,
+    bank_description: response.bank_description!,
+    created_at: toDate(response.created_at)!,
+    updated_at: toDate(response.updated_at)!,
+  }));
 }

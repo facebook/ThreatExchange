@@ -12,7 +12,7 @@ from hmalib import metrics
 from hmalib.metrics import query as metrics_query
 from hmalib.metrics.query import is_publishing_metrics
 
-from .middleware import jsoninator, JSONifiable
+from hmalib.lambdas.api.middleware import jsoninator, JSONifiable
 
 logger = get_logger(__name__)
 

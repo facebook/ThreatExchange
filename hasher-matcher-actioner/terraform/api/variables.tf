@@ -71,6 +71,16 @@ variable "datastore" {
   })
 }
 
+
+variable "banks_datastore" {
+  description = "DynamoDB Table to store bank information into"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
+
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
   type        = number
@@ -92,6 +102,14 @@ variable "config_table" {
 
 variable "te_api_token_secret" {
   description = "The aws secret where the ThreatExchange API token is stored"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
+variable "hma_api_access_tokens_secret" {
+  description = "The aws secret to the set of access tokens checked for in authorizer api as an alternative to cognito user tokens."
   type = object({
     name = string
     arn  = string
@@ -135,10 +153,4 @@ variable "partner_image_buckets" {
     arn    = string
     params = map(string)
   }))
-}
-
-variable "integration_api_access_token" {
-  description = "Access token checked for in authorizer api as an alternative to cognito user tokens."
-  type        = string
-  sensitive   = true
 }

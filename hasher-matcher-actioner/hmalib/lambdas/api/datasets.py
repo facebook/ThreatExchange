@@ -16,7 +16,7 @@ from hmalib.common.threatexchange_config import (
     create_privacy_group_if_not_exists,
 )
 
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 
 
 @dataclass
@@ -221,6 +221,9 @@ def get_datasets_api(
     threat_exchange_data_folder: str,
     threat_exchange_pdq_file_extension: str,
 ) -> bottle.Bottle:
+    """
+    ToDo / FixMe: this file is probably more about privacy groups than datasets...
+    """
     # The documentation below expects prefix to be '/datasets/'
     datasets_api = bottle.Bottle()
     HMAConfig.initialize(hma_config_table)
@@ -244,7 +247,7 @@ def get_datasets_api(
     @datasets_api.post("/update", apply=[jsoninator(UpdateDatasetRequest)])
     def update_dataset(request: UpdateDatasetRequest) -> Dataset:
         """
-        Update dataset fetcher_active, write_back and matcher_active
+        Update dataset values: fetcher_active, write_back, and matcher_active.
         """
         config = ThreatExchangeConfig.getx(str(request.privacy_group_id))
         config.fetcher_active = request.fetcher_active
@@ -278,7 +281,7 @@ def get_datasets_api(
     @datasets_api.post("/sync", apply=[jsoninator])
     def sync_datasets() -> SyncDatasetResponse:
         """
-        Fetch new collaborations from ThreatExchnage and potentially update the configs stored in AWS
+        Fetch new collaborations from ThreatExchange and sync with the configs stored in DynamoDB.
         """
         sync_privacy_groups()
         return SyncDatasetResponse(response="Privacy groups are up to date")
@@ -286,7 +289,7 @@ def get_datasets_api(
     @datasets_api.post("/delete/<key>", apply=[jsoninator])
     def delete_dataset(key=None) -> DeleteDatasetResponse:
         """
-        Delete dataset
+        Delete the dataset with key=<key>
         """
         config = ThreatExchangeConfig.getx(str(key))
         hmaconfig.delete_config(config)

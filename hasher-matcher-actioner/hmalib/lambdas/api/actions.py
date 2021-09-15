@@ -3,7 +3,7 @@
 import bottle
 import typing as t
 from dataclasses import dataclass, asdict
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.configs.actioner import ActionPerformer
@@ -64,7 +64,7 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
     @actions_api.get("/", apply=[jsoninator])
     def fetch_all_actions() -> FetchAllActionsResponse:
         """
-        Returns all action configs.
+        Return all action configs.
         """
         action_configs = ActionPerformer.get_all()
         return FetchAllActionsResponse(
@@ -79,7 +79,7 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
         request: CreateUpdateActionRequest, old_name: str, old_config_sub_stype: str
     ) -> UpdateActionResponse:
         """
-        Update an action url and headers
+        Update the action, name, url, and headers for action with name=<old_name> and subtype=<old_config_sub_stype>.
         """
         if old_name != request.name or old_config_sub_stype != request.config_subtype:
             # The name field can't be updated because it is the primary key
@@ -98,7 +98,7 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
     @actions_api.post("/", apply=[jsoninator(CreateUpdateActionRequest)])
     def create_action(request: CreateUpdateActionRequest) -> CreateActionResponse:
         """
-        create an action
+        Create an action.
         """
         config = ActionPerformer._get_subtypes_by_name()[request.config_subtype](
             **{"name": request.name, **request.fields}
@@ -109,7 +109,7 @@ def get_actions_api(hma_config_table: str) -> bottle.Bottle:
     @actions_api.delete("/<name>", apply=[jsoninator])
     def delete_action(name: str) -> DeleteActionResponse:
         """
-        Delete an action
+        Delete the action with name=<name>.
         """
         hmaconfig.delete_config_by_type_and_name("ActionPerformer", name)
         return DeleteActionResponse(response="The action config is deleted.")

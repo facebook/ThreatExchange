@@ -7,7 +7,7 @@ import typing as t
 import boto3
 from datetime import datetime, timedelta
 
-from . import measure_performance, METRICS_NAMESPACE
+from hmalib.metrics import measure_performance, METRICS_NAMESPACE
 
 
 @functools.lru_cache(maxsize=None)

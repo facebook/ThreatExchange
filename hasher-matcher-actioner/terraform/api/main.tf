@@ -38,6 +38,7 @@ resource "aws_lambda_function" "api_root" {
     variables = {
       DYNAMODB_TABLE                        = var.datastore.name
       HMA_CONFIG_TABLE                      = var.config_table.name
+      BANKS_TABLE                           = var.banks_datastore.name
       IMAGE_BUCKET_NAME                     = var.image_data_storage.bucket_name
       IMAGE_PREFIX                          = var.image_data_storage.image_prefix
       THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
@@ -86,6 +87,11 @@ data "aws_iam_policy_document" "api_root" {
     effect    = "Allow"
     actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem"]
     resources = ["${var.datastore.arn}*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem"]
+    resources = ["${var.banks_datastore.arn}*"]
   }
   statement {
     effect    = "Allow"
@@ -147,6 +153,11 @@ data "aws_iam_policy_document" "api_root" {
     resources = [var.writebacks_queue.arn, var.submissions_queue.arn, var.hashes_queue.arn]
   }
 
+  statement {
+    effect    = "Allow"
+    actions   = ["lambda:GetFunctionConfiguration"]
+    resources = [aws_lambda_function.api_root.arn]
+  }
 }
 
 resource "aws_iam_policy" "api_root" {
@@ -178,9 +189,9 @@ resource "aws_lambda_function" "api_auth" {
   memory_size = 128
   environment {
     variables = {
-      ACCESS_TOKEN  = var.integration_api_access_token
-      USER_POOL_URL = local.user_pool_url
-      CLIENT_ID     = var.api_authorizer_audience
+      HMA_ACCESS_TOKEN_SECRET_NAME = var.hma_api_access_tokens_secret.name
+      USER_POOL_URL                = local.user_pool_url
+      CLIENT_ID                    = var.api_authorizer_audience
     }
   }
   tags = merge(
@@ -222,6 +233,11 @@ data "aws_iam_policy_document" "api_auth" {
       "logs:DescribeLogStreams"
     ]
     resources = ["${aws_cloudwatch_log_group.api_auth.arn}:*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [var.hma_api_access_tokens_secret.arn]
   }
 }
 
@@ -328,7 +344,6 @@ resource "aws_apigatewayv2_authorizer" "hma_apigateway" {
   identity_sources                  = ["$request.header.Authorization"]
   authorizer_payload_format_version = "2.0"
   enable_simple_responses           = true
-  authorizer_result_ttl_in_seconds  = 0
   name                              = "${aws_apigatewayv2_api.hma_apigateway.name}_authorizer"
 }
 

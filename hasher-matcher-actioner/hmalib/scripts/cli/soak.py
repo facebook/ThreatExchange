@@ -4,10 +4,7 @@
 """
 Soak/endurance test a deployed instance of HMA
 
-Besides deploying what is needed:
-- A Cognito User that has access to the deloyed system
-- Local AWS certs (if you were able to run tf apply you should be fine)  
-- A place to set off the test (ec2 instance + long running tmux session)
+Besides deploying you will need a place to set off the test (ec2 instance + long running tmux session)
 
 Structure of the soak test
 
@@ -20,15 +17,13 @@ Initial set up (no point in a long running test if this doesn't work)
 Run
 - Submit Content Test (done every interval=seconds)
 - Sleep
-- Refresh Token
 - Repeat
 
-
-```
-python3 scripts/soak_test_system --api_url "https://abcd1234.execute-api.us-east-1.amazonaws.com/" --batch_size 5 --second_between_batches 5
-```
-
 """
+
+import argparse
+import sys
+import typing as t
 import cmd
 import os
 import argparse
@@ -39,14 +34,140 @@ import datetime
 import numpy as np
 import pandas as pd
 import typing as t
-from hma_client_lib import DeployedInstanceClient
-from listener import Listener
-from submitter import Submitter
 
-# Defaults (often it is easier to edit the script than provide the args)
-API_URL = ""
-REFRESH_TOKEN = ""
-CLIENT_ID = ""
+import hmalib.scripts.cli.command_base as base
+import hmalib.scripts.common.utils as utils
+
+from hmalib.scripts.common.client_lib import DeployedInstanceClient
+from hmalib.scripts.common.listener import Listener
+from hmalib.scripts.common.submitter import Submitter
+
+
+class SoakCommand(base.Command):
+    """
+    Start a soak test on a deployed HMA instance and submit until cancelled
+    """
+
+    @classmethod
+    def init_argparse(cls, ap: argparse.ArgumentParser) -> None:
+        ap.add_argument(
+            "--hostname",
+            help="Hostname used to listen for the actions webhooks.",
+        )
+        ap.add_argument(
+            "--port",
+            help="Port used to listen for the actioner.",
+            default=8080,
+        )
+        ap.add_argument(
+            "--batch_size",
+            help="Number of images to submit in each batch.",
+            default=5,
+        )
+        ap.add_argument(
+            "--seconds_between_batches",
+            help="Number of seconds between completed submission batches.",
+            default=5,
+        )
+        ap.add_argument(
+            "--auto_start",
+            action="store_true",
+            help="Start submitting right away.",
+        )
+        ap.add_argument(
+            "--skip_listener",
+            action="store_true",
+            help="Do not use a listener at all.",
+        )
+        ap.add_argument(
+            "--filepaths",
+            action="extend",
+            nargs="*",
+            type=str,
+            help="List of filepaths for submit use (will start each batch at the start of the list).",
+        )
+
+    @classmethod
+    def get_name(cls) -> str:
+        """The display name of the command"""
+        return "soak"
+
+    @classmethod
+    def get_help(cls) -> str:
+        """The short help of the command"""
+        return "run a soak test"
+
+    def __init__(
+        self,
+        hostname: str,
+        port: int,
+        batch_size: int,
+        seconds_between_batches: int,
+        auto_start: bool = False,
+        skip_listener: bool = False,
+        filepaths: t.List[str] = [],
+    ) -> None:
+        self.hostname = hostname
+        self.port = int(port)
+        self.batch_size = int(batch_size)
+        self.seconds_between_batches = int(seconds_between_batches)
+        self.auto_start = auto_start
+        self.skip_listener = skip_listener
+        self.filepaths = filepaths
+
+    def execute(self, api: utils.HasherMatcherActionerAPI) -> None:
+        helper = DeployedInstanceClient(api=api)
+        if self.skip_listener:
+            helper.set_up_test("http://httpstat.us/404")
+        else:
+            helper.set_up_test(f"http://{self.hostname}:{self.port}")
+
+        submitter = Submitter(
+            helper, self.batch_size, self.seconds_between_batches, self.filepaths
+        )
+
+        if self.skip_listener:
+            listener = None
+        else:
+            listener = Listener(self.hostname, self.port)
+            listener.start_listening()
+
+        if self.auto_start:
+            time.sleep(3)
+            submitter.start()
+
+        SoakShell(submitter, listener).cmdloop()
+
+        if submitter.is_alive():
+            submitter.stop()
+
+        total_submit = submitter.get_total_submit_count()
+        if listener:
+            total_received = listener.get_post_request_count()
+            listener.stop_listening()
+            print("Submitter and listener stopped.")
+            print(f"FINAL TOTAL SUBMITTED: {total_submit}")
+            print(f"FINAL TOTAL POST requests received: {total_received}")
+            difference = total_submit - total_received
+            if difference:
+                print(f"Difference of {difference} found")
+            if difference > 0:
+                print(
+                    "If you exited before waiting on the listener, this is expect. (Warning the actioner may keep trying for a bit)"
+                )
+            if difference < 0:
+                print(
+                    f"Negative difference means more action request than submissions were received. (likely bug or multiply actions configured)"
+                )
+        else:
+            print(f"FINAL TOTAL SUBMITTED: {total_submit}")
+
+        if listener:
+            if data := listener.get_submission_latencies():
+                _generate_latency_stats(data)
+
+        helper.clean_up_test()
+        print(f"Test Run Complete. Thanks!")
 
 
 class SoakShell(cmd.Cmd):
@@ -169,7 +290,7 @@ class SoakShell(cmd.Cmd):
             print("value must be an int")
             return False
         if value <= 0:
-            print("value must be postive")
+            print("value must be positive")
             return False
         return True
 
@@ -228,7 +349,7 @@ class SoakShell(cmd.Cmd):
         return True
 
 
-def generate_latency_stats(
+def _generate_latency_stats(
     data: t.List[t.Tuple[datetime.datetime, datetime.datetime, float]]
 ):
     timestamps, _, delays = list(zip(*data))
@@ -249,161 +370,7 @@ def generate_latency_stats(
 
     filename = "soak_test_timestamps.txt"
     print(f"Writing times to {filename}")
-    print(f"Format: time_submitted, time_action_recevied, delta_in_seconds")
+    print(f"Format: time_submitted, time_action_received, delta_in_seconds")
     with open(filename, "a") as f:  # append mode
         for record in data:
             f.write(f"{record[1].isoformat()}, {record[0].isoformat()}, {record[2]}\n")
-
-
-def start_soak(
-    api_url: str,
-    refresh_token: str,
-    client_id: str,
-    hostname: str,
-    port: int,
-    batch_size: int,
-    seconds_between_batches: int,
-    auto_start: bool = False,
-    skip_listener: bool = False,
-    filepaths: t.List[str] = [],
-):
-    helper = DeployedInstanceClient(api_url, "", client_id, refresh_token)
-    helper.refresh_api_token()
-    if skip_listener:
-        helper.set_up_test("http://httpstat.us/404")
-    else:
-        helper.set_up_test(f"http://{hostname}:{port}")
-
-    submitter = Submitter(helper, batch_size, seconds_between_batches, filepaths)
-
-    if skip_listener:
-        listener = None
-    else:
-        listener = Listener(hostname, port)
-        listener.start_listening()
-
-    if auto_start:
-        time.sleep(3)
-        submitter.start()
-
-    SoakShell(submitter, listener).cmdloop()
-
-    if submitter.is_alive():
-        submitter.stop()
-
-    total_submit = submitter.get_total_submit_count()
-    if listener:
-        total_received = listener.get_post_request_count()
-        listener.stop_listening()
-        print("Submitter and listener stopped.")
-        print(f"FINAL TOTAL SUBMITTED: {total_submit}")
-        print(f"FINAL TOTAL POST requests received: {total_received}")
-        difference = total_submit - total_received
-        if difference:
-            print(f"Difference of {difference} found")
-        if difference > 0:
-            print(
-                "If you exited before waiting on the listener, this is expect. (Warning the actioner may keep trying for a bit)"
-            )
-        if difference < 0:
-            print(
-                f"Negative difference means more action request than submissions were received. (likely bug or multiply actions configured)"
-            )
-    else:
-        print(f"FINAL TOTAL SUBMITTED: {total_submit}")
-
-    if listener:
-        if data := listener.get_submission_latencies():
-            generate_latency_stats(data)
-
-    helper.clean_up_test()
-    print(f"Test Run Complete. Thanks!")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Start a soak test on a deployed HMA instance and submit until cancelled"
-    )
-    parser.add_argument(
-        "--api_url",
-        help="The url of the API to be tested",
-        default=os.environ.get(
-            "HMA_API_URL",
-            API_URL,
-        ),
-    )
-    parser.add_argument(
-        "--refresh_token",
-        help="Refresh token to be used throughout a long running test",
-        default=os.environ.get(
-            "HMA_REFRESH_TOKEN",
-            REFRESH_TOKEN,
-        ),
-    )
-    parser.add_argument(
-        "--client_id",
-        help="ID of app client for the pool",
-        default=os.environ.get(
-            "HMA_COGNITO_USER_POOL_CLIENT_ID",
-            CLIENT_ID,
-        ),
-    )
-    parser.add_argument(
-        "--hostname",
-        help="Hostname used to listen for the actions webhooks.",
-        default=os.environ["EXTERNAL_HOSTNAME"],
-    )
-    parser.add_argument(
-        "--port",
-        help="Port used to listen for the actioner.",
-        default=8080,
-    )
-    parser.add_argument(
-        "--batch_size",
-        help="Number of images to submit in each batch.",
-        default=5,
-    )
-    parser.add_argument(
-        "--seconds_between_batches",
-        help="Number of seconds between completed submission batches.",
-        default=5,
-    )
-    parser.add_argument(
-        "--auto_start",
-        action="store_true",
-        help="Start submitting right away.",
-    )
-    parser.add_argument(
-        "--skip_listener",
-        action="store_true",
-        help="Do not use a listener at all.",
-    )
-    parser.add_argument(
-        "--filepaths",
-        action="extend",
-        nargs="*",
-        type=str,
-        help="List of filepaths for submit use (will start each batch at the start of the list).",
-    )
-
-    args = parser.parse_args()
-
-    if args.filepaths:
-        for filepath in args.filepaths:
-            if not os.path.isfile(filepath):
-                print(f"Filepath: {filepath} not found.")
-                parser.print_usage()
-                exit()
-
-    start_soak(
-        args.api_url,
-        args.refresh_token,
-        args.client_id,
-        args.hostname,
-        int(args.port),
-        int(args.batch_size),
-        int(args.seconds_between_batches),
-        args.auto_start,
-        args.skip_listener,
-        args.filepaths,
-    )

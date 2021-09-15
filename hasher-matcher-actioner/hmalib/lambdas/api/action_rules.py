@@ -8,7 +8,7 @@ from botocore.exceptions import ClientError
 from bottle import response
 from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.configs.evaluator import ActionRule
@@ -55,7 +55,7 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
     @action_rules_api.get("/", apply=[jsoninator])
     def get_action_rules() -> ActionRulesResponse:
         """
-        Returns all action rules.
+        Return all action rules.
         """
         error_message = ""
         action_rules = []
@@ -74,7 +74,7 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
         request: ActionRulesRequest,
     ) -> ActionRulesResponse:
         """
-        Creates an action rule.
+        Create an action rule.
         """
         logger.info("request: %s", request)
         error_message = ""
@@ -108,7 +108,7 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
         old_name: str,
     ) -> ActionRulesResponse:
         """
-        Updates an action rule.
+        Update the action rule with name=<oldname>.
         """
         logger.info("old_name: %s", old_name)
         logger.info("request: %s", request)
@@ -141,7 +141,7 @@ def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
     @action_rules_api.delete("/<name>", apply=[jsoninator])
     def delete_action_rule(name: str) -> ActionRulesResponse:
         """
-        Deletes an action rule.
+        Delete the action rule with name=<name>.
         """
         logger.info("name: %s", name)
         error_message = ""

@@ -5,9 +5,7 @@ RUN yum install -y gcc gcc-c++
 
 # Install dependencies as a separate step so layers are reuseable.
 COPY setup.py ./
-RUN python setup.py egg_info \
-    && pip install -r hmalib.egg-info/requires.txt \
-    && rm -r hmalib.egg-info setup.py
+RUN pip install -e .
 
 # LAMBDA_TASK_ROOT is recommended in the image [1]. I'm hoping this will prevent
 # the python path complications from arising.

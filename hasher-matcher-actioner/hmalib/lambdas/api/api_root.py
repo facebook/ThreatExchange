@@ -15,13 +15,15 @@ from threatexchange.content_type.photo import PhotoContent
 from hmalib.common.logging import get_logger
 from hmalib.common.models.content import ContentRefType, ContentType
 
-from .action_rules_api import get_action_rules_api
-from .actions_api import get_actions_api
-from .content import get_content_api
-from .datasets_api import get_datasets_api
-from .matches import get_matches_api
-from .stats import get_stats_api
-from .submit import (
+
+from hmalib.lambdas.api.bank import get_bank_api
+from hmalib.lambdas.api.action_rules import get_action_rules_api
+from hmalib.lambdas.api.actions import get_actions_api
+from hmalib.lambdas.api.content import get_content_api
+from hmalib.lambdas.api.datasets import get_datasets_api
+from hmalib.lambdas.api.matches import get_matches_api
+from hmalib.lambdas.api.stats import get_stats_api
+from hmalib.lambdas.api.submit import (
     get_submit_api,
     create_presigned_url,
     record_content_submission,
@@ -44,6 +46,7 @@ THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
+BANKS_TABLE = os.environ["BANKS_TABLE"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
@@ -76,8 +79,19 @@ def error500(e):
 
 @app.get("/")
 def root():
+    """
+    root endpoint to make sure the API is live and check when it was last updated
+    """
+    context = bottle.request.environ.get("apig_wsgi.context")
+    invoked_function_arn = context.invoked_function_arn
+    client = boto3.client("lambda")
+    last_modified = client.get_function_configuration(
+        FunctionName=invoked_function_arn
+    )["LastModified"]
+
     return {
-        "message": "Hello World, HMA",
+        "message": "Welcome to the HMA API!",
+        "last_modified": last_modified,
     }
 
 
@@ -215,6 +229,8 @@ app.mount(
     "/actions/",
     get_actions_api(hma_config_table=HMA_CONFIG_TABLE),
 )
+
+app.mount("/banks/", get_bank_api(dynamodb.Table(BANKS_TABLE)))
 
 if __name__ == "__main__":
     app.run()

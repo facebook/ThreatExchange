@@ -9,10 +9,8 @@ import base64
 import functools
 from jwt.algorithms import RSAAlgorithm
 
+from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.logging import get_logger
-
-# ToDo have this eventually be a stored in aws secrets as well as support multiple.
-ACCESS_TOKEN = os.environ["ACCESS_TOKEN"]
 
 USER_POOL_URL = os.environ["USER_POOL_URL"]
 CLIENT_ID = os.environ["CLIENT_ID"]
@@ -58,30 +56,36 @@ def validate_jwt(token: str):
     return {"isAuthorized": False, "context": {"AuthInfo": "JWTTokenCheck"}}
 
 
-def validate_access_token(token: str):
-    response = {"isAuthorized": False, "context": {"AuthInfo": "ServiceAccessToken"}}
-    if not ACCESS_TOKEN or not token:
-        logger.debug("Rejected empty values")
-        return response
+# 10 is ~arbitrary: maxsize > 1 because it is possible for their to be more than one
+# access token in use that we want to cache, however a large number is unlikely.
+@functools.lru_cache(maxsize=10)
+def validate_access_token(token: str) -> bool:
 
-    if token == ACCESS_TOKEN:
-        logger.debug("Access token approved")
-        response["isAuthorized"] = True
+    access_tokens = AWSSecrets().hma_api_tokens()
+    if not access_tokens or not token:
+        logger.debug("No access tokens found")
+        return False
 
-    return response
+    if token in access_tokens:
+        return True
+
+    return False
 
 
 def lambda_handler(event, context):
 
     token = event["identitySource"][0]
 
+    if validate_access_token(token):
+        return {"isAuthorized": True, "context": {"AuthInfo": "ServiceAccessToken"}}
+
     try:
         # try to decode without any validation just to see if it is a JWT
         jwt.decode(token, algorithms=["RS256"], options={"verify_signature": False})
         return validate_jwt(token)
     except jwt.DecodeError:
-        # Does not appear to be a JWT, attempt alternative auth check(s)
-        return validate_access_token(token)
+        logger.debug("JWT decode failed.")
+        return {"isAuthorized": False}
 
 
 if __name__ == "__main__":

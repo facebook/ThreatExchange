@@ -79,3 +79,50 @@ resource "aws_dynamodb_table" "hma_datastore" {
     prevent_destroy = true
   }
 }
+
+
+### Bank Data Management Store
+resource "aws_dynamodb_table" "hma_banks" {
+  name         = "${var.prefix}-HMABanks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  attribute {
+    name = "BankNameIndex-BankName"
+    type = "S"
+  }
+
+  attribute {
+    name = "BankNameIndex-BankId"
+    type = "S"
+  }
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "HMABanks"
+    }
+  )
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  global_secondary_index {
+    name            = "BankNameIndex"
+    hash_key        = "BankNameIndex-BankName"
+    range_key       = "BankNameIndex-BankId"
+    projection_type = "ALL"
+  }
+}

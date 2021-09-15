@@ -15,9 +15,11 @@ from logging import Logger
 from mypy_boto3_sqs.client import SQSClient
 
 from threatexchange.descriptor import ThreatDescriptor
-
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.content_type.meta import get_signal_types_by_name
+
 
 from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.models.signal import (
@@ -27,7 +29,11 @@ from hmalib.common.models.signal import (
 from hmalib.common.logging import get_logger
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.messages.writeback import WritebackMessage
-from .middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+)
 from hmalib.common.config import HMAConfig
 from hmalib.matchers.matchers_base import Matcher
 
@@ -175,21 +181,44 @@ def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
 @dataclass
 class MatchesForHashRequest(DictParseable):
     signal_value: str
-    signal_type: str
+    signal_type: t.Type[SignalType]
 
     @classmethod
     def from_dict(cls, d):
-        # todo translate signal type to actual type
-        return cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base.signal_type = get_signal_types_by_name()[base.signal_type]
+        return base
 
 
 @dataclass
 class MatchesForHashResponse(JSONifiable):
-    matches: t.List[t.Union[ThreatExchangeSignalMetadata]]
+    matches: t.List[ThreatExchangeSignalMetadata]
     signal_value: str
 
+    UNSUPPORTED_FIELDS = ["updated_at", "pending_opinion_change"]
+
     def to_json(self) -> t.Dict:
-        return {"matches": [match.to_json() for match in self.matches]}
+        return {
+            "matches": [
+                self._remove_unsupported_fields(match.to_json())
+                for match in self.matches
+            ]
+        }
+
+    @classmethod
+    def _remove_unsupported_fields(cls, match_dict: t.Dict) -> t.Dict:
+        """
+        ThreatExchangeSignalMetadata is used to store metadata in dynamodb
+        and handle opinion changes on said signal. However the request this object
+        responds to only handles directly accessing the index. Because of this
+        not all fields of the object are relevant or accurate.
+        """
+        for field in cls.UNSUPPORTED_FIELDS:
+            try:
+                del match_dict[field]
+            except KeyError:
+                pass
+        return match_dict
 
 
 def get_matches_api(
@@ -212,7 +241,7 @@ def get_matches_api(
     @matches_api.get("/", apply=[jsoninator])
     def matches() -> MatchSummariesResponse:
         """
-        Returns all, or a filtered list of matches.
+        Return all, or a filtered list of matches based on query params.
         """
         signal_q = bottle.request.query.signal_q or None
         signal_source = bottle.request.query.signal_source or None
@@ -243,8 +272,7 @@ def get_matches_api(
     @matches_api.get("/match/", apply=[jsoninator])
     def match_details() -> MatchDetailsResponse:
         """
-        match details API endpoint:
-        return format: match_details : [MatchDetailsResult]
+        Return the match details for a given content id.
         """
         results = []
         if content_id := bottle.request.query.content_id or None:
@@ -254,7 +282,7 @@ def get_matches_api(
     @matches_api.post("/request-signal-opinion-change/", apply=[jsoninator])
     def request_signal_opinion_change() -> ChangeSignalOpinionResponse:
         """
-        request a change to the opinion for a signal in a dataset
+        Request a change to the opinion for a signal in a given privacy_group.
         """
         signal_id = bottle.request.query.signal_id or None
         signal_source = bottle.request.query.signal_source or None
@@ -299,32 +327,26 @@ def get_matches_api(
 
         return ChangeSignalOpinionResponse(success)
 
-    @matches_api.get("/for-hash/", apply=[jsoninator(MatchesForHashRequest)])
+    @matches_api.get(
+        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True)]
+    )
     def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
         """
-        For a given hash/signal check the index(es) for matches and return the details
-        NOTE: currently metadata returned will not be written to the dynamodb table
-        unlike in the case of a pipeline match based on submissions.
-        """
-        signal_type = None
-        if request.signal_type == "pdq":
-            # todo translate in MatchesForHashRequest and extend to cover MD5
-            signal_type = PdqSignal
+        For a given hash/signal check the index(es) for matches and return the details.
 
-        if not signal_type:
-            # only support PDQ at the moment
-            bottle.response.status = 400
-            return MatchesForHashResponse([], request.signal_value)
+        This does not change system state, metadata returned will not be written any tables
+        unlike when matches are found for submissions.
+        """
 
         matches = _get_matcher(indexes_bucket_name).match(
-            signal_type, request.signal_value
+            request.signal_type, request.signal_value
         )
 
-        match_objects = []
+        match_objects: t.List[ThreatExchangeSignalMetadata] = []
 
         for match in matches:
             match_objects.extend(
-                Matcher.get_metadata_objects_from_match(signal_type, match)
+                Matcher.get_metadata_objects_from_match(request.signal_type, match)
             )
 
         return MatchesForHashResponse(match_objects, request.signal_value)

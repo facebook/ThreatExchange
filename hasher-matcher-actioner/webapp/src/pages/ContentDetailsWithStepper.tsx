@@ -3,7 +3,7 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Col, Container, Row, Spinner} from 'react-bootstrap';
+import {Button, Col, Container, Row, Spinner} from 'react-bootstrap';
 import {Link, useParams} from 'react-router-dom';
 import {fetchContentPipelineProgress} from '../Api';
 import ContentPreview from '../components/ContentPreview';
@@ -61,7 +61,7 @@ export default function ContentDetailsWithStepper(): JSX.Element {
       setActionEvaluatedAt(toDate(pipelineProgress.action_evaluated_at));
       setActionPerformedAt(toDate(pipelineProgress.action_performed_at));
 
-      if (pipelineProgress.action_performed_at === undefined) {
+      if (pipelineProgress.action_performed_at === null) {
         // The pipeline has not yet finished, so setup a poller to call this
         // effect again. If we start storing null records, ie. match produced no
         // results, then we need to revisit how we evaluate that the pipeline is
@@ -102,8 +102,16 @@ export default function ContentDetailsWithStepper(): JSX.Element {
 
           <Container>
             <Row>
-              <Col className="mt-2" xs={{offset: 1}}>
+              <Col className="mt-2" xs={{offset: 1, span: 8}}>
                 <Link to={`/matches/${id}`}>Go to Content Details Page</Link>
+              </Col>
+              <Col xs={{span: 2}}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setPollBuster(pollBuster + 1)}>
+                  Refresh
+                </Button>
               </Col>
             </Row>
           </Container>

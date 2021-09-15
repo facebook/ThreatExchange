@@ -14,7 +14,7 @@ import typing as t
 from time import perf_counter
 from urllib.parse import urljoin
 
-from hma_script_utils import (
+from hmalib.scripts.common.utils import (
     HasherMatcherActionerAPI,
     get_terraform_outputs,
     get_auth_from_env,
@@ -30,35 +30,24 @@ class DeployedInstanceClient:
     Class around testing a deployed instance of HMA from Content Submission to Hash - Match - Action
     by checking that the expected values are found
 
-    This class is structed in a way to have hma_script_utils.py avoid importing hmalib itself.
+    This class is structured in a way to have hma_script_utils.py avoid importing hmalib itself.
     """
 
     def __init__(
         self,
         api_url: str = "",
         api_token: str = "",
-        client_id: str = None,
-        refresh_token: str = None,
         api: HasherMatcherActionerAPI = None,
     ) -> None:
         if api:
             self.api = api
         else:
-            if not api_token and (not client_id or not refresh_token):
+            if not api_token:
                 raise ValueError(
                     "Test requires an api_token OR a client_id + refresh_token to function"
                 )
 
-            self.api = HasherMatcherActionerAPI(
-                api_url, api_token, client_id, refresh_token
-            )
-
-    def refresh_api_token(self):
-        """
-        Manually refresh api's token
-        TODO Make staleness of the token an internal matter for the API class to handle.
-        """
-        self.api._refresh_token()
+            self.api = HasherMatcherActionerAPI(api_url, api_token)
 
     ### Start HMA API wrapper ###
 
@@ -207,7 +196,9 @@ class DeployedInstanceClient:
     def submit_test_content_hash(
         self,
         content_id="submit_content_test_hash_id_1",
+        content_type="photo",
         signal_value="f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",  # pdq of "sample_data/b.jpg"
+        signal_type="pdq",
         additional_fields=[
             "this-is:a-test-hash",
             "submitted-from:hma_client_lib.py",
@@ -216,7 +207,9 @@ class DeployedInstanceClient:
         try:
             self.api.submit_hash(
                 content_id=content_id,
+                content_type=content_type,
                 signal_value=signal_value,
+                signal_type=signal_type,
                 additional_fields=additional_fields,
             )
         except (
@@ -228,7 +221,7 @@ class DeployedInstanceClient:
         ) as err:
             print("Error:", err)
 
-    def run_basic_test(self, wait_time_seconds=5, retry_limit=25):
+    def run_basic_test(self, wait_time_seconds=5, retry_limit=25, hash_submit=False):
         """
         Basic e2e (minus webhook listener) test:
         - Create the configurations needed :
@@ -242,7 +235,10 @@ class DeployedInstanceClient:
         print("Added configurations to HMA instance for test")
 
         content_id = f"e2e-test-{datetime.date.today().isoformat()}-{str(uuid.uuid4())}"
-        self.submit_test_content(content_id)
+        if hash_submit:
+            self.submit_test_content_hash(content_id)
+        else:
+            self.submit_test_content(content_id)
         print(f"Submitted content_id {content_id}")
 
         print("Waiting for action history of submitted content_id")
@@ -270,19 +266,24 @@ if __name__ == "__main__":
 
     tf_outputs = get_terraform_outputs()
     api_url = tf_outputs["api_url"]["value"]
-    token, refresh_token, client_id = get_auth_from_env(tf_outputs)
-
+    token = get_auth_from_env(prompt_for_token=True)
     print(
         "This simple tests should take a little over 2 minutes to complete (due to sqs timeout).\n"
     )
 
-    helper = DeployedInstanceClient(api_url, token, client_id, refresh_token)
-
-    if refresh_token and client_id:
-        helper.refresh_api_token()
+    helper = DeployedInstanceClient(api_url, token)
 
     helper.set_up_test()
 
-    helper.run_basic_test()
+    helper.run_basic_test(hash_submit=True)
+
+    # Test video_md5 hash submit
+    #
+    # helper.submit_test_content_hash(
+    #     content_id="submit_content_test_md5_id_1",
+    #     content_type="video",
+    #     signal_value="2a12f2972373fbd3f693a74adc9042fe",
+    #     signal_type="video_md5",
+    # )
 
     helper.clean_up_test()

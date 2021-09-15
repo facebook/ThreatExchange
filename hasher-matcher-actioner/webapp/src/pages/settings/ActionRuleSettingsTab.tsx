@@ -6,7 +6,7 @@
 
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
 import Toast from 'react-bootstrap/Toast';
@@ -18,13 +18,8 @@ import ActionRuleFormColumns, {
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
-import {
-  addActionRule,
-  deleteActionRule,
-  fetchAllActions,
-  fetchAllActionRules,
-  updateActionRule,
-} from '../../Api';
+import {addActionRule, deleteActionRule, updateActionRule} from '../../Api';
+import {Action} from './ActionSettingsTab';
 
 export type Label = {
   key: string;
@@ -44,20 +39,20 @@ export class ActionRule {
 
   must_not_have_labels: Label[];
 
-  action_id: string;
-
   classification_conditions: ClassificationCondition[];
+
+  action_name: string;
 
   constructor(
     name: string,
+    action_name: string,
     must_have_labels: Label[],
     must_not_have_labels: Label[],
-    action_id: string,
   ) {
     this.name = name;
+    this.action_name = action_name;
     this.must_have_labels = must_have_labels;
     this.must_not_have_labels = must_not_have_labels;
-    this.action_id = action_id;
 
     this.classification_conditions = this.classificationsFromLabels(
       this.must_have_labels,
@@ -66,15 +61,9 @@ export class ActionRule {
   }
 
   copyAndProcessUpdate = (
-    update_name: string,
+    update_name: 'name' | 'action_name' | 'classification_conditions',
     new_value: ClassificationCondition[] | string,
   ): ActionRule => {
-    if (
-      !['name', 'action_id', 'classification_conditions'].includes(update_name)
-    ) {
-      throw Error(`Unknown ActionRule update: ${update_name}`);
-    }
-
     const must_have_labels =
       update_name === 'classification_conditions'
         ? this.mustHaveLabelsFromClassifications(
@@ -91,9 +80,9 @@ export class ActionRule {
 
     return new ActionRule(
       update_name === 'name' ? (new_value as string) : this.name,
+      update_name === 'action_name' ? (new_value as string) : this.action_name,
       must_have_labels,
       must_not_have_labels,
-      update_name === 'action_id' ? (new_value as string) : this.action_id,
     );
   };
 
@@ -136,66 +125,32 @@ export class ActionRule {
       );
 }
 
-export type Action = {
-  name: string;
-  id: string;
-};
-
 const defaultActionRule = new ActionRule(
+  '',
   '',
   [{key: classificationTypeTBD, value: ''}],
   [],
-  '0',
 );
 
-const defaultActionRules: ActionRule[] = [];
+type Input = {
+  actions: Action[];
+  actionRules: ActionRule[];
+  setActionRules: (actionRules: ActionRule[]) => void;
+};
 
-export default function ActionRuleSettingsTab(): JSX.Element {
-  const [actionRules, setActionRules] =
-    useState<ActionRule[]>(defaultActionRules);
-  const [actions, setActions] = useState<Action[]>([]);
+export default function ActionRuleSettingsTab({
+  actions,
+  actionRules,
+  setActionRules,
+}: Input): JSX.Element {
   const [adding, setAdding] = useState(false);
   const [newActionRule, setNewActionRule] = useState(defaultActionRule);
   const [showErrors, setShowErrors] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  useEffect(() => {
-    fetchAllActionRules().then(response => {
-      if (response && response.error_message === '') {
-        const mappedActionRules = response.action_rules.map(
-          (actionRule: {
-            name: string;
-            must_have_labels: Label[];
-            must_not_have_labels: Label[];
-            action_label: Label;
-          }) =>
-            new ActionRule(
-              actionRule.name,
-              actionRule.must_have_labels,
-              actionRule.must_not_have_labels,
-              actionRule.action_label.value,
-            ),
-        );
-        setActionRules(mappedActionRules);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    fetchAllActions().then(response => {
-      if (response) {
-        const actns = response.actions_response.map((action: Action) => ({
-          name: action.name,
-          id: action.name,
-        }));
-        setActions(actns);
-      }
-    });
-  }, []);
-
   const onNewActionRuleChange = (
-    update_name: string,
+    update_name: 'name' | 'action_name' | 'classification_conditions',
     new_value: ClassificationCondition[] | string,
   ) => {
     const newNewActionRule = newActionRule.copyAndProcessUpdate(
@@ -230,7 +185,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
       actionRule.must_not_have_labels.every(
         label => label.key !== classificationTypeTBD && label.value,
       ) &&
-      actionRule.action_id !== '0' &&
+      actionRule.action_name !== defaultActionRule.action_name &&
       actionRuleNameIsUnique(actionRule.name, oldName)) as boolean;
 
   const ruleIsValid = (actionRule: ActionRule, oldName: string) =>
@@ -245,16 +200,6 @@ export default function ActionRuleSettingsTab(): JSX.Element {
     setShowToast(true);
   };
 
-  const getAPIActionRule = (actionRule: ActionRule) => ({
-    name: actionRule.name,
-    must_have_labels: actionRule.must_have_labels,
-    must_not_have_labels: actionRule.must_not_have_labels,
-    action_label: {
-      key: 'Action',
-      value: actionRule.action_id,
-    },
-  });
-
   const onAddActionRule = (actionRule: ActionRule, addToUIOnly: boolean) => {
     actionRules.push(actionRule);
     actionRules.sort((a, b) =>
@@ -262,8 +207,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
     );
     setActionRules([...actionRules]);
     if (!addToUIOnly) {
-      const apiActionRule = getAPIActionRule(actionRule);
-      addActionRule(apiActionRule);
+      addActionRule(actionRule);
       displayToast('A new action rule was added successfully.');
     }
   };
@@ -286,8 +230,7 @@ export default function ActionRuleSettingsTab(): JSX.Element {
   ) => {
     onDeleteActionRule(oldName, true); // deleteFromUIOnly
     onAddActionRule(updatedActionRule, true); // addToUIOnly
-    const apiActionRule = getAPIActionRule(updatedActionRule);
-    updateActionRule(oldName, apiActionRule);
+    updateActionRule(oldName, updatedActionRule);
     displayToast('The action rule was updated successfully.');
   };
 

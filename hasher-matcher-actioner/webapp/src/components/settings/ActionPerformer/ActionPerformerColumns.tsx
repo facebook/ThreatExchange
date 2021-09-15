@@ -2,24 +2,30 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import Form from 'react-bootstrap/Form';
-import PropTypes from 'prop-types';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import WebhookActioner from './WebhookActioner';
+import {Action} from '../../../pages/settings/ActionSettingsTab';
 
 export type WebhookActionPerformerParams = {
   url: string;
   headers: string;
 };
 
+const Actioners: ActionerMap = {
+  WebhookPostActionPerformer: WebhookActioner,
+  WebhookGetActionPerformer: WebhookActioner,
+  WebhookDeleteActionPerformer: WebhookActioner,
+  WebhookPutActionPerformer: WebhookActioner,
+  '': WebhookActioner,
+};
+
 type ActionPerformerColumn = {
-  name: string;
-  type: string;
-  params: WebhookActionPerformerParams;
+  action: Action;
   editing: boolean;
-  onChange: (key: string, keyValueMap: {[key: string]: string}) => void;
+  updateAction: (action: Action) => void;
   canNotDeleteOrUpdateName: boolean;
 };
 
@@ -28,24 +34,17 @@ interface ActionerMap {
 }
 
 export default function ActionPerformerColumns({
-  name,
-  type,
-  params,
+  action,
   editing,
-  onChange,
+  updateAction,
   canNotDeleteOrUpdateName,
 }: ActionPerformerColumn): JSX.Element {
-  const Actioners: ActionerMap = {
-    WebhookPostActionPerformer: WebhookActioner,
-    WebhookGetActionPerformer: WebhookActioner,
-    WebhookDeleteActionPerformer: WebhookActioner,
-    WebhookPutActionPerformer: WebhookActioner,
-    '': WebhookActioner,
-  };
+  const [name, setName] = useState(action.name);
+
   return (
     <>
       <td>
-        <div hidden={editing}>{name}</div>
+        <div hidden={editing}>{action.name}</div>
 
         <div hidden={!editing}>
           <Form>
@@ -67,9 +66,12 @@ export default function ActionPerformerColumns({
                 <Form.Control
                   type="text"
                   placeholder="New Action Name"
-                  value={name}
+                  value={action.name}
                   onChange={e => {
-                    onChange('name', {name: e.target.value});
+                    setName(e.target.value);
+                    const newAction = action;
+                    newAction.name = e.target.value;
+                    updateAction(newAction);
                   }}
                 />
               </Form.Group>
@@ -78,25 +80,12 @@ export default function ActionPerformerColumns({
         </div>
       </td>
       <td>
-        {Actioners[type]({
-          webhookType: type,
+        {Actioners[action.config_subtype]({
+          action,
           editing,
-          ...params,
-          onChange,
+          updateAction,
         })}
       </td>
     </>
   );
 }
-
-ActionPerformerColumns.propTypes = {
-  name: PropTypes.string.isRequired,
-  type: PropTypes.string.isRequired,
-  editing: PropTypes.bool.isRequired,
-  params: PropTypes.shape({
-    url: PropTypes.string.isRequired,
-    headers: PropTypes.string.isRequired,
-  }).isRequired,
-  onChange: PropTypes.func.isRequired,
-  canNotDeleteOrUpdateName: PropTypes.bool.isRequired,
-};
