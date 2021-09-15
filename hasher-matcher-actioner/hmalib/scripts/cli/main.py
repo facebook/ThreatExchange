@@ -113,7 +113,7 @@ def get_api_url(cli_option: str = None) -> str:
     else:
         print(
             "Trying to get API_URL from tf outputs.\n"
-            "You can also pass it in using one of: \n"
+            "You can save time by passing it in using one of: \n"
             "  * a cli argument (-e)\n"
             f"  * in the environment as {environment_var}\n"
         )

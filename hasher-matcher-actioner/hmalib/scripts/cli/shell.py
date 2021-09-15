@@ -1,14 +1,6 @@
 #! /usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-"""
-Prototype of shell wrapper for HMA utils for interactive manual testings
-
-```
-python3 scripts/hma_shell --pwd <password-of-user-created-in-pool>
-```
-
-"""
 import cmd
 import os
 import argparse
@@ -36,21 +28,35 @@ from hmalib.common.configs.actioner import ActionPerformer, WebhookPostActionPer
 
 class ShellCommand(base.Command):
     """
-    Prototype of shell wrapper for HMA utils for interactive manual testings.
+    Prototype shell using HMA utils to interact via the API.
     """
 
     @classmethod
+    def init_argparse(cls, ap: argparse.ArgumentParser) -> None:
+        ap.add_argument(
+            "--cmd",
+            help=f"run one command and exit. Options: {HMAShell.get_commands()}",
+        )
+
+    def __init__(
+        self,
+        cmd: str = "",
+    ) -> None:
+        self.cmd = cmd
+
+    @classmethod
     def get_name(cls) -> str:
-        """The display name of the command"""
         return "shell"
 
     @classmethod
     def get_help(cls) -> str:
-        """The short help of the command"""
-        return "open and interactive shell"
+        return "open interactive shell OR run single command (via --cmd)"
 
     def execute(self, api) -> None:
-        HMAShell(api).cmdloop()
+        if self.cmd:
+            HMAShell(api).onecmd(self.cmd)
+        else:
+            HMAShell(api).cmdloop()
 
 
 class HMAShell(cmd.Cmd):
@@ -104,10 +110,26 @@ class HMAShell(cmd.Cmd):
 
     # Utility commands
 
-    def do_exit(self, arg):
-        "Close the shell: exit"
+    def do_quit(self, arg):
+        "Close the shell: quit"
         print("\nClosing Shell...\n")
         return True
 
     def _format_json_object_to_str(self, json_object):
         return json.dumps(json_object, indent=2)
+
+    @classmethod
+    def get_commands(cls):
+        names = dir(cls)
+        cmds = []
+        names.sort()
+        # There can be duplicates if routines overridden
+        prevname = ""
+        for name in names:
+            if name[:3] == "do_":
+                if name == prevname:
+                    continue
+                prevname = name
+                cmd = name[3:]
+                cmds.append(cmd)
+        return cmds
