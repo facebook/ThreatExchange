@@ -29,7 +29,7 @@ from time import perf_counter
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from hma_script_utils import HasherMatcherActionerAPI
+from hmalib.scripts.common.utils import HasherMatcherActionerAPI
 
 # Token can be found using Postman or with developer credentials using script/get_auth_token
 TOKEN = ""

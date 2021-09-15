@@ -277,9 +277,25 @@ class HasherMatcherActionerAPI:
     ):
         self.session.delete(self._get_request_url(api_path + action_rule_name))
 
+    def get_matches_for_hash(
+        self,
+        signal_type: str,
+        signal_value: str,
+        api_path: str = "/matches/for-hash/",
+    ):
+        params = {
+            "signal_type": signal_type,
+            "signal_value": signal_value,
+        }
+        response = self.session.get(
+            self._get_request_url(api_path),
+            params=params,
+        )
+        return response.json().get("matches", [])
+
 
 def get_terraform_outputs(
-    directory: str = "/workspaces/ThreatExchange/hasher-matcher-actioner/terraform",
+    directory: str = "terraform",
 ):
     cmd = ["terraform"]
     cmd.extend(["output", "-json"])
@@ -288,7 +304,7 @@ def get_terraform_outputs(
 
 
 def get_terraform_outputs_from_file(
-    path: str = "/workspaces/ThreatExchange/hasher-matcher-actioner/tmp.out",
+    path: str = "tmp.out",
 ):
     with open(path) as f:
         return json.loads(f.read())
