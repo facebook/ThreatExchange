@@ -52,7 +52,7 @@ class ShellCommand(base.Command):
     def get_help(cls) -> str:
         return "open interactive shell OR run single command (via --cmd)"
 
-    def execute(self, api) -> None:
+    def execute(self, api: utils.HasherMatcherActionerAPI) -> None:
         if self.cmd:
             HMAShell(api).onecmd(self.cmd)
         else:
@@ -94,6 +94,17 @@ class HMAShell(cmd.Cmd):
     def do_matches_for_id(self, arg):
         "Get matches for content id: matches_for_id <content id>"
         print(self._format_json_object_to_str(self.api.get_content_matches(arg)))
+
+    def do_matches_for_hash(self, arg):
+        "Get matches for a hash: matches_for_hash [pdq|video_md5] <hash>"
+        arg_lst = arg.split()
+        signal_type = arg_lst[0]
+        hash_val = arg_lst[1]
+        print(
+            self._format_json_object_to_str(
+                self.api.get_matches_for_hash(signal_type, hash_val)
+            )
+        )
 
     def do_action_history_for_id(self, arg):
         "Get action_history for content id: action_history_for_id <content id>"

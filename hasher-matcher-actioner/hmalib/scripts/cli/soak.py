@@ -36,6 +36,7 @@ import pandas as pd
 import typing as t
 
 import hmalib.scripts.cli.command_base as base
+import hmalib.scripts.common.utils as utils
 
 from hmalib.scripts.common.client_lib import DeployedInstanceClient
 from hmalib.scripts.common.listener import Listener
@@ -114,7 +115,7 @@ class SoakCommand(base.Command):
         self.skip_listener = skip_listener
         self.filepaths = filepaths
 
-    def execute(self, api) -> None:
+    def execute(self, api: utils.HasherMatcherActionerAPI) -> None:
         helper = DeployedInstanceClient(api=api)
         if self.skip_listener:
             helper.set_up_test("http://httpstat.us/404")

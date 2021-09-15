@@ -277,6 +277,22 @@ class HasherMatcherActionerAPI:
     ):
         self.session.delete(self._get_request_url(api_path + action_rule_name))
 
+    def get_matches_for_hash(
+        self,
+        signal_type: str,
+        signal_value: str,
+        api_path: str = "/matches/for-hash/",
+    ):
+        params = {
+            "signal_type": signal_type,
+            "signal_value": signal_value,
+        }
+        response = self.session.get(
+            self._get_request_url(api_path),
+            params=params,
+        )
+        return response.json().get("matches", [])
+
 
 def get_terraform_outputs(
     directory: str = "terraform",

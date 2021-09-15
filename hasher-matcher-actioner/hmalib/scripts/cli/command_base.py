@@ -10,6 +10,8 @@ import argparse
 import sys
 import typing as t
 
+import hmalib.scripts.common.utils as utils
+
 
 class CommandError(Exception):
     """Wrapper for exceptions which cause return codes"""
@@ -67,5 +69,6 @@ class Command:
         """Convenience accessor to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
-    def execute(self, api) -> None:
+    def execute(self, api: utils.HasherMatcherActionerAPI) -> None:
+        """Run the given command"""
         raise NotImplementedError
