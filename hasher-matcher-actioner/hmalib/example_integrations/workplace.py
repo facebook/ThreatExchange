@@ -1,18 +1,72 @@
 import json
 import hmac
 import typing as t
+import requests
+
 from dataclasses import dataclass
 
 from hmalib.common.logging import get_logger
 
-import requests
+
+"""
+When deployed correctly, this integration will 
+ * process requests sent by a Workplace bot
+ * athenticate that they came from the correct workplace bot
+ * convert them to the form HMA expects
+ * submit to HMA
+
+
+How to ship this workplace integration using AWS:
+
+1. In your workplace community create a bot/app
+2. Give the bot permission to read from the necessary groups
+3. Set WORKPLACE_APP_SECRET to be the secret from this bot
+4. Set HMA_API_GATEWAY_URL to be the URL for the HMA API 
+   (output when terraform apply is run)
+5. Set HMA_API_TOKEN to be the authorization token used to 
+   authenticate access to HMA API
+6. Ship this as a lambda function in Aws. The easiest way to
+   do that might be by adding it to terraform. The code in 
+   examples/workplace.tf might be useful
+7. Create a new API Gateway in AWS that points to this lambda
+   function. You do not need to add an authenticator to the 
+   path since this lambda will handle athenticating that the
+   request truly came from your Workplace bot
+8. Set up your workplace bot to send request to the new API 
+   Gateway
+9. Set up Actions and Action Rules in HMA as necessary
+
+   An Action and Action rule to comment on the post with the 
+   violating content for a match against dataset 12345 might 
+   look like:
+
+   ACTION:
+      Name: WorkplaceCommentAction
+      URL : https://graph.facebook.com/<content-id>/comments?message=Attention+Civilian!+This+post+violates+our+terms+of+service.+The+authorities+have+been+notified+and+they+are+on+the+way.+Good+Luck!
+      Webhook Type : POST
+      Headers : {"Authorization": "Bearer WORKPLACE-ACCESS-TOKEN", "User-Agent": "HMA"}
+
+   ACTION RULE:
+      Name: Comment On Workplace Matches
+      Classification Conditions: 
+         Dataset Source = te
+         SubmittedContent has been classified = integration_source:workplace
+      Action: WorkplaceCommentAction
+
+   NOTE: 
+   1. HMA will parse "<content-id>" and replace with the submitted
+      content-id. This script stores uses WorkplacePostID as the 
+      content-id.
+   2. Replace WORKPLACE-ACCESS-TOKEN with the access token from your workplace bot
+"""
 
 logger = get_logger()
 
-# Placeholder values not used in prod so that we dont leak anything to github
-API_TOKEN = "3156067"
-WORKPLACE_APP_SECRET = "70856018561"
+# Placeholder values
+# You could optionally chose to deploy these as terraform variables
+WORKPLACE_APP_SECRET = "1234567"
 HMA_API_GATEWAY_URL = "https://xxxxxxxxx.execute-api.us-east-1.amazonaws.com"
+HMA_API_TOKEN = "7654321"
 
 
 @dataclass
@@ -54,7 +108,7 @@ def upload_to_HMA(content: PhotoToUpload):
         url=HMA_API_GATEWAY_URL + "/submit/url/",
         headers={
             "Content-Type": "application/json",
-            "Authorization": API_TOKEN,
+            "Authorization": HMA_API_TOKEN,
         },
         data=payload_bytes,
     )

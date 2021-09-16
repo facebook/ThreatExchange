@@ -248,15 +248,6 @@ module "authentication" {
   use_shared_user_pool                      = var.use_shared_user_pool
   webapp_and_api_shared_user_pool_id        = var.webapp_and_api_shared_user_pool_id
   webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
-
-  lambda_docker_info = {
-    uri = var.hma_lambda_docker_uri
-    commands = {
-      integrations = "hmalib.lambdas.integrations.lambda_handler"
-    }
-  }
-  log_retention_in_days = var.log_retention_in_days
-
 }
 
 
