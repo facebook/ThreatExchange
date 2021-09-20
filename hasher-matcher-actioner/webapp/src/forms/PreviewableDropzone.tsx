@@ -3,7 +3,7 @@
  */
 
 import React, {SyntheticEvent, useCallback, useState} from 'react';
-import {Container, Col, Row, Button} from 'react-bootstrap';
+import {Container, Col, Row, Button, ResponsiveEmbed} from 'react-bootstrap';
 import {useDropzone} from 'react-dropzone';
 
 import '../styles/_dropzone.scss';
@@ -40,13 +40,14 @@ function PreviewPane({type, handleChange, file}: PreviewPaneProps) {
         </Col>
       </Row>
       <Row>
-        <Col
-          style={{textAlign: 'center', maxHeight: '300px', overflow: 'scroll'}}>
-          {type === 'video' ? (
-            <BlurVideo src={URL.createObjectURL(file)} override={!revealed} />
-          ) : (
-            <BlurImage src={URL.createObjectURL(file)} override={!revealed} />
-          )}
+        <Col>
+          <ResponsiveEmbed aspectRatio="16by9">
+            {type === 'video' ? (
+              <BlurVideo src={URL.createObjectURL(file)} override={!revealed} />
+            ) : (
+              <BlurImage src={URL.createObjectURL(file)} override={!revealed} />
+            )}
+          </ResponsiveEmbed>
         </Col>
       </Row>
     </Container>
