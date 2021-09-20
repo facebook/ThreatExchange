@@ -154,3 +154,11 @@ variable "partner_image_buckets" {
     params = map(string)
   }))
 }
+
+variable "banks_media_storage" {
+  description= "Name and arn where we store bank media."
+  type = object({
+    bucket_name = string
+    bucket_arn  = string
+  })
+}

@@ -19,7 +19,7 @@ class AllBanksEnvelope(JSONifiable):
         return {"banks": [bank.to_json() for bank in self.banks]}
 
 
-def get_bank_api(bank_table: Table) -> bottle.Bottle:
+def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottle:
     """
     Closure for dependencies of the bank API
     """

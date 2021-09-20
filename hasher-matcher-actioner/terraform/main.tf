@@ -284,6 +284,47 @@ resource "aws_s3_bucket" "data_bucket" {
   force_destroy = true
 }
 
+/**
+ * # Banks S3 Media Bucket:
+ * Stores media uploaded by bank admins. Store raw data. Should ideally be
+ * closed to the wider internet and can have retention rules based on legal
+ * policy.
+ */
+resource "aws_s3_bucket" "banks_media_bucket" {
+  bucket_prefix = "${var.prefix}-banks-media-"
+  acl = "private"
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "BanksMediaBucket"
+    }
+  )
+
+  versioning {
+    # Don't see a reason for versioning media. Everything will be keyed on uuid
+    # and current date. 
+    enabled = false
+  }
+
+  cors_rule {
+    # The webapp uploads media to this bucket directly.
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT"]
+
+    # Partners could lock this down to specific origin where possible.
+    allowed_origins = ["*"]
+    max_age_seconds = 3000
+  }
+
+  lifecycle {
+    # To prevent execution of plans which would cause this bucket to get
+    # destroyed. Once in the hands of partners, we have to be extra careful to
+    # not accidentally delete their data. 
+    prevent_destroy = true
+  }
+}
+
+
 /*
  * # Submissions SQS:
  * Submissions from the API are routed directly into a queue. Doing an SNS
@@ -418,6 +459,11 @@ module "api" {
     bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     pdq_file_extension = local.pdq_file_extension
     data_folder        = local.te_data_folder
+  }
+
+  banks_media_storage = {
+    bucket_name = aws_s3_bucket.banks_media_bucket.id
+    bucket_arn  = aws_s3_bucket.banks_media_bucket.arn
   }
 
   log_retention_in_days        = var.log_retention_in_days

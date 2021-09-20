@@ -47,6 +47,7 @@ THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENS
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 BANKS_TABLE = os.environ["BANKS_TABLE"]
+BANKS_MEDIA_BUCKET_NAME = os.environ["BANKS_MEDIA_BUCKET_NAME"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
@@ -230,7 +231,13 @@ app.mount(
     get_actions_api(hma_config_table=HMA_CONFIG_TABLE),
 )
 
-app.mount("/banks/", get_bank_api(dynamodb.Table(BANKS_TABLE)))
+app.mount(
+    "/banks/",
+    get_bank_api(
+        bank_table=dynamodb.Table(BANKS_TABLE),
+        bank_user_media_bucket=BANKS_MEDIA_BUCKET_NAME,
+    ),
+)
 
 if __name__ == "__main__":
     app.run()
