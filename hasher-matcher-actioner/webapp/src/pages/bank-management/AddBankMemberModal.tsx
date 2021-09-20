@@ -102,6 +102,7 @@ export default function AddBankMemberModal({
           <Row>
             <Col>
               <BankMemberForm
+                type={contentType}
                 uploadProgress={fileUploadProgress}
                 handleSubmit={handleSubmit}
               />

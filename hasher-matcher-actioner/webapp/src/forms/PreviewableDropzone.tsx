@@ -7,6 +7,7 @@ import {Container, Col, Row, Button} from 'react-bootstrap';
 import {useDropzone} from 'react-dropzone';
 
 import '../styles/_dropzone.scss';
+import {ContentType} from '../utils/constants';
 import {BlurImage, BlurVideo} from '../utils/MediaUtils';
 
 type FileType = 'video' | 'photo';
@@ -65,7 +66,7 @@ function HelpText({isDragActive}: HelpTextProps) {
 }
 
 export type PreviewableDropzoneProps = {
-  type: 'video' | 'photo';
+  type: ContentType;
   file?: File;
   handleFileChange: (file: File) => void;
 };
@@ -84,8 +85,10 @@ export default function PreviewableDropzone({
 
   const {getRootProps, getInputProps, open, isDragActive} = useDropzone({
     onDrop,
-    accept: type === 'video' ? 'video/*' : 'image/*',
+    accept: type === ContentType.Video ? 'video/*' : 'image/*',
   });
+
+  const fileType = type === ContentType.Video ? 'video' : 'photo';
 
   return (
     <div>
@@ -94,7 +97,11 @@ export default function PreviewableDropzone({
         {/* eslint-disable react/jsx-props-no-spreading */}
         <input {...getInputProps()} />
         {file ? (
-          <PreviewPane type={type} file={file} handleChange={() => open()} />
+          <PreviewPane
+            type={fileType}
+            file={file}
+            handleChange={() => open()}
+          />
         ) : (
           <HelpText isDragActive={isDragActive} />
         )}
