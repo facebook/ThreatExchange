@@ -32,8 +32,8 @@
     "react-dropzone": "^11.4.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "^4.0.3",
-    "uplot": "^1.6.13",
-    "uplot-react": "^1.1.0"
+    "uplot": "1.6.13",
+    "uplot-react": "1.1.0"
   },
   "scripts": {
     "start": "react-scripts start",
