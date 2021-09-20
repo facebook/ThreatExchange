@@ -15,7 +15,7 @@ from hmalib.common.models.signal import (
 )
 from hmalib.common.count_models import MatchByPrivacyGroupCounter
 
-from ddb_test_common import DynamoDBTableTestBase
+from .ddb_test_common import DynamoDBTableTestBase
 
 # These should change in tandem with terraform/datastore/main.tf
 DATASTORE_TABLE_DEF = {
