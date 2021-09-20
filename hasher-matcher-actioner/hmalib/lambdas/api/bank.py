@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from hmalib.common.models.models_base import DynamoDBCursorKey
 from urllib import parse
 from datetime import datetime
 import json
@@ -33,8 +34,8 @@ class AllBanksEnvelope(JSONifiable):
 class BankMembersPage(JSONifiable):
     bank_members: t.List[BankMember]
 
-    # deserializes to dynamo's exclusive_start_key
-    continuation_token: str
+    # deserializes to dynamo's exclusive_start_key. Is a dict
+    continuation_token: t.Optional[str]
 
     def to_json(self) -> t.Dict:
         result = asdict(self)
@@ -54,6 +55,9 @@ def get_bucket_and_key(s3_url: str) -> t.Tuple[str, str]:
 
 
 def unprivatise_media_url_for_bank_member(bank_member: BankMember) -> BankMember:
+    if bank_member.media_url is None:
+        return bank_member
+
     bucket, key = get_bucket_and_key(bank_member.media_url)
     bank_member.media_url = create_presigned_url(
         bucket_name=bucket,
@@ -147,10 +151,14 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
             content_type=content_type,
             exclusive_start_key=continuation_token,
         )
+
+        continuation_token = None
+        if db_response.last_evaluated_key:
+            continuation_token = uriencode(json.dumps(db_response.last_evaluated_key))
+
         return BankMembersPage(
             bank_members=unprivatise_media_url_for_bank_members(db_response.items),
-            continuation_token=db_response.last_evaluated_key
-            and uriencode(json.dumps(db_response.last_evaluated_key)),
+            continuation_token=continuation_token,
         )
 
     @bank_api.post("/add-member/<bank_id>", apply=[jsoninator])

@@ -148,8 +148,8 @@ class BankMember(DynamoDBItem):
 
     # Will contain either the media_url (in case of photos / videos / pdfs) or
     # the raw_content in case of plain text.
-    media_url: str
-    raw_content: str
+    media_url: t.Optional[str]
+    raw_content: t.Optional[str]
 
     notes: str
 
@@ -184,7 +184,7 @@ class BankMember(DynamoDBItem):
         }
 
     @classmethod
-    def from_dynamodb_item(cls, item: t.Dict) -> "Bank":
+    def from_dynamodb_item(cls, item: t.Dict) -> "BankMember":
         return cls(
             bank_id=item["BankId"],
             bank_member_id=item["BankMemberId"],

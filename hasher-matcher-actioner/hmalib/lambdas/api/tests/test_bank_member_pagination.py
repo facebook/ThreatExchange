@@ -69,7 +69,7 @@ class BankMemberPaginationTestCase(DynamoDBTableTestBase, unittest.TestCase):
 
     def test_pagination_produces_correct_number_of_pages(self):
         bank_id = self._create_200_members()
-        api = TApp(get_bank_api(self.get_table()))
+        api = TApp(get_bank_api(self.get_table(), "irrelevant_s3_bucket_for_this_test"))
 
         running_count = 0
         continuation_token = None
