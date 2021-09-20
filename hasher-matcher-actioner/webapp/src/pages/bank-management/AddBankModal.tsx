@@ -2,7 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState} from 'react';
+import React from 'react';
 import {Modal, Container, Row, Col, Form, Button} from 'react-bootstrap';
 import {createBank} from '../../Api';
 import BankDetailsForm from '../../forms/BankDetailsForm';

@@ -5,8 +5,9 @@
 import {Auth, API} from 'aws-amplify';
 import {ActionRule, Label} from './pages/settings/ActionRuleSettingsTab';
 import {Action} from './pages/settings/ActionSettingsTab';
-import {Bank} from './messages/BankMessages';
+import {Bank, BankMember} from './messages/BankMessages';
 import {toDate} from './utils/DateTimeUtils';
+import {ContentType, getContentTypeForString} from './utils/constants';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -449,6 +450,8 @@ export async function deleteActionRule(name: string): Promise<Response> {
   return apiDelete(`action-rules/${name}`);
 }
 
+// Banks APIs
+
 type BankWithStringDates = Bank & {
   created_at: string;
   updated_at: string;
@@ -504,6 +507,77 @@ export async function updateBank(
     bank_id: response.bank_id!,
     bank_name: response.bank_name!,
     bank_description: response.bank_description!,
+    created_at: toDate(response.created_at)!,
+    updated_at: toDate(response.updated_at)!,
+  }));
+}
+
+type BankMemberWithSerializedTypes = BankMember & {
+  content_type: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type BankMembersPage = {
+  bank_members: BankMemberWithSerializedTypes[];
+  continuation_token: string;
+};
+
+export async function fetchBankMembersPage(
+  bankId: string,
+  contentType: ContentType,
+  continuationToken?: string,
+): Promise<[BankMember[], string]> {
+  const url =
+    continuationToken === undefined
+      ? `banks/get-members/${bankId}?content_type=${contentType}`
+      : `banks/get-members/${bankId}?content_type=${contentType}&continuation_token=${continuationToken}`;
+  return apiGet<BankMembersPage>(url).then(response => [
+    response.bank_members.map(member => ({
+      bank_id: member.bank_id,
+      bank_member_id: member.bank_member_id,
+      content_type: getContentTypeForString(member.content_type),
+      media_url: member.media_url,
+      raw_content: member.raw_content,
+      notes: member.notes,
+      created_at: toDate(member.created_at)!,
+      updated_at: toDate(member.updated_at)!,
+    })),
+    response.continuation_token,
+  ]);
+}
+
+type MediaUploadURLResponse = {
+  signed_url: string;
+  url: string;
+};
+
+export async function fetchMediaUploadURL(
+  mediaType: string,
+  extension: string,
+): Promise<MediaUploadURLResponse> {
+  return apiPost<MediaUploadURLResponse>('/banks/get-media-upload-url', {
+    media_type: mediaType,
+    extension,
+  });
+}
+
+export async function addBankMember(
+  bankId: string,
+  contentType: ContentType,
+  mediaUrl: string,
+  notes: string,
+): Promise<BankMember> {
+  return apiPost<BankMemberWithSerializedTypes>(`/banks/add-member/${bankId}`, {
+    content_type: contentType,
+    media_url: mediaUrl,
+    notes,
+  }).then(response => ({
+    bank_id: response.bank_id,
+    bank_member_id: response.bank_member_id,
+    content_type: getContentTypeForString(response.content_type),
+    media_url: response.media_url,
+    notes: response.notes,
     created_at: toDate(response.created_at)!,
     updated_at: toDate(response.updated_at)!,
   }));
