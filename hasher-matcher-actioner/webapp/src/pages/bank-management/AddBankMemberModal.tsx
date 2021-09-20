@@ -62,12 +62,12 @@ export default function AddBankMemberModal({
 
   const [fileUploadProgress, setFileUploadProgress] = useState<number>(0);
 
-  function closeWrapper(didAdd = false) {
+  const closeWrapper = (didAdd = false) => {
     setFileUploadProgress(0);
     onCloseClick(didAdd);
-  }
+  };
 
-  function handleSubmit(file: File, notes: string) {
+  const handleSubmit = (file: File, notes: string) => {
     // Mark upload in progress:
     setFileUploadProgress(1);
 
@@ -84,7 +84,7 @@ export default function AddBankMemberModal({
         )
         .then(() => closeWrapper(true));
     });
-  }
+  };
 
   return (
     <Modal show={show} onHide={closeWrapper} size="lg" centered>
