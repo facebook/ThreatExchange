@@ -4,8 +4,7 @@
 
 $max-dimension: '450px';
 
-.image-preview,
-.video-preview-container {
+.blur-friendly-preview-container {
   border: 'none';
   margin: '4px 4px 4px 4px';
   max-width: $max-dimension;
@@ -16,17 +15,23 @@ $max-dimension: '450px';
   left: 0;
   width: 100%;
   border: 0;
+
+  .eye {
+    position: absolute;
+    margin-left: 8px;
+    margin-top: 8px;
+
+    padding: 0 3px;
+
+    z-index: 2;
+  }
 }
 
-.image-preview.blur {
-  filter: blur(40px) grayscale(100%);
-}
-
-.video-preview-container video {
+.blur-friendly-preview-container {
   width: 100%;
   height: auto;
 
-  &.blur {
+  > .blur {
     filter: blur(40px) grayscale(100%);
   }
 }
