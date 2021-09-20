@@ -9,10 +9,17 @@ $max-dimension: '450px';
   border: 'none';
   margin: '4px 4px 4px 4px';
   max-width: $max-dimension;
+
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border: 0;
 }
 
 .image-preview.blur {
-  filter: blur(10px) grayscale(100%);
+  filter: blur(40px) grayscale(100%);
 }
 
 .video-preview-container video {
@@ -20,6 +27,6 @@ $max-dimension: '450px';
   height: auto;
 
   &.blur {
-    filter: blur(10px) grayscale(100%);
+    filter: blur(40px) grayscale(100%);
   }
 }

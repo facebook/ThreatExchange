@@ -59,14 +59,16 @@ function BlurMedia(
  */
 export const BlurImage = BlurMedia(
   (handleMouseLeave, handleMouseEnter, blur, src): JSX.Element => (
-    <Image
-      onMouseLeave={handleMouseLeave}
-      onMouseEnter={handleMouseEnter}
-      className={classNames({'image-preview': true, blur})}
-      src={src}
-      fluid
-      rounded
-    />
+    <div className="image-preview-container">
+      <Image
+        onMouseLeave={handleMouseLeave}
+        onMouseEnter={handleMouseEnter}
+        className={classNames({'image-preview': true, blur})}
+        src={src}
+        fluid
+        rounded
+      />
+    </div>
   ),
 );
 

@@ -3,7 +3,15 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Container, Row, Col, Button, Card, Spinner} from 'react-bootstrap';
+import {
+  Container,
+  Row,
+  Col,
+  Button,
+  Card,
+  Spinner,
+  ResponsiveEmbed,
+} from 'react-bootstrap';
 import {fetchBank, fetchBankMembersPage} from '../../Api';
 import {BankMember} from '../../messages/BankMessages';
 import {ContentType} from '../../utils/constants';
@@ -65,7 +73,9 @@ function MemberPreview({
   return (
     <Col xs="3" className="mb-4">
       <Card>
-        <BlurImage src={thumbnailSrc} />
+        <ResponsiveEmbed aspectRatio="16by9">
+          <BlurImage src={thumbnailSrc} />
+        </ResponsiveEmbed>
         <Card.Body>
           <p className="text-small">Updated: {timeAgoForDate(lastUpdated)}</p>
         </Card.Body>

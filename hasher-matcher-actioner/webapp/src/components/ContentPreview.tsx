@@ -3,7 +3,7 @@
  */
 
 import React, {useState} from 'react';
-import {Button, Col, Container, Row} from 'react-bootstrap';
+import {Button, Col, Container, ResponsiveEmbed, Row} from 'react-bootstrap';
 
 import {BlurImage, BlurVideo} from '../utils/MediaUtils';
 import {ContentType} from '../utils/constants';
@@ -74,7 +74,11 @@ export default function ContentPreview({
         </Col>
       </Row>
       <Row className="my-2">
-        <Col>{swtchContentTypeRenderers(revealed, contentType, url)}</Col>
+        <Col>
+          <ResponsiveEmbed aspectRatio="16by9">
+            {swtchContentTypeRenderers(revealed, contentType, url)}
+          </ResponsiveEmbed>
+        </Col>
       </Row>
     </Container>
   );
