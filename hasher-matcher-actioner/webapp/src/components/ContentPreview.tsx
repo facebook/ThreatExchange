@@ -69,7 +69,7 @@ export default function ContentPreview({
       <Row className="my-2">
         <Col>
           <Button onClick={() => setRevealed(!revealed)}>
-            {revealed ? 'Hide!' : 'Reveal!'}
+            {revealed ? 'Hide' : 'Reveal'}
           </Button>
         </Col>
       </Row>

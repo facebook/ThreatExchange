@@ -124,9 +124,9 @@ function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
 
   const empty = members.length === 0 && noMoreMembers === true;
 
-  let title = 'Photos in this bank.';
+  let title = 'Photos in this bank';
   if (type === ContentType.Video) {
-    title = 'Videos in this bank.';
+    title = 'Videos in this bank';
   }
 
   const ctaLabel = type === ContentType.Video ? 'Add Video' : 'Add Photo';

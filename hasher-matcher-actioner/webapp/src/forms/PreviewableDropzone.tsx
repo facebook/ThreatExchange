@@ -10,15 +10,13 @@ import '../styles/_dropzone.scss';
 import {ContentType} from '../utils/constants';
 import {BlurImage, BlurVideo} from '../utils/MediaUtils';
 
-type FileType = 'video' | 'photo';
-
 type PreviewPaneProps = {
-  type: FileType;
+  contentType: ContentType;
   file: File;
   handleChange: () => void;
 };
 
-function PreviewPane({type, handleChange, file}: PreviewPaneProps) {
+function PreviewPane({contentType, handleChange, file}: PreviewPaneProps) {
   const [revealed, setRevealed] = useState<boolean>(false);
 
   return (
@@ -42,7 +40,7 @@ function PreviewPane({type, handleChange, file}: PreviewPaneProps) {
       <Row>
         <Col>
           <ResponsiveEmbed aspectRatio="16by9">
-            {type === 'video' ? (
+            {contentType === ContentType.Video ? (
               <BlurVideo src={URL.createObjectURL(file)} override={!revealed} />
             ) : (
               <BlurImage src={URL.createObjectURL(file)} override={!revealed} />
@@ -67,13 +65,13 @@ function HelpText({isDragActive}: HelpTextProps) {
 }
 
 export type PreviewableDropzoneProps = {
-  type: ContentType;
+  contentType: ContentType;
   file?: File;
   handleFileChange: (file: File) => void;
 };
 
 export default function PreviewableDropzone({
-  type,
+  contentType,
   file,
   handleFileChange,
 }: PreviewableDropzoneProps) {
@@ -86,10 +84,8 @@ export default function PreviewableDropzone({
 
   const {getRootProps, getInputProps, open, isDragActive} = useDropzone({
     onDrop,
-    accept: type === ContentType.Video ? 'video/*' : 'image/*',
+    accept: contentType === ContentType.Video ? 'video/*' : 'image/*',
   });
-
-  const fileType = type === ContentType.Video ? 'video' : 'photo';
 
   return (
     <div>
@@ -99,7 +95,7 @@ export default function PreviewableDropzone({
         <input {...getInputProps()} />
         {file ? (
           <PreviewPane
-            type={fileType}
+            contentType={contentType}
             file={file}
             handleChange={() => open()}
           />

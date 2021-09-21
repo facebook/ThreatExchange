@@ -55,7 +55,7 @@ export default function BankMemberForm({
     <Form onSubmit={innerHandleSubmit}>
       <Form.Group className="mt-4">
         <PreviewableDropzone
-          type={type}
+          contentType={type}
           file={formik.values.file}
           handleFileChange={(file: File) => formik.setFieldValue('file', file)}
         />
