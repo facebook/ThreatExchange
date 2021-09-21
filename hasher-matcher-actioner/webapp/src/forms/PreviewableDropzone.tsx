@@ -3,21 +3,20 @@
  */
 
 import React, {SyntheticEvent, useCallback, useState} from 'react';
-import {Container, Col, Row, Button} from 'react-bootstrap';
+import {Container, Col, Row, Button, ResponsiveEmbed} from 'react-bootstrap';
 import {useDropzone} from 'react-dropzone';
 
 import '../styles/_dropzone.scss';
+import {ContentType} from '../utils/constants';
 import {BlurImage, BlurVideo} from '../utils/MediaUtils';
 
-type FileType = 'video' | 'photo';
-
 type PreviewPaneProps = {
-  type: FileType;
+  contentType: ContentType;
   file: File;
   handleChange: () => void;
 };
 
-function PreviewPane({type, handleChange, file}: PreviewPaneProps) {
+function PreviewPane({contentType, handleChange, file}: PreviewPaneProps) {
   const [revealed, setRevealed] = useState<boolean>(false);
 
   return (
@@ -39,13 +38,14 @@ function PreviewPane({type, handleChange, file}: PreviewPaneProps) {
         </Col>
       </Row>
       <Row>
-        <Col
-          style={{textAlign: 'center', maxHeight: '300px', overflow: 'scroll'}}>
-          {type === 'video' ? (
-            <BlurVideo src={URL.createObjectURL(file)} override={!revealed} />
-          ) : (
-            <BlurImage src={URL.createObjectURL(file)} override={!revealed} />
-          )}
+        <Col>
+          <ResponsiveEmbed aspectRatio="16by9">
+            {contentType === ContentType.Video ? (
+              <BlurVideo src={URL.createObjectURL(file)} override={!revealed} />
+            ) : (
+              <BlurImage src={URL.createObjectURL(file)} override={!revealed} />
+            )}
+          </ResponsiveEmbed>
         </Col>
       </Row>
     </Container>
@@ -65,13 +65,13 @@ function HelpText({isDragActive}: HelpTextProps) {
 }
 
 export type PreviewableDropzoneProps = {
-  type: 'video' | 'photo';
+  contentType: ContentType;
   file?: File;
   handleFileChange: (file: File) => void;
 };
 
 export default function PreviewableDropzone({
-  type,
+  contentType,
   file,
   handleFileChange,
 }: PreviewableDropzoneProps) {
@@ -84,7 +84,7 @@ export default function PreviewableDropzone({
 
   const {getRootProps, getInputProps, open, isDragActive} = useDropzone({
     onDrop,
-    accept: type === 'video' ? 'video/*' : 'image/*',
+    accept: contentType === ContentType.Video ? 'video/*' : 'image/*',
   });
 
   return (
@@ -94,7 +94,11 @@ export default function PreviewableDropzone({
         {/* eslint-disable react/jsx-props-no-spreading */}
         <input {...getInputProps()} />
         {file ? (
-          <PreviewPane type={type} file={file} handleChange={() => open()} />
+          <PreviewPane
+            contentType={contentType}
+            file={file}
+            handleChange={() => open()}
+          />
         ) : (
           <HelpText isDragActive={isDragActive} />
         )}

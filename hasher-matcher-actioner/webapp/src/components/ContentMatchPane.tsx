@@ -5,7 +5,7 @@
 import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 import PropTypes from 'prop-types';
-import {Container, Row, Col} from 'react-bootstrap';
+import {Container, Row, Col, ResponsiveEmbed} from 'react-bootstrap';
 import {fetchPreviewURL, fetchContentDetails, ContentDetails} from '../Api';
 import {BlurImage} from '../utils/MediaUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
@@ -56,9 +56,10 @@ export default function ContentMatchPane({
     (!contentDetails && <p>Loading...</p>) || (
       <Container>
         <Row>
-          {/* Avoid explicit padding if possible when re-doing this page. */}
-          <Col className="p-4 text-center" style={{minHeight: '200px'}}>
-            <BlurImage src={img} />
+          <Col className="p-4 text-center">
+            <ResponsiveEmbed aspectRatio="16by9">
+              <BlurImage src={img} />
+            </ResponsiveEmbed>
           </Col>
         </Row>
         <Row>

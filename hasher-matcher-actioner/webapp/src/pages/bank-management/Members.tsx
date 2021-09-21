@@ -3,13 +3,21 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import {Container, Row, Col, Button, Card, Spinner} from 'react-bootstrap';
+import {
+  Container,
+  Row,
+  Col,
+  Button,
+  Card,
+  Spinner,
+  ResponsiveEmbed,
+} from 'react-bootstrap';
 import {fetchBank, fetchBankMembersPage} from '../../Api';
 import {BankMember} from '../../messages/BankMessages';
 import {ContentType} from '../../utils/constants';
 import {timeAgoForDate} from '../../utils/DateTimeUtils';
 
-import {BlurImage} from '../../utils/MediaUtils';
+import {BlurImage, BlurVideo} from '../../utils/MediaUtils';
 import AddBankMemberModal from './AddBankMemberModal';
 
 export type BankTabProps = {
@@ -56,16 +64,24 @@ function EmptyState({onAdd}: EmptyStateProps): JSX.Element {
 type MemberPreviewProps = {
   thumbnailSrc: string;
   lastUpdated: Date;
+  type: ContentType;
 };
 
 function MemberPreview({
+  type,
   thumbnailSrc,
   lastUpdated,
 }: MemberPreviewProps): JSX.Element {
   return (
-    <Col xs="3" className="mb-4">
+    <Col xs="4" className="mb-4">
       <Card>
-        <BlurImage src={thumbnailSrc} />
+        <ResponsiveEmbed aspectRatio="16by9">
+          {type === ContentType.Video ? (
+            <BlurVideo src={thumbnailSrc} />
+          ) : (
+            <BlurImage src={thumbnailSrc} />
+          )}
+        </ResponsiveEmbed>
         <Card.Body>
           <p className="text-small">Updated: {timeAgoForDate(lastUpdated)}</p>
         </Card.Body>
@@ -74,25 +90,11 @@ function MemberPreview({
   );
 }
 
-export function VideoMembers({bankId}: BankTabProps): JSX.Element {
-  return (
-    <Container>
-      <Row className="my-4">
-        <Col xs="10">
-          <h4>Videos in this bank.</h4>
-        </Col>
-        <Col xs="2" className="text-right">
-          <Button variant="primary">Add Video</Button>
-        </Col>
-      </Row>
-      <Row>
-        <h1>Coming soon!</h1>
-      </Row>
-    </Container>
-  );
-}
+type BaseMembersProps = BankTabProps & {
+  type: ContentType;
+};
 
-export function PhotoMembers({bankId}: BankTabProps): JSX.Element {
+function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
   const [neverFetched, setNeverFetched] = useState<boolean>(true);
   const [showAddMemberModal, setShowAddMemberModal] = useState<boolean>(false);
 
@@ -106,29 +108,34 @@ export function PhotoMembers({bankId}: BankTabProps): JSX.Element {
   const [refetchCounter, setRefetchCounter] = useState<number>(0);
 
   useEffect(() => {
-    fetchBankMembersPage(bankId, ContentType.Photo, continuationToken).then(
-      resp => {
-        setNeverFetched(false);
-        setMembers(resp[0]);
-        setContinuationToken(resp[1]);
+    fetchBankMembersPage(bankId, type, continuationToken).then(resp => {
+      setNeverFetched(false);
+      setMembers(resp[0]);
+      setContinuationToken(resp[1]);
 
-        if (resp[1] === null) {
-          // If there is no continuation token, indicates we reached the end of the list.
-          setNoMoreMembers(true);
-        }
-      },
-    );
+      if (resp[1] === null) {
+        // If there is no continuation token, indicates we reached the end of the list.
+        setNoMoreMembers(true);
+      }
+    });
 
     fetchBank(bankId).then(resp => setBankName(resp.bank_name));
   }, [refetchCounter]);
 
   const empty = members.length === 0 && noMoreMembers === true;
 
+  let title = 'Photos in this bank';
+  if (type === ContentType.Video) {
+    title = 'Videos in this bank';
+  }
+
+  const ctaLabel = type === ContentType.Video ? 'Add Video' : 'Add Photo';
+
   return (
     <Container>
       <Row className="my-4">
         <Col xs="10">
-          <h4>Photos in this bank.</h4>
+          <h4>{title}</h4>
         </Col>
         {/* Only show the CTA when not empty. The empty state has its own CTA. */}
         {!empty ? (
@@ -136,7 +143,7 @@ export function PhotoMembers({bankId}: BankTabProps): JSX.Element {
             <Button
               variant="primary"
               onClick={() => setShowAddMemberModal(true)}>
-              Add Photo
+              {ctaLabel}
             </Button>
           </Col>
         ) : null}
@@ -148,6 +155,7 @@ export function PhotoMembers({bankId}: BankTabProps): JSX.Element {
         ) : null}
         {members.map(member => (
           <MemberPreview
+            type={type}
             thumbnailSrc={member.preview_url!}
             lastUpdated={member.updated_at}
           />
@@ -164,8 +172,16 @@ export function PhotoMembers({bankId}: BankTabProps): JSX.Element {
         bankId={bankId}
         bankName={bankName}
         show={showAddMemberModal}
-        contentType={ContentType.Photo}
+        contentType={type}
       />
     </Container>
   );
+}
+
+export function PhotoMembers({bankId}: BankTabProps): JSX.Element {
+  return <BaseMembers type={ContentType.Photo} bankId={bankId} />;
+}
+
+export function VideoMembers({bankId}: BankTabProps): JSX.Element {
+  return <BaseMembers type={ContentType.Video} bankId={bankId} />;
 }

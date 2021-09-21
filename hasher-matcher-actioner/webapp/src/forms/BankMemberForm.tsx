@@ -6,8 +6,10 @@ import React, {useState, SyntheticEvent, useEffect} from 'react';
 import {Form, Button, ProgressBar} from 'react-bootstrap';
 import {useFormik} from 'formik';
 import PreviewableDropzone from './PreviewableDropzone';
+import {ContentType} from '../utils/constants';
 
 type BankMemberFormProps = {
+  type: ContentType;
   handleSubmit: (file: File, notes: string) => void;
   uploadProgress: number; // Between 0 and 100 implies upload not started, 100 implies uploaded and anything in between is shown in progress bar
 };
@@ -21,6 +23,7 @@ function renderProgressBar(uploadProgress: number): JSX.Element | null {
 }
 
 export default function BankMemberForm({
+  type,
   handleSubmit,
   uploadProgress,
 }: BankMemberFormProps) {
@@ -46,11 +49,13 @@ export default function BankMemberForm({
     formik.submitForm();
   };
 
+  const ctaLabel = type === ContentType.Video ? 'Add Video' : 'Add Photo';
+
   return (
     <Form onSubmit={innerHandleSubmit}>
       <Form.Group className="mt-4">
         <PreviewableDropzone
-          type="photo"
+          contentType={type}
           file={formik.values.file}
           handleFileChange={(file: File) => formik.setFieldValue('file', file)}
         />
@@ -76,7 +81,7 @@ export default function BankMemberForm({
         ) : null}
       </Form.Group>
       <Button type="submit" variant="primary" disabled={saving}>
-        Add Photo
+        {ctaLabel}
       </Button>
     </Form>
   );
