@@ -146,12 +146,13 @@ class BankMember(DynamoDBItem):
 
     content_type: t.Type[ContentType]
 
-    # Will contain either the media's content_uri (in case of photos / videos / pdfs) or
-    # the raw_content in case of plain text. Note, this is not a URL but a URI.
-    # May need further authentication before a GET request.
-    # eg. an S3 URI.
-    # s3://<prefix>-banks-media-<something>/bank-media/image/jpeg/2021-09-20/<uuid>.jpg
-    content_uri: t.Optional[str]
+    # When storing media files, store the bucket and the key. If files are
+    # deleted because of legal / retention policies, this indicator will stay
+    # as-is even if the actual s3 object is deleted.
+    storage_bucket: t.Optional[str]
+    storage_key: t.Optional[str]
+
+    # In case we are storing the content directly in dynamodb.
     raw_content: t.Optional[str]
 
     notes: str
@@ -178,7 +179,8 @@ class BankMember(DynamoDBItem):
             "BankId": self.bank_id,
             "BankMemberId": self.bank_member_id,
             "ContentType": self.content_type.get_name(),
-            "ContentURI": self.content_uri,
+            "StorageBucket": self.storage_bucket,
+            "StorageKey": self.storage_key,
             "RawContent": self.raw_content,
             "Notes": self.notes,
             "CreatedAt": self.created_at.isoformat(),
@@ -192,7 +194,8 @@ class BankMember(DynamoDBItem):
             bank_id=item["BankId"],
             bank_member_id=item["BankMemberId"],
             content_type=get_content_type_for_name(item["ContentType"]),
-            content_uri=item["ContentURI"],
+            storage_bucket=item["StorageBucket"],
+            storage_key=item["StorageKey"],
             raw_content=item["RawContent"],
             notes=item["Notes"],
             created_at=datetime.fromisoformat(item["CreatedAt"]),
@@ -333,7 +336,8 @@ class BanksTable:
         self,
         bank_id: str,
         content_type: t.Type[ContentType],
-        content_uri: t.Optional[str],
+        storage_bucket: t.Optional[str],
+        storage_key: t.Optional[str],
         raw_content: t.Optional[str],
         notes: str,
     ) -> BankMember:
@@ -349,7 +353,8 @@ class BanksTable:
             bank_id=bank_id,
             bank_member_id=new_member_id,
             content_type=content_type,
-            content_uri=content_uri,
+            storage_bucket=storage_bucket,
+            storage_key=storage_key,
             raw_content=raw_content,
             notes=notes,
             created_at=now,

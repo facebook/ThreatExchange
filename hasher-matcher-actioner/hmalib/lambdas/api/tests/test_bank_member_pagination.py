@@ -61,7 +61,8 @@ class BankMemberPaginationTestCase(DynamoDBTableTestBase, unittest.TestCase):
                 bank_id=bank.bank_id,
                 content_type=PhotoContent,
                 raw_content=None,
-                content_uri="https://hma-test-media.s3.us-east-1.amazonaws.com/videos/breaking-news.mp4",
+                storage_bucket="hma-test-media",
+                storage_key="videos/breaking-news.mp4",
                 notes="",
             )
 

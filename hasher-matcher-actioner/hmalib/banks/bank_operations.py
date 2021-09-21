@@ -15,7 +15,8 @@ def add_bank_member(
     banks_table: BanksTable,
     bank_id: str,
     content_type: t.Type[ContentType],
-    content_uri: t.Optional[str],
+    storage_bucket: t.Optional[str],
+    storage_key: t.Optional[str],
     raw_content: t.Optional[str],
     notes: str,
 ) -> BankMember:
@@ -27,7 +28,8 @@ def add_bank_member(
     return banks_table.add_bank_member(
         bank_id=bank_id,
         content_type=content_type,
-        content_uri=content_uri,
+        storage_bucket=storage_bucket,
+        storage_key=storage_key,
         raw_content=raw_content,
         notes=notes,
     )

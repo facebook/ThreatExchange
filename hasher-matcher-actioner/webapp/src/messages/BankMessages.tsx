@@ -22,7 +22,8 @@ export type BankMember = {
   bank_id: string;
   bank_member_id: string;
   content_type: ContentType;
-  content_uri?: string;
+  storage_bucket?: string;
+  storage_key?: string;
   raw_content?: string;
   preview_url?: string;
   notes: string;

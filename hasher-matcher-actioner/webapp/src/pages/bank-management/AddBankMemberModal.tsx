@@ -80,7 +80,13 @@ export default function AddBankMemberModal({
       putFileWithProgress(response.upload_url, file, setFileUploadProgress)
         .then(() =>
           // Add bank member to media URL
-          addBankMember(bankId, contentType, response.content_uri, notes),
+          addBankMember(
+            bankId,
+            contentType,
+            response.storage_bucket,
+            response.storage_key,
+            notes,
+          ),
         )
         .then(() => closeWrapper(true));
     });

@@ -537,7 +537,8 @@ export async function fetchBankMembersPage(
       bank_id: member.bank_id,
       bank_member_id: member.bank_member_id,
       content_type: getContentTypeForString(member.content_type),
-      content_uri: member.content_uri,
+      storage_bucket: member.storage_bucket,
+      storage_key: member.storage_key,
       raw_content: member.raw_content,
       preview_url: member.preview_url,
       notes: member.notes,
@@ -550,7 +551,8 @@ export async function fetchBankMembersPage(
 
 type MediaUploadURLResponse = {
   upload_url: string;
-  content_uri: string;
+  storage_bucket: string;
+  storage_key: string;
 };
 
 export async function fetchMediaUploadURL(
@@ -566,18 +568,21 @@ export async function fetchMediaUploadURL(
 export async function addBankMember(
   bankId: string,
   contentType: ContentType,
-  contentUri: string,
+  storageBucket: string,
+  storageKey: string,
   notes: string,
 ): Promise<BankMember> {
   return apiPost<BankMemberWithSerializedTypes>(`/banks/add-member/${bankId}`, {
     content_type: contentType,
-    content_uri: contentUri,
+    storage_bucket: storageBucket,
+    storage_key: storageKey,
     notes,
   }).then(response => ({
     bank_id: response.bank_id,
     bank_member_id: response.bank_member_id,
     content_type: getContentTypeForString(response.content_type),
-    content_uri: response.content_uri,
+    storage_bucket: response.storage_bucket,
+    storage_key: response.storage_key,
     preview_url: response.preview_url,
     notes: response.notes,
     created_at: toDate(response.created_at)!,

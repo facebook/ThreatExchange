@@ -53,27 +53,15 @@ class BankMembersPage(JSONifiable):
         return result
 
 
-def get_bucket_and_key(s3_url: str) -> t.Tuple[str, str]:
-    """TODO: Find a better place to park this function.
-
-    Given an s3 url like s3://asdfasd/asdfasdfadf, extracts bucket name and key
-    """
-    o = parse.urlparse(s3_url)
-    bucket = o.netloc
-    key = o.path[0] == "/" and o.path[1:] or o.path
-    return (bucket, key)
-
-
 def with_preview_url(bank_member: BankMember) -> PreviewableBankMember:
     previewable = PreviewableBankMember(**asdict(bank_member))
 
-    if bank_member.content_uri is None:
+    if bank_member.storage_bucket is None:
         return previewable
 
-    bucket, key = get_bucket_and_key(bank_member.content_uri)
     previewable.preview_url = create_presigned_url(
-        bucket_name=bucket,
-        key=key,
+        bucket_name=bank_member.storage_bucket,
+        key=bank_member.storage_key,
         file_type=None,
         expiration=300,
         client_method="get_object",
@@ -85,8 +73,8 @@ def with_preview_urls(
     bank_members: t.List[BankMember],
 ) -> t.List[PreviewableBankMember]:
     """
-    For a list of bank_members, converts the content_uri into a publicly visible
-    image for UI to work with.
+    For a list of bank_members, converts the storage details into a publicly
+    visible image for UI to work with.
     """
     return list(map(with_preview_url, bank_members))
 
@@ -177,17 +165,19 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
         """
         Add a bank member. Expects a JSON object with following fields:
         - content_type: ["photo"|"video"]
-        - content_uri: URI for the media. eg. s3://bucket/key.png
+        - storage_bucket: s3bucket for the media
+        - storage_key: key for the media on s3
         - notes: String, any additional notes you want to associate with this
             member.
 
-        Clients would want to use get_media_upload_url() to get a content_uri
-        and a upload_url before using add_member()
+        Clients would want to use get_media_upload_url() to get a
+        storage_bucket, storage_key and a upload_url before using add_member()
 
         Returns 200 OK with the resulting bank_member. 500 on failure.
         """
         content_type = get_content_type_for_name(bottle.request.json["content_type"])
-        content_uri = bottle.request.json["content_uri"]
+        storage_bucket = bottle.request.json["storage_bucket"]
+        storage_key = bottle.request.json["storage_key"]
         notes = bottle.request.json["notes"]
 
         return with_preview_url(
@@ -195,7 +185,8 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
                 banks_table=table_manager,
                 bank_id=bank_id,
                 content_type=content_type,
-                content_uri=content_uri,
+                storage_bucket=storage_bucket,
+                storage_key=storage_key,
                 raw_content=None,
                 notes=notes,
             )
@@ -223,7 +214,8 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
         s3_key = f"bank-media/{media_type}/{today_fragment}/{id}{extension}"
 
         return {
-            "content_uri": f"s3://{bank_user_media_bucket}/{s3_key}",
+            "storage_bucket": bank_user_media_bucket,
+            "storage_key": s3_key,
             "upload_url": create_presigned_put_url(
                 bucket_name=bank_user_media_bucket,
                 key=s3_key,
