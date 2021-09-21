@@ -37,6 +37,14 @@ def build_template(pr_number):
         )
         print("".join(["### ", f"[`{sha[:8]}`]", f"({gh_link})", " ", message]))
 
+        commit_message_command = (
+            f"git rev-list --format=%B --max-count=1 {sha} | tail +2"
+        )
+        commit_message = subprocess.run(
+            commit_message_command, shell=True, capture_output=True
+        ).stdout
+        print(" ".join(commit_message.decode("utf-8").split("\n")[2:]))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
