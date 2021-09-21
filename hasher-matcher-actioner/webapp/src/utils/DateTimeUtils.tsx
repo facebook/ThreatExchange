@@ -40,6 +40,12 @@ export function timeAgo(isoDateString: string): string {
   });
 }
 
+export function timeAgoForDate(date: Date): string {
+  return formatDistanceToNow(date, {
+    addSuffix: true,
+  });
+}
+
 /**
  * If date is of today, return an hh:mm:ss AM/PM style. If not, return a fuller
  * string.

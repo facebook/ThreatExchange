@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from dataclasses import dataclass
 from decimal import Decimal
 import typing as t
 
@@ -93,3 +94,17 @@ DynamoDBCursorKey = t.NewType(
         ],
     ],
 )
+
+
+T = t.TypeVar("T")
+
+
+@dataclass
+class PaginatedResponse(t.Generic[T]):
+    """
+    A generic paginated resopnse container for list of items queried/scanned
+    from dynamodb.
+    """
+
+    last_evaluated_key: DynamoDBCursorKey
+    items: t.List[T]

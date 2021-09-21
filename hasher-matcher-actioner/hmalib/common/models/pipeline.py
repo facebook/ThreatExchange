@@ -11,21 +11,17 @@ from boto3.dynamodb.conditions import Key
 from threatexchange.content_type.meta import get_signal_types_by_name
 from threatexchange.signal_type.signal_base import SignalType
 
-from hmalib.common.models.models_base import DynamoDBItem, DynamoDBCursorKey
+from hmalib.common.models.models_base import (
+    DynamoDBItem,
+    DynamoDBCursorKey,
+    PaginatedResponse,
+)
 
 """
 Data transfer object classes to be used with dynamodbstore
 Classes in this module should implement methods `to_dynamodb_item(self)` and
 `to_sqs_message(self)`
 """
-
-
-@dataclass
-class RecentItems:
-    last_evaluated_key: DynamoDBCursorKey
-
-    # TODO: Can be generified for stronger typing.
-    items: t.List[t.Any]
 
 
 @dataclass
@@ -51,7 +47,7 @@ class PipelineRecordBase(DynamoDBItem):
     @classmethod
     def get_recent_items_page(
         cls, table: Table, ExclusiveStartKey: t.Optional[DynamoDBCursorKey] = None
-    ) -> RecentItems:
+    ) -> PaginatedResponse:
         """
         Get a paginated list of recent items. The API is purposefully kept
         """
@@ -207,7 +203,7 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
     @classmethod
     def get_recent_items_page(
         cls, table: Table, exclusive_start_key: t.Optional[DynamoDBCursorKey] = None
-    ) -> RecentItems:
+    ) -> PaginatedResponse["PipelineHashRecord"]:
         """
         Get a paginated list of recent items.
         """
@@ -235,7 +231,7 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
                 ),
             )
 
-        return RecentItems(
+        return PaginatedResponse(
             t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
             cls._result_items_to_records(result["Items"]),
         )
@@ -350,7 +346,7 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
     @classmethod
     def get_recent_items_page(
         cls, table: Table, exclusive_start_key: t.Optional[DynamoDBCursorKey] = None
-    ) -> RecentItems:
+    ) -> PaginatedResponse["MatchRecord"]:
         """
         Get a paginated list of recent match records. Subsequent calls must use
         `return_value.last_evaluated_key`.
@@ -379,7 +375,7 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
                 ),
             )
 
-        return RecentItems(
+        return PaginatedResponse(
             t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
             cls._result_items_to_records(result["Items"]),
         )

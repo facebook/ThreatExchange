@@ -2,15 +2,21 @@
 
 import typing as t
 from datetime import datetime
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import uuid
 from boto3.dynamodb.conditions import Key
 from mypy_boto3_dynamodb.service_resource import Table
+from threatexchange import content_type
 
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.meta import get_content_type_for_name
 from threatexchange.signal_type.signal_base import SignalType
 
-from hmalib.common.models.models_base import DynamoDBItem
+from hmalib.common.models.models_base import (
+    DynamoDBCursorKey,
+    DynamoDBItem,
+    PaginatedResponse,
+)
 
 """
 # DynamoDB Table HMABanks
@@ -28,14 +34,20 @@ This is enforced by the 4th type of entry in the default table index.
 Item                  | PK                        | SK                             
 ----------------------|---------------------------|------------------------------
 Bank                  | #bank_object              | <bank_id>                      
-BankMember            | <bank_id>                 | member#<bank_member_id>        
+BankMember            | <bank_id>#<content_type>  | member#<bank_member_id>        
 BankMemberSignal      | <bank_id>                 | signal#<signal_id>             
 <signal_id>           | signal_type#<signal_type> | signal_value#<signal_value>    
-|
-Bank objects are all stored under the same partition key because all bank
-information is expected to be less than 10GB. Also, when a bank is deleted, it
-is removed from the (2) BankNameIndex. To be able to find it, there must be
+
+Bank objects are all stored under the same, static partition key because all
+bank information is expected to be less than 10GB. Also, when a bank is deleted,
+it is removed from the (2) BankNameIndex. To be able to find it, there must be
 another way. That is provided by the "known" PK of #bank_object
+
+BankMembers have a PK of <bank_id>#<content_type>. This allows easy querying for
+pages of members for a specific content_type. At this point, I do not see need
+for querying a bank_member without knowing its content_type. Should that need
+arise (and it might soon), we can use override MemberToSignalIndex below with a
+static SK: MemberToSignalIndex eg. PK=<bank_member_id>, SK=#member_object
 
 2. BankNameIndex
    A sparse index. Only contains BankObjects. Used to check if bank_name is
@@ -127,20 +139,79 @@ class BankMember(DynamoDBItem):
     video, photo that a partner wants to match against.
     """
 
+    BANK_MEMBER_ID_PREFIX = "member#"
+
     bank_id: str
     bank_member_id: str
 
     content_type: t.Type[ContentType]
 
-    # Will contain either the media_url (in case of photos / videos / pdfs) or
-    # the raw_content in case of plain text.
-    media_url: str
-    raw_content: str
+    # When storing media files, store the bucket and the key. If files are
+    # deleted because of legal / retention policies, this indicator will stay
+    # as-is even if the actual s3 object is deleted.
+    storage_bucket: t.Optional[str]
+    storage_key: t.Optional[str]
+
+    # In case we are storing the content directly in dynamodb.
+    raw_content: t.Optional[str]
 
     notes: str
 
     created_at: datetime
     updated_at: datetime
+
+    is_removed: bool = field(default=False)
+
+    @classmethod
+    def get_pk(cls, bank_id: str, content_type: t.Type[ContentType]):
+        return f"{bank_id}#{content_type.get_name()}"
+
+    @classmethod
+    def get_sk(cls, bank_member_id: str):
+        return f"{cls.BANK_MEMBER_ID_PREFIX}{bank_member_id}"
+
+    def to_dynamodb_item(self) -> t.Dict:
+        return {
+            # Main Index
+            "PK": self.get_pk(self.bank_id, self.content_type),
+            "SK": self.get_sk(self.bank_member_id),
+            # Attributes
+            "BankId": self.bank_id,
+            "BankMemberId": self.bank_member_id,
+            "ContentType": self.content_type.get_name(),
+            "StorageBucket": self.storage_bucket,
+            "StorageKey": self.storage_key,
+            "RawContent": self.raw_content,
+            "Notes": self.notes,
+            "CreatedAt": self.created_at.isoformat(),
+            "UpdatedAt": self.updated_at.isoformat(),
+            "IsRemoved": self.is_removed,
+        }
+
+    @classmethod
+    def from_dynamodb_item(cls, item: t.Dict) -> "BankMember":
+        return cls(
+            bank_id=item["BankId"],
+            bank_member_id=item["BankMemberId"],
+            content_type=get_content_type_for_name(item["ContentType"]),
+            storage_bucket=item["StorageBucket"],
+            storage_key=item["StorageKey"],
+            raw_content=item["RawContent"],
+            notes=item["Notes"],
+            created_at=datetime.fromisoformat(item["CreatedAt"]),
+            updated_at=datetime.fromisoformat(item["UpdatedAt"]),
+            is_removed=item["IsRemoved"],
+        )
+
+    def to_json(self) -> t.Dict:
+        """Used in APIs."""
+        result = asdict(self)
+        result.update(
+            content_type=self.content_type.get_name(),
+            created_at=self.created_at.isoformat(),
+            updated_at=self.updated_at.isoformat(),
+        )
+        return result
 
 
 @dataclass
@@ -232,12 +303,78 @@ class BanksTable:
 
         return bank
 
+    def get_all_bank_members_page(
+        self,
+        bank_id: str,
+        content_type=t.Type[ContentType],
+        exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
+    ) -> PaginatedResponse[BankMember]:
+        # NOTE: This does not yet filter out is_removed bank_members
+        PAGE_SIZE = 100
+        expected_pk = BankMember.get_pk(bank_id=bank_id, content_type=content_type)
+
+        if not exclusive_start_key:
+            result = self._table.query(
+                ScanIndexForward=False,
+                KeyConditionExpression=Key("PK").eq(expected_pk),
+                Limit=PAGE_SIZE,
+            )
+        else:
+            result = self._table.query(
+                ScanIndexForward=False,
+                KeyConditionExpression=Key("PK").eq(expected_pk),
+                ExclusiveStartKey=exclusive_start_key,
+                Limit=PAGE_SIZE,
+            )
+
+        return PaginatedResponse(
+            t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
+            [BankMember.from_dynamodb_item(item) for item in result["Items"]],
+        )
+
     def add_bank_member(
         self,
         bank_id: str,
         content_type: t.Type[ContentType],
-        media_url: t.Optional[str],
+        storage_bucket: t.Optional[str],
+        storage_key: t.Optional[str],
         raw_content: t.Optional[str],
         notes: str,
     ) -> BankMember:
-        pass
+        """
+        Adds a member to the bank. DOES NOT enforce retroaction. DOES NOT
+        extract signals. Merely a facade to the storage layer. Additional
+        co-ordination (hashing, retroactioning, index updates) should happen via
+        hmalib.banks.bank_operations module.
+        """
+        new_member_id = str(uuid.uuid4())
+        now = datetime.now()
+        bank_member = BankMember(
+            bank_id=bank_id,
+            bank_member_id=new_member_id,
+            content_type=content_type,
+            storage_bucket=storage_bucket,
+            storage_key=storage_key,
+            raw_content=raw_content,
+            notes=notes,
+            created_at=now,
+            updated_at=now,
+        )
+
+        bank_member.write_to_table(self._table)
+        return bank_member
+
+    def remove_bank_member(self, bank_id: str, bank_member_id: str):
+        """
+        Removes the bank member and associated signals from the bank. Merely
+        marks as removed, does not physically delete from the store. DOES NOT
+        stop matching until index is updated. DOES NOT undo any actions already
+        taken.
+        """
+        bank_member = BankMember.from_dynamodb_item(
+            self._table.get_item(
+                Key={"PK": bank_id, "SK": BankMember.get_sk(bank_member_id)}
+            )["Item"]
+        )
+        bank_member.is_removed = False
+        bank_member.write_to_table(self._table)
