@@ -156,7 +156,7 @@ class BankMember(DynamoDBItem):
     created_at: datetime
     updated_at: datetime
 
-    is_deleted: bool = field(default=False)
+    is_removed: bool = field(default=False)
 
     @classmethod
     def get_pk(cls, bank_id: str, content_type: t.Type[ContentType]):
@@ -180,7 +180,7 @@ class BankMember(DynamoDBItem):
             "Notes": self.notes,
             "CreatedAt": self.created_at.isoformat(),
             "UpdatedAt": self.updated_at.isoformat(),
-            "IsDeleted": self.is_deleted,
+            "IsRemoved": self.is_removed,
         }
 
     @classmethod
@@ -194,7 +194,7 @@ class BankMember(DynamoDBItem):
             notes=item["Notes"],
             created_at=datetime.fromisoformat(item["CreatedAt"]),
             updated_at=datetime.fromisoformat(item["UpdatedAt"]),
-            is_deleted=item["IsDeleted"],
+            is_removed=item["IsRemoved"],
         )
 
     def to_json(self) -> t.Dict:
@@ -303,20 +303,22 @@ class BanksTable:
         content_type=t.Type[ContentType],
         exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
     ) -> PaginatedResponse[BankMember]:
+        # NOTE: This does not yet filter out is_removed bank_members
+        PAGE_SIZE = 100
         expected_pk = BankMember.get_pk(bank_id=bank_id, content_type=content_type)
 
         if not exclusive_start_key:
             result = self._table.query(
                 ScanIndexForward=False,
-                Limit=100,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
+                Limit=PAGE_SIZE,
             )
         else:
             result = self._table.query(
                 ScanIndexForward=False,
-                Limit=100,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
                 ExclusiveStartKey=exclusive_start_key,
+                Limit=PAGE_SIZE,
             )
 
         return PaginatedResponse(
@@ -357,7 +359,7 @@ class BanksTable:
     def remove_bank_member(self, bank_id: str, bank_member_id: str):
         """
         Removes the bank member and associated signals from the bank. Merely
-        marks as deleted, does not physically delete from the store. DOES NOT
+        marks as removed, does not physically delete from the store. DOES NOT
         stop matching until index is updated. DOES NOT undo any actions already
         taken.
         """
@@ -366,5 +368,5 @@ class BanksTable:
                 Key={"PK": bank_id, "SK": BankMember.get_sk(bank_member_id)}
             )["Item"]
         )
-        bank_member.is_deleted = False
+        bank_member.is_removed = False
         bank_member.write_to_table(self._table)

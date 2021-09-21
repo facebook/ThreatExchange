@@ -104,7 +104,7 @@ data "aws_iam_policy_document" "api_root" {
     actions   = ["s3:GetObject", "s3:PutObject"]
     resources = [
       "arn:aws:s3:::${var.image_data_storage.bucket_name}/${var.image_data_storage.image_prefix}*", 
-      "arn:aws:s3:::${var.image_data_storage.bucket_name}/${var.image_data_storage.image_prefix}*", 
+      "arn:aws:s3:::${var.index_data_storage.bucket_name}/${var.index_data_storage.index_folder_key}*",
       "arn:aws:s3:::${var.banks_media_storage.bucket_name}/*"
     ]
   }

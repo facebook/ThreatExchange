@@ -54,7 +54,7 @@ def get_bucket_and_key(s3_url: str) -> t.Tuple[str, str]:
     return (bucket, key)
 
 
-def unprivatise_media_url_for_bank_member(bank_member: BankMember) -> BankMember:
+def with_unprivatised_media_url(bank_member: BankMember) -> BankMember:
     if bank_member.media_url is None:
         return bank_member
 
@@ -69,14 +69,14 @@ def unprivatise_media_url_for_bank_member(bank_member: BankMember) -> BankMember
     return bank_member
 
 
-def unprivatise_media_url_for_bank_members(
+def with_unprivatised_media_urls(
     bank_members: t.List[BankMember],
 ) -> t.List[BankMember]:
     """
     For a list of bank_members, converts the media_url into a publicly visible
     image for UI to work with.
     """
-    return list(map(unprivatise_media_url_for_bank_member, bank_members))
+    return list(map(with_unprivatised_media_url, bank_members))
 
 
 def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottle:
@@ -139,11 +139,9 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
             or None
         )
 
-        if bottle.request.query.content_type == "photo":
-            content_type = PhotoContent
-        elif bottle.request.query.content_type == "video":
-            content_type = VideoContent
-        else:
+        try:
+            content_type = get_content_type_for_name(bottle.request.query.content_type)
+        except:
             bottle.abort(400, "content_type must be provided as a query parameter.")
 
         db_response = table_manager.get_all_bank_members_page(
@@ -157,7 +155,7 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
             continuation_token = uriencode(json.dumps(db_response.last_evaluated_key))
 
         return BankMembersPage(
-            bank_members=unprivatise_media_url_for_bank_members(db_response.items),
+            bank_members=with_unprivatised_media_urls(db_response.items),
             continuation_token=continuation_token,
         )
 
@@ -177,7 +175,7 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
         media_url = bottle.request.json["media_url"]
         notes = bottle.request.json["notes"]
 
-        return unprivatise_media_url_for_bank_member(
+        return with_unprivatised_media_url(
             bank_ops.add_bank_member(
                 banks_table=table_manager,
                 bank_id=bank_id,
