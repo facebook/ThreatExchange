@@ -2,7 +2,6 @@
 
 from decimal import Decimal
 import unittest
-from contextlib import contextmanager
 import datetime
 
 from threatexchange.signal_type.pdq import PdqSignal
@@ -388,15 +387,6 @@ class MatchByPrivacyGroupCounterTestCase(DynamoDBTableTestBase, unittest.TestCas
     @classmethod
     def get_table_definition(cls):
         return DATASTORE_TABLE_DEF
-
-    @contextmanager
-    def fresh_dynamodb(self):
-        # Code to acquire resource, e.g.:
-        self.__class__.setUpClass()
-        try:
-            yield
-        finally:
-            self.__class__.tearDownClass()
 
     def test_full_flow(self):
         with self.fresh_dynamodb():
