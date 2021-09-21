@@ -9,7 +9,10 @@ from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange import content_type
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.meta import get_content_type_for_name
+from threatexchange.content_type.meta import (
+    get_content_type_for_name,
+    get_signal_types_by_name,
+)
 from threatexchange.signal_type.signal_base import SignalType
 
 from hmalib.common.models.models_base import (
@@ -239,6 +242,57 @@ class BankedSignalEntry(DynamoDBItem):
     signal_value: str
 
     signal_id: str
+
+    @classmethod
+    def get_pk(cls, signal_type: t.Type[SignalType]) -> str:
+        return f"signal_type#{signal_type.get_name()}"
+
+    @classmethod
+    def get_sk(self, signal_value: str) -> str:
+        return f"signal_value#{signal_value}"
+
+    def to_dynamodb_item(self) -> t.Dict:
+        # Raise an error so that write_to_table() fails. We never want to do that.
+        raise Exception("Do not write BankedSignalEntry to DDB directly!")
+
+    @classmethod
+    def get_unique(
+        cls, table: Table, signal_type: t.Type[SignalType], signal_value: str
+    ) -> "BankedSignalEntry":
+        """
+        Write to the table if PK / SK does not exist. In either case (exists,
+        not exists), return the current unique entry.
+
+        This is a special use-case for BankedSignalEntry. If this is useful to
+        other models, we can move it to a mixin or to dynamodb item. If trying
+        to generify, note how the update_item query needs a custom update query
+        based on what you are trying to write. Generifying may be harder than it
+        seems.
+        """
+        result = table.update_item(
+            Key={
+                "PK": cls.get_pk(signal_type),
+                "SK": cls.get_sk(signal_value),
+            },
+            UpdateExpression="SET SignalId = if_not_exists(SignalId, :signal_id), SignalType = :signal_type, SignalValue = :signal_value",
+            ExpressionAttributeValues={
+                # Note we are generating a new uuid even though we don't always
+                # expect it to get written. AFAIK, uuids are inexhaustible, and
+                # generation performance is good enough to not worry about it.
+                ":signal_id": str(uuid.uuid4()),
+                ":signal_type": signal_type.get_name(),
+                ":signal_value": signal_value,
+            },
+            ReturnValues="ALL_NEW",
+        ).get("Attributes")
+
+        assert result is not None
+
+        return BankedSignalEntry(
+            signal_type=get_signal_types_by_name()[result["SignalType"]],
+            signal_value=t.cast(str, result["SignalValue"]),
+            signal_id=t.cast(str, result["SignalId"]),
+        )
 
 
 class BanksTable:

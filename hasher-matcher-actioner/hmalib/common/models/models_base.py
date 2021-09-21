@@ -18,6 +18,13 @@ class DynamoDBItem:
         table.put_item(Item=self.to_dynamodb_item())
 
     def write_to_table_if_not_found(self, table: Table) -> bool:
+        """
+        Write record to DDB if the PK/SK combination does not exist.
+
+        Returns:
+        * True when record was written (did not exist)
+        * False when record could not be written (PK/SK combo existed)
+        """
         try:
             table.put_item(
                 Item=self.to_dynamodb_item(),

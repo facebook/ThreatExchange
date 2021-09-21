@@ -10,7 +10,7 @@ from webtest import (
 
 from threatexchange.content_type.photo import PhotoContent
 
-from hmalib.common.models.tests.ddb_test_common import DynamoDBTableTestBase
+from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
 from hmalib.common.models.bank import BanksTable
 from hmalib.banks import bank_operations
 from hmalib.lambdas.api.bank import get_bank_api
@@ -18,36 +18,8 @@ from hmalib.lambdas.api.bank import get_bank_api
 unique_id = lambda: str(uuid.uuid4())
 
 
-class BankMemberPaginationTestCase(DynamoDBTableTestBase, unittest.TestCase):
-    @classmethod
-    def get_table_definition(cls) -> t.Any:
-        table_name = "test-banks-table"
-
-        # Regenerate using `aws dynamodb describe-table --table-name <prefix>-HMABanks`
-        # TODO: Automate refresh of this using a commandline invocation
-        return {
-            "AttributeDefinitions": [
-                {"AttributeName": "BankNameIndex-BankId", "AttributeType": "S"},
-                {"AttributeName": "BankNameIndex-BankName", "AttributeType": "S"},
-                {"AttributeName": "PK", "AttributeType": "S"},
-                {"AttributeName": "SK", "AttributeType": "S"},
-            ],
-            "TableName": table_name,
-            "KeySchema": [
-                {"AttributeName": "PK", "KeyType": "HASH"},
-                {"AttributeName": "SK", "KeyType": "RANGE"},
-            ],
-            "GlobalSecondaryIndexes": [
-                {
-                    "IndexName": "BankNameIndex",
-                    "KeySchema": [
-                        {"AttributeName": "BankNameIndex-BankName", "KeyType": "HASH"},
-                        {"AttributeName": "BankNameIndex-BankId", "KeyType": "RANGE"},
-                    ],
-                    "Projection": {"ProjectionType": "ALL"},
-                }
-            ],
-        }
+class BankMemberPaginationTestCase(BanksTableTestBase, unittest.TestCase):
+    # NOTE: Table is defined in base class BanksTableTestBase
 
     def _create_200_members(self) -> str:
         """Create a bank, 200 members and return bank_id."""
