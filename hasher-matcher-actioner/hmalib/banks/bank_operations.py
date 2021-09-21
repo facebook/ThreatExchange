@@ -15,7 +15,7 @@ def add_bank_member(
     banks_table: BanksTable,
     bank_id: str,
     content_type: t.Type[ContentType],
-    media_url: t.Optional[str],
+    content_uri: t.Optional[str],
     raw_content: t.Optional[str],
     notes: str,
 ) -> BankMember:
@@ -27,7 +27,7 @@ def add_bank_member(
     return banks_table.add_bank_member(
         bank_id=bank_id,
         content_type=content_type,
-        media_url=media_url,
+        content_uri=content_uri,
         raw_content=raw_content,
         notes=notes,
     )

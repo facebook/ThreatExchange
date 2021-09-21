@@ -7,7 +7,7 @@ import json
 import uuid
 import bottle
 import typing as t
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from urllib.parse import quote as uriencode
 
 from mypy_boto3_dynamodb.service_resource import Table
@@ -31,8 +31,18 @@ class AllBanksEnvelope(JSONifiable):
 
 
 @dataclass
+class PreviewableBankMember(BankMember):
+    """
+    A bank-member, but has a preview_url. preview_url should be pre-authorized,
+    and of the same content_type as the original media.
+    """
+
+    preview_url: str = field(default_factory=lambda: "")
+
+
+@dataclass
 class BankMembersPage(JSONifiable):
-    bank_members: t.List[BankMember]
+    bank_members: t.List[PreviewableBankMember]
 
     # deserializes to dynamo's exclusive_start_key. Is a dict
     continuation_token: t.Optional[str]
@@ -54,29 +64,31 @@ def get_bucket_and_key(s3_url: str) -> t.Tuple[str, str]:
     return (bucket, key)
 
 
-def with_unprivatised_media_url(bank_member: BankMember) -> BankMember:
-    if bank_member.media_url is None:
-        return bank_member
+def with_preview_url(bank_member: BankMember) -> PreviewableBankMember:
+    previewable = PreviewableBankMember(**asdict(bank_member))
 
-    bucket, key = get_bucket_and_key(bank_member.media_url)
-    bank_member.media_url = create_presigned_url(
+    if bank_member.content_uri is None:
+        return previewable
+
+    bucket, key = get_bucket_and_key(bank_member.content_uri)
+    previewable.preview_url = create_presigned_url(
         bucket_name=bucket,
         key=key,
         file_type=None,
         expiration=300,
         client_method="get_object",
     )
-    return bank_member
+    return previewable
 
 
-def with_unprivatised_media_urls(
+def with_preview_urls(
     bank_members: t.List[BankMember],
-) -> t.List[BankMember]:
+) -> t.List[PreviewableBankMember]:
     """
-    For a list of bank_members, converts the media_url into a publicly visible
+    For a list of bank_members, converts the content_uri into a publicly visible
     image for UI to work with.
     """
-    return list(map(with_unprivatised_media_url, bank_members))
+    return list(map(with_preview_url, bank_members))
 
 
 def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottle:
@@ -141,6 +153,7 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
 
         try:
             content_type = get_content_type_for_name(bottle.request.query.content_type)
+
         except:
             bottle.abort(400, "content_type must be provided as a query parameter.")
 
@@ -155,32 +168,34 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
             continuation_token = uriencode(json.dumps(db_response.last_evaluated_key))
 
         return BankMembersPage(
-            bank_members=with_unprivatised_media_urls(db_response.items),
+            bank_members=with_preview_urls(db_response.items),
             continuation_token=continuation_token,
         )
 
     @bank_api.post("/add-member/<bank_id>", apply=[jsoninator])
-    def add_member(bank_id=None) -> BankMember:
+    def add_member(bank_id=None) -> PreviewableBankMember:
         """
         Add a bank member. Expects a JSON object with following fields:
         - content_type: ["photo"|"video"]
-        - media_url: URL for the media. This should return a result without
-            needing authorization.
+        - content_uri: URI for the media. eg. s3://bucket/key.png
         - notes: String, any additional notes you want to associate with this
             member.
+
+        Clients would want to use get_media_upload_url() to get a content_uri
+        and a upload_url before using add_member()
 
         Returns 200 OK with the resulting bank_member. 500 on failure.
         """
         content_type = get_content_type_for_name(bottle.request.json["content_type"])
-        media_url = bottle.request.json["media_url"]
+        content_uri = bottle.request.json["content_uri"]
         notes = bottle.request.json["notes"]
 
-        return with_unprivatised_media_url(
+        return with_preview_url(
             bank_ops.add_bank_member(
                 banks_table=table_manager,
                 bank_id=bank_id,
                 content_type=content_type,
-                media_url=media_url,
+                content_uri=content_uri,
                 raw_content=None,
                 notes=notes,
             )
@@ -208,8 +223,8 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
         s3_key = f"bank-media/{media_type}/{today_fragment}/{id}{extension}"
 
         return {
-            "url": f"s3://{bank_user_media_bucket}/{s3_key}",
-            "signed_url": create_presigned_put_url(
+            "content_uri": f"s3://{bank_user_media_bucket}/{s3_key}",
+            "upload_url": create_presigned_put_url(
                 bucket_name=bank_user_media_bucket,
                 key=s3_key,
                 file_type=media_type,

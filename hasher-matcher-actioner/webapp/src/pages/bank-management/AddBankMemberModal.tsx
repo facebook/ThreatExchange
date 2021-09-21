@@ -77,10 +77,10 @@ export default function AddBankMemberModal({
     // Obtain a media URL
     fetchMediaUploadURL(file.type, extension).then(response => {
       // Put file on media URL
-      putFileWithProgress(response.signed_url, file, setFileUploadProgress)
+      putFileWithProgress(response.upload_url, file, setFileUploadProgress)
         .then(() =>
           // Add bank member to media URL
-          addBankMember(bankId, contentType, response.url, notes),
+          addBankMember(bankId, contentType, response.content_uri, notes),
         )
         .then(() => closeWrapper(true));
     });

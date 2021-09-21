@@ -22,8 +22,9 @@ export type BankMember = {
   bank_id: string;
   bank_member_id: string;
   content_type: ContentType;
-  media_url?: string;
+  content_uri?: string;
   raw_content?: string;
+  preview_url?: string;
   notes: string;
   created_at: Date;
   updated_at: Date;

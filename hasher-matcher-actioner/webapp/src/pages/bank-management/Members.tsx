@@ -148,7 +148,7 @@ export function PhotoMembers({bankId}: BankTabProps): JSX.Element {
         ) : null}
         {members.map(member => (
           <MemberPreview
-            thumbnailSrc={member.media_url!}
+            thumbnailSrc={member.preview_url!}
             lastUpdated={member.updated_at}
           />
         ))}

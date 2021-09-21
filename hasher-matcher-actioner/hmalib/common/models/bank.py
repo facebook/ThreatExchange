@@ -146,9 +146,12 @@ class BankMember(DynamoDBItem):
 
     content_type: t.Type[ContentType]
 
-    # Will contain either the media_url (in case of photos / videos / pdfs) or
-    # the raw_content in case of plain text.
-    media_url: t.Optional[str]
+    # Will contain either the media's content_uri (in case of photos / videos / pdfs) or
+    # the raw_content in case of plain text. Note, this is not a URL but a URI.
+    # May need further authentication before a GET request.
+    # eg. an S3 URI.
+    # s3://<prefix>-banks-media-<something>/bank-media/image/jpeg/2021-09-20/<uuid>.jpg
+    content_uri: t.Optional[str]
     raw_content: t.Optional[str]
 
     notes: str
@@ -175,7 +178,7 @@ class BankMember(DynamoDBItem):
             "BankId": self.bank_id,
             "BankMemberId": self.bank_member_id,
             "ContentType": self.content_type.get_name(),
-            "MediaURL": self.media_url,
+            "ContentURI": self.content_uri,
             "RawContent": self.raw_content,
             "Notes": self.notes,
             "CreatedAt": self.created_at.isoformat(),
@@ -189,7 +192,7 @@ class BankMember(DynamoDBItem):
             bank_id=item["BankId"],
             bank_member_id=item["BankMemberId"],
             content_type=get_content_type_for_name(item["ContentType"]),
-            media_url=item["MediaURL"],
+            content_uri=item["ContentURI"],
             raw_content=item["RawContent"],
             notes=item["Notes"],
             created_at=datetime.fromisoformat(item["CreatedAt"]),
@@ -330,7 +333,7 @@ class BanksTable:
         self,
         bank_id: str,
         content_type: t.Type[ContentType],
-        media_url: t.Optional[str],
+        content_uri: t.Optional[str],
         raw_content: t.Optional[str],
         notes: str,
     ) -> BankMember:
@@ -346,7 +349,7 @@ class BanksTable:
             bank_id=bank_id,
             bank_member_id=new_member_id,
             content_type=content_type,
-            media_url=media_url,
+            content_uri=content_uri,
             raw_content=raw_content,
             notes=notes,
             created_at=now,
