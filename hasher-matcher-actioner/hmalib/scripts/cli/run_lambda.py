@@ -64,7 +64,7 @@ class RunLambdaCommand(base.Command, base.NeedsTerraformOutputs):
         fn = getattr(module, fn_name)
 
         try:
-            from lambda_local import event as event_value
+            from lambda_local import event as event_value  # type: ignore
 
             fn(event_value, None)
         except ModuleNotFoundError:

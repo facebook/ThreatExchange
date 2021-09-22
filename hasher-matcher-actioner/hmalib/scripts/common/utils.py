@@ -420,7 +420,7 @@ if __name__ == "__main__":
 
     tf_outputs = get_terraform_outputs()
 
-    api_url = tf_outputs["api_url"]["value"]
+    api_url = tf_outputs["api_url"]
 
     token = get_auth_from_env()
 
