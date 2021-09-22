@@ -292,7 +292,7 @@ resource "aws_s3_bucket" "data_bucket" {
  */
 resource "aws_s3_bucket" "banks_media_bucket" {
   bucket_prefix = "${var.prefix}-banks-media-"
-  acl = "private"
+  acl           = "private"
   tags = merge(
     var.additional_tags,
     {

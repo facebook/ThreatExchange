@@ -24,6 +24,14 @@ class BanksTableTestBase(DynamoDBTableTestBase):
                 {"AttributeName": "BankNameIndex-BankName", "AttributeType": "S"},
                 {"AttributeName": "PK", "AttributeType": "S"},
                 {"AttributeName": "SK", "AttributeType": "S"},
+                {
+                    "AttributeName": "PendingBankMemberSignalIndex-SignalType",
+                    "AttributeType": "S",
+                },
+                {
+                    "AttributeName": "PendingBankMemberSignalIndex-UpdatedAt",
+                    "AttributeType": "S",
+                },
             ],
             "TableName": table_name,
             "KeySchema": [
@@ -38,7 +46,21 @@ class BanksTableTestBase(DynamoDBTableTestBase):
                         {"AttributeName": "BankNameIndex-BankId", "KeyType": "RANGE"},
                     ],
                     "Projection": {"ProjectionType": "ALL"},
-                }
+                },
+                {
+                    "IndexName": "PendingBankMemberSignalIndex",
+                    "KeySchema": [
+                        {
+                            "AttributeName": "PendingBankMemberSignalIndex-SignalType",
+                            "KeyType": "HASH",
+                        },
+                        {
+                            "AttributeName": "PendingBankMemberSignalIndex-UpdatedAt",
+                            "KeyType": "RANGE",
+                        },
+                    ],
+                    "Projection": {"ProjectionType": "ALL"},
+                },
             ],
         }
 
