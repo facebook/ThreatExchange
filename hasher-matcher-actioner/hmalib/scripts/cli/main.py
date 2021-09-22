@@ -52,21 +52,24 @@ def execute_command(namespace) -> None:
     if not hasattr(namespace, "command_cls"):
         get_argparse().print_help()
         return
+
     command_cls = namespace.command_cls
     try:
-        # Init Values
-        api = utils.HasherMatcherActionerAPI(
-            get_api_url(namespace.api_endpoint),
-            api_token=get_access_token(namespace.access_token),
-        )
-
         command_argspec = inspect.getfullargspec(command_cls.__init__)
         arg_names = set(command_argspec[0])
         # Since we didn't import click, use hard-to-debug magic to init the command
         command = command_cls(
             **{k: v for k, v in namespace.__dict__.items() if k in arg_names}
         )
-        command.execute(api)
+
+        if issubclass(command_cls, base.NeedsAPIAccess):
+            # Init Values
+            api = utils.HasherMatcherActionerAPI(
+                get_api_url(namespace.api_endpoint),
+                api_token=get_access_token(namespace.access_token),
+            )
+
+            command.execute(api)
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)

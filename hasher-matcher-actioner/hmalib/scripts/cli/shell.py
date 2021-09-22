@@ -26,7 +26,7 @@ from hmalib.common.configs.evaluator import ActionLabel, ActionRule
 from hmalib.common.configs.actioner import ActionPerformer, WebhookPostActionPerformer
 
 
-class ShellCommand(base.Command):
+class ShellCommand(base.Command, base.NeedsAPIAccess):
     """
     Prototype shell using HMA utils to interact via the API.
     """
