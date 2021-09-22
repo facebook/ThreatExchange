@@ -265,7 +265,7 @@ if __name__ == "__main__":
     # If you want manually test the lib, you can do so here:
 
     tf_outputs = get_terraform_outputs()
-    api_url = tf_outputs["api_url"]["value"]
+    api_url = tf_outputs["api_url"]
     token = get_auth_from_env(prompt_for_token=True)
     print(
         "This simple tests should take a little over 2 minutes to complete (due to sqs timeout).\n"

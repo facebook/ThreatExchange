@@ -19,6 +19,7 @@ import hmalib.scripts.common.utils as utils
 import hmalib.scripts.cli.command_base as base
 import hmalib.scripts.cli.soak as soak
 import hmalib.scripts.cli.shell as shell
+TERRAFORM_OUTPUTS_CACHE = "/tmp/hma-terraform-outputs.json"
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
@@ -41,11 +42,25 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="HMA_API_URL",
         help="the url of the HMA API",
     )
+    ap.add_argument(
+        "--refresh-tf-outputs",
+        "-r",
+        help="Refresh terraform outputs",
+        action="store_true",
+    )
+
     subparsers = ap.add_subparsers(title="sub_commands", help="which action to do")
     for command in get_subcommands():
         command.add_command_to_subparser(subparsers)
 
     return ap
+
+
+def get_terraform_outputs(refresh=False) -> t.Dict:
+    if refresh:
+        os.remove(TERRAFORM_OUTPUTS_CACHE)
+
+    return utils.get_cached_terraform_outputs(TERRAFORM_OUTPUTS_CACHE)
 
 
 def execute_command(namespace) -> None:
@@ -70,6 +85,9 @@ def execute_command(namespace) -> None:
             )
 
             command.execute(api)
+        elif issubclass(command_cls, base.NeedsTerraformOutputs):
+            tf_outputs = get_terraform_outputs(namespace.refresh_tf_outputs)
+            command.execute(tf_outputs)
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)
@@ -121,13 +139,14 @@ def get_api_url(cli_option: str = None) -> str:
             f"  * in the environment as {environment_var}\n"
         )
         tf_outputs = utils.get_terraform_outputs()
-        url = tf_outputs["api_url"]["value"]
+        url = tf_outputs["api_url"]
     return url
 
 
 def main(args: t.Optional[t.Sequence[t.Text]] = None) -> None:
     ap = get_argparse()
     namespace = ap.parse_args(args)
+
     execute_command(namespace)
 
 
