@@ -19,11 +19,13 @@ import hmalib.scripts.common.utils as utils
 import hmalib.scripts.cli.command_base as base
 import hmalib.scripts.cli.soak as soak
 import hmalib.scripts.cli.shell as shell
+from hmalib.scripts.cli import run_lambda
+
 TERRAFORM_OUTPUTS_CACHE = "/tmp/hma-terraform-outputs.json"
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
-    return [soak.SoakCommand, shell.ShellCommand]
+    return [soak.SoakCommand, shell.ShellCommand, run_lambda.RunLambdaCommand]
 
 
 def get_argparse() -> argparse.ArgumentParser:
