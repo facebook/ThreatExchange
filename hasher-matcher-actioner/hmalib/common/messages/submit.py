@@ -57,7 +57,7 @@ class URLSubmissionMessage:
         Convenience method. Returns True if `d` can be converted to a
         URLImageSubmissionMessage.
         """
-        return "EventType" in d
+        return "EventType" in d and d["EventType"] == URLSubmissionMessage.event_type
 
 
 @dataclass

@@ -27,7 +27,6 @@ class ContentSignal:
     """
 
     content_type: t.Type[ContentType]
-    content_id: str
     signal_type: t.Type[SignalType]
     signal_value: str
 
@@ -72,7 +71,7 @@ class UnifiedHasher:
         return content_type in self.supported_content_types
 
     def get_hashes(
-        self, content_id: str, content_type: t.Type[ContentType], bytes_: bytes
+        self, content_type: t.Type[ContentType], bytes_: bytes
     ) -> t.Generator[ContentSignal, None, None]:
         """
         Yields signals for content_type.
@@ -84,7 +83,7 @@ class UnifiedHasher:
                 with metrics.timer(metrics.names.hasher.hash(signal_type.get_name())):
                     hash_value = signal_type.hash_from_bytes(bytes_)
 
-                yield ContentSignal(content_type, content_id, signal_type, hash_value)
+                yield ContentSignal(content_type, signal_type, hash_value)
 
     def write_hash_record(self, table: Table, hash_record: PipelineHashRecord):
         """

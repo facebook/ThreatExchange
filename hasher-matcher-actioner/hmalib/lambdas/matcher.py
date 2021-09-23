@@ -14,7 +14,6 @@ from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.matchers.matchers_base import Matcher
 from hmalib.common.config import HMAConfig
-from hmalib.hashing.unified_hasher import ContentSignal
 from hmalib.common.models.pipeline import PipelineHashRecord
 
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]

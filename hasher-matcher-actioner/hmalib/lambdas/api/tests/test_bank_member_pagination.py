@@ -28,8 +28,7 @@ class BankMemberPaginationTestCase(BanksTableTestBase, unittest.TestCase):
         bank = table_manager.create_bank("TEST_BANK", "TEST BANK Description")
 
         for _ in range(200):
-            bank_operations.add_bank_member(
-                table_manager,
+            table_manager.add_bank_member(
                 bank_id=bank.bank_id,
                 content_type=PhotoContent,
                 raw_content=None,
@@ -42,7 +41,13 @@ class BankMemberPaginationTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_pagination_produces_correct_number_of_pages(self):
         bank_id = self._create_200_members()
-        api = TApp(get_bank_api(self.get_table(), "irrelevant_s3_bucket_for_this_test"))
+        api = TApp(
+            get_bank_api(
+                self.get_table(),
+                "irrelevant_s3_bucket_for_this_test",
+                "irrelevant_sqs_queue",
+            )
+        )
 
         running_count = 0
         continuation_token = None

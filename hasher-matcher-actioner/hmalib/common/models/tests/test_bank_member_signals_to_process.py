@@ -20,8 +20,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
         table_manager = BanksTable(self.get_table())
 
         bank = table_manager.create_bank("TEST_BANK", "Test bank description")
-        bank_member = bank_operations.add_bank_member(
-            table_manager,
+        bank_member = table_manager.add_bank_member(
             bank_id=bank.bank_id,
             content_type=VideoContent,
             raw_content=None,

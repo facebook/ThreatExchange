@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from hmalib.common.models.models_base import DynamoDBCursorKey
-from urllib import parse
+from functools import lru_cache
 from datetime import datetime
 import json
 import uuid
@@ -10,6 +9,7 @@ import typing as t
 from dataclasses import asdict, dataclass, field
 from urllib.parse import quote as uriencode
 
+import boto3
 from mypy_boto3_dynamodb.service_resource import Table
 
 from threatexchange.content_type.meta import get_content_type_for_name
@@ -20,6 +20,7 @@ from hmalib.common.models.bank import Bank, BankMember, BanksTable
 from hmalib.banks import bank_operations as bank_ops
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable
 from hmalib.lambdas.api.submit import create_presigned_put_url, create_presigned_url
+from hmalib.common.models.models_base import DynamoDBCursorKey
 
 
 @dataclass
@@ -79,7 +80,14 @@ def with_preview_urls(
     return list(map(with_preview_url, bank_members))
 
 
-def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottle:
+@lru_cache(maxsize=None)
+def _get_sqs_client():
+    return boto3.client("sqs")
+
+
+def get_bank_api(
+    bank_table: Table, bank_user_media_bucket: str, submissions_queue_url: str
+) -> bottle.Bottle:
     """
     Closure for dependencies of the bank API
     """
@@ -183,6 +191,8 @@ def get_bank_api(bank_table: Table, bank_user_media_bucket: str) -> bottle.Bottl
         return with_preview_url(
             bank_ops.add_bank_member(
                 banks_table=table_manager,
+                sqs_client=_get_sqs_client(),
+                submissions_queue_url=submissions_queue_url,
                 bank_id=bank_id,
                 content_type=content_type,
                 storage_bucket=storage_bucket,
