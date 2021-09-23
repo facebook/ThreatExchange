@@ -19,10 +19,13 @@ import hmalib.scripts.common.utils as utils
 import hmalib.scripts.cli.command_base as base
 import hmalib.scripts.cli.soak as soak
 import hmalib.scripts.cli.shell as shell
+from hmalib.scripts.cli import run_lambda
+
+TERRAFORM_OUTPUTS_CACHE = "/tmp/hma-terraform-outputs.json"
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
-    return [soak.SoakCommand, shell.ShellCommand]
+    return [soak.SoakCommand, shell.ShellCommand, run_lambda.RunLambdaCommand]
 
 
 def get_argparse() -> argparse.ArgumentParser:
@@ -41,6 +44,13 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="HMA_API_URL",
         help="the url of the HMA API",
     )
+    ap.add_argument(
+        "--refresh-tf-outputs",
+        "-r",
+        help="Refresh terraform outputs",
+        action="store_true",
+    )
+
     subparsers = ap.add_subparsers(title="sub_commands", help="which action to do")
     for command in get_subcommands():
         command.add_command_to_subparser(subparsers)
@@ -48,25 +58,38 @@ def get_argparse() -> argparse.ArgumentParser:
     return ap
 
 
+def get_terraform_outputs(refresh=False) -> t.Dict:
+    if refresh:
+        os.remove(TERRAFORM_OUTPUTS_CACHE)
+
+    return utils.get_cached_terraform_outputs(TERRAFORM_OUTPUTS_CACHE)
+
+
 def execute_command(namespace) -> None:
     if not hasattr(namespace, "command_cls"):
         get_argparse().print_help()
         return
+
     command_cls = namespace.command_cls
     try:
-        # Init Values
-        api = utils.HasherMatcherActionerAPI(
-            get_api_url(namespace.api_endpoint),
-            api_token=get_access_token(namespace.access_token),
-        )
-
         command_argspec = inspect.getfullargspec(command_cls.__init__)
         arg_names = set(command_argspec[0])
         # Since we didn't import click, use hard-to-debug magic to init the command
         command = command_cls(
             **{k: v for k, v in namespace.__dict__.items() if k in arg_names}
         )
-        command.execute(api)
+
+        if issubclass(command_cls, base.NeedsAPIAccess):
+            # Init Values
+            api = utils.HasherMatcherActionerAPI(
+                get_api_url(namespace.api_endpoint),
+                api_token=get_access_token(namespace.access_token),
+            )
+
+            command.execute(api)
+        elif issubclass(command_cls, base.NeedsTerraformOutputs):
+            tf_outputs = get_terraform_outputs(namespace.refresh_tf_outputs)
+            command.execute(tf_outputs)
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)
@@ -118,13 +141,14 @@ def get_api_url(cli_option: str = None) -> str:
             f"  * in the environment as {environment_var}\n"
         )
         tf_outputs = utils.get_terraform_outputs()
-        url = tf_outputs["api_url"]["value"]
+        url = tf_outputs["api_url"]
     return url
 
 
 def main(args: t.Optional[t.Sequence[t.Text]] = None) -> None:
     ap = get_argparse()
     namespace = ap.parse_args(args)
+
     execute_command(namespace)
 
 

@@ -43,7 +43,7 @@ from hmalib.scripts.common.listener import Listener
 from hmalib.scripts.common.submitter import Submitter
 
 
-class SoakCommand(base.Command):
+class SoakCommand(base.Command, base.NeedsAPIAccess):
     """
     Start a soak test on a deployed HMA instance and submit until cancelled
     """

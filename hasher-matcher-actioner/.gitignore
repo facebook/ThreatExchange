@@ -37,3 +37,6 @@ backend.tf
 
 # Ignore built python distributions
 dist/
+
+# Ignore files for local lambda testing.
+lambda_local.py

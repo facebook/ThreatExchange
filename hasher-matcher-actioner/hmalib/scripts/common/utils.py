@@ -296,16 +296,30 @@ class HasherMatcherActionerAPI:
 
 def get_terraform_outputs(
     directory: str = "terraform",
-):
+) -> t.Dict[str, str]:
+    """
+    Converts from the super verbose JSON output to a more natural string -> string map.
+    """
     cmd = ["terraform"]
     cmd.extend(["output", "-json"])
-    out = subprocess.check_output(cmd, cwd=directory)
-    return json.loads(out)
+    out = json.loads(subprocess.check_output(cmd, cwd=directory))
+    return {k: out[k]["value"] for k in out}
 
 
-def get_terraform_outputs_from_file(
+def get_cached_terraform_outputs(
     path: str = "tmp.out",
-):
+) -> t.Dict[str, str]:
+    """
+    Gets output if not already present at path.
+    """
+    file_exists = os.path.exists(path)
+
+    if not file_exists:
+        with open(path, "w") as f:
+            outputs = get_terraform_outputs()
+            f.write(json.dumps(outputs))
+            return outputs
+
     with open(path) as f:
         return json.loads(f.read())
 
@@ -406,7 +420,7 @@ if __name__ == "__main__":
 
     tf_outputs = get_terraform_outputs()
 
-    api_url = tf_outputs["api_url"]["value"]
+    api_url = tf_outputs["api_url"]
 
     token = get_auth_from_env()
 

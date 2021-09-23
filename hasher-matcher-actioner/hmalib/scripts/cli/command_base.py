@@ -69,6 +69,19 @@ class Command:
         """Convenience accessor to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
+
+# Marker interfaces for main to figure out what to pass
+class NeedsAPIAccess:
     def execute(self, api: utils.HasherMatcherActionerAPI) -> None:
-        """Run the given command"""
+        """
+        Provide implementation for a command which needs access to the HMA API.
+        """
         raise NotImplementedError
+
+
+class NeedsTerraformOutputs:
+    def execute(self, terraform_outputs: t.Dict) -> None:
+        """
+        Provide implementation for a command which needs access to terraform
+        output only.
+        """
