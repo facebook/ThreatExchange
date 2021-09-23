@@ -1,6 +1,6 @@
 Getting Started with Contributing
 
-In it's rough state, the prototype needs some prior configuration / setup before you are ready to start developing on it. Below are some steps and tips for getting started. If anything needs correction, PRs are always welcome.
+In its rough state, the prototype needs some prior configuration / setup before you are ready to start developing on it. Below are some steps and tips for getting started. If anything needs correction, PRs are always welcome.
 
 ## Prerequisites
 
@@ -13,12 +13,19 @@ Additionally, if you want to make use of the provided scripts for doing things l
 
 1. [jq](https://stedolan.github.io/jq/)
 2. [aws cli](https://aws.amazon.com/cli/)
+3. [make](https://www.gnu.org/software/make/)
 
-Beyond tooling you need to have access to an AWS account where the various resources defined in the terraform files here will be created. You will want to either have your AWS credentials either in your environment or in a centralized credentials file. (See the [aws terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication) for more information on these credentials) **Note: These applying these terraform files to your AWS account will result in resources being created that will create costs for your account.**
+Beyond tooling you need to have access to an AWS account where the various resources defined in the terraform files here will be created. You will want to either have your AWS credentials either in your environment or in a centralized credentials file. (See the [aws terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication) for more information on these credentials) 
+
+> **WARNING** `apply`ing these terraform files to your AWS account will result in resources being created that may be billed to your account.
 
 ## Building the Docker Lambda Image
 
-The lambda functions defined for HMA use docker images to hold the code executed by the functions. Until an image is published in a public docker registry, you will need to build and publish this docker image to a docker registry you own. There is a build script in [`scripts/update_lambda_docker_image.sh`](scripts/update_lambda_docker_image.sh) to help with this. This assumes there is an ECR repository already set up with the name `hma-lambda-dev` in your aws account. Run the script after providing a `DOCKER_TAG` environment variable. It is suggested to tag the image with the prefix you intend to use below in your terraform variables / environment. For example, if I am using the prefix `bodnarbm`, I might run the script like this
+The lambda functions defined for HMA use docker images to hold the code executed by the functions. You will need to build and publish this docker image to a docker registry you own. eg. an AWS ECR repository.
+
+There is a build script in [`scripts/update_lambda_docker_image.sh`](scripts/update_lambda_docker_image.sh) to help with this. This assumes there is an ECR repository already set up with the name `hma-lambda-dev` in your aws account. Run the script after providing a `DOCKER_TAG` environment variable. 
+
+It is suggested to tag the image with the prefix you intend to use below in your terraform variables / environment. For example, if I am using the prefix `bodnarbm`, I might run the script like this
 
 ```shell
 $ DOCKER_TAG=bodnarbm ./scripts/update_lambda_docker_image.sh
@@ -86,3 +93,69 @@ Until a Syncer module is created, test threatexchange data needs to be manually 
 3. Upload some target and no target images.
 
 This should run the images through the existing PDQ hasher and matcher lambda functions.
+
+
+## Running Lambdas locally
+
+A helper script pulls in environment variables from AWS's lambda configuration and runs your lambda with those environment variables. This can be used locally to run _and_ debug python code.
+
+eg. to run the hasher lambda
+
+```
+$ python -m hmalib.scripts.cli.main run-lambda --lambda-name hasher
+```
+
+Or alternatively if you've done `python setup.py develop`, just
+```
+$ hmacli run-lambda --lambda-name hasher
+```
+
+This will cache terraform outputs to make things faster for subsequent runs. If you have changed your prefix, you might want to use the `--refresh-tf-outputs` flag when using the command.
+
+### Providing input to your lambdas
+
+* Create a file `hasher-matcher-actioner/lambda_local.py`.
+* Create an attribute called `event` in that file.
+* This is passed as the `event` argument to your lambda
+
+eg.
+```python
+# hasher-matcher-actioner/lambda_local.py
+import json
+import uuid
+from threatexchange.content_type.photo import PhotoContent
+from hmalib.common.messages.submit import URLSubmissionMessage
+
+content_id = str(uuid.uuid4())
+print(f"Will use content_id: {content_id}")
+
+# This attribute will get passed to the hasher lambda.
+event = {
+    "Records": [
+        {
+            "body": json.dumps(
+                URLSubmissionMessage(
+                    content_type=PhotoContent,
+                    content_id=content_id,
+                    url="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png",
+                ).to_sqs_message()
+            )
+        }
+    ]
+}
+```
+
+## Running the API locally
+
+This could not be simpler. 
+
+```
+$ python -m hmalib.scripts.cli.main run-api
+```
+
+or 
+```
+$ hmacli run-api
+```
+
+This will run the API on port 8080 on localhost.
