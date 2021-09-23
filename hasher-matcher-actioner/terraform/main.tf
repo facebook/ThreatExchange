@@ -375,7 +375,8 @@ module "hasher" {
     uri = var.hma_lambda_docker_uri
   }
 
-  datastore = module.datastore.primary_datastore
+  datastore       = module.datastore.primary_datastore
+  banks_datastore = module.datastore.banks_datastore
   submissions_queue = {
     arn = aws_sqs_queue.submissions_queue.arn
   }

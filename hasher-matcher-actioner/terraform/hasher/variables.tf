@@ -32,6 +32,14 @@ variable "datastore" {
   })
 }
 
+variable "banks_datastore" {
+  description = "DynamoDB Table to store bank information into"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
+
 variable "submissions_queue" {
   description = "Configuration information for the image content that will be process for PDQ hashes"
   type = object({
