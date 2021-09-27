@@ -53,9 +53,8 @@ class PDQIndex(SignalTypeIndex):
         for i, entry in enumerate(entries):
             self.local_id_to_entry[i] = entry
             hashes.append(entry[0])
-        
+
         self.index.add(hashes, self.local_id_to_entry.keys())
-    
 
     @classmethod
     def build(cls, entries: t.Iterable[t.Tuple[str, T]]) -> "SignalTypeIndex[T]":

@@ -44,8 +44,8 @@ class PDQHashIndex(ABC):
     @abstractmethod
     def add(self, hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int]):
         """
-        Adds hashes and their custom ids to the PDQ index. 
-        """        
+        Adds hashes and their custom ids to the PDQ index.
+        """
         pass
 
     def search(
@@ -118,13 +118,12 @@ class PDQFlatHashIndex(PDQHashIndex):
     """
 
     def __init__(self):
-        faiss_index = faiss.IndexBinaryIDMap2( faiss.index_binary_factory(BITS_IN_PDQ, "BFlat"))
+        faiss_index = faiss.IndexBinaryIDMap2(
+            faiss.index_binary_factory(BITS_IN_PDQ, "BFlat")
+        )
         super().__init__(faiss_index)
 
-
-    def add(
-        self, hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int]
-    ):
+    def add(self, hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int]):
         """
         Parameters
         ----------
@@ -165,7 +164,9 @@ class PDQMultiHashIndex(PDQHashIndex):
 
     def __init__(self, nhash: int = 16):
         bits_per_hashmap = BITS_IN_PDQ // nhash
-        faiss_index = faiss.IndexBinaryIDMap2(faiss.IndexBinaryMultiHash(BITS_IN_PDQ, nhash, bits_per_hashmap))
+        faiss_index = faiss.IndexBinaryIDMap2(
+            faiss.IndexBinaryMultiHash(BITS_IN_PDQ, nhash, bits_per_hashmap)
+        )
         super().__init__(faiss_index)
         self.__construct_index_rev_map()
 
