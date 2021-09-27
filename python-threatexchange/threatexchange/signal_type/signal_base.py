@@ -26,15 +26,18 @@ class TrivialSignalTypeIndex(index.SignalTypeIndex):
     def query(self, hash: str) -> t.List[index.IndexMatch[index.T]]:
         return [index.IndexMatch(0, meta) for meta in self.state.get(hash, [])]
 
+    def add(self, vals: t.Iterable[t.Tuple[str, t.Any]]) -> None:
+        for k, val in vals:
+            l = self.state.get(k)
+            if not l:
+                l = []
+                self.state[k] = l
+            l.append(val)
+
     @classmethod
     def build(cls, vals: t.Iterable[t.Tuple[str, t.Any]]):
         ret = cls()
-        for k, val in vals:
-            l = ret.state.get(k)
-            if not l:
-                l = []
-                ret.state[k] = l
-            l.append(val)
+        ret.add(vals=vals)
         return ret
 
     def serialize(self, fout: t.BinaryIO):

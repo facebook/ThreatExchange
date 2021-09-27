@@ -127,12 +127,14 @@ else:
     custom_ids = None
 
 start_build_flat_hash_index = time.time()
-flat_index = PDQFlatHashIndex.create(dataset, custom_ids=custom_ids)
+flat_index = PDQFlatHashIndex()
+flat_index.add(dataset, custom_ids=custom_ids)
 serialized_flat_index = pickle.dumps(flat_index)
 end_build_flat_hash_index = time.time()
 
 start_build_multi_hash_index = time.time()
-multi_index = PDQMultiHashIndex.create(dataset, custom_ids=custom_ids)
+multi_index = PDQMultiHashIndex()
+multi_index.add(dataset, custom_ids=custom_ids)
 serialized_multi_index = pickle.dumps(multi_index)
 end_build_multi_hash_index = time.time()
 

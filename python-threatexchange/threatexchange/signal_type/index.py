@@ -110,6 +110,13 @@ class SignalTypeIndex(t.Generic[T]):
         """
         raise NotImplementedError
 
+    def add(cls, entries: t.Iterable[t.Tuple[str, T]]) -> None:
+        """
+        Add entries to an existing index. May contain elements already in the
+        index.
+        """
+        raise NotImplementedError
+
     def serialize(self, fout: t.BinaryIO) -> None:
         """
         Convert the index into a bytestream (probably a file).
