@@ -25,7 +25,7 @@ function BankDetails({bankId}: BankTabProps): JSX.Element {
 
   return (
     <Row>
-      <Col xs="6">
+      <Col>
         {bank !== undefined ? (
           <BankDetailsForm
             bankName={bank.bank_name}
