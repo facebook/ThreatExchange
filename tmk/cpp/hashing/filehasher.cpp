@@ -178,7 +178,19 @@ bool hashVideoFile(
   //     -s ${output_width}:${output_height} -an -f rawvideo -c:v rawvideo \
   //     -pix_fmt rgb24 -r $output_fps pipe:1
 
-  std::string command = ffmpegPath + " -nostdin -i " + inputVideoFileName + " -s " +
+  // add single quotes around the file name and then escape any single quotes inside it
+  // example: my file's.mp4 -> 'my file'\''s.mp4'
+  std::string escapedInputVideoFileName = "'";
+  for (char c : inputVideoFileName) {
+    if (c == '\'') {
+      escapedInputVideoFileName += "'\\''";
+    } else {
+      escapedInputVideoFileName += c;
+    }
+  }
+  escapedInputVideoFileName += "'";
+
+  std::string command = ffmpegPath + " -nostdin -i " + escapedInputVideoFileName + " -s " +
       std::to_string(downsampleFrameDimension) + ":" +
       std::to_string(downsampleFrameDimension) +
       " -an -f rawvideo -c:v rawvideo -pix_fmt rgb24 -r " +
