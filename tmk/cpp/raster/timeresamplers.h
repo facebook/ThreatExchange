@@ -10,6 +10,7 @@
 #ifndef TIMERESAMPLERS_H
 #define TIMERESAMPLERS_H
 
+#include <stdexcept>
 #include <string>
 #include <memory>
 
