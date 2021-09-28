@@ -1,6 +1,6 @@
 BSD License
 
-For ThreatExchange software
+For ThreatExchange software, except pdq/cpp/CImg.h (see pdq/LICENSE):
 
 Copyright (c) 2014-present, Facebook, Inc. All rights reserved.
 
