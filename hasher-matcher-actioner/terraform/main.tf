@@ -108,14 +108,6 @@ module "indexer" {
   measure_performance   = var.measure_performance
 }
 
-module "pdq_signals" {
-  # 2021/08/30: Retain this module until developers have all updated their
-  # deployments or we've fixed #755. If you remove this, states might not be
-  # cleaned up and we'll be left with vestigial infra from this module.
-
-  source = "./pdq-signals"
-}
-
 module "counters" {
   source          = "./counters"
   prefix          = var.prefix
