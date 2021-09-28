@@ -4,6 +4,7 @@ import os
 from moto import mock_dynamodb2
 import boto3
 import typing as t
+from contextlib import contextmanager
 
 
 class DynamoDBTableTestBase:
@@ -15,6 +16,15 @@ class DynamoDBTableTestBase:
 
     def get_table(self):
         return self.__class__.table
+
+    @contextmanager
+    def fresh_dynamodb(self):
+        # Code to acquire resource, e.g.:
+        self.__class__.setUpClass()
+        try:
+            yield
+        finally:
+            self.__class__.tearDownClass()
 
     @staticmethod
     def mock_aws_credentials():

@@ -10,7 +10,7 @@ from webtest import (
 
 from threatexchange.content_type.photo import PhotoContent
 
-from hmalib.common.models.tests.ddb_test_common import DynamoDBTableTestBase
+from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
 from hmalib.common.models.bank import BanksTable
 from hmalib.banks import bank_operations
 from hmalib.lambdas.api.bank import get_bank_api
@@ -18,36 +18,8 @@ from hmalib.lambdas.api.bank import get_bank_api
 unique_id = lambda: str(uuid.uuid4())
 
 
-class BankMemberPaginationTestCase(DynamoDBTableTestBase, unittest.TestCase):
-    @classmethod
-    def get_table_definition(cls) -> t.Any:
-        table_name = "test-banks-table"
-
-        # Regenerate using `aws dynamodb describe-table --table-name <prefix>-HMABanks`
-        # TODO: Automate refresh of this using a commandline invocation
-        return {
-            "AttributeDefinitions": [
-                {"AttributeName": "BankNameIndex-BankId", "AttributeType": "S"},
-                {"AttributeName": "BankNameIndex-BankName", "AttributeType": "S"},
-                {"AttributeName": "PK", "AttributeType": "S"},
-                {"AttributeName": "SK", "AttributeType": "S"},
-            ],
-            "TableName": table_name,
-            "KeySchema": [
-                {"AttributeName": "PK", "KeyType": "HASH"},
-                {"AttributeName": "SK", "KeyType": "RANGE"},
-            ],
-            "GlobalSecondaryIndexes": [
-                {
-                    "IndexName": "BankNameIndex",
-                    "KeySchema": [
-                        {"AttributeName": "BankNameIndex-BankName", "KeyType": "HASH"},
-                        {"AttributeName": "BankNameIndex-BankId", "KeyType": "RANGE"},
-                    ],
-                    "Projection": {"ProjectionType": "ALL"},
-                }
-            ],
-        }
+class BankMemberPaginationTestCase(BanksTableTestBase, unittest.TestCase):
+    # NOTE: Table is defined in base class BanksTableTestBase
 
     def _create_200_members(self) -> str:
         """Create a bank, 200 members and return bank_id."""
@@ -56,8 +28,7 @@ class BankMemberPaginationTestCase(DynamoDBTableTestBase, unittest.TestCase):
         bank = table_manager.create_bank("TEST_BANK", "TEST BANK Description")
 
         for _ in range(200):
-            bank_operations.add_bank_member(
-                table_manager,
+            table_manager.add_bank_member(
                 bank_id=bank.bank_id,
                 content_type=PhotoContent,
                 raw_content=None,
@@ -70,7 +41,13 @@ class BankMemberPaginationTestCase(DynamoDBTableTestBase, unittest.TestCase):
 
     def test_pagination_produces_correct_number_of_pages(self):
         bank_id = self._create_200_members()
-        api = TApp(get_bank_api(self.get_table(), "irrelevant_s3_bucket_for_this_test"))
+        api = TApp(
+            get_bank_api(
+                self.get_table(),
+                "irrelevant_s3_bucket_for_this_test",
+                "irrelevant_sqs_queue",
+            )
+        )
 
         running_count = 0
         continuation_token = None

@@ -19,6 +19,7 @@ resource "aws_lambda_function" "hashing_lambda" {
   environment {
     variables = {
       DYNAMODB_TABLE      = var.datastore.name
+      BANKS_TABLE         = var.banks_datastore.name
       METRICS_NAMESPACE   = var.metrics_namespace
       MEASURE_PERFORMANCE = var.measure_performance ? "True" : "False"
       HASHES_QUEUE_URL    = var.hashes_queue.url
@@ -86,7 +87,7 @@ data "aws_iam_policy_document" "hashing_lambda" {
   statement {
     effect    = "Allow"
     actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
-    resources = [var.datastore.arn]
+    resources = [var.datastore.arn, var.banks_datastore.arn]
   }
   statement {
     effect    = "Allow"

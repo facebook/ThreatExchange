@@ -292,7 +292,7 @@ resource "aws_s3_bucket" "data_bucket" {
  */
 resource "aws_s3_bucket" "banks_media_bucket" {
   bucket_prefix = "${var.prefix}-banks-media-"
-  acl = "private"
+  acl           = "private"
   tags = merge(
     var.additional_tags,
     {
@@ -375,7 +375,8 @@ module "hasher" {
     uri = var.hma_lambda_docker_uri
   }
 
-  datastore = module.datastore.primary_datastore
+  datastore       = module.datastore.primary_datastore
+  banks_datastore = module.datastore.banks_datastore
   submissions_queue = {
     arn = aws_sqs_queue.submissions_queue.arn
   }

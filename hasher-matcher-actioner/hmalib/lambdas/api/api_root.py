@@ -236,6 +236,7 @@ app.mount(
     get_bank_api(
         bank_table=dynamodb.Table(BANKS_TABLE),
         bank_user_media_bucket=BANKS_MEDIA_BUCKET_NAME,
+        submissions_queue_url=SUBMISSIONS_QUEUE_URL,
     ),
 )
 

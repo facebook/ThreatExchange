@@ -3,13 +3,17 @@
 import typing as t
 from datetime import datetime
 from dataclasses import asdict, dataclass, field
+from enum import Enum
 import uuid
+
 from boto3.dynamodb.conditions import Key
 from mypy_boto3_dynamodb.service_resource import Table
-from threatexchange import content_type
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.meta import get_content_type_for_name
+from threatexchange.content_type.meta import (
+    get_content_type_for_name,
+    get_signal_types_by_name,
+)
 from threatexchange.signal_type.signal_base import SignalType
 
 from hmalib.common.models.models_base import (
@@ -214,6 +218,26 @@ class BankMember(DynamoDBItem):
         return result
 
 
+class BankMemberSignalStatus(Enum):
+    """
+    Bank member signals are processed into the respective signal_type indexes.
+    This enum governs the possible states the BankMemberSignal object can be
+    in. This influences whether or not a BankMemberSignal object is present in
+    the PendingBankMemberSignalsIndex.
+    """
+
+    # Implies that this needs to be processed now.
+    PENDING = "PENDING"
+
+    # Has been processed into an index.
+    PROCESSED = "PROCESSED"
+
+    # State machine purists will note that we do not have a PROCESSING stage
+    # which will take a lock and prevent double processing for records. However,
+    # in our case, there is no cost to double processing as long as records are
+    # processed in order. i.e chronologically.
+
+
 @dataclass
 class BankMemberSignal(DynamoDBItem):
     """
@@ -221,12 +245,98 @@ class BankMemberSignal(DynamoDBItem):
     """
 
     bank_id: str
-    signal_id: str
+    bank_member_id: str
 
-    signal_type: t.Type[ContentType]
+    signal_id: str
+    signal_type: t.Type[SignalType]
     signal_value: str
 
+    status: BankMemberSignalStatus
+
     updated_at: datetime
+
+    PENDING_BANK_MEMBER_SIGNALS_INDEX = "PendingBankMemberSignalIndex"
+    PENDING_BANK_MEMBER_SIGNALS_INDEX_SIGNAL_TYPE = (
+        f"{PENDING_BANK_MEMBER_SIGNALS_INDEX}-SignalType"
+    )
+    PENDING_BANK_MEMBER_SIGNALS_INDEX_UPDATED_AT = (
+        f"{PENDING_BANK_MEMBER_SIGNALS_INDEX}-UpdatedAt"
+    )
+
+    @classmethod
+    def get_pk(cls, bank_id):
+        return bank_id
+
+    @classmethod
+    def get_sk(cls, signal_id):
+        return f"signal#{signal_id}"
+
+    def to_dynamodb_item(self) -> t.Dict:
+        item = {
+            # Main Index
+            "PK": self.bank_id,
+            "SK": self.get_sk(signal_id=self.signal_id),
+            # Attributes
+            "BankId": self.bank_id,
+            "BankMemberId": self.bank_member_id,
+            "SignalId": self.signal_id,
+            "SignalType": self.signal_type.get_name(),
+            "SignalValue": self.signal_value,
+            "UpdatedAt": self.updated_at.isoformat(),
+            "Status": self.status.name,
+        }
+
+        if self.status == BankMemberSignalStatus.PENDING:
+            item.update(
+                **{
+                    self.PENDING_BANK_MEMBER_SIGNALS_INDEX_SIGNAL_TYPE: self.signal_type.get_name(),
+                    self.PENDING_BANK_MEMBER_SIGNALS_INDEX_UPDATED_AT: self.updated_at.isoformat(),
+                }
+            )
+
+        return item
+
+    @classmethod
+    def from_dynamodb_item(cls, item: t.Dict) -> "BankMemberSignal":
+        return cls(
+            bank_id=item["BankId"],
+            bank_member_id=item["BankMemberId"],
+            signal_id=item["SignalId"],
+            signal_type=get_signal_types_by_name()[item["SignalType"]],
+            signal_value=item["SignalValue"],
+            updated_at=datetime.fromisoformat(item["UpdatedAt"]),
+            status=BankMemberSignalStatus(item["Status"]),
+        )
+
+    def to_json(self) -> t.Dict:
+        """Used in APIs."""
+        result = asdict(self)
+        result.update(
+            signal_type=self.signal_type.get_name(),
+            updated_at=self.updated_at.isoformat(),
+        )
+        return result
+
+    @classmethod
+    def unmark(cls, table: Table, bank_id: str, signal_id: str):
+        """
+        Updates the status to processed, the updated_at value to now() and
+        removes from the PendingBankMemberSignalIndex.
+
+        To do this in a single ddb call, we use an update_item statement which
+        REMOVES the GSI values, thus removing them from the index.
+        """
+        table.update_item(
+            Key={
+                "PK": cls.get_pk(bank_id=bank_id),
+                "SK": cls.get_sk(signal_id=signal_id),
+            },
+            UpdateExpression=f"SET Status = :status, UpdatedAt = :updated_at  REMOVE {cls.PENDING_BANK_MEMBER_SIGNALS_INDEX_SIGNAL_TYPE}, {cls.PENDING_BANK_MEMBER_SIGNALS_INDEX_UPDATED_AT}",
+            ExpressionAttributeValues={
+                ":status": BankMemberSignalStatus.PROCESSED.value,
+                ":updated_at": datetime.now().isoformat(),
+            },
+        )
 
 
 @dataclass
@@ -239,6 +349,57 @@ class BankedSignalEntry(DynamoDBItem):
     signal_value: str
 
     signal_id: str
+
+    @classmethod
+    def get_pk(cls, signal_type: t.Type[SignalType]) -> str:
+        return f"signal_type#{signal_type.get_name()}"
+
+    @classmethod
+    def get_sk(self, signal_value: str) -> str:
+        return f"signal_value#{signal_value}"
+
+    def to_dynamodb_item(self) -> t.Dict:
+        # Raise an error so that write_to_table() fails. We never want to do that.
+        raise Exception("Do not write BankedSignalEntry to DDB directly!")
+
+    @classmethod
+    def get_unique(
+        cls, table: Table, signal_type: t.Type[SignalType], signal_value: str
+    ) -> "BankedSignalEntry":
+        """
+        Write to the table if PK / SK does not exist. In either case (exists,
+        not exists), return the current unique entry.
+
+        This is a special use-case for BankedSignalEntry. If this is useful to
+        other models, we can move it to a mixin or to dynamodb item. If trying
+        to generify, note how the update_item query needs a custom update query
+        based on what you are trying to write. Generifying may be harder than it
+        seems.
+        """
+        result = table.update_item(
+            Key={
+                "PK": cls.get_pk(signal_type),
+                "SK": cls.get_sk(signal_value),
+            },
+            UpdateExpression="SET SignalId = if_not_exists(SignalId, :signal_id), SignalType = :signal_type, SignalValue = :signal_value",
+            ExpressionAttributeValues={
+                # Note we are generating a new uuid even though we don't always
+                # expect it to get written. AFAIK, uuids are inexhaustible, and
+                # generation performance is good enough to not worry about it.
+                ":signal_id": str(uuid.uuid4()),
+                ":signal_type": signal_type.get_name(),
+                ":signal_value": signal_value,
+            },
+            ReturnValues="ALL_NEW",
+        ).get("Attributes")
+
+        assert result is not None
+
+        return BankedSignalEntry(
+            signal_type=get_signal_types_by_name()[result["SignalType"]],
+            signal_value=t.cast(str, result["SignalValue"]),
+            signal_id=t.cast(str, result["SignalId"]),
+        )
 
 
 class BanksTable:
@@ -378,3 +539,59 @@ class BanksTable:
         )
         bank_member.is_removed = False
         bank_member.write_to_table(self._table)
+
+    def add_bank_member_signal(
+        self,
+        bank_id: str,
+        bank_member_id: str,
+        signal_type: t.Type[SignalType],
+        signal_value: str,
+    ) -> BankMemberSignal:
+        """
+        Adds a BankMemberSignal entry. First, identifies if a signal for the
+        corresponding (type, value) tuple exists, if so, reuses it, it not,
+        creates a new one.
+
+        Returns a BankMemberSignal object. Clients **should not** care whether
+        this is a new signal_id or not.
+
+        This check is being done here because signal uniqueness is enforced by
+        the same table. If this were being done in a different table/store, we
+        could be doing the check at a different layer eg.
+        hmalib.banks.bank_operations.
+        """
+        # First, we get a unique signal_id!
+        signal_id = BankedSignalEntry.get_unique(
+            self._table, signal_type=signal_type, signal_value=signal_value
+        ).signal_id
+
+        # Next, we create the bank member signal
+        member_signal = BankMemberSignal(
+            bank_id=bank_id,
+            bank_member_id=bank_member_id,
+            signal_id=signal_id,
+            signal_type=signal_type,
+            signal_value=signal_value,
+            updated_at=datetime.now(),
+            status=BankMemberSignalStatus.PENDING,
+        )
+        member_signal.write_to_table(self._table)
+        return member_signal
+
+    def unmark_bank_member_signal(self, bank_id: str, signal_id: str):
+        """
+        Remove the bank-member-signal from the pending index.
+        """
+        BankMemberSignal.unmark(self._table, bank_id=bank_id, signal_id=signal_id)
+
+    def get_bank_member_signals_to_process(
+        self, signal_type: t.Type[SignalType], limit: int = 100
+    ):
+        return [
+            BankMemberSignal.from_dynamodb_item(item)
+            for item in self._table.query(
+                IndexName=BankMemberSignal.PENDING_BANK_MEMBER_SIGNALS_INDEX,
+                KeyConditionExpression=Key("PK").eq(signal_type.get_name()),
+                Limit=limit,
+            )["Items"]
+        ]

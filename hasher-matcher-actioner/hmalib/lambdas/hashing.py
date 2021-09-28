@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import functools
+from hmalib.common.messages.bank import BankSubmissionMessage
 import boto3
 import os
 import datetime
@@ -24,7 +25,9 @@ from hmalib.common.messages.submit import (
     URLSubmissionMessage,
 )
 from hmalib.hashing.unified_hasher import UnifiedHasher
+from hmalib.banks import bank_operations
 from hmalib.common.models.pipeline import PipelineHashRecord
+from hmalib.common.models.bank import BanksTable
 from hmalib.common.content_sources import S3BucketContentSource, URLContentSource
 
 logger = get_logger(__name__)
@@ -44,6 +47,7 @@ def get_sqs_client() -> SQSClient:
 OUTPUT_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
+BANKS_TABLE = os.environ["BANKS_TABLE"]
 
 
 # If you want to support additional content or signal types, they can be added
@@ -70,6 +74,7 @@ def lambda_handler(event, context):
     [1]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-console.html
     """
     records_table = get_dynamodb().Table(DYNAMODB_TABLE)
+    banks_table = BanksTable(get_dynamodb().Table(BANKS_TABLE))
     sqs_client = get_sqs_client()
 
     for sqs_record in event["Records"]:
@@ -89,6 +94,8 @@ def lambda_handler(event, context):
                     message, image_prefix=IMAGE_PREFIX
                 ).image_submissions
             )
+        elif BankSubmissionMessage.could_be(message):
+            media_to_process.append(BankSubmissionMessage.from_sqs_message(message))
         else:
             logger.warn(f"Unprocessable Message: {message}")
 
@@ -107,9 +114,19 @@ def lambda_handler(event, context):
                 else:
                     bytes_: bytes = URLContentSource().get_bytes(media.url)
 
-            for signal in hasher.get_hashes(
-                media.content_id, media.content_type, bytes_
-            ):
+            for signal in hasher.get_hashes(media.content_type, bytes_):
+                if isinstance(media, BankSubmissionMessage):
+                    # route signals to bank datastore only.
+                    bank_operations.add_bank_member_signal(
+                        banks_table=banks_table,
+                        bank_id=media.bank_id,
+                        bank_member_id=media.bank_member_id,
+                        signal_type=signal.signal_type,
+                        signal_value=signal.signal_value,
+                    )
+                    # don't write hash records etc.
+                    continue
+
                 hash_record = PipelineHashRecord(
                     content_id=media.content_id,
                     signal_type=signal.signal_type,
