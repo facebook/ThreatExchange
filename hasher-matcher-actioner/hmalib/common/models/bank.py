@@ -39,7 +39,7 @@ Item                  | PK                        | SK
 ----------------------|---------------------------|------------------------------
 Bank                  | #bank_object              | <bank_id>                      
 BankMember            | <bank_id>#<content_type>  | member#<bank_member_id>        
-BankMemberSignal      | <bank_id>                 | signal#<signal_id>             
+BankMemberSignal      | <bank_member_id>          | signal#<signal_id>             
 <signal_id>           | signal_type#<signal_type> | signal_value#<signal_value>    
 
 Bank objects are all stored under the same, static partition key because all
@@ -145,6 +145,9 @@ class BankMember(DynamoDBItem):
 
     BANK_MEMBER_ID_PREFIX = "member#"
 
+    BANK_MEMBER_ID_INDEX = "BankMemberIdIndex"
+    BANK_MEMBER_ID_INDEX_BANK_MEMBER_ID = f"{BANK_MEMBER_ID_INDEX}-BankMemberId"
+
     bank_id: str
     bank_member_id: str
 
@@ -179,6 +182,8 @@ class BankMember(DynamoDBItem):
             # Main Index
             "PK": self.get_pk(self.bank_id, self.content_type),
             "SK": self.get_sk(self.bank_member_id),
+            # BankMemberId Index
+            self.BANK_MEMBER_ID_INDEX_BANK_MEMBER_ID: self.bank_member_id,
             # Attributes
             "BankId": self.bank_id,
             "BankMemberId": self.bank_member_id,
