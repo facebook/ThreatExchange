@@ -6,6 +6,7 @@
 #define MIH_H
 
 #include <pdq/cpp/common/pdqhashtypes.h>
+#include <stdexcept>
 #include <map>
 #include <set>
 #include <vector>
