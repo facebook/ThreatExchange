@@ -5,6 +5,8 @@ Implementation of SignalTypeIndex abstraction for PDQ by wrapping
 hashing.pdq_faiss_matcher.
 """
 
+from collections import OrderedDict
+import collections
 import typing as t
 import pickle
 
@@ -22,14 +24,9 @@ class PDQIndex(SignalTypeIndex):
 
     def __init__(self, entries: t.Iterable[t.Tuple[str, T]]) -> None:
         super().__init__()
-        self.local_id_to_entry = {}
-        hashes = []
-        for i, entry in enumerate(entries):
-            self.local_id_to_entry[i] = entry
-            hashes.append(entry[0])
-        self.index = PDQMultiHashIndex.create(
-            hashes, custom_ids=self.local_id_to_entry.keys()
-        )
+        self.local_id_to_entry: t.OrderedDict = collections.OrderedDict()
+        self.index = PDQMultiHashIndex()
+        self.add(entries=entries)
 
     def __len__(self) -> int:
         return len(self.local_id_to_entry)
@@ -49,6 +46,15 @@ class PDQIndex(SignalTypeIndex):
                 # distance = -1 (index does not currently support distance)
                 matches.append(IndexMatch(-1, self.local_id_to_entry[id][1]))
         return matches
+
+    def add(self, entries: t.Iterable[t.Tuple[str, T]]) -> None:
+        hashes = []
+
+        for i, entry in enumerate(entries):
+            self.local_id_to_entry[i] = entry
+            hashes.append(entry[0])
+
+        self.index.add(hashes, self.local_id_to_entry.keys())
 
     @classmethod
     def build(cls, entries: t.Iterable[t.Tuple[str, T]]) -> "SignalTypeIndex[T]":

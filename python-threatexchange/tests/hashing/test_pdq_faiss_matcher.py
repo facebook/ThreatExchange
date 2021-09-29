@@ -92,7 +92,8 @@ class MixinTests:
 
 class TestPDQFlatHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase):
     def setUp(self):
-        self.index = PDQFlatHashIndex.create(test_hashes)
+        self.index = PDQFlatHashIndex()
+        self.index.add(test_hashes, range(0, len(test_hashes)))
 
     def test_create_faiss_index_from_hashes(self):
         assert type(self.index) is PDQFlatHashIndex
@@ -117,7 +118,8 @@ class TestPDQFlatHashIndexWithCustomIds(
     custom_ids = [MAX_UNSIGNED_INT64 - i for i in range(len(test_hashes))]
 
     def setUp(self):
-        self.index = PDQFlatHashIndex.create(test_hashes, self.custom_ids)
+        self.index = PDQFlatHashIndex()
+        self.index.add(test_hashes, self.custom_ids)
 
     def test_create_faiss_index_from_hashes(self):
         assert type(self.index) is PDQFlatHashIndex
@@ -139,7 +141,8 @@ class TestPDQFlatHashIndexWithCustomIds(
 
 class TestPDQMultiHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase):
     def setUp(self):
-        self.index = PDQMultiHashIndex.create(test_hashes)
+        self.index = PDQMultiHashIndex()
+        self.index.add(test_hashes, range(0, len(test_hashes)))
 
     def test_create_faiss_index_from_hashes(self):
         assert type(self.index) is PDQMultiHashIndex
@@ -163,7 +166,8 @@ class TestPDQMultiHashIndexWithCustomIds(
     custom_ids = [MAX_UNSIGNED_INT64 - i for i in range(len(test_hashes))]
 
     def setUp(self):
-        self.index = PDQMultiHashIndex.create(test_hashes, custom_ids=self.custom_ids)
+        self.index = PDQMultiHashIndex()
+        self.index.add(test_hashes, custom_ids=self.custom_ids)
 
     def test_create_faiss_index_from_hashes(self):
         assert type(self.index) is PDQMultiHashIndex

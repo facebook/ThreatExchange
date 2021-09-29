@@ -41,6 +41,13 @@ class PDQHashIndex(ABC):
         """
         pass
 
+    @abstractmethod
+    def add(self, hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int]):
+        """
+        Adds hashes and their custom ids to the PDQ index.
+        """
+        pass
+
     def search(
         self,
         queries: t.Sequence[PDQ_HASH_TYPE],
@@ -110,43 +117,31 @@ class PDQFlatHashIndex(PDQHashIndex):
     performant when using larger thresholds for PDQ similarity.
     """
 
-    def __init__(self, faiss_index: faiss.IndexBinaryFlat):
+    def __init__(self):
+        faiss_index = faiss.IndexBinaryIDMap2(
+            faiss.index_binary_factory(BITS_IN_PDQ, "BFlat")
+        )
         super().__init__(faiss_index)
 
-    @staticmethod
-    def create(
-        hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int] = None
-    ) -> "PDQFlatHashIndex":
+    def add(self, hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int]):
         """
-        Creates a PDQFlatHashIndex for use searching against the provided hashes.
-
         Parameters
         ----------
         hashes: sequence of PDQ Hashes
             The PDQ hashes to create the index with
-        custom_ids: sequence of custom ids for the PDQ Hashes (optional)
-            Optional sequence of custom id values to use for the PDQ hashes for any
+        custom_ids: sequence of custom ids for the PDQ Hashes
+            Sequence of custom id values to use for the PDQ hashes for any
             method relating to indexes (e.g., hash_at). If provided, the nth item in
             custom_ids will be used as the id for the nth hash in hashes. If not provided
             then the ids for the hashes will be assumed to be their respective index
             in hashes (i.e., the nth hash would have id n, starting from 0).
-
-        Returns
-        -------
-        a PDQFlatHashIndex of these hashes
         """
         hash_bytes = [binascii.unhexlify(hash) for hash in hashes]
         vectors = list(
             map(lambda h: numpy.frombuffer(h, dtype=numpy.uint8), hash_bytes)
         )
-        index = faiss.index_binary_factory(BITS_IN_PDQ, "BFlat")
-        if custom_ids != None:
-            index = faiss.IndexBinaryIDMap2(index)
-            i64_ids = list(map(uint64_to_int64, custom_ids))
-            index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
-        else:
-            index.add(numpy.array(vectors))
-        return PDQFlatHashIndex(index)
+        i64_ids = list(map(uint64_to_int64, custom_ids))
+        self.faiss_index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
 
     def hash_at(self, idx: int):
         i64_id = uint64_to_int64(idx)
@@ -160,30 +155,33 @@ class PDQMultiHashIndex(PDQHashIndex):
 
     The "multi" variant uses an the Multi-Index Hashing searching technique employed by faiss's
     IndexBinaryMultiHash binary index.
+
+    Properties:
+    nhash: int (optional)
+    Optional number of hashmaps for the underlaying faiss index to use for
+    the Multi-Index Hashing lookups.
     """
 
-    def __init__(self, faiss_index: faiss.IndexBinaryMultiHash):
+    def __init__(self, nhash: int = 16):
+        bits_per_hashmap = BITS_IN_PDQ // nhash
+        faiss_index = faiss.IndexBinaryIDMap2(
+            faiss.IndexBinaryMultiHash(BITS_IN_PDQ, nhash, bits_per_hashmap)
+        )
         super().__init__(faiss_index)
         self.__construct_index_rev_map()
 
-    @staticmethod
-    def create(
+    def add(
+        self,
         hashes: t.Iterable[PDQ_HASH_TYPE],
-        nhash: int = 16,
-        custom_ids: t.Iterable[int] = None,
-    ) -> "PDQMultiHashIndex":
+        custom_ids: t.Iterable[int],
+    ):
         """
-        Creates a PDQMultiHashIndex for use searching against the provided hashes.
-
         Parameters
         ----------
         hashes: sequence of PDQ Hashes
             The PDQ hashes to create the index with
-        nhash: int (optional)
-            Optional number of hashmaps for the underlaying faiss index to use for
-            the Multi-Index Hashing lookups.
-        custom_ids: sequence of custom ids for the PDQ Hashes (optional)
-            Optional sequence of custom id values to use for the PDQ hashes for any
+        custom_ids: sequence of custom ids for the PDQ Hashes
+            Sequence of custom id values to use for the PDQ hashes for any
             method relating to indexes (e.g., hash_at). If provided, the nth item in
             custom_ids will be used as the id for the nth hash in hashes. If not provided
             then the ids for the hashes will be assumed to be their respective index
@@ -197,17 +195,9 @@ class PDQMultiHashIndex(PDQHashIndex):
         vectors = list(
             map(lambda h: numpy.frombuffer(h, dtype=numpy.uint8), hash_bytes)
         )
-        bits_per_hashmap = BITS_IN_PDQ // nhash
-        index = faiss.IndexBinaryMultiHash(BITS_IN_PDQ, nhash, bits_per_hashmap)
-        if vectors:
-            if custom_ids != None:
-                index = faiss.IndexBinaryIDMap2(index)
-                i64_ids = list(map(uint64_to_int64, custom_ids))
-
-                index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
-            else:
-                index.add(numpy.array(vectors))
-        return PDQMultiHashIndex(index)
+        i64_ids = list(map(uint64_to_int64, custom_ids))
+        self.faiss_index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
+        self.__construct_index_rev_map()
 
     @property
     def mih_index(self):
