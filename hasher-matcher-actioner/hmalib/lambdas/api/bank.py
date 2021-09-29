@@ -16,11 +16,10 @@ from threatexchange.content_type.meta import get_content_type_for_name
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 
-from hmalib.common.models.bank import Bank, BankMember, BanksTable
+from hmalib.common.models.bank import Bank, BankMember, BanksTable, BankMemberSignal
 from hmalib.banks import bank_operations as bank_ops
 from hmalib.lambdas.api.middleware import jsoninator, JSONifiable
 from hmalib.lambdas.api.submit import create_presigned_put_url, create_presigned_url
-from hmalib.common.models.models_base import DynamoDBCursorKey
 
 
 @dataclass
@@ -51,6 +50,16 @@ class BankMembersPage(JSONifiable):
     def to_json(self) -> t.Dict:
         result = asdict(self)
         result.update(bank_members=[member.to_json() for member in self.bank_members])
+        return result
+
+
+@dataclass
+class PreviewableBankMemberWithSignals(PreviewableBankMember):
+    signals: t.List[BankMemberSignal] = field(default_factory=list)
+
+    def to_json(self) -> t.Dict:
+        result = super().to_json()
+        result.update(signals=[signal.to_json() for signal in self.signals])
         return result
 
 
@@ -233,5 +242,19 @@ def get_bank_api(
                 expiration=3600,
             ),
         }
+
+    @bank_api.get("/get-member/<bank_member_id>", apply=[jsoninator])
+    def get_member(bank_member_id=None) -> PreviewableBankMemberWithSignals:
+        """
+        Get a bank member with signals...
+        """
+        member = table_manager.get_bank_member(bank_member_id=bank_member_id)
+        signals = table_manager.get_signals_for_bank_member(
+            bank_member_id=bank_member_id
+        )
+
+        return PreviewableBankMemberWithSignals(
+            **asdict(with_preview_url(member)), signals=signals
+        )
 
     return bank_api
