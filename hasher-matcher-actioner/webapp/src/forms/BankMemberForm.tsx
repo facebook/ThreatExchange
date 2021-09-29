@@ -52,7 +52,7 @@ export default function BankMemberForm({
   const ctaLabel = type === ContentType.Video ? 'Add Video' : 'Add Photo';
 
   return (
-    <Form onSubmit={innerHandleSubmit}>
+    <Form className="hma-themed-form" onSubmit={innerHandleSubmit}>
       <Form.Group className="mt-4">
         <PreviewableDropzone
           contentType={type}

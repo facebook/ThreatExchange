@@ -39,7 +39,7 @@ Item                  | PK                        | SK
 ----------------------|---------------------------|------------------------------
 Bank                  | #bank_object              | <bank_id>                      
 BankMember            | <bank_id>#<content_type>  | member#<bank_member_id>        
-BankMemberSignal      | <bank_id>                 | signal#<signal_id>             
+BankMemberSignal      | <bank_member_id>          | signal#<signal_id>             
 <signal_id>           | signal_type#<signal_type> | signal_value#<signal_value>    
 
 Bank objects are all stored under the same, static partition key because all
@@ -145,6 +145,9 @@ class BankMember(DynamoDBItem):
 
     BANK_MEMBER_ID_PREFIX = "member#"
 
+    BANK_MEMBER_ID_INDEX = "BankMemberIdIndex"
+    BANK_MEMBER_ID_INDEX_BANK_MEMBER_ID = f"{BANK_MEMBER_ID_INDEX}-BankMemberId"
+
     bank_id: str
     bank_member_id: str
 
@@ -179,6 +182,8 @@ class BankMember(DynamoDBItem):
             # Main Index
             "PK": self.get_pk(self.bank_id, self.content_type),
             "SK": self.get_sk(self.bank_member_id),
+            # BankMemberId Index
+            self.BANK_MEMBER_ID_INDEX_BANK_MEMBER_ID: self.bank_member_id,
             # Attributes
             "BankId": self.bank_id,
             "BankMemberId": self.bank_member_id,
@@ -264,8 +269,8 @@ class BankMemberSignal(DynamoDBItem):
     )
 
     @classmethod
-    def get_pk(cls, bank_id):
-        return bank_id
+    def get_pk(cls, bank_member_id):
+        return bank_member_id
 
     @classmethod
     def get_sk(cls, signal_id):
@@ -274,7 +279,7 @@ class BankMemberSignal(DynamoDBItem):
     def to_dynamodb_item(self) -> t.Dict:
         item = {
             # Main Index
-            "PK": self.bank_id,
+            "PK": self.get_pk(bank_member_id=self.bank_member_id),
             "SK": self.get_sk(signal_id=self.signal_id),
             # Attributes
             "BankId": self.bank_id,
@@ -314,11 +319,12 @@ class BankMemberSignal(DynamoDBItem):
         result.update(
             signal_type=self.signal_type.get_name(),
             updated_at=self.updated_at.isoformat(),
+            status=self.status.value,
         )
         return result
 
     @classmethod
-    def unmark(cls, table: Table, bank_id: str, signal_id: str):
+    def unmark(cls, table: Table, bank_member_id: str, signal_id: str):
         """
         Updates the status to processed, the updated_at value to now() and
         removes from the PendingBankMemberSignalIndex.
@@ -328,7 +334,7 @@ class BankMemberSignal(DynamoDBItem):
         """
         table.update_item(
             Key={
-                "PK": cls.get_pk(bank_id=bank_id),
+                "PK": cls.get_pk(bank_member_id=bank_member_id),
                 "SK": cls.get_sk(signal_id=signal_id),
             },
             UpdateExpression=f"SET Status = :status, UpdatedAt = :updated_at  REMOVE {cls.PENDING_BANK_MEMBER_SIGNALS_INDEX_SIGNAL_TYPE}, {cls.PENDING_BANK_MEMBER_SIGNALS_INDEX_UPDATED_AT}",
@@ -578,11 +584,13 @@ class BanksTable:
         member_signal.write_to_table(self._table)
         return member_signal
 
-    def unmark_bank_member_signal(self, bank_id: str, signal_id: str):
+    def unmark_bank_member_signal(self, bank_member_id: str, signal_id: str):
         """
         Remove the bank-member-signal from the pending index.
         """
-        BankMemberSignal.unmark(self._table, bank_id=bank_id, signal_id=signal_id)
+        BankMemberSignal.unmark(
+            self._table, bank_member_id=bank_member_id, signal_id=signal_id
+        )
 
     def get_bank_member_signals_to_process(
         self, signal_type: t.Type[SignalType], limit: int = 100
@@ -595,3 +603,29 @@ class BanksTable:
                 Limit=limit,
             )["Items"]
         ]
+
+    def get_signals_for_bank_member(
+        self, bank_member_id: str
+    ) -> t.List[BankMemberSignal]:
+        return [
+            BankMemberSignal.from_dynamodb_item(item)
+            for item in self._table.query(
+                KeyConditionExpression=Key("PK").eq(
+                    BankMemberSignal.get_pk(bank_member_id=bank_member_id)
+                )
+            )["Items"]
+        ]
+
+    def get_bank_member(self, bank_member_id: str) -> BankMember:
+        member_keys = self._table.query(
+            IndexName=BankMember.BANK_MEMBER_ID_INDEX,
+            KeyConditionExpression=Key(
+                BankMember.BANK_MEMBER_ID_INDEX_BANK_MEMBER_ID
+            ).eq(bank_member_id),
+        )["Items"][0]
+
+        return BankMember.from_dynamodb_item(
+            self._table.get_item(
+                Key={"PK": member_keys["PK"], "SK": member_keys["SK"]}
+            )["Item"]
+        )

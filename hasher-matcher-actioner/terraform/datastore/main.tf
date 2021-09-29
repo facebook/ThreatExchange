@@ -118,6 +118,11 @@ resource "aws_dynamodb_table" "hma_banks" {
     type = "S"
   }
 
+  attribute {
+    name = "BankMemberIdIndex-BankMemberId"
+    type = "S"
+  }
+
   tags = merge(
     var.additional_tags,
     {
@@ -141,5 +146,11 @@ resource "aws_dynamodb_table" "hma_banks" {
     hash_key        = "PendingBankMemberSignalIndex-SignalType"
     range_key       = "PendingBankMemberSignalIndex-UpdatedAt"
     projection_type = "ALL"
+  }
+
+  global_secondary_index {
+    name            = "BankMemberIdIndex"
+    hash_key        = "BankMemberIdIndex-BankMemberId"
+    projection_type = "KEYS_ONLY"
   }
 }

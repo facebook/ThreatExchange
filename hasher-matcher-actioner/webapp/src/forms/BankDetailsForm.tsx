@@ -61,7 +61,7 @@ export default function BankDetailsForm({
   };
 
   return (
-    <Form onSubmit={innerHandleSubmit}>
+    <Form className="hma-themed-form" onSubmit={innerHandleSubmit}>
       <Form.Group className="mb-3 mt-4">
         <Form.Label htmlFor="bankName">Bank Name</Form.Label>
         <Form.Control
@@ -81,9 +81,10 @@ export default function BankDetailsForm({
         ) : null}
       </Form.Group>
       <Form.Group className="mb-3">
-        <Form.Label htmlFor="bankDescription">
-          Bank Description. Help others understand what this bank is for.
-        </Form.Label>
+        <Form.Label htmlFor="bankDescription">Bank Description</Form.Label>
+        <Form.Text className="text-muted">
+          Help others understand what this bank is for.
+        </Form.Text>
         <Form.Control
           id="bankDescription"
           as="textarea"
