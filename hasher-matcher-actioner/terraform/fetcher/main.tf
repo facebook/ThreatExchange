@@ -1,16 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-terraform {
-  required_providers {
-    aws = "~> 3.0"
-  }
-}
-
-provider "aws" {
-  region  = var.region
-  profile = var.profile
-}
-
 ### Lambda for fetcher ###
 
 data "aws_iam_policy_document" "lambda_assume_role" {

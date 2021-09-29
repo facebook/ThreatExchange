@@ -1,16 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-terraform {
-  required_providers {
-    aws = "~> 3.0"
-  }
-}
-
-provider "aws" {
-  region  = var.region
-  profile = var.profile
-}
-
 resource "aws_s3_bucket_public_access_block" "data_bucket" {
   bucket = var.data_bucket.bucket_name
 
