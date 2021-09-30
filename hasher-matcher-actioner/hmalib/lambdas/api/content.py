@@ -123,7 +123,7 @@ def get_content_api(
         preview it.
         """
         content_object = t.cast(ContentObject, content_object)
-
+        preview_url = ""
         if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
             source = S3BucketContentSource(image_bucket, image_prefix)
 
@@ -132,6 +132,8 @@ def get_content_api(
             )
         elif content_object.content_ref_type == ContentRefType.URL:
             preview_url = content_object.content_ref
+        if not preview_url:
+            return bottle.abort(400, "preview_url not found.")
         return preview_url
 
     # A prefix to all routes must be provided by the api_root app
