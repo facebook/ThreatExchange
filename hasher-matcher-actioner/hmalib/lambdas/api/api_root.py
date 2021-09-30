@@ -79,6 +79,7 @@ def error500(e):
 
 
 @app.get("/")
+@app.get("/root/")
 def root():
     """
     root endpoint to make sure the API is live and check when it was last updated
