@@ -2,7 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React from 'react';
+import React, {useState} from 'react';
+import {Modal, Container, Row, Col, Form, Button} from 'react-bootstrap';
 import {NavLink} from 'react-router-dom';
 import {Auth} from 'aws-amplify';
 import './styles/_sidebar.scss';
@@ -14,6 +15,8 @@ type SidebarProps = {
 export default function Sidebar(
   {className}: SidebarProps = {className: 'sidebar'},
 ): JSX.Element {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   return (
     <div className={`${className} d-flex flex-column`}>
       <div className="px-2 pt-2 pb-4Right">
@@ -68,11 +71,34 @@ export default function Sidebar(
           </NavLink>
         </li>
         <li className="nav-item">
-          <a className="nav-link px-2" onClick={() => Auth.signOut()} href="/">
+          <Button
+            variant="link"
+            className="nav-link px-1"
+            onClick={() => setShowLogoutModal(true)}>
             Sign Out
-          </a>
+          </Button>
         </li>
       </ul>
+      <Modal show={showLogoutModal} size="lg" centered>
+        <Modal.Header closeButton onHide={() => setShowLogoutModal(false)}>
+          <Modal.Title>Logout</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Container>
+            <Row>
+              <Col>
+                <p>Are you sure you want to sign out?</p>
+                <Button
+                  variant="primary"
+                  onClick={() => Auth.signOut()}
+                  href="/">
+                  Yes. Sign me out.
+                </Button>
+              </Col>
+            </Row>
+          </Container>
+        </Modal.Body>
+      </Modal>
     </div>
   );
 }
