@@ -51,11 +51,11 @@ class HasherMatcherActionerAPI:
     def _get_request_url(self, api_path: str) -> str:
         return urljoin(self.api_url, api_path)
 
-    def get(self, api_path: str = ""):
+    def get(self, api_path: str = "root/"):
         response = self.session.get(self._get_request_url(api_path))
         return response.json()
 
-    def get_all_matches(self, api_path: str = "/matches/"):
+    def get_all_matches(self, api_path: str = "matches/"):
         response = self.session.get(self._get_request_url(api_path))
         response.raise_for_status()
         return response.json().get("match_summaries", [])
@@ -72,7 +72,7 @@ class HasherMatcherActionerAPI:
             "additional_fields": additional_fields,
             "content_bytes": b64_file_contents,
         }
-        api_path: str = "/submit/bytes/"
+        api_path: str = "submit/bytes/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode("utf-8"),
@@ -91,7 +91,7 @@ class HasherMatcherActionerAPI:
             "additional_fields": additional_fields,
             "file_type": "image/jpeg",
         }
-        api_path: str = "/submit/put-url/"
+        api_path: str = "submit/put-url/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
@@ -123,7 +123,7 @@ class HasherMatcherActionerAPI:
             "additional_fields": additional_fields,
             "content_url": url,
         }
-        api_path: str = "/submit/url/"
+        api_path: str = "submit/url/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
@@ -150,7 +150,7 @@ class HasherMatcherActionerAPI:
             "signal_type": signal_type,
             "content_url": url,
         }
-        api_path: str = "/submit/hash/"
+        api_path: str = "submit/hash/"
         response = self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
@@ -160,7 +160,7 @@ class HasherMatcherActionerAPI:
     def get_content_hash_details(
         self,
         content_id: str,
-        api_path: str = "/content/hash/",
+        api_path: str = "content/hash/",
     ):
         return self.session.get(
             self._get_request_url(api_path),
@@ -170,7 +170,7 @@ class HasherMatcherActionerAPI:
     def get_content_action_history(
         self,
         content_id: str,
-        api_path: str = "/content/action-history/",
+        api_path: str = "content/action-history/",
     ):
         response = self.session.get(
             self._get_request_url(api_path),
@@ -181,7 +181,7 @@ class HasherMatcherActionerAPI:
     def get_content_matches(
         self,
         content_id: str,
-        api_path: str = "/matches/match/",
+        api_path: str = "matches/match/",
     ):
         response = self.session.get(
             self._get_request_url(api_path),
@@ -191,7 +191,7 @@ class HasherMatcherActionerAPI:
 
     def get_dataset_configs(
         self,
-        api_path: str = "/datasets/",
+        api_path: str = "datasets/",
     ):
         response = self.session.get(self._get_request_url(api_path))
         return response.json().get("threat_exchange_datasets", [])
@@ -204,7 +204,7 @@ class HasherMatcherActionerAPI:
         matcher_active: bool = True,
         fetcher_active: bool = False,
         write_back: bool = False,
-        api_path: str = "/datasets/create",
+        api_path: str = "datasets/create",
     ):
         payload = {
             "privacy_group_id": privacy_group_id,
@@ -221,7 +221,7 @@ class HasherMatcherActionerAPI:
 
     def get_actions(
         self,
-        api_path: str = "/actions/",
+        api_path: str = "actions/",
     ):
         response = self.session.get(self._get_request_url(api_path))
         return response.json().get("actions_response", [])
@@ -231,7 +231,7 @@ class HasherMatcherActionerAPI:
         name: str,
         config_subtype: str,
         fields: t.Dict[str, t.Any],
-        api_path: str = "/actions/",
+        api_path: str = "actions/",
     ):
         payload = {
             "name": name,
@@ -246,13 +246,13 @@ class HasherMatcherActionerAPI:
     def delete_action(
         self,
         action_name: str,
-        api_path: str = "/actions/",
+        api_path: str = "actions/",
     ):
         self.session.delete(self._get_request_url(api_path + action_name))
 
     def get_action_rules(
         self,
-        api_path: str = "/action-rules/",
+        api_path: str = "action-rules/",
     ):
         response = self.session.get(self._get_request_url(api_path))
         return response.json().get("action_rules", [])
@@ -260,7 +260,7 @@ class HasherMatcherActionerAPI:
     def create_action_rule(
         self,
         action_rule: t.Any,
-        api_path: str = "/action-rules/",
+        api_path: str = "action-rules/",
     ):
         payload = {
             "action_rule": action_rule,
@@ -273,7 +273,7 @@ class HasherMatcherActionerAPI:
     def delete_action_rule(
         self,
         action_rule_name: str,
-        api_path: str = "/action-rules/",
+        api_path: str = "action-rules/",
     ):
         self.session.delete(self._get_request_url(api_path + action_rule_name))
 
@@ -281,7 +281,7 @@ class HasherMatcherActionerAPI:
         self,
         signal_type: str,
         signal_value: str,
-        api_path: str = "/matches/for-hash/",
+        api_path: str = "matches/for-hash/",
     ):
         params = {
             "signal_type": signal_type,
@@ -421,7 +421,6 @@ if __name__ == "__main__":
     tf_outputs = get_terraform_outputs()
 
     api_url = tf_outputs["api_url"]
-
     token = get_auth_from_env()
 
     api = HasherMatcherActionerAPI(
