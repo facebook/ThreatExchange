@@ -1,5 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+
+data "aws_region" "current" {}
+
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
     effect  = "Allow"
@@ -168,7 +171,7 @@ resource "aws_iam_role_policy_attachment" "api_root" {
 # Authorizer API Lambda
 
 locals {
-  user_pool_url = "https://cognito-idp.${var.region}.amazonaws.com/${var.api_and_webapp_user_pool_id}"
+  user_pool_url = "https://cognito-idp.${data.aws_region.current.name}.amazonaws.com/${var.api_and_webapp_user_pool_id}"
 }
 
 resource "aws_lambda_function" "api_auth" {
