@@ -154,3 +154,17 @@ def jsoninator(
             return json.dumps(body.to_json())
 
         return wrapper
+
+
+class SubApp(bottle.Bottle):
+    def __init__(self):
+        super(SubApp, self).__init__()
+        self.add_hook("after_request", SubApp.enable_cors_after_request_hook)
+
+    @staticmethod
+    def enable_cors_after_request_hook():
+        """
+        This executes after every route. We use it to attach CORS headers when
+        applicable.
+        """
+        bottle.response.headers["Access-Control-Allow-Origin"] = "*"

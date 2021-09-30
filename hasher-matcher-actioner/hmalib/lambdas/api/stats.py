@@ -12,7 +12,11 @@ from hmalib import metrics
 from hmalib.metrics import query as metrics_query
 from hmalib.metrics.query import is_publishing_metrics
 
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    SubApp,
+)
 
 logger = get_logger(__name__)
 
@@ -55,7 +59,7 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
 
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/stats/'
-    stats_api = bottle.Bottle()
+    stats_api = SubApp()
 
     stat_name_to_metric = {
         "hashes": metrics.names.pdq_hasher_lambda.hash,

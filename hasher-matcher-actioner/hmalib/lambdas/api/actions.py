@@ -3,7 +3,12 @@
 import bottle
 import typing as t
 from dataclasses import dataclass, asdict
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+    SubApp,
+)
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.configs.actioner import ActionPerformer
@@ -58,7 +63,7 @@ class DeleteActionResponse(JSONifiable):
 
 def get_actions_api(hma_config_table: str) -> bottle.Bottle:
     # The documentation below expects prefix to be '/actions/'
-    actions_api = bottle.Bottle()
+    actions_api = SubApp()
     HMAConfig.initialize(hma_config_table)
 
     @actions_api.get("/", apply=[jsoninator])
