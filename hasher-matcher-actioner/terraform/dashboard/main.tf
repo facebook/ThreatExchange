@@ -1,5 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+data "aws_region" "current" {}
+
 locals {
   title_glance = jsonencode({
     height = 1,
@@ -39,7 +41,7 @@ locals {
 
   pipeline_lambdas_widgets = [for lambda in var.pipeline_lambdas : templatefile(
     "${path.module}/lambda_widget.tpl", {
-      region = var.region, lambda_name = lambda[1], lambda_title = lambda[0]
+      region = data.aws_region.current.name, lambda_name = lambda[1], lambda_title = lambda[0]
     }
   )]
 
@@ -48,7 +50,7 @@ locals {
     type  = "metric"
     properties = {
       title  = "${queue[0]}: Age of Oldest Item"
-      region = "${var.region}"
+      region = "${data.aws_region.current.name}"
       period = 60
       stat   = "Maximum"
       metrics = [
@@ -71,7 +73,7 @@ locals {
     type  = "metric"
     properties = {
       title   = "Total Concurrent λ Executions"
-      region  = "${var.region}"
+      region  = "${data.aws_region.current.name}"
       stacked = true
       stat    = "Maximum"
       period  = 60
@@ -91,7 +93,7 @@ locals {
         [".", "Throttles", ".", ".", { color = "#ff9896", label = "Throttles" }]
       ],
       period  = 60,
-      region  = "${var.region}",
+      region  = "${data.aws_region.current.name}",
       stat    = "Sum",
       title   = "API Requests & λ Concurrency ",
       view    = "timeSeries",
@@ -113,7 +115,7 @@ locals {
         [".", "Throttles", ".", ".", { color = "#ff9896", label = "Throttles" }]
       ],
       period  = 60,
-      region  = "${var.region}",
+      region  = "${data.aws_region.current.name}",
       stat    = "Sum",
       title   = "Auth Requests & λ Concurrency ",
       view    = "timeSeries",
@@ -131,7 +133,7 @@ locals {
         ["...", { color = "#ff7f0e", label = "Av", stat = "Average", yAxis = "right" }]
       ],
       period  = 60,
-      region  = "${var.region}",
+      region  = "${data.aws_region.current.name}",
       stat    = "Sum",
       title   = "API Response Times (p90 and avg)",
       view    = "timeSeries",
@@ -151,7 +153,7 @@ locals {
         [".", "Count", ".", ".", ".", ".", { id = "m3", label = "Requests" }]
       ],
       period  = 60,
-      region  = "${var.region}"
+      region  = "${data.aws_region.current.name}"
       stat    = "Sum",
       title   = "API Request Volume and %age 4xx, 5xx",
       view    = "timeSeries",
@@ -171,7 +173,7 @@ locals {
     period = 60
     properties = {
       title  = "Read/Write Capacity Units Utilized",
-      region = "${var.region}",
+      region = "${data.aws_region.current.name}",
       period = 60
       stat   = "Sum",
       metrics = [
@@ -190,7 +192,7 @@ locals {
     type  = "metric"
     properties = {
       title  = "Errors, Throttles &amp; Conflicts",
-      region = "${var.region}",
+      region = "${data.aws_region.current.name}",
       period = 60
       stat   = "Sum",
       metrics = [
