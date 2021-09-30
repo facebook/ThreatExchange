@@ -8,7 +8,12 @@ from botocore.exceptions import ClientError
 from bottle import response
 from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+    SubApp,
+)
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.configs.evaluator import ActionRule
@@ -49,7 +54,7 @@ def handle_unexpected_error(e: Exception):
 
 def get_action_rules_api(hma_config_table: str) -> bottle.Bottle:
     # The endpoints below imply a prefix of '/action-rules'
-    action_rules_api = bottle.Bottle()
+    action_rules_api = SubApp()
     HMAConfig.initialize(hma_config_table)
 
     @action_rules_api.get("/", apply=[jsoninator])

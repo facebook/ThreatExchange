@@ -16,7 +16,12 @@ from hmalib.common.threatexchange_config import (
     create_privacy_group_if_not_exists,
 )
 
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+    SubApp,
+)
 
 
 @dataclass
@@ -225,7 +230,7 @@ def get_datasets_api(
     ToDo / FixMe: this file is probably more about privacy groups than datasets...
     """
     # The documentation below expects prefix to be '/datasets/'
-    datasets_api = bottle.Bottle()
+    datasets_api = SubApp()
     HMAConfig.initialize(hma_config_table)
 
     @datasets_api.get("/", apply=[jsoninator])

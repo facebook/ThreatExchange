@@ -14,7 +14,12 @@ import typing as t
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.content_type.content_base import ContentType
 
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+    SubApp,
+)
 from hmalib.common.models.pipeline import MatchRecord, PipelineHashRecord
 from hmalib.common.models.content import (
     ContentObject,
@@ -131,7 +136,7 @@ def get_content_api(
 
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/content/'
-    content_api = bottle.Bottle()
+    content_api = SubApp()
 
     @content_api.get("/", apply=[jsoninator])
     def content() -> t.Optional[ContentObject]:

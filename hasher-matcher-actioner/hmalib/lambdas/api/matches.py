@@ -33,6 +33,7 @@ from hmalib.lambdas.api.middleware import (
     jsoninator,
     JSONifiable,
     DictParseable,
+    SubApp,
 )
 from hmalib.common.config import HMAConfig
 from hmalib.matchers.matchers_base import Matcher
@@ -235,7 +236,7 @@ def get_matches_api(
 
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/matches/'
-    matches_api = bottle.Bottle()
+    matches_api = SubApp()
     HMAConfig.initialize(hma_config_table)
 
     @matches_api.get("/", apply=[jsoninator])
