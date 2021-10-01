@@ -82,6 +82,12 @@ variable "set_sqs_windows_to_min" {
   default     = false
 }
 
+variable "api_in_vpc" {
+  description = "Instead of the usual API establish a private one in a VPC."
+  type        = bool
+  default     = false
+}
+
 variable "partner_image_buckets" {
   description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
   type = list(object({
