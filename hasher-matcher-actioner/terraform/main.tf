@@ -49,10 +49,6 @@ resource "aws_dynamodb_table" "config_table" {
     }
   )
 
-  # TODO(dcallies) allow creation of initial configs
-  # provisioner "local-exec" {
-  #  command = "python3 ../scripts/populate_config_db ${var.collab_file} ${aws_dynamodb_table.threatexchange_config.name}"
-  # }
 }
 
 locals {
@@ -141,7 +137,6 @@ module "fetcher" {
     bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
     data_folder = local.te_data_folder
   }
-  collab_file = var.collab_file
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)

@@ -48,11 +48,6 @@ variable "fetch_frequency" {
   type        = string
 }
 
-variable "collab_file" {
-  description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
-  type        = string
-}
-
 variable "te_api_token_secret" {
   description = "The aws secret where the ThreatExchange API token is stored"
   type = object({

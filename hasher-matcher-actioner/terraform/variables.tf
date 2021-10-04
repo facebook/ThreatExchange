@@ -58,12 +58,6 @@ variable "fetch_frequency" {
   default     = "15 minutes"
 }
 
-variable "collab_file" {
-  description = "An optional file name of ThreatExchange Collaborations objects to prepopulate. See collabs_example.json for the correct formatting"
-  type        = string
-  default     = "collabs_example.json"
-}
-
 variable "use_shared_user_pool" {
   description = "Indicates if the web app and api will use a shared user pool (generally true for developers / engineers sandbox environments, otherwise false)"
   type        = bool
