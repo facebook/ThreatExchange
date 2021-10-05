@@ -157,8 +157,8 @@ def jsoninator(
 
 
 class SubApp(bottle.Bottle):
-    def __init__(self):
-        super(SubApp, self).__init__()
+    def __init__(self, **kwargs):
+        super(SubApp, self).__init__(**kwargs)
         self.add_hook("after_request", SubApp.enable_cors_in_response_header)
 
     def default_error_handler(self, res):
