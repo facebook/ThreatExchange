@@ -2,7 +2,7 @@
 
 ![image](https://user-images.githubusercontent.com/1654004/111525752-2d5f0200-871b-11eb-9239-98dffecaa45e.png)
 
-HMA is a prototype reference architecture for rapidly spinning up a complete solution for integrating with ThreatExchange datasets and evaluating content against them. The goal is to make it possible to spin up an instance with the minimum number of commands, and be able to run at a reasonable scale without customization. 
+HMA is a prototype reference architecture for rapidly spinning up a complete solution for integrating with ThreatExchange datasets and evaluating content against them. The goal is to make it possible to spin up an instance with the minimum number of commands, and be able to run at a reasonable scale without customization.
 
 The name "hasher, matcher, actioner" refers to the process by which new content is evaluated against banks of known content. First content is hashed into intermediate representations ("Hashes" or "Signals"), then it is matched against an index of known content, and then some action is taken as a result, such as counting the hits, or enqueuing for human review.
 
@@ -47,17 +47,6 @@ To visit your deployed UI, you'll need to get the static URL for the s3 bucket. 
 5. Visit the URL from your browser. You should be prompted for the account you created from the Authentification step
 ![image](https://user-images.githubusercontent.com/1654004/112202142-49a4e800-8bce-11eb-8ed9-8375e77fe8e1.png)
 6. After entering your information, you should see the landing page of the UI
-
-
-
-## Demonstrating HMA From the Instance
-This section needs more details, and will somday have a demo video. 
-
-The too-few-details-to-be-useful version of this is:
-1. Copy state files from a run of the `python-threatexchange` CLI to the appropriate s3 bucket
-2. Add an SNS subcription (i.e. email) on completion of a match lambda
-3. Upload test photos to the appropriate s3 bucket
-4. Hopefully get a notification from step #2
 
 # Contributing to HMA
 For current contributing guidance, please see [CONTRIBUTING.md](CONTRIBUTING.md).
