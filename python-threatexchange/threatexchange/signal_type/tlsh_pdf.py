@@ -9,13 +9,6 @@ import pathlib
 import typing as t
 import warnings
 from io import StringIO
-import tlsh
-from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
-from pdfminer.pdfdocument import PDFDocument
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-from pdfminer.pdfpage import PDFPage
-from pdfminer.pdfparser import PDFParser
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base
@@ -53,6 +46,21 @@ class TLSHSignal(
         if not str(file).endswith(".pdf"):
             warnings.warn("File does not appear to be a pdf. ", category=UserWarning)
             return ""
+
+        try:
+            import tlsh
+            from pdfminer.converter import TextConverter
+            from pdfminer.layout import LAParams
+            from pdfminer.pdfdocument import PDFDocument
+            from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+            from pdfminer.pdfpage import PDFPage
+            from pdfminer.pdfparser import PDFParser
+        except:
+            warnings.warn(
+                "Getting the tlsh hash of a pdf requires additional libraries already be installed; install threatexchange with the [pdf] extra",
+                category=UserWarning,
+            )
+            return ""
         text = StringIO()
         with open(file, "rb") as in_file:
             parser = PDFParser(in_file)
@@ -66,6 +74,14 @@ class TLSHSignal(
 
     def match_hash(self, signal_str: str) -> t.List[signal_base.SignalMatch]:
         matches = []
+        try:
+            import tlsh
+        except:
+            warnings.warn(
+                "Matching a tlsh hash requires additional libraries already be installed; install threatexchange with the [pdf] extra",
+                category=UserWarning,
+            )
+            return []
         if len(signal_str) == EXPECT_TLSH_HASH_LENGTH:
             for x in TEMP_MATCH_IMPLEMNTATION_CHECK_DB:
                 if tlsh.diffxlen(x[0], signal_str) <= TLSH_CONFIDENT_MATCH_THRESHOLD:

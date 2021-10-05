@@ -49,7 +49,7 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
                 "Getting both PDQ hash and text of an image file using OCR requires additional libraries already be installed; install threatexchange with the [pdq_hasher & ocr] extra and see ocr_utils.py",
                 category=UserWarning,
             )
-            return []
+            return ""
 
         pdq_hash, quality = pdq_from_file(file)
         ocr_text = text_from_image_file(file)
