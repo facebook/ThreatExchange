@@ -105,6 +105,8 @@ def lambda_handler(event, context):
     2. Platforms can connect their AWS S3 Buckets directly to HMA so that uploads to those buckets are
     fed directly into the system. When an upload occurs, this lambda is invoked with an s3 event. We then
     convert the event into a URL which we submit to the hasher (via SNS)
+
+    TODO refactor #2 to its own lambda that handles more general sqs events
     """
     if is_s3_event(event):
         logger.info(

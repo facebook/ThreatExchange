@@ -43,3 +43,7 @@ dev_test_instance:
 
 dev_clear_configs:
 	-rm terraform/terraform.tfvars terraform/backend.tf
+
+dev_apply_with_newest_docker_image:
+	@DIGEST=$(call shell-or-die, aws ecr describe-images --repository-name hma-lambda-dev --image-ids imageTag=${USER} | jq -r '.imageDetails[0].imageDigest'); \
+	terraform -chdir=terraform apply -var "hma_lambda_docker_uri=${DOCKER_URI}@$${DIGEST}"

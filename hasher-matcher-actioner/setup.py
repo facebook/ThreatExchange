@@ -23,11 +23,11 @@ setup(
     install_requires=[
         "boto3",
         "boto3-stubs[essential,sns]==1.17.14.0",
-        "threatexchange[faiss,pdq_hasher]>=0.0.23",
+        "threatexchange[faiss,pdq_hasher]>=0.0.25",
         "bottle",
         "apig_wsgi",
         "pyjwt[crypto]==2.1.0",
-        "requests==2.25.1",
+        "requests>=2.25.1",
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["hmacli = hmalib.scripts.cli.main:main"]},
