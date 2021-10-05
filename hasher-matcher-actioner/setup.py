@@ -27,7 +27,7 @@ setup(
         "bottle",
         "apig_wsgi",
         "pyjwt[crypto]==2.1.0",
-        "requests==2.25.1",
+        "requests>=2.25.1",
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["hmacli = hmalib.scripts.cli.main:main"]},
