@@ -389,7 +389,7 @@ resource "aws_lambda_permission" "apigw_lambda" {
   principal     = "apigateway.amazonaws.com"
 
   # More: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-control-access-using-iam-policies-to-invoke-api.html
-  source_arn = "arn:aws:execute-api:${var.region}:${local.account_id}:${aws_api_gateway_rest_api.hma_api_gw.id}/*/${aws_api_gateway_method.hma_api_gw.http_method}${aws_api_gateway_resource.hma_api_gw.path}"
+  source_arn = "arn:aws:execute-api:${data.aws_region.current.name}:${local.account_id}:${aws_api_gateway_rest_api.hma_api_gw.id}/*/${aws_api_gateway_method.hma_api_gw.http_method}${aws_api_gateway_resource.hma_api_gw.path}"
 }
 
 resource "aws_api_gateway_method" "cors" {
