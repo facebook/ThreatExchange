@@ -37,6 +37,10 @@ The devcontainer provides all the tools you need to build and hack on HMA. Inclu
 
     Run `sudo chown $(whoami):developers /var/run/docker.sock` in a VS Code integrated terminal. (`[Cmd]+[Shift]+[P]` "Terminal: Create new integrated terminal...")
 
+
+2. **Building webapp taking too long..**
+    If you see sustained 100% CPU when running `npm install|start|build` within the webapp directory, you might need to provide more memory and CPU to the docker desktop app. We recommend atleast 4GB of RAM and 2CPUs.
+
 ## Developing HMA
 
 We have built out some tooling that relies on Visual Studio Code. [Install](https://code.visualstudio.com/) VS Code to con
