@@ -1,7 +1,6 @@
-Getting Started with Contributing
+# Getting Started
 
-In its rough state, the prototype needs some prior configuration / setup before you are ready to start developing on it. Below are some steps and tips for getting started. If anything needs correction, PRs are always welcome.
-
+You need some prior configuration / setup before you are ready to start developing on it. Below are some steps and tips for getting started. If anything needs correction, PRs are always welcome.
 ## Prerequisites
 
 In the prototype's current state, the following tools are prerequisites to deploying the HMA prototype.
@@ -18,6 +17,33 @@ Additionally, if you want to make use of the provided scripts for doing things l
 Beyond tooling you need to have access to an AWS account where the various resources defined in the terraform files here will be created. You will want to either have your AWS credentials either in your environment or in a centralized credentials file. (See the [aws terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication) for more information on these credentials) 
 
 > **WARNING** `apply`ing these terraform files to your AWS account will result in resources being created that may be billed to your account.
+
+## Automated Development Environment
+
+If you are using [VS Code](https://code.visualstudio.com/), and we recommend you do, you can use the Devcontainer technology to get started real quick and have a great developer experience. 
+1. Download VS Code from the link.
+2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) on your computer. 
+3. Install the [remote containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
+4. Use `[Cmd]+[Shift]+[P]` inside VS Code and choose "Remote-Containers: Open folder in container ..." and navigate to the directory containing this file.
+
+The first time may take a while because images need to be built. Subsequently, opening the container will be blazing fast. 5-10 seconds on a 2019 MacBook Pro.
+
+The devcontainer provides all the tools you need to build and hack on HMA. Including python, docker, make, and Typescript tooling.
+
+### Common Errors and how to correct them
+
+1. **Can't connect to docker...**
+    > Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get http://%2Fvar%2Frun%2Fdocker.sock/v1.24/images/json: dial unix /var/run/docker.sock: connect: permission denied
+
+    Run `sudo chown $(whoami):developers /var/run/docker.sock` in a VS Code integrated terminal. (`[Cmd]+[Shift]+[P]` "Terminal: Create new integrated terminal...")
+
+
+2. **Building webapp taking too long..**
+    If you see sustained 100% CPU when running `npm install|start|build` within the webapp directory, you might need to provide more memory and CPU to the docker desktop app. We recommend atleast 4GB of RAM and 2CPUs.
+
+## Developing HMA
+
+We have built out some tooling that relies on Visual Studio Code. [Install](https://code.visualstudio.com/) VS Code to con
 
 ## Building the Docker Lambda Image
 
