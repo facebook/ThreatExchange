@@ -24,6 +24,9 @@ If you are using [VS Code](https://code.visualstudio.com/), and we recommend you
 1. Download VS Code from the link.
 2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) on your computer. 
 3. Install the [remote containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
+
+    Create `.hma-cmdhist` directory in your home directory. Use `$ mkdir -p ~/.hma-cmdhist` or equivalent for your OS.
+
 4. Use `[Cmd]+[Shift]+[P]` inside VS Code and choose "Remote-Containers: Open folder in container ..." and navigate to the directory containing this file.
 
 The first time may take a while because images need to be built. Subsequently, opening the container will be blazing fast. 5-10 seconds on a 2019 MacBook Pro.
