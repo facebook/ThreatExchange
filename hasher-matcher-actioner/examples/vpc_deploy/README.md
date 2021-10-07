@@ -8,7 +8,7 @@ Just like the main terraform folder you will need `backend.tf` and `terraform.tf
 
 example `backend.tf`
 
-```json
+```HCL
 terraform {
   backend "s3" {
     bucket         = "<your-project>-tf-state"
@@ -21,7 +21,7 @@ terraform {
 
 example `terraform.tfvars`
 
-```json
+```HCL
 prefix = "<prefix>"
 ```
 

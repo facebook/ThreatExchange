@@ -4,9 +4,14 @@ hma_lambda_docker_uri = # DOCKER_IMAGE_URI
 prefix = # ENVIRONMENT_PREFIX
 organization = # a name or acronym for your organization (use only lower case alpha a-z, and, optionally, hyphens)
 log_retention_in_days = # DAYS to retain logs
-include_cloudfront_distribution = true
+include_cloudfront_distribution = false
 te_api_token = "<threat-exchange-api-token>"
 use_shared_user_pool = false # if true, run terraform apply from /authentication-shared terraform and use its outputs for webapp_and_api_shared_user_pool_id and webapp_and_api_shared_user_pool_client_id
 webapp_and_api_shared_user_pool_id = # "<webapp_and_api_shared_user_pool_id>" output when terraform apply is run from /authentication-shared directory
 webapp_and_api_shared_user_pool_client_id = # "<webapp_and_api_shared_user_pool_client_id>" output when terraform apply is run from /authentication-shared directory
 integration_api_access_tokens             = # Optional_list_of_tokens e.g. ['<super_secret_token1>']
+
+api_in_vpc = false 
+vpc_id = "" # required to be nonempty if api_in_vpc = true. Note VPC must be in the same region that HMA is deployed in.
+vpc_subnets = [] # required to be nonempty if api_in_vpc = true
+security_groups = [] # required to be nonempty if api_in_vpc = true

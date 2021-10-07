@@ -270,7 +270,7 @@ data "aws_iam_policy_document" "apigateway_assume_role" {
 resource "aws_api_gateway_rest_api" "hma_api_gw" {
   name = "${var.prefix}_hma_api_gw"
   endpoint_configuration {
-    types            = var.vpc_id != "" ? ["PRIVATE"] : ["REGIONAL"]
+    types            = var.api_in_vpc ? ["PRIVATE"] : ["REGIONAL"]
     vpc_endpoint_ids = length(aws_vpc_endpoint.vpce) > 0 ? aws_vpc_endpoint.vpce[*].id : null
   }
   policy             = length(data.aws_iam_policy_document.hma_api_gw_in_vpc) > 0 ? data.aws_iam_policy_document.hma_api_gw_in_vpc[0].json : null
@@ -450,7 +450,7 @@ data "aws_vpc_endpoint_service" "vpc_service" {
 }
 
 resource "aws_vpc_endpoint" "vpce" {
-  count               = var.vpc_id != "" ? 1 : 0
+  count               = var.api_in_vpc ? 1 : 0
   vpc_id              = var.vpc_id
   service_name        = data.aws_vpc_endpoint_service.vpc_service.service_name
   vpc_endpoint_type   = "Interface"
@@ -461,12 +461,12 @@ resource "aws_vpc_endpoint" "vpce" {
 }
 
 resource "aws_api_gateway_rest_api_policy" "hma_api_gw" {
-  count       = var.vpc_id != "" ? 1 : 0
+  count       = var.api_in_vpc ? 1 : 0
   rest_api_id = aws_api_gateway_rest_api.hma_api_gw.id
   policy      = data.aws_iam_policy_document.hma_api_gw_in_vpc[0].json
 }
 data "aws_iam_policy_document" "hma_api_gw_in_vpc" {
-  count = var.vpc_id != "" ? 1 : 0
+  count = var.api_in_vpc ? 1 : 0
 
   statement {
     effect    = "Allow"
