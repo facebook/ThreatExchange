@@ -82,12 +82,6 @@ variable "set_sqs_windows_to_min" {
   default     = false
 }
 
-variable "api_in_vpc" {
-  description = "Instead of the usual API establish a private one in a VPC."
-  type        = bool
-  default     = false
-}
-
 variable "partner_image_buckets" {
   description = "Names and arns of s3 buckets to consider as inputs to HMA. All images uploaded to these buckets will be processed by the hasher"
   type = list(object({
@@ -121,5 +115,23 @@ variable "integration_api_access_tokens" {
   description = "Access tokens checked for in authorizer api as an alternative to cognito user tokens."
   type        = list(string)
   sensitive   = true
+  default     = []
+}
+
+variable "vpc_id" {
+  description = "Optional vpc that locks down the API and UI to the specfic vpc_subnets and security_groups"
+  type        = string
+  default     = ""
+}
+
+variable "vpc_subnets" {
+  description = "Subnets of the vpc given in for vpc_id"
+  type        = list(string)
+  default     = []
+}
+
+variable "security_groups" {
+  description = "security_groups to be used with the vpc given in for vpc_id"
+  type        = list(string)
   default     = []
 }

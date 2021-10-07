@@ -150,3 +150,21 @@ variable "banks_media_storage" {
     bucket_arn  = string
   })
 }
+
+variable "vpc_id" {
+  description = "Optional vpc that locks down the API and UI to the specfic vpc_subnets and security_groups non empty values will result in the API gateway being private"
+  type        = string
+  default     = ""
+}
+
+variable "vpc_subnets" {
+  description = "Subnets of the vpc given in for vpc_id"
+  type        = list(string)
+  default     = []
+}
+
+variable "security_groups" {
+  description = "Security groups to be used with the vpc given in for vpc_id"
+  type        = list(string)
+  default     = []
+}

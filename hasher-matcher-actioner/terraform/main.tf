@@ -199,7 +199,7 @@ module "webapp" {
   source                          = "./webapp"
   prefix                          = var.prefix
   organization                    = var.organization
-  include_cloudfront_distribution = var.include_cloudfront_distribution && !var.use_shared_user_pool
+  include_cloudfront_distribution = var.include_cloudfront_distribution && !var.use_shared_user_pool && var.vpc_id == ""
 }
 
 /**
@@ -471,6 +471,9 @@ module "api" {
     arn = aws_sqs_queue.submissions_queue.arn
   }
   partner_image_buckets = var.partner_image_buckets
+  vpc_id                = var.vpc_id
+  vpc_subnets           = var.vpc_subnets
+  security_groups       = var.security_groups
 }
 
 # Build and deploy webapp

@@ -270,8 +270,10 @@ data "aws_iam_policy_document" "apigateway_assume_role" {
 resource "aws_api_gateway_rest_api" "hma_api_gw" {
   name = "${var.prefix}_hma_api_gw"
   endpoint_configuration {
-    types = ["REGIONAL"]
+    types            = var.vpc_id != "" ? ["PRIVATE"] : ["REGIONAL"]
+    vpc_endpoint_ids = length(aws_vpc_endpoint.vpce) > 0 ? aws_vpc_endpoint.vpce[*].id : null
   }
+  policy             = length(data.aws_iam_policy_document.hma_api_gw_in_vpc) > 0 ? data.aws_iam_policy_document.hma_api_gw_in_vpc[0].json : null
   binary_media_types = ["*/*"]
 }
 
@@ -436,6 +438,60 @@ resource "aws_api_gateway_integration_response" "cors" {
     "method.response.header.Access-Control-Allow-Origin"  = "'*'",
     "method.response.header.Access-Control-Allow-Headers" = "'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token, Authorization'",
     "method.response.header.Access-Control-Allow-Methods" = "'GET, POST, PUT, DELETE, OPTIONS'", # remove or add methods as needed
+  }
+}
+
+# VPC additions
+data "aws_vpc_endpoint_service" "vpc_service" {
+  service = "execute-api"
+}
+
+resource "aws_vpc_endpoint" "vpce" {
+  count               = var.vpc_id != "" ? 1 : 0
+  vpc_id              = var.vpc_id
+  service_name        = data.aws_vpc_endpoint_service.vpc_service.service_name
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids         = var.vpc_subnets
+  security_group_ids = var.security_groups
+}
+
+resource "aws_api_gateway_rest_api_policy" "hma_api_gw" {
+  count       = var.vpc_id != "" ? 1 : 0
+  rest_api_id = aws_api_gateway_rest_api.hma_api_gw.id
+  policy      = data.aws_iam_policy_document.hma_api_gw_in_vpc[0].json
+}
+data "aws_iam_policy_document" "hma_api_gw_in_vpc" {
+  count = var.vpc_id != "" ? 1 : 0
+
+  statement {
+    effect    = "Allow"
+    actions   = ["execute-api:Invoke"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceVpce"
+      values   = [aws_vpc_endpoint.vpce[count.index].id]
+    }
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+  }
+  statement {
+    effect    = "Deny"
+    actions   = ["execute-api:Invoke"]
+    resources = ["*"]
+    condition {
+      test     = "StringNotEquals"
+      variable = "aws:SourceVpce"
+      values   = [aws_vpc_endpoint.vpce[count.index].id]
+    }
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
   }
 }
 
