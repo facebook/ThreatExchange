@@ -22,7 +22,7 @@ export default function Sidebar(
         </a>
       </div>
       <ul className="navbar-nav mb-auto">
-        <li className="nav-item">
+        {/* <li className="nav-item">
           <NavLink
             exact
             activeClassName="text-white bg-secondary rounded"
@@ -30,7 +30,7 @@ export default function Sidebar(
             className="nav-link px-2">
             Dashboard
           </NavLink>
-        </li>
+        </li> */}
         <li className="nav-item">
           <NavLink
             activeClassName="text-white bg-secondary rounded"

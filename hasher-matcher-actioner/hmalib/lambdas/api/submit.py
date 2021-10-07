@@ -23,7 +23,12 @@ from threatexchange.content_type.meta import (
 )
 
 
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+    SubApp,
+)
 from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.models.content import ContentObject, ContentRefType
 from hmalib.common.logging import get_logger
@@ -249,7 +254,7 @@ def get_submit_api(
 
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/submit/'
-    submit_api = bottle.Bottle()
+    submit_api = SubApp()
     s3_bucket_image_source = S3BucketContentSource(image_bucket, image_prefix)
 
     def _content_exist_error(content_id: str):

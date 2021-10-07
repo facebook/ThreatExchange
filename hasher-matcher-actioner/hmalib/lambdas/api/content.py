@@ -14,7 +14,12 @@ import typing as t
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.content_type.content_base import ContentType
 
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable, DictParseable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    DictParseable,
+    SubApp,
+)
 from hmalib.common.models.pipeline import MatchRecord, PipelineHashRecord
 from hmalib.common.models.content import (
     ContentObject,
@@ -118,7 +123,7 @@ def get_content_api(
         preview it.
         """
         content_object = t.cast(ContentObject, content_object)
-
+        preview_url = ""
         if content_object.content_ref_type == ContentRefType.DEFAULT_S3_BUCKET:
             source = S3BucketContentSource(image_bucket, image_prefix)
 
@@ -127,11 +132,13 @@ def get_content_api(
             )
         elif content_object.content_ref_type == ContentRefType.URL:
             preview_url = content_object.content_ref
+        if not preview_url:
+            return bottle.abort(400, "preview_url not found.")
         return preview_url
 
     # A prefix to all routes must be provided by the api_root app
     # The documentation below expects prefix to be '/content/'
-    content_api = bottle.Bottle()
+    content_api = SubApp()
 
     @content_api.get("/", apply=[jsoninator])
     def content() -> t.Optional[ContentObject]:

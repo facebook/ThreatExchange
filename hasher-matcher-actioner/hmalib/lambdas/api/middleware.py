@@ -154,3 +154,22 @@ def jsoninator(
             return json.dumps(body.to_json())
 
         return wrapper
+
+
+class SubApp(bottle.Bottle):
+    def __init__(self, **kwargs):
+        super(SubApp, self).__init__(**kwargs)
+        self.add_hook("after_request", SubApp.enable_cors_in_response_header)
+
+    def default_error_handler(self, res):
+        logger.error(f"{res}")
+        bottle.response.content_type = "application/json"
+        SubApp.enable_cors_in_response_header()
+        return json.dumps(dict(error=res.body, status_code=res.status_code))
+
+    @staticmethod
+    def enable_cors_in_response_header():
+        """
+        Attach CORS headers when applicable.
+        """
+        bottle.response.headers["Access-Control-Allow-Origin"] = "*"

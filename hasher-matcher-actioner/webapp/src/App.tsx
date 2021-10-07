@@ -64,8 +64,11 @@ export default function App(): JSX.Element {
               <Route path="/banks/">
                 <ViewAllBanks />
               </Route>
-              <Route path="/">
+              <Route path="/dashboard/">
                 <Dashboard />
+              </Route>
+              <Route path="/">
+                <SubmitContent />
               </Route>
             </Switch>
           </main>

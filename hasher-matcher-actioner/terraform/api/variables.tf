@@ -150,3 +150,26 @@ variable "banks_media_storage" {
     bucket_arn  = string
   })
 }
+
+variable "api_in_vpc" {
+  description = "Should the API gateway used with HMA be made private behind a VPC. (Either way API will also require authorization)"
+  type        = bool
+}
+
+variable "vpc_id" {
+  description = "vpc that locks down the API and UI to the specfic vpc_subnets and security_groups. Required if api_in_vpc = true"
+  type        = string
+  default     = ""
+}
+
+variable "vpc_subnets" {
+  description = "Subnet ids of the vpc given in for vpc_id. Required if api_in_vpc = true"
+  type        = list(string)
+  default     = []
+}
+
+variable "security_groups" {
+  description = "Security group ids to be used with the vpc given in for vpc_id. Required if api_in_vpc = true"
+  type        = list(string)
+  default     = []
+}

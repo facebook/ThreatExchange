@@ -18,7 +18,11 @@ from threatexchange.content_type.video import VideoContent
 
 from hmalib.common.models.bank import Bank, BankMember, BanksTable, BankMemberSignal
 from hmalib.banks import bank_operations as bank_ops
-from hmalib.lambdas.api.middleware import jsoninator, JSONifiable
+from hmalib.lambdas.api.middleware import (
+    jsoninator,
+    JSONifiable,
+    SubApp,
+)
 from hmalib.lambdas.api.submit import create_presigned_put_url, create_presigned_url
 
 
@@ -101,7 +105,7 @@ def get_bank_api(
     Closure for dependencies of the bank API
     """
 
-    bank_api = bottle.Bottle()
+    bank_api = SubApp()
     table_manager = BanksTable(table=bank_table)
 
     # Bank Management

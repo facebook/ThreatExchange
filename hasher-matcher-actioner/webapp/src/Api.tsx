@@ -62,14 +62,14 @@ async function apiDelete<T>(route: string, params = {}): Promise<T> {
 type MatchSummaries = {match_summaries: MatchDetails[]};
 
 export async function fetchAllMatches(): Promise<MatchSummaries> {
-  return apiGet('/matches/');
+  return apiGet('matches/');
 }
 
 export async function fetchMatchesFromSignal(
   signalSource: string,
   signalId: string,
 ): Promise<MatchSummaries> {
-  return apiGet('/matches/', {
+  return apiGet('matches/', {
     signal_q: signalId,
     signal_source: signalSource,
   });
@@ -78,7 +78,7 @@ export async function fetchMatchesFromSignal(
 export async function fetchMatchesFromContent(
   contentId: string,
 ): Promise<MatchSummaries> {
-  return apiGet('/matches/', {content_q: contentId});
+  return apiGet('matches/', {content_q: contentId});
 }
 
 export type MatchDetails = {
@@ -100,7 +100,7 @@ export type MatchDetails = {
 type Matches = {match_details: MatchDetails[]};
 
 export async function fetchMatchDetails(contentId: string): Promise<Matches> {
-  return apiGet('/matches/match/', {content_id: contentId});
+  return apiGet('matches/match/', {content_id: contentId});
 }
 
 export type HashDetails = {
@@ -111,13 +111,13 @@ export type HashDetails = {
 export async function fetchHashDetails(
   contentId: string,
 ): Promise<HashDetails> {
-  return apiGet('/content/hash/', {content_id: contentId});
+  return apiGet('content/hash/', {content_id: contentId});
 }
 
 export async function fetchPreviewURL(
   contentId: string,
 ): Promise<{preview_url: string}> {
-  return apiGet('/content/preview-url/', {content_id: contentId});
+  return apiGet('content/preview-url/', {content_id: contentId});
 }
 
 export type ContentActionHistoryRecord = {
@@ -132,7 +132,7 @@ type ContentActionHistoryRecords = {
 export async function fetchContentActionHistory(
   contentId: string,
 ): Promise<ContentActionHistoryRecords> {
-  return apiGet('/content/action-history/', {content_id: contentId});
+  return apiGet('content/action-history/', {content_id: contentId});
 }
 
 export type ContentDetails = {
@@ -152,7 +152,7 @@ export type ContentDetails = {
 export async function fetchContentDetails(
   contentId: string,
 ): Promise<ContentDetails> {
-  return apiGet('/content/', {
+  return apiGet('content/', {
     content_id: contentId,
   });
 }
@@ -170,7 +170,7 @@ type ContentPipelineProgress = {
 export async function fetchContentPipelineProgress(
   contentId: string,
 ): Promise<ContentPipelineProgress> {
-  return apiGet('/content/pipeline-progress/', {
+  return apiGet('content/pipeline-progress/', {
     content_id: contentId,
   });
 }
@@ -178,7 +178,7 @@ export async function fetchContentPipelineProgress(
 export async function fetchDashboardCardSummary(
   path: string,
 ): Promise<Response> {
-  return apiGet(`/${path}`);
+  return apiGet(`${path}`);
 }
 
 export type StatsCard = {
@@ -196,7 +196,7 @@ export async function fetchStats(
   statName: string,
   timeSpan: string,
 ): Promise<StatsResponse> {
-  return apiGet('/stats/', {stat_name: statName, time_span: timeSpan});
+  return apiGet('stats/', {stat_name: statName, time_span: timeSpan});
 }
 
 export async function requestSignalOpinionChange(
@@ -224,7 +224,7 @@ export async function submitContentViaURL(
   contentURL: string,
   forceResubmit: boolean,
 ): Promise<Response> {
-  return apiPost('/submit/url/', {
+  return apiPost('submit/url/', {
     content_id: contentId,
     content_type: contentType,
     additional_fields: additionalFields,
@@ -266,15 +266,15 @@ type DatasetSummariesResponse = {
   threat_exchange_datasets: Array<Dataset>;
 };
 export async function fetchAllDatasets(): Promise<DatasetSummariesResponse> {
-  return apiGet('/datasets/');
+  return apiGet('datasets/');
 }
 
 export async function syncAllDatasets(): Promise<{response: string}> {
-  return apiPost('/datasets/sync');
+  return apiPost('datasets/sync');
 }
 
 export async function deleteDataset(key: string): Promise<{response: string}> {
-  return apiPost(`/datasets/delete/${key}`);
+  return apiPost(`datasets/delete/${key}`);
 }
 
 type Dataset = {
@@ -295,7 +295,7 @@ export async function updateDataset(
   writeBack: boolean,
   matcherActive: boolean,
 ): Promise<Dataset> {
-  return apiPost('/datasets/update', {
+  return apiPost('datasets/update', {
     privacy_group_id: privacyGroupId,
     fetcher_active: fetcherActive,
     write_back: writeBack,
@@ -311,7 +311,7 @@ export async function createDataset(
   writeBack = false,
   matcherActive = true,
 ): Promise<{response: string}> {
-  return apiPost('/datasets/create', {
+  return apiPost('datasets/create', {
     privacy_group_id: privacyGroupId,
     privacy_group_name: privacyGroupName,
     description,
@@ -322,10 +322,8 @@ export async function createDataset(
 }
 
 export async function fetchHashCount(): Promise<Response> {
-  return apiGet('/hash-counts');
+  return apiGet('hash-counts');
 }
-
-// TODO remove the trailing slash from the API URL, then add back the leading slash for /actions/ and /action-rules/ endpoints.
 
 // This class should be kept in sync with python class ActionPerformer (hmalib.common.configs.actioner.ActionPerformer)
 type BackendActionPerformer = {
@@ -559,7 +557,7 @@ export async function fetchMediaUploadURL(
   mediaType: string,
   extension: string,
 ): Promise<MediaUploadURLResponse> {
-  return apiPost<MediaUploadURLResponse>('/banks/get-media-upload-url', {
+  return apiPost<MediaUploadURLResponse>('banks/get-media-upload-url', {
     media_type: mediaType,
     extension,
   });
@@ -572,7 +570,7 @@ export async function addBankMember(
   storageKey: string,
   notes: string,
 ): Promise<BankMember> {
-  return apiPost<BankMemberWithSerializedTypes>(`/banks/add-member/${bankId}`, {
+  return apiPost<BankMemberWithSerializedTypes>(`banks/add-member/${bankId}`, {
     content_type: contentType,
     storage_bucket: storageBucket,
     storage_key: storageKey,
