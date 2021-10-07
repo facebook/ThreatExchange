@@ -310,6 +310,9 @@ resource "aws_api_gateway_integration" "hma_api_gw" {
 }
 
 resource "aws_api_gateway_deployment" "hma_api_gw" {
+  depends_on = [
+    aws_vpc_endpoint.vpce
+  ]
   rest_api_id = aws_api_gateway_rest_api.hma_api_gw.id
   triggers = {
     redeployment = sha1(jsonencode([
