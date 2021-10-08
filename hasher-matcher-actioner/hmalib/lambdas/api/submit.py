@@ -8,6 +8,7 @@ import json
 import datetime
 import dataclasses
 
+from uuid import uuid4
 from enum import Enum
 from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
@@ -15,6 +16,7 @@ from mypy_boto3_sqs import SQSClient
 from botocore.exceptions import ClientError
 import typing as t
 
+from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.content_type.meta import (
@@ -89,6 +91,12 @@ class SubmitRequestBodyBase(DictParseable):
         base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
         base.content_type = get_content_type_for_name(base.content_type)
         return base
+
+
+@dataclass
+class SubmitContents3ObjectRequestBody(SubmitRequestBodyBase):
+    bucket_name: str = ""
+    object_key: str = ""
 
 
 @dataclass
@@ -169,6 +177,55 @@ class SubmitError(JSONifiable):
 
     def to_json(self) -> t.Dict:
         return asdict(self)
+
+
+def submit_content_request_from_s3_object(
+    dynamodb_table: Table,
+    submissions_queue_url: str,
+    bucket: str,
+    key: str,
+    content_id: str = "",
+    content_type: ContentType = PhotoContent,
+    additional_fields: t.Set = set(),
+    force_resubmit: bool = False,
+):
+    """
+    Converts s3 event into a ContentObject and url_submission_message using helpers
+    from submit.py
+
+    For partner bucket uploads, the content IDs are unique and (somewhat) readable but
+    not reversable
+      * uniqueness is provided by uuid4 which has a collision rate of 2^-36
+      * readability is provided by including part of the key in the content id
+      * modifications to the key mean that the original content bucket and key are
+        not derivable from the content ID alone
+
+    The original content (bucket and key) is stored in the reference url which is passed
+    to the webhook via additional_fields
+
+    Q: Why not include full key and bucket in content_id?
+    A: Bucket keys often have "/" which dont work well with ContentDetails UI page
+    """
+
+    readable_key = key.split("/")[-1].replace("?", ".").replace("&", ".")
+    if not content_id:
+        content_id = f"{uuid4()}-{readable_key}"
+
+    presigned_url = create_presigned_url(bucket, key, None, 3600, "get_object")
+    reference_url = f"https://{bucket}.s3.amazonaws.com/{key}"
+    additional_fields.update({f"partner_s3_reference_url:{reference_url}"})
+
+    record_content_submission(
+        dynamodb_table,
+        content_id,
+        content_type,
+        content_ref=presigned_url,
+        content_ref_type=ContentRefType.URL,
+        additional_fields=additional_fields,
+    )
+    send_submission_to_url_queue(
+        dynamodb_table, submissions_queue_url, content_id, content_type, presigned_url
+    )
 
 
 def record_content_submission(
@@ -285,6 +342,28 @@ def get_submit_api(
             else set(),
             force_resubmit=request.force_resubmit,
         )
+
+    @submit_api.post("/s3/", apply=[jsoninator(SubmitContents3ObjectRequestBody)])
+    def submit_s3(
+        request: SubmitContents3ObjectRequestBody,
+    ) -> t.Union[SubmitResponse, SubmitError]:
+        """
+        Submission of a s3 object of a piece of content.
+        """
+        submit_content_request_from_s3_object(
+            dynamodb_table,
+            submissions_queue_url=submissions_queue_url,
+            bucket=request.bucket_name,
+            key=request.object_key,
+            content_id=request.content_id,
+            content_type=request.content_type,
+            additional_fields=set(request.additional_fields)
+            if request.additional_fields
+            else set(),
+            force_resubmit=request.force_resubmit,
+        )
+
+        return SubmitResponse(content_id=request.content_id, submit_successful=True)
 
     @submit_api.post("/url/", apply=[jsoninator(SubmitContentViaURLRequestBody)])
     def submit_url(

@@ -130,6 +130,31 @@ class HasherMatcherActionerAPI:
         )
         response.raise_for_status()
 
+    def submit_via_s3_object(
+        self,
+        content_id: str,
+        bucket_name: str,
+        object_key: str,
+        content_type: str = "photo",
+        additional_fields: t.List[str] = [],
+    ):
+        """
+        Submit to the API using a s3 object that api_root is authorized to read from
+        """
+        payload = {
+            "content_id": content_id,
+            "content_type": content_type,
+            "additional_fields": additional_fields,
+            "bucket_name": bucket_name,
+            "object_key": object_key,
+        }
+        api_path: str = "submit/s3/"
+        response = self.session.post(
+            self._get_request_url(api_path),
+            data=json.dumps(payload).encode(),
+        )
+        response.raise_for_status()
+
     def submit_hash(
         self,
         content_id: str,

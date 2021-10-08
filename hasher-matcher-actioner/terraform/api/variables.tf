@@ -143,6 +143,12 @@ variable "partner_image_buckets" {
   }))
 }
 
+variable "enable_partner_upload_notification" {
+  description = "Enable the upload notfication of partner buckets if given."
+  type        = bool
+  default     = false
+}
+
 variable "banks_media_storage" {
   description = "Name and arn where we store bank media."
   type = object({
