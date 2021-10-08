@@ -501,7 +501,7 @@ data "aws_iam_policy_document" "hma_api_gw_in_vpc" {
 # Connect partner s3 buckets to api_root 
 
 resource "aws_lambda_permission" "allow_bucket" {
-  count = length(var.partner_image_buckets)
+  count = var.enable_partner_upload_notification ? length(var.partner_image_buckets) : 0
 
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
@@ -511,7 +511,7 @@ resource "aws_lambda_permission" "allow_bucket" {
 }
 
 resource "aws_s3_bucket_notification" "bucket_notification" {
-  count = length(var.partner_image_buckets)
+  count = var.enable_partner_upload_notification ? length(var.partner_image_buckets) : 0
 
   bucket = var.partner_image_buckets[count.index].name
 

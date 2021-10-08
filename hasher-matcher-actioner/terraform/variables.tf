@@ -90,7 +90,6 @@ variable "partner_image_buckets" {
     params = map(string)
   }))
   default = []
-
   # Ensure only correct params are used
   validation {
     condition = alltrue(
@@ -109,6 +108,11 @@ variable "partner_image_buckets" {
 
     error_message = "The only accepted params are 'prefix' to specify a prefix/folder/path string where only uploads with that prefix should be sent to HMA and 'suffix' to restrict uploads to only files with a specific extension."
   }
+}
+variable "enable_partner_upload_notification" {
+  description = "Enable the upload notfication of partner buckets if given."
+  type        = bool
+  default     = false
 }
 
 variable "integration_api_access_tokens" {

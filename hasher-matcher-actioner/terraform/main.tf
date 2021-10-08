@@ -470,7 +470,8 @@ module "api" {
     url = aws_sqs_queue.submissions_queue.id,
     arn = aws_sqs_queue.submissions_queue.arn
   }
-  partner_image_buckets = var.partner_image_buckets
+  partner_image_buckets              = var.partner_image_buckets
+  enable_partner_upload_notification = var.enable_partner_upload_notification
 
   api_in_vpc      = var.api_in_vpc
   vpc_id          = var.vpc_id
