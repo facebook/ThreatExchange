@@ -32,7 +32,12 @@ def get_lambda_client():
 class RunAPICommand(base.Command, base.NeedsTerraformOutputs):
     @classmethod
     def init_argparse(cls, ap: argparse.ArgumentParser) -> None:
-        pass
+        ap.add_argument(
+            "--print-endpoints",
+            "-p",
+            help=f"instead of running. List all API endpoints and exit.",
+            action="store_true",
+        )
 
     @classmethod
     def get_name(cls) -> str:
@@ -41,6 +46,9 @@ class RunAPICommand(base.Command, base.NeedsTerraformOutputs):
     @classmethod
     def get_help(cls) -> str:
         return "Runs the bottle application locally. Fetches environment variables from the provisioned lambda."
+
+    def __init__(self, print_endpoints: bool = False) -> None:
+        self.print_endpoints = print_endpoints
 
     def execute(self, tf_outputs: t.Dict) -> None:
         full_lambda_name = f"{tf_outputs['prefix']}_api_root"
@@ -54,4 +62,32 @@ class RunAPICommand(base.Command, base.NeedsTerraformOutputs):
 
         from hmalib.lambdas.api.api_root import app
 
-        app.run()
+        if self.print_endpoints:
+            print("\nPrinting all endpoints instead of running API:\n")
+            self._print_endpoints(app)
+        else:
+            app.run()
+
+    @classmethod
+    def _get_endpoints(cls, app):
+        for route in app.routes:
+            if "mountpoint" in route.config:
+                prefix = route.config["mountpoint.prefix"]
+                subpath = route.config["mountpoint.target"]
+
+                for prefixes, route in cls._get_endpoints(subpath):
+                    yield [prefix] + prefixes, route
+            else:
+                yield [], route
+
+    @classmethod
+    def _print_endpoints(cls, app, with_doc=True):
+        for prefixes, route in cls._get_endpoints(app):
+            path = (
+                "/" + "/".join(p.strip("/") for p in prefixes if p.strip("/"))
+                if prefixes
+                else ""
+            )
+            print(route.method, f"{path}{route.rule}", route.callback.__qualname__)
+            if with_doc:
+                print(route.callback.__doc__)
