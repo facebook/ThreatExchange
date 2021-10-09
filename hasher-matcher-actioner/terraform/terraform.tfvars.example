@@ -1,17 +1,39 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 hma_lambda_docker_uri = # DOCKER_IMAGE_URI
-prefix = # ENVIRONMENT_PREFIX
+prefix = # ENVIRONMENT_PREFIX best default is often username
 organization = # a name or acronym for your organization (use only lower case alpha a-z, and, optionally, hyphens)
-log_retention_in_days = # DAYS to retain logs
-include_cloudfront_distribution = false
-te_api_token = "<threat-exchange-api-token>"
+additional_tags = [] # optional additional tags attached to most resources 
+
+# Authorization Options:
 use_shared_user_pool = false # if true, run terraform apply from /authentication-shared terraform and use its outputs for webapp_and_api_shared_user_pool_id and webapp_and_api_shared_user_pool_client_id
 webapp_and_api_shared_user_pool_id = # "<webapp_and_api_shared_user_pool_id>" output when terraform apply is run from /authentication-shared directory
 webapp_and_api_shared_user_pool_client_id = # "<webapp_and_api_shared_user_pool_client_id>" output when terraform apply is run from /authentication-shared directory
 integration_api_access_tokens             = # Optional_list_of_tokens e.g. ['<super_secret_token1>']
 
-api_in_vpc = false 
+# Fetching Signals:
+te_api_token = "<threat-exchange-api-token>"
+# fetch_frequency = <fetch_frequency> How long to wait between calls to ThreatExchange default "15 minutes"
+
+# Metrics and Logging:
+measure_performance   = true # creates a dashboard and expands the set of logs
+# metrics_namespace = <namepsace> # default "ThreatExchange/HMA"
+log_retention_in_days = # DAYS to retain logs
+
+# Network and CDN:
+include_cloudfront_distribution = false 
+api_in_vpc = false # if true overrides `include_cloudfront_distribution` to false 
 vpc_id = "" # required to be nonempty if api_in_vpc = true. Note VPC must be in the same region that HMA is deployed in.
 vpc_subnets = [] # required to be nonempty if api_in_vpc = true
 security_groups = [] # required to be nonempty if api_in_vpc = true
+
+# Integration Options:
+# partner_image_buckets = [{
+#  "name" : "exmaple-bucket-name",
+#  "arn" : "arn:aws:s3:::exmaple-bucket-name",
+#  "params" : {}
+# }]
+# enable_partner_upload_notification = false # subscrible driectly to updates of `partner_image_buckets` (not recommended for integration without other code changes.)
+
+# Testing Options:
+set_sqs_windows_to_min = false # if true override queue poll time to minimum value (helpful for fast one off testing but wasteful/pointless in production)
