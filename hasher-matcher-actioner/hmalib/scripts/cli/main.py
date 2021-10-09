@@ -87,7 +87,9 @@ def execute_command(namespace) -> None:
         if issubclass(command_cls, base.NeedsAPIAccess):
             # Init Values
             api = utils.HasherMatcherActionerAPI(
-                get_api_url(namespace.api_endpoint),
+                get_api_url(
+                    namespace.api_endpoint, refresh=namespace.refresh_tf_outputs
+                ),
                 api_token=get_access_token(namespace.access_token),
             )
 
@@ -129,7 +131,7 @@ def get_access_token(cli_option: str = None) -> str:
     return token
 
 
-def get_api_url(cli_option: str = None) -> str:
+def get_api_url(cli_option: str = None, refresh=False) -> str:
     """Get the API url cli args, environment_var, or tf outputs"""
 
     environment_var = "HMA_API_URL"
@@ -145,7 +147,7 @@ def get_api_url(cli_option: str = None) -> str:
             "  * a cli argument (-e)\n"
             f"  * in the environment as {environment_var}\n"
         )
-        tf_outputs = utils.get_terraform_outputs()
+        tf_outputs = utils.get_terraform_outputs(refresh)
         url = tf_outputs["api_url"]
     return url
 
