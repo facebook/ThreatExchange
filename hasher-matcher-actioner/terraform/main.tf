@@ -556,6 +556,32 @@ resource "aws_secretsmanager_secret_version" "te_api_token" {
 }
 
 
+### New Submission Path (Use SNS topic instead of HTTP API) ###
+module "submit_events" {
+  count  = var.create_submit_event_sns_topic_and_handler ? 1 : 0
+  source = "./submit_events"
+  prefix = var.prefix
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+    commands = {
+      submit_event_handler = "hmalib.lambdas.submit_event_handler.lambda_handler"
+    }
+  }
+  datastore = module.datastore.primary_datastore
+
+  log_retention_in_days = var.log_retention_in_days
+  additional_tags       = merge(var.additional_tags, local.common_tags)
+
+  submissions_queue = {
+    url = aws_sqs_queue.submissions_queue.id,
+    arn = aws_sqs_queue.submissions_queue.arn
+  }
+  partner_image_buckets = var.partner_image_buckets
+
+}
+
+
+
 ### Basic Dashboard ###
 module "dashboard" {
   count = var.measure_performance ? 1 : 0
