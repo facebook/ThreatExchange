@@ -73,7 +73,6 @@ def error500(e):
     return json.dumps({"error": "500"})
 
 
-@app.get("/")
 @app.get("/root/")
 def root():
     """

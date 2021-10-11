@@ -205,7 +205,7 @@ class DeployedInstanceClient:
         ],
     ):
         try:
-            self.api.submit_hash(
+            self.api.submit_via_hash(
                 content_id=content_id,
                 content_type=content_type,
                 signal_value=signal_value,

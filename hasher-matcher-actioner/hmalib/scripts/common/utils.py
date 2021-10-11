@@ -46,7 +46,10 @@ class HasherMatcherActionerAPI:
             }
         )
         if transport_adapter:
-            self.session.mount(api_url, transport_adapter)
+            self.add_transport_adapter(transport_adapter)
+
+    def add_transport_adapter(self, transport_adapter: HTTPAdapter):
+        self.session.mount(self.api_url, transport_adapter)
 
     def _get_request_url(self, api_path: str) -> str:
         return urljoin(self.api_url, api_path)
@@ -155,7 +158,7 @@ class HasherMatcherActionerAPI:
         )
         response.raise_for_status()
 
-    def submit_hash(
+    def submit_via_hash(
         self,
         content_id: str,
         signal_value: str,
