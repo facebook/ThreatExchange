@@ -44,7 +44,7 @@ def run_ab_command(
 def run_benchmark(
     verbose: bool = True,
     processes: int = 20,
-    delay_btw_starts_in_sec: int = 10,
+    delay_btw_starts_in_sec: int = 10,  # we have this delay to allow the API to ramp up instead of flooding it all at once.
 ):
     runs = []
     for i in range(processes):
@@ -60,4 +60,4 @@ def run_benchmark(
 
 
 if __name__ == "__main__":
-    run_benchmark(processes=40)
+    run_benchmark(processes=10)
