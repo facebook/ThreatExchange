@@ -213,7 +213,13 @@ def submit_content_request_from_s3_object(
 
     presigned_url = create_presigned_url(bucket, key, None, 3600, "get_object")
     reference_url = f"https://{bucket}.s3.amazonaws.com/{key}"
-    additional_fields.update({f"partner_s3_reference_url:{reference_url}"})
+    additional_fields.update(
+        {
+            f"s3_reference_url:{reference_url}",
+            f"bucket_name:{bucket}",
+            f"object_key:{key}",
+        }
+    )
 
     record_content_submission(
         dynamodb_table,
