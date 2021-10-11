@@ -19,7 +19,7 @@ import hmalib.scripts.common.utils as utils
 import hmalib.scripts.cli.command_base as base
 import hmalib.scripts.cli.soak as soak
 import hmalib.scripts.cli.shell as shell
-from hmalib.scripts.cli import run_api, run_lambda, write_terraform_example
+from hmalib.scripts.cli import run_api, run_lambda, print_tfvars_example
 
 TERRAFORM_OUTPUTS_CACHE = "/tmp/hma-terraform-outputs.json"
 
@@ -30,7 +30,7 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
         shell.ShellCommand,
         run_lambda.RunLambdaCommand,
         run_api.RunAPICommand,
-        write_terraform_example.WriteTerraformExampleConfigCommand,
+        print_tfvars_example.PrintTFVarsExampleCommand,
     ]
 
 

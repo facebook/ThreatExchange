@@ -8,7 +8,7 @@ import hmalib.scripts.cli.command_base as base
 MAX_LINE_LENGTH = 80
 
 
-class WriteTerraformExampleConfigCommand(base.Command):
+class PrintTFVarsExampleCommand(base.Command):
     """
     Takes the root input variables declaration file in
     hasher-matcher-actioner/teraform directory and writes an example file
@@ -23,7 +23,7 @@ class WriteTerraformExampleConfigCommand(base.Command):
 
     @classmethod
     def get_name(cls) -> str:
-        return "write-terraform-example"
+        return "print-tfvars-example"
 
     @classmethod
     def get_help(cls) -> str:
