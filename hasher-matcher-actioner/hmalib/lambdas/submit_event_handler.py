@@ -36,15 +36,20 @@ class SubmissionRequest(SubmitContents3ObjectRequestBody):
     @classmethod
     def try_from_messsage(cls, message: t.Dict):
         """try to create a submission from an event message"""
-        sub = cls(
+        submission = cls(
             content_id=message["content_id"],
             content_type=get_content_type_for_name(message["content_type"]),
             bucket_name=message["bucket_name"],
             object_key=message["object_key"],
             additional_fields=message.get("additional_fields", []),
         )
-        if not sub.content_id or not sub.bucket_name or not sub.object_key:
+        if (
+            not submission.content_id
+            or not submission.bucket_name
+            or not submission.object_key
+        ):
             raise ValueError("Empty string given for required field")
+        return submission
 
 
 def lambda_handler(event, context):
@@ -52,7 +57,7 @@ def lambda_handler(event, context):
         try:
             sqs_record_body = json.loads((sqs_record["body"]))
             message = json.loads(sqs_record_body["Message"])
-            submission = Submission.try_from_messsage(message)
+            submission = SubmissionRequest.try_from_messsage(message)
         except ValueError as e:
             logger.info("Failed to process submit event message.")
             # logging as error or exceptions will cause the lambda to retry.
@@ -68,13 +73,13 @@ def lambda_handler(event, context):
         submit_content_request_from_s3_object(
             dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
             submissions_queue_url=SUBMISSIONS_QUEUE_URL,
-            bucket=submission.bucket,
-            key=submission.key,
+            bucket=submission.bucket_name,
+            key=submission.object_key,
             content_id=submission.content_id,
             content_type=submission.content_type,
             additional_fields=set(submission.additional_fields),
-            force_resubmit=True,  # without this after first failure lambda is likely to get stuck in a retry loop.
+            force_resubmit=True,  # without this after first failure/throttle lambda is likely to get stuck in a retry loop.
         )
         logger.info(
-            f"Submitted to HMA - id:{submission.content_id}, bucket:{submission.bucket}, key:{submission.key}"
+            f"Submitted to HMA - id:{submission.content_id}, bucket:{submission.bucket_name}, key:{submission.object_key}"
         )
