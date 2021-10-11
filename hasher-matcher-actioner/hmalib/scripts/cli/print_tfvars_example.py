@@ -1,11 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import argparse
-import hcl2
+import warnings
 
 import hmalib.scripts.cli.command_base as base
 
 MAX_LINE_LENGTH = 80
+MAIN_VARIABLES_FILE = "terraform/variables.tf"
 
 
 class PrintTFVarsExampleCommand(base.Command):
@@ -63,7 +64,15 @@ class PrintTFVarsExampleCommand(base.Command):
     def execute(self) -> None:
         # Assume you are in a directory which contains a terraform directory
         # which contains a variables.tf file.
-        with open("terraform/variables.tf", encoding="utf8") as variables_file:
+        try:
+            import hcl2
+        except ImportError as ex:
+            warnings.warn(
+                "Need hcl2 module installed. Try pip install -r requirements-dev.txt"
+            )
+            raise ex
+
+        with open(MAIN_VARIABLES_FILE, encoding="utf8") as variables_file:
             obj = hcl2.load(variables_file)
             for variable in obj["variable"]:
                 for var_name in variable:
