@@ -19,7 +19,7 @@ import hmalib.scripts.common.utils as utils
 import hmalib.scripts.cli.command_base as base
 import hmalib.scripts.cli.soak as soak
 import hmalib.scripts.cli.shell as shell
-from hmalib.scripts.cli import run_api, run_lambda
+from hmalib.scripts.cli import run_api, run_lambda, write_terraform_example
 
 TERRAFORM_OUTPUTS_CACHE = "/tmp/hma-terraform-outputs.json"
 
@@ -30,6 +30,7 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
         shell.ShellCommand,
         run_lambda.RunLambdaCommand,
         run_api.RunAPICommand,
+        write_terraform_example.WriteTerraformExampleConfigCommand,
     ]
 
 
@@ -95,6 +96,11 @@ def execute_command(namespace) -> None:
         elif issubclass(command_cls, base.NeedsTerraformOutputs):
             tf_outputs = get_terraform_outputs(namespace.refresh_tf_outputs)
             command.execute(tf_outputs)
+        else:
+            # Command does not seem to require injection of any specific
+            # arguments. Just execute it.
+            command.execute()
+
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)

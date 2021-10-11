@@ -1,0 +1,75 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+import argparse
+import hcl2
+
+import hmalib.scripts.cli.command_base as base
+
+MAX_LINE_LENGTH = 80
+
+
+class WriteTerraformExampleConfigCommand(base.Command):
+    """
+    Takes the root input variables declaration file in
+    hasher-matcher-actioner/teraform directory and writes an example file
+    complete with description and defaults.
+
+    Input file is hardcoded. Output is to stdin.
+    """
+
+    @classmethod
+    def init_argparse(cls, ap: argparse.ArgumentParser) -> None:
+        return super().init_argparse(ap)
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "write-terraform-example"
+
+    @classmethod
+    def get_help(cls) -> str:
+        return (
+            "Converts terraform input variable declaration files into an config file."
+        )
+
+    @staticmethod
+    def _print_single_variable(name: str, description: str, default: str, type: str):
+        at_start = True
+        line_length = 0
+
+        description_words = description.split()
+        for word in description_words:
+            line_length += 1 + len(word)
+
+            if at_start:
+                print("# ", end="")
+                at_start = False
+
+            print(f" {word}", end="")
+
+            if line_length > MAX_LINE_LENGTH:
+                at_start = True
+                line_length = 0
+                print("")
+        print()
+
+        if type == "string":
+            default = f'"{default}"'
+        elif type == "bool":
+            default = "true" if default else "false"
+
+        print(f"{name} = {default}")
+        print("")
+
+    def execute(self) -> None:
+        # Assume you are in a directory which contains a terraform directory
+        # which contains a variables.tf file.
+        with open("terraform/variables.tf", encoding="utf8") as variables_file:
+            obj = hcl2.load(variables_file)
+            for variable in obj["variable"]:
+                for var_name in variable:
+                    self._print_single_variable(
+                        name=var_name,
+                        description=variable[var_name]["description"],
+                        default=variable[var_name].get("default", None),
+                        type=variable[var_name]["type"],
+                    )
