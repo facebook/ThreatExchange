@@ -35,5 +35,7 @@ security_groups = [] # required to be nonempty if api_in_vpc = true
 # }]
 # enable_partner_upload_notification = false # subscrible driectly to updates of `partner_image_buckets` (not recommended for integration without other code changes.)
 
+# create_submit_event_sns_topic_and_handler = false # Enable alternative submit flow that accepts submission via a sns topic (arn of which is provided in outputs) instead of the API endpoints.
+
 # Testing Options:
 set_sqs_windows_to_min = false # if true override queue poll time to minimum value (helpful for fast one off testing but wasteful/pointless in production)

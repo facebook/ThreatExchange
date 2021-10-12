@@ -241,7 +241,7 @@ export async function submitContentViaPutURLUpload(
   forceResubmit: boolean,
 ): Promise<Response> {
   const submitResponse = await apiPost<{presigned_url: string}>(
-    '/submit/put-url/',
+    'submit/put-url/',
     {
       content_id: contentId,
       content_type: contentType,

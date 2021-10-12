@@ -144,3 +144,9 @@ variable "security_groups" {
   type        = list(string)
   default     = []
 }
+
+variable "create_submit_event_sns_topic_and_handler" {
+  description = "Enable alternative submit flow that accepts submission via a sns topic (arn of which is provided in outputs) instead of the API endpoints."
+  type        = bool
+  default     = false
+}
