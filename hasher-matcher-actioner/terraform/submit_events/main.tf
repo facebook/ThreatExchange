@@ -6,7 +6,7 @@ resource "aws_sns_topic" "submit_event_notification_topic" {
   tags = merge(
     var.additional_tags,
     {
-      Name = "HMASubmissionTopic"
+      Name = "SubmitEventTopic"
     }
   )
 }
@@ -60,8 +60,6 @@ resource "aws_lambda_function" "submit_event_handler" {
   image_config {
     command = [var.lambda_docker_info.commands.submit_event_handler]
   }
-  timeout     = 300
-  memory_size = 512
   environment {
     variables = {
       DYNAMODB_TABLE        = var.datastore.name
@@ -141,15 +139,6 @@ data "aws_iam_policy_document" "submit_event_handler" {
       resources = ["${lookup(statement.value, "arn", null)}/*"]
     }
   }
-  # statement {
-  #   effect = "Allow"
-  #   actions = [
-  #     "s3:GetObject",
-  #   ]
-  #   resources = concat(
-  #     [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
-  #   )
-  # }
 }
 
 resource "aws_iam_policy" "submit_event_handler" {
@@ -169,8 +158,8 @@ resource "aws_lambda_event_source_mapping" "submit_to_event_handler" {
 
   # Evidently, once set, batch-size and max-batching-window must always
   # be provided. Else terraform warns.
-  batch_size                         = 1
-  maximum_batching_window_in_seconds = 1
+  batch_size                         = 10
+  maximum_batching_window_in_seconds = 10
 }
 
 data "aws_iam_policy_document" "lambda_assume_role" {

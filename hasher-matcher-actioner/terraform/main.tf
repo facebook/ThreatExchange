@@ -199,7 +199,7 @@ module "webapp" {
   source                          = "./webapp"
   prefix                          = var.prefix
   organization                    = var.organization
-  include_cloudfront_distribution = var.include_cloudfront_distribution && !var.use_shared_user_pool && !var.api_in_vpc
+  include_cloudfront_distribution = var.include_cloudfront_distribution
 }
 
 /**
@@ -230,7 +230,7 @@ module "authentication" {
   source                                    = "./authentication"
   prefix                                    = var.prefix
   organization                              = var.organization
-  use_cloudfront_distribution_url           = var.include_cloudfront_distribution
+  use_cloudfront_distribution_url           = var.include_cloudfront_distribution && !var.use_shared_user_pool
   cloudfront_distribution_url               = "https://${module.webapp.cloudfront_distribution_domain_name}"
   use_shared_user_pool                      = var.use_shared_user_pool
   webapp_and_api_shared_user_pool_id        = var.webapp_and_api_shared_user_pool_id

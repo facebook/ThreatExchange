@@ -6,15 +6,15 @@ import boto3
 import typing as t
 from dataclasses import dataclass
 
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.meta import (
+    get_content_type_for_name,
+)
+
 from hmalib.common.logging import get_logger
 from hmalib.lambdas.api.submit import (
     submit_content_request_from_s3_object,
     SubmitContents3ObjectRequestBody,
-)
-
-from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.meta import (
-    get_content_type_for_name,
 )
 
 
@@ -60,10 +60,10 @@ def lambda_handler(event, context):
             submission = SubmissionRequest.try_from_messsage(message)
         except ValueError as e:
             logger.info("Failed to process submit event message.")
-            # logging as error or exceptions will cause the lambda to retry.
+            logger.error(sqs_record)
+            # Logging as exceptions could cause the lambda to retry.
             # We want to avoid this because it will just fail again and
             # also trigger a resubmit for the other events/messages
-            logger.info(sqs_record)
             logger.info(e)
             continue
 
