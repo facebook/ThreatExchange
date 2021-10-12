@@ -25,7 +25,7 @@ terraform/terraform.tfvars:
 	@echo ACTION REQUIRED: terraform/terraform.tfvars is needed to deploy and cannot be created automatically. 
 	@echo However as a staring point, you can copy the example:
 	@echo cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-	@echo Here are the likely inital values for the first two vars:
+	@echo Here are the likely initial values for the first two vars:
 	@echo 'hma_lambda_docker_uri = "${DOCKER_URI}:${DOCKER_TAG}"'
 	@echo 'prefix = "${USER}"'
 	exit 1
