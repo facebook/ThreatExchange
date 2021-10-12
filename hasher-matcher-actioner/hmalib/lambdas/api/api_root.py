@@ -38,7 +38,6 @@ dynamodb = boto3.resource("dynamodb")
 
 THREAT_EXCHANGE_DATA_BUCKET_NAME = os.environ["THREAT_EXCHANGE_DATA_BUCKET_NAME"]
 THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
-THREAT_EXCHANGE_PDQ_FILE_EXTENSION = os.environ["THREAT_EXCHANGE_PDQ_FILE_EXTENSION"]
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 BANKS_TABLE = os.environ["BANKS_TABLE"]
@@ -176,7 +175,6 @@ app.mount(
         datastore_table=dynamodb.Table(DYNAMODB_TABLE),
         threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
         threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
-        threat_exchange_pdq_file_extension=THREAT_EXCHANGE_PDQ_FILE_EXTENSION,
     ),
 )
 
