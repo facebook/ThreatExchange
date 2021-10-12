@@ -12,7 +12,7 @@ webapp_and_api_shared_user_pool_client_id = # "<webapp_and_api_shared_user_pool_
 integration_api_access_tokens             = # Optional_list_of_tokens e.g. ['<super_secret_token1>']
 
 # Fetching Signals:
-te_api_token = "<threat-exchange-api-token>"
+te_api_token = "" # "<threat-exchange-api-token>" Note: it is possible to test out HMA without TE access
 # fetch_frequency = <fetch_frequency> How long to wait between calls to ThreatExchange default "15 minutes"
 
 # Metrics and Logging:
@@ -21,8 +21,8 @@ measure_performance   = true # creates a dashboard and expands the set of logs
 log_retention_in_days = # DAYS to retain logs
 
 # Network and CDN:
-include_cloudfront_distribution = false 
-api_in_vpc = false # if true overrides `include_cloudfront_distribution` to false 
+include_cloudfront_distribution = false # Enables https connections to the HMA UI from a cloudfront domain
+api_in_vpc = false 
 vpc_id = "" # required to be nonempty if api_in_vpc = true. Note VPC must be in the same region that HMA is deployed in.
 vpc_subnets = [] # required to be nonempty if api_in_vpc = true
 security_groups = [] # required to be nonempty if api_in_vpc = true
