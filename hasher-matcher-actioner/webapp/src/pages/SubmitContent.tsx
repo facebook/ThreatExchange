@@ -153,7 +153,7 @@ export default function SubmitContent(): JSX.Element {
                 <Col xs="6">
                   <ChoiceCard
                     label="Photo"
-                    description="Submit photos or other images."
+                    description="Submit photo or other image."
                     selected={inputs.contentType === ContentType.Photo}
                     onSelect={() =>
                       setInputs({...inputs, contentType: ContentType.Photo})
@@ -163,7 +163,7 @@ export default function SubmitContent(): JSX.Element {
                 <Col xs="6">
                   <ChoiceCard
                     label="Video"
-                    description="Submit videos and gifs."
+                    description="Submit video or gif."
                     selected={inputs.contentType === ContentType.Video}
                     onSelect={() =>
                       setInputs({...inputs, contentType: ContentType.Video})
@@ -173,7 +173,7 @@ export default function SubmitContent(): JSX.Element {
               </Row>
             </Form.Group>
             <Form.Group>
-              <Form.Label>Submission Type</Form.Label>
+              <Form.Label>Submission Method</Form.Label>
               <Form.Control
                 as="select"
                 required
