@@ -12,19 +12,21 @@ import {
   Spinner,
   Alert,
   Card,
+  InputGroup,
 } from 'react-bootstrap';
 import {useHistory} from 'react-router-dom';
 
+import classNames from 'classnames';
 import {submitContentViaURL, submitContentViaPutURLUpload} from '../Api';
 import {ContentType, SubmissionType} from '../utils/constants';
 
 import {
-  ContentUniqueIdField,
   PhotoUploadField,
   OptionalAdditionalFields,
   AdditionalFields,
 } from '../components/SubmitContentFields';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
+import ChoiceCard from '../components/ChoiceCard';
 
 const FORM_DEFAULTS = {
   submissionType: undefined,
@@ -144,15 +146,32 @@ export default function SubmitContent(): JSX.Element {
     <FixedWidthCenterAlignedLayout title="Submit Content">
       <Row>
         <Col>
-          <Alert variant="secondary">
-            <p>Provide content to the HMA system to match against.</p>
-            <p>
-              Currently only <b>images</b> using the submisson type{' '}
-              <b>Upload</b> or <b>URL</b> are supported.{' '}
-            </p>
-          </Alert>
-
-          <Form onSubmit={handleSubmit}>
+          <Form className="hma-themed-form" onSubmit={handleSubmit}>
+            <Form.Group>
+              <Form.Label>Content Type</Form.Label>
+              <Row>
+                <Col xs="6">
+                  <ChoiceCard
+                    label="Photo"
+                    description="Submit photos or other images."
+                    selected={inputs.contentType === ContentType.Photo}
+                    onSelect={() =>
+                      setInputs({...inputs, contentType: ContentType.Photo})
+                    }
+                  />
+                </Col>
+                <Col xs="6">
+                  <ChoiceCard
+                    label="Video"
+                    description="Submit videos and gifs."
+                    selected={inputs.contentType === ContentType.Video}
+                    onSelect={() =>
+                      setInputs({...inputs, contentType: ContentType.Video})
+                    }
+                  />
+                </Col>
+              </Row>
+            </Form.Group>
             <Form.Group>
               <Form.Label>Submission Type</Form.Label>
               <Form.Control
@@ -180,106 +199,115 @@ export default function SubmitContent(): JSX.Element {
               </Form.Control>
             </Form.Group>
 
-            <Form.Group>
-              <Form.Row>
-                {submissionType === SubmissionType.FROM_URL && (
-                  <Form.Group>
-                    <Form.Label>Provide a URL to the content</Form.Label>
-                    <Form.Control
-                      onChange={handleInputChange}
-                      name="content"
-                      placeholder="url to content"
-                      required
-                    />
-                    <Form.Text className="text-muted mt-0">
-                      Currently behavior will store a copy of the content
-                    </Form.Text>
-                  </Form.Group>
-                )}
-
-                {submissionType === SubmissionType.PUT_URL_UPLOAD && (
-                  <PhotoUploadField
-                    inputs={inputs}
-                    handleInputChange={handleInputChangeUpload}
-                  />
-                )}
-              </Form.Row>
-              <ContentUniqueIdField
-                inputs={inputs}
-                handleInputChange={handleInputChange}
-              />
-              <OptionalAdditionalFields
-                additionalFields={additionalFields}
-                setAdditionalFields={setAdditionalFields}
-              />
+            {submissionType === SubmissionType.FROM_URL && (
               <Form.Group>
-                <Form.Row>
-                  <Form.Check
-                    disabled={submitting || submittedId !== ''}
-                    name="force_resubmit"
-                    inline
-                    label="Resubmit if content id already present in system"
-                    type="checkbox"
-                    onChange={handleInputChange}
-                  />
-                </Form.Row>
+                <Form.Label>Provide a URL to the content</Form.Label>
+                <Form.Control
+                  onChange={handleInputChange}
+                  name="content"
+                  placeholder="url to content"
+                  required
+                />
                 <Form.Text className="text-muted mt-0">
-                  Be careful submitting different content with the same id is
-                  not supported and will likely error.
+                  Currently behavior will store a copy of the content
                 </Form.Text>
               </Form.Group>
-              <Form.Group as={Row}>
-                <Collapse in={submitting}>
-                  <Spinner
-                    as="span"
-                    animation="border"
-                    role="status"
-                    variant="primary"
-                  />
-                </Collapse>
-                <Collapse in={!submittedId}>
-                  <Button
-                    style={{maxHeight: 38}}
-                    className="ml-3"
-                    variant="primary"
-                    disabled={submitting}
-                    type="submit">
-                    Submit
-                  </Button>
-                </Collapse>
-                <Collapse in={submittedId !== ''}>
-                  <Col>
-                    <Card>
-                      <Card.Header>Your content is submitted!</Card.Header>
-                      <Card.Body>
-                        <Button
-                          variant="primary"
-                          onClick={() =>
-                            history.push(`/pipeline-progress/${submittedId}`)
-                          }>
-                          Track Submission
-                        </Button>{' '}
-                        <Button
-                          variant="secondary"
-                          onClick={handleSubmitAnother}>
-                          Submit Another
-                        </Button>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Collapse>
-                <Collapse in={submissionError}>
-                  <Col className="ml-4">
-                    <Card border="danger">
-                      <Card.Header>Error when submitting.</Card.Header>
-                      <Card.Body>
-                        Error submitting. This can occur if content with that id
-                        already exists.
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Collapse>
+            )}
+
+            {submissionType === SubmissionType.PUT_URL_UPLOAD && (
+              <Form.Group>
+                <PhotoUploadField
+                  inputs={inputs}
+                  handleInputChange={handleInputChangeUpload}
+                />
               </Form.Group>
+            )}
+
+            <Form.Group>
+              <Form.Group>
+                <Form.Label>Unique ID for Content</Form.Label>
+                <Form.Control
+                  onChange={handleInputChange}
+                  type="text"
+                  name="contentId"
+                  placeholder="Enter a unique identifier for content"
+                  required
+                  value={inputs.contentId}
+                />
+
+                <Form.Text className="text-muted mt-0">
+                  Warning currently behavior will overwrite content with the
+                  same id
+                </Form.Text>
+              </Form.Group>
+            </Form.Group>
+            <OptionalAdditionalFields
+              additionalFields={additionalFields}
+              setAdditionalFields={setAdditionalFields}
+            />
+            <Form.Group>
+              <Form.Check
+                disabled={submitting || submittedId !== ''}
+                name="force_resubmit"
+                inline
+                label="Resubmit if content id already present in system"
+                type="checkbox"
+                onChange={handleInputChange}
+              />
+              <Form.Text className="text-muted mt-0">
+                Be careful submitting different content with the same id is not
+                supported and will likely error.
+              </Form.Text>
+            </Form.Group>
+            <Form.Group as={Row}>
+              <Collapse in={submitting}>
+                <Spinner
+                  as="span"
+                  animation="border"
+                  role="status"
+                  variant="primary"
+                />
+              </Collapse>
+              <Collapse in={!submittedId}>
+                <Button
+                  style={{maxHeight: 38}}
+                  className="ml-3"
+                  variant="primary"
+                  disabled={submitting}
+                  type="submit">
+                  Submit
+                </Button>
+              </Collapse>
+              <Collapse in={submittedId !== ''}>
+                <Col>
+                  <Card>
+                    <Card.Header>Your content is submitted!</Card.Header>
+                    <Card.Body>
+                      <Button
+                        variant="primary"
+                        onClick={() =>
+                          history.push(`/pipeline-progress/${submittedId}`)
+                        }>
+                        Track Submission
+                      </Button>{' '}
+                      <Button variant="secondary" onClick={handleSubmitAnother}>
+                        Submit Another
+                      </Button>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Collapse>
+              <Collapse in={submissionError}>
+                <Col className="ml-4">
+                  <Card border="danger">
+                    <Card.Header>Error when submitting.</Card.Header>
+                    <Card.Body>
+                      Error submitting. This can occur if content with that id
+                      already exists.
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Collapse>
             </Form.Group>
           </Form>
         </Col>
