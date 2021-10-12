@@ -22,28 +22,34 @@ upload_docker:
 	DOCKER_TAG=${DOCKER_TAG} ./scripts/update_lambda_docker_image.sh
 
 terraform/terraform.tfvars:
-	echo 'hma_lambda_docker_uri = "${DOCKER_URI}:${DOCKER_TAG}"' > terraform/terraform.tfvars
+	@echo ACTION REQUIRED: terraform/terraform.tfvars is needed to deploy and cannot be created automatically. 
+	@echo However as a staring point, you can copy the example:
+	@echo cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+	@echo Here are the likely initial values for the first two vars:
+	@echo 'hma_lambda_docker_uri = "${DOCKER_URI}:${DOCKER_TAG}"'
+	@echo 'prefix = "${USER}"'
+	exit 1
 
 terraform/backend.tf:
 	@echo terraform state will be stored locally unless a backend.tf file is configured. 
-	@echo Create a backend.tf? to use custom s3 bucket run: export TF_STATE_S3_BUCKET=bucket_name [y/N]
+	@echo Create a backend.tf? to use custom s3 bucket run this first: export TF_STATE_S3_BUCKET=bucket_name [y/N]
 	@read ans; if [ $$ans = "y" ]; then ./scripts/write_backend_config.sh > terraform/backend.tf; fi
 
 dev_create_configs: terraform/terraform.tfvars terraform/backend.tf
 
 dev_create_instance: dev_create_configs upload_docker
-	cd terraform/ && terraform init -var "prefix=${USER}"
-	cd terraform/ && terraform apply -var "prefix=${USER}"
+	terraform -chdir=terraform init 
+	terraform -chdir=terraform apply
 
 dev_destroy_instance:
-	cd terraform/ && terraform destroy -var "prefix=${USER}"
+	terraform -chdir=terraform destroy 
 
 dev_test_instance:
 	python3 hmalib/scripts/common/client_lib.py
 
-dev_clear_configs:
-	-rm terraform/terraform.tfvars terraform/backend.tf
-
 dev_apply_with_newest_docker_image:
-	@DIGEST=$(call shell-or-die, aws ecr describe-images --repository-name hma-lambda-dev --image-ids imageTag=${USER} | jq -r '.imageDetails[0].imageDigest'); \
+	@DIGEST=$(call shell-or-die, aws ecr describe-images --repository-name hma-lambda-dev --image-ids imageTag=${DOCKER_TAG} | jq -r '.imageDetails[0].imageDigest'); \
 	terraform -chdir=terraform apply -var "hma_lambda_docker_uri=${DOCKER_URI}@$${DIGEST}"
+
+dev_install_hmacli:
+	python3 -m pip install -r requirements-dev.txt

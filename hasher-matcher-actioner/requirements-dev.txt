@@ -1,4 +1,4 @@
--r requirements.txt
+.[all]
 pytest==6.2.1
 mypy==0.812
 black
