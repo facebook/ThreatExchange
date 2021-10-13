@@ -35,7 +35,7 @@ dynamodb = boto3.resource("dynamodb")
 
 # In one fetcher run, how many descriptor updates to fetch per privacy group
 # using /threat_updates
-MAX_DESCRIPTORS_UPDATED = 50000
+MAX_DESCRIPTORS_UPDATED = 20000
 
 # Print progress when polling threat_updates once every...<> seconds
 PROGRESS_PRINT_INTERVAL_SEC = 20
@@ -124,7 +124,16 @@ class ProgressLogger:
             logger.info("threat_updates/: processed %d descriptors.", self.processed)
 
 
-def lambda_handler(event, context):
+def lambda_handler(_event, _context):
+    """
+    Run through threatexchange privacy groups and fetch updates to them. If this
+    is the first time for a privacy group, will fetch from the start, else only
+    updates since the last time.
+
+    Note: since this is a scheduled job, we swallow all exceptions. We only log
+    exceptions and move on.
+    """
+
     lambda_init_once()
     config = FetcherConfig.get()
     collabs = ThreatExchangeConfig.get_all()
@@ -141,10 +150,6 @@ def lambda_handler(event, context):
 
     api_key = AWSSecrets().te_api_key()
     api = ThreatExchangeAPI(api_key)
-
-    # Instead of raising the first exception, we log exceptions, collect the
-    # last one and raise if present.
-    encountered_exception = None
 
     for collab in collabs:
         logger.info(
@@ -167,33 +172,31 @@ def lambda_handler(event, context):
             supported_signal_types=[VideoMD5Signal, PdqSignal],
         )
 
-        indicator_store.load_checkpoint()
-
-        if indicator_store.stale:
-            logger.warning(
-                "Store for %s - %d stale! Resetting.",
-                collab.privacy_group_name,
-                int(collab.privacy_group_id),
-            )
-            indicator_store.reset()
-
-        if indicator_store.fetch_checkpoint >= now.timestamp():
-            continue
-
-        delta = indicator_store.next_delta
-
         try:
+            indicator_store.load_checkpoint()
+
+            if indicator_store.stale:
+                logger.warning(
+                    "Store for %s - %d stale! Resetting.",
+                    collab.privacy_group_name,
+                    int(collab.privacy_group_id),
+                )
+                indicator_store.reset()
+
+            if indicator_store.fetch_checkpoint >= now.timestamp():
+                continue
+
+            delta = indicator_store.next_delta
+
             delta.incremental_sync_from_threatexchange(
                 api, limit=MAX_DESCRIPTORS_UPDATED, progress_fn=ProgressLogger()
             )
-        except Exception as e:
-            # Don't need to call .exception() here because we're just re-raising
+        except Exception:  # pylint: disable=broad-except
             logger.exception(
                 "Encountered exception while getting updates. Will attempt saving.."
             )
             # Force delta to show finished
             delta.end = delta.current
-            encountered_exception = e
         finally:
             if delta:
                 logging.info("Fetch complete, applying %d updates", len(delta.updates))
@@ -202,6 +205,3 @@ def lambda_handler(event, context):
                 )
             else:
                 logging.error("Failed before fetching any records")
-
-    if encountered_exception:
-        raise encountered_exception
