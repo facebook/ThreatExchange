@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
 import unittest
 import typing as t
 
+from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.pdq_index import PDQIndex
 
