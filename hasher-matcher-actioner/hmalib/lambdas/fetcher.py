@@ -192,7 +192,6 @@ def lambda_handler(_event, _context):
                 api, limit=MAX_DESCRIPTORS_UPDATED, progress_fn=ProgressLogger()
             )
         except Exception:  # pylint: disable=broad-except
-            # Don't need to call .exception() here because we're just re-raising
             logger.exception(
                 "Encountered exception while getting updates. Will attempt saving.."
             )
