@@ -23,7 +23,7 @@ setup(
     install_requires=[
         "boto3",
         "boto3-stubs[essential,sns]==1.17.14.0",
-        "threatexchange[faiss,pdq_hasher]>=0.0.25",
+        "threatexchange[faiss,pdq_hasher]>=0.0.26",
         "bottle",
         "apig_wsgi",
         "pyjwt[crypto]==2.1.0",
