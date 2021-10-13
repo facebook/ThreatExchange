@@ -9,16 +9,19 @@ be fed into various indices.
 """
 
 import logging
+import time
 import os
-import typing as t
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
-
+from typing import DefaultDict
 import boto3
+
 from threatexchange.api import ThreatExchangeAPI
 from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.threat_updates import ThreatUpdateJSON
 
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
@@ -29,6 +32,13 @@ from hmalib.common.s3_adapters import ThreatUpdateS3Store
 
 logger = get_logger(__name__)
 dynamodb = boto3.resource("dynamodb")
+
+# In one fetcher run, how many descriptor updates to fetch per privacy group
+# using /threat_updates
+MAX_DESCRIPTORS_UPDATED = 50000
+
+# Print progress when polling threat_updates once every...<> seconds
+PROGRESS_PRINT_INTERVAL_SEC = 20
 
 
 @lru_cache(maxsize=None)
@@ -89,6 +99,31 @@ def is_int(int_string: str):
         return False
 
 
+class ProgressLogger:
+    """
+    Use this to get a progress logger which counts up the number of items
+    processed via /threat_updates.
+
+    Returns a callable class.
+    """
+
+    def __init__(self):
+        self.processed = 0
+        self.last_update_time = None
+        self.counts = defaultdict(lambda: 0)
+        self.last_update_printed = 0
+
+    def __call__(self, update: ThreatUpdateJSON):
+        self.processed += 1
+        self.counts[update.threat_type] += -1 if update.should_delete else 1
+        self.last_update_time = update.time
+
+        now = time.time()
+        if now - self.last_update_printed >= PROGRESS_PRINT_INTERVAL_SEC:
+            self.last_update_printed = now
+            logger.info("threat_updates/: processed %d descriptors.", self.processed)
+
+
 def lambda_handler(event, context):
     lambda_init_once()
     config = FetcherConfig.get()
@@ -106,6 +141,10 @@ def lambda_handler(event, context):
 
     api_key = AWSSecrets().te_api_key()
     api = ThreatExchangeAPI(api_key)
+
+    # Instead of raising the first exception, we log exceptions, collect the
+    # last one and raise if present.
+    encountered_exception = None
 
     for collab in collabs:
         logger.info(
@@ -145,14 +184,16 @@ def lambda_handler(event, context):
 
         try:
             delta.incremental_sync_from_threatexchange(
-                api,
+                api, limit=MAX_DESCRIPTORS_UPDATED, progress_fn=ProgressLogger()
             )
-        except:
+        except Exception as e:
             # Don't need to call .exception() here because we're just re-raising
-            logger.error("Exception occurred! Attempting to save...")
+            logger.exception(
+                "Encountered exception while getting updates. Will attempt saving.."
+            )
             # Force delta to show finished
             delta.end = delta.current
-            raise
+            encountered_exception = e
         finally:
             if delta:
                 logging.info("Fetch complete, applying %d updates", len(delta.updates))
@@ -161,3 +202,6 @@ def lambda_handler(event, context):
                 )
             else:
                 logging.error("Failed before fetching any records")
+
+    if encountered_exception:
+        raise encountered_exception
