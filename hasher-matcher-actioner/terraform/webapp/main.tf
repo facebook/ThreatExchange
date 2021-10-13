@@ -2,7 +2,7 @@
 
 resource "aws_s3_bucket" "webapp" {
   bucket = "${var.organization}-${var.prefix}-hma-webapp"
-  acl    = "public-read"
+  acl    = var.include_cloudfront_distribution ? "private" : "public-read"
   tags = merge(
     var.additional_tags,
     {
@@ -19,6 +19,32 @@ resource "aws_s3_bucket" "webapp" {
   force_destroy = true
 }
 
+
+resource "aws_cloudfront_origin_access_identity" "webapp" {
+  count   = var.include_cloudfront_distribution ? 1 : 0
+  comment = "OAI for the webapp to access the s3 site"
+}
+
+data "aws_iam_policy_document" "s3_policy" {
+  count = var.include_cloudfront_distribution ? 1 : 0
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.webapp.arn}/*"]
+
+    principals {
+      type        = "AWS"
+      identifiers = [aws_cloudfront_origin_access_identity.webapp[0].iam_arn]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "webapp" {
+  count  = var.include_cloudfront_distribution ? 1 : 0
+  bucket = aws_s3_bucket.webapp.id
+  policy = data.aws_iam_policy_document.s3_policy[0].json
+}
+
+
 resource "aws_cloudfront_distribution" "webapp" {
   count = var.include_cloudfront_distribution ? 1 : 0
 
@@ -29,13 +55,10 @@ resource "aws_cloudfront_distribution" "webapp" {
 
   origin {
     origin_id   = "${var.organization}-${var.prefix}-hma-webapp-origin"
-    domain_name = aws_s3_bucket.webapp.website_endpoint
+    domain_name = aws_s3_bucket.webapp.bucket_domain_name
 
-    custom_origin_config {
-      http_port              = "80"
-      https_port             = "443"
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
+    s3_origin_config {
+      origin_access_identity = aws_cloudfront_origin_access_identity.webapp[0].cloudfront_access_identity_path
     }
   }
 
@@ -56,12 +79,24 @@ resource "aws_cloudfront_distribution" "webapp" {
     }
   }
 
+  custom_error_response {
+    error_caching_min_ttl = 3000
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+  }
+  custom_error_response {
+    error_caching_min_ttl = 3000
+    error_code            = 403
+    response_code         = 200
+    response_page_path    = "/index.html"
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
     }
   }
-
   viewer_certificate {
     cloudfront_default_certificate = true
   }

@@ -508,7 +508,7 @@ resource "null_resource" "build_and_deploy_webapp" {
     working_dir = "../webapp"
   }
   provisioner "local-exec" {
-    command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl public-read"
+    command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl ${var.include_cloudfront_distribution ? "private" : "public-read"}"
   }
 }
 

@@ -29,7 +29,7 @@ output "cognito_user_pool_client_id" {
 }
 
 output "ui_url" {
-  value = module.webapp.ui_url
+  value = var.include_cloudfront_distribution ? module.webapp.cloudfront_distribution_domain_name : module.webapp.ui_url
 }
 
 output "submit_topic_arn" {
