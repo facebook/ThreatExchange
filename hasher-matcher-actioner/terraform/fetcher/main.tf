@@ -21,7 +21,13 @@ resource "aws_lambda_function" "fetcher" {
   image_config {
     command = [var.lambda_docker_info.commands.fetcher]
   }
-  timeout     = 300
+
+  # Timeout is kept less than the fetch frequency. Right now, fetch frequency is
+  # 15 minutes, so we timeout at 12. The more this value, the more time every
+  # single fetch has to complete.
+  # TODO: make this computed from var.fetch_frequency.
+  timeout = 60 * 12
+
   memory_size = 512
   environment {
     variables = {
