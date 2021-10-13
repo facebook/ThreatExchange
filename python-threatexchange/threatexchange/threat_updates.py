@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
@@ -343,7 +342,7 @@ class ThreatUpdatesStore:
                 delta.start <= self.checkpoint.fetch_checkpoint
             ), "gap in delta record"
             assert not self.stale, "attempted to apply stale delta"
-        assert delta.done, "delta was not fetched"
+
         # It's possible the fetch completed but has no records
         if delta.updates:
             self._apply_updates_impl(delta, post_apply_fn)
