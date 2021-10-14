@@ -5,14 +5,24 @@ output "primary_datastore" {
   # directly.
 
   value = {
-    name = aws_dynamodb_table.hma_datastore.name
-    arn  = aws_dynamodb_table.hma_datastore.arn
+    name       = aws_dynamodb_table.hma_datastore.name
+    arn        = aws_dynamodb_table.hma_datastore.arn
+    stream_arn = aws_dynamodb_table.hma_datastore.stream_arn
   }
 }
 
 output "banks_datastore" {
   value = {
-    name = aws_dynamodb_table.hma_banks.name
-    arn  = aws_dynamodb_table.hma_banks.arn
+    name       = aws_dynamodb_table.hma_banks.name
+    arn        = aws_dynamodb_table.hma_banks.arn
+    stream_arn = aws_dynamodb_table.hma_banks.stream_arn
+  }
+}
+
+
+output "counts_datastore" {
+  value = {
+    name = aws_dynamodb_table.hma_counts.name
+    arn  = aws_dynamodb_table.hma_counts.arn
   }
 }
