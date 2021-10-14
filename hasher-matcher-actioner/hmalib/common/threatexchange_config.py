@@ -15,8 +15,8 @@ logger = get_logger(__name__)
 
 # TODO Currently default to True for testing purpose,
 # need to switch it to False before v0 launch
-FETCHER_ACTIVE_DEFAULT = True
-WRITE_BACK_DEFAULT = True
+FETCHER_ACTIVE_DEFAULT = False
+WRITE_BACK_DEFAULT = False
 MATCHER_ACTIVE_DEFAULT = True
 SAMPLE_DATASET_PRIVACY_GROUP_ID = ["inria-holidays-test"]
 
