@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from hmalib.common.count_models import MatchByPrivacyGroupCounter
 import bottle
 import typing as t
 from dataclasses import dataclass, asdict
@@ -173,7 +172,10 @@ def _get_signal_hash_count_and_last_modified(
     )
     pdq_data_files = pdq_storage.load_data()
     return {
-        file_name: (len(rows), pdq_storage.last_modified[file_name])
+        file_name.split("/")[-1].split(".")[0]: (
+            len(rows),
+            pdq_storage.last_modified[file_name],
+        )
         for file_name, rows in pdq_data_files.items()
     }
 
@@ -191,8 +193,6 @@ def _get_threat_exchange_datasets(
         threat_exchange_data_folder,
     )
 
-    match_counts: t.Dict[str, int] = MatchByPrivacyGroupCounter.get_all_counts(table)
-
     return [
         ThreatExchangeDatasetSummary(
             collab.privacy_group_id,
@@ -205,11 +205,11 @@ def _get_threat_exchange_datasets(
             hash_count=t.cast(
                 int,
                 hash_counts.get(
-                    f"{threat_exchange_data_folder}{collab.privacy_group_id}",  # TODO this is broken right?
-                    [0, ""],
+                    collab.privacy_group_id,
+                    [-1, ""],
                 )[0],
             ),
-            match_count=match_counts.get(collab.privacy_group_id, 0),
+            match_count=-1,  # fix will be based on new count system
         )
         for collab in collaborations
     ]
