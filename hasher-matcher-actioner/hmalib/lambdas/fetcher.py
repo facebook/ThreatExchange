@@ -162,6 +162,12 @@ def lambda_handler(_event, _context):
             )
             continue
 
+        if not collab.fetcher_active:
+            logger.info(
+                f"Fetch skipped because configs has `fetcher_active` set to false for privacy_group_id({collab.privacy_group_id})"
+            )
+            continue
+
         indicator_store = ThreatUpdateS3Store(
             int(collab.privacy_group_id),
             api.app_id,
