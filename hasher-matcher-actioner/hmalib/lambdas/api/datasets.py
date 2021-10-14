@@ -161,14 +161,12 @@ class DatasetSummariesResponse(JSONifiable):
 def _get_signal_hash_count_and_last_modified(
     threat_exchange_data_bucket_name: str,
     threat_exchange_data_folder: str,
-    threat_exchange_pdq_file_extension: str,
 ) -> t.Dict[str, t.Tuple[int, str]]:
     # TODO this method is expensive some cache or memoization method might be a good idea.
 
     s3_config = S3ThreatDataConfig(
         threat_exchange_data_bucket_name=threat_exchange_data_bucket_name,
         threat_exchange_data_folder=threat_exchange_data_folder,
-        threat_exchange_pdq_file_extension=threat_exchange_pdq_file_extension,
     )
     pdq_storage = ThreatExchangeS3PDQAdapter(
         config=s3_config, metrics_logger=metrics.names.api_hash_count()
@@ -184,7 +182,6 @@ def _get_threat_exchange_datasets(
     table: Table,
     threat_exchange_data_bucket_name: str,
     threat_exchange_data_folder: str,
-    threat_exchange_pdq_file_extension: str,
 ) -> t.List[ThreatExchangeDatasetSummary]:
     collaborations = ThreatExchangeConfig.get_all()
     hash_counts: t.Dict[
@@ -192,7 +189,6 @@ def _get_threat_exchange_datasets(
     ] = _get_signal_hash_count_and_last_modified(
         threat_exchange_data_bucket_name,
         threat_exchange_data_folder,
-        threat_exchange_pdq_file_extension,
     )
 
     match_counts: t.Dict[str, int] = MatchByPrivacyGroupCounter.get_all_counts(table)
@@ -209,7 +205,7 @@ def _get_threat_exchange_datasets(
             hash_count=t.cast(
                 int,
                 hash_counts.get(
-                    f"{threat_exchange_data_folder}{collab.privacy_group_id}{threat_exchange_pdq_file_extension}",
+                    f"{threat_exchange_data_folder}{collab.privacy_group_id}",  # TODO this is broken right?
                     [0, ""],
                 )[0],
             ),
@@ -224,7 +220,6 @@ def get_datasets_api(
     datastore_table: Table,
     threat_exchange_data_bucket_name: str,
     threat_exchange_data_folder: str,
-    threat_exchange_pdq_file_extension: str,
 ) -> bottle.Bottle:
     """
     ToDo / FixMe: this file is probably more about privacy groups than datasets...
@@ -245,7 +240,6 @@ def get_datasets_api(
                 datastore_table,
                 threat_exchange_data_bucket_name,
                 threat_exchange_data_folder,
-                threat_exchange_pdq_file_extension,
             )
         )
 

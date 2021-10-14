@@ -59,7 +59,6 @@ class S3ThreatDataConfig:
 
     threat_exchange_data_bucket_name: str
     threat_exchange_data_folder: str
-    threat_exchange_pdq_file_extension: str
 
 
 @dataclass
@@ -117,7 +116,7 @@ class ThreatExchangeS3Adapter:
         """
         What is the extension for files of this indicator type
 
-        eg. pdq.te indicates PDQ files
+        eg. hash_pdq.te indicates PDQ files
         """
         raise NotImplementedError()
 

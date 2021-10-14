@@ -138,7 +138,6 @@ def lambda_handler(event, context):
     s3_config = S3ThreatDataConfig(
         threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
         threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
-        threat_exchange_pdq_file_extension="PHASE_OUT_THIS_INTERNAL_DETAIL",
     )
 
     for updated_signal_type in updates.keys():

@@ -19,7 +19,6 @@ locals {
   common_tags = {
     "HMAPrefix" = var.prefix
   }
-  pdq_file_extension         = ".pdq.te"
   te_data_folder             = module.hashing_data.threat_exchange_data_folder_info.key
   te_api_token_secret_name   = "threatexchange/${var.prefix}_api_tokens"
   hma_api_tokens_secret_name = "hma/${var.prefix}_api_tokens"
@@ -444,9 +443,8 @@ module "api" {
     index_folder_key = module.hashing_data.index_folder_info.key
   }
   threat_exchange_data = {
-    bucket_name        = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    pdq_file_extension = local.pdq_file_extension
-    data_folder        = local.te_data_folder
+    bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
+    data_folder = local.te_data_folder
   }
 
   banks_media_storage = {
@@ -510,7 +508,7 @@ resource "null_resource" "build_and_deploy_webapp" {
     working_dir = "../webapp"
   }
   provisioner "local-exec" {
-    command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl public-read"
+    command = "aws s3 sync ../webapp/build s3://${module.webapp.s3_bucket_name} --acl ${var.include_cloudfront_distribution ? "private" : "public-read"}"
   }
 }
 

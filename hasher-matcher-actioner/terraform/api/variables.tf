@@ -45,9 +45,8 @@ variable "index_data_storage" {
 variable "threat_exchange_data" {
   description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data"
   type = object({
-    bucket_name        = string
-    pdq_file_extension = string
-    data_folder        = string
+    bucket_name = string
+    data_folder = string
   })
 }
 
