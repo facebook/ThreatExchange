@@ -22,7 +22,7 @@ setup(
     description="Convenience package for hmalib. Probably don't distribute it.",
     install_requires=[
         "boto3",
-        "boto3-stubs[essential,sns]==1.17.14.0",
+        "boto3-stubs[essential,sns,dynamodbstreams]==1.17.14.0",
         "threatexchange[faiss,pdq_hasher]>=0.0.26",
         "bottle",
         "apig_wsgi",
