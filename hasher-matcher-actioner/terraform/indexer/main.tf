@@ -134,6 +134,8 @@ resource "null_resource" "provide_sample_pdq_data_holidays" {
   # To get a sensible privacy group value, we reverse engineer the filename split at
   # hmalib.common.s3_adapters.ThreatExchangeS3Adapter._parse_file at line 118
   depends_on = [
+    aws_lambda_permission.indexer,
+    aws_sns_topic_subscription.indexer,
     aws_lambda_function.indexer
   ]
 
