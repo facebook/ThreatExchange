@@ -7,8 +7,10 @@ from functools import lru_cache
 from mypy_boto3_dynamodbstreams.type_defs import GetRecordsOutputTypeDef, RecordTypeDef
 import boto3
 
+from hmalib.common.models.content import ContentObject
 from hmalib.common.models.count import AggregateCount
 from hmalib.common.logging import get_logger
+from hmalib.common.models.models_base import DynamoDBItem
 
 logger = get_logger(__name__)
 
@@ -26,7 +28,7 @@ def get_counts_table():
 
 class BaseTableStreamCounter:
     @classmethod
-    def table_name(cls):
+    def table_name(cls) -> str:
         raise NotImplementedError
 
     @staticmethod
@@ -46,7 +48,9 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
     def table_name(cls):
         return "HMADataStore"
 
+    @classmethod
     def get_increments_for_records(
+        cls,
         records: t.List[RecordTypeDef],
     ) -> t.Dict[AggregateCount, int]:
         """
@@ -54,26 +58,31 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
         value by which they should be incremented. Negative increment implies
         decrement.
         """
-        result = defaultdict(lambda: 0)
+        result: defaultdict = defaultdict(lambda: 0)
         for record in records:
             if record["eventName"] != "INSERT":
                 # We only want to track create events.
                 continue
 
-            pk: str = record["dynamodb"]["Keys"]["PK"]
-            sk: str = record["dynamodb"]["Keys"]["SK"]
+            pk: str = record["dynamodb"]["Keys"]["PK"]["S"]
+            sk: str = record["dynamodb"]["Keys"]["SK"]["S"]
 
-            # TODO: identify what type or record got updated. eg. if this is a
-            # hash, do: @barrett, I need you to figure out how to differentiate
-            # hashes and matches here.
-            result[AggregateCount.PipelineNames.hashes] += 1
+            # TODO These should maybe have a strong connection to the objects instead of class constants
+            # otherwise changes to the object might not correctly update these count checks
+            if sk == ContentObject.CONTENT_STATIC_SK:
+                result[AggregateCount.PipelineNames.submits] += 1
+            elif sk.startswith(DynamoDBItem.TYPE_PREFIX):
+                # note hashes should always match submits (submits == hashes)
+                result[AggregateCount.PipelineNames.hashes] += 1
+            elif sk.startswith(DynamoDBItem.SIGNAL_KEY_PREFIX):
+                result[AggregateCount.PipelineNames.matches] += 1
 
         return dict(result)
 
 
 class BanksTableStreamCounter(BaseTableStreamCounter):
     @classmethod
-    def table_name(cls):
+    def table_name(cls) -> str:
         return "HMABanks"
 
 
@@ -82,9 +91,7 @@ ENABLED_STREAM_COUNTERS = {
     for cls in [PipelineTableStreamCounter, BanksTableStreamCounter]
 }
 
-current_stream_counter: BaseTableStreamCounter = ENABLED_STREAM_COUNTERS[
-    SOURCE_TABLE_NAME
-]
+current_stream_counter = ENABLED_STREAM_COUNTERS[SOURCE_TABLE_NAME]
 
 
 def lambda_handler(event: GetRecordsOutputTypeDef, _context):
@@ -113,6 +120,6 @@ def lambda_handler(event: GetRecordsOutputTypeDef, _context):
         # TODO convert this to a batch write.
         increment_by = counts[count]
         if increment_by > 0:
-            AggregateCount(count).inc(counts_table, increment_by)
+            AggregateCount(str(count)).inc(counts_table, increment_by)
         elif increment_by < 0:
-            AggregateCount(count).dec(counts_table, abs(increment_by))
+            AggregateCount(str(count)).dec(counts_table, abs(increment_by))

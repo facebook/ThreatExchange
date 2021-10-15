@@ -2,7 +2,7 @@
 
 """ Refer to hmalib.lambdas.ddb_stream_counter.lambda_handler's doc string to
 understand how these models are used. """
-
+import typing as t
 from mypy_boto3_dynamodb.service_resource import Table
 
 
@@ -21,7 +21,12 @@ class BaseCount:
 
     def get_value(self, table: Table) -> int:
         """Get current value for the counter."""
-        table.get_item(Key={"PK": self.get_pkey(), "SK": self.get_skey()})
+        return t.cast(
+            int,
+            table.get_item(Key={"PK": self.get_pkey(), "SK": self.get_skey()})
+            .get("Item", {})
+            .get("CurrentCount", 0),
+        )
 
     def inc(self, table: Table, by=1):
         """Increment count. Default by 1, unless specified."""
@@ -48,10 +53,14 @@ class AggregateCount(BaseCount):
     """
 
     class PipelineNames:
-        # How many pieces of content were hashed?
+
+        # How many pieces of content were submitted?
+        submits = "hma.pipeline.submits"
+
+        # How many pieces of content created a hash record?
         hashes = "hma.pipeline.hashes"
 
-        # How many hahses matched against datasets?
+        # How many match object recorded?
         matches = "hma.pipeline.matches"
 
     def __init__(self, of: str):

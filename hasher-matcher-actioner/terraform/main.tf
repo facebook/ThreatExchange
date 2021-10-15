@@ -130,7 +130,10 @@ module "counters" {
   source_stream_arn = each.value
   source_table_name = each.key
 
-  counts_datastore = module.datastore.counts_datastore
+  counts_datastore = {
+    name = module.datastore.counts_datastore.name
+    arn  = module.datastore.counts_datastore.arn
+  }
 
   log_retention_in_days = var.log_retention_in_days
   measure_performance   = var.measure_performance
