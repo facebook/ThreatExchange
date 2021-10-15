@@ -12,7 +12,6 @@ from hmalib.common.models.signal import (
     ThreatExchangeSignalMetadata,
     PendingThreatExchangeOpinionChange,
 )
-from hmalib.common.count_models import MatchByPrivacyGroupCounter
 
 from .ddb_test_common import DynamoDBTableTestBase
 
@@ -381,41 +380,3 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
             PendingThreatExchangeOpinionChange.MARK_TRUE_POSITIVE.value
             == query_metadata.pending_opinion_change.value
         )
-
-
-class MatchByPrivacyGroupCounterTestCase(DynamoDBTableTestBase, unittest.TestCase):
-    @classmethod
-    def get_table_definition(cls):
-        return DATASTORE_TABLE_DEF
-
-    def test_full_flow(self):
-        with self.fresh_dynamodb():
-            # Before anything has been done.
-            self.assertEqual({}, MatchByPrivacyGroupCounter.get_all_counts(self.table))
-            self.assertEqual(
-                0, MatchByPrivacyGroupCounter.get_count(self.table, "specific-pg")
-            )
-
-            # Do an update
-            MatchByPrivacyGroupCounter.increment_counts(
-                self.table, {"a-privacy-group": 100, "another-privacy-group": 32}
-            )
-
-            self.assertEqual(
-                {"a-privacy-group": 100, "another-privacy-group": 32},
-                MatchByPrivacyGroupCounter.get_all_counts(self.table),
-            )
-
-            # Do another update
-            MatchByPrivacyGroupCounter.increment_counts(
-                self.table, {"a-privacy-group": 100, "another-privacy-group": 32}
-            )
-
-            self.assertEqual(
-                {"a-privacy-group": 200, "another-privacy-group": 64},
-                MatchByPrivacyGroupCounter.get_all_counts(self.table),
-            )
-
-            self.assertEqual(
-                200, MatchByPrivacyGroupCounter.get_count(self.table, "a-privacy-group")
-            )

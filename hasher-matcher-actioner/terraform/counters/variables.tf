@@ -10,14 +10,17 @@ variable "lambda_docker_info" {
   type = object({
     uri = string
     commands = object({
-      match_counter = string
+      ddb_stream_counter = string
     })
   })
 }
 
-variable "matches_sns_topic_arn" {
-  description = "ARN for the topic that collects matches from matchers."
-  type        = string
+variable "counts_datastore" {
+  description = "The DynamoDBTable we'll be writing counts to."
+  type = object({
+    name = string
+    arn  = string
+  })
 }
 
 variable "log_retention_in_days" {
@@ -25,12 +28,14 @@ variable "log_retention_in_days" {
   type        = number
 }
 
-variable "datastore" {
-  description = "DynamoDB Table to store hash and match information into"
-  type = object({
-    name = string
-    arn  = string
-  })
+variable "source_stream_arn" {
+  description = "ARN for a DynamoDB Stream"
+  type        = string
+}
+
+variable "source_table_name" {
+  description = "Table for which this stream is configured."
+  type        = string
 }
 
 variable "additional_tags" {

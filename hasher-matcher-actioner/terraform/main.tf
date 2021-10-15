@@ -104,19 +104,39 @@ module "indexer" {
 }
 
 module "counters" {
+  # DynamoDB does not necessarily [1] send the table name to the stream processor.
+  # So instead of relying on it, we configure multiple lambdas using the same
+  # underlying code. Since there is a lot to configure per lambda, we replicate
+  # the module instead of individual resources inside the module.
+
+  # 1: https://stackoverflow.com/questions/35278881/how-to-get-the-table-name-in-aws-dynamodb-trigger-function
+
+  for_each = {
+    HMADataStore = module.datastore.primary_datastore.stream_arn
+    HMABanks     = module.datastore.banks_datastore.stream_arn
+  }
+
   source          = "./counters"
   prefix          = var.prefix
   additional_tags = merge(var.additional_tags, local.common_tags)
-  datastore       = module.datastore.primary_datastore
+
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
-      match_counter = "hmalib.lambdas.match_counter.lambda_handler"
+      ddb_stream_counter = "hmalib.lambdas.ddb_stream_counter.lambda_handler"
     }
   }
+
+  source_stream_arn = each.value
+  source_table_name = each.key
+
+  counts_datastore = {
+    name = module.datastore.counts_datastore.name
+    arn  = module.datastore.counts_datastore.arn
+  }
+
   log_retention_in_days = var.log_retention_in_days
   measure_performance   = var.measure_performance
-  matches_sns_topic_arn = aws_sns_topic.matches.arn
 }
 
 module "fetcher" {
@@ -603,7 +623,6 @@ module "dashboard" {
     module.fetcher.fetcher_function_name,
     module.indexer.indexer_function_name,
     module.actions.writebacker_function_name,
-    module.counters.match_counter_function_name
   ]
   queues_to_monitor = [
     (["ImageQueue", aws_sqs_queue.submissions_queue.name]),

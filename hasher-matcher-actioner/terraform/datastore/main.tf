@@ -34,6 +34,9 @@ resource "aws_dynamodb_table" "hma_datastore" {
     type = "S"
   }
 
+  stream_enabled   = true
+  stream_view_type = "NEW_IMAGE"
+
   global_secondary_index {
     name            = "GSI-1"
     hash_key        = "GSI1-PK"
@@ -123,6 +126,10 @@ resource "aws_dynamodb_table" "hma_banks" {
     type = "S"
   }
 
+  stream_enabled   = true
+  stream_view_type = "NEW_IMAGE"
+
+
   tags = merge(
     var.additional_tags,
     {
@@ -131,6 +138,9 @@ resource "aws_dynamodb_table" "hma_banks" {
   )
 
   lifecycle {
+    # To prevent execution of plans which would cause this datastore to get
+    # destroyed. Once in the hands of partners, we have to be extra careful to
+    # not accidentally delete their data. 
     prevent_destroy = true
   }
 
@@ -152,5 +162,23 @@ resource "aws_dynamodb_table" "hma_banks" {
     name            = "BankMemberIdIndex"
     hash_key        = "BankMemberIdIndex-BankMemberId"
     projection_type = "KEYS_ONLY"
+  }
+}
+
+
+resource "aws_dynamodb_table" "hma_counts" {
+  name         = "${var.prefix}-HMACounts"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "PK"
+  range_key    = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "SK"
+    type = "S"
   }
 }
