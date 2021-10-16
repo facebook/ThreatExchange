@@ -190,7 +190,10 @@ class SimpleDescriptorRollup:
     def from_threat_updates_json(
         cls, my_app_id: int, te_json: t.Dict[str, t.Any]
     ) -> t.Optional["SimpleDescriptorRollup"]:
-        if te_json["should_delete"] or not te_json["descriptors"]["data"]:
+        if te_json["should_delete"]:
+            return None
+        # https://github.com/facebook/ThreatExchange/issues/834
+        if not te_json.get("descriptors", {}).get("data"):
             return None
         descriptors = []
         for descriptor_json in te_json["descriptors"]["data"]:

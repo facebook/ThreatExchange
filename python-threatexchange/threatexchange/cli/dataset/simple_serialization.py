@@ -61,9 +61,10 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
         for threat_type, items in row_by_type.items():
             path = state_dir / f"simple.{threat_type}{Dataset.EXTENSION}"
             ret.append(path)
-            with path.open("w") as f:
+            with path.open("w", encoding="utf-8", newline="") as f:
                 writer = csv.writer(f)
-                writer.writerows(item.as_csv_row() for item in items)
+                for item in items:
+                    writer.writerow(item.as_csv_row())
         return ret
 
     @classmethod
@@ -80,7 +81,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
             indicator_type = match.group(1)
             # Violate your warranty with class state! Not threadsafe!
             csv.field_size_limit(path.stat().st_size)  # dodge field size problems
-            with path.open("r", newline="") as f:
+            with path.open("r", encoding="utf-8", newline="") as f:
                 for row in csv.reader(f):
                     ret.append(
                         cls(
