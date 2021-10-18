@@ -7,7 +7,7 @@ import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import {Action} from '../../../pages/settings/ActionSettingsTab';
 
-interface WebhookTypeInterface extends Record<string, any> {
+interface WebhookTypeInterface extends Record<string, string> {
   WebhookPostActionPerformer: string;
   WebhookGetActionPerformer: string;
   WebhookDeleteActionPerformer: string;

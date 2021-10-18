@@ -74,7 +74,7 @@ export default function PreviewableDropzone({
   contentType,
   file,
   handleFileChange,
-}: PreviewableDropzoneProps) {
+}: PreviewableDropzoneProps): JSX.Element {
   // A dropzone for dnd and click-to-browse style file selection which can
   // preview select files. Previews are hidden by default.
 

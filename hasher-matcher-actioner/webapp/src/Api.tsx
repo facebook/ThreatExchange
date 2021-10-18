@@ -277,6 +277,13 @@ export async function deleteDataset(key: string): Promise<{response: string}> {
   return apiPost(`datasets/delete/${key}`);
 }
 
+export type PrivacyGroup = {
+  privacyGroupId: string;
+  localFetcherActive: boolean;
+  localWriteBack: boolean;
+  localMatcherActive: boolean;
+};
+
 type Dataset = {
   privacy_group_id: string;
   privacy_group_name: string;

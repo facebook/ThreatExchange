@@ -4,8 +4,7 @@
 
 import React, {useState} from 'react';
 import axios from 'axios';
-import {Modal, Container, Row, Col, Form, Button} from 'react-bootstrap';
-import {setNestedObjectValues} from 'formik';
+import {Modal, Container, Row, Col} from 'react-bootstrap';
 import {ContentType} from '../../utils/constants';
 import BankMemberForm from '../../forms/BankMemberForm';
 import {addBankMember, fetchMediaUploadURL} from '../../Api';
@@ -25,6 +24,7 @@ function putFileWithProgress(
 ): Promise<void> {
   const config = {
     // Can't type the following line any better. Even axios types leave it as any!
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onUploadProgress(progressEvent: any) {
       const percentCompleted = Math.round(
         (progressEvent.loaded * 100) / progressEvent.total,

@@ -17,7 +17,7 @@ export default function ChoiceCard({
   description,
   onSelect,
   selected,
-}: ChoiceCardProps) {
+}: ChoiceCardProps): JSX.Element {
   return (
     <Card
       border={selected ? 'primary' : ''}
