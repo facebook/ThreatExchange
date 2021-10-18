@@ -63,7 +63,9 @@ class ThreatUpdateJSON(ThreatUpdateSerialization):
     @property
     def should_delete(self) -> bool:
         """This record is a tombstone, and we should delete our copy"""
-        return self.raw_json["should_delete"]
+        # This should just be should_delete only, but see
+        # https://github.com/facebook/ThreatExchange/issues/834
+        return self.raw_json["should_delete"] or "descriptors" not in self.raw_json
 
     @property
     def key(self):
