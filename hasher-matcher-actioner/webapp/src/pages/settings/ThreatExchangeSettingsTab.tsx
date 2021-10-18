@@ -19,18 +19,13 @@ import {
   SAMPLE_PG_ID,
 } from '../../components/HolidaysDatasetInformationBlock';
 import {
+  PrivacyGroup,
   fetchAllDatasets,
   syncAllDatasets,
   updateDataset,
   deleteDataset,
 } from '../../Api';
 
-type PrivacyGroup = {
-  privacyGroupId: string;
-  localFetcherActive: boolean;
-  localWriteBack: boolean;
-  localMatcherActive: boolean;
-};
 type Dataset = {
   privacy_group_id: string;
   privacy_group_name: string;

@@ -3,20 +3,9 @@
  */
 
 import React, {useState} from 'react';
-import {
-  Col,
-  Button,
-  Row,
-  Form,
-  Collapse,
-  Spinner,
-  Alert,
-  Card,
-  InputGroup,
-} from 'react-bootstrap';
+import {Col, Button, Row, Form, Collapse, Spinner, Card} from 'react-bootstrap';
 import {useHistory} from 'react-router-dom';
 
-import classNames from 'classnames';
 import {submitContentViaURL, submitContentViaPutURLUpload} from '../Api';
 import {ContentType, SubmissionType} from '../utils/constants';
 

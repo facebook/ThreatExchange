@@ -34,7 +34,7 @@ export default function BankDetailsForm({
   bankDescription,
   handleSubmit,
   formResetCounter,
-}: BankDetailsFormProps) {
+}: BankDetailsFormProps): JSX.Element {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {

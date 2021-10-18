@@ -2,7 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, SyntheticEvent, useEffect} from 'react';
+import React, {useState, SyntheticEvent} from 'react';
 import {Form, Button, ProgressBar} from 'react-bootstrap';
 import {useFormik} from 'formik';
 import PreviewableDropzone from './PreviewableDropzone';
@@ -26,7 +26,7 @@ export default function BankMemberForm({
   type,
   handleSubmit,
   uploadProgress,
-}: BankMemberFormProps) {
+}: BankMemberFormProps): JSX.Element {
   const [saving, setSaving] = useState(false);
 
   const formik = useFormik({

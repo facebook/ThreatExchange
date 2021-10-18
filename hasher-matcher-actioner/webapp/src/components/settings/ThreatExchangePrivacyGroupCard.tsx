@@ -16,6 +16,7 @@ import {
 } from 'react-bootstrap';
 import DOMPurify from 'dompurify';
 import {CopyableTextField} from '../../utils/TextFieldsUtils';
+import {PrivacyGroup} from '../../Api';
 
 type ThreatExchangePrivacyGroupCardProps = {
   fetcherActive: boolean;
@@ -27,7 +28,7 @@ type ThreatExchangePrivacyGroupCardProps = {
   writeBack: boolean;
   hashCount: number;
   matchCount: number;
-  onSave: (pg: any) => void;
+  onSave: (pg: PrivacyGroup) => void;
   onDelete: (privacyGroupId: string) => void;
 };
 

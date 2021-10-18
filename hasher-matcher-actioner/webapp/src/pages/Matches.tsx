@@ -63,7 +63,7 @@ function MatchListFilters({
   }, [filterAttribute, filterString]);
 
   const history = useHistory();
-  const loadResults = (e: any) => {
+  const loadResults = (e: React.FormEvent<HTMLElement>) => {
     history.push(`?${localFilterAttribute}=${localFilterString}`);
     e.preventDefault(); // Prevent form submit
   };
@@ -79,14 +79,18 @@ function MatchListFilters({
               <Form.Control
                 as="select"
                 value={localFilterAttribute}
-                onChange={(e: any) => setLocalFilterAttribute(e.target.value)}>
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setLocalFilterAttribute(e.target.value)
+                }>
                 <option value="contentId">Content ID</option>
                 <option value="signalId">Signal ID</option>
               </Form.Control>
             </InputGroup.Prepend>
             <FormControl
               ref={inputRef}
-              onChange={(e: any) => setLocalFilterString(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setLocalFilterString(e.target.value)
+              }
               value={localFilterString || ''}
             />
             <InputGroup.Append>

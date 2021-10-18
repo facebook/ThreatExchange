@@ -3,7 +3,7 @@
  */
 
 import React, {useState} from 'react';
-import {Modal, Container, Row, Col, Form, Button} from 'react-bootstrap';
+import {Modal, Container, Row, Col, Button} from 'react-bootstrap';
 import {NavLink} from 'react-router-dom';
 import {Auth} from 'aws-amplify';
 import './styles/_sidebar.scss';

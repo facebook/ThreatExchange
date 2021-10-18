@@ -85,6 +85,11 @@
     "no-shadow": "off",
     "@typescript-eslint/no-shadow": [
       "error"
+    ],
+    // enabled inline undefined check (short cut we can refactor if we want) see:
+    // https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/eslint-plugin/docs/rules/no-non-null-assertion.md
+    "@typescript-eslint/no-non-null-assertion": [
+      "off"
     ]
   },
   "settings": {
