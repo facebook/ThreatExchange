@@ -89,6 +89,7 @@ class AWSCloudWatchReporter(object):
     # https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_PutMetricData.html
     # TODO Something better than 'hit limit=skip'
     PUT_METRIC_DATA_VALUES_LIMIT = 150
+    PUT_METRIC_PER_PUT_LIMIT = 20
 
     def __init__(self, namespace: str):
         self.client = boto3.client("cloudwatch")
@@ -99,7 +100,7 @@ class AWSCloudWatchReporter(object):
         name: str,
         value_count_mapping: t.Mapping[t.Union[int, float], int],
         unit: AWSCloudWatchUnit,
-    ) -> AWSCloudWatchMetricDatum:
+    ) -> t.Optional[AWSCloudWatchMetricDatum]:
         """
         For reporting multiple values. Requires a dict from values ->
         recurrence_count.
@@ -116,13 +117,14 @@ class AWSCloudWatchReporter(object):
             5: 1
         }
         """
-        if len(value_count_mapping) >= self.PUT_METRIC_DATA_VALUES_LIMIT:
+        if (
+            not value_count_mapping
+            or len(value_count_mapping) >= self.PUT_METRIC_DATA_VALUES_LIMIT
+        ):
             logger.warning(
                 "Skipping `AWSCloudWatchReporter.get_multi_value_datums`:  number of metric subvalues would have errored on write."
             )
-            return AWSCloudWatchMetricDatum(
-                metric_name=name, values=[], counts=[], unit=unit
-            )
+            return None
 
         values = []
         counts = []
@@ -149,7 +151,7 @@ class AWSCloudWatchReporter(object):
 
     def report(self, metric_datums: t.List[AWSCloudWatchMetricDatum]):
         # Publish metric datums to cloudwatch
-        if metric_datums and len(metric_datums) < self.PUT_METRIC_DATA_VALUES_LIMIT:
+        if metric_datums and len(metric_datums) <= self.PUT_METRIC_PER_PUT_LIMIT:
             self._put_metric_data(self.namespace, metric_datums)
         else:
             logger.warning(
@@ -159,6 +161,7 @@ class AWSCloudWatchReporter(object):
     def _put_metric_data(
         self, namespace: str, metric_datums: t.List[AWSCloudWatchMetricDatum]
     ):
+
         self.client.put_metric_data(
             Namespace=namespace, MetricData=[x.to_dict() for x in metric_datums]
         )
