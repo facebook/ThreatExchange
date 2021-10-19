@@ -41,6 +41,7 @@ THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 BANKS_TABLE = os.environ["BANKS_TABLE"]
+COUNTS_TABLE_NAME = os.environ["COUNTS_TABLE_NAME"]
 BANKS_MEDIA_BUCKET_NAME = os.environ["BANKS_MEDIA_BUCKET_NAME"]
 IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
@@ -178,7 +179,7 @@ app.mount(
     ),
 )
 
-app.mount("/stats/", get_stats_api(dynamodb_table=dynamodb.Table(DYNAMODB_TABLE)))
+app.mount("/stats/", get_stats_api(counts_table=dynamodb.Table(COUNTS_TABLE_NAME)))
 
 app.mount(
     "/actions/",

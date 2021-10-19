@@ -451,8 +451,10 @@ module "api" {
       api_auth = "hmalib.lambdas.api.api_auth.lambda_handler"
     }
   }
-  datastore       = module.datastore.primary_datastore
-  banks_datastore = module.datastore.banks_datastore
+  datastore        = module.datastore.primary_datastore
+  banks_datastore  = module.datastore.banks_datastore
+  counts_datastore = module.datastore.counts_datastore
+
   image_data_storage = {
     bucket_name  = module.hashing_data.image_folder_info.bucket_name
     image_prefix = module.hashing_data.image_folder_info.key

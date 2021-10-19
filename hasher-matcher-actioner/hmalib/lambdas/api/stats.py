@@ -11,6 +11,7 @@ from hmalib.common.logging import get_logger
 from hmalib import metrics
 from hmalib.metrics import query as metrics_query
 from hmalib.metrics.query import is_publishing_metrics
+from hmalib.common.models.count import AggregateCount
 
 from hmalib.lambdas.api.middleware import (
     jsoninator,
@@ -52,7 +53,19 @@ class StatResponse(JSONifiable):
         return {"card": self.stat.to_json()}
 
 
-def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
+@dataclass
+class AggregateCountResponse(JSONifiable):
+    """
+    Represents a simple set of Aggregate counts
+    """
+
+    counts: t.Dict[str, int]
+
+    def to_json(self) -> t.Dict:
+        return asdict(self)
+
+
+def get_stats_api(counts_table: Table) -> bottle.Bottle:
     """
     Closure for all dependencies for the stats APIs.
     """
@@ -108,6 +121,27 @@ def get_stats_api(dynamodb_table: Table) -> bottle.Bottle:
                 metric_time_period,
                 count_with_graphs[metric].graph_data,
             )
+        )
+
+    @stats_api.get("/counts/", apply=[jsoninator])
+    def aggregate_counts() -> AggregateCountResponse:
+        """
+        return the set of aggregate_counts
+        """
+        if not is_publishing_metrics():
+            return bottle.abort(404, "This HMA instance is not publishing metrics.")
+
+        PIPELINE_COUNTS_TO_SURFACE = [
+            AggregateCount.PipelineNames.submits,
+            AggregateCount.PipelineNames.hashes,
+            AggregateCount.PipelineNames.matches,
+        ]
+
+        return AggregateCountResponse(
+            {
+                count_name: int(AggregateCount(count_name).get_value(counts_table))
+                for count_name in PIPELINE_COUNTS_TO_SURFACE
+            }
         )
 
     return stats_api
