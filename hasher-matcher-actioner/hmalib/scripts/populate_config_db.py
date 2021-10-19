@@ -20,6 +20,7 @@ import typing as t
 import re
 from botocore.exceptions import ClientError
 from hmalib.common.configs.fetcher import ThreatExchangeConfig
+from hmalib.common.configs.fetcher import StopNCIIExchangeConfig
 from hmalib.common.configs.evaluator import ActionRule
 from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
@@ -91,6 +92,15 @@ def load_defaults(_args):
             in_use=True,
             description="test description",
             matcher_active=True,
+        ),
+        StopNCIIExchangeConfig(
+            name="NCIIConfig",
+            fetcher_active=True,
+            write_back=True,
+            in_use=True,
+            description="NCII hashes",
+            matcher_active=True,
+            next_fetch_timestamp=0,
         ),
         WebhookPostActionPerformer(
             name="EnqueueForReview",

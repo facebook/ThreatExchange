@@ -26,3 +26,20 @@ class ThreatExchangeConfig(HMAConfig):
     def privacy_group_id(self) -> str:
         """TE Configs are keyed by their privacy group ID"""
         return self.name
+
+
+@dataclass
+class StopNCIIExchangeConfig(HMAConfig):
+    """
+    Config for the NCII dataset
+
+    Consumed by the fetcher to get data from NCII API,
+    similar to ThreatExchangeConfig.
+    """
+
+    fetcher_active: bool
+    description: str
+    in_use: bool
+    write_back: bool
+    matcher_active: bool
+    next_fetch_timestamp: int
