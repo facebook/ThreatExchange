@@ -12,7 +12,7 @@ from hmalib.metrics.cloudwatch import AWSCloudWatchReporter
 Does not really have tests, but more of a demo. :)
 
 Run with
-$ MEASURE_PERFORMANCE=1 PYTHONPATH=. python scripts/gen-fake-cloudwatch-metrics.py
+$ MEASURE_PERFORMANCE=1 PYTHONPATH=. python scripts/gen_fake_cloudwatch_metrics.py
 """
 
 
@@ -38,7 +38,7 @@ def main():
         except KeyboardInterrupt:
             break
 
-    flush("ThreatExchange/HMA-Test")
+    flush(namespace="ThreatExchange/HMA-Test-Cloudwatch-Reporter")
 
 
 if __name__ == "__main__":
