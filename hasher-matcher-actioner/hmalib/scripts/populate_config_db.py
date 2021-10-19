@@ -20,7 +20,7 @@ import typing as t
 import re
 from botocore.exceptions import ClientError
 from hmalib.common.configs.fetcher import ThreatExchangeConfig
-from hmalib.common.configs.fetcher import StopNCIIExchangeConfig
+from hmalib.common.configs.fetcher import NonThreatExchangeConfig
 from hmalib.common.configs.evaluator import ActionRule
 from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
@@ -93,7 +93,7 @@ def load_defaults(_args):
             description="test description",
             matcher_active=True,
         ),
-        StopNCIIExchangeConfig(
+        NonThreatExchangeConfig(
             name="NCIIConfig",
             fetcher_active=True,
             write_back=True,

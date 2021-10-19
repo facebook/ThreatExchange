@@ -29,12 +29,9 @@ class ThreatExchangeConfig(HMAConfig):
 
 
 @dataclass
-class StopNCIIExchangeConfig(HMAConfig):
+class NonThreatExchangeConfig(HMAConfig):
     """
-    Config for the NCII dataset
-
-    Consumed by the fetcher to get data from NCII API,
-    similar to ThreatExchangeConfig.
+    Config for the NonThreatExchange datasets(i.e. StopNCII hashes)
     """
 
     fetcher_active: bool
