@@ -67,6 +67,13 @@ variable "banks_datastore" {
   })
 }
 
+variable "counts_datastore" {
+  description = "The DynamoDBTable we be write counts to."
+  type = object({
+    name = string
+    arn  = string
+  })
+}
 
 variable "log_retention_in_days" {
   description = "How long to retain cloudwatch logs for lambda functions in days"
