@@ -131,7 +131,7 @@ def get_stats_api(counts_table: Table) -> bottle.Bottle:
         if not is_publishing_metrics():
             return bottle.abort(404, "This HMA instance is not publishing metrics.")
 
-        PIPELINE_COUNTS_TO_SUFACE = [
+        PIPELINE_COUNTS_TO_SURFACE = [
             AggregateCount.PipelineNames.submits,
             AggregateCount.PipelineNames.hashes,
             AggregateCount.PipelineNames.matches,
@@ -140,7 +140,7 @@ def get_stats_api(counts_table: Table) -> bottle.Bottle:
         return AggregateCountResponse(
             {
                 count_name: int(AggregateCount(count_name).get_value(counts_table))
-                for count_name in PIPELINE_COUNTS_TO_SUFACE
+                for count_name in PIPELINE_COUNTS_TO_SURFACE
             }
         )
 
