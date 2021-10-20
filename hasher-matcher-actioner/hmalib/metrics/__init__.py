@@ -167,14 +167,16 @@ if measure_performance:
             datums = []
             datums.extend([reporter.get_counter_datum(k, v) for k, v in counts.items()])
 
-            datums.extend(
-                [
-                    reporter.get_multi_value_datums(
-                        k, v, AWSCloudWatchUnit.Milliseconds
-                    )
-                    for k, v in timers.items()
-                ]
-            )
+            for duration_name, value_count_mapping in timers.items():
+                # if value_count_mapping is empty or > PUT_METRIC_DATA_VALUES_LIMIT,
+                # method returns None. filter those out otherwise report will throw an error.
+                if datum := reporter.get_multi_value_datums(
+                    name=duration_name,
+                    value_count_mapping=value_count_mapping,
+                    unit=AWSCloudWatchUnit.Milliseconds,
+                ):
+                    datums.append(datum)
+
             reporter.report(datums)
         except Exception as e:
             logger.exception("Couldn't report metrics to cloudwatch")
