@@ -4,25 +4,40 @@ from hmalib.common.config import HMAConfig
 
 
 @dataclass
-class ThreatExchangeConfig(HMAConfig):
+class HashExchangeConfig(HMAConfig):
     """
-    Config for ThreatExchange integrations
-
-    Consumed by the fetcher to get data from the right places in
-    ThreatExchange, downstream to control write-back information
+    Base class for hash exchange configs, this class has common
+    properties for all config types. Consumed by the fetcher to
+    get hash data , downstream to control write-back information
     like reactions and uploads, and possibly other places that
-    need to join HMA and ThreatExchange data.
+    need to join HMA and hash data.
     """
 
-    # TODO - consider hiding name field and always populating with ID
     fetcher_active: bool
-    privacy_group_name: str
     description: str
     in_use: bool
     write_back: bool
     matcher_active: bool
 
+
+@dataclass
+class ThreatExchangeConfig(HashExchangeConfig):
+    """
+    Config for ThreatExchange datasets.
+    """
+
+    privacy_group_name: str
+
     @property
     def privacy_group_id(self) -> str:
         """TE Configs are keyed by their privacy group ID"""
         return self.name
+
+
+@dataclass
+class NonThreatExchangeConfig(HashExchangeConfig):
+    """
+    Config for the NonThreatExchange datasets.
+    """
+
+    next_fetch_timestamp: int
