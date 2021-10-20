@@ -673,7 +673,6 @@ class NonThreatExchangeAPI:
             "pageSize": self.page_size,
         }
         url = self._get_url("FetchHashes", params)
-        print(url)
         headers = {
             "x-functions-key": self.x_functions_key,
             "Ocp-Apim-Subscription-Key": self.ocp_apim_subscription_key,

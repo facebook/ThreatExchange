@@ -25,7 +25,6 @@ class NonThreatExchangeAPIIntegrationTest(unittest.TestCase):
         Assumes that the response has at least one hash record.
         """
         response = self.api.get_hash_records()
-        print(response)
         self.assertTrue(
             isinstance(response, collections.abc.Sequence)
             and not isinstance(response, staticmethod),
