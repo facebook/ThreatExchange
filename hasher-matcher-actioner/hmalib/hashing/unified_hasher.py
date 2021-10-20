@@ -9,8 +9,11 @@ from mypy_boto3_sqs.client import SQSClient
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType, BytesHasher
 
+from hmalib.common.logging import get_logger
 from hmalib.common.models.pipeline import PipelineHashRecord
 from hmalib import metrics
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -81,7 +84,13 @@ class UnifiedHasher:
                 signal_type, BytesHasher
             ):
                 with metrics.timer(metrics.names.hasher.hash(signal_type.get_name())):
-                    hash_value = signal_type.hash_from_bytes(bytes_)
+                    try:
+                        hash_value = signal_type.hash_from_bytes(bytes_)
+                    except Exception:
+                        logger.exception(
+                            "Encountered exception while trying to hash_from_bytes. Unable to hash content."
+                        )
+                        continue
 
                 yield ContentSignal(content_type, signal_type, hash_value)
 
