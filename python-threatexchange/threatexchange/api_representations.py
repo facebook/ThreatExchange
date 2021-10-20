@@ -8,6 +8,7 @@ threatexchange API.
 from datetime import datetime
 from dateutil.parser import parse
 from dataclasses import dataclass
+import typing as t
 
 
 def _parse_datetime_from_iso_8601(datestr: str) -> datetime:
@@ -44,4 +45,50 @@ class ThreatPrivacyGroup:
             bool(d["members_can_use"]),
             bool(d["threat_updates_enabled"]),
             _parse_datetime_from_iso_8601(d["last_updated"]),
+        )
+
+
+@dataclass
+class CSPFeedback:
+    source: str
+    feedbackValue: str
+    tags: t.List[str]
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "CSPFeedback":
+        return cls(
+            d.get("source", None),
+            d.get("feedbackValue", None),
+            d.get("tags", None),
+        )
+
+
+@dataclass
+class HashRecord:
+    lastModtimestamp: int
+    hashValue: str
+    hashStatus: str
+    signalType: str
+    caseNumbers: t.Dict[str, str]
+    tags: t.List[str]
+    hashRegions: t.List[str]
+    CSPFeedbacks: t.List[CSPFeedback]
+
+    def __eq__(self, other) -> bool:
+        return self.hashValue == other.hashValue
+
+    def __hash__(self) -> bool:
+        return hash(self.hashValue)
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "HashRecord":
+        return cls(
+            lastModtimestamp=d.get("lastModtimestamp", None),
+            hashValue=d.get("hashValue", None),
+            hashStatus=d.get("hashStatus", None),
+            signalType=d.get("signalType", None),
+            caseNumbers=d.get("caseNumbers", None),
+            tags=d.get("tags", None),
+            hashRegions=d.get("hashRegions", None),
+            CSPFeedbacks=[CSPFeedback.from_dict(x) for x in d.get("CSPFeedbacks", [])],
         )

@@ -18,7 +18,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-from .api_representations import ThreatPrivacyGroup
+from .api_representations import ThreatPrivacyGroup, HashRecord
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -601,3 +601,102 @@ class ThreatExchangeAPI:
         response = self.get_json_from_url(url)
 
         return response["descriptors"]["data"]
+
+
+class NonThreatExchangeAPI:
+    _BASE_URL = "https://nciiapi.azure-api.net/api"
+
+    def __init__(
+        self,
+        x_functions_key: str,
+        ocp_apim_subscription_key: str,
+        start_timestamp: int,
+        *,
+        endpoint_override: t.Optional[str] = None,
+        page_size: int = 1000,
+    ) -> None:
+        self.x_functions_key = x_functions_key
+        self.ocp_apim_subscription_key = ocp_apim_subscription_key
+        self.start_timestamp = start_timestamp
+        self.page_size = page_size
+        self._base_url = endpoint_override or self._BASE_URL
+
+    def get_json_from_url(
+        self, url, params=None, *, json_obj_hook: t.Callable = None, headers=None
+    ):
+        """
+        Perform an HTTP GET request, and return the JSON response payload.
+        Same timeouts and retry strategy as `_get_session` above.
+        """
+        with self._get_session() as session:
+            response = requests.get(url, params=params or {}, headers=headers or {})
+            response.raise_for_status()
+            return response.json(object_hook=json_obj_hook)
+
+    def _get_session(self):
+        """
+        Custom requests sesson
+
+        Ideally, should be used within a context manager:
+        ```
+        with self._get_session() as session:
+            session.get()...
+        ```
+
+        If using without a context manager, ensure you end up calling close() on
+        the returned value.
+        """
+        session = requests.Session()
+        session.mount(
+            self._base_url,
+            adapter=TimeoutHTTPAdapter(
+                timeout=60,
+                max_retries=Retry(
+                    total=4,
+                    status_forcelist=[429, 500, 502, 503, 504],
+                    allowed_methods=["HEAD", "GET", "OPTIONS"],
+                    backoff_factor=0.2,  # ~1.5 seconds of retries
+                ),
+            ),
+        )
+        return session
+
+    def get_hash_records(
+        self,
+    ) -> t.List[HashRecord]:
+        """
+        Returns a paginated list of all hash records from start_timestamp.
+        """
+
+        params = {
+            "startTimestamp": self.start_timestamp,
+            "pageSize": self.page_size,
+        }
+        url = self._get_url("FetchHashes", params)
+        print(url)
+        headers = {
+            "x-functions-key": self.x_functions_key,
+            "Ocp-Apim-Subscription-Key": self.ocp_apim_subscription_key,
+        }
+        response = self.get_json_from_url(url=url, headers=headers)
+        return [HashRecord.from_dict(d) for d in response["hashRecords"]]
+
+    def _get_url(self, sub_path: t.Optional[str], query_dict: t.Dict = {}) -> str:
+        """
+        Returns a URL for a sub-path and a dictionary of query
+        parameters.
+        """
+
+        query = urllib.parse.urlencode(query_dict)
+
+        base_url_parts = urllib.parse.urlparse(self._base_url)
+        url_parts = urllib.parse.ParseResult(
+            base_url_parts.scheme,
+            base_url_parts.netloc,
+            f"{base_url_parts.path}/{sub_path}",
+            base_url_parts.params,
+            query,
+            base_url_parts.fragment,
+        )
+
+        return urllib.parse.urlunparse(url_parts)
