@@ -101,18 +101,26 @@ def lambda_handler(event, context):
 
         for media in media_to_process:
             if not hasher.supports(media.content_type):
-                logger.warn(f"Unprocessable content type: {media.content_type}")
+                logger.warn(
+                    f"Unprocessable content type: {media.content_type}, id: {media.content_id}"
+                )
                 continue
 
             with metrics.timer(metrics.names.hasher.download_file):
-                if hasattr(media, "key") and hasattr(media, "bucket"):
-                    # Classic duck-typing. If it has key and bucket, must be an
-                    # S3 submission.
-                    bytes_: bytes = S3BucketContentSource(
-                        media.bucket, IMAGE_PREFIX
-                    ).get_bytes(media.content_id)
-                else:
-                    bytes_: bytes = URLContentSource().get_bytes(media.url)
+                try:
+                    if hasattr(media, "key") and hasattr(media, "bucket"):
+                        # Classic duck-typing. If it has key and bucket, must be an
+                        # S3 submission.
+                        bytes_: bytes = S3BucketContentSource(
+                            media.bucket, IMAGE_PREFIX
+                        ).get_bytes(media.content_id)
+                    else:
+                        bytes_: bytes = URLContentSource().get_bytes(media.url)
+                except Exception:
+                    logger.exception(
+                        f"Encountered exception while trying to get_bytes for content id: {media.content_id}. Unable to hash content."
+                    )
+                    continue
 
             for signal in hasher.get_hashes(media.content_type, bytes_):
                 if isinstance(media, BankSubmissionMessage):
