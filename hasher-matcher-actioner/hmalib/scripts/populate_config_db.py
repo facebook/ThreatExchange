@@ -93,15 +93,6 @@ def load_defaults(_args):
             description="test description",
             matcher_active=True,
         ),
-        NonThreatExchangeConfig(
-            name="NCIIConfig",
-            fetcher_active=True,
-            write_back=True,
-            in_use=True,
-            description="NCII hashes",
-            matcher_active=True,
-            next_fetch_timestamp=0,
-        ),
         WebhookPostActionPerformer(
             name="EnqueueForReview",
             url="https://webhook.site/ff7ebc37-514a-439e-9a03-46f86989e195",

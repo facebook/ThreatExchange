@@ -4,7 +4,21 @@ from hmalib.common.config import HMAConfig
 
 
 @dataclass
-class ThreatExchangeConfig(HMAConfig):
+class HashExchangeConfig(HMAConfig):
+    """
+    Base class for hash exchange configs, this class has common
+    properties for all configs.
+    """
+
+    fetcher_active: bool
+    description: str
+    in_use: bool
+    write_back: bool
+    matcher_active: bool
+
+
+@dataclass
+class ThreatExchangeConfig(HashExchangeConfig):
     """
     Config for ThreatExchange integrations
 
@@ -14,13 +28,7 @@ class ThreatExchangeConfig(HMAConfig):
     need to join HMA and ThreatExchange data.
     """
 
-    # TODO - consider hiding name field and always populating with ID
-    fetcher_active: bool
     privacy_group_name: str
-    description: str
-    in_use: bool
-    write_back: bool
-    matcher_active: bool
 
     @property
     def privacy_group_id(self) -> str:
@@ -29,14 +37,9 @@ class ThreatExchangeConfig(HMAConfig):
 
 
 @dataclass
-class NonThreatExchangeConfig(HMAConfig):
+class NonThreatExchangeConfig(HashExchangeConfig):
     """
     Config for the NonThreatExchange datasets(i.e. StopNCII hashes)
     """
 
-    fetcher_active: bool
-    description: str
-    in_use: bool
-    write_back: bool
-    matcher_active: bool
     next_fetch_timestamp: int
