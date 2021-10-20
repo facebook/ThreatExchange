@@ -11,13 +11,14 @@ X_FUNCTIONS_KEY = os.getenv("X_FUNCTIONS_KEY")
 
 OCP_APIM_SUBSCRIPTION_KEY = os.getenv("OCP_APIM_SUBSCRIPTION_KEY")
 
+
 @unittest.skipUnless(
     X_FUNCTIONS_KEY,
     "Integration Test requires tokens. Use X_FUNCTIONS_KEY environment variable.",
 )
 class NonThreatExchangeAPIIntegrationTest(unittest.TestCase):
     def setUp(self):
-        self.api = NonThreatExchangeAPI(X_FUNCTIONS_KEY,OCP_APIM_SUBSCRIPTION_KEY,0)
+        self.api = NonThreatExchangeAPI(X_FUNCTIONS_KEY, OCP_APIM_SUBSCRIPTION_KEY, 0)
 
     def test_get_hashes(self):
         """

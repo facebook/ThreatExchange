@@ -59,7 +59,7 @@ class CSPFeedback:
         return cls(
             d.get("source", None),
             d.get("feedbackValue", None),
-            d.get("tags", None),
+            d.get("tags", []),
         )
 
 
@@ -87,8 +87,8 @@ class HashRecord:
             hashValue=d.get("hashValue", None),
             hashStatus=d.get("hashStatus", None),
             signalType=d.get("signalType", None),
-            caseNumbers=d.get("caseNumbers", None),
-            tags=d.get("tags", None),
-            hashRegions=d.get("hashRegions", None),
+            caseNumbers=d.get("caseNumbers", {}),
+            tags=d.get("tags", []),
+            hashRegions=d.get("hashRegions", []),
             CSPFeedbacks=[CSPFeedback.from_dict(x) for x in d.get("CSPFeedbacks", [])],
         )
