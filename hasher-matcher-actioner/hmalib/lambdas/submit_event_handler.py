@@ -31,36 +31,48 @@ SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 
 class SNSSubmissionRequestBase:
     """
-    Base class for submission request over SNS
+    Abstract base class for submission request over SNS.
     """
-
-    ALWAYS_REQUIRED_FIELDS = {"content_id", "content_type"}
-    REQUIRED_SUBFIELDS: set = set()
 
     @classmethod
     def could_be(cls, message: t.Dict) -> bool:
-        """Check is the required fields for this class are in the message
-        Note: it checks if the value exists not if it is valid.
-        validation is handled in try_from_messsage
         """
+        Check if the required fields for this class are in the message
+        Note: it checks if the value exists not if it is valid.
+        validation is handled in try_from_message
+        """
+        ALWAYS_REQUIRED_FIELDS = {"content_id", "content_type"}
+
         fields = message.keys()
-        if not cls.ALWAYS_REQUIRED_FIELDS.issubset(fields):
+        if not ALWAYS_REQUIRED_FIELDS.issubset(fields):
             return False
-        if not cls.REQUIRED_SUBFIELDS.issubset(fields):
+        if not cls.get_required_subfields().issubset(fields):
             return False
         return True
 
     @classmethod
-    def try_from_messsage(cls, message: t.Dict):
-        """try to create object from an event message"""
+    def try_from_message(cls, message: t.Dict):
+        """
+        Tries to create a single submission object from an event message.
+        raises a ValueError if validation checks fail.
+        """
         raise NotImplementedError()
+
+    @classmethod
+    def get_required_subfields(cls):
+        """
+        Set of subfields expected on the submission object.
+        """
+        return {}
 
     def submit(
         self,
         dynamodb_table: Table,
         submissions_queue_url: str,
     ):
-        """try to submit this request object to HMA"""
+        """
+        Submit this request object to HMA.
+        """
         raise NotImplementedError()
 
 
@@ -75,11 +87,8 @@ class SubmissionRequestViaS3(
     and handles the specific of submission
     """
 
-    REQUIRED_SUBFIELDS = {"bucket_name", "object_key"}
-
     @classmethod
-    def try_from_messsage(cls, message: t.Dict):
-        """try to create a submission from an event message"""
+    def try_from_message(cls, message: t.Dict):
         submission = cls(
             content_id=message["content_id"],
             content_type=get_content_type_for_name(message["content_type"]),
@@ -95,12 +104,15 @@ class SubmissionRequestViaS3(
             raise ValueError("Empty string given for required field")
         return submission
 
+    @classmethod
+    def get_required_subfields(cls):
+        return {"bucket_name", "object_key"}
+
     def submit(
         self,
         dynamodb_table: Table,
         submissions_queue_url: str,
     ):
-        """try to submit this request object to HMA"""
 
         # Reminder the following method does the following:
         # - Creates (or updates) the content object for the given content_id
@@ -131,11 +143,8 @@ class SubmissionRequestViaURL(SNSSubmissionRequestBase, SubmitContentViaURLReque
     and handles the specific of submission
     """
 
-    REQUIRED_SUBFIELDS = {"content_url"}
-
     @classmethod
-    def try_from_messsage(cls, message: t.Dict):
-        """try to create a submission from an event message"""
+    def try_from_message(cls, message: t.Dict):
         submission = cls(
             content_id=message["content_id"],
             content_type=get_content_type_for_name(message["content_type"]),
@@ -146,13 +155,15 @@ class SubmissionRequestViaURL(SNSSubmissionRequestBase, SubmitContentViaURLReque
             raise ValueError("Empty string given for required field")
         return submission
 
+    @classmethod
+    def get_required_subfields(cls):
+        return {"content_url"}
+
     def submit(
         self,
         dynamodb_table: Table,
         submissions_queue_url: str,
     ):
-        """try to submit this request object to HMA"""
-
         content_ref, content_ref_type = self.get_content_ref_details()
 
         record_content_submission(
@@ -182,10 +193,13 @@ def lambda_handler(event, context):
         try:
             sqs_record_body = json.loads((sqs_record["body"]))
             message = json.loads(sqs_record_body["Message"])
+            # It is possble the payload is valid for both submission types
+            # in this case we elect to submit via URL as that is the method
+            # that does not require additional permissions be given to the lambda.
             if SubmissionRequestViaURL.could_be(message):
-                submission = SubmissionRequestViaURL.try_from_messsage(message)
+                submission = SubmissionRequestViaURL.try_from_message(message)
             elif SubmissionRequestViaS3.could_be(message):
-                submission = SubmissionRequestViaS3.try_from_messsage(message)
+                submission = SubmissionRequestViaS3.try_from_message(message)
             else:
                 raise ValueError("Payload missing a required field")
         except ValueError as e:
@@ -193,6 +207,7 @@ def lambda_handler(event, context):
             logger.error(sqs_record)
             continue
 
+        # ToDo try catch or deadletter queue to limit retries
         submission.submit(
             dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
             submissions_queue_url=SUBMISSIONS_QUEUE_URL,
