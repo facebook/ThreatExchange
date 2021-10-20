@@ -27,10 +27,22 @@ class WritebackerTestCase(unittest.TestCase):
     # the untrustworthy one
     configs = [
         ThreatExchangeConfig(
-            "pg 4", True, "Trustworthy PG", "test description", True, True, True
+            name="pg 4",
+            in_use=True,
+            privacy_group_name="Trustworthy PG",
+            description="test description",
+            fetcher_active=True,
+            write_back=True,
+            matcher_active=True,
         ),
         ThreatExchangeConfig(
-            "pg 3", True, "UnTrustworthy PG", "test description", True, False, True
+            name="pg 3",
+            in_use=True,
+            privacy_group_name="UnTrustworthy PG",
+            description="test description",
+            fetcher_active=True,
+            write_back=False,
+            matcher_active=True,
         ),
     ]
 
