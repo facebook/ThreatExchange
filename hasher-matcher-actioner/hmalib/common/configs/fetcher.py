@@ -37,7 +37,7 @@ class ThreatExchangeConfig(HashExchangeConfig):
 @dataclass
 class NonThreatExchangeConfig(HashExchangeConfig):
     """
-    Config for the NonThreatExchange datasets(i.e. StopNCII hashes)
+    Config for the NonThreatExchange datasets.
     """
 
     next_fetch_timestamp: int
