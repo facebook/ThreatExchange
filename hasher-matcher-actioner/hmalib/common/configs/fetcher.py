@@ -7,7 +7,10 @@ from hmalib.common.config import HMAConfig
 class HashExchangeConfig(HMAConfig):
     """
     Base class for hash exchange configs, this class has common
-    properties for all configs.
+    properties for all config types. Consumed by the fetcher to
+    get hash data , downstream to control write-back information
+    like reactions and uploads, and possibly other places that
+    need to join HMA and hash data.
     """
 
     fetcher_active: bool
@@ -20,12 +23,7 @@ class HashExchangeConfig(HMAConfig):
 @dataclass
 class ThreatExchangeConfig(HashExchangeConfig):
     """
-    Config for ThreatExchange integrations
-
-    Consumed by the fetcher to get data from the right places in
-    ThreatExchange, downstream to control write-back information
-    like reactions and uploads, and possibly other places that
-    need to join HMA and ThreatExchange data.
+    Config for ThreatExchange datasets.
     """
 
     privacy_group_name: str

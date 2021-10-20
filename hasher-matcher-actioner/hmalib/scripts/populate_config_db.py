@@ -20,7 +20,6 @@ import typing as t
 import re
 from botocore.exceptions import ClientError
 from hmalib.common.configs.fetcher import ThreatExchangeConfig
-from hmalib.common.configs.fetcher import NonThreatExchangeConfig
 from hmalib.common.configs.evaluator import ActionRule
 from hmalib.common.classification_models import (
     BankedContentIDClassificationLabel,
