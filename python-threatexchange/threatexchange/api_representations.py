@@ -65,7 +65,7 @@ class CSPFeedback:
 
 @dataclass
 class HashRecord:
-    lastModtimestamp: int
+    lastModtimestamp: datetime
     hashValue: str
     hashStatus: str
     signalType: str
@@ -83,7 +83,7 @@ class HashRecord:
     @classmethod
     def from_dict(cls, d: dict) -> "HashRecord":
         return cls(
-            lastModtimestamp=d.get("lastModtimestamp", None),
+            lastModtimestamp=datetime.fromtimestamp(d.get("lastModtimestamp", None)),
             hashValue=d.get("hashValue", None),
             hashStatus=d.get("hashStatus", None),
             signalType=d.get("signalType", None),

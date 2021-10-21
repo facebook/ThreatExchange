@@ -4,21 +4,23 @@ import os
 import unittest
 import collections.abc
 
-from threatexchange.api import NonThreatExchangeAPI
+from threatexchange.non_threatexchange_api import NonThreatExchangeAPI
 from threatexchange.api_representations import HashRecord
 
 X_FUNCTIONS_KEY = os.getenv("X_FUNCTIONS_KEY")
 
 OCP_APIM_SUBSCRIPTION_KEY = os.getenv("OCP_APIM_SUBSCRIPTION_KEY")
 
+BASE_NON_THREATEXCHANGE_URL = os.getenv("BASE_NON_THREATEXCHANGE_URL")
+
 
 @unittest.skipUnless(
-    X_FUNCTIONS_KEY,
+    X_FUNCTIONS_KEY and OCP_APIM_SUBSCRIPTION_KEY and BASE_NON_THREATEXCHANGE_URL,
     "Integration Test requires tokens. Use X_FUNCTIONS_KEY environment variable.",
 )
 class NonThreatExchangeAPIIntegrationTest(unittest.TestCase):
     def setUp(self):
-        self.api = NonThreatExchangeAPI(X_FUNCTIONS_KEY, OCP_APIM_SUBSCRIPTION_KEY, 0)
+        self.api = NonThreatExchangeAPI(X_FUNCTIONS_KEY, OCP_APIM_SUBSCRIPTION_KEY, 0, BASE_NON_THREATEXCHANGE_URL)
 
     def test_get_hashes(self):
         """
