@@ -169,49 +169,6 @@ resource "aws_sns_topic" "matches" {
   name_prefix = "${var.prefix}-matches"
 }
 
-# Connect Hashing Data to PDQ Signals
-
-resource "aws_sqs_queue" "pdq_images_queue" {
-  name_prefix                = "${var.prefix}-pdq-images"
-  visibility_timeout_seconds = 300
-  message_retention_seconds  = 1209600
-  tags = merge(
-    var.additional_tags,
-    local.common_tags,
-    {
-      Name = "PDQImagesQueue"
-    }
-  )
-}
-
-resource "aws_sns_topic_subscription" "hash_new_images" {
-  topic_arn = module.hashing_data.image_folder_info.notification_topic
-  protocol  = "sqs"
-  endpoint  = aws_sqs_queue.pdq_images_queue.arn
-}
-
-data "aws_iam_policy_document" "pdq_hasher_queue" {
-  statement {
-    effect    = "Allow"
-    actions   = ["sqs:SendMessage"]
-    resources = [aws_sqs_queue.pdq_images_queue.arn]
-    principals {
-      type        = "Service"
-      identifiers = ["sns.amazonaws.com"]
-    }
-    condition {
-      test     = "ArnEquals"
-      variable = "aws:SourceArn"
-      values   = [module.hashing_data.image_folder_info.notification_topic]
-    }
-  }
-}
-
-resource "aws_sqs_queue_policy" "pdq_hasher_queue" {
-  queue_url = aws_sqs_queue.pdq_images_queue.id
-  policy    = data.aws_iam_policy_document.pdq_hasher_queue.json
-}
-
 # Set up webapp resources (s3 bucket and cloudfront distribution)
 
 module "webapp" {
@@ -347,10 +304,28 @@ resource "aws_s3_bucket" "banks_media_bucket" {
  *   If we have proven that the generic lambda can generate PDQ signals, we can 
  *   do away with the PDQ specific infrastructure altogether.
 */
+resource "aws_sqs_queue" "submissions_queue_dl" {
+  name_prefix                = "${var.prefix}-submissions-deadletter"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 86400
+
+  tags = merge(
+    var.additional_tags,
+    local.common_tags,
+    {
+      Name = "SubmissionDLQ"
+    }
+  )
+}
+
 resource "aws_sqs_queue" "submissions_queue" {
   name_prefix                = "${var.prefix}-submissions"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 1209600
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.submissions_queue_dl.arn
+    maxReceiveCount     = 4
+  })
 
   tags = merge(
     var.additional_tags,
@@ -361,10 +336,29 @@ resource "aws_sqs_queue" "submissions_queue" {
   )
 }
 
+resource "aws_sqs_queue" "hashes_queue_dl" {
+  name_prefix                = "${var.prefix}-hashes-deadletter"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = 86400
+
+  tags = merge(
+    var.additional_tags,
+    local.common_tags,
+    {
+      Name = "HashesDLQ"
+    }
+  )
+}
+
 resource "aws_sqs_queue" "hashes_queue" {
   name_prefix                = "${var.prefix}-hashes"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 1209600
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.hashes_queue_dl.arn
+    maxReceiveCount     = 4
+  })
+
   tags = merge(
     var.additional_tags,
     local.common_tags,
