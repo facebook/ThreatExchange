@@ -6,7 +6,6 @@ from .api import ThreatExchangeAPI
 
 
 class NonThreatExchangeAPI(ThreatExchangeAPI):
-
     def __init__(
         self,
         x_functions_key: str,

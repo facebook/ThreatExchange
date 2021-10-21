@@ -20,7 +20,9 @@ BASE_NON_THREATEXCHANGE_URL = os.getenv("BASE_NON_THREATEXCHANGE_URL")
 )
 class NonThreatExchangeAPIIntegrationTest(unittest.TestCase):
     def setUp(self):
-        self.api = NonThreatExchangeAPI(X_FUNCTIONS_KEY, OCP_APIM_SUBSCRIPTION_KEY, 0, BASE_NON_THREATEXCHANGE_URL)
+        self.api = NonThreatExchangeAPI(
+            X_FUNCTIONS_KEY, OCP_APIM_SUBSCRIPTION_KEY, 0, BASE_NON_THREATEXCHANGE_URL
+        )
 
     def test_get_hashes(self):
         """
