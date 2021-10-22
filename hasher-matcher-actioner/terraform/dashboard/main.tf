@@ -39,6 +39,15 @@ locals {
     }
   })
 
+  title_submit_event = jsonencode({
+    height = 1,
+    width  = 24,
+    type   = "text",
+    properties = {
+      markdown = "# Submit Events (Submissions over SNS)"
+    }
+  })
+
   pipeline_lambdas_widgets = [for lambda in var.pipeline_lambdas : templatefile(
     "${path.module}/lambda_widget.tpl", {
       region = data.aws_region.current.name, lambda_name = lambda[1], lambda_title = lambda[0]
@@ -58,14 +67,19 @@ locals {
           "AWS/SQS", "ApproximateNumberOfMessagesVisible",
           "QueueName", "${queue[1]}", { stat = "Average" }
         ],
-        [".", "ApproximateAgeOfOldestMessage", ".", ".", { yAxis = "right" }]
+        [".", "ApproximateAgeOfOldestMessage", ".", ".", { yAxis = "right" }],
+        [
+          "AWS/SQS", "ApproximateNumberOfMessagesVisible",
+          "QueueName", "${queue[2]}", { stat = "Average", label = "dlq-approx-count" }
+        ],
+        [".", "ApproximateAgeOfOldestMessage", ".", ".", { yAxis = "right", label = "dlq-approx-age" }]
       ]
     }
     })
   ]
 
   all_lambda_names = flatten([
-    [for lambda in var.pipeline_lambdas : lambda[1]], [var.api_lambda_name, var.auth_lambda_name], var.other_lambdas
+    [for lambda in var.pipeline_lambdas : lambda[1]], var.other_lambdas
   ])
 
   total_concurrent_lambda = jsonencode({
@@ -204,6 +218,50 @@ locals {
     }
   })
 
+  submit_event_lambda_widget = jsonencode({
+    height = 6,
+    width  = 6,
+    type   = "metric",
+    properties = {
+      metrics = [
+        ["AWS/Lambda", "Invocations", "FunctionName", "${var.submit_event_lambda_name}", { label = "SubmitEvents" }],
+        [".", "Errors", ".", ".", { color = "#d62728", yAxis = "left" }],
+        [".", "ConcurrentExecutions", ".", ".", { stat = "Maximum", yAxis = "right" }],
+        [".", "Throttles", ".", ".", { color = "#ff9896", label = "Throttles" }]
+      ],
+      period  = 60,
+      region  = "${data.aws_region.current.name}",
+      stat    = "Sum",
+      title   = "Submit Event & λ Concurrency ",
+      view    = "timeSeries",
+      stacked = false
+    }
+  })
+
+  submit_queue_widge = jsonencode({
+    width = 6
+    type  = "metric"
+    properties = {
+      title  = "${var.submit_event_queue[0]}: Age of Oldest Item"
+      region = "${data.aws_region.current.name}"
+      period = 60
+      stat   = "Maximum"
+      metrics = [
+        [
+          "AWS/SQS", "ApproximateNumberOfMessagesVisible",
+          "QueueName", "${var.submit_event_queue[1]}", { stat = "Average" }
+        ],
+        [".", "ApproximateAgeOfOldestMessage", ".", ".", { yAxis = "right" }],
+        [
+          "AWS/SQS", "ApproximateNumberOfMessagesVisible",
+          "QueueName", "${var.submit_event_queue[2]}", { stat = "Average", label = "dlq-approx-count" }
+        ],
+        [".", "ApproximateAgeOfOldestMessage", ".", ".", { yAxis = "right", label = "dlq-approx-age" }]
+      ]
+    }
+  })
+
+
   dashboard_body = <<JSON
   {
     "widgets": [
@@ -222,7 +280,11 @@ locals {
       ${local.dynamodb_datastore_errors_widget},
 
       ${local.title_system_capacity},
-      ${local.total_concurrent_lambda}
+      ${local.total_concurrent_lambda},
+
+      ${local.title_submit_event},
+      ${local.submit_event_lambda_widget},
+      ${local.submit_queue_widge}
       ]
   }
 JSON

@@ -622,12 +622,19 @@ module "dashboard" {
     module.fetcher.fetcher_function_name,
     module.indexer.indexer_function_name,
     module.actions.writebacker_function_name,
-  ]
+    module.api.api_auth_function_name,
+    module.api.api_root_function_name,
+    module.submit_events[0].submit_event_handler_function_name,
+  ] # all lambdas not given as pipeline_lambdas
   queues_to_monitor = [
-    (["ImageQueue", aws_sqs_queue.submissions_queue.name]),
-    (["HashQueue", aws_sqs_queue.hashes_queue.name]),
-    (["MatchQueue", module.actions.matches_queue_name]),
-    (["ActionQueue", module.actions.actions_queue_name])
+    (["ImageQueue", aws_sqs_queue.submissions_queue.name, aws_sqs_queue.submissions_queue_dlq.name]),
+    (["HashQueue", aws_sqs_queue.hashes_queue.name, aws_sqs_queue.hashes_queue_dlq.name]),
+    (["MatchQueue", module.actions.matches_queue_name, module.actions.matches_dlq_name]),
+    (["ActionQueue", module.actions.actions_queue_name, module.actions.actions_dlq_name])
   ] # Could also monitor sns topics
+
+  submit_event_lambda_name = module.submit_events[0].submit_event_handler_function_name
+  submit_event_queue       = (["SubmitEventQueue", module.submit_events[0].submit_event_queue_name, module.submit_events[0].submit_event_dlq_name])
+
   api_gateway_id = module.api.api_gateway_id
 }

@@ -23,10 +23,22 @@ output "matches_queue_name" {
   value = aws_sqs_queue.matches_queue.name
 }
 
+output "matches_dlq_name" {
+  value = aws_sqs_queue.matches_queue_dlq.name
+}
+
 output "actions_queue_name" {
   value = aws_sqs_queue.actions_queue.name
 }
 
+output "actions_dlq_name" {
+  value = aws_sqs_queue.actions_queue_dlq.name
+}
+
 output "writebacks_queue_name" {
   value = aws_sqs_queue.writebacks_queue.name
+}
+
+output "writebacks_dlq_name" {
+  value = aws_sqs_queue.writebacks_queue_dlq.name
 }
