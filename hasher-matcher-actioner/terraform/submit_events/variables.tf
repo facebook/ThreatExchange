@@ -23,7 +23,6 @@ variable "log_retention_in_days" {
 variable "additional_tags" {
   description = "Additional resource tags"
   type        = map(string)
-  default     = {}
 }
 
 variable "datastore" {
@@ -51,3 +50,7 @@ variable "partner_image_buckets" {
   }))
 }
 
+variable "deadletterqueue_message_retention_seconds" {
+  description = "Number of second messages should stay in dead letter queue after a repeated failure."
+  type        = number
+}

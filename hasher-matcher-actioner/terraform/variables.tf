@@ -150,3 +150,9 @@ variable "create_submit_event_sns_topic_and_handler" {
   type        = bool
   default     = false
 }
+
+variable "deadletterqueue_message_retention_seconds" {
+  description = "Number of second messages should stay in dead letter queue after a repeated failure."
+  type        = number
+  default     = 604800
+}

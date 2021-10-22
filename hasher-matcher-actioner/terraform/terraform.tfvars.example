@@ -37,5 +37,7 @@ security_groups = [] # required to be nonempty if api_in_vpc = true
 
 # create_submit_event_sns_topic_and_handler = false # Enable alternative submit flow that accepts submission via a sns topic (arn of which is provided in outputs) instead of the API endpoints.
 
+# deadletterqueue_message_retention_seconds = <seconds> # Number of second messages should stay in dead letter queue after a repeated failure. (default is 7 days)
+
 # Testing Options:
 set_sqs_windows_to_min = false # if true override queue poll time to minimum value (helpful for fast one off testing but wasteful/pointless in production)

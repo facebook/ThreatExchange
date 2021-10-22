@@ -304,10 +304,10 @@ resource "aws_s3_bucket" "banks_media_bucket" {
  *   If we have proven that the generic lambda can generate PDQ signals, we can 
  *   do away with the PDQ specific infrastructure altogether.
 */
-resource "aws_sqs_queue" "submissions_queue_dl" {
-  name_prefix                = "${var.prefix}-submissions-deadletter"
+resource "aws_sqs_queue" "submissions_queue_dlq" {
+  name_prefix                = "${var.prefix}-submissions-deadletter-"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 86400
+  message_retention_seconds  = var.deadletterqueue_message_retention_seconds
 
   tags = merge(
     var.additional_tags,
@@ -323,7 +323,7 @@ resource "aws_sqs_queue" "submissions_queue" {
   visibility_timeout_seconds = 300
 
   redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.submissions_queue_dl.arn
+    deadLetterTargetArn = aws_sqs_queue.submissions_queue_dlq.arn
     maxReceiveCount     = 4
   })
 
@@ -336,10 +336,10 @@ resource "aws_sqs_queue" "submissions_queue" {
   )
 }
 
-resource "aws_sqs_queue" "hashes_queue_dl" {
-  name_prefix                = "${var.prefix}-hashes-deadletter"
+resource "aws_sqs_queue" "hashes_queue_dlq" {
+  name_prefix                = "${var.prefix}-hashes-deadletter-"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 86400
+  message_retention_seconds  = var.deadletterqueue_message_retention_seconds
 
   tags = merge(
     var.additional_tags,
@@ -355,7 +355,7 @@ resource "aws_sqs_queue" "hashes_queue" {
   visibility_timeout_seconds = 300
 
   redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.hashes_queue_dl.arn
+    deadLetterTargetArn = aws_sqs_queue.hashes_queue_dlq.arn
     maxReceiveCount     = 4
   })
 
@@ -555,6 +555,8 @@ module "actions" {
 
   queue_batch_size        = var.set_sqs_windows_to_min ? 10 : 100
   queue_window_in_seconds = var.set_sqs_windows_to_min ? 0 : 30
+
+  deadletterqueue_message_retention_seconds = var.deadletterqueue_message_retention_seconds
 }
 
 ### ThreatExchange API Token Secret ###
@@ -592,6 +594,7 @@ module "submit_events" {
   }
   partner_image_buckets = var.partner_image_buckets
 
+  deadletterqueue_message_retention_seconds = var.deadletterqueue_message_retention_seconds
 }
 
 

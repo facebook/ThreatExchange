@@ -11,10 +11,10 @@ resource "aws_sns_topic" "submit_event_notification_topic" {
   )
 }
 
-resource "aws_sqs_queue" "submit_event_queue_dl" {
-  name_prefix                = "${var.prefix}-submit-event-deadletter"
+resource "aws_sqs_queue" "submit_event_queue_dlq" {
+  name_prefix                = "${var.prefix}-submit-event-deadletter-"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 86400
+  message_retention_seconds  = var.deadletterqueue_message_retention_seconds
 
   tags = merge(
     var.additional_tags,
@@ -29,7 +29,7 @@ resource "aws_sqs_queue" "submit_event_queue" {
   visibility_timeout_seconds = 300
 
   redrive_policy = jsonencode({
-    deadLetterTargetArn = aws_sqs_queue.submit_event_queue_dl.arn
+    deadLetterTargetArn = aws_sqs_queue.submit_event_queue_dlq.arn
     maxReceiveCount     = 4
   })
 
