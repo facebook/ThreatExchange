@@ -4,8 +4,8 @@ import os
 import unittest
 import collections.abc
 
-from threatexchange.non_threatexchange_api import NonThreatExchangeAPI
-from threatexchange.api_representations import HashRecord
+from hmalib.common.apis.non_threatexchange_api import NonThreatExchangeAPI
+from hmalib.common.apis.api_representations import HashRecord
 
 X_FUNCTIONS_KEY = os.getenv("X_FUNCTIONS_KEY")
 

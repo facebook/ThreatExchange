@@ -114,15 +114,13 @@ class ThreatExchangeAPI:
     def app_id(self):
         return int(self.api_token.partition("|")[0])
 
-    def get_json_from_url(
-        self, url, params=None, *, json_obj_hook: t.Callable = None, headers=None
-    ):
+    def get_json_from_url(self, url, params=None, *, json_obj_hook: t.Callable = None):
         """
         Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `_get_session` above.
         """
         with self._get_session() as session:
-            response = requests.get(url, params=params or {}, headers=headers or {})
+            response = requests.get(url, params=params or {})
             response.raise_for_status()
             return response.json(object_hook=json_obj_hook)
 
@@ -367,7 +365,7 @@ class ThreatExchangeAPI:
         Returns a threatexchange URL for a sub-path and a dictionary of query
         parameters. Automatically adds access_token to the query dictionary.
         """
-        if "access_token" not in query_dict and hasattr(self, "api_token"):
+        if "access_token" not in query_dict:
             query_dict["access_token"] = self.api_token
 
         query = urllib.parse.urlencode(query_dict)

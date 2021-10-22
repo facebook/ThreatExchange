@@ -2,10 +2,10 @@
 
 import typing as t
 from .api_representations import HashRecord
-from .api import ThreatExchangeAPI
+from hmalib.common.models.api_base import BaseAPI
 
 
-class NonThreatExchangeAPI(ThreatExchangeAPI):
+class NonThreatExchangeAPI(BaseAPI):
     def __init__(
         self,
         x_functions_key: str,
@@ -19,7 +19,7 @@ class NonThreatExchangeAPI(ThreatExchangeAPI):
         self.ocp_apim_subscription_key = ocp_apim_subscription_key
         self.start_timestamp = start_timestamp
         self.page_size = page_size
-        self._base_url = base_url or self._BASE_URL
+        self._base_url = base_url
 
     def get_hash_records(
         self,
@@ -32,7 +32,7 @@ class NonThreatExchangeAPI(ThreatExchangeAPI):
             "startTimestamp": self.start_timestamp,
             "pageSize": self.page_size,
         }
-        url = self._get_graph_api_url("FetchHashes", params)
+        url = self._get_api_url("FetchHashes", params)
         headers = {
             "x-functions-key": self.x_functions_key,
             "Ocp-Apim-Subscription-Key": self.ocp_apim_subscription_key,
