@@ -36,12 +36,6 @@ class HashRecord:
     hashRegions: t.List[str]
     CSPFeedbacks: t.List[CSPFeedback]
 
-    def __eq__(self, other) -> bool:
-        return self.hashValue == other.hashValue
-
-    def __hash__(self) -> bool:
-        return hash(self.hashValue)
-
     @classmethod
     def from_dict(cls, d: dict) -> "HashRecord":
         return cls(

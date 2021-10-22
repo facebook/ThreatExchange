@@ -31,6 +31,14 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 class BaseAPI:
+    def __init__(
+        self,
+        api_token: str,
+        base_url: str,
+    ) -> None:
+        self.api_token = api_token
+        self._base_url = base_url
+
     def get_json_from_url(
         self, url, params=None, *, json_obj_hook: t.Callable = None, headers=None
     ):
