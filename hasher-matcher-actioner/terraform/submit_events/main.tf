@@ -11,10 +11,28 @@ resource "aws_sns_topic" "submit_event_notification_topic" {
   )
 }
 
+resource "aws_sqs_queue" "submit_event_queue_dlq" {
+  name_prefix                = "${var.prefix}-submit-event-deadletter-"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = var.deadletterqueue_message_retention_seconds
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "SubmitEventDLQ"
+    }
+  )
+}
+
 resource "aws_sqs_queue" "submit_event_queue" {
   name_prefix                = "${var.prefix}-submit-event"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 1209600
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.submit_event_queue_dlq.arn
+    maxReceiveCount     = 4
+  })
+
   tags = merge(
     var.additional_tags,
     {

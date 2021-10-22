@@ -6,10 +6,30 @@ locals {
 }
 
 # Define a queue for the InputSNS topic to push messages to.
+
+resource "aws_sqs_queue" "matches_queue_dlq" {
+  name_prefix                = "${var.prefix}-matches-deadletter-"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = var.deadletterqueue_message_retention_seconds
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "MatchesDLQ"
+    }
+  )
+}
+
+
 resource "aws_sqs_queue" "matches_queue" {
   name_prefix                = "${var.prefix}-matches-"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 1209600
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.matches_queue_dlq.arn
+    maxReceiveCount     = 4
+  })
+
   tags = merge(
     var.additional_tags,
     local.common_tags
@@ -50,10 +70,29 @@ resource "aws_sns_topic_subscription" "new_matches_topic" {
 
 # Set up the queue for sending messages from the action evaluator to the action performer
 
+resource "aws_sqs_queue" "actions_queue_dlq" {
+  name_prefix                = "${var.prefix}-actions-deadletter-"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = var.deadletterqueue_message_retention_seconds
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "ActionsDLQ"
+    }
+  )
+}
+
+
 resource "aws_sqs_queue" "actions_queue" {
   name_prefix                = "${var.prefix}-actions"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 1209600
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.actions_queue_dlq.arn
+    maxReceiveCount     = 4
+  })
+
   tags = merge(
     var.additional_tags,
     {
@@ -64,10 +103,28 @@ resource "aws_sqs_queue" "actions_queue" {
 
 # Set up the queue for sending messages from the action evaluator to the writebacker
 
+resource "aws_sqs_queue" "writebacks_queue_dlq" {
+  name_prefix                = "${var.prefix}-writebacks-deadletter-"
+  visibility_timeout_seconds = 300
+  message_retention_seconds  = var.deadletterqueue_message_retention_seconds
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "WritebacksDLQ"
+    }
+  )
+}
+
 resource "aws_sqs_queue" "writebacks_queue" {
   name_prefix                = "${var.prefix}-writebacks"
   visibility_timeout_seconds = 300
-  message_retention_seconds  = 1209600
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.writebacks_queue_dlq.arn
+    maxReceiveCount     = 4
+  })
+
   tags = merge(
     var.additional_tags,
     {

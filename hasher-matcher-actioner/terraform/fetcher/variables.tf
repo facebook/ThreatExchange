@@ -35,7 +35,6 @@ variable "threat_exchange_data" {
 variable "additional_tags" {
   description = "Additional resource tags"
   type        = map(string)
-  default     = {}
 }
 
 variable "log_retention_in_days" {

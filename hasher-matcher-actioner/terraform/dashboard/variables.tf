@@ -44,7 +44,19 @@ variable "other_lambdas" {
 
 variable "queues_to_monitor" {
   description = "Main set of sqs queues used in processing content"
-  type        = list(tuple([string, string]))
+  type        = list(tuple([string, string, string]))
+  default     = null
+}
+
+variable "submit_event_lambda_name" {
+  description = "Name of lambda used as the submit event handler"
+  type        = string
+  default     = null
+}
+
+variable "submit_event_queue" {
+  description = "sqs queues for submit events in processing content"
+  type        = tuple([string, string, string])
   default     = null
 }
 

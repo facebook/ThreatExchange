@@ -30,13 +30,11 @@ variable "log_retention_in_days" {
 variable "additional_tags" {
   description = "Additional resource tags"
   type        = map(string)
-  default     = {}
 }
 
 variable "measure_performance" {
   description = "Send metrics to cloudwatch. Useful for benchmarking, but can incur costs. Set to string True for this to work."
   type        = bool
-  default     = false
 }
 
 variable "te_api_token_secret" {
@@ -73,4 +71,8 @@ variable "queue_window_in_seconds" {
   description = "Maximum batching window in seconds to wait before sending messages to lambda"
   type        = number
   default     = 30
+}
+variable "deadletterqueue_message_retention_seconds" {
+  description = "Number of second messages should stay in dead letter queue after a repeated failure."
+  type        = number
 }
