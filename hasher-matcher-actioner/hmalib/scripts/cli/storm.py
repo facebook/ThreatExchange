@@ -200,7 +200,7 @@ class StormCommand(base.Command, base.NeedsAPIAccess):
         """
 
         file_name = ""
-        if self.submit_method in ["url", "upload"]:
+        if self.submit_method in ["upload", "bytes"]:
             # get filename from filepath
             file_name = os.path.split(self.media)[-1]
 
