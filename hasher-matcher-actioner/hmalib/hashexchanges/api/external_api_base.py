@@ -11,6 +11,7 @@ import urllib.parse
 
 import requests
 from requests.adapters import HTTPAdapter
+from requests.sessions import Session
 from urllib3.util.retry import Retry
 
 
@@ -31,13 +32,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 
 
 class BaseAPI:
-    def __init__(
-        self,
-        api_token: str,
-        base_url: str,
-    ) -> None:
-        self.api_token = api_token
-        self._base_url = base_url
+    _base_url: str
 
     def get_json_from_url(
         self, url, params=None, *, json_obj_hook: t.Callable = None, headers=None
@@ -51,7 +46,7 @@ class BaseAPI:
             response.raise_for_status()
             return response.json(object_hook=json_obj_hook)
 
-    def _get_session(self):
+    def _get_session(self) -> Session:
         """
         Custom requests sesson
 
@@ -82,11 +77,8 @@ class BaseAPI:
     def _get_api_url(self, sub_path: t.Optional[str], query_dict: t.Dict = {}) -> str:
         """
         Returns a URL for a sub-path and a dictionary of query
-        parameters. Automatically adds access_token to the query dictionary
-        if it has attribute api_token
+        parameters.
         """
-        if "access_token" not in query_dict and hasattr(self, "api_token"):
-            query_dict["access_token"] = self.api_token
 
         query = urllib.parse.urlencode(query_dict)
 
