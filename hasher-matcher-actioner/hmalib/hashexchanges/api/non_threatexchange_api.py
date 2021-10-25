@@ -26,7 +26,7 @@ class NonThreatExchangeAPI(BaseAPI):
         Returns a paginated list of all hash records from start_timestamp.
         """
 
-        params = {
+        params: t.Dict[str, t.Union[str, int]] = {
             "startTimestamp": start_timestamp,
             "pageSize": page_size,
         }
