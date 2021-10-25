@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import typing as t
-from .non_threatexchange_api_representations import non_threatexchange_api_response
+from .non_threatexchange_api_representations import NonThreatExchangeAPIResponse
 from hmalib.hashexchanges.api.external_api_base import BaseAPI
 
 
@@ -20,7 +20,7 @@ class NonThreatExchangeAPI(BaseAPI):
         self,
         start_timestamp: int,
         page_size: int = 1000,
-    ) -> non_threatexchange_api_response:
+    ) -> NonThreatExchangeAPIResponse:
         """
         Returns a paginated list of all hash records from start_timestamp.
         """
@@ -35,4 +35,4 @@ class NonThreatExchangeAPI(BaseAPI):
             "Ocp-Apim-Subscription-Key": self.ocp_apim_subscription_key,
         }
         response = super().get_json_from_url(url=url, headers=headers)
-        return non_threatexchange_api_response.from_dict(response)
+        return NonThreatExchangeAPIResponse.from_dict(response)

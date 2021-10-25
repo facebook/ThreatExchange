@@ -103,7 +103,7 @@ class HashRecord:
 
 
 @dataclass
-class non_threatexchange_api_response:
+class NonThreatExchangeAPIResponse:
     """
     nextSetTimestamp1: Indicates the timestamp to be used for next API call.
 
@@ -126,7 +126,7 @@ class non_threatexchange_api_response:
     hashRecords: t.List[HashRecord]
 
     @classmethod
-    def from_dict(cls, d: dict) -> "non_threatexchange_api_response":
+    def from_dict(cls, d: dict) -> "NonThreatExchangeAPIResponse":
         return cls(
             count=d.get("count", None),
             nextSetTimestamp=d.get("nextSetTimestamp", None),
