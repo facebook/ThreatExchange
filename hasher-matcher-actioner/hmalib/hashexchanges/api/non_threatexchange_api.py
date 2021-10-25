@@ -20,6 +20,7 @@ class NonThreatExchangeAPI(BaseAPI):
         self,
         start_timestamp: int,
         page_size: int = 1000,
+        next_page_token: str = None,
     ) -> NonThreatExchangeAPIResponse:
         """
         Returns a paginated list of all hash records from start_timestamp.
@@ -29,6 +30,8 @@ class NonThreatExchangeAPI(BaseAPI):
             "startTimestamp": start_timestamp,
             "pageSize": page_size,
         }
+        if next_page_token is not None:
+            params["nextPageToken"] = next_page_token
         url = super()._get_api_url("FetchHashes", params)
         headers = {
             "x-functions-key": self.x_functions_key,
