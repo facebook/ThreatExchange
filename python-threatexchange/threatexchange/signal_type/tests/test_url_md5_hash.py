@@ -10,8 +10,7 @@ URL_TEST_MD5 = "e359430911fe80c2dd526d3cca21da30"
 
 class UrlMD5SignalTestCase(unittest.TestCase):
     def test_can_hash_simple_url(self):
-        print(UrlMD5Signal.hash_from_url(URL_TEST))
-        assert URL_TEST_MD5 == UrlMD5Signal.hash_from_url(URL_TEST), "MD5 hash does not match"
+        assert URL_TEST_MD5 == UrlMD5Signal.hash_from_str(URL_TEST), "MD5 hash does not match"
 
     def test_can_hash_full_url(self):
-        assert URL_TEST_MD5 == UrlMD5Signal.hash_from_url(FULL_URL_TEST), "MD5 hash does not match"
+        assert URL_TEST_MD5 == UrlMD5Signal.hash_from_str(FULL_URL_TEST), "MD5 hash does not match"
