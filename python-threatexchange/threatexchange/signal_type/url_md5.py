@@ -6,8 +6,6 @@ Wrapper around the URL MD5 signal types.
 """
 
 import hashlib
-import pathlib
-import typing as t
 
 from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
 from . import signal_base

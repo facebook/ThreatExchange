@@ -6,7 +6,7 @@ Wrapper around the pdf content type.
 """
 import typing as t
 
-from ..signal_type import md5
+from ..signal_type import url_md5
 from ..signal_type.signal_base import SignalType
 from .content_base import ContentType
 
@@ -21,7 +21,9 @@ class URL(ContentType):
     So we first check that the protocol (including ':' but not '//' ) is removed
     (if not we remove it) and then simply MD5 hash remainder of the URL.
 
-    URLs as per RFC 1738 [https://datatracker.ietf.org/doc/html/rfc1738] minus the scheme and following '//'
+    URLs as per RFC 1738 [https://datatracker.ietf.org/doc/html/rfc1738] minus the
+    scheme and following '//'
+
     Examples include:
     * www.facebook.com
     * drive.google.com/drive/u/0/folders/
@@ -32,4 +34,4 @@ class URL(ContentType):
 
     @classmethod
     def get_signal_types(cls) -> t.List[t.Type[SignalType]]:
-        return [url.UrlMD5Signal]
+        return [url_md5.UrlMD5Signal]
