@@ -8,7 +8,7 @@ Stores all the content type implementations for lookup
 import functools
 import typing as t
 
-from . import content_base, text, video, photo, pdf
+from . import content_base, text, video, photo, pdf, url
 from ..signal_type import signal_base
 
 
