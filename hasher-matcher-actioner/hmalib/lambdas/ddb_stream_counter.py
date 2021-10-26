@@ -8,7 +8,7 @@ from mypy_boto3_dynamodbstreams.type_defs import GetRecordsOutputTypeDef, Record
 import boto3
 
 from hmalib.common.models.content import ContentObject
-from hmalib.common.models.count import AggregateCount
+from hmalib.common.models.count import AggregateCount, CountBuffer
 from hmalib.common.logging import get_logger
 from hmalib.common.models.models_base import DynamoDBItem
 
@@ -31,14 +31,15 @@ class BaseTableStreamCounter:
     def table_name(cls) -> str:
         raise NotImplementedError
 
-    @staticmethod
-    def get_increments_for_records(
-        records: t.List[RecordTypeDef],
-    ) -> t.Dict[AggregateCount, int]:
+    @classmethod
+    def update_increments_for_records(
+        cls, records: t.List[RecordTypeDef], count_buffer: CountBuffer
+    ):
         """
-        Given a list of streamed ddb records, returns a map of BaseCounts -> the
-        value by which they should be incremented. Negative increment implies
-        decrement.
+        Given a list of streamed ddb records, and a buffer, processes the
+        records and calls count_buffer.inc_*/dec_* methods as appropriate.
+
+        At the end, will flush the buffer too.
         """
         raise NotImplementedError
 
@@ -49,16 +50,15 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
         return "HMADataStore"
 
     @classmethod
-    def get_increments_for_records(
-        cls,
-        records: t.List[RecordTypeDef],
-    ) -> t.Dict[AggregateCount, int]:
+    def update_increments_for_records(
+        cls, records: t.List[RecordTypeDef], count_buffer: CountBuffer
+    ):
         """
-        Given a list of streamed ddb records, returns a map of BaseCounts -> the
-        value by which they should be incremented. Negative increment implies
-        decrement.
+        Given a list of streamed ddb records, and a buffer, processes the
+        records and calls count_buffer.inc_*/dec_* methods as appropriate.
+
+        At the end, will flush the buffer too.
         """
-        result: defaultdict = defaultdict(lambda: 0)
         for record in records:
             if record["eventName"] != "INSERT":
                 # We only want to track create events.
@@ -70,14 +70,17 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
             # TODO These should maybe have a strong connection to the objects instead of class constants
             # otherwise changes to the object might not correctly update these count checks
             if sk == ContentObject.CONTENT_STATIC_SK:
-                result[AggregateCount.PipelineNames.submits] += 1
+                count_buffer.inc_aggregate(AggregateCount.PipelineNames.submits)
             elif sk.startswith(DynamoDBItem.TYPE_PREFIX):
                 # note hashes should always match submits (submits == hashes)
-                result[AggregateCount.PipelineNames.hashes] += 1
+                count_buffer.inc_aggregate(AggregateCount.PipelineNames.hashes)
             elif sk.startswith(DynamoDBItem.SIGNAL_KEY_PREFIX):
-                result[AggregateCount.PipelineNames.matches] += 1
+                count_buffer.inc_aggregate(AggregateCount.PipelineNames.matches)
 
-        return dict(result)
+        print(sk)
+        print(count_buffer.aggregate_deltas)
+
+        count_buffer.flush()
 
 
 class BanksTableStreamCounter(BaseTableStreamCounter):
@@ -110,16 +113,6 @@ def lambda_handler(event: GetRecordsOutputTypeDef, _context):
     invocations. To make matters iron-clad, the stream counter lambda does not
     have write permission on any of the source tables.
     """
-    counts: t.Dict[
-        AggregateCount, int
-    ] = current_stream_counter.get_increments_for_records(event["Records"])
-
     counts_table = get_counts_table()
-
-    for count in counts:
-        # TODO convert this to a batch write.
-        increment_by = counts[count]
-        if increment_by > 0:
-            AggregateCount(str(count)).inc(counts_table, increment_by)
-        elif increment_by < 0:
-            AggregateCount(str(count)).dec(counts_table, abs(increment_by))
+    count_buffer = CountBuffer(counts_table)
+    current_stream_counter.update_increments_for_records(event["Records"], count_buffer)

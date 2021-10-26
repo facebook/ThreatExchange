@@ -3,6 +3,9 @@
 """ Refer to hmalib.lambdas.ddb_stream_counter.lambda_handler's doc string to
 understand how these models are used. """
 import typing as t
+from collections import defaultdict
+
+from boto3.dynamodb.conditions import Key
 from mypy_boto3_dynamodb.service_resource import Table
 
 
@@ -79,3 +82,155 @@ class AggregateCount(BaseCount):
 
     def get_skey(self) -> str:
         return self._get_skey_for_aggregate()
+
+
+class ParameterizedCount(BaseCount):
+    """
+    Allows you to do aggregate counts, with a parameter. An example would be
+    matches per privacy group.
+
+    At this point, only supports a single parameter value.
+
+    Think about it as
+        ParameterizedCount(of="hma.pipeline.matches", by="privacy_group"), value="4567896456789000976"))
+    or  ParameterizedCount(of="hma.pipeline.hashes", by="content_type", value="photo")
+    or  ParameterizedCount(of="hma.pipeline.hashes", by="signal_type", value="pdq")
+    """
+
+    def __init__(self, of: str, by: str, value: str, cached_value: int = None):
+        """You may provide a cached value if this object is getting retrieved
+        from the database. Note, this does not in any way change the actual
+        value in the database. It only saves a database call if you are using
+        get_value() immediately after."""
+
+        self.of = of
+        self.by = by
+        self.value = value
+        self._cached_value = cached_value
+
+    def get_value(self, table: Table) -> int:
+        """If cached_value is set to a non-None value, return it, else make a
+        database call to get the answer. This is useful when you are getting a
+        list of parameterized counts using `ParameterizedCount.get_all()`"""
+        if self._cached_value:
+            return self._cached_value
+
+        return super().get_value(table)
+
+    @classmethod
+    def get_all(cls, of: str, by: str, table: Table) -> t.List["ParameterizedCount"]:
+        return [
+            cls(
+                of,
+                by,
+                value=t.cast(str, item.get("SK"))[4:],  # strip the "val#" portion
+                cached_value=t.cast(int, item.get("CurrentCount", 0)),
+            )
+            for item in table.query(
+                ScanIndexForward=True,
+                KeyConditionExpression=Key("PK").eq(
+                    cls._get_pkey_for_parameterized(of, by)
+                ),
+            )["Items"]
+        ]
+
+    @staticmethod
+    def _get_pkey_for_parameterized(of: str, by: str) -> str:
+        return f"parameterized#{of}#by#{by}"
+
+    @staticmethod
+    def _get_skey_for_parameterized(by: str, value: str) -> str:
+        return f"val#{value}"
+
+    def get_pkey(self) -> str:
+        return self._get_pkey_for_parameterized(self.of, self.by)
+
+    def get_skey(self) -> str:
+        return self._get_skey_for_parameterized(self.by, self.value)
+
+
+class CountBuffer:
+    """
+    A buffer that for increments to the variety of count types. Flushes to
+    dynamodb every X writes, or when expicitly called.
+
+    buffer = CountBuffer(ddb_table)
+
+    buffer.inc_aggregate("hma.pipeline.matches")
+    buffer.inc_parameterized("hma.pipeline.submit", by="content_type", value="photo")
+    """
+
+    DELTA_BUFFER_SIZE = 20
+
+    def __init__(self, table: Table):
+        self.table = table
+        self.aggregate_deltas: t.DefaultDict = defaultdict(lambda: 0)
+        self.parameterized_deltas: t.DefaultDict = defaultdict(lambda: 0)
+
+    def inc_aggregate(self, of: str):
+        """
+        Increment an aggregate counter. May write to dynamodb if conditions met
+        see CountBuffer docstring.
+        """
+        self.aggregate_deltas[of] += 1
+        self.flush_if_necessary()
+
+    def dec_aggregate(self, of: str):
+        """
+        Decrement an aggregate counter. May write to dynamodb if conditions met
+        see CountBuffer docstring.
+        """
+        self.aggregate_deltas[of] -= 1
+        self.flush_if_necessary()
+
+    def inc_parameterized(self, of: str, by: str, value: str):
+        """
+        Increment a parameterized counter. May write to dynamodb if conditions
+        met: see CountBuffer docstring.
+
+        eg. buffer.inc_parameterized("hma.pipeline.submit", by="content_type", value="photo")
+        """
+
+        self.parameterized_deltas[(of, by, value)] += 1
+        self.flush_if_necessary()
+
+    def dec_parameterized(self, of: str, by: str, value: str):
+        """
+        Decrement a parameterized counter. May write to dynamodb if conditions
+        met: see CountBuffer docstring.
+
+        eg. buffer.dec_parameterized("hma.pipeline.submit", by="content_type", value="photo")
+        """
+        self.parameterized_deltas[(of, by, value)] -= 1
+        self.flush_if_necessary()
+
+    def flush_if_necessary(self):
+        if (
+            len(self.parameterized_deltas) + len(self.aggregate_deltas)
+            > self.DELTA_BUFFER_SIZE
+        ):
+            self.flush()
+
+    def flush(self):
+        """
+        Write all counters remaining in the buffer. Warning, may take some time.
+
+        TODO: Make this into batch calls to dynamodb so it is performant.
+        """
+        for name, increment_by in self.aggregate_deltas.items():
+            if increment_by > 0:
+                AggregateCount(str(name)).inc(self.table, increment_by)
+            elif increment_by < 0:
+                AggregateCount(str(name)).dec(self.table, abs(increment_by))
+        # reset flushed buffer
+        self.aggregate_deltas = defaultdict(lambda: 0)
+
+        for delta_tuple, increment_by in self.parameterized_deltas.items():
+            of, by, value = delta_tuple
+
+            if increment_by > 0:
+                ParameterizedCount(of, by, value).inc(self.table, increment_by)
+            elif increment_by < 0:
+                ParameterizedCount(of, by, value).dec(self.table, increment_by)
+        # reset flushed buffer
+        self.parameterized_deltas = defaultdict(lambda: 0)
