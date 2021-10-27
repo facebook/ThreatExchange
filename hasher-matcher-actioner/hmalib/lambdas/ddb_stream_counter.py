@@ -35,7 +35,7 @@ class BaseTableStreamCounter:
 
         We create separate lambda functions in AWS for each table that needs a
         stream. Both the lambda functions use the same code, but an environment
-        variable (SOURCE_TABLE_TYPE) is used to to notify the lambda code which
+        variable (SOURCE_TABLE_TYPE) is used to notify the lambda code which
         table generated the event.
 
         This is an enum. The values of this can be found in terraform/main.tf

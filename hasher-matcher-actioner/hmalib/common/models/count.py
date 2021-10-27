@@ -15,15 +15,21 @@ class BaseCount:
     """
 
     def get_pkey(self) -> str:
-        """Get partition key for this count."""
+        """
+        Get partition key for this count.
+        """
         raise NotImplementedError
 
     def get_skey(self) -> str:
-        """Get sort key for this count."""
+        """
+        Get sort key for this count.
+        """
         raise NotImplementedError
 
     def get_value(self, table: Table) -> int:
-        """Get current value for the counter."""
+        """
+        Get current value for the counter.
+        """
         return t.cast(
             int,
             table.get_item(Key={"PK": self.get_pkey(), "SK": self.get_skey()})
@@ -32,7 +38,9 @@ class BaseCount:
         )
 
     def inc(self, table: Table, by=1):
-        """Increment count. Default by 1, unless specified."""
+        """
+        Increment count. Default by 1, unless specified.
+        """
         table.update_item(
             Key={"PK": self.get_pkey(), "SK": self.get_skey()},
             UpdateExpression="SET CurrentCount = if_not_exists(CurrentCount, :zero) + :by",
@@ -40,7 +48,9 @@ class BaseCount:
         )
 
     def dec(self, table: Table, by=1):
-        """Increment count. Default by 1, unless specified."""
+        """
+        Increment count. Default by 1, unless specified.
+        """
         table.update_item(
             Key={"PK": self.get_pkey(), "SK": self.get_skey()},
             UpdateExpression="SET CurrentCount = if_not_exists(CurrentCount, :zero) - :by",
@@ -97,11 +107,16 @@ class ParameterizedCount(BaseCount):
     or  ParameterizedCount(of="hma.pipeline.hashes", by="signal_type", value="pdq")
     """
 
+    SKEY_PREFIX = "val#4"
+    SKEY_PREFIX_LENGTH = len(SKEY_PREFIX)
+
     def __init__(self, of: str, by: str, value: str, cached_value: int = None):
-        """You may provide a cached value if this object is getting retrieved
-        from the database. Note, this does not in any way change the actual
-        value in the database. It only saves a database call if you are using
-        get_value() immediately after."""
+        """
+        You may provide a cached value if this object is getting retrieved from
+        the database. Note, this does not in any way change the actual value in
+        the database. It only saves a database call if you are using get_value()
+        immediately after.
+        """
 
         self.of = of
         self.by = by
@@ -109,9 +124,11 @@ class ParameterizedCount(BaseCount):
         self._cached_value = cached_value
 
     def get_value(self, table: Table) -> int:
-        """If cached_value is set to a non-None value, return it, else make a
+        """
+        If cached_value is set to a non-None value, return it, else make a
         database call to get the answer. This is useful when you are getting a
-        list of parameterized counts using `ParameterizedCount.get_all()`"""
+        list of parameterized counts using `ParameterizedCount.get_all()`
+        """
         if self._cached_value:
             return self._cached_value
 
@@ -123,7 +140,9 @@ class ParameterizedCount(BaseCount):
             cls(
                 of,
                 by,
-                value=t.cast(str, item.get("SK"))[4:],  # strip the "val#" portion
+                value=t.cast(str, item.get("SK"))[
+                    cls.SKEY_PREFIX_LENGTH :
+                ],  # strip the "val#" portion
                 cached_value=t.cast(int, item.get("CurrentCount", 0)),
             )
             for item in table.query(
@@ -138,9 +157,9 @@ class ParameterizedCount(BaseCount):
     def _get_pkey_for_parameterized(of: str, by: str) -> str:
         return f"parameterized#{of}#by#{by}"
 
-    @staticmethod
-    def _get_skey_for_parameterized(by: str, value: str) -> str:
-        return f"val#{value}"
+    @classmethod
+    def _get_skey_for_parameterized(cls, by: str, value: str) -> str:
+        return f"{cls.SKEY_PREFIX}{value}"
 
     def get_pkey(self) -> str:
         return self._get_pkey_for_parameterized(self.of, self.by)
@@ -199,7 +218,12 @@ class CountBuffer:
         Write all counters remaining in the buffer. Since we do not autoflush
         yet, this may take some time.
 
-        TODO: Make this into batch calls to dynamodb so it is performant.
+        TODO: Make this into batch calls to dynamodb so it is performant. Right
+        now, we iterate through all increments and make individual calls to
+        dynamodb. This is partially because BaseCount defines inc() method. Can
+        this be extracted out such that instead of doing one ddb write per
+        BaseCount, we can batch the DDB writes and do a single BatchWriteItem call?
+        https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
         """
         for name, increment_by in self.aggregate_deltas.items():
             if increment_by > 0:
