@@ -600,6 +600,11 @@ module "submit_events" {
 
 
 ### Basic Dashboard ###
+locals {
+  # Since module submit_event may or may not be initialized
+  is_submit_event_module_initialized = length(module.submit_events) != 0
+}
+
 module "dashboard" {
   count = var.measure_performance ? 1 : 0
   depends_on = [
@@ -618,14 +623,19 @@ module "dashboard" {
   ] # Not currently included fetcher, indexer, writebacker, and counter functions
   api_lambda_name  = module.api.api_root_function_name
   auth_lambda_name = module.api.api_auth_function_name
-  other_lambdas = [
+
+  other_lambdas = concat([
     module.fetcher.fetcher_function_name,
     module.indexer.indexer_function_name,
     module.actions.writebacker_function_name,
     module.api.api_auth_function_name,
     module.api.api_root_function_name,
-    module.submit_events[0].submit_event_handler_function_name,
-  ] # all lambdas not given as pipeline_lambdas
+    ], # all lambdas not given as pipeline_lambdas
+
+    # optionally add submit module lambda if initialized.
+    local.is_submit_event_module_initialized ? [module.submit_events[0].submit_event_handler_function_name] : []
+  )
+
   queues_to_monitor = [
     (["ImageQueue", aws_sqs_queue.submissions_queue.name, aws_sqs_queue.submissions_queue_dlq.name]),
     (["HashQueue", aws_sqs_queue.hashes_queue.name, aws_sqs_queue.hashes_queue_dlq.name]),
@@ -633,8 +643,8 @@ module "dashboard" {
     (["ActionQueue", module.actions.actions_queue_name, module.actions.actions_dlq_name])
   ] # Could also monitor sns topics
 
-  submit_event_lambda_name = module.submit_events[0].submit_event_handler_function_name
-  submit_event_queue       = (["SubmitEventQueue", module.submit_events[0].submit_event_queue_name, module.submit_events[0].submit_event_dlq_name])
+  submit_event_lambda_name = local.is_submit_event_module_initialized ? module.submit_events[0].submit_event_handler_function_name : null
+  submit_event_queue       = local.is_submit_event_module_initialized ? (["SubmitEventQueue", module.submit_events[0].submit_event_queue_name, module.submit_events[0].submit_event_dlq_name]) : null
 
   api_gateway_id = module.api.api_gateway_id
 }

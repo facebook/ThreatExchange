@@ -218,6 +218,9 @@ locals {
     }
   })
 
+  # Should we add the submit event widgets to the dashboard?
+  add_submit_event_widgets = var.submit_event_lambda_name != null
+
   submit_event_lambda_widget = jsonencode({
     height = 6,
     width  = 6,
@@ -238,7 +241,7 @@ locals {
     }
   })
 
-  submit_queue_widge = jsonencode({
+  submit_queue_widge = local.add_submit_event_widgets ? jsonencode({
     width = 6
     type  = "metric"
     properties = {
@@ -259,8 +262,7 @@ locals {
         [".", "ApproximateAgeOfOldestMessage", ".", ".", { yAxis = "right", label = "dlq-approx-age" }]
       ]
     }
-  })
-
+  }) : jsonencode({})
 
   dashboard_body = <<JSON
   {
@@ -280,11 +282,14 @@ locals {
       ${local.dynamodb_datastore_errors_widget},
 
       ${local.title_system_capacity},
-      ${local.total_concurrent_lambda},
+      ${local.total_concurrent_lambda}
 
+      %{if local.add_submit_event_widgets}
+      ,
       ${local.title_submit_event},
       ${local.submit_event_lambda_widget},
       ${local.submit_queue_widge}
+      %{endif}
       ]
   }
 JSON
