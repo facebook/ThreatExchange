@@ -40,7 +40,7 @@ resource "aws_iam_role" "ddb_stream_counter_lambda_role" {
 }
 
 resource "aws_lambda_function" "ddb_stream_counter" {
-  function_name = "${var.prefix}_ddb_stream_counter_${var.source_table_name}"
+  function_name = "${var.prefix}_ddb_stream_counter_${var.source_table_type}"
   package_type  = "Image"
   role          = aws_iam_role.ddb_stream_counter_lambda_role.arn
   image_uri     = var.lambda_docker_info.uri
@@ -51,7 +51,7 @@ resource "aws_lambda_function" "ddb_stream_counter" {
   memory_size = 128
   environment {
     variables = {
-      SOURCE_TABLE_NAME   = var.source_table_name
+      SOURCE_TABLE_TYPE   = var.source_table_type
       MEASURE_PERFORMANCE = var.measure_performance ? "True" : "False"
       COUNTS_TABLE_NAME   = var.counts_datastore.name
     }

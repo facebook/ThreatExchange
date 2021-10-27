@@ -15,7 +15,7 @@ from hmalib.common.models.models_base import DynamoDBItem
 logger = get_logger(__name__)
 
 # Which table is this stream processor tailing?
-SOURCE_TABLE_NAME = os.environ["SOURCE_TABLE_NAME"]
+SOURCE_TABLE_TYPE = os.environ["SOURCE_TABLE_TYPE"]
 
 # Which table do we write counts to.
 COUNTS_TABLE_NAME = os.environ["COUNTS_TABLE_NAME"]
@@ -28,7 +28,26 @@ def get_counts_table():
 
 class BaseTableStreamCounter:
     @classmethod
-    def table_name(cls) -> str:
+    def table_type(cls) -> str:
+        """
+        DDB Streams do not necessarily pass the name of the table from which the
+        event is sourced. This means we have to use some tricks.
+
+        We create separate lambda functions in AWS for each table that needs a
+        stream. Both the lambda functions use the same code, but an environment
+        variable (SOURCE_TABLE_TYPE) is used to to notify the lambda code which
+        table generated the event.
+
+        This is an enum. The values of this can be found in terraform/main.tf
+        module "counters", attribute for_each.
+
+        A subclass impl of this method should return one of those enum values.
+        If you are adding a new table, you'll need to:
+        a) add it to terraform/main.tf:module "counters":attribute for_each
+        b) add a subclass of this class "BaseTableStreamCounter"
+        c) add it to ENABLED_STREAM_COUNTERS in this module
+           (hmalib.lambdas.ddb_stream_counter)
+        """
         raise NotImplementedError
 
     @classmethod
@@ -46,7 +65,7 @@ class BaseTableStreamCounter:
 
 class PipelineTableStreamCounter(BaseTableStreamCounter):
     @classmethod
-    def table_name(cls):
+    def table_type(cls):
         return "HMADataStore"
 
     @classmethod
@@ -77,24 +96,21 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
             elif sk.startswith(DynamoDBItem.SIGNAL_KEY_PREFIX):
                 count_buffer.inc_aggregate(AggregateCount.PipelineNames.matches)
 
-        print(sk)
-        print(count_buffer.aggregate_deltas)
-
         count_buffer.flush()
 
 
 class BanksTableStreamCounter(BaseTableStreamCounter):
     @classmethod
-    def table_name(cls) -> str:
+    def table_type(cls) -> str:
         return "HMABanks"
 
 
 ENABLED_STREAM_COUNTERS = {
-    cls.table_name(): cls
+    cls.table_type(): cls
     for cls in [PipelineTableStreamCounter, BanksTableStreamCounter]
 }
 
-current_stream_counter = ENABLED_STREAM_COUNTERS[SOURCE_TABLE_NAME]
+current_stream_counter = ENABLED_STREAM_COUNTERS[SOURCE_TABLE_TYPE]
 
 
 def lambda_handler(event: GetRecordsOutputTypeDef, _context):
