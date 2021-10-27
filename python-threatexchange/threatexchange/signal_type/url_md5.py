@@ -16,7 +16,7 @@ class UrlMD5Signal( signal_base.SimpleSignalType, signal_base.StrHasher):
     Simple signal type for URL MD5s.
     """
 
-    INDICATOR_TYPE = "HASH_MD5_URL"
+    INDICATOR_TYPE = "HASH_URL_MD5"
     TYPE_TAG = "media_type_url"
 
     @classmethod
