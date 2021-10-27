@@ -151,16 +151,15 @@ class ParameterizedCount(BaseCount):
 
 class CountBuffer:
     """
-    A buffer that for increments to the variety of count types. Flushes to
-    dynamodb every X writes, or when expicitly called.
+    A buffer that for increments to the variety of count types. Must call
+    buffer.flush() at the end to flush everything to ddb.
 
     buffer = CountBuffer(ddb_table)
 
     buffer.inc_aggregate("hma.pipeline.matches")
-    buffer.inc_parameterized("hma.pipeline.submit", by="content_type", value="photo")
+    buffer.inc_parameterized("hma.pipeline.submit", by="content_type",
+    value="photo")
     """
-
-    DELTA_BUFFER_SIZE = 20
 
     def __init__(self, table: Table):
         self.table = table
@@ -169,51 +168,36 @@ class CountBuffer:
 
     def inc_aggregate(self, of: str):
         """
-        Increment an aggregate counter. May write to dynamodb if conditions met
-        see CountBuffer docstring.
+        Increment an aggregate counter.
         """
         self.aggregate_deltas[of] += 1
-        self.flush_if_necessary()
 
     def dec_aggregate(self, of: str):
         """
-        Decrement an aggregate counter. May write to dynamodb if conditions met
-        see CountBuffer docstring.
+        Decrement an aggregate counter.
         """
         self.aggregate_deltas[of] -= 1
-        self.flush_if_necessary()
 
     def inc_parameterized(self, of: str, by: str, value: str):
         """
-        Increment a parameterized counter. May write to dynamodb if conditions
-        met: see CountBuffer docstring.
+        Increment a parameterized counter.
 
         eg. buffer.inc_parameterized("hma.pipeline.submit", by="content_type", value="photo")
         """
-
         self.parameterized_deltas[(of, by, value)] += 1
-        self.flush_if_necessary()
 
     def dec_parameterized(self, of: str, by: str, value: str):
         """
-        Decrement a parameterized counter. May write to dynamodb if conditions
-        met: see CountBuffer docstring.
+        Decrement a parameterized counter.
 
         eg. buffer.dec_parameterized("hma.pipeline.submit", by="content_type", value="photo")
         """
         self.parameterized_deltas[(of, by, value)] -= 1
-        self.flush_if_necessary()
-
-    def flush_if_necessary(self):
-        if (
-            len(self.parameterized_deltas) + len(self.aggregate_deltas)
-            > self.DELTA_BUFFER_SIZE
-        ):
-            self.flush()
 
     def flush(self):
         """
-        Write all counters remaining in the buffer. Warning, may take some time.
+        Write all counters remaining in the buffer. Since we do not autoflush
+        yet, this may take some time.
 
         TODO: Make this into batch calls to dynamodb so it is performant.
         """

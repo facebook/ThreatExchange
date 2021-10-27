@@ -27,21 +27,19 @@ class CountsTestBase(DynamoDBTableTestBase):
 
 
 class CountBuffersTest(CountsTestBase, unittest.TestCase):
-    def test_max_buffer_size_writes(self):
-        """Verify that nothing is written to ddb until the buffer size is exceeded"""
-        buffer_size = CountBuffer.DELTA_BUFFER_SIZE
+    def test_no_writes_until_flush(self):
+        """Verify that nothing is written to ddb until the buffer is flushed"""
         buffer = CountBuffer(self.get_table())
-
         dummy_count_name = "hmatest.something.that.you.measure"
 
-        for i in range(buffer_size):
+        for i in range(100):
             buffer.inc_aggregate(f"{dummy_count_name}.{i}")
 
         self.assertEqual(
             AggregateCount(f"{dummy_count_name}.{0}").get_value(self.get_table()), 0
         )
 
-        buffer.inc_aggregate(f"{dummy_count_name}.{i+1}")
+        buffer.flush()
 
         self.assertEqual(
             AggregateCount(f"{dummy_count_name}.{0}").get_value(self.get_table()),
