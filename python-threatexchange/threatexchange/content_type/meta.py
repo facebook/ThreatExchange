@@ -8,14 +8,20 @@ Stores all the content type implementations for lookup
 import functools
 import typing as t
 
-from . import content_base, text, video, photo, pdf
+from . import content_base, text, video, photo, pdf, url
 from ..signal_type import signal_base
 
 
 @functools.lru_cache(1)
 def get_all_content_types() -> t.List[t.Type[content_base.ContentType]]:
     """Returns all content_type implementations for commands"""
-    return [text.TextContent, video.VideoContent, photo.PhotoContent, pdf.PDFContent]
+    return [
+        text.TextContent,
+        video.VideoContent,
+        photo.PhotoContent,
+        pdf.PDFContent,
+        url.URL,
+    ]
 
 
 @functools.lru_cache(1)
