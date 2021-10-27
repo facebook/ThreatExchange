@@ -10,6 +10,7 @@ from ..signal_type import url_md5
 from ..signal_type.signal_base import SignalType
 from .content_base import ContentType
 
+
 class URL(ContentType):
     """
     URLs are often used to point specific files and specific locations online.

@@ -53,6 +53,7 @@ def normalize_string(s: str) -> str:
     s = re.sub("[\W_]", "", s)
     return s
 
+
 def normalize_url(url: str) -> str:
     """
     Normalize the URL and strip the scheme from the URL to make matching more effective.
@@ -64,13 +65,13 @@ def normalize_url(url: str) -> str:
     url = url.lower()
     # parse the Url into it's consituent parts
     parsed = urlparse(url)
-    #identify the scheme and trailing punctuation
-    #e.g. scheme = "http://"
+    # identify the scheme and trailing punctuation
+    # e.g. scheme = "http://"
     scheme = "%s://" % parsed.scheme
-    #Remove the scheme from the full url
+    # Remove the scheme from the full url
     # https://www.facebook.com => www.facebook.com
-    url = parsed.geturl().replace(scheme, '', 1)
-    #Ensure URL is utf-8 encoded
-    url=url.encode('utf-8')
+    url = parsed.geturl().replace(scheme, "", 1)
+    # Ensure URL is utf-8 encoded
+    url = url.encode("utf-8")
 
     return url
