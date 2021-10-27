@@ -128,7 +128,7 @@ module "counters" {
   }
 
   source_stream_arn = each.value
-  source_table_name = each.key
+  source_table_type = each.key
 
   counts_datastore = {
     name = module.datastore.counts_datastore.name
@@ -607,23 +607,26 @@ locals {
 
 module "dashboard" {
   count = var.measure_performance ? 1 : 0
+
   depends_on = [
     module.api.api_root_function_name,
     module.datastore.primary_datastore,
   ]
+
   name      = local.dashboard_name
   source    = "./dashboard"
   prefix    = var.prefix
   datastore = module.datastore.primary_datastore
+
   pipeline_lambdas = [
     (["Hash", module.hasher.hasher_function_name]),
     (["Match", module.matcher.matcher_function_name]),
     (["Action Evaluator", module.actions.action_evaluator_function_name]),
     (["Action Performer", module.actions.action_performer_function_name])
   ] # Not currently included fetcher, indexer, writebacker, and counter functions
+
   api_lambda_name  = module.api.api_root_function_name
   auth_lambda_name = module.api.api_auth_function_name
-
   other_lambdas = concat([
     module.fetcher.fetcher_function_name,
     module.indexer.indexer_function_name,

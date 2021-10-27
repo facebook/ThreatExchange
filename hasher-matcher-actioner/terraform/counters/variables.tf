@@ -33,8 +33,8 @@ variable "source_stream_arn" {
   type        = string
 }
 
-variable "source_table_name" {
-  description = "Table for which this stream is configured."
+variable "source_table_type" {
+  description = "Table type for which this stream is configured. For a list of values, check out hmalib.lambdas.ddb_stream_counter.BaseTableStreamCounter.table_type's docstring."
   type        = string
 }
 

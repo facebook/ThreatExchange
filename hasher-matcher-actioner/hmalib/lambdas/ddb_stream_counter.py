@@ -8,14 +8,14 @@ from mypy_boto3_dynamodbstreams.type_defs import GetRecordsOutputTypeDef, Record
 import boto3
 
 from hmalib.common.models.content import ContentObject
-from hmalib.common.models.count import AggregateCount
+from hmalib.common.models.count import AggregateCount, CountBuffer
 from hmalib.common.logging import get_logger
 from hmalib.common.models.models_base import DynamoDBItem
 
 logger = get_logger(__name__)
 
 # Which table is this stream processor tailing?
-SOURCE_TABLE_NAME = os.environ["SOURCE_TABLE_NAME"]
+SOURCE_TABLE_TYPE = os.environ["SOURCE_TABLE_TYPE"]
 
 # Which table do we write counts to.
 COUNTS_TABLE_NAME = os.environ["COUNTS_TABLE_NAME"]
@@ -28,37 +28,56 @@ def get_counts_table():
 
 class BaseTableStreamCounter:
     @classmethod
-    def table_name(cls) -> str:
+    def table_type(cls) -> str:
+        """
+        DDB Streams do not necessarily pass the name of the table from which the
+        event is sourced. This means we have to use some tricks.
+
+        We create separate lambda functions in AWS for each table that needs a
+        stream. Both the lambda functions use the same code, but an environment
+        variable (SOURCE_TABLE_TYPE) is used to notify the lambda code which
+        table generated the event.
+
+        This is an enum. The values of this can be found in terraform/main.tf
+        module "counters", attribute for_each.
+
+        A subclass impl of this method should return one of those enum values.
+        If you are adding a new table, you'll need to:
+        a) add it to terraform/main.tf:module "counters":attribute for_each
+        b) add a subclass of this class "BaseTableStreamCounter"
+        c) add it to ENABLED_STREAM_COUNTERS in this module
+           (hmalib.lambdas.ddb_stream_counter)
+        """
         raise NotImplementedError
 
-    @staticmethod
-    def get_increments_for_records(
-        records: t.List[RecordTypeDef],
-    ) -> t.Dict[AggregateCount, int]:
+    @classmethod
+    def update_increments_for_records(
+        cls, records: t.List[RecordTypeDef], count_buffer: CountBuffer
+    ):
         """
-        Given a list of streamed ddb records, returns a map of BaseCounts -> the
-        value by which they should be incremented. Negative increment implies
-        decrement.
+        Given a list of streamed ddb records, and a buffer, processes the
+        records and calls count_buffer.inc_*/dec_* methods as appropriate.
+
+        At the end, will flush the buffer too.
         """
         raise NotImplementedError
 
 
 class PipelineTableStreamCounter(BaseTableStreamCounter):
     @classmethod
-    def table_name(cls):
+    def table_type(cls):
         return "HMADataStore"
 
     @classmethod
-    def get_increments_for_records(
-        cls,
-        records: t.List[RecordTypeDef],
-    ) -> t.Dict[AggregateCount, int]:
+    def update_increments_for_records(
+        cls, records: t.List[RecordTypeDef], count_buffer: CountBuffer
+    ):
         """
-        Given a list of streamed ddb records, returns a map of BaseCounts -> the
-        value by which they should be incremented. Negative increment implies
-        decrement.
+        Given a list of streamed ddb records, and a buffer, processes the
+        records and calls count_buffer.inc_*/dec_* methods as appropriate.
+
+        At the end, will flush the buffer too.
         """
-        result: defaultdict = defaultdict(lambda: 0)
         for record in records:
             if record["eventName"] != "INSERT":
                 # We only want to track create events.
@@ -70,28 +89,28 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
             # TODO These should maybe have a strong connection to the objects instead of class constants
             # otherwise changes to the object might not correctly update these count checks
             if sk == ContentObject.CONTENT_STATIC_SK:
-                result[AggregateCount.PipelineNames.submits] += 1
+                count_buffer.inc_aggregate(AggregateCount.PipelineNames.submits)
             elif sk.startswith(DynamoDBItem.TYPE_PREFIX):
                 # note hashes should always match submits (submits == hashes)
-                result[AggregateCount.PipelineNames.hashes] += 1
+                count_buffer.inc_aggregate(AggregateCount.PipelineNames.hashes)
             elif sk.startswith(DynamoDBItem.SIGNAL_KEY_PREFIX):
-                result[AggregateCount.PipelineNames.matches] += 1
+                count_buffer.inc_aggregate(AggregateCount.PipelineNames.matches)
 
-        return dict(result)
+        count_buffer.flush()
 
 
 class BanksTableStreamCounter(BaseTableStreamCounter):
     @classmethod
-    def table_name(cls) -> str:
+    def table_type(cls) -> str:
         return "HMABanks"
 
 
 ENABLED_STREAM_COUNTERS = {
-    cls.table_name(): cls
+    cls.table_type(): cls
     for cls in [PipelineTableStreamCounter, BanksTableStreamCounter]
 }
 
-current_stream_counter = ENABLED_STREAM_COUNTERS[SOURCE_TABLE_NAME]
+current_stream_counter = ENABLED_STREAM_COUNTERS[SOURCE_TABLE_TYPE]
 
 
 def lambda_handler(event: GetRecordsOutputTypeDef, _context):
@@ -110,16 +129,6 @@ def lambda_handler(event: GetRecordsOutputTypeDef, _context):
     invocations. To make matters iron-clad, the stream counter lambda does not
     have write permission on any of the source tables.
     """
-    counts: t.Dict[
-        AggregateCount, int
-    ] = current_stream_counter.get_increments_for_records(event["Records"])
-
     counts_table = get_counts_table()
-
-    for count in counts:
-        # TODO convert this to a batch write.
-        increment_by = counts[count]
-        if increment_by > 0:
-            AggregateCount(str(count)).inc(counts_table, increment_by)
-        elif increment_by < 0:
-            AggregateCount(str(count)).dec(counts_table, abs(increment_by))
+    count_buffer = CountBuffer(counts_table)
+    current_stream_counter.update_increments_for_records(event["Records"], count_buffer)
