@@ -141,6 +141,12 @@ class BankMember(DynamoDBItem):
     """
     Describes a bank member. A bank member is a piece of content. eg. text,
     video, photo that a partner wants to match against.
+
+    A BankMember can also be virtual. Which means the actual media is
+    unavailable. This could happen if the bank is sycned with a source that only
+    provides hashes, or it could be that the media has been removed to comply
+    with retention policies. Since virtual could be a loaded term, we use the
+    more explicit and accurate `is_media_unavailable attribute`.
     """
 
     BANK_MEMBER_ID_PREFIX = "member#"
@@ -168,6 +174,7 @@ class BankMember(DynamoDBItem):
     updated_at: datetime
 
     is_removed: bool = field(default=False)
+    is_media_unavailable: bool = field(default=False)
 
     @classmethod
     def get_pk(cls, bank_id: str, content_type: t.Type[ContentType]):
@@ -195,6 +202,7 @@ class BankMember(DynamoDBItem):
             "CreatedAt": self.created_at.isoformat(),
             "UpdatedAt": self.updated_at.isoformat(),
             "IsRemoved": self.is_removed,
+            "IsMediaUnavailable": self.is_media_unavailable,
         }
 
     @classmethod
@@ -210,6 +218,7 @@ class BankMember(DynamoDBItem):
             created_at=datetime.fromisoformat(item["CreatedAt"]),
             updated_at=datetime.fromisoformat(item["UpdatedAt"]),
             is_removed=item["IsRemoved"],
+            is_media_unavailable=item["IsMediaUnavailable"],
         )
 
     def to_json(self) -> t.Dict:
@@ -507,6 +516,7 @@ class BanksTable:
         storage_key: t.Optional[str],
         raw_content: t.Optional[str],
         notes: str,
+        is_media_unavailable: bool = False,
     ) -> BankMember:
         """
         Adds a member to the bank. DOES NOT enforce retroaction. DOES NOT
@@ -526,6 +536,7 @@ class BanksTable:
             notes=notes,
             created_at=now,
             updated_at=now,
+            is_media_unavailable=is_media_unavailable,
         )
 
         bank_member.write_to_table(self._table)
@@ -583,6 +594,36 @@ class BanksTable:
         )
         member_signal.write_to_table(self._table)
         return member_signal
+
+    def add_detached_bank_member_signal(
+        self,
+        bank_id: str,
+        content_type: t.Type[ContentType],
+        signal_type: t.Type[SignalType],
+        signal_value: str,
+    ) -> BankMemberSignal:
+        """
+        Adds a BankMemberSignal without a needing a related BankMember. Pretty
+        much the same as add_bank_member_signal otherwise.
+
+        Creates a BankMember with a is_media_unavailable=True.
+        """
+        bank_member = self.add_bank_member(
+            bank_id=bank_id,
+            content_type=content_type,
+            storage_bucket=None,
+            storage_key=None,
+            raw_content=None,
+            notes="",
+            is_media_unavailable=True,
+        )
+
+        return self.add_bank_member_signal(
+            bank_id=bank_id,
+            bank_member_id=bank_member.bank_member_id,
+            signal_type=signal_type,
+            signal_value=signal_value,
+        )
 
     def unmark_bank_member_signal(self, bank_member_id: str, signal_id: str):
         """
