@@ -99,7 +99,7 @@ class S3BucketSubmitter:
     def run_one_iteration(self, executor):
         def submit_one(presigned_url: str):
             content_id = str(uuid.uuid4())
-            executor.submit(self.api.submit_via_external_url, presigned_url, content_id)
+            executor.submit(self.api.submit_via_external_url, content_id, presigned_url)
 
         self.map_object_presigned_urls(submit_one)
 

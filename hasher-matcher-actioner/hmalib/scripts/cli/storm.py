@@ -11,16 +11,17 @@ Run
 
 Example usage for each submission type
 ```
-$ hmacli storm -m "<filepath>" -v upload 100
-$ hmacli storm -m "<filepath>" -v bytes 100
-$ hmacli storm -m "<signed-url>" -v url 100
-$ hmacli storm -m "<bucket>:<key>" -v s3 100
-$ hmacli storm -m "<pdq-hash>" -v hash 100
+$ hmacli storm -m "<filepath>" -c 100 -v upload
+$ hmacli storm -m "<filepath>" -c 100 -v bytes
+$ hmacli storm -m "<signed-url>" -c 100 -v url
+$ hmacli storm -m "<bucket>:<key>" -c 100 -v s3
+$ hmacli storm -m "<pdq-hash>" -c 100 -v hash
 ```
 
 """
 
 import os
+import sys
 import base64
 import argparse
 import uuid
@@ -68,13 +69,15 @@ class StormCommand(base.Command, base.NeedsAPIAccess):
         )
         ap.add_argument(
             "submit_method",
-            choices=["upload", "bytes", "url", "s3", "hash"],
+            choices=["upload", "bytes", "url", "s3", "hash", "sns-s3", "sns-url"],
             help="Method of submission to use in storm",
             default="upload",
         )
         ap.add_argument(
-            "count",
-            help="Approximately how many times do we want to submit.",
+            "--count",
+            "-c",
+            help="Number of times to submit media.",
+            default=1,
         )
         ap.add_argument(
             "--verbose",
@@ -87,6 +90,11 @@ class StormCommand(base.Command, base.NeedsAPIAccess):
             "-r",
             action="store_true",
             help="Have request retry (with exponential backoff) if errors are encoutered.",
+        )
+        ap.add_argument(
+            "--sns_topic",
+            help="ARN of SNS Topic to submit to, required when submit_method=[sns-s3,sns-url]",
+            default="",
         )
 
     @classmethod
@@ -106,12 +114,14 @@ class StormCommand(base.Command, base.NeedsAPIAccess):
         count: str,
         verbose: bool = False,
         retry: bool = False,
+        sns_topic: str = "",
     ) -> None:
         self.media = media
         self.submit_method = submit_method
         self.count = int(count)
         self.verbose = verbose
         self.retry = retry
+        self.sns_topic = sns_topic
 
         # hostnames are especially useful when storming from more than one instance.
         self.hostname = socket.gethostname()
@@ -135,6 +145,11 @@ class StormCommand(base.Command, base.NeedsAPIAccess):
             )
             api.add_transport_adapter(HTTPAdapter(max_retries=retry_strategy))
 
+        if self.submit_method in ["sns-s3", "sns-url"] and not self.sns_topic:
+            print(
+                f"submit_method: {self.submit_method} require's the sns topic arn be provided to `--sns_topic`"
+            )
+            sys.exit(1)
         # Need to compute script level RequestsPerSecond so that we can estimate
         # benchmark performance. For that, storing the start time every 200
         # requests and reporting the QPS between that and current.
@@ -224,8 +239,8 @@ class StormCommand(base.Command, base.NeedsAPIAccess):
                 )
             elif self.submit_method == "url":
                 api.submit_via_external_url(
-                    url=self.media,
                     content_id=content_id,
+                    url=self.media,
                     additional_fields=additional_fields,
                 )
             elif self.submit_method == "hash":
@@ -240,6 +255,22 @@ class StormCommand(base.Command, base.NeedsAPIAccess):
                     content_id=content_id,
                     bucket_name=bucket,
                     object_key=key,
+                    additional_fields=additional_fields,
+                )
+            elif self.submit_method == "sns-s3":
+                bucket, key = self.media.split(":", 1)
+                api.sns_submit_via_s3_object(
+                    submit_topic_arn=self.sns_topic,
+                    content_id=content_id,
+                    bucket_name=bucket,
+                    object_key=key,
+                    additional_fields=additional_fields,
+                )
+            elif self.submit_method == "sns-url":
+                api.sns_submit_via_external_url(
+                    submit_topic_arn=self.sns_topic,
+                    content_id=content_id,
+                    url=self.media,
                     additional_fields=additional_fields,
                 )
         # api methods call raise_for_status to check for error

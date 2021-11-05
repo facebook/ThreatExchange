@@ -112,8 +112,8 @@ class HasherMatcherActionerAPI:
 
     def submit_via_external_url(
         self,
-        url: str,
         content_id: str,
+        url: str,
         additional_fields: t.List[str] = [],
     ):
         """
@@ -184,6 +184,58 @@ class HasherMatcherActionerAPI:
             data=json.dumps(payload).encode(),
         )
         response.raise_for_status()
+
+    @classmethod
+    def sns_submit_via_external_url(
+        cls,
+        submit_topic_arn: str,
+        content_id: str,
+        url: str,
+        additional_fields: t.List[str] = [],
+    ):
+        """
+        Distinct from submit_via_upload_put_url(), It uses the URL only path
+        and bypasses s3 completely and submits via an SNS topic
+        """
+        payload = {
+            "content_id": content_id,
+            "content_type": "photo",
+            "additional_fields": additional_fields,
+            "content_url": url,
+        }
+        sns_client = boto3.client("sns")
+
+        response = sns_client.publish(
+            TopicArn=submit_topic_arn,
+            Message=json.dumps(payload),
+        )
+
+    @classmethod
+    def sns_submit_via_s3_object(
+        cls,
+        submit_topic_arn: str,
+        content_id: str,
+        bucket_name: str,
+        object_key: str,
+        content_type: str = "photo",
+        additional_fields: t.List[str] = [],
+    ):
+        """
+        Submit to the SNS topic using a s3 object that submit_even_handler lambda is authorized to read from.
+        """
+        payload = {
+            "content_id": content_id,
+            "content_type": content_type,
+            "additional_fields": additional_fields,
+            "bucket_name": bucket_name,
+            "object_key": object_key,
+        }
+        sns_client = boto3.client("sns")
+
+        response = sns_client.publish(
+            TopicArn=submit_topic_arn,
+            Message=json.dumps(payload),
+        )
 
     def get_content_hash_details(
         self,
