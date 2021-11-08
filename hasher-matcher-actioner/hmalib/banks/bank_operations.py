@@ -77,3 +77,24 @@ def add_bank_member_signal(
         signal_type=signal_type,
         signal_value=signal_value,
     )
+
+
+def add_detached_bank_member_signal(
+    banks_table: BanksTable,
+    bank_id: str,
+    content_type: t.Type[ContentType],
+    signal_type: t.Type[SignalType],
+    signal_value: str,
+) -> BankMemberSignal:
+    """
+    Add a bank member signal without a BankMember. Will deduplicate a
+    signal_value + signal_type tuple before writing to the database.
+
+    Will make signals available for processing into indices.
+    """
+    return banks_table.add_detached_bank_member_signal(
+        bank_id=bank_id,
+        content_type=content_type,
+        signal_type=signal_type,
+        signal_value=signal_value,
+    )
