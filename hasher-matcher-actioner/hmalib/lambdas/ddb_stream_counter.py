@@ -89,12 +89,22 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
             # TODO These should maybe have a strong connection to the objects instead of class constants
             # otherwise changes to the object might not correctly update these count checks
             if sk == ContentObject.CONTENT_STATIC_SK:
-                count_buffer.inc_aggregate(AggregateCount.PipelineNames.submits)
+                content_type = record["dynamodb"]["NewImage"]["ContentType"]["S"]
+                count_buffer.inc_parameterized(
+                    AggregateCount.PipelineNames.submits, "content_type", content_type
+                )
             elif sk.startswith(DynamoDBItem.TYPE_PREFIX):
                 # note hashes should always match submits (submits == hashes)
-                count_buffer.inc_aggregate(AggregateCount.PipelineNames.hashes)
+                signal_type = record["dynamodb"]["NewImage"]["SignalType"]["S"]
+                count_buffer.inc_parameterized(
+                    AggregateCount.PipelineNames.hashes, "signal_type", signal_type
+                )
             elif sk.startswith(DynamoDBItem.SIGNAL_KEY_PREFIX):
-                count_buffer.inc_aggregate(AggregateCount.PipelineNames.matches)
+                signal_source = record["dynamodb"]["NewImage"]["SignalSource"]["S"]
+                signal_id = sk.split("#")[-1]
+                count_buffer.inc_parameterized(
+                    AggregateCount.PipelineNames.matches, signal_source, signal_id
+                )
 
         count_buffer.flush()
 
