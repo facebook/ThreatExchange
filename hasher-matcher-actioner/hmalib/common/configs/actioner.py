@@ -6,6 +6,7 @@ import typing as t
 
 from dataclasses import dataclass
 from hmalib.common.logging import get_logger
+from hmalib.common.extensions import load_extension_impl
 from hmalib.common.messages.match import MatchMessage
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from requests import get, post, put, delete, Response
@@ -33,6 +34,7 @@ class ActionPerformer(config.HMAConfigWithSubtypes, HasAWSSerialization):
             WebhookGetActionPerformer,
             WebhookPutActionPerformer,
             WebhookDeleteActionPerformer,
+            CustomImplActionPerformer,
         ]
 
     # Implemented by subtypes
@@ -103,3 +105,23 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
     def call(self, url: str, data: str) -> Response:
         logger.info(f"Performing a DELETE request to URL. {url}")
         return delete(url, headers=json.loads(self.headers))
+
+
+@dataclass
+class CustomImplActionPerformer(ActionPerformer):
+    """
+    Pulls impl from extensions.py for an action performer.
+    Requires configuration in setup.py and hma_extensions as well.
+    """
+
+    entry_point_name: str
+
+    def perform_action(self, match_message: MatchMessage) -> None:
+        if fn := load_extension_impl(self.entry_point_name):
+            # for now just to test the impl can be run pass something
+            # printable to the method
+            fn(match_message.to_aws())
+        else:
+            logger.error(
+                f"Unable to load custom action performer: {self.entry_point_name}"
+            )

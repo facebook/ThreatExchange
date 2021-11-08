@@ -30,5 +30,8 @@ setup(
         "requests>=2.25.1",
     ],
     extras_require=extras_require,
-    entry_points={"console_scripts": ["hmacli = hmalib.scripts.cli.main:main"]},
+    entry_points={
+        "console_scripts": ["hmacli = hmalib.scripts.cli.main:main"],
+        "hmalib_extensions": ["echo = hmalib_extensions.main:print_arg"],
+    },
 )
