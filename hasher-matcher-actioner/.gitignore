@@ -41,3 +41,4 @@ dist/
 # Ignore files for local lambda testing.
 lambda_local.py
 main.py.zip
+settings.py

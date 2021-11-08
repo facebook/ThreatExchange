@@ -11,3 +11,4 @@ RUN pip install -e .
 # the python path complications from arising.
 # 1: https://hub.docker.com/r/amazon/aws-lambda-python
 COPY hmalib ${LAMBDA_TASK_ROOT}/hmalib
+COPY hmalib_extensions ${LAMBDA_TASK_ROOT}/hmalib_extensions

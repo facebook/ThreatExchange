@@ -4,9 +4,10 @@ import hmalib.common.config as config
 import json
 import typing as t
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from hmalib.common.messages.match import MatchMessage
+from hmalib.common.extensions import load_custom_actioner
+from hmalib.common.messages.action import ActionMessage
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from requests import get, post, put, delete, Response
 
@@ -23,7 +24,7 @@ class ActionPerformer(config.HMAConfigWithSubtypes, HasAWSSerialization):
     All actions share the same namespace (so that a post action and a
     "send to review" action can't both be called "IActionReview")
 
-    ActionPerformer.get("action_name").perform_action(match_message)
+    ActionPerformer.get("action_name").perform_action(message)
     """
 
     @staticmethod
@@ -33,17 +34,18 @@ class ActionPerformer(config.HMAConfigWithSubtypes, HasAWSSerialization):
             WebhookGetActionPerformer,
             WebhookPutActionPerformer,
             WebhookDeleteActionPerformer,
+            CustomImplActionPerformer,
         ]
 
     # Implemented by subtypes
-    def perform_action(self, match_message: MatchMessage) -> None:
+    def perform_action(self, message: ActionMessage) -> None:
         raise NotImplementedError
 
 
 # at match time, these strings are replaced by the result of running the associated
 # function on the match message
-WEBHOOK_ACTION_PERFORMER_REPLACEMENTS: t.Dict[str, t.Callable[[MatchMessage], str]] = {
-    "<content-id>": lambda match_message: match_message.content_key,
+WEBHOOK_ACTION_PERFORMER_REPLACEMENTS: t.Dict[str, t.Callable[[ActionMessage], str]] = {
+    "<content-id>": lambda message: message.content_key,
 }
 
 
@@ -54,16 +56,14 @@ class WebhookActionPerformer(ActionPerformer):
     url: str
     headers: str
 
-    def perform_action(self, match_message: MatchMessage) -> None:
+    def perform_action(self, message: ActionMessage) -> None:
         parsed_url = self.url
         for (
             replacement_str,
             replacement_func,
         ) in WEBHOOK_ACTION_PERFORMER_REPLACEMENTS.items():
-            parsed_url = parsed_url.replace(
-                replacement_str, replacement_func(match_message)
-            )
-        self.call(parsed_url, data=json.dumps(match_message.to_aws()))
+            parsed_url = parsed_url.replace(replacement_str, replacement_func(message))
+        self.call(parsed_url, data=json.dumps(message.to_aws()))
 
     def call(self, url: str, data: str) -> Response:
         raise NotImplementedError()
@@ -103,3 +103,22 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
     def call(self, url: str, data: str) -> Response:
         logger.info(f"Performing a DELETE request to URL. {url}")
         return delete(url, headers=json.loads(self.headers))
+
+
+@dataclass
+class CustomImplActionPerformer(ActionPerformer):
+    """
+    Pulls impl from extensions.py for an action performer.
+    Requires configuration in setup.py and hma_extensions as well.
+    """
+
+    entry_point_name: str
+    additional_kwargs: t.Dict[str, str] = field(default_factory=dict)
+
+    def perform_action(self, message: ActionMessage) -> None:
+        if fn := load_custom_actioner(self.entry_point_name):
+            fn(message, **self.additional_kwargs)
+        else:
+            logger.error(
+                f"Unable to load custom action performer: {self.entry_point_name}"
+            )
