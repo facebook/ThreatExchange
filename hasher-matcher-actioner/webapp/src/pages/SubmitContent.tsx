@@ -196,6 +196,7 @@ export default function SubmitContent(): JSX.Element {
                   name="content"
                   placeholder="url to content"
                   required
+                  value={inputs.content}
                 />
                 <Form.Text className="text-muted mt-0">
                   Currently behavior will store a copy of the content
