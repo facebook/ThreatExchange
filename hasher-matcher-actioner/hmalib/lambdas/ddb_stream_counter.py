@@ -93,24 +93,32 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
             # otherwise changes to the object might not correctly update these count checks
             if sk == ContentObject.CONTENT_STATIC_SK:
                 count_buffer.inc_aggregate(AggregateCount.PipelineNames.submits)
-                content_type = inserted_record["ContentType"]["S"]
-                count_buffer.inc_parameterized(
-                    AggregateCount.PipelineNames.submits, "content_type", content_type
-                )
+                if (
+                    content_type := inserted_record.get("ContentType", {}).get("S")
+                ) is not None:
+                    count_buffer.inc_parameterized(
+                        AggregateCount.PipelineNames.submits,
+                        "content_type",
+                        content_type,
+                    )
             elif sk.startswith(DynamoDBItem.TYPE_PREFIX):
                 # note hashes should always match submits (submits == hashes)
                 count_buffer.inc_aggregate(AggregateCount.PipelineNames.hashes)
-                signal_type = inserted_record["SignalType"]["S"]
-                count_buffer.inc_parameterized(
-                    AggregateCount.PipelineNames.hashes, "signal_type", signal_type
-                )
+                if (
+                    signal_type := inserted_record.get("SignalType", {}).get("S")
+                ) is not None:
+                    count_buffer.inc_parameterized(
+                        AggregateCount.PipelineNames.hashes, "signal_type", signal_type
+                    )
             elif sk.startswith(DynamoDBItem.SIGNAL_KEY_PREFIX):
                 count_buffer.inc_aggregate(AggregateCount.PipelineNames.matches)
-                signal_source = inserted_record["SignalSource"]["S"]
-                signal_id = sk.split("#")[-1]
-                count_buffer.inc_parameterized(
-                    AggregateCount.PipelineNames.matches, signal_source, signal_id
-                )
+                if (
+                    signal_source := inserted_record.get("SignalSource", {}).get("S")
+                ) is not None:
+                    signal_id = sk.split("#")[-1]
+                    count_buffer.inc_parameterized(
+                        AggregateCount.PipelineNames.matches, signal_source, signal_id
+                    )
 
         count_buffer.flush()
 
