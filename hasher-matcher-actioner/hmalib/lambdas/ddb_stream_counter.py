@@ -85,16 +85,40 @@ class PipelineTableStreamCounter(BaseTableStreamCounter):
 
             pk: str = record["dynamodb"]["Keys"]["PK"]["S"]
             sk: str = record["dynamodb"]["Keys"]["SK"]["S"]
+            # The raw stream values have a different schema than what is returned by boto3 meaning
+            # they can't be deserialized into one of the HMA datamodels using existing functionality.
+            inserted_record = record["dynamodb"]["NewImage"]
 
             # TODO These should maybe have a strong connection to the objects instead of class constants
             # otherwise changes to the object might not correctly update these count checks
             if sk == ContentObject.CONTENT_STATIC_SK:
                 count_buffer.inc_aggregate(AggregateCount.PipelineNames.submits)
+                if (
+                    content_type := inserted_record.get("ContentType", {}).get("S")
+                ) is not None:
+                    count_buffer.inc_parameterized(
+                        AggregateCount.PipelineNames.submits,
+                        "content_type",
+                        content_type,
+                    )
             elif sk.startswith(DynamoDBItem.TYPE_PREFIX):
                 # note hashes should always match submits (submits == hashes)
                 count_buffer.inc_aggregate(AggregateCount.PipelineNames.hashes)
+                if (
+                    signal_type := inserted_record.get("SignalType", {}).get("S")
+                ) is not None:
+                    count_buffer.inc_parameterized(
+                        AggregateCount.PipelineNames.hashes, "signal_type", signal_type
+                    )
             elif sk.startswith(DynamoDBItem.SIGNAL_KEY_PREFIX):
                 count_buffer.inc_aggregate(AggregateCount.PipelineNames.matches)
+                if (
+                    signal_source := inserted_record.get("SignalSource", {}).get("S")
+                ) is not None:
+                    signal_id = sk.split("#")[-1]
+                    count_buffer.inc_parameterized(
+                        AggregateCount.PipelineNames.matches, signal_source, signal_id
+                    )
 
         count_buffer.flush()
 
