@@ -10,40 +10,38 @@ import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
 import {add, checkmark, close} from 'ionicons/icons';
 import {updateAction, createAction, deleteAction} from '../../Api';
-import ActionPerformerColumns, {
-  WebhookActionPerformerParams,
-} from '../../components/settings/ActionPerformer/ActionPerformerColumns';
+import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
 import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
 import {ActionRule} from './ActionRuleSettingsTab';
 
 type Input = {
-  actions: Action[];
-  setActions: (actions: Action[]) => void;
+  actions: ActionPerformer[];
+  setActions: (actions: ActionPerformer[]) => void;
   actionRules: ActionRule[];
 };
 
-export type Action = {
+export type ActionPerformerParams = {
+  url: string;
+  headers: string;
+  entry_point_name: string;
+  additional_kwargs: Record<string, string>;
+};
+
+export type ActionPerformer = {
   name: string;
 
   config_subtype: string;
 
-  params: WebhookActionPerformerParams;
+  params: ActionPerformerParams;
 };
 
-const defaultAction: Action = {
+const defaultAction: ActionPerformer = {
   name: '',
   config_subtype: '',
-  params: {url: '', headers: ''},
+  params: {url: '', headers: '', entry_point_name: '', additional_kwargs: {}},
 };
 
-/**
- * TODO This used to have an ActionLabel Settings component here. The
- * action rules are now in a separate tab. We can now rename this
- * outer component to ActionPerformerSettingsTab and start the
- * implementation of that component here. Not doing that now because
- * someone else is actively working in this space.
- */
-export default function ActionSettingsTab({
+export default function ActionPerformerSettingsTab({
   actions,
   setActions,
   actionRules,
@@ -62,7 +60,7 @@ export default function ActionSettingsTab({
   const onActionUpdate = (
     old_name: string,
     old_type: string,
-    updatedAction: Action,
+    updatedAction: ActionPerformer,
   ) => {
     updateAction(old_name, old_type, updatedAction)
       .then(response => {
@@ -73,7 +71,9 @@ export default function ActionSettingsTab({
           return action;
         });
         setActions(updatedActions);
-        displayToast(response.response);
+        displayToast(
+          `${response.response} (Manual refresh maybe necessary to see changes.)`,
+        );
       })
       .catch(e => {
         displayToast(
@@ -84,7 +84,9 @@ export default function ActionSettingsTab({
   const onActionCreate = () => {
     createAction(newAction)
       .then(response => {
-        displayToast(response.response);
+        displayToast(
+          `${response.response} (Manual refresh maybe necessary to see changes.)`,
+        );
         const newActions = actions;
         newActions.unshift(newAction);
         setActions(newActions);
@@ -97,14 +99,14 @@ export default function ActionSettingsTab({
         );
       });
   };
-  const onActionDelete = (actionToDelete: Action) => {
+  const onActionDelete = (actionToDelete: ActionPerformer) => {
     deleteAction(actionToDelete.name)
       .then(response => {
         const filteredActions = actions.filter(
-          (action: Action) => action.name !== actionToDelete.name,
+          (action: ActionPerformer) => action.name !== actionToDelete.name,
         );
         setActions(filteredActions);
-        displayToast(response.response);
+        displayToast(`${response.response}`);
       })
       .catch(e => {
         displayToast(

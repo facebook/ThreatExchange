@@ -19,7 +19,7 @@ import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {addActionRule, deleteActionRule, updateActionRule} from '../../Api';
-import {Action} from './ActionSettingsTab';
+import {ActionPerformer} from './ActionPerformerSettingsTab';
 
 export type Label = {
   key: string;
@@ -133,7 +133,7 @@ const defaultActionRule = new ActionRule(
 );
 
 type Input = {
-  actions: Action[];
+  actions: ActionPerformer[];
   actionRules: ActionRule[];
   setActionRules: (actionRules: ActionRule[]) => void;
 };

@@ -14,11 +14,11 @@ import type {
   ActionRule,
   ClassificationCondition,
 } from '../../pages/settings/ActionRuleSettingsTab';
-import {Action} from '../../pages/settings/ActionSettingsTab';
+import {ActionPerformer} from '../../pages/settings/ActionPerformerSettingsTab';
 
 type Input = {
   actionRule: ActionRule;
-  actions: Action[];
+  actions: ActionPerformer[];
   onDeleteActionRule: (name: string, deleteFromUIOnly: boolean) => void;
   onUpdateActionRule: (oldName: string, updatedActionRule: ActionRule) => void;
   ruleIsValid: (actionRule: ActionRule, oldName: string) => boolean;

@@ -6,32 +6,15 @@ import React, {useState} from 'react';
 import Form from 'react-bootstrap/Form';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
-import WebhookActioner from './WebhookActioner';
-import {Action} from '../../../pages/settings/ActionSettingsTab';
-
-export type WebhookActionPerformerParams = {
-  url: string;
-  headers: string;
-};
-
-const Actioners: ActionerMap = {
-  WebhookPostActionPerformer: WebhookActioner,
-  WebhookGetActionPerformer: WebhookActioner,
-  WebhookDeleteActionPerformer: WebhookActioner,
-  WebhookPutActionPerformer: WebhookActioner,
-  '': WebhookActioner,
-};
+import ActionPerfomerDetails from './ActionPerformerDetails';
+import {ActionPerformer} from '../../../pages/settings/ActionPerformerSettingsTab';
 
 type ActionPerformerColumn = {
-  action: Action;
+  action: ActionPerformer;
   editing: boolean;
-  updateAction: (action: Action) => void;
+  updateAction: (action: ActionPerformer) => void;
   canNotDeleteOrUpdateName: boolean;
 };
-
-interface ActionerMap {
-  [key: string]: typeof WebhookActioner;
-}
 
 export default function ActionPerformerColumns({
   action,
@@ -44,7 +27,22 @@ export default function ActionPerformerColumns({
   return (
     <>
       <td>
-        <div hidden={editing}>{action.name}</div>
+        <div hidden={editing}>
+          {canNotDeleteOrUpdateName ? (
+            <OverlayTrigger
+              overlay={
+                <Tooltip id={`tooltip-disabled-${name}`}>
+                  This action cannot be deleted nor can the name be modified
+                  because it is currently being used by one or more action
+                  rules.
+                </Tooltip>
+              }>
+              <Form.Label>{name}</Form.Label>
+            </OverlayTrigger>
+          ) : (
+            action.name
+          )}
+        </div>
 
         <div hidden={!editing}>
           <Form>
@@ -52,10 +50,10 @@ export default function ActionPerformerColumns({
               <OverlayTrigger
                 overlay={
                   <Tooltip id={`tooltip-disabled-${name}`}>
-                    The action {name}&apos;s name can not be modified because it
-                    is currently being used by one or more action rules. Please
-                    edit the rule(s) to refer to another action, or delete the
-                    rule(s), then retry.
+                    This action name cannot be modified because it is currently
+                    being used by one or more action rules. Please edit the
+                    rule(s) to refer to another action, or delete the rule(s),
+                    then retry.
                   </Tooltip>
                 }>
                 <Form.Label>{name}</Form.Label>
@@ -80,7 +78,7 @@ export default function ActionPerformerColumns({
         </div>
       </td>
       <td>
-        {Actioners[action.config_subtype]({
+        {ActionPerfomerDetails({
           action,
           editing,
           updateAction,
