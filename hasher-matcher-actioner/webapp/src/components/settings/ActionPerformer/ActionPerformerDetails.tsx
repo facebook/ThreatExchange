@@ -5,6 +5,7 @@
 import React, {useState} from 'react';
 import {InputGroup, Col, Button, Form, Card} from 'react-bootstrap';
 import {ActionPerformer} from '../../../pages/settings/ActionPerformerSettingsTab';
+import {ActionPerformerType} from '../../../utils/constants';
 
 const actionPerformerDetails = {
   params: {
@@ -61,7 +62,7 @@ export default function ActionPerformerDetails({
   const [headers, setHeaders] = useState(action.params.headers);
   const [epName, setEPName] = useState(action.params.entry_point_name);
   const [kwargs, setKWArgs] = useState<kwargs>(
-    unPackageKWArgs(action.params.additional_kwargs),
+    unPackageKWArgs(action.params.additional_kwargs ?? {}),
   );
 
   const WebHookActionerBody = (): JSX.Element => (
@@ -240,13 +241,19 @@ export default function ActionPerformerDetails({
                 updateAction(newAction);
               }}>
               <option value="">Please select one option</option>
-              <option value="WebhookPostActionPerformer">POST Webhook</option>
-              <option value="WebhookGetActionPerformer">GET Webhook</option>
-              <option value="WebhookPutActionPerformer">PUT Webhook</option>
-              <option value="WebhookDeleteActionPerformer">
+              <option value={ActionPerformerType.WebhookPostActionPerformer}>
+                POST Webhook
+              </option>
+              <option value={ActionPerformerType.WebhookGetActionPerformer}>
+                GET Webhook
+              </option>
+              <option value={ActionPerformerType.WebhookPutActionPerformer}>
+                PUT Webhook
+              </option>
+              <option value={ActionPerformerType.WebhookDeleteActionPerformer}>
                 DELETE Webhook
               </option>
-              <option value="CustomImplActionPerformer">
+              <option value={ActionPerformerType.CustomImplActionPerformer}>
                 Custom Implementation
               </option>
             </Form.Control>

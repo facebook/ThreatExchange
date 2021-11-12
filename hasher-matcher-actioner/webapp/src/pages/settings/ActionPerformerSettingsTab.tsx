@@ -13,6 +13,7 @@ import {updateAction, createAction, deleteAction} from '../../Api';
 import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
 import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
 import {ActionRule} from './ActionRuleSettingsTab';
+import {ActionPerformerType} from '../../utils/constants';
 
 type Input = {
   actions: ActionPerformer[];
@@ -21,17 +22,15 @@ type Input = {
 };
 
 export type ActionPerformerParams = {
-  url: string;
-  headers: string;
-  entry_point_name: string;
-  additional_kwargs: Record<string, string>;
+  url?: string;
+  headers?: string;
+  entry_point_name?: string;
+  additional_kwargs?: Record<string, string>;
 };
 
 export type ActionPerformer = {
   name: string;
-
   config_subtype: string;
-
   params: ActionPerformerParams;
 };
 
@@ -39,6 +38,33 @@ const defaultAction: ActionPerformer = {
   name: '',
   config_subtype: '',
   params: {url: '', headers: '', entry_point_name: '', additional_kwargs: {}},
+};
+
+// Right now the API (or more specifically the config.py HMAConfig class)
+// does not handle unexpected null fields cleanly therefore for now
+// we define the set of expected params and filter out the others
+// before sending creation or update requests.
+const webhookParams = ['url', 'headers'];
+const customParams = ['entry_point_name', 'additional_kwargs'];
+
+const expectedParamsMap: Record<string, string[]> = {
+  [ActionPerformerType.WebhookPostActionPerformer]: webhookParams,
+  [ActionPerformerType.WebhookGetActionPerformer]: webhookParams,
+  [ActionPerformerType.WebhookDeleteActionPerformer]: webhookParams,
+  [ActionPerformerType.WebhookPutActionPerformer]: webhookParams,
+  [ActionPerformerType.CustomImplActionPerformer]: customParams,
+};
+
+const removeUnexpectedParams = (action: ActionPerformer): ActionPerformer => {
+  const expectedParams = expectedParamsMap[action.config_subtype];
+  const newParams: Record<string, string | Record<string, string> | undefined> =
+    {};
+  expectedParams.forEach(param => {
+    newParams[param] = action.params[param as keyof ActionPerformerParams];
+  });
+  const newAction = action;
+  newAction.params = newParams;
+  return newAction;
 };
 
 export default function ActionPerformerSettingsTab({
@@ -62,7 +88,7 @@ export default function ActionPerformerSettingsTab({
     old_type: string,
     updatedAction: ActionPerformer,
   ) => {
-    updateAction(old_name, old_type, updatedAction)
+    updateAction(old_name, old_type, removeUnexpectedParams(updatedAction))
       .then(response => {
         const updatedActions = actions.map(action => {
           if (action.name === old_name) {
@@ -82,7 +108,7 @@ export default function ActionPerformerSettingsTab({
       });
   };
   const onActionCreate = () => {
-    createAction(newAction)
+    createAction(removeUnexpectedParams(newAction))
       .then(response => {
         displayToast(
           `${response.response} (Manual refresh maybe necessary to see changes.)`,

@@ -394,7 +394,7 @@ export async function deleteAction(name: string): Promise<{response: string}> {
   return apiDelete(`actions/${name}`);
 }
 
-// We need two different ActionRule types because the mackend model (must (not) have labels) is different
+// We need two different ActionRule types because the backend model (must (not) have labels) is different
 // from the Frontend model (classification conditions).
 // This class should be kept in sync with python class ActionRule (hmalib.common.configs.evaluator.ActionRule)
 type BackendActionRule = {

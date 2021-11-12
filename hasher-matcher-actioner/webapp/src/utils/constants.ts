@@ -27,6 +27,14 @@ export enum SubmissionType {
   FROM_URL = 'From URL',
 }
 
+export enum ActionPerformerType {
+  WebhookPostActionPerformer = 'WebhookPostActionPerformer',
+  WebhookGetActionPerformer = 'WebhookGetActionPerformer',
+  WebhookPutActionPerformer = 'WebhookPutActionPerformer',
+  WebhookDeleteActionPerformer = 'WebhookDeleteActionPerformer',
+  CustomImplActionPerformer = 'CustomImplActionPerformer',
+}
+
 // Matchtes MetricTimePeriod in hmalib/metrics/query.py
 export const StatsTimeSpans = Object.freeze({
   HOURS_1: '1h',
