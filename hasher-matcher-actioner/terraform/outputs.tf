@@ -35,3 +35,6 @@ output "ui_url" {
 output "submit_topic_arn" {
   value = var.create_submit_event_sns_topic_and_handler ? module.submit_events[0].submit_topic_arn : ""
 }
+output "action_performer_iam_role_arn" {
+  value = module.actions.action_performer_iam_role_arn
+}
