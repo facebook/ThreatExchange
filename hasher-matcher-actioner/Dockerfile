@@ -4,6 +4,7 @@ FROM public.ecr.aws/lambda/python:3.8@sha256:6fd9eea0292e900c7b8f4186c9e4fbcdb13
 RUN yum install -y gcc gcc-c++
 
 # Install dependencies as a separate step so layers are reuseable.
+# (the [y] is so the command does not fail if settings.py is not found.)
 COPY setup.py settings.p[y] ./
 RUN pip install -e .
 
