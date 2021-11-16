@@ -6,7 +6,7 @@ import typing as t
 
 from dataclasses import dataclass, field
 from hmalib.common.logging import get_logger
-from hmalib.common.extensions import load_custom_actioner
+from hmalib.common.extension import load_actioner_performer_extension
 from hmalib.common.messages.action import ActionMessage
 from hmalib.common.aws_dataclass import HasAWSSerialization
 from requests import get, post, put, delete, Response
@@ -108,17 +108,17 @@ class WebhookDeleteActionPerformer(WebhookActionPerformer):
 @dataclass
 class CustomImplActionPerformer(ActionPerformer):
     """
-    Pulls impl from extensions.py for an action performer.
-    Requires configuration in setup.py and hma_extensions as well.
+    Pulls values from extensions.py for an action performer impl.
+    Requires configuration in setting.py and hma_extensions as well.
     """
 
-    entry_point_name: str
+    extension_name: str
     additional_kwargs: t.Dict[str, str] = field(default_factory=dict)
 
     def perform_action(self, message: ActionMessage) -> None:
-        if fn := load_custom_actioner(self.entry_point_name):
-            fn(message, **self.additional_kwargs)
+        if ext := load_actioner_performer_extension(self.extension_name):
+            ext.perform_action_impl(message, self.additional_kwargs)
         else:
             logger.error(
-                f"Unable to load custom action performer: {self.entry_point_name}"
+                f"Unable to load custom action performer: {self.extension_name}"
             )
