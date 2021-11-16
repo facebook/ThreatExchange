@@ -14,9 +14,9 @@ const actionPerformerDetails = {
       description: 'Optional json object of headers to include in webhook',
       default: '{}',
     },
-    entry_point_name: {
+    extension_name: {
       description:
-        'The entry point name for implementations mapping defined in settings.py',
+        'The name for the extension implementations whose mapping defined in settings.py',
     },
     additional_kwargs: {
       description: 'keyword mapping passed to the implementations.',
@@ -60,7 +60,9 @@ export default function ActionPerformerDetails({
   const [actionerType, setActionerType] = useState(action.config_subtype);
   const [url, setURL] = useState(action.params.url);
   const [headers, setHeaders] = useState(action.params.headers);
-  const [epName, setEPName] = useState(action.params.entry_point_name);
+  const [extensionName, setExtensionName] = useState(
+    action.params.extension_name,
+  );
   const [kwargs, setKWArgs] = useState<kwargs>(
     unPackageKWArgs(action.params.additional_kwargs ?? {}),
   );
@@ -194,7 +196,7 @@ export default function ActionPerformerDetails({
   const CustomActionerBody = (): JSX.Element => (
     <>
       <Card.Body hidden={editing}>
-        <Form.Label> Entry Point Name : {epName}</Form.Label>
+        <Form.Label> Extension Name: {extensionName}</Form.Label>
         <br />
         {kwargsField()}
       </Card.Body>
@@ -202,17 +204,17 @@ export default function ActionPerformerDetails({
       <Card.Body hidden={!editing}>
         <Form>
           <Form.Group>
-            <Form.Label>Entry Point Name</Form.Label>
+            <Form.Label>Extension Name</Form.Label>
             <Form.Text className="text-muted">
-              {actionPerformerDetails.params.entry_point_name.description}
+              {actionPerformerDetails.params.extension_name.description}
             </Form.Text>
             <Form.Control
               type="text"
-              value={epName}
+              value={extensionName}
               onChange={e => {
-                setEPName(e.target.value);
+                setExtensionName(e.target.value);
                 const newAction = action;
-                newAction.params.entry_point_name = e.target.value;
+                newAction.params.extension_name = e.target.value;
                 updateAction(newAction);
               }}
             />

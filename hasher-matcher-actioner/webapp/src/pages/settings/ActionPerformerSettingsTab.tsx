@@ -24,7 +24,7 @@ type Input = {
 export type ActionPerformerParams = {
   url?: string;
   headers?: string;
-  entry_point_name?: string;
+  extension_name?: string;
   additional_kwargs?: Record<string, string>;
 };
 
@@ -37,7 +37,7 @@ export type ActionPerformer = {
 const defaultAction: ActionPerformer = {
   name: '',
   config_subtype: '',
-  params: {url: '', headers: '', entry_point_name: '', additional_kwargs: {}},
+  params: {url: '', headers: '', extension_name: '', additional_kwargs: {}},
 };
 
 // Right now the API (or more specifically the config.py HMAConfig class)
@@ -45,7 +45,7 @@ const defaultAction: ActionPerformer = {
 // we define the set of expected params and filter out the others
 // before sending creation or update requests.
 const webhookParams = ['url', 'headers'];
-const customParams = ['entry_point_name', 'additional_kwargs'];
+const customParams = ['extension_name', 'additional_kwargs'];
 
 const expectedParamsMap: Record<string, string[]> = {
   [ActionPerformerType.WebhookPostActionPerformer]: webhookParams,

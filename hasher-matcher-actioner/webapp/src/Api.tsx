@@ -338,7 +338,7 @@ type BackendActionPerformer = {
   config_subtype: string;
   url: string;
   headers: string;
-  entry_point_name: string;
+  extension_name: string;
   additional_kwargs: Record<string, string>;
 };
 
@@ -358,7 +358,7 @@ export async function fetchAllActions(): Promise<ActionPerformer[]> {
             params: {
               url: action.url ?? '',
               headers: action.headers ?? '',
-              entry_point_name: action.entry_point_name ?? '',
+              extension_name: action.extension_name ?? '',
               additional_kwargs: action.additional_kwargs ?? {},
             },
           } as ActionPerformer),
