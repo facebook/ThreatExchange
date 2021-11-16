@@ -6,7 +6,7 @@ from hmalib.common.extensions.action_performers import ActionPerformerExtensionB
 
 def load_actioner_performer_extension(
     name: str,
-) -> t.Optional[ActionPerformerExtensionBase]:
+) -> t.Optional[t.Type[ActionPerformerExtensionBase]]:
     try:
         from settings import CUSTOM_ACTION_PERFORMERS
 
