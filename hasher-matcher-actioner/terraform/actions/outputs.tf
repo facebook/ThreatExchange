@@ -15,6 +15,10 @@ output "action_performer_function_name" {
   value = aws_lambda_function.action_performer.function_name
 }
 
+output "action_performer_iam_role_arn" {
+  value = aws_iam_role.action_performer.arn
+}
+
 output "writebacker_function_name" {
   value = aws_lambda_function.writebacker.function_name
 }

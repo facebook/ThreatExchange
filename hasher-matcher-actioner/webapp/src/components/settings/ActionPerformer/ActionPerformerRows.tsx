@@ -3,19 +3,17 @@
  */
 
 import {IonIcon} from '@ionic/react';
-import {checkmark, trashBin, pencil, helpOutline, close} from 'ionicons/icons';
+import {checkmark, trashBin, pencil, close} from 'ionicons/icons';
 import React, {useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
-import {Action} from '../../../pages/settings/ActionSettingsTab';
+import {ActionPerformer} from '../../../pages/settings/ActionPerformerSettingsTab';
 import ActionPerformerColumns from './ActionPerformerColumns';
 
 type ActionPerformerRowsProps = {
-  action: Action;
-  saveAction: (newAction: Action) => void;
-  deleteAction: (oldAction: Action) => void;
+  action: ActionPerformer;
+  saveAction: (newAction: ActionPerformer) => void;
+  deleteAction: (oldAction: ActionPerformer) => void;
   canNotDeleteOrUpdateName: boolean;
 };
 
@@ -30,7 +28,8 @@ export default function ActionPerformerRows({
     useState(false);
   const [showUpdateActionConfirmation, setShowUpdateActionConfirmation] =
     useState(false);
-  const [updatedAction, setUpdatedAction] = useState(action);
+  const newAction = {...action};
+  const [updatedAction, setUpdatedAction] = useState(newAction);
 
   const resetForm = () => {
     setUpdatedAction(action);
@@ -82,21 +81,6 @@ export default function ActionPerformerRows({
               </Button>
             </Modal.Footer>
           </Modal>
-          {canNotDeleteOrUpdateName ? (
-            <OverlayTrigger
-              overlay={
-                <Tooltip id={`tooltip-${action.name}`}>
-                  The action {action.name} can not be deleted because it is
-                  currently being used by one or more action rules. Please edit
-                  the rule(s) to refer to another action, or delete the rule(s),
-                  then retry.
-                </Tooltip>
-              }>
-              <Button variant="secondary" className="table-action-button">
-                <IonIcon icon={helpOutline} size="large" color="white" />
-              </Button>
-            </OverlayTrigger>
-          ) : null}
         </td>
         <ActionPerformerColumns
           action={updatedAction}

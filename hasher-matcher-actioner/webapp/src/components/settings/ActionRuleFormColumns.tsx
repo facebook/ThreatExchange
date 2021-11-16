@@ -11,12 +11,12 @@ import type {
   ActionRule,
   ClassificationCondition,
 } from '../../pages/settings/ActionRuleSettingsTab';
-import {Action} from '../../pages/settings/ActionSettingsTab';
+import {ActionPerformer} from '../../pages/settings/ActionPerformerSettingsTab';
 
 export const classificationTypeTBD = 'TBD';
 
 type Input = {
-  actions: Action[];
+  actions: ActionPerformer[];
   actionRule: ActionRule;
   showErrors: boolean;
   nameIsUnique: (newName: string, oldName: string) => boolean;
@@ -212,7 +212,7 @@ export default function ActionRuleFormColumns({
       </td>
       <td>
         <Form.Label>
-          Action
+          ActionPerformer
           <span hidden={!showErrors || !!actionRule.action_name}>
             {' '}
             (required)

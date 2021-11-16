@@ -4,7 +4,7 @@
 
 import {Auth, API} from 'aws-amplify';
 import {ActionRule, Label} from './pages/settings/ActionRuleSettingsTab';
-import {Action} from './pages/settings/ActionSettingsTab';
+import {ActionPerformer} from './pages/settings/ActionPerformerSettingsTab';
 import {Bank, BankMember} from './messages/BankMessages';
 import {toDate} from './utils/DateTimeUtils';
 import {ContentType, getContentTypeForString} from './utils/constants';
@@ -338,6 +338,8 @@ type BackendActionPerformer = {
   config_subtype: string;
   url: string;
   headers: string;
+  extension_name: string;
+  additional_kwargs: Record<string, string>;
 };
 
 type AllActions = {
@@ -345,7 +347,7 @@ type AllActions = {
   actions_response: Array<BackendActionPerformer>;
 };
 
-export async function fetchAllActions(): Promise<Action[]> {
+export async function fetchAllActions(): Promise<ActionPerformer[]> {
   return apiGet<AllActions>('actions/').then(response => {
     if (response && !response.error_message && response.actions_response) {
       return response.actions_response.map(
@@ -353,8 +355,13 @@ export async function fetchAllActions(): Promise<Action[]> {
           ({
             name: action.name,
             config_subtype: action.config_subtype,
-            params: {url: action.url, headers: action.headers},
-          } as Action),
+            params: {
+              url: action.url ?? '',
+              headers: action.headers ?? '',
+              extension_name: action.extension_name ?? '',
+              additional_kwargs: action.additional_kwargs ?? {},
+            },
+          } as ActionPerformer),
       );
     }
     return [];
@@ -362,7 +369,7 @@ export async function fetchAllActions(): Promise<Action[]> {
 }
 
 export async function createAction(
-  newAction: Action,
+  newAction: ActionPerformer,
 ): Promise<{response: string}> {
   return apiPost('actions/', {
     name: newAction.name,
@@ -374,7 +381,7 @@ export async function createAction(
 export async function updateAction(
   old_name: string,
   old_config_subtype: string,
-  updatedAction: Action,
+  updatedAction: ActionPerformer,
 ): Promise<{response: string}> {
   return apiPut(`actions/${old_name}/${old_config_subtype}`, {
     name: updatedAction.name,
@@ -387,7 +394,7 @@ export async function deleteAction(name: string): Promise<{response: string}> {
   return apiDelete(`actions/${name}`);
 }
 
-// We need two different ActionRule types because the mackend model (must (not) have labels) is different
+// We need two different ActionRule types because the backend model (must (not) have labels) is different
 // from the Frontend model (classification conditions).
 // This class should be kept in sync with python class ActionRule (hmalib.common.configs.evaluator.ActionRule)
 type BackendActionRule = {

@@ -294,7 +294,7 @@ class HasherMatcherActionerAPI:
             "matcher_active": matcher_active,
             "write_back": write_back,
         }
-        self.session.post(
+        return self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
@@ -318,7 +318,7 @@ class HasherMatcherActionerAPI:
             "config_subtype": config_subtype,
             "fields": fields,
         }
-        self.session.post(
+        return self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
@@ -328,7 +328,7 @@ class HasherMatcherActionerAPI:
         action_name: str,
         api_path: str = "actions/",
     ):
-        self.session.delete(self._get_request_url(api_path + action_name))
+        return self.session.delete(self._get_request_url(api_path + action_name))
 
     def get_action_rules(
         self,
@@ -345,7 +345,7 @@ class HasherMatcherActionerAPI:
         payload = {
             "action_rule": action_rule,
         }
-        self.session.post(
+        return self.session.post(
             self._get_request_url(api_path),
             data=json.dumps(payload).encode(),
         )
@@ -355,7 +355,7 @@ class HasherMatcherActionerAPI:
         action_rule_name: str,
         api_path: str = "action-rules/",
     ):
-        self.session.delete(self._get_request_url(api_path + action_rule_name))
+        return self.session.delete(self._get_request_url(api_path + action_rule_name))
 
     def get_matches_for_hash(
         self,
