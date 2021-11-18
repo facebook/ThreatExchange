@@ -22,7 +22,11 @@ from hmalib.scripts.common.utils import (
 
 from hmalib.common.classification_models import ClassificationLabel
 from hmalib.common.configs.evaluator import ActionLabel, ActionRule
-from hmalib.common.configs.actioner import ActionPerformer, WebhookPostActionPerformer
+from hmalib.common.configs.actioner import (
+    ActionPerformer,
+    WebhookPostActionPerformer,
+    CustomImplActionPerformer,
+)
 
 
 class DeployedInstanceClient:
@@ -73,7 +77,7 @@ class DeployedInstanceClient:
         self,
         action_performer: ActionPerformer,
     ):
-        self.api.create_action(
+        return self.api.create_action(
             name=action_performer.name,
             config_subtype=action_performer.get_config_subtype(),
             fields={
@@ -111,6 +115,7 @@ class DeployedInstanceClient:
     ACTION_NAME = "SubmitContentTestActionWebhookPost"
     ACTION_CLASSIFICATION_LABEL = "holidays_jpg1_dataset"
     ACTION_RULE_PREFIX = "trigger-on-tag-"
+    CUSTOM_ACTION_NAME = "SubmitContentTestCustomImplAction"
 
     def set_up_test(self, action_hook_url="http://httpstat.us/404"):
         """
@@ -158,6 +163,35 @@ class DeployedInstanceClient:
             action_rule=action_rule,
         )
 
+    def set_up_custom_impl_test_actions(self, extension_name="ap_example_1"):
+        action_performer = CustomImplActionPerformer(
+            name=self.CUSTOM_ACTION_NAME,
+            extension_name=extension_name,
+            additional_kwargs={
+                "defined_keyword_arg": "hello-custom-impl",
+                "bonus_keyword": "here-is-where-it-put-other-values",
+            },
+        )
+
+        self.create_action(
+            action_performer=action_performer,
+        )
+
+        action_rule = ActionRule(
+            name=f"{self.ACTION_RULE_PREFIX}{self.ACTION_CLASSIFICATION_LABEL}-custom",
+            action_label=ActionLabel(self.CUSTOM_ACTION_NAME),
+            must_have_labels=set(
+                [
+                    ClassificationLabel(self.ACTION_CLASSIFICATION_LABEL),
+                ]
+            ),
+            must_not_have_labels=set(),
+        )
+
+        self.create_action_rule(
+            action_rule=action_rule,
+        )
+
     def clean_up_test(self):
         """
         Deletes specific action and action rules
@@ -167,6 +201,15 @@ class DeployedInstanceClient:
             f"{self.ACTION_RULE_PREFIX}{self.ACTION_CLASSIFICATION_LABEL}"
         )
         self.api.delete_action(self.ACTION_NAME)
+
+    def clean_up_custom_impl_test(self):
+        """
+        Deletes specific action and action rules to custom impl
+        """
+        self.api.delete_action_rule(
+            f"{self.ACTION_RULE_PREFIX}{self.ACTION_CLASSIFICATION_LABEL}-custom"
+        )
+        self.api.delete_action(self.CUSTOM_ACTION_NAME)
 
     def submit_test_content(
         self,
@@ -224,15 +267,11 @@ class DeployedInstanceClient:
     def run_basic_test(self, wait_time_seconds=5, retry_limit=25, hash_submit=False):
         """
         Basic e2e (minus webhook listener) test:
-        - Create the configurations needed :
         - Submit a piece of content expected to match/action
         - Check action history via the API for the content submitted
             - repeat until found or retry_limit hit
         """
         start_time = perf_counter()
-
-        self.set_up_test()
-        print("Added configurations to HMA instance for test")
 
         content_id = f"e2e-test-{datetime.date.today().isoformat()}-{str(uuid.uuid4())}"
         if hash_submit:
@@ -253,8 +292,6 @@ class DeployedInstanceClient:
             print("Error: hit retry limit on checking actions history")
         else:
             print("Success action event found in history!")
-        self.clean_up_test()
-        print("Removed actions configurations used in test")
         print(f"Test completed in {int((perf_counter() - start_time))} seconds")
 
 
@@ -274,16 +311,13 @@ if __name__ == "__main__":
     helper = DeployedInstanceClient(api_url, token)
 
     helper.set_up_test()
+    # if you want to test a custom impl you can uncomment the followings line
+    # Note: you will also need to make changes/create to settings.py
+    # helper.set_up_custom_impl_test_actions()
+    print("Added configurations to HMA instance for test")
 
-    helper.run_basic_test(hash_submit=True)
-
-    # Test video_md5 hash submit
-    #
-    # helper.submit_test_content_hash(
-    #     content_id="submit_content_test_md5_id_1",
-    #     content_type="video",
-    #     signal_value="2a12f2972373fbd3f693a74adc9042fe",
-    #     signal_type="video_md5",
-    # )
+    helper.run_basic_test()
 
     helper.clean_up_test()
+    # helper.clean_up_custom_impl_test()
+    print("Removed actions configurations used in test")
