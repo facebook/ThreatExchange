@@ -41,4 +41,9 @@ dist/
 # Ignore files for local lambda testing.
 lambda_local.py
 main.py.zip
-settings.py
+
+# see settings.py.example for an example in source control
+settings.py 
+# __init__.py and one other file are committed as an example. 
+# all other files added are expected to be third party additions/custom implementations. 
+hmalib_extensions/
