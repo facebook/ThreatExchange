@@ -107,7 +107,7 @@ class ParameterizedCount(BaseCount):
     or  ParameterizedCount(of="hma.pipeline.hashes", by="signal_type", value="pdq")
     """
 
-    SKEY_PREFIX = "val#4"
+    SKEY_PREFIX = "val#"
     SKEY_PREFIX_LENGTH = len(SKEY_PREFIX)
 
     def __init__(self, of: str, by: str, value: str, cached_value: int = None):
