@@ -1,7 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-This is the base api class contains common http methods
+Common operations that you would use when implementing a client for an external
+API. This is not necessarily a Graph API, but any other HTTP Based API that HMA
+needs to support.
 """
 
 # TODO Remove same methods in python-threatexchange api.py

@@ -1,11 +1,18 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import typing as t
-from .non_threatexchange_api_representations import NonThreatExchangeAPIResponse
-from hmalib.hashexchanges.api.external_api_base import BaseAPI
+from hmalib.common.external_api import BaseAPI
+from hmalib.hashexchanges.api.stopnciiorg_representations import (
+    HashRecordsPage,
+)
 
 
-class NonThreatExchangeAPI(BaseAPI):
+class StopNciiOrgAPI(BaseAPI):
+    """
+    A client for the API hosted by StopNCII.org. Mostly mirrors ThreatExchange's
+    functionality.
+    """
+
     def __init__(
         self,
         x_functions_key: str,
@@ -16,12 +23,12 @@ class NonThreatExchangeAPI(BaseAPI):
         self.ocp_apim_subscription_key = ocp_apim_subscription_key
         self._base_url = base_url
 
-    def get_hash_records(
+    def get_hash_records_page(
         self,
         start_timestamp: int,
         page_size: int = 1000,
         next_page_token: str = None,
-    ) -> NonThreatExchangeAPIResponse:
+    ) -> HashRecordsPage:
         """
         Returns a paginated list of all hash records from start_timestamp.
         """
@@ -38,4 +45,4 @@ class NonThreatExchangeAPI(BaseAPI):
             "Ocp-Apim-Subscription-Key": self.ocp_apim_subscription_key,
         }
         response = super().get_json_from_url(url=url, headers=headers)
-        return NonThreatExchangeAPIResponse.from_dict(response)
+        return HashRecordsPage.from_dict(response)
