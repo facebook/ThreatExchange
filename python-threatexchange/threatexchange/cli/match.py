@@ -15,7 +15,7 @@ from ..content_type import meta
 from ..dataset import Dataset
 from ..descriptor import ThreatDescriptor
 from ..signal_type.signal_base import FileMatcher, HashMatcher, StrMatcher
-from . import command_base, fetch
+from . import command_base, tag_fetch
 
 
 class MatchCommand(command_base.Command):
@@ -148,7 +148,7 @@ class MatchCommand(command_base.Command):
             self.stderr(
                 "Looks like you are running this for the first time. Fetching some sample data."
             )
-            fetch.TagFetchCommand(sample=True).execute(api, dataset)
+            tag_fetch.TagFetchCommand(sample=True).execute(api, dataset)
 
         all_signal_types = dataset.load_cache(
             s() for s in self.content_type.get_signal_types()
