@@ -31,7 +31,7 @@ class ThreatPrivacyGroup:
     def __eq__(self, other) -> bool:
         return self.id == other.id
 
-    def __hash__(self) -> bool:
+    def __hash__(self) -> int:
         return hash(self.id)
 
     @classmethod

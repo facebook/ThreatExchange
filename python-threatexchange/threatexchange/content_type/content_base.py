@@ -20,5 +20,5 @@ class ContentType:
         return common.class_name_to_human_name(cls.__name__, "Content")
 
     @classmethod
-    def get_signal_types() -> t.List[t.Type[signal_base.SignalType]]:
+    def get_signal_types(cls) -> t.List[t.Type[signal_base.SignalType]]:
         raise NotImplementedError

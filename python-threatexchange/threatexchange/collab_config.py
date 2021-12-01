@@ -68,7 +68,7 @@ class CollaborationConfig:
             json.dump(out, f, indent=4)
 
     @classmethod
-    def get_example_config(cls) -> "CollabConfig":
+    def get_example_config(cls) -> "CollaborationConfig":
         """
         Get a config to access the public sample data under media_priority_samples
         """
