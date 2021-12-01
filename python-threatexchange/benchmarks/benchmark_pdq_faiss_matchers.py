@@ -48,13 +48,6 @@ parser.add_argument(
     help="PDQ similarity threshold values to benchmark with",
 )
 parser.add_argument("--seed", type=int, help="seed for random number generator")
-parser.add_argument(
-    "--use-custom-ids",
-    dest="use_custom_ids",
-    action="store_true",
-    help="whether to use custom ids in the index",
-)
-parser.set_defaults(use_custom_ids=False)
 
 args = parser.parse_args()
 
@@ -121,10 +114,8 @@ def generate_random_hash_with_hamming_distance(original_hash, desired_hamming_di
 
 dataset = [generate_random_hash() for _ in range(args.dataset_size)]
 
-if args.use_custom_ids:
-    custom_ids = [i + 100_000_000_000_000 for i in range(args.dataset_size)]
-else:
-    custom_ids = None
+
+custom_ids = [i + 100_000_000_000_000 for i in range(args.dataset_size)]
 
 start_build_flat_hash_index = time.time()
 flat_index = PDQFlatHashIndex()
