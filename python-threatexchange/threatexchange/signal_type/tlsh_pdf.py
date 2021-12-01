@@ -15,18 +15,6 @@ from . import signal_base
 
 TLSH_CONFIDENT_MATCH_THRESHOLD = 30
 EXPECT_TLSH_HASH_LENGTH = 72
-""" 
-This is a new signal type not found on ThreatExchange, in order to test the implementation we
-override this set of hashes we want to match with here.
- 
-ToDo: @BarrettOlson: make this override cleaner and configurable by signal type in the future 
-"""
-TEMP_MATCH_IMPLEMNTATION_CHECK_DB = [
-    [
-        "T145B2859FE708266211A3026277C7AEE5FF76402C636AD5BA2C2CC11C23A1F2957773D5",
-        [["test"], 1],
-    ]
-]
 
 
 class TLSHSignal(
@@ -39,6 +27,7 @@ class TLSHSignal(
 
     """
 
+    INDICATOR_TYPE = "HASH_TEXT_TLSH"
     TYPE_TAG = "media_type_pdf"
 
     @classmethod
@@ -83,7 +72,14 @@ class TLSHSignal(
             )
             return []
         if len(signal_str) == EXPECT_TLSH_HASH_LENGTH:
-            for x in TEMP_MATCH_IMPLEMNTATION_CHECK_DB:
-                if tlsh.diffxlen(x[0], signal_str) <= TLSH_CONFIDENT_MATCH_THRESHOLD:
-                    matches.append(signal_base.SignalMatch(x[1][0], x[1][1]))
+            for tlsh_hash, signal_attr in self.state.items():
+                if (
+                    tlsh.diffxlen(tlsh_hash, signal_str)
+                    <= TLSH_CONFIDENT_MATCH_THRESHOLD
+                ):
+                    matches.append(
+                        signal_base.SignalMatch(
+                            signal_attr.labels, signal_attr.first_descriptor_id
+                        )
+                    )
         return matches
