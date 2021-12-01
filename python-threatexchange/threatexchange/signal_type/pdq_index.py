@@ -31,15 +31,15 @@ class PDQIndex(SignalTypeIndex):
     def __len__(self) -> int:
         return len(self.local_id_to_entry)
 
-    def query(self, hash: str) -> t.List[IndexMatch[T]]:
+    def query(
+        self, hash: str, threshhold=PDQ_CONFIDENT_MATCH_THRESHOLD
+    ) -> t.List[IndexMatch[T]]:
         """
         Look up entries against the index, up to the max supported distance.
         """
 
         # query takes a signal hash but index supports banch quries hence [hash]
-        results = self.index.search(
-            [hash], self.PDQ_CONFIDENT_MATCH_THRESHOLD, return_as_ids=True
-        )
+        results = self.index.search([hash], threshhold, return_as_ids=True)
         matches = []
         for result_ids in results:
             for id in result_ids:
