@@ -112,12 +112,12 @@ resource "aws_dynamodb_table" "hma_banks" {
   }
 
   attribute {
-    name = "PendingBankMemberSignalIndex-SignalType"
+    name = "BankMemberSignalCursorIndex-SignalType"
     type = "S"
   }
 
   attribute {
-    name = "PendingBankMemberSignalIndex-UpdatedAt"
+    name = "BankMemberSignalCursorIndex-ChronoKey"
     type = "S"
   }
 
@@ -152,9 +152,9 @@ resource "aws_dynamodb_table" "hma_banks" {
   }
 
   global_secondary_index {
-    name            = "PendingBankMemberSignalIndex"
-    hash_key        = "PendingBankMemberSignalIndex-SignalType"
-    range_key       = "PendingBankMemberSignalIndex-UpdatedAt"
+    name            = "BankMemberSignalCursorIndex"
+    hash_key        = "BankMemberSignalCursorIndex-SignalType"
+    range_key       = "BankMemberSignalCursorIndex-ChronoKey"
     projection_type = "ALL"
   }
 

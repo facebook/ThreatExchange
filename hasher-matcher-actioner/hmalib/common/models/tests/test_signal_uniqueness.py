@@ -20,18 +20,22 @@ class BanksTableTestBase(DynamoDBTableTestBase):
         # TODO: Automate refresh of this using a commandline invocation
         return {
             "AttributeDefinitions": [
+                {
+                    "AttributeName": "BankMemberIdIndex-BankMemberId",
+                    "AttributeType": "S",
+                },
+                {
+                    "AttributeName": "BankMemberSignalCursorIndex-ChronoKey",
+                    "AttributeType": "S",
+                },
+                {
+                    "AttributeName": "BankMemberSignalCursorIndex-SignalType",
+                    "AttributeType": "S",
+                },
                 {"AttributeName": "BankNameIndex-BankId", "AttributeType": "S"},
                 {"AttributeName": "BankNameIndex-BankName", "AttributeType": "S"},
                 {"AttributeName": "PK", "AttributeType": "S"},
                 {"AttributeName": "SK", "AttributeType": "S"},
-                {
-                    "AttributeName": "PendingBankMemberSignalIndex-SignalType",
-                    "AttributeType": "S",
-                },
-                {
-                    "AttributeName": "PendingBankMemberSignalIndex-UpdatedAt",
-                    "AttributeType": "S",
-                },
             ],
             "TableName": table_name,
             "KeySchema": [
@@ -48,14 +52,24 @@ class BanksTableTestBase(DynamoDBTableTestBase):
                     "Projection": {"ProjectionType": "ALL"},
                 },
                 {
-                    "IndexName": "PendingBankMemberSignalIndex",
+                    "IndexName": "BankMemberIdIndex",
                     "KeySchema": [
                         {
-                            "AttributeName": "PendingBankMemberSignalIndex-SignalType",
+                            "AttributeName": "BankMemberIdIndex-BankMemberId",
+                            "KeyType": "HASH",
+                        }
+                    ],
+                    "Projection": {"ProjectionType": "KEYS_ONLY"},
+                },
+                {
+                    "IndexName": "BankMemberSignalCursorIndex",
+                    "KeySchema": [
+                        {
+                            "AttributeName": "BankMemberSignalCursorIndex-SignalType",
                             "KeyType": "HASH",
                         },
                         {
-                            "AttributeName": "PendingBankMemberSignalIndex-UpdatedAt",
+                            "AttributeName": "BankMemberSignalCursorIndex-ChronoKey",
                             "KeyType": "RANGE",
                         },
                     ],
