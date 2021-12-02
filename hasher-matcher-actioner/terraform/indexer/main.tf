@@ -2,7 +2,7 @@
 
 # First define the Indexing Schedule
 resource "aws_cloudwatch_event_rule" "indexing_schedule" {
-  name                = "${var.prefix}HMA_IndexingSchedule"
+  name                = "${var.prefix}-HMA_IndexingSchedule"
   description         = "Rebuild Index on a regular cadence"
   schedule_expression = "rate(${var.indexer_frequency})"
   role_arn            = aws_iam_role.indexing_schedule.arn
@@ -56,6 +56,12 @@ resource "aws_iam_policy" "indexing_schedule" {
 resource "aws_iam_role_policy_attachment" "indexing_schedule" {
   role       = aws_iam_role.indexing_schedule.name
   policy_arn = aws_iam_policy.indexing_schedule.arn
+}
+
+## Connect rule to function invocation
+resource "aws_cloudwatch_event_target" "indexer" {
+  arn  = aws_lambda_function.indexer.arn
+  rule = aws_cloudwatch_event_rule.indexing_schedule.name
 }
 
 
