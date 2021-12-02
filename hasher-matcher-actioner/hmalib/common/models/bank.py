@@ -580,17 +580,35 @@ class BanksTable:
             signal_value=signal_value,
         )
 
-    def get_bank_member_signals_to_process(
-        self, signal_type: t.Type[SignalType], limit: int = 100
-    ):
-        return [
-            BankMemberSignal.from_dynamodb_item(item)
-            for item in self._table.query(
+    def get_bank_member_signals_to_process_page(
+        self,
+        signal_type: t.Type[SignalType],
+        exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
+        limit: int = 100,
+    ) -> PaginatedResponse[BankMemberSignal]:
+        if not exclusive_start_key:
+            result = self._table.query(
                 IndexName=BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX,
-                KeyConditionExpression=Key("PK").eq(signal_type.get_name()),
+                ScanIndexForward=True,
+                KeyConditionExpression=Key(
+                    BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE
+                ).eq(signal_type.get_name()),
                 Limit=limit,
-            )["Items"]
-        ]
+            )
+        else:
+            result = self._table.query(
+                IndexName=BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX,
+                ScanIndexForward=True,
+                KeyConditionExpression=Key(
+                    BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE
+                ).eq(signal_type.get_name()),
+                ExclusiveStartKey=exclusive_start_key,
+                Limit=limit,
+            )
+        return PaginatedResponse(
+            t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
+            [BankMemberSignal.from_dynamodb_item(item) for item in result["Items"]],
+        )
 
     def get_signals_for_bank_member(
         self, bank_member_id: str

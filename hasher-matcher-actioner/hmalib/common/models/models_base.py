@@ -115,3 +115,12 @@ class PaginatedResponse(t.Generic[T]):
 
     last_evaluated_key: DynamoDBCursorKey
     items: t.List[T]
+
+    def has_next_page(self):
+        """
+        If query does not return last_evaluated_key, there are no more results
+        to return.
+
+        https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html
+        """
+        return self.last_evaluated_key != None
