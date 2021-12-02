@@ -49,8 +49,9 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     def te_threat_updates_fields(cls):
         return SimpleDescriptorRollup.te_threat_updates_fields()
 
+    # ToDo this violates Liskov but is already used in Prod and will require a larger refactor
     @classmethod
-    def store(
+    def store(  # type: ignore
         cls, state_dir: pathlib.Path, contents: t.Iterable["CliIndicatorSerialization"]
     ) -> t.List[pathlib.Path]:
         # Stores in multiple files split by indicator type

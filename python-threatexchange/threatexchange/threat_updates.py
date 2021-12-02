@@ -11,7 +11,7 @@ import time
 import typing as t
 from dataclasses import dataclass
 
-from .api import ThreatExchangeAPI
+from .api import ThreatExchangeAPI, _CursoredResponse
 from .dataset import Dataset
 from .descriptor import SimpleDescriptorRollup
 
@@ -125,18 +125,18 @@ class ThreatUpdatesDelta:
         types: t.Iterable[str] = (),
     ) -> None:
         self.privacy_group = privacy_group
-        self.updates = []
+        self.updates: t.List = []
         self.current = start
         self.start = start
         self.end = end
         self.types = list(types)
 
-        self._cursor = None
+        self._cursor: t.Optional[_CursoredResponse] = None
 
     @property
     def done(self) -> bool:
         """Has this delta fetched its entire assigned range?"""
-        return self.end and self.end <= self.current
+        return bool(self.end and self.end <= self.current)
 
     def __bool__(self):
         return self.done or bool(self.updates)
@@ -157,7 +157,6 @@ class ThreatUpdatesDelta:
         self.updates.extend(delta.updates)
         self.current = delta.current
         self.end = delta.end
-        self.tries = delta.tries
 
     def one_fetch(self, api: ThreatExchangeAPI):
         """
@@ -194,18 +193,18 @@ class ThreatUpdatesDelta:
     ) -> t.Tuple["ThreatUpdatesDelta", t.List["ThreatUpdatesDelta"]]:
         """Split this delta into n deltas of roughly even size"""
         tar = self.end or time.time()
-        diff = (tar - self.current_time) // (n + 1)
+        diff = int((tar - self.current) // (n + 1))
         if diff <= 0:
             return self, []
         end = self.end
         prev = self
         new_deltas = []
         for i in range(n - 1):
-            prev.end = prev.start + diff
+            new_start = prev.start + diff
             new_deltas.append(
                 ThreatUpdatesDelta(
                     self.privacy_group,
-                    prev.end,
+                    new_start,
                 )
             )
         prev.end = end
@@ -247,7 +246,7 @@ class ThreatUpdateCheckpoint(t.NamedTuple):
     """
 
     # See docstring about tailing fast enough
-    DEFAULT_REFETCH_SEC = 3600 * 24 * 85  # 85 days
+    DEFAULT_REFETCH_SEC: int = 3600 * 24 * 85  # 85 days
 
     # When was the last time we started or the furthest we've seen,
     # to check against the store getting too stale
@@ -260,7 +259,7 @@ class ThreatUpdateCheckpoint(t.NamedTuple):
         # means that we fetched now.
         last_fetch_time = self.last_fetch_time
         if last_fetch_time == 0:
-            last_fetch_time = time.time()
+            last_fetch_time = int(time.time())
 
         return ThreatUpdateCheckpoint(
             last_fetch_time=max(last_fetch_time, delta.current),
@@ -290,7 +289,7 @@ class ThreatUpdatesStore:
         privacy_group: int,
     ) -> None:
         self.privacy_group = privacy_group
-        self.checkpoint = None
+        self.checkpoint: t.Optional[ThreatUpdateCheckpoint] = None
 
     @property
     def fetch_checkpoint(self):
@@ -305,7 +304,7 @@ class ThreatUpdatesStore:
         """Return the next delta that should be applied"""
         return ThreatUpdatesDelta(
             self.privacy_group,
-            self.checkpoint.fetch_checkpoint,
+            self.checkpoint.fetch_checkpoint if self.checkpoint else 0,
             None,
         )
 
@@ -331,7 +330,7 @@ class ThreatUpdatesStore:
     @property
     def stale(self) -> bool:
         """Is this state so old that it might be invalid?"""
-        return self.checkpoint.stale
+        return self.checkpoint.stale if self.checkpoint else False
 
     def apply_updates(
         self,
@@ -341,15 +340,16 @@ class ThreatUpdatesStore:
         """Merge updates to the data store"""
         if delta.start != 0:
             assert (
-                delta.start <= self.checkpoint.fetch_checkpoint
+                self.checkpoint and delta.start <= self.checkpoint.fetch_checkpoint
             ), "gap in delta record"
             assert not self.stale, "attempted to apply stale delta"
 
         # It's possible the fetch completed but has no records
         if delta.updates:
             self._apply_updates_impl(delta, post_apply_fn)
-        self.checkpoint = self.checkpoint.get_updated(delta)
-        self._store_checkpoint(self.checkpoint)
+        if self.checkpoint:
+            self.checkpoint = self.checkpoint.get_updated(delta)
+            self._store_checkpoint(self.checkpoint)
 
 
 class ThreatUpdateFileStore(ThreatUpdatesStore):
@@ -369,7 +369,7 @@ class ThreatUpdateFileStore(ThreatUpdatesStore):
         self.path = state_dir
         self.app_id = app_id
         self._serialization = serialization
-        self._cached_state = None
+        self._cached_state: t.Optional[t.Dict[str, t.Any]] = None
 
     @property
     def checkpoint_file(self) -> pathlib.Path:
