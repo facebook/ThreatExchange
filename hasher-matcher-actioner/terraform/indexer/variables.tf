@@ -24,9 +24,8 @@ variable "measure_performance" {
 variable "threat_exchange_data" {
   description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data"
   type = object({
-    bucket_name        = string
-    notification_topic = string
-    data_folder        = string
+    bucket_name = string
+    data_folder = string
   })
 }
 
@@ -46,4 +45,9 @@ variable "lambda_docker_info" {
       indexer = string
     })
   })
+}
+
+variable "indexer_frequency" {
+  description = "How frequently do we want indexing run? Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+  type        = string
 }

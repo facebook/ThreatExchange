@@ -58,6 +58,12 @@ variable "fetch_frequency" {
   default     = "15 minutes"
 }
 
+variable "indexer_frequency" {
+  description = "How frequently do we want indexing run? Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+  type        = string
+  default     = "15 minutes"
+}
+
 variable "use_shared_user_pool" {
   description = "Indicates if the web app and api will use a shared user pool (generally true for developers / engineers sandbox environments, otherwise false)"
   type        = bool
