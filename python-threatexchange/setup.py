@@ -38,6 +38,7 @@ all_extras = set(sum(extras_require.values(), []))
 extras_require["test"] = sorted({"pytest"} | all_extras)
 extras_require["package"] = ["wheel"]
 extras_require["lint"] = ["black"]
+extras_require["types"] = ["mypy", "types-python-dateutil", "types-requests"]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 setup(

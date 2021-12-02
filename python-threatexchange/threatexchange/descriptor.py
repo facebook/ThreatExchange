@@ -31,18 +31,18 @@ class ThreatDescriptor(t.NamedTuple):
 
     # TODO - do something smarter than this - static
     #        class variable problematic, currently set in main.py
-    MY_APP_ID = -1
+    MY_APP_ID = -1  # type: ignore
 
     # You declared the indicator was in the collaboration label set
-    TRUE_POSITIVE = "true_positive"
+    TRUE_POSITIVE = "true_positive"  # type: ignore
     # You declared the indicator was not in the collaboration label set
-    FALSE_POSITIVE = "false_positive"
+    FALSE_POSITIVE = "false_positive"  # type: ignore
     # Someone declared the indicator was not in the collaboration label set
-    DISPUTED = "disputed"
+    DISPUTED = "disputed"  # type: ignore
 
     # Special tags to mark whether you (or someone else)
     # has weighed in on the indicator
-    SPECIAL_TAGS = frozenset((TRUE_POSITIVE, FALSE_POSITIVE, DISPUTED))
+    SPECIAL_TAGS = frozenset((TRUE_POSITIVE, FALSE_POSITIVE, DISPUTED))  # type: ignore
 
     id: int
     raw_indicator: str
@@ -62,7 +62,7 @@ class ThreatDescriptor(t.NamedTuple):
         # does a transform, but other locations do not
         if isinstance(tags, dict):
             tags = sorted(tag["text"] for tag in tags["data"])
-        td = cls(
+        td = cls(  # type: ignore
             id=int(td_json["id"]),
             raw_indicator=td_json["raw_indicator"],
             indicator_type=td_json["type"],
