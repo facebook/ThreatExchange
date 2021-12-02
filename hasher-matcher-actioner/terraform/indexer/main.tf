@@ -105,6 +105,14 @@ resource "aws_lambda_function" "indexer" {
   )
 }
 
+resource "aws_lambda_permission" "allow_cloudwatch" {
+  statement_id  = "${var.prefix}AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.indexer.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.indexing_schedule.arn
+}
+
 resource "aws_cloudwatch_log_group" "indexer" {
   name              = "/aws/lambda/${aws_lambda_function.indexer.function_name}"
   retention_in_days = var.log_retention_in_days
