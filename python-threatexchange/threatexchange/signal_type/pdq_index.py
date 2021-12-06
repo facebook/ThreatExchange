@@ -67,12 +67,14 @@ class PDQIndex(SignalTypeIndex):
 
     @classmethod
     def build(
-        cls, entries: t.Iterable[t.Tuple[str, IndexT]]
+        cls,
+        entries: t.Iterable[t.Tuple[str, IndexT]],
+        flat_index: bool = False,
     ) -> "SignalTypeIndex[IndexT]":
         """
         Build an PDQ index from a set of entries.
         """
-        return cls(entries)
+        return cls(entries, flat_index)
 
     def serialize(self, fout: t.BinaryIO) -> None:
         """
