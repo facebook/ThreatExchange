@@ -11,21 +11,33 @@ import typing as t
 import pickle
 
 from threatexchange.signal_type.index import SignalTypeIndex, IndexMatch, T as IndexT
-from threatexchange.hashing.pdq_faiss_matcher import PDQMultiHashIndex
+from threatexchange.hashing.pdq_faiss_matcher import (
+    PDQMultiHashIndex,
+    PDQFlatHashIndex,
+    PDQHashIndex,
+)
 
 
 class PDQIndex(SignalTypeIndex):
     """
-    Wrapper around the pdq faiss index lib
+    Wrapper around the pdq faiss index lib using PDQMultiHashIndex
     """
 
     PDQ_CONFIDENT_MATCH_THRESHOLD = 31
     T = IndexT
 
+    @classmethod
+    def get_match_threshold(cls):
+        return cls.PDQ_CONFIDENT_MATCH_THRESHOLD
+
+    @classmethod
+    def _get_empty_index(cls) -> PDQHashIndex:
+        return PDQMultiHashIndex()
+
     def __init__(self, entries: t.Iterable[t.Tuple[str, T]]) -> None:
         super().__init__()
         self.local_id_to_entry: t.OrderedDict = collections.OrderedDict()
-        self.index = PDQMultiHashIndex()
+        self.index: PDQHashIndex = self._get_empty_index()
         self.add(entries=entries)
 
     def __len__(self) -> int:
@@ -38,7 +50,7 @@ class PDQIndex(SignalTypeIndex):
 
         # query takes a signal hash but index supports batch queries hence [hash]
         results = self.index.search_with_distance(
-            [hash], self.PDQ_CONFIDENT_MATCH_THRESHOLD, return_as_ids=True
+            [hash], self.get_match_threshold(), return_as_ids=True
         )
 
         matches = []
@@ -74,3 +86,22 @@ class PDQIndex(SignalTypeIndex):
         Instanciate an index from a previous call to serialize
         """
         return pickle.loads(fin)
+
+
+class PDQFlatIndex(PDQIndex):
+    """
+    Wrapper around the pdq faiss index lib
+    that uses PDQFlatHashIndex instead of PDQMultiHashIndex
+    It also uses a high match threshold to increase recall
+    possibly as the cost of precision.
+    """
+
+    PDQ_MATCH_THRESHOLD = 52
+
+    @classmethod
+    def get_match_threshold(cls):
+        return cls.PDQ_MATCH_THRESHOLD
+
+    @classmethod
+    def _get_empty_index(cls) -> PDQHashIndex:
+        return PDQFlatHashIndex()
