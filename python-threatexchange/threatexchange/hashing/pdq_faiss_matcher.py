@@ -101,6 +101,36 @@ class PDQHashIndex(ABC):
             for i in range(len(query_vectors))
         ]
 
+    def search_with_distance(
+        self,
+        queries: t.Sequence[PDQ_HASH_TYPE],
+        threshhold: int,
+        return_as_ids: bool = False,
+        **kwargs
+    ):
+        query_vectors = [
+            numpy.frombuffer(binascii.unhexlify(q), dtype=numpy.uint8) for q in queries
+        ]
+        qs = numpy.array(query_vectors)
+        limits, similarities, I = self.faiss_index.range_search(qs, threshhold + 1)
+        if return_as_ids:
+            # for custom ids, we understood them initially as uint64 numbers and then coerced them internally to be signed
+            # int64s, so we need to reverse this before returning them back to the caller. For non custom ids, this will
+            # effectively return the same result
+            output_fn: t.Callable[[int], t.Any] = int64_to_uint64
+        else:
+            output_fn = self.hash_at
+
+        result = {}
+        for i in range(len(queries)):
+            match_tuples = []
+            matches = [output_fn(idx.item()) for idx in I[limits[i] : limits[i + 1]]]
+            distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
+            for match, distance in zip(*(matches, distances)):
+                match_tuples.append((match, distance))
+            result[queries[i]] = match_tuples
+        return result
+
     def __getstate__(self):
         data = faiss.serialize_index_binary(self.faiss_index)
         return data

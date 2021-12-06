@@ -36,15 +36,14 @@ class PDQIndex(SignalTypeIndex):
         Look up entries against the index, up to the max supported distance.
         """
 
-        # query takes a signal hash but index supports banch quries hence [hash]
-        results = self.index.search(
+        # query takes a signal hash but index supports batch queries hence [hash]
+        results = self.index.search_with_distance(
             [hash], self.PDQ_CONFIDENT_MATCH_THRESHOLD, return_as_ids=True
         )
+
         matches = []
-        for result_ids in results:
-            for id in result_ids:
-                # distance = -1 (index does not currently support distance)
-                matches.append(IndexMatch(-1, self.local_id_to_entry[id][1]))
+        for id, distance in results[hash]:
+            matches.append(IndexMatch(distance, self.local_id_to_entry[id][1]))
         return matches
 
     def add(self, entries: t.Iterable[t.Tuple[str, T]]) -> None:
