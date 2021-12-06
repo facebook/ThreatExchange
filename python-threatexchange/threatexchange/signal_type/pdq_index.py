@@ -21,20 +21,20 @@ from threatexchange.hashing.pdq_faiss_matcher import (
 class PDQIndex(SignalTypeIndex):
     """
     Wrapper around the pdq faiss index lib
+    using PDQMultiHashIndex
     """
 
     PDQ_CONFIDENT_MATCH_THRESHOLD = 31
     T = IndexT
 
-    def __init__(
-        self, entries: t.Iterable[t.Tuple[str, IndexT]], flat_index: bool = False
-    ) -> None:
+    @classmethod
+    def _get_empty_index(cls) -> PDQHashIndex:
+        return PDQMultiHashIndex()
+
+    def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
         super().__init__()
         self.local_id_to_entry: t.OrderedDict = collections.OrderedDict()
-        if flat_index:
-            self.index: PDQHashIndex = PDQFlatHashIndex()
-        else:
-            self.index = PDQMultiHashIndex()
+        self.index: PDQHashIndex = self._get_empty_index()
         self.add(entries=entries)
 
     def __len__(self) -> int:
@@ -69,12 +69,11 @@ class PDQIndex(SignalTypeIndex):
     def build(
         cls,
         entries: t.Iterable[t.Tuple[str, IndexT]],
-        flat_index: bool = False,
     ) -> "SignalTypeIndex[IndexT]":
         """
         Build an PDQ index from a set of entries.
         """
-        return cls(entries, flat_index)
+        return cls(entries)
 
     def serialize(self, fout: t.BinaryIO) -> None:
         """
@@ -88,3 +87,14 @@ class PDQIndex(SignalTypeIndex):
         Instantiate an index from a previous call to serialize
         """
         return pickle.loads(fin.read())
+
+
+class PDQFlatIndex(PDQIndex):
+    """
+    Wrapper around the pdq faiss index lib
+    that uses PDQFlatHashIndex instead of PDQMultiHashIndex
+    """
+
+    @classmethod
+    def _get_empty_index(cls) -> PDQHashIndex:
+        return PDQFlatHashIndex()
