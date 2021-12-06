@@ -30,7 +30,7 @@ class RawTextSignal(signal_base.SimpleSignalType, signal_base.StrMatcher):
 
     def __init__(self) -> None:
         super().__init__()
-        self.normal_to_raw = {}
+        self.normal_to_raw: t.Dict[str, str] = {}
 
     def match(self, content: str) -> t.List[signal_base.SignalMatch]:
         return self.match_hash(content)

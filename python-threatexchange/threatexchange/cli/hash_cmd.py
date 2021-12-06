@@ -14,7 +14,7 @@ from ..api import ThreatExchangeAPI
 from ..content_type import meta
 from ..dataset import Dataset
 from ..descriptor import ThreatDescriptor
-from ..signal_type.signal_base import FileHasher, StrHasher
+from ..signal_type.signal_base import FileHasher, StrHasher, SignalType
 from . import command_base, fetch
 
 
@@ -67,7 +67,7 @@ class HashCommand(command_base.Command):
         content_type: str,
         signal_type: t.Optional[str],
         as_text: bool,
-        content: t.List[str],
+        content: t.Union[t.List[str], t.TextIO],
     ) -> None:
         self.content_type = [
             c for c in meta.get_all_content_types() if c.get_name() == content_type
@@ -103,7 +103,7 @@ class HashCommand(command_base.Command):
 
         for inp in self.input_generator:
             hash_fn = lambda s, t: s.hash_from_file(t)
-            signal_types = file_hashers
+            signal_types: t.List[t.Any] = file_hashers
             if isinstance(inp, str):
                 hash_fn = lambda s, t: s.hash_from_str(t)
                 signal_types = str_hashers
