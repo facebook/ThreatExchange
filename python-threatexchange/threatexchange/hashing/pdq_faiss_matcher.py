@@ -106,7 +106,6 @@ class PDQHashIndex(ABC):
         queries: t.Sequence[PDQ_HASH_TYPE],
         threshhold: int,
         return_as_ids: bool = False,
-        **kwargs
     ):
         query_vectors = [
             numpy.frombuffer(binascii.unhexlify(q), dtype=numpy.uint8) for q in queries
@@ -239,9 +238,23 @@ class PDQMultiHashIndex(PDQHashIndex):
             return faiss.downcast_IndexBinary(self.faiss_index.index)
         return self.faiss_index
 
-    def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int, **kwargs):
+    def search(
+        self,
+        queries: t.Sequence[PDQ_HASH_TYPE],
+        threshhold: int,
+        return_as_ids: bool = False,
+    ):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
-        return super().search(queries, threshhold, **kwargs)
+        return super().search(queries, threshhold, return_as_ids)
+
+    def search_with_distance(
+        self,
+        queries: t.Sequence[PDQ_HASH_TYPE],
+        threshhold: int,
+        return_as_ids: bool = False,
+    ):
+        self.mih_index.nflip = threshhold // self.mih_index.nhash
+        return super().search_with_distance(queries, threshhold, return_as_ids)
 
     def hash_at(self, idx: int):
         i64_id = uint64_to_int64(idx)
