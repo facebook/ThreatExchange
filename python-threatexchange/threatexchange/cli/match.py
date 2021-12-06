@@ -119,11 +119,11 @@ class MatchCommand(command_base.Command):
             tok: str,
         ) -> t.Generator[t.Union[str, pathlib.Path], None, None]:
             if force_input_to_text:
-                return tok
+                yield tok
             path = pathlib.Path(token)
             if path.exists():
-                return path
-            return tok
+                yield path
+            yield tok
 
         for token in input_:
             token = token.rstrip()
@@ -141,7 +141,7 @@ class MatchCommand(command_base.Command):
                     no_stderr=True,
                 )
             else:
-                yield parsed
+                yield from parsed
 
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         if dataset.is_cache_empty:
@@ -155,7 +155,9 @@ class MatchCommand(command_base.Command):
         )
 
         file_matchers = [s for s in all_signal_types if isinstance(s, FileMatcher)]
-        str_matchers = [s for s in all_signal_types if isinstance(s, StrMatcher)]
+        str_matchers: t.List[t.Any] = [
+            s for s in all_signal_types if isinstance(s, StrMatcher)
+        ]
 
         match_str = lambda s, t: s.match(t)
         if self.as_hashes:
