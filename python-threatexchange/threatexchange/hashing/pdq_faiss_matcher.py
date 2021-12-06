@@ -107,6 +107,23 @@ class PDQHashIndex(ABC):
         threshhold: int,
         return_as_ids: bool = False,
     ):
+        """
+        Same as search however instead of returning only sequence of matches per query
+        it returns a mapping from query strings to a list of matched hashes (or ids) and distances
+        e.g.
+        result = {
+            "000000000000000000000000000000000000000000000000000000000000FFFF": [
+                ("00000000000000000000000000000000000000000000000000000000FFFFFFFF", 16.0)
+            ]
+        }
+        or if return_as_ids=True
+        result_with_as_ids = {
+            "000000000000000000000000000000000000000000000000000000000000FFFF": [
+                (12345678901, 16.0)
+            ]
+        }
+        """
+
         query_vectors = [
             numpy.frombuffer(binascii.unhexlify(q), dtype=numpy.uint8) for q in queries
         ]
