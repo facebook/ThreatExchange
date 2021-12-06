@@ -49,8 +49,9 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     def te_threat_updates_fields(cls):
         return SimpleDescriptorRollup.te_threat_updates_fields()
 
+    # ToDo this violates Liskov but is already used in Prod and will require a larger refactor
     @classmethod
-    def store(
+    def store(  # type: ignore
         cls, state_dir: pathlib.Path, contents: t.Iterable["CliIndicatorSerialization"]
     ) -> t.List[pathlib.Path]:
         # Stores in multiple files split by indicator type
@@ -68,9 +69,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
         return ret
 
     @classmethod
-    def load(
-        cls, state_dir: pathlib.Path
-    ) -> t.List["threat_updates.ThreatUpdateSerialization"]:
+    def load(cls, state_dir: pathlib.Path) -> t.Iterable["CliIndicatorSerialization"]:
         """Load this serialization from the state directory"""
         ret = []
         pattern = r"simple\.([^.]+)" + re.escape(Dataset.EXTENSION)
@@ -139,9 +138,7 @@ class HMASerialization(CliIndicatorSerialization):
         )
 
     @classmethod
-    def load(
-        cls, state_dir: pathlib.Path
-    ) -> t.List["threat_updates.ThreatUpdateSerialization"]:
+    def load(cls, state_dir: pathlib.Path) -> t.Iterable["HMASerialization"]:
         """Load this serialization from the state directory"""
         ret = []
         pattern = r"simple\.([^.]+)" + re.escape(Dataset.EXTENSION)
@@ -172,7 +169,7 @@ if __name__ == "__main__":
         indicator_id,
         SimpleDescriptorRollup(first_descriptor_id, added_on, labels),
     )
-    serdeser = HMASerialization.from_csv_row(ser.as_csv_row(), "HASH_PDQ")
+    serdeser = HMASerialization.from_csv_row(list(ser.as_csv_row()), "HASH_PDQ")
 
     if ser.as_csv_row() == serdeser.as_csv_row():
         print("Serialization worked correctly")
