@@ -103,7 +103,7 @@ class SignalType:
 
     ##########################################################################
     # TODO - Remove  these methods after refactor
-    def process_descriptor(self, descriptor) -> bool:
+    def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
         """
         Add ThreatDescriptor to the state of this type, if it is for this type.
 

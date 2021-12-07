@@ -72,6 +72,4 @@ def normalize_url(url: str) -> bytes:
     # https://www.facebook.com => www.facebook.com
     url = parsed.geturl().replace(scheme, "", 1)
     # Ensure URL is utf-8 encoded
-    encoded_url = url.encode("utf-8")
-
-    return encoded_url
+    return url.encode("utf-8")
