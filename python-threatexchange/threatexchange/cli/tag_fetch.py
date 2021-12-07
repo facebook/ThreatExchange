@@ -205,10 +205,12 @@ class TagFetchCommand(command_base.Command):
 
             seen_td_ids = set()
 
-            counts = collections.Counter()
-            errors = collections.Counter()
+            counts: t.Dict[str, int] = collections.Counter()
+            errors: t.Dict[str, int] = collections.Counter()
 
-            tags_to_fetch = dataset.config.labels
+            tags_to_fetch = (
+                list(dataset.config.labels.keys()) if dataset.config.labels else []
+            )
             only_first_fetch = False
 
             if self.sample:
@@ -248,8 +250,10 @@ class TagFetchCommand(command_base.Command):
                 tag_id = api.get_tag_id(tag_name)
                 if not tag_id:
                     continue
-                pending_futures = collections.deque()
-                remainder_td_ids = collections.deque()
+                pending_futures: t.Deque[
+                    concurrent.futures.Future
+                ] = collections.deque()
+                remainder_td_ids: t.Deque[int] = collections.deque()
                 query = _TagQueryFetchCheckpoint(
                     api, tag_id, fetch_type.from_timestamp, self.until_timestamp
                 )
@@ -311,7 +315,7 @@ class TagFetchCommand(command_base.Command):
                 self.stderr(f"  {signal_name}: {error_count}")
         if not self.sample:
             dataset.record_fetch_checkpoint(
-                self.until_timestamp or self.start_time, fetch_type.is_full
+                self.until_timestamp or fetch_type.from_timestamp, fetch_type.is_full
             )
 
     def _fetch_descriptors(
@@ -343,7 +347,7 @@ class _TagQueryFetchCheckpoint:
     def __bool__(self) -> bool:
         return bool(self._next_url)
 
-    def next(self) -> t.Dict[id, t.Any]:
+    def next(self) -> t.List:
         response = self.api.get_json_from_url(self._next_url)
         self._next_url = response.get("paging", {}).get("next")
         return [d["id"] for d in response["data"] if d["type"] == "THREAT_DESCRIPTOR"]

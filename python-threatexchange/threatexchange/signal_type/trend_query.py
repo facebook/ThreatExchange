@@ -58,7 +58,7 @@ class TrendQuerySignal(signal_base.SignalType, signal_base.StrMatcher):
     """
 
     def __init__(self) -> None:
-        self.state: t.Dict[str, (TrendQuery, SimpleDescriptorRollup)] = {}
+        self.state: t.Dict[str, t.Tuple[TrendQuery, SimpleDescriptorRollup]] = {}
 
     def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
         """
@@ -78,7 +78,9 @@ class TrendQuerySignal(signal_base.SignalType, signal_base.StrMatcher):
             self.state[descriptor.raw_indicator] = (
                 TrendQuery(query_json),
                 SimpleDescriptorRollup(
-                    descriptor.id, descriptor.added_on, descriptor.tags
+                    descriptor.id,
+                    descriptor.added_on,
+                    set(descriptor.tags),
                 ),
             )
         else:

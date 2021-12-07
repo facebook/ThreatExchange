@@ -74,7 +74,7 @@ class FetchCommand(command_base.Command):
         # Print first update after 5 seconds
         self.last_update_printed = time.time() - self.PROGRESS_PRINT_INTERVAL_SEC + 5
         self.processed = 0
-        self.counts = collections.Counter()
+        self.counts: t.Dict[str, int] = collections.Counter()
 
     def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
         privacy_groups = dataset.config.privacy_groups

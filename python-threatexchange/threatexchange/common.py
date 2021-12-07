@@ -54,11 +54,11 @@ def normalize_string(s: str) -> str:
     return s
 
 
-def normalize_url(url: str) -> str:
+def normalize_url(url: str) -> bytes:
     """
     Normalize the URL and strip the scheme from the URL to make matching more effective.
 
-    Urls will be normalized to lowercase and the initial sche
+    Urls will be normalized to lowercase and the initial scheme removed as well as "utf-8" encoded.
     """
     # Lowercase
     # HtTPs://wWw.faCeBook.cOM => https://www.facebook.com
@@ -72,6 +72,4 @@ def normalize_url(url: str) -> str:
     # https://www.facebook.com => www.facebook.com
     url = parsed.geturl().replace(scheme, "", 1)
     # Ensure URL is utf-8 encoded
-    url = url.encode("utf-8")
-
-    return url
+    return url.encode("utf-8")

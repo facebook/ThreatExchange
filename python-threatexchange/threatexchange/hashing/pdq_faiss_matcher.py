@@ -92,7 +92,7 @@ class PDQHashIndex(ABC):
             # for custom ids, we understood them initially as uint64 numbers and then coerced them internally to be signed
             # int64s, so we need to reverse this before returning them back to the caller. For non custom ids, this will
             # effectively return the same result
-            output_fn = int64_to_uint64
+            output_fn: t.Callable[[int], t.Any] = int64_to_uint64
         else:
             output_fn = self.hash_at
 
@@ -250,9 +250,14 @@ class PDQMultiHashIndex(PDQHashIndex):
             return faiss.downcast_IndexBinary(self.faiss_index.index)
         return self.faiss_index
 
-    def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int, **kwargs):
+    def search(
+        self,
+        queries: t.Sequence[PDQ_HASH_TYPE],
+        threshhold: int,
+        return_as_ids: bool = False,
+    ):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
-        return super().search(queries, threshhold, **kwargs)
+        return super().search(queries, threshhold, return_as_ids)
 
     def search_with_distance_in_result(
         self,

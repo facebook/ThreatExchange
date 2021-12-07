@@ -31,18 +31,18 @@ class ThreatDescriptor(t.NamedTuple):
 
     # TODO - do something smarter than this - static
     #        class variable problematic, currently set in main.py
-    MY_APP_ID = -1
+    MY_APP_ID = -1  # type: ignore
 
     # You declared the indicator was in the collaboration label set
-    TRUE_POSITIVE = "true_positive"
+    TRUE_POSITIVE = "true_positive"  # type: ignore
     # You declared the indicator was not in the collaboration label set
-    FALSE_POSITIVE = "false_positive"
+    FALSE_POSITIVE = "false_positive"  # type: ignore
     # Someone declared the indicator was not in the collaboration label set
-    DISPUTED = "disputed"
+    DISPUTED = "disputed"  # type: ignore
 
     # Special tags to mark whether you (or someone else)
     # has weighed in on the indicator
-    SPECIAL_TAGS = frozenset((TRUE_POSITIVE, FALSE_POSITIVE, DISPUTED))
+    SPECIAL_TAGS = frozenset((TRUE_POSITIVE, FALSE_POSITIVE, DISPUTED))  # type: ignore
 
     id: int
     raw_indicator: str
@@ -53,7 +53,7 @@ class ThreatDescriptor(t.NamedTuple):
     added_on: str
 
     @classmethod
-    def from_te_json(cls, my_app_id: int, td_json) -> "ThreatDescriptor":
+    def from_te_json(cls, my_app_id: t.Union[str, int], td_json) -> "ThreatDescriptor":
         # Hack for now, but nearly refactored out of cls state
         cls.MY_APP_ID = my_app_id
         owner_id_str = td_json["owner"]["id"]
@@ -62,7 +62,7 @@ class ThreatDescriptor(t.NamedTuple):
         # does a transform, but other locations do not
         if isinstance(tags, dict):
             tags = sorted(tag["text"] for tag in tags["data"])
-        td = cls(
+        td = cls(  # type: ignore
             id=int(td_json["id"]),
             raw_indicator=td_json["raw_indicator"],
             indicator_type=td_json["type"],
@@ -133,7 +133,7 @@ class SimpleDescriptorRollup:
 
     @classmethod
     def from_descriptor(cls, descriptor: ThreatDescriptor) -> "SimpleDescriptorRollup":
-        return cls(descriptor.id, descriptor.added_on, descriptor.tags)
+        return cls(descriptor.id, descriptor.added_on, set(descriptor.tags))
 
     @classmethod
     def from_descriptors(
@@ -155,7 +155,7 @@ class SimpleDescriptorRollup:
         if descriptor.is_mine:
             self.added_on = self.IS_MY_OPINION
             self.first_descriptor_id = descriptor.id
-            self.labels = descriptor.tags
+            self.labels = set(descriptor.tags)
             return
         # My descriptor beats my reactions, and I don't want
         # to take anyone else's opinion
@@ -165,7 +165,7 @@ class SimpleDescriptorRollup:
         elif descriptor.is_false_positive:
             self.added_on = self.IS_MY_OPINION
             self.first_descriptor_id = descriptor.id
-            self.labels = descriptor.tags
+            self.labels = set(descriptor.tags)
             return
         # Else merge the labels together
         self.added_on, self.first_descriptor_id = min(
@@ -179,12 +179,12 @@ class SimpleDescriptorRollup:
         return self.first_descriptor_id, self.added_on, " ".join(self.labels)
 
     @classmethod
-    def from_row(cls, row: t.Iterable) -> "SimpleDescriptorRollup":
+    def from_row(cls, row: t.List) -> "SimpleDescriptorRollup":
         """Simple conversion from CSV row"""
         labels = []
         if row[2]:
             labels = row[2].split(" ")
-        return cls(int(row[0]), row[1], labels)
+        return cls(int(row[0]), row[1], set(labels))
 
     @classmethod
     def from_threat_updates_json(

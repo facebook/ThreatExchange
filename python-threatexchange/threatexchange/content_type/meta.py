@@ -25,19 +25,18 @@ def get_all_content_types() -> t.List[t.Type[content_base.ContentType]]:
 
 
 @functools.lru_cache(1)
-def get_content_types_by_name() -> t.Dict[str, content_base.ContentType]:
+def get_content_types_by_name() -> t.Dict[str, t.Type[content_base.ContentType]]:
     return {c.get_name(): c for c in get_all_content_types()}
 
 
 @functools.lru_cache(1)
 def get_all_signal_types() -> t.Set[t.Type[signal_base.SignalType]]:
     """Returns all signal_type implementations for commands"""
-    ret = set()
     return {s for c in get_all_content_types() for s in c.get_signal_types()}
 
 
 @functools.lru_cache(1)
-def get_signal_types_by_name() -> t.Dict[str, signal_base.SignalType]:
+def get_signal_types_by_name() -> t.Dict[str, t.Type[signal_base.SignalType]]:
     return {s.get_name(): s for s in get_all_signal_types()}
 
 

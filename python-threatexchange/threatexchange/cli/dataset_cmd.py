@@ -10,6 +10,7 @@ from .. import threat_updates
 from ..api import ThreatExchangeAPI
 from ..content_type import meta
 from ..dataset import Dataset
+from ..threat_updates import ThreatUpdateSerialization
 from . import command_base
 from .dataset.simple_serialization import CliIndicatorSerialization
 
@@ -133,7 +134,7 @@ class DatasetCommand(command_base.Command):
             self.print_summary(indicators)
 
     def print_summary(self, indicators: t.Dict[str, CliIndicatorSerialization]):
-        by_type = collections.Counter()
+        by_type: t.Dict[str, int] = collections.Counter()
         for indicator in indicators.values():
             by_type[indicator.indicator_type] += 1
         for name, count in sorted(by_type.items(), key=lambda i: -i[1]):
@@ -141,11 +142,11 @@ class DatasetCommand(command_base.Command):
 
     def print_signal_summary(self, indicators: t.Dict[str, CliIndicatorSerialization]):
         signal_types = meta.get_signal_types_by_name()
-        by_signal = collections.Counter()
+        by_signal: t.Dict[str, int] = collections.Counter()
         for indicator in indicators.values():
             for name, signal_type in signal_types.items():
                 if signal_type.indicator_applies(
-                    indicator.indicator_type, indicator.rollup.labels
+                    indicator.indicator_type, list(indicator.rollup.labels)
                 ):
                     by_signal[name] += 1
         for name, count in sorted(by_signal.items(), key=lambda i: -i[1]):
@@ -162,7 +163,7 @@ class DatasetCommand(command_base.Command):
 
 def generate_cli_indices(dataset: Dataset, indicator_stores):
     signal_types = meta.get_signal_types_by_name()
-    indicators = {name: [] for name in signal_types}
+    indicators: t.Dict[str, t.List] = {name: [] for name in signal_types}
     for store in indicator_stores:
         for indicator in store.load_state().values():
             for name, signal_type in signal_types.items():
@@ -180,4 +181,4 @@ def generate_cli_indices(dataset: Dataset, indicator_stores):
                 (indicator.indicator_type, indicator.rollup)
                 for indicator in indicators_for_signal
             )
-        dataset.store_index(signal_type, index)
+        dataset.store_index(signal_type(), index)

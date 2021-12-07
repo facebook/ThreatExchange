@@ -122,7 +122,7 @@ def get_app_token(cli_option: str = None) -> str:
     file_loc = pathlib.Path("~/.txtoken").expanduser()
     environment_var = "TX_ACCESS_TOKEN"
     token = ""
-    source = ""
+    source: t.Union[pathlib.Path, str] = ""
     if cli_option:
         source = "cli argument"
         token = cli_option

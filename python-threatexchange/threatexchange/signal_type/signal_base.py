@@ -103,7 +103,7 @@ class SignalType:
 
     ##########################################################################
     # TODO - Remove  these methods after refactor
-    def process_descriptor(self, descriptor: t.Dict[str, t.Any]) -> bool:
+    def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
         """
         Add ThreatDescriptor to the state of this type, if it is for this type.
 
@@ -214,7 +214,7 @@ class SimpleSignalType(SignalType, HashMatcher):
     Assumes that the signal type can easily merge on a string.
     """
 
-    INDICATOR_TYPE: t.Union[str, t.Tuple[str]] = ()
+    INDICATOR_TYPE: t.Union[str, t.Tuple[str, ...]] = ()
     TYPE_TAG: t.Optional[str] = None
 
     @classmethod

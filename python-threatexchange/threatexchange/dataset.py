@@ -129,4 +129,4 @@ class Dataset:
         if not path.exists():
             return None
         with path.open("rb") as fin:
-            return signal_type.get_index_cls.deserialize(fin)
+            return signal_type.get_index_cls().deserialize(fin)
