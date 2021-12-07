@@ -88,7 +88,7 @@ class TestPDQIndex(unittest.TestCase):
 
         # Convert expected to distance -> set of metadata map
         distance_to_expected_items_map: t.Dict[int, t.Set[t.Dict]] = functools.reduce(
-            quality_indexed_dict_reducer, result, dict()
+            quality_indexed_dict_reducer, expected, dict()
         )
 
         assert len(distance_to_expected_items_map) == len(
@@ -106,7 +106,7 @@ class TestPDQIndex(unittest.TestCase):
         result = self.index.query(entry_hash)
         self.assertEqualPDQIndexMatchResults(
             result,
-            [IndexMatch(-1, test_entries[1][1]), IndexMatch(-1, test_entries[0][1])],
+            [IndexMatch(0, test_entries[1][1]), IndexMatch(16, test_entries[0][1])],
         )
 
     def test_search_index_with_no_match(self):
@@ -130,5 +130,5 @@ class TestPDQIndex(unittest.TestCase):
         result = reconstructed_index.query(query)
         self.assertEqualPDQIndexMatchResults(
             result,
-            [IndexMatch(-1, test_entries[1][1]), IndexMatch(-1, test_entries[0][1])],
+            [IndexMatch(0, test_entries[1][1]), IndexMatch(16, test_entries[0][1])],
         )

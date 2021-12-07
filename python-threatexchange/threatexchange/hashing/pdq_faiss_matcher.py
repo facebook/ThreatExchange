@@ -101,6 +101,47 @@ class PDQHashIndex(ABC):
             for i in range(len(query_vectors))
         ]
 
+    def search_with_distance_in_result(
+        self,
+        queries: t.Sequence[str],
+        threshhold: int,
+    ):
+        """
+        Search method that return a mapping from query_str =>  (id, hash, distance)
+
+        This implementation is the same as `search` above however instead of returning just the sequence of matches
+        per query it returns a mapping from query strings to a list of matched hashes (or ids) and distances
+
+        e.g.
+        result = {
+            "000000000000000000000000000000000000000000000000000000000000FFFF": [
+                (12345678901, "00000000000000000000000000000000000000000000000000000000FFFFFFFF", 16.0)
+            ]
+        }
+        """
+
+        query_vectors = [
+            numpy.frombuffer(binascii.unhexlify(q), dtype=numpy.uint8) for q in queries
+        ]
+        qs = numpy.array(query_vectors)
+        limits, similarities, I = self.faiss_index.range_search(qs, threshhold + 1)
+
+        # for custom ids, we understood them initially as uint64 numbers and then coerced them internally to be signed
+        # int64s, so we need to reverse this before returning them back to the caller. For non custom ids, this will
+        # effectively return the same result
+        output_fn: t.Callable[[int], t.Any] = int64_to_uint64
+
+        result = {}
+        for i, query in enumerate(queries):
+            match_tuples = []
+            matches = [idx.item() for idx in I[limits[i] : limits[i + 1]]]
+            distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
+            for match, distance in zip(matches, distances):
+                # (Id, Hash, Distance)
+                match_tuples.append((output_fn(match), self.hash_at(match), distance))
+            result[query] = match_tuples
+        return result
+
     def __getstate__(self):
         data = faiss.serialize_index_binary(self.faiss_index)
         return data
@@ -212,6 +253,14 @@ class PDQMultiHashIndex(PDQHashIndex):
     def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int, **kwargs):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
         return super().search(queries, threshhold, **kwargs)
+
+    def search_with_distance_in_result(
+        self,
+        queries: t.Sequence[str],
+        threshhold: int,
+    ):
+        self.mih_index.nflip = threshhold // self.mih_index.nhash
+        return super().search_with_distance_in_result(queries, threshhold)
 
     def hash_at(self, idx: int):
         i64_id = uint64_to_int64(idx)
