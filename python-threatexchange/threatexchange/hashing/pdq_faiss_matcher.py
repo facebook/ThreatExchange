@@ -103,7 +103,7 @@ class PDQHashIndex(ABC):
 
     def search_with_distance_in_result(
         self,
-        queries: t.Sequence[PDQ_HASH_TYPE],
+        queries: t.Sequence[str],
         threshhold: int,
     ):
         """
@@ -256,7 +256,7 @@ class PDQMultiHashIndex(PDQHashIndex):
 
     def search_with_distance_in_result(
         self,
-        queries: t.Sequence[PDQ_HASH_TYPE],
+        queries: t.Sequence[str],
         threshhold: int,
     ):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
