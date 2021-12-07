@@ -16,12 +16,7 @@ class TLSHHasherModuleUnitTest(unittest.TestCase):
         tlsh_half_data_hash = tlsh_pdf.TLSHSignal.hash_from_file(
             "data/test_pdf_half.pdf"
         )
-        tlsh_complete_match = tlsh_pdf.TLSHSignal.match_hash(
-            self, tlsh_complete_data_hash
-        )
-        tlsh_half_complete_match = tlsh_pdf.TLSHSignal.match_hash(
-            self, tlsh_half_data_hash
-        )
+        # ToDo find way to have sub in signal data here
+        tlsh_complete_match = tlsh_pdf.TLSHSignal().match_hash(tlsh_complete_data_hash)
+        tlsh_half_complete_match = tlsh_pdf.TLSHSignal().match_hash(tlsh_half_data_hash)
         assert tlsh_complete_data_hash == TEST_PDF_COMPLETE_TLSH
-        assert tlsh_complete_match != []
-        assert tlsh_half_complete_match != []
