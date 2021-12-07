@@ -132,14 +132,14 @@ class PDQHashIndex(ABC):
         output_fn: t.Callable[[int], t.Any] = int64_to_uint64
 
         result = {}
-        for i in range(len(queries)):
+        for i, query in enumerate(queries):
             match_tuples = []
             matches = [idx.item() for idx in I[limits[i] : limits[i + 1]]]
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
             for match, distance in zip(matches, distances):
                 # (Id, Hash, Distance)
                 match_tuples.append((output_fn(match), self.hash_at(match), distance))
-            result[queries[i]] = match_tuples
+            result[query] = match_tuples
         return result
 
     def __getstate__(self):
