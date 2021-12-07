@@ -13,3 +13,11 @@ RUN pip install -e .
 # 1: https://hub.docker.com/r/amazon/aws-lambda-python
 COPY hmalib ${LAMBDA_TASK_ROOT}/hmalib
 COPY hmalib_extensions ${LAMBDA_TASK_ROOT}/hmalib_extensions
+
+# Testing local changes to python-threatexchange: 
+# 1) Run: cp -r ../python-threatexchange/threatexchange threatexchange 
+# 2) comment out line `"threatexchange[faiss,pdq_hasher]>=0.X.XX",` from setup.py's install_requires
+# 3) uncomment bottom line
+# 4) rebuild and push new docker image (e.g. make upload_docker)
+# 5) redploy hma using image created  (e.g. make dev_apply_with_newest_docker_image)
+# COPY threatexchange ${LAMBDA_TASK_ROOT}/threatexchange
