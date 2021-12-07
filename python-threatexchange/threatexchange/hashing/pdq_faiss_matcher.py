@@ -101,25 +101,21 @@ class PDQHashIndex(ABC):
             for i in range(len(query_vectors))
         ]
 
-    def search_with_distance(
+    def search_with_distance_in_result(
         self,
         queries: t.Sequence[PDQ_HASH_TYPE],
         threshhold: int,
-        return_as_ids: bool = False,
     ):
         """
-        Same as search however instead of returning only sequence of matches per query
-        it returns a mapping from query strings to a list of matched hashes (or ids) and distances
+        Search method that return a mapping from query_str =>  (id, hash, distance)
+
+        This implementation is the same as `search` above however instead of returning just the sequence of matches
+        per query it returns a mapping from query strings to a list of matched hashes (or ids) and distances
+
         e.g.
         result = {
             "000000000000000000000000000000000000000000000000000000000000FFFF": [
-                ("00000000000000000000000000000000000000000000000000000000FFFFFFFF", 16.0)
-            ]
-        }
-        or if return_as_ids=True
-        result_with_as_ids = {
-            "000000000000000000000000000000000000000000000000000000000000FFFF": [
-                (12345678901, 16.0)
+                (12345678901, "00000000000000000000000000000000000000000000000000000000FFFFFFFF", 16.0)
             ]
         }
         """
@@ -129,21 +125,20 @@ class PDQHashIndex(ABC):
         ]
         qs = numpy.array(query_vectors)
         limits, similarities, I = self.faiss_index.range_search(qs, threshhold + 1)
-        if return_as_ids:
-            # for custom ids, we understood them initially as uint64 numbers and then coerced them internally to be signed
-            # int64s, so we need to reverse this before returning them back to the caller. For non custom ids, this will
-            # effectively return the same result
-            output_fn: t.Callable[[int], t.Any] = int64_to_uint64
-        else:
-            output_fn = self.hash_at
+
+        # for custom ids, we understood them initially as uint64 numbers and then coerced them internally to be signed
+        # int64s, so we need to reverse this before returning them back to the caller. For non custom ids, this will
+        # effectively return the same result
+        output_fn: t.Callable[[int], t.Any] = int64_to_uint64
 
         result = {}
         for i in range(len(queries)):
             match_tuples = []
-            matches = [output_fn(idx.item()) for idx in I[limits[i] : limits[i + 1]]]
+            matches = [idx.item() for idx in I[limits[i] : limits[i + 1]]]
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
-            for match, distance in zip(*(matches, distances)):
-                match_tuples.append((match, distance))
+            for match, distance in zip(matches, distances):
+                # (Id, Hash, Distance)
+                match_tuples.append((output_fn(match), self.hash_at(match), distance))
             result[queries[i]] = match_tuples
         return result
 
@@ -255,23 +250,17 @@ class PDQMultiHashIndex(PDQHashIndex):
             return faiss.downcast_IndexBinary(self.faiss_index.index)
         return self.faiss_index
 
-    def search(
-        self,
-        queries: t.Sequence[PDQ_HASH_TYPE],
-        threshhold: int,
-        return_as_ids: bool = False,
-    ):
+    def search(self, queries: t.Sequence[PDQ_HASH_TYPE], threshhold: int, **kwargs):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
-        return super().search(queries, threshhold, return_as_ids)
+        return super().search(queries, threshhold, **kwargs)
 
-    def search_with_distance(
+    def search_with_distance_in_result(
         self,
         queries: t.Sequence[PDQ_HASH_TYPE],
         threshhold: int,
-        return_as_ids: bool = False,
     ):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
-        return super().search_with_distance(queries, threshhold, return_as_ids)
+        return super().search_with_distance_in_result(queries, threshhold)
 
     def hash_at(self, idx: int):
         i64_id = uint64_to_int64(idx)

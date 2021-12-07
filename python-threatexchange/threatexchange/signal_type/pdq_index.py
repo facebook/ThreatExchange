@@ -23,12 +23,11 @@ class PDQIndex(SignalTypeIndex):
     Wrapper around the pdq faiss index lib using PDQMultiHashIndex
     """
 
-    PDQ_CONFIDENT_MATCH_THRESHOLD = 31
     T = IndexT
 
     @classmethod
     def get_match_threshold(cls):
-        return cls.PDQ_CONFIDENT_MATCH_THRESHOLD
+        return 31  # PDQ_CONFIDENT_MATCH_THRESHOLD
 
     @classmethod
     def _get_empty_index(cls) -> PDQHashIndex:
@@ -49,12 +48,12 @@ class PDQIndex(SignalTypeIndex):
         """
 
         # query takes a signal hash but index supports batch queries hence [hash]
-        results = self.index.search_with_distance(
-            [hash], self.get_match_threshold(), return_as_ids=True
+        results = self.index.search_with_distance_in_result(
+            [hash], self.get_match_threshold()
         )
 
         matches = []
-        for id, distance in results[hash]:
+        for id, _, distance in results[hash]:
             matches.append(IndexMatch(distance, self.local_id_to_entry[id][1]))
         return matches
 
@@ -96,11 +95,9 @@ class PDQFlatIndex(PDQIndex):
     possibly as the cost of precision.
     """
 
-    PDQ_MATCH_THRESHOLD = 52
-
     @classmethod
     def get_match_threshold(cls):
-        return cls.PDQ_MATCH_THRESHOLD
+        return 52  # larger PDQ_MATCH_THRESHOLD for flatindexes
 
     @classmethod
     def _get_empty_index(cls) -> PDQHashIndex:
