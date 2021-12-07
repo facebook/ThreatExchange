@@ -23,8 +23,6 @@ class PDQIndex(SignalTypeIndex):
     Wrapper around the pdq faiss index lib using PDQMultiHashIndex
     """
 
-    T = IndexT
-
     @classmethod
     def get_match_threshold(cls):
         return 31  # PDQ_CONFIDENT_MATCH_THRESHOLD
@@ -33,7 +31,7 @@ class PDQIndex(SignalTypeIndex):
     def _get_empty_index(cls) -> PDQHashIndex:
         return PDQMultiHashIndex()
 
-    def __init__(self, entries: t.Iterable[t.Tuple[str, T]]) -> None:
+    def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
         super().__init__()
         self.local_id_to_entry: t.OrderedDict = collections.OrderedDict()
         self.index: PDQHashIndex = self._get_empty_index()
@@ -42,7 +40,7 @@ class PDQIndex(SignalTypeIndex):
     def __len__(self) -> int:
         return len(self.local_id_to_entry)
 
-    def query(self, hash: str) -> t.List[IndexMatch[T]]:
+    def query(self, hash: str) -> t.List[IndexMatch[IndexT]]:
         """
         Look up entries against the index, up to the max supported distance.
         """
@@ -57,7 +55,7 @@ class PDQIndex(SignalTypeIndex):
             matches.append(IndexMatch(distance, self.local_id_to_entry[id][1]))
         return matches
 
-    def add(self, entries: t.Iterable[t.Tuple[str, T]]) -> None:
+    def add(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
         hashes = []
 
         for i, entry in enumerate(entries):
@@ -67,7 +65,9 @@ class PDQIndex(SignalTypeIndex):
         self.index.add(hashes, self.local_id_to_entry.keys())
 
     @classmethod
-    def build(cls, entries: t.Iterable[t.Tuple[str, T]]) -> "SignalTypeIndex[T]":
+    def build(
+        cls, entries: t.Iterable[t.Tuple[str, IndexT]]
+    ) -> "SignalTypeIndex[IndexT]":
         """
         Build an PDQ index from a set of entries.
         """
@@ -80,11 +80,11 @@ class PDQIndex(SignalTypeIndex):
         fout.write(pickle.dumps(self))
 
     @classmethod
-    def deserialize(cls, fin: t.BinaryIO) -> "SignalTypeIndex[T]":
+    def deserialize(cls, fin: t.BinaryIO) -> "SignalTypeIndex[IndexT]":
         """
-        Instanciate an index from a previous call to serialize
+        Instantiate an index from a previous call to serialize
         """
-        return pickle.loads(fin)
+        return pickle.loads(fin.read())
 
 
 class PDQFlatIndex(PDQIndex):
