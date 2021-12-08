@@ -1,5 +1,72 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+# First define the Indexing Schedule
+resource "aws_cloudwatch_event_rule" "indexing_trigger" {
+  name                = "${var.prefix}-RecurringIndexBuild"
+  description         = "Rebuild Index on a regular cadence"
+  schedule_expression = "rate(${var.indexer_frequency})"
+  role_arn            = aws_iam_role.indexing_trigger.arn
+}
+
+resource "aws_iam_role" "indexing_trigger" {
+  name_prefix        = "${var.prefix}_indexing_trigger"
+  assume_role_policy = data.aws_iam_policy_document.indexing_trigger_assume_role.json
+
+  tags = merge(
+    var.additional_tags,
+    {
+      Name = "FetcherLambdaTriggerRole"
+    }
+  )
+}
+
+data "aws_iam_policy_document" "indexing_trigger_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+  }
+}
+
+## Define a policy document to asign to the role
+data "aws_iam_policy_document" "indexing_trigger" {
+  statement {
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.indexer.arn]
+    effect    = "Allow"
+    condition {
+      test     = "ArnLike"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudwatch_event_rule.indexing_trigger.arn]
+    }
+  }
+}
+
+## Create a permission policy from policy document
+resource "aws_iam_policy" "indexing_trigger" {
+  name_prefix = "${var.prefix}_indexing_trigger_role_policy"
+  description = "Permissions for Indexing Schedule"
+  policy      = data.aws_iam_policy_document.indexing_trigger.json
+}
+
+## Attach a permission policy to the indexing trigger role
+resource "aws_iam_role_policy_attachment" "indexing_trigger" {
+  role       = aws_iam_role.indexing_trigger.name
+  policy_arn = aws_iam_policy.indexing_trigger.arn
+}
+
+## Connect rule to function invocation
+resource "aws_cloudwatch_event_target" "indexer" {
+  arn  = aws_lambda_function.indexer.arn
+  rule = aws_cloudwatch_event_rule.indexing_trigger.name
+}
+
+
+
+# Then define the Indexing Function / Lambda etc.
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
     effect  = "Allow"
@@ -10,8 +77,6 @@ data "aws_iam_policy_document" "lambda_assume_role" {
     }
   }
 }
-
-#  Indexer
 
 resource "aws_lambda_function" "indexer" {
   function_name = "${var.prefix}_indexer"
@@ -38,6 +103,14 @@ resource "aws_lambda_function" "indexer" {
       Name = "IndexerFunction"
     }
   )
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch" {
+  statement_id  = "${var.prefix}AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.indexer.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.indexing_trigger.arn
 }
 
 resource "aws_cloudwatch_log_group" "indexer" {
@@ -113,19 +186,6 @@ resource "aws_iam_role_policy_attachment" "indexer" {
   policy_arn = aws_iam_policy.indexer.arn
 }
 
-resource "aws_sns_topic_subscription" "indexer" {
-  topic_arn = var.threat_exchange_data.notification_topic
-  protocol  = "lambda"
-  endpoint  = aws_lambda_function.indexer.arn
-}
-
-resource "aws_lambda_permission" "indexer" {
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.indexer.function_name
-  principal     = "sns.amazonaws.com"
-  source_arn    = var.threat_exchange_data.notification_topic
-}
-
 resource "null_resource" "provide_sample_pdq_data_holidays" {
   # To force-update on existing deployment, taint and apply terraform again
   # $ terraform taint module.indexer.null_resource.provide_sample_pdq_data_holidays
@@ -134,8 +194,6 @@ resource "null_resource" "provide_sample_pdq_data_holidays" {
   # To get a sensible privacy group value, we reverse engineer the filename split at
   # hmalib.common.s3_adapters.ThreatExchangeS3Adapter._parse_file at line 118
   depends_on = [
-    aws_lambda_permission.indexer,
-    aws_sns_topic_subscription.indexer,
     aws_lambda_function.indexer
   ]
 

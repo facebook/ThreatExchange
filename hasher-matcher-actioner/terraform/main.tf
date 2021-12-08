@@ -101,6 +101,7 @@ module "indexer" {
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
+  indexer_frequency     = var.indexer_frequency
 }
 
 module "counters" {

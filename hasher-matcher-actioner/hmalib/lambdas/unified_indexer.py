@@ -34,53 +34,6 @@ THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 
 
-def unwrap_if_sns(data):
-    """
-    If SNS message, extracts the message. Else, returns orignal message itself.
-    """
-
-    if "EventSource" in data and data["EventSource"] == "aws:sns":
-        message = data["Sns"]["Message"]
-        return json.loads(message)
-    return data
-
-
-def is_s3_testevent(data):
-    return "Event" in data and data["Event"] == "s3:TestEvent"
-
-
-def get_updated_files_by_signal_type(event) -> t.Dict[t.Type[SignalType], t.List[str]]:
-    """
-    Given SQS events, creates map of signal_type -> list(updated_files). Returns
-    empty map if none of the updated files have signals. Empty maps are Falsy.
-
-    There are two reasons why we may receive batches.
-    - SQS attribute batch_window_in_seconds can be kept large in this case to
-      allow batches to form
-    - files are likely going to be updated en-masse when /threat_updates are
-      received.
-    """
-    result = defaultdict(list)
-    for record in event["Records"]:
-        inner_record = unwrap_if_sns(record)
-        if is_s3_testevent(inner_record):
-            continue
-        for s3_record in inner_record["Records"]:
-            bucket_name = s3_record["s3"]["bucket"]["name"]
-            file_path = unquote_plus(s3_record["s3"]["object"]["key"])
-            if (
-                bucket_name == THREAT_EXCHANGE_DATA_BUCKET_NAME
-                and file_path.startswith(THREAT_EXCHANGE_DATA_FOLDER)
-            ):
-                optional_signal_type = (
-                    ThreatUpdateS3Store.get_signal_type_from_object_key(file_path)
-                )
-                if optional_signal_type:
-                    result[optional_signal_type].append(file_path)
-
-    return result
-
-
 def merge_threat_exchange_files(
     accumulator: t.Dict[str, HashRowT], hash_row: HashRowT
 ) -> t.Dict[str, HashRowT]:
@@ -105,12 +58,15 @@ _ADAPTER_MAPPING = {
     VideoMD5Signal: ThreatExchangeS3VideoMD5Adapter,
 }
 
+# Which signal types must be processed into an index?
+ALL_INDEXABLE_SIGNAL_TYPES = [PdqSignal, VideoMD5Signal]
+
 
 def lambda_handler(event, context):
     """
-    Listens to SQS events fired when new data files are added to the data
-    bucket's data directory. If the updated key matches a set of criteria,
-    converts the raw data file into an index and writes to an output S3 bucket.
+    Runs on a schedule. On each run, gets all data files for
+    ALL_INDEXABLE_SIGNAL_TYPES from s3, converts the raw data file into an index
+    and writes to an output S3 bucket.
 
     As per the default configuration, the bucket must be
     - the hashing data bucket eg. dipanjanm-hashing-<...>
@@ -119,17 +75,6 @@ def lambda_handler(event, context):
     - the key name must return a signal_type in
       ThreatUpdateS3Store.get_signal_type_from_object_key
     """
-    updates = get_updated_files_by_signal_type(event)
-
-    logger.info(updates)
-    if not updates:
-        logger.info("Signal Data Not Updated, skipping")
-        return
-
-    logger.info(
-        f"Received updates for indicator_types: {','.join(map(lambda x: str(x), updates.keys()))}"
-    )
-
     # Note: even though we know which files were updated, threatexchange indexes
     # do not yet allow adding new entries. So, we must do a full rebuild. So, we
     # only end up using the signal types that were updated, not the actual files
@@ -140,14 +85,14 @@ def lambda_handler(event, context):
         threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
     )
 
-    for updated_signal_type in updates.keys():
-        adapter_class = _ADAPTER_MAPPING[updated_signal_type]
+    for signal_type in ALL_INDEXABLE_SIGNAL_TYPES:
+        adapter_class = _ADAPTER_MAPPING[signal_type]
         data_files = adapter_class(
             config=s3_config, metrics_logger=metrics.names.indexer
         ).load_data()
 
         with metrics.timer(metrics.names.indexer.merge_datafiles):
-            logger.info(f"Merging {updated_signal_type} Hash files")
+            logger.info(f"Merging {signal_type} Hash files")
             flattened_data = [
                 hash_row for file_ in data_files.values() for hash_row in file_
             ]
@@ -157,11 +102,11 @@ def lambda_handler(event, context):
             ).values()
 
         with metrics.timer(metrics.names.indexer.build_index):
-            logger.info(f"Rebuilding {updated_signal_type} Index")
-            index_class = INDEX_MAPPING[updated_signal_type]
+            logger.info(f"Rebuilding {signal_type} Index")
+            index_class = INDEX_MAPPING[signal_type]
             index: S3BackedInstrumentedIndexMixin = index_class.build(merged_data)
 
-            logger.info(f"Putting {updated_signal_type} index in S3")
+            logger.info(f"Putting {signal_type} index in S3")
             index.save(bucket_name=INDEXES_BUCKET_NAME)
             metrics.flush()
 
