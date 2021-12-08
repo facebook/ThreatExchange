@@ -176,7 +176,7 @@ data "aws_iam_policy_document" "fetcher_trigger_assume_role" {
 data "aws_iam_policy_document" "fetcher_trigger" {
   statement {
     actions   = ["lambda:InvokeFunction"]
-    resources = ["*"]
+    resources = [aws_lambda_function.fetcher.arn]
     effect    = "Allow"
     condition {
       test     = "ArnLike"

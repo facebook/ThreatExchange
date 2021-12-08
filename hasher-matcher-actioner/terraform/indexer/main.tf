@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "indexing_trigger_assume_role" {
 data "aws_iam_policy_document" "indexing_trigger" {
   statement {
     actions   = ["lambda:InvokeFunction"]
-    resources = ["*"]
+    resources = [aws_lambda_function.indexer.arn]
     effect    = "Allow"
     condition {
       test     = "ArnLike"
