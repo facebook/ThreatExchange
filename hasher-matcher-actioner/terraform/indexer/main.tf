@@ -1,16 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 # First define the Indexing Schedule
-resource "aws_cloudwatch_event_rule" "indexing_schedule" {
-  name                = "${var.prefix}-HMA_IndexingSchedule"
+resource "aws_cloudwatch_event_rule" "indexing_trigger" {
+  name                = "${var.prefix}-HMA_IndexingTrigger"
   description         = "Rebuild Index on a regular cadence"
   schedule_expression = "rate(${var.indexer_frequency})"
-  role_arn            = aws_iam_role.indexing_schedule.arn
+  role_arn            = aws_iam_role.indexing_trigger.arn
 }
 
-resource "aws_iam_role" "indexing_schedule" {
-  name_prefix        = "${var.prefix}_indexing_schedule"
-  assume_role_policy = data.aws_iam_policy_document.indexing_schedule_assume_role.json
+resource "aws_iam_role" "indexing_trigger" {
+  name_prefix        = "${var.prefix}_indexing_trigger"
+  assume_role_policy = data.aws_iam_policy_document.indexing_trigger_assume_role.json
 
   tags = merge(
     var.additional_tags,
@@ -20,7 +20,7 @@ resource "aws_iam_role" "indexing_schedule" {
   )
 }
 
-data "aws_iam_policy_document" "indexing_schedule_assume_role" {
+data "aws_iam_policy_document" "indexing_trigger_assume_role" {
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "indexing_schedule_assume_role" {
 }
 
 ## Define a policy document to asign to the role
-data "aws_iam_policy_document" "indexing_schedule" {
+data "aws_iam_policy_document" "indexing_trigger" {
   statement {
     actions   = ["lambda:InvokeFunction"]
     resources = ["*"]
@@ -40,28 +40,28 @@ data "aws_iam_policy_document" "indexing_schedule" {
     condition {
       test     = "ArnLike"
       variable = "AWS:SourceArn"
-      values   = [aws_cloudwatch_event_rule.indexing_schedule.arn]
+      values   = [aws_cloudwatch_event_rule.indexing_trigger.arn]
     }
   }
 }
 
 ## Create a permission policy from policy document
-resource "aws_iam_policy" "indexing_schedule" {
-  name_prefix = "${var.prefix}_indexing_schedule_role_policy"
+resource "aws_iam_policy" "indexing_trigger" {
+  name_prefix = "${var.prefix}_indexing_trigger_role_policy"
   description = "Permissions for Indexing Schedule"
-  policy      = data.aws_iam_policy_document.indexing_schedule.json
+  policy      = data.aws_iam_policy_document.indexing_trigger.json
 }
 
-## Attach a permission policy to the fetech trigger role
-resource "aws_iam_role_policy_attachment" "indexing_schedule" {
-  role       = aws_iam_role.indexing_schedule.name
-  policy_arn = aws_iam_policy.indexing_schedule.arn
+## Attach a permission policy to the indexing trigger role
+resource "aws_iam_role_policy_attachment" "indexing_trigger" {
+  role       = aws_iam_role.indexing_trigger.name
+  policy_arn = aws_iam_policy.indexing_trigger.arn
 }
 
 ## Connect rule to function invocation
 resource "aws_cloudwatch_event_target" "indexer" {
   arn  = aws_lambda_function.indexer.arn
-  rule = aws_cloudwatch_event_rule.indexing_schedule.name
+  rule = aws_cloudwatch_event_rule.indexing_trigger.name
 }
 
 
@@ -110,7 +110,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.indexer.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.indexing_schedule.arn
+  source_arn    = aws_cloudwatch_event_rule.indexing_trigger.arn
 }
 
 resource "aws_cloudwatch_log_group" "indexer" {
