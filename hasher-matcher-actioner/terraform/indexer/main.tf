@@ -2,7 +2,7 @@
 
 # First define the Indexing Schedule
 resource "aws_cloudwatch_event_rule" "indexing_trigger" {
-  name                = "${var.prefix}-HMA_IndexingTrigger"
+  name                = "${var.prefix}-RecurringIndexBuild"
   description         = "Rebuild Index on a regular cadence"
   schedule_expression = "rate(${var.indexer_frequency})"
   role_arn            = aws_iam_role.indexing_trigger.arn
