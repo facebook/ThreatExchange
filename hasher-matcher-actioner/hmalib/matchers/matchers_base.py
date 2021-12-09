@@ -161,8 +161,8 @@ class Matcher:
                     str(privacy_group)
                 ):
                     if match.distance >= threshold:
-                        logger.warning(  # ToDo debug is probably a better log
-                            "Match was found at %s distance but exceeds custom theshhold of %s for pg, %s",
+                        logger.debug(
+                            "Match was found at %s distance but exceeds custom theshold of %s for pg, %s",
                             match.distance,
                             threshold,
                             privacy_group,
