@@ -96,6 +96,7 @@ class MatchDetail(JSONifiable):
     signal_source: str
     signal_type: str
     updated_at: str
+    match_distance: t.Optional[int]
     metadata: t.List[ThreatExchangeMatchDetailMetadata]
 
     def to_json(self) -> t.Dict:
@@ -135,6 +136,9 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
             signal_source=record.signal_source,
             signal_type=record.signal_type.get_name(),
             updated_at=record.updated_at.isoformat(),
+            match_distance=int(record.match_distance)
+            if record.match_distance is not None
+            else None,
             metadata=get_signal_details(table, record.signal_id, record.signal_source),
         )
         for record in records
