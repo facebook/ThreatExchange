@@ -37,4 +37,9 @@ We welcome contributions! See [CONTRIBUTING](https://github.com/facebook/ThreatE
 
 ## License
 
-Please see `./LICENSE`.
+All projects in this repository are under the BSD license - see [./LICENSE](https://github.com/facebook/ThreatExchange/blob/main/LICENSE). However, there are some exceptions for files that were included for demonstration purposes, and their alternative licenses are noted at the top of the files themselves.
+
+As of 12/9/2021, this is the complete list of exceptions:
+* pdq/cpp/CImg.h
+
+
