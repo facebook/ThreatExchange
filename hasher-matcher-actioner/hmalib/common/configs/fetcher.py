@@ -40,7 +40,7 @@ class AdditionalMatchSettingsConfig(HMAConfig):
     This object is stop gap until ThreatExchangeConfig and this class
     can be consolidated into a Bank and utilize a banks settings.
 
-    The reason `pdq_match_thresold` is not added to ThreatExchangeConfig
+    The reason `pdq_match_threshold` is not added to ThreatExchangeConfig
     directly is the field is optional and HMAConfig will error for all configs
     without it.
     """
