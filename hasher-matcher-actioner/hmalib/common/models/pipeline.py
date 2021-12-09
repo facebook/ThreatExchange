@@ -268,6 +268,7 @@ class _MatchRecord(PipelineRecordBase):
     signal_id: str
     signal_source: str
     signal_hash: str
+    match_distance: t.Optional[int] = None
 
 
 @dataclass
@@ -300,6 +301,7 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
                 "GSI1-SK": self.get_dynamodb_content_key(self.content_id),
                 "HashType": self.signal_type.get_name(),
                 "GSI2-PK": self.get_dynamodb_type_key(self.__class__.__name__),
+                "MatchDistance": self.match_distance,
             },
         )
 
@@ -399,6 +401,7 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
                 signal_specific_attributes=cls.deserialize_signal_specific_attributes(
                     item
                 ),
+                match_distance=item.get("MatchDistance"),
             )
             for item in items
         ]

@@ -139,6 +139,7 @@ class Matcher:
             signal_id=str(match.metadata["id"]),
             signal_source=match.metadata["source"],
             signal_hash=match.metadata["hash"],
+            match_distance=int(match.distance),
         ).write_to_table(table)
 
     @classmethod
