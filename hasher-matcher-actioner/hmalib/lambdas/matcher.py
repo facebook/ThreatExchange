@@ -84,7 +84,7 @@ def lambda_handler(event, context):
             matcher.write_match_record_for_result(
                 table=table,
                 signal_type=hash_record.signal_type,
-                signal_value=hash_record.content_hash,
+                content_hash=hash_record.content_hash,
                 content_id=hash_record.content_id,
                 match=match,
             )
