@@ -47,6 +47,7 @@ DATASTORE_TABLE_DEF = {
                     "SignalSource",
                     "HashType",
                     "SignalType",
+                    "MatchDistance",
                 ],
             },
         },
@@ -64,6 +65,7 @@ DATASTORE_TABLE_DEF = {
                     "SignalSource",
                     "HashType",
                     "SignalType",
+                    "MatchDistance",
                 ],
             },
         },
@@ -114,7 +116,6 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
             TestPDQModels.TEST_SIGNAL_ID,
             TestPDQModels.TEST_SIGNAL_SOURCE,
             signal_hash,
-            {"Distance": "29"},
         )
 
     @staticmethod
