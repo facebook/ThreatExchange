@@ -122,7 +122,7 @@ class Matcher:
         self,
         table: Table,
         signal_type: t.Type[SignalType],
-        signal_value: str,
+        content_hash: str,
         content_id: str,
         match: IndexMatch,
     ):
@@ -132,13 +132,13 @@ class Matcher:
         for match record calls.
         """
         MatchRecord(
-            content_id,
-            signal_type,
-            signal_value,
-            datetime.datetime.now(),
-            str(match.metadata["id"]),
-            match.metadata["source"],
-            match.metadata["hash"],
+            content_id=content_id,
+            signal_type=signal_type,
+            content_hash=content_hash,
+            updated_at=datetime.datetime.now(),
+            signal_id=str(match.metadata["id"]),
+            signal_source=match.metadata["source"],
+            signal_hash=match.metadata["hash"],
         ).write_to_table(table)
 
     @classmethod
