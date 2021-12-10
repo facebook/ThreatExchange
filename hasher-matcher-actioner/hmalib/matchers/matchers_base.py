@@ -24,7 +24,10 @@ from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.mappings import INDEX_MAPPING
 from hmalib.common.messages.match import BankedSignal, MatchMessage
-from hmalib.common.configs.fetcher import ThreatExchangeConfig
+from hmalib.common.configs.fetcher import (
+    ThreatExchangeConfig,
+    AdditionalMatchSettingsConfig,
+)
 
 
 logger = get_logger(__name__)
@@ -51,6 +54,39 @@ def get_privacy_group_matcher_active(privacy_group_id: str) -> bool:
     Impl: the // is python's integer division operator. Threw me off. :)
     """
     return _get_privacy_group_matcher_active(
+        privacy_group_id, time.time() // PG_CONFIG_CACHE_TIME_SECONDS
+    )
+
+
+@functools.lru_cache(maxsize=128)
+def _get_optional_privacy_group_matcher_pdq_theshold(
+    privacy_group_id: str, cache_buster
+) -> t.Optional[int]:
+    config = AdditionalMatchSettingsConfig.get(privacy_group_id)
+    if not config:
+        logger.debug(
+            "Privacy group %s does not have custom pdq_match_threshold.",
+            privacy_group_id,
+        )
+        return None
+
+    logger.debug(
+        "pdq_match_threshold for %s is %s", privacy_group_id, config.pdq_match_threshold
+    )
+    return config.pdq_match_threshold
+
+
+def get_optional_privacy_group_matcher_pdq_theshold(
+    privacy_group_id: str,
+) -> t.Optional[int]:
+    """
+    Does this privacy group's have a custom pdq threshold; if so what is it?
+    Entries in the internal cache are cleared
+    every PG_CONFIG_CACHE_TIME_SECONDS seconds.
+
+    Impl: the // is python's integer division operator. Threw me off. :)
+    """
+    return _get_optional_privacy_group_matcher_pdq_theshold(
         privacy_group_id, time.time() // PG_CONFIG_CACHE_TIME_SECONDS
     )
 
@@ -104,7 +140,7 @@ class Matcher:
         consider extending this class and implementing your own.
         """
 
-        filtered_results = []
+        filtered_results_based_on_active = []
         for match in results:
             match.metadata["privacy_groups"] = list(
                 filter(
@@ -114,9 +150,34 @@ class Matcher:
             )
 
             if len(match.metadata["privacy_groups"]) != 0:
-                filtered_results.append(match)
+                filtered_results_based_on_active.append(match)
 
-        return filtered_results
+        # Also check and see if there is a custom threshold filter
+        filtered_results_based_on_threshold = []
+        for match in filtered_results_based_on_active:
+            filtered_privacy_groups = []
+            for privacy_group in match.metadata.get("privacy_groups", []):
+                if threshold := get_optional_privacy_group_matcher_pdq_theshold(
+                    str(privacy_group)
+                ):
+                    if match.distance >= threshold:
+                        logger.debug(
+                            "Match was found at %s distance but exceeds custom theshold of %s for pg, %s",
+                            match.distance,
+                            threshold,
+                            privacy_group,
+                        )
+                    else:
+                        filtered_privacy_groups.append(privacy_group)
+                else:
+                    # no custom threshold found
+                    filtered_privacy_groups.append(privacy_group)
+            match.metadata["privacy_groups"] = filtered_privacy_groups
+
+            if len(match.metadata["privacy_groups"]) != 0:
+                filtered_results_based_on_threshold.append(match)
+
+        return filtered_results_based_on_threshold
 
     def write_match_record_for_result(
         self,
