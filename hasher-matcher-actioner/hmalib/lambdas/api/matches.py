@@ -196,22 +196,22 @@ class MatchesForHashRequest(DictParseable):
 
 
 @dataclass
-class MatchesForHashResponse(JSONifiable):
-    matches: t.List[ThreatExchangeSignalMetadata]
-    signal_value: str
+class MatchesForHash(JSONifiable):
+    match_distance: int
+    matched_signal: ThreatExchangeSignalMetadata  # or matches signal from other sources
 
     UNSUPPORTED_FIELDS = ["updated_at", "pending_opinion_change"]
 
     def to_json(self) -> t.Dict:
         return {
-            "matches": [
-                self._remove_unsupported_fields(match.to_json())
-                for match in self.matches
-            ]
+            "match_distance": self.match_distance,
+            "matched_signal": self._remove_unsupported_fields(
+                self.matched_signal.to_json()
+            ),
         }
 
     @classmethod
-    def _remove_unsupported_fields(cls, match_dict: t.Dict) -> t.Dict:
+    def _remove_unsupported_fields(cls, matched_signal: t.Dict) -> t.Dict:
         """
         ThreatExchangeSignalMetadata is used to store metadata in dynamodb
         and handle opinion changes on said signal. However the request this object
@@ -220,10 +220,19 @@ class MatchesForHashResponse(JSONifiable):
         """
         for field in cls.UNSUPPORTED_FIELDS:
             try:
-                del match_dict[field]
+                del matched_signal[field]
             except KeyError:
                 pass
-        return match_dict
+        return matched_signal
+
+
+@dataclass
+class MatchesForHashResponse(JSONifiable):
+    matches: t.List[MatchesForHash]
+    signal_value: str
+
+    def to_json(self) -> t.Dict:
+        return {"matches": [match.to_json() for match in self.matches]}
 
 
 def get_matches_api(
@@ -347,11 +356,19 @@ def get_matches_api(
             request.signal_type, request.signal_value
         )
 
-        match_objects: t.List[ThreatExchangeSignalMetadata] = []
+        match_objects: t.List[MatchesForHash] = []
 
         for match in matches:
             match_objects.extend(
-                Matcher.get_metadata_objects_from_match(request.signal_type, match)
+                [
+                    MatchesForHash(
+                        match_distance=int(match.distance),
+                        matched_signal=signal_metadata,
+                    )
+                    for signal_metadata in Matcher.get_metadata_objects_from_match(
+                        request.signal_type, match
+                    )
+                ]
             )
 
         return MatchesForHashResponse(match_objects, request.signal_value)
