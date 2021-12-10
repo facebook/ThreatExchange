@@ -318,6 +318,6 @@ if __name__ == "__main__":
 
     helper.run_basic_test()
 
-    helper.clean_up_test()
+    # helper.clean_up_test()
     # helper.clean_up_custom_impl_test()
     print("Removed actions configurations used in test")

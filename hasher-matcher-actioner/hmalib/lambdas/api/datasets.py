@@ -9,7 +9,10 @@ from hmalib import metrics
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
-from hmalib.common.configs.fetcher import ThreatExchangeConfig
+from hmalib.common.configs.fetcher import (
+    ThreatExchangeConfig,
+    AdditionalMatchSettingsConfig,
+)
 from hmalib.common.threatexchange_config import (
     sync_privacy_groups,
     create_privacy_group_if_not_exists,
@@ -157,6 +160,40 @@ class DatasetSummariesResponse(JSONifiable):
         }
 
 
+@dataclass
+class DatasetAdditionalMatchSettingsResponse(JSONifiable):
+    additional_match_settings: t.List[AdditionalMatchSettingsConfig]
+
+    def to_json(self) -> t.Dict:
+        return {
+            "additional_match_settings": [
+                {config.name: {"pdq_match_threshold": config.pdq_match_threshold}}
+                for config in self.additional_match_settings
+            ]
+        }
+
+
+@dataclass
+class AdditionalMatchSettingsUpdateRequest(DictParseable):
+    privacy_group_id: str
+    pdq_match_threshold: int
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "AdditionalMatchSettingsUpdateRequest":
+        return cls(
+            d["privacy_group_id"],
+            d["pdq_match_threshold"],
+        )
+
+
+@dataclass
+class AdditionalMatchSettingsUpdateResponse(JSONifiable):
+    response: str
+
+    def to_json(self) -> t.Dict:
+        return asdict(self)
+
+
 def _get_signal_hash_count_and_last_modified(
     threat_exchange_data_bucket_name: str,
     threat_exchange_data_folder: str,
@@ -293,5 +330,68 @@ def get_datasets_api(
         config = ThreatExchangeConfig.getx(str(key))
         hmaconfig.delete_config(config)
         return DeleteDatasetResponse(response="The privacy group is deleted")
+
+    @datasets_api.get("/match-settings", apply=[jsoninator])
+    def get_all_additional_match_settings() -> DatasetAdditionalMatchSettingsResponse:
+        """
+        Return all additional match settings
+        """
+        return DatasetAdditionalMatchSettingsResponse(
+            additional_match_settings=AdditionalMatchSettingsConfig.get_all()
+        )
+
+    @datasets_api.get("/match-settings/<key>", apply=[jsoninator])
+    def get_additional_match_settings(
+        key=None,
+    ) -> DatasetAdditionalMatchSettingsResponse:
+        """
+        Return an additional match settings config
+        """
+        config = AdditionalMatchSettingsConfig.getx(str(key))
+        return DatasetAdditionalMatchSettingsResponse(
+            additional_match_settings=[config]
+        )
+
+    @datasets_api.post(
+        "/match-settings", apply=[jsoninator(AdditionalMatchSettingsUpdateRequest)]
+    )
+    def create_or_update_additional_match_settings(
+        request: AdditionalMatchSettingsUpdateRequest,
+    ) -> AdditionalMatchSettingsUpdateResponse:
+        """
+        Create or update an match settings config
+        """
+        # ToDo validate request
+        if config := AdditionalMatchSettingsConfig.get(request.privacy_group_id):
+            config.pdq_match_threshold = request.pdq_match_threshold
+            hmaconfig.update_config(config)
+
+            return AdditionalMatchSettingsUpdateResponse(
+                f"additional_match_settings updated for pg_id {request.privacy_group_id} pdq_match_threshold={request.pdq_match_threshold}"
+            )
+
+        config = AdditionalMatchSettingsConfig(
+            request.privacy_group_id, request.pdq_match_threshold
+        )
+        hmaconfig.create_config(config)
+        return AdditionalMatchSettingsUpdateResponse(
+            f"additional_match_settings created for pg_id {request.privacy_group_id} pdq_match_threshold={request.pdq_match_threshold}"
+        )
+
+    @datasets_api.delete("/match-settings/<key>", apply=[jsoninator])
+    def delete_additional_match_settings(
+        key=None,
+    ) -> AdditionalMatchSettingsUpdateResponse:
+        """
+        Delete an additional match settings config
+        """
+        if config := AdditionalMatchSettingsConfig.get(str(key)):
+            hmaconfig.delete_config(config)
+            return AdditionalMatchSettingsUpdateResponse(
+                f"additional_match_settings deleted for pg_id {key}"
+            )
+        return AdditionalMatchSettingsUpdateResponse(
+            f"additional_match_settings for pg_id {key} not found"
+        )
 
     return datasets_api

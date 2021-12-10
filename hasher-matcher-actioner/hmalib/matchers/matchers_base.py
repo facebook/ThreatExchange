@@ -22,7 +22,7 @@ from threatexchange.signal_type.signal_base import SignalType
 
 from hmalib import metrics
 from hmalib.common.logging import get_logger
-from hmalib.common.mappings import INDEX_MAPPING
+from hmalib.common.mappings import get_index_for_signal_type_matching
 from hmalib.common.messages.match import BankedSignal, MatchMessage
 from hmalib.common.configs.fetcher import (
     ThreatExchangeConfig,
@@ -32,7 +32,7 @@ from hmalib.common.configs.fetcher import (
 
 logger = get_logger(__name__)
 
-PG_CONFIG_CACHE_TIME_SECONDS = 300
+PG_CONFIG_CACHE_TIME_SECONDS = 1  # ToDo change back to 300 after testing?
 
 
 @functools.lru_cache(maxsize=128)
@@ -56,6 +56,49 @@ def get_privacy_group_matcher_active(privacy_group_id: str) -> bool:
     return _get_privacy_group_matcher_active(
         privacy_group_id, time.time() // PG_CONFIG_CACHE_TIME_SECONDS
     )
+
+
+@functools.lru_cache(maxsize=128)
+def _get_all_matcher_active_privacy_groups(cache_buster) -> t.List[str]:
+    configs = ThreatExchangeConfig.get_all()
+    return list(
+        map(
+            lambda c: c.name,
+            filter(
+                lambda c: c.matcher_active,
+                configs,
+            ),
+        )
+    )
+
+
+@functools.lru_cache(maxsize=128)
+def _get_all_privacy_group_active_matcher_pdq_theshold(
+    cache_buster,
+) -> t.Dict[str, int]:
+    active_pg_names = _get_all_matcher_active_privacy_groups(cache_buster)
+    if not active_pg_names:
+        return {}
+    return {
+        config.name: config.pdq_match_threshold
+        for config in AdditionalMatchSettingsConfig.get_all()
+        if config.name in active_pg_names
+    }
+
+
+def get_max_threshold_of_active_privacy_groups_for_signal_type(
+    signal_type: t.Type[SignalType],
+) -> int:
+    if signal_type == PdqSignal:
+        pg_to_pdq_threshold = _get_all_privacy_group_active_matcher_pdq_theshold(
+            time.time() // PG_CONFIG_CACHE_TIME_SECONDS
+        )
+        # no custom threshold set/active
+        if not pg_to_pdq_threshold:
+            return 0
+        return max(pg_to_pdq_threshold.values())
+    else:
+        return 0
 
 
 @functools.lru_cache(maxsize=128)
@@ -123,7 +166,8 @@ class Matcher:
         index = self.get_index(signal_type)
 
         with metrics.timer(metrics.names.indexer.search_index):
-            match_results: t.List[IndexMatch] = index.query(signal_value)
+            match_results: t.List[IndexMatch] = []
+            match_results.extend(index.query(signal_value))
 
         if not match_results:
             # No matches found in the index
@@ -261,12 +305,16 @@ class Matcher:
         # If cached, return an index instance for the signal_type. If not, build
         # one, cache and return.
         if not signal_type in self._cached_indexes:
-            index_cls = INDEX_MAPPING[signal_type]
+            max_custom_threshold = (
+                get_max_threshold_of_active_privacy_groups_for_signal_type(signal_type)
+            )
 
+            index_cls = get_index_for_signal_type_matching(
+                signal_type, max_custom_threshold
+            )
             with metrics.timer(metrics.names.indexer.download_index):
-                self._cached_indexes[signal_type] = index_cls.load(
-                    bucket_name=self.index_bucket_name
-                )
+                index = index_cls.load(bucket_name=self.index_bucket_name)
+                self._cached_indexes[signal_type] = index
 
         return self._cached_indexes[signal_type]
 

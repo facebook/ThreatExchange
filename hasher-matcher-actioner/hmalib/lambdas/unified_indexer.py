@@ -103,11 +103,14 @@ def lambda_handler(event, context):
 
         with metrics.timer(metrics.names.indexer.build_index):
             logger.info(f"Rebuilding {signal_type} Index")
-            index_class = INDEX_MAPPING[signal_type]
-            index: S3BackedInstrumentedIndexMixin = index_class.build(merged_data)
 
-            logger.info(f"Putting {signal_type} index in S3")
-            index.save(bucket_name=INDEXES_BUCKET_NAME)
+            for index_class in INDEX_MAPPING[signal_type]:
+                index: S3BackedInstrumentedIndexMixin = index_class.build(merged_data)
+
+                logger.info(
+                    f"Putting {signal_type} index in S3 for index {index.get_index_class_name()}"
+                )
+                index.save(bucket_name=INDEXES_BUCKET_NAME)
             metrics.flush()
 
     logger.info("Index updates complete")
