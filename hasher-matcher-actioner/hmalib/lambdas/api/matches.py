@@ -47,7 +47,7 @@ def _get_sqs_client() -> SQSClient:
     return boto3.client("sqs")
 
 
-@functools.lru_cache(maxsize=None)
+# @functools.lru_cache(maxsize=None) this caching created a narly bug unfortunately.
 def _get_matcher(index_bucket_name: str) -> Matcher:
     return Matcher(
         index_bucket_name=index_bucket_name,
@@ -197,18 +197,18 @@ class MatchesForHashRequest(DictParseable):
 
 @dataclass
 class MatchesForHashResponse(JSONifiable):
-    matches: t.List[ThreatExchangeSignalMetadata]
+    matches: t.List[t.Tuple[int, ThreatExchangeSignalMetadata]]
     signal_value: str
 
     UNSUPPORTED_FIELDS = ["updated_at", "pending_opinion_change"]
 
     def to_json(self) -> t.Dict:
-        return {
-            "matches": [
-                self._remove_unsupported_fields(match.to_json())
-                for match in self.matches
-            ]
-        }
+        matches = []
+        for distance, signal_metadata in self.matches:
+            match_dict = self._remove_unsupported_fields(signal_metadata.to_json())
+            match_dict["_distance"] = distance
+            matches.append(match_dict)
+        return {"matches": matches}
 
     @classmethod
     def _remove_unsupported_fields(cls, match_dict: t.Dict) -> t.Dict:
@@ -347,11 +347,16 @@ def get_matches_api(
             request.signal_type, request.signal_value
         )
 
-        match_objects: t.List[ThreatExchangeSignalMetadata] = []
+        match_objects: t.List[t.Tuple[int, ThreatExchangeSignalMetadata]] = []
 
         for match in matches:
             match_objects.extend(
-                Matcher.get_metadata_objects_from_match(request.signal_type, match)
+                [
+                    (int(match.distance), signal_metadata)
+                    for signal_metadata in Matcher.get_metadata_objects_from_match(
+                        request.signal_type, match
+                    )
+                ]
             )
 
         return MatchesForHashResponse(match_objects, request.signal_value)
