@@ -304,14 +304,16 @@ class Matcher:
     def get_index(self, signal_type: t.Type[SignalType]) -> SignalTypeIndex:
         # If cached, return an index instance for the signal_type. If not, build
         # one, cache and return.
-        if not signal_type in self._cached_indexes:
-            max_custom_threshold = (
-                get_max_threshold_of_active_privacy_groups_for_signal_type(signal_type)
-            )
+        max_custom_threshold = (
+            get_max_threshold_of_active_privacy_groups_for_signal_type(signal_type)
+        )
+        index_cls = get_index_for_signal_type_matching(
+            signal_type, max_custom_threshold
+        )
 
-            index_cls = get_index_for_signal_type_matching(
-                signal_type, max_custom_threshold
-            )
+        if not signal_type in self._cached_indexes or not isinstance(
+            self._cached_indexes[signal_type], index_cls
+        ):
             with metrics.timer(metrics.names.indexer.download_index):
                 index = index_cls.load(bucket_name=self.index_bucket_name)
                 self._cached_indexes[signal_type] = index
