@@ -198,20 +198,20 @@ class MatchesForHashRequest(DictParseable):
 @dataclass
 class MatchesForHash(JSONifiable):
     match_distance: int
-    matched_signal_fields: ThreatExchangeSignalMetadata  # or matches signal from other sources
+    matched_signal: ThreatExchangeSignalMetadata  # or matches signal from other sources
 
     UNSUPPORTED_FIELDS = ["updated_at", "pending_opinion_change"]
 
     def to_json(self) -> t.Dict:
         return {
             "match_distance": self.match_distance,
-            "matched_signal_fields": self._remove_unsupported_fields(
-                self.matched_signal_fields.to_json()
+            "matched_signal": self._remove_unsupported_fields(
+                self.matched_signal.to_json()
             ),
         }
 
     @classmethod
-    def _remove_unsupported_fields(cls, signal_fields: t.Dict) -> t.Dict:
+    def _remove_unsupported_fields(cls, matched_signal: t.Dict) -> t.Dict:
         """
         ThreatExchangeSignalMetadata is used to store metadata in dynamodb
         and handle opinion changes on said signal. However the request this object
@@ -220,10 +220,10 @@ class MatchesForHash(JSONifiable):
         """
         for field in cls.UNSUPPORTED_FIELDS:
             try:
-                del signal_fields[field]
+                del matched_signal[field]
             except KeyError:
                 pass
-        return signal_fields
+        return matched_signal
 
 
 @dataclass
@@ -363,7 +363,7 @@ def get_matches_api(
                 [
                     MatchesForHash(
                         match_distance=int(match.distance),
-                        matched_signal_fields=signal_metadata,
+                        matched_signal=signal_metadata,
                     )
                     for signal_metadata in Matcher.get_metadata_objects_from_match(
                         request.signal_type, match
