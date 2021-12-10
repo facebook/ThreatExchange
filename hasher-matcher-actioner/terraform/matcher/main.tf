@@ -99,7 +99,7 @@ data "aws_iam_policy_document" "matcher_lambda" {
   }
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:GetItem"]
+    actions   = ["dynamodb:GetItem", "dynamodb:Scan"]
     resources = [var.config_table.arn]
   }
   statement {
