@@ -51,3 +51,20 @@ variable "indexer_frequency" {
   description = "How frequently do we want indexing run? Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
   type        = string
 }
+
+
+variable "config_table" {
+  description = "The name and arn of the DynamoDB table used for persisting configs."
+  type = object({
+    arn  = string
+    name = string
+  })
+}
+
+variable "banks_datastore" {
+  description = "DynamoDB Table to store bank information into"
+  type = object({
+    name = string
+    arn  = string
+  })
+}

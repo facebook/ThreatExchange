@@ -98,10 +98,14 @@ module "indexer" {
     index_folder_key = module.hashing_data.index_folder_info.key
   }
 
+  banks_datastore = module.datastore.banks_datastore
+
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   measure_performance   = var.measure_performance
   indexer_frequency     = var.indexer_frequency
+  config_table          = local.config_table
+
 }
 
 module "counters" {
