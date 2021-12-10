@@ -85,7 +85,6 @@ def lambda_handler(event, context):
     for sqs_record in event["Records"]:
         # TODO research max # sqs records / lambda_handler invocation
         sqs_record_body = json.loads(sqs_record["body"])
-        logger.info("sqs record body %s", sqs_record["body"])
         match_message = MatchMessage.from_aws_json(sqs_record_body["Message"])
 
         logger.info("Evaluating match_message: %s", match_message)

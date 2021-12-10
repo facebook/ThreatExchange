@@ -1,9 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import json
 import boto3
 import bottle
-import datetime
 import functools
 import dataclasses
 
@@ -11,7 +9,6 @@ from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 import typing as t
 from enum import Enum
-from logging import Logger
 from mypy_boto3_sqs.client import SQSClient
 
 from threatexchange.descriptor import ThreatDescriptor
@@ -19,7 +16,6 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.content_type.meta import get_signal_types_by_name
-
 
 from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.models.signal import (
@@ -29,6 +25,7 @@ from hmalib.common.models.signal import (
 from hmalib.common.logging import get_logger
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.messages.writeback import WritebackMessage
+from hmalib.indexers.metadata import BANKS_SOURCE_SHORT_CODE
 from hmalib.lambdas.api.middleware import (
     jsoninator,
     JSONifiable,
@@ -36,6 +33,7 @@ from hmalib.lambdas.api.middleware import (
     SubApp,
 )
 from hmalib.common.config import HMAConfig
+from hmalib.common.models.bank import BankMember, BanksTable
 from hmalib.matchers.matchers_base import Matcher
 
 
@@ -198,7 +196,12 @@ class MatchesForHashRequest(DictParseable):
 @dataclass
 class MatchesForHash(JSONifiable):
     match_distance: int
-    matched_signal: ThreatExchangeSignalMetadata  # or matches signal from other sources
+
+    # TODO: Once ThreatExchange data flows into Banks, we can Use BankMember
+    # alone.
+    matched_signal: t.Union[
+        ThreatExchangeSignalMetadata, BankMember
+    ]  # or matches signal from other sources
 
     UNSUPPORTED_FIELDS = ["updated_at", "pending_opinion_change"]
 
@@ -240,6 +243,7 @@ def get_matches_api(
     hma_config_table: str,
     indexes_bucket_name: str,
     writeback_queue_url: str,
+    bank_table: Table,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -251,6 +255,8 @@ def get_matches_api(
     # The documentation below expects prefix to be '/matches/'
     matches_api = SubApp()
     HMAConfig.initialize(hma_config_table)
+
+    banks_table = BanksTable(table=bank_table)
 
     @matches_api.get("/", apply=[jsoninator])
     def matches() -> MatchSummariesResponse:
@@ -358,6 +364,7 @@ def get_matches_api(
 
         match_objects: t.List[MatchesForHash] = []
 
+        # First get all threatexchange objects
         for match in matches:
             match_objects.extend(
                 [
@@ -365,11 +372,25 @@ def get_matches_api(
                         match_distance=int(match.distance),
                         matched_signal=signal_metadata,
                     )
-                    for signal_metadata in Matcher.get_metadata_objects_from_match(
+                    for signal_metadata in Matcher.get_te_metadata_objects_from_match(
                         request.signal_type, match
                     )
                 ]
             )
+
+        # now get all bank objects
+        for match in matches:
+            for metadata_obj in filter(
+                lambda m: m.get_source() == BANKS_SOURCE_SHORT_CODE, match.metadata
+            ):
+                match_objects.append(
+                    MatchesForHash(
+                        match_distance=int(match.distance),
+                        matched_signal=banks_table.get_bank_member(
+                            metadata_obj.bank_member_id
+                        ),
+                    )
+                )
 
         return MatchesForHashResponse(match_objects, request.signal_value)
 
