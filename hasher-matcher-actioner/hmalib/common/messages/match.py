@@ -36,7 +36,13 @@ class BankedSignal:
     bank_source: str
     classifications: t.Set[Label] = field(default_factory=set)
 
+    def __post_init__(self):
+        self.add_bank_classifications()
+
     def add_bank_classifications(self):
+        if len(self.classifications) != 0:
+            return
+
         self.classifications.add(BankSourceClassificationLabel(self.bank_source))
         self.classifications.add(BankIDClassificationLabel(self.bank_id))
         self.classifications.add(
