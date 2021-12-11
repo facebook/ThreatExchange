@@ -5,7 +5,12 @@
 import {Auth, API} from 'aws-amplify';
 import {ActionRule, Label} from './pages/settings/ActionRuleSettingsTab';
 import {ActionPerformer} from './pages/settings/ActionPerformerSettingsTab';
-import {Bank, BankMember} from './messages/BankMessages';
+import {
+  Bank,
+  BankMember,
+  BankMemberSignal,
+  BankMemberWithSignals,
+} from './messages/BankMessages';
 import {toDate} from './utils/DateTimeUtils';
 import {ContentType, getContentTypeForString} from './utils/constants';
 
@@ -559,6 +564,41 @@ export async function fetchBankMembersPage(
     })),
     response.continuation_token,
   ]);
+}
+
+type BankMemberSignalWithSerializedTypes = BankMemberSignal & {
+  updated_at: string;
+};
+
+type BankMemberWithSignalsWithSerializedTypes =
+  BankMemberWithSerializedTypes & {
+    signals: BankMemberSignalWithSerializedTypes[];
+  };
+
+export async function fetchBankMember(
+  bankMemberId: string,
+): Promise<BankMemberWithSignals> {
+  const url = `banks/get-member/${bankMemberId}`;
+  return apiGet<BankMemberWithSignalsWithSerializedTypes>(url).then(member => ({
+    bank_id: member.bank_id,
+    bank_member_id: member.bank_member_id,
+    content_type: getContentTypeForString(member.content_type),
+    storage_bucket: member.storage_bucket,
+    storage_key: member.storage_key,
+    raw_content: member.raw_content,
+    preview_url: member.preview_url,
+    notes: member.notes,
+    created_at: toDate(member.created_at)!,
+    updated_at: toDate(member.updated_at)!,
+    signals: member.signals.map(signal => ({
+      bank_id: signal.bank_id,
+      bank_member_id: signal.bank_member_id,
+      signal_id: signal.signal_id,
+      signal_type: signal.signal_type, // TODO: Convert to enum.
+      signal_value: signal.signal_value,
+      updated_at: toDate(signal.updated_at)!,
+    })),
+  }));
 }
 
 type MediaUploadURLResponse = {

@@ -12,6 +12,7 @@ import {
   Spinner,
   ResponsiveEmbed,
 } from 'react-bootstrap';
+import {Link} from 'react-router-dom';
 import {fetchBank, fetchBankMembersPage} from '../../Api';
 import {BankMember} from '../../messages/BankMessages';
 import {ContentType} from '../../utils/constants';
@@ -49,12 +50,14 @@ type MemberPreviewProps = {
   thumbnailSrc: string;
   lastUpdated: Date;
   type: ContentType;
+  bankMemberId: string;
 };
 
 function MemberPreview({
   type,
   thumbnailSrc,
   lastUpdated,
+  bankMemberId,
 }: MemberPreviewProps): JSX.Element {
   return (
     <Col xs="4" className="mb-4">
@@ -67,6 +70,9 @@ function MemberPreview({
           )}
         </ResponsiveEmbed>
         <Card.Body>
+          <p className="text-small">
+            <Link to={`/banks/member/${bankMemberId}`}>View Member</Link>
+          </p>
           <p className="text-small">Updated: {timeAgoForDate(lastUpdated)}</p>
         </Card.Body>
       </Card>
@@ -139,6 +145,7 @@ function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
         ) : null}
         {members.map(member => (
           <MemberPreview
+            bankMemberId={member.bank_member_id}
             type={type}
             thumbnailSrc={member.preview_url!}
             lastUpdated={member.updated_at}
