@@ -20,7 +20,7 @@ import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 const tabEventKeys = ['threatexchange', 'actions', 'action-rules'];
 
 export default function Settings(): JSX.Element {
-  const {tab} = useParams<{tab: string}>();
+  const {tab = tabEventKeys[0]} = useParams<{tab: string}>();
   const history = useHistory();
   const [actions, setActions] = useState<ActionPerformer[]>([]);
   const [actionRules, setActionRules] = useState<ActionRule[]>([]);
@@ -37,9 +37,6 @@ export default function Settings(): JSX.Element {
     });
   }, []);
 
-  if (tab === undefined || !tab || !tabEventKeys.includes(tab)) {
-    window.location.href = '/settings/threatexchange';
-  }
   return (
     <>
       <Tabs
