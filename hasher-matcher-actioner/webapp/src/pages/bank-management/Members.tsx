@@ -16,7 +16,7 @@ import {fetchBank, fetchBankMembersPage} from '../../Api';
 import {BankMember} from '../../messages/BankMessages';
 import {ContentType} from '../../utils/constants';
 import {timeAgoForDate} from '../../utils/DateTimeUtils';
-
+import Loader from '../../components/Loader';
 import {BlurImage, BlurVideo} from '../../utils/MediaUtils';
 import AddBankMemberModal from './AddBankMemberModal';
 
@@ -25,22 +25,6 @@ export type BankTabProps = {
 };
 
 type OptionalString = string | undefined;
-
-function Loader(): JSX.Element {
-  return (
-    <Col>
-      <h5>
-        <Spinner
-          style={{verticalAlign: 'middle'}}
-          className="mr-2"
-          animation="border"
-          variant="primary"
-        />
-        Loading...
-      </h5>
-    </Col>
-  );
-}
 
 type EmptyStateProps = {
   onAdd: () => void;
