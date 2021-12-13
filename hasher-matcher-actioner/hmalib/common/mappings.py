@@ -28,31 +28,10 @@ from hmalib.indexers.s3_indexers import (
     S3BackedInstrumentedIndexMixin,
 )
 
-# Maps from signal type → index to use for that signal type.
+# Maps from signal type → [index] i.e. list of indexes the can be use for that signal type.
 INDEX_MAPPING: t.Dict[
     t.Type[SignalType], t.List[t.Type[S3BackedInstrumentedIndexMixin]]
 ] = {
     PdqSignal: [S3BackedPDQIndex, S3BackedPDQFlatIndex],
     VideoMD5Signal: [S3BackedMD5Index],
 }
-
-
-def get_index_for_signal_type_matching(
-    signal_type: t.Type[SignalType], max_custom_threshold: int = 0
-):
-    indexes = INDEX_MAPPING[signal_type]
-    # disallow empty list
-    assert indexes
-    if len(indexes) == 1:
-        # if we only have one option just return
-        return indexes[0]
-
-    indexes.sort(key=lambda i: i.get_index_max_distance())
-
-    for index in indexes:
-        if max_custom_threshold <= index.get_index_max_distance():
-            return index
-
-    # if we don't have an index that supports max threshold
-    # just return the one if the highest possible max distance
-    return indexes[-1]

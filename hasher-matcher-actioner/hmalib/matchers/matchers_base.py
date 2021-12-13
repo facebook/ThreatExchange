@@ -22,7 +22,7 @@ from threatexchange.signal_type.signal_base import SignalType
 
 from hmalib import metrics
 from hmalib.common.logging import get_logger
-from hmalib.common.mappings import get_index_for_signal_type_matching
+from hmalib.common.mappings import INDEX_MAPPING
 from hmalib.common.messages.match import BankedSignal, MatchMessage
 from hmalib.common.configs.fetcher import (
     ThreatExchangeConfig,
@@ -58,7 +58,7 @@ def get_privacy_group_matcher_active(privacy_group_id: str) -> bool:
     )
 
 
-@functools.lru_cache(maxsize=128)
+@functools.lru_cache(maxsize=None)
 def _get_all_matcher_active_privacy_groups(cache_buster) -> t.List[str]:
     configs = ThreatExchangeConfig.get_all()
     return list(
@@ -72,31 +72,31 @@ def _get_all_matcher_active_privacy_groups(cache_buster) -> t.List[str]:
     )
 
 
-@functools.lru_cache(maxsize=128)
-def _get_all_privacy_group_active_matcher_pdq_theshold(
+@functools.lru_cache(maxsize=None)
+def _get_max_pdq_threshold_for_active_matcher_privacy_groups(
     cache_buster,
-) -> t.Dict[str, int]:
+) -> int:
     active_pg_names = _get_all_matcher_active_privacy_groups(cache_buster)
     if not active_pg_names:
-        return {}
-    return {
-        config.name: config.pdq_match_threshold
+        return 0
+    active_pdq_thresholds = [
+        config.pdq_match_threshold
         for config in AdditionalMatchSettingsConfig.get_all()
         if config.name in active_pg_names
-    }
+    ]
+    if active_pdq_thresholds:
+        return max(active_pdq_thresholds)
+    # no custom threshold set for active privacy_groups
+    return 0
 
 
 def get_max_threshold_of_active_privacy_groups_for_signal_type(
     signal_type: t.Type[SignalType],
 ) -> int:
     if signal_type == PdqSignal:
-        pg_to_pdq_threshold = _get_all_privacy_group_active_matcher_pdq_theshold(
+        return _get_max_pdq_threshold_for_active_matcher_privacy_groups(
             time.time() // PG_CONFIG_CACHE_TIME_SECONDS
         )
-        # no custom threshold set/active
-        if not pg_to_pdq_threshold:
-            return 0
-        return max(pg_to_pdq_threshold.values())
     else:
         return 0
 
@@ -166,8 +166,7 @@ class Matcher:
         index = self.get_index(signal_type)
 
         with metrics.timer(metrics.names.indexer.search_index):
-            match_results: t.List[IndexMatch] = []
-            match_results.extend(index.query(signal_value))
+            match_results: t.List[IndexMatch] = index.query(signal_value)
 
         if not match_results:
             # No matches found in the index
@@ -307,7 +306,7 @@ class Matcher:
         max_custom_threshold = (
             get_max_threshold_of_active_privacy_groups_for_signal_type(signal_type)
         )
-        index_cls = get_index_for_signal_type_matching(
+        index_cls = self._get_index_for_signal_type_matching(
             signal_type, max_custom_threshold
         )
 
@@ -315,10 +314,32 @@ class Matcher:
             self._cached_indexes[signal_type], index_cls
         ):
             with metrics.timer(metrics.names.indexer.download_index):
-                index = index_cls.load(bucket_name=self.index_bucket_name)
-                self._cached_indexes[signal_type] = index
+                self._cached_indexes[signal_type] = index_cls.load(
+                    bucket_name=self.index_bucket_name
+                )
 
         return self._cached_indexes[signal_type]
+
+    @classmethod
+    def _get_index_for_signal_type_matching(
+        cls, signal_type: t.Type[SignalType], max_custom_threshold: int = 0
+    ):
+        indexes = INDEX_MAPPING[signal_type]
+        # disallow empty list
+        assert indexes
+        if len(indexes) == 1:
+            # if we only have one option just return
+            return indexes[0]
+
+        indexes.sort(key=lambda i: i.get_index_max_distance())
+
+        for index_cls in indexes:
+            if max_custom_threshold <= index_cls.get_index_max_distance():
+                return index_cls
+
+        # if we don't have an index that supports max threshold
+        # just return the one if the highest possible max distance
+        return indexes[-1]
 
     def publish_match_message(
         self,
