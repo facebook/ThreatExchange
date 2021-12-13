@@ -14,7 +14,7 @@ import functools
 from mypy_boto3_s3.service_resource import Bucket
 from mypy_boto3_s3.type_defs import MetricsAndOperatorTypeDef
 from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
-from threatexchange.signal_type.pdq_index import PDQIndex
+from threatexchange.signal_type.pdq_index import PDQIndex, PDQFlatIndex
 
 from hmalib.common.logging import get_logger
 from hmalib import metrics
@@ -54,6 +54,20 @@ class S3BackedInstrumentedIndexMixin:
             )
             return pickle.loads(index_file_bytes)
 
+    def get_index_class_name(self) -> str:
+        """
+        Name to help identify the index being used in HMA logs.
+        """
+        return self.__class__.__name__
+
+    @classmethod
+    def get_index_max_distance(cls) -> int:
+        """
+        Helper to distinguish if the next should be used based on configured thersholds.
+        Defaults to zero (i.e. only exact matches supported)
+        """
+        return 0
+
     @classmethod
     def _get_index_s3_key(cls):
         """
@@ -92,3 +106,17 @@ class S3BackedPDQIndex(PDQIndex, S3BackedInstrumentedIndexMixin):
     """
 
     pass
+
+    @classmethod
+    def get_index_max_distance(cls) -> int:
+        return cls.get_match_threshold()
+
+
+class S3BackedPDQFlatIndex(PDQFlatIndex, S3BackedInstrumentedIndexMixin):
+    """
+    DO NOT OVERRIDE __init__(). Let PDQFlatIndex provide that.
+    """
+
+    @classmethod
+    def get_index_max_distance(cls) -> int:
+        return cls.get_match_threshold()

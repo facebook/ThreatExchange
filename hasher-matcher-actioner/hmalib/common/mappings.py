@@ -24,11 +24,14 @@ from threatexchange.signal_type.signal_base import SignalType
 from hmalib.indexers.s3_indexers import (
     S3BackedMD5Index,
     S3BackedPDQIndex,
+    S3BackedPDQFlatIndex,
     S3BackedInstrumentedIndexMixin,
 )
 
-# Maps from signal type → index to use for that signal type.
-INDEX_MAPPING: t.Dict[t.Type[SignalType], t.Type[S3BackedInstrumentedIndexMixin]] = {
-    PdqSignal: S3BackedPDQIndex,
-    VideoMD5Signal: S3BackedMD5Index,
+# Maps from signal type → [index] i.e. list of indexes the can be use for that signal type.
+INDEX_MAPPING: t.Dict[
+    t.Type[SignalType], t.List[t.Type[S3BackedInstrumentedIndexMixin]]
+] = {
+    PdqSignal: [S3BackedPDQIndex, S3BackedPDQFlatIndex],
+    VideoMD5Signal: [S3BackedMD5Index],
 }

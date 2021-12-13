@@ -58,6 +58,49 @@ def get_privacy_group_matcher_active(privacy_group_id: str) -> bool:
     )
 
 
+@functools.lru_cache(maxsize=None)
+def _get_all_matcher_active_privacy_groups(cache_buster) -> t.List[str]:
+    configs = ThreatExchangeConfig.get_all()
+    return list(
+        map(
+            lambda c: c.name,
+            filter(
+                lambda c: c.matcher_active,
+                configs,
+            ),
+        )
+    )
+
+
+@functools.lru_cache(maxsize=None)
+def _get_max_pdq_threshold_for_active_matcher_privacy_groups(
+    cache_buster,
+) -> int:
+    active_pg_names = _get_all_matcher_active_privacy_groups(cache_buster)
+    if not active_pg_names:
+        return 0
+    active_pdq_thresholds = [
+        config.pdq_match_threshold
+        for config in AdditionalMatchSettingsConfig.get_all()
+        if config.name in active_pg_names
+    ]
+    if active_pdq_thresholds:
+        return max(active_pdq_thresholds)
+    # no custom threshold set for active privacy_groups
+    return 0
+
+
+def get_max_threshold_of_active_privacy_groups_for_signal_type(
+    signal_type: t.Type[SignalType],
+) -> int:
+    if signal_type == PdqSignal:
+        return _get_max_pdq_threshold_for_active_matcher_privacy_groups(
+            time.time() // PG_CONFIG_CACHE_TIME_SECONDS
+        )
+    else:
+        return 0
+
+
 @functools.lru_cache(maxsize=128)
 def _get_optional_privacy_group_matcher_pdq_theshold(
     privacy_group_id: str, cache_buster
@@ -258,17 +301,50 @@ class Matcher:
         ]
 
     def get_index(self, signal_type: t.Type[SignalType]) -> SignalTypeIndex:
-        # If cached, return an index instance for the signal_type. If not, build
-        # one, cache and return.
-        if not signal_type in self._cached_indexes:
-            index_cls = INDEX_MAPPING[signal_type]
+        """
+        If cached, return an index instance for the signal_type. If not, build
+        one, cache and return.
+        """
 
+        max_custom_threshold = (
+            get_max_threshold_of_active_privacy_groups_for_signal_type(signal_type)
+        )
+        index_cls = self._get_index_for_signal_type_matching(
+            signal_type, max_custom_threshold
+        )
+
+        # Check for signal_type in cache AND confirm said index class type is
+        # still correct for the given [optional] max_custom_threshold
+        if not signal_type in self._cached_indexes or not isinstance(
+            self._cached_indexes[signal_type], index_cls
+        ):
             with metrics.timer(metrics.names.indexer.download_index):
                 self._cached_indexes[signal_type] = index_cls.load(
                     bucket_name=self.index_bucket_name
                 )
 
         return self._cached_indexes[signal_type]
+
+    @classmethod
+    def _get_index_for_signal_type_matching(
+        cls, signal_type: t.Type[SignalType], max_custom_threshold: int = 0
+    ):
+        indexes = INDEX_MAPPING[signal_type]
+        # disallow empty list
+        assert indexes
+        if len(indexes) == 1:
+            # if we only have one option just return
+            return indexes[0]
+
+        indexes.sort(key=lambda i: i.get_index_max_distance())
+
+        for index_cls in indexes:
+            if max_custom_threshold <= index_cls.get_index_max_distance():
+                return index_cls
+
+        # if we don't have an index that supports max threshold
+        # just return the one if the highest possible max distance
+        return indexes[-1]
 
     def publish_match_message(
         self,
