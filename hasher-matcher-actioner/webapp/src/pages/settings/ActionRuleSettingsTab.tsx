@@ -20,6 +20,7 @@ import '../../styles/_settings.scss';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {addActionRule, deleteActionRule, updateActionRule} from '../../Api';
 import {ActionPerformer} from './ActionPerformerSettingsTab';
+import SettingsTabPane from './SettingsTabPane';
 
 export type Label = {
   key: string;
@@ -247,7 +248,12 @@ export default function ActionRuleSettingsTab({
   ));
 
   return (
-    <FixedWidthCenterAlignedLayout title="Action Rules">
+    <SettingsTabPane>
+      <Row>
+        <Col>
+          <SettingsTabPane.Title>Action Rules</SettingsTabPane.Title>
+        </Col>
+      </Row>
       <Row className="mt-3">
         <Col>
           <p>
@@ -325,6 +331,6 @@ export default function ActionRuleSettingsTab({
           <Toast.Body>{toastMessage}</Toast.Body>
         </Toast>
       </div>
-    </FixedWidthCenterAlignedLayout>
+    </SettingsTabPane>
   );
 }
