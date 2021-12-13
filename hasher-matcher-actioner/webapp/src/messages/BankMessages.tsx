@@ -30,3 +30,16 @@ export type BankMember = {
   created_at: Date;
   updated_at: Date;
 };
+
+export type BankMemberSignal = {
+  bank_id: string;
+  bank_member_id: string;
+  signal_id: string;
+  signal_type: string; // TODO: Convert to enum.
+  signal_value: string;
+  updated_at: Date;
+};
+
+export type BankMemberWithSignals = BankMember & {
+  signals: BankMemberSignal[];
+};

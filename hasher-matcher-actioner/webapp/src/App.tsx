@@ -22,6 +22,7 @@ import SubmitContent from './pages/SubmitContent';
 import ContentDetailsWithStepper from './pages/ContentDetailsWithStepper';
 import ViewAllBanks from './pages/bank-management/ViewAllBanks';
 import ViewBank from './pages/bank-management/ViewBank';
+import ViewBankMember from './pages/bank-management/ViewBankMember';
 
 export default function App(): JSX.Element {
   return (
@@ -60,6 +61,9 @@ export default function App(): JSX.Element {
               </Route>
               <Route path="/banks/bank/:bankId/:tab">
                 <ViewBank />
+              </Route>
+              <Route path="/banks/member/:bankMemberId/">
+                <ViewBankMember />
               </Route>
               <Route path="/banks/">
                 <ViewAllBanks />
