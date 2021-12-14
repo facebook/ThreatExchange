@@ -476,7 +476,9 @@ module "api" {
   te_api_token_secret          = aws_secretsmanager_secret.te_api_token
   hma_api_access_tokens_secret = aws_secretsmanager_secret.hma_api_tokens
 
-  writebacks_queue = module.actions.writebacks_queue
+  writebacks_queue      = module.actions.writebacks_queue
+  indexer_function_name = module.indexer.indexer_function_name
+  indexer_function_arn  = module.indexer.indexer_function_arn
   hashes_queue = {
     url = aws_sqs_queue.hashes_queue.id,
     arn = aws_sqs_queue.hashes_queue.arn

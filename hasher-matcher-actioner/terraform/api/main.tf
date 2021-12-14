@@ -48,6 +48,7 @@ resource "aws_lambda_function" "api_root" {
       SUBMISSIONS_QUEUE_URL                 = var.submissions_queue.url
       HASHES_QUEUE_URL                      = var.hashes_queue.url
       BANKS_MEDIA_BUCKET_NAME               = var.banks_media_storage.bucket_name
+      INDEXER_FUNCTION_NAME                 = var.indexer_function_name
     }
   }
   tags = merge(
@@ -164,6 +165,12 @@ data "aws_iam_policy_document" "api_root" {
     effect    = "Allow"
     actions   = ["lambda:GetFunctionConfiguration"]
     resources = [aws_lambda_function.api_root.arn]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["lambda:InvokeAsync", "lambda:InvokeFunction"]
+    resources = [var.indexer_function_arn]
   }
 }
 
