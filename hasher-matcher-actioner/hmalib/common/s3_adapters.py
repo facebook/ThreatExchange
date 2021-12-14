@@ -35,6 +35,7 @@ from hmalib.common.logging import get_logger
 from hmalib.indexers.metadata import (
     BaseIndexMetadata,
     ThreatExchangeIndicatorIndexMetadata,
+    THREAT_EXCHANGE_SOURCE_SHORT_CODE,
 )
 
 logger = get_logger(__name__)
@@ -66,7 +67,7 @@ KNOWN_SIGNAL_TYPES: t.List[t.Type[SignalType]] = [VideoMD5Signal, PdqSignal]
 @dataclass
 class S3ThreatDataConfig:
 
-    SOURCE_STR = "te"
+    SOURCE_STR = THREAT_EXCHANGE_SOURCE_SHORT_CODE
 
     threat_exchange_data_bucket_name: str
     threat_exchange_data_folder: str

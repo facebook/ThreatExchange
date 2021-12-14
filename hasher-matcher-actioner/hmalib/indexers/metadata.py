@@ -23,7 +23,11 @@ class BaseIndexMetadata:
         return asdict(self)
 
 
+# Note changing this value will change S3ThreatDataConfig.SOURCE_STR. Per my
+# lookup, this will not affect how data gets stored, only logs, but should
+# figure it out.
 THREAT_EXCHANGE_SOURCE_SHORT_CODE = "te"
+
 BANKS_SOURCE_SHORT_CODE = "bnk"
 
 
