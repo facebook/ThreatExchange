@@ -108,7 +108,9 @@ def get_max_threshold_of_active_privacy_groups_for_signal_type(
 
 
 @functools.lru_cache(maxsize=128)
-def _get_privacy_group_matcher_pdq_theshold(privacy_group_id: str, cache_buster) -> int:
+def _get_privacy_group_matcher_pdq_threshold(
+    privacy_group_id: str, cache_buster
+) -> int:
     config = AdditionalMatchSettingsConfig.get(privacy_group_id)
     if not config:
         logger.debug(
@@ -123,7 +125,7 @@ def _get_privacy_group_matcher_pdq_theshold(privacy_group_id: str, cache_buster)
     return config.pdq_match_threshold
 
 
-def get_privacy_group_matcher_pdq_theshold(
+def get_privacy_group_matcher_pdq_threshold(
     privacy_group_id: str,
 ) -> int:
     """
@@ -138,7 +140,7 @@ def get_privacy_group_matcher_pdq_theshold(
 
     Impl: the // is python's integer division operator. Threw me off. :)
     """
-    return _get_privacy_group_matcher_pdq_theshold(
+    return _get_privacy_group_matcher_pdq_threshold(
         privacy_group_id, time.time() // PG_CONFIG_CACHE_TIME_SECONDS
     )
 
@@ -216,7 +218,7 @@ class Matcher:
                     and (
                         signal_type != PdqSignal
                         or match.distance
-                        <= get_privacy_group_matcher_pdq_theshold(
+                        <= get_privacy_group_matcher_pdq_threshold(
                             str(metadata_obj.privacy_group)
                         )
                     )
