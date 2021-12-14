@@ -5,11 +5,16 @@
 import React, {useState} from 'react';
 import {IonIcon} from '@ionic/react';
 import {chevronUp, chevronDown} from 'ionicons/icons';
+import {useFormik} from 'formik';
 
 import {Accordion, Col, Button, Form, Card} from 'react-bootstrap';
 import DOMPurify from 'dompurify';
 import {CopyableTextField} from '../../utils/TextFieldsUtils';
 import {PrivacyGroup} from '../../Api';
+
+type AdvancedSettingsValues = {
+  pdqMatchThreshold?: string;
+};
 
 type ThreatExchangePrivacyGroupCardProps = {
   fetcherActive: boolean;
@@ -21,6 +26,7 @@ type ThreatExchangePrivacyGroupCardProps = {
   writeBack: boolean;
   hashCount: number;
   matchCount: number;
+  pdqMatchThreshold?: string;
   onSave: (pg: PrivacyGroup) => void;
   onDelete: (privacyGroupId: string) => void;
 };
@@ -35,6 +41,7 @@ export default function ThreatExchangePrivacyGroupCard({
   writeBack,
   hashCount,
   matchCount,
+  pdqMatchThreshold,
   onSave,
   onDelete,
 }: ThreatExchangePrivacyGroupCardProps): JSX.Element {
@@ -46,6 +53,9 @@ export default function ThreatExchangePrivacyGroupCard({
   const [originalWriteBack, setOriginalWriteBack] = useState(writeBack);
   const [originalMatcherActive, setOriginalMatcherActive] =
     useState(matcherActive);
+  const [originalPDQMatchThreshold, setOriginalPDQMatchThreshold] = useState(
+    pdqMatchThreshold ?? '',
+  );
   const [localFetcherActive, setLocalFetcherActive] = useState(fetcherActive);
   const [localWriteBack, setLocalWriteBack] = useState(writeBack);
   const [localMatcherActive, setLocalMatcherActive] = useState(matcherActive);
@@ -58,6 +68,31 @@ export default function ThreatExchangePrivacyGroupCard({
   const onSwitchMatcherActive = () => {
     setLocalMatcherActive(!localMatcherActive);
   };
+
+  function validate(values: AdvancedSettingsValues) {
+    const errors: Partial<AdvancedSettingsValues> = {};
+    if (
+      !!values.pdqMatchThreshold &&
+      (Number.isNaN(Number(values.pdqMatchThreshold)) ||
+        Number(values.pdqMatchThreshold) < 0 ||
+        Number(values.pdqMatchThreshold) > 52)
+    ) {
+      errors.pdqMatchThreshold =
+        'Invalid: none empty values must be between 0 (only exact matches) and 52 (max threshold the libray supports)';
+    }
+
+    return errors;
+  }
+
+  const formik = useFormik({
+    initialValues: {
+      pdqMatchThreshold: pdqMatchThreshold || '',
+    },
+    validate,
+    onSubmit: values => {
+      console.log('shoudneverhappen');
+    },
+  });
 
   return (
     <>
@@ -145,8 +180,36 @@ export default function ThreatExchangePrivacyGroupCard({
                   icon={showAdvancedSettings ? chevronDown : chevronUp}
                 />
               </Accordion.Toggle>
-              <Accordion.Collapse className="mt-2 mr-2 text-muted" eventKey="0">
-                <Card.Body>Comming Soon!</Card.Body>
+              <Accordion.Collapse className="mt-2 mr-2" eventKey="0">
+                <Card.Body>
+                  <Form>
+                    <Form.Group>
+                      <Form.Label>Custom PDQ Match Threshold</Form.Label>
+                      <Form.Control
+                        id="pdqMatchThreshold"
+                        onBlur={formik.handleBlur}
+                        isValid={
+                          formik.touched.pdqMatchThreshold &&
+                          !formik.errors.pdqMatchThreshold &&
+                          !!formik.values.pdqMatchThreshold
+                        }
+                        isInvalid={
+                          formik.touched.pdqMatchThreshold &&
+                          !!formik.errors.pdqMatchThreshold
+                        }
+                        onChange={formik.handleChange}
+                        type="text"
+                        placeholder={pdqMatchThreshold ?? ''}
+                      />
+                      {formik.touched.pdqMatchThreshold &&
+                      formik.errors.pdqMatchThreshold ? (
+                        <Form.Control.Feedback type="invalid">
+                          {formik.errors.pdqMatchThreshold}
+                        </Form.Control.Feedback>
+                      ) : null}
+                    </Form.Group>
+                  </Form>
+                </Card.Body>
               </Accordion.Collapse>
             </Accordion>
           </Card>
@@ -154,7 +217,10 @@ export default function ThreatExchangePrivacyGroupCard({
           <Card.Footer>
             {localWriteBack === originalWriteBack &&
             localFetcherActive === originalFetcherActive &&
-            localMatcherActive === originalMatcherActive ? null : (
+            localMatcherActive === originalMatcherActive &&
+            (!formik.touched.pdqMatchThreshold ||
+              formik.values.pdqMatchThreshold ===
+                originalPDQMatchThreshold) ? null : (
               <div>
                 <Button
                   variant="primary"
@@ -162,13 +228,18 @@ export default function ThreatExchangePrivacyGroupCard({
                     setOriginalFetcherActive(localFetcherActive);
                     setOriginalWriteBack(localWriteBack);
                     setOriginalMatcherActive(localMatcherActive);
+                    setOriginalPDQMatchThreshold(
+                      formik.values.pdqMatchThreshold,
+                    );
                     onSave({
                       privacyGroupId,
                       localFetcherActive,
                       localWriteBack,
                       localMatcherActive,
+                      localPDQMatchThreshold: formik.values.pdqMatchThreshold,
                     });
-                  }}>
+                  }}
+                  disabled={!!formik.errors.pdqMatchThreshold}>
                   Save
                 </Button>
               </div>
@@ -190,3 +261,7 @@ export default function ThreatExchangePrivacyGroupCard({
     </>
   );
 }
+
+ThreatExchangePrivacyGroupCard.defaultProps = {
+  pdqMatchThreshold: undefined,
+};
