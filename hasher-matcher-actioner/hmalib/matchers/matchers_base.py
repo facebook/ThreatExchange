@@ -40,8 +40,7 @@ logger = get_logger(__name__)
 
 PG_CONFIG_CACHE_TIME_SECONDS = 300
 
-# This is clearly wrong, but will still work. Someone tell the correct value, please.
-MAX_PDQ_DISTANCE = 1000
+MAX_PDQ_DISTANCE = 256
 
 
 @functools.lru_cache(maxsize=128)
@@ -206,7 +205,7 @@ class Matcher:
                     metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE
                     and get_privacy_group_matcher_active(metadata_obj.privacy_group)
                     and match.distance
-                    < (
+                    <= (
                         get_optional_privacy_group_matcher_pdq_theshold(
                             str(metadata_obj.privacy_group)
                         )
