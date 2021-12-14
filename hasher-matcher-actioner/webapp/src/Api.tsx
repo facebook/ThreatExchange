@@ -641,3 +641,19 @@ export async function addBankMember(
     updated_at: toDate(response.updated_at)!,
   }));
 }
+
+// Index APIs
+
+type IndexLastModifiedResponse = {
+  last_modified: string;
+};
+
+export async function fetchIndexesLastModified(): Promise<Date> {
+  return apiGet<IndexLastModifiedResponse>('indexes/last-modified').then(
+    response => toDate(response.last_modified)!,
+  );
+}
+
+export async function rebuildAllIndexes(): Promise<undefined> {
+  return apiPost('indexes/rebuild-all').then();
+}

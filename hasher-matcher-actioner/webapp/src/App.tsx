@@ -53,11 +53,8 @@ export default function App(): JSX.Element {
               <Route path="/submit">
                 <SubmitContent />
               </Route>
-              <Route path="/settings/:tab">
+              <Route path="/settings/:tab?">
                 <Settings />
-              </Route>
-              <Route path="/settings">
-                <Redirect to="/settings/signals" />
               </Route>
               <Route path="/banks/bank/:bankId/:tab">
                 <ViewBank />

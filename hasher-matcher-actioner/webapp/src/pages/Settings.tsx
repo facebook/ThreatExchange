@@ -14,13 +14,14 @@ import ActionPerformerSettingsTab, {
   ActionPerformer,
 } from './settings/ActionPerformerSettingsTab';
 import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
+import IndexSettingsTab from './settings/IndexSettingsTab';
 
 // This array must include the eventKey attribute value of any Tab in Tabs as
 // a part of the implementation to give each tab its own route.
 const tabEventKeys = ['threatexchange', 'actions', 'action-rules'];
 
 export default function Settings(): JSX.Element {
-  const {tab} = useParams<{tab: string}>();
+  const {tab = tabEventKeys[0]} = useParams<{tab: string}>();
   const history = useHistory();
   const [actions, setActions] = useState<ActionPerformer[]>([]);
   const [actionRules, setActionRules] = useState<ActionRule[]>([]);
@@ -37,9 +38,6 @@ export default function Settings(): JSX.Element {
     });
   }, []);
 
-  if (tab === undefined || !tab || !tabEventKeys.includes(tab)) {
-    window.location.href = '/settings/threatexchange';
-  }
   return (
     <>
       <Tabs
@@ -64,6 +62,9 @@ export default function Settings(): JSX.Element {
             actionRules={actionRules}
             setActionRules={setActionRules}
           />
+        </Tab>
+        <Tab eventKey="index" title="Indexes">
+          <IndexSettingsTab />
         </Tab>
       </Tabs>
     </>

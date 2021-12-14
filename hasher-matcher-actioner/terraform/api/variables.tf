@@ -183,3 +183,13 @@ variable "security_groups" {
   type        = list(string)
   default     = []
 }
+
+variable "indexer_function_name" {
+  description = "Name of the lambda function that does indexing."
+  type        = string
+}
+
+variable "indexer_function_arn" {
+  description = "ARN of the lambda function that does indexing."
+  type        = string
+}

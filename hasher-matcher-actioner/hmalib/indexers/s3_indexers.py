@@ -8,6 +8,7 @@ S3 Backed Index Management. Offers a menu of indexes.
   understand TMK better. :) -- @schatten
 """
 
+from datetime import datetime
 import pickle
 import boto3
 import functools
@@ -34,6 +35,8 @@ class S3BackedInstrumentedIndexMixin:
 
     Also overrides methods to wrap instrumentation with hmalib.metrics library.
     """
+
+    INDEXES_PREFIX = "index/"
 
     def save(self, bucket_name: str):
         with metrics.timer(metrics.names.indexer.upload_index):
@@ -69,6 +72,16 @@ class S3BackedInstrumentedIndexMixin:
         return 0
 
     @classmethod
+    def get_latest_last_modified(cls, bucket_name: str) -> datetime:
+        """
+        Get the update time of the newest index.
+        """
+        objects = get_s3_client().list_objects_v2(
+            Bucket=bucket_name, Prefix=cls.INDEXES_PREFIX
+        )
+        return max(map(lambda item: item["LastModified"], objects["Contents"]))
+
+    @classmethod
     def _get_index_s3_key(cls):
         """
         Uses current class name to get a unique but consistent s3 key for this
@@ -89,7 +102,7 @@ class S3BackedInstrumentedIndexMixin:
         ours:  index/hmalib.indexers.s3_indexers.S3BackedPDQIndex.index
         their: index/partnername.integrity.indexers.CustomPDQIndex.index
         """
-        return f"index/{cls.__module__}.{cls.__name__}.index"
+        return f"{cls.INDEXES_PREFIX}{cls.__module__}.{cls.__name__}.index"
 
 
 class S3BackedMD5Index(TrivialSignalTypeIndex, S3BackedInstrumentedIndexMixin):
