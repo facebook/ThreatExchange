@@ -58,9 +58,9 @@ class S3BackedInstrumentedIndexMixin:
             return pickle.loads(index_file_bytes)
 
     @classmethod
-    def get_oldest_last_modified(cls, bucket_name: str) -> datetime:
+    def get_latest_last_modified(cls, bucket_name: str) -> datetime:
         """
-        Get the update time of the oldest index.
+        Get the update time of the newest index.
         """
         objects = get_s3_client().list_objects_v2(
             Bucket=bucket_name, Prefix=cls.INDEXES_PREFIX

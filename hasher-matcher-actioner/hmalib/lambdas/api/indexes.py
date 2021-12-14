@@ -40,7 +40,7 @@ def get_indexes_api(
         the latest index rebuilt.
         """
         return IndexesLastModifiedResponse(
-            S3BackedInstrumentedIndexMixin.get_oldest_last_modified(
+            S3BackedInstrumentedIndexMixin.get_latest_last_modified(
                 bucket_name=indexes_bucket_name
             )
         )
