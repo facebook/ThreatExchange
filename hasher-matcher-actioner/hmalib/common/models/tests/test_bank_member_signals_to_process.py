@@ -44,12 +44,14 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
             )
 
             # expect this to now be available to process
-            to_process = table_manager.get_bank_member_signals_to_process(
+            to_process = table_manager.get_bank_member_signals_to_process_page(
                 signal_type=VideoTmkPdqfSignal
             )
 
-            self.assertEqual(len(to_process), 1)
-            self.assertEqual(bank_member_signal.signal_id, to_process[0].signal_id)
+            self.assertEqual(len(to_process.items), 1)
+            self.assertEqual(
+                bank_member_signal.signal_id, to_process.items[0].signal_id
+            )
 
     def test_multiple_signals_are_retrieved(self):
         with self.fresh_dynamodb():
@@ -69,9 +71,9 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
             to_process_signal_ids = [
                 signal.signal_id
-                for signal in table_manager.get_bank_member_signals_to_process(
+                for signal in table_manager.get_bank_member_signals_to_process_page(
                     signal_type=VideoTmkPdqfSignal
-                )
+                ).items
             ]
 
             self.assertListEqual(signal_ids, to_process_signal_ids)
@@ -98,9 +100,46 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
             to_process_signal_ids = [
                 signal.signal_id
-                for signal in table_manager.get_bank_member_signals_to_process(
+                for signal in table_manager.get_bank_member_signals_to_process_page(
                     signal_type=VideoTmkPdqfSignal
-                )
+                ).items
             ]
 
             self.assertListEqual(signal_ids_in_order, to_process_signal_ids)
+
+    def test_order_of_signals_multi_page(self):
+        with self.fresh_dynamodb():
+            table_manager = BanksTable(self.get_table())
+            bank_id, bank_member_id = self._create_bank_and_bank_member()
+
+            signals = [
+                table_manager.add_bank_member_signal(
+                    bank_id=bank_id,
+                    bank_member_id=bank_member_id,
+                    signal_type=VideoTmkPdqfSignal,
+                    signal_value="A VIDEO TMK PDQF SIGNAL. WILTY?"
+                    + str(random.random()),
+                )
+                for _ in range(20)
+            ]
+
+            signal_ids_in_order = list(
+                map(lambda s: s.signal_id, sorted(signals, key=lambda x: x.updated_at))
+            )
+
+            queried_signal_ids = []
+            exclusive_start_key = None
+            while True:
+                response = table_manager.get_bank_member_signals_to_process_page(
+                    signal_type=VideoTmkPdqfSignal,
+                    limit=4,
+                    exclusive_start_key=exclusive_start_key,
+                )
+
+                exclusive_start_key = response.last_evaluated_key
+                queried_signal_ids += [signal.signal_id for signal in response.items]
+
+                if not response.has_next_page():
+                    break
+
+            self.assertListEqual(signal_ids_in_order, queried_signal_ids)

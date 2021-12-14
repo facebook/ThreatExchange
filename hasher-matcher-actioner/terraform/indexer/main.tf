@@ -95,6 +95,8 @@ resource "aws_lambda_function" "indexer" {
       THREAT_EXCHANGE_DATA_FOLDER      = var.threat_exchange_data.data_folder
       INDEXES_BUCKET_NAME              = var.index_data_storage.bucket_name
       MEASURE_PERFORMANCE              = var.measure_performance ? "True" : "False"
+      HMA_CONFIG_TABLE                 = var.config_table.name
+      BANKS_TABLE                      = var.banks_datastore.name
     }
   }
   tags = merge(
@@ -158,6 +160,12 @@ data "aws_iam_policy_document" "indexer" {
     effect    = "Allow"
     actions   = ["s3:PutObject"]
     resources = ["arn:aws:s3:::${var.index_data_storage.bucket_name}/index/*"]
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem"]
+    resources = ["${var.banks_datastore.arn}*"]
   }
   statement {
     effect = "Allow"

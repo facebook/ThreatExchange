@@ -148,6 +148,7 @@ app.mount(
         hma_config_table=HMA_CONFIG_TABLE,
         indexes_bucket_name=INDEXES_BUCKET_NAME,
         writeback_queue_url=WRITEBACK_QUEUE_URL,
+        bank_table=dynamodb.Table(BANKS_TABLE),
     ),
 )
 

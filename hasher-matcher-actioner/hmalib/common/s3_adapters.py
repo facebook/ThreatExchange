@@ -32,6 +32,11 @@ from hmalib.common.models.signal import (
 )
 from hmalib import metrics
 from hmalib.common.logging import get_logger
+from hmalib.indexers.metadata import (
+    BaseIndexMetadata,
+    ThreatExchangeIndicatorIndexMetadata,
+    THREAT_EXCHANGE_SOURCE_SHORT_CODE,
+)
 
 logger = get_logger(__name__)
 
@@ -46,7 +51,14 @@ def get_s3_client():
     return boto3.client("s3")
 
 
-HashRowT = t.Tuple[str, t.Dict[str, t.Any]]
+# A hash row is a tuple of the hash_value and a sequence of metadata object.
+# Remember, a single hash may have multiple metadata objects. One from
+# threatexchange, one from banks, another one from threatexchange, but a
+# different privacy group.
+#
+# Use mutable sequence instead of list here because we need subclasses of
+# BaseIndexMetadata and t.List is not co-variant in mypy's grammar.
+HashRowT = t.Tuple[str, t.MutableSequence[BaseIndexMetadata]]
 
 # Signal types that s3_adapters should support
 KNOWN_SIGNAL_TYPES: t.List[t.Type[SignalType]] = [VideoMD5Signal, PdqSignal]
@@ -55,7 +67,7 @@ KNOWN_SIGNAL_TYPES: t.List[t.Type[SignalType]] = [VideoMD5Signal, PdqSignal]
 @dataclass
 class S3ThreatDataConfig:
 
-    SOURCE_STR = "te"
+    SOURCE_STR = THREAT_EXCHANGE_SOURCE_SHORT_CODE
 
     threat_exchange_data_bucket_name: str
     threat_exchange_data_folder: str
@@ -151,24 +163,21 @@ class ThreatExchangeS3Adapter:
         )
         self.last_modified[file_name] = data_file["LastModified"].isoformat()
         privacy_group = file_name.split("/")[-1].split(".")[0]
-        return [
-            (
-                row["hash"],
-                # Also add hash to metadata for easy look up on match
-                {
-                    "id": int(row["indicator_id"]),
-                    "hash": row["hash"],
-                    "source": self.config.SOURCE_STR,  # default for now to make downstream easier to generalize
-                    "privacy_groups": set(
-                        [privacy_group]
-                    ),  # read privacy group from key
-                    "tags": {privacy_group: row["tags"].split(" ")}
-                    if row["tags"]
-                    else {},  # note: these are the labels assigned by pytx in descriptor.py (NOT a 1-1 with tags on TE)
-                },
+
+        result: t.List[HashRowT] = []
+        for row in data_reader:
+            metadata = ThreatExchangeIndicatorIndexMetadata(
+                indicator_id=row["indicator_id"],
+                signal_value=row["hash"],
+                privacy_group=privacy_group,
             )
-            for row in data_reader
-        ]
+            if row["tags"]:
+                # note: these are the labels assigned by pytx in descriptor.py (NOT a 1-1 with tags on TE)
+                metadata.tags.update(row["tags"].split(" "))
+
+            result.append((row["hash"], [metadata]))
+
+        return result
 
 
 class ThreatExchangeS3PDQAdapter(ThreatExchangeS3Adapter):

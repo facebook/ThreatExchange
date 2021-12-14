@@ -71,14 +71,12 @@ PK                SK                        Item
 PK                        SK            Item
 <bank_member_signal_id>   <bank_id>     KEYS_ONLY(BankMemberSignal)
 
-5. PendingBankMemberSignalsIndex
-   A sparse index. Only contains BankMemberSignalObjects that haven't yet been
-   processed into the index. Additions and Removals can both be processed. The
-   indexer must scan this index, for each entry, get the BankMember and
-   BankMemberSignal. As the indexer processes them in, it will remove them from
-   this sparse GSI.
-PK              SK              Item
-<signal_type>   <updated_at>    KEYS_ONLY(BankMemberSignal)
+5. BankMemberSignalCursorIndex
+   Contains BankMemberSignal Objects in the order they were updated. This can be
+   used by any system that needs to process bank member signals in order. eg.
+   indexer, TBD-component that can write a bank to threatexchange.
+PK              SK                                          Item
+<signal_type>   <updated_at>+<some-portion-of-signal-id>    ALL(BankMemberSignal)
 """
 
 
@@ -232,26 +230,6 @@ class BankMember(DynamoDBItem):
         return result
 
 
-class BankMemberSignalStatus(Enum):
-    """
-    Bank member signals are processed into the respective signal_type indexes.
-    This enum governs the possible states the BankMemberSignal object can be
-    in. This influences whether or not a BankMemberSignal object is present in
-    the PendingBankMemberSignalsIndex.
-    """
-
-    # Implies that this needs to be processed now.
-    PENDING = "PENDING"
-
-    # Has been processed into an index.
-    PROCESSED = "PROCESSED"
-
-    # State machine purists will note that we do not have a PROCESSING stage
-    # which will take a lock and prevent double processing for records. However,
-    # in our case, there is no cost to double processing as long as records are
-    # processed in order. i.e chronologically.
-
-
 @dataclass
 class BankMemberSignal(DynamoDBItem):
     """
@@ -265,17 +243,19 @@ class BankMemberSignal(DynamoDBItem):
     signal_type: t.Type[SignalType]
     signal_value: str
 
-    status: BankMemberSignalStatus
-
     updated_at: datetime
 
-    PENDING_BANK_MEMBER_SIGNALS_INDEX = "PendingBankMemberSignalIndex"
-    PENDING_BANK_MEMBER_SIGNALS_INDEX_SIGNAL_TYPE = (
-        f"{PENDING_BANK_MEMBER_SIGNALS_INDEX}-SignalType"
+    BANK_MEMBER_SIGNAL_CURSOR_INDEX = "BankMemberSignalCursorIndex"
+    BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE = (
+        f"{BANK_MEMBER_SIGNAL_CURSOR_INDEX}-SignalType"
     )
-    PENDING_BANK_MEMBER_SIGNALS_INDEX_UPDATED_AT = (
-        f"{PENDING_BANK_MEMBER_SIGNALS_INDEX}-UpdatedAt"
+    BANK_MEMBER_SIGNAL_CURSOR_INDEX_CHRONO_KEY = (
+        f"{BANK_MEMBER_SIGNAL_CURSOR_INDEX}-ChronoKey"
     )
+
+    # How many keys of the signal id to use to de-duplicate the chronological
+    # ordering key?
+    CHRONO_KEY_SIGNAL_ID_FRAGMENT_SIZE = 12
 
     @classmethod
     def get_pk(cls, bank_member_id):
@@ -284,6 +264,10 @@ class BankMemberSignal(DynamoDBItem):
     @classmethod
     def get_sk(cls, signal_id):
         return f"signal#{signal_id}"
+
+    @classmethod
+    def get_chrono_key(cls, updated_at: datetime, signal_id: str):
+        return f"{updated_at.isoformat()}:{signal_id[:cls.CHRONO_KEY_SIGNAL_ID_FRAGMENT_SIZE]}"
 
     def to_dynamodb_item(self) -> t.Dict:
         item = {
@@ -297,16 +281,11 @@ class BankMemberSignal(DynamoDBItem):
             "SignalType": self.signal_type.get_name(),
             "SignalValue": self.signal_value,
             "UpdatedAt": self.updated_at.isoformat(),
-            "Status": self.status.name,
+            self.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE: self.signal_type.get_name(),
+            self.BANK_MEMBER_SIGNAL_CURSOR_INDEX_CHRONO_KEY: self.get_chrono_key(
+                self.updated_at, self.signal_id
+            ),
         }
-
-        if self.status == BankMemberSignalStatus.PENDING:
-            item.update(
-                **{
-                    self.PENDING_BANK_MEMBER_SIGNALS_INDEX_SIGNAL_TYPE: self.signal_type.get_name(),
-                    self.PENDING_BANK_MEMBER_SIGNALS_INDEX_UPDATED_AT: self.updated_at.isoformat(),
-                }
-            )
 
         return item
 
@@ -319,7 +298,6 @@ class BankMemberSignal(DynamoDBItem):
             signal_type=get_signal_types_by_name()[item["SignalType"]],
             signal_value=item["SignalValue"],
             updated_at=datetime.fromisoformat(item["UpdatedAt"]),
-            status=BankMemberSignalStatus(item["Status"]),
         )
 
     def to_json(self) -> t.Dict:
@@ -328,30 +306,8 @@ class BankMemberSignal(DynamoDBItem):
         result.update(
             signal_type=self.signal_type.get_name(),
             updated_at=self.updated_at.isoformat(),
-            status=self.status.value,
         )
         return result
-
-    @classmethod
-    def unmark(cls, table: Table, bank_member_id: str, signal_id: str):
-        """
-        Updates the status to processed, the updated_at value to now() and
-        removes from the PendingBankMemberSignalIndex.
-
-        To do this in a single ddb call, we use an update_item statement which
-        REMOVES the GSI values, thus removing them from the index.
-        """
-        table.update_item(
-            Key={
-                "PK": cls.get_pk(bank_member_id=bank_member_id),
-                "SK": cls.get_sk(signal_id=signal_id),
-            },
-            UpdateExpression=f"SET Status = :status, UpdatedAt = :updated_at  REMOVE {cls.PENDING_BANK_MEMBER_SIGNALS_INDEX_SIGNAL_TYPE}, {cls.PENDING_BANK_MEMBER_SIGNALS_INDEX_UPDATED_AT}",
-            ExpressionAttributeValues={
-                ":status": BankMemberSignalStatus.PROCESSED.value,
-                ":updated_at": datetime.now().isoformat(),
-            },
-        )
 
 
 @dataclass
@@ -590,7 +546,6 @@ class BanksTable:
             signal_type=signal_type,
             signal_value=signal_value,
             updated_at=datetime.now(),
-            status=BankMemberSignalStatus.PENDING,
         )
         member_signal.write_to_table(self._table)
         return member_signal
@@ -625,25 +580,35 @@ class BanksTable:
             signal_value=signal_value,
         )
 
-    def unmark_bank_member_signal(self, bank_member_id: str, signal_id: str):
-        """
-        Remove the bank-member-signal from the pending index.
-        """
-        BankMemberSignal.unmark(
-            self._table, bank_member_id=bank_member_id, signal_id=signal_id
-        )
-
-    def get_bank_member_signals_to_process(
-        self, signal_type: t.Type[SignalType], limit: int = 100
-    ):
-        return [
-            BankMemberSignal.from_dynamodb_item(item)
-            for item in self._table.query(
-                IndexName=BankMemberSignal.PENDING_BANK_MEMBER_SIGNALS_INDEX,
-                KeyConditionExpression=Key("PK").eq(signal_type.get_name()),
+    def get_bank_member_signals_to_process_page(
+        self,
+        signal_type: t.Type[SignalType],
+        exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
+        limit: int = 100,
+    ) -> PaginatedResponse[BankMemberSignal]:
+        if not exclusive_start_key:
+            result = self._table.query(
+                IndexName=BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX,
+                ScanIndexForward=True,
+                KeyConditionExpression=Key(
+                    BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE
+                ).eq(signal_type.get_name()),
                 Limit=limit,
-            )["Items"]
-        ]
+            )
+        else:
+            result = self._table.query(
+                IndexName=BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX,
+                ScanIndexForward=True,
+                KeyConditionExpression=Key(
+                    BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE
+                ).eq(signal_type.get_name()),
+                ExclusiveStartKey=exclusive_start_key,
+                Limit=limit,
+            )
+        return PaginatedResponse(
+            t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
+            [BankMemberSignal.from_dynamodb_item(item) for item in result["Items"]],
+        )
 
     def get_signals_for_bank_member(
         self, bank_member_id: str

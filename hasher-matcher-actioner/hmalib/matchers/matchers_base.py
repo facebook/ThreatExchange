@@ -9,8 +9,6 @@ import datetime
 import functools
 
 from mypy_boto3_sns.client import SNSClient
-from hmalib.common.models.signal import ThreatExchangeSignalMetadata
-
 from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange.signal_type.pdq import PdqSignal
 from hmalib.common.models.pipeline import MatchRecord
@@ -28,11 +26,21 @@ from hmalib.common.configs.fetcher import (
     ThreatExchangeConfig,
     AdditionalMatchSettingsConfig,
 )
+from hmalib.common.models.bank import BankMember, BanksTable
+from hmalib.common.models.signal import ThreatExchangeSignalMetadata
+from hmalib.indexers.metadata import (
+    BANKS_SOURCE_SHORT_CODE,
+    THREAT_EXCHANGE_SOURCE_SHORT_CODE,
+    BaseIndexMetadata,
+    BankedSignalIndexMetadata,
+)
 
 
 logger = get_logger(__name__)
 
 PG_CONFIG_CACHE_TIME_SECONDS = 300
+
+MAX_PDQ_DISTANCE = 256
 
 
 @functools.lru_cache(maxsize=128)
@@ -156,7 +164,7 @@ class Matcher:
 
     def match(
         self, signal_type: t.Type[SignalType], signal_value: str
-    ) -> t.List[IndexMatch]:
+    ) -> t.List[IndexMatch[BaseIndexMetadata]]:
         """
         Returns MatchMessage which can be directly published to a queue.
 
@@ -183,44 +191,33 @@ class Matcher:
         consider extending this class and implementing your own.
         """
 
-        filtered_results_based_on_active = []
+        filtered_results = []
         for match in results:
-            match.metadata["privacy_groups"] = list(
-                filter(
-                    lambda x: get_privacy_group_matcher_active(str(x)),
-                    match.metadata.get("privacy_groups", []),
-                )
-            )
-
-            if len(match.metadata["privacy_groups"]) != 0:
-                filtered_results_based_on_active.append(match)
-
-        # Also check and see if there is a custom threshold filter
-        filtered_results_based_on_threshold = []
-        for match in filtered_results_based_on_active:
-            filtered_privacy_groups = []
-            for privacy_group in match.metadata.get("privacy_groups", []):
-                if threshold := get_optional_privacy_group_matcher_pdq_theshold(
-                    str(privacy_group)
-                ):
-                    if match.distance >= threshold:
-                        logger.debug(
-                            "Match was found at %s distance but exceeds custom theshold of %s for pg, %s",
-                            match.distance,
-                            threshold,
-                            privacy_group,
+            match.metadata = [
+                metadata_obj
+                for metadata_obj in match.metadata
+                if metadata_obj.get_source() == BANKS_SOURCE_SHORT_CODE
+                or (
+                    # If metadata obj is from threatexchange (one privacy group
+                    # per metadata obj), check that it is active AND that its
+                    # distance is lesser than the optional pdq_threshold set for
+                    # that pg (or MAX_PDQ_DISTANCE).
+                    metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE
+                    and get_privacy_group_matcher_active(metadata_obj.privacy_group)
+                    and match.distance
+                    <= (
+                        get_optional_privacy_group_matcher_pdq_theshold(
+                            str(metadata_obj.privacy_group)
                         )
-                    else:
-                        filtered_privacy_groups.append(privacy_group)
-                else:
-                    # no custom threshold found
-                    filtered_privacy_groups.append(privacy_group)
-            match.metadata["privacy_groups"] = filtered_privacy_groups
+                        or MAX_PDQ_DISTANCE
+                    )
+                )
+            ]
 
-            if len(match.metadata["privacy_groups"]) != 0:
-                filtered_results_based_on_threshold.append(match)
+            if len(match.metadata) != 0:
+                filtered_results.append(match)
 
-        return filtered_results_based_on_threshold
+        return filtered_results
 
     def write_match_record_for_result(
         self,
@@ -228,23 +225,50 @@ class Matcher:
         signal_type: t.Type[SignalType],
         content_hash: str,
         content_id: str,
-        match: IndexMatch,
+        match: IndexMatch[BaseIndexMetadata],
     ):
         """
         Write a match record to dynamodb. The content_id is not important to the
         matcher. So, the calling lambda is expected to pass on the content_id
         for match record calls.
         """
-        MatchRecord(
-            content_id=content_id,
-            signal_type=signal_type,
-            content_hash=content_hash,
-            updated_at=datetime.datetime.now(),
-            signal_id=str(match.metadata["id"]),
-            signal_source=match.metadata["source"],
-            signal_hash=match.metadata["hash"],
-            match_distance=int(match.distance),
-        ).write_to_table(table)
+        # Write one record for TE and one for banks.. I am sure the logic can be
+        # simplified. We can do filters instead of iterating with flags. But
+        # umm, we can fix that later?
+        bank_record_written = False
+        te_record_written = False
+
+        for metadata_obj in match.metadata:
+            match_record_attributes = {
+                "content_id": content_id,
+                "signal_type": signal_type,
+                "content_hash": content_hash,
+                "updated_at": datetime.datetime.now(),
+                "signal_source": metadata_obj.get_source(),
+                "match_distance": int(match.distance),
+            }
+
+            if (
+                metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE
+                and not te_record_written
+            ):
+                match_record_attributes.update(
+                    signal_id=metadata_obj.indicator_id,
+                    signal_hash=metadata_obj.signal_value,
+                )
+                te_record_written = True
+
+            elif (
+                metadata_obj.get_source() == BANKS_SOURCE_SHORT_CODE
+                and not bank_record_written
+            ):
+                match_record_attributes.update(
+                    signal_id=metadata_obj.signal_id,
+                    signal_hash=metadata_obj.signal_value,
+                )
+                bank_record_written = True
+
+            MatchRecord(**match_record_attributes).write_to_table(table)
 
     @classmethod
     def write_signal_if_not_found(
@@ -264,40 +288,35 @@ class Matcher:
         their own store. Perhaps the API could be useful when building local
         banks. Who knows! :)
         """
-        for signal in cls.get_metadata_objects_from_match(signal_type, match):
-            signal.write_to_table_if_not_found(table)
+        for signal in cls.get_te_metadata_objects_from_match(signal_type, match):
+            if hasattr(signal, "write_to_table_if_not_found"):
+                # only ThreatExchangeSignalMetadata has this method.
+                # mypy not smart enough to auto cast.
+                signal.write_to_table_if_not_found(table)  # type: ignore
 
     @classmethod
-    def get_metadata_objects_from_match(
+    def get_te_metadata_objects_from_match(
         cls,
         signal_type: t.Type[SignalType],
-        match: IndexMatch,
-    ) -> t.List[t.Union[ThreatExchangeSignalMetadata]]:
+        match: IndexMatch[BaseIndexMetadata],
+    ) -> t.List[ThreatExchangeSignalMetadata]:
         """
         See docstring of `write_signal_if_not_found` we will likely want to move
         this outside of Matcher. However while the MD5 expansion is still on going
         better to have it all in once place.
         Note: changes made here will have an effect on api.matches.get_match_for_hash
         """
-        if (
-            match.metadata["source"]
-            != ThreatExchangeSignalMetadata.SIGNAL_SOURCE_SHORTCODE
-        ):
-            logger.warn(
-                "Matched against signal that is not sourced from threatexchange. Not writing metadata object."
-            )
-            return []
-
         return [
             ThreatExchangeSignalMetadata(
-                signal_id=str(match.metadata["id"]),
-                privacy_group_id=privacy_group_id,
+                signal_id=str(match_object.indicator_id),
+                privacy_group_id=match_object.privacy_group,
                 updated_at=datetime.datetime.now(),
                 signal_type=signal_type,
-                signal_hash=match.metadata["hash"],
-                tags=match.metadata["tags"].get(privacy_group_id, []),
+                signal_hash=match_object.signal_value,
+                tags=list(match_object.tags),
             )
-            for privacy_group_id in match.metadata.get("privacy_groups", [])
+            for match_object in match.metadata
+            if match_object.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE
         ]
 
     def get_index(self, signal_type: t.Type[SignalType]) -> SignalTypeIndex:
@@ -361,17 +380,25 @@ class Matcher:
         banked_signals = []
 
         for match in matches:
-            for privacy_group_id in match.metadata.get("privacy_groups", []):
-                banked_signal = BankedSignal(
-                    str(match.metadata["id"]),
-                    str(privacy_group_id),
-                    str(match.metadata["source"]),
-                )
+            for metadata_obj in match.metadata:
+                if metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE:
+                    banked_signal = BankedSignal(
+                        str(metadata_obj.indicator_id),
+                        str(metadata_obj.privacy_group),
+                        str(metadata_obj.get_source()),
+                    )
+                    for tag in metadata_obj.tags:
+                        banked_signal.add_classification(tag)
 
-                for tag in match.metadata["tags"].get(privacy_group_id, []):
-                    banked_signal.add_classification(tag)
+                    banked_signals.append(banked_signal)
+                elif metadata_obj.get_source() == BANKS_SOURCE_SHORT_CODE:
+                    banked_signal = BankedSignal(
+                        metadata_obj.signal_id,
+                        metadata_obj.bank_member_id,
+                        metadata_obj.get_source(),
+                    )
 
-                banked_signals.append(banked_signal)
+                    banked_signals.append(banked_signal)
 
         match_message = MatchMessage(
             content_key=content_id,
