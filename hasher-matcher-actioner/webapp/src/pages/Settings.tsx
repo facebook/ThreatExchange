@@ -14,6 +14,7 @@ import ActionPerformerSettingsTab, {
   ActionPerformer,
 } from './settings/ActionPerformerSettingsTab';
 import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
+import IndexSettingsTab from './settings/IndexSettingsTab';
 
 // This array must include the eventKey attribute value of any Tab in Tabs as
 // a part of the implementation to give each tab its own route.
@@ -61,6 +62,9 @@ export default function Settings(): JSX.Element {
             actionRules={actionRules}
             setActionRules={setActionRules}
           />
+        </Tab>
+        <Tab eventKey="index" title="Indexes">
+          <IndexSettingsTab />
         </Tab>
       </Tabs>
     </>
