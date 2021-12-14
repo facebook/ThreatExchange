@@ -133,6 +133,9 @@ def get_privacy_group_matcher_pdq_theshold(
     Entries in the internal cache are cleared
     every PG_CONFIG_CACHE_TIME_SECONDS seconds.
 
+    ToDo this should be refactored into a signal angostic interface eventaully
+        especially before we have another similarity based signal type in HMA
+
     Impl: the // is python's integer division operator. Threw me off. :)
     """
     return _get_privacy_group_matcher_pdq_theshold(
