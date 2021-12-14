@@ -17,6 +17,7 @@ from hmalib.lambdas.api.action_rules import get_action_rules_api
 from hmalib.lambdas.api.actions import get_actions_api
 from hmalib.lambdas.api.content import get_content_api
 from hmalib.lambdas.api.datasets import get_datasets_api
+from hmalib.lambdas.api.indexes import get_indexes_api
 from hmalib.lambdas.api.matches import get_matches_api
 from hmalib.lambdas.api.stats import get_stats_api
 from hmalib.lambdas.api.submit import (
@@ -49,6 +50,7 @@ SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 HASHES_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
+INDEXER_FUNCTION_NAME = os.environ["INDEXER_FUNCTION_NAME"]
 WRITEBACK_QUEUE_URL = os.environ["WRITEBACKS_QUEUE_URL"]
 
 # Override common errors codes to return json instead of bottle's default html
@@ -192,6 +194,14 @@ app.mount(
         bank_table=dynamodb.Table(BANKS_TABLE),
         bank_user_media_bucket=BANKS_MEDIA_BUCKET_NAME,
         submissions_queue_url=SUBMISSIONS_QUEUE_URL,
+    ),
+)
+
+app.mount(
+    "/indexes/",
+    get_indexes_api(
+        indexes_bucket_name=INDEXES_BUCKET_NAME,
+        indexer_function_name=INDEXER_FUNCTION_NAME,
     ),
 )
 
