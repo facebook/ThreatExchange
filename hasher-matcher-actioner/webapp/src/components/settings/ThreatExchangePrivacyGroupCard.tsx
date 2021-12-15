@@ -121,7 +121,7 @@ export default function ThreatExchangePrivacyGroupCard({
                   Description
                   <IonIcon
                     className="inline-icon"
-                    icon={showDescription ? chevronDown : chevronUp}
+                    icon={showDescription ? chevronUp : chevronDown}
                   />
                 </Accordion.Toggle>
                 <Accordion.Collapse
@@ -182,7 +182,7 @@ export default function ThreatExchangePrivacyGroupCard({
                   : 'Hide Advanced Settings '}
                 <IonIcon
                   className="inline-icon"
-                  icon={showAdvancedSettings ? chevronDown : chevronUp}
+                  icon={showAdvancedSettings ? chevronUp : chevronDown}
                 />
               </Accordion.Toggle>
               <Accordion.Collapse className="mt-2 mr-2" eventKey="0">
