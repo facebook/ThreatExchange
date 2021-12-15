@@ -17,7 +17,6 @@ import ActionRuleFormColumns, {
 } from '../../components/settings/ActionRuleFormColumns';
 import ActionRulesTableRow from '../../components/settings/ActionRulesTableRow';
 import '../../styles/_settings.scss';
-import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {addActionRule, deleteActionRule, updateActionRule} from '../../Api';
 import {ActionPerformer} from './ActionPerformerSettingsTab';
 import SettingsTabPane from './SettingsTabPane';
