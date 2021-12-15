@@ -40,8 +40,6 @@ logger = get_logger(__name__)
 
 PG_CONFIG_CACHE_TIME_SECONDS = 300
 
-MAX_PDQ_DISTANCE = 256
-
 
 @functools.lru_cache(maxsize=128)
 def _get_privacy_group_matcher_active(privacy_group_id: str, cache_buster) -> bool:
@@ -110,16 +108,16 @@ def get_max_threshold_of_active_privacy_groups_for_signal_type(
 
 
 @functools.lru_cache(maxsize=128)
-def _get_optional_privacy_group_matcher_pdq_theshold(
+def _get_privacy_group_matcher_pdq_threshold(
     privacy_group_id: str, cache_buster
-) -> t.Optional[int]:
+) -> int:
     config = AdditionalMatchSettingsConfig.get(privacy_group_id)
     if not config:
         logger.debug(
-            "Privacy group %s does not have custom pdq_match_threshold.",
+            "Privacy group %s does not have custom pdq_match_threshold. Using default defined in PDQ_CONFIDENT_MATCH_THRESHOLD",
             privacy_group_id,
         )
-        return None
+        return PdqSignal.PDQ_CONFIDENT_MATCH_THRESHOLD
 
     logger.debug(
         "pdq_match_threshold for %s is %s", privacy_group_id, config.pdq_match_threshold
@@ -127,17 +125,22 @@ def _get_optional_privacy_group_matcher_pdq_theshold(
     return config.pdq_match_threshold
 
 
-def get_optional_privacy_group_matcher_pdq_theshold(
+def get_privacy_group_matcher_pdq_threshold(
     privacy_group_id: str,
-) -> t.Optional[int]:
+) -> int:
     """
     Does this privacy group's have a custom pdq threshold; if so what is it?
+    otherwise return the default PDQ_CONFIDENT_MATCH_THRESHOLD.
+
     Entries in the internal cache are cleared
     every PG_CONFIG_CACHE_TIME_SECONDS seconds.
 
+    ToDo this should be refactored into a signal angostic interface eventaully
+        especially before we have another similarity based signal type in HMA
+
     Impl: the // is python's integer division operator. Threw me off. :)
     """
-    return _get_optional_privacy_group_matcher_pdq_theshold(
+    return _get_privacy_group_matcher_pdq_threshold(
         privacy_group_id, time.time() // PG_CONFIG_CACHE_TIME_SECONDS
     )
 
@@ -180,9 +183,11 @@ class Matcher:
             # No matches found in the index
             return []
 
-        return self.filter_match_results(match_results)
+        return self.filter_match_results(match_results, signal_type)
 
-    def filter_match_results(self, results: t.List[IndexMatch]) -> t.List[IndexMatch]:
+    def filter_match_results(
+        self, results: t.List[IndexMatch], signal_type: t.Type[SignalType]
+    ) -> t.List[IndexMatch]:
         """
         For ThreatExchange, use the privacy group's matcher_active flag to
         filter out match results that should not be returned.
@@ -191,25 +196,31 @@ class Matcher:
         consider extending this class and implementing your own.
         """
 
+        # results is a list of match object references that live in any index
+        # this method should not edit those objects directly as they could effect
+        # subsequent calls made while the index is still in memory
+        matches = results.copy()
+
         filtered_results = []
-        for match in results:
+        for match in matches:
             match.metadata = [
                 metadata_obj
                 for metadata_obj in match.metadata
                 if metadata_obj.get_source() == BANKS_SOURCE_SHORT_CODE
                 or (
                     # If metadata obj is from threatexchange (one privacy group
-                    # per metadata obj), check that it is active AND that its
+                    # per metadata obj), check that it is active AND
+                    # if the signal_type is PdqSignal that its
                     # distance is lesser than the optional pdq_threshold set for
-                    # that pg (or MAX_PDQ_DISTANCE).
+                    # that pg.
                     metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE
                     and get_privacy_group_matcher_active(metadata_obj.privacy_group)
-                    and match.distance
-                    <= (
-                        get_optional_privacy_group_matcher_pdq_theshold(
+                    and (
+                        signal_type != PdqSignal
+                        or match.distance
+                        <= get_privacy_group_matcher_pdq_threshold(
                             str(metadata_obj.privacy_group)
                         )
-                        or MAX_PDQ_DISTANCE
                     )
                 )
             ]
@@ -346,7 +357,7 @@ class Matcher:
 
     @classmethod
     def _get_index_for_signal_type_matching(
-        cls, signal_type: t.Type[SignalType], max_custom_threshold: int = 0
+        cls, signal_type: t.Type[SignalType], max_custom_threshold: int
     ):
         indexes = INDEX_MAPPING[signal_type]
         # disallow empty list
