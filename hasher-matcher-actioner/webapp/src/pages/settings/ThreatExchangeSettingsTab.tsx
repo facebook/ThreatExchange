@@ -182,6 +182,7 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
                   writeBack={dataset.write_back}
                   hashCount={dataset.hash_count}
                   matchCount={dataset.match_count}
+                  pdqMatchThreshold={dataset.pdq_match_threshold}
                   onSave={onPrivacyGroupSave}
                   onDelete={onPrivacyGroupDelete}
                 />

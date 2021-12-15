@@ -40,7 +40,9 @@ export default function ThreatExchangePrivacyGroupCard({
   description,
   writeBack,
   hashCount,
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   matchCount,
+  /* eslint-enable @typescript-eslint/no-unused-vars */
   pdqMatchThreshold,
   onSave,
   onDelete,
@@ -78,7 +80,7 @@ export default function ThreatExchangePrivacyGroupCard({
         Number(values.pdqMatchThreshold) > 52)
     ) {
       errors.pdqMatchThreshold =
-        'Invalid: none empty values must be between 0 (only exact matches) and 52 (max threshold the libray supports)';
+        'Nonempty values must be between 0 (for only exact matches) and 52 (max threshold supported by index) inclusive';
     }
 
     return errors;
@@ -86,11 +88,14 @@ export default function ThreatExchangePrivacyGroupCard({
 
   const formik = useFormik({
     initialValues: {
-      pdqMatchThreshold: pdqMatchThreshold || '',
+      pdqMatchThreshold: pdqMatchThreshold ?? '',
     },
     validate,
-    onSubmit: values => {
-      console.log('shoudneverhappen');
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    onSubmit: _ => {
+      /* eslint-enable @typescript-eslint/no-unused-vars */
+      // https://github.com/jaredpalmer/formik/issues/2675
+      // this should never trigger but due to typing we can't just omit it.
     },
   });
 
@@ -191,7 +196,8 @@ export default function ThreatExchangePrivacyGroupCard({
                         isValid={
                           formik.touched.pdqMatchThreshold &&
                           !formik.errors.pdqMatchThreshold &&
-                          !!formik.values.pdqMatchThreshold
+                          formik.values.pdqMatchThreshold !==
+                            originalPDQMatchThreshold
                         }
                         isInvalid={
                           formik.touched.pdqMatchThreshold &&
@@ -199,7 +205,8 @@ export default function ThreatExchangePrivacyGroupCard({
                         }
                         onChange={formik.handleChange}
                         type="text"
-                        placeholder={pdqMatchThreshold ?? ''}
+                        value={formik.values.pdqMatchThreshold}
+                        placeholder="None"
                       />
                       {formik.touched.pdqMatchThreshold &&
                       formik.errors.pdqMatchThreshold ? (
