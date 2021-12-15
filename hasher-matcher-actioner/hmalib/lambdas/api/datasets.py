@@ -317,10 +317,11 @@ def get_datasets_api(
         updated_config = hmaconfig.update_config(config).__dict__
         updated_config["privacy_group_id"] = updated_config["name"]
 
+        additional_config = AdditionalMatchSettingsConfig.get(
+            str(request.privacy_group_id)
+        )
         if request.pdq_match_threshold:
-            if additional_config := AdditionalMatchSettingsConfig.get(
-                str(request.privacy_group_id)
-            ):
+            if additional_config:
                 additional_config.pdq_match_threshold = int(request.pdq_match_threshold)
                 hmaconfig.update_config(additional_config)
             else:
@@ -328,6 +329,8 @@ def get_datasets_api(
                     str(request.privacy_group_id), int(request.pdq_match_threshold)
                 )
                 hmaconfig.create_config(additional_config)
+        elif additional_config:  # pdq_match_threshold was set and now should be removed
+            hmaconfig.delete_config(additional_config)
 
         return Dataset.from_dict(updated_config)
 
