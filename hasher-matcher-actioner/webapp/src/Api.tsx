@@ -287,6 +287,7 @@ export type PrivacyGroup = {
   localFetcherActive: boolean;
   localWriteBack: boolean;
   localMatcherActive: boolean;
+  localPDQMatchThreshold?: string;
 };
 
 type Dataset = {
@@ -299,6 +300,7 @@ type Dataset = {
   in_use: boolean;
   hash_count: number;
   match_count: number;
+  pdq_match_threshold?: string;
 };
 
 export async function updateDataset(
@@ -306,12 +308,14 @@ export async function updateDataset(
   fetcherActive: boolean,
   writeBack: boolean,
   matcherActive: boolean,
+  pdqMatchThreshold?: string,
 ): Promise<Dataset> {
   return apiPost('datasets/update', {
     privacy_group_id: privacyGroupId,
     fetcher_active: fetcherActive,
     write_back: writeBack,
     matcher_active: matcherActive,
+    pdq_match_threshold: pdqMatchThreshold,
   });
 }
 

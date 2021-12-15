@@ -36,6 +36,7 @@ type Dataset = {
   write_back: boolean;
   hash_count: number;
   match_count: number;
+  pdq_match_threshold?: string;
 };
 
 export default function ThreatExchangeSettingsTab(): JSX.Element {
@@ -50,6 +51,7 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
       privacyGroup.localFetcherActive,
       privacyGroup.localWriteBack,
       privacyGroup.localMatcherActive,
+      privacyGroup.localPDQMatchThreshold,
     )
       .then(response => {
         setToastBody('Changes are saved!');
@@ -180,6 +182,7 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
                   writeBack={dataset.write_back}
                   hashCount={dataset.hash_count}
                   matchCount={dataset.match_count}
+                  pdqMatchThreshold={dataset.pdq_match_threshold}
                   onSave={onPrivacyGroupSave}
                   onDelete={onPrivacyGroupDelete}
                 />

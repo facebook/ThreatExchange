@@ -32,7 +32,7 @@ type SettingsTabPaneTitleProps = {
   children: string;
 };
 
-SettingsTabPane.Title = function ({
+SettingsTabPane.Title = function Title({
   children,
 }: SettingsTabPaneTitleProps): JSX.Element {
   return <h2>{children}</h2>;

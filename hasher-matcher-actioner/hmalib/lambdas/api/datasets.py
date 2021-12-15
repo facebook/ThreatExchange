@@ -86,6 +86,7 @@ class UpdateDatasetRequest(DictParseable):
     fetcher_active: bool
     matcher_active: bool
     write_back: bool
+    pdq_match_threshold: str
 
     @classmethod
     def from_dict(cls, d: dict) -> "UpdateDatasetRequest":
@@ -94,6 +95,7 @@ class UpdateDatasetRequest(DictParseable):
             d["fetcher_active"],
             d["matcher_active"],
             d["write_back"],
+            d.get("pdq_match_threshold", ""),
         )
 
 
@@ -140,10 +142,15 @@ class ThreatExchangeDatasetSummary(Dataset):
 
     hash_count: int
     match_count: int
+    pdq_match_threshold: t.Optional[str]
 
     def to_json(self) -> t.Dict:
         dataset_json = super().to_json()
-        dataset_json.update(hash_count=self.hash_count, match_count=self.match_count)
+        dataset_json.update(
+            hash_count=self.hash_count,
+            match_count=self.match_count,
+            pdq_match_threshold=self.pdq_match_threshold,
+        )
 
         return dataset_json
 
@@ -238,26 +245,36 @@ def _get_threat_exchange_datasets(
         threat_exchange_data_folder,
     )
 
-    return [
-        ThreatExchangeDatasetSummary(
-            collab.privacy_group_id,
-            collab.privacy_group_name,
-            collab.description,
-            collab.fetcher_active,
-            collab.matcher_active,
-            collab.write_back,
-            collab.in_use,
-            hash_count=t.cast(
-                int,
-                hash_counts.get(
-                    collab.privacy_group_id,
-                    [-1, ""],
-                )[0],
-            ),
-            match_count=-1,  # fix will be based on new count system
+    summaries = []
+    for collab in collaborations:
+        if additional_config := AdditionalMatchSettingsConfig.get(
+            str(collab.privacy_group_id)
+        ):
+            pdq_match_threshold = str(additional_config.pdq_match_threshold)
+        else:
+            pdq_match_threshold = ""
+        summaries.append(
+            ThreatExchangeDatasetSummary(
+                collab.privacy_group_id,
+                collab.privacy_group_name,
+                collab.description,
+                collab.fetcher_active,
+                collab.matcher_active,
+                collab.write_back,
+                collab.in_use,
+                hash_count=t.cast(
+                    int,
+                    hash_counts.get(
+                        collab.privacy_group_id,
+                        [-1, ""],
+                    )[0],
+                ),
+                match_count=-1,  # fix will be based on new count system
+                pdq_match_threshold=pdq_match_threshold,
+            )
         )
-        for collab in collaborations
-    ]
+
+    return summaries
 
 
 def get_datasets_api(
@@ -299,6 +316,22 @@ def get_datasets_api(
         config.matcher_active = request.matcher_active
         updated_config = hmaconfig.update_config(config).__dict__
         updated_config["privacy_group_id"] = updated_config["name"]
+
+        additional_config = AdditionalMatchSettingsConfig.get(
+            str(request.privacy_group_id)
+        )
+        if request.pdq_match_threshold:
+            if additional_config:
+                additional_config.pdq_match_threshold = int(request.pdq_match_threshold)
+                hmaconfig.update_config(additional_config)
+            else:
+                additional_config = AdditionalMatchSettingsConfig(
+                    str(request.privacy_group_id), int(request.pdq_match_threshold)
+                )
+                hmaconfig.create_config(additional_config)
+        elif additional_config:  # pdq_match_threshold was set and now should be removed
+            hmaconfig.delete_config(additional_config)
+
         return Dataset.from_dict(updated_config)
 
     @datasets_api.post("/create", apply=[jsoninator(CreateDatasetRequest)])
