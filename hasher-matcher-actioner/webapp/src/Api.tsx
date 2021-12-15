@@ -300,7 +300,7 @@ type Dataset = {
   in_use: boolean;
   hash_count: number;
   match_count: number;
-  pdqMatchThreshold?: string;
+  pdq_match_threshold?: string;
 };
 
 export async function updateDataset(
