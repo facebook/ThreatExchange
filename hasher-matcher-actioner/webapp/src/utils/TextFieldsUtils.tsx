@@ -50,7 +50,11 @@ export function CopyableTextField({
       // @BarrettOlson. UpdatingPopover is really, really hard to type in
       // typescript. Let's discuss what it was helping with and if it is
       // necessary.
-      overlay={<Popover id="copy-me">{message}</Popover>}>
+      overlay={
+        <Popover id="copy-me">
+          <div className="p-2">{message}</div>
+        </Popover>
+      }>
       <button
         type="button"
         role="link"
