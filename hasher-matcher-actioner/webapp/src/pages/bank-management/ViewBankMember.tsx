@@ -24,6 +24,7 @@ import {
   CopyableHashField,
 } from '../../utils/TextFieldsUtils';
 import ReturnTo from '../../components/ReturnTo';
+import {MediaUnavailablePreview} from './Members';
 
 function NoSignalsYet() {
   return (
@@ -105,13 +106,17 @@ export default function ViewBankMember(): JSX.Element {
       ) : (
         <Row>
           <Col md={{span: 6}}>
-            <ResponsiveEmbed aspectRatio="4by3">
-              {member.content_type === ContentType.Video ? (
-                <BlurVideo src={member.preview_url!} />
-              ) : (
-                <BlurImage src={member.preview_url!} />
-              )}
-            </ResponsiveEmbed>
+            {member.is_media_unavailable ? (
+              <MediaUnavailablePreview />
+            ) : (
+              <ResponsiveEmbed aspectRatio="4by3">
+                {member.content_type === ContentType.Video ? (
+                  <BlurVideo src={member.preview_url!} />
+                ) : (
+                  <BlurImage src={member.preview_url!} />
+                )}
+              </ResponsiveEmbed>
+            )}
           </Col>
           <Col md={{span: 6}}>
             <Container>

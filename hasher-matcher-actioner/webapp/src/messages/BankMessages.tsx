@@ -29,6 +29,7 @@ export type BankMember = {
   notes: string;
   created_at: Date;
   updated_at: Date;
+  is_media_unavailable: boolean;
 };
 
 export type BankMemberSignal = {

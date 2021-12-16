@@ -565,6 +565,7 @@ export async function fetchBankMembersPage(
       notes: member.notes,
       created_at: toDate(member.created_at)!,
       updated_at: toDate(member.updated_at)!,
+      is_media_unavailable: member.is_media_unavailable,
     })),
     response.continuation_token,
   ]);
@@ -594,6 +595,7 @@ export async function fetchBankMember(
     notes: member.notes,
     created_at: toDate(member.created_at)!,
     updated_at: toDate(member.updated_at)!,
+    is_media_unavailable: member.is_media_unavailable,
     signals: member.signals.map(signal => ({
       bank_id: signal.bank_id,
       bank_member_id: signal.bank_member_id,
@@ -643,6 +645,7 @@ export async function addBankMember(
     notes: response.notes,
     created_at: toDate(response.created_at)!,
     updated_at: toDate(response.updated_at)!,
+    is_media_unavailable: response.is_media_unavailable,
   }));
 }
 
