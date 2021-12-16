@@ -3,7 +3,7 @@
  */
 
 import React, {useState, useEffect} from 'react';
-import {useHistory, useParams} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 import {Col, Row, Table, Button} from 'react-bootstrap';
 
 import {
@@ -20,13 +20,13 @@ import ContentMatchTable from '../components/ContentMatchTable';
 import ActionHistoryTable from '../components/ActionHistoryTable';
 import FixedWidthCenterAlignedLayout from './layouts/FixedWidthCenterAlignedLayout';
 import ContentPreview from '../components/ContentPreview';
+import ReturnTo from '../components/ReturnTo';
 
 type PageParam = {
   id: string;
 };
 
 export default function ContentDetailsSummary(): JSX.Element {
-  const history = useHistory();
   const {id} = useParams<PageParam>();
   const [contentDetails, setContentDetails] = useState<ContentDetails>();
   const [hashDetails, setHashDetails] = useState<HashDetails>();
@@ -70,9 +70,7 @@ export default function ContentDetailsSummary(): JSX.Element {
     <FixedWidthCenterAlignedLayout title="Summary">
       <Row>
         <Col className="mb-4">
-          <Button variant="link" href="#" onClick={() => history.goBack()}>
-            &larr; Back
-          </Button>
+          <ReturnTo />
         </Col>
       </Row>
       <Row

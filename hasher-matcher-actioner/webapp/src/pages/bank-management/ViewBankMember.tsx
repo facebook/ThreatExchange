@@ -14,10 +14,7 @@ import {
 import {useParams} from 'react-router-dom';
 
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
-import {
-  BankMemberWithSignals,
-  BankMemberSignal,
-} from '../../messages/BankMessages';
+import {BankMemberWithSignals} from '../../messages/BankMessages';
 import Loader from '../../components/Loader';
 import {fetchBankMember} from '../../Api';
 import {ContentType} from '../../utils/constants';
@@ -26,6 +23,7 @@ import {
   CopyableTextField,
   CopyableHashField,
 } from '../../utils/TextFieldsUtils';
+import ReturnTo from '../../components/ReturnTo';
 
 function NoSignalsYet() {
   return (
@@ -80,8 +78,24 @@ export default function ViewBankMember(): JSX.Element {
     fetchBankMember(bankMemberId).then(setMember);
   }, [pollBuster]);
 
+  const returnURL = member
+    ? `/banks/bank/${member.bank_id}/${
+        member.content_type === ContentType.Video ? 'video' : 'photo'
+      }-memberships`
+    : '/';
+
   return (
-    <FixedWidthCenterAlignedLayout title="Bank Member">
+    <FixedWidthCenterAlignedLayout>
+      <Row>
+        <Col className="my-4">
+          <ReturnTo to={returnURL}>Back to Members</ReturnTo>
+        </Col>
+      </Row>
+      <Row>
+        <Col>
+          <h1>Bank Member</h1>
+        </Col>
+      </Row>
       {member === undefined ? (
         <Row>
           <Col>
