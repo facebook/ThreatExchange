@@ -46,10 +46,20 @@ function EmptyState({onAdd}: EmptyStateProps): JSX.Element {
   );
 }
 
+export function MediaUnavailablePreview(): JSX.Element {
+  return (
+    <div className="p-4 bg-light" style={{borderBottom: '1px solid #6c757d'}}>
+      <p className="lead">Media Not Provided</p>
+      <p>Member was added without associated media.</p>
+    </div>
+  );
+}
+
 type MemberPreviewProps = {
   thumbnailSrc: string;
   lastUpdated: Date;
   type: ContentType;
+  isMediaUnavailable: boolean;
   bankMemberId: string;
 };
 
@@ -57,18 +67,24 @@ function MemberPreview({
   type,
   thumbnailSrc,
   lastUpdated,
+  isMediaUnavailable,
   bankMemberId,
 }: MemberPreviewProps): JSX.Element {
   return (
     <Col xs="4" className="mb-4">
       <Card>
-        <ResponsiveEmbed aspectRatio="16by9">
-          {type === ContentType.Video ? (
-            <BlurVideo src={thumbnailSrc} />
-          ) : (
-            <BlurImage src={thumbnailSrc} />
-          )}
-        </ResponsiveEmbed>
+        {isMediaUnavailable ? (
+          <MediaUnavailablePreview />
+        ) : (
+          <ResponsiveEmbed aspectRatio="16by9">
+            {type === ContentType.Video ? (
+              <BlurVideo src={thumbnailSrc} />
+            ) : (
+              <BlurImage src={thumbnailSrc} />
+            )}
+          </ResponsiveEmbed>
+        )}
+
         <Card.Body>
           <p className="text-small">
             <Link to={`/banks/member/${bankMemberId}`}>View Member</Link>
@@ -147,6 +163,7 @@ function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
           <MemberPreview
             bankMemberId={member.bank_member_id}
             type={type}
+            isMediaUnavailable={member.is_media_unavailable}
             thumbnailSrc={member.preview_url!}
             lastUpdated={member.updated_at}
           />

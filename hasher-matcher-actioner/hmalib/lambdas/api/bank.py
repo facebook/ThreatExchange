@@ -12,7 +12,10 @@ from urllib.parse import quote as uriencode
 import boto3
 from mypy_boto3_dynamodb.service_resource import Table
 
-from threatexchange.content_type.meta import get_content_type_for_name
+from threatexchange.content_type.meta import (
+    get_content_type_for_name,
+    get_signal_types_by_name,
+)
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 
@@ -213,6 +216,32 @@ def get_bank_api(
                 raw_content=None,
                 notes=notes,
             )
+        )
+
+    @bank_api.post("/add-detached-member-signal/<bank_id>", apply=[jsoninator])
+    def add_detached_bank_member_signal(bank_id=None) -> BankMemberSignal:
+        """
+        Add a virtual bank_member (without any associated media) and a
+        corresponding signal.
+
+        Requires JSON object with following fields:
+        - signal_type: ["pdq"|"pdq_ocr","photo_md5"] -> anything from
+          threatexchange.content_type.meta.get_signal_types_by_name()'s keys
+        - content_type: ["photo"|"video"] to get the content_type for the
+          virtual member.
+        - signal_value: the hash to store against this signal. Will
+          automatically de-dupe against existing signals.
+        """
+        content_type = get_content_type_for_name(bottle.request.json["content_type"])
+        signal_type = get_signal_types_by_name()[bottle.request.json["signal_type"]]
+        signal_value = bottle.request.json["signal_value"]
+
+        return bank_ops.add_detached_bank_member_signal(
+            banks_table=table_manager,
+            bank_id=bank_id,
+            content_type=content_type,
+            signal_type=signal_type,
+            signal_value=signal_value,
         )
 
     # Miscellaneous
