@@ -2,8 +2,8 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect} from 'react';
-import {Col, Collapse, Row, Table, Toast} from 'react-bootstrap';
+import React, {useState, useEffect, useContext} from 'react';
+import {Col, Collapse, Row, Table} from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import Spinner from 'react-bootstrap/Spinner';
 
@@ -12,6 +12,7 @@ import {CopyableHashField, CopyableTextField} from '../utils/TextFieldsUtils';
 import {formatTimestamp} from '../utils/DateTimeUtils';
 
 import OpinionTableCell from './OpinionTableCell';
+import {NotificationsContext} from '../AppWithNotifications';
 
 export default function ContentMatchTable({
   contentKey,
@@ -19,33 +20,19 @@ export default function ContentMatchTable({
   contentKey: string;
 }): JSX.Element {
   const [matchDetails, setMatchDetails] = useState<MatchDetails[]>();
+  const notifications = useContext(NotificationsContext);
+
   useEffect(() => {
     fetchMatchDetails(contentKey).then(matches => {
       setMatchDetails(matches.match_details);
     });
   }, [contentKey]);
 
-  const [showToast, setShowToast] = useState(false);
   return (
     <>
       <Spinner hidden={matchDetails !== null} animation="border" role="status">
         <span className="sr-only">Loading...</span>
       </Spinner>
-      <div className="feedback-toast-container">
-        <Toast
-          onClose={() => setShowToast(false)}
-          show={showToast}
-          delay={5000}
-          autohide>
-          <Toast.Header>
-            <strong className="mr-auto">Submitted</strong>
-            <small>Thanks!</small>
-          </Toast.Header>
-          <Toast.Body>
-            Please wait for the requested change to propagate
-          </Toast.Body>
-        </Toast>
-      </div>
       <Collapse in={matchDetails !== null}>
         <Row>
           <Col md={12}>
@@ -97,7 +84,13 @@ export default function ContentMatchTable({
                             pendingOpinionChange={
                               metadata.pending_opinion_change
                             }
-                            setShowToast={setShowToast}
+                            setShowToast={() =>
+                              notifications.success({
+                                header: 'Submitted',
+                                message:
+                                  'Please wait for the requested change to propagate',
+                              })
+                            }
                           />
                         </td>
                         <td>{metadata.tags.join(', ')}</td>

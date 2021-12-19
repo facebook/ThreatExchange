@@ -4,6 +4,7 @@
 
 @import '_variables';
 @import './themed-form';
+@import 'node_modules/bootstrap/scss/variables';
 
 div#root {
   display: flex;
@@ -40,9 +41,32 @@ div#root {
   margin: auto;
 }
 
-.feedback-toast-container {
+.toast-container {
   position: fixed;
-  top: 0;
-  right: 0;
-  padding: 25px;
+  z-index: 2;
+  top: 20px;
+  right: 20px;
+  width: 350px; // Toasts are max 350px wide.
+
+  & > .toast {
+    padding: 8px;
+    border-left-width: 5px;
+    border-left-style: solid;
+
+    &.info {
+      border-left-color: $blue;
+    }
+
+    &.success {
+      border-left-color: $green;
+    }
+
+    &.warn {
+      border-left-color: $yellow;
+    }
+
+    &.error {
+      border-left-color: $red;
+    }
+  }
 }

@@ -6,10 +6,9 @@
 
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import Row from 'react-bootstrap/Row';
 import Table from 'react-bootstrap/Table';
-import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
 import {add, checkmark, close} from 'ionicons/icons';
 import ActionRuleFormColumns, {
@@ -20,6 +19,7 @@ import '../../styles/_settings.scss';
 import {addActionRule, deleteActionRule, updateActionRule} from '../../Api';
 import {ActionPerformer} from './ActionPerformerSettingsTab';
 import SettingsTabPane from './SettingsTabPane';
+import {NotificationsContext} from '../../AppWithNotifications';
 
 export type Label = {
   key: string;
@@ -146,8 +146,7 @@ export default function ActionRuleSettingsTab({
   const [adding, setAdding] = useState(false);
   const [newActionRule, setNewActionRule] = useState(defaultActionRule);
   const [showErrors, setShowErrors] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const notifications = useContext(NotificationsContext);
 
   const onNewActionRuleChange = (
     update_name: 'name' | 'action_name' | 'classification_conditions',
@@ -195,11 +194,6 @@ export default function ActionRuleSettingsTab({
     setNewActionRule(defaultActionRule);
   };
 
-  const displayToast = (message: string) => {
-    setToastMessage(message);
-    setShowToast(true);
-  };
-
   const onAddActionRule = (actionRule: ActionRule, addToUIOnly: boolean) => {
     actionRules.push(actionRule);
     actionRules.sort((a, b) =>
@@ -208,7 +202,9 @@ export default function ActionRuleSettingsTab({
     setActionRules([...actionRules]);
     if (!addToUIOnly) {
       addActionRule(actionRule);
-      displayToast('A new action rule was added successfully.');
+      notifications.success({
+        message: 'A new action rule was added successfully.',
+      });
     }
   };
 
@@ -220,7 +216,9 @@ export default function ActionRuleSettingsTab({
     setActionRules([...actionRules]);
     if (!deleteFromUIOnly) {
       deleteActionRule(name);
-      displayToast('The action rule was deleted successfully.');
+      notifications.success({
+        message: 'The action rule was deleted successfully.',
+      });
     }
   };
 
@@ -231,7 +229,9 @@ export default function ActionRuleSettingsTab({
     onDeleteActionRule(oldName, true); // deleteFromUIOnly
     onAddActionRule(updatedActionRule, true); // addToUIOnly
     updateActionRule(oldName, updatedActionRule);
-    displayToast('The action rule was updated successfully.');
+    notifications.success({
+      message: 'The action rule was updated successfully.',
+    });
   };
 
   const actionRulesTableRows = actionRules.map(actionRule => (
@@ -321,15 +321,6 @@ export default function ActionRuleSettingsTab({
           </Table>
         </Col>
       </Row>
-      <div className="feedback-toast-container">
-        <Toast
-          onClose={() => setShowToast(false)}
-          show={showToast}
-          delay={5000}
-          autohide>
-          <Toast.Body>{toastMessage}</Toast.Body>
-        </Toast>
-      </div>
     </SettingsTabPane>
   );
 }
