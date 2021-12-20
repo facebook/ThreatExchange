@@ -71,3 +71,68 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
             )
 
             self.assertEqual(len(to_process.items), 0)
+
+    def test_bank_member_removes_from_get_members_page(self):
+        NUM_MEMBERS = 100
+        REMOVE_EVERY_XTH_MEMBER = 4
+
+        with self.fresh_dynamodb():
+            table_manager = BanksTable(self.get_table())
+            bank_id, bank_member_id = self._create_bank_and_bank_member()
+            for i in range(NUM_MEMBERS):
+                bank_member = table_manager.add_bank_member(
+                    bank_id=bank_id,
+                    content_type=VideoContent,
+                    raw_content=None,
+                    storage_bucket="hma-test-media",
+                    storage_key="irrrelevant",
+                    notes="",
+                )
+
+            members = []
+            exclusive_start_key = None
+
+            while True:
+                page = table_manager.get_all_bank_members_page(
+                    bank_id=bank_id,
+                    content_type=VideoContent,
+                    exclusive_start_key=exclusive_start_key,
+                )
+                members += page.items
+                exclusive_start_key = page.last_evaluated_key
+
+                if not page.has_next_page():
+                    break
+
+            self.assertEqual(
+                len(members),
+                101,
+                "All the pages together have as many members as we added.",
+            )
+
+            count_members_removed = 0
+            for i, member in enumerate(members):
+                if i // REMOVE_EVERY_XTH_MEMBER == 0:
+                    table_manager.remove_bank_member(member.bank_member_id)
+                    count_members_removed += 1
+
+            members = []
+            exclusive_start_key = None
+
+            while True:
+                page = table_manager.get_all_bank_members_page(
+                    bank_id=bank_id,
+                    content_type=VideoContent,
+                    exclusive_start_key=exclusive_start_key,
+                )
+                members += page.items
+                exclusive_start_key = page.last_evaluated_key
+
+                if not page.has_next_page():
+                    break
+
+            self.assertEqual(
+                len(members),
+                101 - count_members_removed,
+                "All the pages together have as many members as we added minus the ones we removed.",
+            )

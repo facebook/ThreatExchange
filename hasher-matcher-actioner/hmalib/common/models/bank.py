@@ -441,7 +441,6 @@ class BanksTable:
         content_type=t.Type[ContentType],
         exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
     ) -> PaginatedResponse[BankMember]:
-        # NOTE: This does not yet filter out is_removed bank_members
         PAGE_SIZE = 100
         expected_pk = BankMember.get_pk(bank_id=bank_id, content_type=content_type)
 
@@ -449,12 +448,14 @@ class BanksTable:
             result = self._table.query(
                 ScanIndexForward=False,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
+                FilterExpression=Key("IsRemoved").eq(False),
                 Limit=PAGE_SIZE,
             )
         else:
             result = self._table.query(
                 ScanIndexForward=False,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
+                FilterExpression=Key("IsRemoved").eq(False),
                 ExclusiveStartKey=exclusive_start_key,
                 Limit=PAGE_SIZE,
             )
