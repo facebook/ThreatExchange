@@ -39,8 +39,9 @@ export default function Settings(): JSX.Element {
   }, []);
 
   return (
-    <>
+    <div className="pt-4">
       <Tabs
+        className="pl-3"
         activeKey={tab}
         id="setting-tabs"
         onSelect={key => {
@@ -67,6 +68,6 @@ export default function Settings(): JSX.Element {
           <IndexSettingsTab />
         </Tab>
       </Tabs>
-    </>
+    </div>
   );
 }

@@ -2,11 +2,10 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useContext} from 'react';
 import {
   Row,
   Button,
-  Toast,
   Spinner,
   Tooltip,
   OverlayTrigger,
@@ -25,6 +24,7 @@ import {
   updateDataset,
   deleteDataset,
 } from '../../Api';
+import {NotificationsContext} from '../../AppWithNotifications';
 
 type Dataset = {
   privacy_group_id: string;
@@ -43,8 +43,8 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastBody, setToastBody] = useState('');
+  const notifications = useContext(NotificationsContext);
+
   const onPrivacyGroupSave = (privacyGroup: PrivacyGroup) => {
     updateDataset(
       privacyGroup.privacyGroupId,
@@ -54,8 +54,7 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
       privacyGroup.localPDQMatchThreshold,
     )
       .then(response => {
-        setToastBody('Changes are saved!');
-        setShowToast(true);
+        notifications.success({message: 'Changes are saved!'});
         datasets[
           datasets.findIndex(
             item => item.privacy_group_id === response.privacy_group_id,
@@ -64,25 +63,25 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
         setDatasets(datasets);
       })
       .catch(() => {
-        setToastBody('Errors when saving changes. Please try again later');
-        setShowToast(true);
+        notifications.error({
+          message: 'Errors when saving changes. Please try again later',
+        });
       });
   };
   const onPrivacyGroupDelete = (privacyGroupId: string) => {
     deleteDataset(privacyGroupId)
       .then(response => {
-        setToastBody(response.response);
-        setShowToast(true);
+        notifications.success({message: response.response});
         const filteredDatasets = datasets.filter(
           item => item.privacy_group_id !== privacyGroupId,
         );
         setDatasets(filteredDatasets);
       })
       .catch(() => {
-        setToastBody(
-          'Errors when deleting the privacy group. Please try again later',
-        );
-        setShowToast(true);
+        notifications.error({
+          message:
+            'Errors when deleting the privacy group. Please try again later',
+        });
       });
   };
 
@@ -95,10 +94,9 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
       })
       .catch(e => {
         setLoading(false);
-        setToastBody(
-          `Errors when fetching privacy groups. Please try again later\n ${e.message}`,
-        );
-        setShowToast(true);
+        notifications.error({
+          message: `Errors when fetching privacy groups. Please try again later\n ${e.message}`,
+        });
       });
   };
 
@@ -107,16 +105,14 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
     syncAllDatasets()
       .then(syncResponse => {
         setSyncing(false);
-        setToastBody(syncResponse.response);
-        setShowToast(true);
+        notifications.success({message: syncResponse.response});
         refreshDatasets();
       })
       .catch(() => {
         setSyncing(false);
-        setToastBody(
-          'Errors when syncing privacy groups. Please try again later',
-        );
-        setShowToast(true);
+        notifications.error({
+          message: 'Errors when syncing privacy groups. Please try again later',
+        });
       });
   };
 
@@ -125,11 +121,6 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
   }, []);
   return (
     <>
-      <div className="feedback-toast-container">
-        <Toast onClose={() => setShowToast(false)} show={showToast} autohide>
-          <Toast.Body>{toastBody}</Toast.Body>
-        </Toast>
-      </div>
       <Card.Header>
         <Row className="mt-3">
           <h2 className="mt-2">ThreatExchange Datasets </h2>

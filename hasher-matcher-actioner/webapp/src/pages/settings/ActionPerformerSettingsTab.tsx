@@ -2,18 +2,18 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import Card from 'react-bootstrap/Card';
 import Table from 'react-bootstrap/Table';
 import Button from 'react-bootstrap/Button';
-import Toast from 'react-bootstrap/Toast';
 import {IonIcon} from '@ionic/react';
-import {add, checkmark, close} from 'ionicons/icons';
+import {add, checkmark, close, notificationsOutline} from 'ionicons/icons';
 import {updateAction, createAction, deleteAction} from '../../Api';
 import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
 import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
 import {ActionRule} from './ActionRuleSettingsTab';
 import {ActionPerformerType} from '../../utils/constants';
+import {NotificationsContext} from '../../AppWithNotifications';
 
 type Input = {
   actions: ActionPerformer[];
@@ -74,14 +74,10 @@ export default function ActionPerformerSettingsTab({
 }: Input): JSX.Element {
   const [adding, setAdding] = useState(false);
   const [newAction, setNewAction] = useState(defaultAction);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  const notifications = useContext(NotificationsContext);
+
   const resetForm = () => {
     setNewAction(defaultAction);
-  };
-  const displayToast = (message: string) => {
-    setToastMessage(message);
-    setShowToast(true);
   };
   const onActionUpdate = (
     old_name: string,
@@ -97,22 +93,22 @@ export default function ActionPerformerSettingsTab({
           return action;
         });
         setActions(updatedActions);
-        displayToast(
-          `${response.response} (Manual refresh maybe necessary to see changes.)`,
-        );
+        notifications.success({
+          message: `${response.response} (Manual refresh maybe necessary to see changes.)`,
+        });
       })
       .catch(e => {
-        displayToast(
-          `Errors when updating the action. Please try again later\n${e.message}`,
-        );
+        notifications.error({
+          message: `Errors when updating the action. Please try again later\n${e.message}`,
+        });
       });
   };
   const onActionCreate = () => {
     createAction(removeUnexpectedParams(newAction))
       .then(response => {
-        displayToast(
-          `${response.response} (Manual refresh maybe necessary to see changes.)`,
-        );
+        notifications.success({
+          message: `${response.response} (Manual refresh maybe necessary to see changes.)`,
+        });
         const newActions = actions;
         newActions.unshift(newAction);
         setActions(newActions);
@@ -120,9 +116,9 @@ export default function ActionPerformerSettingsTab({
         setAdding(false);
       })
       .catch(e => {
-        displayToast(
-          `Errors when creating the action. Please try again later\n${e.message}`,
-        );
+        notifications.error({
+          message: `Errors when creating the action. Please try again later\n${e.message}`,
+        });
       });
   };
   const onActionDelete = (actionToDelete: ActionPerformer) => {
@@ -132,12 +128,12 @@ export default function ActionPerformerSettingsTab({
           (action: ActionPerformer) => action.name !== actionToDelete.name,
         );
         setActions(filteredActions);
-        displayToast(`${response.response}`);
+        notifications.success({message: `${response.response}`});
       })
       .catch(e => {
-        displayToast(
-          `Errors when deleting the action. Please try again later\n${e.message}`,
-        );
+        notifications.error({
+          message: `Errors when deleting the action. Please try again later\n${e.message}`,
+        });
       });
   };
 
@@ -154,15 +150,6 @@ export default function ActionPerformerSettingsTab({
             that you can review the Content and, if it is truly a cat, remove it
             for violating your Platform&apos;s Community Standards.
           </p>
-          <div className="feedback-toast-container">
-            <Toast
-              onClose={() => setShowToast(false)}
-              show={showToast}
-              delay={5000}
-              autohide>
-              <Toast.Body>{toastMessage}</Toast.Body>
-            </Toast>
-          </div>
         </Card.Header>
         <Card.Body>
           <Table striped bordered hover>
