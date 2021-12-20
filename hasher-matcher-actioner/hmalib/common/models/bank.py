@@ -498,19 +498,27 @@ class BanksTable:
         bank_member.write_to_table(self._table)
         return bank_member
 
-    def remove_bank_member(self, bank_id: str, bank_member_id: str):
+    def remove_bank_member(self, bank_member_id: str):
         """
         Removes the bank member and associated signals from the bank. Merely
         marks as removed, does not physically delete from the store. DOES NOT
         stop matching until index is updated. DOES NOT undo any actions already
         taken.
         """
+        bank_member_keys = self._table.query(
+            IndexName=BankMember.BANK_MEMBER_ID_INDEX,
+            KeyConditionExpression=Key(
+                BankMember.BANK_MEMBER_ID_INDEX_BANK_MEMBER_ID
+            ).eq(bank_member_id),
+        )["Items"][0]
+
         bank_member = BankMember.from_dynamodb_item(
             self._table.get_item(
-                Key={"PK": bank_id, "SK": BankMember.get_sk(bank_member_id)}
+                Key={"SK": bank_member_keys["SK"], "PK": bank_member_keys["PK"]}
             )["Item"]
         )
-        bank_member.is_removed = False
+
+        bank_member.is_removed = True
         bank_member.write_to_table(self._table)
 
     def add_bank_member_signal(
@@ -579,6 +587,24 @@ class BanksTable:
             signal_type=signal_type,
             signal_value=signal_value,
         )
+
+    def remove_bank_member_signals_to_process(self, bank_member_id: str):
+        """
+        For a bank_member, remove all signals from the processing index.
+        """
+        for signal in self.get_signals_for_bank_member(bank_member_id=bank_member_id):
+            self._table.update_item(
+                Key={
+                    "PK": BankMemberSignal.get_pk(bank_member_id=bank_member_id),
+                    "SK": BankMemberSignal.get_sk(signal.signal_id),
+                },
+                UpdateExpression=f"SET UpdatedAt = :updated_at REMOVE #gsi_pk, #gsi_sk",
+                ExpressionAttributeNames={
+                    "#gsi_pk": BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE,
+                    "#gsi_sk": BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_CHRONO_KEY,
+                },
+                ExpressionAttributeValues={":updated_at": datetime.now().isoformat()},
+            )
 
     def get_bank_member_signals_to_process_page(
         self,

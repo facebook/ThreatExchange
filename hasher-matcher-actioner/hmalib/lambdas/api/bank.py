@@ -290,4 +290,18 @@ def get_bank_api(
             **asdict(with_preview_url(member)), signals=signals
         )
 
+    @bank_api.post("/remove-bank-member/<bank_member_id>")
+    def remove_bank_member(bank_member_id: str):
+        """
+        Remove bank member signals from the processing index and mark
+        bank_member as is_removed=True.
+
+        Returns empty json object.
+        """
+        bank_ops.remove_bank_member(
+            banks_table=table_manager,
+            bank_member_id=bank_member_id,
+        )
+        return {}
+
     return bank_api
