@@ -28,7 +28,16 @@ class AWSSecrets:
         session = boto3.session.Session()
         self.secrets_client = session.client(service_name="secretsmanager")
 
+    def update_te_api_token(self, token: str):
+        f"""
+        Sets the value of the ThreatExchange API Token in AWS Secrets. Requires
+        {THREAT_EXCHANGE_API_TOKEN_SECRET_NAME} be defined in os.environ.
+
+        Raises KeyError if environment variable is not defined.
         """
+        secret_name = os.environ[THREAT_EXCHANGE_API_TOKEN_SECRET_NAME]
+        self._update_str_secret(secret_name, token)
+
     def te_api_token(self) -> str:
         f"""
         get the ThreatExchange API Token.
@@ -81,3 +90,11 @@ class AWSSecrets:
             SecretId=secret_name
         )
         return get_secret_value_response
+
+    def _update_str_secret(self, secret_name: str, secret_value: str):
+        """
+        Update secret_value as the value for secret_name only if it exists.
+        """
+        self.secrets_client.update_secret(
+            SecretId=secret_name, SecretString=secret_value
+        )
