@@ -148,8 +148,8 @@ def lambda_handler(_event, _context):
     data = f"Triggered at time {current_time}, found {len(collabs)} collabs: {', '.join(names)}"
     logger.info(data)
 
-    api_key = AWSSecrets().te_api_key()
-    api = ThreatExchangeAPI(api_key)
+    api_token = AWSSecrets().te_api_token()
+    api = ThreatExchangeAPI(api_token)
 
     for collab in collabs:
         logger.info(

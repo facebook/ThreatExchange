@@ -14,6 +14,9 @@ from hmalib.common.logging import get_logger
 logger = get_logger(__name__)
 
 
+THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = "THREAT_EXCHANGE_API_TOKEN_SECRET_NAME"
+
+
 class AWSSecrets:
     """
     A class for reading secrets stored in aws
@@ -25,16 +28,17 @@ class AWSSecrets:
         session = boto3.session.Session()
         self.secrets_client = session.client(service_name="secretsmanager")
 
-    def te_api_key(self) -> str:
         """
-        get the ThreatExchange API Key.
-        Requires THREAT_EXCHANGE_API_TOKEN_SECRET_NAME be present in environ
+    def te_api_token(self) -> str:
+        f"""
+        get the ThreatExchange API Token.
+        Requires {THREAT_EXCHANGE_API_TOKEN_SECRET_NAME} be present in environ
         else returns empty string.
         """
-        secret_name = os.environ.get("THREAT_EXCHANGE_API_TOKEN_SECRET_NAME")
+        secret_name = os.environ.get(THREAT_EXCHANGE_API_TOKEN_SECRET_NAME)
         if not secret_name:
             logger.warning(
-                "Unable to load THREAT_EXCHANGE_API_TOKEN_SECRET_NAME from env"
+                f"Unable to load {THREAT_EXCHANGE_API_TOKEN_SECRET_NAME} from env"
             )
             return ""
         api_key = self._get_str_secret(secret_name)
