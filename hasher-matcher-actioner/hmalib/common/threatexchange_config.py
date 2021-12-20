@@ -3,13 +3,15 @@
 """
 Helpers for sync privacy groups between ThreatExchange and DynamoDB
 """
+from botocore.exceptions import ClientError
+from requests.exceptions import HTTPError
+
+from threatexchange.api import ThreatExchangeAPI
 
 from hmalib.aws_secrets import AWSSecrets
-from threatexchange.api import ThreatExchangeAPI
 from hmalib.common.logging import get_logger
 from hmalib.common import config as hmaconfig
 from hmalib.common.configs.fetcher import ThreatExchangeConfig
-from botocore.exceptions import ClientError
 
 logger = get_logger(__name__)
 
@@ -55,8 +57,8 @@ def create_privacy_group_if_not_exists(
 
 
 def sync_privacy_groups():
-    api_key = AWSSecrets().te_api_key()
-    api = ThreatExchangeAPI(api_key)
+    api_token = AWSSecrets().te_api_token()
+    api = ThreatExchangeAPI(api_token)
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()
     unique_privacy_groups = set(privacy_group_member_list + privacy_group_owner_list)
@@ -90,3 +92,25 @@ def update_privacy_groups_in_use(priavcy_group_id_in_use: set) -> None:
         if str(collab.privacy_group_id) not in priavcy_group_id_in_use:
             collab.in_use = False
             hmaconfig.update_config(collab)
+
+
+def try_api_token(api_token: str) -> bool:
+    """
+    Try the new API token to make a get_privacy_groups member call. If
+    successful, return True, else False.
+
+    Some doctests to choose from:
+    >>> from hmalib.common.threatexchange_config import try_api_token
+    >>> try_api_token("<valid token>")
+    True
+    >>> try_api_token("<blank_string>")
+    False
+    >>> try_api_token("<invalid_token>")
+    False
+    """
+    api = ThreatExchangeAPI(api_token)
+    try:
+        api.get_threat_privacy_groups_member()
+        return True
+    except (ValueError, HTTPError):
+        return False

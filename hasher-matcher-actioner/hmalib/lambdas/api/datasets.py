@@ -6,6 +6,7 @@ from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 
 from hmalib import metrics
+from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.config import HMAConfig
 from hmalib.common import config as hmaconfig
 from hmalib.common.s3_adapters import ThreatExchangeS3PDQAdapter, S3ThreatDataConfig
@@ -14,8 +15,9 @@ from hmalib.common.configs.fetcher import (
     AdditionalMatchSettingsConfig,
 )
 from hmalib.common.threatexchange_config import (
-    sync_privacy_groups,
     create_privacy_group_if_not_exists,
+    sync_privacy_groups,
+    try_api_token,
 )
 
 from hmalib.lambdas.api.middleware import (
@@ -433,5 +435,27 @@ def get_datasets_api(
                 f"match_settings deleted for pg_id {key}"
             )
         return bottle.abort(400, f"No match_settings for pg_id {key} found")
+
+    @datasets_api.post("/update-threatexchange-token")
+    def update_threatexchange_token() -> t.Dict:
+        """
+        Given a new threatexchange token as part of the request, makes dummy
+        call to threatexchange to see if it is a valid token. If found valid,
+        updates the secret.
+
+        Returns 200 if successful, 400 if the token is invalid. Response body is
+        always and empty JSON object.
+
+        Expected JSON Keys:
+        * `token`: the threatexchange token
+        """
+        token = bottle.request.json["token"]
+        is_valid_token = try_api_token(token)
+        if is_valid_token:
+            AWSSecrets().update_te_api_token(token)
+            return {}
+
+        bottle.response.status_code = 400
+        return {}
 
     return datasets_api

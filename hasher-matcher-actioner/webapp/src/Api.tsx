@@ -341,6 +341,23 @@ export async function fetchHashCount(): Promise<Response> {
   return apiGet('hash-counts');
 }
 
+/**
+ * Update ThreatExchange token to a new value. Backend will check whether the
+ * token has appropriate access and only then succeed.
+ *
+ * Invalid token will return Promise(False); while valid token when set will
+ * return Promise(True);
+ *
+ * @param token The new Token for access to ThreatExchange.
+ */
+export async function updateThreatExchangeAPIToken(
+  token: string,
+): Promise<boolean> {
+  return apiPost('datasets/update-threatexchange-token', {token})
+    .then(() => true)
+    .catch(() => false);
+}
+
 // This class should be kept in sync with python class ActionPerformer (hmalib.common.configs.actioner.ActionPerformer)
 type BackendActionPerformer = {
   name: string;

@@ -32,8 +32,9 @@ export function HolidaysDatasetInformationBlock({
   };
 
   return (
-    <Card bg="light" body style={{maxWidth: '720px'}}>
-      <h2>Test Photos</h2>
+    // <Card bg="light" body style={{maxWidth: '720px'}}>
+    <>
+      <h3>Test Photos</h3>
       <p>
         In addition to ThreatExchange data, HMA also comes with a set of image
         hashes baked in. The images are from a dataset called the INRIA Holidays
@@ -70,7 +71,7 @@ export function HolidaysDatasetInformationBlock({
           </Button>
         </li>
       </ul>
-    </Card>
+    </>
   );
 }
 
