@@ -30,6 +30,7 @@ export type BankMember = {
   created_at: Date;
   updated_at: Date;
   is_media_unavailable: boolean;
+  is_removed: boolean;
 };
 
 export type BankMemberSignal = {
