@@ -13,7 +13,7 @@ import {
   Modal,
   Alert,
 } from 'react-bootstrap';
-import {useParams} from 'react-router-dom';
+import {useParams, Link} from 'react-router-dom';
 
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {BankMemberWithSignals} from '../../messages/BankMessages';
@@ -163,6 +163,11 @@ export default function ViewBankMember(): JSX.Element {
                         This member is marked as removed. Signals from this
                         member are no longer going to be used for to find
                         similar content.
+                      </p>
+
+                      <p>
+                        You can add the member again from the{' '}
+                        <Link to={returnURL}>bank memberships</Link> page.
                       </p>
                     </Alert>
                   </Col>

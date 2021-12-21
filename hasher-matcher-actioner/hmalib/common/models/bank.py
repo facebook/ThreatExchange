@@ -591,7 +591,12 @@ class BanksTable:
 
     def remove_bank_member_signals_to_process(self, bank_member_id: str):
         """
-        For a bank_member, remove all signals from the processing index.
+        For a bank_member, remove all signals from the
+        BankMemberSignalCursorIndex on this table.
+
+        All systems that want to "do" something with bank_member_signals use
+        this index. eg. building indexes, syncing signals to another
+        hash_exchange.
         """
         for signal in self.get_signals_for_bank_member(bank_member_id=bank_member_id):
             self._table.update_item(
