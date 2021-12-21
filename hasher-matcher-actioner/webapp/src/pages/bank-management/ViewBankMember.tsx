@@ -10,13 +10,15 @@ import {
   Table,
   Button,
   Container,
+  Modal,
+  Alert,
 } from 'react-bootstrap';
-import {useParams} from 'react-router-dom';
+import {useParams, Link} from 'react-router-dom';
 
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {BankMemberWithSignals} from '../../messages/BankMessages';
 import Loader from '../../components/Loader';
-import {fetchBankMember} from '../../Api';
+import {fetchBankMember, removeBankMember} from '../../Api';
 import {ContentType} from '../../utils/constants';
 import {BlurImage, BlurVideo} from '../../utils/MediaUtils';
 import {
@@ -71,6 +73,7 @@ function SignalDetails({
 
 export default function ViewBankMember(): JSX.Element {
   const {bankMemberId} = useParams<{bankMemberId: string}>();
+  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   const [member, setMember] = useState<BankMemberWithSignals>();
   const [pollBuster, setPollBuster] = useState<number>(1);
@@ -85,6 +88,13 @@ export default function ViewBankMember(): JSX.Element {
       }-memberships`
     : '/';
 
+  const removeMember = () => {
+    removeBankMember(bankMemberId).then(() => {
+      setShowConfirmModal(false);
+      setPollBuster(pollBuster + 1);
+    });
+  };
+
   return (
     <FixedWidthCenterAlignedLayout>
       <Row>
@@ -93,10 +103,27 @@ export default function ViewBankMember(): JSX.Element {
         </Col>
       </Row>
       <Row>
-        <Col>
-          <h1>Bank Member</h1>
+        <Col xs={{span: 8}}>
+          <h2>Bank Member</h2>
+        </Col>
+        <Col xs={{span: 4}} className="text-right">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setPollBuster(pollBuster + 1)}>
+            Refresh
+          </Button>{' '}
+          {member && !member.is_removed ? (
+            <Button
+              size="sm"
+              variant="danger"
+              onClick={() => setShowConfirmModal(true)}>
+              Delete Member
+            </Button>
+          ) : null}
         </Col>
       </Row>
+      <Row />
       {member === undefined ? (
         <Row>
           <Col>
@@ -121,18 +148,31 @@ export default function ViewBankMember(): JSX.Element {
           <Col md={{span: 6}}>
             <Container>
               <Row>
-                <Col xs={{span: 10}}>
+                <Col>
                   <h3>Member Details</h3>
                 </Col>
-                <Col xs={{span: 2}}>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setPollBuster(pollBuster + 1)}>
-                    Refresh
-                  </Button>
-                </Col>
               </Row>
+              {member.is_removed ? (
+                <Row>
+                  <Col>
+                    <Alert variant="warning">
+                      <Alert.Heading>
+                        Member is marked as removed!
+                      </Alert.Heading>
+                      <p>
+                        This member is marked as removed. Signals from this
+                        member are no longer going to be used for to find
+                        similar content.
+                      </p>
+
+                      <p>
+                        You can add the member again from the{' '}
+                        <Link to={returnURL}>bank memberships</Link> page.
+                      </p>
+                    </Alert>
+                  </Col>
+                </Row>
+              ) : null}
             </Container>
             <Table>
               <tbody>
@@ -169,6 +209,27 @@ export default function ViewBankMember(): JSX.Element {
           </Col>
         </Row>
       )}
+      <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Remove the BankMember </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Are you sure you want to remove this bank member? Once the index
+            rebuilds, HMA will stop matching against this member.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowConfirmModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={removeMember}>
+            Yes, Remove this Member
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </FixedWidthCenterAlignedLayout>
   );
 }

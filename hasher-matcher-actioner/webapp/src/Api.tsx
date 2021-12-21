@@ -583,6 +583,7 @@ export async function fetchBankMembersPage(
       created_at: toDate(member.created_at)!,
       updated_at: toDate(member.updated_at)!,
       is_media_unavailable: member.is_media_unavailable,
+      is_removed: member.is_removed,
     })),
     response.continuation_token,
   ]);
@@ -613,6 +614,7 @@ export async function fetchBankMember(
     created_at: toDate(member.created_at)!,
     updated_at: toDate(member.updated_at)!,
     is_media_unavailable: member.is_media_unavailable,
+    is_removed: member.is_removed,
     signals: member.signals.map(signal => ({
       bank_id: signal.bank_id,
       bank_member_id: signal.bank_member_id,
@@ -663,7 +665,14 @@ export async function addBankMember(
     created_at: toDate(response.created_at)!,
     updated_at: toDate(response.updated_at)!,
     is_media_unavailable: response.is_media_unavailable,
+    is_removed: response.is_removed,
   }));
+}
+
+export async function removeBankMember(bankMemberId: string): Promise<void> {
+  return apiPost(`banks/remove-bank-member/${bankMemberId}`).then(
+    _ => undefined,
+  );
 }
 
 // Index APIs

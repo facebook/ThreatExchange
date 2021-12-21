@@ -57,6 +57,21 @@ def add_bank_member(
     return member
 
 
+def remove_bank_member(
+    banks_table: BanksTable,
+    bank_member_id: str,
+):
+    """
+    Remove bank member. Marks the member as removed and all its signals are
+    removed from the GSI used to build HMA indexes.
+
+    NOTE: If we ever start incremental updates to HMA indexes, removing bank
+    members will stop working.
+    """
+    banks_table.remove_bank_member_signals_to_process(bank_member_id=bank_member_id)
+    banks_table.remove_bank_member(bank_member_id=bank_member_id)
+
+
 def add_bank_member_signal(
     banks_table: BanksTable,
     bank_id: str,
