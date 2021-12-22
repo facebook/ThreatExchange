@@ -25,13 +25,16 @@ function BankDetails({bankId}: BankTabProps): JSX.Element {
 
   return (
     <Row>
-      <Col>
+      <Col xs={{span: 6}}>
         {bank !== undefined ? (
           <BankDetailsForm
             bankName={bank.bank_name}
             bankDescription={bank.bank_description}
-            handleSubmit={(bankName, bankDescription) => {
-              updateBank(bankId, bankName, bankDescription).then(setBank);
+            isActive={bank.is_active}
+            handleSubmit={(bankName, bankDescription, isActive) => {
+              updateBank(bankId, bankName, bankDescription, isActive).then(
+                setBank,
+              );
               setFormResetCounter(formResetCounter + 1);
             }}
             formResetCounter={formResetCounter}

@@ -131,11 +131,12 @@ def get_bank_api(
     @bank_api.post("/create-bank", apply=[jsoninator])
     def create_bank() -> Bank:
         """
-        Create a bank using only the name and description.
+        Create a bank using only the name, description and an is_active flag.
         """
         return table_manager.create_bank(
             bank_name=bottle.request.json["bank_name"],
             bank_description=bottle.request.json["bank_description"],
+            is_active=bottle.request.json["is_active"],
         )
 
     @bank_api.post("/update-bank/<bank_id>", apply=[jsoninator])
@@ -147,6 +148,7 @@ def get_bank_api(
             bank_id=bank_id,
             bank_name=bottle.request.json["bank_name"],
             bank_description=bottle.request.json["bank_description"],
+            is_active=bottle.request.json["is_active"],
         )
 
     # Member Management

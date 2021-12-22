@@ -9,10 +9,15 @@ import {useFormik} from 'formik';
 type BankDetailsValues = {
   bankName: string;
   bankDescription: string;
+  isActive: boolean;
 };
 
 type BankDetailsFormProps = Partial<BankDetailsValues> & {
-  handleSubmit: (bankName: string, bankDescription: string) => void;
+  handleSubmit: (
+    bankName: string,
+    bankDescription: string,
+    isActive: boolean,
+  ) => void;
   formResetCounter?: number;
 };
 
@@ -32,6 +37,7 @@ function validate(values: BankDetailsValues) {
 export default function BankDetailsForm({
   bankName,
   bankDescription,
+  isActive,
   handleSubmit,
   formResetCounter,
 }: BankDetailsFormProps): JSX.Element {
@@ -46,11 +52,12 @@ export default function BankDetailsForm({
     initialValues: {
       bankName: bankName || '',
       bankDescription: bankDescription || '',
+      isActive: isActive !== undefined && isActive,
     },
     validate,
     onSubmit: values => {
       setSaving(true);
-      handleSubmit(values.bankName, values.bankDescription);
+      handleSubmit(values.bankName, values.bankDescription, values.isActive);
     },
     enableReinitialize: formResetCounter !== undefined,
   });
@@ -104,6 +111,17 @@ export default function BankDetailsForm({
             {formik.errors.bankDescription}
           </Form.Control.Feedback>
         ) : null}
+      </Form.Group>
+      <Form.Group>
+        <Form.Label>Matching</Form.Label>
+
+        <Form.Switch
+          id="isActive"
+          onChange={formik.handleChange}
+          onBlur={formik.handleBlur}
+          checked={formik.values.isActive}
+          label="Match against members of this bank."
+        />
       </Form.Group>
       <Button type="submit" variant="primary" disabled={saving}>
         Save
