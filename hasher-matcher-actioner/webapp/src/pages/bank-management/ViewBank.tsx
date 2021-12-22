@@ -9,6 +9,7 @@ import Tabs from 'react-bootstrap/Tabs';
 import {generatePath, useHistory, useParams} from 'react-router-dom';
 
 import {fetchBank, updateBank} from '../../Api';
+import ReturnTo from '../../components/ReturnTo';
 
 import BankDetailsForm from '../../forms/BankDetailsForm';
 import {Bank} from '../../messages/BankMessages';
@@ -52,11 +53,22 @@ export default function ViewBank(): JSX.Element {
   const history = useHistory();
 
   const pageTitle = 'Edit Bank';
+  const returnURL = '/banks/';
 
   return (
-    <FixedWidthCenterAlignedLayout title={pageTitle}>
+    <FixedWidthCenterAlignedLayout>
+      <Row>
+        <Col className="my-4">
+          <ReturnTo to={returnURL}>Back to all Banks</ReturnTo>
+        </Col>
+      </Row>
       <Row>
         <Col>
+          <h2>{pageTitle}</h2>
+        </Col>
+      </Row>
+      <Row>
+        <Col className="py-2">
           <Tabs
             onSelect={key => {
               history.push(
