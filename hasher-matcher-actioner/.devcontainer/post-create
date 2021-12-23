@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# 'Splode if anything fails 
+set -e
+
 # Link aws configuration directory paths
 ln -s /var/run/aws-config/ ~/.aws
 
