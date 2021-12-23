@@ -27,7 +27,7 @@ If you are using [VS Code](https://code.visualstudio.com/), and we recommend you
 
     Create `.hma-cmdhist` directory in your home directory. Use `$ mkdir -p ~/.hma-cmdhist` or equivalent for your OS.
 
-4. Use `[Cmd]+[Shift]+[P]` inside VS Code and choose "Remote-Containers: Open folder in container ..." and navigate to the directory containing this file.
+4. Use `[Cmd]+[Shift]+[P]` inside VS Code and choose "Remote-Containers: Open folder in container ..." and navigate to your checkout of facebook/ThreatExchange, and open ./hasher-matcher-actioner/ (not ./hasher-matcher-actioner/.devcontainer).
 
 The first time may take a while because images need to be built. Subsequently, opening the container will be blazing fast. 5-10 seconds on a 2019 MacBook Pro.
 
