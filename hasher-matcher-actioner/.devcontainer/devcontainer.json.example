@@ -1,12 +1,26 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "hma-devserver",
+  // =================== CTRL+F TODO TO FIND THINGS TO FIX ==============
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "unixname": "${env:USER}"
+      // MacOS can try ${env:USER} 
+      // Windows can try ${env:USERNAME}
+      "unixname": "TODO-YOUR-USER-HERE" 
     }
   },
+  // MacOS can try ${localEnv:USER}
+  // Windows can try ${localEnv:USERNAME}
+  "remoteUser": "TODO-YOUR-USER-HERE",
+    "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    // MacOS can try ${localEnv:HOME}${localEnv:USERPROFILE}
+    // Windows can try ${localEnv:HOMEPATH}
+    "source=TODO-YOUR-HOME-DIR-WITH-AWS/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
+    "source=TODO-YOUR-HOME-DIR-WITH-CMDHIST/.hma-cmdhist,target=/commandhistory,type=bind"
+  ],
+  // ==================== EVERYTHING AFTER SHOULD WORK AS IS =================
+  "name": "hma-devserver",
   // Set *default* container specific settings.json values on container create.
   "settings": {
     "terminal.integrated.profiles.linux": {
@@ -55,11 +69,6 @@
     "eamodio.gitlens",
     "stkb.rewrap"
   ],
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.hma-cmdhist,target=/commandhistory,type=bind"
-  ],
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": "sh .devcontainer/post-create",
   // Use 'portsAttributes' to set default properties for specific forwarded ports.
@@ -71,6 +80,5 @@
   },
   "remoteEnv": {
     "IN_DEVCONTAINER": "true"
-  },
-  "remoteUser": "${localEnv:USER}"
+  }
 }
