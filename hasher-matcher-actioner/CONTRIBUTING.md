@@ -21,13 +21,34 @@ Beyond tooling you need to have access to an AWS account where the various resou
 ## Automated Development Environment
 
 If you are using [VS Code](https://code.visualstudio.com/), and we recommend you do, you can use the Devcontainer technology to get started real quick and have a great developer experience. 
-1. Download VS Code from the link.
-2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) on your computer. 
-3. Install the [remote containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
+1. [Windows Only] Sadly, the devcontainer will misbehave unless all the file endings are unix style (LF) instead of windows style (CRLF). You most likely checked out the repo with autocrlf set to "true", which means you have the wrong line endings. The fastest way to fix this is to simply re-clone the whole repository with autocrlf=input.
+
+```
+$ git config --get core.autocrlf  # Check your old value
+$ git config --global core.autocrfl input
+$ git clone <your fork>  # I called mine devcontainer-ThreatExchange
+$ cd <the fork>
+$ git config --local core.autocrfl input
+$ git config --global core.autocrfl <the old value, probably true>
+```
+If we were smarter, we'd have the devcontainer built on a checkout of the repo, but this was faster to figure out than getting git configs in.
+
+2. Download VS Code from [the VS Code website](https://code.visualstudio.com/).
+
+3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) on your computer. 
+
+4. Install the [remote containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
     Create `.hma-cmdhist` directory in your home directory. Use `$ mkdir -p ~/.hma-cmdhist` or equivalent for your OS.
 
-4. Use `[Cmd]+[Shift]+[P]` inside VS Code and choose "Remote-Containers: Open folder in container ..." and navigate to your checkout of facebook/ThreatExchange, and open ./hasher-matcher-actioner/ (not ./hasher-matcher-actioner/.devcontainer).
+5. Tweak the devcontainer.json settings - you'll need to make specific changes depending on your operating system.
+```
+$ cd hasher-matcher-actioner/.devcontainer
+$ cp devcontainer.json.example devcontainer.json
+$ vim devcontainer.json
+```
+
+6. Use `[Cmd]+[Shift]+[P]` inside VS Code and choose "Remote-Containers: Open folder in container ..." and navigate to your checkout of facebook/ThreatExchange, and open ./hasher-matcher-actioner/ (not ./hasher-matcher-actioner/.devcontainer).
 
 The first time may take a while because images need to be built. Subsequently, opening the container will be blazing fast. 5-10 seconds on a 2019 MacBook Pro.
 
