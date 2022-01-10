@@ -48,7 +48,3 @@ class CliState:
     def get_all_collabs(self) -> t.List[CollaborationConfig]:
         """Get all collaborations"""
         return []
-
-    def get_fetcher(self, something: t.Any) -> t.Any:
-        """Returns a fetcher, initialized from the CLI state"""
-        return None
