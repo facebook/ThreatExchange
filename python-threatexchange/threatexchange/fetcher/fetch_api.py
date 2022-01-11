@@ -4,7 +4,7 @@
 """
 The fetcher is the component that talks to external APIs to get and put signals
 
-@see Fetcher
+@see SignalExchangeAPI
 """
 
 
@@ -63,7 +63,7 @@ class SignalExchangeAPI:
         raise NotImplementedError
 
     def report_seen(
-        self, s_type: SignalType, signal: str, metadata: state.FetchMetadata
+        self, s_type: SignalType, signal: str, metadata: state.FetchedSignalData
     ) -> None:
         """Report that this signal was observed on your platform"""
         raise NotImplementedError
