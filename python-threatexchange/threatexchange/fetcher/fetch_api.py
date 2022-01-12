@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
@@ -12,45 +11,70 @@ import typing as t
 
 from threatexchange.collab_config import CollaborationConfig
 from threatexchange.signal_type.signal_base import SignalType
-from . import fetch_state_base as state
+from threatexchange.fetcher import fetch_state_base as state
 
-
+# TODO t.Generic[TFetchDelta, TFetchedSignalData]
+#      In order to make it easier to track the expected extensions for an API
 class SignalExchangeAPI:
     """
-    An external APIs to get and maybe put signals
+    APIs to get and maybe put signals.
 
     Fetchers ideally can checkpoint their progress, so that they can tail
-    updates from the server.
+    updates.
+
+    While this interface is primarily intended for connecting with
+    externally hosted servers, it might be useful to write adopters for
+    certain formats of local files, which could be valuable for testing.
 
     Is assumed that fetched signals have some metadata attached to them,
     which is unique to that API. Additionally, it a assumed that there
-    might be multiple contributors to signals inside of an API.
+    might be multiple contributors (owners) to signals inside of an API.
 
-    The Fetcher can assume it is stateful, and
+    An instance of this class can retain state (caching connecting, etc)
+    as needed.
+
+    Methods with an implementation are optional, but may rely on
+
+    = On Owner IDs =
+    Some APIs may not have any concept of owner ID (because the owner is the
+    API itself). In that case, it's suggested to use 0 for all IDs. If the you
+    own the API, it may also make sense to have 0 be the return of
+    get_own_owner_id, which is used by matching to tell if a signal be
+    considered "confirmed" or not. If your API does support the concept of
+    owners, make sure to implement resolve_owner and get_own_owner_id
+
     """
 
     @classmethod
     def name(cls) -> str:
         """
-        A string name unique to all SignalExchangeAPIs
+        A simple string name unique to SignalExchangeAPIs in use.
 
-        This will get stored for lookup from a map of supported APIs
-        keyed str: API
+        This shouldn't be changed once comitted, or you may break naive
+        storage solutions (like the one in the CLI) which stores fetched
+        data by (SignalExchangeAPI.name(), collab_name).
         """
         return cls.__name__
 
     def resolve_owner(self, id: int) -> str:
         """
-        Convert an owner ID into a human readable name (if available)
+        Convert an owner ID into a human readable name (if available).
 
-        If empty is returned, its assumed that the collaboration name itself
-        is good enough to describe this content.
+        If empty string is returned, a placeholder will be used instead.
         """
         return ""
 
     def get_own_owner_id(self) -> int:
         """
-        Return the owner ID of this caller. Opinions with that ID are "ours"
+        Return the owner ID of this caller. Opinions with that ID are "ours".
+
+        SignalOpinions returned by fetch() where the owner id is
+        the return of get_own_owner_id() are assumed to be owned by you, which
+        can result in some additional metadata being added to matches, for
+        example in the `match` command of the CLI.
+
+        A default implementation is provided that is assumed to not match any
+        real owner ID.
         """
         return -1
 
@@ -65,7 +89,12 @@ class SignalExchangeAPI:
     def report_seen(
         self, s_type: SignalType, signal: str, metadata: state.FetchedSignalData
     ) -> None:
-        """Report that this signal was observed on your platform"""
+        """
+        Report that you observed this signal.
+
+        This is an optional API, and places that use it should catch
+        the NotImplementError.
+        """
         raise NotImplementedError
 
     def report_opinion(
@@ -89,7 +118,12 @@ class SignalExchangeAPI:
         signal: str,
         metadata: state.FetchedSignalData,
     ) -> None:
-        """Report that a previously seen signal was a true positive"""
+        """
+        Report that a previously seen signal was a true positive.
+
+        This is an optional API, and places that use it should catch
+        the NotImplementError.
+        """
         raise NotImplementedError
 
     def report_false_positive(
@@ -98,5 +132,10 @@ class SignalExchangeAPI:
         signal: str,
         metadata: state.FetchedSignalData,
     ) -> None:
-        """Report that a previously seen signal is a false positive"""
+        """
+        Report that a previously seen signal is a false positive.
+
+        This is an optional API, and places that use it should catch
+        the NotImplementError.
+        """
         raise NotImplementedError
