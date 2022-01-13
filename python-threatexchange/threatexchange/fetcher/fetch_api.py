@@ -11,9 +11,9 @@ import typing as t
 
 from threatexchange.collab_config import CollaborationConfig
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher import fetch_state_base as state
+from threatexchange.fetcher import fetch_state as state
 
-# TODO t.Generic[TFetchDelta, TFetchedSignalData]
+# TODO t.Generic[TFetchDelta, TFetchedSignalData, TCollabConfig]
 #      In order to make it easier to track the expected extensions for an API
 class SignalExchangeAPI:
     """
