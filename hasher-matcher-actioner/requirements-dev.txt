@@ -5,5 +5,5 @@ black
 moto
 pandas
 WebTest==2.0.35
-Pillow==8.3.2
+Pillow==9.0.0
 python-hcl2==3.0.1
