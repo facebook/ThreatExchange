@@ -80,14 +80,14 @@ class SignalExchangeAPI:
 
     def fetch_once(
         self, collab: CollaborationConfig, checkpoint: t.Any
-    ) -> state.FetchDelta:
+    ) -> state.FetchDeltaBase:
         """
         Call out to external resources, pulling down one "batch" of content.
         """
         raise NotImplementedError
 
     def report_seen(
-        self, s_type: SignalType, signal: str, metadata: state.FetchedSignalData
+        self, s_type: SignalType, signal: str, metadata: state.FetchedSignalDataBase
     ) -> None:
         """
         Report that you observed this signal.
@@ -116,7 +116,7 @@ class SignalExchangeAPI:
         self,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalData,
+        metadata: state.FetchedSignalDataBase,
     ) -> None:
         """
         Report that a previously seen signal was a true positive.
@@ -130,7 +130,7 @@ class SignalExchangeAPI:
         self,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalData,
+        metadata: state.FetchedSignalDataBase,
     ) -> None:
         """
         Report that a previously seen signal is a false positive.

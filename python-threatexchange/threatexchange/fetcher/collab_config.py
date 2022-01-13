@@ -23,4 +23,5 @@ class CollaborationConfigBase:
     """
 
     name: str
+    enabled: bool  # Whether to fetch from this or not
     fetcher_name: str  # Fetch_api.SignalExchangeAPI.name()
