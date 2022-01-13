@@ -49,7 +49,7 @@
     "python.analysis.extraPaths": [
       // Unless we do this, pylance is not able to resolve imports
       "~/.local/lib/python3.9/site-packages"
-    ]
+    ],
     "[javascriptreact]": {
       "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
     },
