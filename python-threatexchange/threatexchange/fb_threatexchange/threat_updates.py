@@ -12,7 +12,6 @@ import typing as t
 from dataclasses import dataclass
 
 from .api import ThreatExchangeAPI, _CursoredResponse
-from .dataset import Dataset
 from .descriptor import SimpleDescriptorRollup
 
 
@@ -33,24 +32,6 @@ class ThreatUpdateSerialization:
     @classmethod
     def te_threat_updates_fields(cls):
         """Which &fields= arguments need to be passed for this serialization"""
-        raise NotImplementedError
-
-    # TODO - Remove reliance on files to better support DB usecase
-    @classmethod
-    def store(
-        cls, state_dir: pathlib.Path, contents: t.Iterable["ThreatUpdateSerialization"]
-    ) -> t.List[pathlib.Path]:
-        """
-        Store a collection of this class in one or more files.
-
-        Return the files that are written to. (Currently not used)
-        """
-        raise NotImplementedError
-
-    # TODO - Remove reliance on files to better support DB usecase
-    @classmethod
-    def load(cls, state_dir: pathlib.Path) -> t.Iterable["ThreatUpdateSerialization"]:
-        """Load this serialization from the state directory"""
         raise NotImplementedError
 
 

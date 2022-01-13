@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import sys
 from codecs import open
 from os import path
 
@@ -65,6 +64,7 @@ setup(
         "urllib3>=1.26.0",  # For allow_methods
         "dataclasses",
         "python-dateutil",
+        "dacite",
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},

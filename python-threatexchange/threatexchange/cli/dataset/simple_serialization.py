@@ -3,17 +3,13 @@
 
 import collections
 import csv
-import json
-import os
 import pathlib
-import time
 import re
 import typing as t
 
-from ...api import ThreatExchangeAPI
-from ... import threat_updates
-from ...descriptor import SimpleDescriptorRollup
-from ...dataset import Dataset
+from threatexchange.fetcher.fb_threatexchange import threat_updates
+from threatexchange.fetcher.fb_threatexchange.descriptor import SimpleDescriptorRollup
+from threatexchange.cli.cli_state import Dataset
 
 # TODO - merge SimpleDescriptorRollup here
 class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):

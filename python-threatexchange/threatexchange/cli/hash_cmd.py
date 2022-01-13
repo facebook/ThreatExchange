@@ -5,17 +5,13 @@
 Hash command to convert content into signatures.
 """
 
-import argparse
 import pathlib
 import sys
 import typing as t
+from threatexchange.cli.cli_config import CLISettings
 
-from ..api import ThreatExchangeAPI
-from ..content_type import meta
-from ..dataset import Dataset
-from ..descriptor import ThreatDescriptor
-from ..signal_type.signal_base import FileHasher, StrHasher, SignalType
-from . import command_base, fetch
+from threatexchange.signal_type.signal_base import FileHasher, TextHasher
+from threatexchange.cli import command_base
 
 
 # TODO consider refactor to handle overlap with match
@@ -31,18 +27,18 @@ class HashCommand(command_base.Command):
     USE_STDIN = "-"
 
     @classmethod
-    def init_argparse(cls, ap) -> None:
+    def init_argparse(cls, settings: CLISettings, ap) -> None:
 
         ap.add_argument(
             "content_type",
-            choices=[t.get_name() for t in meta.get_all_content_types()],
+            choices=[c.get_name() for c in settings.get_all_content_types()],
             help="what kind of content to hash",
         )
 
         ap.add_argument(
             "--signal-type",
             "-S",
-            choices=[t.get_name() for t in meta.get_all_signal_types()],
+            choices=[s.get_name() for s in settings.get_all_signal_types()],
             help="only generate these signal types",
         )
 
@@ -50,16 +46,13 @@ class HashCommand(command_base.Command):
             "--as-text",
             "-T",
             action="store_true",
-            help="force input to be interpreted as text instead of as filenames",
+            help="interpret content as text instead of as filenames",
         )
 
         ap.add_argument(
             "content",
             nargs="+",
-            help=(
-                "what to match against. Accepts filenames, "
-                "quoted strings, or '-' to read newline-separated stdin"
-            ),
+            help="list of content or '-' for stdin",
         )
 
     def __init__(
@@ -69,9 +62,7 @@ class HashCommand(command_base.Command):
         as_text: bool,
         content: t.Union[t.List[str], t.TextIO],
     ) -> None:
-        self.content_type = [
-            c for c in meta.get_all_content_types() if c.get_name() == content_type
-        ][0]
+        self.content_type_str = content_type
         self.signal_type = signal_type
 
         if content == [self.USE_STDIN]:
@@ -90,16 +81,17 @@ class HashCommand(command_base.Command):
             else:
                 yield pathlib.Path(token)
 
-    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
+    def execute(self, settings: CLISettings) -> None:
+        content_type = settings.get_content_type(self.content_type_str)
 
         all_signal_types = [
             s
-            for s in self.content_type.get_signal_types()
+            for s in settings.get_signal_types_for_content(content_type)
             if self.signal_type in (None, s.get_name())
         ]
 
         file_hashers = [s for s in all_signal_types if issubclass(s, FileHasher)]
-        str_hashers = [s for s in all_signal_types if issubclass(s, StrHasher)]
+        str_hashers = [s for s in all_signal_types if issubclass(s, TextHasher)]
 
         for inp in self.input_generator:
             hash_fn = lambda s, t: s.hash_from_file(t)

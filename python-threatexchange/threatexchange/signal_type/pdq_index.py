@@ -5,7 +5,6 @@ Implementation of SignalTypeIndex abstraction for PDQ by wrapping
 hashing.pdq_faiss_matcher.
 """
 
-from collections import OrderedDict
 import collections
 import typing as t
 import pickle

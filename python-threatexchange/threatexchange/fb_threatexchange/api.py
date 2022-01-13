@@ -7,18 +7,59 @@ TODO: Slim down to only what we need
 """
 
 import copy
-import datetime
 import json
-import os
-import re
 import typing as t
 import urllib.parse
+import os
+import pathlib
+import re
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
 from .api_representations import ThreatPrivacyGroup
+
+
+def get_app_token(cli_option: str = None) -> str:
+    """Get the API key from a variety of fallback sources"""
+
+    file_loc = pathlib.Path("~/.txtoken").expanduser()
+    environment_var = "TX_ACCESS_TOKEN"
+    token = ""
+    source: t.Union[pathlib.Path, str] = ""
+    if cli_option:
+        source = "cli argument"
+        token = cli_option
+    elif os.environ.get(environment_var):
+        source = f"{environment_var} environment variable"
+        token = os.environ[environment_var]
+    elif file_loc.exists() and file_loc.read_text():
+        source = file_loc
+        token = file_loc.read_text()
+    else:
+        raise Exception(
+            (
+                "Can't find App Token, pass it in using one of: \n"
+                "  * a cli argument\n"
+                f"  * in the environment as {environment_var}\n"
+                f"  * in a file at {file_loc}\n"
+                "https://developers.facebook.com/tools/accesstoken/"
+            ),
+        )
+    token = token.strip()
+    if not is_valid_app_token(token):
+        raise Exception(
+            f"Your current app token (from {source}) is invalid.\n"
+            "Double check that it's an 'App Token' from "
+            "https://developers.facebook.com/tools/accesstoken/",
+        )
+    return token
+
+
+def is_valid_app_token(token: str) -> bool:
+    """Returns true if the string looks like a valid token"""
+    return bool(re.match("[0-9]{8,}(?:%7C|\\|)[a-zA-Z0-9_\\-]{20,}", token))
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):

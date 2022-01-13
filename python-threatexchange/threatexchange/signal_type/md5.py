@@ -9,13 +9,14 @@ import hashlib
 import pathlib
 import typing as t
 
-from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
+from threatexchange.content_type.video import VideoContent
+
 from . import signal_base
 
 
-class VideoMD5Signal(
-    signal_base.SimpleSignalType, signal_base.FileHasher, signal_base.BytesHasher
-):
+class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.BytesHasher):
     """
     Simple signal type for Video MD5s.
 
@@ -27,8 +28,11 @@ class VideoMD5Signal(
     that are capable of some notion of similarity, such as TMK+PDQF.
     """
 
-    INDICATOR_TYPE = "HASH_MD5"
-    TYPE_TAG = "media_type_video"
+    INDICATOR_TYPE = "VIDEO_HASH_MD5"
+
+    @classmethod
+    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+        return [VideoContent]
 
     @classmethod
     def hash_from_file(cls, path: pathlib.Path) -> str:
@@ -47,6 +51,10 @@ class VideoMD5Signal(
         bytes_hash.update(bytes_)
         return bytes_hash.hexdigest()
 
+    @staticmethod
+    def get_examples() -> t.List[str]:
+        return ["cab08b36195edb1a1231d2d09fa450e0", "d41d8cd98f00b204e9800998ecf8427e"]
+
 
 class PhotoMD5Signal(VideoMD5Signal):
     """
@@ -57,4 +65,9 @@ class PhotoMD5Signal(VideoMD5Signal):
     have much higher recall without too much loss in precision.
     """
 
+    INDICATOR_TYPE = "HASH_MD5"
     TYPE_TAG = "media_type_photo"
+
+    @classmethod
+    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+        return [PhotoContent]

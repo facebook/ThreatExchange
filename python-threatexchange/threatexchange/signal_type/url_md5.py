@@ -5,23 +5,33 @@
 Wrapper around the URL MD5 signal types.
 """
 
+import typing as t
 import hashlib
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.url import URLContent
 
-from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from . import signal_base
-from .. import common
+from threatexchange.signal_type import signal_base
+from threatexchange import common
+from threatexchange.signal_type.url import URLSignal
 
 
-class UrlMD5Signal(signal_base.SimpleSignalType, signal_base.StrHasher):
+class UrlMD5Signal(signal_base.SimpleSignalType, signal_base.TextHasher):
     """
     Simple signal type for URL MD5s.
     """
 
     INDICATOR_TYPE = "HASH_URL_MD5"
-    TYPE_TAG = "media_type_url"
+
+    @classmethod
+    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+        return [URLContent]
 
     @classmethod
     def hash_from_str(cls, url: str) -> str:
         encoded_url = common.normalize_url(url)
         url_hash = hashlib.md5(encoded_url)
         return url_hash.hexdigest()
+
+    @staticmethod
+    def get_examples() -> t.List[str]:
+        return [UrlMD5Signal.hash_from_str(s) for s in URLSignal.get_examples()]
