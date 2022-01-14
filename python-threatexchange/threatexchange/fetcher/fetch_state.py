@@ -12,8 +12,6 @@ from dataclasses import dataclass
 from enum import Enum
 import typing as t
 
-from threatexchange.signal_type.signal_base import SignalType
-
 
 TFetchStateCheckpoint = t.TypeVar("TFetchStateCheckpoint")  # TODO for now
 
@@ -52,7 +50,7 @@ class SignalOpinion:
 
 
 @dataclass
-class FetchedSignalData:
+class FetchedSignalDataBase:
     """
     Metadata to make decisions on matches and power feedback on the fetch API.
 
@@ -66,7 +64,7 @@ class FetchedSignalData:
     opinions: t.List[SignalOpinion]
 
 
-class FetchDelta:
+class FetchDeltaBase:
     """
     Contains the result of a fetch.
 
@@ -83,9 +81,9 @@ class FetchDelta:
         raise NotImplementedError
 
 
-# TODO t.Generic[TFetchDelta, TFetchedSignalData]
+# TODO t.Generic[TFetchDeltaBase, TFetchedSignalDataBase]
 #      to help keep track of the expected subclasses for an impl
-class FetchedState:
+class FetchedStateBase:
     """
     An interface to previously fetched or persisted state.
 
@@ -107,9 +105,9 @@ class FetchedState:
         """
         raise NotImplementedError
 
-    def merge(self, delta: FetchDelta) -> None:
+    def merge(self, delta: FetchDeltaBase) -> None:
         """
-        Merge a FetchDelta into the state.
+        Merge a FetchDeltaBase into the state.
 
         At the implementation's discretion, it may call flush() or the
         equivalent work.
@@ -139,7 +137,7 @@ class FetchedState:
         """
         raise NotImplementedError
 
-    def get_metadata_from_id(self, metadata_id: int) -> FetchedSignalData:
+    def get_metadata_from_id(self, metadata_id: int) -> FetchedSignalDataBase:
         """
         Fetch the metadata from an ID
         """

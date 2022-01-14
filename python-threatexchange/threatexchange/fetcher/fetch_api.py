@@ -11,9 +11,9 @@ import typing as t
 
 from threatexchange.collab_config import CollaborationConfig
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher import fetch_state_base as state
+from threatexchange.fetcher import fetch_state as state
 
-# TODO t.Generic[TFetchDelta, TFetchedSignalData]
+# TODO t.Generic[TFetchDelta, TFetchedSignalData, TCollabConfig]
 #      In order to make it easier to track the expected extensions for an API
 class SignalExchangeAPI:
     """
@@ -80,14 +80,14 @@ class SignalExchangeAPI:
 
     def fetch_once(
         self, collab: CollaborationConfig, checkpoint: t.Any
-    ) -> state.FetchDelta:
+    ) -> state.FetchDeltaBase:
         """
         Call out to external resources, pulling down one "batch" of content.
         """
         raise NotImplementedError
 
     def report_seen(
-        self, s_type: SignalType, signal: str, metadata: state.FetchedSignalData
+        self, s_type: SignalType, signal: str, metadata: state.FetchedSignalDataBase
     ) -> None:
         """
         Report that you observed this signal.
@@ -116,7 +116,7 @@ class SignalExchangeAPI:
         self,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalData,
+        metadata: state.FetchedSignalDataBase,
     ) -> None:
         """
         Report that a previously seen signal was a true positive.
@@ -130,7 +130,7 @@ class SignalExchangeAPI:
         self,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalData,
+        metadata: state.FetchedSignalDataBase,
     ) -> None:
         """
         Report that a previously seen signal is a false positive.
