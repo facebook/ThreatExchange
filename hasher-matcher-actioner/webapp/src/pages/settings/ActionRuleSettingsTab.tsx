@@ -54,7 +54,7 @@ export class ActionRule {
     this.must_have_labels = must_have_labels;
     this.must_not_have_labels = must_not_have_labels;
 
-    this.classification_conditions = this.classificationsFromLabels(
+    this.classification_conditions = ActionRule.classificationsFromLabels(
       this.must_have_labels,
       this.must_not_have_labels,
     );
@@ -66,14 +66,14 @@ export class ActionRule {
   ): ActionRule => {
     const must_have_labels =
       update_name === 'classification_conditions'
-        ? this.mustHaveLabelsFromClassifications(
+        ? ActionRule.mustHaveLabelsFromClassifications(
             new_value as ClassificationCondition[],
           )
         : this.must_have_labels;
 
     const must_not_have_labels =
       update_name === 'classification_conditions'
-        ? this.mustNotHaveLabelsFromClassifications(
+        ? ActionRule.mustNotHaveLabelsFromClassifications(
             new_value as ClassificationCondition[],
           )
         : this.must_not_have_labels;
@@ -86,7 +86,7 @@ export class ActionRule {
     );
   };
 
-  mustHaveLabelsFromClassifications = (
+  static mustHaveLabelsFromClassifications = (
     classification_conditions: ClassificationCondition[],
   ): Label[] =>
     classification_conditions
@@ -96,7 +96,7 @@ export class ActionRule {
         value: classification.classificationValue,
       }));
 
-  mustNotHaveLabelsFromClassifications = (
+  static mustNotHaveLabelsFromClassifications = (
     classification_conditions: ClassificationCondition[],
   ): Label[] =>
     classification_conditions
@@ -106,7 +106,7 @@ export class ActionRule {
         value: classification.classificationValue,
       }));
 
-  classificationsFromLabels = (
+  static classificationsFromLabels = (
     mustHaveLabels: Label[],
     mustNotHaveLabels: Label[],
   ): ClassificationCondition[] =>

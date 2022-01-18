@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@aws-amplify/ui-react": "^1.2.4",
+    "@aws-amplify/ui-react": "^1.2.20",
     "@ionic/react": "^5.7.0",
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^12.0.0",
@@ -22,7 +22,7 @@
     "eslint": "^7.29.0",
     "formik": "^2.2.9",
     "ionicons": "^5.5.3",
-    "node-sass": "^6.0.1",
+    "node-sass": "^7.0.1",
     "prettier": "^2.3.2",
     "prop-types": "^15.7.2",
     "react": "^17.0.2",
@@ -30,7 +30,7 @@
     "react-dom": "^17.0.2",
     "react-dropzone": "^11.4.0",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "^4.0.3",
+    "react-scripts": "^5.0.0",
     "uplot": "^1.6.13",
     "uplot-react": "^1.1.0"
   },
@@ -54,7 +54,8 @@
   "devDependencies": {
     "@types/dompurify": "^2.2.3",
     "@types/react-router-dom": "^5.1.8",
-    "@typescript-eslint/parser": "^4.28.1",
+    "@typescript-eslint/parser": "^5.10.0",
+    "@typescript-eslint/eslint-plugin": "^5.10.0",
     "eslint": "^7.29.0",
     "eslint-config-airbnb": "^18.2.1",
     "eslint-config-prettier": "^8.3.0",
