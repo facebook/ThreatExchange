@@ -6,28 +6,28 @@ from setuptools import setup
 
 extras_require = {
     "cli": [
-        "pandas",
-        "numpy",
+        "pandas==1.3.5",
+        "numpy==1.22.1",
     ]
 }
 
 all_extras = set(sum(extras_require.values(), []))
-extras_require["test"] = sorted({"pytest"} | all_extras)
+extras_require["test"] = sorted({"pytest==6.2.1"} | all_extras)
 extras_require["package"] = ["wheel"]
-extras_require["lint"] = ["black"]
+extras_require["lint"] = ["black==21.12b0"]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
 setup(
     name="hmalib",
     description="Convenience package for hmalib. Probably don't distribute it.",
     install_requires=[
-        "boto3",
+        "boto3==1.20.37",
         "boto3-stubs[essential,sns,dynamodbstreams]==1.17.14.0",
-        "threatexchange[faiss,pdq_hasher]>=0.0.29",
-        "bottle",
-        "apig_wsgi",
+        "threatexchange[faiss,pdq_hasher]==0.0.29",
+        "bottle==0.12.19",
+        "apig-wsgi==2.13.0",
         "pyjwt[crypto]==2.1.0",
-        "requests>=2.25.1",
+        "requests==2.27.1",
     ],
     extras_require=extras_require,
     entry_points={
