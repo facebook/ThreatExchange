@@ -136,12 +136,6 @@ export default function ActionRulesTableRow({
             onClick={() => setEditing(true)}>
             <IonIcon icon={pencil} size="large" color="white" />
           </Button>{' '}
-          <Button
-            variant="secondary"
-            className="table-action-button"
-            onClick={() => setShowDeleteActionRuleConfirmation(true)}>
-            <IonIcon icon={trashBin} size="large" className="white" />
-          </Button>
           <Modal
             show={showDeleteActionRuleConfirmation}
             onHide={() => setShowDeleteActionRuleConfirmation(false)}>
@@ -189,6 +183,13 @@ export default function ActionRulesTableRow({
               }
             }}>
             <IonIcon icon={checkmark} size="large" color="white" />
+          </Button>{' '}
+          <Button
+            variant="secondary"
+            className="mb-2 table-action-button"
+            onClick={() => setShowDeleteActionRuleConfirmation(true)}
+            disabled={!editing}>
+            <IonIcon icon={trashBin} size="large" className="white" />
           </Button>{' '}
           <Button
             variant="outline-secondary"
