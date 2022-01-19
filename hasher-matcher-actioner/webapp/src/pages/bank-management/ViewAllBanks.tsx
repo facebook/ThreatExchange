@@ -6,6 +6,7 @@ import React, {useEffect, useState} from 'react';
 import {Row, Col, Card, Button} from 'react-bootstrap';
 import {generatePath, useHistory} from 'react-router-dom';
 import {fetchAllBanks} from '../../Api';
+import Loader from '../../components/Loader';
 import {Bank} from '../../messages/BankMessages';
 
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
@@ -61,6 +62,7 @@ function EmptyState({onCreate}: EmptyStateProps): JSX.Element {
 }
 
 export default function ViewAllBanks(): JSX.Element {
+  const [neverFetched, setNeverFetched] = useState<boolean>(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [banks, setBanks] = useState<Bank[]>([]);
 
@@ -68,7 +70,10 @@ export default function ViewAllBanks(): JSX.Element {
   const [createModalClosed, setCreateModalClosed] = useState(0);
 
   useEffect(() => {
-    fetchAllBanks().then(setBanks);
+    fetchAllBanks().then(banks_response => {
+      setBanks(banks_response);
+      setNeverFetched(false);
+    });
   }, [createModalClosed]);
 
   return (
@@ -98,9 +103,16 @@ export default function ViewAllBanks(): JSX.Element {
         </Col>
       </Row>
       <Row>
-        {banks.length === 0 ? (
+        {neverFetched ? (
+          <Col xs={{offset: 2, span: 8}}>
+            <Loader />
+          </Col>
+        ) : null}
+
+        {neverFetched === false && banks.length === 0 ? (
           <EmptyState onCreate={() => setShowCreateModal(true)} />
-        ) : (
+        ) : null}
+        {neverFetched === false && banks.length !== 0 ? (
           <Col xs={{offset: 2, span: 8}}>
             {banks.map(bank => (
               <BankCard
@@ -110,7 +122,7 @@ export default function ViewAllBanks(): JSX.Element {
               />
             ))}
           </Col>
-        )}
+        ) : null}
       </Row>
       <AddBankModal
         onCloseClick={() => {
