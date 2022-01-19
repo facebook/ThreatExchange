@@ -45,12 +45,19 @@ def _get_sqs_client() -> SQSClient:
     return boto3.client("sqs")
 
 
-@functools.lru_cache(maxsize=None)
-def _get_matcher(index_bucket_name: str) -> Matcher:
-    return Matcher(
-        index_bucket_name=index_bucket_name,
-        supported_signal_types=[PdqSignal, VideoMD5Signal],
-    )
+_matcher = None
+
+
+def _get_matcher(index_bucket_name: str, banks_table: BanksTable) -> Matcher:
+    global _matcher
+    if _matcher is None:
+        _matcher = Matcher(
+            index_bucket_name=index_bucket_name,
+            supported_signal_types=[PdqSignal, VideoMD5Signal],
+            banks_table=banks_table,
+        )
+
+    return _matcher
 
 
 @dataclass
@@ -358,7 +365,7 @@ def get_matches_api(
         unlike when matches are found for submissions.
         """
 
-        matches = _get_matcher(indexes_bucket_name).match(
+        matches = _get_matcher(indexes_bucket_name, banks_table=banks_table).match(
             request.signal_type, request.signal_value
         )
 

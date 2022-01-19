@@ -24,6 +24,7 @@ resource "aws_lambda_function" "matcher_lambda" {
       INDEXES_BUCKET_NAME = var.index_data_storage.bucket_name
       HMA_CONFIG_TABLE    = var.config_table.name
       MATCHES_TOPIC_ARN   = var.matches_topic_arn
+      BANKS_TABLE         = var.banks_datastore.name
     }
   }
 
@@ -101,6 +102,11 @@ data "aws_iam_policy_document" "matcher_lambda" {
     effect    = "Allow"
     actions   = ["dynamodb:GetItem", "dynamodb:Scan"]
     resources = [var.config_table.arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query"]
+    resources = ["${var.banks_datastore.arn}*"]
   }
   statement {
     effect = "Allow"

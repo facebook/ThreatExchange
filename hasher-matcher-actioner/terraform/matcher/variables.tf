@@ -69,3 +69,11 @@ variable "config_table" {
     name = string
   })
 }
+
+variable "banks_datastore" {
+  description = "DynamoDB Table to store bank information into"
+  type = object({
+    name = string
+    arn  = string
+  })
+}
