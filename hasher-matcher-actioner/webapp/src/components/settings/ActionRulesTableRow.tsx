@@ -198,10 +198,9 @@ export default function ActionRulesTableRow({
           <Button
             variant="secondary"
             className="mb-2 table-action-button"
-            onClick={() => setShowDeleteActionRuleConfirmation(true)}
-            disabled={!editing}>
+            onClick={() => setShowDeleteActionRuleConfirmation(true)}>
             <IonIcon icon={trashBin} size="large" className="white" />
-          </Button>{' '}
+          </Button>
         </td>
         <ActionRuleFormColumns
           actions={actions}
