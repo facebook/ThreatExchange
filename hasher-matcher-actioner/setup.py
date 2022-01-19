@@ -28,6 +28,7 @@ setup(
         "apig_wsgi",
         "pyjwt[crypto]==2.1.0",
         "requests>=2.25.1",
+        "methodtools>=0.4.5",
     ],
     extras_require=extras_require,
     entry_points={
