@@ -38,10 +38,13 @@ class BaseMatchFilter:
     All classes implementing their own match filter logic should implement this
     interface.
 
+    Implementing classes are called by the matcher and then the `filter_matches`
+    method is called.
+
     A sub class can either (re)define `filter_matches` or just
-    `should_filter_out` (RECOMMENDED). The benefit of defining just
-    `should_filter_out` is that the logging is centrally handled and we reduce
-    *some* redundancies.
+    `should_process_metadata_obj` (RECOMMENDED). The benefit of defining just
+    `should_process_metadata_obj` is that the logging is centrally handled and we
+    reduce *some* redundancies.
 
     If you need more control, or there are benefits to handling all matches
     together, (re)define `filter_matches`.
@@ -52,17 +55,37 @@ class BaseMatchFilter:
         matches: t.List[IndexMatch[BaseIndexMetadata]],
         index_signal_type: t.Type[SignalType],
     ) -> t.List[IndexMatch]:
+        """
+        The only publicly used method of this interface. Given a list of index
+        matches, filter some out.
+
+        Note matches is a list of IndexMatches and IndexMatches.metadata is a
+        list of objects subclassing BaseIndexMetadata.
+
+        Typically, you'd implement should_process_metadata_obj which would have
+        an opinion on a specific match_metadata.
+
+        Let's take an example. Hash H1 is present in threatexchange and in a
+        local bank. So, matching a close hash H2 results in an IndexMatch object
+        with two metadata objects. You'd want the filters to individually
+        inspect the threatexchange and the local bank metadata.
+        """
+
         results = []
         for match in matches:
             metadata_results = []
             for metadata_obj in match.metadata:
-                if self.filter_one_metadata_obj(
+                filter_one_result = self.should_process_metadata_obj(
                     metadata_obj, index_signal_type, match.distance
-                ):
+                )
+                if type(filter_one_result) != bool or filter_one_result:
+                    # If should_process_metadata_obj returned a non boolean
+                    # response, we don't want to filter out based on that.
+                    # Default to processing that metadata.
                     metadata_results.append(metadata_obj)
                 else:
                     logger.info(
-                        "Filtering out metadata object {%s} because MatchFilter<%s> said so.",
+                        "Filtering out metadata object {%s} because MatchFilter%s said so.",
                         repr(metadata_obj),
                         str(self.__class__),
                     )
@@ -74,7 +97,7 @@ class BaseMatchFilter:
 
         return results
 
-    def filter_one_metadata_obj(
+    def should_process_metadata_obj(
         self,
         match: BaseIndexMetadata,
         index_signal_type: t.Type[SignalType],
@@ -85,6 +108,8 @@ class BaseMatchFilter:
 
         @return True to process this match or to not have an opinion.
         @return False to filter out and NOT process this match.
+
+        Non boolean results are ignored so they default to True.
         """
         raise NotImplementedError
 
@@ -199,7 +224,7 @@ class ThreatExchangePrivacyGroupMatcherActiveFilter(BaseMatchFilter):
     moment.
     """
 
-    def filter_one_metadata_obj(
+    def should_process_metadata_obj(
         self,
         match: BaseIndexMetadata,
         index_signal_type: t.Type[SignalType],
@@ -219,7 +244,7 @@ class ThreatExchangePdqMatchDistanceFilter(BaseMatchFilter):
     privacy group.
     """
 
-    def filter_one_metadata_obj(
+    def should_process_metadata_obj(
         self,
         match: BaseIndexMetadata,
         index_signal_type: t.Type[SignalType],
@@ -247,7 +272,7 @@ class BankActiveFilter(BaseMatchFilter):
     def __init__(self, banks_table: BanksTable):
         self.banks_table = banks_table
 
-    def filter_one_metadata_obj(
+    def should_process_metadata_obj(
         self,
         match: BaseIndexMetadata,
         index_signal_type: t.Type[SignalType],
