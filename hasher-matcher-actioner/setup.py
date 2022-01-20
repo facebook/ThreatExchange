@@ -27,6 +27,7 @@ setup(
         "bottle==0.12.19",
         "apig-wsgi==2.13.0",
         "pyjwt[crypto]==2.1.0",
+        "methodtools==0.4.5",
         "requests==2.27.1",
     ],
     extras_require=extras_require,

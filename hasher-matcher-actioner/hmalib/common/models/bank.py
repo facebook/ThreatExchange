@@ -93,6 +93,9 @@ class Bank(DynamoDBItem):
     bank_name: str
     bank_description: str
 
+    # Is used actively for matching. Think of as kill switch for the bank.
+    is_active: bool
+
     created_at: datetime
 
     # Gets changed on updates to the bank object, not its members.
@@ -112,6 +115,7 @@ class Bank(DynamoDBItem):
             "BankDescription": self.bank_description,
             "CreatedAt": self.created_at.isoformat(),
             "UpdatedAt": self.updated_at.isoformat(),
+            "IsActive": self.is_active,
         }
 
     @classmethod
@@ -122,6 +126,8 @@ class Bank(DynamoDBItem):
             bank_description=item["BankDescription"],
             created_at=datetime.fromisoformat(item["CreatedAt"]),
             updated_at=datetime.fromisoformat(item["UpdatedAt"]),
+            # is_active is True by default.
+            is_active=item.get("IsActive", True),
         )
 
     def to_json(self) -> t.Dict:
@@ -385,7 +391,9 @@ class BanksTable:
     def __init__(self, table: Table):
         self._table = table
 
-    def create_bank(self, bank_name: str, bank_description: str) -> Bank:
+    def create_bank(
+        self, bank_name: str, bank_description: str, is_active: bool = True
+    ) -> Bank:
         new_bank_id = str(uuid.uuid4())
         now = datetime.now()
         bank = Bank(
@@ -394,6 +402,7 @@ class BanksTable:
             bank_description=bank_description,
             created_at=now,
             updated_at=now,
+            is_active=is_active,
         )
         bank.write_to_table(table=self._table)
         return bank
@@ -416,6 +425,7 @@ class BanksTable:
         bank_id: str,
         bank_name: t.Optional[str],
         bank_description: t.Optional[str],
+        is_active: t.Optional[bool],
     ) -> Bank:
         bank = Bank.from_dynamodb_item(
             self._table.get_item(
@@ -429,7 +439,10 @@ class BanksTable:
         if bank_description:
             bank.bank_description = bank_description
 
-        if bank_name or bank_description:
+        if is_active != None:
+            bank.is_active = bool(is_active)
+
+        if bank_name or bank_description or (is_active != None):
             bank.updated_at = datetime.now()
             bank.write_to_table(table=self._table)
 

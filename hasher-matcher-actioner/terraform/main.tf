@@ -425,6 +425,8 @@ module "matcher" {
 
   matches_topic_arn = aws_sns_topic.matches.arn
 
+  banks_datastore = module.datastore.banks_datastore
+
   index_data_storage = {
     bucket_name      = module.hashing_data.index_folder_info.bucket_name
     index_folder_key = module.hashing_data.index_folder_info.key

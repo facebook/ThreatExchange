@@ -13,6 +13,7 @@ export type Bank = {
   bank_id: string;
   bank_name: string;
   bank_description: string;
+  is_active: boolean;
   created_at: Date;
   updated_at: Date;
 };

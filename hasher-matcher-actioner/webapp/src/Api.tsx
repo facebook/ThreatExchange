@@ -505,6 +505,7 @@ export async function fetchAllBanks(): Promise<Bank[]> {
       bank_id: item.bank_id!,
       bank_name: item.bank_name!,
       bank_description: item.bank_description!,
+      is_active: item.is_active,
       created_at: toDate(item.created_at)!,
       updated_at: toDate(item.updated_at)!,
     })),
@@ -517,6 +518,7 @@ export async function fetchBank(bankId: string): Promise<Bank> {
       bank_id: response.bank_id!,
       bank_name: response.bank_name!,
       bank_description: response.bank_description!,
+      is_active: response.is_active,
       created_at: toDate(response.created_at)!,
       updated_at: toDate(response.updated_at)!,
     }),
@@ -526,10 +528,12 @@ export async function fetchBank(bankId: string): Promise<Bank> {
 export async function createBank(
   bankName: string,
   bankDescription: string,
+  isActive = true,
 ): Promise<void> {
   return apiPost('banks/create-bank', {
     bank_name: bankName,
     bank_description: bankDescription,
+    is_active: isActive,
   });
 }
 
@@ -537,14 +541,17 @@ export async function updateBank(
   bankId: string,
   bankName: string,
   bankDescription: string,
+  isActive: boolean,
 ): Promise<Bank> {
   return apiPost<BankWithStringDates>(`banks/update-bank/${bankId}`, {
     bank_name: bankName,
     bank_description: bankDescription,
+    is_active: isActive,
   }).then(response => ({
     bank_id: response.bank_id!,
     bank_name: response.bank_name!,
     bank_description: response.bank_description!,
+    is_active: response.is_active,
     created_at: toDate(response.created_at)!,
     updated_at: toDate(response.updated_at)!,
   }));
