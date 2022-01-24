@@ -222,7 +222,7 @@ This will run the API on port 8080 on localhost.
         [2022-01-24T14:14:49.974Z] Exit code 127
         ```
 - Cause: You did not create a `devcontainer.json` before opening the directory in the remote container. This caused VSCode to create a default `devcontainer.json` which points to the wrong `Dockerfile`.
-- Resolution: Replace the default `devcontainer.json` using the example config in `devcontainer.json.example`. Then try again to open the directory in a remote container
+- Resolution: This should no longer happen because the repo now has a configured `devcontainer.json`.
 
 ### Corrupted /vscode
 - Context:
