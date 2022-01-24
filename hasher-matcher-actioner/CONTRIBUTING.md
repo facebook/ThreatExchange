@@ -209,3 +209,25 @@ $ hmacli run-api
 ```
 
 This will run the API on port 8080 on localhost.
+
+## Troubleshooting
+
+### Default devcontainer.json
+- Context:
+    - You clone the `ThreatExchange` repo and open the `hasher-matcher-actioner/` directory in a VSCode remote container.
+    - You select VSCode to use a preexisting `Dockerfile`
+    - The VSCode console logs show
+        ```bash
+        [2022-01-24T14:14:49.974Z] /bin/sh: line 26: tar: command not found
+        [2022-01-24T14:14:49.974Z] Exit code 127
+        ```
+- Cause: You did not create a `devcontainer.json` before opening the directory in the remote container. This caused VSCode to create a default `devcontainer.json` which points to the wrong `Dockerfile`.
+- Resolution: This should no longer happen because the repo now has a configured `devcontainer.json`.
+
+### Corrupted /vscode
+- Context:
+    - You clone the `ThreatExchange` repo and open the `hasher-matcher-actioner/` directory in a VSCode remote container.
+    - You select VSCode to use a preexisting `Dockerfile`
+    - The VSCode console logs show that it's stuck loading `userProfile`
+- Cause: The VSCode plugin to open folder in remote docker containers uses the same `/vscode` volume for subsequent run. This volume can get corrupted if one of the attempts to open a folder remotely fails and leaves empty directories in the `/vscode` volume. Any subsequent attempt to open a file/folder in a remote container would get stuck trying to use the empty directories.
+- Resolution: Delete the `/vscode` volume. You will have to stop any containers using the volume before you can delete the volume. A simple way is to close VSCode and run `docker system prune --all --volumes`

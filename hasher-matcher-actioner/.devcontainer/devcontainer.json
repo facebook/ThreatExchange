@@ -1,25 +1,20 @@
 // For format details, see https://aka.ms/devcontainer.json.
 {
-  // =================== CTRL+F TODO TO FIND THINGS TO FIX ==============
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      // MacOS can try ${env:USER} 
-      // Windows can try ${env:USERNAME}
-      "unixname": "TODO-YOUR-USER-HERE" 
+      // MacOS and Linux use ${localEnv:USER}, Windows uses ${localEnv:USERNAME}
+      "unixname": "${localEnv:USER}${localEnv:USERNAME}"
     }
   },
-  // MacOS can try ${localEnv:USER}
-  // Windows can try ${localEnv:USERNAME}
-  "remoteUser": "TODO-YOUR-USER-HERE",
-    "mounts": [
+  // MacOS and Linux use ${env:USER}, Windows uses ${env:USERNAME}
+  "remoteUser": "${localEnv:USER}${localEnv:USERNAME}",
+  "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    // MacOS can try ${localEnv:HOME}${localEnv:USERPROFILE}
-    // Windows can try ${localEnv:HOMEPATH}
-    "source=TODO-YOUR-HOME-DIR-WITH-AWS/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
-    "source=TODO-YOUR-HOME-DIR-WITH-CMDHIST/.hma-cmdhist,target=/commandhistory,type=bind"
+    // MacOS and Linux use ${localEnv:HOME}, Windows uses ${localEnv:USERPROFILE}
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.hma-cmdhist,target=/commandhistory,type=bind"
   ],
-  // ==================== EVERYTHING AFTER SHOULD WORK AS IS =================
   "name": "hma-devserver",
   // Set *default* container specific settings.json values on container create.
   "settings": {
