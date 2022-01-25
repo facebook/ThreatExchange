@@ -131,12 +131,14 @@ def get_bank_api(
     @bank_api.post("/create-bank", apply=[jsoninator])
     def create_bank() -> Bank:
         """
-        Create a bank using only the name, description and an is_active flag.
+        Create a bank using only the name, description and an is_active flag,
+        and optionally tags.
         """
         return table_manager.create_bank(
             bank_name=bottle.request.json["bank_name"],
             bank_description=bottle.request.json["bank_description"],
             is_active=bottle.request.json["is_active"],
+            bank_tags=set(bottle.request.json["bank_tags"]),
         )
 
     @bank_api.post("/update-bank/<bank_id>", apply=[jsoninator])
@@ -149,6 +151,7 @@ def get_bank_api(
             bank_name=bottle.request.json["bank_name"],
             bank_description=bottle.request.json["bank_description"],
             is_active=bottle.request.json["is_active"],
+            bank_tags=set(bottle.request.json["bank_tags"]),
         )
 
     # Member Management
@@ -205,6 +208,7 @@ def get_bank_api(
         storage_bucket = bottle.request.json["storage_bucket"]
         storage_key = bottle.request.json["storage_key"]
         notes = bottle.request.json["notes"]
+        bank_member_tags = set(bottle.request.json["bank_member_tags"])
 
         return with_preview_url(
             bank_ops.add_bank_member(
@@ -217,6 +221,7 @@ def get_bank_api(
                 storage_key=storage_key,
                 raw_content=None,
                 notes=notes,
+                bank_member_tags=bank_member_tags,
             )
         )
 
@@ -290,6 +295,17 @@ def get_bank_api(
 
         return PreviewableBankMemberWithSignals(
             **asdict(with_preview_url(member)), signals=signals
+        )
+
+    @bank_api.post("/update-bank-member/<bank_member_id>", apply=[jsoninator])
+    def update_bank_member(bank_member_id=None) -> Bank:
+        """
+        Update notes and tags for a bank_member_id.
+        """
+        return table_manager.update_bank_member(
+            bank_member_id=bank_member_id,
+            notes=bottle.request.json["notes"],
+            bank_member_tags=set(bottle.request.json["bank_member_tags"]),
         )
 
     @bank_api.post("/remove-bank-member/<bank_member_id>")

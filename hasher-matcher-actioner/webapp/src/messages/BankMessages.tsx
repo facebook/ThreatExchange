@@ -16,6 +16,7 @@ export type Bank = {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+  bank_tags: string[];
 };
 
 export type BankMember = {
@@ -32,6 +33,7 @@ export type BankMember = {
   updated_at: Date;
   is_media_unavailable: boolean;
   is_removed: boolean;
+  bank_member_tags: string[];
 };
 
 export type BankMemberSignal = {

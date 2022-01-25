@@ -101,6 +101,8 @@ class Bank(DynamoDBItem):
     # Gets changed on updates to the bank object, not its members.
     updated_at: datetime
 
+    bank_tags: t.Set[str] = field(default_factory=set)
+
     def to_dynamodb_item(self) -> t.Dict:
         return {
             # Main Index
@@ -116,6 +118,7 @@ class Bank(DynamoDBItem):
             "CreatedAt": self.created_at.isoformat(),
             "UpdatedAt": self.updated_at.isoformat(),
             "IsActive": self.is_active,
+            "BankTags": self.set_to_dynamodb_attribute(self.bank_tags),
         }
 
     @classmethod
@@ -128,6 +131,8 @@ class Bank(DynamoDBItem):
             updated_at=datetime.fromisoformat(item["UpdatedAt"]),
             # is_active is True by default.
             is_active=item.get("IsActive", True),
+            # tags default to empty set
+            bank_tags=cls.dynamodb_attribute_to_set(item.get("BankTags", {})),
         )
 
     def to_json(self) -> t.Dict:
@@ -136,6 +141,7 @@ class Bank(DynamoDBItem):
         result.update(
             created_at=self.created_at.isoformat(),
             updated_at=self.updated_at.isoformat(),
+            bank_tags=list(self.bank_tags),
         )
         return result
 
@@ -180,6 +186,8 @@ class BankMember(DynamoDBItem):
     is_removed: bool = field(default=False)
     is_media_unavailable: bool = field(default=False)
 
+    bank_member_tags: t.Set[str] = field(default_factory=set)
+
     @classmethod
     def get_pk(cls, bank_id: str, content_type: t.Type[ContentType]):
         return f"{bank_id}#{content_type.get_name()}"
@@ -207,6 +215,7 @@ class BankMember(DynamoDBItem):
             "UpdatedAt": self.updated_at.isoformat(),
             "IsRemoved": self.is_removed,
             "IsMediaUnavailable": self.is_media_unavailable,
+            "BankMemberTags": self.set_to_dynamodb_attribute(self.bank_member_tags),
         }
 
     @classmethod
@@ -223,6 +232,10 @@ class BankMember(DynamoDBItem):
             updated_at=datetime.fromisoformat(item["UpdatedAt"]),
             is_removed=item["IsRemoved"],
             is_media_unavailable=item["IsMediaUnavailable"],
+            # tags default to empty set
+            bank_member_tags=cls.dynamodb_attribute_to_set(
+                item.get("BankMemberTags", {})
+            ),
         )
 
     def to_json(self) -> t.Dict:
@@ -232,6 +245,7 @@ class BankMember(DynamoDBItem):
             content_type=self.content_type.get_name(),
             created_at=self.created_at.isoformat(),
             updated_at=self.updated_at.isoformat(),
+            bank_member_tags=list(self.bank_member_tags),
         )
         return result
 
@@ -392,7 +406,11 @@ class BanksTable:
         self._table = table
 
     def create_bank(
-        self, bank_name: str, bank_description: str, is_active: bool = True
+        self,
+        bank_name: str,
+        bank_description: str,
+        is_active: bool = False,
+        bank_tags: t.Set[str] = set(),
     ) -> Bank:
         new_bank_id = str(uuid.uuid4())
         now = datetime.now()
@@ -403,6 +421,7 @@ class BanksTable:
             created_at=now,
             updated_at=now,
             is_active=is_active,
+            bank_tags=bank_tags,
         )
         bank.write_to_table(table=self._table)
         return bank
@@ -426,6 +445,7 @@ class BanksTable:
         bank_name: t.Optional[str],
         bank_description: t.Optional[str],
         is_active: t.Optional[bool],
+        bank_tags: t.Optional[t.Set[str]] = None,
     ) -> Bank:
         bank = Bank.from_dynamodb_item(
             self._table.get_item(
@@ -442,7 +462,10 @@ class BanksTable:
         if is_active != None:
             bank.is_active = bool(is_active)
 
-        if bank_name or bank_description or (is_active != None):
+        if bank_tags != None:
+            bank.bank_tags = t.cast(t.Set[str], bank_tags)
+
+        if bank_name or bank_description or (is_active != None) or bank_tags != None:
             bank.updated_at = datetime.now()
             bank.write_to_table(table=self._table)
 
@@ -487,6 +510,7 @@ class BanksTable:
         raw_content: t.Optional[str],
         notes: str,
         is_media_unavailable: bool = False,
+        bank_member_tags: t.Set[str] = set(),
     ) -> BankMember:
         """
         Adds a member to the bank. DOES NOT enforce retroaction. DOES NOT
@@ -507,8 +531,33 @@ class BanksTable:
             created_at=now,
             updated_at=now,
             is_media_unavailable=is_media_unavailable,
+            bank_member_tags=bank_member_tags,
         )
 
+        bank_member.write_to_table(self._table)
+        return bank_member
+
+    def update_bank_member(
+        self, bank_member_id: str, notes: str, bank_member_tags: t.Set[str]
+    ):
+        """
+        Updates the notes and tags for a bank member identified by bank_member_id.
+        """
+        bank_member_keys = self._table.query(
+            IndexName=BankMember.BANK_MEMBER_ID_INDEX,
+            KeyConditionExpression=Key(
+                BankMember.BANK_MEMBER_ID_INDEX_BANK_MEMBER_ID
+            ).eq(bank_member_id),
+        )["Items"][0]
+
+        bank_member = BankMember.from_dynamodb_item(
+            self._table.get_item(
+                Key={"SK": bank_member_keys["SK"], "PK": bank_member_keys["PK"]}
+            )["Item"]
+        )
+
+        bank_member.notes = notes
+        bank_member.bank_member_tags = bank_member_tags
         bank_member.write_to_table(self._table)
         return bank_member
 

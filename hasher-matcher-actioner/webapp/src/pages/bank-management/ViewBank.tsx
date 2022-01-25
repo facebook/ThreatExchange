@@ -32,10 +32,15 @@ function BankDetails({bankId}: BankTabProps): JSX.Element {
             bankName={bank.bank_name}
             bankDescription={bank.bank_description}
             isActive={bank.is_active}
-            handleSubmit={(bankName, bankDescription, isActive) => {
-              updateBank(bankId, bankName, bankDescription, isActive).then(
-                setBank,
-              );
+            tags={bank.bank_tags}
+            handleSubmit={(bankName, bankDescription, isActive, tags) => {
+              updateBank(
+                bankId,
+                bankName,
+                bankDescription,
+                isActive,
+                tags,
+              ).then(setBank);
               setFormResetCounter(formResetCounter + 1);
             }}
             formResetCounter={formResetCounter}

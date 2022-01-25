@@ -7,10 +7,11 @@ import {Form, Button, ProgressBar} from 'react-bootstrap';
 import {useFormik} from 'formik';
 import PreviewableDropzone from './PreviewableDropzone';
 import {ContentType} from '../utils/constants';
+import PillBox from '../components/PillBox';
 
 type BankMemberFormProps = {
   type: ContentType;
-  handleSubmit: (file: File, notes: string) => void;
+  handleSubmit: (file: File, notes: string, tags: string[]) => void;
   uploadProgress: number; // Between 0 and 100 implies upload not started, 100 implies uploaded and anything in between is shown in progress bar
 };
 
@@ -33,6 +34,7 @@ export default function BankMemberForm({
     initialValues: {
       file: undefined,
       notes: '',
+      tags: [] as string[],
     },
     onSubmit: values => {
       if (!values.file) {
@@ -40,7 +42,7 @@ export default function BankMemberForm({
       }
 
       setSaving(true);
-      handleSubmit(values.file!, values.notes);
+      handleSubmit(values.file!, values.notes, values.tags);
     },
   });
 
@@ -79,6 +81,27 @@ export default function BankMemberForm({
             {formik.errors.notes}
           </Form.Control.Feedback>
         ) : null}
+
+        <Form.Label>Tags</Form.Label>
+
+        <PillBox
+          handleNewTagAdd={tag => {
+            const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+            if (!alreadyExists) {
+              formik.setFieldValue('tags', formik.values.tags.concat([tag]));
+            }
+          }}
+          handleTagDelete={tag => {
+            const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+            if (alreadyExists) {
+              formik.setFieldValue(
+                'tags',
+                formik.values.tags.filter(x => x !== tag),
+              );
+            }
+          }}
+          pills={formik.values.tags}
+        />
       </Form.Group>
       <Button type="submit" variant="primary" disabled={saving}>
         {ctaLabel}

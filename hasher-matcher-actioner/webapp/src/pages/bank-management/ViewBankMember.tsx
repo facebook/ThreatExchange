@@ -7,6 +7,7 @@ import {
   Row,
   Col,
   ResponsiveEmbed,
+  Form,
   Table,
   Button,
   Container,
@@ -15,10 +16,13 @@ import {
 } from 'react-bootstrap';
 import {useParams, Link} from 'react-router-dom';
 
+import {useFormik} from 'formik';
+import {triangleSharp} from 'ionicons/icons';
+import {notStrictEqual} from 'assert';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import {BankMemberWithSignals} from '../../messages/BankMessages';
 import Loader from '../../components/Loader';
-import {fetchBankMember, removeBankMember} from '../../Api';
+import {fetchBankMember, removeBankMember, updateBankMember} from '../../Api';
 import {ContentType} from '../../utils/constants';
 import {BlurImage, BlurVideo} from '../../utils/MediaUtils';
 import {
@@ -27,6 +31,7 @@ import {
 } from '../../utils/TextFieldsUtils';
 import ReturnTo from '../../components/ReturnTo';
 import {MediaUnavailablePreview} from './Members';
+import PillBox from '../../components/PillBox';
 
 function NoSignalsYet() {
   return (
@@ -71,6 +76,81 @@ function SignalDetails({
   );
 }
 
+type BankMemberEditableAttributesFormProps = {
+  notes: string;
+  tags: string[];
+  handleSubmit: (notes: string, tags: string[]) => void;
+};
+
+function BankMemberEditableAttributesForm({
+  notes,
+  tags,
+  handleSubmit,
+}: BankMemberEditableAttributesFormProps): JSX.Element {
+  const formik = useFormik({
+    initialValues: {
+      notes,
+      tags,
+    },
+    enableReinitialize: true,
+    onSubmit: values => {
+      handleSubmit(values.notes, values.tags);
+    },
+  });
+
+  return (
+    <tbody>
+      <tr>
+        <td>Notes:</td>
+        <td>
+          <Form.Control
+            id="notes"
+            as="textarea"
+            rows={3}
+            placeholder="Optional description or instructions for other admins. Can be added later."
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            isValid={formik.touched.notes && !formik.errors.notes}
+            isInvalid={formik.touched.notes && !!formik.errors.notes}
+            value={formik.values.notes}
+          />
+        </td>
+      </tr>
+      <tr>
+        <td>Tags:</td>
+        <td>
+          <PillBox
+            handleNewTagAdd={tag => {
+              const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+              if (!alreadyExists) {
+                formik.setFieldValue('tags', formik.values.tags.concat([tag]));
+              }
+            }}
+            handleTagDelete={tag => {
+              const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+              if (alreadyExists) {
+                formik.setFieldValue(
+                  'tags',
+                  formik.values.tags.filter(x => x !== tag),
+                );
+              }
+            }}
+            pills={formik.values.tags}
+          />
+        </td>
+      </tr>
+      {formik.dirty ? (
+        <tr>
+          <td />
+          <td>
+            <Button onClick={() => formik.submitForm()}>Save Changes</Button>
+          </td>
+        </tr>
+      ) : null}
+    </tbody>
+  );
+}
+
 export default function ViewBankMember(): JSX.Element {
   const {bankMemberId} = useParams<{bankMemberId: string}>();
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
@@ -91,6 +171,12 @@ export default function ViewBankMember(): JSX.Element {
   const removeMember = () => {
     removeBankMember(bankMemberId).then(() => {
       setShowConfirmModal(false);
+      setPollBuster(pollBuster + 1);
+    });
+  };
+
+  const handleEditableAttributesSubmit = (notes: string, tags: string[]) => {
+    updateBankMember(bankMemberId, notes, tags).then(() => {
       setPollBuster(pollBuster + 1);
     });
   };
@@ -182,11 +268,12 @@ export default function ViewBankMember(): JSX.Element {
                     <CopyableTextField text={member.bank_member_id} />
                   </td>
                 </tr>
-                <tr>
-                  <td>Notes:</td>
-                  <td>{member.notes}</td>
-                </tr>
               </tbody>
+              <BankMemberEditableAttributesForm
+                tags={member.bank_member_tags}
+                notes={member.notes}
+                handleSubmit={handleEditableAttributesSubmit}
+              />
             </Table>
             <Container>
               <Row>

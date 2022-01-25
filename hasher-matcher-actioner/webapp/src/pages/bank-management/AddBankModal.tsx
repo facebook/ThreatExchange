@@ -30,9 +30,9 @@ export default function AddBankModal({
           <Row>
             <Col>
               <BankDetailsForm
-                handleSubmit={(bankName, bankDescription, isActive) => {
-                  createBank(bankName, bankDescription, isActive).then(() =>
-                    onCloseClick(),
+                handleSubmit={(bankName, bankDescription, isActive, tags) => {
+                  createBank(bankName, bankDescription, isActive, tags).then(
+                    () => onCloseClick(),
                   );
                 }}
               />
