@@ -6,10 +6,13 @@ import React, {useState, SyntheticEvent, useEffect} from 'react';
 import {Form, Button} from 'react-bootstrap';
 import {useFormik} from 'formik';
 
+import PillBox from '../components/PillBox';
+
 type BankDetailsValues = {
   bankName: string;
   bankDescription: string;
   isActive: boolean;
+  tags: string[];
 };
 
 type BankDetailsFormProps = Partial<BankDetailsValues> & {
@@ -17,6 +20,7 @@ type BankDetailsFormProps = Partial<BankDetailsValues> & {
     bankName: string,
     bankDescription: string,
     isActive: boolean,
+    tags: string[],
   ) => void;
   formResetCounter?: number;
 };
@@ -38,6 +42,7 @@ export default function BankDetailsForm({
   bankName,
   bankDescription,
   isActive,
+  tags,
   handleSubmit,
   formResetCounter,
 }: BankDetailsFormProps): JSX.Element {
@@ -53,11 +58,17 @@ export default function BankDetailsForm({
       bankName: bankName || '',
       bankDescription: bankDescription || '',
       isActive: isActive !== undefined && isActive,
+      tags: tags === undefined ? [] : tags,
     },
     validate,
     onSubmit: values => {
       setSaving(true);
-      handleSubmit(values.bankName, values.bankDescription, values.isActive);
+      handleSubmit(
+        values.bankName,
+        values.bankDescription,
+        values.isActive,
+        values.tags,
+      );
     },
     enableReinitialize: formResetCounter !== undefined,
   });
@@ -123,7 +134,32 @@ export default function BankDetailsForm({
           label="Match against members of this bank."
         />
       </Form.Group>
-      <Button type="submit" variant="primary" disabled={saving}>
+
+      <Form.Group>
+        <Form.Label>Tags</Form.Label>
+        <PillBox
+          handleNewTagAdd={tag => {
+            const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+            if (!alreadyExists) {
+              formik.setFieldValue('tags', formik.values.tags.concat([tag]));
+            }
+          }}
+          handleTagDelete={tag => {
+            const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+            if (alreadyExists) {
+              formik.setFieldValue(
+                'tags',
+                formik.values.tags.filter(x => x !== tag),
+              );
+            }
+          }}
+          pills={formik.values.tags}
+        />
+      </Form.Group>
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={saving || !formik.dirty}>
         Save
       </Button>
     </Form>

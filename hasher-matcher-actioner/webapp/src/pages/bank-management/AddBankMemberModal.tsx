@@ -67,7 +67,7 @@ export default function AddBankMemberModal({
     onCloseClick(didAdd);
   };
 
-  const handleSubmit = (file: File, notes: string) => {
+  const handleSubmit = (file: File, notes: string, tags: string[]) => {
     // Mark upload in progress:
     setFileUploadProgress(1);
 
@@ -86,6 +86,7 @@ export default function AddBankMemberModal({
             response.storage_bucket,
             response.storage_key,
             notes,
+            tags,
           ),
         )
         .then(() => closeWrapper(true));
