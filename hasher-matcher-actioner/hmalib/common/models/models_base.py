@@ -14,6 +14,8 @@ class DynamoDBItem:
     SIGNAL_KEY_PREFIX = "s#"
     TYPE_PREFIX = "type#"
 
+    SET_PLACEHOLDER_VALUE = "SET_PLACEHOLDER_VALUE"
+
     def write_to_table(self, table: Table):
         table.put_item(Item=self.to_dynamodb_item())
 
@@ -65,6 +67,24 @@ class DynamoDBItem:
     @staticmethod
     def remove_content_key_prefix(key: str) -> str:
         return key[len(DynamoDBItem.CONTENT_KEY_PREFIX) :]
+
+    @classmethod
+    def set_to_dynamodb_attribute(cls, value: t.Set) -> t.Set:
+        if not value or len(value) == 0:
+            return set([cls.SET_PLACEHOLDER_VALUE])
+
+        return value
+
+    @classmethod
+    def dynamodb_attribute_to_set(cls, value: t.Set) -> t.Set:
+        if len(value) == 1:
+            elem = value.pop()
+            if elem == cls.SET_PLACEHOLDER_VALUE:
+                return set()
+            else:
+                value.add(elem)
+
+        return value
 
 
 class AWSMessage:
