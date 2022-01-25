@@ -2,7 +2,6 @@
 
 import functools
 import json
-from nis import match
 import os
 import boto3
 from mypy_boto3_dynamodb.service_resource import DynamoDBServiceResource, Table
