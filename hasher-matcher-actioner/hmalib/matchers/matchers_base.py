@@ -276,7 +276,10 @@ class Matcher:
                     bank_member = self.banks_table.get_bank_member(
                         bank_member_id=metadata_obj.bank_member_id
                     )
-                    for tag in bank_member.tags:
+
+                    # TODO: This would do good with caching.
+                    bank = self.banks_table.get_bank(bank_id=bank_member.bank_id)
+                    for tag in set.union(bank_member.tags, bank.tags):
                         banked_signal.add_classification(tag)
 
                     banked_signals.append(banked_signal)
