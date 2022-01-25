@@ -32,7 +32,7 @@ function BankDetails({bankId}: BankTabProps): JSX.Element {
             bankName={bank.bank_name}
             bankDescription={bank.bank_description}
             isActive={bank.is_active}
-            tags={bank.tags}
+            tags={bank.bank_tags}
             handleSubmit={(bankName, bankDescription, isActive, tags) => {
               updateBank(
                 bankId,

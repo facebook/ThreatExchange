@@ -270,7 +270,7 @@ export default function ViewBankMember(): JSX.Element {
                 </tr>
               </tbody>
               <BankMemberEditableAttributesForm
-                tags={member.tags}
+                tags={member.bank_member_tags}
                 notes={member.notes}
                 handleSubmit={handleEditableAttributesSubmit}
               />

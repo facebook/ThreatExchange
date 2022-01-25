@@ -30,7 +30,7 @@ def add_bank_member(
     storage_key: t.Optional[str],
     raw_content: t.Optional[str],
     notes: str,
-    tags: t.Set[str],
+    bank_member_tags: t.Set[str],
 ) -> BankMember:
     """
     Write bank-member to database. Send a message to hashing lambda to extract signals.
@@ -42,7 +42,7 @@ def add_bank_member(
         storage_key=storage_key,
         raw_content=raw_content,
         notes=notes,
-        tags=tags,
+        bank_member_tags=bank_member_tags,
     )
 
     submission_message = BankSubmissionMessage(

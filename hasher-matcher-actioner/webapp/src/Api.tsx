@@ -508,7 +508,7 @@ export async function fetchAllBanks(): Promise<Bank[]> {
       is_active: item.is_active,
       created_at: toDate(item.created_at)!,
       updated_at: toDate(item.updated_at)!,
-      tags: item.tags,
+      bank_tags: item.bank_tags,
     })),
   );
 }
@@ -522,7 +522,7 @@ export async function fetchBank(bankId: string): Promise<Bank> {
       is_active: response.is_active,
       created_at: toDate(response.created_at)!,
       updated_at: toDate(response.updated_at)!,
-      tags: response.tags,
+      bank_tags: response.bank_tags,
     }),
   );
 }
@@ -546,13 +546,13 @@ export async function updateBank(
   bankName: string,
   bankDescription: string,
   isActive: boolean,
-  tags: string[] = [],
+  bankTags: string[] = [],
 ): Promise<Bank> {
   return apiPost<BankWithStringDates>(`banks/update-bank/${bankId}`, {
     bank_name: bankName,
     bank_description: bankDescription,
     is_active: isActive,
-    tags,
+    bank_tags: bankTags,
   }).then(response => ({
     bank_id: response.bank_id!,
     bank_name: response.bank_name!,
@@ -560,7 +560,7 @@ export async function updateBank(
     is_active: response.is_active,
     created_at: toDate(response.created_at)!,
     updated_at: toDate(response.updated_at)!,
-    tags,
+    bank_tags: response.bank_tags,
   }));
 }
 
@@ -598,7 +598,7 @@ export async function fetchBankMembersPage(
       updated_at: toDate(member.updated_at)!,
       is_media_unavailable: member.is_media_unavailable,
       is_removed: member.is_removed,
-      tags: member.tags,
+      bank_member_tags: member.bank_member_tags,
     })),
     response.continuation_token,
   ]);
@@ -630,7 +630,7 @@ export async function fetchBankMember(
     updated_at: toDate(member.updated_at)!,
     is_media_unavailable: member.is_media_unavailable,
     is_removed: member.is_removed,
-    tags: member.tags,
+    bank_member_tags: member.bank_member_tags,
     signals: member.signals.map(signal => ({
       bank_id: signal.bank_id,
       bank_member_id: signal.bank_member_id,
@@ -664,14 +664,14 @@ export async function addBankMember(
   storageBucket: string,
   storageKey: string,
   notes: string,
-  tags: string[],
+  bankMemberTags: string[],
 ): Promise<BankMember> {
   return apiPost<BankMemberWithSerializedTypes>(`banks/add-member/${bankId}`, {
     content_type: contentType,
     storage_bucket: storageBucket,
     storage_key: storageKey,
     notes,
-    tags,
+    bank_member_tags: bankMemberTags,
   }).then(response => ({
     bank_id: response.bank_id,
     bank_member_id: response.bank_member_id,
@@ -684,20 +684,20 @@ export async function addBankMember(
     updated_at: toDate(response.updated_at)!,
     is_media_unavailable: response.is_media_unavailable,
     is_removed: response.is_removed,
-    tags: response.tags,
+    bank_member_tags: response.bank_member_tags,
   }));
 }
 
 export async function updateBankMember(
   bankMemberId: string,
   notes: string,
-  tags: string[] = [],
+  bankMemberTags: string[] = [],
 ): Promise<BankMember> {
   return apiPost<BankMemberWithSerializedTypes>(
     `banks/update-bank-member/${bankMemberId}`,
     {
       notes,
-      tags,
+      bank_member_tags: bankMemberTags,
     },
   ).then(response => ({
     bank_id: response.bank_id,
@@ -711,7 +711,7 @@ export async function updateBankMember(
     updated_at: toDate(response.updated_at)!,
     is_media_unavailable: response.is_media_unavailable,
     is_removed: response.is_removed,
-    tags: response.tags,
+    bank_member_tags: response.bank_member_tags,
   }));
 }
 

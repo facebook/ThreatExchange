@@ -138,7 +138,7 @@ def get_bank_api(
             bank_name=bottle.request.json["bank_name"],
             bank_description=bottle.request.json["bank_description"],
             is_active=bottle.request.json["is_active"],
-            tags=set(bottle.request.json["tags"]),
+            bank_tags=set(bottle.request.json["bank_tags"]),
         )
 
     @bank_api.post("/update-bank/<bank_id>", apply=[jsoninator])
@@ -151,7 +151,7 @@ def get_bank_api(
             bank_name=bottle.request.json["bank_name"],
             bank_description=bottle.request.json["bank_description"],
             is_active=bottle.request.json["is_active"],
-            tags=set(bottle.request.json["tags"]),
+            bank_tags=set(bottle.request.json["bank_tags"]),
         )
 
     # Member Management
@@ -208,7 +208,7 @@ def get_bank_api(
         storage_bucket = bottle.request.json["storage_bucket"]
         storage_key = bottle.request.json["storage_key"]
         notes = bottle.request.json["notes"]
-        tags = set(bottle.request.json["tags"])
+        bank_member_tags = set(bottle.request.json["bank_member_tags"])
 
         return with_preview_url(
             bank_ops.add_bank_member(
@@ -221,7 +221,7 @@ def get_bank_api(
                 storage_key=storage_key,
                 raw_content=None,
                 notes=notes,
-                tags=tags,
+                bank_member_tags=bank_member_tags,
             )
         )
 
@@ -305,7 +305,7 @@ def get_bank_api(
         return table_manager.update_bank_member(
             bank_member_id=bank_member_id,
             notes=bottle.request.json["notes"],
-            tags=set(bottle.request.json["tags"]),
+            bank_member_tags=set(bottle.request.json["bank_member_tags"]),
         )
 
     @bank_api.post("/remove-bank-member/<bank_member_id>")
