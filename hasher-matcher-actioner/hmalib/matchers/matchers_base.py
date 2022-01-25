@@ -60,6 +60,7 @@ class Matcher:
         self.index_bucket_name = index_bucket_name
         self.supported_signal_types = supported_signal_types
         self._cached_indexes: t.Dict[t.Type[SignalType], SignalTypeIndex] = {}
+        self.banks_table = banks_table
 
         self.match_filters: t.Sequence[BaseMatchFilter] = [
             ThreatExchangePrivacyGroupMatcherActiveFilter(),
@@ -272,6 +273,11 @@ class Matcher:
                         metadata_obj.bank_member_id,
                         metadata_obj.get_source(),
                     )
+                    bank_member = self.banks_table.get_bank_member(
+                        bank_member_id=metadata_obj.bank_member_id
+                    )
+                    for tag in bank_member.tags:
+                        banked_signal.add_classification(tag)
 
                     banked_signals.append(banked_signal)
 
