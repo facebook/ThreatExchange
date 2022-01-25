@@ -37,6 +37,12 @@ class MatchFiltersTestCase(BanksTableTestBase, unittest.TestCase):
             storage_key=None,
             notes=None,
         )
+        self.table_manager.update_bank(
+            bank_id=self.active_bank.bank_id,
+            bank_name=self.active_bank.bank_name,
+            bank_description=self.active_bank.bank_description,
+            is_active=True,
+        )
 
         self.inactive_bank = self.table_manager.create_bank(
             "TEST_BANK_2", "Is Inactive"
@@ -55,8 +61,6 @@ class MatchFiltersTestCase(BanksTableTestBase, unittest.TestCase):
             storage_key=None,
             notes=None,
         )
-
-        print(self.table_manager.get_bank(bank_id=self.active_bank.bank_id))
 
     def _create_privacy_groups(self):
         # Since we already have a mock_dynamodb2 courtesy BanksTableTestBase,
