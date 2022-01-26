@@ -132,7 +132,7 @@ class Bank(DynamoDBItem):
             # is_active is True by default.
             is_active=item.get("IsActive", True),
             # tags default to empty set
-            bank_tags=cls.dynamodb_attribute_to_set(item.get("BankTags", {})),
+            bank_tags=cls.dynamodb_attribute_to_set(item.get("BankTags", set())),
         )
 
     def to_json(self) -> t.Dict:
@@ -234,7 +234,7 @@ class BankMember(DynamoDBItem):
             is_media_unavailable=item["IsMediaUnavailable"],
             # tags default to empty set
             bank_member_tags=cls.dynamodb_attribute_to_set(
-                item.get("BankMemberTags", {})
+                item.get("BankMemberTags", set())
             ),
         )
 

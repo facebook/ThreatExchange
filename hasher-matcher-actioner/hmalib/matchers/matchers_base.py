@@ -245,7 +245,7 @@ class Matcher:
         self,
         content_id: str,
         content_hash: str,
-        matches: t.List[IndexMatch],
+        matches: t.List[IndexMatch[t.List[BaseIndexMetadata]]],
         sns_client: SNSClient,
         topic_arn: str,
     ):
@@ -268,13 +268,14 @@ class Matcher:
 
                     banked_signals.append(banked_signal)
                 elif metadata_obj.get_source() == BANKS_SOURCE_SHORT_CODE:
-                    banked_signal = BankedSignal(
-                        metadata_obj.signal_id,
-                        metadata_obj.bank_member_id,
-                        metadata_obj.get_source(),
-                    )
                     bank_member = self.banks_table.get_bank_member(
                         bank_member_id=metadata_obj.bank_member_id
+                    )
+
+                    banked_signal = BankedSignal(
+                        metadata_obj.bank_member_id,
+                        bank_member.bank_id,
+                        metadata_obj.get_source(),
                     )
 
                     # TODO: This would do good with caching.
