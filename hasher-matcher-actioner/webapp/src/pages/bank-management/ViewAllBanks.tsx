@@ -97,8 +97,11 @@ export default function ViewAllBanks(): JSX.Element {
             Use banks to manage sets of images or videos you want to action on.
             When you &ldquo;submit&rdquo; images or videos, HMA will
             automatically try to match against these banks. Banks can be
-            configured to automatically take action or prevent other actions
-            from being taken.
+            configured to automatically take actions on matches. Read more in{' '}
+            <a href="https://github.com/facebook/ThreatExchange/wiki/Creating-and-Managing-Banks">
+              the wiki
+            </a>
+            .
           </p>
         </Col>
       </Row>
