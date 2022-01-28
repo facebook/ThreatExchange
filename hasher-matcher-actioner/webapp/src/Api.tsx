@@ -531,13 +531,13 @@ export async function createBank(
   bankName: string,
   bankDescription: string,
   isActive = true,
-  tags: string[] = [],
+  bank_tags: string[] = [],
 ): Promise<void> {
   return apiPost('banks/create-bank', {
     bank_name: bankName,
     bank_description: bankDescription,
     is_active: isActive,
-    tags,
+    bank_tags,
   });
 }
 
