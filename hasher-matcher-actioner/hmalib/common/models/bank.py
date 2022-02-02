@@ -729,3 +729,22 @@ class BanksTable:
                 Key={"PK": member_keys["PK"], "SK": member_keys["SK"]}
             )["Item"]
         )
+
+    def get_bank_member_signal_from_id(
+        self, signal_id: str
+    ) -> t.List[BankMemberSignal]:
+        """
+        Hacky (not efficient): we need to add an index entry or object
+        to change this look up to a query (not a scan) before we can
+        support very large banks.
+
+        This currently does not provide bank name, bank tags, or bank members tags to avoid
+        yet another look up. (we should find a way to avoid the scan before adding such options)
+        """
+        return [
+            BankMemberSignal.from_dynamodb_item(item)
+            for item in self._table.scan(
+                IndexName="BankMemberSignalCursorIndex",
+                FilterExpression=Key("SK").eq(BankMemberSignal.get_sk(signal_id)),
+            )["Items"]
+        ]
