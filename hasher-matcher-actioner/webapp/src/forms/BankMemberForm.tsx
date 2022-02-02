@@ -15,6 +15,8 @@ type BankMemberFormProps = {
   uploadProgress: number; // Between 0 and 100 implies upload not started, 100 implies uploaded and anything in between is shown in progress bar
 };
 
+const ARE_BANK_MEMBER_TAGS_EDITABLE = false;
+
 function renderProgressBar(uploadProgress: number): JSX.Element | null {
   if (uploadProgress === 0) {
     return null;
@@ -82,26 +84,32 @@ export default function BankMemberForm({
           </Form.Control.Feedback>
         ) : null}
 
-        <Form.Label>Tags</Form.Label>
-
-        <PillBox
-          handleNewTagAdd={tag => {
-            const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
-            if (!alreadyExists) {
-              formik.setFieldValue('tags', formik.values.tags.concat([tag]));
-            }
-          }}
-          handleTagDelete={tag => {
-            const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
-            if (alreadyExists) {
-              formik.setFieldValue(
-                'tags',
-                formik.values.tags.filter(x => x !== tag),
-              );
-            }
-          }}
-          pills={formik.values.tags}
-        />
+        {ARE_BANK_MEMBER_TAGS_EDITABLE ? (
+          <>
+            <Form.Label>Tags</Form.Label>
+            <PillBox
+              handleNewTagAdd={tag => {
+                const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+                if (!alreadyExists) {
+                  formik.setFieldValue(
+                    'tags',
+                    formik.values.tags.concat([tag]),
+                  );
+                }
+              }}
+              handleTagDelete={tag => {
+                const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
+                if (alreadyExists) {
+                  formik.setFieldValue(
+                    'tags',
+                    formik.values.tags.filter(x => x !== tag),
+                  );
+                }
+              }}
+              pills={formik.values.tags}
+            />
+          </>
+        ) : null}
       </Form.Group>
       <Button type="submit" variant="primary" disabled={saving}>
         {ctaLabel}
