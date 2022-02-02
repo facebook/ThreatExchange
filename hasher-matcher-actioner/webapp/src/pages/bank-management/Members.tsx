@@ -20,31 +20,13 @@ import {timeAgoForDate} from '../../utils/DateTimeUtils';
 import Loader from '../../components/Loader';
 import {BlurImage, BlurVideo} from '../../utils/MediaUtils';
 import AddBankMemberModal from './AddBankMemberModal';
+import EmptyState from '../../components/EmptyState';
 
 export type BankTabProps = {
   bankId: string;
 };
 
 type OptionalString = string | undefined;
-
-type EmptyStateProps = {
-  onAdd: () => void;
-};
-
-function EmptyState({onAdd}: EmptyStateProps): JSX.Element {
-  return (
-    <Col xs={{offset: 2, span: 8}} className="py-4">
-      <div className="h-100 text-center mt-4">
-        <p className="lead">You have not added any members to this bank yet!</p>
-        <p className="text-center">
-          <Button variant="success" size="lg" onClick={onAdd}>
-            Add Member
-          </Button>
-        </p>
-      </div>
-    </Col>
-  );
-}
 
 export function MediaUnavailablePreview(): JSX.Element {
   return (
@@ -157,7 +139,14 @@ function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
       <Row>
         {neverFetched ? <Loader /> : null}
         {empty ? (
-          <EmptyState onAdd={() => setShowAddMemberModal(true)} />
+          <EmptyState>
+            <EmptyState.Lead>
+              You have not added any members to this bank yet!
+            </EmptyState.Lead>
+            <EmptyState.CTA onClick={() => setShowAddMemberModal(true)}>
+              Add Member
+            </EmptyState.CTA>
+          </EmptyState>
         ) : null}
         {members.map(member => (
           <MemberPreview
