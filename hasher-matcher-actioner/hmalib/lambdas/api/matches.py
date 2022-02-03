@@ -82,7 +82,16 @@ class MatchSummariesResponse(JSONifiable):
 
 
 @dataclass
-class ThreatExchangeMatchDetailMetadata(JSONifiable):
+class BankedSignalDetailsMetadata(JSONifiable):
+    bank_member_id: str
+    bank_id: str
+
+    def to_json(self) -> t.Dict:
+        return asdict(self)
+
+
+@dataclass
+class ThreatExchangeSignalDetailsMetadata(JSONifiable):
     privacy_group_id: str
     tags: t.List[str]
     opinion: str
@@ -94,6 +103,11 @@ class ThreatExchangeMatchDetailMetadata(JSONifiable):
 
 @dataclass
 class MatchDetail(JSONifiable):
+    """
+    Note: te_signal_details should eventaully be folded into banked_signal_details
+    once threatexchanges signals function the same as locally banked one.
+    """
+
     content_id: str
     content_hash: str
     signal_id: t.Union[str, int]
@@ -102,11 +116,19 @@ class MatchDetail(JSONifiable):
     signal_type: str
     updated_at: str
     match_distance: t.Optional[int]
-    metadata: t.List[ThreatExchangeMatchDetailMetadata]
+    te_signal_details: t.List[ThreatExchangeSignalDetailsMetadata]
+    banked_signal_details: t.List[BankedSignalDetailsMetadata]
 
     def to_json(self) -> t.Dict:
         result = asdict(self)
-        result.update(metadata=[datum.to_json() for datum in self.metadata])
+        result.update(
+            te_signal_details=[datum.to_json() for datum in self.te_signal_details]
+        )
+        result.update(
+            banked_signal_details=[
+                datum.to_json() for datum in self.banked_signal_details
+            ]
+        )
         return result
 
 
@@ -126,11 +148,13 @@ class ChangeSignalOpinionResponse(JSONifiable):
         return {"change_requested": self.success}
 
 
-def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
+def get_match_details(
+    datastore_table: Table, banks_table: BanksTable, content_id: str
+) -> t.List[MatchDetail]:
     if not content_id:
         return []
 
-    records = MatchRecord.get_from_content_id(table, f"{content_id}")
+    records = MatchRecord.get_from_content_id(datastore_table, f"{content_id}")
 
     return [
         MatchDetail(
@@ -144,21 +168,35 @@ def get_match_details(table: Table, content_id: str) -> t.List[MatchDetail]:
             match_distance=int(record.match_distance)
             if record.match_distance is not None
             else None,
-            metadata=get_signal_details(table, record.signal_id, record.signal_source),
+            te_signal_details=get_te_signal_details(
+                datastore_table=datastore_table,
+                signal_id=record.signal_id,
+                signal_source=record.signal_source,
+            ),
+            banked_signal_details=get_banked_signal_details(
+                banks_table=banks_table,
+                signal_id=record.signal_id,
+                signal_source=record.signal_source,
+            ),
         )
         for record in records
     ]
 
 
-def get_signal_details(
-    table: Table, signal_id: t.Union[str, int], signal_source: str
-) -> t.List[ThreatExchangeMatchDetailMetadata]:
-    # TODO: Remove need for signal_source. That's part of the *SignalMetadata class now.
-    if not signal_id or not signal_source:
+def get_te_signal_details(
+    datastore_table: Table,
+    signal_id: str,
+    signal_source: str,
+) -> t.List[ThreatExchangeSignalDetailsMetadata]:
+    """
+    Note: te_signal_details should eventaully be folded into banked_signal_details
+    once threatexchanges signals function the same as locally banked one.
+    """
+    if not signal_id or not signal_source or signal_source == BANKS_SOURCE_SHORT_CODE:
         return []
 
     return [
-        ThreatExchangeMatchDetailMetadata(
+        ThreatExchangeSignalDetailsMetadata(
             privacy_group_id=metadata.privacy_group_id,
             tags=[
                 tag for tag in metadata.tags if tag not in ThreatDescriptor.SPECIAL_TAGS
@@ -166,7 +204,26 @@ def get_signal_details(
             opinion=get_opinion_from_tags(metadata.tags).value,
             pending_opinion_change=metadata.pending_opinion_change.value,
         )
-        for metadata in ThreatExchangeSignalMetadata.get_from_signal(table, signal_id)
+        for metadata in ThreatExchangeSignalMetadata.get_from_signal(
+            datastore_table, signal_id
+        )
+    ]
+
+
+def get_banked_signal_details(
+    banks_table: BanksTable,
+    signal_id: str,
+    signal_source: str,
+) -> t.List[BankedSignalDetailsMetadata]:
+    if not signal_id or not signal_source or signal_source != BANKS_SOURCE_SHORT_CODE:
+        return []
+
+    return [
+        BankedSignalDetailsMetadata(
+            bank_member_id=bank_member_signal.bank_member_id,
+            bank_id=bank_member_signal.bank_id,
+        )
+        for bank_member_signal in banks_table.get_bank_member_signal_from_id(signal_id)
     ]
 
 
@@ -246,7 +303,7 @@ class MatchesForHashResponse(JSONifiable):
 
 
 def get_matches_api(
-    dynamodb_table: Table,
+    datastore_table: Table,
     hma_config_table: str,
     indexes_bucket_name: str,
     writeback_queue_url: str,
@@ -275,14 +332,14 @@ def get_matches_api(
         content_q = bottle.request.query.content_q or None
 
         if content_q:
-            records = MatchRecord.get_from_content_id(dynamodb_table, content_q)
+            records = MatchRecord.get_from_content_id(datastore_table, content_q)
         elif signal_q:
             records = MatchRecord.get_from_signal(
-                dynamodb_table, signal_q, signal_source or ""
+                datastore_table, signal_q, signal_source or ""
             )
         else:
             # TODO: Support pagination after implementing in UI.
-            records = MatchRecord.get_recent_items_page(dynamodb_table).items
+            records = MatchRecord.get_recent_items_page(datastore_table).items
 
         return MatchSummariesResponse(
             match_summaries=[
@@ -303,7 +360,11 @@ def get_matches_api(
         """
         results = []
         if content_id := bottle.request.query.content_id or None:
-            results = get_match_details(dynamodb_table, content_id)
+            results = get_match_details(
+                datastore_table=datastore_table,
+                banks_table=banks_table,
+                content_id=content_id,
+            )
         return MatchDetailsResponse(match_details=results)
 
     @matches_api.post("/request-signal-opinion-change/", apply=[jsoninator])
@@ -337,7 +398,7 @@ def get_matches_api(
         )
 
         signal = ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
-            dynamodb_table, signal_id=signal_id, privacy_group_id=privacy_group_id
+            datastore_table, signal_id=signal_id, privacy_group_id=privacy_group_id
         )
 
         if not signal:
@@ -346,7 +407,7 @@ def get_matches_api(
         signal = t.cast(ThreatExchangeSignalMetadata, signal)
         signal.pending_opinion_change = pending_opinion_change
         success = signal.update_pending_opinion_change_in_table_if_exists(
-            dynamodb_table
+            datastore_table
         )
 
         if not success:

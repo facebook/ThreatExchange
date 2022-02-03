@@ -6,105 +6,164 @@ import React, {useState, useEffect, useContext} from 'react';
 import {Col, Collapse, Row, Table} from 'react-bootstrap';
 import PropTypes from 'prop-types';
 import Spinner from 'react-bootstrap/Spinner';
+import {Link} from 'react-router-dom';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import {fetchMatchDetails, MatchDetails} from '../Api';
 import {CopyableHashField, CopyableTextField} from '../utils/TextFieldsUtils';
-import {formatTimestamp} from '../utils/DateTimeUtils';
-
+import {timeAgo} from '../utils/DateTimeUtils';
 import OpinionTableCell from './OpinionTableCell';
 import {NotificationsContext} from '../AppWithNotifications';
+
+type SignalDetailsCellProps = {
+  match: MatchDetails;
+};
+
+function SignalDetailsCell({match}: SignalDetailsCellProps): JSX.Element {
+  const notifications = useContext(NotificationsContext);
+  // Elected to keep this component in same file for now as it is subject to a fair amout of thrash
+  // as TE signals are refactored to use banks.
+  return (
+    <>
+      {match.te_signal_details && match.te_signal_details.length ? (
+        <>
+          <h5>Dataset Membership</h5>
+          <Table title="Datasets">
+            <thead>
+              <tr>
+                <th>Dataset ID</th>
+                <th>Opinion</th>
+                <th>Tags</th>
+              </tr>
+            </thead>
+            {match.te_signal_details.map(details => (
+              <tbody key={match.signal_id + details.privacy_group_id}>
+                <tr>
+                  <td>
+                    <Link to="/settings/threatexchange">
+                      {details.privacy_group_id}
+                    </Link>
+                  </td>
+                  <td>
+                    <OpinionTableCell
+                      privacyGroupId={details.privacy_group_id}
+                      signalId={match.signal_id}
+                      signalSource={match.signal_source}
+                      opinion={details.opinion}
+                      pendingOpinionChange={details.pending_opinion_change}
+                      setShowToast={() =>
+                        notifications.success({
+                          header: 'Submitted',
+                          message:
+                            'Please wait for the requested change to propagate',
+                        })
+                      }
+                    />
+                  </td>
+                  <td>{details.tags.join(', ')}</td>
+                </tr>
+              </tbody>
+            ))}
+          </Table>
+        </>
+      ) : null}
+      {match.banked_signal_details && match.banked_signal_details.length ? (
+        <>
+          <h5>Bank Membership</h5>
+          <Table title="Banks">
+            <thead>
+              <tr>
+                <th>Bank ID</th>
+                <th>Member ID</th>
+              </tr>
+            </thead>
+            {match.banked_signal_details.map(details => (
+              <tbody key={match.signal_id + details.bank_member_id}>
+                <tr>
+                  <td>
+                    <Link to={`/banks/bank/${details.bank_id}/bank-details`}>
+                      {details.bank_id}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link to={`/banks/member/${details.bank_member_id}`}>
+                      {details.bank_member_id}
+                    </Link>
+                  </td>
+                </tr>
+              </tbody>
+            ))}
+          </Table>
+        </>
+      ) : null}
+    </>
+  );
+}
 
 export default function ContentMatchTable({
   contentKey,
 }: {
   contentKey: string;
 }): JSX.Element {
-  const [matchDetails, setMatchDetails] = useState<MatchDetails[]>();
-  const notifications = useContext(NotificationsContext);
+  const [matchesDetails, setMatchesDetails] = useState<MatchDetails[]>();
 
   useEffect(() => {
     fetchMatchDetails(contentKey).then(matches => {
-      setMatchDetails(matches.match_details);
+      setMatchesDetails(matches.match_details);
     });
   }, [contentKey]);
 
   return (
     <>
-      <Spinner hidden={matchDetails !== null} animation="border" role="status">
+      <Spinner
+        hidden={matchesDetails !== null}
+        animation="border"
+        role="status">
         <span className="sr-only">Loading...</span>
       </Spinner>
-      <Collapse in={matchDetails !== null}>
+      <Collapse in={matchesDetails !== null}>
         <Row>
           <Col md={12}>
-            <h3>Matches</h3>
-            <Table responsive className="mt-2" title="Matches">
+            <h3>Matched Signals</h3>
+            <Table responsive striped bordered title="Matches">
               <thead>
                 <tr>
-                  <th>MatchedSignal ID</th>
-                  <th>MatchedSignal Type</th>
-                  <th>MatchedSignal</th>
-                  <th>Last Updated</th>
-                  <th>Privacy Group</th>
-                  <th>Opinion</th>
-                  <th>Classifications</th>
+                  <th>Signal ID</th>
+                  <th>Type</th>
+                  <th>Signal</th>
+                  <th>LastUpdated</th>
+                  <OverlayTrigger
+                    overlay={
+                      <Tooltip id={`tooltip-signal-details-${contentKey}`}>
+                        This column is current state for each signal. It may
+                        have been different when this signal was originally
+                        matched.
+                      </Tooltip>
+                    }>
+                    <th>Current Signal Details</th>
+                  </OverlayTrigger>
                 </tr>
               </thead>
-              {matchDetails && matchDetails.length ? (
-                matchDetails.map((match, index) => (
-                  <tbody key={match.signal_id}>
-                    {match.metadata.map((metadata, subIndex) => (
-                      <tr
-                        style={index % 2 ? {} : {background: '#dddddd'}}
-                        className="align-middle"
-                        key={match.signal_id + metadata.privacy_group_id}>
-                        {subIndex === 0 ? (
-                          <>
-                            <td>
-                              <CopyableTextField text={match.signal_id} />
-                            </td>
-                            <td>{match.signal_type}</td>
-                            <CopyableHashField text={match.signal_hash} />
-                            <td>{formatTimestamp(match.updated_at)}</td>
-                          </>
-                        ) : (
-                          <>
-                            <td />
-                            <td />
-                            <td />
-                            <td />
-                          </>
-                        )}
-                        <td>{metadata.privacy_group_id}</td>
-                        <td>
-                          <OpinionTableCell
-                            privacyGroupId={metadata.privacy_group_id}
-                            signalId={match.signal_id}
-                            signalSource={match.signal_source}
-                            opinion={metadata.opinion}
-                            pendingOpinionChange={
-                              metadata.pending_opinion_change
-                            }
-                            setShowToast={() =>
-                              notifications.success({
-                                header: 'Submitted',
-                                message:
-                                  'Please wait for the requested change to propagate',
-                              })
-                            }
-                          />
-                        </td>
-                        <td>{metadata.tags.join(', ')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                ))
-              ) : (
-                <tbody>
+              <tbody>
+                {matchesDetails && matchesDetails.length ? (
+                  matchesDetails.map(match => (
+                    <tr key={match.signal_id}>
+                      <td>
+                        <CopyableTextField text={match.signal_id} />
+                      </td>
+                      <td>{match.signal_type}</td>
+                      <CopyableHashField text={match.signal_hash} />
+                      <td>{timeAgo(match.updated_at)}</td>
+                      <td>{SignalDetailsCell({match})}</td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
                     <td colSpan={5}>No Matches found for this Content.</td>
                   </tr>
-                </tbody>
-              )}
+                )}
+              </tbody>
             </Table>
           </Col>
         </Row>

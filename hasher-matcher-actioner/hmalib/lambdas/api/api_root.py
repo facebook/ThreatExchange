@@ -144,7 +144,7 @@ app.mount(
 app.mount(
     "/matches/",
     get_matches_api(
-        dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
+        datastore_table=dynamodb.Table(DYNAMODB_TABLE),
         hma_config_table=HMA_CONFIG_TABLE,
         indexes_bucket_name=INDEXES_BUCKET_NAME,
         writeback_queue_url=WRITEBACK_QUEUE_URL,

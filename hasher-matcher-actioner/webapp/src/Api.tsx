@@ -86,6 +86,18 @@ export async function fetchMatchesFromContent(
   return apiGet('matches/', {content_q: contentId});
 }
 
+type TESignalDetails = {
+  privacy_group_id: string;
+  tags: string[];
+  opinion: string;
+  pending_opinion_change: string;
+};
+
+type BankedSignalDetails = {
+  bank_member_id: string;
+  bank_id: string;
+};
+
 export type MatchDetails = {
   content_id: string;
   content_hash: string;
@@ -94,12 +106,8 @@ export type MatchDetails = {
   signal_source: string;
   signal_type: string;
   updated_at: string;
-  metadata: {
-    privacy_group_id: string;
-    tags: string[];
-    opinion: string;
-    pending_opinion_change: string;
-  }[];
+  te_signal_details: TESignalDetails[];
+  banked_signal_details: BankedSignalDetails[];
 };
 
 type Matches = {match_details: MatchDetails[]};
