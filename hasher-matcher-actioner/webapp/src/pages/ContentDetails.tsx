@@ -18,7 +18,7 @@ import {formatTimestamp} from '../utils/DateTimeUtils';
 import {getContentTypeForString} from '../utils/constants';
 import ContentMatchTable from '../components/ContentMatchTable';
 import ActionHistoryTable from '../components/ActionHistoryTable';
-import FullWidthLocalScrollingLeftAlignedLayout from './layouts/FullWidthLocalScrollingLeftAlignedLayout';
+import FullWidthLeftAlignedLayout from './layouts/FullWidthLeftAlignedLayout';
 import ContentPreview from '../components/ContentPreview';
 import ReturnTo from '../components/ReturnTo';
 
@@ -67,7 +67,7 @@ export default function ContentDetailsSummary(): JSX.Element {
   }, []);
 
   return (
-    <FullWidthLocalScrollingLeftAlignedLayout title="Summary">
+    <FullWidthLeftAlignedLayout title="Summary">
       <Container className="h-100 v-100" fluid>
         {/* ^ This container is everything below the header */}
         <Row>
@@ -139,6 +139,6 @@ export default function ContentDetailsSummary(): JSX.Element {
         </Row>
         <ContentMatchTable contentKey={id} />
       </Container>
-    </FullWidthLocalScrollingLeftAlignedLayout>
+    </FullWidthLeftAlignedLayout>
   );
 }
