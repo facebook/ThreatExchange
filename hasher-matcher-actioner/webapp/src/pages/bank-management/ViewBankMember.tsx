@@ -120,6 +120,7 @@ function BankMemberEditableAttributesForm({
         <td>Tags:</td>
         <td>
           <PillBox
+            readOnly
             handleNewTagAdd={tag => {
               const alreadyExists = formik.values.tags.indexOf(tag) !== -1;
               if (!alreadyExists) {
