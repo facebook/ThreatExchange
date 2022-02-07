@@ -2,7 +2,7 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useContext, useEffect} from 'react';
 import {
   Row,
   Col,
@@ -17,9 +17,8 @@ import {
 import {useParams, Link} from 'react-router-dom';
 
 import {useFormik} from 'formik';
-import {triangleSharp} from 'ionicons/icons';
-import {notStrictEqual} from 'assert';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
+import {ConfirmationsContext} from '../../AppWithConfirmations';
 import {BankMemberWithSignals} from '../../messages/BankMessages';
 import Loader from '../../components/Loader';
 import {fetchBankMember, removeBankMember, updateBankMember} from '../../Api';
@@ -154,7 +153,6 @@ function BankMemberEditableAttributesForm({
 
 export default function ViewBankMember(): JSX.Element {
   const {bankMemberId} = useParams<{bankMemberId: string}>();
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
 
   const [member, setMember] = useState<BankMemberWithSignals>();
   const [pollBuster, setPollBuster] = useState<number>(1);
@@ -171,7 +169,6 @@ export default function ViewBankMember(): JSX.Element {
 
   const removeMember = () => {
     removeBankMember(bankMemberId).then(() => {
-      setShowConfirmModal(false);
       setPollBuster(pollBuster + 1);
     });
   };
@@ -179,6 +176,18 @@ export default function ViewBankMember(): JSX.Element {
   const handleEditableAttributesSubmit = (notes: string, tags: string[]) => {
     updateBankMember(bankMemberId, notes, tags).then(() => {
       setPollBuster(pollBuster + 1);
+    });
+  };
+
+  const confirmations = useContext(ConfirmationsContext);
+  const confirmDeleteBankMember = () => {
+    confirmations.confirm({
+      message:
+        'Are you sure you want to remove this bank member? Once the index rebuilds, HMA will stop matching against this member.',
+      ctaVariant: 'danger',
+      ctaText: 'Yes. Remove this Member.',
+      onCancel: () => undefined,
+      onConfirm: removeMember,
     });
   };
 
@@ -204,7 +213,7 @@ export default function ViewBankMember(): JSX.Element {
             <Button
               size="sm"
               variant="danger"
-              onClick={() => setShowConfirmModal(true)}>
+              onClick={confirmDeleteBankMember}>
               Delete Member
             </Button>
           ) : null}
@@ -297,27 +306,6 @@ export default function ViewBankMember(): JSX.Element {
           </Col>
         </Row>
       )}
-      <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Remove the BankMember </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>
-            Are you sure you want to remove this bank member? Once the index
-            rebuilds, HMA will stop matching against this member.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => setShowConfirmModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={removeMember}>
-            Yes, Remove this Member
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </FixedWidthCenterAlignedLayout>
   );
 }

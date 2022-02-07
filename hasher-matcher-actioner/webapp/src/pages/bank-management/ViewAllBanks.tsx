@@ -6,13 +6,13 @@ import React, {useEffect, useState} from 'react';
 import {Row, Col, Card, Button} from 'react-bootstrap';
 import {generatePath, useHistory} from 'react-router-dom';
 import {fetchAllBanks} from '../../Api';
+import EmptyState from '../../components/EmptyState';
 import Loader from '../../components/Loader';
 import {Bank} from '../../messages/BankMessages';
 
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
 import AddBankModal from './AddBankModal';
 
-// TODO: Move to components, and other files
 type BankDetails = {
   bankName: string;
   bankDescription: string;
@@ -37,27 +37,6 @@ function BankCard({
         <p>{bankDescription}</p>
       </Card.Body>
     </Card>
-  );
-}
-// TODO: move to components and other files
-type EmptyStateProps = {
-  onCreate: () => void;
-};
-
-function EmptyState({onCreate}: EmptyStateProps): JSX.Element {
-  return (
-    <Col xs={{offset: 2, span: 8}} className="py-4">
-      <div className="h-100" style={{textAlign: 'center', paddingTop: '40%)'}}>
-        <p className="lead">
-          You have not created banks yet. Create your first bank!
-        </p>
-        <p className="text-center">
-          <Button variant="success" size="lg" onClick={onCreate}>
-            Create Bank
-          </Button>
-        </p>
-      </div>
-    </Col>
   );
 }
 
@@ -113,7 +92,14 @@ export default function ViewAllBanks(): JSX.Element {
         ) : null}
 
         {neverFetched === false && banks.length === 0 ? (
-          <EmptyState onCreate={() => setShowCreateModal(true)} />
+          <EmptyState>
+            <EmptyState.Lead>
+              You have not created banks yet. Create your first bank!
+            </EmptyState.Lead>
+            <EmptyState.CTA onClick={() => setShowCreateModal(true)}>
+              Create Bank
+            </EmptyState.CTA>
+          </EmptyState>
         ) : null}
         {neverFetched === false && banks.length !== 0 ? (
           <Col xs={{offset: 2, span: 8}}>

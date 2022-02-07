@@ -4,9 +4,10 @@
 
 import {IonIcon} from '@ionic/react';
 import {checkmark, trashBin, pencil, close} from 'ionicons/icons';
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
+import {ConfirmationsContext} from '../../../AppWithConfirmations';
 import {ActionPerformer} from '../../../pages/settings/ActionPerformerSettingsTab';
 import ActionPerformerColumns from './ActionPerformerColumns';
 
@@ -24,12 +25,32 @@ export default function ActionPerformerRows({
   canNotDeleteOrUpdateName,
 }: ActionPerformerRowsProps): JSX.Element {
   const [editing, setEditing] = useState(false);
-  const [showDeleteActionConfirmation, setShowDeleteActionConfirmation] =
-    useState(false);
-  const [showUpdateActionConfirmation, setShowUpdateActionConfirmation] =
-    useState(false);
   const newAction = {...action};
   const [updatedAction, setUpdatedAction] = useState(newAction);
+
+  const confirmations = useContext(ConfirmationsContext);
+  const showDeleteActionConfirmation = () => {
+    confirmations.confirm({
+      message: `Please confirm you want to delete the action named "${action.name}"`,
+      ctaText: 'Yes. Delete this Action.',
+      ctaVariant: 'danger',
+      onCancel: () => undefined,
+      onConfirm: () => deleteAction(action),
+    });
+  };
+
+  const showUpdateActionConfirmation = () => {
+    confirmations.confirm({
+      message: `Please confirm you want to update the action named ${action.name}`,
+      ctaVariant: 'primary',
+      ctaText: 'Yes. Update this Action.',
+      onCancel: () => undefined,
+      onConfirm: () => {
+        setEditing(false);
+        saveAction(updatedAction);
+      },
+    });
+  };
 
   const resetForm = () => {
     setUpdatedAction(action);
@@ -49,38 +70,10 @@ export default function ActionPerformerRows({
             variant="secondary"
             className="table-action-button"
             disabled={canNotDeleteOrUpdateName}
-            onClick={() => setShowDeleteActionConfirmation(true)}>
+            onClick={showDeleteActionConfirmation}>
             <IonIcon icon={trashBin} size="large" color="white" />
           </Button>
           <br />
-          <Modal
-            show={showDeleteActionConfirmation}
-            onHide={() => setShowDeleteActionConfirmation(false)}>
-            <Modal.Header closeButton>
-              <Modal.Title>Confirm Action Delete</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <p>
-                Please confirm you want to delete the action named{' '}
-                <strong>{action.name}</strong>.
-              </p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="secondary"
-                onClick={() => setShowDeleteActionConfirmation(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  deleteAction(action);
-                  setShowDeleteActionConfirmation(false);
-                }}>
-                Yes, Delete This Action
-              </Button>
-            </Modal.Footer>
-          </Modal>
         </td>
         <ActionPerformerColumns
           action={updatedAction}
@@ -94,9 +87,7 @@ export default function ActionPerformerRows({
           <Button
             variant="outline-primary"
             className="mb-2 table-action-button"
-            onClick={() => {
-              setShowUpdateActionConfirmation(true);
-            }}>
+            onClick={showUpdateActionConfirmation}>
             <IonIcon icon={checkmark} size="large" color="white" />
           </Button>
           <br />
@@ -109,35 +100,6 @@ export default function ActionPerformerRows({
             }}>
             <IonIcon icon={close} size="large" />
           </Button>
-          <Modal
-            show={showUpdateActionConfirmation}
-            onHide={() => setShowUpdateActionConfirmation(false)}>
-            <Modal.Header closeButton>
-              <Modal.Title>Confirm Action Update</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <p>
-                Please confirm you want to update the action named{' '}
-                <strong>{action.name}</strong>.
-              </p>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button
-                variant="secondary"
-                onClick={() => setShowUpdateActionConfirmation(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setEditing(false);
-                  saveAction(updatedAction);
-                  setShowUpdateActionConfirmation(false);
-                }}>
-                Yes, Update This Action
-              </Button>
-            </Modal.Footer>
-          </Modal>
         </td>
         <ActionPerformerColumns
           action={updatedAction}

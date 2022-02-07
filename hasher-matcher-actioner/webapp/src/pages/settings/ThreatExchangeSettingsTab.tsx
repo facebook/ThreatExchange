@@ -12,6 +12,7 @@ import {
   Card,
   Col,
 } from 'react-bootstrap';
+import classNames from 'classnames';
 import ThreatExchangePrivacyGroupCard from '../../components/settings/ThreatExchangePrivacyGroupCard';
 import {
   HolidaysDatasetInformationBlock,
@@ -27,27 +28,7 @@ import {
 import {NotificationsContext} from '../../AppWithNotifications';
 import SettingsTabPane from './SettingsTabPane';
 import ThreatExchangeTokenEditor from './ThreatExchangeTokenEditor';
-
-/**
- * Empty state when no datasets are found in the backend.
- */
-function EmptyState(): JSX.Element {
-  return (
-    <Col xs={{offset: 2, span: 8}} className="py-4">
-      <div className="h-100" style={{textAlign: 'center'}}>
-        <p className="lead">No ThreatExchange Datasets found.</p>
-        <p>
-          Datasets map to{' '}
-          <a href="https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-privacy-group/v12.0">
-            Threat Privacy Groups
-          </a>{' '}
-          on ThreatExchange. Use the sync button to fetch all privacy groups you
-          have access to.
-        </p>
-      </div>
-    </Col>
-  );
-}
+import EmptyState from '../../components/EmptyState';
 
 type Dataset = {
   privacy_group_id: string;
@@ -148,7 +129,14 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
         <Col xs={{span: 8}}>
           <h3>ThreatExchange Datasets </h3>
         </Col>
-        <Col xs={{span: 4}} className="text-right">
+        <Col
+          xs={{span: 4}}
+          className={classNames({
+            'text-right': true,
+            // Only show the sync button if not we have datasets, otherwise
+            // there will be two CTAs (in the empty state and this one)
+            invisible: !loading && (!datasets || datasets.length === 0),
+          })}>
           <OverlayTrigger
             key="syncButton"
             placement="left"
@@ -191,7 +179,19 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
         ) : null}
 
         {!loading && (!datasets || datasets.length === 0) ? (
-          <EmptyState />
+          <EmptyState>
+            <EmptyState.Lead>No ThreatExchange Datasets found</EmptyState.Lead>
+
+            <p>
+              Datasets map to{' '}
+              <a href="https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-privacy-group/v12.0">
+                Threat Privacy Groups
+              </a>{' '}
+              on ThreatExchange. Use the sync button to fetch all privacy groups
+              you have access to.
+            </p>
+            <EmptyState.CTA onClick={onSync}>Sync</EmptyState.CTA>
+          </EmptyState>
         ) : (
           datasets.map(dataset => (
             <ThreatExchangePrivacyGroupCard

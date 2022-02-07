@@ -2,10 +2,11 @@
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
 
-import React, {useState} from 'react';
+import React, {useState, useContext} from 'react';
 import {Modal, Container, Row, Col, Button} from 'react-bootstrap';
 import {NavLink} from 'react-router-dom';
 import {Auth} from 'aws-amplify';
+import {ConfirmationsContext} from './AppWithConfirmations';
 import './styles/_sidebar.scss';
 
 type SidebarProps = {
@@ -15,8 +16,16 @@ type SidebarProps = {
 export default function Sidebar(
   {className}: SidebarProps = {className: 'sidebar'},
 ): JSX.Element {
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
-
+  const confirmations = useContext(ConfirmationsContext);
+  const showLogoutModal = () => {
+    confirmations.confirm({
+      message: 'Are you sure you want to sign out?',
+      ctaText: 'Yes. Sign me out.',
+      ctaVariant: 'primary',
+      onCancel: () => undefined,
+      onConfirm: () => Auth.signOut(),
+    });
+  };
   return (
     <div className={`${className} d-flex flex-column`}>
       <div className="px-2 pt-2 pb-4Right">
@@ -73,31 +82,11 @@ export default function Sidebar(
           <Button
             variant="link"
             className="nav-link px-1"
-            onClick={() => setShowLogoutModal(true)}>
+            onClick={showLogoutModal}>
             Sign Out
           </Button>
         </li>
       </ul>
-      <Modal show={showLogoutModal} size="lg" centered>
-        <Modal.Header closeButton onHide={() => setShowLogoutModal(false)}>
-          <Modal.Title>Logout</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Container>
-            <Row>
-              <Col>
-                <p>Are you sure you want to sign out?</p>
-                <Button
-                  variant="primary"
-                  onClick={() => Auth.signOut()}
-                  href="/">
-                  Yes. Sign me out.
-                </Button>
-              </Col>
-            </Row>
-          </Container>
-        </Modal.Body>
-      </Modal>
     </div>
   );
 }
