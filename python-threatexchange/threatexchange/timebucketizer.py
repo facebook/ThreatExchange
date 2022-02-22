@@ -7,11 +7,25 @@ from os import walk
 from os.path import isfile, join
 
 import json
+from threading import Timer
+from time import sleep
+import time
 from typing import List
 import csv
 
+import typing as t
 
-class TimeBucketizer:
+# class JSONifiable:
+#     def to_json(self) -> t.Dict:
+#         raise NotImplementedError
+
+
+class TimeBucketInstance:
+    def to_csv(self) -> t.Dict:
+        raise NotImplementedError
+
+
+class TimeBucketizer(TimeBucketInstance):
     # TODO Make this generic, so we can have TimeBucket[Tuple[int, int]] or TimeBucket[MoreComplexObject].
     def __init__(
         self, bucket_width: datetime.timedelta, storage_path: str, type: str, id: str
@@ -33,8 +47,12 @@ class TimeBucketizer:
         (eg. multiple lambdas) and writing to the same file system.
         """
 
+        if bucket_width < datetime.timedelta(seconds=60):
+            raise Exception("Please ensure timedelta is atleast a minute long.")
+
         self.bucket_width = bucket_width
-        self.start = self._calculate_start(bucket_width)
+        # Add flag for BUCKET_WIDTH
+        self.start, self.end = self._calculate_start(bucket_width)
         self.storage_path = storage_path
         self.id = id
         self.type = type
@@ -44,13 +62,14 @@ class TimeBucketizer:
     def _calculate_start(self, bucket_width):
         now = datetime.datetime.now()
         rounded = now - (now - datetime.datetime.min) % bucket_width
-        return rounded
+        return (rounded, rounded + self.bucket_width)
 
     def add_record(self, record) -> None:
         """
         Adds the record to the current bucket.
         """
-
+        if len(self.buffer) > 100 or (self.end - self.start).days <= 0:
+            self._flush()
         self.buffer.append(record)
 
     def get_records(self) -> List:
@@ -81,29 +100,26 @@ class TimeBucketizer:
         """
         Flushes the files currently stored onto the database
         """
-        value = self._calculate_start(self.bucket_width)
-
         accurate_date = os.path.join(
-            str(value.year),
-            str(value.month),
-            str(value.day),
-            str(value.hour),
-            str(value.minute),
+            str(self.start.year),
+            str(self.start.month),
+            str(self.start.day),
+            str(self.start.hour),
+            str(self.start.minute),
         )
 
         file_name = str(self.id) + ".csv"
-        directory_path = self.storage_path + "/" + self.type + "/" + accurate_date
+        directory_path = os.path.join(self.storage_path, self.type, accurate_date)
         file_pathway = os.path.join(directory_path, file_name)
 
         if not os.path.isdir(directory_path):
             os.makedirs(directory_path)
 
-        if not os.path.isfile(file_pathway):
-            with open(file_pathway, "w") as f:
-                writer = csv.writer(f)
-                writer.writerow(["File Content"])
-
         with open(file_pathway, "a+", newline="") as outfile:
             writer = csv.writer(outfile)
             for val in self.buffer:
                 writer.writerow([val])
+
+        # Reset values
+        self.start, self.end = self._calculate_start(self.bucket_width)
+        self.buffer = []
