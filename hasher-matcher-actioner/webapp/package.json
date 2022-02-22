@@ -31,6 +31,7 @@
     "react-dropzone": "^11.4.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "^5.0.0",
+    "react-waypoint": "^10.1.0",
     "uplot": "^1.6.13",
     "uplot-react": "^1.1.0"
   },
@@ -54,8 +55,8 @@
   "devDependencies": {
     "@types/dompurify": "^2.2.3",
     "@types/react-router-dom": "^5.1.8",
-    "@typescript-eslint/parser": "^5.10.0",
     "@typescript-eslint/eslint-plugin": "^5.10.0",
+    "@typescript-eslint/parser": "^5.10.0",
     "eslint": "^7.29.0",
     "eslint-config-airbnb": "^18.2.1",
     "eslint-config-prettier": "^8.3.0",

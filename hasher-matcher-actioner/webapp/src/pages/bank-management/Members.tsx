@@ -13,6 +13,7 @@ import {
   ResponsiveEmbed,
 } from 'react-bootstrap';
 import {Link} from 'react-router-dom';
+import {Waypoint} from 'react-waypoint';
 import {fetchBank, fetchBankMembersPage} from '../../Api';
 import {BankMember} from '../../messages/BankMessages';
 import {ContentType} from '../../utils/constants';
@@ -98,7 +99,7 @@ function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
   useEffect(() => {
     fetchBankMembersPage(bankId, type, continuationToken).then(resp => {
       setNeverFetched(false);
-      setMembers(resp[0]);
+      setMembers(members.concat(resp[0]));
       setContinuationToken(resp[1]);
 
       if (resp[1] === null) {
@@ -137,7 +138,6 @@ function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
         ) : null}
       </Row>
       <Row>
-        {neverFetched ? <Loader /> : null}
         {empty ? (
           <EmptyState>
             <EmptyState.Lead>
@@ -158,6 +158,26 @@ function BaseMembers({bankId, type}: BaseMembersProps): JSX.Element {
           />
         ))}
       </Row>
+      {noMoreMembers ? (
+        <></>
+      ) : (
+        <div>
+          <Waypoint
+            onEnter={() =>
+              fetchBankMembersPage(bankId, type, continuationToken).then(
+                resp => {
+                  setMembers(members.concat(resp[0]));
+                  setContinuationToken(resp[1]);
+                  if (resp[1] === null) {
+                    setNoMoreMembers(true);
+                  }
+                },
+              )
+            }
+          />
+          <Loader />
+        </div>
+      )}
       <AddBankMemberModal
         onCloseClick={(didAdd = false) => {
           if (didAdd) {
