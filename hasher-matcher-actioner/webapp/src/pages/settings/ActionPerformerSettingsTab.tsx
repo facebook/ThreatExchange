@@ -11,7 +11,7 @@ import {add, checkmark, close, notificationsOutline} from 'ionicons/icons';
 import {updateAction, createAction, deleteAction} from '../../Api';
 import ActionPerformerColumns from '../../components/settings/ActionPerformer/ActionPerformerColumns';
 import ActionPerformerRows from '../../components/settings/ActionPerformer/ActionPerformerRows';
-import {ActionRule} from './ActionRuleSettingsTab';
+import {ActionRule} from '../../messages/ActionMessages';
 import {ActionPerformerType} from '../../utils/constants';
 import {NotificationsContext} from '../../AppWithNotifications';
 
@@ -212,7 +212,7 @@ export default function ActionPerformerSettingsTab({
                         // Check if any ActionRule is using this Action
                         actionRules.findIndex(
                           action_rule =>
-                            action_rule.action_name === action.name,
+                            action_rule.action_label.value === action.name,
                         ) >= 0
                       }
                     />

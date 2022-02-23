@@ -7,9 +7,8 @@ import Tab from 'react-bootstrap/Tab';
 import Tabs from 'react-bootstrap/Tabs';
 import {useHistory, useParams} from 'react-router-dom';
 import {fetchAllActionRules, fetchAllActions} from '../Api';
-import ActionRuleSettingsTab, {
-  ActionRule,
-} from './settings/ActionRuleSettingsTab';
+import ActionRuleSettingsTab from './settings/ActionRuleSettingsTab';
+import {ActionRule} from '../messages/ActionMessages';
 import ActionPerformerSettingsTab, {
   ActionPerformer,
 } from './settings/ActionPerformerSettingsTab';

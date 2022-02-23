@@ -3,7 +3,6 @@
  */
 
 import {Auth, API} from 'aws-amplify';
-import {ActionRule, Label} from './pages/settings/ActionRuleSettingsTab';
 import {ActionPerformer} from './pages/settings/ActionPerformerSettingsTab';
 import {
   Bank,
@@ -13,6 +12,7 @@ import {
 } from './messages/BankMessages';
 import {toDate} from './utils/DateTimeUtils';
 import {ContentType, getContentTypeForString} from './utils/constants';
+import {ActionRule, Label} from './messages/ActionMessages';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -428,57 +428,22 @@ export async function deleteAction(name: string): Promise<{response: string}> {
   return apiDelete(`actions/${name}`);
 }
 
-// We need two different ActionRule types because the backend model (must (not) have labels) is different
-// from the Frontend model (classification conditions).
-// This class should be kept in sync with python class ActionRule (hmalib.common.configs.evaluator.ActionRule)
-type BackendActionRule = {
-  name: string;
-  must_have_labels: Label[];
-  must_not_have_labels: Label[];
-  action_label: {
-    key: string;
-    value: string;
-  };
-};
-
-const convertToBackendActionRule = (frontend_action_rule: ActionRule) =>
-  ({
-    name: frontend_action_rule.name,
-    must_have_labels: frontend_action_rule.must_have_labels,
-    must_not_have_labels: frontend_action_rule.must_not_have_labels,
-    action_label: {
-      key: 'Action',
-      value: frontend_action_rule.action_name,
-    },
-  } as BackendActionRule);
-
 type AllActionRules = {
   error_message: string;
-  action_rules: Array<BackendActionRule>;
+  action_rules: Array<ActionRule>;
 };
 
 export async function fetchAllActionRules(): Promise<ActionRule[]> {
-  return apiGet<AllActionRules>('action-rules/').then(response => {
-    if (response && response.error_message === '' && response.action_rules) {
-      const fetchedActionRules = response.action_rules.map(
-        backend_action_rule =>
-          new ActionRule(
-            backend_action_rule.name,
-            backend_action_rule.action_label.value,
-            backend_action_rule.must_have_labels,
-            backend_action_rule.must_not_have_labels,
-          ),
-      );
-      return fetchedActionRules;
-    }
-    return [];
-  });
+  return apiGet<AllActionRules>('action-rules/').then(response =>
+    response && response.error_message === '' && response.action_rules
+      ? response.action_rules
+      : [],
+  );
 }
 
 export async function addActionRule(actionRule: ActionRule): Promise<Response> {
-  const backendActionRule = convertToBackendActionRule(actionRule);
   return apiPost('action-rules/', {
-    action_rule: backendActionRule,
+    action_rule: actionRule,
   });
 }
 
@@ -486,9 +451,8 @@ export async function updateActionRule(
   oldName: string,
   actionRule: ActionRule,
 ): Promise<Response> {
-  const backendActionRule = convertToBackendActionRule(actionRule);
   return apiPut(`action-rules/${oldName}`, {
-    action_rule: backendActionRule,
+    action_rule: actionRule,
   });
 }
 
