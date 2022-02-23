@@ -67,6 +67,7 @@ export default function PillBox({
     <div>
       {pills.map(pill => (
         <Pill
+          key={pill}
           readOnly={!!readOnly}
           tag={pill}
           onDelete={() => handleTagDelete(pill)}
