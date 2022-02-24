@@ -52,4 +52,4 @@ dev_apply_with_newest_docker_image:
 	terraform -chdir=terraform apply -var "hma_lambda_docker_uri=${DOCKER_URI}@$${DIGEST}"
 
 dev_install_hmacli:
-	python3 -m pip install -r requirements-dev.txt
+	python3 -m pip install -e '.[all]'
