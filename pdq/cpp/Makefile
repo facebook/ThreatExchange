@@ -2,8 +2,8 @@
 CC=g++ -g -std=c++11
 IFLAGS=-I../.. -I.
 # -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation is because of CImg.h
-WFLAGS=-Wall -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation -Werror
-LFLAGS=-lm
+WFLAGS=-Wall -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation -Wno-unknown-warning-option -Werror
+LFLAGS=-lm -lpthread
 
 CCOPT=$(CC) $(CFLAGS) $(IFLAGS) $(WFLAGS) -O3
 CCDBG=$(CC) -g $(CFLAGS) $(IFLAGS) $(WFLAGS)
