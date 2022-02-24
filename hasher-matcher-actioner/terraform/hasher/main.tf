@@ -27,6 +27,16 @@ resource "aws_lambda_function" "hashing_lambda" {
     }
   }
 
+  vpc_config {
+    security_group_ids = var.durable_fs_security_group_ids
+    subnet_ids         = var.durable_fs_subnet_ids
+  }
+
+  file_system_config {
+    local_mount_path = var.durable_fs_local_mount_path
+    arn              = var.durable_fs_arn
+  }
+
   tags = merge(
     var.additional_tags,
     {
@@ -113,6 +123,11 @@ data "aws_iam_policy_document" "hashing_lambda" {
 resource "aws_iam_role_policy_attachment" "hashing_lambda_permissions" {
   role       = aws_iam_role.hashing_lambda_role.name
   policy_arn = aws_iam_policy.hashing_lambda_policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "AWSLambdaVPCAccessExecutionRole" {
+  role       = aws_iam_role.hashing_lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 resource "aws_lambda_event_source_mapping" "submissions_to_hasher" {
