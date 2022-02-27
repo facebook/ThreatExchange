@@ -1,17 +1,10 @@
 import datetime
-from datetime import timedelta
-from inspect import _void
 
 import os
-from os import walk
-from os.path import isfile, join
 
-import json
-from threading import Timer
-from time import sleep
-import time
 from typing import List
 import csv
+import _csv
 
 import typing as t
 
@@ -20,12 +13,34 @@ import typing as t
 #         raise NotImplementedError
 
 
-class TimeBucketInstance:
-    def to_csv(self) -> t.Dict:
+#     @classmethod
+# def from_dynamodb_item(cls, item: t.Dict) -> "Bank":
+#     return cls(
+#         bank_id=item["BankId"],
+#         bank_name=item["BankName"],
+#         bank_description=item["BankDescription"],
+#         created_at=datetime.fromisoformat(item["CreatedAt"]),
+#         updated_at=datetime.fromisoformat(item["UpdatedAt"]),
+#         # is_active is True by default.
+#         is_active=item.get("IsActive", True),
+#         # tags default to empty set
+#         bank_tags=cls.dynamodb_attribute_to_set(item.get("BankTags", set())),
+#     )
+
+
+class CSViable:
+    def to_csv(self) -> t.List[t.Union[str, int]]:
+        raise NotImplementedError
+
+    @classmethod
+    def from_csv(cls, value: t.List[t.Union[str, int]]) -> "CSViable":
         raise NotImplementedError
 
 
-class TimeBucketizer(TimeBucketInstance):
+T = t.TypeVar("T", bound=CSViable)
+
+
+class TimeBucketizer(t.Generic[T]):
     # TODO Make this generic, so we can have TimeBucket[Tuple[int, int]] or TimeBucket[MoreComplexObject].
     def __init__(
         self, bucket_width: datetime.timedelta, storage_path: str, type: str, id: str
@@ -47,32 +62,43 @@ class TimeBucketizer(TimeBucketInstance):
         (eg. multiple lambdas) and writing to the same file system.
         """
 
-        if bucket_width < datetime.timedelta(seconds=60):
+        if (
+            bucket_width < datetime.timedelta(seconds=60)
+            and bucket_width.seconds == 0
+            and bucket_width.microseconds == 0
+        ):
             raise Exception("Please ensure timedelta is atleast a minute long.")
 
         self.bucket_width = bucket_width
-        # Add flag for BUCKET_WIDTH
         self.start, self.end = self._calculate_start(bucket_width)
         self.storage_path = storage_path
         self.id = id
         self.type = type
 
-        self.buffer = []
+        self.buffer: t.List[T] = []
 
     def _calculate_start(self, bucket_width):
         now = datetime.datetime.now()
         rounded = now - (now - datetime.datetime.min) % bucket_width
         return (rounded, rounded + self.bucket_width)
 
-    def add_record(self, record) -> None:
+    def add_record(self, record: T) -> None:
         """
         Adds the record to the current bucket.
         """
-        if len(self.buffer) > 100 or (self.end - self.start).days <= 0:
+        if len(self.buffer) >= 100 or self.end <= datetime.datetime.now():
             self._flush()
         self.buffer.append(record)
 
-    def get_records(self) -> List:
+    # Add a destroy method to handle case where add_record isn't called !!!!!!!!!!!!!!!!!!!!!
+    def destroy_remaining(self) -> None:
+        if len(self.buffer):
+            return
+        self._flush()
+
+    # Need to fix return type for this method !!!!!!!!!!!!!!!!!!!!
+    # - Unable to fix return type because unable to get the values as type T
+    def get_records(self) -> t.List[T]:
         """
         Used for testing. Returns a list of all filepathways found starting from the storage_path
         """
@@ -88,7 +114,8 @@ class TimeBucketizer(TimeBucketInstance):
 
         return list_of_pathways
 
-    def get_all_data_in_csv(self, directory_path):
+    # Change the name here !! -> FIXED!!
+    def get_csv_file_count(self, directory_path) -> int:
         """
         Returns all the data in the csv files
         """
@@ -116,10 +143,43 @@ class TimeBucketizer(TimeBucketInstance):
             os.makedirs(directory_path)
 
         with open(file_pathway, "a+", newline="") as outfile:
-            writer = csv.writer(outfile)
-            for val in self.buffer:
-                writer.writerow([val])
+            writer: _csv._writer = csv.writer(outfile)
+            writer.writerows(map(lambda x: x.to_csv(), self.buffer))
 
         # Reset values
         self.start, self.end = self._calculate_start(self.bucket_width)
         self.buffer = []
+
+    # Check if the data was added
+    def get_file_contents(self, file_path) -> List[str]:
+        """
+        Returns all the data stored inside csv file given the file_path
+        """
+        my_file = open(file_path, "r")
+        return list(csv.reader(my_file))
+
+
+class A(CSViable):
+    pass
+
+
+class testA(CSViable):
+    def __init__(self):
+        self.a = "a"
+        self.b = "b"
+
+    def to_csv(self):
+        return [self.a]
+
+
+sample: TimeBucketizer[A] = TimeBucketizer(
+    datetime.timedelta(minutes=1), "/tmp/makethisdirectory/", "hasher", "2"
+)
+
+# sample.add_record(testA())
+# sample.add_record(testA())
+# sample.add_record(testA())
+# sample.add_record(testA())
+# sample.add_record(testA())
+# sample._flush()
+sample.get_file_contents("/tmp/makethisdirectory/hasher/2022/2/27/1/17/2.csv")
