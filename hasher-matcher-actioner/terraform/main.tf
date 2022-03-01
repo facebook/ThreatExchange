@@ -22,6 +22,8 @@ locals {
   te_data_folder             = module.hashing_data.threat_exchange_data_folder_info.key
   te_api_token_secret_name   = "threatexchange/${var.prefix}_api_tokens"
   hma_api_tokens_secret_name = "hma/${var.prefix}_api_tokens"
+
+  durable_storage_path = "/mnt/durable-storage"
 }
 
 ### Config storage ###
@@ -218,6 +220,12 @@ module "authentication" {
   webapp_and_api_shared_user_pool_client_id = var.webapp_and_api_shared_user_pool_client_id
 }
 
+module "durable_fs" {
+  source          = "./durable-fs"
+  prefix          = var.prefix
+  additional_tags = var.additional_tags
+}
+
 
 /**
  * # Primary S3 Bucket:
@@ -291,7 +299,6 @@ resource "aws_s3_bucket" "banks_media_bucket" {
     prevent_destroy = true
   }
 }
-
 
 /*
  * # Submissions SQS:
@@ -401,6 +408,11 @@ module "hasher" {
       [for partner_bucket in var.partner_image_buckets : "${partner_bucket.arn}/*"]
     )
   }
+
+  durable_fs_subnet_ids         = module.durable_fs.durable_fs_subnet_ids
+  durable_fs_security_group_ids = module.durable_fs.durable_fs_security_group_ids
+  durable_fs_arn                = module.durable_fs.durable_fs_arn
+  durable_fs_local_mount_path   = local.durable_storage_path
 
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)

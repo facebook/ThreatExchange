@@ -81,3 +81,23 @@ variable "image_data_storage" {
     all_bucket_arns = list(string)
   })
 }
+
+variable "durable_fs_security_group_ids" {
+  description = "SG Ids for the durable file-system we are mounting on the hashing lambda."
+  type        = list(string)
+}
+
+variable "durable_fs_subnet_ids" {
+  description = "subnet Ids for the durable file-system we are mounting on the hashing lambda."
+  type        = list(string)
+}
+
+variable "durable_fs_local_mount_path" {
+  description = "Local mount path durable file-system we are mounting on the hashing lambda."
+  type        = string
+}
+
+variable "durable_fs_arn" {
+  description = "ARN for the durable file-system we are mounting on the hashing lambda."
+  type        = string
+}
