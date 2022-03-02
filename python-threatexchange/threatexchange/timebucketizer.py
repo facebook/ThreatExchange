@@ -8,24 +8,7 @@ import _csv
 
 import typing as t
 
-# class JSONifiable:
-#     def to_json(self) -> t.Dict:
-#         raise NotImplementedError
-
-
-#     @classmethod
-# def from_dynamodb_item(cls, item: t.Dict) -> "Bank":
-#     return cls(
-#         bank_id=item["BankId"],
-#         bank_name=item["BankName"],
-#         bank_description=item["BankDescription"],
-#         created_at=datetime.fromisoformat(item["CreatedAt"]),
-#         updated_at=datetime.fromisoformat(item["UpdatedAt"]),
-#         # is_active is True by default.
-#         is_active=item.get("IsActive", True),
-#         # tags default to empty set
-#         bank_tags=cls.dynamodb_attribute_to_set(item.get("BankTags", set())),
-#     )
+import timeit
 
 
 class CSViable:
@@ -90,14 +73,11 @@ class TimeBucketizer(t.Generic[T]):
             self._flush()
         self.buffer.append(record)
 
-    # Add a destroy method to handle case where add_record isn't called !!!!!!!!!!!!!!!!!!!!!
     def destroy_remaining(self) -> None:
         if len(self.buffer):
             return
         self._flush()
 
-    # Need to fix return type for this method !!!!!!!!!!!!!!!!!!!!
-    # - Unable to fix return type because unable to get the values as type T
     def get_records(self) -> t.List[T]:
         """
         Used for testing. Returns a list of all filepathways found starting from the storage_path
@@ -105,6 +85,7 @@ class TimeBucketizer(t.Generic[T]):
         directory_path = os.path.join(self.storage_path, self.type, "")
 
         list_of_pathways = [
+            # Leaving this here for now: Hashrecord.from_csv(val)
             val
             for sublist in [
                 [os.path.join(i[0], j) for j in i[2]] for i in os.walk(directory_path)
@@ -114,7 +95,6 @@ class TimeBucketizer(t.Generic[T]):
 
         return list_of_pathways
 
-    # Change the name here !! -> FIXED!!
     def get_csv_file_count(self, directory_path) -> int:
         """
         Returns all the data in the csv files
@@ -146,40 +126,12 @@ class TimeBucketizer(t.Generic[T]):
             writer: _csv._writer = csv.writer(outfile)
             writer.writerows(map(lambda x: x.to_csv(), self.buffer))
 
-        # Reset values
         self.start, self.end = self._calculate_start(self.bucket_width)
         self.buffer = []
 
-    # Check if the data was added
     def get_file_contents(self, file_path) -> List[str]:
         """
         Returns all the data stored inside csv file given the file_path
         """
         my_file = open(file_path, "r")
         return list(csv.reader(my_file))
-
-
-class A(CSViable):
-    pass
-
-
-class testA(CSViable):
-    def __init__(self):
-        self.a = "a"
-        self.b = "b"
-
-    def to_csv(self):
-        return [self.a]
-
-
-sample: TimeBucketizer[A] = TimeBucketizer(
-    datetime.timedelta(minutes=1), "/tmp/makethisdirectory/", "hasher", "2"
-)
-
-# sample.add_record(testA())
-# sample.add_record(testA())
-# sample.add_record(testA())
-# sample.add_record(testA())
-# sample.add_record(testA())
-# sample._flush()
-sample.get_file_contents("/tmp/makethisdirectory/hasher/2022/2/27/1/17/2.csv")
