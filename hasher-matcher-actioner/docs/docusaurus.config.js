@@ -9,7 +9,7 @@ const config = {
   title: 'HMA',
   tagline: 'Hasher Matcher Actioner',
   url: 'https://facebook.github.io/',
-  baseUrl: '/threatexchange/',
+  baseUrl: '/ThreatExchange/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
