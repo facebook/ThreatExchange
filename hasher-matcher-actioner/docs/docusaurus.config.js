@@ -77,19 +77,19 @@ const config = {
             title: 'Guides',
             items: [
               {
-                href: 'installation/index',
+                href: 'docs/installation',
                 label: 'Install',
               },
               {
-                href: 'guides/index',
+                href: 'docs/guides',
                 label: 'Usage',
               },
               {
-                href: 'customizing/index',
+                href: 'docs/customizing',
                 label: 'Customize',
               },
               {
-                href: 'contributing/index',
+                href: 'docs/contributing',
                 label: 'Contribute',
               }
             ],
