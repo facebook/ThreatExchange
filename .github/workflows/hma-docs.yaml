@@ -1,0 +1,35 @@
+name: deploy-hma-docusaurus
+
+on:
+  push:
+    branches: [main]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Check out repo
+        uses: actions/checkout@v2
+      # Node is required for npm. 
+      # TODO: Can we save time by using a node image instead of plain ubuntu?
+      - name: Set up Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+      # Install and build Docusaurus website
+      - name: Build Docusaurus website
+        run: |
+          cd hasher-matcher-actioner/docs
+          npm install 
+          npm run build
+      - name: Deploy to GitHub Pages
+        if: success()
+        uses: crazy-max/ghaction-github-pages@v2
+        with:
+          target_branch: gh-pages
+          build_dir: hasher-matcher-actioner/docs/build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
