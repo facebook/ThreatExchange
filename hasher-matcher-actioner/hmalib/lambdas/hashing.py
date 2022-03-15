@@ -83,7 +83,9 @@ def lambda_handler(event, context):
         if message.get("Event") == "s3:TestEvent":
             continue
 
-        media_to_process: t.List[t.Union[S3ImageSubmission, URLSubmissionMessage]] = []
+        media_to_process: t.List[
+            t.Union[S3ImageSubmission, URLSubmissionMessage, BankSubmissionMessage]
+        ] = []
 
         if URLSubmissionMessage.could_be(message):
             media_to_process.append(URLSubmissionMessage.from_sqs_message(message))
@@ -101,8 +103,12 @@ def lambda_handler(event, context):
 
         for media in media_to_process:
             if not hasher.supports(media.content_type):
+                if isinstance(media, BankSubmissionMessage):
+                    object_id = media.bank_id
+                else:
+                    object_id = media.content_id
                 logger.warn(
-                    f"Unprocessable content type: {media.content_type}, id: {media.content_id}"
+                    f"Unprocessable content type: {media.content_type}, id: {object_id}"
                 )
                 continue
 
@@ -111,14 +117,20 @@ def lambda_handler(event, context):
                     if hasattr(media, "key") and hasattr(media, "bucket"):
                         # Classic duck-typing. If it has key and bucket, must be an
                         # S3 submission.
+                        media = t.cast(S3ImageSubmission, media)
                         bytes_: bytes = S3BucketContentSource(
                             media.bucket, IMAGE_PREFIX
                         ).get_bytes(media.content_id)
                     else:
+                        media = t.cast(URLSubmissionMessage, media)
                         bytes_: bytes = URLContentSource().get_bytes(media.url)
                 except Exception:
+                    if isinstance(media, BankSubmissionMessage):
+                        object_id = media.bank_id
+                    else:
+                        object_id = media.content_id
                     logger.exception(
-                        f"Encountered exception while trying to get_bytes for content id: {media.content_id}. Unable to hash content."
+                        f"Encountered exception while trying to get_bytes for id: {object_id}. Unable to hash content."
                     )
                     continue
 
