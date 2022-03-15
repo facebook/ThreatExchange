@@ -27,6 +27,8 @@ from hmalib.indexers.metadata import (
     BANKS_SOURCE_SHORT_CODE,
     THREAT_EXCHANGE_SOURCE_SHORT_CODE,
     BaseIndexMetadata,
+    ThreatExchangeIndicatorIndexMetadata,
+    BankedSignalIndexMetadata,
 )
 from hmalib.matchers.filters import (
     BankActiveFilter,
@@ -70,7 +72,7 @@ class Matcher:
 
     def match(
         self, signal_type: t.Type[SignalType], signal_value: str
-    ) -> t.List[IndexMatch[BaseIndexMetadata]]:
+    ) -> t.List[IndexMatch[t.List[BaseIndexMetadata]]]:
         """
         Returns MatchMessage which can be directly published to a queue.
 
@@ -115,7 +117,7 @@ class Matcher:
         signal_type: t.Type[SignalType],
         content_hash: str,
         content_id: str,
-        match: IndexMatch[BaseIndexMetadata],
+        match: IndexMatch[t.List[BaseIndexMetadata]],
     ):
         """
         Write a match record to dynamodb. The content_id is not important to the
@@ -133,12 +135,16 @@ class Matcher:
             }
 
             if metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE:
+                metadata_obj = t.cast(
+                    ThreatExchangeIndicatorIndexMetadata, metadata_obj
+                )
                 match_record_attributes.update(
                     signal_id=metadata_obj.indicator_id,
                     signal_hash=metadata_obj.signal_value,
                 )
 
             elif metadata_obj.get_source() == BANKS_SOURCE_SHORT_CODE:
+                metadata_obj = t.cast(BankedSignalIndexMetadata, metadata_obj)
                 match_record_attributes.update(
                     signal_id=metadata_obj.signal_id,
                     signal_hash=metadata_obj.signal_value,
@@ -174,7 +180,7 @@ class Matcher:
     def get_te_metadata_objects_from_match(
         cls,
         signal_type: t.Type[SignalType],
-        match: IndexMatch[BaseIndexMetadata],
+        match: IndexMatch[t.List[BaseIndexMetadata]],
     ) -> t.List[ThreatExchangeSignalMetadata]:
         """
         See docstring of `write_signal_if_not_found` we will likely want to move
@@ -182,18 +188,23 @@ class Matcher:
         better to have it all in once place.
         Note: changes made here will have an effect on api.matches.get_match_for_hash
         """
-        return [
-            ThreatExchangeSignalMetadata(
-                signal_id=str(match_object.indicator_id),
-                privacy_group_id=match_object.privacy_group,
-                updated_at=datetime.datetime.now(),
-                signal_type=signal_type,
-                signal_hash=match_object.signal_value,
-                tags=list(match_object.tags),
-            )
-            for match_object in match.metadata
-            if match_object.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE
-        ]
+        metadata_objects = []
+        for metadata_obj in match.metadata:
+            if metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE:
+                metadata_obj = t.cast(
+                    ThreatExchangeIndicatorIndexMetadata, metadata_obj
+                )
+                metadata_objects.append(
+                    ThreatExchangeSignalMetadata(
+                        signal_id=str(metadata_obj.indicator_id),
+                        privacy_group_id=metadata_obj.privacy_group,
+                        updated_at=datetime.datetime.now(),
+                        signal_type=signal_type,
+                        signal_hash=metadata_obj.signal_value,
+                        tags=list(metadata_obj.tags),
+                    )
+                )
+        return metadata_objects
 
     def get_index(self, signal_type: t.Type[SignalType]) -> SignalTypeIndex:
         """
@@ -258,6 +269,9 @@ class Matcher:
         for match in matches:
             for metadata_obj in match.metadata:
                 if metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE:
+                    metadata_obj = t.cast(
+                        ThreatExchangeIndicatorIndexMetadata, metadata_obj
+                    )
                     banked_signal = BankedSignal(
                         str(metadata_obj.indicator_id),
                         str(metadata_obj.privacy_group),
@@ -268,6 +282,7 @@ class Matcher:
 
                     banked_signals.append(banked_signal)
                 elif metadata_obj.get_source() == BANKS_SOURCE_SHORT_CODE:
+                    metadata_obj = t.cast(BankedSignalIndexMetadata, metadata_obj)
                     bank_member = self.banks_table.get_bank_member(
                         bank_member_id=metadata_obj.bank_member_id
                     )
