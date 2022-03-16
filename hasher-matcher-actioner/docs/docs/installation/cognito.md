@@ -5,7 +5,7 @@ title: Cognito User Pools for Authentication
 
 ## Terraforming a User Pool
 
-This starts after you have checked out a release of HMA and unzipped it. Check out this [section in the installation](installation/#checking-out-a-release) page.
+This starts after you have checked out a release of HMA and unzipped it. Check out this [section in the installation](/docs/installation/#checking-out-a-release) page.
 
 ```sh
 $ cd ThreatExchange-HMA-v0.1.1/hasher-matcher-actioner/

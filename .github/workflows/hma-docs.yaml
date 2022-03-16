@@ -3,6 +3,11 @@ name: deploy-hma-docusaurus
 on:
   push:
     branches: [main]
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "hasher-matcher-actioner/docs/**"
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -26,7 +31,8 @@ jobs:
           npm install 
           npm run build
       - name: Deploy to GitHub Pages
-        if: success()
+        # Only deploy if this is tip of main. Otherwise, just build website.
+        if: success() && github.ref == 'refs/heads/main'
         uses: crazy-max/ghaction-github-pages@v2
         with:
           target_branch: gh-pages
