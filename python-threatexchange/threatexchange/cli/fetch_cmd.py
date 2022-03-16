@@ -71,14 +71,14 @@ class FetchCommand(command_base.Command):
         self.skip_index_rebuild = skip_index_rebuild
         self.only_api = only_api
         self.only_collab = only_collab
-        self.collabs = []
+        self.collabs: t.List[CollaborationConfigBase] = []
 
         # Limits
         self.total_fetched_count = 0
         self.start_time = time.time()
 
         # Progress
-        self.last_update_time = None
+        self.last_update_time: t.Optional[int] = None
         # Print first update after 5 seconds
         self.last_update_printed = time.time() - self.PROGRESS_PRINT_INTERVAL_SEC + 5
         self.progress_fetched_count = 0
@@ -156,7 +156,7 @@ class FetchCommand(command_base.Command):
         collab: CollaborationConfigBase,
     ) -> bool:
 
-        store = settings.get_fetch_store_for_fetcher(fetcher)
+        store = settings.get_fetch_store_for_fetcher(fetcher.__class__)
         checkpoint = self._verify_store_and_checkpoint(store, collab)
 
         self.progress_fetched_count = 0

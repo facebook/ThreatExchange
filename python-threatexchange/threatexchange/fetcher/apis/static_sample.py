@@ -43,7 +43,9 @@ class StaticSampleSignalExchangeAPI(SignalExchangeAPI):
         _checkpoint: t.Optional[state.FetchCheckpointBase],
     ) -> SimpleFetchDelta:
 
-        sample_signals = []
+        sample_signals: t.List[
+            t.Tuple[t.Tuple[str, str], state.FetchedSignalMetadata]
+        ] = []
         for stype in supported_signal_types:
             sample_signals.extend(_signals(stype))
 
@@ -56,7 +58,7 @@ class StaticSampleSignalExchangeAPI(SignalExchangeAPI):
 
 def _signals(
     sig_cls: t.Type[SignalType],
-) -> t.Iterable[t.Tuple[t.Tuple[t.Type[SignalType], str], state.FetchedSignalMetadata]]:
+) -> t.Iterable[t.Tuple[t.Tuple[str, str], state.FetchedSignalMetadata]]:
     sig_name = sig_cls.get_name()
     return (
         ((sig_name, s), state.FetchedSignalMetadata()) for s in sig_cls.get_examples()

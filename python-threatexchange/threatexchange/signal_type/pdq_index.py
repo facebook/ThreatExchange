@@ -37,7 +37,7 @@ class PDQIndex(PickledSignalTypeIndex):
 
     def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]] = ()) -> None:
         super().__init__()
-        self.local_id_to_entry: t.List[IndexT] = []
+        self.local_id_to_entry: t.List[t.Tuple[str, IndexT]] = []
         self.index: PDQHashIndex = self._get_empty_index()
         self.add_all(entries=entries)
 

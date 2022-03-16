@@ -45,7 +45,9 @@ class CliState(collab_config.CollaborationConfigStoreBase):
     Everything is just in a single file (usually ~/.threatexchange).
     """
 
-    def __init__(self, fetch_types: t.List[t.Type[SignalExchangeAPI]]):
+    def __init__(
+        self, fetch_types: t.List[t.Union[SignalExchangeAPI, t.Type[SignalExchangeAPI]]]
+    ):
         dir = pathlib.Path("~/.threatexchange/").expanduser()
         self._dir = dir
 
@@ -127,7 +129,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
                         continue
                     ctype = None
                     if isinstance(content, dict):
-                        ctype = self._name_to_ctype.get(content.get("api"))
+                        ctype = self._name_to_ctype.get(content.get("api"))  # type: ignore
                     if ctype is None:
                         logging.warning("Ignoring collab config of unknown type: %s", f)
                         continue
@@ -163,7 +165,7 @@ class CLISettings:
         self._mapping = mapping
         self._state = cli_state
         self._sample_message_printed = False
-        self._config = None
+        self._config: t.Optional[CLiConfig] = None
         self.index_store = CliIndexStore(cli_state.index_dir)
 
     def get_persistent_config(self) -> CLiConfig:
@@ -189,7 +191,7 @@ class CLISettings:
 
     def get_signal_types_for_content(
         self, content_type: t.Type[content_base.ContentType]
-    ) -> t.List[signal_base.SignalType]:
+    ) -> t.List[t.Type[signal_base.SignalType]]:
         return self._mapping.signal_and_content.signal_type_by_content[content_type]
 
     def get_fetchers(self):
@@ -209,7 +211,7 @@ class CLISettings:
         self, collab: collab_config.CollaborationConfigBase
     ) -> FetchedStateStoreBase:
         return self.get_fetch_store_for_fetcher(
-            self._mapping.fetcher.fetchers_by_name[collab.api]
+            self._mapping.fetcher.fetchers_by_name[collab.api].__class__
         )
 
     def get_all_collabs(

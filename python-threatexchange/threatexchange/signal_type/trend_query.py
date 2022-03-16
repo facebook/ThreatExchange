@@ -64,7 +64,7 @@ class TrendQuerySignal(signal_base.SignalType, signal_base.MatchesStr):
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
         tq = TrendQuery(
-            json.loads(hash)
+            json.loads(signal_str)
         )  # TODO - does this throw all the right exceptions?
         return signal_str
 
@@ -106,7 +106,7 @@ class TrendQueryIndex(index.PickledSignalTypeIndex[index.T]):
 
     # TODO - Figure out how to properly capture hash vs search
     def query(self, hash: str) -> t.List[index.IndexMatch[index.T]]:
-        ret = []
+        ret: t.List[index.IndexMatch[index.T]] = []
         for tq, values in self.state.values():
             if tq.matches(hash):
                 ret.extend(index.IndexMatch(0, v) for v in values)

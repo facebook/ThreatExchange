@@ -24,13 +24,15 @@ class SignalTypeMapping:
     def __init__(
         self,
         content_types: t.List[t.Type[ContentType]],
-        signal_types: t.Optional[t.List[t.Type[SignalType]]] = None,
+        signal_types: t.List[t.Type[SignalType]],
     ):
         _validate_content_and_signal(content_types, signal_types)
 
         self.content_by_name = {c.get_name(): c for c in content_types}
         self.signal_type_by_name = {s.get_name(): s for s in signal_types}
-        self.signal_type_by_content = {c: [] for c in content_types}
+        self.signal_type_by_content: t.Dict[
+            t.Type[ContentType], t.List[t.Type[SignalType]]
+        ] = {c: [] for c in content_types}
         for signal_type in signal_types:
             for content_type in signal_type.get_content_types():
                 self.signal_type_by_content[content_type].append(signal_type)
@@ -41,16 +43,12 @@ class SignalTypeMapping:
     def get_supported_signal_types_for_content(
         self, content: t.Type[ContentType]
     ) -> t.List[t.Type[SignalType]]:
-        return [
-            s
-            for s in content.get_signal_types()
-            if s.get_name() in self.signal_type_by_name
-        ]
+        return list(self.signal_type_by_content.get(content, ()))
 
 
 class FetcherMapping:
     def __init__(self, fetchers: t.List[SignalExchangeAPI]) -> None:
-        _validate_signal_apis(f for f in fetchers)
+        _validate_signal_apis(f.__class__ for f in fetchers)
         self.fetchers_by_name = {f.get_name(): f for f in fetchers}
 
 
@@ -68,7 +66,7 @@ class FunctionalityMapping:
     collabs: CollaborationConfigStoreBase
 
 
-def _validate_signal_apis(apis: t.Iterable[SignalExchangeAPI]):
+def _validate_signal_apis(apis: t.Iterable[t.Type[SignalExchangeAPI]]):
     names = set()
     for a in apis:
         name = a.get_name()

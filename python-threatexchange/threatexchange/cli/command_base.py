@@ -91,7 +91,9 @@ class CommandWithSubcommands(Command):
     _SUBCOMMANDS: t.List[t.Type[Command]] = []
 
     @classmethod
-    def add_command_to_subparser(cls, settings: CLISettings, subparsers) -> None:
+    def add_command_to_subparser(
+        cls, settings: CLISettings, subparsers
+    ) -> argparse.ArgumentParser:
         command_ap = super().add_command_to_subparser(settings, subparsers)
         sub_subparsers = command_ap.add_subparsers()
 

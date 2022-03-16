@@ -218,7 +218,7 @@ class TrivialLinearSearchHashIndex(index.PickledSignalTypeIndex[index.T]):
     _SIGNAL_TYPE: t.Type[SignalType]
 
     def __init__(self) -> None:
-        self.state: t.List[(str, index.T)] = []
+        self.state: t.List[t.Tuple[str, index.T]] = []
 
     def query(self, query_hash: str) -> t.List[index.IndexMatch[index.T]]:
         ret = []
@@ -244,7 +244,7 @@ class TrivialLinearSearchMatchIndex(index.PickledSignalTypeIndex[index.T]):
     _SIGNAL_TYPE: t.Type[MatchesStr]
 
     def __init__(self) -> None:
-        self.state: t.List[(str, index.T)] = []
+        self.state: t.List[t.Tuple[str, index.T]] = []
         assert issubclass(self._SIGNAL_TYPE, MatchesStr)
 
     def query(self, query_hash: str) -> t.List[index.IndexMatch[index.T]]:

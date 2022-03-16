@@ -86,7 +86,7 @@ class SignalExchangeAPI:
         """
         return ""
 
-    def get_own_owner_id(self) -> int:
+    def get_own_owner_id(self, collab: CollaborationConfigBase) -> int:
         """
         Return the owner ID of this caller. Opinions with that ID are "ours".
 
@@ -120,7 +120,11 @@ class SignalExchangeAPI:
         raise NotImplementedError
 
     def report_seen(
-        self, s_type: SignalType, signal: str, metadata: state.FetchedStateStoreBase
+        self,
+        collab: CollaborationConfigBase,
+        s_type: SignalType,
+        signal: str,
+        metadata: state.FetchedStateStoreBase,
     ) -> None:
         """
         Report that you observed this signal.
@@ -166,9 +170,9 @@ class SignalExchangeAPI:
             s_type,
             signal,
             state.SignalOpinion(
-                owner=self.get_own_owner_id(),
+                owner=self.get_own_owner_id(collab),
                 category=state.SignalOpinionCategory.TRUE_POSITIVE,
-                tags=[],
+                tags=set(),
             ),
         )
 
@@ -190,8 +194,8 @@ class SignalExchangeAPI:
             s_type,
             signal,
             state.SignalOpinion(
-                owner=self.get_own_owner_id(),
+                owner=self.get_own_owner_id(collab),
                 category=state.SignalOpinionCategory.FALSE_POSITIVE,
-                tags=[],
+                tags=set(),
             ),
         )

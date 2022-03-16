@@ -196,11 +196,11 @@ class MatchCommand(command_base.Command):
             query = None
             if self.inline:
                 if issubclass(s_type, TextHasher):
-                    query = lambda t: index.query(s_type.hash_from_str(t))
+                    query = lambda t: index.query(s_type.hash_from_str(t))  # type: ignore
                 elif issubclass(s_type, MatchesStr):
-                    query = lambda t: index.query(t)
+                    query = lambda t: index.query(t)  # type: ignore
             else:
-                query = lambda f: index.query(s_type.hash_from_file(f))
+                query = lambda f: index.query(s_type.hash_from_file(f))  # type: ignore
             if query:
                 matchers.append((s_type, query))
 

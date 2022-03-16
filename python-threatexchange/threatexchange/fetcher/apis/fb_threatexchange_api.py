@@ -8,17 +8,13 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/
 """
 
 
-import logging
 import typing as t
 import time
 from dataclasses import dataclass, field
-from threatexchange.fb_threatexchange.descriptor import SimpleDescriptorRollup
 from threatexchange.fb_threatexchange.threat_updates import ThreatUpdateJSON
-from threatexchange.fetcher.simple.state import (
-    SimpleFetchDelta,
-    SimpleFetchedSignalMetadata,
-)
-from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
+from threatexchange.fetcher.simple.state import SimpleFetchDelta
+
+from threatexchange.fb_threatexchange.api import ThreatExchangeAPI, _CursoredResponse
 
 from threatexchange.fetcher import fetch_state as state
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
@@ -75,7 +71,9 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
 
     opinions: t.List[FBThreatExchangeOpinion]
 
-    def get_as_opinions(self) -> t.List[FBThreatExchangeOpinion]:
+    def get_as_opinions(  # type: ignore  # Why can't mypy tell this is a subclass?
+        self,
+    ) -> t.List[FBThreatExchangeOpinion]:
         return self.opinions
 
     @classmethod
@@ -124,13 +122,16 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
             if owner_id in explicit_opinions:
                 continue
             explicit_opinions[owner_id] = FBThreatExchangeOpinion(
-                owner_id, category, [], FBThreatExchangeOpinion.REACTION_DESCRIPTOR_ID
+                owner_id,
+                category,
+                set(),
+                FBThreatExchangeOpinion.REACTION_DESCRIPTOR_ID,
             )
 
         if not explicit_opinions:
             # Visibility bug of some kind on TE API :(
             return None
-        return cls(list(explicit_opinions))
+        return cls(list(explicit_opinions.values()))
 
     @staticmethod
     def te_threat_updates_fields() -> t.Tuple[str, ...]:
@@ -158,7 +159,7 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
         self._api = None
         if fb_app_token is not None:
             self._api = ThreatExchangeAPI(fb_app_token)
-        self.cursors = {}
+        self.cursors: t.Dict[str, _CursoredResponse] = {}
 
     @property
     def api(self) -> ThreatExchangeAPI:
@@ -182,10 +183,12 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
         # TODO -This is supported by the API
         raise NotImplementedError
 
-    def get_own_owner_id(self, collab: FBThreatExchangeCollabConfig) -> int:
+    def get_own_owner_id(  # type: ignore[override]  # fix with generics on base
+        self, collab: FBThreatExchangeCollabConfig
+    ) -> int:
         return self.api.app_id
 
-    def fetch_once(
+    def fetch_once(  # type: ignore  # fix with generics on base
         self,
         supported_signal_types: t.List[t.Type[SignalType]],
         collab: FBThreatExchangeCollabConfig,
@@ -217,22 +220,28 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
                 (
                     u.threat_type,
                     u.indicator,
-                ): FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
+                ): FBThreatExchangeIndicatorRecord.from_threatexchange_json(
+                    u
+                )  # type: ignore  # TODO, this is a real type error, but functional for now
                 for u in batch
             },
             FBThreatExchangeCheckpoint(highest_time),
             done=cursor.done,
         )
 
-    def report_seen(
-        self, s_type: SignalType, signal: str, metadata: state.FetchedStateStoreBase
+    def report_seen(  # type: ignore[override]  # fix with generics on base
+        self,
+        collab: FBThreatExchangeCollabConfig,
+        s_type: SignalType,
+        signal: str,
+        metadata: state.FetchedStateStoreBase,
     ) -> None:
         # TODO - this is supported by the API
         raise NotImplementedError
 
-    def report_opinion(
+    def report_opinion(  # type: ignore[override]  # fix with generics on base
         self,
-        collab: CollaborationConfigBase,
+        collab: FBThreatExchangeCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
         opinion: state.SignalOpinion,
@@ -240,9 +249,9 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
         # TODO - this is supported by the API
         raise NotImplementedError
 
-    def report_true_positive(
+    def report_true_positive(  # type: ignore[override]  # fix with generics on base
         self,
-        collab: CollaborationConfigBase,
+        collab: FBThreatExchangeCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
         metadata: state.FetchedSignalMetadata,
@@ -253,15 +262,15 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
             s_type,
             signal,
             state.SignalOpinion(
-                owner=self.get_own_owner_id(),
+                owner=self.get_own_owner_id(collab),
                 category=state.SignalOpinionCategory.TRUE_POSITIVE,
-                tags=[],
+                tags=set(),
             ),
         )
 
-    def report_false_positive(
+    def report_false_positive(  # type: ignore[override]  # fix with generics on base
         self,
-        collab: CollaborationConfigBase,
+        collab: FBThreatExchangeCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
         _metadata: state.FetchedSignalMetadata,
@@ -271,8 +280,8 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
             s_type,
             signal,
             state.SignalOpinion(
-                owner=self.get_own_owner_id(),
+                owner=self.get_own_owner_id(collab),
                 category=state.SignalOpinionCategory.FALSE_POSITIVE,
-                tags=[],
+                tags=set(),
             ),
         )

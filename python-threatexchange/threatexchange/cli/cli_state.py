@@ -18,12 +18,15 @@ import dataclasses
 import logging
 
 import dacite
-from build.lib.threatexchange.signal_type.index import SignalTypeIndex
-from build.lib.threatexchange.signal_type.signal_base import SignalType
 
+from threatexchange.signal_type.index import SignalTypeIndex
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
-from threatexchange.fetcher.fetch_state import FetchCheckpointBase
+from threatexchange.fetcher.fetch_state import (
+    FetchCheckpointBase,
+    FetchedSignalMetadata,
+)
 from threatexchange.fetcher.simple import state as simple_state
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.signal_type import signal_base
@@ -53,7 +56,9 @@ class CliIndexStore:
             for f in self.dir.glob(f"*{self.FILE_EXTENSION}")
         ]
 
-    def clear(self, only_types: t.Optional[t.List[t.Type[SignalType]]] = None) -> None:
+    def clear(
+        self, only_types: t.Optional[t.Iterable[t.Type[SignalType]]] = None
+    ) -> None:
         only_names = None
         if only_types is not None:
             only_names = {st.get_name() for st in only_types}
@@ -65,11 +70,11 @@ class CliIndexStore:
                 logging.info("Removing index %s", file)
                 file.unlink()
 
-    def _index_file(self, signal_type: signal_base.SignalType) -> pathlib.Path:
+    def _index_file(self, signal_type: t.Type[signal_base.SignalType]) -> pathlib.Path:
         return self.dir / f"{signal_type.get_name()}{self.FILE_EXTENSION}"
 
     def store_index(
-        self, signal_type: signal_base.SignalType, index: SignalTypeIndex
+        self, signal_type: t.Type[signal_base.SignalType], index: SignalTypeIndex
     ) -> None:
         assert signal_type.get_index_cls() == index.__class__
         path = self._index_file(signal_type)
@@ -77,7 +82,7 @@ class CliIndexStore:
             index.serialize(fout)
 
     def load_index(
-        self, signal_type: signal_base.SignalType
+        self, signal_type: t.Type[signal_base.SignalType]
     ) -> t.Optional[index.SignalTypeIndex]:
         path = self._index_file(signal_type)
         if not path.exists():
@@ -115,7 +120,7 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
         collab_name: str,
     ) -> t.Optional[
         t.Tuple[
-            t.Dict[str, t.Dict[str, simple_state.SimpleFetchedSignalMetadata]],
+            t.Dict[str, t.Dict[str, FetchedSignalMetadata]],
             FetchCheckpointBase,
         ]
     ]:
@@ -152,12 +157,10 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
                 "You might have to delete it with `threatexchange fetch --clear`"
             )
 
-    def _write_state(
+    def _write_state(  # type: ignore[override]  # fix with generics on base
         self,
         collab_name: str,
-        updates_by_type: t.Dict[
-            str, t.Dict[str, simple_state.SimpleFetchedSignalMetadata]
-        ],
+        updates_by_type: t.Dict[str, t.Dict[str, FetchedSignalMetadata]],
         checkpoint: FetchCheckpointBase,
     ) -> None:
         file = self.collab_file(collab_name)

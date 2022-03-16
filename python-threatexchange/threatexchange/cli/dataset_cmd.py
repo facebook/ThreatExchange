@@ -16,6 +16,7 @@ from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import FetchedSignalMetadata
 
 from threatexchange.cli import command_base
+from threatexchange import common
 
 
 class DatasetCommand(command_base.Command):
@@ -61,8 +62,10 @@ class DatasetCommand(command_base.Command):
             "-s",
             nargs="+",
             default=[],
-            choices=[s.get_name() for s in settings.get_all_signal_types()],
-            type=settings.get_signal_type,
+            type=common.argparse_choices_pre_type(
+                choices=[s.get_name() for s in settings.get_all_signal_types()],
+                type=settings.get_signal_type,
+            ),
             help="only process these sigals",
         )
         type_selector.add_argument(
@@ -70,8 +73,10 @@ class DatasetCommand(command_base.Command):
             "-C",
             nargs="+",
             default=[],
-            choices=[s.get_name() for s in settings.get_all_content_types()],
-            type=settings.get_content_type,
+            type=common.argparse_choices_pre_type(
+                choices=[s.get_name() for s in settings.get_all_content_types()],
+                type=settings.get_content_type,
+            ),
             help="only process signals for these content types",
         )
         ap.add_argument(
@@ -143,7 +148,7 @@ class DatasetCommand(command_base.Command):
         else:
             self.execute_print_summary(settings)
 
-    def get_signal_types(self, settings: CLISettings) -> t.List[t.Type[SignalType]]:
+    def get_signal_types(self, settings: CLISettings) -> t.Set[t.Type[SignalType]]:
         signal_types = self.only_signals or settings.get_all_signal_types()
         if self.only_content:
             signal_types = [
@@ -151,7 +156,7 @@ class DatasetCommand(command_base.Command):
                 for s in signal_types
                 if any(c in self.only_content for c in s.get_content_types())
             ]
-        return signal_types
+        return set(signal_types)
 
     def get_collabs(self, settings: CLISettings) -> t.List[CollaborationConfigBase]:
         collabs = [
@@ -163,18 +168,21 @@ class DatasetCommand(command_base.Command):
         return collabs
 
     def get_signals(
-        self, settings: CLISettings, signal_types: t.List[t.Type[SignalType]]
+        self, settings: CLISettings, signal_types: t.Iterable[t.Type[SignalType]]
     ) -> t.Dict[
         t.Type[SignalType], t.Dict[str, t.List[t.Tuple[str, FetchedSignalMetadata]]]
     ]:
         collabs = self.get_collabs(settings)
 
-        collab_by_api = {}
-        for collab in collabs:
-            collab_by_api.setdefault(collab.api, []).append(collab)
+        collab_by_api: t.Dict[str, t.List[CollaborationConfigBase]] = {}
+        for collab_config in collabs:
+            collab_by_api.setdefault(collab_config.api, []).append(collab_config)
         by_type = {}
         for s_type in signal_types:
-            by_signal = {}
+            by_signal: t.Dict[
+                str,
+                t.List[t.Tuple[str, FetchedSignalMetadata]],
+            ] = {}
             for collabs_for_store in collab_by_api.values():
                 store = settings.get_fetch_store_for_collab(collabs_for_store[0])
                 by_collab = store.get_for_signal_type(collabs_for_store, s_type)
@@ -193,37 +201,37 @@ class DatasetCommand(command_base.Command):
     def execute_print_summary(self, settings: CLISettings):
         signals = self.get_signals(settings, self.get_signal_types(settings))
         by_type: t.Dict[str, int] = collections.Counter()
-        for s_type, signals in signals.items():
-            by_type[s_type] += len(signals)
-        for s_type, count in sorted(by_type.items(), key=lambda i: -i[1]):
-            self.stderr(f"{s_type.get_name()}: {count}")
+        for s_type, type_signals in signals.items():
+            by_type[s_type.get_name()] += len(type_signals)
+        for s_name, count in sorted(by_type.items(), key=lambda i: -i[1]):
+            self.stderr(f"{s_name}: {count}")
 
     def execute_print_signal_summary(self, settings):
         raise NotImplementedError
-        signal_types = meta.get_signal_types_by_name()
-        by_signal: t.Dict[str, int] = collections.Counter()
-        for indicator in indicators.values():
-            for name, signal_type in signal_types.items():
-                if signal_type.indicator_applies(
-                    indicator.indicator_type, list(indicator.rollup.labels)
-                ):
-                    by_signal[name] += 1
-        for name, count in sorted(by_signal.items(), key=lambda i: -i[1]):
-            self.stderr(f"{name}: {count}")
+        # signal_types = meta.get_signal_types_by_name()
+        # by_signal: t.Dict[str, int] = collections.Counter()
+        # for indicator in indicators.values():
+        #     for name, signal_type in signal_types.items():
+        #         if signal_type.indicator_applies(
+        #             indicator.indicator_type, list(indicator.rollup.labels)
+        #         ):
+        #             by_signal[name] += 1
+        # for name, count in sorted(by_signal.items(), key=lambda i: -i[1]):
+        #     self.stderr(f"{name}: {count}")
 
     def execute_print_records(self, settings):
         raise NotImplementedError
-        csv_writer = csv.writer(sys.stdout)
-        for indicator in indicators.values():
-            if self.indicator_only:
-                print(indicator.indicator)
-            else:
-                csv_writer.writerow(indicator.as_csv_row())
+        # csv_writer = csv.writer(sys.stdout)
+        # for indicator in indicators.values():
+        #     if self.indicator_only:
+        #         print(indicator.indicator)
+        #     else:
+        #         csv_writer.writerow(indicator.as_csv_row())
 
     def execute_clear_indices(self, settings: CLISettings) -> None:
         only_signals = None
         if self.only_signals or self.only_content:
-            only_signals = self.get_signal_types()
+            only_signals = self.get_signal_types(settings)
         settings.index_store.clear(only_signals)
 
     def execute_generate_indices(self, settings: CLISettings) -> None:

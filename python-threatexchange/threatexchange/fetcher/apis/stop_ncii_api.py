@@ -24,7 +24,6 @@ class StopNCIICheckpoint(
 ):
     update_time: int
     last_fetch_time: int
-    last_token: str
 
     def is_stale(self) -> bool:
         """Consider stale after 30d of not fetching"""
@@ -35,13 +34,13 @@ class StopNCIICheckpoint(
 
 
 class StopNCIIAPI(SignalExchangeAPI):
-    def fetch_once(
+    def fetch_once(  # type: ignore[override]  # fix with generics on base
         self,
         supported_signal_types: t.List[t.Type[SignalType]],
         collab: CollaborationConfigBase,
         checkpoint: t.Optional[StopNCIICheckpoint],
     ) -> state.FetchDelta:
         # TODO
-        raise NotImplemented("TODO not yet implemented")
+        raise NotImplementedError("TODO not yet implemented")
         # now = int(time.time())
         # return SimpleFetchDelta({}, StopNCIICheckpoint(now, now, True))

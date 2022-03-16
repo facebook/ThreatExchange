@@ -107,11 +107,11 @@ class LabelCommand(command_base.Command):
 
     def __init__(
         self,
-        content_type: ContentType,
+        content_type: t.Type[ContentType],
         content: str,
         is_hash: bool,
         collab: CollaborationConfigBase,
-        only_signals: t.List[SignalType],
+        only_signals: t.List[t.Type[SignalType]],
         tags: t.Set[str],
         true_positive: bool,
         false_positive: bool,
@@ -146,13 +146,13 @@ class LabelCommand(command_base.Command):
         )
 
         if self.is_hash:
-            hash_val = signal_types[0].validate_hash(self.content)
+            hash_val = signal_types[0].validate_signal_str(self.content)
             api.report_opinion(
                 self.collab,
                 signal_types[0],
                 hash_val,
                 SignalOpinion(
-                    api.get_own_owner_id(),
+                    api.get_own_owner_id(self.collab),
                     SignalOpinionCategory.TRUE_POSITIVE,
                     self.tags,
                 ),

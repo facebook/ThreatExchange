@@ -7,8 +7,8 @@ import pathlib
 import re
 import typing as t
 
-from threatexchange.fetcher.fb_threatexchange import threat_updates
-from threatexchange.fetcher.fb_threatexchange.descriptor import SimpleDescriptorRollup
+from threatexchange.fb_threatexchange import threat_updates
+from threatexchange.fb_threatexchange.descriptor import SimpleDescriptorRollup
 from threatexchange.cli.cli_state import Dataset
 
 # TODO - merge SimpleDescriptorRollup here

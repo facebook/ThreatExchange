@@ -80,9 +80,7 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
 
 
 def execute_command(settings: CLISettings, namespace) -> None:
-    if not hasattr(namespace, "command_cls"):
-        get_argparse().print_help()
-        return
+    assert hasattr(namespace, "command_cls")
     command_cls = namespace.command_cls
     logging.debug("Setup complete, handing off to %s", command_cls.__name__)
     try:

@@ -68,7 +68,7 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         pdq_hash_1, _, ocr_text_1 = hash1.partition(",")
         pdq_hash_2, _, ocr_text_2 = hash2.partition(",")
         if not all((pdq_hash_1, ocr_text_1, pdq_hash_2, ocr_text_2)):
-            return signal_base.HashComparisonResult.no_match_result(255)
+            return signal_base.HashComparisonResult.from_no_match(255)
 
         dist = simple_distance(pdq_hash_1, pdq_hash_2)
         match = False

@@ -66,7 +66,7 @@ class SignalOpinion:
 
     owner: int
     category: SignalOpinionCategory
-    tags: t.List[str]
+    tags: t.Set[str]
 
     @classmethod
     def get_trivial(cls):
@@ -89,17 +89,33 @@ class AggregateSignalOpinionCategory(IntEnum):
     def from_opinion_categories(
         cls, opinion_categories: t.Iterable[SignalOpinionCategory]
     ) -> "AggregateSignalOpinionCategory":
-        return reduce(cls.aggregate, opinion_categories)
+        aggregate_opinion = None
+        for category in opinion_categories:
+            aggregate_opinion = cls.aggregate(aggregate_opinion, category)
+        assert aggregate_opinion is not None
+        return aggregate_opinion
 
     @classmethod
     def aggregate(
-        cls, old: "AggregateSignalOpinionCategory", new: SignalOpinionCategory
+        cls,
+        old: t.Optional["AggregateSignalOpinionCategory"],
+        new: t.Union["AggregateSignalOpinionCategory", SignalOpinionCategory],
     ) -> "AggregateSignalOpinionCategory":
-        new = AggregateSignalOpinionCategory(new)
-        lo = min(old, new)
-        hi = max(old, new)
+        """
+        Combine signal opinions into an aggregate opinion.
+
+        In general, take the highest confidence/severity of true positives,
+        unless you have both a true + false positive, in which case the result
+        is disputed.
+        """
+        # For some reason, mypy can't deal with new being retyped
+        new_ = AggregateSignalOpinionCategory(new)
+        if old is None:
+            return new_
+        lo = min(old, new_)
+        hi = max(old, new_)
         if lo == hi:
-            return lo
+            return hi
         return cls.DISPUTED if lo == cls.FALSE_POSITIVE else hi
 
 
@@ -182,9 +198,9 @@ class FetchDeltaWithUpdateStream(FetchDelta):
     This allows naive implementations for storage.
     """
 
-    def get_as_update_dict() -> t.Dict[
-        t.Tuple[str, str], t.Optional[FetchedSignalMetadata]
-    ]:
+    def get_as_update_dict(
+        self,
+    ) -> t.Mapping[t.Tuple[str, str], t.Optional[FetchedSignalMetadata]]:
         """
         Returns the contents of the delta as
          (signal_type, signal_str) => record

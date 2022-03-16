@@ -36,10 +36,10 @@ class LocalFileSignalExchangeAPI(SignalExchangeAPI):
     """
 
     @classmethod
-    def get_config_class(cls) -> CollaborationConfigBase:
+    def get_config_class(cls) -> t.Type[FileCollaborationConfig]:
         return FileCollaborationConfig
 
-    def fetch_once(
+    def fetch_once(  # type: ignore[override]  # fix with generics on base
         self,
         _supported_signal_types: t.List[t.Type[SignalType]],
         collab: FileCollaborationConfig,
@@ -65,7 +65,7 @@ class LocalFileSignalExchangeAPI(SignalExchangeAPI):
 
         return SimpleFetchDelta(updates, state.FetchCheckpointBase(), done=True)
 
-    def report_opinion(
+    def report_opinion(  # type: ignore[override]  # fix with generics on base
         self,
         collab: FileCollaborationConfig,
         s_type: t.Type[SignalType],
