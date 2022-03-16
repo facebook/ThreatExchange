@@ -27,15 +27,15 @@ resource "aws_lambda_function" "hashing_lambda" {
     }
   }
 
-  vpc_config {
-    security_group_ids = var.durable_fs_security_group_ids
-    subnet_ids         = var.durable_fs_subnet_ids
-  }
+  # vpc_config {
+  #   security_group_ids = var.durable_fs_security_group_ids
+  #   subnet_ids         = var.durable_fs_subnet_ids
+  # }
 
-  file_system_config {
-    local_mount_path = var.durable_fs_local_mount_path
-    arn              = var.durable_fs_arn
-  }
+  # file_system_config {
+  #   local_mount_path = var.durable_fs_local_mount_path
+  #   arn              = var.durable_fs_arn
+  # }
 
   tags = merge(
     var.additional_tags,
