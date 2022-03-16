@@ -23,7 +23,9 @@ class CollaborationConfigBase:
 
     name: str
     api: str  # Often a const for implementations
-    enabled: bool  # Whether to fetch/sync
+    # Whether to fetch/sync. Some implementations (like the CLI) may gate matching
+    # to avoid waiting for an index rebuild to stop processing matches
+    enabled: bool
     # Only fetch and index these types
     only_signal_types: t.Set[str]
     # Don't fetch and index these types

@@ -14,15 +14,14 @@ between stages, and a state file to store hashes.
 import argparse
 import logging
 import inspect
-import pathlib
 import os
 import sys
 import typing as t
-from unicodedata import name
+import pathlib
 
 from threatexchange import meta
+from threatexchange.fb_threatexchange import api as tx_api
 from threatexchange.fetcher.apis.file_api import LocalFileSignalExchangeAPI
-
 from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.fetcher.apis.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
@@ -103,12 +102,60 @@ def execute_command(settings: CLISettings, namespace) -> None:
         sys.exit(130)
 
 
+def _get_fb_tx_app_token(cli_option: str = None) -> t.Optional[str]:
+    """
+    Get the API key from a variety of fallback sources
+
+    Examples might be environment, files, etc
+    """
+
+    file_loc = pathlib.Path("~/.txtoken").expanduser()
+    environment_var = "TX_ACCESS_TOKEN"
+    config = CliState([]).get_persistent_config()  # TODO fix the circular dependency
+
+    potential_sources = (
+        (os.environ.get(environment_var), f"{environment_var} environment variable"),
+        (
+            config.fb_threatexchange_api_token,
+            "`config api fb_threat_exchange --api-token` command",
+        ),
+        (file_loc.exists() and file_loc.read_text(), f"{file_loc} file"),
+    )
+
+    for val, source in potential_sources:
+        if not val:
+            continue
+        val = val.strip()
+        if tx_api.is_valid_app_token(val):
+            return val
+        print(
+            (
+                f"Warning! Your current app token {val!r} (from {source}) is invalid.\n"
+                "Double check that it's an 'App Token' from "
+                "https://developers.facebook.com/tools/accesstoken/",
+            ),
+            file=sys.stderr,
+        )
+        # Don't throw because we don't want to block commands that fix this
+        return None  # We probably don't expect to fall back here
+    return None
+    # b = "  * "
+    # raise Exception(
+    #     "\n".join(
+    #         (
+    #             "Can't find App Token, pass it in using one of:",
+    #             f"{b}{b.join(s[1] for s in potential_sources)}",
+    #             "",
+    #             "https://developers.facebook.com/tools/accesstoken/",
+    #         )
+    #     )
+    # )
+
+
 def _get_settings() -> CLISettings:
     """
     Configure the behavior and functionality.
     """
-
-    config = CliState([]).get_persistent_config()  # TODO fix the circular dependency
 
     signals = meta.SignalTypeMapping(
         [photo.PhotoContent, video.VideoContent, url.URLContent, text.TextContent],
@@ -126,7 +173,7 @@ def _get_settings() -> CLISettings:
             StaticSampleSignalExchangeAPI(),
             LocalFileSignalExchangeAPI(),
             StopNCIIAPI(),
-            FBThreatExchangeSignalExchangeAPI(config.fb_threatexchange_api_token),
+            FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token()),
         ]
     )
     state = CliState(list(fetchers.fetchers_by_name.values()))
