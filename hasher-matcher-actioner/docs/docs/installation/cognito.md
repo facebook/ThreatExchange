@@ -13,7 +13,7 @@ $ cd terraform/authentication-shared/
 $ cp terraform.tfvars.example terraform.tfvars
 ```
 
-Open `terraform.tfvars` in an editor and set the value of `organization` to a short string that denotes the organization you work for. It may use the name of the organization, or it may not. It is used as a part of the name for s3 buckets which are expected to be globally unique. Use a short, all-smallcase string without any hyphens or underscores.
+Open `terraform.tfvars` in an editor and set the value of `organization` to a short string that denotes your organization. It may use the name of the organization, or it may not. It is used as a part of the name for s3 buckets which are expected to be globally unique. Use a short, all-smallcase string without any hyphens or underscores.
 
 ### Create a shared pool
 

@@ -68,7 +68,7 @@ Copy the output of the last command above. Open `terraform/terraform.tfvars` in 
 
 ### `organization` 
 
-Use a short string that denotes the organization you work for. It may use the name of the organization, or it may not. It is used as a part of the name for s3 buckets which are expected to be globally unique. Use a short, all-smallcase string without any hyphens or underscores.
+Use a short string that denotes your organization. It may use the name of the organization, or it may not. It is used as a part of the name for s3 buckets which are expected to be globally unique. Use a short, all-smallcase string without any hyphens or underscores.
 
 ### `prefix`
 
