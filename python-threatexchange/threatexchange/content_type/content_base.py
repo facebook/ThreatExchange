@@ -27,7 +27,7 @@ class ContentType:
 
         Examples might be:
         * URL => download page content and return photo/video/text/URL snippets
-        * File => Identify content based on file type and return appropritate snippets
+        * File => Identify content based on file type and return appropriate snippets
         * Photo => run OCR and extract text
         * Video => break out photo thumbnail, close caption text, audio
         """

@@ -1,22 +1,20 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
 Wrapper around the Photo PDQ signal type.
 """
 
-from signal import signal
 import typing as t
 import pathlib
 import warnings
 
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
-
-from . import signal_base
+from threatexchange.signal_type import signal_base
 from threatexchange.hashing.pdq_utils import simple_distance
 
 
+# TODO force this as a required library?
 def _raise_pillow_warning():
     warnings.warn(
         "PDQ from raw image data requires Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",

@@ -32,7 +32,7 @@ class HashComparisonResult(t.NamedTuple):
 
     @classmethod
     def from_bool(cls, matches: bool) -> "HashComparisonResult":
-        return cls(matches, int(matches))
+        return cls.from_match() if matches else cls.from_no_match()
 
 
 class SignalType:
@@ -46,6 +46,10 @@ class SignalType:
     This class additionally helps translates ThreatDescriptors into the correct
     representation to do matching, as well as serialize that representation
     into a compact form.
+
+    # Why is `signal_str` str?
+    Forcing the type to always be serializable in str gives us the advantage that
+    uploading it to SignalAPIs is always straightforward.
     """
 
     @classmethod
