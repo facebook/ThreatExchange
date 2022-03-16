@@ -102,7 +102,7 @@ class TextHasher:
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
-        return cls.hash_from_bytes(file.read_text())
+        return cls.hash_from_str(file.read_text())
 
 
 class TrivialTextHasher(TextHasher):

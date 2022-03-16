@@ -72,11 +72,8 @@ def _validate_signal_apis(apis: t.Iterable[SignalExchangeAPI]):
     names = set()
     for a in apis:
         name = a.get_name()
-        assert (
-            name not in names
-        ), f"Duplicate name in {a.__name__}s: '{name}'"
+        assert name not in names, f"Duplicate name in {a.__name__}s: '{name}'"
         names.add(name)
-        
 
 
 def _validate_content_types(content_types: t.List[t.Type[ContentType]]) -> None:

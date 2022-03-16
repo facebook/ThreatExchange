@@ -28,7 +28,7 @@ class TestIndexUpdates(unittest.TestCase):
         self.assertEqual(len(index.query(self.get_first_set()[0][0])), 1)
         self.assertEqual(len(index.query(self.get_second_set()[0][0])), 0)
 
-        index.add(self.get_second_set())
+        index.add_all(self.get_second_set())
 
         self.assertEqual(len(index.query(self.get_first_set()[0][0])), 1)
         self.assertEqual(len(index.query(self.get_second_set()[0][0])), 1)

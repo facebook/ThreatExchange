@@ -20,12 +20,14 @@ EXPECT_TLSH_HASH_LENGTH = 72
 
 try:
     import tlsh
-    from pdfminer.converter import TextConverter
-    from pdfminer.layout import LAParams
-    from pdfminer.pdfdocument import PDFDocument
-    from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-    from pdfminer.pdfpage import PDFPage
-    from pdfminer.pdfparser import PDFParser
+
+    # TODO Restore
+    # from pdfminer.converter import TextConverter
+    # from pdfminer.layout import LAParams
+    # from pdfminer.pdfdocument import PDFDocument
+    # from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+    # from pdfminer.pdfpage import PDFPage
+    # from pdfminer.pdfparser import PDFParser
 
     _ENABLED = True
 except ImportError:
@@ -33,7 +35,9 @@ except ImportError:
 
 
 class TLSHSignal(
-    signal_base.SimpleSignalType, signal_base.TextHasher, signal_base.BytesHasher
+    signal_base.SimpleSignalType,
+    signal_base.BytesHasher,
+    signal_base.TextHasher,
 ):
     """
     Simple signal type for text using TLSH
@@ -55,7 +59,7 @@ class TLSHSignal(
     @classmethod
     def hash_from_bytes(cls, bytes_: bytes) -> str:
         assert _ENABLED
-        return str(tlsh.hash(bytes))
+        return str(tlsh.hash(bytes_))
 
     @classmethod
     def compare_hash(cls, hash1: str, hash2: str) -> signal_base.HashComparisonResult:
