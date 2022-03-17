@@ -62,11 +62,13 @@ class TLSHSignal(
         return str(tlsh.hash(bytes_))
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> signal_base.HashComparisonResult:
+    def compare_hash(
+        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
+    ) -> signal_base.HashComparisonResult:
+        if distance_threshold is None:
+            distance_threshold = TLSH_CONFIDENT_MATCH_THRESHOLD
         dist = tlsh.diffxlen(hash1, hash2)
-        return signal_base.HashComparisonResult.from_dist(
-            dist, TLSH_CONFIDENT_MATCH_THRESHOLD
-        )
+        return signal_base.HashComparisonResult.from_dist(dist, distance_threshold)
 
     @staticmethod
     def get_examples() -> t.List[str]:

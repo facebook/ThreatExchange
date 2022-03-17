@@ -49,11 +49,14 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.BytesHasher):
         return [PhotoContent]
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> signal_base.HashComparisonResult:
+    def compare_hash(
+        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
+    ) -> signal_base.HashComparisonResult:
+        thresh = cls.PDQ_CONFIDENT_MATCH_THRESHOLD
+        if distance_threshold is not None:
+            thresh = distance_threshold
         dist = simple_distance(hash1, hash2)
-        return signal_base.HashComparisonResult.from_dist(
-            dist, cls.PDQ_CONFIDENT_MATCH_THRESHOLD
-        )
+        return signal_base.HashComparisonResult.from_dist(dist, thresh)
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:

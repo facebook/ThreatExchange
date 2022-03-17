@@ -15,8 +15,10 @@ import Levenshtein
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 
-from threatexchange.hashing.pdq_utils import simple_distance
+from threatexchange.hashing.pdq_utils import pdq_match, simple_distance
 from threatexchange import common
+from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.raw_text import RawTextSignal
 from . import signal_base
 
 
@@ -37,7 +39,7 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     # Hashes of distance less than or equal to this threshold are considered a 'match'
     PDQ_PLUS_OCR_CONFIDENT_MATCH_THRESHOLD = 31
     # Match considered if 90% of the strings match
-    LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD = 0.10
+    LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD = 90
 
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:
@@ -64,24 +66,26 @@ class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         return f"{pdq_hash},{ocr_text}"
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> signal_base.HashComparisonResult:
+    def compare_hash(
+        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
+    ) -> signal_base.HashComparisonResult:
+        pdq_dist_threshold = cls.PDQ_PLUS_OCR_CONFIDENT_MATCH_THRESHOLD
+        if distance_threshold is not None:
+            assert 0 <= distance_threshold <= 256
+            pdq_dist_threshold = distance_threshold
         pdq_hash_1, _, ocr_text_1 = hash1.partition(",")
         pdq_hash_2, _, ocr_text_2 = hash2.partition(",")
-        if not all((pdq_hash_1, ocr_text_1, pdq_hash_2, ocr_text_2)):
-            return signal_base.HashComparisonResult.from_no_match(255)
+        assert all(
+            (pdq_hash_1, ocr_text_1, pdq_hash_2, ocr_text_2)
+        ), "malformed pdq_ocr hash"
 
-        dist = simple_distance(pdq_hash_1, pdq_hash_2)
-        match = False
-        if dist <= cls.PDQ_PLUS_OCR_CONFIDENT_MATCH_THRESHOLD:
-            # Check for text match
-            text1 = common.normalize_string(ocr_text_1)
-            text2 = common.normalize_string(ocr_text_2)
-            match = _levenshtein_text_match(
-                text1,
-                text2,
-                cls.LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD,
-            )
-        return signal_base.HashComparisonResult(match, dist)
+        pdq_result = PdqSignal.compare_hash(pdq_hash_1, pdq_hash_2, pdq_dist_threshold)
+        if not pdq_result.match:
+            return pdq_result
+        text_result = RawTextSignal.matches_str(
+            ocr_text_1, ocr_text_2, cls.LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD
+        )
+        return signal_base.HashComparisonResult(text_result.match, pdq_result.distance)
 
     @staticmethod
     def get_examples() -> t.List[str]:
