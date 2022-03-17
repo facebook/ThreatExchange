@@ -37,9 +37,6 @@ class SignalTypeMapping:
             for content_type in signal_type.get_content_types():
                 self.signal_type_by_content[content_type].append(signal_type)
 
-    def get_fetcher_classes(self):
-        return [f[0] for f in self.fetcher_data_by_name.values()]
-
     def get_supported_signal_types_for_content(
         self, content: t.Type[ContentType]
     ) -> t.List[t.Type[SignalType]]:

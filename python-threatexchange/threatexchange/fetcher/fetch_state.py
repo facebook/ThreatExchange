@@ -16,6 +16,8 @@ import typing as t
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
 
+Self = t.TypeVar("Self")
+
 
 @dataclass
 class FetchCheckpointBase:
@@ -108,12 +110,11 @@ class AggregateSignalOpinionCategory(IntEnum):
         unless you have both a true + false positive, in which case the result
         is disputed.
         """
-        # For some reason, mypy can't deal with new being retyped
-        new_ = AggregateSignalOpinionCategory(new)
+        new = AggregateSignalOpinionCategory(new)
         if old is None:
-            return new_
-        lo = min(old, new_)
-        hi = max(old, new_)
+            return new
+        lo = min(old, new)
+        hi = max(old, new)
         if lo == hi:
             return hi
         return cls.DISPUTED if lo == cls.FALSE_POSITIVE else hi
@@ -152,13 +153,15 @@ class FetchedSignalMetadata:
         return [SignalOpinion.get_trivial()]
 
     @classmethod
-    def merge_metadata(
-        cls, _older: "FetchedSignalMetadata", newer: "FetchedSignalMetadata"
-    ) -> "FetchedSignalMetadata":
+    def merge_metadata(cls: t.Type[Self], _older: Self, newer: Self) -> Self:
         """
-        The merge strategy when streaming updates.
+        The merge strategy when tailing a stream of updates.
+
+        Simple strategies might be:
+        1. Replace - newer records for the same signal complete replace old ones
+        2. Merge - new records are combined with old ones
         """
-        return newer
+        return newer  # Default is replace
 
     def get_as_aggregate_opinion(self) -> AggregateSignalOpinion:
         return AggregateSignalOpinion.from_opinions(self.get_as_opinions())

@@ -181,7 +181,7 @@ class SignalExchangeAPI:
         collab: CollaborationConfigBase,
         s_type: t.Type[SignalType],
         signal: str,
-        _metadata: state.FetchedSignalMetadata,
+        metadata: state.FetchedSignalMetadata,
     ) -> None:
         """
         Report that a previously seen signal is a false positive.

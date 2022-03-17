@@ -24,7 +24,6 @@ from threatexchange.cli.cli_config import CLISettings
 
 from threatexchange.cli import command_base
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
 from threatexchange.fetcher.apis.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )

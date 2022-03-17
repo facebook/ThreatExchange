@@ -33,17 +33,12 @@ from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
 
 
-class FetchCheckpoint(t.NamedTuple):
-    last_full_fetch: float
-    last_fetch: float
-
-
-class Dataset:
-
-    EXTENSION = ".te"
-
-
 class CliIndexStore:
+    """
+    Persistance layer for SignalTypeIndex objects for the cli.
+
+    They are just stored to a file directory, with names based on their type.
+    """
 
     FILE_EXTENSION = ".index"
 
@@ -51,14 +46,16 @@ class CliIndexStore:
         self.dir = indice_dir
 
     def get_available(self) -> t.List[str]:
+        """Return the names (SignalType.get_name()) of stored indices"""
         return [
-            str(f)[-len(self.FILE_EXTENSION)]
+            str(f)[: -len(self.FILE_EXTENSION)]
             for f in self.dir.glob(f"*{self.FILE_EXTENSION}")
         ]
 
     def clear(
         self, only_types: t.Optional[t.Iterable[t.Type[SignalType]]] = None
     ) -> None:
+        """Clear persisted indices"""
         only_names = None
         if only_types is not None:
             only_names = {st.get_name() for st in only_types}
@@ -71,11 +68,13 @@ class CliIndexStore:
                 file.unlink()
 
     def _index_file(self, signal_type: t.Type[signal_base.SignalType]) -> pathlib.Path:
+        """The expected path for the index for a signal type"""
         return self.dir / f"{signal_type.get_name()}{self.FILE_EXTENSION}"
 
     def store_index(
         self, signal_type: t.Type[signal_base.SignalType], index: SignalTypeIndex
     ) -> None:
+        """Persist a SignalTypeIndex to disk"""
         assert signal_type.get_index_cls() == index.__class__
         path = self._index_file(signal_type)
         with path.open("wb") as fout:
@@ -84,6 +83,7 @@ class CliIndexStore:
     def load_index(
         self, signal_type: t.Type[signal_base.SignalType]
     ) -> t.Optional[index.SignalTypeIndex]:
+        """Load the SignalTypeIndex for this type from disk"""
         path = self._index_file(signal_type)
         if not path.exists():
             return None
@@ -92,6 +92,12 @@ class CliIndexStore:
 
 
 class CliSimpleState(simple_state.SimpleFetchedStateStore):
+    """
+    A simple on-disk storage format for the CLI.
+
+    Ideally, it should be easy to read manually (for debugging),
+    but compact enough to handle very large sets of data.
+    """
 
     JSON_CHECKPOINT_KEY = "checkpoint"
     JSON_RECORDS_KEY = "records"
@@ -103,9 +109,11 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
         self.dir = fetched_state_dir
 
     def collab_file(self, collab_name: str) -> pathlib.Path:
+        """The file location for collaboration state"""
         return self.dir / f"{collab_name}.state.json"
 
     def clear(self, collab: CollaborationConfigBase) -> None:
+        """Delete a collaboration and its state directory"""
         file = self.collab_file(collab.name)
         if file.is_file():
             logging.info("Removing %s", file)
