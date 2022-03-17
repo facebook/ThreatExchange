@@ -19,7 +19,8 @@ def dataclass_dump(fp: t.IO[str], obj) -> None:
     json_dict = dataclasses.asdict(obj)
     # Sanity check - we want to make sure it will also come out the other end
     # And this will wrong-type error if it can't
-    dataclass_load_dict(json_dict, obj.__class__)
+    obj_sanity_check = dataclass_load_dict(json_dict, obj.__class__)
+    assert obj == obj_sanity_check, "object changed during serialization?"
     return json.dump(json_dict, fp, indent=2, default=_json_set_default)
 
 

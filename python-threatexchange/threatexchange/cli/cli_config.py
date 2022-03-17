@@ -85,7 +85,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
     def config_file(self) -> pathlib.Path:
         return self._dir / "config.json"
 
-    def path_for_config(
+    def path_for_collab_config(
         self, config: collab_config.CollaborationConfigBase
     ) -> pathlib.Path:
         return self.collab_dir / f"{config.name}.json"
@@ -104,7 +104,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
     ) -> pathlib.Path:
         return self.fetched_state_dir / f"{api.get_name()}/"
 
-    def get_names_without_loading(self) -> t.List[str]:
+    def get_collab_names_without_loading(self) -> t.List[str]:
         if self._cache is not None:
             return list(self._cache)
         return [str(p) for p in self.collab_dir.glob("*.json")]
@@ -143,13 +143,12 @@ class CliState(collab_config.CollaborationConfigStoreBase):
 
     def update_collab(self, collab: collab_config.CollaborationConfigBase) -> None:
         """Create or update a collaboration"""
-        path = self.path_for_config(collab)
-        with path.open("w") as fp:
-            cli_json.dataclass_dump(fp, collab)
+        path = self.path_for_collab_config(collab)
+        cli_json.dataclass_dump_file(path, collab)
 
     def delete_collab(self, collab: collab_config.CollaborationConfigBase) -> None:
         """Delete a collaboration"""
-        self.path_for_config(collab).unlink(missing_ok=True)
+        self.path_for_collab_config(collab).unlink(missing_ok=True)
 
 
 class CLISettings:

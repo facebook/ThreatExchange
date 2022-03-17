@@ -40,6 +40,8 @@ class SignalTypeMapping:
     def get_supported_signal_types_for_content(
         self, content: t.Type[ContentType]
     ) -> t.List[t.Type[SignalType]]:
+        # TODO - consider storing by tuple instead of defending against accidental
+        #        mutation by callers
         return list(self.signal_type_by_content.get(content, ()))
 
 
