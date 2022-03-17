@@ -8,6 +8,7 @@ Config command to setup the CLI and settings.
 import argparse
 from dataclasses import is_dataclass, Field, fields, MISSING
 import json
+import types
 import typing as t
 import logging
 
@@ -173,9 +174,15 @@ class _UpdateCollabCommand(command_base.Command):
         assert not isinstance(
             field.type, t.ForwardRef
         ), "rework class to not have forward ref"
+
+        target_type = field.type
+        if hasattr(field.type, "__args__"):
+            target_type = field.type.__args__[0]
+
         ap.add_argument(
             f"--{field.name.replace('_', '-')}",
-            type=t.get_origin(field.type) or field.type,
+            type=target_type,
+            metavar=target_type.__name__,
             help="[auto generated from config class]",
         )
 
