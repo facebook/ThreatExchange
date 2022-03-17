@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 from freezegun import freeze_time
-from threatexchange.timebucketizer import CSViable, TimeBucketizer
+from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 
 
 @dataclass(eq=True)

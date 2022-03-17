@@ -1,22 +1,27 @@
-import datetime
-
-import os
-
-from typing import List
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import csv
-import _csv
-
+import datetime
+import os
 import typing as t
 
-import timeit
+MAX_BUFFER_SIZE = 100
+SECONDS_PER_DAY = 86400
+SECONDS_PER_MINUTE = 60
+
+
+Self = t.TypeVar("Self", bound="CSViable")
 
 
 class CSViable:
+    """
+    Interface of methods that must be implemented to run TimeBucketizer. It is used to guarantee safe parsing data in and out of CSV files
+    """
+
     def to_csv(self) -> t.List[t.Union[str, int]]:
         raise NotImplementedError
 
     @classmethod
-    def from_csv(cls, value: t.List[t.Union[str, int]]) -> "CSViable":
+    def from_csv(cls: t.Type[Self], value: t.List[str]) -> Self:
         raise NotImplementedError
 
 
@@ -24,20 +29,21 @@ T = t.TypeVar("T", bound=CSViable)
 
 
 class TimeBucketizer(t.Generic[T]):
+
     # TODO Make this generic, so we can have TimeBucket[Tuple[int, int]] or TimeBucket[MoreComplexObject].
     def __init__(
-        self, bucket_width: datetime.timedelta, storage_path: str, type: str, id: str
+        self, bucket_width: datetime.timedelta, storage_path: str, type: str, id: str, buffer_size: int = MAX_BUFFER_SIZE
     ):
         """
         Divides the day into 24h / bucket_width buckets. When add_record
         is called, based on current time, appends record to current bucket.
-        Each bucket's data is stored as a serialized JSON file.
+        Each bucket's data is stored as a serialized CSV file.
         Note that there may be multiple instances of TimeBucket writing to the
         same file system so add some uniqueness for this instance.
 
         Say your storage path is /var/data/threatexchange/timebuckets
         The file for current datetime (2022/02/08/20:49 UTC) for a bucket_width
-        of 5 minutes should be "/var/data/threatexchange/timebuckets/<type>/2022/02/08/20:45/<unique_id>.json"
+        of 5 minutes should be "/var/data/threatexchange/timebuckets/<type>/2022/02/08/20:45/<unique_id>.csv"
 
         The first <type> allows you to use the same storage folder for
         say hashes and matches.
@@ -45,23 +51,26 @@ class TimeBucketizer(t.Generic[T]):
         (eg. multiple lambdas) and writing to the same file system.
         """
 
-        if (
-            bucket_width < datetime.timedelta(seconds=60)
-            and bucket_width.seconds == 0
-            and bucket_width.microseconds == 0
-        ):
+        if bucket_width.total_seconds() < 60 or bucket_width.total_seconds() % 60 != 0:
             raise Exception("Please ensure timedelta is atleast a minute long.")
 
+        if SECONDS_PER_DAY % bucket_width.total_seconds() != 0:
+            raise Exception(
+                "Time Delta must be equally divisible into buckets based on a 24 hour clock"
+            )
+
         self.bucket_width = bucket_width
-        self.start, self.end = self._calculate_start(bucket_width)
+        self.start, self.end = self._calculate_bucket_endpoints(datetime.datetime.now(), bucket_width)
         self.storage_path = storage_path
         self.id = id
         self.type = type
 
+        self.buffer_size = buffer_size
         self.buffer: t.List[T] = []
 
-    def _calculate_start(self, bucket_width):
-        now = datetime.datetime.now()
+
+    def _calculate_bucket_endpoints(self, time: datetime.datetime, bucket_width: datetime.timedelta):
+        now = time
         rounded = now - (now - datetime.datetime.min) % bucket_width
         return (rounded, rounded + self.bucket_width)
 
@@ -69,16 +78,20 @@ class TimeBucketizer(t.Generic[T]):
         """
         Adds the record to the current bucket.
         """
-        if len(self.buffer) >= 100 or self.end <= datetime.datetime.now():
+        if len(self.buffer) >= MAX_BUFFER_SIZE or self.end <= datetime.datetime.now():
             self._flush()
         self.buffer.append(record)
 
     def destroy_remaining(self) -> None:
-        if len(self.buffer):
+        """
+        Used to trigger a force flush of remaining data stored inside buffer
+        """
+        if not len(self.buffer):
             return
         self._flush()
 
-    def get_records(self) -> t.List[T]:
+    # Change back to t.List[T] after other method is implemented
+    def get_records(self) -> t.List[str]:
         """
         Used for testing. Returns a list of all filepathways found starting from the storage_path
         """
@@ -95,17 +108,9 @@ class TimeBucketizer(t.Generic[T]):
 
         return list_of_pathways
 
-    def get_csv_file_count(self, directory_path) -> int:
-        """
-        Returns all the data in the csv files
-        """
-        with open(os.path.join(directory_path, str(self.id)) + ".csv") as f:
-            data_count = sum(1 for _ in f)
-        return data_count - 1
-
     def _flush(self) -> None:
         """
-        Flushes the files currently stored onto the database
+        Flushes the current data onto storage source
         """
         accurate_date = os.path.join(
             str(self.start.year),
@@ -117,21 +122,40 @@ class TimeBucketizer(t.Generic[T]):
 
         file_name = str(self.id) + ".csv"
         directory_path = os.path.join(self.storage_path, self.type, accurate_date)
-        file_pathway = os.path.join(directory_path, file_name)
+        file_path = os.path.join(directory_path, file_name)
 
         if not os.path.isdir(directory_path):
             os.makedirs(directory_path)
 
-        with open(file_pathway, "a+", newline="") as outfile:
-            writer: _csv._writer = csv.writer(outfile)
+        # Opening in append mode because it's possible we have to write to the same file multiple times with preexisting data
+        # newline is overriden to prevent spaces in the csv file between sections
+        with open(file_path, "a+", newline="") as outfile:
+            writer = csv.writer(outfile)
             writer.writerows(map(lambda x: x.to_csv(), self.buffer))
 
-        self.start, self.end = self._calculate_start(self.bucket_width)
+        self.start, self.end = self._calculate_bucket_endpoints(datetime.datetime.now(), self.bucket_width)
         self.buffer = []
 
-    def get_file_contents(self, file_path) -> List[str]:
+    def get_file_contents(self, since: datetime.datetime, until: datetime.datetime, type: str, storage_path: str, bucket_width: datetime.timedelta, type_class: t.Type[CSViable]):
         """
         Returns all the data stored inside csv file given the file_path
         """
-        my_file = open(file_path, "r")
-        return list(csv.reader(my_file))
+        
+        since_nearest = self._calculate_bucket_endpoints(since, bucket_width)[0]
+        until_nearest = self._calculate_bucket_endpoints(until, bucket_width)[1]
+    
+        content_list = []
+        file_list = [] 
+        while since_nearest <= until_nearest:
+            
+            directory_path = os.path.join(storage_path, type, str(since_nearest.year), str(since_nearest.month), str(since_nearest.day), str(since_nearest.hour), str(since_nearest.minute))
+            if os.path.isdir(directory_path): 
+                file_list.extend([os.path.join(directory_path, file) for file in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, file))])
+            since_nearest += bucket_width
+            
+        for file in file_list:
+            my_file = open(file, "r")
+
+            content_list.extend(list(map(type_class().from_csv, csv.reader(my_file))))
+        
+        return content_list
