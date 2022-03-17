@@ -8,8 +8,14 @@ Config command to setup the CLI and settings.
 import argparse
 from dataclasses import is_dataclass, Field, fields, MISSING
 import json
-import types
 import typing as t
+
+try:
+    from typing import ForwardRef  # >= 3.7
+except ImportError:
+    # <3.7
+    from typing import _ForwardRef as ForwardRef  # type: ignore
+
 import logging
 
 from threatexchange import common
@@ -172,7 +178,7 @@ class _UpdateCollabCommand(command_base.Command):
         if field.name in cls._IGNORE_FIELDS:
             return
         assert not isinstance(
-            field.type, t.ForwardRef
+            field.type, ForwardRef
         ), "rework class to not have forward ref"
 
         target_type = field.type
