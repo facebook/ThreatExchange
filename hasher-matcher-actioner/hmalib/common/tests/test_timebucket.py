@@ -43,7 +43,7 @@ class TestTimeBuckets(unittest.TestCase):
                 frozen_datetime.move_to(other_datetime)
                 sample.add_record(SampleCSViableClass())
 
-                fileContent = sample.get_file_contents(
+                fileContent = sample.get_records(
                     initial_datetime,
                     other_datetime,
                     "hasher",
@@ -71,7 +71,7 @@ class TestTimeBuckets(unittest.TestCase):
                     frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
                 sample.add_record(SampleCSViableClass())
 
-                fileContent = sample.get_file_contents(
+                fileContent = sample.get_records(
                     initial_datetime,
                     datetime.datetime.now(),
                     "hasher",
@@ -91,7 +91,7 @@ class TestTimeBuckets(unittest.TestCase):
             for _ in range(3201):
                 sample.add_record(SampleCSViableClass())
 
-            fileContent = sample.get_file_contents(
+            fileContent = sample.get_records(
                 datetime.datetime.now(),
                 datetime.datetime.now(),
                 "hasher",
@@ -108,15 +108,15 @@ class TestTimeBuckets(unittest.TestCase):
                 "Buffer overload, did not write the file and reset the buffer.",
             )
 
-    def test_destroy_remaining(self):
+    def test_force_flush(self):
         with tempfile.TemporaryDirectory() as td:
             sample = TimeBucketizer(datetime.timedelta(minutes=1), td, "hasher", "4")
             for _ in range(5):
                 sample.add_record(SampleCSViableClass())
 
-            sample.destroy_remaining()
+            sample.force_flush()
 
-            fileContent = sample.get_file_contents(
+            fileContent = sample.get_records(
                 datetime.datetime.now(),
                 datetime.datetime.now(),
                 "hasher",
@@ -136,9 +136,9 @@ class TestTimeBuckets(unittest.TestCase):
     def test_destroy_empty_buffer(self):
         with tempfile.TemporaryDirectory() as td:
             sample = TimeBucketizer(datetime.timedelta(minutes=1), td, "hasher", "4")
-            sample.destroy_remaining()
+            sample.force_flush()
 
-            fileContent = sample.get_file_contents(
+            fileContent = sample.get_records(
                 datetime.datetime.now(),
                 datetime.datetime.now(),
                 "hasher",
