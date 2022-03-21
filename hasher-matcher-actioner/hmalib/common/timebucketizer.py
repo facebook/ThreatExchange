@@ -3,6 +3,7 @@ import csv
 import datetime
 import os
 import typing as t
+import uuid
 
 MAX_BUFFER_SIZE = 3200
 SECONDS_PER_DAY = 86400
@@ -178,18 +179,3 @@ class TimeBucketizer(t.Generic[T]):
                 )
 
         return content_list
-
-    @staticmethod
-    def get_all_records2(
-        location: datetime.datetime,
-        type: str,
-        storage_path: str,
-    ):    
-        directory_path = TimeBucketizer._generate_path(storage_path, type, location)
-        if not os.path.isdir(directory_path):
-            return []
-        
-        file_list = [os.path.join(directory_path, file) for file in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, file))]
-
-        for file in file_list:
-            reader = open(file, "r")
