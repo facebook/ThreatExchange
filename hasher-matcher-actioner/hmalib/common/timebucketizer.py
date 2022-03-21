@@ -122,7 +122,7 @@ class TimeBucketizer(t.Generic[T]):
             os.makedirs(directory_path)
 
         # Opening in append mode because it's possible we have to write to the same file multiple times with preexisting data
-        # newline is overriden to prevent spaces in the csv file between sections
+        # newline is overridden to prevent spaces in the csv file between sections
         with open(file_path, "a+", newline="") as outfile:
             writer = csv.writer(outfile)
             writer.writerows(map(lambda x: x.to_csv(), self.buffer))
@@ -178,3 +178,18 @@ class TimeBucketizer(t.Generic[T]):
                 )
 
         return content_list
+
+    @staticmethod
+    def get_all_records2(
+        location: datetime.datetime,
+        type: str,
+        storage_path: str,
+    ):    
+        directory_path = TimeBucketizer._generate_path(storage_path, type, location)
+        if not os.path.isdir(directory_path):
+            return []
+        
+        file_list = [os.path.join(directory_path, file) for file in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, file))]
+
+        for file in file_list:
+            reader = open(file, "r")
