@@ -9,20 +9,12 @@ to fill up.
 """
 
 import argparse
-import sys
 import typing as t
+import sys
 
-from .. import common
-from ..api import ThreatExchangeAPI
-from ..dataset import Dataset
-
-
-class CommandError(Exception):
-    """Wrapper for exceptions which cause return codes"""
-
-    def __init__(self, message: str, returncode: int = 1) -> None:
-        super().__init__(message)
-        self.returncode = returncode
+from threatexchange import common
+from threatexchange.cli.cli_config import CLISettings
+from threatexchange.cli.exceptions import CommandError
 
 
 class Command:
@@ -31,7 +23,9 @@ class Command:
     """
 
     @classmethod
-    def add_command_to_subparser(cls, subparsers) -> None:
+    def add_command_to_subparser(
+        cls, settings: CLISettings, subparsers
+    ) -> argparse.ArgumentParser:
         """
         Shortcut for adding the command to the parser.
 
@@ -44,15 +38,18 @@ class Command:
             formatter_class=argparse.RawDescriptionHelpFormatter,
         )
         command_ap.set_defaults(command_cls=cls)
-        cls.init_argparse(command_ap)
+        cls.init_argparse(settings, command_ap)
+        return command_ap
 
     @classmethod
-    def init_argparse(cls, argparse: argparse.ArgumentParser) -> None:
+    def init_argparse(
+        cls, settings: CLISettings, argparse: argparse.ArgumentParser
+    ) -> None:
         """
         Program the command subparser for __init__
 
         Your argument names should match the argument names in __init__.
-        Be careful of collisions with the top level arg names from all_in_one.py
+        Be careful of collisions with the top level arg names from main.py
         """
         pass
 
@@ -74,10 +71,10 @@ class Command:
         line = cls.get_description().strip().partition("\n")[0]
         # Good luck debugging this! Slightly reformat short description
         # (toplevel --help)
-        if line[0].isupper():
+        if line and line[0].isupper():
             first_word, sp, rem = line.partition(" ")
             line = f"{first_word.lower()}{sp}{rem}"
-        if line[-1] == ".":
+        if line and line[-1] == ".":
             line = line[:-1]
         return line
 
@@ -86,5 +83,24 @@ class Command:
         """Convenience accessor to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
-    def execute(self, api: ThreatExchangeAPI, dataset: Dataset) -> None:
+    def execute(self, settings: CLISettings) -> None:
         raise NotImplementedError
+
+
+class CommandWithSubcommands(Command):
+    _SUBCOMMANDS: t.List[t.Type[Command]] = []
+
+    @classmethod
+    def add_command_to_subparser(
+        cls, settings: CLISettings, subparsers
+    ) -> argparse.ArgumentParser:
+        command_ap = super().add_command_to_subparser(settings, subparsers)
+        sub_subparsers = command_ap.add_subparsers()
+
+        for command in cls._SUBCOMMANDS:
+            command.add_command_to_subparser(settings, sub_subparsers)
+
+        return command_ap
+
+    def execute(self, settings: CLISettings) -> None:
+        raise CommandError("subcommand is required", 2)

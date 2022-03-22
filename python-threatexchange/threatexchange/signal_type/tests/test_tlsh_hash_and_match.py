@@ -1,22 +1,19 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import unittest
 
-from threatexchange.signal_type import tlsh_pdf
-
-TEST_PDF_COMPLETE_TLSH = (
-    "T145B2859FE708266211A3026277C7AEE5FF76402C636AD5BA2C2CC11C23A1F2957773D5"
-)
+from threatexchange.signal_type import tlsh
 
 
+@unittest.skipIf(not tlsh._ENABLED, "tlsh not installed")
 class TLSHHasherModuleUnitTest(unittest.TestCase):
-    def test_tlsh_from_file(self):
-        tlsh_complete_data_hash = tlsh_pdf.TLSHSignal.hash_from_file(
-            "data/test_pdf_complete.pdf"
-        )
-        tlsh_half_data_hash = tlsh_pdf.TLSHSignal.hash_from_file(
-            "data/test_pdf_half.pdf"
-        )
-        # ToDo find way to have sub in signal data here
-        tlsh_complete_match = tlsh_pdf.TLSHSignal().match_hash(tlsh_complete_data_hash)
-        tlsh_half_complete_match = tlsh_pdf.TLSHSignal().match_hash(tlsh_half_data_hash)
-        assert tlsh_complete_data_hash == TEST_PDF_COMPLETE_TLSH
+    def test_tlsh_from_string(self):
+        expected = {
+            "A minimum string length must be 256 bytes! "
+            "That's so much text this means it's not super "
+            "useful for finding short text!": "T1DFB092A1724AC2C0D3CA48452291E"
+            "A04A5B75EB903A6E7577A54118FFA8148E98F9426",
+        }
+        for input, expected_hash in expected.items():
+            hashed = tlsh.TLSHSignal.hash_from_str(input)
+
+        assert hashed == expected_hash, f"case: {input}"

@@ -21,6 +21,7 @@ At scale, the flow for matching looks something like:
 """
 
 import typing as t
+import pickle
 
 
 T = t.TypeVar("T")
@@ -47,9 +48,18 @@ class IndexMatch(t.Generic[T]):
         self.metadata = metadata
 
 
+Self = t.TypeVar("Self", bound="SignalTypeIndex")
+
+
 class SignalTypeIndex(t.Generic[T]):
     """
-    Abstraction for an efficient matching technique.
+    Abstraction for efficient scale matching on signals.
+
+    SignalType forces you to implement the brute force approaches to
+    make them easier to work with and conceptualize. However, if you
+    are intending to match thousands of items a second at the scale of
+    millions of signals, this class allows you to implement a more
+    complex and efficient method.
 
     This class can be thought of as just a Dict[hash, List[T]] interface
     that can return the flattened result of multiple entries on a get().
@@ -57,12 +67,12 @@ class SignalTypeIndex(t.Generic[T]):
     The T can be whatever metadata might be useful, although be warned
     that not all T may serialize correctly.
 
-    # Why is `hash` str?
-    There are various multi-pass hashing approaches that may generate more
-    complicated data structures, or require multiple query passes. It's
-    unclear whether we should try and generalize those yet, and forcing the
-    type to always be serializable in str gives us the advantage that
-    uploading it to ThreatExchange is always straightforward.
+    # Handling Index Types that cannot be updated
+    The default interface assumes that you can both create and update
+    indices. It's possible that some storage types cannot support this.
+    In that case build() and deserialize() are the only methods that
+    should be used to create indices, and you can have add() methods
+    throw NotImplementedError.
 
     # Handling Restricted Value Types
     In cases where your underlying index has limited type support for
@@ -86,7 +96,8 @@ class SignalTypeIndex(t.Generic[T]):
         internal_mapping[idx] = meta
     """
 
-    def query(self, hash: str) -> t.List[IndexMatch[T]]:
+    # TODO - this doesn't handle bytes queries / BytesHashers
+    def query(self, query: str) -> t.List[IndexMatch[T]]:
         """
         Look up entries against the index, up to the max supported distance.
 
@@ -97,9 +108,11 @@ class SignalTypeIndex(t.Generic[T]):
         raise NotImplementedError
 
     @classmethod
-    def build(cls, entries: t.Iterable[t.Tuple[str, T]]) -> "SignalTypeIndex[T]":
+    def build(cls: t.Type[Self], entries: t.Iterable[t.Tuple[str, T]]) -> Self:
         """
         Build an index from a set of entries.
+
+        You can override __init__ as needed, but keep this once constant.
 
         Note that there may be duplicates of the hash type, i.e.
 
@@ -108,14 +121,23 @@ class SignalTypeIndex(t.Generic[T]):
 
         A later call to query(H1) should return both M1 and M2
         """
+        ret = cls()
+        ret.add_all(entries)
+        return ret
+
+    # TODO - probably move add() methods to a mixin instead
+    def add(self, signal_str: str, entry: T) -> None:
+        """
+        Add an entry to the index.
+
+        Duplicate entries should not replace previous ones.
+        """
         raise NotImplementedError
 
-    def add(cls, entries: t.Iterable[t.Tuple[str, T]]) -> None:
-        """
-        Add entries to an existing index. May contain elements already in the
-        index.
-        """
-        raise NotImplementedError
+    def add_all(self, entries: t.Iterable[t.Tuple[str, T]]) -> None:
+        """add, but more so"""
+        for signal_str, entry in entries:
+            self.add(signal_str, entry)
 
     def serialize(self, fout: t.BinaryIO) -> None:
         """
@@ -130,6 +152,18 @@ class SignalTypeIndex(t.Generic[T]):
         raise NotImplementedError
 
     @classmethod
-    def deserialize(cls, fin: t.BinaryIO) -> "SignalTypeIndex[T]":
+    def deserialize(cls: t.Type[Self], fin: t.BinaryIO) -> Self:
         """Instanciate an index from a previous call to serialize"""
         raise NotImplementedError
+
+
+PickedSelf = t.TypeVar("PickedSelf", bound=SignalTypeIndex)
+
+
+class PickledSignalTypeIndex(SignalTypeIndex[T]):
+    def serialize(self, fout: t.BinaryIO) -> None:
+        fout.write(pickle.dumps(self))
+
+    @classmethod
+    def deserialize(cls: t.Type[PickedSelf], fin: t.BinaryIO) -> PickedSelf:
+        return pickle.loads(fin.read())

@@ -4,14 +4,11 @@
 """
 Wrapper around the pdf content type.
 """
-import typing as t
 
-from ..signal_type import url_md5
-from ..signal_type.signal_base import SignalType
 from .content_base import ContentType
 
 
-class URL(ContentType):
+class URLContent(ContentType):
     """
     URLs are often used to point specific files and specific locations online.
     While a change in protocol/scheme is not necessarily significant to the location
@@ -32,7 +29,3 @@ class URL(ContentType):
     * twitter.com/userabc/status/1452649689363451231217/?lang=fr
 
     """
-
-    @classmethod
-    def get_signal_types(cls) -> t.List[t.Type[SignalType]]:
-        return [url_md5.UrlMD5Signal]

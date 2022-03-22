@@ -7,25 +7,22 @@ Wrapper around the URL signal type.
 
 import typing as t
 
-from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from . import signal_base
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.url import URLContent
+from threatexchange.signal_type import signal_base
 
 
-class URLSignal(signal_base.SimpleSignalType, signal_base.StrMatcher):
+class URLSignal(signal_base.SimpleSignalType, signal_base.TrivialTextHasher):
     """
     Wrapper around URL links, such as https://github.com/
     """
 
-    # TODO - Also handle URI indicator_type
-    INDICATOR_TYPE = "RAW_URI"
-    TYPE_TAG = "media_type_url"
+    INDICATOR_TYPE = ("URI", "RAW_URI")
 
-    def match(self, content) -> t.List[signal_base.SignalMatch]:
-        ret = []
-        for word in content.split():
-            found = self.state.get(word)
-            if found:
-                ret.append(
-                    signal_base.SignalMatch(found.labels, found.first_descriptor_id)
-                )
-        return ret
+    @classmethod
+    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+        return [URLContent]
+
+    @staticmethod
+    def get_examples() -> t.List[str]:
+        return ["https://developers.facebook.com/docs/threat-exchange/reference/apis/"]

@@ -5,14 +5,14 @@
 Wrapper around the Trend Query (keywords and regexes) content type.
 """
 
-import csv
 import json
-import pathlib
 import re
 import typing as t
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.text import TextContent
 
-from ..descriptor import SimpleDescriptorRollup, ThreatDescriptor
-from . import signal_base
+from threatexchange.signal_type import signal_base
+from threatexchange.signal_type import index
 
 
 class TrendQuery:
@@ -46,7 +46,7 @@ class TrendQuery:
         return False
 
 
-class TrendQuerySignal(signal_base.SignalType, signal_base.StrMatcher):
+class TrendQuerySignal(signal_base.SignalType, signal_base.MatchesStr):
     """
     Trend Queries are a combination of and/or/not regexes.
 
@@ -57,61 +57,73 @@ class TrendQuerySignal(signal_base.SignalType, signal_base.StrMatcher):
     They have high "recall" but potentially low "precision".
     """
 
-    def __init__(self) -> None:
-        self.state: t.Dict[str, t.Tuple[TrendQuery, SimpleDescriptorRollup]] = {}
-
-    def process_descriptor(self, descriptor: ThreatDescriptor) -> bool:
-        """
-        Add ThreatDescriptor to the state of this type, if it is for this type
-
-        Return true if the true if the descriptor was used.
-        """
-        if (
-            descriptor.indicator_type != "DEBUG_STRING"
-            or "media_type_trend_query" not in descriptor.tags
-        ):
-            return False
-        old_val = self.state.get(descriptor.raw_indicator)
-        query_json = json.loads(descriptor.raw_indicator)
-
-        if old_val is None:
-            self.state[descriptor.raw_indicator] = (
-                TrendQuery(query_json),
-                SimpleDescriptorRollup(
-                    descriptor.id,
-                    descriptor.added_on,
-                    set(descriptor.tags),
-                ),
-            )
-        else:
-            old_val[1].merge(descriptor)
-        return True
-
-    def match(self, content: str) -> t.List[signal_base.SignalMatch]:
-        return [
-            signal_base.SignalMatch(rollup.labels, rollup.first_descriptor_id)
-            for query, rollup in self.state.values()
-            if query.matches(content)
-        ]
-
-    def load(self, path: pathlib.Path) -> None:
-        self.state.clear()
-        csv.field_size_limit(path.stat().st_size)  # dodge field size problems
-        with path.open("r", newline="") as f:
-            for row in csv.reader(f, dialect="excel-tab"):
-                raw_indicator = row[0]
-                query_json = json.loads(raw_indicator)
-                self.state[raw_indicator] = (
-                    TrendQuery(query_json),
-                    SimpleDescriptorRollup.from_row(row[1:]),
-                )
-
-    def store(self, path: pathlib.Path) -> None:
-        with path.open("w+", newline="") as f:
-            writer = csv.writer(f, dialect="excel-tab")
-            for k, v in self.state.items():
-                writer.writerow((k,) + v[1].as_row())
+    @classmethod
+    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+        return [TextContent]
 
     @classmethod
-    def indicator_applies(cls, indicator_type: str, tags: t.List[str]) -> bool:
-        return indicator_type == "DEBUG_STRING" and "media_type_trend_query" in tags
+    def validate_signal_str(cls, signal_str: str) -> str:
+        tq = TrendQuery(
+            json.loads(signal_str)
+        )  # TODO - does this throw all the right exceptions?
+        return signal_str
+
+    @classmethod
+    def matches_str(
+        cls, hash: str, haystack: str, distance_threshold: t.Optional[int] = None
+    ) -> signal_base.HashComparisonResult:
+        if distance_threshold is not None:
+            raise ValueError("distance_threshold not supported")
+        tq = TrendQuery(json.loads(hash))
+        return signal_base.HashComparisonResult.from_bool(tq.matches(haystack))
+
+    @classmethod
+    def get_index_cls(cls) -> t.Type[index.SignalTypeIndex]:
+        return TrendQueryIndex
+
+    @staticmethod
+    def get_examples() -> t.List[str]:
+        return [
+            json.dumps(
+                {
+                    "and": [
+                        {
+                            "or": [
+                                "basketball",
+                                "basket ball",
+                                "basket-ball",
+                                "bball",
+                                "hoops",
+                            ]
+                        },
+                        {"or": ["play", "tonight", "today", "now"]},
+                    ],
+                    "not": ["tomorrow", "baseball", "hockey", "football", "soccer"],
+                }
+            )
+        ]
+
+
+class TrendQueryIndex(index.PickledSignalTypeIndex[index.T]):
+    def __init__(self) -> None:
+        self.state: t.Dict[str, t.Tuple[TrendQuery, t.List[index.T]]] = {}
+
+    # TODO - Figure out how to properly capture hash vs search
+    def query(self, hash: str) -> t.List[index.IndexMatch[index.T]]:
+        ret: t.List[index.IndexMatch[index.T]] = []
+        for tq, values in self.state.values():
+            if tq.matches(hash):
+                ret.extend(index.IndexMatch(0, v) for v in values)
+        return ret
+
+    def add(self, hash: str, value: index.T) -> None:
+        old_val = self.state.get(hash)
+        query_json = json.loads(hash)
+
+        if old_val is None:
+            self.state[hash] = (
+                TrendQuery(query_json),
+                [value],
+            )
+        else:
+            old_val[1].append(value)

@@ -7,6 +7,8 @@ A place to put simple helpers that don't seem like they go anywhere else.
 If this file starts getting large, break it up.
 """
 
+import argparse
+import typing as t
 import re
 from urllib.parse import urlparse
 import unicodedata
@@ -73,3 +75,22 @@ def normalize_url(url: str) -> bytes:
     url = parsed.geturl().replace(scheme, "", 1)
     # Ensure URL is utf-8 encoded
     return url.encode("utf-8")
+
+
+def argparse_choices_pre_type(choices: t.List[str], type: t.Callable[[str], t.Any]):
+    """
+    Argparse parses choices after type, which is sometimes undesirable.
+
+    So fix it with duct tape. type=argparse_choices_pre_type()
+    """
+
+    def ret(s: str):
+        if s not in choices:
+            raise argparse.ArgumentTypeError(
+                "invalid choice: %s (choose from %s)",
+                s,
+                ", ".join(repr(c) for c in choices),
+            )
+        return type(s)
+
+    return ret

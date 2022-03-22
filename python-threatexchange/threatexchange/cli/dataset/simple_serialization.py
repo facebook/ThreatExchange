@@ -3,17 +3,14 @@
 
 import collections
 import csv
-import json
-import os
 import pathlib
-import time
 import re
 import typing as t
 
-from ...api import ThreatExchangeAPI
-from ... import threat_updates
-from ...descriptor import SimpleDescriptorRollup
-from ...dataset import Dataset
+from threatexchange.fb_threatexchange import threat_updates
+from threatexchange.fb_threatexchange.descriptor import SimpleDescriptorRollup
+
+_EXTENSION = ".te"
 
 # TODO - merge SimpleDescriptorRollup here
 class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
@@ -60,7 +57,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
             row_by_type[item.indicator_type].append(item)
         ret = []
         for threat_type, items in row_by_type.items():
-            path = state_dir / f"simple.{threat_type}{Dataset.EXTENSION}"
+            path = state_dir / f"simple.{threat_type}{_EXTENSION}"
             ret.append(path)
             with path.open("w", encoding="utf-8", newline="") as f:
                 writer = csv.writer(f)
@@ -72,8 +69,8 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     def load(cls, state_dir: pathlib.Path) -> t.Iterable["CliIndicatorSerialization"]:
         """Load this serialization from the state directory"""
         ret = []
-        pattern = r"simple\.([^.]+)" + re.escape(Dataset.EXTENSION)
-        for path in state_dir.glob(f"simple.*{Dataset.EXTENSION}"):
+        pattern = r"simple\.([^.]+)" + re.escape(_EXTENSION)
+        for path in state_dir.glob(f"simple.*{_EXTENSION}"):
             match = re.match(pattern, path.name)
             if not match or not path.is_file():
                 continue
@@ -141,8 +138,8 @@ class HMASerialization(CliIndicatorSerialization):
     def load(cls, state_dir: pathlib.Path) -> t.Iterable["HMASerialization"]:
         """Load this serialization from the state directory"""
         ret = []
-        pattern = r"simple\.([^.]+)" + re.escape(Dataset.EXTENSION)
-        for path in state_dir.glob(f"simple.*{Dataset.EXTENSION}"):
+        pattern = r"simple\.([^.]+)" + re.escape(_EXTENSION)
+        for path in state_dir.glob(f"simple.*{_EXTENSION}"):
             match = re.match(pattern, path.name)
             if not match or not path.is_file():
                 continue

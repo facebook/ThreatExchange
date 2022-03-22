@@ -9,7 +9,8 @@ The fetcher is the component that talks to external APIs to get and put signals
 
 import typing as t
 
-from threatexchange.collab_config import CollaborationConfig
+from threatexchange import common
+from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher import fetch_state as state
 
@@ -46,15 +47,36 @@ class SignalExchangeAPI:
     """
 
     @classmethod
-    def name(cls) -> str:
+    def get_name(cls) -> str:
         """
         A simple string name unique to SignalExchangeAPIs in use.
+
+        It should be one lowercase_with_underscores word.
 
         This shouldn't be changed once comitted, or you may break naive
         storage solutions (like the one in the CLI) which stores fetched
         data by (SignalExchangeAPI.name(), collab_name).
         """
-        return cls.__name__
+        name = cls.__name__
+        for suffix in ("API", "Exchange"):
+            if name.endswith(suffix):
+                name = name[: -len(suffix)]
+        return common.class_name_to_human_name(name, "Signal")
+
+    @classmethod
+    def get_checkpoint_cls(cls) -> t.Type[state.FetchCheckpointBase]:
+        """Returns the dataclass used to control checkpoint for this API"""
+        return state.FetchCheckpointBase  # Default = no checkpoints
+
+    @classmethod
+    def get_record_cls(cls) -> t.Type[state.FetchedSignalMetadata]:
+        """Returns the dataclass used to store records for this API"""
+        return state.FetchedSignalMetadata  # Default = no metadata
+
+    @classmethod
+    def get_config_class(cls) -> t.Type[CollaborationConfigBase]:
+        """Returns the dataclass used to store records for this API"""
+        return CollaborationConfigBase
 
     def resolve_owner(self, id: int) -> str:
         """
@@ -64,7 +86,7 @@ class SignalExchangeAPI:
         """
         return ""
 
-    def get_own_owner_id(self) -> int:
+    def get_own_owner_id(self, collab: CollaborationConfigBase) -> int:
         """
         Return the owner ID of this caller. Opinions with that ID are "ours".
 
@@ -79,15 +101,30 @@ class SignalExchangeAPI:
         return -1
 
     def fetch_once(
-        self, collab: CollaborationConfig, checkpoint: t.Any
-    ) -> state.FetchDeltaBase:
+        self,
+        supported_signal_types: t.List[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
+        checkpoint: t.Optional[state.FetchCheckpointBase],
+    ) -> state.FetchDelta:
         """
         Call out to external resources, pulling down one "batch" of content.
+
+        Many APIs are a sequence of events: (creates/updates, deletions)
+        In that case, it's important the these events are strictly ordered.
+        I.e. if the sequence is create => delete, if the sequence is reversed
+        to delete => create, the end result is a stored record, when the
+        expected is a deleted one.
         """
         raise NotImplementedError
 
     def report_seen(
-        self, s_type: SignalType, signal: str, metadata: state.FetchedSignalDataBase
+        self,
+        collab: CollaborationConfigBase,
+        s_type: SignalType,
+        signal: str,
+        metadata: state.FetchedStateStoreBase,
     ) -> None:
         """
         Report that you observed this signal.
@@ -99,7 +136,7 @@ class SignalExchangeAPI:
 
     def report_opinion(
         self,
-        collab: CollaborationConfig,
+        collab: CollaborationConfigBase,
         s_type: t.Type[SignalType],
         signal: str,
         opinion: state.SignalOpinion,
@@ -109,14 +146,18 @@ class SignalExchangeAPI:
 
         Most implementations will want a full replacement specialization, but this
         allows a common interface for all uploads for the simplest usecases.
+
+        This is an optional API, and places that use it should catch
+        the NotImplementError.
         """
         raise NotImplementedError
 
     def report_true_positive(
         self,
+        collab: CollaborationConfigBase,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalDataBase,
+        metadata: state.FetchedSignalMetadata,
     ) -> None:
         """
         Report that a previously seen signal was a true positive.
@@ -124,13 +165,23 @@ class SignalExchangeAPI:
         This is an optional API, and places that use it should catch
         the NotImplementError.
         """
-        raise NotImplementedError
+        self.report_opinion(
+            collab,
+            s_type,
+            signal,
+            state.SignalOpinion(
+                owner=self.get_own_owner_id(collab),
+                category=state.SignalOpinionCategory.TRUE_POSITIVE,
+                tags=set(),
+            ),
+        )
 
     def report_false_positive(
         self,
+        collab: CollaborationConfigBase,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalDataBase,
+        metadata: state.FetchedSignalMetadata,
     ) -> None:
         """
         Report that a previously seen signal is a false positive.
@@ -138,4 +189,13 @@ class SignalExchangeAPI:
         This is an optional API, and places that use it should catch
         the NotImplementError.
         """
-        raise NotImplementedError
+        self.report_opinion(
+            collab,
+            s_type,
+            signal,
+            state.SignalOpinion(
+                owner=self.get_own_owner_id(collab),
+                category=state.SignalOpinionCategory.FALSE_POSITIVE,
+                tags=set(),
+            ),
+        )

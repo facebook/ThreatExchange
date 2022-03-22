@@ -7,18 +7,26 @@ TODO: Slim down to only what we need
 """
 
 import copy
-import datetime
 import json
-import os
-import re
 import typing as t
+import os
+import pathlib
+import re
+
 import urllib.parse
+import urllib.error
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+
 from .api_representations import ThreatPrivacyGroup
+
+
+def is_valid_app_token(token: str) -> bool:
+    """Returns true if the string looks like a valid token"""
+    return bool(re.match("[0-9]{8,}(?:%7C|\\|)[a-zA-Z0-9_\\-]{20,}", token))
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):

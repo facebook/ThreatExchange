@@ -5,12 +5,16 @@ Implementation of SignalTypeIndex abstraction for PDQ by wrapping
 hashing.pdq_faiss_matcher.
 """
 
-from collections import OrderedDict
 import collections
 import typing as t
 import pickle
 
-from threatexchange.signal_type.index import SignalTypeIndex, IndexMatch, T as IndexT
+from threatexchange.signal_type.index import (
+    PickledSignalTypeIndex,
+    SignalTypeIndex,
+    IndexMatch,
+    T as IndexT,
+)
 from threatexchange.hashing.pdq_faiss_matcher import (
     PDQMultiHashIndex,
     PDQFlatHashIndex,
@@ -18,7 +22,7 @@ from threatexchange.hashing.pdq_faiss_matcher import (
 )
 
 
-class PDQIndex(SignalTypeIndex):
+class PDQIndex(PickledSignalTypeIndex):
     """
     Wrapper around the pdq faiss index lib using PDQMultiHashIndex
     """
@@ -31,11 +35,11 @@ class PDQIndex(SignalTypeIndex):
     def _get_empty_index(cls) -> PDQHashIndex:
         return PDQMultiHashIndex()
 
-    def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
+    def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]] = ()) -> None:
         super().__init__()
-        self.local_id_to_entry: t.OrderedDict = collections.OrderedDict()
+        self.local_id_to_entry: t.List[t.Tuple[str, IndexT]] = []
         self.index: PDQHashIndex = self._get_empty_index()
-        self.add(entries=entries)
+        self.add_all(entries=entries)
 
     def __len__(self) -> int:
         return len(self.local_id_to_entry)
@@ -55,36 +59,18 @@ class PDQIndex(SignalTypeIndex):
             matches.append(IndexMatch(distance, self.local_id_to_entry[id][1]))
         return matches
 
-    def add(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
-        hashes = []
+    def add(self, signal_str: str, entry: IndexT) -> None:
+        self.add_all(((signal_str, entry),))
 
-        for i, entry in enumerate(entries):
-            self.local_id_to_entry[i] = entry
-            hashes.append(entry[0])
-
-        self.index.add(hashes, self.local_id_to_entry.keys())
-
-    @classmethod
-    def build(
-        cls, entries: t.Iterable[t.Tuple[str, IndexT]]
-    ) -> "SignalTypeIndex[IndexT]":
-        """
-        Build an PDQ index from a set of entries.
-        """
-        return cls(entries)
-
-    def serialize(self, fout: t.BinaryIO) -> None:
-        """
-        Convert the PDQ index into a bytestream (probably a file).
-        """
-        fout.write(pickle.dumps(self))
-
-    @classmethod
-    def deserialize(cls, fin: t.BinaryIO) -> "SignalTypeIndex[IndexT]":
-        """
-        Instantiate an index from a previous call to serialize
-        """
-        return pickle.loads(fin.read())
+    def add_all(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
+        start = len(self.local_id_to_entry)
+        self.local_id_to_entry.extend(entries)
+        if start != len(self.local_id_to_entry):
+            # This function signature is very silly
+            self.index.add(
+                (e[0] for e in self.local_id_to_entry[start:]),
+                range(start, len(self.local_id_to_entry)),
+            )
 
 
 class PDQFlatIndex(PDQIndex):
