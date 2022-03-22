@@ -2,7 +2,11 @@
 
 A Python Library for downloading and using datasets stored in ThreatExchange.
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/threatexchange) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
+
+## Upcoming Changes - Please Pardon Our Dust
+ThreatExchange is in the middle of a big refactor starting in #944 which will make it less about Facebook's ThreatExchange, and more about signal and hash exchange in general. There may be some breakages in the short term, and many of the concepts below will need to be updated. 
+
 
 ## Overview
 Fetching signals from ThreatExchange "correctly" is sadly not as straightforward as it should be.
