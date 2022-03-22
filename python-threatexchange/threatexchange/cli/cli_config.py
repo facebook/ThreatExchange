@@ -25,7 +25,7 @@ from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchange
 from threatexchange.signal_type import signal_base
 from threatexchange.meta import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
-from threatexchange.cli import json as cli_json
+from threatexchange.cli import dataclass_json as cli_json
 
 
 CONFIG_FILENAME = "config.json"

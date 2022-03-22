@@ -15,13 +15,23 @@ def dataclass_dump_file(path: pathlib.Path, obj) -> None:
         dataclass_dump(fp, obj)
 
 
-def dataclass_dump(fp: t.IO[str], obj) -> None:
+def _as_dict(obj: t.Any) -> t.Dict[str, t.Any]:
     json_dict = dataclasses.asdict(obj)
     # Sanity check - we want to make sure it will also come out the other end
     # And this will wrong-type error if it can't
     obj_sanity_check = dataclass_load_dict(json_dict, obj.__class__)
     assert obj == obj_sanity_check, "object changed during serialization?"
+    return json_dict
+
+
+def dataclass_dump(fp: t.IO[str], obj) -> None:
+    json_dict = _as_dict(obj)
     return json.dump(json_dict, fp, indent=2, default=_json_set_default)
+
+
+def dataclass_dumps(fp: t.IO[str], obj) -> str:
+    json_dict = _as_dict(obj)
+    return json.dumps(json_dict, indent=2, default=_json_set_default)
 
 
 def dataclass_load_file(
@@ -37,6 +47,11 @@ def dataclass_load_file(
 
 def dataclass_load(fp: t.IO[str], cls: t.Type[T]) -> T:
     json_dict = json.load(fp)
+    return dataclass_load_dict(json_dict, cls)
+
+
+def dataclass_loads(s: str, cls: t.Type[T]) -> T:
+    json_dict = json.loads(s)
     return dataclass_load_dict(json_dict, cls)
 
 
