@@ -8,7 +8,7 @@ scalable service running on AWS. Instead, we have all of our state in
 a file (likely ~/.threatexchange)
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import sys
 import typing as t
 import json
@@ -36,6 +36,7 @@ class CLiConfig:
     """A place to store misc configuration for the CLI"""
 
     fb_threatexchange_api_token: t.Optional[str] = None
+    extensions: t.Set[str] = field(default_factory=set)
 
 
 class CliState(collab_config.CollaborationConfigStoreBase):
