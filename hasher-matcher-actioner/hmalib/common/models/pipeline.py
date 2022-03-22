@@ -6,6 +6,10 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from boto3.dynamodb.conditions import Key
+
+from threatexchange.content_type.meta import get_signal_types_by_name
+from threatexchange.signal_type.signal_base import SignalType
+
 from hmalib.common.models.models_base import (
     DynamoDBCursorKey,
     DynamoDBItem,
@@ -405,20 +409,3 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
             )
             for item in items
         ]
-
-
-@dataclass(eq=True)
-class HashRecord(CSViable):
-    """
-    Example class used for testing purposes.
-    """
-
-    content_hash: str
-    content_id: str
-
-    def to_csv(self) -> t.List[t.Union[str, int]]:
-        return [self.content_hash, self.content_id]
-
-    @classmethod
-    def from_csv(cls: t.Type["HashRecord"], value: t.List[str]) -> "HashRecord":
-        return HashRecord(value[0], value[1])
