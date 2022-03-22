@@ -1,22 +1,21 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
-from decimal import Decimal
 import typing as t
 from dataclasses import dataclass, field
+from decimal import Decimal
 
-from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Key
-
+from hmalib.common.models.models_base import (
+    DynamoDBCursorKey,
+    DynamoDBItem,
+    PaginatedResponse,
+)
+from mypy_boto3_dynamodb.service_resource import Table
 from threatexchange.content_type.meta import get_signal_types_by_name
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.timebucketizer import CSViable
 
-from hmalib.common.models.models_base import (
-    DynamoDBItem,
-    DynamoDBCursorKey,
-    PaginatedResponse,
-)
 
 """
 Data transfer object classes to be used with dynamodbstore
@@ -407,17 +406,19 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
             for item in items
         ]
 
+
 @dataclass(eq=True)
 class HashRecord(CSViable):
     """
     Example class used for testing purposes.
     """
-    content_hash:str
-    content_id:str
+
+    content_hash: str
+    content_id: str
 
     def to_csv(self) -> t.List[t.Union[str, int]]:
         return [self.content_hash, self.content_id]
 
     @classmethod
-    def from_csv(cls: t.Type[Self], value: t.List[str]) -> Self:
-        return HashRecord(value[0],value[1])
+    def from_csv(cls: t.Type["HashRecord"], value: t.List[str]) -> "HashRecord":
+        return HashRecord(value[0], value[1])
