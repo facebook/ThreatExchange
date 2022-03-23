@@ -76,7 +76,7 @@ def _get_matcher(index_bucket_name: str, banks_table: BanksTable) -> Matcher:
 _hasher = None
 
 
-def _get_haher() -> UnifiedHasher:
+def _get_hasher() -> UnifiedHasher:
     global _hasher
     if _hasher is None:
         _hasher = UnifiedHasher(
@@ -549,7 +549,7 @@ def get_matches_api(
             return MediaFetchError()
 
         signal_to_matches = {}
-        for signal in _get_haher().get_hashes(request.content_type, bytes_):
+        for signal in _get_hasher().get_hashes(request.content_type, bytes_):
             signal_to_matches[signal.signal_type.get_name()] = {
                 signal.signal_value: _matches_for_hash(
                     signal_type=signal.signal_type, signal_value=signal.signal_value
