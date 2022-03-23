@@ -17,10 +17,10 @@ You can create your own extensions easily, and we encourage you to do so!
 ## A Note on Name Collisions
 ContentType, SignalType, and SignalExchangeAPI all require a unique string name to enable the various lookups. There will be a challenge for extension writers to choose short, human-friendly names that have not already been used by others. As long as a runtime does not have two types with the same short name, it will still work properly. To aid with finding a free name, we'll try and keep a list of extensions here with their names. Feel free to reach out to threatexchange@fb.com to get your extension listed here.
 
-| Type | Package Name | Name | Note
-| ------------- | ------------- | ------------- |
-| Signal | threatexchange | raw_text | Match strings with strings
-| Signal | threatexchange | trend_query | Simple regex on strings
+| Type | Package Name | Name | Note |
+| ------------- | ------------- | ------------- | ------------- |
+| Signal | threatexchange | raw_text | Match strings with strings 
+| Signal | threatexchange | trend_query | Simple regex on strings 
 | Signal | threatexchange | url | Match known URLs
 | Signal | threatexchange | pdq | Photo scanning with PDQ
 | Signal | threatexchange | url_md5 | Match hashes of known URLs
@@ -28,7 +28,7 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | Signal | threatexchange.extensions.pdq_ocr | pdq_ocr | photos+text (memes)
 | Signal | threatexchange.extensions.text_tlsh | text_tlsh | tlsh scanning on text
 | Signal | TBD | tmk_pdqf | The planned name for TMK+PDQF video hashing 
-| Signal | N/A | photodna | Reserved to prevent collision with PhotoDNA
+| Signal | N/A | photodna | Reserved to prevent confusion with PhotoDNA
 | Content | threatexchange | text | Text files and strings
 | Content | threatexchange | photo | Photo formats
 | Content | threatexchange | video | Video formats
@@ -38,8 +38,8 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | API | threatexchange | stopncii | StopNCII.org
 | API | threatexchange | sample | Static sample signals
 | API | threatexchange | local_file | Load content from a file
-| API | TBD | ncmec | Reserved for if it is possible to build a NCMEC API implementation
-| API | TBD | iwf | Reserved for if it is possible to build a IWF API implementation
+| API | N/A | ncmec | Reserved to prevent confusion with NCMEC API
+| API | N/A | iwf | Reserved to prevent confusion with IWF API
 
 ## Writing a ThreatExchange Expansion Module
 Using the interfaces for SignalType, ContentType, and SignalExchangeAPI, create classes that extend as many of those as you think should be bundled together. 
@@ -100,12 +100,12 @@ It will also sanity check to make sure you don't have collisions with existing m
 $ threatexchange config extensions add threatexchangecontributions.myproject
 Added my.module.name:
   Signals:
-    foo FooSignal
-    bar BarSignal
+    foo - FooSignal
+    bar - BarSignal
   Contents:
-    baz BazContent
+    baz - BazContent
   APIs:
-    zed ZedAPI
+    zed - ZedAPI
 
 # What do I have?
 $ threatexchange threatexchange config extensions list
