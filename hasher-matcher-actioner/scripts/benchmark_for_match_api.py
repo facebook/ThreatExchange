@@ -8,13 +8,20 @@ Requires `ab` Apache HTTP server benchmarking tool https://httpd.apache.org/docs
 
 import subprocess
 import time
+import typing as t
+
+API_URL = "<api_url>"
+TOKEN = "<token>"
+HEADER = f"Authorization:{TOKEN}"
+
+PATH_OF_REQUEST_BODY_FILE = "scripts/request_body_example_1.json"
+MEDIA_URL = f"{API_URL}matches/for-media/"
 
 TYPE = "pdq"
 HASH = "<hash>"
-API_URL = "<api_url>"
-TOKEN = "<token>"
-URL = f"{API_URL}matches/for-hash/?signal_value={HASH}&signal_type={TYPE}"
-HEADER = f"Authorization:{TOKEN}"
+MATCH_URL = f"{API_URL}matches/for-hash/?signal_value={HASH}&signal_type={TYPE}"
+
+URL = MEDIA_URL
 
 
 def run_ab_command(
@@ -23,8 +30,17 @@ def run_ab_command(
     workers: int = 20,
     headers: str = "",
     url: str = "localhost:3000",
+    post_request_body: t.Optional[str] = None,
 ):
     cmd = ["ab"]
+    if post_request_body:
+        cmd.extend(
+            [
+                "-p",  # file with request body
+                f"{post_request_body}",
+                f"-T application/json",
+            ],
+        )
     cmd.extend(
         [
             "-k",  # keep alive
@@ -38,6 +54,7 @@ def run_ab_command(
     )
     out = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print("Stared Run #:", run_num, "PID", out.pid)
+    print("Using cmd: ", cmd)
     return out
 
 
@@ -49,7 +66,16 @@ def run_benchmark(
     runs = []
     for i in range(processes):
         runs.append(
-            (i, run_ab_command(run_num=i, request=100000, headers=HEADER, url=URL))
+            (
+                i,
+                run_ab_command(
+                    run_num=i,
+                    request=100000,
+                    headers=HEADER,
+                    url=URL,
+                    post_request_body=PATH_OF_REQUEST_BODY_FILE,
+                ),
+            )
         )
         time.sleep(delay_btw_starts_in_sec)
     for i, run in runs:
@@ -60,4 +86,4 @@ def run_benchmark(
 
 
 if __name__ == "__main__":
-    run_benchmark(processes=10)
+    run_benchmark(processes=1)

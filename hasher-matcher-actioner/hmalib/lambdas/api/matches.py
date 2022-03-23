@@ -9,13 +9,20 @@ from dataclasses import dataclass, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 import typing as t
 from enum import Enum
+from urllib.error import HTTPError
 from mypy_boto3_sqs.client import SQSClient
 
 from threatexchange.descriptor import ThreatDescriptor
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
-from threatexchange.content_type.meta import get_signal_types_by_name
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
+from threatexchange.content_type.video import VideoContent
+from threatexchange.content_type.meta import (
+    get_signal_types_by_name,
+    get_content_types_by_name,
+)
 
 from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.models.signal import (
@@ -25,7 +32,10 @@ from hmalib.common.models.signal import (
 from hmalib.common.logging import get_logger
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.messages.writeback import WritebackMessage
-from hmalib.indexers.metadata import BANKS_SOURCE_SHORT_CODE
+from hmalib.indexers.metadata import (
+    BANKS_SOURCE_SHORT_CODE,
+    BankedSignalIndexMetadata,
+)
 from hmalib.lambdas.api.middleware import (
     jsoninator,
     JSONifiable,
@@ -35,6 +45,9 @@ from hmalib.lambdas.api.middleware import (
 from hmalib.common.config import HMAConfig
 from hmalib.common.models.bank import BankMember, BanksTable
 from hmalib.matchers.matchers_base import Matcher
+
+from hmalib.hashing.unified_hasher import UnifiedHasher
+from hmalib.common.content_sources import URLContentSource
 
 
 logger = get_logger(__name__)
@@ -58,6 +71,21 @@ def _get_matcher(index_bucket_name: str, banks_table: BanksTable) -> Matcher:
         )
 
     return _matcher
+
+
+_hasher = None
+
+
+def _get_hasher() -> UnifiedHasher:
+    global _hasher
+    if _hasher is None:
+        _hasher = UnifiedHasher(
+            supported_content_types=[PhotoContent, VideoContent],
+            supported_signal_types=[PdqSignal, VideoMD5Signal],
+            output_queue_url="",
+        )
+
+    return _hasher
 
 
 @dataclass
@@ -252,8 +280,20 @@ class MatchesForHashRequest(DictParseable):
 
     @classmethod
     def from_dict(cls, d):
-        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
-        base.signal_type = get_signal_types_by_name()[base.signal_type]
+        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})  # type: ignore # tiny hack to get convert string fields
+        base.signal_type = get_signal_types_by_name()[base.signal_type]  # type: ignore # tiny hack to get SignalType from string in request
+        return base
+
+
+@dataclass
+class MatchesForMediaRequest(DictParseable):
+    content_url: str
+    content_type: t.Type[ContentType]
+
+    @classmethod
+    def from_dict(cls, d):
+        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})  # type: ignore # tiny hack to get convert string fields
+        base.content_type = get_content_types_by_name()[base.content_type]  # type: ignore # tiny hack to get ContentType from string in request
         return base
 
 
@@ -296,10 +336,32 @@ class MatchesForHash(JSONifiable):
 @dataclass
 class MatchesForHashResponse(JSONifiable):
     matches: t.List[MatchesForHash]
-    signal_value: str
 
     def to_json(self) -> t.Dict:
         return {"matches": [match.to_json() for match in self.matches]}
+
+
+@dataclass
+class MatchesForMediaResponse(JSONifiable):
+    signal_to_matches: t.Dict[str, t.Dict[str, t.List[MatchesForHash]]]
+    # example: { "pdq" : { "<hash>" : [<matches?>] } }
+
+    def to_json(self) -> t.Dict:
+        return {
+            "signal_to_matches": {
+                signal_type: {signal_val: [match.to_json() for match in matches]}
+                for (signal_val, matches) in hash_to_match.items()
+            }
+            for (signal_type, hash_to_match) in self.signal_to_matches.items()
+        }
+
+
+@dataclass
+class MediaFetchError(JSONifiable):
+    def to_json(self) -> t.Dict:
+        return {
+            "message": "Failed to fetch media from provided url",
+        }
 
 
 def get_matches_api(
@@ -327,9 +389,9 @@ def get_matches_api(
         """
         Return all, or a filtered list of matches based on query params.
         """
-        signal_q = bottle.request.query.signal_q or None
-        signal_source = bottle.request.query.signal_source or None
-        content_q = bottle.request.query.content_q or None
+        signal_q = bottle.request.query.signal_q or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
+        signal_source = bottle.request.query.signal_source or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
+        content_q = bottle.request.query.content_q or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
 
         if content_q:
             records = MatchRecord.get_from_content_id(datastore_table, content_q)
@@ -359,7 +421,7 @@ def get_matches_api(
         Return the match details for a given content id.
         """
         results = []
-        if content_id := bottle.request.query.content_id or None:
+        if content_id := bottle.request.query.content_id or None:  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
             results = get_match_details(
                 datastore_table=datastore_table,
                 banks_table=banks_table,
@@ -372,10 +434,10 @@ def get_matches_api(
         """
         Request a change to the opinion for a signal in a given privacy_group.
         """
-        signal_id = bottle.request.query.signal_id or None
-        signal_source = bottle.request.query.signal_source or None
-        privacy_group_id = bottle.request.query.privacy_group_id or None
-        opinion_change = bottle.request.query.opinion_change or None
+        signal_id = bottle.request.query.signal_id or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
+        signal_source = bottle.request.query.signal_source or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
+        privacy_group_id = bottle.request.query.privacy_group_id or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
+        opinion_change = bottle.request.query.opinion_change or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
 
         if (
             not signal_id
@@ -415,19 +477,11 @@ def get_matches_api(
 
         return ChangeSignalOpinionResponse(success)
 
-    @matches_api.get(
-        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True)]
-    )
-    def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
-        """
-        For a given hash/signal check the index(es) for matches and return the details.
-
-        This does not change system state, metadata returned will not be written any tables
-        unlike when matches are found for submissions.
-        """
-
+    def _matches_for_hash(
+        signal_type: t.Type[SignalType], signal_value: str
+    ) -> t.List[MatchesForHash]:
         matches = _get_matcher(indexes_bucket_name, banks_table=banks_table).match(
-            request.signal_type, request.signal_value
+            signal_type, signal_value
         )
 
         match_objects: t.List[MatchesForHash] = []
@@ -441,7 +495,7 @@ def get_matches_api(
                         matched_signal=signal_metadata,
                     )
                     for signal_metadata in Matcher.get_te_metadata_objects_from_match(
-                        request.signal_type, match
+                        signal_type, match
                     )
                 ]
             )
@@ -451,6 +505,7 @@ def get_matches_api(
             for metadata_obj in filter(
                 lambda m: m.get_source() == BANKS_SOURCE_SHORT_CODE, match.metadata
             ):
+                metadata_obj = t.cast(BankedSignalIndexMetadata, metadata_obj)
                 match_objects.append(
                     MatchesForHash(
                         match_distance=int(match.distance),
@@ -460,6 +515,47 @@ def get_matches_api(
                     )
                 )
 
-        return MatchesForHashResponse(match_objects, request.signal_value)
+        return match_objects
+
+    @matches_api.get(
+        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True)]
+    )
+    def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
+        """
+        For a given hash/signal check the index(es) for matches and return the details.
+
+        This does not change system state, metadata returned will not be written any tables
+        unlike when matches are found for submissions.
+        """
+
+        return MatchesForHashResponse(
+            matches=_matches_for_hash(request.signal_type, request.signal_value)
+        )
+
+    @matches_api.post("/for-media/", apply=[jsoninator(MatchesForMediaRequest)])
+    def for_media(
+        request: MatchesForMediaRequest,
+    ) -> t.Union[MatchesForMediaResponse, MediaFetchError]:
+        """
+        For a given piece of media hash it, check the index(es) for matches, and return the details.
+
+        This does not change system state, metadata returned will not be written any tables
+        unlike when matches are found for submissions.
+        """
+        try:
+            bytes_: bytes = URLContentSource().get_bytes(request.content_url)
+        except Exception as e:
+            bottle.response.status = 400
+            return MediaFetchError()
+
+        signal_to_matches = {}
+        for signal in _get_hasher().get_hashes(request.content_type, bytes_):
+            signal_to_matches[signal.signal_type.get_name()] = {
+                signal.signal_value: _matches_for_hash(
+                    signal_type=signal.signal_type, signal_value=signal.signal_value
+                )
+            }
+
+        return MatchesForMediaResponse(signal_to_matches=signal_to_matches)
 
     return matches_api
