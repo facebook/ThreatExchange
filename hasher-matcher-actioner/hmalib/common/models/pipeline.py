@@ -10,7 +10,7 @@ from boto3.dynamodb.conditions import Key
 
 from threatexchange.content_type.meta import get_signal_types_by_name
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.hmalib.common import CSViable
+from hmalib.common.timebucketizer import CSViable
 
 from hmalib.common.models.models_base import (
     DynamoDBItem,
@@ -411,7 +411,7 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
 @dataclass(eq=True)
 class HashRecord(CSViable):
     """
-    We are getting these records, with content_hashes and content_ids from the hashing process with intent to build an PDQIndex 
+    We are getting these records, with content_hashes and content_ids from the hashing process with intent to build an PDQIndex
     """
 
     content_hash: str
