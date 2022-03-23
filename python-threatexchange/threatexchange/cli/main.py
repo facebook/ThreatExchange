@@ -12,6 +12,8 @@ between stages, and a state file to store hashes.
 """
 
 import argparse
+from dataclasses import dataclass
+from distutils import extension
 import logging
 import inspect
 import os
@@ -20,6 +22,8 @@ import typing as t
 import pathlib
 
 from threatexchange import meta
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange.fb_threatexchange import api as tx_api
 from threatexchange.fetcher.apis.file_api import LocalFileSignalExchangeAPI
 from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
@@ -29,6 +33,7 @@ from threatexchange.fetcher.apis.fb_threatexchange_api import (
 from threatexchange.fetcher.apis.stop_ncii_api import StopNCIIAPI
 
 from threatexchange.content_type import photo, video, text, url
+from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.signal_type import (
     pdq,
     md5,
@@ -37,7 +42,7 @@ from threatexchange.signal_type import (
     url_md5,
     trend_query,
 )
-from threatexchange.cli.cli_config import CliState
+from threatexchange.cli.cli_config import CLiConfig, CliState
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import (
     command_base as base,
@@ -48,6 +53,7 @@ from threatexchange.cli import (
     match_cmd,
     config_cmd,
 )
+from threatexchange.signal_type.signal_base import SignalType
 
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
@@ -102,7 +108,7 @@ def execute_command(settings: CLISettings, namespace) -> None:
         sys.exit(130)
 
 
-def _get_fb_tx_app_token(cli_option: str = None) -> t.Optional[str]:
+def _get_fb_tx_app_token(config: CLiConfig) -> t.Optional[str]:
     """
     Get the API key from a variety of fallback sources
 
@@ -111,7 +117,6 @@ def _get_fb_tx_app_token(cli_option: str = None) -> t.Optional[str]:
 
     file_loc = pathlib.Path("~/.txtoken").expanduser()
     environment_var = "TX_ACCESS_TOKEN"
-    config = CliState([]).get_persistent_config()  # TODO fix the circular dependency
 
     potential_sources = (
         (os.environ.get(environment_var), f"{environment_var} environment variable"),
@@ -139,26 +144,35 @@ def _get_fb_tx_app_token(cli_option: str = None) -> t.Optional[str]:
         # Don't throw because we don't want to block commands that fix this
         return None  # We probably don't expect to fall back here
     return None
-    # b = "  * "
-    # raise Exception(
-    #     "\n".join(
-    #         (
-    #             "Can't find App Token, pass it in using one of:",
-    #             f"{b}{b.join(s[1] for s in potential_sources)}",
-    #             "",
-    #             "https://developers.facebook.com/tools/accesstoken/",
-    #         )
-    #     )
-    # )
 
 
-def _get_settings() -> CLISettings:
+class _ExtendedTypes(t.NamedTuple):
+    content_types: t.List[t.Type[ContentType]]
+    signal_types: t.List[t.Type[SignalType]]
+    api_instances: t.List[SignalExchangeAPI]
+
+
+def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
+    ret = _ExtendedTypes([], [], [])
+    for extension in config.extensions:
+        logging.debug("Loading extension %s", extension)
+        manifest = ThreatExchangeExtensionManifest.load_from_module_name(extension)
+        ret.signal_types.extend(manifest.signal_types)
+        ret.content_types.extend(manifest.content_types)
+        ret.api_instances.extend(api() for api in manifest.apis)
+    return ret
+
+
+def _get_settings(config: CLiConfig) -> CLISettings:
     """
     Configure the behavior and functionality.
     """
 
+    extensions = _get_extended_functionality(config)
+
     signals = meta.SignalTypeMapping(
-        [photo.PhotoContent, video.VideoContent, url.URLContent, text.TextContent],
+        [photo.PhotoContent, video.VideoContent, url.URLContent, text.TextContent]
+        + extensions.content_types,
         [
             pdq.PdqSignal,
             md5.VideoMD5Signal,
@@ -166,15 +180,17 @@ def _get_settings() -> CLISettings:
             url_signal.URLSignal,
             url_md5.UrlMD5Signal,
             trend_query.TrendQuerySignal,
-        ],
+        ]
+        + extensions.signal_types,
     )
     fetchers = meta.FetcherMapping(
         [
             StaticSampleSignalExchangeAPI(),
             LocalFileSignalExchangeAPI(),
             StopNCIIAPI(),
-            FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token()),
+            FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
         ]
+        + extensions.api_instances
     )
     state = CliState(list(fetchers.fetchers_by_name.values()))
 
@@ -196,7 +212,8 @@ def _setup_logging():
 def main(args: t.Optional[t.Sequence[t.Text]] = None) -> None:
     _setup_logging()
 
-    settings = _get_settings()
+    config = CliState([]).get_persistent_config()  # TODO fix the circular dependency
+    settings = _get_settings(config)
     ap = get_argparse(settings)
     namespace = ap.parse_args(args)
     execute_command(settings, namespace)

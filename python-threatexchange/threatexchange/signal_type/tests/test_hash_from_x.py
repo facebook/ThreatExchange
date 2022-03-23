@@ -1,15 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import unittest
-import tempfile
-from PIL import Image
 
 from threatexchange.signal_type import (
     md5,
     pdq_ocr,
     pdq,
     raw_text,
-    tlsh,
     trend_query,
     url_md5,
     url,
@@ -29,7 +26,6 @@ class SignalTypeHashTest(unittest.TestCase):
         pdq_ocr.PdqOcrSignal,
         pdq.PdqSignal,
         raw_text.RawTextSignal,
-        tlsh.TLSHSignal,
         trend_query.TrendQuerySignal,
         url_md5.UrlMD5Signal,
         url.URLSignal,

@@ -7,8 +7,12 @@ Config command to setup the CLI and settings.
 
 import argparse
 from dataclasses import is_dataclass, Field, fields, MISSING
+import itertools
 import json
+import importlib
+import logging
 import typing as t
+
 
 try:
     from typing import ForwardRef  # >= 3.7
@@ -16,12 +20,11 @@ except ImportError:
     # <3.7
     from typing import _ForwardRef as ForwardRef  # type: ignore
 
-import logging
 
+from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
+from threatexchange import meta as tx_meta
 from threatexchange import common
-
 from threatexchange.cli.cli_config import CLISettings
-
 from threatexchange.cli import command_base
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.fetcher.apis.fb_threatexchange_api import (
@@ -345,6 +348,125 @@ class ConfigCollabCommand(command_base.CommandWithSubcommands):
         ConfigCollabListCommand().execute(settings)
 
 
+class ConfigExtensionsCommand(command_base.Command):
+    """Configure extensions"""
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "extensions"
+
+    @classmethod
+    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+        ap.add_argument(
+            "action",
+            choices=["list", "add", "remove"],
+            default="list",
+            help="what to do",
+        )
+        ap.add_argument(
+            "module",
+            nargs="?",
+            help="the module path to the extension. foo.bar.baz",
+        )
+
+    def __init__(self, action: str, module: t.Optional[str]) -> None:
+        self.action = {
+            "list": self.execute_list,
+            "add": self.execute_add,
+            "remove": self.execute_remove,
+        }[action]
+        self.module = module
+
+    def execute(self, settings: CLISettings) -> None:
+        self.action(settings)
+
+    def execute_list(self, settings: CLISettings) -> None:
+        if self.module:
+            manifest = self.get_manifest(self.module)
+            self.print_extension(manifest)
+            return
+        for module_name in sorted(settings.get_persistent_config().extensions):
+            print(module_name)
+            manifest = self.get_manifest(module_name)
+            self.print_extension(manifest, indent=2)
+
+    def get_manifest(self, module_name: str) -> ThreatExchangeExtensionManifest:
+        try:
+            return ThreatExchangeExtensionManifest.load_from_module_name(module_name)
+        except ValueError as ve:
+            raise CommandError(str(ve), 2)
+
+    def execute_add(self, settings: CLISettings) -> None:
+        if not self.module:
+            raise CommandError("module is required", 2)
+
+        manifest = self.get_manifest(self.module)
+
+        # Validate our new setups by pretending to create a new mapping with the new classes
+        content_and_settings = tx_meta.SignalTypeMapping(
+            list(
+                itertools.chain(
+                    settings.get_all_content_types(), manifest.content_types
+                )
+            ),
+            list(
+                itertools.chain(settings.get_all_signal_types(), manifest.signal_types)
+            ),
+        )
+
+        # For APIs, we also need to make sure they can be instanciated without args for the CLI
+        apis = []
+        for new_api in manifest.apis:
+            try:
+                instance = new_api()
+            except Exception as e:
+                logging.exception(f"Failed to instanciante API {new_api.get_name()}")
+                raise CommandError(
+                    f"Not able to instanciate API {new_api.get_name()} - throws {e}"
+                )
+            apis.append(instance)
+        apis.extend(settings.get_fetchers())
+        tx_meta.FetcherMapping(apis)
+
+        self.print_extension(manifest)
+
+        config = settings.get_persistent_config()
+        config.extensions.add(self.module)
+        settings.set_persistent_config(config)
+
+    def execute_remove(self, settings: CLISettings) -> None:
+        if not self.module:
+            raise CommandError("Which module you are remove is required", 2)
+        config = settings.get_persistent_config()
+        if self.module not in config.extensions:
+            raise CommandError(f"You haven't added {self.module}", 2)
+        config.extensions.remove(self.module)
+        settings.set_persistent_config(config)
+
+    def print_extension(
+        self, manifest: ThreatExchangeExtensionManifest, indent=0
+    ) -> None:
+        space = " " * indent
+        level2 = f"\n{space}  "
+        if manifest.signal_types:
+            print(f"{space}Signal:{level2}", end="")
+            print(
+                level2.join(
+                    f"{s.get_name()} - {s.__name__}" for s in manifest.signal_types
+                )
+            )
+        if manifest.content_types:
+            print(f"{space}Content:{level2}", end="")
+            print(
+                level2.join(
+                    f"{c.get_name()} - {c.__name__}" for c in manifest.content_types
+                )
+            )
+        if manifest.apis:
+            print(f"{space}Content:{level2}", end="")
+            print(level2.join(f"{a.get_name()} - {a.__name__}" for a in manifest.apis))
+
+
 class ConfigSignalCommand(command_base.Command):
     """Configure signal types"""
 
@@ -354,7 +476,7 @@ class ConfigSignalCommand(command_base.Command):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-        action = ap.add_argument(
+        ap.add_argument(
             "action",
             choices=["list"],
             default="list",
@@ -443,4 +565,5 @@ class ConfigCommand(command_base.CommandWithSubcommands):
         ConfigSignalCommand,
         ConfigContentCommand,
         ConfigAPICommand,
+        ConfigExtensionsCommand,
     ]
