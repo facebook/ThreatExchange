@@ -12,7 +12,7 @@ from threatexchange.content_type.url import URLContent
 from threatexchange.signal_type import signal_base
 
 
-class URLSignal(signal_base.SimpleSignalType, signal_base.TrivialTextHasher):
+class URLSignal(signal_base.SimpleSignalType):
     """
     Wrapper around URL links, such as https://github.com/
     """

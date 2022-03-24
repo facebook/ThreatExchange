@@ -43,14 +43,15 @@ class CliState(collab_config.CollaborationConfigStoreBase):
     """
     A wrapper around stateful information stored for the CLI.
 
-    Everything is just in a single file (usually ~/.threatexchange).
+    Everything is just in a single directory (usually ~/.threatexchange).
     """
 
     def __init__(
-        self, fetch_types: t.List[t.Union[SignalExchangeAPI, t.Type[SignalExchangeAPI]]]
+        self,
+        fetch_types: t.List[t.Union[SignalExchangeAPI, t.Type[SignalExchangeAPI]]],
+        dir: pathlib.Path,
     ):
-        dir = pathlib.Path("~/.threatexchange/").expanduser()
-        self._dir = dir
+        self._dir = dir.expanduser()
 
         self._name_to_ctype = {
             ft.get_name(): ft.get_config_class() for ft in fetch_types
@@ -214,14 +215,18 @@ class CLISettings:
             self._mapping.fetcher.fetchers_by_name[collab.api].__class__
         )
 
+    @property
+    def in_demo_mode(self) -> bool:
+        """Has no live collabs"""
+        return not self._state.get_all_collabs()
+
     def get_all_collabs(
         self, *, default_to_sample: bool = False
     ) -> t.List[collab_config.CollaborationConfigBase]:
-        collabs = self._state.get_all_collabs()
-        if not collabs and default_to_sample:
+        if self.in_demo_mode and default_to_sample:
             return [self._get_sample_collab()]
         # Should this check whether the APIs are all valid?
-        return collabs
+        return self._state.get_all_collabs()
 
     def get_collab(
         self,

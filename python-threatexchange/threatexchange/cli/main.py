@@ -155,7 +155,7 @@ def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
     return ret
 
 
-def _get_settings(config: CLiConfig) -> CLISettings:
+def _get_settings(config: CLiConfig, dir: pathlib.Path) -> CLISettings:
     """
     Configure the behavior and functionality.
     """
@@ -184,7 +184,7 @@ def _get_settings(config: CLiConfig) -> CLISettings:
         ]
         + extensions.api_instances
     )
-    state = CliState(list(fetchers.fetchers_by_name.values()))
+    state = CliState(list(fetchers.fetchers_by_name.values()), dir=dir)
 
     return CLISettings(meta.FunctionalityMapping(signals, fetchers, state), state)
 
@@ -202,12 +202,15 @@ def _setup_logging():
 
 
 def main(
-    args: t.Optional[t.Sequence[t.Text]] = None, state_dir: pathlib.Path = None
+    args: t.Optional[t.Sequence[t.Text]] = None,
+    state_dir: pathlib.Path = pathlib.Path("~/.threatexchange"),
 ) -> None:
     _setup_logging()
 
-    config = CliState([]).get_persistent_config()  # TODO fix the circular dependency
-    settings = _get_settings(config)
+    config = CliState(
+        [], state_dir
+    ).get_persistent_config()  # TODO fix the circular dependency
+    settings = _get_settings(config, state_dir)
     ap = get_argparse(settings)
     namespace = ap.parse_args(args)
     execute_command(settings, namespace)

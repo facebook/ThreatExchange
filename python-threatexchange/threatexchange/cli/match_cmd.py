@@ -13,6 +13,7 @@ import typing as t
 
 
 from threatexchange import common
+from threatexchange.cli.fetch_cmd import FetchCommand
 from threatexchange.fetcher.fetch_state import FetchedSignalMetadata
 
 from threatexchange.signal_type.index import IndexMatch
@@ -169,6 +170,11 @@ class MatchCommand(command_base.Command):
                 yield parsed
 
     def execute(self, settings: CLISettings) -> None:
+        if not settings.index_store.get_available():
+            if not settings.in_demo_mode:
+                raise CommandError("No indices available. Do you need to fetch?")
+            self.stderr("You haven't built any indices, so we'll call `fetch` for you!")
+            FetchCommand().execute(settings)
 
         signal_types = settings.get_signal_types_for_content(self.content_type)
 

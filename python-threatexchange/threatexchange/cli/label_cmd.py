@@ -87,7 +87,7 @@ class LabelCommand(command_base.Command):
 
         ap.add_argument(
             "collab",
-            type=lambda n: settings.get_collab(n),
+            type=lambda n: _collab_type(n, settings),
             help="The name of the collaboration",
         )
 
@@ -128,6 +128,9 @@ class LabelCommand(command_base.Command):
             if len(self.only_signals) != 1:
                 raise ArgumentTypeError("[-H] use only one argument for -S")
 
+        if self.collab is None:
+            raise ArgumentTypeError("No such collaboration!")
+
         self.action = self.execute_upload
         if true_positive:
             self.action = self.execute_true_positive
@@ -167,3 +170,10 @@ class LabelCommand(command_base.Command):
 
     def execute_false_positive(self, settings: CLISettings) -> None:
         raise NotImplementedError
+
+
+def _collab_type(name: str, settings: CLISettings) -> CollaborationConfigBase:
+    ret = settings.get_collab(name)
+    if ret is None:
+        raise ArgumentTypeError(f"No such collab '{name}'!")
+    return ret

@@ -57,7 +57,7 @@ setup(
     ],
     keywords="facebook threatexchange",
     url="https://www.github.com/facebook/ThreatExchange",
-    packages=find_packages(exclude=["tests*"]),
+    packages=find_packages(exclude=["tests*"]),  # TODO also exclude subdir tests
     install_requires=[
         "python-Levenshtein",
         "requests>=2.26.0",
