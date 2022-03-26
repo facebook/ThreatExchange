@@ -18,3 +18,4 @@ cpp/tmk-show-pair-offsets
 cpp/tmk-two-level-score
 cpp/tmkdump
 cpp/vstr2feat
+cpp/*.exe
