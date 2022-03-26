@@ -50,8 +50,11 @@ EXE= \
  tmkdump \
  tmk-compare-two-tmks \
  tmk-show-pair-offsets \
+ # tmk-clusterize-parallel \
  tmk-clusterize \
+ # tmk-query-parallel \
  tmk-query \
+ # tmk-two-level-score-parallel \
  tmk-two-level-score
 
 # Pending https://github.com/facebook/ThreatExchange/issues/197:
@@ -153,12 +156,18 @@ tmk-show-pair-offsets: ./bin/tmk-show-pair-offsets.cpp $(LIBHDR) libtmk.a
 # ----------------------------------------------------------------
 tmk-clusterize: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-clusterize.cpp -o tmk-clusterize -L. -ltmk
+tmk-clusterize-parallel: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
+	$(CC) -Xpreprocessor -fopenmp -lomp bin/tmk-clusterize.cpp -o tmk-clusterize-parallel -L. -ltmk
 tmk-query: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-query.cpp -o tmk-query -L. -ltmk
+tmk-query-parallel: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
+	$(CC) -Xpreprocessor -fopenmp -lomp bin/tmk-query.cpp -o tmk-query-parallel -L. -ltmk
 tmk-query-with-faiss: ./bin/tmk-query-with-faiss.cpp $(LIBHDR) libtmk.a
 	$(CC) -I/usr/local/include/faiss bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss -Wl,-rpath=/usr/local/lib
 tmk-two-level-score: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-two-level-score.cpp -o tmk-two-level-score -L. -ltmk
+tmk-two-level-score-parallel: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
+	$(CC) -Xpreprocessor -fopenmp -lomp bin/tmk-two-level-score.cpp -o tmk-two-level-score-parallel -L. -ltmk
 
 # ================================================================
 tags:

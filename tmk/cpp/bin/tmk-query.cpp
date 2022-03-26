@@ -6,6 +6,7 @@
 #include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
 
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -165,37 +166,49 @@ int main(int argc, char** argv) {
   // QUERY
   std::chrono::time_point<std::chrono::system_clock> startQuery =
       std::chrono::system_clock::now();
-  for (const auto& it1 : needlesMetadataToFeatures) {
-    const std::string& metadata1 = it1.first;
-    std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
 
-    if (verbose) {
-      printf("\n");
-      printf("QUERY FOR %s\n", metadata1.c_str());
-    }
+  #pragma omp parallel
+  #pragma omp single nowait
+  {
+    for (const auto& it1 : needlesMetadataToFeatures) {
+      #pragma omp task firstprivate(it1)
+      {
+        const std::string& metadata1 = it1.first;
+        std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
 
-    for (const auto& it2 : haystackMetadataToFeatures) {
-      const std::string& metadata2 = it2.first;
-      std::shared_ptr<TMKFeatureVectors> pfv2 = it2.second;
-
-      float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
-      if (s1 >= c1) {
-        float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
-        if (s2 >= c2) {
-          if (verbose) {
-            printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
-          } else {
-            printf(
-                "%.6f %.6f %s %s\n",
-                s1,
-                s2,
-                metadata1.c_str(),
-                metadata2.c_str());
-          }
+        if (verbose) {
+          printf("\n");
+          printf("QUERY FOR %s\n", metadata1.c_str());
         }
-      }
-    }
-  }
+
+        for (const auto& it2 : haystackMetadataToFeatures) {
+          #pragma omp task firstprivate(it2)
+          {
+            const std::string& metadata2 = it2.first;
+            std::shared_ptr<TMKFeatureVectors> pfv2 = it2.second;
+
+            float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
+            if (s1 >= c1) {
+              float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+              if (s2 >= c2) {
+                if (verbose) {
+                  printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
+                } else {
+                  printf(
+                      "%.6f %.6f %s %s\n",
+                      s1,
+                      s2,
+                      metadata1.c_str(),
+                      metadata2.c_str());
+                }
+              }
+            }
+          } // end omp task it2
+        } // end for loop it2
+      } // end omp task it1
+    } // end for loop it1
+  } // end parallel
+  #pragma omp taskwait
 
   std::chrono::time_point<std::chrono::system_clock> endQuery =
       std::chrono::system_clock::now();

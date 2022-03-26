@@ -18,6 +18,7 @@
 #include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
 
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -237,35 +238,6 @@ void snowballClusterize(
   std::map<std::string, std::set<std::string>> adjacencyMatrix;
 
   // COMPUTE THE ADJACENCY MATRIX
-  for (const auto& it1 : metadataToFeatures) {
-    const std::string& filename1 = it1.first;
-    const std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
-    // printf("... %s\n", filename1.c_str());
-    for (const auto& it2 : metadataToFeatures) {
-      const std::string& filename2 = it2.first;
-      const std::shared_ptr<TMKFeatureVectors> pfv2 = it2.second;
-      // The adjacency matrix is symmetric. So write both sides of the
-      // diagonal, but do the math only one per pair.
-      if (filename1 <= filename2) {
-        if (!TMKFeatureVectors::areCompatible(*pfv1, *pfv2)) {
-          fprintf(
-              stderr,
-              "%s: immiscible provenances:\n%s\n%s\n",
-              argv0,
-              filename1.c_str(),
-              filename2.c_str());
-          exit(1);
-        }
-        float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
-        if (s1 >= c1) {
-          if (level1Only) {
-            adjacencyMatrix[filename1].insert(filename2);
-            adjacencyMatrix[filename2].insert(filename1);
-          } else {
-            float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
-            if (s2 >= c2) {
-              adjacencyMatrix[filename1].insert(filename2);
-              adjacencyMatrix[filename2].insert(filename1);
 
   std::chrono::time_point<std::chrono::system_clock> startAdjacencyMatrix =
       std::chrono::system_clock::now();
@@ -274,11 +246,54 @@ void snowballClusterize(
     printf("\n");
     printf("CALCULATING THE ADJACENCY MATRIX\n");
   }
+
+  #pragma omp parallel
+  #pragma omp single nowait
+  {
+    for (const auto& it1 : metadataToFeatures) {
+      #pragma omp task firstprivate(it1)
+      {
+        const std::string& filename1 = it1.first;
+        const std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
+        // printf("... %s\n", filename1.c_str());
+
+        for (const auto& it2 : metadataToFeatures) {
+          #pragma omp task firstprivate(it2)
+          {
+            const std::string& filename2 = it2.first;
+            const std::shared_ptr<TMKFeatureVectors> pfv2 = it2.second;
+            // The adjacency matrix is symmetric. So write both sides of the
+            // diagonal, but do the math only one per pair.
+            if (filename1 <= filename2) {
+              if (!TMKFeatureVectors::areCompatible(*pfv1, *pfv2)) {
+                fprintf(
+                    stderr,
+                    "%s: immiscible provenances:\n%s\n%s\n",
+                    argv0,
+                    filename1.c_str(),
+                    filename2.c_str());
+                exit(1);
+              }
+              float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
+              if (s1 >= c1) {
+                if (level1Only) {
+                  adjacencyMatrix[filename1].insert(filename2);
+                  adjacencyMatrix[filename2].insert(filename1);
+                } else {
+                  float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+                  if (s2 >= c2) {
+                    adjacencyMatrix[filename1].insert(filename2);
+                    adjacencyMatrix[filename2].insert(filename1);
+                  }
+                }
+              }
             }
-          }
-        }
-      }
-    }
+          } // end omp task it2
+        } // end for loop it2
+      } // end omp task it1
+    } // end for loop it1
+  } // end parallel
+  #pragma omp taskwait
 
   std::chrono::time_point<std::chrono::system_clock> endAdjacencyMatrix =
       std::chrono::system_clock::now();
