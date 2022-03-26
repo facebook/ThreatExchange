@@ -20,10 +20,11 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 
 #include <tmk/cpp/algo/tmkfv.h>
 #include <tmk/cpp/io/tmkio.h>
+#include <tmk/cpp/bin/tmk_default_thresholds.h>
 
-#include <IndexIVFPQ.h>
-#include <IndexFlat.h>
-#include <index_io.h>
+#include <faiss/IndexIVFPQ.h>
+#include <faiss/IndexFlat.h>
+#include <faiss/index_io.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,8 +42,6 @@ using namespace facebook::tmk::algo;
 // possible scan through input video-data. Command-line flags --c1 and --c2
 // can be used for search-pruning. Note that thresholds depend on choice of
 // frame-feature algorithm.
-#define DEFAULT_LEVEL_1_THRESHOLD -1.0
-#define DEFAULT_LEVEL_2_THRESHOLD 0.0
 
 void handleListFileNameOrDie(
     const char* argv0,
@@ -85,12 +84,15 @@ void usage(char* argv0, int exit_rc) {
       fp,
       "--c2 {y}: Level-2 threshold: default %.3f.\n",
       DEFAULT_LEVEL_2_THRESHOLD);
+  fprintf(fp, "--min {n}:  Return a maximum of n nearest neighbors. Using 5\n");
+  fprintf(fp, "-v|--verbose: Be more verbose.\n");
   exit(exit_rc);
 }
 
 // ================================================================
 int main(int argc, char** argv) {
   bool verbose = false;
+  int k = 5;
   float c1 = DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = DEFAULT_LEVEL_2_THRESHOLD;
   int i, j;
@@ -116,6 +118,14 @@ int main(int argc, char** argv) {
         usage(argv[0], 1);
       }
       if (sscanf(argv[argi], "%f", &c2) != 1) {
+        usage(argv[0], 1);
+      }
+      argi++;
+    } else if (!strcmp(flag, "--min")) {
+      if (argi >= argc) {
+        usage(argv[0], 1);
+      }
+      if (sscanf(argv[argi], "%d", &k) != 1) {
         usage(argv[0], 1);
       }
       argi++;
@@ -278,7 +288,6 @@ int main(int argc, char** argv) {
     i++;
   }
 
-  int k = 5;
   printf("Searching for the %d nearest neighbors\n", k);
 
   std::vector<faiss::Index::idx_t> nearest_neighbor_indices(k * num_queries);
