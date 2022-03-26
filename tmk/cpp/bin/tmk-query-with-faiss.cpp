@@ -35,6 +35,8 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 #include <map>
 #include <set>
 
+#include "tmk-query.h"
+
 using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
 
@@ -43,26 +45,8 @@ using namespace facebook::tmk::algo;
 // can be used for search-pruning. Note that thresholds depend on choice of
 // frame-feature algorithm.
 
-void handleListFileNameOrDie(
-    const char* argv0,
-    const char* listFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures);
-
-void handleListFpOrDie(
-    const char* argv0,
-    FILE* listFp,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures);
-
-void handleTmkFileNameOrDie(
-    const char* argv0,
-    const char* tmkFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures);
-
 // ================================================================
-void usage(char* argv0, int exit_rc) {
+static void usage(char* argv0, int exit_rc) {
   FILE* fp = (exit_rc == 0) ? stdout : stderr;
   fprintf(
       fp,
@@ -84,7 +68,8 @@ void usage(char* argv0, int exit_rc) {
       fp,
       "--c2 {y}: Level-2 threshold: default %.3f.\n",
       DEFAULT_LEVEL_2_THRESHOLD);
-  fprintf(fp, "--min {n}:  Return a maximum of n nearest neighbors. Using 5\n");
+  fprintf(fp, "--min {n}: Return a maximum of n nearest neighbors. Using 5\n");
+  fprintf(fp, "-f|--force: Force query to use FAISS even if below minimum number of points\n");
   fprintf(fp, "-v|--verbose: Be more verbose.\n");
   exit(exit_rc);
 }
@@ -92,6 +77,7 @@ void usage(char* argv0, int exit_rc) {
 // ================================================================
 int main(int argc, char** argv) {
   bool verbose = false;
+  bool force = false;
   int k = 5;
   float c1 = DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = DEFAULT_LEVEL_2_THRESHOLD;
@@ -104,6 +90,8 @@ int main(int argc, char** argv) {
       usage(argv[0], 0);
     } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
       verbose = true;
+    } else if (!strcmp(flag, "-f") || !strcmp(flag, "--force")) {
+      force = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -189,6 +177,17 @@ int main(int argc, char** argv) {
   // 8 = number of bits per sub-code (almost always 8)
   faiss::IndexIVFPQ faiss_index(&coarse_quantizer, vector_dimension, num_centroids, 4, 8);
   faiss_index.verbose = verbose;
+
+  // check for min data size for optimal FAISS performance
+  int min_points = faiss_index.cp.min_points_per_centroid * num_centroids;
+  if (num_database_vectors < min_points) {
+    if (verbose) {
+      printf("MINIMUM POINTS NOT MET FOR FAISS: %d FOUND vs %d EXPECTED\n", (int)num_database_vectors, min_points);
+    }
+    if (!force) {
+      return tmkQuery(argc, argv);
+    }
+  }
 
   // Really a vector of vectors but for FAISS it's one long vector
   std::vector<float> database(num_database_vectors * vector_dimension);
@@ -361,59 +360,4 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-// ----------------------------------------------------------------
-void handleListFileNameOrDie(
-    const char* argv0,
-    const char* listFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures) {
-  FILE* fp = fopen(listFileName, "r");
-  if (fp == nullptr) {
-    perror("fopen");
-    fprintf(
-        stderr, "%s: could not open \"%s\" for read.\n", argv0, listFileName);
-    exit(1);
-  }
 
-  handleListFpOrDie(argv0, fp, metadataToFeatures);
-
-  fclose(fp);
-}
-
-// ----------------------------------------------------------------
-void handleListFpOrDie(
-    const char* argv0,
-    FILE* listFp,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures) {
-  char* tmkFileName = nullptr;
-  size_t linelen = 0;
-  while ((ssize_t)(linelen = getline(&tmkFileName, &linelen, listFp)) != -1) {
-    // Chomp
-    if (linelen > 0) {
-      if (tmkFileName[linelen - 1] == '\n') {
-        tmkFileName[linelen - 1] = 0;
-      }
-    }
-    handleTmkFileNameOrDie(argv0, tmkFileName, metadataToFeatures);
-  }
-}
-
-// ----------------------------------------------------------------
-void handleTmkFileNameOrDie(
-    const char* argv0,
-    const char* tmkFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures) {
-  std::shared_ptr<TMKFeatureVectors> pfv =
-      TMKFeatureVectors::readFromInputFile(tmkFileName, argv0);
-
-  if (pfv == nullptr) {
-    fprintf(stderr, "%s: failed to read \"%s\".\n", argv0, tmkFileName);
-    exit(1);
-  }
-
-  pfv->L2NormalizePureAverageFeature();
-
-  metadataToFeatures[std::string(tmkFileName)] = pfv;
-}

@@ -15,29 +15,13 @@
 #include <map>
 #include <set>
 
+#include "tmk-query.h"
+
 using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
 
-void handleListFileNameOrDie(
-    const char* argv0,
-    const char* listFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures);
-
-void handleListFpOrDie(
-    const char* argv0,
-    FILE* listFp,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures);
-
-void handletmkFileNameOrDie(
-    const char* argv0,
-    const char* tmkFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
-        metadataToFeatures);
-
 // ================================================================
-void usage(char* argv0, int exit_rc) {
+static void usage(char* argv0, int exit_rc) {
   FILE* fp = (exit_rc == 0) ? stdout : stderr;
   fprintf(
       fp,
@@ -63,7 +47,14 @@ void usage(char* argv0, int exit_rc) {
 }
 
 // ================================================================
+
+#ifndef TMK_PREFER_FAISS
 int main(int argc, char** argv) {
+  return tmkQuery(argc, argv);
+}
+#endif
+
+int tmkQuery(int argc, char** argv) {
   bool verbose = false;
   float c1 = FULL_DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = FULL_DEFAULT_LEVEL_2_THRESHOLD;
@@ -258,12 +249,12 @@ void handleListFpOrDie(
         tmkFileName[linelen - 1] = 0;
       }
     }
-    handletmkFileNameOrDie(argv0, tmkFileName, metadataToFeatures);
+    handleTmkFileNameOrDie(argv0, tmkFileName, metadataToFeatures);
   }
 }
 
 // ----------------------------------------------------------------
-void handletmkFileNameOrDie(
+void handleTmkFileNameOrDie(
     const char* argv0,
     const char* tmkFileName,
     std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
