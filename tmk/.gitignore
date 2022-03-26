@@ -16,6 +16,7 @@ cpp/tmk-compare-two-tmks
 cpp/tmk-hash-video
 cpp/tmk-query
 cpp/tmk-query-parallel
+cpp/tmk-query-with-faiss
 cpp/tmk-show-pair-offsets
 cpp/tmk-two-level-score
 cpp/tmk-two-level-score-parallel

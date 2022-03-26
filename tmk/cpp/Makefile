@@ -42,6 +42,12 @@ LIBOBJ= \
 ./raster/rasterwriters.o \
 ./raster/timeresamplers.o
 
+EXE_PARALLEL= \
+ tmk-query-parallel \
+ tmk-clusterize-parallel \
+ tmk-two-level-score-parallel \
+ tmk-query-with-faiss  # Pending https://github.com/facebook/ThreatExchange/issues/197
+
 EXE= \
  tmk-hash-video \
  feat2tmk \
@@ -50,18 +56,14 @@ EXE= \
  tmkdump \
  tmk-compare-two-tmks \
  tmk-show-pair-offsets \
- # tmk-clusterize-parallel \
  tmk-clusterize \
- # tmk-query-parallel \
  tmk-query \
- # tmk-two-level-score-parallel \
  tmk-two-level-score
-
-# Pending https://github.com/facebook/ThreatExchange/issues/197:
-# tmk-query-with-faiss \
 
 # ================================================================
 all: $(EXE) regtest
+
+parallel: $(EXE_PARALLEL)
 
 regtest: tmk-hash-video tmk-compare-two-tmks .always
 	mkdir -p ./regtest
@@ -156,18 +158,20 @@ tmk-show-pair-offsets: ./bin/tmk-show-pair-offsets.cpp $(LIBHDR) libtmk.a
 # ----------------------------------------------------------------
 tmk-clusterize: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-clusterize.cpp -o tmk-clusterize -L. -ltmk
-tmk-clusterize-parallel: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
-	$(CC) -Xpreprocessor -fopenmp -lomp bin/tmk-clusterize.cpp -o tmk-clusterize-parallel -L. -ltmk
 tmk-query: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-query.cpp -o tmk-query -L. -ltmk
-tmk-query-parallel: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
-	$(CC) -Xpreprocessor -fopenmp -lomp bin/tmk-query.cpp -o tmk-query-parallel -L. -ltmk
-tmk-query-with-faiss: ./bin/tmk-query-with-faiss.cpp $(LIBHDR) libtmk.a
-	$(CC) -Xpreprocessor -fopenmp -I/usr/local/include/faiss bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss -lomp -Wl,-rpath,/usr/local/lib
 tmk-two-level-score: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-two-level-score.cpp -o tmk-two-level-score -L. -ltmk
+
+# ----------------------------------------------------------------
+tmk-clusterize-parallel: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
+	$(CC) -Xpreprocessor -fopenmp bin/tmk-clusterize.cpp -o tmk-clusterize-parallel -L. -ltmk -lomp
+tmk-query-with-faiss: ./bin/tmk-query-with-faiss.cpp $(LIBHDR) libtmk.a
+	$(CC) -Xpreprocessor -fopenmp -I/usr/local/include/faiss bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss -lomp -Wl,-rpath,/usr/local/lib
+tmk-query-parallel: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
+	$(CC) -Xpreprocessor -fopenmp bin/tmk-query.cpp -o tmk-query-parallel -L. -ltmk -lomp
 tmk-two-level-score-parallel: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
-	$(CC) -Xpreprocessor -fopenmp -lomp bin/tmk-two-level-score.cpp -o tmk-two-level-score-parallel -L. -ltmk
+	$(CC) -Xpreprocessor -fopenmp bin/tmk-two-level-score.cpp -o tmk-two-level-score-parallel -L. -ltmk -lomp
 
 # ================================================================
 tags:
@@ -179,6 +183,7 @@ clean:
 	-rm -vf libtmk.a
 	-rm -vf $(LIBOBJ)
 	-rm -vf $(EXE)
+	-rm -vf $(EXE_PARALLEL)
 	-rm -vf regtest/*.tmk
 
 .always:
