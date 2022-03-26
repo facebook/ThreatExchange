@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <chrono>
 #include <map>
 #include <set>
 
@@ -59,6 +61,8 @@ void usage(const char* argv0, int exit_rc) {
       DEFAULT_LEVEL_2_THRESHOLD);
   fprintf(
       fp, "--include-self: Match each hash against itself as well as others.\n");
+  fprintf(fp, "-v|--verbose: Be more verbose.\n");
+
   exit(exit_rc);
 }
 
@@ -68,6 +72,7 @@ int main(int argc, char** argv) {
   float c1 = DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = DEFAULT_LEVEL_2_THRESHOLD;
   bool includeSelf = false;
+  bool verbose = false;
 
   int argi = 1;
   while ((argi < argc) && argv[argi][0] == '-') {
@@ -77,6 +82,8 @@ int main(int argc, char** argv) {
 
     } else if (!strcmp(flag, "-i")) {
       fileNamesFromStdin = true;
+    } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
+      verbose = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -167,6 +174,8 @@ int main(int argc, char** argv) {
       if (skipThisPair) {
         continue;
       }
+  std::chrono::time_point<std::chrono::system_clock> startScores =
+      std::chrono::system_clock::now();
 
       float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
       if (s1 >= c1) {
@@ -175,6 +184,18 @@ int main(int argc, char** argv) {
             "%.6f %.6f %s %s\n", s1, s2, metadata1.c_str(), metadata2.c_str());
       }
     }
+  if (verbose) {
+    printf("\n");
+    printf("CALCULATING THE SCORES\n");
+  }
+
+
+  std::chrono::time_point<std::chrono::system_clock> endScores =
+      std::chrono::system_clock::now();
+  std::chrono::duration<double> scoresSeconds = endScores - startScores;
+  if (verbose) {
+    printf("\n");
+    printf("SCORES SECONDS = %.6lf\n", scoresSeconds.count());
   }
 
   return 0;

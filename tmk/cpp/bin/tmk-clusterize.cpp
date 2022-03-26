@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <chrono>
 #include <map>
 #include <set>
 
@@ -46,6 +48,7 @@ void snowballClusterize(
     float c1,
     float c2,
     bool level1Only,
+    bool verbose,
     std::map<std::string, std::set<std::string>>& equivalenceClasses,
     char* argv0);
 
@@ -76,6 +79,7 @@ void usage(char* argv0, int exit_rc) {
   fprintf(fp, "--level-1-only: Don't do level-2 thresholding (runs faster).\n");
   fprintf(fp, "--min {n}:  Only print clusters of size n or more. Using 2\n");
   fprintf(fp, "            suppresses output of singletons.\n");
+  fprintf(fp, "-v|--verbose: Be more verbose.\n");
   exit(exit_rc);
 }
 
@@ -86,6 +90,7 @@ int main(int argc, char** argv) {
   float c1 = DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = DEFAULT_LEVEL_2_THRESHOLD;
   bool level1Only = false;
+  bool verbose = false;
   int minClusterSizeToPrint = 1;
 
   int argi = 1;
@@ -98,6 +103,8 @@ int main(int argc, char** argv) {
       fileNamesFromStdin = true;
     } else if (!strcmp(flag, "-s")) {
       printSeparateClusters = true;
+    } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
+      verbose = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -175,7 +182,7 @@ int main(int argc, char** argv) {
   // CLUSTERIZE
   std::map<std::string, std::set<std::string>> equivalenceClasses;
   snowballClusterize(
-      metadataToFeatures, c1, c2, level1Only, equivalenceClasses, argv[0]);
+      metadataToFeatures, c1, c2, level1Only, verbose, equivalenceClasses, argv[0]);
 
   // PRINT OUTPUT
   printTextOutput(
@@ -224,6 +231,7 @@ void snowballClusterize(
     float c1,
     float c2,
     bool level1Only,
+    bool verbose,
     std::map<std::string, std::set<std::string>>& equivalenceClasses,
     char* argv0) {
   std::map<std::string, std::set<std::string>> adjacencyMatrix;
@@ -258,11 +266,26 @@ void snowballClusterize(
             if (s2 >= c2) {
               adjacencyMatrix[filename1].insert(filename2);
               adjacencyMatrix[filename2].insert(filename1);
+
+  std::chrono::time_point<std::chrono::system_clock> startAdjacencyMatrix =
+      std::chrono::system_clock::now();
+
+  if (verbose) {
+    printf("\n");
+    printf("CALCULATING THE ADJACENCY MATRIX\n");
+  }
             }
           }
         }
       }
     }
+
+  std::chrono::time_point<std::chrono::system_clock> endAdjacencyMatrix =
+      std::chrono::system_clock::now();
+  std::chrono::duration<double> matrixSeconds = endAdjacencyMatrix - startAdjacencyMatrix;
+  if (verbose) {
+    printf("\n");
+    printf("ADJACENCY MATRIX SECONDS = %.6lf\n", matrixSeconds.count());
   }
 
   // IDENTIFY CLUSTER REPRESENTATIVES
