@@ -321,13 +321,18 @@ int main(int argc, char** argv) {
       const std::shared_ptr<TMKFeatureVectors> phaystackFV = haystackMetadataToFeatures.at(haystackFilename);
 
       float s1 = TMKFeatureVectors::computeLevel1Score(*pneedleFV, *phaystackFV);
-      float s2 = TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
 
-      printf("  distance %.6f L1 %.6f L2 %.6f metadata %s\n",
-        nndist,
-        s1,
-        s2,
-        haystackFilename.c_str());
+      if (s1 >= c1) {
+        float s2 = TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
+
+        if (s2 >= c2) {
+          printf("  distance %.6f L1 %.6f L2 %.6f metadata %s\n",
+            nndist,
+            s1,
+            s2,
+            haystackFilename.c_str());
+        }
+      }
     }
     printf("\n");
   }
