@@ -178,9 +178,11 @@ int main(int argc, char** argv) {
   if (num_centroids > num_database_vectors) {
     num_centroids = num_database_vectors;
   }
-  printf("VECTOR_DIMENSION     %d\n", (int)vector_dimension);
-  printf("NUM_DATABASE_VECTORS %d\n", (int)num_database_vectors);
-  printf("NUM_CENTROIDS        %d\n", (int)num_centroids);
+  if (verbose) {
+    printf("VECTOR_DIMENSION     %d\n", (int)vector_dimension);
+    printf("NUM_DATABASE_VECTORS %d\n", (int)num_database_vectors);
+    printf("NUM_CENTROIDS        %d\n", (int)num_centroids);
+  }
 
   // The coarse quantizer should not be deallocated before the index.
   // 4 = number of bytes per code (vector_dimension must be a multiple of this)
@@ -201,13 +203,19 @@ int main(int argc, char** argv) {
   }
 
   // Train the quantizer, using the database
-  printf("Start training the quantizer:\n");
+  if (verbose) {
+    printf("Start training the quantizer:\n");
+  }
   faiss_index.train(num_database_vectors, database.data());
-  printf("End training the quantizer.\n");
+  if (verbose) {
+    printf("End training the quantizer.\n");
+  }
 
   faiss_index.add(num_database_vectors, database.data());
 
-  printf("imbalance factor: %g\n", faiss_index.invlists->imbalance_factor());
+  if (verbose) {
+    printf("imbalance factor: %g\n", faiss_index.invlists->imbalance_factor());
+  }
 
   std::vector<std::string> haystack_filenames_as_vector(haystackMetadataToFeatures.size());
   std::vector<std::string> needles_filenames_as_vector(needlesMetadataToFeatures.size());
@@ -288,7 +296,9 @@ int main(int argc, char** argv) {
     i++;
   }
 
-  printf("Searching for the %d nearest neighbors\n", k);
+  if (verbose) {
+    printf("Searching for the %d nearest neighbors\n", k);
+  }
 
   std::vector<faiss::Index::idx_t> nearest_neighbor_indices(k * num_queries);
   std::vector<float> nearest_neighbor_distances(k * num_queries);
@@ -312,8 +322,10 @@ int main(int argc, char** argv) {
         querySeconds.count() / needlesMetadataToFeatures.size());
   }
 
-  printf("Query results (vector IDs, then distances):\n");
-  printf("(Note that the nearest neighbor is not always at distance 0 due to quantization errors.)\n");
+  if (verbose) {
+    printf("Query results (vector IDs, then distances):\n");
+    printf("(Note that the nearest neighbor is not always at distance 0 due to quantization errors.)\n");
+  }
 
   for (i = 0; i < num_queries; i++) {
     const std::string& needleFilename = needles_filenames_as_vector[i];
