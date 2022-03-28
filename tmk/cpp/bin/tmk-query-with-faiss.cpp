@@ -25,6 +25,7 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 #include <faiss/IndexIVFPQ.h>
 #include <faiss/IndexFlat.h>
 #include <faiss/index_io.h>
+#include <faiss/utils/distances.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,7 +160,7 @@ int main(int argc, char** argv) {
   size_t num_database_vectors = haystackMetadataToFeatures.size();
 
   // Make the index object and train it
-  faiss::IndexFlatL2 coarse_quantizer(vector_dimension);
+  faiss::IndexFlatIP coarse_quantizer(vector_dimension);
 
   // A reasonable number of centroids to index num_database_vectors vectors
   int num_centroids = int(4 * sqrt(num_database_vectors));
@@ -200,6 +201,8 @@ int main(int argc, char** argv) {
     }
     i++;
   }
+
+  faiss::fvec_renorm_L2(vector_dimension, num_database_vectors, database.data());
 
   // Train the quantizer, using the database
   if (verbose) {
@@ -294,6 +297,8 @@ int main(int argc, char** argv) {
     }
     i++;
   }
+
+  faiss::fvec_renorm_L2(vector_dimension, num_queries, queries.data());
 
   if (verbose) {
     printf("Searching for the %d nearest neighbors\n", k);
