@@ -14,7 +14,7 @@ extras_require = {
 all_extras = set(sum(extras_require.values(), []))
 extras_require["test"] = sorted({"pytest==6.2.1", "freezegun==1.1.0"} | all_extras)
 extras_require["package"] = ["wheel"]
-extras_require["lint"] = ["black==21.12b0"]
+extras_require["lint"] = ["black==22.3.0"]
 extras_require["type"] = ["types-requests==2.27.1", "types-freezegun==1.1.7"]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 
