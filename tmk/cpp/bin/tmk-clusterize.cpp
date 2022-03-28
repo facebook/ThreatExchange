@@ -106,6 +106,8 @@ int main(int argc, char** argv) {
       printSeparateClusters = true;
     } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
       verbose = true;
+    } else if (!strcmp(flag, "--level-1-only")) {
+      level1Only = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -122,9 +124,6 @@ int main(int argc, char** argv) {
       if (sscanf(argv[argi], "%f", &c2) != 1) {
         usage(argv[0], 1);
       }
-      argi++;
-    } else if (!strcmp(flag, "--level-1-only")) {
-      level1Only = true;
       argi++;
 
     } else if (!strcmp(flag, "--min")) {

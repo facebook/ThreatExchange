@@ -70,6 +70,7 @@ static void usage(char* argv0, int exit_rc) {
       "--c2 {y}: Level-2 threshold: default %.3f.\n",
       DEFAULT_LEVEL_2_THRESHOLD);
   fprintf(fp, "--min {n}: Return a maximum of n nearest neighbors. Using 5\n");
+  fprintf(fp, "--level-1-only: Don't do level-2 thresholding (runs faster).\n");
   fprintf(fp, "-f|--force: Force query to use FAISS even if below minimum number of points\n");
   fprintf(fp, "-v|--verbose: Be more verbose.\n");
   exit(exit_rc);
@@ -78,6 +79,7 @@ static void usage(char* argv0, int exit_rc) {
 // ================================================================
 int main(int argc, char** argv) {
   bool verbose = false;
+  bool level1Only = false;
   bool force = false;
   int k = 5;
   float c1 = DEFAULT_LEVEL_1_THRESHOLD;
@@ -93,6 +95,8 @@ int main(int argc, char** argv) {
       verbose = true;
     } else if (!strcmp(flag, "-f") || !strcmp(flag, "--force")) {
       force = true;
+    } else if (!strcmp(flag, "--level-1-only")) {
+      level1Only = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -348,7 +352,7 @@ int main(int argc, char** argv) {
       float s1 = TMKFeatureVectors::computeLevel1Score(*pneedleFV, *phaystackFV);
 
       if (s1 >= c1) {
-        float s2 = TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
+        float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
 
         if (s2 >= c2) {
           printf("  distance %.6f L1 %.6f L2 %.6f metadata %s\n",

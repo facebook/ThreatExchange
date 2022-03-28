@@ -43,6 +43,7 @@ static void usage(char* argv0, int exit_rc) {
       fp,
       "--c2 {y}: Level-2 threshold: default %.3f.\n",
       FULL_DEFAULT_LEVEL_2_THRESHOLD);
+  fprintf(fp, "--level-1-only: Don't do level-2 thresholding (runs faster).\n");
   exit(exit_rc);
 }
 
@@ -56,6 +57,7 @@ int main(int argc, char** argv) {
 
 int tmkQuery(int argc, char** argv) {
   bool verbose = false;
+  bool level1Only = false;
   float c1 = FULL_DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = FULL_DEFAULT_LEVEL_2_THRESHOLD;
 
@@ -66,6 +68,8 @@ int tmkQuery(int argc, char** argv) {
       usage(argv[0], 0);
     } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
       verbose = true;
+    } else if (!strcmp(flag, "--level-1-only")) {
+      level1Only = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -180,7 +184,7 @@ int tmkQuery(int argc, char** argv) {
 
             float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
             if (s1 >= c1) {
-              float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+              float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
               if (s2 >= c2) {
                 if (verbose) {
                   printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
