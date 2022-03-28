@@ -103,6 +103,7 @@ class names:
         merge_datafiles = f"{_prefix}.merge_datafiles"
         search_index = f"{_prefix}.search_index"
         download_index = f"{_prefix}.download_index"
+        get_bank_data = f"{_prefix}.get_bank_data"
 
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
