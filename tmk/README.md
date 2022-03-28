@@ -28,7 +28,7 @@ produced in conjunction with Facebook AI Research ('FAIR').
 - Make sure you can hash the exact same sample videos (in this repo -- see below) and get the same hashes (within roundoff error)
 - Let us know about file-format issues: at FB the upload-checker runs after videos in various formats have been transcoded to MP4, so we have no data on TMK with AVI, MOV, etc. Also note that the floating-point numbers within the `.tmk` files are all stored **little-endian**.
 - See if you can find matching content on your site, using initial match-threshold numbers.
-- Please feel free to contact us with feedback on the code, this documentation, or any other suggestions for additional rollout of this algorithm. And/or simply put up a pul request if you prefer.
+- Please feel free to contact us with feedback on the code, this documentation, or any other suggestions for additional rollout of this algorithm. And/or simply put up a pull request if you prefer.
 - In particular, we already know that several companies preferred a Java port of PDQ; we suspect the same will hold true for TMK.
 
 # TMK scoring
@@ -73,6 +73,9 @@ Notes:
 - We have a simple `Makefile` in order to reduce the number of dependencies, so people can get up and running quicker.
 - FB-internally we use `buck`; please let us know if you want Buck `TARGETS` files.
 - This simple Makefile build does not execute any `*test*.cpp` files, which `buck test` would. Hence the importance of computing hashes for sample videos (see next step).
+- To compile on Windows, you will also need to install `make`, e.g., via [choco](https://community.chocolatey.org/packages/make) and [MinGW](https://osdn.net/projects/mingw/).
+  - MinGW needs to be added to the system path in order to compile and use the executables
+  - The tests will not run after `make` without more changes, but they can be run manually
 
 ## Compute hashes of sample videos and compare to previous outputs
 
