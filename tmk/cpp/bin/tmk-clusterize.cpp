@@ -254,7 +254,6 @@ void snowballClusterize(
       {
         const std::string& filename1 = it1.first;
         const std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
-        // printf("... %s\n", filename1.c_str());
 
         for (const auto& it2 : metadataToFeatures) {
           #pragma omp task firstprivate(it2)

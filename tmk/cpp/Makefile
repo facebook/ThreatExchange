@@ -46,7 +46,7 @@ EXE_PARALLEL= \
  tmk-query-parallel \
  tmk-clusterize-parallel \
  tmk-two-level-score-parallel \
- tmk-query-with-faiss  # Pending https://github.com/facebook/ThreatExchange/issues/197
+ tmk-query-with-faiss
 
 EXE= \
  tmk-hash-video \
