@@ -11,6 +11,10 @@
 #include <tmk/cpp/algo/tmkfv.h>
 #include <tmk/cpp/lib/vec.h>
 
+#if defined(_WIN32)
+  #define _USE_MATH_DEFINES
+#endif
+
 #include <cmath>
 #include <stdexcept>
 

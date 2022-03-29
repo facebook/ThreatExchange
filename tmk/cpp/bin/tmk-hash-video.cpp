@@ -19,6 +19,13 @@
 
 using namespace std;
 
+const std::string PATH_SEPARATOR =
+#if defined(_WIN32)
+                                    "\\";
+#else
+                                    "/";
+#endif
+
 // ----------------------------------------------------------------
 void usage(char* argv0, int exit_rc) {
   FILE* fp = (exit_rc == 0) ? stdout : stderr;
@@ -163,11 +170,11 @@ int main(int argc, char* argv[]) {
   //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   if (outputDirectory != "") {
     // Strip containing directory:
-    std::string b = basename(inputVideoFileName, "/");
+    std::string b = basename(inputVideoFileName, PATH_SEPARATOR);
     // Strip file extension:
     b = stripExtension(b, ".");
     // E.g. -i /path/to/foo.mp4 -d /tmp -> /tmp/foo.tmk
-    outputFeatureVectorsFileName = outputDirectory + "/" + b + ".tmk";
+    outputFeatureVectorsFileName = outputDirectory + PATH_SEPARATOR + b + ".tmk";
   }
 
   FILE* outputFp = facebook::tmk::io::openFileOrDie(

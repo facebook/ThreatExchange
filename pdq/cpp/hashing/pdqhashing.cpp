@@ -11,6 +11,10 @@
 // https://github.com/facebookexternal/ThreatExchange-PDQ/blob/main/pdqhash-2017-10-09.pdf
 // ================================================================
 
+#if defined(_WIN32)
+  #define _USE_MATH_DEFINES
+#endif
+
 #include <cassert>
 #include <chrono>
 #include <cmath>

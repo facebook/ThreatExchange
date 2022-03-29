@@ -9,6 +9,16 @@
 #include <stdio.h>
 #include <memory>
 
+#include <iomanip>
+#include <sstream>
+
+const char* POPEN_MODE =
+#if defined(_WIN32)
+                          "rb";
+#else
+                          "r";
+#endif
+
 using namespace std;
 
 namespace facebook {
@@ -27,7 +37,7 @@ bool hashVideo(
     fprintf(stderr, "%s\n", ffmpegGeneratorCommand.c_str());
   }
 
-  FILE* inputFp = popen(ffmpegGeneratorCommand.c_str(), "r");
+  FILE* inputFp = popen(ffmpegGeneratorCommand.c_str(), POPEN_MODE);
   if (inputFp == nullptr) {
     fprintf(stderr, "%s: ffmpeg to generate video stream failed\n", argv0);
     return false;
@@ -180,17 +190,14 @@ bool hashVideoFile(
 
   // add single quotes around the file name and then escape any single quotes inside it
   // example: my file's.mp4 -> 'my file'\''s.mp4'
-  std::string escapedInputVideoFileName = "'";
-  for (char c : inputVideoFileName) {
-    if (c == '\'') {
-      escapedInputVideoFileName += "'\\''";
-    } else {
-      escapedInputVideoFileName += c;
-    }
-  }
-  escapedInputVideoFileName += "'";
+  std::stringstream ss;
 
-  std::string command = ffmpegPath + " -nostdin -i " + escapedInputVideoFileName + " -s " +
+  ss << quoted(inputVideoFileName);
+  std::string escapedInputVideoFileName = ss.str();
+  std::string ffmpegLogLevel = verbose ? "" : "-loglevel warning -hide_banner -stats";
+
+  std::string command = ffmpegPath + " " + ffmpegLogLevel + " -nostdin -i " +
+      escapedInputVideoFileName + " -s " +
       std::to_string(downsampleFrameDimension) + ":" +
       std::to_string(downsampleFrameDimension) +
       " -an -f rawvideo -c:v rawvideo -pix_fmt rgb24 -r " +
