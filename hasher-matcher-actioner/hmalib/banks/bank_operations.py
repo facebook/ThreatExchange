@@ -115,3 +115,40 @@ def add_detached_bank_member_signal(
         signal_type=signal_type,
         signal_value=signal_value,
     )
+
+
+"""
+Represents a single detached signal being added to a bank. Container
+ContentType, SignalType and the signal value.
+"""
+
+
+class Signal(t.NamedTuple):
+    content_type: t.Type[ContentType]
+    signal_type: t.Type[SignalType]
+    signal_value: str
+
+
+def add_detached_bank_member_signal_batch(
+    banks_table: BanksTable,
+    bank_id: str,
+    signals: t.Iterable[Signal],
+) -> t.Iterable[BankMemberSignal]:
+    """
+    Dump a large number of detached signals into a bank. Check
+    add_detached_bank_member_signal for more details.
+
+    TODO: At this point, is dumb. Does not actually batch the requests, instead
+    loops through signals and calls single APIs.
+    """
+    return list(
+        map(
+            lambda signal: banks_table.add_detached_bank_member_signal(
+                bank_id=bank_id,
+                content_type=signal.content_type,
+                signal_type=signal.signal_type,
+                signal_value=signal.signal_value,
+            ),
+            signals,
+        )
+    )
