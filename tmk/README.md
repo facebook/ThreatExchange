@@ -73,9 +73,16 @@ Notes:
 - We have a simple `Makefile` in order to reduce the number of dependencies, so people can get up and running quicker.
 - FB-internally we use `buck`; please let us know if you want Buck `TARGETS` files.
 - This simple Makefile build does not execute any `*test*.cpp` files, which `buck test` would. Hence the importance of computing hashes for sample videos (see next step).
-- To compile on Windows, you will also need to install `make`, e.g., via [choco](https://community.chocolatey.org/packages/make) and [MinGW](https://osdn.net/projects/mingw/).
+
+## Windows users
+
+Some basic modifications have been made to enable support for Windows. To compile, you will also need to install `make`, e.g., via [choco](https://community.chocolatey.org/packages/make) and [MinGW](https://osdn.net/projects/mingw/).
   - MinGW needs to be added to the system path in order to compile and use the executables
+
+Known issues:
   - The tests will not run after `make` without more changes, but they can be run manually
+  - Avoid BOM or CRLF line endings (e.g., if `haystack.txt` files are supplied)
+  - Use of absolute file paths may need more work in some cases. Try relative paths, or copying executables (like `ffmpeg.exe`) to your local directory.
 
 ## Compute hashes of sample videos and compare to previous outputs
 
