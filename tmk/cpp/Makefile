@@ -175,7 +175,7 @@ tmk-two-level-score: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
 tmk-clusterize-parallel: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
 	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-clusterize.cpp -o tmk-clusterize-parallel -L. -ltmk $(OMP_LIB)
 tmk-query-with-faiss: ./bin/tmk-query-with-faiss.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) -Xpreprocessor -fopenmp -I/usr/local/include/faiss -DTMK_PREFER_FAISS bin/tmk-query.cpp bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss $(OMP_LIB) -Wl,-rpath,/usr/local/lib
+	$(CC_IF_WIN) -Xpreprocessor -fopenmp -I/usr/local/include/faiss bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss $(OMP_LIB) -Wl,-rpath,/usr/local/lib
 tmk-query-parallel: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
 	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-query.cpp -o tmk-query-parallel -L. -ltmk $(OMP_LIB)
 tmk-two-level-score-parallel: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a

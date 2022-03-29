@@ -15,13 +15,30 @@
 #include <map>
 #include <set>
 
-#include "tmk-query.h"
-
 using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
 
+void handleListFileNameOrDie(
+    const char* argv0,
+    const char* listFileName,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures);
+
+void handleListFpOrDie(
+    const char* argv0,
+    FILE* listFp,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures);
+
+void handleTmkFileNameOrDie(
+    const char* argv0,
+    const char* tmkFileName,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures);
+
 // ================================================================
-static void usage(char* argv0, int exit_rc) {
+
+void usage(char* argv0, int exit_rc) {
   FILE* fp = (exit_rc == 0) ? stdout : stderr;
   fprintf(
       fp,
@@ -49,13 +66,7 @@ static void usage(char* argv0, int exit_rc) {
 
 // ================================================================
 
-#ifndef TMK_PREFER_FAISS
 int main(int argc, char** argv) {
-  return tmkQuery(argc, argv);
-}
-#endif
-
-int tmkQuery(int argc, char** argv) {
   bool verbose = false;
   bool level1Only = false;
   float c1 = FULL_DEFAULT_LEVEL_1_THRESHOLD;

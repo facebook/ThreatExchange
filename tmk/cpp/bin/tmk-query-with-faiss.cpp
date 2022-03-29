@@ -36,8 +36,6 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 #include <map>
 #include <set>
 
-#include "tmk-query.h"
-
 using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
 
@@ -46,8 +44,26 @@ using namespace facebook::tmk::algo;
 // can be used for search-pruning. Note that thresholds depend on choice of
 // frame-feature algorithm.
 
+void handleListFileNameOrDie(
+    const char* argv0,
+    const char* listFileName,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures);
+
+void handleListFpOrDie(
+    const char* argv0,
+    FILE* listFp,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures);
+
+void handleTmkFileNameOrDie(
+    const char* argv0,
+    const char* tmkFileName,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures);
+
 // ================================================================
-static void usage(char* argv0, int exit_rc) {
+void usage(char* argv0, int exit_rc) {
   FILE* fp = (exit_rc == 0) ? stdout : stderr;
   fprintf(
       fp,
@@ -164,6 +180,7 @@ int main(int argc, char** argv) {
   size_t num_database_vectors = haystackMetadataToFeatures.size();
 
   // Make the index object and train it
+  // note: this implementation is almost certainly wrong without using inner product, but that can be a future PR.
   faiss::IndexFlatIP coarse_quantizer(vector_dimension);
 
   // A reasonable number of centroids to index num_database_vectors vectors
@@ -190,7 +207,8 @@ int main(int argc, char** argv) {
       printf("MINIMUM POINTS NOT MET FOR FAISS: %d FOUND vs %d EXPECTED\n", (int)num_database_vectors, min_points);
     }
     if (!force) {
-      return tmkQuery(argc, argv);
+      printf(stderr, "Number of points is below minimum size for faiss. Run with --force flag to ignore this error.\n");
+      exit(2);
     }
   }
 
@@ -369,4 +387,59 @@ int main(int argc, char** argv) {
   return 0;
 }
 
+// ----------------------------------------------------------------
+void handleListFileNameOrDie(
+    const char* argv0,
+    const char* listFileName,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures) {
+  FILE* fp = fopen(listFileName, "r");
+  if (fp == nullptr) {
+    perror("fopen");
+    fprintf(
+        stderr, "%s: could not open \"%s\" for read.\n", argv0, listFileName);
+    exit(1);
+  }
 
+  handleListFpOrDie(argv0, fp, metadataToFeatures);
+
+  fclose(fp);
+}
+
+// ----------------------------------------------------------------
+void handleListFpOrDie(
+    const char* argv0,
+    FILE* listFp,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures) {
+  char* tmkFileName = nullptr;
+  size_t linelen = 0;
+  while ((ssize_t)(linelen = getline(&tmkFileName, &linelen, listFp)) != -1) {
+    // Chomp
+    if (linelen > 0) {
+      if (tmkFileName[linelen - 1] == '\n') {
+        tmkFileName[linelen - 1] = 0;
+      }
+    }
+    handleTmkFileNameOrDie(argv0, tmkFileName, metadataToFeatures);
+  }
+}
+
+// ----------------------------------------------------------------
+void handleTmkFileNameOrDie(
+    const char* argv0,
+    const char* tmkFileName,
+    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+        metadataToFeatures) {
+  std::shared_ptr<TMKFeatureVectors> pfv =
+      TMKFeatureVectors::readFromInputFile(tmkFileName, argv0);
+
+  if (pfv == nullptr) {
+    fprintf(stderr, "%s: failed to read \"%s\".\n", argv0, tmkFileName);
+    exit(1);
+  }
+
+  pfv->L2NormalizePureAverageFeature();
+
+  metadataToFeatures[std::string(tmkFileName)] = pfv;
+}
