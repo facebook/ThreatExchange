@@ -9,6 +9,7 @@ import time
 import typing as t
 
 from threatexchange.cli.cli_config import CLISettings
+from threatexchange.cli.dataset_cmd import DatasetCommand
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.fetcher.fetch_state import (
@@ -58,12 +59,13 @@ class FetchCommand(command_base.Command):
 
     def __init__(
         self,
-        clear: bool,
-        time_limit_sec: t.Optional[int],
-        limit: t.Optional[int],
-        skip_index_rebuild: bool,
-        only_api: t.Optional[str],
-        only_collab: t.Optional[str],
+        # Defaults to make it easier to call from match
+        clear: bool = False,
+        time_limit_sec: t.Optional[int] = None,
+        limit: t.Optional[int] = None,
+        skip_index_rebuild: bool = False,
+        only_api: t.Optional[str] = None,
+        only_collab: t.Optional[str] = None,
     ) -> None:
         self.clear = clear
         self.time_limit_sec = time_limit_sec
@@ -129,6 +131,7 @@ class FetchCommand(command_base.Command):
 
         if any_succeded and not self.skip_index_rebuild:
             self.stderr("Rebuilding match indices...")
+            DatasetCommand().execute_generate_indices(settings)
 
         if not all_succeeded:
             raise command_base.CommandError("Some collabs had errors!", 3)
