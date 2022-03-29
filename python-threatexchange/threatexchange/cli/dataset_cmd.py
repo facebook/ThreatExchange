@@ -108,20 +108,22 @@ class DatasetCommand(command_base.Command):
         )
 
     def __init__(
+        # These all have defaults to make it easier to call
+        # only for rebuld
         self,
         # Mode
-        clear_indices: bool,
-        rebuild_indices: bool,
-        signal_summary: bool,
-        print_records: bool,
+        clear_indices: bool = False,
+        rebuild_indices: bool = False,
+        signal_summary: bool = False,
+        print_records: bool = False,
         # Signal selectors
-        only_collabs: t.List[str],
-        only_signals: t.List[t.Type[SignalType]],
-        only_content: t.List[t.Type[ContentType]],
-        only_tags: t.List[str],
+        only_collabs: t.Sequence[str] = (),
+        only_signals: t.Sequence[t.Type[SignalType]] = (),
+        only_content: t.Sequence[t.Type[ContentType]] = (),
+        only_tags: t.Sequence[str] = (),
         # Print stuff
-        signals_only: bool,
-        limit: t.Optional[int],
+        signals_only: bool = False,
+        limit: t.Optional[int] = None,
     ) -> None:
         self.clear_indices = clear_indices
         self.rebuild_indices = rebuild_indices

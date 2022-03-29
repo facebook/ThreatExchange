@@ -88,24 +88,16 @@ def execute_command(settings: CLISettings, namespace) -> None:
     assert hasattr(namespace, "command_cls")
     command_cls = namespace.command_cls
     logging.debug("Setup complete, handing off to %s", command_cls.__name__)
-    try:
-        # Init everything
-        command_argspec = inspect.getfullargspec(command_cls.__init__)
-        arg_names = set(command_argspec[0])
-        # Since we didn't import click, use hard-to-debug magic to init the command
-        command_args = {k: v for k, v in namespace.__dict__.items() if k in arg_names}
-        if "full_argparse_namespace" in arg_names:
-            command_args["full_argparse_namespace"] = namespace
+    # Init everything
+    command_argspec = inspect.getfullargspec(command_cls.__init__)
+    arg_names = set(command_argspec[0])
+    # Since we didn't import click, use hard-to-debug magic to init the command
+    command_args = {k: v for k, v in namespace.__dict__.items() if k in arg_names}
+    if "full_argparse_namespace" in arg_names:
+        command_args["full_argparse_namespace"] = namespace
 
-        command = command_cls(**command_args)
-
-        command.execute(settings)
-    except base.CommandError as ce:
-        print(ce, file=sys.stderr)
-        sys.exit(ce.returncode)
-    except KeyboardInterrupt:
-        # No stack for CTRL+C
-        sys.exit(130)
+    command = command_cls(**command_args)
+    command.execute(settings)
 
 
 def _get_fb_tx_app_token(config: CLiConfig) -> t.Optional[str]:
@@ -163,7 +155,7 @@ def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
     return ret
 
 
-def _get_settings(config: CLiConfig) -> CLISettings:
+def _get_settings(config: CLiConfig, dir: pathlib.Path) -> CLISettings:
     """
     Configure the behavior and functionality.
     """
@@ -192,7 +184,7 @@ def _get_settings(config: CLiConfig) -> CLISettings:
         ]
         + extensions.api_instances
     )
-    state = CliState(list(fetchers.fetchers_by_name.values()))
+    state = CliState(list(fetchers.fetchers_by_name.values()), dir=dir)
 
     return CLISettings(meta.FunctionalityMapping(signals, fetchers, state), state)
 
@@ -209,15 +201,28 @@ def _setup_logging():
     )
 
 
-def main(args: t.Optional[t.Sequence[t.Text]] = None) -> None:
+def main(
+    args: t.Optional[t.Sequence[t.Text]] = None,
+    state_dir: pathlib.Path = pathlib.Path("~/.threatexchange"),
+) -> None:
     _setup_logging()
 
-    config = CliState([]).get_persistent_config()  # TODO fix the circular dependency
-    settings = _get_settings(config)
+    config = CliState(
+        [], state_dir
+    ).get_persistent_config()  # TODO fix the circular dependency
+    settings = _get_settings(config, state_dir)
     ap = get_argparse(settings)
     namespace = ap.parse_args(args)
     execute_command(settings, namespace)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        _setup_logging()
+        main()
+    except base.CommandError as ce:
+        print(ce, file=sys.stderr)
+        sys.exit(ce.returncode)
+    except KeyboardInterrupt:
+        # No stack for CTRL+C
+        sys.exit(130)

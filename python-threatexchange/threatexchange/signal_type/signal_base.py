@@ -110,14 +110,6 @@ class TextHasher:
         return cls.hash_from_str(file.read_text())
 
 
-class TrivialTextHasher(TextHasher):
-    """The text == the hash"""
-
-    @classmethod
-    def hash_from_str(cls, content: str) -> str:
-        return content
-
-
 class MatchesStr:
     @classmethod
     def matches_str(

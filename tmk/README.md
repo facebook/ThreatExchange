@@ -1,55 +1,57 @@
 # Summary
 
-TMK (for *Temporal Match Kernel*) is a video-similarity-detection algorithm
+TMK (for _Temporal Match Kernel_) is a video-similarity-detection algorithm
 produced in conjunction with Facebook AI Research ('FAIR').
 
-* Full details are located in the [hashing.pdf](https://github.com/facebook/ThreatExchange/blob/main/hashing/hashing.pdf) document.
+- Full details are located in the [hashing.pdf](https://github.com/facebook/ThreatExchange/blob/main/hashing/hashing.pdf) document.
 
-* See https://newsroom.fb.com/news/2019/08/open-source-photo-video-matching for context.
+- See https://newsroom.fb.com/news/2019/08/open-source-photo-video-matching for context.
 
-* Researchers in video copy-detection algorithms may also be interested in
+- Researchers in video copy-detection algorithms may also be interested in
   https://github.com/facebookresearch/videoalignment for a research version of
   TMK, with different parameter-weighting than presented here.
 
 # Status
 
-* For cross-company sharing, for exports, one needs to compute hashes for a
-relatively small list of banked videos, then publish those data (over
-ThreatExchange, for example) -- this is a small-scale endeavor. For imports,
-one needs to hash *all* to-be-checked videos and compare them against a
-hash-list -- this is a large-scale endeavor.  At present (2019-01-18) this code
-is single-machine-only: nothing is connected up to databases or RPC yet.
+- For cross-company sharing, for exports, one needs to compute hashes for a
+  relatively small list of banked videos, then publish those data (over
+  ThreatExchange, for example) -- this is a small-scale endeavor. For imports,
+  one needs to hash _all_ to-be-checked videos and compare them against a
+  hash-list -- this is a large-scale endeavor. At present (2019-01-18) this code
+  is single-machine-only: nothing is connected up to databases or RPC yet.
 
-* Integration with [FAISS](https://github.com/facebookresearch/faiss) has been
-successfully prototyped -- we will post information about this soon.
+- Integration with [FAISS](https://github.com/facebookresearch/faiss) has been
+  successfully prototyped -- we will post information about this soon.
 
 # Goals
 
-* Make sure you can hash the exact same sample videos (in this repo -- see below) and get the same hashes (within roundoff error)
-* Let us know about file-format issues: at FB the upload-checker runs after videos in various formats have been transcoded to MP4, so we have no data on TMK with AVI, MOV, etc. Also note that the floating-point numbers within the `.tmk` files are all stored **little-endian**.
-* See if you can find matching content on your site, using initial match-threshold numbers.
-* Please feel free to contact us with feedback on the code, this documentation, or any other suggestions for additional rollout of this algorithm. And/or simply put up a pul request if you prefer.
-* In particular, we already know that several companies preferred a Java port of PDQ; we suspect the same will hold true for TMK.
+- Make sure you can hash the exact same sample videos (in this repo -- see below) and get the same hashes (within roundoff error)
+- Let us know about file-format issues: at FB the upload-checker runs after videos in various formats have been transcoded to MP4, so we have no data on TMK with AVI, MOV, etc. Also note that the floating-point numbers within the `.tmk` files are all stored **little-endian**.
+- See if you can find matching content on your site, using initial match-threshold numbers.
+- Please feel free to contact us with feedback on the code, this documentation, or any other suggestions for additional rollout of this algorithm. And/or simply put up a pull request if you prefer.
+- In particular, we already know that several companies preferred a Java port of PDQ; we suspect the same will hold true for TMK.
 
 # TMK scoring
 
-* For each video file, the hasher channels the output of `ffmpeg` (which you need to separately install) to produce a `.tmk` file.
-* You can think of the feature-vectors file as opaque binary files if you like. However please do see `./tmk/tools/tmkdump.py` which shows how to display the binary `.tmk` files in human-readable format.
-* The **.tmk** files contain:
-  * **Metadata** about how the hash was computed (so we can avoid mixing hashes produced by different, incompatible software).
-  * A **pure-average feature**. Think of a 'frame feature' as a floating-point hash of a single video frame. Then the pure-average feature is the slotwise average over all the frames of the video.
-  * **Cosine and sine features**. These are nothing more than **weighted** average of frame features, with various periods and various fourier-coefficient weights
-* We can compute a **level-1 score** for a pair of videos using cosine similarity of their pure-average features. This is quick to compute.
-* If the level-1 score is less than a threshold, the videos don't match. If it's above, then we compute a **level-2 score** using all the cosine/sine features. (Details are in `tmkfv.cpp`.) If this level-2 score is over a second threshold, then the videos do match. (If you want to compute the full TMK level-2 pair-score between an arbitrary pair of videos, then set the level-1 threshold to -1.)
-* Possible values for level-1 score range from -1 to 1 (1 being perfect match); possible values for level-2 score range from 0 to 1 (1 being perfect match).
-* Values of those thresholds are suggested at 0.7 for each.
+- For each video file, the hasher channels the output of `ffmpeg` (which you need to separately install) to produce a `.tmk` file.
+- You can think of the feature-vectors file as opaque binary files if you like. However please do see `./tmk/tools/tmkdump.py` which shows how to display the binary `.tmk` files in human-readable format.
+- The **.tmk** files contain:
+  - **Metadata** about how the hash was computed (so we can avoid mixing hashes produced by different, incompatible software).
+  - A **pure-average feature**. Think of a 'frame feature' as a floating-point hash of a single video frame. Then the pure-average feature is the slotwise average over all the frames of the video.
+  - **Cosine and sine features**. These are nothing more than **weighted** average of frame features, with various periods and various fourier-coefficient weights
+- We can compute a **level-1 score** for a pair of videos using cosine similarity of their pure-average features. This is quick to compute.
+- If the level-1 score is less than a threshold, the videos don't match. If it's above, then we compute a **level-2 score** using all the cosine/sine features. (Details are in `tmkfv.cpp`.) If this level-2 score is over a second threshold, then the videos do match. (If you want to compute the full TMK level-2 pair-score between an arbitrary pair of videos, then set the level-1 threshold to -1.)
+- Possible values for level-1 score range from -1 to 1 (1 being perfect match); possible values for level-2 score range from 0 to 1 (1 being perfect match).
+- Values of those thresholds are suggested at 0.7 for each.
 
 # Prerequisites
-We need to have ffmpeg (https://www.ffmpeg.org/) downloaded and working. 
+
+We need to have ffmpeg (https://www.ffmpeg.org/) downloaded and working.
 
 The sample hashes were generated with ffmpeg version 4.1 so if you have any issues with `make regtest` check your ffmpeg version.
 
 # Getting started
+
 First let's compile the code and compute hashes of some sample videos, and make
 sure we're all getting compatible results. Namely, I've got some sample videos
 in this repository which I've hashed on my platform. If you hash those exact
@@ -68,9 +70,19 @@ $ make
 
 Notes:
 
-* We have a simple `Makefile` in order to reduce the number of dependencies, so people can get up and running quicker.
-* FB-internally we use `buck`; please let us know if you want Buck `TARGETS` files.
-* This simple Makefile build does not execute any `*test*.cpp` files, which `buck test` would. Hence the importance of computing hashes for sample videos (see next step).
+- We have a simple `Makefile` in order to reduce the number of dependencies, so people can get up and running quicker.
+- FB-internally we use `buck`; please let us know if you want Buck `TARGETS` files.
+- This simple Makefile build does not execute any `*test*.cpp` files, which `buck test` would. Hence the importance of computing hashes for sample videos (see next step).
+
+## Windows users
+
+Some basic modifications have been made to enable support for Windows. To compile, you will also need to install `make`, e.g., via [choco](https://community.chocolatey.org/packages/make) and [MinGW](https://osdn.net/projects/mingw/).
+  - MinGW needs to be added to the system path in order to compile and use the executables
+
+Known issues:
+  - The tests will not run after `make` without more changes, but they can be run manually
+  - Avoid BOM or CRLF line endings (e.g., if `haystack.txt` files are supplied)
+  - Use of absolute file paths may need more work in some cases. Try relative paths, or copying executables (like `ffmpeg.exe`) to your local directory.
 
 ## Compute hashes of sample videos and compare to previous outputs
 
@@ -281,7 +293,7 @@ $ find /path/to/your/hashes -name '*.tmk' | tmk-clusterize -s --min 2 -i
 $ find /path/to/shared/hashes -name '*.tmk' | tmk-clusterize --min 2 -i
 ```
 
-This concludes the walkthrough.  Please see
+This concludes the walkthrough. Please see
 [README-more.md](https://github.com/facebook/ThreatExchange/blob/main/hashing/tmk/README-more.md)
 for more detailed reference information.
 
@@ -290,7 +302,7 @@ for more detailed reference information.
 Out of `n` videos there are `n*(n-1)/2` pairs. For all 2,679 video hashes
 within a particular dataset used for this section, that's over 3 million
 pair-scores to compute. So we took a random sample of about 400, resulting in
-about 85,000 possible distinct pairs.  Here we're plotting histograms of the
+about 85,000 possible distinct pairs. Here we're plotting histograms of the
 level-1 scores, the level-2 scores, and the joint density.
 
 Remember from above we use the level-2 score to decide if two videos match or

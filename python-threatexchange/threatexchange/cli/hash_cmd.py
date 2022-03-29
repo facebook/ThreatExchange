@@ -10,7 +10,7 @@ import sys
 import typing as t
 from threatexchange.cli.cli_config import CLISettings
 
-from threatexchange.signal_type.signal_base import FileHasher, TextHasher
+from threatexchange.signal_type.signal_base import BytesHasher, FileHasher, TextHasher
 from threatexchange.cli import command_base
 
 
@@ -19,9 +19,10 @@ class HashCommand(command_base.Command):
     """
     Hash content into signatures (aka hashes).
 
-    Reads inputs as filenames by default, or as text with --as-text.
+    Reads inputs as filenames by default, though it will attempt to read
+    inline with --inline. Most useful with with content type `text`.
 
-    You can also pass in via stdin by using "-" as the input.
+    You can also pass in via stdin by using "-" as the content.
     """
 
     USE_STDIN = "-"
@@ -29,24 +30,30 @@ class HashCommand(command_base.Command):
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap) -> None:
 
+        signal_types = [
+            s
+            for s in settings.get_all_signal_types()
+            if issubclass(s, (TextHasher, BytesHasher))
+        ]
+
         ap.add_argument(
             "content_type",
-            choices=[c.get_name() for c in settings.get_all_content_types()],
+            choices={c.get_name() for s in signal_types for c in s.get_content_types()},
             help="what kind of content to hash",
         )
 
         ap.add_argument(
             "--signal-type",
             "-S",
-            choices=[s.get_name() for s in settings.get_all_signal_types()],
+            choices=[s.get_name() for s in signal_types],
             help="only generate these signal types",
         )
 
         ap.add_argument(
-            "--as-text",
-            "-T",
+            "--inline",
+            "-I",
             action="store_true",
-            help="interpret content as text instead of as filenames",
+            help="interpret content inline instead of as filenames",
         )
 
         ap.add_argument(
@@ -59,7 +66,7 @@ class HashCommand(command_base.Command):
         self,
         content_type: str,
         signal_type: t.Optional[str],
-        as_text: bool,
+        inline: bool,
         content: t.Union[t.List[str], t.TextIO],
     ) -> None:
         self.content_type_str = content_type
@@ -67,7 +74,7 @@ class HashCommand(command_base.Command):
 
         if content == [self.USE_STDIN]:
             content = sys.stdin
-        self.input_generator = self._parse_input(content, as_text)
+        self.input_generator = self._parse_input(content, inline)
 
     def _parse_input(
         self,

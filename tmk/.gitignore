@@ -22,3 +22,4 @@ cpp/tmk-two-level-score
 cpp/tmk-two-level-score-parallel
 cpp/tmkdump
 cpp/vstr2feat
+cpp/*.exe
