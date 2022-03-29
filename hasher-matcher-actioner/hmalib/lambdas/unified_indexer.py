@@ -137,7 +137,8 @@ def lambda_handler(event, context):
             config=s3_config, metrics_logger=metrics.names.indexer
         ).load_data()
 
-        bank_data = get_all_bank_hash_rows(signal_type, banks_table)
+        with metrics.timer(metrics.names.indexer.get_bank_data):
+            bank_data = get_all_bank_hash_rows(signal_type, banks_table)
 
         with metrics.timer(metrics.names.indexer.merge_datafiles):
             logger.info(f"Merging {signal_type} Hash files")

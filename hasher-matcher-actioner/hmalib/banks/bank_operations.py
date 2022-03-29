@@ -135,7 +135,7 @@ def add_detached_bank_member_signal_batch(
     signals: t.Iterable[Signal],
 ) -> t.Iterable[BankMemberSignal]:
     """
-    Dump a large number of detached signals into a bank. Check
+    Dump multiple detached signals into a bank. Check
     add_detached_bank_member_signal for more details.
 
     TODO: At this point, is dumb. Does not actually batch the requests, instead
