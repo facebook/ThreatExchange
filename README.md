@@ -1,25 +1,32 @@
-# Facebook ThreatExchange
+# Projects in this Repository
 
-ThreatExchange is a set of RESTful APIs on the Facebook Platform for querying, publishing, and sharing security threat information. It's a lightweight way for exchanging details on malware, phishing pages, and other threats with either specific members of the community or the ThreatExchange community at large.
+This repository originally started as code to support Meta's ThreatExchange API, but over time has grown to include a number of projects to support signal exchange and content moderation in general. Below are a list of sub-projects.
 
-For full details on ThreatExchange and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
+## PDQ Photo Hashing and Similarity Matching
 
-## API Reference Examples
+PDQ is a photo hashing algorithm that can turn photos into 256 bit signatures which can then be used to match other photos. 
 
-The `api-reference-examples` folder contains example implementations in various languages for using the API. These implementations are at various stages of completeness and may not all implement every endpoint available on the ThreatExchange API. For full details on the ThreatExchange API and UI, data formats, and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
+## TMK+PDQF (TMK) Video Hashing and Similarity Matching
+
+TMK+PDQF (or TMK for short) is a video hashing algorithm that can turn videos into 256KB signatures which can be used to match other videos.
+
+## Hasher-Matcher-Actioner (HMA) Trust & Safety Platform
+
+HMA is a ready-to-deploy content moderation project for AWS, containing many submodules. It allows you to maintain lists of known content to scan for, which you can either curate yourself or connect to other hash exchange programs to share and recieve lists.  More can be found [at the wiki](https://github.com/facebook/ThreatExchange/wiki).
 
 ## python-threatexchange
 
-A python Library/CLI tool available on pypi under `threatexchange` which allows basic integration with ThreatExchange and matching on ThreatExchange signals.
+A python Library/CLI tool available on pypi under `threatexchange` which provides implementations for content scanning and signal exchange. It provides reference implementations in python for downloading hashes from Meta's ThreatExchange API, scanning images with PDQ, and others. It can also be easily extended to work with other hash exchanges and other tecnhniques, not all of which are written by the maintainers of this repository.
 
-## PDQ and TMK Hashing Technologies
 
-ThreatExchange supports a variety of hashing algorithms for photos and videos. Two widely used algorithms are PDQ for photos and TMK for videos. The top-level folders `pdq` and `tmk` includes documentation and  implementation examples of these algorithms.
+## Meta's ThreatExchange API Reference Examples
 
-## Hasher-Matcher-Actioner (HMA)
+The `api-reference-examples` folder contains example implementations in various languages for using the API. These implementations are at various stages of completeness and may not all implement every endpoint available on the ThreatExchange API. For full details on the ThreatExchange API and UI, data formats, and best practices are available in the [ThreatExchange docs](https://developers.facebook.com/docs/threat-exchange/).
 
-This is a deployable project for bootstrapping content moderation, containing many sub parts. The initial capabilities support shared banks of image hashes kept in sync via ThreatExchange. Uses docker images (including proof-of-concept HMA-lite), as well as terraform configuration for setting up on AWS.
+# Meta's ThreatExchange API
+ThreatExchange is a set of RESTful APIs on the Facebook Platform for querying, publishing, and sharing security threat information. It's a lightweight way for exchanging details on malware, phishing pages, and other threats with either specific members of the community or the ThreatExchange community at large.
 
+For full details on ThreatExchange and best practices are available in the ThreatExchange docs.
 
 ## Get All Available Data
 
@@ -31,6 +38,7 @@ You can also explore the dataset using the hosted [ThreatExchange UI](https://de
 
 To request access to ThreatExchange, please submit an application via [https://developers.facebook.com/products/threat-exchange/](https://developers.facebook.com/products/threat-exchange/).
 
+# Other Information about this Repository
 ## Contributing
 
 We welcome contributions! See [CONTRIBUTING](https://github.com/facebook/ThreatExchange/blob/main/CONTRIBUTING.md) for details on how to get started, and our [Code of Conduct](https://github.com/facebook/ThreatExchange/blob/main/CODE_OF_CONDUCT.md).
