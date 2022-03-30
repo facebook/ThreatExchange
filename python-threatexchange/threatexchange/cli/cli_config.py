@@ -145,6 +145,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
 
     def update_collab(self, collab: collab_config.CollaborationConfigBase) -> None:
         """Create or update a collaboration"""
+        assert collab.api, "didn't set API?"
         path = self.path_for_collab_config(collab)
         cli_json.dataclass_dump_file(path, collab)
 

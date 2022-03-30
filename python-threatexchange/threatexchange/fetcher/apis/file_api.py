@@ -17,17 +17,20 @@ from threatexchange.fetcher.simple.state import (
 
 from threatexchange.fetcher import fetch_state as state
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
-from threatexchange.fetcher.collab_config import (
-    CollaborationConfigBase,
-    DefaultsForCollabConfigBase,
-)
+from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
 
 
 @dataclass
-class FileCollaborationConfig(CollaborationConfigBase, DefaultsForCollabConfigBase):
+class _FileCollaborationConfigRequiredFields:
     filename: str
-    signal_type: t.Optional[str]
+
+
+@dataclass
+class FileCollaborationConfig(
+    CollaborationConfigWithDefaults, _FileCollaborationConfigRequiredFields
+):
+    signal_type: t.Optional[str] = None
 
 
 class LocalFileSignalExchangeAPI(SignalExchangeAPI):
