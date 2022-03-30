@@ -6,6 +6,7 @@
 #include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
 
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,13 +30,14 @@ void handleListFpOrDie(
     std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures);
 
-void handletmkFileNameOrDie(
+void handleTmkFileNameOrDie(
     const char* argv0,
     const char* tmkFileName,
     std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures);
 
 // ================================================================
+
 void usage(char* argv0, int exit_rc) {
   FILE* fp = (exit_rc == 0) ? stdout : stderr;
   fprintf(
@@ -58,12 +60,15 @@ void usage(char* argv0, int exit_rc) {
       fp,
       "--c2 {y}: Level-2 threshold: default %.3f.\n",
       FULL_DEFAULT_LEVEL_2_THRESHOLD);
+  fprintf(fp, "--level-1-only: Don't do level-2 thresholding (runs faster).\n");
   exit(exit_rc);
 }
 
 // ================================================================
+
 int main(int argc, char** argv) {
   bool verbose = false;
+  bool level1Only = false;
   float c1 = FULL_DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = FULL_DEFAULT_LEVEL_2_THRESHOLD;
 
@@ -74,6 +79,8 @@ int main(int argc, char** argv) {
       usage(argv[0], 0);
     } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
       verbose = true;
+    } else if (!strcmp(flag, "--level-1-only")) {
+      level1Only = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -165,37 +172,49 @@ int main(int argc, char** argv) {
   // QUERY
   std::chrono::time_point<std::chrono::system_clock> startQuery =
       std::chrono::system_clock::now();
-  for (const auto& it1 : needlesMetadataToFeatures) {
-    const std::string& metadata1 = it1.first;
-    std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
 
-    if (verbose) {
-      printf("\n");
-      printf("QUERY FOR %s\n", metadata1.c_str());
-    }
+  #pragma omp parallel
+  #pragma omp single nowait
+  {
+    for (const auto& it1 : needlesMetadataToFeatures) {
+      #pragma omp task firstprivate(it1)
+      {
+        const std::string& metadata1 = it1.first;
+        std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
 
-    for (const auto& it2 : haystackMetadataToFeatures) {
-      const std::string& metadata2 = it2.first;
-      std::shared_ptr<TMKFeatureVectors> pfv2 = it2.second;
-
-      float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
-      if (s1 >= c1) {
-        float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
-        if (s2 >= c2) {
-          if (verbose) {
-            printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
-          } else {
-            printf(
-                "%.6f %.6f %s %s\n",
-                s1,
-                s2,
-                metadata1.c_str(),
-                metadata2.c_str());
-          }
+        if (verbose) {
+          printf("\n");
+          printf("QUERY FOR %s\n", metadata1.c_str());
         }
-      }
-    }
-  }
+
+        for (const auto& it2 : haystackMetadataToFeatures) {
+          #pragma omp task firstprivate(it2)
+          {
+            const std::string& metadata2 = it2.first;
+            std::shared_ptr<TMKFeatureVectors> pfv2 = it2.second;
+
+            float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
+            if (s1 >= c1) {
+              float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+              if (s2 >= c2) {
+                if (verbose) {
+                  printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
+                } else {
+                  printf(
+                      "%.6f %.6f %s %s\n",
+                      s1,
+                      s2,
+                      metadata1.c_str(),
+                      metadata2.c_str());
+                }
+              }
+            }
+          } // end omp task it2
+        } // end for loop it2
+      } // end omp task it1
+    } // end for loop it1
+  } // end parallel
+  #pragma omp taskwait
 
   std::chrono::time_point<std::chrono::system_clock> endQuery =
       std::chrono::system_clock::now();
@@ -245,12 +264,12 @@ void handleListFpOrDie(
         tmkFileName[linelen - 1] = 0;
       }
     }
-    handletmkFileNameOrDie(argv0, tmkFileName, metadataToFeatures);
+    handleTmkFileNameOrDie(argv0, tmkFileName, metadataToFeatures);
   }
 }
 
 // ----------------------------------------------------------------
-void handletmkFileNameOrDie(
+void handleTmkFileNameOrDie(
     const char* argv0,
     const char* tmkFileName,
     std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&

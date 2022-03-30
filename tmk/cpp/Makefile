@@ -50,6 +50,12 @@ LIBOBJ= \
 ./raster/rasterwriters.o \
 ./raster/timeresamplers.o
 
+EXE_PARALLEL= \
+ tmk-query-parallel \
+ tmk-clusterize-parallel \
+ tmk-two-level-score-parallel \
+ tmk-query-with-faiss
+
 EXE= \
  tmk-hash-video \
  feat2tmk \
@@ -62,11 +68,10 @@ EXE= \
  tmk-query \
  tmk-two-level-score
 
-# Pending https://github.com/facebook/ThreatExchange/issues/197:
-# tmk-query-with-faiss \
-
 # ================================================================
 all: $(EXE) regtest
+
+parallel: $(EXE_PARALLEL)
 
 regtest: tmk-hash-video tmk-compare-two-tmks .always
 	mkdir -p ./regtest
@@ -170,7 +175,7 @@ tmk-two-level-score: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
 tmk-clusterize-parallel: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
 	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-clusterize.cpp -o tmk-clusterize-parallel -L. -ltmk $(OMP_LIB)
 tmk-query-with-faiss: ./bin/tmk-query-with-faiss.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) -Xpreprocessor -fopenmp -I/usr/local/include/faiss -DTMK_PREFER_FAISS bin/tmk-query.cpp bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss $(OMP_LIB) -Wl,-rpath,/usr/local/lib
+	$(CC_IF_WIN) -Xpreprocessor -fopenmp -I/usr/local/include/faiss bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss $(OMP_LIB) -Wl,-rpath,/usr/local/lib
 tmk-query-parallel: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
 	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-query.cpp -o tmk-query-parallel -L. -ltmk $(OMP_LIB)
 tmk-two-level-score-parallel: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
@@ -186,6 +191,7 @@ clean:
 	-rm -vf libtmk.a
 	-rm -vf $(LIBOBJ)
 	-rm -vf $(EXE)
+	-rm -vf $(EXE_PARALLEL)
 	-rm -vf regtest/*.tmk
 
 .always:

@@ -20,10 +20,12 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 
 #include <tmk/cpp/algo/tmkfv.h>
 #include <tmk/cpp/io/tmkio.h>
+#include <tmk/cpp/bin/tmk_default_thresholds.h>
 
-#include <IndexIVFPQ.h>
-#include <IndexFlat.h>
-#include <index_io.h>
+#include <faiss/IndexIVFPQ.h>
+#include <faiss/IndexFlat.h>
+#include <faiss/index_io.h>
+#include <faiss/utils/distances.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,8 +43,6 @@ using namespace facebook::tmk::algo;
 // possible scan through input video-data. Command-line flags --c1 and --c2
 // can be used for search-pruning. Note that thresholds depend on choice of
 // frame-feature algorithm.
-#define DEFAULT_LEVEL_1_THRESHOLD -1.0
-#define DEFAULT_LEVEL_2_THRESHOLD 0.0
 
 void handleListFileNameOrDie(
     const char* argv0,
@@ -85,12 +85,19 @@ void usage(char* argv0, int exit_rc) {
       fp,
       "--c2 {y}: Level-2 threshold: default %.3f.\n",
       DEFAULT_LEVEL_2_THRESHOLD);
+  fprintf(fp, "--min {n}: Return a maximum of n nearest neighbors. Using 5\n");
+  fprintf(fp, "--level-1-only: Don't do level-2 thresholding (runs faster).\n");
+  fprintf(fp, "-f|--force: Force query to use FAISS even if below minimum number of points\n");
+  fprintf(fp, "-v|--verbose: Be more verbose.\n");
   exit(exit_rc);
 }
 
 // ================================================================
 int main(int argc, char** argv) {
   bool verbose = false;
+  bool level1Only = false;
+  bool force = false;
+  int k = 5;
   float c1 = DEFAULT_LEVEL_1_THRESHOLD;
   float c2 = DEFAULT_LEVEL_2_THRESHOLD;
   int i, j;
@@ -102,6 +109,10 @@ int main(int argc, char** argv) {
       usage(argv[0], 0);
     } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
       verbose = true;
+    } else if (!strcmp(flag, "-f") || !strcmp(flag, "--force")) {
+      force = true;
+    } else if (!strcmp(flag, "--level-1-only")) {
+      level1Only = true;
 
     } else if (!strcmp(flag, "--c1")) {
       if (argi >= argc) {
@@ -116,6 +127,14 @@ int main(int argc, char** argv) {
         usage(argv[0], 1);
       }
       if (sscanf(argv[argi], "%f", &c2) != 1) {
+        usage(argv[0], 1);
+      }
+      argi++;
+    } else if (!strcmp(flag, "--min")) {
+      if (argi >= argc) {
+        usage(argv[0], 1);
+      }
+      if (sscanf(argv[argi], "%d", &k) != 1) {
         usage(argv[0], 1);
       }
       argi++;
@@ -161,22 +180,37 @@ int main(int argc, char** argv) {
   size_t num_database_vectors = haystackMetadataToFeatures.size();
 
   // Make the index object and train it
-  faiss::IndexFlatL2 coarse_quantizer(vector_dimension);
+  // note: this implementation is almost certainly wrong without using inner product, but that can be a future PR.
+  faiss::IndexFlatIP coarse_quantizer(vector_dimension);
 
   // A reasonable number of centroids to index num_database_vectors vectors
   int num_centroids = int(4 * sqrt(num_database_vectors));
   if (num_centroids > num_database_vectors) {
     num_centroids = num_database_vectors;
   }
-  printf("VECTOR_DIMENSION     %d\n", (int)vector_dimension);
-  printf("NUM_DATABASE_VECTORS %d\n", (int)num_database_vectors);
-  printf("NUM_CENTROIDS        %d\n", (int)num_centroids);
+  if (verbose) {
+    printf("VECTOR_DIMENSION     %d\n", (int)vector_dimension);
+    printf("NUM_DATABASE_VECTORS %d\n", (int)num_database_vectors);
+    printf("NUM_CENTROIDS        %d\n", (int)num_centroids);
+  }
 
   // The coarse quantizer should not be deallocated before the index.
   // 4 = number of bytes per code (vector_dimension must be a multiple of this)
   // 8 = number of bits per sub-code (almost always 8)
   faiss::IndexIVFPQ faiss_index(&coarse_quantizer, vector_dimension, num_centroids, 4, 8);
   faiss_index.verbose = verbose;
+
+  // check for min data size for optimal FAISS performance
+  int min_points = faiss_index.cp.min_points_per_centroid * num_centroids;
+  if (num_database_vectors < min_points) {
+    if (verbose) {
+      printf("MINIMUM POINTS NOT MET FOR FAISS: %d FOUND vs %d EXPECTED\n", (int)num_database_vectors, min_points);
+    }
+    if (!force) {
+      printf(stderr, "Number of points is below minimum size for faiss. Run with --force flag to ignore this error.\n");
+      exit(2);
+    }
+  }
 
   // Really a vector of vectors but for FAISS it's one long vector
   std::vector<float> database(num_database_vectors * vector_dimension);
@@ -190,14 +224,22 @@ int main(int argc, char** argv) {
     i++;
   }
 
+  faiss::fvec_renorm_L2(vector_dimension, num_database_vectors, database.data());
+
   // Train the quantizer, using the database
-  printf("Start training the quantizer:\n");
+  if (verbose) {
+    printf("Start training the quantizer:\n");
+  }
   faiss_index.train(num_database_vectors, database.data());
-  printf("End training the quantizer.\n");
+  if (verbose) {
+    printf("End training the quantizer.\n");
+  }
 
   faiss_index.add(num_database_vectors, database.data());
 
-  printf("imbalance factor: %g\n", faiss_index.invlists->imbalance_factor());
+  if (verbose) {
+    printf("imbalance factor: %g\n", faiss_index.invlists->imbalance_factor());
+  }
 
   std::vector<std::string> haystack_filenames_as_vector(haystackMetadataToFeatures.size());
   std::vector<std::string> needles_filenames_as_vector(needlesMetadataToFeatures.size());
@@ -278,8 +320,11 @@ int main(int argc, char** argv) {
     i++;
   }
 
-  int k = 5;
-  printf("Searching for the %d nearest neighbors\n", k);
+  faiss::fvec_renorm_L2(vector_dimension, num_queries, queries.data());
+
+  if (verbose) {
+    printf("Searching for the %d nearest neighbors\n", k);
+  }
 
   std::vector<faiss::Index::idx_t> nearest_neighbor_indices(k * num_queries);
   std::vector<float> nearest_neighbor_distances(k * num_queries);
@@ -303,8 +348,10 @@ int main(int argc, char** argv) {
         querySeconds.count() / needlesMetadataToFeatures.size());
   }
 
-  printf("Query results (vector IDs, then distances):\n");
-  printf("(Note that the nearest neighbor is not always at distance 0 due to quantization errors.)\n");
+  if (verbose) {
+    printf("Query results (vector IDs, then distances):\n");
+    printf("(Note that the nearest neighbor is not always at distance 0 due to quantization errors.)\n");
+  }
 
   for (i = 0; i < num_queries; i++) {
     const std::string& needleFilename = needles_filenames_as_vector[i];
@@ -321,13 +368,18 @@ int main(int argc, char** argv) {
       const std::shared_ptr<TMKFeatureVectors> phaystackFV = haystackMetadataToFeatures.at(haystackFilename);
 
       float s1 = TMKFeatureVectors::computeLevel1Score(*pneedleFV, *phaystackFV);
-      float s2 = TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
 
-      printf("  distance %.6f L1 %.6f L2 %.6f metadata %s\n",
-        nndist,
-        s1,
-        s2,
-        haystackFilename.c_str());
+      if (s1 >= c1) {
+        float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
+
+        if (s2 >= c2) {
+          printf("  distance %.6f L1 %.6f L2 %.6f metadata %s\n",
+            nndist,
+            s1,
+            s2,
+            haystackFilename.c_str());
+        }
+      }
     }
     printf("\n");
   }
