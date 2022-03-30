@@ -563,7 +563,8 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
         if list_available_collabs:
             self.action = self.execute_list_collabs
         elif import_collab is not None:
-            self.action = lambda s: self.execute_import(s, import_collab)
+            tmp_for_typing = import_collab
+            self.action = lambda s: self.execute_import(s, tmp_for_typing)
 
     def execute(self, settings: CLISettings) -> None:
         self.action(settings)
