@@ -52,6 +52,9 @@ jobs:
       - name: Check python types
         run: |
           python -m mypy hmalib
+      - name: No local threatexchange
+        run: |
+          ./scripts/set_threatexchange_source ensure-pypi
   test:
     name: Run python tests
     runs-on: ubuntu-latest

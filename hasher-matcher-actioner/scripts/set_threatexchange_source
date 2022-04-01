@@ -1,0 +1,58 @@
+#!/bin/bash
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+# Use Threatexchange from pypi or from a directory. Makes changes so that local
+# runs AND docker builds both use the appropriate threatexchange library.
+
+usage() {
+    printf 'Usage: %s pypi | local \n' "$(basename "$0")"
+}
+
+if [ ! -d "hmalib" ]; then
+    printf 'Run from hasher-matcher-actioner directory\n'
+    exit 1
+fi
+
+if [ $# -eq 0 ]; then
+    usage && exit 1
+fi
+
+declare -a DOCKER_COPY_INSTRUCTIONS=(
+    'COPY local-threatexchange local-threatexchange/'
+    'RUN python3 -m pip install ./local-threatexchange --target "${DEPS_PATH}"'
+)
+
+DOCKERFILE='Dockerfile'
+
+if [ $1 == "pypi" ]; then
+    rm -r threatexchange 2>/dev/null
+    rm -r threatexchange-setup.py 2>/dev/null
+
+    sed -e 's/#\"threatexchange/\"threatexchange/' -i setup.py # remove from setup.py
+    pip install .                                              # add to site-packages for local stuff
+
+    for instruction in "${DOCKER_COPY_INSTRUCTIONS[@]}"; do
+        line_with_instruction=$(grep -n "$instruction" $DOCKERFILE | cut -d':' -f 1)
+        if [ ! $line_with_instruction == "" ]; then
+            sed -i "${line_with_instruction}d" $DOCKERFILE
+        fi
+    done
+
+    exit 0
+elif [ $1 == "local" ]; then
+    sed -e 's/"threatexchange/#\"threatexchange/' -i setup.py # remove from setup.py
+    pip uninstall -y threatexchange                           # remove from current site-packages
+
+    # Copy and install from source
+    cp -r ../python-threatexchange/ ./local-threatexchange
+    python -m pip install -e ./local-threatexchange
+
+    for instruction in "${DOCKER_COPY_INSTRUCTIONS[@]}"; do
+        echo $instruction
+        grep -qxF "$instruction" $DOCKERFILE || echo $instruction >>$DOCKERFILE
+    done
+    exit 0
+else
+    printf 'Unsupported source for threatexchange: %s\n' "$1"
+    usage && exit 1
+fi
