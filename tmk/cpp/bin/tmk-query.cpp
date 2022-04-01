@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include <chrono>
-#include <map>
+#include <unordered_map>
 #include <set>
 
 using namespace facebook::tmk;
@@ -21,19 +21,19 @@ using namespace facebook::tmk::algo;
 void handleListFileNameOrDie(
     const char* argv0,
     const char* listFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+    std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures);
 
 void handleListFpOrDie(
     const char* argv0,
     FILE* listFp,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+    std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures);
 
 void handleTmkFileNameOrDie(
     const char* argv0,
     const char* tmkFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+    std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures);
 
 // ================================================================
@@ -109,9 +109,9 @@ int main(int argc, char** argv) {
   std::chrono::time_point<std::chrono::system_clock> startLoad =
       std::chrono::system_clock::now();
 
-  std::map<std::string, std::shared_ptr<TMKFeatureVectors>>
+  std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>
       needlesMetadataToFeatures;
-  std::map<std::string, std::shared_ptr<TMKFeatureVectors>>
+  std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>
       haystackMetadataToFeatures;
 
   if ((argc - argi) == 1) {
@@ -173,48 +173,45 @@ int main(int argc, char** argv) {
   std::chrono::time_point<std::chrono::system_clock> startQuery =
       std::chrono::system_clock::now();
 
-  #pragma omp parallel
-  #pragma omp single nowait
-  {
-    for (const auto& it1 : needlesMetadataToFeatures) {
-      #pragma omp task firstprivate(it1)
-      {
-        const std::string& metadata1 = it1.first;
-        std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
+  std::vector<std::string> filenames;
+  filenames.reserve(haystackMetadataToFeatures.size());
 
-        if (verbose) {
-          printf("\n");
-          printf("QUERY FOR %s\n", metadata1.c_str());
-        }
+  for (const auto &s : haystackMetadataToFeatures) {
+    filenames.push_back(s.first);
+  }
 
-        for (const auto& it2 : haystackMetadataToFeatures) {
-          #pragma omp task firstprivate(it2)
-          {
-            const std::string& metadata2 = it2.first;
-            std::shared_ptr<TMKFeatureVectors> pfv2 = it2.second;
+  for (const auto& it1 : needlesMetadataToFeatures) {
+    const std::string& metadata1 = it1.first;
+    std::shared_ptr<TMKFeatureVectors> pfv1 = it1.second;
 
-            float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
-            if (s1 >= c1) {
-              float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
-              if (s2 >= c2) {
-                if (verbose) {
-                  printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
-                } else {
-                  printf(
-                      "%.6f %.6f %s %s\n",
-                      s1,
-                      s2,
-                      metadata1.c_str(),
-                      metadata2.c_str());
-                }
-              }
+    if (verbose) {
+      printf("\n");
+      printf("QUERY FOR %s\n", metadata1.c_str());
+    }
+
+    #pragma omp parallel for schedule(dynamic)
+      for (unsigned int i = 0; i < filenames.size(); i++) {
+        const std::string& metadata2 = filenames[i];
+        std::shared_ptr<TMKFeatureVectors> pfv2 = haystackMetadataToFeatures.at(metadata2);
+
+        float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
+        if (s1 >= c1) {
+          float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+          if (s2 >= c2) {
+            if (verbose) {
+              printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
+            } else {
+              printf(
+                  "%.6f %.6f %s %s\n",
+                  s1,
+                  s2,
+                  metadata1.c_str(),
+                  metadata2.c_str());
             }
-          } // end omp task it2
-        } // end for loop it2
-      } // end omp task it1
-    } // end for loop it1
-  } // end parallel
-  #pragma omp taskwait
+          }
+        }
+      } // end parallel
+  } // end needles loop
 
   std::chrono::time_point<std::chrono::system_clock> endQuery =
       std::chrono::system_clock::now();
@@ -234,7 +231,7 @@ int main(int argc, char** argv) {
 void handleListFileNameOrDie(
     const char* argv0,
     const char* listFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+    std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures) {
   FILE* fp = fopen(listFileName, "r");
   if (fp == nullptr) {
@@ -253,7 +250,7 @@ void handleListFileNameOrDie(
 void handleListFpOrDie(
     const char* argv0,
     FILE* listFp,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+    std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures) {
   char* tmkFileName = nullptr;
   size_t linelen = 0;
@@ -272,7 +269,7 @@ void handleListFpOrDie(
 void handleTmkFileNameOrDie(
     const char* argv0,
     const char* tmkFileName,
-    std::map<std::string, std::shared_ptr<TMKFeatureVectors>>&
+    std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>&
         metadataToFeatures) {
   std::shared_ptr<TMKFeatureVectors> pfv =
       TMKFeatureVectors::readFromInputFile(tmkFileName, argv0);

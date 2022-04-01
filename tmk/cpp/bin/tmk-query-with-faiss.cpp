@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
       printf("MINIMUM POINTS NOT MET FOR FAISS: %d FOUND vs %d EXPECTED\n", (int)num_database_vectors, min_points);
     }
     if (!force) {
-      printf(stderr, "Number of points is below minimum size for faiss. Run with --force flag to ignore this error.\n");
+      fprintf(stderr, "Number of points is below minimum size for faiss. Run with --force flag to ignore this error.\n");
       exit(2);
     }
   }

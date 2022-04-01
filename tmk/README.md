@@ -77,12 +77,30 @@ Notes:
 ## Windows users
 
 Some basic modifications have been made to enable support for Windows. To compile, you will also need to install `make`, e.g., via [choco](https://community.chocolatey.org/packages/make) and [MinGW](https://osdn.net/projects/mingw/).
-  - MinGW needs to be added to the system path in order to compile and use the executables
+
+- MinGW needs to be added to the system path in order to compile and use the executables
 
 Known issues:
-  - The tests will not run after `make` without more changes, but they can be run manually
-  - Avoid BOM or CRLF line endings (e.g., if `haystack.txt` files are supplied)
-  - Use of absolute file paths may need more work in some cases. Try relative paths, or copying executables (like `ffmpeg.exe`) to your local directory.
+
+- The tests will not run after `make` without more changes, but they can be run manually
+- Avoid BOM or CRLF line endings (e.g., if `haystack.txt` files are supplied)
+- Use of absolute file paths may need more work in some cases. Try relative paths, or copying executables (like `ffmpeg.exe`) to your local directory.
+
+## Performance and parallelization
+
+Parallelized variants of some of the binaries can be compiled using `make parallel`.
+
+OpenMP's runtime library and [FAISS](https://github.com/facebookresearch/faiss) are required dependencies. On a Mac, these can be installed with brew (i.e., `brew install libomp faiss`).
+
+Drop-in replacements:
+
+- `tmk-clusterize-parallel` instead of `tmk-clusterize`
+- `tmk-two-level-score-parallel` instead of `tmk-two-level-score`
+- `tmk-query-parallel` or `tmk-query-with-faiss` instead of `tmk-query`
+
+Known issues:
+
+- The current faiss implementation is almost certainly wrong and will produce different results than `tmk-query`
 
 ## Compute hashes of sample videos and compare to previous outputs
 
