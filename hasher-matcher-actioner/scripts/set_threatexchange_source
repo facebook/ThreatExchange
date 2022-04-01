@@ -5,7 +5,7 @@
 # runs AND docker builds both use the appropriate threatexchange library.
 
 usage() {
-    printf 'Usage: %s pypi | local \n' "$(basename "$0")"
+    printf 'Usage: %s pypi | local | ensure-pypi \n' "$(basename "$0")"
 }
 
 if [ ! -d "hmalib" ]; then
@@ -23,10 +23,10 @@ declare -a DOCKER_COPY_INSTRUCTIONS=(
 )
 
 DOCKERFILE='Dockerfile'
+LOCAL_LIB_LOCATION='./local-threatexchange'
 
 if [ $1 == "pypi" ]; then
-    rm -r threatexchange 2>/dev/null
-    rm -r threatexchange-setup.py 2>/dev/null
+    rm -r $LOCAL_LIB_LOCATION 2>/dev/null
 
     sed -e 's/#\"threatexchange/\"threatexchange/' -i setup.py # remove from setup.py
     pip install .                                              # add to site-packages for local stuff
@@ -44,14 +44,29 @@ elif [ $1 == "local" ]; then
     pip uninstall -y threatexchange                           # remove from current site-packages
 
     # Copy and install from source
-    cp -r ../python-threatexchange/ ./local-threatexchange
-    python -m pip install -e ./local-threatexchange
+    cp -r ../python-threatexchange/ LOCAL_LIB_LOCATION
+    python -m pip install -e LOCAL_LIB_LOCATION
 
     for instruction in "${DOCKER_COPY_INSTRUCTIONS[@]}"; do
         echo $instruction
         grep -qxF "$instruction" $DOCKERFILE || echo $instruction >>$DOCKERFILE
     done
     exit 0
+elif [ $1 == "ensure-pypi" ]; then
+    if grep -P "^\s*#(\s)?\"threatexchange" setup.py; then
+        echo "setup.py has threatexchange dependency commented out."
+        printf 'Use: %s pypi \n' "$(basename "$0")"
+        exit 1
+    fi
+
+    for instruction in "${DOCKER_COPY_INSTRUCTIONS[@]}"; do
+        if grep "$instruction" $DOCKERFILE; then
+            echo "Dockerfile has local-threatexchange handling."
+            printf 'Use: %s pypi \n' "$(basename "$0")"
+            exit 1
+        fi
+    done
+
 else
     printf 'Unsupported source for threatexchange: %s\n' "$1"
     usage && exit 1
