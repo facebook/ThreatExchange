@@ -10,13 +10,18 @@ import pathlib
 import typing as t
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
+from threatexchange.signal_type import signal_base
 
-from . import signal_base
 
-
-class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.BytesHasher):
+class VideoMD5Signal(
+    signal_base.SimpleSignalType,
+    signal_base.BytesHasher,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     Simple signal type for Video MD5s.
 
@@ -54,20 +59,3 @@ class VideoMD5Signal(signal_base.SimpleSignalType, signal_base.BytesHasher):
     @staticmethod
     def get_examples() -> t.List[str]:
         return ["cab08b36195edb1a1231d2d09fa450e0", "d41d8cd98f00b204e9800998ecf8427e"]
-
-
-class PhotoMD5Signal(VideoMD5Signal):
-    """
-    Simple signal type for Photo MD5s.
-
-    Unlike Videos, transcoding of photos is quite common. This should be
-    a format of last resort, as the open source PDQ algorithm will usually
-    have much higher recall without too much loss in precision.
-    """
-
-    INDICATOR_TYPE = "HASH_MD5"
-    TYPE_TAG = "media_type_photo"
-
-    @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
-        return [PhotoContent]

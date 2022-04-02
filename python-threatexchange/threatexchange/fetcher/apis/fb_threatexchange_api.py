@@ -23,6 +23,9 @@ from threatexchange.fetcher.collab_config import (
     DefaultsForCollabConfigBase,
 )
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
 
 
 @dataclass
@@ -214,17 +217,33 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
             # Is supposed to be strictly increasing
             highest_time = max(update.time, highest_time)
 
-        # TODO - correctly check types
+        # TODO - We can clobber types that map into multiple
+        type_mapping = {}
+        for st in supported_signal_types:
+            if issubclass(st, HasFbThreatExchangeIndicatorType):
+                types = st.INDICATOR_TYPE
+                if isinstance(types, str):
+                    types = (types,)
+                type_mapping.update((t, st) for t in types)
+            else:
+                # Setdefault here to prefer names claimed by above
+                type_mapping.setdefault(st.get_name(), st)
+        updates = {}
+        for u in batch:
+            record = FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
+            st = type_mapping.get(u.threat_type)
+            if st is not None:
+                updates[st.get_name(), u.indicator] = record
+            # Since ThreatExchange can serialize anything with DEBUG_STRING,
+            # allow easy prototyping by using a tag prefix
+            if st is None and u.threat_type == "DEBUG_STRING":
+                for tag in record.get_as_aggregate_opinion().tags:
+                    prefix = "pytx:type:"
+                    if tag.startswith(prefix) and tag[prefix:] in type_mapping:
+                        updates[type_mapping[tag[prefix:]].get_name(), u.indicator]
+
         return SimpleFetchDelta(
-            {
-                (
-                    u.threat_type,
-                    u.indicator,
-                ): FBThreatExchangeIndicatorRecord.from_threatexchange_json(
-                    u
-                )  # type: ignore  # TODO, this is a real type error, but functional for now
-                for u in batch
-            },
+            updates,
             FBThreatExchangeCheckpoint(highest_time),
             done=cursor.done,
         )
