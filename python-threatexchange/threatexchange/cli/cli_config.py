@@ -167,7 +167,7 @@ class CLISettings:
         self._state = cli_state
         self._sample_message_printed = False
         self._config: t.Optional[CLiConfig] = None
-        self.index_store = CliIndexStore(cli_state.index_dir)
+        self.index = CliIndexStore(cli_state.index_dir)
 
     def get_persistent_config(self) -> CLiConfig:
         if self._config is None:

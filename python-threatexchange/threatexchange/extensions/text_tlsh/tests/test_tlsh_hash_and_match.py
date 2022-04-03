@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import unittest
 
-from threatexchange.extensions.text_tlsh.text_tlsh import TextTLSHSignal
 
 try:
     import tlsh
@@ -9,6 +8,8 @@ try:
     _DISABLED = False
 except ImportError:
     _DISABLED = True
+else:
+    from threatexchange.extensions.text_tlsh.text_tlsh import TextTLSHSignal
 
 
 @unittest.skipIf(_DISABLED, "tlsh not installed")

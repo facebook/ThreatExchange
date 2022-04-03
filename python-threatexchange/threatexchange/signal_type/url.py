@@ -12,7 +12,7 @@ from threatexchange.content_type.url import URLContent
 from threatexchange.signal_type import signal_base
 
 
-class URLSignal(signal_base.SimpleSignalType):
+class URLSignal(signal_base.SimpleSignalType, signal_base.MatchesStr):
     """
     Wrapper around URL links, such as https://github.com/
     """
@@ -22,6 +22,13 @@ class URLSignal(signal_base.SimpleSignalType):
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:
         return [URLContent]
+
+    @classmethod
+    def matches_str(
+        cls, signal: str, haystack: str, distance_threshold: t.Optional[int] = None
+    ) -> signal_base.HashComparisonResult:
+        # TODO - normalization
+        return signal_base.HashComparisonResult.from_bool(signal == haystack)
 
     @staticmethod
     def get_examples() -> t.List[str]:

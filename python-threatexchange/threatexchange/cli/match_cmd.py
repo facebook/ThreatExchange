@@ -170,7 +170,7 @@ class MatchCommand(command_base.Command):
                 yield parsed
 
     def execute(self, settings: CLISettings) -> None:
-        if not settings.index_store.get_available():
+        if not settings.index.list():
             if not settings.in_demo_mode:
                 raise CommandError("No indices available. Do you need to fetch?")
             self.stderr("You haven't built any indices, so we'll call `fetch` for you!")
@@ -195,18 +195,18 @@ class MatchCommand(command_base.Command):
 
         matchers = []
         for s_type in signal_types:
-            index = settings.index_store.load_index(s_type)
+            index = settings.index.load(s_type)
             if index is None:
                 logging.info("No index for %s, skipping", s_type.get_name())
                 continue
             query = None
             if self.inline:
                 if issubclass(s_type, TextHasher):
-                    query = lambda t: index.query(s_type.hash_from_str(t))  # type: ignore
+                    query = lambda t, index=index: index.query(s_type.hash_from_str(t))  # type: ignore
                 elif issubclass(s_type, MatchesStr):
-                    query = lambda t: index.query(t)  # type: ignore
+                    query = lambda t, index=index: index.query(t)  # type: ignore
             else:
-                query = lambda f: index.query(s_type.hash_from_file(f))  # type: ignore
+                query = lambda f, index=index: index.query(s_type.hash_from_file(f))  # type: ignore
             if query:
                 matchers.append((s_type, query))
 

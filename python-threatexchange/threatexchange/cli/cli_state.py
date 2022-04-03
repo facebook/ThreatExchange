@@ -45,7 +45,7 @@ class CliIndexStore:
     def __init__(self, indice_dir: pathlib.Path) -> None:
         self.dir = indice_dir
 
-    def get_available(self) -> t.List[str]:
+    def list(self) -> t.List[str]:
         """Return the names (SignalType.get_name()) of stored indices"""
         return [
             str(f)[: -len(self.FILE_EXTENSION)]
@@ -71,7 +71,7 @@ class CliIndexStore:
         """The expected path for the index for a signal type"""
         return self.dir / f"{signal_type.get_name()}{self.FILE_EXTENSION}"
 
-    def store_index(
+    def store(
         self, signal_type: t.Type[signal_base.SignalType], index: SignalTypeIndex
     ) -> None:
         """Persist a SignalTypeIndex to disk"""
@@ -80,7 +80,7 @@ class CliIndexStore:
         with path.open("wb") as fout:
             index.serialize(fout)
 
-    def load_index(
+    def load(
         self, signal_type: t.Type[signal_base.SignalType]
     ) -> t.Optional[index.SignalTypeIndex]:
         """Load the SignalTypeIndex for this type from disk"""
