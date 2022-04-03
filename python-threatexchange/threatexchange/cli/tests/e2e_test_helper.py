@@ -47,17 +47,19 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
             raise E2ETestSystemExit(se.code)
 
     def assert_cli_output(
-        self, args: t.Iterable[str], expected_output: str, line: t.Optional[int] = None
+        self, args: t.Iterable[str], expected_output: t.Union[str, t.Dict[int, str]]
     ) -> None:
         output = self.cli_call(*args)
-        if line is not None:
-            lines = output.strip().split("\n")
+        if isinstance(expected_output, str):
+            self.assertEqual(expected_output.strip(), output.strip())
+            return
+        lines = output.strip().split("\n")
+        for line, expected_line_output in expected_output.items():
             if line < 0:
-                self.assertGreaterEqual(line, -len(lines))
+                self.assertGreaterEqual(line, -len(lines), expected_line_output)
             else:
-                self.assertLess(line, len(lines))
-            output = lines[line]
-        self.assertEqual(expected_output.strip(), output.strip())
+                self.assertLess(line, len(lines), expected_line_output)
+            self.assertEqual(lines[line], expected_line_output)
 
     def assert_cli_usage_error(
         self, args: t.Iterable[str], msg_regex: str = None
