@@ -49,15 +49,17 @@ class RawTextSignal(
             threshold = distance_threshold
         a = common.normalize_string(signal)
         b = common.normalize_string(haystack)
-        match_threshold = math.floor(len(a) * (100 - threshold) / 100)
+        max_match_distance = len(a) - len(a) * (100 - threshold) / 100
 
         ldiff = abs(len(a) - len(b))
 
-        if ldiff > match_threshold:
-            return signal_base.HashComparisonResult.from_no_match()
+        if ldiff > max_match_distance:
+            return signal_base.HashComparisonResult.from_no_match(ldiff)
 
         distance = Levenshtein.distance(a, b)
-        return signal_base.HashComparisonResult(distance <= match_threshold, distance)
+        return signal_base.HashComparisonResult(
+            distance <= max_match_distance, distance
+        )
 
     @classmethod
     def get_index_cls(cls) -> t.Type[index.SignalTypeIndex]:
