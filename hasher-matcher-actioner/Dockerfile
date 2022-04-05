@@ -13,3 +13,6 @@ RUN pip install -e .
 # 1: https://hub.docker.com/r/amazon/aws-lambda-python
 COPY hmalib ${LAMBDA_TASK_ROOT}/hmalib
 COPY hmalib_extensions ${LAMBDA_TASK_ROOT}/hmalib_extensions
+
+COPY local-threatexchang[e] ./
+RUN if [ -d "local-threatexchange" ]; then pip install -e ./local-threatexchange; fi
