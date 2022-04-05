@@ -8,11 +8,13 @@ RUN yum install -y gcc gcc-c++
 COPY setup.py settings.p[y] ./
 RUN pip install -e .
 
+# Copy local-threatexchange if it exists and install threatexchange from it in
+# editable mode. This will override a copy of threatexchange fetched from pypi.
+COPY local-threatexchang[e] ./
+RUN if [ -d "local-threatexchange" ]; then pip install -e ./local-threatexchange; fi
+
 # LAMBDA_TASK_ROOT is recommended in the image [1]. I'm hoping this will prevent
 # the python path complications from arising.
 # 1: https://hub.docker.com/r/amazon/aws-lambda-python
 COPY hmalib ${LAMBDA_TASK_ROOT}/hmalib
 COPY hmalib_extensions ${LAMBDA_TASK_ROOT}/hmalib_extensions
-
-COPY local-threatexchang[e] ./
-RUN if [ -d "local-threatexchange" ]; then pip install -e ./local-threatexchange; fi
