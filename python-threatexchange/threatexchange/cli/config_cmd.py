@@ -11,7 +11,10 @@ import itertools
 import json
 import importlib
 import logging
+import os
 import typing as t
+
+from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
 
 
 try:
@@ -28,6 +31,7 @@ from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import command_base
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.fetcher.apis.fb_threatexchange_api import (
+    FBThreatExchangeCollabConfig,
     FBThreatExchangeSignalExchangeAPI,
 )
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
@@ -527,15 +531,88 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-        ap.add_argument(
-            "--api-token",
-            help="set the default api token",
+        import_cmds = ap.add_mutually_exclusive_group()
+        import_cmds.add_argument(
+            "--list-available-collabs",
+            "-L",
+            action="store_true",
+            help="query the API to list available collabs",
+        )
+        import_cmds.add_argument(
+            "--import-collab",
+            "-I",
+            type=int,
+            help="import a collaboration by privacy group ID",
         )
 
-    def __init__(self, api_token: t.Optional[str]) -> None:
+        # Not actually a type of import cmd, but to add exclusivity logic
+        config_cmds = import_cmds.add_argument_group()
+        config_cmds.add_argument(
+            "--api-token",
+            help="set the default api token (https://developers.facebook.com/tools/accesstoken/)",
+        )
+
+    def __init__(
+        self,
+        api_token: t.Optional[str],
+        list_available_collabs: bool,
+        import_collab: t.Optional[int],
+    ) -> None:
         self.api_token = api_token
+        self.action = self.execute_config
+        if list_available_collabs:
+            self.action = self.execute_list_collabs
+        elif import_collab is not None:
+            tmp_for_typing = import_collab
+            self.action = lambda s: self.execute_import(s, tmp_for_typing)
 
     def execute(self, settings: CLISettings) -> None:
+        self.action(settings)
+
+    def get_te_api(self, settings: CLISettings) -> ThreatExchangeAPI:
+        te = next(
+            (
+                f
+                for f in settings.get_fetchers()
+                if isinstance(f, FBThreatExchangeSignalExchangeAPI)
+            ),
+            None,
+        )
+        assert te is not None
+        return te.api
+
+    def execute_list_collabs(self, settings: CLISettings) -> None:
+        api = self.get_te_api(settings)
+
+        unique_privacy_groups = {
+            pg.id: pg for pg in api.get_threat_privacy_groups_member()
+        }
+        unique_privacy_groups.update(
+            (pg.id, pg) for pg in api.get_threat_privacy_groups_owner()
+        )
+
+        max_width = os.get_terminal_size().columns
+
+        for pg in sorted(unique_privacy_groups.values(), key=lambda pg: pg.name):
+            if not pg.threat_updates_enabled:
+                continue
+            line = f"{pg.id} {pg.name} - {pg.description}".replace("\n", " ")
+            if len(line) > max_width:
+                line = f"{line[:max_width-3]}..."
+            print(line)
+
+    def execute_import(self, settings: CLISettings, privacy_group_id: int) -> None:
+        api = self.get_te_api(settings)
+        pg = api.get_privacy_group(privacy_group_id)
+        if settings.get_collab(pg.name) is not None:
+            raise CommandError(
+                f"A collaboration already exists with the name {pg.name}", 2
+            )
+        settings._state.update_collab(
+            FBThreatExchangeCollabConfig(name=pg.name, privacy_group=privacy_group_id)
+        )
+
+    def execute_config(self, settings: CLISettings) -> None:
         if self.api_token is not None:
             config = settings.get_persistent_config()
             config.fb_threatexchange_api_token = self.api_token

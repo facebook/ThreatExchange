@@ -11,7 +11,6 @@ tl;dr: Have a module with TX_MANIFEST that is assigned this class.
 
 from dataclasses import dataclass
 import importlib
-from multiprocessing.sharedctypes import Value
 import typing as t
 
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
@@ -43,7 +42,7 @@ class ThreatExchangeExtensionManifest:
             raise ValueError(f"No such module '{module_name}'")
 
         try:
-            manifest = module.TX_MANIFEST
+            manifest = module.TX_MANIFEST  # type: ignore
         except AttributeError:
             raise ValueError(f"Module is missing TX_MANIFEST")
 

@@ -18,21 +18,26 @@ from threatexchange.fb_threatexchange.api import ThreatExchangeAPI, _CursoredRes
 
 from threatexchange.fetcher import fetch_state as state
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
-from threatexchange.fetcher.collab_config import (
-    CollaborationConfigBase,
-    DefaultsForCollabConfigBase,
-)
+from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher.apis.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 
+_API_NAME = "fb_threat_exchange"
+
+
+@dataclass
+class _FBThreatExchangeCollabConfigRequiredFields:
+    privacy_group: int
+
 
 @dataclass
 class FBThreatExchangeCollabConfig(
-    CollaborationConfigBase, DefaultsForCollabConfigBase
+    CollaborationConfigWithDefaults,
+    _FBThreatExchangeCollabConfigRequiredFields,
 ):
-    privacy_group: int
+    api: str = field(init=False, default=_API_NAME)
     app_token_override: t.Optional[str] = None
 
 
@@ -169,6 +174,10 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
         if self._api is None:
             raise Exception("App Developer token not configured.")
         return self._api
+
+    @classmethod
+    def get_name(cls) -> str:
+        return _API_NAME
 
     @classmethod
     def get_checkpoint_cls(cls) -> t.Type[state.FetchCheckpointBase]:

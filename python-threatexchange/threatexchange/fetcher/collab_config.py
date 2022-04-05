@@ -39,7 +39,12 @@ class CollaborationConfigBase:
 
 
 @dataclass
-class DefaultsForCollabConfigBase:
+class CollaborationConfigWithDefaults(CollaborationConfigBase):
+    """
+    Helper to re-order arguments for defaults
+    """
+
+    api: str = ""
     enabled: bool = True
     only_signal_types: t.Set[str] = field(default_factory=set)
     not_signal_types: t.Set[str] = field(default_factory=set)
@@ -47,11 +52,6 @@ class DefaultsForCollabConfigBase:
     not_owners: t.Set[int] = field(default_factory=set)
     only_tags: t.Set[str] = field(default_factory=set)
     not_tags: t.Set[str] = field(default_factory=set)
-
-
-@dataclass
-class SimpleCollabConfig(CollaborationConfigBase, DefaultsForCollabConfigBase):
-    """Fill out all the defaults in an MRO-friendly way"""
 
 
 class CollaborationConfigStoreBase:

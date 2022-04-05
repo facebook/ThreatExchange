@@ -3,7 +3,7 @@ import unittest
 
 
 try:
-    import tlsh
+    import tlsh as _
 
     _DISABLED = False
 except ImportError:
