@@ -10,9 +10,16 @@ import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.url import URLContent
 from threatexchange.signal_type import signal_base
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
 
 
-class URLSignal(signal_base.SimpleSignalType, signal_base.MatchesStr):
+class URLSignal(
+    signal_base.SimpleSignalType,
+    signal_base.MatchesStr,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     Wrapper around URL links, such as https://github.com/
     """

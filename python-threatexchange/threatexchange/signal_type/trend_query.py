@@ -13,6 +13,9 @@ from threatexchange.content_type.text import TextContent
 
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
 
 
 class TrendQuery:
@@ -46,7 +49,9 @@ class TrendQuery:
         return False
 
 
-class TrendQuerySignal(signal_base.SignalType, signal_base.MatchesStr):
+class TrendQuerySignal(
+    signal_base.SignalType, signal_base.MatchesStr, HasFbThreatExchangeIndicatorType
+):
     """
     Trend Queries are a combination of and/or/not regexes.
 
@@ -56,6 +61,8 @@ class TrendQuerySignal(signal_base.SignalType, signal_base.MatchesStr):
 
     They have high "recall" but potentially low "precision".
     """
+
+    INDICATOR_TYPE = "TREND_QUERY"
 
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:

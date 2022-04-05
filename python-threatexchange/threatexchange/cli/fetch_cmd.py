@@ -226,7 +226,7 @@ class FetchCommand(command_base.Command):
 
         from_time = ""
         if self.last_update_time is not None:
-            if not from_time:
+            if self.last_update_time <= 0:
                 from_time = "ages long past"
             elif self.last_update_time >= time.time() - 1:
                 from_time = "moments ago"

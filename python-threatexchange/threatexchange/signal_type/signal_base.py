@@ -160,27 +160,6 @@ class SimpleSignalType(SignalType):
     Assumes that the signal type can easily merge on a string.
     """
 
-    INDICATOR_TYPE: t.Union[str, t.Tuple[str, ...]] = ()
-    TYPE_TAG: t.Optional[str] = None
-
-    @classmethod
-    def facebook_threatexchange_indicator_applies(
-        cls, indicator_type: str, tags: t.List[str]
-    ) -> bool:
-        """
-        A helper for Facebook ThreatExchange indicator conversion.
-
-        TODO: Consider moving to its own helper class.
-        """
-        types = cls.INDICATOR_TYPE
-        if isinstance(cls.INDICATOR_TYPE, str):
-            types = (cls.INDICATOR_TYPE,)
-        if indicator_type not in types:
-            return False
-        if cls.TYPE_TAG is not None:
-            return cls.TYPE_TAG in tags
-        return True
-
     @classmethod
     def compare_hash(
         cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None

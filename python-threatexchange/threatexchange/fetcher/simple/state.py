@@ -136,10 +136,9 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
 
     def _get_state(self, collab_name: str) -> _StateTracker:
         if collab_name not in self._state:
+            logging.debug("Loading state for %s", collab_name)
             read_state = self._read_state(collab_name) or ({}, None)
-            ret = _StateTracker(*read_state)
-            self._state[collab_name] = ret
-            return ret
+            self._state[collab_name] = _StateTracker(*read_state)
         return self._state[collab_name]
 
     def merge(  # type: ignore[override]  # fix with generics on base

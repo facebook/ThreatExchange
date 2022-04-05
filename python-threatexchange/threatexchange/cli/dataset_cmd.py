@@ -164,7 +164,6 @@ class DatasetCommand(command_base.Command):
         collabs = [
             c for c in settings.get_all_collabs(default_to_sample=True) if c.enabled
         ]
-
         if self.only_collabs:
             collabs = [c for c in collabs if c.name in self.only_collabs]
         return collabs
