@@ -15,9 +15,16 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.text import TextContent
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
 
 
-class RawTextSignal(signal_base.SimpleSignalType, signal_base.MatchesStr):
+class RawTextSignal(
+    signal_base.SimpleSignalType,
+    signal_base.MatchesStr,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     Raw text signal is the same as raw text content: the exact text content.
 

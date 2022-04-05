@@ -21,7 +21,6 @@ class SignalTypeHashTest(unittest.TestCase):
 
     # TODO - maybe make a metaclass for this to automatically detect?
     SIGNAL_TYPES_TO_TEST = [
-        md5.PhotoMD5Signal,
         md5.VideoMD5Signal,
         pdq_ocr.PdqOcrSignal,
         pdq.PdqSignal,

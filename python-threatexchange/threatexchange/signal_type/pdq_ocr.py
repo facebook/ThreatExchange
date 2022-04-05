@@ -16,13 +16,19 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 
 from threatexchange.hashing.pdq_utils import pdq_match, simple_distance
-from threatexchange import common
 from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.signal_type.raw_text import RawTextSignal
-from . import signal_base
+from threatexchange.signal_type import signal_base
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
 
 
-class PdqOcrSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
+class PdqOcrSignal(
+    signal_base.SimpleSignalType,
+    signal_base.FileHasher,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     PDQ is an open source photo similarity algorithm. See 'pdq.py'
     This signal type combines pdq hashes with a text string found using

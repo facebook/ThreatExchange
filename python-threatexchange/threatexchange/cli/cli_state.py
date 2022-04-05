@@ -22,6 +22,7 @@ import dacite
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
+from threatexchange.cli import dataclass_json
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
@@ -139,21 +140,20 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
             with file.open("r") as f:
                 json_dict = json.load(f)
 
-            checkpoint = dacite.from_dict(
-                data_class=self.api_cls.get_checkpoint_cls(),
-                data=json_dict[self.JSON_CHECKPOINT_KEY],
-                config=dacite.Config(cast=[Enum]),
+            checkpoint = dataclass_json.dataclass_load_dict(
+                json_dict=json_dict[self.JSON_CHECKPOINT_KEY],
+                cls=self.api_cls.get_checkpoint_cls(),
             )
             records = json_dict[self.JSON_RECORDS_KEY]
 
+            logging.debug("Loaded %s with records for: %s", collab_name, list(records))
             # Minor stab at lowering memory footprint by converting kinda
             # inline
             for stype in list(records):
                 records[stype] = {
-                    signal: dacite.from_dict(
-                        data_class=self.api_cls.get_record_cls(),
-                        data=json_record,
-                        config=dacite.Config(cast=[Enum]),
+                    signal: dataclass_json.dataclass_load_dict(
+                        json_dict=json_record,
+                        cls=self.api_cls.get_record_cls(),
                     )
                     for signal, json_record in records[stype].items()
                 }
@@ -202,5 +202,15 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
                 for stype, signal_to_record in updates_by_type.items()
             },
         }
-        with file.open("w") as f:
-            json.dump(json_dict, f, indent=2)
+
+        tmpfile = file.with_name(f".{file.name}")
+
+        with tmpfile.open("w") as f:
+            json.dump(json_dict, f, indent=2, default=_json_set_default)
+        tmpfile.rename(file)
+
+
+def _json_set_default(obj):
+    if isinstance(obj, set):
+        return list(obj)
+    raise TypeError

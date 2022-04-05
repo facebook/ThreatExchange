@@ -13,9 +13,16 @@ from threatexchange.content_type.url import URLContent
 from threatexchange.signal_type import signal_base
 from threatexchange import common
 from threatexchange.signal_type.url import URLSignal
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
 
 
-class UrlMD5Signal(signal_base.SimpleSignalType, signal_base.TextHasher):
+class UrlMD5Signal(
+    signal_base.SimpleSignalType,
+    signal_base.TextHasher,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     Simple signal type for URL MD5s.
     """
