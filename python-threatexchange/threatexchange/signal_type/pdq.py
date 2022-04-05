@@ -12,6 +12,9 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type import signal_base
 from threatexchange.hashing.pdq_utils import simple_distance
+from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+    HasFbThreatExchangeIndicatorType,
+)
 
 
 # TODO force this as a required library?
@@ -22,7 +25,11 @@ def _raise_pillow_warning():
     )
 
 
-class PdqSignal(signal_base.SimpleSignalType, signal_base.BytesHasher):
+class PdqSignal(
+    signal_base.SimpleSignalType,
+    signal_base.BytesHasher,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     PDQ is an open source photo similarity algorithm.
 
@@ -38,7 +45,6 @@ class PdqSignal(signal_base.SimpleSignalType, signal_base.BytesHasher):
     """
 
     INDICATOR_TYPE = "HASH_PDQ"
-    TYPE_TAG = "media_type_photo"
 
     # This may need to be updated (TODO make more configurable)
     # Hashes of distance less than or equal to this threshold are considered a 'match'
