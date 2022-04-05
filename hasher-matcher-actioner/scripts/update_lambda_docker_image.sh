@@ -11,6 +11,16 @@ if [[ -z "${DOCKER_TAG}" ]]; then
     exit 1
 fi
 
+if [ -d "local-threatexchange" ]; then
+    echo "################### WARNING ######################"
+    echo "  Using a local copy of threatexchange from the   "
+    echo "  local-threatexchange directory to build the "
+    echo "  docker image."
+    echo " Run './scripts/set_threatexchange_source pypi' if "
+    echo " this is not what you want. "
+    echo "##################################################"
+fi
+
 REPOSITORY_NAME="hma-lambda-dev"
 
 ECS_PASSWORD="$(aws ecr get-login-password --region us-east-1)"

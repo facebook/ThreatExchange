@@ -65,10 +65,6 @@ The devcontainer provides all the tools you need to build and hack on HMA. Inclu
 2. **Building webapp taking too long..**
     If you see sustained 100% CPU when running `npm install|start|build` within the webapp directory, you might need to provide more memory and CPU to the docker desktop app. We recommend atleast 4GB of RAM and 2CPUs.
 
-## Developing HMA
-
-We have built out some tooling that relies on Visual Studio Code. [Install](https://code.visualstudio.com/) VS Code to con
-
 ## Building the Docker Lambda Image
 
 The lambda functions defined for HMA use docker images to hold the code executed by the functions. You will need to build and publish this docker image to a docker registry you own. eg. an AWS ECR repository.
@@ -105,18 +101,21 @@ e.g.
 $ aws lambda update-function-code --function-name bodnarbm_pdq_matcher --image-uri <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/hma-lambda-dev:bodnarbm
 ```
 
-Lastly, if you are testing changes to the [`python-threatexchange` module](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange) that you would like to deploy on docker, you can make docker reference your local version of `python-threatexchange` by running the following steps from the `hasher-matcher-actioner` directory:
+## Working with an unpublished python-threatexchange version
 
-1. `$ cp -r ../python-threatexchange local_threatexchange`
-2. Edit the Dockerfile to include the following lines **before** the pip install requirements:
+We have built a script to make this more palatable.
+
+If you want to use `python-threatexchange` from the parent directory. Your git checkout version, use 
 
 ```
-ARG LOCAL_THREAT_EXCHANGE=./local_threatexchange
-COPY $LOCAL_THREAT_EXCHANGE $LOCAL_THREAT_EXCHANGE
-RUN python3 -m pip install ./local_threatexchange --target "${DEPS_PATH}"
+$ ./scripts/set_threatexchange_source local
 ```
 
-3. `$ make docker && rm -r local_threatexchange`
+To switch back to a copy of `python-threatexchange` downloaded from pypi, run
+
+```
+$ ./scripts/set_threatexchange_source pypi
+```
 
 ## Config Files
 
