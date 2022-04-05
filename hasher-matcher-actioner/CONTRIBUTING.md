@@ -117,12 +117,6 @@ To switch back to a copy of `python-threatexchange` downloaded from pypi, run
 $ ./scripts/set_threatexchange_source pypi
 ```
 
-Ensure that you are not accidentally checking in code with changes for the local version by using. This is also done automatically in our CI workflows.
-
-```
-$ ./scripts/set_threatexchange_source ensure-pypi
-```
-
 ## Config Files
 
 Before using terraform, you will need to provide some additional configuration, examples of which are provided in this folder using the same name, but with example suffixed to the end.
