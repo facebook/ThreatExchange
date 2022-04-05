@@ -18,7 +18,7 @@ class SignalTypeHashTest:
     to rapidly make simple tests.
     """
 
-    TYPE: t.ClassVar[SignalType]
+    TYPE: t.ClassVar[t.Type[SignalType]]
 
     def assert_signal_str_valid(
         self, s: str, expected: t.Optional[str] = None, *, valid: bool = True
@@ -86,9 +86,6 @@ class SignalTypeAutoTest(SignalTypeHashTest):
 
 
 class TextHasherAutoTest(SignalTypeAutoTest):
-
-    TYPE: t.ClassVar[TextHasher]
-
     def get_hashes_from_str_cases(self) -> t.Iterable[t.Tuple[str, str]]:
         raise NotImplementedError
 
@@ -103,10 +100,7 @@ TMatchesStrCase = t.Union[
 
 
 class MatchesStrAutoTest(SignalTypeAutoTest):
-
-    TYPE: t.ClassVar[MatchesStr]
-
-    def get_matches_str_cases() -> t.Iterable[TMatchesStrCase]:
+    def get_matches_str_cases(self) -> t.Iterable[TMatchesStrCase]:
         raise NotImplementedError
 
     def test_matches_str(self):
