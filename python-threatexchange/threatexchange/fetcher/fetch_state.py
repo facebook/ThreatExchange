@@ -168,6 +168,8 @@ class FetchedSignalMetadata:
 
     def __str__(self) -> str:
         agg = self.get_as_aggregate_opinion()
+        if not agg.tags:
+            return agg.category.name
         return f"{agg.category.name} {','.join(agg.tags)}"
 
 

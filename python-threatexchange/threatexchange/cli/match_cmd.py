@@ -215,8 +215,8 @@ class MatchCommand(command_base.Command):
             return
 
         for inp in self.input_generator:
-            seen = set()
             for s_type, matcher in matchers:
+                seen = set()  # TODO - maybe take the highest certainty?
                 results: t.List[IndexMatch] = matcher(inp)
                 for r in results:
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
