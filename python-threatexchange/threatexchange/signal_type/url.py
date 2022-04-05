@@ -15,7 +15,11 @@ from threatexchange.fetcher.apis.fb_threatexchange_signal import (
 )
 
 
-class URLSignal(signal_base.SimpleSignalType, signal_base.MatchesStr, HasFbThreatExchangeIndicatorType):
+class URLSignal(
+    signal_base.SimpleSignalType,
+    signal_base.MatchesStr,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     Wrapper around URL links, such as https://github.com/
     """
