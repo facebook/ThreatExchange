@@ -233,7 +233,7 @@ class DatasetCommand(command_base.Command):
         only_signals = None
         if self.only_signals or self.only_content:
             only_signals = self.get_signal_types(settings)
-        settings.index_store.clear(only_signals)
+        settings.index.clear(only_signals)
 
     def execute_generate_indices(self, settings: CLISettings) -> None:
         signal_types = self.get_signal_types(settings)
@@ -244,7 +244,7 @@ class DatasetCommand(command_base.Command):
             signals = signal_by_type.get(s_type, {})
             if not signals:
                 logging.info("No signals for %s", s_type.__name__)
-                settings.index_store.clear([s_type])
+                settings.index.clear([s_type])
                 continue
 
             self.stderr(
@@ -253,5 +253,5 @@ class DatasetCommand(command_base.Command):
                 f"with {len(signals)} signals...",
             )
             index = index_cls.build(signals.items())
-            settings.index_store.store_index(s_type, index)
+            settings.index.store(s_type, index)
             self.stderr(f"Index for {s_type.get_name()} ready")

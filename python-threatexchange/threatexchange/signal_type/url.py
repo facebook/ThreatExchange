@@ -15,7 +15,11 @@ from threatexchange.fetcher.apis.fb_threatexchange_signal import (
 )
 
 
-class URLSignal(signal_base.SimpleSignalType, HasFbThreatExchangeIndicatorType):
+class URLSignal(
+    signal_base.SimpleSignalType,
+    signal_base.MatchesStr,
+    HasFbThreatExchangeIndicatorType,
+):
     """
     Wrapper around URL links, such as https://github.com/
     """
@@ -25,6 +29,13 @@ class URLSignal(signal_base.SimpleSignalType, HasFbThreatExchangeIndicatorType):
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:
         return [URLContent]
+
+    @classmethod
+    def matches_str(
+        cls, signal: str, haystack: str, distance_threshold: t.Optional[int] = None
+    ) -> signal_base.HashComparisonResult:
+        # TODO - normalization
+        return signal_base.HashComparisonResult.from_bool(signal == haystack)
 
     @staticmethod
     def get_examples() -> t.List[str]:
