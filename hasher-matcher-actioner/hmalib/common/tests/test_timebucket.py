@@ -1,10 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 from dataclasses import dataclass
 import datetime
+import os
+import random
+import string
 import tempfile
 import unittest
 
 from freezegun import freeze_time
+from hmalib.common.models.pipeline import HashRecord
 from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 
 
@@ -21,7 +25,7 @@ class SampleCSViableClass(CSViable):
     def to_csv(self):
         return [self.a, self.b]
 
-    def from_csv(self, value):
+    def from_csv(self):
         return SampleCSViableClass()
 
 
@@ -152,3 +156,39 @@ class TestTimeBuckets(unittest.TestCase):
                 [],
                 "Destroy method should not have executed as the buffer is empty",
             )
+
+    @freeze_time("2012-08-13 14:04:00")
+    def test_squash_content(self):
+        with tempfile.TemporaryDirectory() as td:
+            with freeze_time(datetime.datetime.now()) as frozen_datetime:
+
+                VALUE_1 = 5
+                VALUE_2 = 10
+                VALUE_3 = 3
+                for i in range(VALUE_1):
+                    for i in range(VALUE_2):
+                        sample = TimeBucketizer(
+                            datetime.timedelta(minutes=1), td, "hasher", str(i)
+                        )
+                        for i in range(VALUE_3):
+                            content = "".join(
+                                random.choice(string.ascii_lowercase) for _ in range(10)
+                            )
+                            sample.add_record(HashRecord(content, str(i)))
+                        sample.force_flush()
+                    frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+
+                TimeBucketizer.squash_content(
+                    datetime.datetime.now(), "hasher", td, datetime.timedelta(minutes=1)
+                )
+
+                records = TimeBucketizer.get_records(
+                    datetime.datetime.now() - datetime.timedelta(minutes=7),
+                    datetime.datetime.now(),
+                    "hasher",
+                    td,
+                    datetime.timedelta(minutes=1),
+                    HashRecord,
+                )
+
+                self.assertEqual(len(records), VALUE_1 * VALUE_2 * VALUE_3)

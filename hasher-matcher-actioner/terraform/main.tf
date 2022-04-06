@@ -226,6 +226,16 @@ module "durable_fs" {
   additional_tags = var.additional_tags
 }
 
+module "custodian" {
+  source              = "./custodian"
+  prefix              = var.prefix
+  additional_tags     = merge(var.additional_tags, local.common_tags)
+  custodian_frequency = var.custodian_frequency
+  lambda_docker_info = {
+    uri = var.hma_lambda_docker_uri
+  }
+}
+
 
 /**
  * # Primary S3 Bucket:
