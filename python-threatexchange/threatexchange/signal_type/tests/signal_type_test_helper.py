@@ -3,11 +3,7 @@
 import pytest
 import typing as t
 
-from threatexchange.signal_type.signal_base import (
-    MatchesStr,
-    TextHasher,
-    SignalType,
-)
+from threatexchange.signal_type.signal_base import SignalType
 
 
 class SignalTypeHashTest:
@@ -44,16 +40,27 @@ THashCompareCase = t.Union[
 
 
 class SignalTypeAutoTest(SignalTypeHashTest):
+    """
+    A helper to automatically generate a bunch of simple tests for a SignalType.
+
+    If you create a test class that extends this one, it will automatically create
+    test cases, which you can provide test data by implementing the *_cases().
+
+    check out test_raw_text.py in this directory for a simple example
+
+    This is probably not the cleanest way you could have done this, but it's
+    probably better than nothing.
+    """
+
     def test_get_name(self):
         assert self.TYPE.get_name()
         # Could also test for collisions, but ¯\_(ツ)_/¯
 
     def test_examples(self):
         examples = self.TYPE.get_examples()
-        assert examples, (
-            "It's good practice to have example signals - however, "
-            "override this test if that doesn't make sense for this signal type"
-        )
+        # It's possible that there some SignalTypes where this doesn't make
+        # sense, in which case you can override this test to just always pass
+        assert examples, f"Add some examples to {self.TYPE.__name__}.get_examples()"
         for example in examples:
             self.assert_signal_str_valid(example)
             assert self.TYPE.compare_hash(example, example).match, f"Case: {example}"
@@ -86,6 +93,10 @@ class SignalTypeAutoTest(SignalTypeHashTest):
 
 
 class TextHasherAutoTest(SignalTypeAutoTest):
+    """
+    Auto-testing, but with TextHasher classes
+    """
+
     def get_hashes_from_str_cases(self) -> t.Iterable[t.Tuple[str, str]]:
         raise NotImplementedError
 
@@ -100,6 +111,10 @@ TMatchesStrCase = t.Union[
 
 
 class MatchesStrAutoTest(SignalTypeAutoTest):
+    """
+    Auto-testing, but with MatchesStr classes
+    """
+
     def get_matches_str_cases(self) -> t.Iterable[TMatchesStrCase]:
         raise NotImplementedError
 
