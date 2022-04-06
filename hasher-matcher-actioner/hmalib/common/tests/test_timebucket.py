@@ -1,13 +1,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from dataclasses import dataclass
 import datetime
 import os
 import random
 import string
 import tempfile
 import unittest
+from dataclasses import dataclass
 
 from freezegun import freeze_time
+
 from hmalib.common.models.pipeline import HashRecord
 from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 

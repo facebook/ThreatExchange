@@ -2,12 +2,11 @@
 import csv
 import datetime
 import os
-import typing as t
-import uuid
 import random
 import string
+import typing as t
+import uuid
 from dataclasses import dataclass, field
-
 
 MAX_BUFFER_SIZE = 3200
 SECONDS_PER_DAY = 86400
