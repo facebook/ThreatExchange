@@ -7,26 +7,8 @@ from hmalib.common.models.pipeline import HashRecord
 from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 from hmalib.indexers.lcc import LCCIndexer
 
+
 # python -m py.test hmalib/indexers/tests/test_lcc_indexer.py::TestLCCIndexer::test
-
-
-@dataclass(eq=True)
-class SampleCSViableClass(CSViable):
-    """
-    Example class used for testing purposes.
-    """
-
-    def __init__(self):
-        self.a = "a"
-        self.b = "b"
-
-    def to_csv(self):
-        return [self.a, self.b]
-
-    def from_csv(self, value):
-        return SampleCSViableClass()
-
-
 class TestLCCIndexer(unittest.TestCase):
     def test(self):
         with tempfile.TemporaryDirectory() as td:
@@ -45,12 +27,14 @@ class TestLCCIndexer(unittest.TestCase):
             )
             tbi.force_flush()
             test_class = LCCIndexer()
-            test_index = test_class.build_index_from_last_24h(tbi)
-            print(
-                test_index.query(
-                    "19055fc67a4e8d667d9668700c1920ff19005fc67a4e8d667d9668700c1920ff"
-                )
+            test_index = test_class.build_index_from_last_24h(
+                tbi.type, tbi.storage_path, tbi.bucket_width
             )
+            # test_class.override_recent_index(test_index,tbi.type,tbi.storage_path,tbi.bucket_width,write_path)
+            # print(
+            #     test_index.query(
+            #         "19055fc67a4e8d667d9668700c1920ff19005fc67a4e8d667d9668700c1920ff"
+            #     )
+            # )
             # should return a list with non-zero length
-            self.assertEqual(3, 4)
-        # print("Hello", testClass)
+            # self.assertEqual(3, 4)
