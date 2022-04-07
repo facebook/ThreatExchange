@@ -12,6 +12,7 @@ from threatexchange.cli.cli_config import CLISettings
 
 from threatexchange.signal_type.signal_base import BytesHasher, FileHasher, TextHasher
 from threatexchange.cli import command_base
+from threatexchange.signal_type.text_md5 import TextMD5Signal
 
 
 # TODO consider refactor to handle overlap with match

@@ -41,6 +41,7 @@ from threatexchange.signal_type import (
     url as url_signal,
     url_md5,
     trend_query,
+    text_md5,
 )
 from threatexchange.cli.cli_config import CLiConfig, CliState
 from threatexchange.cli.cli_config import CLISettings
@@ -172,6 +173,7 @@ def _get_settings(config: CLiConfig, dir: pathlib.Path) -> CLISettings:
             url_signal.URLSignal,
             url_md5.UrlMD5Signal,
             trend_query.TrendQuerySignal,
+            text_md5.TextMD5Signal,
         ]
         + extensions.signal_types,
     )
