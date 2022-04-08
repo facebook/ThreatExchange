@@ -2,13 +2,17 @@
 
 This repository originally started as code to support Meta's ThreatExchange API, but over time has grown to include a number of projects to support signal exchange and content moderation in general. Below are a list of sub-projects.
 
-## PDQ Photo Hashing and Similarity Matching
+## PDQ Image Hashing and Similarity Matching
 
 PDQ is a photo hashing algorithm that can turn photos into 256 bit signatures which can then be used to match other photos. 
 
 ## TMK+PDQF (TMK) Video Hashing and Similarity Matching
 
 TMK+PDQF (or TMK for short) is a video hashing algorithm that can turn videos into 256KB signatures which can be used to match other videos.
+
+## [Coming Soon] Video PDQ (vPDQ) Video Hashing and Similarity Matching
+
+Video PDQ (or vPDQ for short) is a simple video hashing algorithm that determines two videos are matching based on the amount of shared similar frames. It can easily be applied for other image algorithms, and not just PDQ.
 
 ## Hasher-Matcher-Actioner (HMA) Trust & Safety Platform
 
