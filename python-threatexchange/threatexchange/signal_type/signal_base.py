@@ -95,7 +95,18 @@ class SignalType:
         return []
 
 
-class TextHasher:
+class FileHasher:
+    """
+    This class can hash files.
+    """
+
+    @classmethod
+    def hash_from_file(cls, file: pathlib.Path) -> str:
+        """Get a string representation of the hash from a file"""
+        raise NotImplementedError
+
+
+class TextHasher(FileHasher):
     """
     This class can turn text into intermediary representations (hashes)
     """
@@ -121,20 +132,6 @@ class MatchesStr:
         Note that this can just be a reference/helper, and the efficient
         version of the algorithm can live in the index class.
         """
-        raise NotImplementedError
-
-
-class FileHasher:
-    """
-    This class can hash files.
-
-    If also inheiriting from StrHasher, put this second in the inheiretence
-    to prefer file hashing to reading the file in as a Str.
-    """
-
-    @classmethod
-    def hash_from_file(cls, file: pathlib.Path) -> str:
-        """Get a string representation of the hash from a file"""
         raise NotImplementedError
 
 

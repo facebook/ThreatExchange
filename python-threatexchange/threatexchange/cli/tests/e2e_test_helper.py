@@ -33,18 +33,21 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
         self.addCleanup(lambda: shutil.rmtree(str(state_dir)))
         self._state_dir = state_dir
 
-    def cli_call(self, *given_args: str) -> str:
+    def cli_call_helper(self, std_op: str, *given_args: str) -> str:
         args = list(self.COMMON_CALL_ARGS)
         args.extend(given_args)
         print("Calling: $ threatexchange", " ".join(args), file=sys.stderr)
         try:
-            with patch("sys.stdout", new=StringIO()) as fake_out:
+            with patch(std_op, new=StringIO()) as fake_out:
                 main(args, state_dir=self._state_dir)
             return fake_out.getvalue()
         except SystemExit as se:
             if se.code == 0:  # ERROR: Everything is fine
                 return fake_out.getvalue()
             raise E2ETestSystemExit(se.code)
+
+    def cli_call(self, *given_args: str) -> str:
+        return self.cli_call_helper("sys.stdout", *given_args)
 
     def assert_cli_output(
         self, args: t.Iterable[str], expected_output: t.Union[str, t.Dict[int, str]]
@@ -70,3 +73,9 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
         self.assertEqual(exception.returncode, 2)
         if msg_regex is not None:
             self.assertRegex(str(exception), msg_regex)
+
+    def assert_cli_error_output(
+        self, given_args: t.Iterable[str], expected_err: t.Union[str, t.Dict[int, str]]
+    ) -> None:
+        output = self.cli_call_helper("sys.stderr", *given_args)
+        self.assertEqual(expected_err, output.strip())
