@@ -128,7 +128,7 @@ class ThreatExchangeAPI:
         Same timeouts and retry strategy as `_get_session` above.
         """
         with self._get_session() as session:
-            response = requests.get(url, params=params or {})
+            response = requests.get(url, params=params or {})  # !!! Typo? sessions.get?
             response.raise_for_status()
             return response.json(object_hook=json_obj_hook)
 
