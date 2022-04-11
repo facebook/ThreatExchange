@@ -60,3 +60,29 @@ class DynamoDBTableTestBase:
         dynamodb.create_table.
         """
         raise NotImplementedError
+
+
+class HMAConfigTestBase(DynamoDBTableTestBase):
+    """
+    Provides table defintion for HMA Config to encourage re-use.
+    """
+
+    @classmethod
+    def get_table_definition(cls) -> t.Any:
+        """
+        Refresh using  `$ aws dynamodb describe-table --table-name <prefix>-HMAConfig`
+        """
+
+        table_name = "test-config-table"
+        return {
+            "AttributeDefinitions": [
+                {"AttributeName": "ConfigName", "AttributeType": "S"},
+                {"AttributeName": "ConfigType", "AttributeType": "S"},
+            ],
+            "TableName": table_name,
+            "BillingMode": "PAY_PER_REQUEST",
+            "KeySchema": [
+                {"AttributeName": "ConfigType", "KeyType": "HASH"},
+                {"AttributeName": "ConfigName", "KeyType": "RANGE"},
+            ],
+        }
