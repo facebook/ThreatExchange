@@ -18,26 +18,18 @@ from hmalib.common.timebucketizer import TimeBucketizer
 starttime = time.time()
 logger = get_logger(__name__)
 
-# parameters of get_records
-# def get_records(
-#         since: datetime.datetime,
-# until: datetime.datetime,
-# type: str,
-# storage_path: str,
-# bucket_width: datetime.timedelta,
-# type_class: t.Type[CSViable],
-# ):
-
 
 class LCCIndexer:
     @classmethod
-    def get_recent_index(cls, storage_path) -> PDQIndex:
+    def get_recent_index(cls, storage_path, signal_type, bucket_width) -> PDQIndex:
         """Get the most recent index."""
-        os.listdir(storage_path)[0]
+
         file_type = r"\*csv"
-        files = glob.glob(storage_path + file_type)
-        latest_index = max(files, key=os.path.getctime)
-        return latest_index
+        files = glob.glob(f"{storage_path}''{signal_type}")
+        latest_index_file = max(files, key=os.path.getctime)
+
+        with open(f"{latest_index_file}", "rb") as f:
+            pickle.load(f)
 
     # find some way to access most recent index in file structure
     # indexObjPath = path of index with latest creation time (should already be sorted by time in file structure)
@@ -68,16 +60,22 @@ class LCCIndexer:
 
     @classmethod
     def override_recent_index(
-        cls, index: SignalTypeIndex, signal_type, storage_path, bucket_width, write_path
+        cls,
+        index: SignalTypeIndex,
+        signal_type,
+        storage_path,
+        bucket_width,
     ) -> None:
         """
         get most recent index of type PDQ
         write most recent index of specific index type
         """
-        d = timedelta(days=1)
-        pickle.dump(
-            index, f"{write_path}''{signal_type}''{datetime.now()-bucket_width}"
-        )
+        # use path lib for file directory
+        with open(
+            f"{storage_path}''{signal_type}''{datetime.now()-bucket_width}", "wb"
+        ) as f:
+            pickle.dump(index, f)
+
         # # variable name with creation time, index type, time delta value
         # indexObj = {testIndex, datetime.now(), PDQIndex, d}
         # # write_path = open(indexpath,"w")
