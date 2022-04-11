@@ -106,8 +106,12 @@ class HashCommand(command_base.Command):
             if isinstance(inp, str):
                 hash_fn = lambda s, t: s.hash_from_str(t)
                 signal_types = str_hashers
-
             for signal_type in signal_types:
-                hash_str = hash_fn(signal_type, inp)
-                if hash_str:
-                    print(signal_type.get_name(), hash_str)
+                try:
+                    hash_str = hash_fn(signal_type, inp)
+                    if hash_str:
+                        print(signal_type.get_name(), hash_str)
+                except FileNotFoundError:
+                    self.stderr(
+                        f"The file {inp} doesn't exist or the file path is incorrect"
+                    )

@@ -20,7 +20,7 @@ HMA is a ready-to-deploy content moderation project for AWS, containing many sub
 
 ## python-threatexchange
 
-A python Library/CLI tool available on pypi under `threatexchange` which provides implementations for content scanning and signal exchange. It provides reference implementations in python for downloading hashes from Meta's ThreatExchange API, scanning images with PDQ, and others. It can also be easily extended to work with other hash exchanges and other tecnhniques, not all of which are written by the maintainers of this repository.
+A python Library/CLI tool available on pypi under `threatexchange` which provides implementations for content scanning and signal exchange. It provides reference implementations in python for downloading hashes from Meta's ThreatExchange API, scanning images with PDQ, and others. It can also be easily extended to work with other hash exchanges and other techniques, not all of which are written by the maintainers of this repository.
 
 
 ## Meta's ThreatExchange API Reference Examples
