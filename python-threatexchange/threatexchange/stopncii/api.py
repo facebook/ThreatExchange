@@ -41,7 +41,7 @@ class StopNCIICaseStatus(enum.Enum):
 
 @enum.unique
 class StopNCIICSPFeedbackValue(enum.Enum):
-    """"""
+    """The feedback that a CSP has given on a hash"""
 
     Unknown = "Unknown"
     None_ = "None"  # Allows you to tag without associating a state
@@ -57,9 +57,17 @@ class StopNCIICSPFeedbackValue(enum.Enum):
 class StopNCIICSPFeedback:
     """Feedback on a hash from a Content Service Provider"""
 
-    source: str  # Name of the Content Service Provider (CSP)
     feedbackValue: StopNCIICSPFeedbackValue  # What the feedback is
-    tags: t.Set[str]  # Unstructured additional tags
+    tags: t.Set[str] = field(default_factory=set)  # Unstructured additional tags
+    source: str = ""  # Name of the Content Service Provider (CSP)
+
+    @classmethod
+    def as_dict_for_post(self) -> t.Dict[str, t.Any]:
+        """The json-friendly format to send in post requests"""
+        return {
+            "tags": list(self.tags),
+            "feedbackValue": str(self.feedbackValue),
+        }
 
 
 @dataclass
@@ -103,8 +111,7 @@ class StopNCIIAPI:
     BASE_URL: t.ClassVar[str] = "https://api.stopncii.org/"
     API_VERSION: t.ClassVar[str] = "v1"
 
-    DEFAULT_START_TIMESTAMP: t.ClassVar[int] = 10
-    PAGE_SIZE: t.ClassVar[int] = 800
+    DEFAULT_START_TIME: t.ClassVar[int] = 10
 
     def __init__(self, function_key: str, subscription_key: str) -> None:
         self._auth_headers = {
@@ -134,6 +141,7 @@ class StopNCIIAPI:
                 max_retries=Retry(
                     total=4,
                     status_forcelist=[429, 500, 502, 503, 504],
+                    # No retry for post. Could probably add timeout...
                     allowed_methods=["HEAD", "GET", "OPTIONS"],
                     backoff_factor=0.2,  # ~1.5 seconds of retries
                 ),
@@ -166,7 +174,7 @@ class StopNCIIAPI:
             return response.json()
 
     def fetch_hashes(
-        self, *, start_timestamp: int = None, next_page: str = None
+        self, *, start_timestamp: int = DEFAULT_START_TIME, next_page: str = ""
     ) -> FetchHashesResponse:
         """
         Fetch a series of update records from the hash API.
@@ -175,11 +183,13 @@ class StopNCIIAPI:
         the same SignalType+Hash in a later iteration, it should completely
         replace the previously observed record.
         """
-        if start_timestamp is None:
-            start_timestamp = self.DEFAULT_START_TIMESTAMP
-        params: t.Dict[str, t.Any] = {"startTimestamp": start_timestamp}
-        if next_page is not None:
+        params: t.Dict[str, t.Any] = {
+            "startTimestamp": start_timestamp,
+            "pageSize": 800,
+        }
+        if next_page:
             params["nextPageToken"] = next_page
+        logging.debug("StopNCII FetchHashes called: %s", params)
         json_val = self._get("FetchHashes", **params)
         logging.debug("StopNCII FetchHashes returns: %s", json_val)
         return dacite.from_dict(
@@ -189,7 +199,7 @@ class StopNCIIAPI:
         )
 
     def fetch_hashes_iter(
-        self, start_timestamp: int = None
+        self, start_timestamp: int = DEFAULT_START_TIME
     ) -> t.Iterator[FetchHashesResponse]:
         """
         A simple wrapper around FetchHashes to keep fetching until complete.
@@ -203,7 +213,7 @@ class StopNCIIAPI:
 
         """
         has_more = True
-        next_page = None
+        next_page = ""
         while has_more:
             result = self.fetch_hashes(
                 start_timestamp=start_timestamp, next_page=next_page
@@ -212,18 +222,60 @@ class StopNCIIAPI:
             next_page = result.nextPageToken
             yield result
 
+    def submit_hash(
+        self,
+        signal_type: StopNCIISignalType,
+        hash_value: str,
+        tags: t.Optional[t.Set[str]] = None,
+        reported_state: StopNCIICSPFeedbackValue = StopNCIICSPFeedbackValue.Blocked,
+    ) -> None:
+        """Convenience accessor for reporting a single hash"""
+        self.submit_hashes(
+            {
+                (signal_type, hash_value): StopNCIICSPFeedback(
+                    reported_state, tags or set()
+                )
+            }
+        )
+
+    def submit_hashes(
+        self, hashes: t.Dict[t.Tuple[StopNCIISignalType, str], StopNCIICSPFeedback]
+    ) -> None:
+        """
+        Upload hashes as a CSP to StopNCII.org.
+
+        Most hashes come from users submitting to the portal, but the API
+        allows for CSPs to source their own hashes as well.
+        """
+        now = int(time.time())
+        records = []
+        for (signal_type, hashValue), feedback in hashes.items():
+            records.append(
+                {
+                    "lastModtimestamp": now,
+                    "signalType": str(signal_type),
+                    "hashValue": hashValue,
+                    "CSPFeedbacks": [feedback.as_dict_for_post()],
+                }
+            )
+        payload = {"count": len(hashes), "hashRecords": records}
+        self._post("SubmitHashes", json=payload)
+
     def submit_feedback(
         self,
         signal_type: StopNCIISignalType,
         hash_value: str,
-        feedback: StopNCIICSPFeedback,
+        feedback: StopNCIICSPFeedbackValue,
+        tags: t.Optional[t.Set[str]] = None,
     ) -> None:
         """
-        Convenience accessor for submitting feedback for a single hash.
+        Convenience function for submitting feedback for a single hash.
 
         Note that even a single hash may correspond to multiple cases.
         """
-        self.submit_feedbacks({(signal_type, hash_value): feedback})
+        self.submit_feedbacks(
+            {(signal_type, hash_value): StopNCIICSPFeedback(feedback, tags or set())}
+        )
 
     def submit_feedbacks(
         self, feedbacks: t.Dict[t.Tuple[StopNCIISignalType, str], StopNCIICSPFeedback]
@@ -231,21 +283,11 @@ class StopNCIIAPI:
         """Submit feedback on multiple hashes"""
         now = int(time.time())
         # Now for the fun hacky part, convert to expected format
-        records = []
-        for (signal_type, hashValue), feedback in feedbacks.items():
-            fb_dict = asdict(feedback)
-            fb_dict["tags"] = list(fb_dict["tags"])  # Convert from set
-            fb_dict["feedbackValue"] = str(
-                fb_dict["feedbackValue"]
-            )  # Convert from enum
-
-            records.append(
-                {
-                    "lastModtimestamp": now,
-                    "signalType": str(signal_type),
-                    "hashValue": hashValue,
-                    "CSPFeedbacks": [fb_dict],
-                }
-            )
-        payload = {"count": len(feedbacks), "hashRecords": records}
-        self._post("SubmitHashes", json=payload)
+        feedback_dicts = []
+        for (_signal_type, hashValue), feedback in feedbacks.items():
+            # Why isn't signalType used here?
+            fb_dict = feedback.as_dict_for_post()
+            fb_dict["hashValue"] = hashValue
+            feedback_dicts.append(fb_dict)
+        payload = {"count": len(feedbacks), "hashFeedbacks": feedback_dicts}
+        self._post("SubmitFeedback", json=payload)
