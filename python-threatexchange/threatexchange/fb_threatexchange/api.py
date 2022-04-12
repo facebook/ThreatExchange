@@ -127,8 +127,8 @@ class ThreatExchangeAPI:
         Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `_get_session` above.
         """
-        with self._get_session() as session:
-            response = requests.get(url, params=params or {})
+        with self._get_session() as _session:
+            response = requests.get(url, params=params or {})  # !!! Typo? session.get?
             response.raise_for_status()
             return response.json(object_hook=json_obj_hook)
 
