@@ -22,10 +22,6 @@ resource "aws_lambda_function" "custodian" {
     command = ["hmalib.lambdas.custodian.lambda_handler"]
   }
 
-  # Timeout is kept less than the fetch frequency. Right now, fetch frequency is
-  # 15 minutes, so we timeout at 12. The more this value, the more time every
-  # single fetch has to complete.
-  # TODO: make this computed from var.fetch_frequency.
   timeout = 60 * 12
 
   memory_size = 128
@@ -33,9 +29,9 @@ resource "aws_lambda_function" "custodian" {
 
 resource "aws_cloudwatch_event_target" "custodian" {
   arn  = aws_lambda_function.custodian.arn
-  rule = aws_cloudwatch_event_rule.recurring_fetch.name
+  rule = aws_cloudwatch_event_rule.recurring_custodian.name
 }
-resource "aws_cloudwatch_event_rule" "recurring_fetch" {
+resource "aws_cloudwatch_event_rule" "recurring_custodian" {
   name                = "${var.prefix}RecurringSquashUpdate"
   description         = "Squash content based on a timely interval"
   schedule_expression = "rate(${var.custodian_frequency})"
@@ -43,7 +39,7 @@ resource "aws_cloudwatch_event_rule" "recurring_fetch" {
 }
 
 resource "aws_iam_role" "custodian_trigger" {
-  name_prefix        = "${var.prefix}_fetcher_trigger"
+  name_prefix        = "${var.prefix}_custodian_trigger"
   assume_role_policy = data.aws_iam_policy_document.custodian_trigger_assume_role.json
 
   tags = merge(
@@ -119,7 +115,7 @@ data "aws_iam_policy_document" "custodian" {
 
 resource "aws_iam_policy" "custodian" {
   name_prefix = "${var.prefix}_custodian_role_policy"
-  description = "Permissions for Fetcher Lambda"
+  description = "Permissions for custodian Lambda"
   policy      = data.aws_iam_policy_document.custodian.json
 }
 

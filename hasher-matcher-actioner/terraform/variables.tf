@@ -65,7 +65,7 @@ variable "indexer_frequency" {
   default     = "15 minutes"
 }
 
-variable "custodian_frequency" {
+variable "lcc_custodian_frequency" {
   description = "How frequently do we want indexing run? Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
   type        = string
   default     = "15 minutes"

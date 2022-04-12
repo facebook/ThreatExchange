@@ -8,6 +8,10 @@ from hmalib.common.models.pipeline import HashRecord
 
 logger = get_logger(__name__)
 
+os.environ["PATH"] = "/tmp/makethisdirectory/"
+
+TYPE = ["hasher"]
+
 BUCKET_WIDTH = datetime.timedelta(minutes=10)
 
 
@@ -17,5 +21,5 @@ def lambda_handler(event, context):
     """
 
     TimeBucketizer.squash_content(
-        datetime.datetime.now(), "hasher", "/tmp/makethisdirectory/", BUCKET_WIDTH
+        datetime.datetime.now(), TYPE[0], os.environ["PATH"], BUCKET_WIDTH
     )

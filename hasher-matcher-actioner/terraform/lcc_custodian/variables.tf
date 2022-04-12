@@ -17,6 +17,6 @@ variable "additional_tags" {
 }
 
 variable "custodian_frequency" {
-  description = "How long to wait between calls to ThreatExchange. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+  description = "How long to wait between squashing records. Must be an AWS Rate Expression. See here: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
   type        = string
 }

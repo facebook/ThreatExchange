@@ -2,6 +2,7 @@
 import datetime
 import os
 import random
+import typing as t
 import string
 import tempfile
 import unittest
@@ -26,7 +27,8 @@ class SampleCSViableClass(CSViable):
     def to_csv(self):
         return [self.a, self.b]
 
-    def from_csv(self):
+    @classmethod
+    def from_csv(cls, value: t.List[str]):
         return SampleCSViableClass()
 
 
@@ -166,6 +168,7 @@ class TestTimeBuckets(unittest.TestCase):
                 VALUE_1 = 5
                 VALUE_2 = 10
                 VALUE_3 = 3
+                expected_records = []
                 for i in range(VALUE_1):
                     for i in range(VALUE_2):
                         sample = TimeBucketizer(
@@ -175,21 +178,30 @@ class TestTimeBuckets(unittest.TestCase):
                             content = "".join(
                                 random.choice(string.ascii_lowercase) for _ in range(10)
                             )
-                            sample.add_record(HashRecord(content, str(i)))
+                            new_record = HashRecord(content, str(i))
+                            sample.add_record(new_record)
+                            expected_records.append(new_record)
                         sample.force_flush()
                     frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
 
+                frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+                frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+                frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
                 TimeBucketizer.squash_content(
-                    datetime.datetime.now(), "hasher", td, datetime.timedelta(minutes=1)
+                    "hasher",
+                    td,
+                    datetime.timedelta(minutes=1),
+                    datetime.datetime.now() - datetime.timedelta(minutes=2),
                 )
 
                 records = TimeBucketizer.get_records(
-                    datetime.datetime.now() - datetime.timedelta(minutes=7),
+                    datetime.datetime.now() - datetime.timedelta(minutes=10),
                     datetime.datetime.now(),
                     "hasher",
                     td,
                     datetime.timedelta(minutes=1),
                     HashRecord,
                 )
-
+                print(records)
                 self.assertEqual(len(records), VALUE_1 * VALUE_2 * VALUE_3)
+                self.assertCountEqual(records, expected_records)

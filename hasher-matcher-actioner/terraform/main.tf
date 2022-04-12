@@ -226,11 +226,11 @@ module "durable_fs" {
   additional_tags = var.additional_tags
 }
 
-module "custodian" {
-  source              = "./custodian"
+module "lcc_custodian" {
+  source              = "./lcc_custodian"
   prefix              = var.prefix
   additional_tags     = merge(var.additional_tags, local.common_tags)
-  custodian_frequency = var.custodian_frequency
+  custodian_frequency = var.lcc_custodian_frequency
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
   }

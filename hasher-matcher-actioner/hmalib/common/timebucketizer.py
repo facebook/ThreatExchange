@@ -182,27 +182,38 @@ class TimeBucketizer(t.Generic[T]):
         return content_list
 
     @staticmethod
+    def squash_directory(directory_path, file_list):
+        with open(
+            os.path.join(directory_path, "squash" + str(uuid.uuid1())) + ".csv",
+            "w",
+        ) as new_file:
+            for file in file_list:
+                with open(file, "r") as reader:
+                    new_file.write(reader.read())
+                os.remove(file)
+
+    @staticmethod
     def squash_content(
-        location: datetime.datetime,
         type: str,
         storage_path: str,
         bucket_width: datetime.timedelta,
-        date_to: datetime.timedelta = datetime.timedelta(days=1),
+        min_bucket_start_time: datetime.datetime,
+        max_bucket_start_time: datetime.datetime = None,
     ):
-
-        if bucket_width > date_to:
-            return
+        if max_bucket_start_time == None:
+            max_bucket_start_time = min_bucket_start_time - datetime.timedelta(days=1)
 
         until_nearest = TimeBucketizer._calculate_bucket_endpoints(
-            location, bucket_width
+            min_bucket_start_time, bucket_width
         )[1]
-
         since_nearest = TimeBucketizer._calculate_bucket_endpoints(
-            until_nearest - date_to, bucket_width
+            max_bucket_start_time, bucket_width
         )[0]
 
-        while until_nearest > since_nearest:
+        if until_nearest > datetime.datetime.now() - bucket_width:
+            return
 
+        while until_nearest <= since_nearest:
             directory_path = TimeBucketizer._generate_path(
                 storage_path, type, until_nearest
             )
@@ -216,14 +227,6 @@ class TimeBucketizer(t.Generic[T]):
                     elif os.path.isfile(file_path):
                         file_list.append(file_path)
 
-                with open(
-                    os.path.join(directory_path, "squash" + str(uuid.uuid1())) + ".csv",
-                    "w",
-                ) as new_file:
-                    for file in file_list:
-                        with open(file, "r") as reader:
-                            new_file.write(reader.read())
+                TimeBucketizer.squash_directory(directory_path, file_list)
 
-                        os.remove(file)
-
-            until_nearest -= bucket_width
+            until_nearest += bucket_width
