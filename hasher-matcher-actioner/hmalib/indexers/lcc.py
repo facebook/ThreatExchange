@@ -27,18 +27,8 @@ class LCCIndexer:
         directory = os.path.join(storage_path, signal_type)
         latest_directory = max(pathlib.Path(directory).glob("*/"), key=os.path.getmtime)
 
-        print(latest_directory)
-        # latest_index_file = max(latest_directory, key=os.path.getctime)
-
         with open(latest_directory, "rb") as f:
             return pickle.load(f)
-
-    # find some way to access most recent index in file structure
-    # indexObjPath = path of index with latest creation time (should already be sorted by time in file structure)
-    # file = open(indexObjPath,"r")
-    # latest_index = pickle.load(file)
-    # file.close()
-    # return latest_index
 
     @classmethod
     def build_index_from_last_24h(cls, signal_type, storage_path, bucket_width) -> None:
