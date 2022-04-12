@@ -2,6 +2,7 @@
 
 import glob
 import os.path
+import pathlib
 import pickle
 import time
 import typing as t
@@ -21,15 +22,16 @@ logger = get_logger(__name__)
 
 class LCCIndexer:
     @classmethod
-    def get_recent_index(cls, storage_path, signal_type, bucket_width) -> PDQIndex:
+    def get_recent_index(cls, storage_path, signal_type) -> PDQIndex:
         """Get the most recent index."""
+        directory = os.path.join(storage_path, signal_type)
+        latest_directory = max(pathlib.Path(directory).glob("*/"), key=os.path.getmtime)
 
-        file_type = r"\*csv"
-        files = glob.glob(f"{storage_path}''{signal_type}")
-        latest_index_file = max(files, key=os.path.getctime)
+        print(latest_directory)
+        # latest_index_file = max(latest_directory, key=os.path.getctime)
 
-        with open(f"{latest_index_file}", "rb") as f:
-            pickle.load(f)
+        with open(latest_directory, "rb") as f:
+            return pickle.load(f)
 
     # find some way to access most recent index in file structure
     # indexObjPath = path of index with latest creation time (should already be sorted by time in file structure)
@@ -70,16 +72,7 @@ class LCCIndexer:
         get most recent index of type PDQ
         write most recent index of specific index type
         """
-        # use path lib for file directory
-        with open(
-            f"{storage_path}''{signal_type}''{datetime.now()-bucket_width}", "wb"
-        ) as f:
+        creation_time = str(datetime.now().strftime("%Y-%m-%d_%H:%M"))
+        directory = os.path.join(storage_path, signal_type, creation_time)
+        with open(directory, "wb") as f:
             pickle.dump(index, f)
-
-        # # variable name with creation time, index type, time delta value
-        # indexObj = {testIndex, datetime.now(), PDQIndex, d}
-        # # write_path = open(indexpath,"w")
-        # pickle.dump(indexObj, write_path)
-        # # example file structure
-        # # "/var/data/threatexchange/LCCIndexes/<hash_type>/2022-02-08-20-45-<pickle-name>.pickle"
-        # # os.listdirs, check if this returns sorted list of files

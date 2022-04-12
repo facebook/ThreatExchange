@@ -30,11 +30,5 @@ class TestLCCIndexer(unittest.TestCase):
             test_index = test_class.build_index_from_last_24h(
                 tbi.type, tbi.storage_path, tbi.bucket_width
             )
-            # test_class.override_recent_index(test_index,tbi.type,tbi.storage_path,tbi.bucket_width,write_path)
-            # print(
-            #     test_index.query(
-            #         "19055fc67a4e8d667d9668700c1920ff19005fc67a4e8d667d9668700c1920ff"
-            #     )
-            # )
-            # should return a list with non-zero length
-            # self.assertEqual(3, 4)
+            test_class.override_recent_index(test_index, tbi.type, td, tbi.bucket_width)
+            print(test_class.get_recent_index(td, tbi.type))
