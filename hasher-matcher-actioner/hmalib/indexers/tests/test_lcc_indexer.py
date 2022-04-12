@@ -7,6 +7,7 @@ from hmalib.common.models.pipeline import HashRecord
 from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 from hmalib.indexers.lcc import LCCIndexer
 
+
 class TestLCCIndexer(unittest.TestCase):
     def test(self):
         with tempfile.TemporaryDirectory() as td:
