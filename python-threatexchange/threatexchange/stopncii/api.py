@@ -98,6 +98,15 @@ class FetchHashesResponse:
     hashRecords: t.List[StopNCIIHashRecord]  # The records
 
 
+@enum.unique
+class StopNCIIEndpoint(enum.Enum):
+    """Endpoints (with their own function keys) on StopNCII"""
+
+    FetchHashes = "FetchHashes"
+    SubmitHashes = "SubmitHashes"
+    SubmitFeedback = "SubmitFeedback"
+
+
 class StopNCIIAPI:
     """
     A wrapper around the StopNCII.org hash exchange API.
@@ -112,13 +121,17 @@ class StopNCIIAPI:
 
     DEFAULT_START_TIME: t.ClassVar[int] = 10
 
-    def __init__(self, function_key: str, subscription_key: str) -> None:
-        self._auth_headers = {
-            "x-functions-key": function_key,
-            "Ocp-Apim-Subscription-Key": subscription_key,
-        }
+    def __init__(
+        self,
+        subscription_key: str,
+        fetch_function_key: str,
+        additional_function_keys: t.Optional[t.Dict[StopNCIIEndpoint, str]] = None,
+    ) -> None:
+        self._function_keys = dict(additional_function_keys or {})
+        self._function_keys[StopNCIIEndpoint.FetchHashes] = fetch_function_key
+        self._subscription_key = subscription_key
 
-    def _get_session(self):
+    def _get_session(self, endpoint: StopNCIIEndpoint):
         """
         Custom requests sesson
 
@@ -131,8 +144,19 @@ class StopNCIIAPI:
         If using without a context manager, ensure you end up calling close() on
         the returned value.
         """
+        function_key = self._function_keys.get(endpoint)
+        if not function_key:
+            raise ValueError(
+                f"You don't have a function key for the endpoint {endpoint}"
+            )
+
         session = requests.Session()
-        session.headers.update(self._auth_headers)
+        session.headers.update(
+            {
+                "x-functions-key": function_key,
+                "Ocp-Apim-Subscription-Key": self._subscription_key,
+            }
+        )
         session.mount(
             self.BASE_URL,
             adapter=TimeoutHTTPAdapter(
@@ -148,34 +172,38 @@ class StopNCIIAPI:
         )
         return session
 
-    def _get(self, endpoint: str, **json) -> t.Any:
+    def _get(self, endpoint: StopNCIIEndpoint, **params) -> t.Any:
         """
         Perform an HTTP GET request, and return the JSON response payload.
 
         Same timeouts and retry strategy as `_get_session` above.
         """
 
-        url = "/".join((self.BASE_URL, endpoint))
-        with self._get_session() as session:
-            response = session.get(url, json=json)
+        url = "/".join((self.BASE_URL, endpoint.value))
+        with self._get_session(endpoint) as session:
+            response = session.get(url, params=params)
             response.raise_for_status()
             return response.json()
 
-    def _post(self, endpoint: str, *, json=None, params=None) -> t.Any:
+    def _post(self, endpoint: StopNCIIEndpoint, *, json=None) -> t.Any:
         """
         Perform an HTTP POST request, and return the JSON response payload.
 
         No timeout or retry strategy.
         """
 
-        url = "/".join((self.BASE_URL, endpoint))
-        with self._get_session() as session:
-            response = session.post(url, json=json, params=params or {})
+        url = "/".join((self.BASE_URL, endpoint.value))
+        with self._get_session(endpoint) as session:
+            response = session.post(url, json=json)
             response.raise_for_status()
             return response.json()
 
     def fetch_hashes(
-        self, *, start_timestamp: int = DEFAULT_START_TIME, next_page: str = ""
+        self,
+        *,
+        page_size: int = 800,
+        start_timestamp: int = DEFAULT_START_TIME,
+        next_page: str = "",
     ) -> FetchHashesResponse:
         """
         Fetch a series of update records from the hash API.
@@ -186,12 +214,12 @@ class StopNCIIAPI:
         """
         params: t.Dict[str, t.Any] = {
             "startTimestamp": start_timestamp,
-            "pageSize": 800,
+            "pageSize": page_size,
         }
         if next_page:
             params["nextPageToken"] = next_page
         logging.debug("StopNCII FetchHashes called: %s", params)
-        json_val = self._get("FetchHashes", **params)
+        json_val = self._get(StopNCIIEndpoint.FetchHashes, **params)
         logging.debug("StopNCII FetchHashes returns: %s", json_val)
         return dacite.from_dict(
             data_class=FetchHashesResponse,
@@ -260,7 +288,7 @@ class StopNCIIAPI:
                 }
             )
         payload = {"count": len(hashes), "hashRecords": records}
-        self._post("SubmitHashes", json=payload)
+        self._post(StopNCIIEndpoint.SubmitHashes, json=payload)
 
     def submit_feedback(
         self,
@@ -291,4 +319,4 @@ class StopNCIIAPI:
             fb_dict["hashValue"] = hashValue
             feedback_dicts.append(fb_dict)
         payload = {"count": len(feedbacks), "hashFeedbacks": feedback_dicts}
-        self._post("SubmitFeedback", json=payload)
+        self._post(StopNCIIEndpoint.SubmitFeedback, json=payload)
