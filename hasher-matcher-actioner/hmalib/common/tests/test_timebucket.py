@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import datetime
 import tempfile
+import typing as t
 import unittest
 
 from freezegun import freeze_time
@@ -21,7 +22,8 @@ class SampleCSViableClass(CSViable):
     def to_csv(self):
         return [self.a, self.b]
 
-    def from_csv(self, value):
+    @classmethod
+    def from_csv(cls, value: t.List[str]):
         return SampleCSViableClass()
 
 

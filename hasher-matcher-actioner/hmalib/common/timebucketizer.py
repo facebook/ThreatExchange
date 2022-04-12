@@ -174,8 +174,6 @@ class TimeBucketizer(t.Generic[T]):
 
         for file in file_list:
             with open(file, "r") as my_file:
-                content_list.extend(
-                    list(map(type_class().from_csv, csv.reader(my_file)))
-                )
+                content_list.extend(list(map(type_class.from_csv, csv.reader(my_file))))
 
         return content_list
