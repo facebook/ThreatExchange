@@ -19,7 +19,7 @@ def lambda_handler(event, context):
     """
     Squash the records of multiple timebucketizers into a single file
     """
-
-    TimeBucketizer.squash_content(
-        datetime.datetime.now(), TYPE[0], os.environ["PATH"], BUCKET_WIDTH
-    )
+    for value in TYPE:
+        TimeBucketizer.squash_content(
+            datetime.datetime.now(), value, os.environ["PATH"], BUCKET_WIDTH
+        )

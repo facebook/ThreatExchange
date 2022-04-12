@@ -2,14 +2,13 @@
 import datetime
 import os
 import random
-import typing as t
 import string
 import tempfile
+import typing as t
 import unittest
 from dataclasses import dataclass
 
 from freezegun import freeze_time
-
 from hmalib.common.models.pipeline import HashRecord
 from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 
@@ -192,6 +191,7 @@ class TestTimeBuckets(unittest.TestCase):
                     td,
                     datetime.timedelta(minutes=1),
                     datetime.datetime.now() - datetime.timedelta(minutes=2),
+                    datetime.datetime.now() - datetime.timedelta(days=1),
                 )
 
                 records = TimeBucketizer.get_records(

@@ -2,11 +2,8 @@
 import csv
 import datetime
 import os
-import random
-import string
 import typing as t
 import uuid
-from dataclasses import dataclass, field
 
 MAX_BUFFER_SIZE = 3200
 SECONDS_PER_DAY = 86400
@@ -182,9 +179,18 @@ class TimeBucketizer(t.Generic[T]):
         return content_list
 
     @staticmethod
-    def squash_directory(directory_path, file_list):
+    def squash_directory(directory_path):
+
+        file_list = []
+        for file in os.listdir(directory_path):
+            file_path = os.path.join(directory_path, file)
+            if file.startswith("squash"):
+                return
+            elif os.path.isfile(file_path):
+                file_list.append(file_path)
+
         with open(
-            os.path.join(directory_path, "squash" + str(uuid.uuid1())) + ".csv",
+            os.path.join(directory_path, "squash_" + str(uuid.uuid1())) + ".csv",
             "w",
         ) as new_file:
             for file in file_list:
@@ -197,17 +203,15 @@ class TimeBucketizer(t.Generic[T]):
         type: str,
         storage_path: str,
         bucket_width: datetime.timedelta,
+        max_bucket_start_time: datetime.datetime,
+        # Add logging
         min_bucket_start_time: datetime.datetime,
-        max_bucket_start_time: datetime.datetime = None,
     ):
-        if max_bucket_start_time == None:
-            max_bucket_start_time = min_bucket_start_time - datetime.timedelta(days=1)
-
         until_nearest = TimeBucketizer._calculate_bucket_endpoints(
-            min_bucket_start_time, bucket_width
+            max_bucket_start_time, bucket_width
         )[1]
         since_nearest = TimeBucketizer._calculate_bucket_endpoints(
-            max_bucket_start_time, bucket_width
+            min_bucket_start_time, bucket_width
         )[0]
 
         if until_nearest > datetime.datetime.now() - bucket_width:
@@ -219,14 +223,6 @@ class TimeBucketizer(t.Generic[T]):
             )
 
             if os.path.isdir(directory_path):
-                file_list = []
-                for file in os.listdir(directory_path):
-                    file_path = os.path.join(directory_path, file)
-                    if file.startswith("squash"):
-                        return
-                    elif os.path.isfile(file_path):
-                        file_list.append(file_path)
-
-                TimeBucketizer.squash_directory(directory_path, file_list)
+                TimeBucketizer.squash_directory(directory_path)
 
             until_nearest += bucket_width
