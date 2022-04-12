@@ -108,8 +108,7 @@ class StopNCIIAPI:
     corresponds to NCII content.
     """
 
-    BASE_URL: t.ClassVar[str] = "https://api.stopncii.org/"
-    API_VERSION: t.ClassVar[str] = "v1"
+    BASE_URL: t.ClassVar[str] = "https://api.stopncii.org/v1"
 
     DEFAULT_START_TIME: t.ClassVar[int] = 10
 
@@ -152,10 +151,11 @@ class StopNCIIAPI:
     def _get(self, endpoint: str, **json) -> t.Any:
         """
         Perform an HTTP GET request, and return the JSON response payload.
+
         Same timeouts and retry strategy as `_get_session` above.
         """
 
-        url = "/".join((self.BASE_URL, self.API_VERSION, endpoint))
+        url = "/".join((self.BASE_URL, endpoint))
         with self._get_session() as session:
             response = session.get(url, json=json)
             response.raise_for_status()
@@ -163,11 +163,12 @@ class StopNCIIAPI:
 
     def _post(self, endpoint: str, *, json=None, params=None) -> t.Any:
         """
-        Perform an HTTP GET request, and return the JSON response payload.
-        Same timeouts and retry strategy as `_get_session` above.
+        Perform an HTTP POST request, and return the JSON response payload.
+
+        No timeout or retry strategy.
         """
 
-        url = "/".join((self.BASE_URL, self.API_VERSION, endpoint))
+        url = "/".join((self.BASE_URL, endpoint))
         with self._get_session() as session:
             response = session.post(url, json=json, params=params or {})
             response.raise_for_status()
