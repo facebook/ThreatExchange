@@ -182,6 +182,9 @@ class TimeBucketizer(t.Generic[T]):
 
     @staticmethod
     def squash_directory(directory_path):
+        """
+        Squash all contents of a given directory
+        """
         file_list = []
         for file in os.listdir(directory_path):
             file_path = os.path.join(directory_path, file)
@@ -214,6 +217,9 @@ class TimeBucketizer(t.Generic[T]):
         min_bucket_start_time: datetime.datetime,
         max_bucket_start_time: datetime.datetime,
     ):
+        """
+        Squash all directories bucket_width apart ranging from min_bucket_start_time to max_bucket_start_time
+        """
 
         since_nearest = TimeBucketizer._calculate_bucket_endpoints(
             min_bucket_start_time, bucket_width
@@ -228,7 +234,6 @@ class TimeBucketizer(t.Generic[T]):
                 "max_bucket_start_time indicates nearest bucket is not ready for squashing"
             )
             return
-
         while since_nearest <= until_nearest:
             directory_path = TimeBucketizer._generate_path(
                 storage_path, type, since_nearest
