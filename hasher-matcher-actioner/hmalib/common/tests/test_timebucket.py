@@ -205,17 +205,9 @@ class TestTimeBuckets(unittest.TestCase):
 
                 now = datetime.datetime(2012, 8, 13, 14, 4, 0)
                 file_count = 0
-                for i in range(VALUE_1):
-                    directory_path = os.path.join(
-                        td,
-                        "hasher",
-                        str(now.year),
-                        str(now.month),
-                        str(now.day),
-                        str(now.hour),
-                        str((now + datetime.timedelta(minutes=i)).minute),
-                    )
-                    file_count += len(os.listdir(directory_path))
+
+                for _, _, files in os.walk(td):
+                    file_count += len(files)
 
                 self.assertEqual(len(records), VALUE_1 * VALUE_2 * VALUE_3)
                 self.assertCountEqual(records, expected_records)
