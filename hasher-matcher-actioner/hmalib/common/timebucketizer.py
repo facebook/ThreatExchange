@@ -187,6 +187,7 @@ class TimeBucketizer(t.Generic[T]):
         for file in os.listdir(directory_path):
             file_path = os.path.join(directory_path, file)
             if file.startswith("squash"):
+                logger.info("Directory (%s) already squashed.", directory_path)
                 return
             elif os.path.isfile(file_path):
                 file_list.append(file_path)
@@ -196,9 +197,12 @@ class TimeBucketizer(t.Generic[T]):
             "w",
         ) as new_file:
             for file in file_list:
+                logger.info("getting content of: %s", file)
                 with open(file, "r") as reader:
                     new_file.write(reader.read())
+                logger.info("removing file: %s", file)
                 os.remove(file)
+        logger.info("successfully squashed: %s", directory_path)
 
     @staticmethod
     def squash_content(
@@ -206,7 +210,6 @@ class TimeBucketizer(t.Generic[T]):
         storage_path: str,
         bucket_width: datetime.timedelta,
         max_bucket_start_time: datetime.datetime,
-        # Add logging
         min_bucket_start_time: datetime.datetime,
     ):
         until_nearest = TimeBucketizer._calculate_bucket_endpoints(
@@ -217,6 +220,9 @@ class TimeBucketizer(t.Generic[T]):
         )[0]
 
         if until_nearest > datetime.datetime.now() - bucket_width:
+            logger.info(
+                "Start time indicates nearest bucket is not ready for squashing"
+            )
             return
 
         while until_nearest <= since_nearest:
@@ -225,6 +231,7 @@ class TimeBucketizer(t.Generic[T]):
             )
 
             if os.path.isdir(directory_path):
+                logger.info("squashing: %s", directory_path)
                 TimeBucketizer.squash_directory(directory_path)
 
             until_nearest += bucket_width
