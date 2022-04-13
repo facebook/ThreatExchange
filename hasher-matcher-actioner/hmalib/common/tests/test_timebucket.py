@@ -163,7 +163,6 @@ class TestTimeBuckets(unittest.TestCase):
     def test_squash_content(self):
         with tempfile.TemporaryDirectory() as td:
             with freeze_time(datetime.datetime.now()) as frozen_datetime:
-
                 VALUE_1 = 5
                 VALUE_2 = 10
                 VALUE_3 = 3
@@ -186,12 +185,13 @@ class TestTimeBuckets(unittest.TestCase):
                 frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
                 frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
                 frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+
                 TimeBucketizer.squash_content(
                     "hasher",
                     td,
                     datetime.timedelta(minutes=1),
-                    datetime.datetime.now() - datetime.timedelta(minutes=2),
                     datetime.datetime.now() - datetime.timedelta(days=1),
+                    datetime.datetime.now() - datetime.timedelta(minutes=2),
                 )
 
                 records = TimeBucketizer.get_records(
@@ -202,6 +202,21 @@ class TestTimeBuckets(unittest.TestCase):
                     datetime.timedelta(minutes=1),
                     HashRecord,
                 )
-                print(records)
+
+                now = datetime.datetime(2012, 8, 13, 14, 4, 0)
+                file_count = 0
+                for i in range(VALUE_1):
+                    directory_path = os.path.join(
+                        td,
+                        "hasher",
+                        str(now.year),
+                        str(now.month),
+                        str(now.day),
+                        str(now.hour),
+                        str((now + datetime.timedelta(minutes=i)).minute),
+                    )
+                    file_count += len(os.listdir(directory_path))
+
                 self.assertEqual(len(records), VALUE_1 * VALUE_2 * VALUE_3)
                 self.assertCountEqual(records, expected_records)
+                self.assertEqual(file_count, VALUE_1)
