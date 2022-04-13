@@ -32,6 +32,12 @@ class SampleCSViableClass(CSViable):
 
 
 class TestTimeBuckets(unittest.TestCase):
+    def get_file_count(self, directory_path):
+        file_count = 0
+        for _, _, files in os.walk(directory_path):
+            file_count += len(files)
+        return file_count
+
     def test_correct_file_content(self):
         with tempfile.TemporaryDirectory() as td:
             initial_datetime = datetime.datetime(
@@ -186,6 +192,8 @@ class TestTimeBuckets(unittest.TestCase):
                 frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
                 frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
 
+                file_count_prev = self.get_file_count(td)
+
                 TimeBucketizer.squash_content(
                     "hasher",
                     td,
@@ -204,11 +212,10 @@ class TestTimeBuckets(unittest.TestCase):
                 )
 
                 now = datetime.datetime(2012, 8, 13, 14, 4, 0)
-                file_count = 0
 
-                for _, _, files in os.walk(td):
-                    file_count += len(files)
+                file_count = self.get_file_count(td)
 
                 self.assertEqual(len(records), VALUE_1 * VALUE_2 * VALUE_3)
                 self.assertCountEqual(records, expected_records)
+                self.assertEqual(file_count_prev, VALUE_1 * VALUE_2)
                 self.assertEqual(file_count, VALUE_1)
