@@ -1,11 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-from dataclasses import dataclass
 import datetime
+import os
+import random
+import string
 import tempfile
 import typing as t
 import unittest
+from dataclasses import dataclass
 
 from freezegun import freeze_time
+from hmalib.common.models.pipeline import HashRecord
 from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 
 
@@ -28,6 +32,12 @@ class SampleCSViableClass(CSViable):
 
 
 class TestTimeBuckets(unittest.TestCase):
+    def get_file_count(self, directory_path):
+        file_count = 0
+        for _, _, files in os.walk(directory_path):
+            file_count += len(files)
+        return file_count
+
     def test_correct_file_content(self):
         with tempfile.TemporaryDirectory() as td:
             initial_datetime = datetime.datetime(
@@ -154,3 +164,58 @@ class TestTimeBuckets(unittest.TestCase):
                 [],
                 "Destroy method should not have executed as the buffer is empty",
             )
+
+    @freeze_time("2012-08-13 14:04:00")
+    def test_squash_content(self):
+        with tempfile.TemporaryDirectory() as td:
+            with freeze_time(datetime.datetime.now()) as frozen_datetime:
+                VALUE_1 = 5
+                VALUE_2 = 10
+                VALUE_3 = 3
+                expected_records = []
+                for i in range(VALUE_1):
+                    for i in range(VALUE_2):
+                        sample = TimeBucketizer(
+                            datetime.timedelta(minutes=1), td, "hasher", str(i)
+                        )
+                        for i in range(VALUE_3):
+                            content = "".join(
+                                random.choice(string.ascii_lowercase) for _ in range(10)
+                            )
+                            new_record = HashRecord(content, str(i))
+                            sample.add_record(new_record)
+                            expected_records.append(new_record)
+                        sample.force_flush()
+                    frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+
+                frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+                frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+                frozen_datetime.tick(delta=datetime.timedelta(minutes=1))
+
+                file_count_prev = self.get_file_count(td)
+
+                TimeBucketizer.squash_content(
+                    "hasher",
+                    td,
+                    datetime.timedelta(minutes=1),
+                    datetime.datetime.now() - datetime.timedelta(days=1),
+                    datetime.datetime.now() - datetime.timedelta(minutes=2),
+                )
+
+                records = TimeBucketizer.get_records(
+                    datetime.datetime.now() - datetime.timedelta(minutes=10),
+                    datetime.datetime.now(),
+                    "hasher",
+                    td,
+                    datetime.timedelta(minutes=1),
+                    HashRecord,
+                )
+
+                now = datetime.datetime(2012, 8, 13, 14, 4, 0)
+
+                file_count = self.get_file_count(td)
+
+                self.assertEqual(len(records), VALUE_1 * VALUE_2 * VALUE_3)
+                self.assertCountEqual(records, expected_records)
+                self.assertEqual(file_count_prev, VALUE_1 * VALUE_2)
+                self.assertEqual(file_count, VALUE_1)

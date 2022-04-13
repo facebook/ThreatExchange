@@ -8,7 +8,9 @@ import uuid
 MAX_BUFFER_SIZE = 3200
 SECONDS_PER_DAY = 86400
 SECONDS_PER_MINUTE = 60
+from hmalib.common.logging import get_logger
 
+logger = get_logger(__name__)
 
 Self = t.TypeVar("Self", bound="CSViable")
 
@@ -177,3 +179,68 @@ class TimeBucketizer(t.Generic[T]):
                 content_list.extend(list(map(type_class.from_csv, csv.reader(my_file))))
 
         return content_list
+
+    @staticmethod
+    def squash_directory(directory_path):
+        """
+        Squash all contents of a given directory
+        """
+        file_list = []
+        for file in os.listdir(directory_path):
+            file_path = os.path.join(directory_path, file)
+            if file.startswith("squash"):
+                logger.info("Directory (%s) already squashed.", directory_path)
+                return
+            elif os.path.isfile(file_path):
+                file_list.append(file_path)
+
+        with open(
+            os.path.join(directory_path, "squash_" + str(uuid.uuid1())) + ".csv",
+            "w",
+        ) as new_file:
+            for file in file_list:
+                logger.info("getting content of: %s", file)
+                with open(file, "r") as reader:
+                    new_file.write(reader.read())
+
+            for file in file_list:
+                logger.info("removing file: %s", file)
+                os.remove(file)
+
+        logger.info("successfully squashed: %s", directory_path)
+
+    @staticmethod
+    def squash_content(
+        type: str,
+        storage_path: str,
+        bucket_width: datetime.timedelta,
+        min_bucket_start_time: datetime.datetime,
+        max_bucket_start_time: datetime.datetime,
+    ):
+        """
+        Squash all directories bucket_width apart ranging from min_bucket_start_time to max_bucket_start_time
+        """
+
+        since_nearest = TimeBucketizer._calculate_bucket_endpoints(
+            min_bucket_start_time, bucket_width
+        )[0]
+
+        until_nearest = TimeBucketizer._calculate_bucket_endpoints(
+            max_bucket_start_time, bucket_width
+        )[1]
+
+        if until_nearest > datetime.datetime.now() - bucket_width:
+            logger.info(
+                "max_bucket_start_time indicates nearest bucket is not ready for squashing"
+            )
+            return
+        while since_nearest <= until_nearest:
+            directory_path = TimeBucketizer._generate_path(
+                storage_path, type, since_nearest
+            )
+
+            if os.path.isdir(directory_path):
+                logger.info("squashing: %s", directory_path)
+                TimeBucketizer.squash_directory(directory_path)
+
+            since_nearest += bucket_width
