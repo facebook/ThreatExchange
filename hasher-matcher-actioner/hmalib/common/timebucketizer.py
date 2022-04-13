@@ -182,7 +182,6 @@ class TimeBucketizer(t.Generic[T]):
 
     @staticmethod
     def squash_directory(directory_path):
-
         file_list = []
         for file in os.listdir(directory_path):
             file_path = os.path.join(directory_path, file)
