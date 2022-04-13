@@ -8,7 +8,9 @@ import uuid
 MAX_BUFFER_SIZE = 3200
 SECONDS_PER_DAY = 86400
 SECONDS_PER_MINUTE = 60
+from hmalib.common.logging import get_logger
 
+logger = get_logger(__name__)
 
 Self = t.TypeVar("Self", bound="CSViable")
 
