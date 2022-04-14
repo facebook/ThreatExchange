@@ -1,14 +1,13 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import argparse
-import importlib
-import logging.config
-import os
-import sys
 import typing as t
 from functools import lru_cache
-
+import sys
+import argparse
+import importlib
 import boto3
+import os
+import logging.config
 
 LOGGING = {
     "version": 1,
@@ -67,7 +66,7 @@ class RunAPICommand(base.Command, base.NeedsTerraformOutputs):
             print("\nPrinting all endpoints instead of running API:\n")
             self._print_endpoints(app)
         else:
-            app.run(port=7000)
+            app.run()
 
     @classmethod
     def _get_endpoints(cls, app):
