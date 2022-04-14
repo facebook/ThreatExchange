@@ -1,18 +1,12 @@
-from dataclasses import dataclass, asdict
-from mypy_boto3_dynamodb.service_resource import Table
-import bottle
+import typing as t
+from dataclasses import asdict, dataclass
 
+import bottle
 from hmalib.common.config import HMAConfig
 from hmalib.common.models.bank import BankMember, BanksTable
-
-from hmalib.lambdas.api.middleware import (
-    jsoninator,
-    JSONifiable,
-    DictParseable,
-    SubApp,
-)
-
-import typing as t
+from hmalib.lambdas.api.middleware import (DictParseable, JSONifiable, SubApp,
+                                           jsoninator)
+from mypy_boto3_dynamodb.service_resource import Table
 
 
 @dataclass
