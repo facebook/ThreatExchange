@@ -173,15 +173,18 @@ app.mount(
     ),
 )
 
+
 app.mount(
     "/lcc/",
     get_lcc_api(
+        # Not sure which of these are needed. Followed similar format above
+        # not sure which parameters of these I'll need to use
         datastore_table=dynamodb.Table(DYNAMODB_TABLE),
         hma_config_table=HMA_CONFIG_TABLE,
         indexes_bucket_name=INDEXES_BUCKET_NAME,
         writeback_queue_url=WRITEBACK_QUEUE_URL,
         bank_table=dynamodb.Table(BANKS_TABLE),
-        # I think only this one is needed
+        # I think only this one is needed?
         hash_queue_url=HASHES_QUEUE_URL,
     ),
 )

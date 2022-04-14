@@ -15,6 +15,12 @@ from hmalib.lambdas.api.middleware import (
 import typing as t
 
 
+# I return this type because I saw in the documentation that a
+# to_json method is required
+
+# I might need to use
+# `jsoninator(<requestObj>, from_query=True)` but not sure how the from_query=True
+# would modify this implementation
 @dataclass
 class LccResponse(JSONifiable):
     found_match: bool
@@ -45,11 +51,12 @@ def get_lcc_api(
 
     # Not sure if I need these two?
     HMAConfig.initialize(hma_config_table)
-
     banks_table = BanksTable(table=bank_table)
 
     @lcc_api.get("/", apply=[jsoninator])
     def lcc_hasher() -> LccResponse:
+        # Do i need a case if these are blank?
+        # They seem to default to "" if left out in the api request
         found_match = bottle.request.query.found_match
         content_id = bottle.request.query.content_id
         preview_url = bottle.request.query.preview_url
