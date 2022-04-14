@@ -145,6 +145,30 @@ class HMASignalTypeMapping(SignalTypeMapping):
     def get_content_type(self, name: str) -> t.Optional[t.Type[ContentType]]:
         return self.content_by_name.get(name, None)
 
+    def get_signal_type_enforce(self, name: str) -> t.Type[SignalType]:
+        """
+        Like get_signal_type, but errors out instead of returning None.
+        """
+        signal_type = self.get_signal_type(name)
+        if signal_type is None:
+            raise ValueError(
+                f"SignalType: '{name}' could not be resolved to a configured SignalType."
+            )
+
+        return signal_type
+
+    def get_content_Type_enforce(self, name: str) -> t.Type[ContentType]:
+        """
+        Like get_content_type, but errors out instead of returning None.
+        """
+        content_type = self.get_content_type(name)
+        if content_type is None:
+            raise ValueError(
+                f"ContentType: '{name}' could not be resolved to a configured ContentType."
+            )
+
+        return content_type
+
 
 @dataclass
 class HMAFunctionalityMapping(FunctionalityMapping):

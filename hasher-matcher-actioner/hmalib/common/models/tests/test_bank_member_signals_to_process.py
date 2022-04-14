@@ -3,21 +3,39 @@
 import typing as t
 import unittest
 import random
-from threatexchange import signal_type
 
 from threatexchange.content_type.video import VideoContent
-from threatexchange.signal_type.video_tmk_pdqf import VideoTmkPdqfSignal
-
+from threatexchange.meta import SignalTypeMapping
+from threatexchange.signal_type.md5 import VideoMD5Signal
+from hmalib.common.mappings import (
+    DEFAULT_SIGNAL_AND_CONTENT_TYPES,
+    HMASignalTypeMapping,
+)
+from hmalib.common.config import HMAConfig
 from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
 from hmalib.banks import bank_operations
 from hmalib.common.models.bank import BanksTable
+
+
+class TestHMASignalTypeConfigs(HMASignalTypeMapping):
+    def __init__(self):
+        default_content_types = (
+            DEFAULT_SIGNAL_AND_CONTENT_TYPES.content_by_name.values()
+        )
+        default_signal_types = (
+            DEFAULT_SIGNAL_AND_CONTENT_TYPES.signal_type_by_name.values()
+        )
+
+        SignalTypeMapping.__init__(self, default_content_types, default_signal_types)
 
 
 class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
     # Note: Table is defined in base class BanksTableTestBase
 
     def _create_bank_and_bank_member(self) -> t.Tuple[str, str]:
-        table_manager = BanksTable(self.get_table())
+        table_manager = BanksTable(
+            self.get_table(), signal_type_mapping=TestHMASignalTypeConfigs()
+        )
 
         bank = table_manager.create_bank("TEST_BANK", "Test bank description")
         bank_member = table_manager.add_bank_member(
@@ -39,13 +57,13 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
             bank_member_signal = table_manager.add_bank_member_signal(
                 bank_id=bank_id,
                 bank_member_id=bank_member_id,
-                signal_type=VideoTmkPdqfSignal,
-                signal_value="A VIDEO TMK PDQF SIGNAL. WILTY?",
+                signal_type=VideoMD5Signal,
+                signal_value="A VIDEO MD5 SIGNAL. WILTY?",
             )
 
             # expect this to now be available to process
             to_process = table_manager.get_bank_member_signals_to_process_page(
-                signal_type=VideoTmkPdqfSignal
+                signal_type=VideoMD5Signal
             )
 
             self.assertEqual(len(to_process.items), 1)
@@ -62,9 +80,8 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
                 table_manager.add_bank_member_signal(
                     bank_id=bank_id,
                     bank_member_id=bank_member_id,
-                    signal_type=VideoTmkPdqfSignal,
-                    signal_value="A VIDEO TMK PDQF SIGNAL. WILTY?"
-                    + str(random.random()),
+                    signal_type=VideoMD5Signal,
+                    signal_value="A VIDEO MD5 SIGNAL. WILTY?" + str(random.random()),
                 ).signal_id
                 for _ in range(20)
             ]
@@ -72,7 +89,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
             to_process_signal_ids = [
                 signal.signal_id
                 for signal in table_manager.get_bank_member_signals_to_process_page(
-                    signal_type=VideoTmkPdqfSignal
+                    signal_type=VideoMD5Signal
                 ).items
             ]
 
@@ -87,9 +104,8 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
                 table_manager.add_bank_member_signal(
                     bank_id=bank_id,
                     bank_member_id=bank_member_id,
-                    signal_type=VideoTmkPdqfSignal,
-                    signal_value="A VIDEO TMK PDQF SIGNAL. WILTY?"
-                    + str(random.random()),
+                    signal_type=VideoMD5Signal,
+                    signal_value="A VIDEO MD5 SIGNAL. WILTY?" + str(random.random()),
                 )
                 for _ in range(20)
             ]
@@ -101,7 +117,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
             to_process_signal_ids = [
                 signal.signal_id
                 for signal in table_manager.get_bank_member_signals_to_process_page(
-                    signal_type=VideoTmkPdqfSignal
+                    signal_type=VideoMD5Signal
                 ).items
             ]
 
@@ -116,7 +132,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
                 table_manager.add_bank_member_signal(
                     bank_id=bank_id,
                     bank_member_id=bank_member_id,
-                    signal_type=VideoTmkPdqfSignal,
+                    signal_type=VideoMD5Signal,
                     signal_value="A VIDEO TMK PDQF SIGNAL. WILTY?"
                     + str(random.random()),
                 )
@@ -131,7 +147,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
             exclusive_start_key = None
             while True:
                 response = table_manager.get_bank_member_signals_to_process_page(
-                    signal_type=VideoTmkPdqfSignal,
+                    signal_type=VideoMD5Signal,
                     limit=4,
                     exclusive_start_key=exclusive_start_key,
                 )
