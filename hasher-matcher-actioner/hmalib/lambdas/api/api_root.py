@@ -20,6 +20,7 @@ from hmalib.lambdas.api.datasets import get_datasets_api
 from hmalib.lambdas.api.indexes import get_indexes_api
 from hmalib.lambdas.api.matches import get_matches_api
 from hmalib.lambdas.api.stats import get_stats_api
+from hmalib.lambdas.api.lcc import get_lcc_api
 from hmalib.lambdas.api.submit import (
     get_submit_api,
     create_presigned_url,
@@ -170,6 +171,11 @@ app.mount(
         submissions_queue_url=SUBMISSIONS_QUEUE_URL,
         hash_queue_url=HASHES_QUEUE_URL,
     ),
+)
+
+app.mount(
+    "/lcc/",
+    get_lcc_api(),
 )
 
 app.mount(
