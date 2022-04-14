@@ -2,8 +2,8 @@ import pytest
 from threatexchange.stopncii.api import (
     StopNCIIAPI,
     StopNCIICaseStatus,
-    StopNCIICSPFeedback,
     StopNCIICSPFeedbackValue,
+    StopNCIIEndpoint,
     StopNCIIHashRecord,
     StopNCIISignalType,
 )
@@ -17,7 +17,7 @@ PAGE_TOKEN = (
 
 
 def mock_get_impl(endpoint: str, **json):
-    assert endpoint == "FetchHashes"
+    assert endpoint == StopNCIIEndpoint.FetchHashes
 
     if json.get("nextPageToken") != PAGE_TOKEN:
         return {
