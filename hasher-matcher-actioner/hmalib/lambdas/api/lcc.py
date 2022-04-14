@@ -28,6 +28,7 @@ def get_lcc_api() -> bottle.Bottle:
 
     @lcc_api.get("/", apply=[jsoninator])
     def lcc_hasher() -> LCCResponse:
-        return LCCResponse("", "", "")
+        print("Hash: ", bottle.request.query.hash)
+        return LCCResponse(False, "", "")
 
     return lcc_api
