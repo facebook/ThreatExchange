@@ -157,7 +157,7 @@ class HMASignalTypeMapping(SignalTypeMapping):
 
         return signal_type
 
-    def get_content_Type_enforce(self, name: str) -> t.Type[ContentType]:
+    def get_content_type_enforce(self, name: str) -> t.Type[ContentType]:
         """
         Like get_content_type, but errors out instead of returning None.
         """

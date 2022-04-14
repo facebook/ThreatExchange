@@ -275,7 +275,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
         cls, item: t.Dict, signal_type_mapping: HMASignalTypeMapping
     ) -> "ContentObject":
         content_ref_type = ContentRefType(item["ContentRefType"])
-        content_type = signal_type_mapping.get_content_Type_enforce(item["ContentType"])
+        content_type = signal_type_mapping.get_content_type_enforce(item["ContentType"])
         # This value is added in the case that no additional fields
         # were provided and can be safely discarded.
         item["AdditionalFields"].discard(cls.ADDITIONAL_FIELDS_PLACE_HOLDER)
