@@ -30,7 +30,7 @@ from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchange
 from threatexchange.fetcher.apis.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
-from threatexchange.fetcher.apis.stop_ncii_api import StopNCIIAPI
+from threatexchange.fetcher.apis.stop_ncii_api import StopNCIISignalExchangeAPI
 
 from threatexchange.content_type import photo, video, text, url
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
@@ -138,6 +138,13 @@ def _get_fb_tx_app_token(config: CLiConfig) -> t.Optional[str]:
     return None
 
 
+def _get_stopncii_tokens(
+    config: CLiConfig,
+) -> t.Tuple[t.Optional[str], t.Optional[str]]:
+    """Get the API keys for StopNCII from the config"""
+    return None, None  # TODO
+
+
 class _ExtendedTypes(t.NamedTuple):
     content_types: t.List[t.Type[ContentType]]
     signal_types: t.List[t.Type[SignalType]]
@@ -179,7 +186,7 @@ def _get_settings(config: CLiConfig, dir: pathlib.Path) -> CLISettings:
         [
             StaticSampleSignalExchangeAPI(),
             LocalFileSignalExchangeAPI(),
-            StopNCIIAPI(),
+            StopNCIISignalExchangeAPI(*_get_stopncii_tokens(config)),
             FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
         ]
         + extensions.api_instances

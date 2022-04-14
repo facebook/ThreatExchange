@@ -38,6 +38,9 @@ class FetchCheckpointBase:
         return None
 
 
+TFetchCheckpoint = t.TypeVar("TFetchCheckpoint", bound=FetchCheckpointBase)
+
+
 class SignalOpinionCategory(IntEnum):
     """
     What the opinion on a signal is.
@@ -173,7 +176,12 @@ class FetchedSignalMetadata:
         return f"{agg.category.name} {','.join(agg.tags)}"
 
 
-class FetchDelta:
+TFetchedSignalMetadata = t.TypeVar(
+    "TFetchedSignalMetadata", bound=FetchedSignalMetadata
+)
+
+
+class FetchDelta(t.Generic[TFetchCheckpoint]):
     """
     Contains the result of a fetch.
 
@@ -185,7 +193,7 @@ class FetchDelta:
         """Helper for --limit"""
         return 1
 
-    def next_checkpoint(self) -> FetchCheckpointBase:
+    def next_checkpoint(self) -> TFetchCheckpoint:
         """A serializable checkpoint for fetch."""
         raise NotImplementedError
 
@@ -196,7 +204,9 @@ class FetchDelta:
         raise NotImplementedError
 
 
-class FetchDeltaWithUpdateStream(FetchDelta):
+class FetchDeltaWithUpdateStream(
+    t.Generic[TFetchCheckpoint, TFetchedSignalMetadata], FetchDelta[TFetchCheckpoint]
+):
     """
     For most APIs, they can represented in a simple update stream.
 
@@ -205,7 +215,7 @@ class FetchDeltaWithUpdateStream(FetchDelta):
 
     def get_as_update_dict(
         self,
-    ) -> t.Mapping[t.Tuple[str, str], t.Optional[FetchedSignalMetadata]]:
+    ) -> t.Mapping[t.Tuple[str, str], t.Optional[TFetchedSignalMetadata]]:
         """
         Returns the contents of the delta as
          (signal_type, signal_str) => record
