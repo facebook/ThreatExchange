@@ -60,7 +60,9 @@ class RunAPICommand(base.Command, base.NeedsTerraformOutputs):
         for k in fn_env_vars:
             os.environ[k] = fn_env_vars[k]
 
-        from hmalib.lambdas.api.api_root import app
+        from hmalib.lambdas.api.api_root import bottle_init_once
+
+        app = bottle_init_once()[0]
 
         if self.print_endpoints:
             print("\nPrinting all endpoints instead of running API:\n")

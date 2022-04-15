@@ -278,7 +278,7 @@ def get_pytx_functionality_mapping() -> HMAFunctionalityMapping:
         )
 
     return HMAFunctionalityMapping(
-        HMASignalTypeMapping(),
+        HMASignalTypeMapping.get_from_config_or_default(),
         FetcherMapping(fetchers=fetchers),
         None,
     )
