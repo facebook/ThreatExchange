@@ -9,6 +9,8 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.signal_type.signal_base import SignalType
 
+from hmalib.common.config import HMAConfig
+from hmalib.common.mappings import get_pytx_functionality_mapping
 from hmalib.common.models.bank import BanksTable
 from hmalib.common.s3_adapters import (
     HashRowT,
@@ -19,7 +21,6 @@ from hmalib.common.s3_adapters import (
 )
 from hmalib.common.logging import get_logger
 from hmalib import metrics
-from hmalib.common.mappings import INDEX_MAPPING
 from hmalib.indexers.metadata import BankedSignalIndexMetadata
 from hmalib.indexers.s3_indexers import (
     S3BackedInstrumentedIndexMixin,
@@ -33,6 +34,7 @@ THREAT_EXCHANGE_DATA_FOLDER = os.environ["THREAT_EXCHANGE_DATA_FOLDER"]
 
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 BANKS_TABLE = os.environ["BANKS_TABLE"]
+HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 
 
 def get_all_bank_hash_rows(
@@ -131,6 +133,9 @@ def lambda_handler(event, context):
 
     banks_table = BanksTable(dynamodb.Table(BANKS_TABLE))
 
+    HMAConfig.initialize(HMA_CONFIG_TABLE)
+    signal_content_mapping = get_pytx_functionality_mapping()
+
     for signal_type in ALL_INDEXABLE_SIGNAL_TYPES:
         adapter_class = _ADAPTER_MAPPING[signal_type]
         data_files = adapter_class(
@@ -155,7 +160,10 @@ def lambda_handler(event, context):
         with metrics.timer(metrics.names.indexer.build_index):
             logger.info(f"Rebuilding {signal_type} Index")
 
-            for index_class in INDEX_MAPPING[signal_type]:
+            for index_class in [
+                signal_type.get_index_cls()
+                for signal_type in signal_content_mapping.signal_and_content.signal_type_by_name.values()
+            ]:
                 index: S3BackedInstrumentedIndexMixin = index_class.build(merged_data)
 
                 logger.info(

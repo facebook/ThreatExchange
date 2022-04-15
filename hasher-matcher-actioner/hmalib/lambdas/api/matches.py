@@ -20,7 +20,7 @@ from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
-from threatexchange.meta import FunctionalityMapping
+from threatexchange.meta import FunctionalityMapping, SignalTypeMapping
 
 from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.models.signal import (
@@ -205,6 +205,7 @@ def get_match_details(
                 datastore_table=datastore_table,
                 signal_id=record.signal_id,
                 signal_source=record.signal_source,
+                signal_type_mapping=signal_type_mapping,
             ),
             banked_signal_details=get_banked_signal_details(
                 banks_table=banks_table,
@@ -220,6 +221,7 @@ def get_te_signal_details(
     datastore_table: Table,
     signal_id: str,
     signal_source: str,
+    signal_type_mapping: SignalTypeMapping,
 ) -> t.List[ThreatExchangeSignalDetailsMetadata]:
     """
     Note: te_signal_details should eventaully be folded into banked_signal_details
@@ -238,7 +240,7 @@ def get_te_signal_details(
             pending_opinion_change=metadata.pending_opinion_change.value,
         )
         for metadata in ThreatExchangeSignalMetadata.get_from_signal(
-            datastore_table, signal_id
+            datastore_table, signal_id, signal_type_mapping
         )
     ]
 
@@ -477,7 +479,10 @@ def get_matches_api(
         )
 
         signal = ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
-            datastore_table, signal_id=signal_id, privacy_group_id=privacy_group_id
+            datastore_table,
+            signal_id=signal_id,
+            privacy_group_id=privacy_group_id,
+            signal_type_mapping=signal_type_mapping,
         )
 
         if not signal:
