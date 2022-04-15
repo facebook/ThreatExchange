@@ -4,8 +4,9 @@ import typing as t
 from dataclasses import dataclass
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.meta import get_content_type_for_name
 from threatexchange.signal_type.signal_base import SignalType
+
+from hmalib.common.mappings import HMASignalTypeMapping
 
 
 @dataclass
@@ -38,9 +39,11 @@ class BankSubmissionMessage:
         }
 
     @classmethod
-    def from_sqs_message(cls, d: dict) -> "BankSubmissionMessage":
+    def from_sqs_message(
+        cls, d: dict, signal_type_mapping: HMASignalTypeMapping
+    ) -> "BankSubmissionMessage":
         return cls(
-            content_type=get_content_type_for_name(d["ContentType"]),
+            content_type=signal_type_mapping.get_content_type_enforce(d["ContentType"]),
             url=d["URL"],
             bank_id=d["BankId"],
             bank_member_id=d["BankMemberId"],

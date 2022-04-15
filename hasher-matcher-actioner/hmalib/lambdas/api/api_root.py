@@ -9,9 +9,10 @@ from apig_wsgi import make_lambda_handler
 from bottle import response, error
 from mypy_boto3_dynamodb.service_resource import Table
 
+from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.common.models.content import ContentRefType, ContentType
-
+from hmalib.common.mappings import get_pytx_functionality_mapping
 from hmalib.lambdas.api.bank import get_bank_api
 from hmalib.lambdas.api.action_rules import get_action_rules_api
 from hmalib.lambdas.api.actions import get_actions_api
@@ -52,6 +53,13 @@ HASHES_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 INDEXER_FUNCTION_NAME = os.environ["INDEXER_FUNCTION_NAME"]
 WRITEBACK_QUEUE_URL = os.environ["WRITEBACKS_QUEUE_URL"]
+
+# Initialize hmaconfig at module level. Mounted SubApps need not initialize
+# their own HMAConfigs.
+HMAConfig.initialize(HMA_CONFIG_TABLE)
+
+functionality_mapping = get_pytx_functionality_mapping()
+
 
 # Override common errors codes to return json instead of bottle's default html
 @error(404)
@@ -149,6 +157,7 @@ app.mount(
         indexes_bucket_name=INDEXES_BUCKET_NAME,
         writeback_queue_url=WRITEBACK_QUEUE_URL,
         bank_table=dynamodb.Table(BANKS_TABLE),
+        signal_type_mapping=functionality_mapping.signal_and_content,
     ),
 )
 
@@ -158,6 +167,7 @@ app.mount(
         dynamodb_table=dynamodb.Table(DYNAMODB_TABLE),
         image_bucket=IMAGE_BUCKET_NAME,
         image_prefix=IMAGE_PREFIX,
+        signal_type_mapping=functionality_mapping.signal_and_content,
     ),
 )
 
@@ -169,6 +179,7 @@ app.mount(
         image_prefix=IMAGE_PREFIX,
         submissions_queue_url=SUBMISSIONS_QUEUE_URL,
         hash_queue_url=HASHES_QUEUE_URL,
+        signal_type_mapping=functionality_mapping.signal_and_content,
     ),
 )
 
@@ -195,6 +206,7 @@ app.mount(
         bank_table=dynamodb.Table(BANKS_TABLE),
         bank_user_media_bucket=BANKS_MEDIA_BUCKET_NAME,
         submissions_queue_url=SUBMISSIONS_QUEUE_URL,
+        signal_type_mapping=functionality_mapping.signal_and_content,
     ),
 )
 

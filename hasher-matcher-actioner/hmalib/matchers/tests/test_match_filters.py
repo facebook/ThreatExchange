@@ -20,13 +20,16 @@ from hmalib.indexers.metadata import (
 from hmalib.matchers.matchers_base import Matcher
 from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
 from hmalib.common.tests import config_test
+from hmalib.common.models.tests.test_bank_member_signals_to_process import (
+    TestHMASignalTypeConfigs,
+)
 
 
 class MatchFiltersTestCase(BanksTableTestBase, unittest.TestCase):
     # NOTE: Table is defined in base class BanksTableTestBase
 
     def _create_banks(self):
-        self.table_manager = BanksTable(self.get_table())
+        self.table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
 
         self.active_bank = self.table_manager.create_bank("TEST_BANK", "Is Active")
         self.active_bank_member = self.table_manager.add_bank_member(

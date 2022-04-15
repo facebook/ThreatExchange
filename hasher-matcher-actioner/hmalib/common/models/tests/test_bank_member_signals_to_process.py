@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import pytest
 import typing as t
 import unittest
 import random
@@ -17,6 +18,7 @@ from hmalib.banks import bank_operations
 from hmalib.common.models.bank import BanksTable
 
 
+@pytest.mark.skip(reason="not a test")
 class TestHMASignalTypeConfigs(HMASignalTypeMapping):
     def __init__(self):
         default_content_types = (
@@ -51,7 +53,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_single_signal_is_retrieved(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             bank_member_signal = table_manager.add_bank_member_signal(
@@ -73,7 +75,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_multiple_signals_are_retrieved(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             signal_ids = [
@@ -97,7 +99,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_order_of_signals_is_chronological(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             signals = [
@@ -125,7 +127,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_order_of_signals_multi_page(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             signals = [

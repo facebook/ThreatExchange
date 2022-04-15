@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 from threatexchange import signal_type
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.lambdas.api.submit import create_presigned_url
 import bottle
 import boto3
@@ -109,7 +110,10 @@ class ActionHistoryResponse(JSONifiable):
 
 
 def get_content_api(
-    dynamodb_table: Table, image_bucket: str, image_prefix: str
+    dynamodb_table: Table,
+    image_bucket: str,
+    image_prefix: str,
+    signal_type_mapping: HMASignalTypeMapping,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -148,7 +152,9 @@ def get_content_api(
         content_id = bottle.request.query.content_id or None
 
         if content_id:
-            return ContentObject.get_from_content_id(dynamodb_table, content_id)
+            return ContentObject.get_from_content_id(
+                dynamodb_table, content_id, signal_type_mapping
+            )
         return None
 
     @content_api.get("/pipeline-progress/", apply=[jsoninator])
@@ -166,7 +172,9 @@ def get_content_api(
             return bottle.abort(400, "content_id must be provided.")
         content_id = t.cast(str, content_id)
 
-        content_object = ContentObject.get_from_content_id(dynamodb_table, content_id)
+        content_object = ContentObject.get_from_content_id(
+            dynamodb_table, content_id, signal_type_mapping
+        )
         if not content_object:
             return bottle.abort(400, f"Content with id '{content_id}' not found.")
         content_object = t.cast(ContentObject, content_object)
@@ -183,7 +191,7 @@ def get_content_api(
         )
 
         hash_records = PipelineHashRecord.get_from_content_id(
-            dynamodb_table, content_id
+            dynamodb_table, content_id, signal_type_mapping
         )
         if len(hash_records) != 0:
             result.hashed_at = max(hash_records, key=lambda r: r.updated_at).updated_at
@@ -199,7 +207,9 @@ def get_content_api(
                     hash_record.signal_type.get_name()
                 ] = hash_record.content_hash
 
-        match_records = MatchRecord.get_from_content_id(dynamodb_table, content_id)
+        match_records = MatchRecord.get_from_content_id(
+            dynamodb_table, content_id, signal_type_mapping
+        )
         if len(match_records) != 0:
             result.matched_at = max(
                 match_records, key=lambda r: r.updated_at
@@ -244,7 +254,7 @@ def get_content_api(
 
         # FIXME: Presently, hash API can only support one hash per content_id
         record = PipelineHashRecord.get_from_content_id(
-            dynamodb_table, f"{content_id}"
+            dynamodb_table, f"{content_id}", signal_type_mapping
         )[0]
         if not record:
             return None

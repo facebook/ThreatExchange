@@ -33,10 +33,10 @@ from dataclasses import dataclass, field, asdict
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Attr, Key, And
 from botocore.exceptions import ClientError
-from threatexchange.content_type.meta import get_signal_types_by_name
 
 from threatexchange.signal_type.signal_base import SignalType
 
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.models.models_base import DynamoDBItem
 
 
@@ -178,6 +178,7 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
         cls,
         table: Table,
         signal_id: t.Union[str, int],
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> t.List["ThreatExchangeSignalMetadata"]:
         """
         Load objects for this signal across all privacy groups. A signal_id,
@@ -192,11 +193,15 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
             & Key("SK").begins_with(cls.PRIVACY_GROUP_PREFIX),
             ProjectionExpression=cls.PROJECTION_EXPRESSION,
         ).get("Items")
-        return cls._result_items_to_metadata(items or [])
+        return cls._result_items_to_metadata(items or [], signal_type_mapping)
 
     @classmethod
     def get_from_signal_and_privacy_group(
-        cls, table: Table, signal_id: t.Union[str, int], privacy_group_id: str
+        cls,
+        table: Table,
+        signal_id: t.Union[str, int],
+        privacy_group_id: str,
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> t.Optional["ThreatExchangeSignalMetadata"]:
         """
         Load object for this signal and privacy_group combination.
@@ -205,25 +210,33 @@ class ThreatExchangeSignalMetadata(DynamoDBItem):
         sk = cls.get_sort_key(privacy_group_id)
 
         item = table.get_item(Key={"PK": pk, "SK": sk})
-        return "Item" in item and cls._result_item_to_metadata(item["Item"]) or None
+        return (
+            "Item" in item
+            and cls._result_item_to_metadata(item["Item"], signal_type_mapping)
+            or None
+        )
 
     @classmethod
     def _result_items_to_metadata(
         cls,
         items: t.List[t.Dict],
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> t.List["ThreatExchangeSignalMetadata"]:
-        return [cls._result_item_to_metadata(item) for item in items]
+        return [
+            cls._result_item_to_metadata(item, signal_type_mapping) for item in items
+        ]
 
     @classmethod
     def _result_item_to_metadata(
         cls,
         item: t.Dict,
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> "ThreatExchangeSignalMetadata":
         return ThreatExchangeSignalMetadata(
             signal_id=cls.remove_signal_key_prefix(item["PK"], item["SignalSource"]),
             privacy_group_id=item["PrivacyGroup"],
             updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
-            signal_type=get_signal_types_by_name()[item["SignalType"]],
+            signal_type=signal_type_mapping.get_signal_type_enforce(item["SignalType"]),
             signal_hash=item["SignalHash"],
             tags=item["Tags"],
             pending_opinion_change=PendingThreatExchangeOpinionChange(

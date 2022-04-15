@@ -10,6 +10,7 @@ import boto3
 from moto import mock_dynamodb2
 from botocore.exceptions import ClientError
 from hmalib.common import config, aws_dataclass
+from hmalib.common.models.tests.ddb_test_common import DynamoDBTableTestBase
 
 
 class ConfigTest(unittest.TestCase):

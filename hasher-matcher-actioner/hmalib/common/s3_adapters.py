@@ -18,9 +18,12 @@ import typing as t
 from botocore.errorfactory import ClientError
 from mypy_boto3_s3 import Client as S3Client
 from mypy_boto3_s3.service_resource import Bucket
-from threatexchange import threat_updates as tu
+from threatexchange.fb_threatexchange import threat_updates as tu
 from threatexchange.cli.dataset.simple_serialization import HMASerialization
-from threatexchange.descriptor import SimpleDescriptorRollup, ThreatDescriptor
+from threatexchange.fb_threatexchange.descriptor import (
+    SimpleDescriptorRollup,
+    ThreatDescriptor,
+)
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal

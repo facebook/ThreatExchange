@@ -34,7 +34,7 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_bank_member_removes(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             bank_member_signal_1 = table_manager.add_bank_member_signal(
@@ -81,7 +81,7 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
         REMOVE_EVERY_XTH_MEMBER = 4
 
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
             bank_id, bank_member_id = self._create_bank_and_bank_member()
             for i in range(NUM_MEMBERS):
                 bank_member = table_manager.add_bank_member(
