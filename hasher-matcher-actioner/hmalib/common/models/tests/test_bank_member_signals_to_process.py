@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import pytest
 import typing as t
 import unittest
 import random
@@ -8,27 +7,13 @@ import random
 from threatexchange.content_type.video import VideoContent
 from threatexchange.meta import SignalTypeMapping
 from threatexchange.signal_type.md5 import VideoMD5Signal
-from hmalib.common.mappings import (
-    DEFAULT_SIGNAL_AND_CONTENT_TYPES,
-    HMASignalTypeMapping,
-)
+
 from hmalib.common.config import HMAConfig
-from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
 from hmalib.banks import bank_operations
 from hmalib.common.models.bank import BanksTable
 
-
-@pytest.mark.skip(reason="not a test")
-class TestHMASignalTypeConfigs(HMASignalTypeMapping):
-    def __init__(self):
-        default_content_types = (
-            DEFAULT_SIGNAL_AND_CONTENT_TYPES.content_by_name.values()
-        )
-        default_signal_types = (
-            DEFAULT_SIGNAL_AND_CONTENT_TYPES.signal_type_by_name.values()
-        )
-
-        SignalTypeMapping.__init__(self, default_content_types, default_signal_types)
+from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
 
 
 class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
@@ -36,7 +21,7 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def _create_bank_and_bank_member(self) -> t.Tuple[str, str]:
         table_manager = BanksTable(
-            self.get_table(), signal_type_mapping=TestHMASignalTypeConfigs()
+            self.get_table(), signal_type_mapping=get_default_signal_type_mapping()
         )
 
         bank = table_manager.create_bank("TEST_BANK", "Test bank description")
@@ -53,7 +38,9 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_single_signal_is_retrieved(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             bank_member_signal = table_manager.add_bank_member_signal(
@@ -75,7 +62,9 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_multiple_signals_are_retrieved(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             signal_ids = [
@@ -99,7 +88,9 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_order_of_signals_is_chronological(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             signals = [
@@ -127,7 +118,9 @@ class BankMemberSignalsToProcessTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_order_of_signals_multi_page(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             signals = [

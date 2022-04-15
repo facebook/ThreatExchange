@@ -16,9 +16,8 @@ from hmalib.common.messages.action import ActionMessage
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.classification_models import ClassificationLabel
 from hmalib.common.configs.actioner import WebhookPostActionPerformer
-from hmalib.common.models.tests.test_bank_member_signals_to_process import (
-    TestHMASignalTypeConfigs,
-)
+
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
 
 from .ddb_test_common import DynamoDBTableTestBase
 
@@ -156,7 +155,7 @@ class TestContentModels(DynamoDBTableTestBase, unittest.TestCase):
         query_obj = ContentObject.get_from_content_id(
             self.get_table(),
             TestContentModels.TEST_CONTENT_ID,
-            TestHMASignalTypeConfigs(),
+            get_default_signal_type_mapping(),
         )
 
         assert obj == query_obj

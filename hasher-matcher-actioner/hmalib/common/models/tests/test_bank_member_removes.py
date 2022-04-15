@@ -9,7 +9,7 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from hmalib.common.models.bank import BanksTable
 from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
 
-from .test_bank_member_signals_to_process import TestHMASignalTypeConfigs
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
 
 
 class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
@@ -17,7 +17,7 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
 
     def _create_bank_and_bank_member(self) -> t.Tuple[str, str]:
         table_manager = BanksTable(
-            self.get_table(), signal_type_mapping=TestHMASignalTypeConfigs()
+            self.get_table(), signal_type_mapping=get_default_signal_type_mapping()
         )
 
         bank = table_manager.create_bank("TEST_BANK", "Test bank description")
@@ -34,7 +34,9 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_bank_member_removes(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             bank_member_signal_1 = table_manager.add_bank_member_signal(
@@ -81,7 +83,9 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
         REMOVE_EVERY_XTH_MEMBER = 4
 
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
             for i in range(NUM_MEMBERS):
                 bank_member = table_manager.add_bank_member(

@@ -353,6 +353,18 @@ def update_config(config: HMAConfig) -> "HMAConfig":
     return config
 
 
+def create_or_update_config(config: HMAConfig) -> "HMAConfig":
+    """
+    Tries to update config, if found. Else creates. Will do two ddb calls.
+    """
+    try:
+        update_config(config)
+    except:
+        create_config(config)
+    finally:
+        return config
+
+
 def mock_create_config(config: HMAConfig) -> "HMAConfig":
     mocks[config.__class__.__name__ + config.name] = config
     return config

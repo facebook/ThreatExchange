@@ -32,7 +32,12 @@ from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
-from hmalib.common.config import HMAConfig, create_config
+from hmalib.common.config import (
+    HMAConfig,
+    create_config,
+    create_or_update_config,
+    update_config,
+)
 from hmalib.common.logging import get_logger
 from hmalib.aws_secrets import AWSSecrets
 
@@ -51,12 +56,26 @@ def import_class(full_class_name) -> t.Type:
     return getattr(module, klass)
 
 
+"""
+Reverses import_class. Will create a module.ClassName style string that can
+be imported using import_class.
+"""
+
+
+def full_class_name(klass) -> str:
+    return f"{klass.__module__}.{klass.__name__}"
+
+
 @dataclass
 class ToggleableSignalTypeConfig(HMAConfig):
     signal_type_class: str
 
     # Allow soft disables.
     enabled: bool = True
+
+    @staticmethod
+    def get_name_from_type(signal_type: t.Type[SignalType]) -> str:
+        return f"signal_type:{full_class_name(signal_type)}"
 
 
 @dataclass
@@ -66,78 +85,137 @@ class ToggleableContentTypeConfig(HMAConfig):
     # Allow soft disables.
     enabled: bool = True
 
+    @staticmethod
+    def get_name_from_type(content_type: t.Type[ContentType]) -> str:
+        return f"content_type:{full_class_name(content_type)}"
+
 
 class HMASignalTypeMapping(SignalTypeMapping):
     """
     An extension of the SignalTypeMapping defined in threatexchange.meta.
 
-    Enhancments:
+    Enhancements:
 
     1. State is pulled in from dynamodb when __init__ is first called.
     2. Dedicated methods for getting signal and content_type by name. Instead of
        depending on SignalTypeMapping's internal state.
     """
 
-    def __init__(self):
+    @classmethod
+    def get_from_config_or_default(cls) -> "HMASignalTypeMapping":
+        """
+        Pull configs from HMAConfigs if available. If not, use defaults.
+        """
         all_content_types = ToggleableContentTypeConfig.get_all()
         all_signal_types = ToggleableSignalTypeConfig.get_all()
 
         if len(all_content_types) + len(all_signal_types) == 0:
-            # Reasonably sure that we've never set values. So initialize with
-            # default values.
-            logger.info(
-                "First time calling HMASignalTypeMapping.__init__()? Creating default signal and content types.."
-            )
-            default_content_types, default_signal_types = self._init_configs()
-            super().__init__(default_content_types, default_signal_types)
-            return
+            # We have never written content or signal types to database, so use
+            # default values instead.
+            (
+                all_content_types,
+                all_signal_types,
+            ) = cls._get_default_configs()
 
-        enabled_content_types = list(
-            map(
-                lambda c: import_class(c.content_type_class),
-                filter(lambda ct: ct.enabled, all_content_types),
-            )
-        )
-        enabled_signal_types = list(
-            map(
-                lambda c: import_class(c.signal_type_class),
-                filter(lambda st: st.enabled, all_signal_types),
-            )
-        )
-        super().__init__(enabled_content_types, enabled_signal_types)
+        enabled_content_types = [
+            import_class(ct.content_type_class)
+            for ct in all_content_types
+            if ct.enabled
+        ]
+        enabled_signal_types = [
+            import_class(st.signal_type_class) for st in all_signal_types if st.enabled
+        ]
 
-    def _init_configs(
-        self,
-    ) -> t.Tuple[t.List[t.Type[ContentType]], t.List[t.Type[SignalType]]]:
+        return HMASignalTypeMapping(enabled_content_types, enabled_signal_types)
+
+    @classmethod
+    def _get_default_configs(
+        cls,
+    ) -> t.Tuple[
+        t.List[ToggleableContentTypeConfig], t.List[ToggleableSignalTypeConfig]
+    ]:
         """
-        Initialize configs such that a subsequent call returns
-        DEFAULT_SIGNAL_AND_CONTENT_TYPES.
-
-        WARNING: Not designed for distributed usage. If invoked simultaneously
-        by multiple workloads, this may error out because configs.create will be
-        called on the same object.
+        Return default ToggleableContentTypeConfigs and
+        ToggleableSignalTypeConfigs. These are not guaranteed to be in the
+        config database.
         """
-        full_class_name = lambda c: f"{c.__module__}.{c.__name__}"
-
-        content_types = []
+        content_type_configs = []
         for _type in DEFAULT_SIGNAL_AND_CONTENT_TYPES.content_by_name.values():
             content_config = ToggleableContentTypeConfig(
-                name=f"content_type:{full_class_name(_type)}",
+                name=ToggleableContentTypeConfig.get_name_from_type(_type),
                 content_type_class=full_class_name(_type),
             )
-            create_config(content_config)
-            content_types.append(_type)
+            content_type_configs.append(content_config)
 
-        signal_types = []
+        signal_type_configs = []
         for _type in DEFAULT_SIGNAL_AND_CONTENT_TYPES.signal_type_by_name.values():
             signal_config = ToggleableSignalTypeConfig(
-                name=f"signal_type:{full_class_name(_type)}",
+                name=ToggleableSignalTypeConfig.get_name_from_type(_type),
                 signal_type_class=full_class_name(_type),
             )
-            create_config(signal_config)
-            signal_types.append(_type)
+            signal_type_configs.append(signal_config)
 
-        return (content_types, signal_types)
+        return (content_type_configs, signal_type_configs)
+
+    def write_as_configs(self):
+        """
+        Write current state to dynamodb. This will create or update HMAConfigs
+        so that subsequent calls to get_from_config_or_default() return current
+        state.
+
+        Note: this will also disable signal and content types that are not part
+        of current state.
+        """
+        self._write_content_types_as_configs()
+        self._write_signal_types_as_configs()
+
+    def _write_content_types_as_configs(self):
+        self_enabled_ct_classes = [
+            full_class_name(ct) for ct in self.content_by_name.values()
+        ]
+
+        all_ct_configs = ToggleableContentTypeConfig.get_all()
+        for ct_config in all_ct_configs:
+            if ct_config.content_type_class not in self_enabled_ct_classes:
+                # Disable content types that are not currently part of self.content_by_name
+                ct_config.enabled = False
+                update_config(ct_config)
+            else:
+                # Force enable content types that are part of self.content_by_name
+                ct_config.enabled = True
+                update_config(ct_config)
+
+        for ct_class in self.content_by_name.values():
+            # Create or update config for each enabled ct class.
+            ct_config = ToggleableContentTypeConfig(
+                name=ToggleableContentTypeConfig.get_name_from_type(ct_class),
+                content_type_class=full_class_name(ct_class),
+            )
+            create_or_update_config(ct_config)
+
+    def _write_signal_types_as_configs(self):
+        self_enabled_st_classes = [
+            full_class_name(st) for st in self.signal_type_by_name.values()
+        ]
+
+        all_st_configs = ToggleableSignalTypeConfig.get_all()
+        for st_config in all_st_configs:
+            if st_config.content_type_class not in self_enabled_st_classes:
+                # Disable content types that are not currently part of self.content_by_name
+                st_config.enabled = False
+                update_config(st_config)
+            else:
+                # Force enable content types that are part of self.content_by_name
+                st_config.enabled = True
+                update_config(st_config)
+
+        for st_class in self.signal_type_by_name.values():
+            # Create or update config for each enabled st class.
+            st_config = ToggleableSignalTypeConfig(
+                name=ToggleableSignalTypeConfig.get_name_from_type(st_class),
+                signal_type_class=full_class_name(st_class),
+            )
+            create_or_update_config(st_config)
 
     def get_signal_type(self, name: str) -> t.Optional[t.Type[SignalType]]:
         return self.signal_type_by_name.get(name, None)

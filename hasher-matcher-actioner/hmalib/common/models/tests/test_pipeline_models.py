@@ -13,9 +13,7 @@ from hmalib.common.models.signal import (
     PendingThreatExchangeOpinionChange,
 )
 
-from hmalib.common.models.tests.test_bank_member_signals_to_process import (
-    TestHMASignalTypeConfigs,
-)
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
 from .ddb_test_common import DynamoDBTableTestBase
 
 # These should change in tandem with terraform/datastore/main.tf
@@ -177,7 +175,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
                 for item in models.PipelineHashRecord.get_from_content_id(
                     self.table,
                     TestPDQModels.TEST_CONTENT_ID,
-                    TestHMASignalTypeConfigs(),
+                    get_default_signal_type_mapping(),
                 )
             ]
         )
@@ -192,7 +190,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
                 for item in models.PipelineHashRecord.get_from_content_id(
                     self.table,
                     TestPDQModels.TEST_CONTENT_ID,
-                    TestHMASignalTypeConfigs(),
+                    get_default_signal_type_mapping(),
                 )
             ]
         )
@@ -203,7 +201,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         record.write_to_table(self.table)
 
         query_record = models.PipelineHashRecord.get_recent_items_page(
-            self.table, TestHMASignalTypeConfigs()
+            self.table, get_default_signal_type_mapping()
         ).items[0]
 
         record.signal_specific_attributes = {}
@@ -241,7 +239,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         record.write_to_table(self.table)
 
         query_record = models.MatchRecord.get_from_content_id(
-            self.table, TestPDQModels.TEST_CONTENT_ID, TestHMASignalTypeConfigs()
+            self.table, TestPDQModels.TEST_CONTENT_ID, get_default_signal_type_mapping()
         )[0]
 
         assert record == query_record
@@ -263,7 +261,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
             self.table,
             TestPDQModels.TEST_SIGNAL_ID,
             TestPDQModels.TEST_SIGNAL_SOURCE,
-            TestHMASignalTypeConfigs(),
+            get_default_signal_type_mapping(),
         )[0]
 
         assert record == query_record
@@ -278,7 +276,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         record.write_to_table(self.table)
 
         query_record = models.MatchRecord.get_recent_items_page(
-            self.table, TestHMASignalTypeConfigs()
+            self.table, get_default_signal_type_mapping()
         ).items[0]
 
         record.signal_specific_attributes = {}
@@ -316,7 +314,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         metadata.write_to_table(self.table)
 
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
-            self.table, TestPDQModels.TEST_SIGNAL_ID, TestHMASignalTypeConfigs()
+            self.table, TestPDQModels.TEST_SIGNAL_ID, get_default_signal_type_mapping()
         )[0]
 
         assert metadata.signal_hash == query_metadata.signal_hash
@@ -339,7 +337,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         metadata.write_to_table(self.table)
 
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
-            self.table, new_signal_id, TestHMASignalTypeConfigs()
+            self.table, new_signal_id, get_default_signal_type_mapping()
         )[0]
         assert metadata.signal_hash == query_metadata.signal_hash
         for tag in metadata.tags:
@@ -353,7 +351,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
             self.table,
             new_signal_id,
-            TestHMASignalTypeConfigs(),
+            get_default_signal_type_mapping(),
         )[0]
         for tag in replaced_tags:
             assert tag in query_metadata.tags
@@ -376,7 +374,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
             self.table,
             new_signal_id,
-            TestHMASignalTypeConfigs(),
+            get_default_signal_type_mapping(),
         )[0]
         assert metadata.signal_hash == query_metadata.signal_hash
         assert (
@@ -391,7 +389,7 @@ class TestPDQModels(DynamoDBTableTestBase, unittest.TestCase):
         # second attmept at update should succeed
         assert metadata.update_pending_opinion_change_in_table_if_exists(self.table)
         query_metadata = ThreatExchangeSignalMetadata.get_from_signal(
-            self.table, new_signal_id, TestHMASignalTypeConfigs()
+            self.table, new_signal_id, get_default_signal_type_mapping()
         )[0]
         assert (
             PendingThreatExchangeOpinionChange.MARK_TRUE_POSITIVE.value

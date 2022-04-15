@@ -10,13 +10,12 @@ from webtest import (
 
 from threatexchange.content_type.photo import PhotoContent
 
-from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
-from hmalib.common.models.tests.test_bank_member_signals_to_process import (
-    TestHMASignalTypeConfigs,
-)
 from hmalib.common.models.bank import BanksTable
 from hmalib.banks import bank_operations
 from hmalib.lambdas.api.bank import get_bank_api
+
+from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
 
 unique_id = lambda: str(uuid.uuid4())
 
@@ -26,7 +25,7 @@ class BankMemberPaginationTestCase(BanksTableTestBase, unittest.TestCase):
 
     def _create_200_members(self) -> str:
         """Create a bank, 200 members and return bank_id."""
-        table_manager = BanksTable(self.get_table(), TestHMASignalTypeConfigs())
+        table_manager = BanksTable(self.get_table(), get_default_signal_type_mapping())
 
         bank = table_manager.create_bank("TEST_BANK", "TEST BANK Description")
 
@@ -49,7 +48,7 @@ class BankMemberPaginationTestCase(BanksTableTestBase, unittest.TestCase):
                 self.get_table(),
                 "irrelevant_s3_bucket_for_this_test",
                 "irrelevant_sqs_queue",
-                TestHMASignalTypeConfigs(),
+                get_default_signal_type_mapping(),
             )
         )
 
