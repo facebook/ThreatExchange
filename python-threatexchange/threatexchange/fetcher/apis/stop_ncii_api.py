@@ -68,7 +68,9 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
         return opinions
 
 
-class StopNCIISignalExchangeAPI(fetch_api.SignalExchangeAPIWithIterFetch[StopNCIICheckpoint]):
+class StopNCIISignalExchangeAPI(
+    fetch_api.SignalExchangeAPIWithIterFetch[StopNCIICheckpoint]
+):
     """
     Conversion for the StopNCII.org API
 
