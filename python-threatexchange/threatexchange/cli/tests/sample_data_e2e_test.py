@@ -13,7 +13,7 @@ class SampleDataE2ETest(ThreatExchangeCLIE2eTest):
     def test_direct_to_match(self):
         """The classic first use of the CLI"""
         self.assert_cli_output(
-            ("match", "text", "-I", self.MATCHES_ONE),
+            ("match", "text", "--", self.MATCHES_ONE),
             "raw_text - (Sample Signals) WORTH_INVESTIGATING",
         )
 
@@ -22,14 +22,14 @@ class SampleDataE2ETest(ThreatExchangeCLIE2eTest):
         self.cli_call("fetch")
         self.cli_call("dataset", "-r")
         self.assert_cli_output(
-            ("match", "text", "-I", self.MATCHES_ONE),
+            ("match", "text", "--", self.MATCHES_ONE),
             "raw_text - (Sample Signals) WORTH_INVESTIGATING",
         )
 
     def test_multiple_match(self):
         """Matches should be able to hit multiple types"""
         self.assert_cli_output(
-            ("match", "text", "-I", self.MATCHES_TWO),
+            ("match", "text", "--", self.MATCHES_TWO),
             "\n".join(
                 (
                     "raw_text - (Sample Signals) WORTH_INVESTIGATING",
