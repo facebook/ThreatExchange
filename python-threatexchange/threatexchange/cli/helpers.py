@@ -7,6 +7,8 @@ import sys
 import tempfile
 import shutil
 
+from threatexchange.cli.exceptions import CommandError
+
 """
 Common helpers for the CLI
 
@@ -54,6 +56,6 @@ class FlexFilesInputAction(argparse.Action):
                 break
             path = pathlib.Path(filename)
             if not path.is_file():
-                raise ValueError(f"No such file {path}")
+                raise CommandError(f"No such file {path}", 2)
             ret.append(path)
         setattr(namespace, self.dest, ret)

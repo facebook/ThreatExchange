@@ -2,7 +2,6 @@
 
 
 from io import StringIO
-import math
 import pathlib
 import shutil
 import sys
@@ -11,7 +10,7 @@ import typing as t
 from unittest.mock import patch
 import unittest
 
-from threatexchange.cli.main import main
+from threatexchange.cli.main import inner_main
 from threatexchange.cli.exceptions import CommandError
 
 
@@ -41,7 +40,7 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
             with patch("sys.stdout", new=StringIO()) as fake_out, patch(
                 "sys.argv", new=args
             ):
-                main(args, state_dir=self._state_dir)
+                inner_main(args, state_dir=self._state_dir)
         except SystemExit as se:
             if se.code != 0:
                 raise E2ETestSystemExit(se.code)
