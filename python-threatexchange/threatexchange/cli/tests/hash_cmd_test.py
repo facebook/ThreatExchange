@@ -18,7 +18,7 @@ class HashCommandTest(ThreatExchangeCLIE2eTest):
                 ("video", fp.name), "video_md5 d41d8cd98f00b204e9800998ecf8427e"
             )
 
-        self.assert_cli_error_output(
+        self.assert_cli_usage_error(
             ("url", "blah.txt"),
             "The file blah.txt doesn't exist or the file path is incorrect",
         )
