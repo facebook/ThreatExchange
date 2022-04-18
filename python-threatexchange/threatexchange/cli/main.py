@@ -224,8 +224,8 @@ def inner_main(
 
 def main():
     """The main called by pip"""
+    _setup_logging()
     try:
-        _setup_logging()
         inner_main()
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
@@ -237,4 +237,4 @@ def main():
 
 # Surprise! This line is not actually called when installed as a script by pip
 if __name__ == "__main__":
-    main()
+    main()  # Don't add anything else here
