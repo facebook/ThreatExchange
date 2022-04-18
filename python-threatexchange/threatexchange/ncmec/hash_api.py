@@ -9,13 +9,12 @@ https://report.cybertip.org/hashsharing/v2/documentation.pdf
 
 import xml.etree.ElementTree as ET
 from datetime import datetime
-
 from dataclasses import dataclass
 from enum import Enum, unique
 import logging
 import time
 import typing as t
-from apig_wsgi import BytesIO
+from io import BytesIO
 
 import requests
 from requests.packages.urllib3.util.retry import Retry
