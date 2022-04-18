@@ -9,6 +9,7 @@ import pathlib
 import sys
 import typing as t
 from threatexchange.cli.cli_config import CLISettings
+from threatexchange.cli.exceptions import CommandError
 
 from threatexchange.signal_type.signal_base import BytesHasher, FileHasher, TextHasher
 from threatexchange.cli import command_base
@@ -112,6 +113,6 @@ class HashCommand(command_base.Command):
                     if hash_str:
                         print(signal_type.get_name(), hash_str)
                 except FileNotFoundError:
-                    self.stderr(
-                        f"The file {inp} doesn't exist or the file path is incorrect"
+                    raise CommandError(
+                        f"The file {inp} doesn't exist or the file path is incorrect", 2
                     )
