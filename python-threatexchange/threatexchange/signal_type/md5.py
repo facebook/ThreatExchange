@@ -7,6 +7,7 @@ Wrapper around the MD5 signal types.
 
 import hashlib
 import pathlib
+import re
 import typing as t
 
 from threatexchange.content_type.content_base import ContentType
@@ -38,6 +39,13 @@ class VideoMD5Signal(
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:
         return [VideoContent]
+
+    @classmethod
+    def validate_signal_str(cls, signal_str: str) -> str:
+        normalized = signal_str.strip().lower()
+        if not re.match("^[0-9a-f]{32}$", normalized):
+            raise ValueError(f"{signal_str!r} is not a valid MD5 hash")
+        return normalized
 
     @classmethod
     def hash_from_file(cls, path: pathlib.Path) -> str:

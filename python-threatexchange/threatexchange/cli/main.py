@@ -201,12 +201,11 @@ def _setup_logging():
     )
 
 
-def main(
+def inner_main(
     args: t.Optional[t.Sequence[t.Text]] = None,
     state_dir: pathlib.Path = pathlib.Path("~/.threatexchange"),
 ) -> None:
-    _setup_logging()
-
+    """The main called by tests"""
     config = CliState(
         [], state_dir
     ).get_persistent_config()  # TODO fix the circular dependency
@@ -216,13 +215,19 @@ def main(
     execute_command(settings, namespace)
 
 
-if __name__ == "__main__":
+def main():
+    """The main called by pip"""
     try:
         _setup_logging()
-        main()
+        inner_main()
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)
     except KeyboardInterrupt:
         # No stack for CTRL+C
         sys.exit(130)
+
+
+# Surprise! This line is not actually called when installed as a script by pip
+if __name__ == "__main__":
+    main()
