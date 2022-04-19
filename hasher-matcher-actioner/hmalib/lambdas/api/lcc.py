@@ -2,11 +2,13 @@ import typing as t
 from dataclasses import asdict, dataclass
 
 import bottle
+from mypy_boto3_dynamodb.service_resource import Table
+
 from hmalib.common.config import HMAConfig
 from hmalib.common.models.bank import BankMember, BanksTable
 from hmalib.indexers.lcc import LCCIndexer
-from hmalib.lambdas.api.middleware import DictParseable, JSONifiable, SubApp, jsoninator
-from mypy_boto3_dynamodb.service_resource import Table
+from hmalib.lambdas.api.middleware import (DictParseable, JSONifiable, SubApp,
+                                           jsoninator)
 
 
 @dataclass
@@ -22,10 +24,13 @@ class LCCResponse(JSONifiable):
             "preview_url": self.preview_url,
         }
 
+
 @functools.lru_cache(maxsize=None)
 def get_index(storage_path, signal_type):
     index = LCCIndexer.get_recent_index(storage_path, signal_type)
     return index
+
+
 def get_lcc_api(storage_path) -> bottle.Bottle:
 
     lcc_api = SubApp()
