@@ -41,7 +41,11 @@ class SimpleFetchedSignalMetadata(fetch_state.FetchedSignalMetadata):
 
 
 @dataclass
-class SimpleFetchDelta(fetch_state.FetchDeltaWithUpdateStream):
+class SimpleFetchDelta(
+    fetch_state.FetchDeltaWithUpdateStream[
+        fetch_state.TFetchCheckpoint, fetch_state.TFetchedSignalMetadata
+    ]
+):
     """
     Simple class for deltas.
 
@@ -49,14 +53,16 @@ class SimpleFetchDelta(fetch_state.FetchDeltaWithUpdateStream):
     deleted if it exists.
     """
 
-    updates: t.Mapping[t.Tuple[str, str], t.Optional[fetch_state.FetchedSignalMetadata]]
-    checkpoint: fetch_state.FetchCheckpointBase
+    updates: t.Mapping[
+        t.Tuple[str, str], t.Optional[fetch_state.TFetchedSignalMetadata]
+    ]
+    checkpoint: fetch_state.TFetchCheckpoint
     done: bool  # powers has_more
 
     def record_count(self) -> int:
         return len(self.updates)
 
-    def next_checkpoint(self) -> fetch_state.FetchCheckpointBase:
+    def next_checkpoint(self) -> fetch_state.TFetchCheckpoint:
         return self.checkpoint
 
     def has_more(self) -> bool:
@@ -64,7 +70,7 @@ class SimpleFetchDelta(fetch_state.FetchDeltaWithUpdateStream):
 
     def get_as_update_dict(
         self,
-    ) -> t.Mapping[t.Tuple[str, str], t.Optional[fetch_state.FetchedSignalMetadata]]:
+    ) -> t.Mapping[t.Tuple[str, str], t.Optional[fetch_state.TFetchedSignalMetadata]]:
         return self.updates
 
 
