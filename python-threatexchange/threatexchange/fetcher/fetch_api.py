@@ -213,7 +213,9 @@ class SignalExchangeAPIWithIterFetch(
     SignalExchangeAPI,
 ):
     """
-    An alternative fetch_once implementation simplifies tracking state
+    Provides an alternative fetch_once implementation to simplify state
+
+    @see fetch_iter
     """
 
     def __init__(self) -> None:
@@ -249,7 +251,7 @@ class SignalExchangeAPIWithIterFetch(
         checkpoint: t.Optional[state.TFetchCheckpoint],
     ) -> t.Iterator[state.FetchDelta[state.TFetchCheckpoint]]:
         """
-        An alternative fetch_once implementation simplifies tracking state.
+        An alternative to fetch_once implementation to simplify state.
 
         Since we expect fetch_once to be called sequentially, we can safely
         store things like next_page takens in the implementation.
