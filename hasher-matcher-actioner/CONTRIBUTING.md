@@ -41,10 +41,9 @@ If we were smarter, we'd have the devcontainer built on a checkout of the repo, 
 
     Create `.hma-cmdhist` directory in your home directory. Use `$ mkdir -p ~/.hma-cmdhist` or equivalent for your OS.
 
-5. Tweak the devcontainer.json settings - you'll need to make specific changes depending on your operating system.
+5. [Optional/Warning] You may need to tweak the devcontainer.json settings - to make specific changes depending on your operating system.
 ```
 $ cd hasher-matcher-actioner/.devcontainer
-$ cp devcontainer.json.example devcontainer.json
 $ vim devcontainer.json
 ```
 
