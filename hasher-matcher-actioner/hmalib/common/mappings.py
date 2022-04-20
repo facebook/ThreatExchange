@@ -56,13 +56,11 @@ def import_class(full_class_name) -> t.Type:
     return getattr(module, klass)
 
 
-"""
-Reverses import_class. Will create a module.ClassName style string that can
-be imported using import_class.
-"""
-
-
 def full_class_name(klass) -> str:
+    """
+    Reverses import_class. Will create a module.ClassName style string that can
+    be imported using import_class.
+    """
     return f"{klass.__module__}.{klass.__name__}"
 
 

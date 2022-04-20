@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from pyclbr import Function
 import boto3
 import bottle
 import functools

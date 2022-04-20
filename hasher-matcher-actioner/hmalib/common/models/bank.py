@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from pyclbr import Function
 import typing as t
 from datetime import datetime
 from dataclasses import asdict, dataclass, field
