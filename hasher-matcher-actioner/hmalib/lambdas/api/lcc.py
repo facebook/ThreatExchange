@@ -1,3 +1,4 @@
+import functools
 import typing as t
 from dataclasses import asdict, dataclass
 
@@ -7,8 +8,7 @@ from mypy_boto3_dynamodb.service_resource import Table
 from hmalib.common.config import HMAConfig
 from hmalib.common.models.bank import BankMember, BanksTable
 from hmalib.indexers.lcc import LCCIndexer
-from hmalib.lambdas.api.middleware import (DictParseable, JSONifiable, SubApp,
-                                           jsoninator)
+from hmalib.lambdas.api.middleware import DictParseable, JSONifiable, SubApp, jsoninator
 
 
 @dataclass
