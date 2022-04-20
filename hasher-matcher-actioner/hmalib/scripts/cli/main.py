@@ -67,7 +67,7 @@ def get_argparse() -> argparse.ArgumentParser:
 
 
 def get_terraform_outputs(refresh=False) -> t.Dict:
-    if refresh:
+    if refresh and pathlib.Path(TERRAFORM_OUTPUTS_CACHE).exists():
         os.remove(TERRAFORM_OUTPUTS_CACHE)
 
     return utils.get_cached_terraform_outputs(TERRAFORM_OUTPUTS_CACHE)
