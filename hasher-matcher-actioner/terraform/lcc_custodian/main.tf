@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 ### Lambda for custodian ###
-
+data "aws_region" "current" {}
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
     effect  = "Allow"
@@ -111,6 +111,53 @@ data "aws_iam_policy_document" "custodian" {
     resources = ["${aws_cloudwatch_log_group.custodian.arn}:*"]
   }
 
+}
+
+
+locals {
+
+  # all_lambda_names = flatten([[for lambda in var.pipeline_lambdas : lambda[1]], var.other_lambdas])
+  title_glance = jsonencode({
+    height = 6,
+    width  = 6,
+    type   = "metric",
+    properties = {
+      view    = "timeSeries",
+      stacked = false,
+      metrics = [["ThreatExchange/HMA", "lcc.build_index-count"]]
+      # metric = [for lambda in local.all_lambda_names : ["ThreatExchange/HMA", "lcc.build_index-count"]]
+      region = "${data.aws_region.current.name}"
+    }
+  })
+
+
+  first_item = jsonencode({
+    width = 12,
+    type  = "metric",
+    properties = {
+      metrics = [["ThreatExchange/HMA", "lcc.build_index-duration"]]
+      view    = "timeSeries",
+      stacked = false,
+      region  = "${data.aws_region.current.name}"
+      period  = 300
+      stat    = "Average"
+    }
+  })
+
+  dashboard_body = <<JSON
+  {
+    "widgets": [
+      ${local.title_glance},
+      ${local.first_item}
+      ]
+  }
+  JSON
+}
+
+
+resource "aws_cloudwatch_dashboard" "basic_dashboard" {
+  dashboard_name = "${var.prefix}-lcc-dashboard"
+  dashboard_body = replace(local.dashboard_body, "/\"([0-9]+)\"/", "$1")
 }
 
 resource "aws_iam_policy" "custodian" {

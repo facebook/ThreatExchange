@@ -105,6 +105,10 @@ class names:
         download_index = f"{_prefix}.download_index"
         get_bank_data = f"{_prefix}.get_bank_data"
 
+    class lcc:
+        _prefix = "lcc"
+        build_index = f"{_prefix}.build_index"
+
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
 METRICS_NAMESPACE = os.getenv(_METRICS_NAMESPACE_ENVVAR, names.hma_namespace)
@@ -121,6 +125,8 @@ def _no_op_timer(name):
 
 
 def _no_op_flush(namespace: str = "does not matter"):
+    print("I should not be entering in here")
+    print(os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR))
     pass
 
 
@@ -164,6 +170,7 @@ if measure_performance:
         PutMetricData's Limit See AWSCloudWatchReporter.PUT_METRIC_DATA_VALUES_LIMIT
         """
         try:
+            print("Am i entering in here?")
             reporter = AWSCloudWatchReporter(namespace)
             datums = []
             datums.extend([reporter.get_counter_datum(k, v) for k, v in counts.items()])
