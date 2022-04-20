@@ -125,8 +125,6 @@ def _no_op_timer(name):
 
 
 def _no_op_flush(namespace: str = "does not matter"):
-    print("I should not be entering in here")
-    print(os.getenv(_ENABLE_PERF_MEASUREMENTS_ENVVAR))
     pass
 
 
@@ -170,7 +168,6 @@ if measure_performance:
         PutMetricData's Limit See AWSCloudWatchReporter.PUT_METRIC_DATA_VALUES_LIMIT
         """
         try:
-            print("Am i entering in here?")
             reporter = AWSCloudWatchReporter(namespace)
             datums = []
             datums.extend([reporter.get_counter_datum(k, v) for k, v in counts.items()])
