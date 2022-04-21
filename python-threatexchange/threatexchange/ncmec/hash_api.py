@@ -45,12 +45,14 @@ class _XMLWrapper:
     def __init__(self, e: ET.Element) -> None:
         self.element = e
 
-    def __getitem__(self, key) -> "_XMLWrapper":
+    def __getitem__(self, key: str) -> "_XMLWrapper":
         """Asserts child with name exists"""
-        child = self.element.find(key)
-        if child is None:
+        child = self.element.findall(key)
+        if not child:
             raise IndexError
-        return _XMLWrapper(child)
+        if len(child) != 1:
+            raise ValueError(f"More than one child named {key}")
+        return _XMLWrapper(child[0])
 
     def maybe(self, key: str, *rest: str) -> "_XMLWrapper":
         """Gets a child node or a placeholder for chaining"""
@@ -81,7 +83,7 @@ class _XMLWrapper:
 
     def __iter__(self) -> t.Iterator["_XMLWrapper"]:
         """Iterate over children"""
-        for child in list(self.element):
+        for child in self.element:
             yield _XMLWrapper(child)
 
     def __str__(self) -> str:
