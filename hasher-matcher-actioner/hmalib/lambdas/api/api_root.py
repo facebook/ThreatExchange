@@ -232,5 +232,6 @@ def lambda_handler(event, context):
     return handler(event, context)
 
 
-if __name__ == "__main":
-    bottle_init_once()[0].run()
+if __name__ == "__main__":
+    app, _ = bottle_init_once()
+    app.run()
