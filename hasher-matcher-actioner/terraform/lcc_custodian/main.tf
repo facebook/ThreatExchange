@@ -139,8 +139,9 @@ locals {
     properties = {
       view    = "timeSeries"
       stacked = false
-      metrics = [["ThreatExchange/HMA", "lcc.build_index-count"]]
-      region  = "${data.aws_region.current.name}"
+      metrics = [["ThreatExchange/HMA", "lcc.build_index-count"]
+      ]
+      region = "${data.aws_region.current.name}"
     }
   })
 

@@ -34,7 +34,7 @@ class LCCIndexer:
     @classmethod
     def build_index_from_last_24h(cls, signal_type, storage_path, bucket_width) -> None:
         """Create an index"""
-        with metrics.timer(metrics.names.lcc.build_index):
+        with metrics.timer(metrics.names.lcc.get_data):
             d = timedelta(days=1)
 
             # Make 3 different metric.timers
@@ -48,12 +48,12 @@ class LCCIndexer:
                 HashRecord,
             )
 
-        with metrics.timer(metrics.names.lcc.build_index_get_data):
+        with metrics.timer(metrics.names.lcc.in_memory_processing):
             record_list = []
             for record in past_day_content:
                 record_list.append((record.content_hash, record.content_id))
 
-        with metrics.timer(metrics.names.lcc.build_index_pdq_build):
+        with metrics.timer(metrics.names.lcc.build_index):
             return PDQIndex.build(record_list)
 
     @classmethod
