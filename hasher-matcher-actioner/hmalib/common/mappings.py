@@ -32,12 +32,7 @@ from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
-from hmalib.common.config import (
-    HMAConfig,
-    create_config,
-    create_or_update_config,
-    update_config,
-)
+from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
 from hmalib.aws_secrets import AWSSecrets
 
@@ -100,20 +95,12 @@ class HMASignalTypeMapping(SignalTypeMapping):
     """
 
     @classmethod
-    def get_from_config_or_default(cls) -> "HMASignalTypeMapping":
+    def get_from_config(cls) -> "HMASignalTypeMapping":
         """
-        Pull configs from HMAConfigs if available. If not, use defaults.
+        Pull configs from HMAConfigs.
         """
         all_content_types = ToggleableContentTypeConfig.get_all()
         all_signal_types = ToggleableSignalTypeConfig.get_all()
-
-        if len(all_content_types) + len(all_signal_types) == 0:
-            # We have never written content or signal types to database, so use
-            # default values instead.
-            (
-                all_content_types,
-                all_signal_types,
-            ) = cls._get_default_configs()
 
         enabled_content_types = [
             import_class(ct.content_type_class)
@@ -125,95 +112,6 @@ class HMASignalTypeMapping(SignalTypeMapping):
         ]
 
         return HMASignalTypeMapping(enabled_content_types, enabled_signal_types)
-
-    @classmethod
-    def _get_default_configs(
-        cls,
-    ) -> t.Tuple[
-        t.List[ToggleableContentTypeConfig], t.List[ToggleableSignalTypeConfig]
-    ]:
-        """
-        Return default ToggleableContentTypeConfigs and
-        ToggleableSignalTypeConfigs. These are not guaranteed to be in the
-        config database.
-        """
-        content_type_configs = []
-        for _type in DEFAULT_SIGNAL_AND_CONTENT_TYPES.content_by_name.values():
-            content_config = ToggleableContentTypeConfig(
-                name=ToggleableContentTypeConfig.get_name_from_type(_type),
-                content_type_class=full_class_name(_type),
-            )
-            content_type_configs.append(content_config)
-
-        signal_type_configs = []
-        for _type in DEFAULT_SIGNAL_AND_CONTENT_TYPES.signal_type_by_name.values():
-            signal_config = ToggleableSignalTypeConfig(
-                name=ToggleableSignalTypeConfig.get_name_from_type(_type),
-                signal_type_class=full_class_name(_type),
-            )
-            signal_type_configs.append(signal_config)
-
-        return (content_type_configs, signal_type_configs)
-
-    def write_as_configs(self):
-        """
-        Write current state to dynamodb. This will create or update HMAConfigs
-        so that subsequent calls to get_from_config_or_default() return current
-        state.
-
-        Note: this will also disable signal and content types that are not part
-        of current state.
-        """
-        self._write_content_types_as_configs()
-        self._write_signal_types_as_configs()
-
-    def _write_content_types_as_configs(self):
-        self_enabled_ct_classes = [
-            full_class_name(ct) for ct in self.content_by_name.values()
-        ]
-
-        all_ct_configs = ToggleableContentTypeConfig.get_all()
-        for ct_config in all_ct_configs:
-            if ct_config.content_type_class not in self_enabled_ct_classes:
-                # Disable content types that are not currently part of self.content_by_name
-                ct_config.enabled = False
-                update_config(ct_config)
-            else:
-                # Force enable content types that are part of self.content_by_name
-                ct_config.enabled = True
-                update_config(ct_config)
-
-        for ct_class in self.content_by_name.values():
-            # Create or update config for each enabled ct class.
-            ct_config = ToggleableContentTypeConfig(
-                name=ToggleableContentTypeConfig.get_name_from_type(ct_class),
-                content_type_class=full_class_name(ct_class),
-            )
-            create_or_update_config(ct_config)
-
-    def _write_signal_types_as_configs(self):
-        self_enabled_st_classes = [
-            full_class_name(st) for st in self.signal_type_by_name.values()
-        ]
-
-        all_st_configs = ToggleableSignalTypeConfig.get_all()
-        for st_config in all_st_configs:
-            if st_config.content_type_class not in self_enabled_st_classes:
-                # Disable content types that are not currently part of self.content_by_name
-                st_config.enabled = False
-                update_config(st_config)
-            else:
-                # Force enable content types that are part of self.content_by_name
-                st_config.enabled = True
-                update_config(st_config)
-
-        for st_class in self.signal_type_by_name.values():
-            # Create or update config for each enabled st class.
-            st_config = ToggleableSignalTypeConfig(
-                name=ToggleableSignalTypeConfig.get_name_from_type(st_class),
-                signal_type_class=full_class_name(st_class),
-            )
-            create_or_update_config(st_config)
 
     def get_signal_type(self, name: str) -> t.Optional[t.Type[SignalType]]:
         return self.signal_type_by_name.get(name, None)
@@ -270,13 +168,13 @@ def get_pytx_functionality_mapping() -> HMAFunctionalityMapping:
     fetchers: t.List[SignalExchangeAPI] = []
 
     threatexchange_api_token = AWSSecrets().te_api_token()
-    if not threatexchange_api_token in (None, ""):
+    if threatexchange_api_token not in (None, ""):
         fetchers.append(
             FBThreatExchangeSignalExchangeAPI(threatexchange_api_token),
         )
 
     return HMAFunctionalityMapping(
-        HMASignalTypeMapping.get_from_config_or_default(),
+        HMASignalTypeMapping.get_from_config(),
         FetcherMapping(fetchers=fetchers),
         None,
     )
