@@ -116,39 +116,39 @@ data "aws_iam_policy_document" "custodian" {
 
 locals {
 
-  # all_lambda_names = flatten([[for lambda in var.pipeline_lambdas : lambda[1]], var.other_lambdas])
-  title_glance = jsonencode({
+  stacked_graph = jsonencode({
     height = 6,
     width  = 6,
     type   = "metric",
     properties = {
       view    = "timeSeries",
-      stacked = false,
-      metrics = [["ThreatExchange/HMA", "lcc.build_index-count"]]
-      # metric = [for lambda in local.all_lambda_names : ["ThreatExchange/HMA", "lcc.build_index-count"]]
+      stacked = true,
+      metrics = [
+        ["ThreatExchange/HMA", "lcc.build_index_get_data-duration"],
+        [".", "lcc.build_index_pdq_build-duration"],
+        [".", "lcc.build_index-duration"]
+      ],
       region = "${data.aws_region.current.name}"
     }
   })
 
-
-  first_item = jsonencode({
-    width = 12,
-    type  = "metric",
+  line_graph = jsonencode({
+    width  = 6
+    height = 6
+    type   = "metric"
     properties = {
-      metrics = [["ThreatExchange/HMA", "lcc.build_index-duration"]]
-      view    = "timeSeries",
-      stacked = false,
+      view    = "timeSeries"
+      stacked = false
+      metrics = [["ThreatExchange/HMA", "lcc.build_index-count"]]
       region  = "${data.aws_region.current.name}"
-      period  = 300
-      stat    = "Average"
     }
   })
 
   dashboard_body = <<JSON
   {
     "widgets": [
-      ${local.title_glance},
-      ${local.first_item}
+      ${local.stacked_graph},
+      ${local.line_graph}
       ]
   }
   JSON
