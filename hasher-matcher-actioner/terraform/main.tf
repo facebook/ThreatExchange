@@ -672,3 +672,9 @@ module "dashboard" {
 
   api_gateway_id = module.api.api_gateway_id
 }
+
+module "migrations" {
+  source = "./migrations"
+
+  config_table = local.config_table
+}

@@ -85,3 +85,4 @@ class NeedsTerraformOutputs:
         Provide implementation for a command which needs access to terraform
         output only.
         """
+        raise NotImplementedError
