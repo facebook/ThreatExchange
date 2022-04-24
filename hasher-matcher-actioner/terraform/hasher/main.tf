@@ -24,6 +24,7 @@ resource "aws_lambda_function" "hashing_lambda" {
       MEASURE_PERFORMANCE = var.measure_performance ? "True" : "False"
       HASHES_QUEUE_URL    = var.hashes_queue.url
       IMAGE_PREFIX        = var.image_data_storage.image_prefix
+      HMA_CONFIG_TABLE    = var.config_table.name
     }
   }
 
@@ -98,6 +99,11 @@ data "aws_iam_policy_document" "hashing_lambda" {
     effect    = "Allow"
     actions   = ["dynamodb:PutItem", "dynamodb:UpdateItem"]
     resources = [var.datastore.arn, var.banks_datastore.arn]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]
+    resources = [var.config_table.arn]
   }
   statement {
     effect    = "Allow"

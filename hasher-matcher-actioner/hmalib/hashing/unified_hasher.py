@@ -10,6 +10,7 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType, BytesHasher
 
 from hmalib.common.logging import get_logger
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.models.pipeline import PipelineHashRecord
 from hmalib import metrics
 
@@ -53,25 +54,23 @@ class UnifiedHasher:
 
     def __init__(
         self,
-        supported_content_types: t.List[t.Type[ContentType]],
-        supported_signal_types: t.List[t.Type[SignalType]],
+        signal_type_mapping: HMASignalTypeMapping,
         output_queue_url: str,
     ):
-        self.supported_content_types = supported_content_types
-
-        # Not enforced in typing because python does not yet have t.Intersect,
-        # but all supported_signal_types must also implement BytesHasher
-        assert all([issubclass(t, BytesHasher) for t in supported_signal_types])
-
-        self.supported_signal_types = supported_signal_types
-
+        self.signal_type_mapping = signal_type_mapping
         self.output_queue_url = output_queue_url
 
     def supports(self, content_type: t.Type[ContentType]) -> bool:
         """
         Can this hasher produce signals for content of `content_type`?
+
+        Right now, just verifies whether signal_type_mapping brings in this
+        type. In the future should say 'no' for unhashable content like PDFs or
+        raw-text.
         """
-        return content_type in self.supported_content_types
+        return bool(
+            self.signal_type_mapping.get_content_type_enforce(content_type.get_name())
+        )
 
     def get_hashes(
         self, content_type: t.Type[ContentType], bytes_: bytes
@@ -79,10 +78,12 @@ class UnifiedHasher:
         """
         Yields signals for content_type.
         """
-        for signal_type in content_type.get_signal_types():
-            if signal_type in self.supported_signal_types and issubclass(
-                signal_type, BytesHasher
-            ):
+        for (
+            signal_type
+        ) in self.signal_type_mapping.get_supported_signal_types_for_content(
+            content_type
+        ):
+            if issubclass(signal_type, BytesHasher):
                 with metrics.timer(metrics.names.hasher.hash(signal_type.get_name())):
                     try:
                         hash_value = signal_type.hash_from_bytes(bytes_)
