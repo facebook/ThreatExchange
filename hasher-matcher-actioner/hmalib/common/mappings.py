@@ -83,16 +83,22 @@ class ToggleableContentTypeConfig(HMAConfig):
         return f"content_type:{full_class_name(content_type)}"
 
 
-class HMASignalTypeMapping(SignalTypeMapping):
+class HMASignalTypeMapping:
     """
-    An extension of the SignalTypeMapping defined in threatexchange.meta.
-
-    Enhancements:
+    Contains signal and content types that will be made available to HMA
+    components.
 
     1. State is pulled in from dynamodb when __init__ is first called.
     2. Dedicated methods for getting signal and content_type by name. Instead of
        depending on SignalTypeMapping's internal state.
     """
+
+    def __init__(
+        self,
+        content_types: t.List[t.Type[ContentType]],
+        signal_types: t.List[t.Type[SignalType]],
+    ):
+        self._internal_pytx_obj = SignalTypeMapping(content_types, signal_types)
 
     @classmethod
     def get_from_config(cls) -> "HMASignalTypeMapping":
@@ -114,10 +120,10 @@ class HMASignalTypeMapping(SignalTypeMapping):
         return HMASignalTypeMapping(enabled_content_types, enabled_signal_types)
 
     def get_signal_type(self, name: str) -> t.Optional[t.Type[SignalType]]:
-        return self.signal_type_by_name.get(name, None)
+        return self._internal_pytx_obj.signal_type_by_name.get(name, None)
 
     def get_content_type(self, name: str) -> t.Optional[t.Type[ContentType]]:
-        return self.content_by_name.get(name, None)
+        return self._internal_pytx_obj.content_by_name.get(name, None)
 
     def get_signal_type_enforce(self, name: str) -> t.Type[SignalType]:
         """
@@ -142,6 +148,16 @@ class HMASignalTypeMapping(SignalTypeMapping):
             )
 
         return content_type
+
+    def get_supported_signal_types_for_content(
+        self, content: t.Type[ContentType]
+    ) -> t.List[t.Type[SignalType]]:
+        """
+        Returns a list of signal_types for a content.
+
+        Merely proxies the call to the underlying python-threatexchange object.
+        """
+        return self._internal_pytx_obj.get_supported_signal_types_for_content(content)
 
 
 @dataclass
