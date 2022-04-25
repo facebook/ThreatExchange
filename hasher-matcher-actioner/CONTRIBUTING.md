@@ -18,6 +18,14 @@ Beyond tooling you need to have access to an AWS account where the various resou
 
 > **WARNING** `apply`ing these terraform files to your AWS account will result in resources being created that may be billed to your account.
 
+## Setting up Terraform
+
+Before using terraform, you will need to provide some additional configuration, examples of which are provided in this folder using the same name, but with example suffixed to the end.
+
+1. `terraform.tfvars`: In this file, you will want to define the values for the variables defined in [variables.tf](terraform/variables.tf). Only variables without defaults are required, though if you are setting up an environment for developing on the HMA prototype, you likely want to override the default `prefix` to allow having an isolated environment. You may want to set up a shared Cognito user pool for multiple developer environments to share. To do that, run `terraform apply` from `/authentication-shared` once (note it has its own terraform.tfvars) then use the outputs in the main `terraform.tfvars`. See the terraform docs on [input variables](https://www.terraform.io/docs/configuration/variables.html) for more information on providing variable values and overrides.
+
+2. _(optional)_ `backend.tf`: This file is used for optionally defining a remote backend to store your terraform state. If you are working on development for the HMA prototype and are part of the facebook ThreatExchange team, it is highly suggested you use the configuration for this file in the internal wiki. That will enable state locking and remote state storage for your terraform environment.
+
 ## Automated Development Environment
 
 If you are using [VS Code](https://code.visualstudio.com/), and we recommend you do, you can use the Devcontainer technology to get started real quick and have a great developer experience. 
@@ -63,6 +71,13 @@ The devcontainer provides all the tools you need to build and hack on HMA. Inclu
 
 2. **Building webapp taking too long..**
     If you see sustained 100% CPU when running `npm install|start|build` within the webapp directory, you might need to provide more memory and CPU to the docker desktop app. We recommend atleast 4GB of RAM and 2CPUs.
+
+
+3. **VPC Limits**
+    Default AWS configuration for VPCs is 5. See [this](https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html). You will need to increase that quota if you encounter errors like
+    ```
+    Error: error creating EC2 VPC: VpcLimitExceeded: The maximum number of VPCs has been reached.
+    ```
 
 ## Building the Docker Lambda Image
 
@@ -115,14 +130,6 @@ To switch back to a copy of `python-threatexchange` downloaded from pypi, run
 ```
 $ ./scripts/set_threatexchange_source pypi
 ```
-
-## Config Files
-
-Before using terraform, you will need to provide some additional configuration, examples of which are provided in this folder using the same name, but with example suffixed to the end.
-
-1. `terraform.tfvars`: In this file, you will want to define the values for the variables defined in [variables.tf](terraform/variables.tf). Only variables without defaults are required, though if you are setting up an environment for developing on the HMA prototype, you likely want to override the default `prefix` to allow having an isolated environment. You may want to set up a shared Cognito user pool for multiple developer environments to share. To do that, run `terraform apply` from `/authentication-shared` once (note it has its own terraform.tfvars) then use the outputs in the main `terraform.tfvars`. See the terraform docs on [input variables](https://www.terraform.io/docs/configuration/variables.html) for more information on providing variable values and overrides.
-
-2. _(optional)_ `backend.tf`: This file is used for optionally defining a remote backend to store your terraform state. If you are working on development for the HMA prototype and are part of the facebook ThreatExchange team, it is highly suggested you use the configuration for this file in the internal wiki. That will enable state locking and remote state storage for your terraform environment.
 
 ## Deploying to AWS
 
