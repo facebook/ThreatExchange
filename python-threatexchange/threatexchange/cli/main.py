@@ -30,7 +30,7 @@ from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchange
 from threatexchange.fetcher.apis.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
-from threatexchange.fetcher.apis.stop_ncii_api import StopNCIIAPI
+from threatexchange.fetcher.apis.stop_ncii_api import StopNCIISignalExchangeAPI
 
 from threatexchange.content_type import photo, video, text, url
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
@@ -138,6 +138,13 @@ def _get_fb_tx_app_token(config: CLiConfig) -> t.Optional[str]:
     return None
 
 
+def _get_stopncii_tokens(
+    config: CLiConfig,
+) -> t.Tuple[t.Optional[str], t.Optional[str]]:
+    """Get the API keys for StopNCII from the config"""
+    return None, None  # TODO
+
+
 class _ExtendedTypes(t.NamedTuple):
     content_types: t.List[t.Type[ContentType]]
     signal_types: t.List[t.Type[SignalType]]
@@ -179,7 +186,7 @@ def _get_settings(config: CLiConfig, dir: pathlib.Path) -> CLISettings:
         [
             StaticSampleSignalExchangeAPI(),
             LocalFileSignalExchangeAPI(),
-            StopNCIIAPI(),
+            StopNCIISignalExchangeAPI(*_get_stopncii_tokens(config)),
             FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
         ]
         + extensions.api_instances
@@ -201,12 +208,11 @@ def _setup_logging():
     )
 
 
-def main(
+def inner_main(
     args: t.Optional[t.Sequence[t.Text]] = None,
     state_dir: pathlib.Path = pathlib.Path("~/.threatexchange"),
 ) -> None:
-    _setup_logging()
-
+    """The main called by tests"""
     config = CliState(
         [], state_dir
     ).get_persistent_config()  # TODO fix the circular dependency
@@ -216,13 +222,19 @@ def main(
     execute_command(settings, namespace)
 
 
-if __name__ == "__main__":
+def main():
+    """The main called by pip"""
+    _setup_logging()
     try:
-        _setup_logging()
-        main()
+        inner_main()
     except base.CommandError as ce:
         print(ce, file=sys.stderr)
         sys.exit(ce.returncode)
     except KeyboardInterrupt:
         # No stack for CTRL+C
         sys.exit(130)
+
+
+# Surprise! This line is not actually called when installed as a script by pip
+if __name__ == "__main__":
+    main()  # Don't add anything else here

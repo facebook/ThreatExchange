@@ -14,6 +14,7 @@ from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
+    FetchDelta,
     FetchedStateStoreBase,
 )
 from threatexchange.cli import command_base
@@ -168,7 +169,7 @@ class FetchCommand(command_base.Command):
 
         try:
             while not self.has_hit_limits():
-                delta = fetcher.fetch_once(
+                delta: FetchDelta[FetchCheckpointBase] = fetcher.fetch_once(
                     settings.get_all_signal_types(), collab, checkpoint
                 )
                 logging.info("Fetched %d records", delta.record_count())

@@ -23,6 +23,7 @@ from hmalib.lambdas.api.datasets import get_datasets_api
 from hmalib.lambdas.api.indexes import get_indexes_api
 from hmalib.lambdas.api.matches import get_matches_api
 from hmalib.lambdas.api.stats import get_stats_api
+from hmalib.lambdas.api.lcc import get_lcc_api
 from hmalib.lambdas.api.submit import (
     get_submit_api,
     submit_content_request_from_s3_object,
@@ -161,6 +162,11 @@ def bottle_init_once() -> t.Tuple[
             indexes_bucket_name=INDEXES_BUCKET_NAME,
             indexer_function_name=INDEXER_FUNCTION_NAME,
         ),
+    )
+    
+    app.mount(
+        "/lcc/",
+        get_lcc_api(),
     )
 
     apig_wsgi_handler = make_lambda_handler(app)

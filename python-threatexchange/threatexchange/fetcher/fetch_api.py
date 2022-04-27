@@ -14,6 +14,9 @@ from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher import fetch_state as state
 
+TCollabConfig = t.TypeVar("TCollabConfig", bound=CollaborationConfigBase)
+TFetchDelta = t.TypeVar("TFetchDelta", bound=state.FetchDelta)
+
 # TODO t.Generic[TFetchDelta, TFetchedSignalData, TCollabConfig]
 #      In order to make it easier to track the expected extensions for an API
 class SignalExchangeAPI:
@@ -78,6 +81,8 @@ class SignalExchangeAPI:
         """Returns the dataclass used to store records for this API"""
         return CollaborationConfigBase
 
+    # TODO - this doens't work for StopNCII which sends the owner as a string
+    #        maybe this should take the full metadata?
     def resolve_owner(self, id: int) -> str:
         """
         Convert an owner ID into a human readable name (if available).
@@ -107,7 +112,7 @@ class SignalExchangeAPI:
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.FetchCheckpointBase],
-    ) -> state.FetchDelta:
+    ) -> state.FetchDelta[state.FetchCheckpointBase]:
         """
         Call out to external resources, pulling down one "batch" of content.
 
@@ -199,3 +204,58 @@ class SignalExchangeAPI:
                 tags=set(),
             ),
         )
+
+
+class SignalExchangeAPIWithIterFetch(
+    t.Generic[
+        state.TFetchCheckpoint
+    ],  # TODO move to SignalExchangeAPI in a future diff
+    SignalExchangeAPI,
+):
+    """
+    Provides an alternative fetch_once implementation to simplify state
+
+    @see fetch_iter
+    """
+
+    def __init__(self) -> None:
+        self._fetch_iters: t.Dict[
+            str, t.Iterator[state.FetchDelta[state.TFetchCheckpoint]]
+        ] = {}
+
+    def fetch_once(  # type: ignore[override]  # fix with generics on base
+        self,
+        supported_signal_types: t.List[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
+        checkpoint: t.Optional[state.TFetchCheckpoint],
+    ) -> state.FetchDelta[state.TFetchCheckpoint]:
+        it = self._fetch_iters.get(collab.name)
+        if it is None:
+            it = self.fetch_iter(supported_signal_types, collab, checkpoint)
+            self._fetch_iters[collab.name] = it
+        delta = next(it, None)
+        # This can happen if the last yielded element did not set done
+        # which will cause next() to be called again after the iterator
+        # is exhaused
+        assert delta is not None, "fetch_iter stopping yielding too early"
+        return delta
+
+    def fetch_iter(
+        self,
+        supported_signal_types: t.List[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
+        checkpoint: t.Optional[state.TFetchCheckpoint],
+    ) -> t.Iterator[state.FetchDelta[state.TFetchCheckpoint]]:
+        """
+        An alternative to fetch_once implementation to simplify state.
+
+        Since we expect fetch_once to be called sequentially, we can safely
+        store things like next_page takens in the implementation.
+
+        TODO: This seems straight up better than fetch_once, refactor out
+        """
+        raise NotImplementedError

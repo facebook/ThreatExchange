@@ -10,14 +10,11 @@ There are a few categories of state that this wraps:
   3. Index state - serializations of indexes for SignalType
 """
 
-from enum import Enum
 import json
 import pathlib
 import typing as t
 import dataclasses
 import logging
-
-import dacite
 
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType

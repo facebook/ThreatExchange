@@ -14,16 +14,20 @@ import typing as t
 
 from threatexchange import common
 from threatexchange.cli.fetch_cmd import FetchCommand
+from threatexchange.cli.helpers import FlexFilesInputAction
 from threatexchange.fetcher.fetch_state import FetchedSignalMetadata
 
-from threatexchange.signal_type.index import IndexMatch
+from threatexchange.signal_type.index import IndexMatch, SignalTypeIndex
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.signal_type.signal_base import BytesHasher, SignalType
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.content_type.content_base import ContentType
 
 from threatexchange.signal_type.signal_base import MatchesStr, TextHasher, FileHasher
 from threatexchange.cli import command_base
+
+
+TMatcher = t.Callable[[pathlib.Path], t.List[IndexMatch]]
 
 
 class MatchCommand(command_base.Command):
@@ -78,25 +82,14 @@ class MatchCommand(command_base.Command):
             "--hashes",
             "-H",
             action="store_true",
-            help=(
-                "force input to be interpreted " "as signals for the given signal type"
-            ),
+            help=("force input to be interpreted as signals for the given signal type"),
         )
 
         ap.add_argument(
-            "--inline",
-            "-I",
-            action="store_true",
-            help=("force input to be intepreted inline instead of as files"),
-        )
-
-        ap.add_argument(
-            "content",
-            nargs="+",
-            help=(
-                "what to scan for matches. By default assumes filenames. "
-                "Use '-' to read newline-separated stdin"
-            ),
+            "files",
+            nargs=argparse.REMAINDER,
+            action=FlexFilesInputAction,
+            help="list of files or -- to interpret remainder as a string",
         )
 
         ap.add_argument(
@@ -116,18 +109,16 @@ class MatchCommand(command_base.Command):
         content_type: t.Type[ContentType],
         only_signal: t.Optional[t.Type[SignalType]],
         hashes: bool,
-        inline: bool,
-        content: t.List[str],
+        files: t.List[pathlib.Path],
         show_false_positives: bool,
         hide_disputed: bool,
     ) -> None:
         self.content_type = content_type
         self.only_signal = only_signal
-        self.input_generator = self.parse_input(content, hashes, inline)
-        self.inline = inline
         self.as_hashes = hashes
         self.show_false_positives = show_false_positives
         self.hide_disputed = hide_disputed
+        self.files = files
 
         if only_signal and content_type not in only_signal.get_content_types():
             raise CommandError(
@@ -135,39 +126,6 @@ class MatchCommand(command_base.Command):
                 f"apply to {content_type.get_name()}",
                 2,
             )
-
-    def parse_input(
-        self,
-        input_: t.Iterable[str],
-        input_is_hashes: bool,
-        inline: bool,
-        no_stderr=False,
-    ) -> t.Generator[t.Union[str, pathlib.Path], None, None]:
-        def interpret_token(tok: str) -> t.Union[str, pathlib.Path]:
-            if inline:
-                return tok
-            path = pathlib.Path(token)
-            if not path.is_file():
-                raise CommandError(f"No such file {path}", 2)
-            return path
-
-        for token in input_:
-            token = token.rstrip()
-            if not no_stderr and token == self.USE_STDIN:
-                yield from self.parse_input(
-                    sys.stdin, input_is_hashes, inline, no_stderr=True
-                )
-                continue
-            parsed = interpret_token(token)
-            if input_is_hashes and isinstance(parsed, pathlib.Path):
-                yield from self.parse_input(
-                    parsed.open("r"),
-                    input_is_hashes=True,
-                    inline=True,
-                    no_stderr=True,
-                )
-            else:
-                yield parsed
 
     def execute(self, settings: CLISettings) -> None:
         if not settings.index.list():
@@ -180,44 +138,41 @@ class MatchCommand(command_base.Command):
 
         if self.only_signal:
             signal_types = [self.only_signal]
-
-        if self.inline:
-            signal_types = [
-                s for s in signal_types if issubclass(s, (TextHasher, MatchesStr))
-            ]
-        else:
-            signal_types = [s for s in signal_types if issubclass(s, FileHasher)]
+        types: t.Tuple[type, ...] = (FileHasher, MatchesStr)
+        if self.as_hashes:
+            types = (BytesHasher, TextHasher, FileHasher)
+        signal_types = [s for s in signal_types if issubclass(s, types)]
+        if self.as_hashes and len(signal_types) > 1:
+            raise CommandError(
+                "Too many SignalTypes for --as-hashes. Use also --only-signal", 2
+            )
 
         logging.info(
             "Signal types that apply: %s",
             ", ".join(s.get_name() for s in signal_types) or "None!",
         )
 
-        matchers = []
+        indices: t.List[t.Tuple[t.Type[SignalType], SignalTypeIndex]] = []
         for s_type in signal_types:
             index = settings.index.load(s_type)
             if index is None:
                 logging.info("No index for %s, skipping", s_type.get_name())
                 continue
-            query = None
-            if self.inline:
-                if issubclass(s_type, TextHasher):
-                    query = lambda t, index=index: index.query(s_type.hash_from_str(t))  # type: ignore
-                elif issubclass(s_type, MatchesStr):
-                    query = lambda t, index=index: index.query(t)  # type: ignore
-            else:
-                query = lambda f, index=index: index.query(s_type.hash_from_file(f))  # type: ignore
-            if query:
-                matchers.append((s_type, query))
+            indices.append((s_type, index))
 
-        if not matchers:
+        if not indices:
             self.stderr("No data to match against")
             return
 
-        for inp in self.input_generator:
-            for s_type, matcher in matchers:
+        for path in self.files:
+            for s_type, index in indices:
                 seen = set()  # TODO - maybe take the highest certainty?
-                results: t.List[IndexMatch] = matcher(inp)
+                results = []
+                if self.as_hashes:
+                    results = _match_hashes(path, s_type, index)
+                else:
+                    results = _match_file(path, s_type, index)
+
                 for r in results:
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
                     for collab, fetched_data in metadatas:
@@ -225,3 +180,35 @@ class MatchCommand(command_base.Command):
                             continue
                         seen.add(collab)
                         print(s_type.get_name(), f"- ({collab})", fetched_data)
+
+
+def _match_file(
+    path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
+) -> t.List[IndexMatch]:
+    if issubclass(s_type, MatchesStr):
+        return index.query(path.read_text())
+    assert issubclass(s_type, FileHasher)
+    return index.query(s_type.hash_from_file(path))
+
+
+def _match_hashes(
+    path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
+) -> t.List[IndexMatch]:
+    ret = []
+    for hash in path.read_text().splitlines():
+        hash = hash.strip()
+        if not hash:
+            continue
+        try:
+            hash = s_type.validate_signal_str(hash)
+        except Exception:
+            logging.exception("%s failed verification on %s", s_type.get_name(), hash)
+            hash_repr = repr(hash)
+            if len(hash_repr) > 50:
+                hash_repr = hash_repr[:47] + "..."
+            raise CommandError(
+                f"{hash_repr} from {path} is not a valid hash for {s_type.get_name()}",
+                2,
+            )
+        ret.extend(index.query(hash))
+    return ret

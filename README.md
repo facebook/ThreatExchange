@@ -2,7 +2,7 @@
 
 This repository originally started as code to support Meta's ThreatExchange API, but over time has grown to include a number of projects to support signal exchange and content moderation in general. Below are a list of sub-projects.
 
-## PDQ Photo Hashing and Similarity Matching
+## PDQ Image Hashing and Similarity Matching
 
 PDQ is a photo hashing algorithm that can turn photos into 256 bit signatures which can then be used to match other photos. 
 
@@ -10,13 +10,17 @@ PDQ is a photo hashing algorithm that can turn photos into 256 bit signatures wh
 
 TMK+PDQF (or TMK for short) is a video hashing algorithm that can turn videos into 256KB signatures which can be used to match other videos.
 
+## [Coming Soon] Video PDQ (vPDQ) Video Hashing and Similarity Matching
+
+Video PDQ (or vPDQ for short) is a simple video hashing algorithm that determines two videos are matching based on the amount of shared similar frames. It can easily be applied for other image algorithms, and not just PDQ.
+
 ## Hasher-Matcher-Actioner (HMA) Trust & Safety Platform
 
 HMA is a ready-to-deploy content moderation project for AWS, containing many submodules. It allows you to maintain lists of known content to scan for, which you can either curate yourself or connect to other hash exchange programs to share and recieve lists.  More can be found [at the wiki](https://github.com/facebook/ThreatExchange/wiki).
 
 ## python-threatexchange
 
-A python Library/CLI tool available on pypi under `threatexchange` which provides implementations for content scanning and signal exchange. It provides reference implementations in python for downloading hashes from Meta's ThreatExchange API, scanning images with PDQ, and others. It can also be easily extended to work with other hash exchanges and other tecnhniques, not all of which are written by the maintainers of this repository.
+A python Library/CLI tool available on pypi under `threatexchange` which provides implementations for content scanning and signal exchange. It provides reference implementations in python for downloading hashes from Meta's ThreatExchange API, scanning images with PDQ, and others. It can also be easily extended to work with other hash exchanges and other techniques, not all of which are written by the maintainers of this repository.
 
 
 ## Meta's ThreatExchange API Reference Examples
