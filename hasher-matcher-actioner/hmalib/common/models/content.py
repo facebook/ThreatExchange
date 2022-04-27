@@ -2,6 +2,7 @@
 
 import datetime
 from enum import Enum
+from multiprocessing.sharedctypes import Value
 import typing as t
 
 from dataclasses import dataclass, field, asdict
@@ -10,9 +11,9 @@ from boto3.dynamodb.conditions import Attr, Key, Or
 from botocore.exceptions import ClientError
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.meta import get_content_type_for_name
 
 from hmalib.lambdas.api.middleware import JSONifiable
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.models.models_base import DynamoDBItem
 
 
@@ -255,9 +256,7 @@ class ContentObject(ContentObjectBase, JSONifiable):
 
     @classmethod
     def get_from_content_id(
-        cls,
-        table: Table,
-        content_id: str,
+        cls, table: Table, content_id: str, signal_type_mapping: HMASignalTypeMapping
     ) -> t.Optional["ContentObject"]:
         if not content_id:
             return None
@@ -268,17 +267,15 @@ class ContentObject(ContentObjectBase, JSONifiable):
             }
         ).get("Item", None)
         if item:
-            return cls._result_item_to_object(item)
+            return cls._result_item_to_object(item, signal_type_mapping)
         return None
 
     @classmethod
     def _result_item_to_object(
-        cls,
-        item: t.Dict,
+        cls, item: t.Dict, signal_type_mapping: HMASignalTypeMapping
     ) -> "ContentObject":
         content_ref_type = ContentRefType(item["ContentRefType"])
-        content_type = get_content_type_for_name(item["ContentType"])
-
+        content_type = signal_type_mapping.get_content_type_enforce(item["ContentType"])
         # This value is added in the case that no additional fields
         # were provided and can be safely discarded.
         item["AdditionalFields"].discard(cls.ADDITIONAL_FIELDS_PLACE_HOLDER)

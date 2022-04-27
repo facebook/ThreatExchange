@@ -10,12 +10,9 @@ from boto3.dynamodb.conditions import Key
 from mypy_boto3_dynamodb.service_resource import Table
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.meta import (
-    get_content_type_for_name,
-    get_signal_types_by_name,
-)
 from threatexchange.signal_type.signal_base import SignalType
 
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.models.models_base import (
     DynamoDBCursorKey,
     DynamoDBItem,
@@ -219,11 +216,14 @@ class BankMember(DynamoDBItem):
         }
 
     @classmethod
-    def from_dynamodb_item(cls, item: t.Dict) -> "BankMember":
+    def from_dynamodb_item(
+        cls, item: t.Dict, signal_type_mapping: HMASignalTypeMapping
+    ) -> "BankMember":
+        content_type = signal_type_mapping.get_content_type_enforce(item["ContentType"])
         return cls(
             bank_id=item["BankId"],
             bank_member_id=item["BankMemberId"],
-            content_type=get_content_type_for_name(item["ContentType"]),
+            content_type=content_type,
             storage_bucket=item["StorageBucket"],
             storage_key=item["StorageKey"],
             raw_content=item["RawContent"],
@@ -310,12 +310,14 @@ class BankMemberSignal(DynamoDBItem):
         return item
 
     @classmethod
-    def from_dynamodb_item(cls, item: t.Dict) -> "BankMemberSignal":
+    def from_dynamodb_item(
+        cls, item: t.Dict, signal_type_mapping: HMASignalTypeMapping
+    ) -> "BankMemberSignal":
         return cls(
             bank_id=item["BankId"],
             bank_member_id=item["BankMemberId"],
             signal_id=item["SignalId"],
-            signal_type=get_signal_types_by_name()[item["SignalType"]],
+            signal_type=signal_type_mapping.get_signal_type_enforce(item["SignalType"]),
             signal_value=item["SignalValue"],
             updated_at=datetime.fromisoformat(item["UpdatedAt"]),
         )
@@ -387,7 +389,7 @@ class BankedSignalEntry(DynamoDBItem):
         assert result is not None
 
         return BankedSignalEntry(
-            signal_type=get_signal_types_by_name()[result["SignalType"]],
+            signal_type=signal_type,
             signal_value=t.cast(str, result["SignalValue"]),
             signal_id=t.cast(str, result["SignalId"]),
         )
@@ -402,8 +404,9 @@ class BanksTable:
     here we're trying a single 'manager' for all classes of items in the table.
     """
 
-    def __init__(self, table: Table):
+    def __init__(self, table: Table, signal_type_mapping: HMASignalTypeMapping):
         self._table = table
+        self._signal_type_mapping = signal_type_mapping
 
     def create_bank(
         self,
@@ -498,7 +501,12 @@ class BanksTable:
 
         return PaginatedResponse(
             t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
-            [BankMember.from_dynamodb_item(item) for item in result["Items"]],
+            [
+                BankMember.from_dynamodb_item(
+                    item, signal_type_mapping=self._signal_type_mapping
+                )
+                for item in result["Items"]
+            ],
         )
 
     def add_bank_member(
@@ -553,7 +561,8 @@ class BanksTable:
         bank_member = BankMember.from_dynamodb_item(
             self._table.get_item(
                 Key={"SK": bank_member_keys["SK"], "PK": bank_member_keys["PK"]}
-            )["Item"]
+            )["Item"],
+            signal_type_mapping=self._signal_type_mapping,
         )
 
         bank_member.notes = notes
@@ -578,7 +587,8 @@ class BanksTable:
         bank_member = BankMember.from_dynamodb_item(
             self._table.get_item(
                 Key={"SK": bank_member_keys["SK"], "PK": bank_member_keys["PK"]}
-            )["Item"]
+            )["Item"],
+            signal_type_mapping=self._signal_type_mapping,
         )
 
         bank_member.is_removed = True
@@ -701,14 +711,21 @@ class BanksTable:
             )
         return PaginatedResponse(
             t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
-            [BankMemberSignal.from_dynamodb_item(item) for item in result["Items"]],
+            [
+                BankMemberSignal.from_dynamodb_item(
+                    item, signal_type_mapping=self._signal_type_mapping
+                )
+                for item in result["Items"]
+            ],
         )
 
     def get_signals_for_bank_member(
         self, bank_member_id: str
     ) -> t.List[BankMemberSignal]:
         return [
-            BankMemberSignal.from_dynamodb_item(item)
+            BankMemberSignal.from_dynamodb_item(
+                item, signal_type_mapping=self._signal_type_mapping
+            )
             for item in self._table.query(
                 KeyConditionExpression=Key("PK").eq(
                     BankMemberSignal.get_pk(bank_member_id=bank_member_id)
@@ -727,7 +744,8 @@ class BanksTable:
         return BankMember.from_dynamodb_item(
             self._table.get_item(
                 Key={"PK": member_keys["PK"], "SK": member_keys["SK"]}
-            )["Item"]
+            )["Item"],
+            signal_type_mapping=self._signal_type_mapping,
         )
 
     def get_bank_member_signal_from_id(
@@ -742,7 +760,9 @@ class BanksTable:
         yet another look up. (we should find a way to avoid the scan before adding such options)
         """
         return [
-            BankMemberSignal.from_dynamodb_item(item)
+            BankMemberSignal.from_dynamodb_item(
+                item, signal_type_mapping=self._signal_type_mapping
+            )
             for item in self._table.scan(
                 IndexName="BankMemberSignalCursorIndex",
                 FilterExpression=Key("SK").eq(BankMemberSignal.get_sk(signal_id)),

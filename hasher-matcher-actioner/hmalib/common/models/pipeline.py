@@ -1,17 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import datetime
-from decimal import Decimal
 import typing as t
 from dataclasses import dataclass, field
 
 from mypy_boto3_dynamodb.service_resource import Table
 from boto3.dynamodb.conditions import Key
 
-from threatexchange.content_type.meta import get_signal_types_by_name
 from threatexchange.signal_type.signal_base import SignalType
-from hmalib.common.timebucketizer import CSViable
 
+from hmalib.common.timebucketizer import CSViable
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.models.models_base import (
     DynamoDBItem,
     DynamoDBCursorKey,
@@ -47,7 +46,10 @@ class PipelineRecordBase(DynamoDBItem):
 
     @classmethod
     def get_recent_items_page(
-        cls, table: Table, ExclusiveStartKey: t.Optional[DynamoDBCursorKey] = None
+        cls,
+        table: Table,
+        signal_type_mapping: HMASignalTypeMapping,
+        ExclusiveStartKey: t.Optional[DynamoDBCursorKey] = None,
     ) -> PaginatedResponse:
         """
         Get a paginated list of recent items. The API is purposefully kept
@@ -158,10 +160,12 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
         }
 
     @classmethod
-    def from_sqs_message(cls, d: dict) -> "PipelineHashRecord":
+    def from_sqs_message(
+        cls, d: dict, signal_type_mapping: HMASignalTypeMapping
+    ) -> "PipelineHashRecord":
         return cls(
             content_id=d["ContentId"],
-            signal_type=get_signal_types_by_name()[d["SignalType"]],
+            signal_type=signal_type_mapping.get_signal_type_enforce(d["SignalType"]),
             content_hash=d["ContentHash"],
             signal_specific_attributes=d["SignalSpecificAttributes"],
             updated_at=datetime.datetime.fromisoformat(d["UpdatedAt"]),
@@ -179,6 +183,7 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
         cls,
         table: Table,
         content_id: str,
+        signal_type_mapping: HMASignalTypeMapping,
         signal_type: t.Optional[t.Type[SignalType]] = None,
     ) -> t.List["PipelineHashRecord"]:
         """
@@ -198,12 +203,16 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
         return cls._result_items_to_records(
             table.query(
                 KeyConditionExpression=condition_expression,
-            ).get("Items", [])
+            ).get("Items", []),
+            signal_type_mapping=signal_type_mapping,
         )
 
     @classmethod
     def get_recent_items_page(
-        cls, table: Table, exclusive_start_key: t.Optional[DynamoDBCursorKey] = None
+        cls,
+        table: Table,
+        signal_type_mapping: HMASignalTypeMapping,
+        exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
     ) -> PaginatedResponse["PipelineHashRecord"]:
         """
         Get a paginated list of recent items.
@@ -234,13 +243,16 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
 
         return PaginatedResponse(
             t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
-            cls._result_items_to_records(result["Items"]),
+            cls._result_items_to_records(
+                result["Items"], signal_type_mapping=signal_type_mapping
+            ),
         )
 
     @classmethod
     def _result_items_to_records(
         cls,
         items: t.List[t.Dict],
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> t.List["PipelineHashRecord"]:
         """
         Get a paginated list of recent hash records. Subsequent calls must use
@@ -249,7 +261,9 @@ class PipelineHashRecord(PipelineRecordDefaultsBase, PipelineRecordBase):
         return [
             PipelineHashRecord(
                 content_id=item["PK"][len(cls.CONTENT_KEY_PREFIX) :],
-                signal_type=get_signal_types_by_name()[item["SignalType"]],
+                signal_type=signal_type_mapping.get_signal_type_enforce(
+                    item["SignalType"]
+                ),
                 content_hash=item["ContentHash"],
                 updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
                 signal_specific_attributes=cls.deserialize_signal_specific_attributes(
@@ -312,7 +326,7 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
 
     @classmethod
     def get_from_content_id(
-        cls, table: Table, content_id: str
+        cls, table: Table, content_id: str, signal_type_mapping: HMASignalTypeMapping
     ) -> t.List["MatchRecord"]:
         """
         Return all matches for a content_id.
@@ -325,12 +339,17 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
             table.query(
                 KeyConditionExpression=Key("PK").eq(content_key)
                 & Key("SK").begins_with(source_prefix),
-            ).get("Items", [])
+            ).get("Items", []),
+            signal_type_mapping,
         )
 
     @classmethod
     def get_from_signal(
-        cls, table: Table, signal_id: t.Union[str, int], signal_source: str
+        cls,
+        table: Table,
+        signal_id: t.Union[str, int],
+        signal_source: str,
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> t.List["MatchRecord"]:
         """
         Return all matches for a signal. Needs source and id to uniquely
@@ -343,12 +362,16 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
             table.query(
                 IndexName="GSI-1",
                 KeyConditionExpression=Key("GSI1-PK").eq(signal_key),
-            ).get("Items", [])
+            ).get("Items", []),
+            signal_type_mapping,
         )
 
     @classmethod
     def get_recent_items_page(
-        cls, table: Table, exclusive_start_key: t.Optional[DynamoDBCursorKey] = None
+        cls,
+        table: Table,
+        signal_type_mapping: HMASignalTypeMapping,
+        exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
     ) -> PaginatedResponse["MatchRecord"]:
         """
         Get a paginated list of recent match records. Subsequent calls must use
@@ -380,20 +403,25 @@ class MatchRecord(PipelineRecordDefaultsBase, _MatchRecord):
 
         return PaginatedResponse(
             t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),
-            cls._result_items_to_records(result["Items"]),
+            cls._result_items_to_records(
+                result["Items"], signal_type_mapping=signal_type_mapping
+            ),
         )
 
     @classmethod
     def _result_items_to_records(
         cls,
         items: t.List[t.Dict],
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> t.List["MatchRecord"]:
         return [
             MatchRecord(
                 content_id=cls.remove_content_key_prefix(item["PK"]),
                 content_hash=item["ContentHash"],
                 updated_at=datetime.datetime.fromisoformat(item["UpdatedAt"]),
-                signal_type=get_signal_types_by_name()[item["SignalType"]],
+                signal_type=signal_type_mapping.get_signal_type_enforce(
+                    item["SignalType"]
+                ),
                 signal_id=cls.remove_signal_key_prefix(
                     item["SK"], item["SignalSource"]
                 ),

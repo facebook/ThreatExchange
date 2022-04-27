@@ -46,6 +46,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
+          bash ./scripts/set_threatexchange_source local
       - name: Check code format
         run: |
           black --check .
@@ -65,6 +66,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
+          bash ./scripts/set_threatexchange_source local
       - name: Test with pytest
         run: |
           python -m py.test

@@ -4,6 +4,8 @@ from unittest import TestCase
 
 from hmalib.common.s3_adapters import ThreatUpdateS3Store, KNOWN_SIGNAL_TYPES
 
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
+
 
 class S3AdaptersTestCase(TestCase):
     def test_key_indicator_type_mapping(self):
@@ -16,6 +18,7 @@ class S3AdaptersTestCase(TestCase):
                 "does-not-matter",
                 "does-not-matter",
                 KNOWN_SIGNAL_TYPES,
+                signal_type_mapping=get_default_signal_type_mapping(),
             )
 
             assert signal_type == ThreatUpdateS3Store.get_signal_type_from_object_key(

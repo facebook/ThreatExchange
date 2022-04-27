@@ -19,13 +19,10 @@ import typing as t
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.content_type.meta import (
-    get_content_type_for_name,
-    get_signal_types_by_name,
-)
 
 
 from hmalib.lambdas.api.middleware import (
+    DictParseableWithSignalTypeMapping,
     jsoninator,
     JSONifiable,
     DictParseable,
@@ -34,6 +31,7 @@ from hmalib.lambdas.api.middleware import (
 from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.models.content import ContentObject, ContentRefType
 from hmalib.common.logging import get_logger
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.messages.submit import URLSubmissionMessage
 from hmalib.common.models.pipeline import PipelineHashRecord
 
@@ -77,7 +75,7 @@ def create_presigned_url(bucket_name, key, file_type, expiration, client_method)
 
 # Request Objects
 @dataclass
-class SubmitRequestBodyBase(DictParseable):
+class SubmitRequestBodyBase(DictParseableWithSignalTypeMapping):
     content_id: str
     content_type: t.Type[ContentType]
     additional_fields: t.Optional[t.List]
@@ -87,9 +85,11 @@ class SubmitRequestBodyBase(DictParseable):
         raise NotImplementedError
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d, signal_type_mapping: HMASignalTypeMapping):
         base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
-        base.content_type = get_content_type_for_name(base.content_type)
+        base.content_type = signal_type_mapping.get_content_type_enforce(
+            base.content_type  # type:ignore
+        )
         return base
 
 
@@ -122,9 +122,9 @@ class SubmitContentHashRequestBody(SubmitRequestBodyBase):
     content_url: str = ""
 
     @classmethod
-    def from_dict(cls, d):
-        base = super().from_dict(d)
-        base.signal_type = get_signal_types_by_name()[base.signal_type]
+    def from_dict(cls, d, signal_type_mapping: HMASignalTypeMapping):
+        base = super().from_dict(d, signal_type_mapping)
+        base.signal_type = signal_type_mapping.get_signal_type_enforce(base.signal_type)
         return base
 
     def get_content_ref_details(self) -> t.Tuple[str, ContentRefType]:
@@ -308,6 +308,7 @@ def get_submit_api(
     image_prefix: str,
     submissions_queue_url: str,
     hash_queue_url: str,
+    signal_type_mapping: HMASignalTypeMapping,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root

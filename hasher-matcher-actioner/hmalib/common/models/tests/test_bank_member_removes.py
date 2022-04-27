@@ -4,17 +4,21 @@ import typing as t
 import unittest
 
 from threatexchange.content_type.video import VideoContent
-from threatexchange.signal_type.video_tmk_pdqf import VideoTmkPdqfSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from hmalib.common.models.bank import BanksTable
 from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
+
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
 
 
 class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
     # Note: Table is defined in base class BanksTableTestBase
 
     def _create_bank_and_bank_member(self) -> t.Tuple[str, str]:
-        table_manager = BanksTable(self.get_table())
+        table_manager = BanksTable(
+            self.get_table(), signal_type_mapping=get_default_signal_type_mapping()
+        )
 
         bank = table_manager.create_bank("TEST_BANK", "Test bank description")
         bank_member = table_manager.add_bank_member(
@@ -30,33 +34,35 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
 
     def test_bank_member_removes(self):
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
 
             bank_member_signal_1 = table_manager.add_bank_member_signal(
                 bank_id=bank_id,
                 bank_member_id=bank_member_id,
-                signal_type=VideoTmkPdqfSignal,
+                signal_type=VideoMD5Signal,
                 signal_value="A VIDEO TMK PDQF SIGNAL. WILTY?",
             )
 
             bank_member_signal_2 = table_manager.add_bank_member_signal(
                 bank_id=bank_id,
                 bank_member_id=bank_member_id,
-                signal_type=VideoTmkPdqfSignal,
+                signal_type=VideoMD5Signal,
                 signal_value="ANOTHER VIDEO TMK PDQF SIGNAL. WILTY?",
             )
 
             bank_member_signal_3 = table_manager.add_bank_member_signal(
                 bank_id=bank_id,
                 bank_member_id=bank_member_id,
-                signal_type=VideoTmkPdqfSignal,
+                signal_type=VideoMD5Signal,
                 signal_value="An ANOTHER VIDEO TMK PDQF SIGNAL. WILTY?",
             )
 
             # expect this to now be available to process
             to_process = table_manager.get_bank_member_signals_to_process_page(
-                signal_type=VideoTmkPdqfSignal
+                signal_type=VideoMD5Signal
             )
 
             self.assertEqual(len(to_process.items), 3)
@@ -67,7 +73,7 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
 
             # expect this to now be available to process
             to_process = table_manager.get_bank_member_signals_to_process_page(
-                signal_type=VideoTmkPdqfSignal
+                signal_type=VideoMD5Signal
             )
 
             self.assertEqual(len(to_process.items), 0)
@@ -77,7 +83,9 @@ class BankMemberRemovesTestCase(BanksTableTestBase, unittest.TestCase):
         REMOVE_EVERY_XTH_MEMBER = 4
 
         with self.fresh_dynamodb():
-            table_manager = BanksTable(self.get_table())
+            table_manager = BanksTable(
+                self.get_table(), get_default_signal_type_mapping()
+            )
             bank_id, bank_member_id = self._create_bank_and_bank_member()
             for i in range(NUM_MEMBERS):
                 bank_member = table_manager.add_bank_member(

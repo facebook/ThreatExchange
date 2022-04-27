@@ -18,12 +18,16 @@ import typing as t
 from botocore.errorfactory import ClientError
 from mypy_boto3_s3 import Client as S3Client
 from mypy_boto3_s3.service_resource import Bucket
-from threatexchange import threat_updates as tu
+from threatexchange.fb_threatexchange import threat_updates as tu
 from threatexchange.cli.dataset.simple_serialization import HMASerialization
-from threatexchange.descriptor import SimpleDescriptorRollup, ThreatDescriptor
+from threatexchange.fb_threatexchange.descriptor import (
+    SimpleDescriptorRollup,
+    ThreatDescriptor,
+)
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
+from hmalib.common.mappings import HMASignalTypeMapping
 
 
 from hmalib.common.models.signal import (
@@ -236,6 +240,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         s3_te_data_folder: str,
         data_store_table: str,
         supported_signal_types: t.List[SignalType],
+        signal_type_mapping: HMASignalTypeMapping,
     ) -> None:
         super().__init__(privacy_group)
         self.app_id = app_id
@@ -247,6 +252,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
         )
         self.s3_client = s3_client
         self.s3_bucket_name = s3_bucket_name
+        self.signal_type_mapping = signal_type_mapping
 
     @classmethod
     def indicator_type_str_from_signal_type(
@@ -555,6 +561,7 @@ class ThreatUpdateS3Store(tu.ThreatUpdatesStore):
                 table,
                 int(row[1]),  # indicator-id or signal-id
                 str(self.privacy_group),
+                self.signal_type_mapping,
             )
 
             if metadata:

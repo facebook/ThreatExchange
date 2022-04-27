@@ -12,17 +12,14 @@ from enum import Enum
 from urllib.error import HTTPError
 from mypy_boto3_sqs.client import SQSClient
 
-from threatexchange.descriptor import ThreatDescriptor
+from threatexchange.fb_threatexchange.descriptor import ThreatDescriptor
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
-from threatexchange.content_type.meta import (
-    get_signal_types_by_name,
-    get_content_types_by_name,
-)
+from threatexchange.meta import FunctionalityMapping, SignalTypeMapping
 
 from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.models.signal import (
@@ -30,6 +27,7 @@ from hmalib.common.models.signal import (
     PendingThreatExchangeOpinionChange,
 )
 from hmalib.common.logging import get_logger
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.messages.match import BankedSignal
 from hmalib.common.messages.writeback import WritebackMessage
 from hmalib.indexers.metadata import (
@@ -37,6 +35,7 @@ from hmalib.indexers.metadata import (
     BankedSignalIndexMetadata,
 )
 from hmalib.lambdas.api.middleware import (
+    DictParseableWithSignalTypeMapping,
     jsoninator,
     JSONifiable,
     DictParseable,
@@ -177,12 +176,17 @@ class ChangeSignalOpinionResponse(JSONifiable):
 
 
 def get_match_details(
-    datastore_table: Table, banks_table: BanksTable, content_id: str
+    datastore_table: Table,
+    banks_table: BanksTable,
+    content_id: str,
+    signal_type_mapping: HMASignalTypeMapping,
 ) -> t.List[MatchDetail]:
     if not content_id:
         return []
 
-    records = MatchRecord.get_from_content_id(datastore_table, f"{content_id}")
+    records = MatchRecord.get_from_content_id(
+        datastore_table, f"{content_id}", signal_type_mapping
+    )
 
     return [
         MatchDetail(
@@ -200,6 +204,7 @@ def get_match_details(
                 datastore_table=datastore_table,
                 signal_id=record.signal_id,
                 signal_source=record.signal_source,
+                signal_type_mapping=signal_type_mapping,
             ),
             banked_signal_details=get_banked_signal_details(
                 banks_table=banks_table,
@@ -215,6 +220,7 @@ def get_te_signal_details(
     datastore_table: Table,
     signal_id: str,
     signal_source: str,
+    signal_type_mapping: SignalTypeMapping,
 ) -> t.List[ThreatExchangeSignalDetailsMetadata]:
     """
     Note: te_signal_details should eventaully be folded into banked_signal_details
@@ -233,7 +239,7 @@ def get_te_signal_details(
             pending_opinion_change=metadata.pending_opinion_change.value,
         )
         for metadata in ThreatExchangeSignalMetadata.get_from_signal(
-            datastore_table, signal_id
+            datastore_table, signal_id, signal_type_mapping
         )
     ]
 
@@ -274,27 +280,33 @@ def get_opinion_from_tags(tags: t.List[str]) -> OpinionString:
 
 
 @dataclass
-class MatchesForHashRequest(DictParseable):
+class MatchesForHashRequest(DictParseableWithSignalTypeMapping):
     signal_value: str
     signal_type: t.Type[SignalType]
 
     @classmethod
-    def from_dict(cls, d):
-        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})  # type: ignore # tiny hack to get convert string fields
-        base.signal_type = get_signal_types_by_name()[base.signal_type]  # type: ignore # tiny hack to get SignalType from string in request
-        return base
+    def from_dict(
+        cls, d: t.Dict, signal_type_mapping: HMASignalTypeMapping
+    ) -> "MatchesForHashRequest":
+        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base.signal_type = signal_type_mapping.get_signal_type_enforce(
+            t.cast(str, base.signal_type)
+        )
+        return t.cast("MatchesForHashRequest", base)
 
 
 @dataclass
-class MatchesForMediaRequest(DictParseable):
+class MatchesForMediaRequest(DictParseableWithSignalTypeMapping):
     content_url: str
     content_type: t.Type[ContentType]
 
     @classmethod
-    def from_dict(cls, d):
-        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})  # type: ignore # tiny hack to get convert string fields
-        base.content_type = get_content_types_by_name()[base.content_type]  # type: ignore # tiny hack to get ContentType from string in request
-        return base
+    def from_dict(cls, d, signal_type_mapping: HMASignalTypeMapping):
+        base = cls(**{f.name: d.get(f.name, None) for f in dataclasses.fields(cls)})
+        base.content_type = signal_type_mapping.get_content_type_enforce(
+            t.cast(str, base.content_type)
+        )
+        return t.cast("MatchesForMediaRequest", base)
 
 
 @dataclass
@@ -370,6 +382,7 @@ def get_matches_api(
     indexes_bucket_name: str,
     writeback_queue_url: str,
     bank_table: Table,
+    signal_type_mapping: HMASignalTypeMapping,
 ) -> bottle.Bottle:
     """
     A Closure that includes all dependencies that MUST be provided by the root
@@ -382,7 +395,7 @@ def get_matches_api(
     matches_api = SubApp()
     HMAConfig.initialize(hma_config_table)
 
-    banks_table = BanksTable(table=bank_table)
+    banks_table = BanksTable(table=bank_table, signal_type_mapping=signal_type_mapping)
 
     @matches_api.get("/", apply=[jsoninator])
     def matches() -> MatchSummariesResponse:
@@ -394,14 +407,18 @@ def get_matches_api(
         content_q = bottle.request.query.content_q or None  # type: ignore # ToDo refactor to use `jsoninator(<requestObj>, from_query=True)``
 
         if content_q:
-            records = MatchRecord.get_from_content_id(datastore_table, content_q)
+            records = MatchRecord.get_from_content_id(
+                datastore_table, content_q, signal_type_mapping
+            )
         elif signal_q:
             records = MatchRecord.get_from_signal(
-                datastore_table, signal_q, signal_source or ""
+                datastore_table, signal_q, signal_source or "", signal_type_mapping
             )
         else:
             # TODO: Support pagination after implementing in UI.
-            records = MatchRecord.get_recent_items_page(datastore_table).items
+            records = MatchRecord.get_recent_items_page(
+                datastore_table, signal_type_mapping
+            ).items
 
         return MatchSummariesResponse(
             match_summaries=[
@@ -426,6 +443,7 @@ def get_matches_api(
                 datastore_table=datastore_table,
                 banks_table=banks_table,
                 content_id=content_id,
+                signal_type_mapping=signal_type_mapping,
             )
         return MatchDetailsResponse(match_details=results)
 
@@ -460,7 +478,10 @@ def get_matches_api(
         )
 
         signal = ThreatExchangeSignalMetadata.get_from_signal_and_privacy_group(
-            datastore_table, signal_id=signal_id, privacy_group_id=privacy_group_id
+            datastore_table,
+            signal_id=signal_id,
+            privacy_group_id=privacy_group_id,
+            signal_type_mapping=signal_type_mapping,
         )
 
         if not signal:

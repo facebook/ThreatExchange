@@ -6,7 +6,7 @@ Helpers for sync privacy groups between ThreatExchange and DynamoDB
 from botocore.exceptions import ClientError
 from requests.exceptions import HTTPError
 
-from threatexchange.api import ThreatExchangeAPI
+from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
 
 from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.logging import get_logger

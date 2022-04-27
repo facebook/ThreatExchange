@@ -20,7 +20,7 @@ import hmalib.scripts.cli.command_base as base
 import hmalib.scripts.cli.soak as soak
 import hmalib.scripts.cli.storm as storm
 import hmalib.scripts.cli.shell as shell
-from hmalib.scripts.cli import run_api, run_lambda, print_tfvars_example
+from hmalib.scripts.cli import run_api, run_lambda, print_tfvars_example, migrate
 
 TERRAFORM_OUTPUTS_CACHE = "/tmp/hma-terraform-outputs.json"
 
@@ -33,6 +33,7 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
         run_lambda.RunLambdaCommand,
         run_api.RunAPICommand,
         print_tfvars_example.PrintTFVarsExampleCommand,
+        migrate.MigrateCommand,
     ]
 
 
@@ -67,7 +68,7 @@ def get_argparse() -> argparse.ArgumentParser:
 
 
 def get_terraform_outputs(refresh=False) -> t.Dict:
-    if refresh:
+    if refresh and pathlib.Path(TERRAFORM_OUTPUTS_CACHE).exists():
         os.remove(TERRAFORM_OUTPUTS_CACHE)
 
     return utils.get_cached_terraform_outputs(TERRAFORM_OUTPUTS_CACHE)

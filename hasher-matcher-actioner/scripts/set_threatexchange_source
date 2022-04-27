@@ -32,9 +32,17 @@ if [ $1 == "pypi" ]; then
 elif [ $1 == "local" ]; then
     pip uninstall -y threatexchange # remove from current site-packages
 
+    # Clean up existing installation
+    if [ -d $LOCAL_LIB_LOCATION ]; then 
+        printf 'Found existing installation of local-threatexchange. Deleting...\n'
+        rm -r $LOCAL_LIB_LOCATION
+    else
+        printf 'No existing installation of local-threatexchange found.\n'
+    fi
+
     # Copy and install from source. Copying is necessary. A link would not work.
     # Dockerbuilds can't follow symlinks outside their context directory.
-    rm -r $LOCAL_LIB_LOCATION 2>/dev/null
+    printf 'Copying current sources to local-threatexchange.\n'
     cp -r ../python-threatexchange/ $LOCAL_LIB_LOCATION
     # Install in editable mode..
     python3 -m pip install -e $LOCAL_LIB_LOCATION

@@ -5,6 +5,7 @@ import typing as t
 import bottle
 
 from hmalib.common.logging import get_logger
+from hmalib.common.mappings import HMASignalTypeMapping
 
 logger = get_logger(__name__)
 
@@ -63,9 +64,24 @@ class DictParseable:
         raise NotImplementedError
 
 
+class DictParseableWithSignalTypeMapping:
+    """
+    A special case of dict parseables where the dynamic signal type config is
+    required.
+    """
+
+    @classmethod
+    def from_dict(
+        cls, d: t.Dict, signal_type_mapping: HMASignalTypeMapping
+    ) -> "DictParseableWithSignalTypeMapping":
+        raise NotImplementedError
+
+
 def jsoninator(
     view_fn_or_request_type: t.Union[
-        t.Callable[[int, int], JSONifiable], t.Type[DictParseable]
+        t.Callable[[int, int], JSONifiable],
+        t.Type[DictParseable],
+        t.Type[DictParseableWithSignalTypeMapping],
     ],
     from_query=False,
 ):

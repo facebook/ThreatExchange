@@ -9,19 +9,17 @@ import datetime
 
 from mypy_boto3_sns.client import SNSClient
 from mypy_boto3_dynamodb.service_resource import Table
-from threatexchange.signal_type.pdq import PdqSignal
-from hmalib.common.models.bank import BanksTable
-from hmalib.common.models.pipeline import MatchRecord
 import typing as t
 
+from threatexchange.meta import FunctionalityMapping
 from threatexchange.signal_type.index import IndexMatch, SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 
+from hmalib.common.models.bank import BanksTable
+from hmalib.common.models.pipeline import MatchRecord
 from hmalib import metrics
 from hmalib.common.logging import get_logger
-from hmalib.common.mappings import INDEX_MAPPING
 from hmalib.common.messages.match import BankedSignal, MatchMessage
-
 from hmalib.common.models.signal import ThreatExchangeSignalMetadata
 from hmalib.indexers.metadata import (
     BANKS_SOURCE_SHORT_CODE,
@@ -235,7 +233,7 @@ class Matcher:
     def _get_index_for_signal_type_matching(
         cls, signal_type: t.Type[SignalType], max_custom_threshold: int
     ):
-        indexes = INDEX_MAPPING[signal_type]
+        indexes = signal_type.get_index_cls()
         # disallow empty list
         assert indexes
         if len(indexes) == 1:

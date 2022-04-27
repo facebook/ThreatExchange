@@ -5,9 +5,9 @@ import typing as t
 from dataclasses import dataclass
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.content_type.meta import get_content_type_for_name
 from threatexchange.content_type.photo import PhotoContent
 
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.content_sources import S3BucketContentSource
 from hmalib.common.logging import get_logger
 
@@ -43,9 +43,11 @@ class URLSubmissionMessage:
         }
 
     @classmethod
-    def from_sqs_message(cls, d: dict) -> "URLSubmissionMessage":
+    def from_sqs_message(
+        cls, d: dict, signal_type_mapping: HMASignalTypeMapping
+    ) -> "URLSubmissionMessage":
         return cls(
-            content_type=get_content_type_for_name(d["ContentType"]),
+            content_type=signal_type_mapping.get_content_type_enforce(d["ContentType"]),
             content_id=d["ContentId"],
             url=d["URL"],
             event_type=d["EventType"],

@@ -3,6 +3,7 @@
 from functools import lru_cache
 from datetime import datetime
 import json
+import signal
 import uuid
 import bottle
 import typing as t
@@ -12,13 +13,7 @@ from urllib.parse import quote as uriencode
 import boto3
 from mypy_boto3_dynamodb.service_resource import Table
 
-from threatexchange.content_type.meta import (
-    get_content_type_for_name,
-    get_signal_types_by_name,
-)
-from threatexchange.content_type.photo import PhotoContent
-from threatexchange.content_type.video import VideoContent
-
+from hmalib.common.mappings import HMASignalTypeMapping
 from hmalib.common.models.bank import Bank, BankMember, BanksTable, BankMemberSignal
 from hmalib.banks import bank_operations as bank_ops
 from hmalib.lambdas.api.middleware import (
@@ -102,14 +97,19 @@ def _get_sqs_client():
 
 
 def get_bank_api(
-    bank_table: Table, bank_user_media_bucket: str, submissions_queue_url: str
+    bank_table: Table,
+    bank_user_media_bucket: str,
+    submissions_queue_url: str,
+    signal_type_mapping: HMASignalTypeMapping,
 ) -> bottle.Bottle:
     """
     Closure for dependencies of the bank API
     """
 
     bank_api = SubApp()
-    table_manager = BanksTable(table=bank_table)
+    table_manager = BanksTable(
+        table=bank_table, signal_type_mapping=signal_type_mapping
+    )
 
     # Bank Management
 
@@ -169,8 +169,9 @@ def get_bank_api(
         )
 
         try:
-            content_type = get_content_type_for_name(bottle.request.query.content_type)
-
+            content_type = signal_type_mapping.get_content_type_enforce(
+                bottle.request.query.content_type
+            )
         except:
             bottle.abort(400, "content_type must be provided as a query parameter.")
 
@@ -204,7 +205,9 @@ def get_bank_api(
 
         Returns 200 OK with the resulting bank_member. 500 on failure.
         """
-        content_type = get_content_type_for_name(bottle.request.json["content_type"])
+        content_type = signal_type_mapping.get_content_type_enforce(
+            bottle.request.json["content_type"]
+        )
         storage_bucket = bottle.request.json["storage_bucket"]
         storage_key = bottle.request.json["storage_key"]
         notes = bottle.request.json["notes"]
@@ -239,8 +242,12 @@ def get_bank_api(
         - signal_value: the hash to store against this signal. Will
           automatically de-dupe against existing signals.
         """
-        content_type = get_content_type_for_name(bottle.request.json["content_type"])
-        signal_type = get_signal_types_by_name()[bottle.request.json["signal_type"]]
+        content_type = signal_type_mapping.get_content_type_enforce(
+            bottle.request.json["content_type"]
+        )
+        signal_type = signal_type_mapping.get_signal_type_enforce(
+            bottle.request.json["signal_type"]
+        )
         signal_value = bottle.request.json["signal_value"]
 
         return bank_ops.add_detached_bank_member_signal(
