@@ -163,7 +163,7 @@ def bottle_init_once() -> t.Tuple[
             indexer_function_name=INDEXER_FUNCTION_NAME,
         ),
     )
-    
+
     app.mount(
         "/lcc/",
         get_lcc_api(),
