@@ -21,7 +21,7 @@ class MigrateCommand(base.Command):
     "hmalib.scripts.migrations.2022_04_02_default_content_signal_type_configs"
     module.
 
-    Right now, there is no state management done within the command.. Doing a
+    Right now, there is no state management done within the command. Doing a
     migration twice will cause it to happen twice. State-management is left to
     terraform. See terraform/migrations/main.tf.
     """
@@ -30,13 +30,10 @@ class MigrateCommand(base.Command):
     def init_argparse(cls, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
             "migration",
-            type=str,
             help="Which migration to run? eg. 2022_04_02_default_content_signal_type_configs",
         )
 
-        ap.add_argument(
-            "--config-table", type=str, help="Name of the HMA Config table."
-        )
+        ap.add_argument("--config-table", help="Name of the HMA Config table.")
 
     @classmethod
     def get_name(cls) -> str:
