@@ -7,6 +7,8 @@ from hmalib.common.models.pipeline import HashRecord
 from hmalib.common.timebucketizer import CSViable, TimeBucketizer
 from hmalib.indexers.lcc import LCCIndexer
 
+from hmalib import metrics
+
 
 class TestLCCIndexer(unittest.TestCase):
     def test(self):
@@ -26,8 +28,12 @@ class TestLCCIndexer(unittest.TestCase):
             )
             tbi.force_flush()
             test_class = LCCIndexer()
+
             test_index = test_class.build_index_from_last_24h(
                 tbi.type, tbi.storage_path, tbi.bucket_width
             )
+
             test_class.override_recent_index(test_index, tbi.type, td, tbi.bucket_width)
             print(test_class.get_recent_index(td, tbi.type))
+
+        assert True

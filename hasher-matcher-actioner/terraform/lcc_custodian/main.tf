@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 ### Lambda for custodian ###
-
+data "aws_region" "current" {}
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
     effect  = "Allow"
@@ -111,6 +111,54 @@ data "aws_iam_policy_document" "custodian" {
     resources = ["${aws_cloudwatch_log_group.custodian.arn}:*"]
   }
 
+}
+
+
+locals {
+
+  stacked_graph = jsonencode({
+    height = 6,
+    width  = 6,
+    type   = "metric",
+    properties = {
+      view    = "timeSeries",
+      stacked = true,
+      metrics = [
+        ["ThreatExchange/HMA", "lcc.get_data-duration"],
+        [".", "lcc.in_memory_processing-duration"],
+        [".", "lcc.build_index-duration"]
+      ],
+      region = "${data.aws_region.current.name}"
+    }
+  })
+
+  line_graph = jsonencode({
+    width  = 6
+    height = 6
+    type   = "metric"
+    properties = {
+      view    = "timeSeries"
+      stacked = false
+      metrics = [["ThreatExchange/HMA", "lcc.build_index-count"]
+      ]
+      region = "${data.aws_region.current.name}"
+    }
+  })
+
+  dashboard_body = <<JSON
+  {
+    "widgets": [
+      ${local.stacked_graph},
+      ${local.line_graph}
+      ]
+  }
+  JSON
+}
+
+
+resource "aws_cloudwatch_dashboard" "basic_dashboard" {
+  dashboard_name = "${var.prefix}-lcc-dashboard"
+  dashboard_body = replace(local.dashboard_body, "/\"([0-9]+)\"/", "$1")
 }
 
 resource "aws_iam_policy" "custodian" {

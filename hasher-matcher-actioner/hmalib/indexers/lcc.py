@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.pdq_index import PDQIndex
+from hmalib import metrics
 
 from hmalib.common.logging import get_logger
 from hmalib.common.models.pipeline import HashRecord
@@ -33,22 +34,27 @@ class LCCIndexer:
     @classmethod
     def build_index_from_last_24h(cls, signal_type, storage_path, bucket_width) -> None:
         """Create an index"""
-        d = timedelta(days=1)
+        with metrics.timer(metrics.names.lcc.get_data):
+            d = timedelta(days=1)
 
-        past_day_content = TimeBucketizer.get_records(
-            (datetime.now() - d),
-            datetime.now(),
-            signal_type,
-            storage_path,
-            bucket_width,
-            HashRecord,
-        )
+            # Make 3 different metric.timers
+            # get_Recrods, record_list, and .build
+            past_day_content = TimeBucketizer.get_records(
+                (datetime.now() - d),
+                datetime.now(),
+                signal_type,
+                storage_path,
+                bucket_width,
+                HashRecord,
+            )
 
-        record_list = []
-        for record in past_day_content:
-            record_list.append((record.content_hash, record.content_id))
-        testIndex = PDQIndex.build(record_list)
-        return testIndex
+        with metrics.timer(metrics.names.lcc.in_memory_processing):
+            record_list = []
+            for record in past_day_content:
+                record_list.append((record.content_hash, record.content_id))
+
+        with metrics.timer(metrics.names.lcc.build_index):
+            return PDQIndex.build(record_list)
 
     @classmethod
     def override_recent_index(

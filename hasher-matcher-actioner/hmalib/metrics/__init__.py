@@ -105,6 +105,12 @@ class names:
         download_index = f"{_prefix}.download_index"
         get_bank_data = f"{_prefix}.get_bank_data"
 
+    class lcc:
+        _prefix = "lcc"
+        get_data = f"{_prefix}.get_data"
+        in_memory_processing = f"{_prefix}.in_memory_processing"
+        build_index = f"{_prefix}.build_index"
+
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
 METRICS_NAMESPACE = os.getenv(_METRICS_NAMESPACE_ENVVAR, names.hma_namespace)
