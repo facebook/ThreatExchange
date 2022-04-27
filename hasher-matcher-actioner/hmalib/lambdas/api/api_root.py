@@ -48,7 +48,7 @@ IMAGE_BUCKET_NAME = os.environ["IMAGE_BUCKET_NAME"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
 SUBMISSIONS_QUEUE_URL = os.environ["SUBMISSIONS_QUEUE_URL"]
 HASHES_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
-
+LCC_DURABLE_FS_PATH = os.environ["LCC_DURABLE_FS_PATH"]
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 INDEXER_FUNCTION_NAME = os.environ["INDEXER_FUNCTION_NAME"]
 WRITEBACK_QUEUE_URL = os.environ["WRITEBACKS_QUEUE_URL"]
@@ -166,7 +166,10 @@ def bottle_init_once() -> t.Tuple[
 
     app.mount(
         "/lcc/",
-        get_lcc_api(),
+        get_lcc_api(
+            storage_path=LCC_DURABLE_FS_PATH,
+            signal_type_mapping=functionality_mapping.signal_and_content,
+        ),
     )
 
     apig_wsgi_handler = make_lambda_handler(app)

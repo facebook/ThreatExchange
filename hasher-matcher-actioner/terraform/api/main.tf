@@ -49,6 +49,7 @@ resource "aws_lambda_function" "api_root" {
       HASHES_QUEUE_URL                      = var.hashes_queue.url
       BANKS_MEDIA_BUCKET_NAME               = var.banks_media_storage.bucket_name
       INDEXER_FUNCTION_NAME                 = var.indexer_function_name
+      LCC_DURABLE_FS_PATH                   = "TODO: GET actual path. Verify API works with EFS security groups."
     }
   }
   tags = merge(
