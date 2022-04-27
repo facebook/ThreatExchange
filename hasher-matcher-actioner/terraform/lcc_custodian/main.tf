@@ -124,8 +124,8 @@ locals {
       view    = "timeSeries",
       stacked = true,
       metrics = [
-        ["ThreatExchange/HMA", "lcc.build_index_get_data-duration"],
-        [".", "lcc.build_index_pdq_build-duration"],
+        ["ThreatExchange/HMA", "lcc.get_data-duration"],
+        [".", "lcc.in_memory_processing-duration"],
         [".", "lcc.build_index-duration"]
       ],
       region = "${data.aws_region.current.name}"

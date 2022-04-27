@@ -110,9 +110,6 @@ class names:
         get_data = f"{_prefix}.get_data"
         in_memory_processing = f"{_prefix}.in_memory_processing"
         build_index = f"{_prefix}.build_index"
-        # build_index = f"{_prefix}.build_index"
-        # build_index_get_data = f"{_prefix}.build_index_get_data"
-        # build_index_pdq_build = f"{_prefix}.build_index_pdq_build"
 
 
 _METRICS_NAMESPACE_ENVVAR = "METRICS_NAMESPACE"
@@ -188,7 +185,6 @@ if measure_performance:
                     datums.append(datum)
 
             reporter.report(datums)
-            print("Did I work?")
         except Exception as e:
             logger.exception("Couldn't report metrics to cloudwatch")
 
