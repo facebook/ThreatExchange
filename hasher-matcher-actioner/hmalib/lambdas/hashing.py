@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import functools
-from hmalib.common.messages.bank import BankSubmissionMessage
 import boto3
 import os
 import datetime
@@ -11,13 +10,19 @@ import typing as t
 from mypy_boto3_dynamodb import DynamoDBServiceResource
 from mypy_boto3_sqs import SQSClient
 
-from threatexchange.content_type.meta import get_content_type_for_name
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
 
+from hmalib.common.config import HMAConfig
 from hmalib.common.logging import get_logger
+from hmalib.common.mappings import (
+    HMAFunctionalityMapping,
+    HMASignalTypeMapping,
+    get_pytx_functionality_mapping,
+)
+from hmalib.common.messages.bank import BankSubmissionMessage
 from hmalib import metrics
 from hmalib.common.messages.submit import (
     S3ImageSubmission,
@@ -48,15 +53,23 @@ OUTPUT_QUEUE_URL = os.environ["HASHES_QUEUE_URL"]
 DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
 BANKS_TABLE = os.environ["BANKS_TABLE"]
+HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
 
 
-# If you want to support additional content or signal types, they can be added
-# here.
-hasher = UnifiedHasher(
-    supported_content_types=[PhotoContent, VideoContent],
-    supported_signal_types=[PdqSignal, VideoMD5Signal],
-    output_queue_url=OUTPUT_QUEUE_URL,
-)
+@functools.lru_cache(maxsize=None)
+def _get_signal_type_mapping() -> HMASignalTypeMapping:
+    """
+    Cache-get signalTypeMapping. Call only if HMAConfig has been initialized.
+    """
+    return get_pytx_functionality_mapping().signal_and_content
+
+
+@functools.lru_cache(maxsize=None)
+def _get_hasher(signal_type_mapping: HMASignalTypeMapping):
+    return UnifiedHasher(
+        signal_type_mapping=signal_type_mapping,
+        output_queue_url=OUTPUT_QUEUE_URL,
+    )
 
 
 def lambda_handler(event, context):
@@ -74,8 +87,14 @@ def lambda_handler(event, context):
     [1]: https://docs.aws.amazon.com/lambda/latest/dg/configuration-console.html
     """
     records_table = get_dynamodb().Table(DYNAMODB_TABLE)
-    banks_table = BanksTable(get_dynamodb().Table(BANKS_TABLE))
+    HMAConfig.initialize(HMA_CONFIG_TABLE)
+    banks_table = BanksTable(
+        get_dynamodb().Table(BANKS_TABLE),
+        _get_signal_type_mapping(),
+    )
     sqs_client = get_sqs_client()
+
+    hasher = _get_hasher(_get_signal_type_mapping())
 
     for sqs_record in event["Records"]:
         message = json.loads(sqs_record["body"])
@@ -88,7 +107,11 @@ def lambda_handler(event, context):
         ] = []
 
         if URLSubmissionMessage.could_be(message):
-            media_to_process.append(URLSubmissionMessage.from_sqs_message(message))
+            media_to_process.append(
+                URLSubmissionMessage.from_sqs_message(
+                    message, _get_signal_type_mapping()
+                )
+            )
         elif S3ImageSubmissionBatchMessage.could_be(message):
             # S3 submissions can only be images for now.
             media_to_process.extend(
@@ -97,7 +120,11 @@ def lambda_handler(event, context):
                 ).image_submissions
             )
         elif BankSubmissionMessage.could_be(message):
-            media_to_process.append(BankSubmissionMessage.from_sqs_message(message))
+            media_to_process.append(
+                BankSubmissionMessage.from_sqs_message(
+                    message, _get_signal_type_mapping()
+                )
+            )
         else:
             logger.warn(f"Unprocessable Message: {message}")
 
