@@ -1,0 +1,194 @@
+/** Styles for NCII Web app **/
+
+* {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  background: #EEF2F6 url(../images/bg.jpg);
+  font-family: 'Raleway', sans-serif;
+  color: #888;
+  transform: translateX(0%);
+  transition: transform 0.2s linear;
+  user-select: none;
+}
+
+/** For Button animation **/
+
+@-webkit-keyframes animation-rotate {
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@-moz-keyframes animation-rotate {
+  100% {
+    -moz-transform: rotate(360deg);
+  }
+}
+
+@-o-keyframes animation-rotate {
+  100% {
+    -o-transform: rotate(360deg);
+  }
+}
+
+@keyframes animation-rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+body.file-process-open {
+  transition: transform 0.2s linear;
+}
+
+a {
+  text-decoration: none;
+}
+
+.button i {
+  margin-right: 8px;
+}
+.body-container-wrapper {
+  width: 100%;
+}
+.body-container-wrapper .page-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  height: 100%;
+  width: 80%;
+  margin: auto;
+}
+
+h1 {
+  font-size: 16px;
+}
+
+/** Upload button styles **/
+
+.upload {
+  padding: 0;
+  background-color: #3498db;
+  background-image: 8121991;
+  box-shadow: inset rgba(0, 0, 0, 0.2) 0 0 0 1px, rgba(52, 152, 219, 0.5) 0 0 5px;
+  border-radius: 4px;
+  background-clip: padding-box;
+  padding: 20px 20px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.upload span {
+  text-shadow: rgba(29, 111, 165, 0.9) 0 0 2px;
+}
+
+.upload span {
+  padding: 20px 25px;
+  color: #fff;
+}
+
+.upload:hover {
+  background-color: #2f88c4;
+  background-image: 8121991;
+  box-shadow: inset rgba(0, 0, 0, 0.2) 0 0 0 1px, rgba(74, 163, 223, 0.5) 0 0 5px;
+}
+
+.upload:hover span {
+  text-shadow: rgba(33, 125, 187, 0.9) 0 0 2px;
+}
+
+.upload:active {
+  background-color: #258cd1;
+  background-image: 8121991;
+}
+
+.upload--loading {
+  background-color: #258cd1 !important;
+  background-image: 8121991 !important;
+  background-image: -webkit-linear-gradient(#258cd1 0%, #258cd1 100%) !important;
+  background-image: -moz-linear-gradient(#258cd1 0%, #258cd1 100%) !important;
+  background-image: -o-linear-gradient(#258cd1 0%, #258cd1 100%) !important;
+  background-image: linear-gradient(#258cd1 0%, #258cd1 100%) !important;
+  position: relative;
+  cursor: wait;
+}
+
+.upload--loading:before {
+  margin: -13px 0 0 -13px;
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  content: '';
+  -webkit-border-radius: 24px;
+  -webkit-background-clip: padding-box;
+  -moz-border-radius: 24px;
+  -moz-background-clip: padding;
+  border-radius: 24px;
+  background-clip: padding-box;
+  border: rgba(255, 255, 255, 0.25) 2px solid;
+  border-top-color: #ffffff;
+  -webkit-animation: animation-rotate 750ms linear infinite;
+  -moz-animation: animation-rotate 750ms linear infinite;
+  -o-animation: animation-rotate 750ms linear infinite;
+  animation: animation-rotate 750ms linear infinite;
+}
+
+.upload--loading span, .upload--loading:hover span, .upload--loading:active span {
+  color: transparent;
+  text-shadow: none;
+}
+
+.upload--loading span, .upload--loading:hover span, .upload--loading:active span {
+  color: transparent;
+  text-shadow: none;
+}
+
+.upload-hidden {
+  visibility: hidden;
+}
+
+/** Table style **/
+
+table {
+  width: 80%;
+  border-collapse: collapse;
+  margin: 20px auto;
+}
+
+tr:nth-of-type(odd) {
+  background: #eee;
+}
+
+th {
+  background: #3498db;
+  color: white;
+  font-weight: bold;
+}
+
+td, th {
+  padding: 10px;
+  border: 1px solid #ccc;
+  text-align: left;
+  max-width: 600px;
+  word-wrap: break-word;
+}
+
+a.disabled {
+  pointer-events: none;
+  cursor: default;
+  background-color: #cccccc;
+}
