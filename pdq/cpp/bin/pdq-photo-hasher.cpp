@@ -51,6 +51,33 @@ static void usage(char* argv0, int rc) {
   exit(rc);
 }
 
+extern "C"{
+  // The below method will be exposed when generating WASM binary from c++ code and will be used for generating the image hashes in browser.   
+  char* getHash(char* fileName){
+     //printf("filename = %s",fileName);
+     /*EM_ASM({
+    	   console.log('fileName = ' + Module.UTF8ToString($0)); 
+    	},fileName);*/ 
+     Hash256 pdqhash;
+     int quality;
+     int imageHeightTimesWidthUnused = 0;
+     float readSecondsUnused = 0.0;
+     float hashSecondsUnused = 0.0;
+     facebook::pdq::hashing::pdqHash256FromFile(
+        fileName,
+        pdqhash,
+        quality,
+        imageHeightTimesWidthUnused,
+        readSecondsUnused,
+        hashSecondsUnused
+      );
+      std::string imageHash = pdqhash.format();
+      char* hash = new char[imageHash.length()+1];
+      strcpy(hash,imageHash.c_str());      
+      return hash;
+  }
+}
+
 // ----------------------------------------------------------------
 int main(int argc, char* argv[]) {
   bool files_on_stdin = false;
