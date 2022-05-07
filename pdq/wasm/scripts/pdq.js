@@ -1,121 +1,42 @@
 // Import hash wasm library for generating MD5 hash.
-import { createMD5} from '../node_modules/hash-wasm/dist/index.esm.min.js';
+import { createMD5 } from '../node_modules/hash-wasm/dist/index.esm.min.js';
 //import the library to talk to imagemagick
 import * as Magick from '../node_modules/wasm-imagemagick/dist/magickApi.js';
 
-let DoMagickCall = "";
-// Execute the following codes once the DOM contents are loaded completely.
-document.addEventListener("DOMContentLoaded", (event) => {
-	const chunkSize = 64 * 1024 * 1024;
-	const fileReader = new FileReader();
-	let hasher = null;
+let getPDQHash = "";
+let hasher = null;
 
-	function hashChunk(chunk) {
-		return new Promise((resolve, reject) => {
-			fileReader.onload = async (e) => {
-				const view = new Uint8Array(e.target.result);
-				hasher.update(view);
-				resolve();
-			};
+/**
+ * This method is used for generating PDQ / MD5 hashes based on the type of file i.e. Image /Video.
+ * @param {*} data 
+ * @param {*} fname 
+ * @param {*} tempfname 
+ * @param {*} isImageFile 
+ * @param {*} isVideoFile 
+ */
+export async function getPDQMD5Hash(data, fname, tempfname, isImageFile, isVideoFile, dataArray) {
+	// Save the selected files to emscripten file system for c++ code to access the file.
+	let stream = FS.open(fname, 'w+');
+	FS.write(stream, data, 0, data.length, 0);
+	FS.close(stream);
 
-			fileReader.readAsArrayBuffer(chunk);
-		});
+	let hashResult = "";
+	if (isImageFile) {
+		// Call the function for converting the image to .pnm file using image magick web assembly.
+		hashResult = await getPDQHash(fname, tempfname);
 	}
-
-	const readFile = async (file) => {
-		if (hasher) {
-			hasher.init();
-		} else {
-			hasher = await createMD5();
-		}
-
-		const chunkNumber = Math.floor(file.size / chunkSize);
-
-		for (let i = 0; i <= chunkNumber; i++) {
-			const chunk = file.slice(
-				chunkSize * i,
-				Math.min(chunkSize * (i + 1), file.size)
-			);
-			await hashChunk(chunk);
-		}
-
-		const hash = hasher.digest();
-		return Promise.resolve(hash);
-	};
-
-	document.getElementById("uploadFiles").onclick = function () {
-		document.getElementById("uploadFiles").classList.add("upload--loading");
-		document.getElementsByClassName("upload-hidden")[0].click();
+	else if (isVideoFile) {
+		// Call the function for generating MD5 hash of video file.
+		hashResult = await getMD5Hash(dataArray);
 	}
-
-
-	document.getElementById("myfile").onchange = function () {
-		let files = document.getElementById("myfile").files;
-
-		document.getElementById("uploadFiles").classList.remove("upload--loading");
-		document.getElementsByTagName("BODY")[0].classList.add('file-process-open');
-		// Loop through the selected files files.
-		for (let i = 0; i < files.length; i++) {
-			let fname = '';
-			let tempfname = '';
-			let reader = new FileReader();
-
-			let file = files.item(i);
-			if (file) {
-				fname = file.name;
-				if (fname) {
-					tempfname = `${fname.substr(0, fname.lastIndexOf("."))}_temp.pnm`;
-				}
-			}
-
-			reader.onloadend = async function (e) {
-
-				let result = reader.result;
-				const data = new Uint8Array(result);
-
-				// Save the selected files to emscripten file system for c++ code to access the file.
-				let stream = FS.open(fname, 'w+');
-				FS.write(stream, data, 0, data.length, 0);
-				FS.close(stream);
-
-				let isImageFile = file.type.includes("image");
-				const isVideoFile = file.type.includes("video");
-
-				document.getElementById("resHeader").style.display = "block";
-				if (isImageFile) {
-					// Call the function for converting the image to .pnm file using image magick web assembly.
-					DoMagickCall(fname, tempfname, formatFileSize(file.size, 2));
-				}
-				else if (isVideoFile) {
-					// Generate a new table row and cell contents and append to result table .
-					const resultTable = document.getElementById('resBody').insertRow(-1);
-					if (resultTable) {
-						const cellOne = resultTable.insertCell(0);
-						const cellTwo = resultTable.insertCell(1);
-						const cellThree = resultTable.insertCell(2);
-						cellOne.innerHTML = fname;
-						cellTwo.innerHTML = await readFile(file);
-						cellThree.innerHTML = formatFileSize(file.size, 2);
-					}
-				}
-				else {
-					const resultTable = document.getElementById('resBody').insertRow(-1);
-					if (resultTable) {
-						const cellOne = resultTable.insertCell(0);
-						cellOne.colSpan = "3";
-						cellOne.innerHTML = `File ${fname} cannot be processed.Please ensure only Image/Video files are only selected for calculating file Hash.`;
-					}
-				}
-
-			}
-
-			reader.readAsArrayBuffer(file);
-		}
+	else {
+		hashResult = "";
 	}
-});
+	return hashResult;
+}
 
-// Fetch the image to rotate, and call image magick
-DoMagickCall = async function (filename, tempfilename, filesize) {
+// This method is used for generating the PDQ hash in webbrowser by calling wasm method.
+getPDQHash = async function (filename, tempfilename) {
 
 	// Read the file whose hash needs to be calculated.     
 	let sourceBytes = FS.readFile(filename);
@@ -145,28 +66,26 @@ DoMagickCall = async function (filename, tempfilename, filesize) {
 
 	// Remove the file so that we can free some memory.
 	FS.unlink(filename);
-	document.getElementById("resHeader").style.display = "block";
-
-	// Generate a new table row and cell contents and append to result table .
-	const resultTable = document.getElementById('resBody').insertRow(-1);
-	if (resultTable) {
-		const cellOne = resultTable.insertCell(0);
-		const cellTwo = resultTable.insertCell(1);
-		const cellThree = resultTable.insertCell(2);
-		cellOne.innerHTML = filename;
-		cellTwo.innerHTML = result;
-		cellThree.innerHTML = filesize;
-	}
+	// return back the result.
+	return result;
 };
 
 /**
-Method for getting the file size.
-**/
-function formatFileSize(bytes, decimalPoint) {
-	if (bytes == 0) return '0 Bytes';
-	var k = 1024,
-		dm = decimalPoint || 2,
-		sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
-		i = Math.floor(Math.log(bytes) / Math.log(k));
-	return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
+ * The below method is used for generating the MD5 hash of the video file .
+ * @param {*} file 
+ * @returns 
+ */
+const getMD5Hash = async (dataArray) => {
+	if (hasher) {
+		hasher.init();
+	} else {
+		hasher = await createMD5();
+	}
+
+	for (let count = 0; count < dataArray.length; count++) {
+		hasher.update(dataArray[count]);
+	}
+
+	const hash = hasher.digest();
+	return Promise.resolve(hash);
+};
