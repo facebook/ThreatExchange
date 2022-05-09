@@ -32,7 +32,6 @@ from enum import Enum
 
 import json
 import typing as t
-import types
 
 T = t.TypeVar("T")
 
