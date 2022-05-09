@@ -28,6 +28,11 @@ class Complicated:
 
 
 @dataclass
+class SimpleOptional(aws_dataclass.HasAWSSerialization):
+    a: t.Optional[int] = field(default=None)
+
+
+@dataclass
 class SimpleInt:
     a: int = 2
 
@@ -143,3 +148,17 @@ class AWSDataclassTest(unittest.TestCase):
         n.n = n
         # No recursion guard currently
         self.assertSerializesCorrectly(head)
+
+    def test_optional_attribute(self):
+        o_left_none = SimpleOptional()
+        self.assertSerializesCorrectly(o_left_none)
+
+        o_filled = SimpleOptional(12)
+        self.assertSerializesCorrectly(o_filled)
+
+        o_fail = SimpleOptional("should_fail")
+        self.assertRaises(
+            aws_dataclass.AWSSerializationFailure,
+            self.assertSerializesCorrectly,
+            o_fail,
+        )
