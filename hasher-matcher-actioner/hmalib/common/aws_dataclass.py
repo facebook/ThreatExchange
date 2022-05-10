@@ -33,6 +33,11 @@ import typing as t
 
 T = t.TypeVar("T")
 
+# dynamodb does not allow sets to be empty. Use this as the only member when
+# writing an empty set. When retrieving a set, remove this if it is the only
+# value.
+EMPTY_SET_SENTINEL_VALUE_STR = "::EMPTY_SET_SENTINEL::"
+
 
 class AWSSerializationFailure(ValueError):
     pass
@@ -81,8 +86,14 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
     if in_type == bool:  # BOOL
         return py_field  # type: ignore # mypy/issues/10003
     if in_type == t.Set[str]:  # SS
+        if not py_field or len(py_field) == 0:
+            # Handle empty sets.
+            return {EMPTY_SET_SENTINEL_VALUE_STR}  # type:ignore
         return py_field  # type: ignore # mypy/issues/10003
     if in_type == t.Set[int]:  # SN
+        if not py_field or len(py_field) == 0:
+            # Handle empty sets.
+            return {EMPTY_SET_SENTINEL_VALUE_STR}  # type:ignore
         return {i for i in py_field}  # type: ignore # mypy/issues/10003
     if in_type == t.Set[float]:  # SN
         # WARNING WARNING
@@ -150,9 +161,9 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
     if in_type is bool:  # BOOL
         return aws_field  # type: ignore # mypy/issues/10003
     if in_type is t.Set[str]:  # SS
-        return aws_field  # type: ignore # mypy/issues/10003
+        return {value for value in aws_field if value != EMPTY_SET_SENTINEL_VALUE_STR}  # type: ignore # mypy/issues/10003
     if in_type is t.Set[int]:  # SN
-        return {int(s) for s in aws_field}  # type: ignore # mypy/issues/10003
+        return {int(value) for value in aws_field if value != EMPTY_SET_SENTINEL_VALUE_STR}  # type: ignore # mypy/issues/10003
     if in_type is t.Set[float]:  # SN
         return {float(s) for s in aws_field}  # type: ignore # mypy/issues/10003
 

@@ -272,3 +272,22 @@ class ConfigTest(unittest.TestCase):
             " but it's not in get_subtype_classes",
         ):
             config.create_config(SubtypeAbstractParentClass("Foo", False))
+
+    def test_empty_set(self):
+        """
+        Unfortunately moto does not follow the API to a T.
+
+        https://github.com/spulec/moto/issues/5116
+
+        So we simply verify that writing an empty set and retrieving it works.
+        Behind the scenes, we are not writing empty sets, but a sentinel value
+        instead.
+        """
+
+        @dataclass
+        class HasSetConfig(config.HMAConfig):
+            a_set: t.Set[str] = field(default_factory=set)
+
+        conf = HasSetConfig(name="maybe-this-matters?")
+
+        self.assertEqualsAfterDynamodb(conf)
