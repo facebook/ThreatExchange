@@ -23,6 +23,9 @@ namespace WebAssemblySeleniumWebDriver.Services {
                     return;
                 }
 
+                // Added a forceful delay of 10 seconds to avoid errors .
+                Thread.Sleep(10000);
+
                 StreamReader reader = new StreamReader(csvFilePath);
                 string? line = String.Empty;
                 string[] columns = new string[2];
@@ -44,6 +47,11 @@ namespace WebAssemblySeleniumWebDriver.Services {
                     }
 
                     filePath = columns[0];
+
+                    // Check if the file path specified is absolute path , if not get the relative path specified in the file with respect to the current working directory.
+                    if (!Path.IsPathRooted(filePath)) {
+                        filePath = Path.GetFullPath(Path.Combine(new DirectoryInfo(Environment.CurrentDirectory).FullName ?? String.Empty,filePath));
+                    }
 
                     if (!File.Exists(filePath)) {
                         Console.WriteLine($"{filePath} filepath doesn't exists in the system.Please specify a valid file path in the csv file.");
