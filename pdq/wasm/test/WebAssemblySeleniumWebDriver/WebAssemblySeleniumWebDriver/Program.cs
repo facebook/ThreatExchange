@@ -27,7 +27,7 @@ if ((isPDQMD5 && args?.Length < 3) || (!isPDQMD5 && args?.Length < 4)) {
     return;
 }
 
-csvFilePath = args[2];
+csvFilePath = args!=null ? args[2]:"";
 
 if (isPDQMD5) {
     siteUrl = args?.Length > 3 ? args[3] : "http://localhost:9093";

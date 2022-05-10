@@ -24,7 +24,7 @@ namespace WebAssemblySeleniumWebDriver.Services {
                 }
 
                 StreamReader reader = new StreamReader(csvFilePath);
-                string line = String.Empty;
+                string? line = String.Empty;
                 string[] columns = new string[2];
                 String filePath = String.Empty;
                 reader.ReadLine(); // skip first
