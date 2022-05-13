@@ -55,16 +55,14 @@ try {
     }
 
     if (isPDQMD5) {
-        PDQMD5Hashing.GetHash(driver,csvFilePath,siteUrl);
-        // Quits the driver to close the webdriver session/
-        driver.Quit();
+        PDQMD5Hashing.GetHash(driver,csvFilePath,siteUrl);        
     }
     else {
         Console.WriteLine("Please verify the command line arguments values are passed in correctly.");
-        // Quits the driver to close the webdriver session/
-        driver.Quit();
-        return;
     }
+
+    // Quits the driver instance to close the webdriver session
+    driver.Quit();
 
 }
 catch (Exception ex) {
