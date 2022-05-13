@@ -66,6 +66,57 @@ std::string stripExtension(
   }
 }
 
+extern "C"{  
+  // The below method will be exposed when generating WASM binary from c++ code and will be used for generating the video (tmk) hashes in browser.
+  int getVideoHash(char* tmkFileName){
+			
+    const char* pName = "tmk-hash-video";
+    int resampleFramesPerSecond = 15; // TMK default
+    std::string frameFeatureAlgorithmName = "pdqf";
+	
+    bool verbose = false;
+    std::string ffmpegPath = "";
+    std::string inputVideoFileName = "";
+    std::string outputFeatureVectorsFileName = "";
+    std::string outputDirectory = "";
+	 
+	facebook::tmk::io::TMKFramewiseAlgorithm tmkFramewiseAlgorithm =
+			facebook::tmk::io::algoFromLowercaseName(frameFeatureAlgorithmName);
+	if (tmkFramewiseAlgorithm == facebook::tmk::io::TMKFramewiseAlgorithm::UNRECOGNIZED) {
+		fprintf(stderr, "unrecognized algorithm name.\n");		
+	}
+	
+	facebook::tmk::algo::TMKFeatureVectors tmkFeatureVectors;
+	bool rc = facebook::tmk::hashing::hashVideoFile(
+				inputVideoFileName,
+				tmkFramewiseAlgorithm,
+				ffmpegPath,
+				resampleFramesPerSecond,
+				tmkFeatureVectors,
+				verbose,
+				pName);
+       
+       if(!rc){
+         return 0;
+       }
+       
+       FILE* outputFp = facebook::tmk::io::openFileOrDie(
+      				     tmkFileName, "wb", pName);
+	if (!tmkFeatureVectors.writeToOutputStream(outputFp, pName)) {
+	    perror("fwrite");
+	    fprintf(
+		stderr,
+		"%s: could not write feature-vectors to \"%s\".\n",
+		"tmk-hash-video",
+		tmkFileName);
+	    return 0;
+	}
+	fclose(outputFp);
+
+	return 1;	
+ }
+}
+
 // ----------------------------------------------------------------
 int main(int argc, char* argv[]) {
   int resampleFramesPerSecond = 15; // TMK default

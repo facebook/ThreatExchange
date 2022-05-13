@@ -1,0 +1,86 @@
+<html>
+
+<head>
+	<meta charset='UTF-8'>
+	<link rel="stylesheet" href="./styles/style.css">
+	<script src="./node_modules/@ffmpeg/ffmpeg/dist/ffmpeg.min.js"></script>
+	<script src="./scripts/tmk-hash-video.js"></script>
+	<script type='module'>
+		import { initFFMpeg, getTMKHash } from "./scripts/tmk.js";
+		// Execute the following codes once the DOM contents are loaded completely.
+		document.addEventListener("DOMContentLoaded", (event) => {
+			initFFMpeg().then((isLoaded) => {
+				if (isLoaded) {
+					document.getElementById("uploadFiles").classList.remove("disabled");
+				}
+			});
+
+
+			document.getElementById("uploadFiles").onclick = function () {
+				document.getElementById("uploadFiles").classList.add("upload--loading");
+				document.getElementsByClassName("upload-hidden")[0].click();
+			}
+
+			document.getElementById("myfile").onchange = function (event) {
+				// Call the method for generating the PDQ/MD5 hash by calling exposed web assembly methods. 
+				getFileHash(event.target.files);
+			};
+		});
+
+		// This method is used for reading the file from file input and calling the TMK hash web assembly for generating video file hashes.
+		async function getFileHash(files) {
+			const file = files[0];
+			document.getElementById("uploadFiles").classList.add("disabled");
+			document.getElementById("uploadFiles").classList.remove("upload--loading");
+			document.getElementsByTagName("BODY")[0].classList.add('file-process-open');
+
+			let fname = '';
+			let tmkfname = '';
+			let reader = new FileReader();
+
+			if (file) {
+				fname = file.name;
+				if (fname) {
+					tmkfname = `${fname.substr(0, fname.lastIndexOf("."))}.tmk`;
+				}
+			}
+
+			reader.onloadend = function (e) {
+
+				let result = reader.result;
+				const data = new Uint8Array(result);
+
+				// Save the selected files to emscripten file system for c++ code to access the file.
+				let stream = FS.open(fname, 'w+');
+				FS.write(stream, data, 0, data.length, 0);
+				FS.close(stream);
+
+				// Call the function for calling TMK web assembly for TMK hash generation .
+				getTMKHash(fname, tmkfname);
+				document.getElementById("uploadFiles").classList.add("disabled");
+			}
+
+			reader.readAsArrayBuffer(file);
+
+		}
+	</script>
+</head>
+
+<body>
+	<div class="body-container-wrapper">
+		<div class="page-center">
+			<h1>Upload Your Video files here</h1>
+
+			<a class="upload disabled" id="uploadFiles"><span>Select files</span></a>
+
+			<form id="upload" enctype="multipart/form-data">
+				<div id="drop">
+					<input type="file" name="img" id="myfile" class="upload-hidden" accept="video/*" />
+				</div>
+			</form>
+
+		</div>
+	</div>
+</body>
+
+</html>
