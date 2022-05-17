@@ -58,8 +58,18 @@ namespace WebAssemblySeleniumWebDriver.Services {
                         filePath = Path.GetFullPath(Path.Combine(new DirectoryInfo(Environment.CurrentDirectory).FullName ?? String.Empty,filePath));
                     }
 
+                    // Check if the tmk file path specified is absolute path , if not get the relative path specified in the file with respect to the current working directory.
+                    if (!Path.IsPathRooted(tmkFilePath)) {
+                        tmkFilePath = Path.GetFullPath(Path.Combine(new DirectoryInfo(Environment.CurrentDirectory).FullName ?? String.Empty,tmkFilePath));
+                    }
+
                     if (!File.Exists(filePath)) {
                         Console.WriteLine($"{filePath} filepath doesn't exists in the system.Please specify a valid file path in the csv file.");
+                        continue;
+                    }
+
+                    if (!File.Exists(tmkFilePath)) {
+                        Console.WriteLine($"{filePath} tmk filepath doesn't exists in the system.Please specify a valid file path in the csv file.");
                         continue;
                     }
 
@@ -86,17 +96,17 @@ namespace WebAssemblySeleniumWebDriver.Services {
                     int count = 0;
 
                     // Loop through until the file exists in the downloaded path. This looping should occur only for a finite number of times.
-                    while (!File.Exists($"{downloadFilePath}/{tmkfilename}") && count<5000) {
+                    while (!File.Exists($"{downloadFilePath}/{tmkfilename}") && count < 5000) {
                         count++;
                     };
 
                     // If still could not find the tmkfile in the downloaded path , seems like some error occured while hash generation. No need to 
                     // proceed further from here.
-                    if (!File.Exists($"{downloadFilePath}/{tmkfilename}")){
+                    if (!File.Exists($"{downloadFilePath}/{tmkfilename}")) {
                         Console.WriteLine($"Looks like some error occurred during {fileName} TMK hash generation.");
                         continue;
                     }
-           
+
                     // Check if both Generated and Actual TMK file hashes are same . If so print a message else print error message.
                     if (FileUtils.FileCompare(tmkFilePath,$"{downloadFilePath}/{tmkfilename}")) {
                         Console.WriteLine($"Generated TMK file contents for {fileName} is matching with the actual TMK file contents.");

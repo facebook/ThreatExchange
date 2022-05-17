@@ -1,4 +1,5 @@
 # ----------------------------------------------------------------
+ifneq ($(findstring wasm, $(MAKECMDGOALS)), wasm)
 CC=g++ -O2 -std=c++14 -I../..
 FFMPEG=/usr/local/bin/ffmpeg # please customize according to your installation
 
@@ -8,6 +9,10 @@ ifeq ($(OS),Windows_NT)
 else
   CC_IF_WIN=g++ -O2 -std=c++14 -I../..
   OMP_LIB=-lomp
+endif
+else
+CC=emcc -O2 -std=c++14 -D BUILD_WASM -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_RUNTIME_METHODS=['ccall','UTF8ToString ']  -s  EXPORTED_FUNCTIONS=['_getVideoHash'] -s FORCE_FILESYSTEM=1 -s LLD_REPORT_UNDEFINED -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s DISABLE_EXCEPTION_CATCHING=0 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=1  -I../..
+CC_IF_WIN=$(CC)
 endif
 
 # ----------------------------------------------------------------
@@ -70,6 +75,8 @@ EXE= \
 
 # ================================================================
 all: $(EXE) regtest
+
+wasm: tmk-wasm-hash-video
 
 parallel: $(EXE_PARALLEL)
 
@@ -147,6 +154,9 @@ libtmk.a: $(LIBOBJ)
 tmk-hash-video: ./bin/tmk-hash-video.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-hash-video.cpp -o tmk-hash-video -L. -ltmk
 
+tmk-wasm-hash-video: ./bin/tmk-hash-video.cpp $(LIBSRC) $(LIBHDR)
+	$(CC) bin/tmk-hash-video.cpp $(LIBSRC) -o tmk-hash-video.js 
+
 # ----------------------------------------------------------------
 vstr2feat: ./bin/vstr2feat.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/vstr2feat.cpp -o vstr2feat -L. -ltmk
@@ -162,6 +172,9 @@ tmk-compare-two-tmks: ./bin/tmk-compare-two-tmks.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-compare-two-tmks.cpp -o tmk-compare-two-tmks -L. -ltmk
 tmk-show-pair-offsets: ./bin/tmk-show-pair-offsets.cpp $(LIBHDR) libtmk.a
 	$(CC) bin/tmk-show-pair-offsets.cpp -o tmk-show-pair-offsets -L. -ltmk
+tmk-wasm-compare-two-tmks: ./bin/tmk-compare-two-tmks.cpp $(LIBHDR) libtmk.a
+	$(CC) bin/tmk-compare-two-tmks.cpp -o tmk-compare-two-tmks.js -L. -ltmk
+
 
 # ----------------------------------------------------------------
 tmk-clusterize: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
