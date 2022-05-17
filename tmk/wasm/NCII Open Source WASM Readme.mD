@@ -34,7 +34,7 @@ PDQ / MD5 WEB ASSEMBLY
 =======================
 STEPS FOR BUILDING THE PDQ / MD5 WEB ASSEMBLY:
 ----------------------------------------------
-Note: There is a Makefile provided under the /tmp/ThreatExchange/pdq/wasm direcotry, which can automate all the steps provided below:
+Note: There is a Makefile provided under the /tmp/ThreatExchange/pdq/wasm directory, which can automate all the steps provided below:
 
 The steps are:
 1.	Pull the emscripten docker image using the following command. (The reference for this available at https://hub.docker.com/r/emscripten/emsdk : 
