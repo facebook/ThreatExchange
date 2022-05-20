@@ -18,6 +18,7 @@ import logging
 import inspect
 import os
 import sys
+from textwrap import dedent
 import typing as t
 import pathlib
 
@@ -158,8 +159,10 @@ class _ExtendedTypes(t.NamedTuple):
             return
         err_list = "\n  ".join(self.load_failures)
         raise base.CommandError.user(
-            "Some extensions are no longer loadable! "
-            f"Fix them with the `config extensions` command:\n  {err_list}"
+            "Some extensions are no longer loadable! You might need to "
+            "re-install, or else remove them with the "
+            "`threatexchange config extension remove` command:\n  "
+            f"{err_list}"
         )
 
 
