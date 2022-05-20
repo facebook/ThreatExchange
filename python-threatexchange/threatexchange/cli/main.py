@@ -161,7 +161,7 @@ class _ExtendedTypes(t.NamedTuple):
         raise base.CommandError.user(
             "Some extensions are no longer loadable! You might need to "
             "re-install, or else remove them with the "
-            "`threatexchange config extension remove` command:\n  "
+            "`threatexchange config extensions remove` command:\n  "
             f"{err_list}"
         )
 
