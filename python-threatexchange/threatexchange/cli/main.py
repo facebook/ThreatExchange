@@ -18,6 +18,7 @@ import logging
 import inspect
 import os
 import sys
+from textwrap import dedent
 import typing as t
 import pathlib
 
@@ -77,6 +78,8 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
         metavar="TOKEN",
         help="the App token for ThreatExchange",
     )
+    # is_config = Safe mode to try and let you fix bad settings from CLI
+    ap.set_defaults(is_config=False)
     subparsers = ap.add_subparsers(title="verbs", help="which action to do")
     for command in get_subcommands():
         command.add_command_to_subparser(settings, subparsers)
@@ -149,20 +152,38 @@ class _ExtendedTypes(t.NamedTuple):
     content_types: t.List[t.Type[ContentType]]
     signal_types: t.List[t.Type[SignalType]]
     api_instances: t.List[SignalExchangeAPI]
+    load_failures: t.List[str]
+
+    def assert_no_errors(self) -> None:
+        if not self.load_failures:
+            return
+        err_list = "\n  ".join(self.load_failures)
+        raise base.CommandError.user(
+            "Some extensions are no longer loadable! You might need to "
+            "re-install, or else remove them with the "
+            "`threatexchange config extensions remove` command:\n  "
+            f"{err_list}"
+        )
 
 
 def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
-    ret = _ExtendedTypes([], [], [])
+    ret = _ExtendedTypes([], [], [], [])
     for extension in config.extensions:
         logging.debug("Loading extension %s", extension)
-        manifest = ThreatExchangeExtensionManifest.load_from_module_name(extension)
-        ret.signal_types.extend(manifest.signal_types)
-        ret.content_types.extend(manifest.content_types)
-        ret.api_instances.extend(api() for api in manifest.apis)
+        try:
+            manifest = ThreatExchangeExtensionManifest.load_from_module_name(extension)
+        except (ValueError, ImportError):
+            ret.load_failures.append(extension)
+        else:
+            ret.signal_types.extend(manifest.signal_types)
+            ret.content_types.extend(manifest.content_types)
+            ret.api_instances.extend(api() for api in manifest.apis)
     return ret
 
 
-def _get_settings(config: CLiConfig, dir: pathlib.Path) -> CLISettings:
+def _get_settings(
+    config: CLiConfig, dir: pathlib.Path
+) -> t.Tuple[CLISettings, _ExtendedTypes]:
     """
     Configure the behavior and functionality.
     """
@@ -193,7 +214,10 @@ def _get_settings(config: CLiConfig, dir: pathlib.Path) -> CLISettings:
     )
     state = CliState(list(fetchers.fetchers_by_name.values()), dir=dir)
 
-    return CLISettings(meta.FunctionalityMapping(signals, fetchers, state), state)
+    return (
+        CLISettings(meta.FunctionalityMapping(signals, fetchers, state), state),
+        extensions,
+    )
 
 
 def _setup_logging():
@@ -216,9 +240,11 @@ def inner_main(
     config = CliState(
         [], state_dir
     ).get_persistent_config()  # TODO fix the circular dependency
-    settings = _get_settings(config, state_dir)
+    settings, extensions = _get_settings(config, state_dir)
     ap = get_argparse(settings)
     namespace = ap.parse_args(args)
+    if not namespace.is_config:
+        extensions.assert_no_errors()
     execute_command(settings, namespace)
 
 
