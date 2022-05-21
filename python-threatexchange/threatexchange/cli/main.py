@@ -203,15 +203,13 @@ def _get_settings(
         ]
         + extensions.signal_types,
     )
-    fetchers = meta.FetcherMapping(
-        [
-            StaticSampleSignalExchangeAPI(),
-            LocalFileSignalExchangeAPI(),
-            StopNCIISignalExchangeAPI(*_get_stopncii_tokens(config)),
-            FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
-        ]
-        + extensions.api_instances
-    )
+    base_apis: t.List[SignalExchangeAPI] = [
+        StaticSampleSignalExchangeAPI(),
+        LocalFileSignalExchangeAPI(),
+        StopNCIISignalExchangeAPI(*_get_stopncii_tokens(config)),
+        FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
+    ]
+    fetchers = meta.FetcherMapping(base_apis + extensions.api_instances)
     state = CliState(list(fetchers.fetchers_by_name.values()), dir=dir)
 
     return (

@@ -20,6 +20,8 @@ from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
 
+TDelta = SimpleFetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata]
+
 
 @dataclass
 class _FileCollaborationConfigRequiredFields:
@@ -33,7 +35,14 @@ class FileCollaborationConfig(
     signal_type: t.Optional[str] = None
 
 
-class LocalFileSignalExchangeAPI(SignalExchangeAPI):
+class LocalFileSignalExchangeAPI(
+    SignalExchangeAPI[
+        FileCollaborationConfig,
+        state.FetchCheckpointBase,
+        state.FetchedSignalMetadata,
+        TDelta,
+    ]
+):
     """
     Read simple signal files off the local disk.
     """
@@ -42,12 +51,12 @@ class LocalFileSignalExchangeAPI(SignalExchangeAPI):
     def get_config_class(cls) -> t.Type[FileCollaborationConfig]:
         return FileCollaborationConfig
 
-    def fetch_once(  # type: ignore[override]  # fix with generics on base
+    def fetch_once(
         self,
         _supported_signal_types: t.List[t.Type[SignalType]],
         collab: FileCollaborationConfig,
         _checkpoint: t.Optional[state.FetchCheckpointBase],
-    ) -> state.FetchDelta:
+    ) -> TDelta:
         """Fetch the whole file"""
         path = Path(collab.filename)
         assert path.exists(), f"No such file {path}"
@@ -68,7 +77,7 @@ class LocalFileSignalExchangeAPI(SignalExchangeAPI):
 
         return SimpleFetchDelta(updates, state.FetchCheckpointBase(), done=True)
 
-    def report_opinion(  # type: ignore[override]  # fix with generics on base
+    def report_opinion(
         self,
         collab: FileCollaborationConfig,
         s_type: t.Type[SignalType],
