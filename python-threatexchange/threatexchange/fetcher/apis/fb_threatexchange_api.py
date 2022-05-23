@@ -162,7 +162,19 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
         )
 
 
-class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
+TThreatExchangeDelta = SimpleFetchDelta[
+    FBThreatExchangeCheckpoint, FBThreatExchangeIndicatorRecord
+]
+
+
+class FBThreatExchangeSignalExchangeAPI(
+    SignalExchangeAPI[
+        FBThreatExchangeCollabConfig,
+        FBThreatExchangeCheckpoint,
+        FBThreatExchangeIndicatorRecord,
+        TThreatExchangeDelta,
+    ]
+):
     def __init__(self, fb_app_token: t.Optional[str] = None) -> None:
         self._api = None
         if fb_app_token is not None:
@@ -180,7 +192,7 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
         return _API_NAME
 
     @classmethod
-    def get_checkpoint_cls(cls) -> t.Type[state.FetchCheckpointBase]:
+    def get_checkpoint_cls(cls) -> t.Type[FBThreatExchangeCheckpoint]:
         return FBThreatExchangeCheckpoint
 
     @classmethod
@@ -195,17 +207,15 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
         # TODO -This is supported by the API
         raise NotImplementedError
 
-    def get_own_owner_id(  # type: ignore[override]  # fix with generics on base
-        self, collab: FBThreatExchangeCollabConfig
-    ) -> int:
+    def get_own_owner_id(self, collab: FBThreatExchangeCollabConfig) -> int:
         return self.api.app_id
 
-    def fetch_once(  # type: ignore  # fix with generics on base
+    def fetch_once(
         self,
         supported_signal_types: t.List[t.Type[SignalType]],
         collab: FBThreatExchangeCollabConfig,
         checkpoint: t.Optional[FBThreatExchangeCheckpoint],
-    ) -> state.FetchDelta:
+    ) -> TThreatExchangeDelta:
         cursor = self.cursors.get(collab.name)
         start_time = None if checkpoint is None else checkpoint.update_time
         if not cursor:
@@ -242,17 +252,17 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
             done=cursor.done,
         )
 
-    def report_seen(  # type: ignore[override]  # fix with generics on base
+    def report_seen(
         self,
         collab: FBThreatExchangeCollabConfig,
         s_type: SignalType,
         signal: str,
-        metadata: state.FetchedStateStoreBase,
+        metadata: FBThreatExchangeIndicatorRecord,
     ) -> None:
         # TODO - this is supported by the API
         raise NotImplementedError
 
-    def report_opinion(  # type: ignore[override]  # fix with generics on base
+    def report_opinion(
         self,
         collab: FBThreatExchangeCollabConfig,
         s_type: t.Type[SignalType],
@@ -262,12 +272,12 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
         # TODO - this is supported by the API
         raise NotImplementedError
 
-    def report_true_positive(  # type: ignore[override]  # fix with generics on base
+    def report_true_positive(
         self,
         collab: FBThreatExchangeCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalMetadata,
+        metadata: FBThreatExchangeIndicatorRecord,
     ) -> None:
         # TODO - this is supported by the API
         self.report_opinion(
@@ -281,12 +291,12 @@ class FBThreatExchangeSignalExchangeAPI(SignalExchangeAPI):
             ),
         )
 
-    def report_false_positive(  # type: ignore[override]  # fix with generics on base
+    def report_false_positive(
         self,
         collab: FBThreatExchangeCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
-        _metadata: state.FetchedSignalMetadata,
+        _metadata: FBThreatExchangeIndicatorRecord,
     ) -> None:
         self.report_opinion(
             collab,

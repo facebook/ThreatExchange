@@ -17,9 +17,12 @@ from threatexchange.fetcher import fetch_state as state
 TCollabConfig = t.TypeVar("TCollabConfig", bound=CollaborationConfigBase)
 TFetchDelta = t.TypeVar("TFetchDelta", bound=state.FetchDelta)
 
-# TODO t.Generic[TFetchDelta, TFetchedSignalData, TCollabConfig]
-#      In order to make it easier to track the expected extensions for an API
-class SignalExchangeAPI:
+
+class SignalExchangeAPI(
+    t.Generic[
+        TCollabConfig, state.TFetchCheckpoint, state.TFetchedSignalMetadata, TFetchDelta
+    ]
+):
     """
     APIs to get and maybe put signals.
 
@@ -67,19 +70,22 @@ class SignalExchangeAPI:
         return common.class_name_to_human_name(name, "Signal")
 
     @classmethod
-    def get_checkpoint_cls(cls) -> t.Type[state.FetchCheckpointBase]:
+    def get_checkpoint_cls(cls) -> t.Type[state.TFetchCheckpoint]:
         """Returns the dataclass used to control checkpoint for this API"""
-        return state.FetchCheckpointBase  # Default = no checkpoints
+        # Default = no checkpoints
+        return state.FetchCheckpointBase  # type: ignore
 
     @classmethod
-    def get_record_cls(cls) -> t.Type[state.FetchedSignalMetadata]:
+    def get_record_cls(cls) -> t.Type[state.TFetchedSignalMetadata]:
         """Returns the dataclass used to store records for this API"""
-        return state.FetchedSignalMetadata  # Default = no metadata
+        # Default = no metadata
+        return state.FetchedSignalMetadata  # type: ignore
 
     @classmethod
-    def get_config_class(cls) -> t.Type[CollaborationConfigBase]:
+    def get_config_class(cls) -> t.Type[TCollabConfig]:
         """Returns the dataclass used to store records for this API"""
-        return CollaborationConfigBase
+        # Default - just knowing the type is enough
+        return CollaborationConfigBase  # type: ignore
 
     # TODO - this doens't work for StopNCII which sends the owner as a string
     #        maybe this should take the full metadata?
@@ -91,7 +97,7 @@ class SignalExchangeAPI:
         """
         return ""
 
-    def get_own_owner_id(self, collab: CollaborationConfigBase) -> int:
+    def get_own_owner_id(self, collab: TCollabConfig) -> int:
         """
         Return the owner ID of this caller. Opinions with that ID are "ours".
 
@@ -108,11 +114,11 @@ class SignalExchangeAPI:
     def fetch_once(
         self,
         supported_signal_types: t.List[t.Type[SignalType]],
-        collab: CollaborationConfigBase,
+        collab: TCollabConfig,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
-        checkpoint: t.Optional[state.FetchCheckpointBase],
-    ) -> state.FetchDelta[state.FetchCheckpointBase]:
+        checkpoint: t.Optional[state.TFetchCheckpoint],
+    ) -> TFetchDelta:
         """
         Call out to external resources, pulling down one "batch" of content.
 
@@ -126,10 +132,10 @@ class SignalExchangeAPI:
 
     def report_seen(
         self,
-        collab: CollaborationConfigBase,
+        collab: TCollabConfig,
         s_type: SignalType,
         signal: str,
-        metadata: state.FetchedStateStoreBase,
+        metadata: state.TFetchedSignalMetadata,
     ) -> None:
         """
         Report that you observed this signal.
@@ -141,7 +147,7 @@ class SignalExchangeAPI:
 
     def report_opinion(
         self,
-        collab: CollaborationConfigBase,
+        collab: TCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
         opinion: state.SignalOpinion,
@@ -159,10 +165,10 @@ class SignalExchangeAPI:
 
     def report_true_positive(
         self,
-        collab: CollaborationConfigBase,
+        collab: TCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalMetadata,
+        metadata: state.TFetchedSignalMetadata,
     ) -> None:
         """
         Report that a previously seen signal was a true positive.
@@ -183,10 +189,10 @@ class SignalExchangeAPI:
 
     def report_false_positive(
         self,
-        collab: CollaborationConfigBase,
+        collab: TCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
-        metadata: state.FetchedSignalMetadata,
+        metadata: state.TFetchedSignalMetadata,
     ) -> None:
         """
         Report that a previously seen signal is a false positive.
@@ -207,10 +213,9 @@ class SignalExchangeAPI:
 
 
 class SignalExchangeAPIWithIterFetch(
-    t.Generic[
-        state.TFetchCheckpoint
-    ],  # TODO move to SignalExchangeAPI in a future diff
-    SignalExchangeAPI,
+    SignalExchangeAPI[
+        TCollabConfig, state.TFetchCheckpoint, state.TFetchedSignalMetadata, TFetchDelta
+    ],
 ):
     """
     Provides an alternative fetch_once implementation to simplify state
@@ -219,18 +224,16 @@ class SignalExchangeAPIWithIterFetch(
     """
 
     def __init__(self) -> None:
-        self._fetch_iters: t.Dict[
-            str, t.Iterator[state.FetchDelta[state.TFetchCheckpoint]]
-        ] = {}
+        self._fetch_iters: t.Dict[str, t.Iterator[TFetchDelta]] = {}
 
-    def fetch_once(  # type: ignore[override]  # fix with generics on base
+    def fetch_once(
         self,
         supported_signal_types: t.List[t.Type[SignalType]],
-        collab: CollaborationConfigBase,
+        collab: TCollabConfig,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> state.FetchDelta[state.TFetchCheckpoint]:
+    ) -> TFetchDelta:
         it = self._fetch_iters.get(collab.name)
         if it is None:
             it = self.fetch_iter(supported_signal_types, collab, checkpoint)
@@ -245,11 +248,11 @@ class SignalExchangeAPIWithIterFetch(
     def fetch_iter(
         self,
         supported_signal_types: t.List[t.Type[SignalType]],
-        collab: CollaborationConfigBase,
+        collab: TCollabConfig,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> t.Iterator[state.FetchDelta[state.TFetchCheckpoint]]:
+    ) -> t.Iterator[TFetchDelta]:
         """
         An alternative to fetch_once implementation to simplify state.
 

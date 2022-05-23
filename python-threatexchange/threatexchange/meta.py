@@ -46,7 +46,7 @@ class SignalTypeMapping:
 
 
 class FetcherMapping:
-    def __init__(self, fetchers: t.List[SignalExchangeAPI]) -> None:
+    def __init__(self, fetchers: t.Sequence[SignalExchangeAPI]) -> None:
         _validate_signal_apis(f.__class__ for f in fetchers)
         self.fetchers_by_name = {f.get_name(): f for f in fetchers}
 

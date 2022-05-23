@@ -69,7 +69,12 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
 
 
 class StopNCIISignalExchangeAPI(
-    fetch_api.SignalExchangeAPIWithIterFetch[StopNCIICheckpoint]
+    fetch_api.SignalExchangeAPIWithIterFetch[
+        CollaborationConfigBase,
+        StopNCIICheckpoint,
+        StopNCIISignalMetadata,
+        SimpleFetchDelta[StopNCIICheckpoint, StopNCIISignalMetadata],
+    ]
 ):
     """
     Conversion for the StopNCII.org API
