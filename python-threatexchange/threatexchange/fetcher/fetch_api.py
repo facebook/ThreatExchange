@@ -221,6 +221,8 @@ TSignalExchangeAPI = SignalExchangeAPI[
     state.FetchDelta[state.FetchCheckpointBase],
 ]
 
+TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
+
 
 class SignalExchangeAPIWithIterFetch(
     SignalExchangeAPI[

@@ -18,7 +18,6 @@ from threatexchange.signal_type.signal_base import SignalType
 
 Self = t.TypeVar("Self")
 
-
 @dataclass
 class FetchCheckpointBase:
     """
@@ -181,7 +180,7 @@ TFetchedSignalMetadata = t.TypeVar(
 )
 
 
-class FetchDelta(t.Generic[TFetchCheckpoint]):
+class FetchDelta(t.Generic[TFetchCheckpoint, TFetchedSignalMetadata]):
     """
     Contains the result of a fetch.
 
@@ -227,27 +226,12 @@ class FetchDelta(t.Generic[TFetchCheckpoint]):
 
     def get_for_signal_type(
         self, signal_type: t.Type[SignalType]
-    ) -> t.Dict[str, FetchedSignalMetadata]:
+    ) -> t.Dict[str, TFetchedSignalMetadata]:
         """
         Get as a map of signal => Metadata
 
         This powers simple storage solutions, and provides the mapping
         from how the API provides update to how the index needs.
-        """
-        raise NotImplementedError
-
-
-class FetchDeltaWithUpdateStream(
-    t.Generic[TFetchCheckpoint, TFetchedSignalMetadata], FetchDelta[TFetchCheckpoint]
-):
-    def get_as_update_dict(
-        self,
-    ) -> t.Mapping[t.Tuple[str, str], t.Optional[TFetchedSignalMetadata]]:
-        """
-        Returns the contents of the delta as
-         (signal_type, signal_str) => record
-        If the record is set to None, this indicates the record should be
-        deleted if it exists.
         """
         raise NotImplementedError
 
