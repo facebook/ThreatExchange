@@ -218,7 +218,7 @@ TSignalExchangeAPI = SignalExchangeAPI[
     CollaborationConfigBase,
     state.FetchCheckpointBase,
     state.FetchedSignalMetadata,
-    state.FetchDelta[state.FetchCheckpointBase],
+    state.FetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata],
 ]
 
 TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]

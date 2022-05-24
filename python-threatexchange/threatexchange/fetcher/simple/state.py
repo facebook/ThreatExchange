@@ -14,7 +14,9 @@ from threatexchange.fetcher.collab_config import CollaborationConfigBase
 
 K = t.TypeVar("K")
 V = t.TypeVar("V")
-TFetchDelta = fetch_state.FetchDelta[
+
+# Fill out sensible defaults for mypy. T_ to avoid confusing with TFetchDelta
+T_FetchDelta = fetch_state.FetchDelta[
     fetch_state.FetchCheckpointBase, fetch_state.FetchedSignalMetadata
 ]
 
@@ -54,7 +56,9 @@ class FetchDeltaWithUpdateStream(
         fetch_state.TFetchCheckpoint, fetch_state.TFetchedSignalMetadata
     ],
 ):
-    """ """
+    """
+    TODO
+    """
 
     update_record: t.Dict[K, t.Optional[V]]
     checkpoint: fetch_state.TFetchCheckpoint
@@ -99,12 +103,13 @@ class FetchDeltaWithUpdateStream(
 
 @dataclass
 class SimpleFetchDelta(
+    t.Generic[fetch_state.TFetchCheckpoint, fetch_state.TFetchedSignalMetadata],
     FetchDeltaWithUpdateStream[
         fetch_state.TFetchCheckpoint,
         fetch_state.TFetchedSignalMetadata,
         t.Tuple[str, str],
         fetch_state.TFetchedSignalMetadata,
-    ]
+    ],
 ):
     """
     If the update stream is already stored as signal types, no conversion is needed.
@@ -123,10 +128,10 @@ class SimpleFetchDelta(
 
 @dataclass
 class _StateTracker:
-    _delta: t.Optional[TFetchDelta]
+    _delta: t.Optional[T_FetchDelta]
     dirty: bool = False
 
-    def merge(self, new_delta: TFetchDelta) -> None:
+    def merge(self, new_delta: T_FetchDelta) -> None:
         if not self._delta:
             self._delta = new_delta
         else:
@@ -134,7 +139,11 @@ class _StateTracker:
         self.dirty = True
 
     @property
-    def delta(self) -> TFetchDelta:
+    def empty(self) -> bool:
+        return self._delta is None
+
+    @property
+    def delta(self) -> T_FetchDelta:
         assert self._delta is not None
         return self._delta
 
@@ -158,10 +167,10 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
     def _read_state(
         self,
         collab_name: str,
-    ) -> t.Optional[TFetchDelta]:
+    ) -> t.Optional[T_FetchDelta]:
         raise NotImplementedError
 
-    def _write_state(self, collab_name: str, delta, TFetchDelta) -> None:
+    def _write_state(self, collab_name: str, delta: T_FetchDelta) -> None:
         raise NotImplementedError
 
     def get_checkpoint(
@@ -179,7 +188,7 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
     def merge(
         self,
         collab: CollaborationConfigBase,
-        delta: TFetchDelta,
+        delta: T_FetchDelta,
     ) -> None:
         """
         Merge a FetchDeltaBase into the state.
@@ -209,9 +218,9 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
     def get_for_signal_type(
         self, collabs: t.List[CollaborationConfigBase], signal_type: t.Type[SignalType]
     ) -> t.Dict[str, t.Dict[str, fetch_state.FetchedSignalMetadata]]:
-        st_name = signal_type.get_name()
         ret = {}
         for collab in collabs:
             state = self._get_state(collab.name)
-            ret[collab.name] = state.delta.get_for_signal_type(signal_type)
+            if not state.empty:
+                ret[collab.name] = state.delta.get_for_signal_type(signal_type)
         return ret
