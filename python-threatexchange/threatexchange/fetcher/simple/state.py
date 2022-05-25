@@ -51,10 +51,10 @@ class SimpleFetchedSignalMetadata(fetch_state.FetchedSignalMetadata):
 
 @dataclass
 class FetchDeltaWithUpdateStream(
-    t.Generic[fetch_state.TFetchCheckpoint, fetch_state.TFetchedSignalMetadata, K, V],
     fetch_state.FetchDelta[
         fetch_state.TFetchCheckpoint, fetch_state.TFetchedSignalMetadata
     ],
+    t.Generic[fetch_state.TFetchCheckpoint, fetch_state.TFetchedSignalMetadata, K, V],
 ):
     """
     TODO
@@ -74,7 +74,9 @@ class FetchDeltaWithUpdateStream(
         """
         return new_v
 
-    def merge(self: fetch_state.Self, newer: fetch_state.Self) -> None:
+    def merge(
+        self: "FetchDeltaWithUpdateStream", newer: "FetchDeltaWithUpdateStream"
+    ) -> None:
         updates = newer.update_record
         if not updates:
             return
@@ -101,9 +103,7 @@ class FetchDeltaWithUpdateStream(
         return not self.done
 
 
-@dataclass
 class SimpleFetchDelta(
-    t.Generic[fetch_state.TFetchCheckpoint, fetch_state.TFetchedSignalMetadata],
     FetchDeltaWithUpdateStream[
         fetch_state.TFetchCheckpoint,
         fetch_state.TFetchedSignalMetadata,
@@ -148,7 +148,7 @@ class _StateTracker:
         return self._delta
 
     @property
-    def checkpoint(self) -> t.Optional[fetch_state.TFetchCheckpoint]:
+    def checkpoint(self) -> t.Optional[fetch_state.FetchCheckpointBase]:
         return None if self._delta is None else self._delta.next_checkpoint()
 
 

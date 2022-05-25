@@ -51,8 +51,12 @@ class StaticSampleSignalExchangeAPI(
         for stype in supported_signal_types:
             sample_signals.extend(_signals(stype))
 
-        return SimpleFetchDelta(
-            dict(sample_signals),
+        updates: t.Dict[
+            t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]
+        ] = dict(sample_signals)
+
+        return TDelta(
+            updates,
             state.FetchCheckpointBase(),
             done=True,
         )

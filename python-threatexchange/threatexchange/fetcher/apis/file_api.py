@@ -66,7 +66,7 @@ class LocalFileSignalExchangeAPI(
         with path.open("r") as f:
             lines = f.readlines()
 
-        updates = {}
+        updates: t.Dict[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]] = {}
         for line in lines:
             signal_type = collab.signal_type
             signal = line.strip()

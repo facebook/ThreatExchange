@@ -87,9 +87,9 @@ def argparse_choices_pre_type(choices: t.List[str], type: t.Callable[[str], t.An
     def ret(s: str):
         if s not in choices:
             raise argparse.ArgumentTypeError(
-                "invalid choice: %s (choose from %s)",
-                s,
-                ", ".join(repr(c) for c in choices),
+                "invalid choice: {} (choose from {})".format(
+                    s, ", ".join(repr(c) for c in choices)
+                ),
             )
         return type(s)
 

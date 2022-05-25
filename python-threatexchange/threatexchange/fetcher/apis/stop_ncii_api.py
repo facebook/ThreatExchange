@@ -118,7 +118,7 @@ class StopNCIISignalExchangeAPI(
             start_time = checkpoint.update_time
         for result in self.api.fetch_hashes_iter(start_timestamp=start_time):
             translated = (_get_delta_mapping(r) for r in result.hashRecords)
-            yield SimpleFetchDelta(
+            yield SimpleFetchDelta[StopNCIICheckpoint, StopNCIISignalMetadata](
                 dict(t for t in translated if t[0][0]),
                 StopNCIICheckpoint.from_stopncii_fetch(result),
                 done=not result.hasMoreRecords,

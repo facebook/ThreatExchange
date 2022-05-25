@@ -4,24 +4,24 @@ from collections import defaultdict
 from dataclasses import dataclass
 import typing as t
 
-from fetcher.collab_config import CollaborationConfigWithDefaults
-from fetcher.fetch_api import TSignalExchangeAPICls
-from fetcher.fetch_state import (
+from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
+from threatexchange.fetcher.fetch_api import TSignalExchangeAPI, TSignalExchangeAPICls
+from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
     SignalOpinion,
     SignalOpinionCategory,
 )
 
-from fetcher.simple.state import (
+from threatexchange.fetcher.simple.state import (
     FetchDeltaWithUpdateStream,
     SimpleFetchDelta,
     SimpleFetchedSignalMetadata,
     SimpleFetchedStateStore,
     T_FetchDelta,
 )
-from signal_type.md5 import VideoMD5Signal
-from signal_type.raw_text import RawTextSignal
-from signal_type.signal_base import SignalType
+from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.signal_type.raw_text import RawTextSignal
+from threatexchange.signal_type.signal_base import SignalType
 
 
 @dataclass
@@ -51,10 +51,12 @@ class FakeFetchDelta(
 
     def get_for_signal_type(
         self, signal_type: t.Type[SignalType]
-    ) -> t.Dict[str, FakeUpdateRecord]:
-        remapped = defaultdict(lambda: defaultdict(set))
+    ) -> t.Dict[str, SimpleFetchedSignalMetadata]:
+        remapped: t.DefaultDict[str, t.DefaultDict[int, t.Set[str]]] = defaultdict(
+            lambda: defaultdict(set)
+        )
         if signal_type == VideoMD5Signal:
-            for k, update in self.update_record.items():
+            for _k, update in self.update_record.items():
                 if update is not None:
                     remapped[update.md5][update.owner].add(update.tag)
 
@@ -83,8 +85,8 @@ class FakeFetchStore(SimpleFetchedStateStore):
     def __init__(
         self,
     ) -> None:
-        super().__init__(TSignalExchangeAPICls)
-        self._fake_storage = {}
+        super().__init__(TSignalExchangeAPI)
+        self._fake_storage: t.Dict[str, T_FetchDelta] = {}
 
     def _read_state(
         self,
