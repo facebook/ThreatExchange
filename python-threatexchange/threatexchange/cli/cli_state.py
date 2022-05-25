@@ -11,16 +11,13 @@ There are a few categories of state that this wraps:
 """
 
 import pickle
-import json
 import pathlib
 import typing as t
-import dataclasses
 import logging
 
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.cli import dataclass_json
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
@@ -28,7 +25,7 @@ from threatexchange.fetcher.fetch_state import (
     FetchedSignalMetadata,
 )
 from threatexchange.fetcher.simple import state as simple_state
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI, TFetchDelta
+from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
 
@@ -134,7 +131,7 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
             with file.open("rb") as f:
                 delta = pickle.load(f)
 
-            assert isinstance(delta, FetchDelta), "got the wrong type of file"
+            assert isinstance(delta, FetchDelta), "Unexpected class type?"
             delta = t.cast(simple_state.T_FetchDelta, delta)
             assert (
                 delta.next_checkpoint().__class__.__name__
@@ -144,8 +141,6 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
             logging.debug(
                 "Loaded %s with %d records", collab_name, delta.record_count()
             )
-            # Minor stab at lowering memory footprint by converting kinda
-            # inline
             return delta
         except Exception:
             logging.exception("Failed to read state for %s", collab_name)
