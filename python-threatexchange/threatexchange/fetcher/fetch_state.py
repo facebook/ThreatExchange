@@ -18,6 +18,7 @@ from threatexchange.signal_type.signal_base import SignalType
 
 Self = t.TypeVar("Self")
 
+
 @dataclass
 class FetchCheckpointBase:
     """
