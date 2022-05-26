@@ -10,19 +10,18 @@ There are a few categories of state that this wraps:
   3. Index state - serializations of indexes for SignalType
 """
 
-import json
+import pickle
 import pathlib
 import typing as t
-import dataclasses
 import logging
 
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.cli import dataclass_json
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
+    FetchDelta,
     FetchedSignalMetadata,
 )
 from threatexchange.fetcher.simple import state as simple_state
@@ -124,37 +123,25 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
     def _read_state(
         self,
         collab_name: str,
-    ) -> t.Optional[
-        t.Tuple[
-            t.Dict[str, t.Dict[str, FetchedSignalMetadata]],
-            FetchCheckpointBase,
-        ]
-    ]:
+    ) -> t.Optional[simple_state.T_FetchDelta]:
         file = self.collab_file(collab_name)
         if not file.is_file():
             return None
         try:
-            with file.open("r") as f:
-                json_dict = json.load(f)
+            with file.open("rb") as f:
+                delta = pickle.load(f)
 
-            checkpoint = dataclass_json.dataclass_load_dict(
-                json_dict=json_dict[self.JSON_CHECKPOINT_KEY],
-                cls=self.api_cls.get_checkpoint_cls(),
+            assert isinstance(delta, FetchDelta), "Unexpected class type?"
+            delta = t.cast(simple_state.T_FetchDelta, delta)
+            assert (
+                delta.next_checkpoint().__class__.__name__
+                == self.api_cls.get_checkpoint_cls().__name__
+            ), "wrong checkpoint class?"
+
+            logging.debug(
+                "Loaded %s with %d records", collab_name, delta.record_count()
             )
-            records = json_dict[self.JSON_RECORDS_KEY]
-
-            logging.debug("Loaded %s with records for: %s", collab_name, list(records))
-            # Minor stab at lowering memory footprint by converting kinda
-            # inline
-            for stype in list(records):
-                records[stype] = {
-                    signal: dataclass_json.dataclass_load_dict(
-                        json_dict=json_record,
-                        cls=self.api_cls.get_record_cls(),
-                    )
-                    for signal, json_record in records[stype].items()
-                }
-            return records, checkpoint
+            return delta
         except Exception:
             logging.exception("Failed to read state for %s", collab_name)
             raise CommandError(
@@ -162,22 +149,19 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
                 "You might have to delete it with `threatexchange fetch --clear`"
             )
 
-    def _write_state(  # type: ignore[override]  # fix with generics on base
+    def _write_state(  # type: ignore[override]  # Fix in followup PR
         self,
         collab_name: str,
-        updates_by_type: t.Dict[str, t.Dict[str, FetchedSignalMetadata]],
-        checkpoint: FetchCheckpointBase,
+        delta: simple_state.SimpleFetchDelta[
+            FetchCheckpointBase, FetchedSignalMetadata
+        ],
     ) -> None:
         file = self.collab_file(collab_name)
         if not file.parent.exists():
             file.parent.mkdir(parents=True)
 
         record_sanity_check = next(
-            (
-                record
-                for records in updates_by_type.values()
-                for record in records.values()
-            ),
+            (record for record in delta.update_record.values()),
             None,
         )
 
@@ -188,26 +172,7 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
                 f"Record cls: want {self.api_cls.get_record_cls().__name__} "
                 f"got {record_sanity_check.__class__.__name__}"
             )
-
-        json_dict = {
-            self.JSON_CHECKPOINT_KEY: dataclasses.asdict(checkpoint),
-            self.JSON_RECORDS_KEY: {
-                stype: {
-                    s: dataclasses.asdict(record)
-                    for s, record in signal_to_record.items()
-                }
-                for stype, signal_to_record in updates_by_type.items()
-            },
-        }
-
         tmpfile = file.with_name(f".{file.name}")
-
-        with tmpfile.open("w") as f:
-            json.dump(json_dict, f, indent=2, default=_json_set_default)
+        with tmpfile.open("wb") as f:
+            pickle.dump(delta, f)
         tmpfile.rename(file)
-
-
-def _json_set_default(obj):
-    if isinstance(obj, set):
-        return list(obj)
-    raise TypeError

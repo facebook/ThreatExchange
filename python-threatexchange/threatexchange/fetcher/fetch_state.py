@@ -181,12 +181,16 @@ TFetchedSignalMetadata = t.TypeVar(
 )
 
 
-class FetchDelta(t.Generic[TFetchCheckpoint]):
+class FetchDelta(t.Generic[TFetchCheckpoint, TFetchedSignalMetadata]):
     """
     Contains the result of a fetch.
 
-    You'll need to extend this, but it only to be interpretable by your
-    API's version of FetchedState
+    In order to make naive storage (such as on the CLI) work, implementations
+    of this class must be pickle-able.
+
+    Note that the way that this class organizes and stores data does not
+    need to be the same way that that the index class organizes data,
+    which is hash => Record.
     """
 
     def record_count(self) -> int:
@@ -199,28 +203,36 @@ class FetchDelta(t.Generic[TFetchCheckpoint]):
 
     def has_more(self) -> bool:
         """
-        Returns true if the API has no more data at this time.
+        Returns false if the API has no more data at this time.
         """
         raise NotImplementedError
 
-
-class FetchDeltaWithUpdateStream(
-    t.Generic[TFetchCheckpoint, TFetchedSignalMetadata], FetchDelta[TFetchCheckpoint]
-):
-    """
-    For most APIs, they can represented in a simple update stream.
-
-    This allows naive implementations for storage.
-    """
-
-    def get_as_update_dict(
-        self,
-    ) -> t.Mapping[t.Tuple[str, str], t.Optional[TFetchedSignalMetadata]]:
+    def merge(self: Self, newer: Self) -> None:
         """
-        Returns the contents of the delta as
-         (signal_type, signal_str) => record
-        If the record is set to None, this indicates the record should be
-        deleted if it exists.
+        Merge the content of a subsequent fetch() call into this one.
+
+        Different APIs might have different approaches to merging.
+
+        You can assume the caller has kept track, and is only
+        merging in sequential order.
+
+        delta_1 = api.fetch_once(...)
+        delta_2 = api.fetch_once(..., delta_1.checkpoint)
+        delta_3 = api.fetch_once(..., delta_2.checkpoint)
+
+        delta_1.merge(delta_2)
+        delta_1.merge(delta_3)
+        """
+        raise NotImplementedError
+
+    def get_for_signal_type(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Dict[str, TFetchedSignalMetadata]:
+        """
+        Get as a map of signal => Metadata
+
+        This powers simple storage solutions, and provides the mapping
+        from how the API provides update to how the index needs.
         """
         raise NotImplementedError
 

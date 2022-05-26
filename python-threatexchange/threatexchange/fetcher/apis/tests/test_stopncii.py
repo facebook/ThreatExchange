@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 import pytest
 import typing as t
 
@@ -37,7 +39,7 @@ def test_fetch(fetcher: SignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     assert checkpoint.update_time == 1625175071
     assert checkpoint.last_fetch_time == 10**8
 
-    updates = delta.get_as_update_dict()
+    updates = delta.update_record
     assert len(updates) == 2
     assert {t[0] for t in updates} == {"pdq"}
 
@@ -57,7 +59,7 @@ def test_fetch(fetcher: SignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     delta = t.cast(SimpleFetchDelta, fetcher.fetch_once([], collab, None))
     assert delta.has_more() is False
     assert delta.record_count() == 1
-    updates = delta.get_as_update_dict()
+    updates = delta.update_record
     assert len(updates) == 1
     assert "pdq" == tuple(updates)[0][0]
     a = t.cast(StopNCIISignalMetadata, tuple(updates.values())[0])

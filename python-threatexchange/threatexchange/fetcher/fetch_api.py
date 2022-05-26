@@ -212,6 +212,18 @@ class SignalExchangeAPI(
         )
 
 
+# A convenience helper since mypy can't intuit that bound != t.Any
+# For methods like get_checkpoint_cls
+TSignalExchangeAPI = SignalExchangeAPI[
+    CollaborationConfigBase,
+    state.FetchCheckpointBase,
+    state.FetchedSignalMetadata,
+    state.FetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata],
+]
+
+TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
+
+
 class SignalExchangeAPIWithIterFetch(
     SignalExchangeAPI[
         TCollabConfig, state.TFetchCheckpoint, state.TFetchedSignalMetadata, TFetchDelta
