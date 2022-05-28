@@ -20,7 +20,7 @@ from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
 
-TDelta = SimpleFetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata]
+TypedDelta = SimpleFetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata]
 
 
 @dataclass
@@ -40,7 +40,7 @@ class LocalFileSignalExchangeAPI(
         FileCollaborationConfig,
         state.FetchCheckpointBase,
         state.FetchedSignalMetadata,
-        TDelta,
+        TypedDelta,
     ]
 ):
     """
@@ -51,12 +51,14 @@ class LocalFileSignalExchangeAPI(
     def get_config_class(cls) -> t.Type[FileCollaborationConfig]:
         return FileCollaborationConfig
 
-    def fetch_once(
+    def fetch_iter(
         self,
-        _supported_signal_types: t.List[t.Type[SignalType]],
+        _supported_signal_types: t.Sequence[t.Type[SignalType]],
         collab: FileCollaborationConfig,
-        _checkpoint: t.Optional[state.FetchCheckpointBase],
-    ) -> TDelta:
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
+        checkpoint: t.Optional[state.TFetchCheckpoint],
+    ) -> t.Iterator[TypedDelta]:
         """Fetch the whole file"""
         path = Path(collab.filename)
         assert path.exists(), f"No such file {path}"
@@ -75,7 +77,7 @@ class LocalFileSignalExchangeAPI(
             if signal_type and signal:
                 updates[signal_type, signal] = state.FetchedSignalMetadata()
 
-        return SimpleFetchDelta(updates, state.FetchCheckpointBase(), done=True)
+        yield SimpleFetchDelta(updates, state.FetchCheckpointBase())
 
     def report_opinion(
         self,

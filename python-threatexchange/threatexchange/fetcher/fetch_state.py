@@ -10,7 +10,7 @@ needed to power API features.
 
 from dataclasses import dataclass
 from enum import IntEnum
-from functools import reduce
+from abc import ABC, abstractmethod
 import typing as t
 
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
@@ -201,12 +201,6 @@ class FetchDelta(t.Generic[TFetchCheckpoint, TFetchedSignalMetadata]):
         """A serializable checkpoint for fetch."""
         raise NotImplementedError
 
-    def has_more(self) -> bool:
-        """
-        Returns false if the API has no more data at this time.
-        """
-        raise NotImplementedError
-
     def merge(self: Self, newer: Self) -> None:
         """
         Merge the content of a subsequent fetch() call into this one.
@@ -239,7 +233,7 @@ class FetchDelta(t.Generic[TFetchCheckpoint, TFetchedSignalMetadata]):
 
 # TODO t.Generic[TFetchDeltaBase, TFetchedSignalDataBase, FetchCheckpointBase]
 #      to help keep track of the expected subclasses for an impl
-class FetchedStateStoreBase:
+class FetchedStateStoreBase(ABC):
     """
     An interface to previously fetched or persisted state.
 
@@ -255,6 +249,7 @@ class FetchedStateStoreBase:
     since they need to be consistent between instanciation
     """
 
+    @abstractmethod
     def get_checkpoint(
         self, collab: CollaborationConfigBase
     ) -> t.Optional[FetchCheckpointBase]:
@@ -263,6 +258,7 @@ class FetchedStateStoreBase:
         """
         raise NotImplementedError
 
+    @abstractmethod
     def merge(self, collab: CollaborationConfigBase, delta: FetchDelta) -> None:
         """
         Merge a FetchDelta into the state.
@@ -272,6 +268,7 @@ class FetchedStateStoreBase:
         """
         raise NotImplementedError
 
+    @abstractmethod
     def flush(self) -> None:
         """
         Finish writing the results of previous merges to persistant state.
@@ -280,12 +277,14 @@ class FetchedStateStoreBase:
         """
         raise NotImplementedError
 
+    @abstractmethod
     def clear(self, collab: CollaborationConfigBase) -> None:
         """
         Delete all the stored state for this collaboration.
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_for_signal_type(
         self, collabs: t.List[CollaborationConfigBase], signal_type: t.Type[SignalType]
     ) -> t.Dict[str, t.Dict[str, FetchedSignalMetadata]]:

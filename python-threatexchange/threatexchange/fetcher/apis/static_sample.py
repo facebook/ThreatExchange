@@ -19,7 +19,7 @@ from threatexchange.fetcher.simple.state import (
     SimpleFetchDelta,
 )
 
-TDelta = SimpleFetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata]
+TypedDelta = SimpleFetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata]
 
 
 class StaticSampleSignalExchangeAPI(
@@ -27,7 +27,7 @@ class StaticSampleSignalExchangeAPI(
         CollaborationConfigBase,
         state.FetchCheckpointBase,
         state.FetchedSignalMetadata,
-        TDelta,
+        TypedDelta,
     ]
 ):
     """
@@ -38,13 +38,14 @@ class StaticSampleSignalExchangeAPI(
     def get_name(cls) -> str:
         return "sample"
 
-    def fetch_once(
+    def fetch_iter(
         self,
-        supported_signal_types: t.List[t.Type[SignalType]],
+        supported_signal_types: t.Sequence[t.Type[SignalType]],
         collab: CollaborationConfigBase,
-        _checkpoint: t.Optional[state.FetchCheckpointBase],
-    ) -> TDelta:
-
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
+        checkpoint: t.Optional[state.TFetchCheckpoint],
+    ) -> t.Iterator[TypedDelta]:
         sample_signals: t.List[
             t.Tuple[t.Tuple[str, str], state.FetchedSignalMetadata]
         ] = []
@@ -55,10 +56,9 @@ class StaticSampleSignalExchangeAPI(
             t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]
         ] = dict(sample_signals)
 
-        return TDelta(
+        yield TypedDelta(
             updates,
             state.FetchCheckpointBase(),
-            done=True,
         )
 
 

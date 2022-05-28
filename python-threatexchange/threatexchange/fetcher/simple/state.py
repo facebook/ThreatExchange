@@ -62,7 +62,6 @@ class FetchDeltaWithUpdateStream(
 
     update_record: t.Dict[K, t.Optional[V]]
     checkpoint: fetch_state.TFetchCheckpoint
-    done: bool
 
     @classmethod
     def _merge_update(cls, old_v: V, new_v: V) -> t.Optional[V]:
@@ -91,16 +90,12 @@ class FetchDeltaWithUpdateStream(
             else:
                 self.update_record[k] = result_v
         self.checkpoint = newer.checkpoint
-        self.done = newer.done
 
     def record_count(self) -> int:
         return len(self.update_record)
 
     def next_checkpoint(self) -> fetch_state.TFetchCheckpoint:
         return self.checkpoint
-
-    def has_more(self) -> bool:
-        return not self.done
 
 
 class SimpleFetchDelta(

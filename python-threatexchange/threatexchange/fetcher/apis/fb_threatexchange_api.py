@@ -162,7 +162,7 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
         )
 
 
-TThreatExchangeDelta = SimpleFetchDelta[
+ThreatExchangeDelta = SimpleFetchDelta[
     FBThreatExchangeCheckpoint, FBThreatExchangeIndicatorRecord
 ]
 
@@ -172,14 +172,13 @@ class FBThreatExchangeSignalExchangeAPI(
         FBThreatExchangeCollabConfig,
         FBThreatExchangeCheckpoint,
         FBThreatExchangeIndicatorRecord,
-        TThreatExchangeDelta,
+        ThreatExchangeDelta,
     ]
 ):
     def __init__(self, fb_app_token: t.Optional[str] = None) -> None:
         self._api = None
         if fb_app_token is not None:
             self._api = ThreatExchangeAPI(fb_app_token)
-        self.cursors: t.Dict[str, _CursoredResponse] = {}
 
     @property
     def api(self) -> ThreatExchangeAPI:
@@ -210,47 +209,46 @@ class FBThreatExchangeSignalExchangeAPI(
     def get_own_owner_id(self, collab: FBThreatExchangeCollabConfig) -> int:
         return self.api.app_id
 
-    def fetch_once(
+    def fetch_iter(
         self,
-        supported_signal_types: t.List[t.Type[SignalType]],
+        supported_signal_types: t.Sequence[t.Type[SignalType]],
         collab: FBThreatExchangeCollabConfig,
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[FBThreatExchangeCheckpoint],
-    ) -> TThreatExchangeDelta:
-        cursor = self.cursors.get(collab.name)
+    ) -> t.Iterator[ThreatExchangeDelta]:
         start_time = None if checkpoint is None else checkpoint.update_time
-        if not cursor:
-            cursor = self.api.get_threat_updates(
-                collab.privacy_group,
-                start_time=start_time,
-                page_size=500,
-                fields=ThreatUpdateJSON.te_threat_updates_fields(),
-                decode_fn=ThreatUpdateJSON,
-            )
-            self.cursors[collab.name] = cursor
+        cursor = self.api.get_threat_updates(
+            collab.privacy_group,
+            start_time=start_time,
+            page_size=500,
+            fields=ThreatUpdateJSON.te_threat_updates_fields(),
+            decode_fn=ThreatUpdateJSON,
+        )
 
         batch: t.List[ThreatUpdateJSON] = []
         highest_time = 0
-        for update in cursor.next():
-            # TODO catch errors here
-            batch.append(update)
-            # Is supposed to be strictly increasing
-            highest_time = max(update.time, highest_time)
+        for fetch in cursor:
+            for update in fetch:
+                # TODO catch errors here
+                batch.append(update)
+                # Is supposed to be strictly increasing
+                highest_time = max(update.time, highest_time)
 
-        # TODO - We can clobber types that map into multiple
-        type_mapping = _make_indicator_type_mapping(supported_signal_types)
-        updates = {}
-        for u in batch:
-            st = type_mapping.get(u.threat_type)
-            if st is not None:
-                updates[
-                    st.get_name(), u.indicator
-                ] = FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
+            # TODO - We can clobber types that map into multiple
+            type_mapping = _make_indicator_type_mapping(supported_signal_types)
+            updates = {}
+            for u in batch:
+                st = type_mapping.get(u.threat_type)
+                if st is not None:
+                    updates[
+                        st.get_name(), u.indicator
+                    ] = FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
 
-        return SimpleFetchDelta(
-            updates,
-            FBThreatExchangeCheckpoint(highest_time),
-            done=cursor.done,
-        )
+            yield SimpleFetchDelta(
+                updates,
+                FBThreatExchangeCheckpoint(highest_time),
+            )
 
     def report_seen(
         self,
@@ -311,7 +309,7 @@ class FBThreatExchangeSignalExchangeAPI(
 
 
 def _make_indicator_type_mapping(
-    supported_signal_types: t.List[t.Type[SignalType]],
+    supported_signal_types: t.Sequence[t.Type[SignalType]],
 ) -> t.Dict[str, t.Type[SignalType]]:
     # TODO - We can clobber types that map into multiple
     type_mapping: t.Dict[str, t.Type[SignalType]] = {}

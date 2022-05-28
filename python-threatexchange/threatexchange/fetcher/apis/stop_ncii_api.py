@@ -12,7 +12,6 @@ import typing as t
 from dataclasses import dataclass
 from threatexchange.fetcher.simple.state import (
     SimpleFetchDelta,
-    SimpleFetchedSignalMetadata,
 )
 
 from threatexchange.stopncii import api
@@ -69,7 +68,7 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
 
 
 class StopNCIISignalExchangeAPI(
-    fetch_api.SignalExchangeAPIWithIterFetch[
+    fetch_api.SignalExchangeAPI[
         CollaborationConfigBase,
         StopNCIICheckpoint,
         StopNCIISignalMetadata,
@@ -109,7 +108,7 @@ class StopNCIISignalExchangeAPI(
 
     def fetch_iter(
         self,
-        _supported_signal_types: t.List[t.Type[SignalType]],
+        _supported_signal_types: t.Sequence[t.Type[SignalType]],
         _collab: CollaborationConfigBase,
         checkpoint: t.Optional[StopNCIICheckpoint],
     ) -> t.Iterator[SimpleFetchDelta[StopNCIICheckpoint, StopNCIISignalMetadata]]:
@@ -121,7 +120,6 @@ class StopNCIISignalExchangeAPI(
             yield SimpleFetchDelta[StopNCIICheckpoint, StopNCIISignalMetadata](
                 dict(t for t in translated if t[0][0]),
                 StopNCIICheckpoint.from_stopncii_fetch(result),
-                done=not result.hasMoreRecords,
             )
 
 
