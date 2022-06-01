@@ -229,23 +229,3 @@ TSignalExchangeAPI = SignalExchangeAPI[
 ]
 
 TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
-
-
-# def fetch_once(
-#     self,
-#     supported_signal_types: t.List[t.Type[SignalType]],
-#     collab: TCollabConfig,
-#     # None if fetching for the first time,
-#     # otherwise the previous FetchDelta returned
-#     checkpoint: t.Optional[state.TFetchCheckpoint],
-# ) -> TFetchDelta:
-#     it = self._fetch_iters.get(collab.name)
-#     if it is None:
-#         it = self.fetch_iter(supported_signal_types, collab, checkpoint)
-#         self._fetch_iters[collab.name] = it
-#     delta = next(it, None)
-#     # This can happen if the last yielded element did not set done
-#     # which will cause next() to be called again after the iterator
-#     # is exhaused
-#     assert delta is not None, "fetch_iter stopping yielding too early"
-#     return delta
