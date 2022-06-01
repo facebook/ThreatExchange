@@ -6,14 +6,13 @@
 #define _GNU_SOURCE
 #endif
 
-#include <pdq/cpp/common/pdqhashtypes.h>
-#include <pdq/cpp/io/hashio.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <pdq/cpp/common/pdqhashtypes.h>
+#include <pdq/cpp/io/hashio.h>
 
 // ================================================================
 // This is an ops tool for doing various things to 256-bit hashes
@@ -32,10 +31,10 @@ static void do_slot_norms(char* argv0, char* argv1, int argc, char** argv);
 static void do_deltas(char* argv0, char* argv1, int argc, char** argv);
 static void do_adjacent_xors(char* argv0, char* argv1, int argc, char** argv);
 static void do_xors_from_first(char* argv0, char* argv1, int argc, char** argv);
-static void
-do_matrix(char* argv0, char* argv1, int argc, char** argv, bool do_cij);
-static void
-do_pairwise_distances(char* argv0, char* argv1, int argc, char** argv);
+static void do_matrix(
+    char* argv0, char* argv1, int argc, char** argv, bool do_cij);
+static void do_pairwise_distances(
+    char* argv0, char* argv1, int argc, char** argv);
 static void do_bits(char* argv0, char* argv1, int argc, char** argv);
 static void do_words(char* argv0, char* argv1, int argc, char** argv);
 static void do_fuzz(char* argv0, char* argv1, int argc, char** argv);
@@ -57,7 +56,8 @@ static void usage(char* argv0, int rc) {
       " slotnorms:          Show slotwise (16-bit) hamming norms of hashes.\n"
       " deltas:             Print hamming distances between adjacent hashes.\n"
       " axors:              Print XORs of adjacent hashes.\n"
-      " fxors:              Print XORs of each hash with respect to the first.\n"
+      " fxors:              Print XORs of each hash with respect to the "
+      "first.\n"
       " matrix:             Print matrix of pairwise hamming distances.\n"
       " cij:                Print DKVP-formatted pairwise-distance data.\n"
       " pairwise-distances: Compute pairwise distances given two filenames\n"
@@ -110,8 +110,8 @@ int main(int argc, char** argv) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_norms(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
+static void do_norms(
+    char* /*unused*/, char* /*unused*/, int argc, char** argv) {
   std::vector<Hash256> hashes;
   loadHashesFromFilesOrDie(argv, argc, hashes);
   for (auto hash : hashes) {
@@ -120,8 +120,8 @@ do_norms(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_slot_norms(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
+static void do_slot_norms(
+    char* /*unused*/, char* /*unused*/, int argc, char** argv) {
   std::vector<Hash256> hashes;
   loadHashesFromFilesOrDie(argv, argc, hashes);
   for (auto hash : hashes) {
@@ -134,8 +134,8 @@ do_slot_norms(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_deltas(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
+static void do_deltas(
+    char* /*unused*/, char* /*unused*/, int argc, char** argv) {
   std::vector<Hash256> hashes;
   loadHashesFromFilesOrDie(argv, argc, hashes);
   for (int i = 0; i < (int)hashes.size(); i++) {
@@ -151,8 +151,8 @@ do_deltas(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_adjacent_xors(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
+static void do_adjacent_xors(
+    char* /*unused*/, char* /*unused*/, int argc, char** argv) {
   std::vector<Hash256> hashes;
   loadHashesFromFilesOrDie(argv, argc, hashes);
   for (int i = 1; i < (int)hashes.size(); i++) {
@@ -162,8 +162,8 @@ do_adjacent_xors(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_xors_from_first(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
+static void do_xors_from_first(
+    char* /*unused*/, char* /*unused*/, int argc, char** argv) {
   std::vector<Hash256> hashes;
   loadHashesFromFilesOrDie(argv, argc, hashes);
   for (int i = 1; i < (int)hashes.size(); i++) {
@@ -173,8 +173,8 @@ do_xors_from_first(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_matrix(char* argv0, char* /*unused*/, int argc, char** argv, bool do_cij) {
+static void do_matrix(
+    char* argv0, char* /*unused*/, int argc, char** argv, bool do_cij) {
   std::vector<Hash256> hashes1;
   std::vector<Hash256> hashes2;
 
@@ -215,8 +215,8 @@ do_matrix(char* argv0, char* /*unused*/, int argc, char** argv, bool do_cij) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_pairwise_distances(char* argv0, char* argv1, int argc, char** argv) {
+static void do_pairwise_distances(
+    char* argv0, char* argv1, int argc, char** argv) {
   if (argc != 2) {
     fprintf(stderr, "%s %s: need two filenames.\n", argv0, argv1);
     exit(1);
@@ -242,8 +242,8 @@ static void do_bits(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
 }
 
 // ----------------------------------------------------------------
-static void
-do_words(char* /*unused*/, char* /*unused*/, int argc, char** argv) {
+static void do_words(
+    char* /*unused*/, char* /*unused*/, int argc, char** argv) {
   std::vector<Hash256> hashes;
   loadHashesFromFilesOrDie(argv, argc, hashes);
   for (auto hash : hashes) {

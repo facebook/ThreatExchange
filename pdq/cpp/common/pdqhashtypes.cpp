@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace facebook {
 namespace pdq {

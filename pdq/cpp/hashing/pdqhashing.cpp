@@ -2,9 +2,9 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 // ================================================================
 
+#include <pdq/cpp/downscaling/downscaling.h>
 #include <pdq/cpp/hashing/pdqhashing.h>
 #include <pdq/cpp/hashing/torben.h>
-#include <pdq/cpp/downscaling/downscaling.h>
 
 // ================================================================
 // PDQ algorithm description:
@@ -12,7 +12,7 @@
 // ================================================================
 
 #if defined(_WIN32)
-  #define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
 #endif
 
 #include <cassert>

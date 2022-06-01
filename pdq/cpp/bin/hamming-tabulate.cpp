@@ -2,12 +2,11 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 // ================================================================
 
-#include <pdq/cpp/common/pdqbasetypes.h>
-#include <pdq/cpp/common/pdqhamming.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pdq/cpp/common/pdqbasetypes.h>
+#include <pdq/cpp/common/pdqhamming.h>
 
 using namespace facebook::pdq::hashing;
 
@@ -17,7 +16,6 @@ using namespace facebook::pdq::hashing;
 // invoked precisely once, for precomputing the hamming-distance tables.
 
 int main(int argc, char** argv) {
-
   printf("static Hash8 hash8_norm_lookup_table[] = {\n");
   for (int i = 0; i < 256; i++) {
     Hash8 h = i;

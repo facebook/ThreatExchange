@@ -23,21 +23,17 @@ namespace hashing {
 // The caller must free the return value.
 // xxx check for this.
 float* loadFloatLumaFromCImg(
-  cimg_library::CImg<uint8_t>& img,
-  int& numRows,
-  int& numCols
-);
+    cimg_library::CImg<uint8_t>& img, int& numRows, int& numCols);
 
 void showDecoderInfo();
 
 bool pdqHash256FromFile(
-  const char* filename,
-  Hash256& hash,
-  int& quality,
-  int& imageHeightTimesWidth,
-  float& readSeconds,
-  float& hashSeconds
-);
+    const char* filename,
+    Hash256& hash,
+    int& quality,
+    int& imageHeightTimesWidth,
+    float& readSeconds,
+    float& hashSeconds);
 
 // Naming conventions:
 // * Rotate 90: counterclockwise 90 degrees
@@ -55,23 +51,23 @@ bool pdqHash256FromFile(
 // * Pass nullptr for any variants you do not want to be computed.
 // * Pass pointer to hashes to be stuffed with variants you do want computed.
 bool pdqDihedralHash256esFromFile(
-  const char* filename,
-  Hash256* hashptrOriginal,
-  Hash256* hashptrRotate90,
-  Hash256* hashptrRotate180,
-  Hash256* hashptrRotate270,
-  Hash256* hashptrFlipX,
-  Hash256* hashptrFlipY,
-  Hash256* hashptrFlipPlus1,
-  Hash256* hashptrFlipMinus1,
-  int& quality,
-  int& imageHeightTimesWidth,
-  float& readSeconds,
-  float& hashSeconds
-);
+    const char* filename,
+    Hash256* hashptrOriginal,
+    Hash256* hashptrRotate90,
+    Hash256* hashptrRotate180,
+    Hash256* hashptrRotate270,
+    Hash256* hashptrFlipX,
+    Hash256* hashptrFlipY,
+    Hash256* hashptrFlipPlus1,
+    Hash256* hashptrFlipMinus1,
+    int& quality,
+    int& imageHeightTimesWidth,
+    float& readSeconds,
+    float& hashSeconds);
 
 // Takes matrix as numRows x numCols in row-major order
-void floatMatrixToCImg(float* matrix, int numRows, int numCols, const char filename[]);
+void floatMatrixToCImg(
+    float* matrix, int numRows, int numCols, const char filename[]);
 
 } // namespace hashing
 } // namespace pdq
