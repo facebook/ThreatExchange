@@ -12,7 +12,7 @@ on:
       - main
     paths:
       - "tmk/cpp/**"
-      - ".github/workflows/pdq-ci-tmk-format.yml"
+      - ".github/workflows/tmk-ci-cpp-format.yml"
 
 jobs:
   formatting-check:
