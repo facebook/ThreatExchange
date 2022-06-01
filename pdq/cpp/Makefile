@@ -1,5 +1,5 @@
 # ================================================================
-CXX=g++-11 # please customize according to your system --- Note: Apple clang on M1 is not currently supported 
+CXX=g++ # please customize according to your system --- Note: Apple clang on M1 is not currently supported 
 CC=$(CXX) -g -std=c++11
 IFLAGS=-I../.. -I.
 # -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation is because of CImg.h
