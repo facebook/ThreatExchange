@@ -15,8 +15,8 @@
 // ================================================================
 
 #include <tmk/cpp/algo/tmkfv.h>
-#include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
+#include <tmk/cpp/io/tmkio.h>
 
 #include <omp.h>
 #include <stdio.h>
@@ -25,8 +25,8 @@
 
 #include <chrono>
 #include <map>
-#include <unordered_map>
 #include <set>
+#include <unordered_map>
 
 using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
@@ -157,7 +157,8 @@ int main(int argc, char** argv) {
   }
 
   // INGEST FEATURES
-  std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>> metadataToFeatures;
+  std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>
+      metadataToFeatures;
   if (fileNamesFromStdin) {
     char* tmkFileName = nullptr;
     size_t linelen = 0;
@@ -183,7 +184,13 @@ int main(int argc, char** argv) {
   // CLUSTERIZE
   std::map<std::string, std::set<std::string>> equivalenceClasses;
   snowballClusterize(
-      metadataToFeatures, c1, c2, level1Only, verbose, equivalenceClasses, argv[0]);
+      metadataToFeatures,
+      c1,
+      c2,
+      level1Only,
+      verbose,
+      equivalenceClasses,
+      argv[0]);
 
   // PRINT OUTPUT
   printTextOutput(
@@ -250,51 +257,54 @@ void snowballClusterize(
   std::vector<std::string> filenames;
   filenames.reserve(metadataToFeatures.size());
 
-  for (const auto &s : metadataToFeatures) {
+  for (const auto& s : metadataToFeatures) {
     // prefill adjacencyMatrix diagonal
     adjacencyMatrix[s.first].insert(s.first);
     filenames.push_back(s.first);
   }
 
-  #pragma omp parallel for schedule(dynamic)
-    // The adjacency matrix is symmetric. So do the math only one per pair.
-    for (unsigned int i = 0; i < filenames.size() - 1; i++) {
-      for (unsigned int j = i + 1; j < filenames.size(); j++) {
-        bool flip = filenames[i] > filenames[j];
-        const std::string &filename1 = flip ? filenames[j] : filenames[i];
-        const std::string &filename2 = flip ? filenames[i] : filenames[j];
+#pragma omp parallel for schedule(dynamic)
+  // The adjacency matrix is symmetric. So do the math only one per pair.
+  for (unsigned int i = 0; i < filenames.size() - 1; i++) {
+    for (unsigned int j = i + 1; j < filenames.size(); j++) {
+      bool flip = filenames[i] > filenames[j];
+      const std::string& filename1 = flip ? filenames[j] : filenames[i];
+      const std::string& filename2 = flip ? filenames[i] : filenames[j];
 
-        const std::shared_ptr<TMKFeatureVectors> pfv1 = metadataToFeatures.at(filename1);
-        const std::shared_ptr<TMKFeatureVectors> pfv2 = metadataToFeatures.at(filename2);
+      const std::shared_ptr<TMKFeatureVectors> pfv1 =
+          metadataToFeatures.at(filename1);
+      const std::shared_ptr<TMKFeatureVectors> pfv2 =
+          metadataToFeatures.at(filename2);
 
-        if (!TMKFeatureVectors::areCompatible(*pfv1, *pfv2)) {
-          fprintf(
-              stderr,
-              "%s: immiscible provenances:\n%s\n%s\n",
-              argv0,
-              filename1.c_str(),
-              filename2.c_str());
-          exit(1);
-        }
-        float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
-        if (s1 >= c1) {
-          if (level1Only) {
+      if (!TMKFeatureVectors::areCompatible(*pfv1, *pfv2)) {
+        fprintf(
+            stderr,
+            "%s: immiscible provenances:\n%s\n%s\n",
+            argv0,
+            filename1.c_str(),
+            filename2.c_str());
+        exit(1);
+      }
+      float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
+      if (s1 >= c1) {
+        if (level1Only) {
+          adjacencyMatrix[filename1].insert(filename2);
+          adjacencyMatrix[filename2].insert(filename1);
+        } else {
+          float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+          if (s2 >= c2) {
             adjacencyMatrix[filename1].insert(filename2);
             adjacencyMatrix[filename2].insert(filename1);
-          } else {
-            float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
-            if (s2 >= c2) {
-              adjacencyMatrix[filename1].insert(filename2);
-              adjacencyMatrix[filename2].insert(filename1);
-            }
           }
         }
       }
-    } // end parallel
+    }
+  } // end parallel
 
   std::chrono::time_point<std::chrono::system_clock> endAdjacencyMatrix =
       std::chrono::system_clock::now();
-  std::chrono::duration<double> matrixSeconds = endAdjacencyMatrix - startAdjacencyMatrix;
+  std::chrono::duration<double> matrixSeconds =
+      endAdjacencyMatrix - startAdjacencyMatrix;
   if (verbose) {
     printf("\n");
     printf("ADJACENCY MATRIX SECONDS = %.6lf\n", matrixSeconds.count());
@@ -315,7 +325,8 @@ void snowballClusterize(
   // We expect to get [A,B,C,D] as one equivalence class and [E] as the other.
   // Representatives are just the first-found, e.g. A and E respectively.
 
-  std::unordered_map<std::string, std::string> metadatasToClusterRepresentatives;
+  std::unordered_map<std::string, std::string>
+      metadatasToClusterRepresentatives;
 
   // For each row of the adjacency matrix:
   for (const auto& row_it : adjacencyMatrix) {

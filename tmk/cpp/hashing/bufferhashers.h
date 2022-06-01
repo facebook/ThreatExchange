@@ -43,8 +43,7 @@ class AbstractFrameBufferHasher {
   virtual int getFeatureDimension() = 0;
 
   virtual bool hashFrame(
-      unsigned char* buffer,
-      tmk::algo::FrameFeature& frameFeature) = 0;
+      unsigned char* buffer, tmk::algo::FrameFeature& frameFeature) = 0;
 };
 
 // ----------------------------------------------------------------
@@ -66,15 +65,13 @@ class PDQFloatFrameBufferHasher : public AbstractFrameBufferHasher {
 
   ~PDQFloatFrameBufferHasher() {}
 
-  static int getFrameDownscaleDimension() {
-    return SCALED_DIMENSION;
-  }
+  static int getFrameDownscaleDimension() { return SCALED_DIMENSION; }
   int getFeatureDimension() override {
     return facebook::pdq::hashing::HASH256_NUM_BITS;
   }
 
-  bool hashFrame(unsigned char* buffer, tmk::algo::FrameFeature& frameFeature)
-      override;
+  bool hashFrame(
+      unsigned char* buffer, tmk::algo::FrameFeature& frameFeature) override;
 };
 
 // ----------------------------------------------------------------
@@ -83,9 +80,7 @@ class FrameBufferHasherFactory {
   static int getFrameHasherDownscaleDimension(
       io::TMKFramewiseAlgorithm algorithm);
   static std::unique_ptr<AbstractFrameBufferHasher> createFrameHasher(
-      io::TMKFramewiseAlgorithm algorithm,
-      int frameHeight,
-      int frameWidth);
+      io::TMKFramewiseAlgorithm algorithm, int frameHeight, int frameWidth);
 };
 
 } // namespace hashing

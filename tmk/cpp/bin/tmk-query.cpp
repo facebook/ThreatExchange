@@ -3,8 +3,8 @@
 // ================================================================
 
 #include <tmk/cpp/algo/tmkfv.h>
-#include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
+#include <tmk/cpp/io/tmkio.h>
 
 #include <omp.h>
 #include <stdio.h>
@@ -12,8 +12,8 @@
 #include <string.h>
 
 #include <chrono>
-#include <unordered_map>
 #include <set>
+#include <unordered_map>
 
 using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> filenames;
   filenames.reserve(haystackMetadataToFeatures.size());
 
-  for (const auto &s : haystackMetadataToFeatures) {
+  for (const auto& s : haystackMetadataToFeatures) {
     filenames.push_back(s.first);
   }
 
@@ -189,28 +189,31 @@ int main(int argc, char** argv) {
       printf("QUERY FOR %s\n", metadata1.c_str());
     }
 
-    #pragma omp parallel for schedule(dynamic)
-      for (unsigned int i = 0; i < filenames.size(); i++) {
-        const std::string& metadata2 = filenames[i];
-        std::shared_ptr<TMKFeatureVectors> pfv2 = haystackMetadataToFeatures.at(metadata2);
+#pragma omp parallel for schedule(dynamic)
+    for (unsigned int i = 0; i < filenames.size(); i++) {
+      const std::string& metadata2 = filenames[i];
+      std::shared_ptr<TMKFeatureVectors> pfv2 =
+          haystackMetadataToFeatures.at(metadata2);
 
-        float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
-        if (s1 >= c1) {
-          float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
-          if (s2 >= c2) {
-            if (verbose) {
-              printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
-            } else {
-              printf(
-                  "%.6f %.6f %s %s\n",
-                  s1,
-                  s2,
-                  metadata1.c_str(),
-                  metadata2.c_str());
-            }
+      float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
+      if (s1 >= c1) {
+        float s2 = level1Only
+            ? c2
+            : TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+        if (s2 >= c2) {
+          if (verbose) {
+            printf("  %.6f %.6f %s\n", s1, s2, metadata2.c_str());
+          } else {
+            printf(
+                "%.6f %.6f %s %s\n",
+                s1,
+                s2,
+                metadata1.c_str(),
+                metadata2.c_str());
           }
         }
-      } // end parallel
+      }
+    } // end parallel
   } // end needles loop
 
   std::chrono::time_point<std::chrono::system_clock> endQuery =

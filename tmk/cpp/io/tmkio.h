@@ -25,22 +25,16 @@ FILE* openFileOrDie(const char* filename, const char* mode, const char* argv0);
 // ----------------------------------------------------------------
 TMKFramewiseAlgorithm algoFromMagic(char magic[TMK_MAGIC_LENGTH]);
 TMKFramewiseAlgorithm algoFromMagicOrDie(
-    char* argv0,
-    char magic[TMK_MAGIC_LENGTH],
-    char* fromFileName);
+    char* argv0, char magic[TMK_MAGIC_LENGTH], char* fromFileName);
 void reportUnrecognizedAlgorithmMagic(
-    char* argv0,
-    char magic[4],
-    char* fromFileName);
+    char* argv0, char magic[4], char* fromFileName);
 bool algoToMagic(TMKFramewiseAlgorithm algorithm, char magic[TMK_MAGIC_LENGTH]);
 TMKFramewiseAlgorithm algoFromLowercaseName(std::string name);
 std::string algorithmToName(TMKFramewiseAlgorithm algorithm);
 
 // ----------------------------------------------------------------
 bool readDecodedVideoStreamFileHeader(
-    FILE* fp,
-    DecodedVideoStreamFileHeader* pheader,
-    const char* programName);
+    FILE* fp, DecodedVideoStreamFileHeader* pheader, const char* programName);
 
 bool readFrameFeaturesFileHeader(
     FILE* fp,
@@ -86,11 +80,7 @@ char makePrintable(char c);
 // ----------------------------------------------------------------
 // Precondition: buffer is already allocated.
 bool readRGBTriples(
-    unsigned char* buffer,
-    int height,
-    int width,
-    FILE* fp,
-    bool& eof);
+    unsigned char* buffer, int height, int width, FILE* fp, bool& eof);
 
 // ----------------------------------------------------------------
 // Precondition: vector is already allocated.

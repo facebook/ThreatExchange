@@ -12,9 +12,9 @@
 // as possible.
 // ================================================================
 
-#include <tmk/cpp/lib/vec.h>
 #include <stdio.h>
 #include <cmath>
+#include <tmk/cpp/lib/vec.h>
 
 namespace facebook {
 namespace tmk {
@@ -82,9 +82,7 @@ bool distanceSquaredLE(
 
 // ----------------------------------------------------------------
 float computeDistance(
-    const std::vector<float>& u,
-    const std::vector<float>& v
-) {
+    const std::vector<float>& u, const std::vector<float>& v) {
   float dsq = 0.0;
   int n = u.size();
   for (int i = 0; i < n; i++) {
@@ -153,8 +151,8 @@ std::vector<std::vector<float>> allocateRank2(int length1, int length2) {
 }
 
 // ----------------------------------------------------------------
-std::vector<std::vector<std::vector<float>>>
-allocateRank3(int length1, int length2, int length3) {
+std::vector<std::vector<std::vector<float>>> allocateRank3(
+    int length1, int length2, int length3) {
   std::vector<std::vector<std::vector<float>>> retval =
       std::vector<std::vector<std::vector<float>>>(length1);
   for (int i = 0; i < length1; i++) {
@@ -204,16 +202,14 @@ bool compareFloats(float a, float b, float tolerance) {
 }
 
 bool compareVectors(
-    const std::vector<float>& u,
-    const std::vector<float>& v,
-    float tolerance) {
+    const std::vector<float>& u, const std::vector<float>& v, float tolerance) {
   if (u.size() != v.size()) {
     printf("SIZE OUT\n");
     return false;
   }
   for (int i = 0; i < u.size(); i++) {
     if (!(compareFloats(u[i], v[i], tolerance))) {
-    printf("I OUT %d %.4f %.4f\n", i, u[i], v[i]);
+      printf("I OUT %d %.4f %.4f\n", i, u[i], v[i]);
       return false;
     }
   }

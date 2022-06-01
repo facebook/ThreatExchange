@@ -9,21 +9,21 @@
 //
 // tmk-two-level-score *.tmk | sort -n
 
-#include <iostream>
-#include <tmk/cpp/hashing/filehasher.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <string>
+#include <iostream>
 #include <memory>
+#include <string>
+#include <tmk/cpp/hashing/filehasher.h>
 
 using namespace std;
 
 const std::string PATH_SEPARATOR =
 #if defined(_WIN32)
-                                    "\\";
+    "\\";
 #else
-                                    "/";
+    "/";
 #endif
 
 // ----------------------------------------------------------------
@@ -36,9 +36,11 @@ void usage(char* argv0, int exit_rc) {
   fprintf(fp, "-o|--output-feature-vectors-file-name ...\n");
   fprintf(fp, "Optional:\n");
   fprintf(fp, "-v|--verbose\n");
-  fprintf(fp, "-d|--output-directory ...: instead of specifiying "
-    "output-file name, just give a directory and the output file name will "
-    "be auto-computed from the input video file name.\n");
+  fprintf(
+      fp,
+      "-d|--output-directory ...: instead of specifiying "
+      "output-file name, just give a directory and the output file name will "
+      "be auto-computed from the input video file name.\n");
   exit(exit_rc);
 }
 
@@ -55,8 +57,7 @@ std::string basename(const std::string& path, const std::string& delimiter) {
 
 // ----------------------------------------------------------------
 std::string stripExtension(
-    const std::string& path,
-    const std::string& delimiter) {
+    const std::string& path, const std::string& delimiter) {
   size_t n = path.length();
   size_t i = path.rfind(delimiter, n);
   if (i == string::npos) {
@@ -126,24 +127,27 @@ int main(int argc, char* argv[]) {
   }
 
   if (outputFeatureVectorsFileName.empty() && outputDirectory.empty()) {
-    fprintf(stderr,
-      "%s: need one of --output-feature-vectors-file-name "
-      "or --output-directory\n",
-      argv[0]);
+    fprintf(
+        stderr,
+        "%s: need one of --output-feature-vectors-file-name "
+        "or --output-directory\n",
+        argv[0]);
     usage(argv[0], 1);
   }
 
   if (!outputFeatureVectorsFileName.empty() && !outputDirectory.empty()) {
-    fprintf(stderr,
-      "%s: need one of --output-feature-vectors-file-name "
-      "or --output-directory\n",
-      argv[0]);
+    fprintf(
+        stderr,
+        "%s: need one of --output-feature-vectors-file-name "
+        "or --output-directory\n",
+        argv[0]);
     usage(argv[0], 1);
   }
 
   facebook::tmk::io::TMKFramewiseAlgorithm tmkFramewiseAlgorithm =
-    facebook::tmk::io::algoFromLowercaseName(frameFeatureAlgorithmName);
-  if (tmkFramewiseAlgorithm == facebook::tmk::io::TMKFramewiseAlgorithm::UNRECOGNIZED) {
+      facebook::tmk::io::algoFromLowercaseName(frameFeatureAlgorithmName);
+  if (tmkFramewiseAlgorithm ==
+      facebook::tmk::io::TMKFramewiseAlgorithm::UNRECOGNIZED) {
     fprintf(stderr, "%s: unrecognized algorithm name.\n", argv[0]);
     return 1;
   }
@@ -174,7 +178,8 @@ int main(int argc, char* argv[]) {
     // Strip file extension:
     b = stripExtension(b, ".");
     // E.g. -i /path/to/foo.mp4 -d /tmp -> /tmp/foo.tmk
-    outputFeatureVectorsFileName = outputDirectory + PATH_SEPARATOR + b + ".tmk";
+    outputFeatureVectorsFileName =
+        outputDirectory + PATH_SEPARATOR + b + ".tmk";
   }
 
   FILE* outputFp = facebook::tmk::io::openFileOrDie(
@@ -191,8 +196,10 @@ int main(int argc, char* argv[]) {
   fclose(outputFp);
 
   if (outputDirectory != "") {
-    printf("%s %s\n",
-      inputVideoFileName.c_str(), outputFeatureVectorsFileName.c_str());
+    printf(
+        "%s %s\n",
+        inputVideoFileName.c_str(),
+        outputFeatureVectorsFileName.c_str());
   }
 
   return 0;

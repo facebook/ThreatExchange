@@ -16,8 +16,8 @@
 // ================================================================
 
 #include <tmk/cpp/algo/tmkfv.h>
-#include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
+#include <tmk/cpp/io/tmkio.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,8 +38,7 @@ void ingestFeatures(
     bool level1Only);
 
 std::shared_ptr<TMKFeatureVectors> loadFromInputFileNameOrDie(
-    const char* argv0,
-    const char* tmkFileName);
+    const char* argv0, const char* tmkFileName);
 
 void printTextOutput(const std::map<std::string, int>& repsWithCounts);
 
@@ -209,8 +208,7 @@ void ingestFeatures(
 
 // ----------------------------------------------------------------
 std::shared_ptr<TMKFeatureVectors> loadFromInputFileNameOrDie(
-    const char* argv0,
-    const char* tmkFileName) {
+    const char* argv0, const char* tmkFileName) {
   FILE* inputFp =
       facebook::tmk::io::openFileOrDie(tmkFileName, (char*)"rb", argv0);
 

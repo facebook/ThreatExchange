@@ -3,7 +3,8 @@
 // ================================================================
 
 /* ----------------------------------------------------------------
-java TETagQuery tag-to-details --page-size 10 --hash-dir ./tetmk media_type_long_hash_video
+java TETagQuery tag-to-details --page-size 10 --hash-dir ./tetmk
+media_type_long_hash_video
 
 g++ \
   -Xpreprocessor -fopenmp -lomp \
@@ -19,11 +20,11 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 ---------------------------------------------------------------- */
 
 #include <tmk/cpp/algo/tmkfv.h>
-#include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
+#include <tmk/cpp/io/tmkio.h>
 
-#include <faiss/IndexIVFPQ.h>
 #include <faiss/IndexFlat.h>
+#include <faiss/IndexIVFPQ.h>
 #include <faiss/index_io.h>
 #include <faiss/utils/distances.h>
 
@@ -31,8 +32,8 @@ export DYLD_LIBRARY_PATH=/usr/lib:/usr/local/lib:../../faiss
 #include <stdlib.h>
 #include <string.h>
 
-#include <cmath>
 #include <chrono>
+#include <cmath>
 #include <map>
 #include <set>
 
@@ -87,7 +88,9 @@ void usage(char* argv0, int exit_rc) {
       DEFAULT_LEVEL_2_THRESHOLD);
   fprintf(fp, "--min {n}: Return a maximum of n nearest neighbors. Using 5\n");
   fprintf(fp, "--level-1-only: Don't do level-2 thresholding (runs faster).\n");
-  fprintf(fp, "-f|--force: Force query to use FAISS even if below minimum number of points\n");
+  fprintf(
+      fp,
+      "-f|--force: Force query to use FAISS even if below minimum number of points\n");
   fprintf(fp, "-v|--verbose: Be more verbose.\n");
   exit(exit_rc);
 }
@@ -180,7 +183,8 @@ int main(int argc, char** argv) {
   size_t num_database_vectors = haystackMetadataToFeatures.size();
 
   // Make the index object and train it
-  // note: this implementation is almost certainly wrong without using inner product, but that can be a future PR.
+  // note: this implementation is almost certainly wrong without using inner
+  // product, but that can be a future PR.
   faiss::IndexFlatIP coarse_quantizer(vector_dimension);
 
   // A reasonable number of centroids to index num_database_vectors vectors
@@ -197,17 +201,23 @@ int main(int argc, char** argv) {
   // The coarse quantizer should not be deallocated before the index.
   // 4 = number of bytes per code (vector_dimension must be a multiple of this)
   // 8 = number of bits per sub-code (almost always 8)
-  faiss::IndexIVFPQ faiss_index(&coarse_quantizer, vector_dimension, num_centroids, 4, 8);
+  faiss::IndexIVFPQ faiss_index(
+      &coarse_quantizer, vector_dimension, num_centroids, 4, 8);
   faiss_index.verbose = verbose;
 
   // check for min data size for optimal FAISS performance
   int min_points = faiss_index.cp.min_points_per_centroid * num_centroids;
   if (num_database_vectors < min_points) {
     if (verbose) {
-      printf("MINIMUM POINTS NOT MET FOR FAISS: %d FOUND vs %d EXPECTED\n", (int)num_database_vectors, min_points);
+      printf(
+          "MINIMUM POINTS NOT MET FOR FAISS: %d FOUND vs %d EXPECTED\n",
+          (int)num_database_vectors,
+          min_points);
     }
     if (!force) {
-      fprintf(stderr, "Number of points is below minimum size for faiss. Run with --force flag to ignore this error.\n");
+      fprintf(
+          stderr,
+          "Number of points is below minimum size for faiss. Run with --force flag to ignore this error.\n");
       exit(2);
     }
   }
@@ -217,14 +227,16 @@ int main(int argc, char** argv) {
   i = 0;
   for (const auto& it : haystackMetadataToFeatures) {
     const auto& haystackFV = it.second;
-    const std::vector<float>& haystack_vector = haystackFV->getPureAverageFeature();
+    const std::vector<float>& haystack_vector =
+        haystackFV->getPureAverageFeature();
     for (j = 0; j < vector_dimension; j++) {
       database[i * vector_dimension + j] = haystack_vector[j];
     }
     i++;
   }
 
-  faiss::fvec_renorm_L2(vector_dimension, num_database_vectors, database.data());
+  faiss::fvec_renorm_L2(
+      vector_dimension, num_database_vectors, database.data());
 
   // Train the quantizer, using the database
   if (verbose) {
@@ -241,8 +253,10 @@ int main(int argc, char** argv) {
     printf("imbalance factor: %g\n", faiss_index.invlists->imbalance_factor());
   }
 
-  std::vector<std::string> haystack_filenames_as_vector(haystackMetadataToFeatures.size());
-  std::vector<std::string> needles_filenames_as_vector(needlesMetadataToFeatures.size());
+  std::vector<std::string> haystack_filenames_as_vector(
+      haystackMetadataToFeatures.size());
+  std::vector<std::string> needles_filenames_as_vector(
+      needlesMetadataToFeatures.size());
   i = 0;
   for (const auto& it : haystackMetadataToFeatures) {
     haystack_filenames_as_vector[i] = it.first;
@@ -330,12 +344,11 @@ int main(int argc, char** argv) {
   std::vector<float> nearest_neighbor_distances(k * num_queries);
 
   faiss_index.search(
-    num_queries,
-    queries.data(),
-    k,
-    nearest_neighbor_distances.data(),
-    nearest_neighbor_indices.data()
-  );
+      num_queries,
+      queries.data(),
+      k,
+      nearest_neighbor_distances.data(),
+      nearest_neighbor_indices.data());
 
   std::chrono::time_point<std::chrono::system_clock> endQuery =
       std::chrono::system_clock::now();
@@ -350,34 +363,41 @@ int main(int argc, char** argv) {
 
   if (verbose) {
     printf("Query results (vector IDs, then distances):\n");
-    printf("(Note that the nearest neighbor is not always at distance 0 due to quantization errors.)\n");
+    printf(
+        "(Note that the nearest neighbor is not always at distance 0 due to quantization errors.)\n");
   }
 
   for (i = 0; i < num_queries; i++) {
     const std::string& needleFilename = needles_filenames_as_vector[i];
-    const std::shared_ptr<TMKFeatureVectors> pneedleFV = needlesMetadataToFeatures.at(needleFilename);
+    const std::shared_ptr<TMKFeatureVectors> pneedleFV =
+        needlesMetadataToFeatures.at(needleFilename);
     printf("Query %2d %s:\n", i, needleFilename.c_str());
 
     for (int j = 0; j < k; j++) {
-      int nnidx = (int)nearest_neighbor_indices[i*k+j];
+      int nnidx = (int)nearest_neighbor_indices[i * k + j];
       if (nnidx < 0) { // -1 for ... I'm not yet sure why.
         continue;
       }
-      float nndist = nearest_neighbor_distances[i*k+j];
+      float nndist = nearest_neighbor_distances[i * k + j];
       const std::string& haystackFilename = haystack_filenames_as_vector[nnidx];
-      const std::shared_ptr<TMKFeatureVectors> phaystackFV = haystackMetadataToFeatures.at(haystackFilename);
+      const std::shared_ptr<TMKFeatureVectors> phaystackFV =
+          haystackMetadataToFeatures.at(haystackFilename);
 
-      float s1 = TMKFeatureVectors::computeLevel1Score(*pneedleFV, *phaystackFV);
+      float s1 =
+          TMKFeatureVectors::computeLevel1Score(*pneedleFV, *phaystackFV);
 
       if (s1 >= c1) {
-        float s2 = level1Only ? c2 : TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
+        float s2 = level1Only
+            ? c2
+            : TMKFeatureVectors::computeLevel2Score(*pneedleFV, *phaystackFV);
 
         if (s2 >= c2) {
-          printf("  distance %.6f L1 %.6f L2 %.6f metadata %s\n",
-            nndist,
-            s1,
-            s2,
-            haystackFilename.c_str());
+          printf(
+              "  distance %.6f L1 %.6f L2 %.6f metadata %s\n",
+              nndist,
+              s1,
+              s2,
+              haystackFilename.c_str());
         }
       }
     }

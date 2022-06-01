@@ -38,12 +38,8 @@ class AbstractRasterWriter {
   // Returns number of triples written
   virtual size_t writeRGBTriples(unsigned char* raster, FILE* outputFp) = 0;
   unsigned char* getPointerToStorageTriple(unsigned char* raster, int i, int j);
-  int getDisplayFrameHeight() const {
-    return displayFrameHeight_;
-  }
-  int getDisplayFrameWidth() const {
-    return displayFrameWidth_;
-  }
+  int getDisplayFrameHeight() const { return displayFrameHeight_; }
+  int getDisplayFrameWidth() const { return displayFrameWidth_; }
 };
 
 // ----------------------------------------------------------------

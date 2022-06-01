@@ -44,8 +44,8 @@ TMKFramewiseAlgorithm algoFromMagic(char magic[4]) {
 }
 
 // ----------------------------------------------------------------
-TMKFramewiseAlgorithm
-algoFromMagicOrDie(char* argv0, char magic[4], char* fromFileName) {
+TMKFramewiseAlgorithm algoFromMagicOrDie(
+    char* argv0, char magic[4], char* fromFileName) {
   TMKFramewiseAlgorithm algorithm = algoFromMagic(magic);
   if (algorithm == TMKFramewiseAlgorithm::UNRECOGNIZED) {
     reportUnrecognizedAlgorithmMagic(argv0, magic, fromFileName);
@@ -56,9 +56,7 @@ algoFromMagicOrDie(char* argv0, char magic[4], char* fromFileName) {
 
 // ----------------------------------------------------------------
 void reportUnrecognizedAlgorithmMagic(
-    char* argv0,
-    char magic[4],
-    char* fromFileName) {
+    char* argv0, char magic[4], char* fromFileName) {
   fprintf(
       stderr,
       "%s: unrecognized algorithm %c%c%c%c (%02x%02x%02x%02x) in \"%s\".\n",
@@ -76,8 +74,7 @@ void reportUnrecognizedAlgorithmMagic(
 
 // ----------------------------------------------------------------
 bool algoToMagic(
-    TMKFramewiseAlgorithm algorithm,
-    char magic[TMK_MAGIC_LENGTH]) {
+    TMKFramewiseAlgorithm algorithm, char magic[TMK_MAGIC_LENGTH]) {
   bool rv = false;
   switch (algorithm) {
     case TMKFramewiseAlgorithm::PDQ_FLOAT:
@@ -115,9 +112,7 @@ std::string algorithmToName(TMKFramewiseAlgorithm algorithm) {
 
 // ----------------------------------------------------------------
 bool readDecodedVideoStreamFileHeader(
-    FILE* fp,
-    DecodedVideoStreamFileHeader* pheader,
-    const char* programName) {
+    FILE* fp, DecodedVideoStreamFileHeader* pheader, const char* programName) {
   size_t rc = fread(pheader, sizeof(*pheader), 1, fp);
   if (rc != 1) {
     perror("fread");
@@ -326,9 +321,7 @@ char makePrintable(char c) {
 
 // ----------------------------------------------------------------
 bool checkMagic(
-    char actual[TMK_MAGIC_LENGTH],
-    char* expected,
-    const char* programName) {
+    char actual[TMK_MAGIC_LENGTH], char* expected, const char* programName) {
   bool ok = true;
   if (strlen(expected) != TMK_MAGIC_LENGTH) {
     ok = false;
@@ -370,11 +363,7 @@ bool checkMagic(
 
 // ----------------------------------------------------------------
 bool readRGBTriples(
-    unsigned char* buffer,
-    int height,
-    int width,
-    FILE* fp,
-    bool& eof) {
+    unsigned char* buffer, int height, int width, FILE* fp, bool& eof) {
   eof = false;
   int numRGBTriples = height * width;
 

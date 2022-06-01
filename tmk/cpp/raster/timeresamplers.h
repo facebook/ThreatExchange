@@ -10,9 +10,9 @@
 #ifndef TIMERESAMPLERS_H
 #define TIMERESAMPLERS_H
 
+#include <memory>
 #include <stdexcept>
 #include <string>
-#include <memory>
 
 namespace facebook {
 namespace tmk {
@@ -103,8 +103,7 @@ class SpeedUpTimeResampler : public AbstractTimeResampler {
 class TimeResamplerFactory {
  public:
   static std::unique_ptr<AbstractTimeResampler> createTimeResampler(
-      double inputFramesPerSecond,
-      int outputFramesPerSecond);
+      double inputFramesPerSecond, int outputFramesPerSecond);
 };
 
 } // namespace raster
