@@ -1,5 +1,5 @@
 # ================================================================
-CXX=g++ # please customize according to your system --- Note: Apple clang on M1 is not currently supported 
+CXX=g++-11 # please customize according to your system --- Note: Apple clang on M1 is not currently supported 
 CC=$(CXX) -g -std=c++11
 IFLAGS=-I../.. -I.
 # -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation is because of CImg.h
@@ -118,6 +118,11 @@ mih-query: bin/mih-query.cpp $(LIBSRCS) $(LIBHDRS)
 # Note: works on Linux; not on OSX.
 test-mih-prof: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) -pg bin/test-mih.cpp $(LIBSRCS) -o test-mih-prof $(LFLAGS) -lpthread
+
+format:
+	find . -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
+check-format:
+	find . -iname '*.h' -o -iname '*.cpp' | xargs clang-format -n --Werror
 
 # ================================================================
 tags: .always
