@@ -6,12 +6,12 @@
 #define _GNU_SOURCE
 #endif
 
-#include <pdq/cpp/io/hashio.h>
-#include <pdq/cpp/index/mih.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pdq/cpp/index/mih.h>
+#include <pdq/cpp/io/hashio.h>
+
 #include <set>
 
 // XXX UNDER CONSTRUCTION
@@ -59,18 +59,21 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "-h|--help    Print this message.\n");
   fprintf(fp, "-v|--verbose Be verbose.\n");
   fprintf(fp, "-b|--brute-force-query Use linear search not MIH.\n");
-  fprintf(fp, "-d {n}       Distance threshold: default %d.\n",
-    DEFAULT_PDQ_DISTANCE_THRESHOLD);
-  fprintf(fp, "--trace {n}       Print to stderr every n items. Default off.\n");
+  fprintf(
+      fp,
+      "-d {n}       Distance threshold: default %d.\n",
+      DEFAULT_PDQ_DISTANCE_THRESHOLD);
+  fprintf(
+      fp, "--trace {n}       Print to stderr every n items. Default off.\n");
   exit(rc);
 }
 
 // ----------------------------------------------------------------
 int main(int argc, char** argv) {
   bool verbose = false;
-  int  doBruteForceQuery = false;
-  int  distanceThreshold = DEFAULT_PDQ_DISTANCE_THRESHOLD;
-  int  traceCount = 0;
+  int doBruteForceQuery = false;
+  int distanceThreshold = DEFAULT_PDQ_DISTANCE_THRESHOLD;
+  int traceCount = 0;
 
   //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // Parse command-line flags. I'm explicitly not using gflags or other such
@@ -95,14 +98,14 @@ int main(int argc, char** argv) {
     } else if (!strcmp(argv[argi], "-d")) {
       if ((argc - argi) < 2)
         usage(argv[0], 1);
-      if (sscanf(argv[argi+1], "%d", &distanceThreshold) != 1) {
+      if (sscanf(argv[argi + 1], "%d", &distanceThreshold) != 1) {
         usage(argv[0], 1);
       }
       argi += 2;
     } else if (!strcmp(argv[argi], "--trace")) {
       if ((argc - argi) < 2)
         usage(argv[0], 1);
-      if (sscanf(argv[argi+1], "%d", &traceCount) != 1) {
+      if (sscanf(argv[argi + 1], "%d", &traceCount) != 1) {
         usage(argv[0], 1);
       }
       argi += 2;
@@ -115,13 +118,14 @@ int main(int argc, char** argv) {
   //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // Load input hashes+metadata
 
-  std::vector<std::pair<Hash256,std::string>> vector_of_pairs;
+  std::vector<std::pair<Hash256, std::string>> vector_of_pairs;
 
-  facebook::pdq::io::loadHashesAndMetadataFromFiles(&argv[argi], argc-argi, vector_of_pairs);
+  facebook::pdq::io::loadHashesAndMetadataFromFiles(
+      &argv[argi], argc - argi, vector_of_pairs);
 
   if (verbose) {
     printf("ORIGINAL VECTOR OF PAIRS:\n");
-    for (auto it: vector_of_pairs) {
+    for (auto it : vector_of_pairs) {
       Hash256 hash = it.first;
       std::string metadata = it.second;
       printf("%s,%s\n", hash.format().c_str(), metadata.c_str());
@@ -133,7 +137,7 @@ int main(int argc, char** argv) {
   // Build the mutually-indexed hash. Initially mark all hayfibers with
   // cluster ID -1.
 
-  facebook::pdq::index::MIH256<std::pair<int,std::string>> mih;
+  facebook::pdq::index::MIH256<std::pair<int, std::string>> mih;
   // We could insertAll, but instead loop so we can trace.
   // mih.insertAll(vector_of_pairs);
   int i = 0;
@@ -165,7 +169,7 @@ int main(int argc, char** argv) {
     Hash256& needle_hash = it1.first;
     std::string needle_metadata = it1.second;
 
-    std::vector<std::pair<Hash256,std::pair<int,std::string>>> matches;
+    std::vector<std::pair<Hash256, std::pair<int, std::string>>> matches;
 
     if (traceCount > 0) {
       if ((i % traceCount) == 0) {
@@ -189,25 +193,25 @@ int main(int argc, char** argv) {
         break;
       }
     }
-    int assignedClusterIndex = (matchedClusterIndex == -1)
-      ? ++newClusterIndex
-      : matchedClusterIndex;
-    for (auto& it2: matches) {
+    int assignedClusterIndex =
+        (matchedClusterIndex == -1) ? ++newClusterIndex : matchedClusterIndex;
+    for (auto& it2 : matches) {
       printf("WRITE %d\n", assignedClusterIndex);
       it2.second.second = assignedClusterIndex;
     }
   }
 
-  for (auto& it: mih.get()) {
+  for (auto& it : mih.get()) {
     Hash256& hash = it.first;
     auto cluster_id_and_metadata = it.second;
     int clusterIndex = cluster_id_and_metadata.first;
     std::string metadata = cluster_id_and_metadata.second;
 
-    printf("clidx=%d,hash=%s,%s\n",
-      clusterIndex,
-      hash.format().c_str(),
-      metadata.c_str());
+    printf(
+        "clidx=%d,hash=%s,%s\n",
+        clusterIndex,
+        hash.format().c_str(),
+        metadata.c_str());
 
     fflush(stdout);
   }

@@ -119,6 +119,11 @@ mih-query: bin/mih-query.cpp $(LIBSRCS) $(LIBHDRS)
 test-mih-prof: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) -pg bin/test-mih.cpp $(LIBSRCS) -o test-mih-prof $(LFLAGS) -lpthread
 
+format:
+	find . -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
+check-format:
+	find . -iname '*.h' -o -iname '*.cpp' | xargs clang-format -n --Werror
+
 # ================================================================
 tags: .always
 	ctags -R .

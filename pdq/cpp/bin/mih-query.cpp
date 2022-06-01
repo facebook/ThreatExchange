@@ -6,11 +6,12 @@
 #define _GNU_SOURCE
 #endif
 
-#include <pdq/cpp/index/mih.h>
-#include <pdq/cpp/io/hashio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pdq/cpp/index/mih.h>
+#include <pdq/cpp/io/hashio.h>
+
 #include <set>
 
 // ================================================================

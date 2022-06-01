@@ -2,9 +2,10 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 // ================================================================
 
-#include <pdq/cpp/io/pdqio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pdq/cpp/io/pdqio.h>
+
 #include <stdexcept>
 
 // ================================================================
@@ -209,13 +210,12 @@ void process_file(
   if (do_pdqhash) {
     try {
       facebook::pdq::hashing::pdqHash256FromFile(
-        filename,
-        pdqhash,
-        quality,
-        imageHeightTimesWidthUnused,
-        readSecondsUnused,
-        hashSecondsUnused
-      );
+          filename,
+          pdqhash,
+          quality,
+          imageHeightTimesWidthUnused,
+          readSecondsUnused,
+          hashSecondsUnused);
     } catch (std::runtime_error& e) {
       fprintf(stderr, "%s: could not decode \"%s\".\n", argv0, filename);
       if (keep_going_after_errors) {

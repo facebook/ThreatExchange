@@ -32,9 +32,7 @@ using Hash256Text = char[HASH256_TEXT_LENGTH];
 struct Hash256 {
   Hash16 w[HASH256_NUM_WORDS];
 
-  int getNumWords() const {
-    return HASH256_NUM_WORDS;
-  }
+  int getNumWords() const { return HASH256_NUM_WORDS; }
 
   Hash256() {
     for (int i = 0; i < HASH256_NUM_WORDS; i++) {
@@ -87,21 +85,13 @@ struct Hash256 {
     return n;
   }
 
-  int getBit(int k) const {
-    return (this->w[(k & 255) >> 4] >> (k & 15)) & 1;
-  }
+  int getBit(int k) const { return (this->w[(k & 255) >> 4] >> (k & 15)) & 1; }
 
-  void setBit(int k) {
-    this->w[(k & 255) >> 4] |= 1 << (k & 15);
-  }
+  void setBit(int k) { this->w[(k & 255) >> 4] |= 1 << (k & 15); }
 
-  void clearBit(int k) {
-    this->w[(k & 255) >> 4] &= ~(1 << (k & 15));
-  }
+  void clearBit(int k) { this->w[(k & 255) >> 4] &= ~(1 << (k & 15)); }
 
-  void flipBit(int k) {
-    this->w[(k & 255) >> 4] ^= 1 << (k & 15);
-  }
+  void flipBit(int k) { this->w[(k & 255) >> 4] ^= 1 << (k & 15); }
 
   Hash256 operator^(const Hash256& that) const {
     Hash256 rv;
@@ -146,9 +136,7 @@ struct Hash256 {
   static Hash256 fromStringOrDie(char* string);
 
   std::string format() const;
-  void dump() {
-    printf("%s", this->format().c_str());
-  }
+  void dump() { printf("%s", this->format().c_str()); }
 
   // Flips some number of bits randomly, with replacement.  (I.e. not all
   // flipped bits are guaranteed to be in different positions; if you pass

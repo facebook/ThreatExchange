@@ -2,12 +2,11 @@
 // Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 // ================================================================
 
-#include <pdq/cpp/common/pdqhashtypes.h>
-#include <pdq/cpp/common/pdqhamming.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pdq/cpp/common/pdqhamming.h>
+#include <pdq/cpp/common/pdqhashtypes.h>
 
 // ================================================================
 // Tests bit-flips. Output is to stdout and regressed using reg_test/run.
@@ -43,7 +42,7 @@ int main(int argc, char** argv) {
 
   hash.clear();
   for (int i = 0; i < 16; i++) {
-    hash.setBit(i*i);
+    hash.setBit(i * i);
   }
   printf("\n");
   printf("%s\n", hash.format().c_str());
