@@ -27,10 +27,7 @@ using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
 
 void handleInputFileNameOrDie(
-    const char* argv0,
-    const char* tmkFileName,
-    bool printAvgOnly,
-    bool raw);
+    const char* argv0, const char* tmkFileName, bool printAvgOnly, bool raw);
 
 int handleInputFp(
     const char* argv0,
@@ -126,10 +123,7 @@ int main(int argc, char** argv) {
 
 // ----------------------------------------------------------------
 void handleInputFileNameOrDie(
-    const char* argv0,
-    const char* tmkFileName,
-    bool printAvgOnly,
-    bool raw) {
+    const char* argv0, const char* tmkFileName, bool printAvgOnly, bool raw) {
   FILE* inputFp =
       facebook::tmk::io::openFileOrDie(tmkFileName, (char*)"rb", argv0);
   handleInputFp(argv0, tmkFileName, inputFp, printAvgOnly, raw);

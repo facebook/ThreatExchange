@@ -45,9 +45,9 @@ int main(int argc, char** argv) {
     char* flag = argv[argi++];
     if (!strcmp(flag, "-h") || !strcmp(flag, "--help")) {
       usage(argv[0], 0);
-    } else if (!strcmp(flag, "-s") || !strcmp(flag, "--strict")){
+    } else if (!strcmp(flag, "-s") || !strcmp(flag, "--strict")) {
       strict = true;
-    } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")){
+    } else if (!strcmp(flag, "-v") || !strcmp(flag, "--verbose")) {
       verbose = true;
     } else {
       usage(argv[0], 1);
@@ -69,19 +69,27 @@ int main(int argc, char** argv) {
   }
   float tol = 0.08;
   bool ok;
-  float minScore = 1.0 - tol; // Perfect matches will have level 1 and 2 scores of 1.0
+  float minScore =
+      1.0 - tol; // Perfect matches will have level 1 and 2 scores of 1.0
 
-  if (strict){
+  if (strict) {
     ok = TMKFeatureVectors::compare(*pfva, *pfvb, tol);
-    if(verbose){
+    if (verbose) {
       fprintf(stderr, "Using sine and cosine similarity.\n");
     }
   } else {
-    float score1 = TMKFeatureVectors::computeLevel1Score(*pfva, *pfvb) > minScore;
-    float score2 = TMKFeatureVectors::computeLevel2Score(*pfva, *pfvb)  > minScore;
+    float score1 =
+        TMKFeatureVectors::computeLevel1Score(*pfva, *pfvb) > minScore;
+    float score2 =
+        TMKFeatureVectors::computeLevel2Score(*pfva, *pfvb) > minScore;
     ok = (score1 > minScore) && (score2 > minScore);
-    if(verbose){
-      fprintf(stderr, "Level 1 Score: %f Level 2 Score: %f Tolerance: %f\n", score1, score2, tol);
+    if (verbose) {
+      fprintf(
+          stderr,
+          "Level 1 Score: %f Level 2 Score: %f Tolerance: %f\n",
+          score1,
+          score2,
+          tol);
     }
   }
 
@@ -93,11 +101,7 @@ int main(int argc, char** argv) {
         tmkFileNameB);
     exit(1);
   } else {
-    fprintf(
-        stderr,
-        "TMK files match:\n%s\n%s\n",
-        tmkFileNameA,
-        tmkFileNameB);
+    fprintf(stderr, "TMK files match:\n%s\n%s\n", tmkFileNameA, tmkFileNameB);
     exit(0);
   }
 }

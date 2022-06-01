@@ -182,6 +182,10 @@ tmk-query-parallel: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
 tmk-two-level-score-parallel: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
 	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-two-level-score.cpp -o tmk-two-level-score-parallel -L. -ltmk $(OMP_LIB)
 
+format:
+	find . -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
+check-format:
+	find . -iname '*.h' -o -iname '*.cpp' | xargs clang-format -n --Werror
 # ================================================================
 tags:
 	ctags -R .

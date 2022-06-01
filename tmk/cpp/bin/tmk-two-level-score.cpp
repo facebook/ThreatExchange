@@ -22,8 +22,8 @@
 // ================================================================
 
 #include <tmk/cpp/algo/tmkfv.h>
-#include <tmk/cpp/io/tmkio.h>
 #include <tmk/cpp/bin/tmk_default_thresholds.h>
+#include <tmk/cpp/io/tmkio.h>
 
 #include <omp.h>
 #include <stdio.h>
@@ -31,8 +31,8 @@
 #include <string.h>
 
 #include <chrono>
-#include <unordered_map>
 #include <set>
+#include <unordered_map>
 
 using namespace facebook::tmk;
 using namespace facebook::tmk::algo;
@@ -61,7 +61,8 @@ void usage(const char* argv0, int exit_rc) {
       "--c2 {y}: Level-2 threshold: default %.3f.\n",
       DEFAULT_LEVEL_2_THRESHOLD);
   fprintf(
-      fp, "--include-self: Match each hash against itself as well as others.\n");
+      fp,
+      "--include-self: Match each hash against itself as well as others.\n");
   fprintf(fp, "-v|--verbose: Be more verbose.\n");
 
   exit(exit_rc);
@@ -128,7 +129,8 @@ int main(int argc, char** argv) {
 
   //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // LOAD FEATURES
-  std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>> metadataToFeatures;
+  std::unordered_map<std::string, std::shared_ptr<TMKFeatureVectors>>
+      metadataToFeatures;
   if (fileNamesFromStdin) {
     char* tmkFileName = nullptr;
     size_t linelen = 0;
@@ -162,39 +164,41 @@ int main(int argc, char** argv) {
   std::vector<std::string> filenames;
   filenames.reserve(metadataToFeatures.size());
 
-  for (const auto &s : metadataToFeatures)
+  for (const auto& s : metadataToFeatures)
     filenames.push_back(s.first);
 
   int selfOffset = includeSelf ? 0 : 1;
 
-  #pragma omp parallel for schedule(dynamic)
-    for (unsigned int i = 0; i < filenames.size() - selfOffset; i++) {
-      for (unsigned int j = i + selfOffset; j < filenames.size(); j++) {
-        bool flip = filenames[i] > filenames[j];
-        const std::string &filename1 = flip ? filenames[j] : filenames[i];
-        const std::string &filename2 = flip ? filenames[i] : filenames[j];
+#pragma omp parallel for schedule(dynamic)
+  for (unsigned int i = 0; i < filenames.size() - selfOffset; i++) {
+    for (unsigned int j = i + selfOffset; j < filenames.size(); j++) {
+      bool flip = filenames[i] > filenames[j];
+      const std::string& filename1 = flip ? filenames[j] : filenames[i];
+      const std::string& filename2 = flip ? filenames[i] : filenames[j];
 
-        const std::shared_ptr<TMKFeatureVectors> pfv1 = metadataToFeatures.at(filename1);
-        const std::shared_ptr<TMKFeatureVectors> pfv2 = metadataToFeatures.at(filename2);
+      const std::shared_ptr<TMKFeatureVectors> pfv1 =
+          metadataToFeatures.at(filename1);
+      const std::shared_ptr<TMKFeatureVectors> pfv2 =
+          metadataToFeatures.at(filename2);
 
-        if (!TMKFeatureVectors::areCompatible(*pfv1, *pfv2)) {
-          fprintf(
-              stderr,
-              "%s: immiscible provenances:\n%s\n%s\n",
-              argv[0],
-              filename1.c_str(),
-              filename2.c_str());
-          exit(1);
-        }
-
-        float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
-        if (s1 >= c1) {
-          float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
-          printf(
-              "%.6f %.6f %s %s\n", s1, s2, filename1.c_str(), filename2.c_str());
-        }
+      if (!TMKFeatureVectors::areCompatible(*pfv1, *pfv2)) {
+        fprintf(
+            stderr,
+            "%s: immiscible provenances:\n%s\n%s\n",
+            argv[0],
+            filename1.c_str(),
+            filename2.c_str());
+        exit(1);
       }
-    } // end parallel
+
+      float s1 = TMKFeatureVectors::computeLevel1Score(*pfv1, *pfv2);
+      if (s1 >= c1) {
+        float s2 = TMKFeatureVectors::computeLevel2Score(*pfv1, *pfv2);
+        printf(
+            "%.6f %.6f %s %s\n", s1, s2, filename1.c_str(), filename2.c_str());
+      }
+    }
+  } // end parallel
 
   std::chrono::time_point<std::chrono::system_clock> endScores =
       std::chrono::system_clock::now();

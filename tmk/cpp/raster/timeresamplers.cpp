@@ -55,8 +55,7 @@ int SpeedUpTimeResampler::numberToEmit() {
 // ----------------------------------------------------------------
 std::unique_ptr<AbstractTimeResampler>
 TimeResamplerFactory::createTimeResampler(
-    double inputFramesPerSecond,
-    int outputFramesPerSecond) {
+    double inputFramesPerSecond, int outputFramesPerSecond) {
   std::unique_ptr<AbstractTimeResampler> ptimeResampler;
   if (inputFramesPerSecond == outputFramesPerSecond) {
     ptimeResampler = std::make_unique<SameRateTimeResampler>(

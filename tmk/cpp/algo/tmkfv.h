@@ -90,9 +90,9 @@
 #define TMKFV_H
 
 #include <stdio.h>
-#include <tmk/cpp/io/tmkio.h>
 #include <memory>
 #include <vector>
+#include <tmk/cpp/io/tmkio.h>
 
 namespace facebook {
 namespace tmk {
@@ -214,8 +214,7 @@ class TMKFeatureVectors {
   // Checks the two are computed using the same periods, same framewise hasher,
   // etc.
   static bool areCompatible(
-      const TMKFeatureVectors& fva,
-      const TMKFeatureVectors& fvb);
+      const TMKFeatureVectors& fva, const TMKFeatureVectors& fvb);
 
   //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   static Periods makePoullotPeriods();
@@ -232,46 +231,30 @@ class TMKFeatureVectors {
   bool writeToOutputFile(const char* fileName, const char* programName) const;
 
   static std::shared_ptr<TMKFeatureVectors> readFromInputStream(
-      FILE* fp,
-      const char* programName);
+      FILE* fp, const char* programName);
   static std::shared_ptr<TMKFeatureVectors> readFromInputFile(
-      const char* fileName,
-      const char* programName);
+      const char* fileName, const char* programName);
 
   //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   facebook::tmk::io::TMKFramewiseAlgorithm getAlgorithm() const {
     return _algorithm;
   }
 
-  int getNumPeriods() const {
-    return _periods.size();
-  }
-  int getNumFourierCoefficients() const {
-    return _fourierCoefficients.size();
-  }
-  int getFrameFeatureDimension() const {
-    return _frameFeatureDimension;
-  }
+  int getNumPeriods() const { return _periods.size(); }
+  int getNumFourierCoefficients() const { return _fourierCoefficients.size(); }
+  int getFrameFeatureDimension() const { return _frameFeatureDimension; }
 
-  int getFramesPerSecond() const {
-    return _framesPerSecond;
-  }
+  int getFramesPerSecond() const { return _framesPerSecond; }
 
-  int getFrameFeatureCount() const {
-    return _frameFeatureCount;
-  }
+  int getFrameFeatureCount() const { return _frameFeatureCount; }
 
-  Periods getPeriods() const {
-    return _periods;
-  }
+  Periods getPeriods() const { return _periods; }
 
   FourierCoefficients getFourierCoefficients() const {
     return _fourierCoefficients;
   }
 
-  FrameFeature getPureAverageFeature() const {
-    return _pureAverageFeature;
-  }
+  FrameFeature getPureAverageFeature() const { return _pureAverageFeature; }
 
   FeaturesByPeriodsAndFourierCoefficients getCosFeatures() const {
     return _cosFeatures;
@@ -292,12 +275,10 @@ class TMKFeatureVectors {
       bool printDetails);
 
   static float computeLevel1Score(
-      const TMKFeatureVectors& fva,
-      const TMKFeatureVectors& fvb);
+      const TMKFeatureVectors& fva, const TMKFeatureVectors& fvb);
 
   static float computeLevel2Score(
-      const TMKFeatureVectors& fva,
-      const TMKFeatureVectors& fvb);
+      const TMKFeatureVectors& fva, const TMKFeatureVectors& fvb);
 
   static bool compare(
       const TMKFeatureVectors& fva,

@@ -15,16 +15,13 @@ namespace raster {
 
 // ----------------------------------------------------------------
 unsigned char* AbstractRasterWriter::getPointerToStorageTriple(
-    unsigned char* raster,
-    int i,
-    int j) {
+    unsigned char* raster, int i, int j) {
   return &raster[3 * ((i * storageFrameWidth_) + j)];
 }
 
 // ----------------------------------------------------------------
 size_t NoTransformRasterWriter::writeRGBTriples(
-    unsigned char* raster,
-    FILE* outputFp) {
+    unsigned char* raster, FILE* outputFp) {
   return fwrite(raster, 3, storageFrameWidth_ * storageFrameHeight_, outputFp);
 }
 
@@ -59,8 +56,7 @@ size_t NoTransformRasterWriter::writeRGBTriples(
 
 // ----------------------------------------------------------------
 size_t RotateCW90RasterWriter::writeRGBTriples(
-    unsigned char* raster,
-    FILE* outputFp) {
+    unsigned char* raster, FILE* outputFp) {
   size_t rc = 0;
   for (int display_i = 0; display_i < storageFrameWidth_; display_i++) {
     for (int display_j = 0; display_j < storageFrameHeight_; display_j++) {
@@ -108,8 +104,7 @@ size_t RotateCW90RasterWriter::writeRGBTriples(
 //   (29,0) D  (29,19) C
 
 size_t RotateCCW90RasterWriter::writeRGBTriples(
-    unsigned char* raster,
-    FILE* outputFp) {
+    unsigned char* raster, FILE* outputFp) {
   size_t rc = 0;
   for (int display_i = 0; display_i < storageFrameWidth_; display_i++) {
     for (int display_j = 0; display_j < storageFrameHeight_; display_j++) {
@@ -162,8 +157,7 @@ size_t RotateCCW90RasterWriter::writeRGBTriples(
 //   (29,0) D  (29,19) C
 
 size_t Rotate180RasterWriter::writeRGBTriples(
-    unsigned char* raster,
-    FILE* outputFp) {
+    unsigned char* raster, FILE* outputFp) {
   size_t rc = 0;
   for (int display_i = 0; display_i < storageFrameHeight_; display_i++) {
     for (int display_j = 0; display_j < storageFrameWidth_; display_j++) {

@@ -34,10 +34,7 @@ bool distanceSquaredLE(
     float& dsq // Contains full distance-squared if return value is true.
 );
 
-float computeDistance(
-    const std::vector<float>& u,
-    const std::vector<float>& v
-);
+float computeDistance(const std::vector<float>& u, const std::vector<float>& v);
 
 float computeDot(const std::vector<float>& u, const std::vector<float>& v);
 
@@ -50,8 +47,8 @@ void L2NormalizeVector(std::vector<float>& v);
 
 std::vector<std::vector<float>> allocateRank2(int length1, int length2);
 
-std::vector<std::vector<std::vector<float>>>
-allocateRank3(int length1, int length2, int length3);
+std::vector<std::vector<std::vector<float>>> allocateRank3(
+    int length1, int length2, int length3);
 
 bool checkDimensionsRank3(
     const std::vector<std::vector<std::vector<float>>>& u,
@@ -62,9 +59,7 @@ bool checkDimensionsRank3(
 bool compareFloats(float a, float b, float tolerance);
 
 bool compareVectors(
-    const std::vector<float>& u,
-    const std::vector<float>& v,
-    float tolerance);
+    const std::vector<float>& u, const std::vector<float>& v, float tolerance);
 
 bool compareVectorsRank3(
     const std::vector<std::vector<std::vector<float>>>& u,

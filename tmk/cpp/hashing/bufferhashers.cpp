@@ -7,9 +7,9 @@
 // vectors (one per frame). Multiple frame-hashing algorithms are supported.
 // ================================================================
 
-#include <tmk/cpp/hashing/bufferhashers.h>
-#include <pdq/cpp/downscaling/downscaling.h>
 #include <stdexcept>
+#include <pdq/cpp/downscaling/downscaling.h>
+#include <tmk/cpp/hashing/bufferhashers.h>
 
 namespace facebook {
 namespace tmk {
@@ -70,9 +70,7 @@ int FrameBufferHasherFactory::getFrameHasherDownscaleDimension(
 // ----------------------------------------------------------------
 std::unique_ptr<AbstractFrameBufferHasher>
 FrameBufferHasherFactory::createFrameHasher(
-    io::TMKFramewiseAlgorithm algorithm,
-    int frameHeight,
-    int frameWidth) {
+    io::TMKFramewiseAlgorithm algorithm, int frameHeight, int frameWidth) {
   std::unique_ptr<AbstractFrameBufferHasher> retval;
   switch (algorithm) {
     case io::TMKFramewiseAlgorithm::PDQ_FLOAT:

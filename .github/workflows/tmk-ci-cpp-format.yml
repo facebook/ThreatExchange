@@ -1,0 +1,27 @@
+# From: https://github.com/marketplace/actions/clang-format-check#multiple-paths
+name: clang-format Check
+on: 
+  push:
+    branches:
+      - main
+    paths:
+      - "tmk/cpp/**"
+      - ".github/workflows/tmk-ci-cpp-format.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "tmk/cpp/**"
+      - ".github/workflows/tmk-ci-cpp-format.yml"
+
+jobs:
+  formatting-check:
+    name: Formatting Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run clang-format style check for C/C++ programs.
+      uses: jidicula/clang-format-action@v4.6.2
+      with:
+        clang-format-version: '14'
+        check-path: 'tmk/cpp'

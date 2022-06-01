@@ -14,9 +14,9 @@
 
 const char* POPEN_MODE =
 #if defined(_WIN32)
-                          "rb";
+    "rb";
 #else
-                          "r";
+    "r";
 #endif
 
 using namespace std;
@@ -188,13 +188,14 @@ bool hashVideoFile(
   //     -s ${output_width}:${output_height} -an -f rawvideo -c:v rawvideo \
   //     -pix_fmt rgb24 -r $output_fps pipe:1
 
-  // add single quotes around the file name and then escape any single quotes inside it
-  // example: my file's.mp4 -> 'my file'\''s.mp4'
+  // add single quotes around the file name and then escape any single quotes
+  // inside it example: my file's.mp4 -> 'my file'\''s.mp4'
   std::stringstream ss;
 
   ss << quoted(inputVideoFileName);
   std::string escapedInputVideoFileName = ss.str();
-  std::string ffmpegLogLevel = verbose ? "" : "-loglevel warning -hide_banner -stats";
+  std::string ffmpegLogLevel =
+      verbose ? "" : "-loglevel warning -hide_banner -stats";
 
   std::string command = ffmpegPath + " " + ffmpegLogLevel + " -nostdin -i " +
       escapedInputVideoFileName + " -s " +

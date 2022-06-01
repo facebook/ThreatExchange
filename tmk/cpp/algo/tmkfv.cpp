@@ -12,7 +12,7 @@
 #include <tmk/cpp/lib/vec.h>
 
 #if defined(_WIN32)
-  #define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
 #endif
 
 #include <cmath>
@@ -136,8 +136,7 @@ std::shared_ptr<TMKFeatureVectors> TMKFeatureVectors::tryCreateFromPrecomputed(
 
 // ----------------------------------------------------------------
 bool TMKFeatureVectors::areCompatible(
-    const TMKFeatureVectors& fva,
-    const TMKFeatureVectors& fvb) {
+    const TMKFeatureVectors& fva, const TMKFeatureVectors& fvb) {
   if (fva._algorithm != fvb._algorithm) {
     fprintf(
         stderr,
@@ -346,8 +345,8 @@ FourierCoefficients TMKFeatureVectors::makePoullotFourierCoefficients() {
 }
 
 // ----------------------------------------------------------------
-bool TMKFeatureVectors::writeToOutputStream(FILE* fp, const char* programName)
-    const {
+bool TMKFeatureVectors::writeToOutputStream(
+    FILE* fp, const char* programName) const {
   bool write_rc = false;
 
   if (!facebook::tmk::io::writeFeatureVectorFileHeader(
@@ -416,8 +415,7 @@ bool TMKFeatureVectors::writeToOutputStream(FILE* fp, const char* programName)
 
 // ----------------------------------------------------------------
 bool TMKFeatureVectors::writeToOutputFile(
-    const char* fileName,
-    const char* programName) const {
+    const char* fileName, const char* programName) const {
   FILE* fp = fopen(fileName, "wb");
   if (fp == nullptr) {
     perror("fopen");
@@ -443,8 +441,7 @@ bool TMKFeatureVectors::writeToOutputFile(
 
 // ----------------------------------------------------------------
 std::shared_ptr<TMKFeatureVectors> TMKFeatureVectors::readFromInputStream(
-    FILE* fp,
-    const char* programName) {
+    FILE* fp, const char* programName) {
   io::FeatureVectorFileHeader header;
   bool read_rc;
 
@@ -543,8 +540,7 @@ std::shared_ptr<TMKFeatureVectors> TMKFeatureVectors::readFromInputStream(
 
 // ----------------------------------------------------------------
 std::shared_ptr<TMKFeatureVectors> TMKFeatureVectors::readFromInputFile(
-    const char* fileName,
-    const char* programName) {
+    const char* fileName, const char* programName) {
   FILE* fp = fopen(fileName, "rb");
   if (fp == nullptr) {
     perror("fopen");
@@ -677,16 +673,14 @@ void TMKFeatureVectors::findPairOffsetsModuloPeriods(
 
 // ----------------------------------------------------------------
 float TMKFeatureVectors::computeLevel1Score(
-    const TMKFeatureVectors& fva,
-    const TMKFeatureVectors& fvb) {
+    const TMKFeatureVectors& fva, const TMKFeatureVectors& fvb) {
   return facebook::tmk::libvec::computeCosSim(
       fva.getPureAverageFeature(), fvb.getPureAverageFeature());
 }
 
 // ----------------------------------------------------------------
 float TMKFeatureVectors::computeLevel2Score(
-    const TMKFeatureVectors& fva,
-    const TMKFeatureVectors& fvb) {
+    const TMKFeatureVectors& fva, const TMKFeatureVectors& fvb) {
   BestOffsets bestOffsets;
   ValuesAtBestOffsets valuesAtBestOffsets;
   TMKFeatureVectors::findPairOffsetsModuloPeriods(

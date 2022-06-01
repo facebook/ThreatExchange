@@ -9,9 +9,9 @@
 // * feat2tmk: .feat file to .tmk list of TMK cosine/sine features
 // ================================================================
 
+#include <tmk/cpp/algo/tmkfv.h>
 #include <tmk/cpp/hashing/bufferhashers.h>
 #include <tmk/cpp/io/tmkio.h>
-#include <tmk/cpp/algo/tmkfv.h>
 
 #include <stdio.h>
 #include <stdlib.h>
