@@ -174,7 +174,7 @@ void scaleFloatLuma(
       oldNumRows,
       oldNumCols,
       windowSizeAlongRows,
-      windowSizeAlongCols,
+       windowSizeAlongCols,
       numJaroszXYPasses);
 
   decimateFloat(
