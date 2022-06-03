@@ -16,12 +16,6 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher import fetch_state as state
 
 TCollabConfig = t.TypeVar("TCollabConfig", bound=CollaborationConfigBase)
-TUpdateRecord = t.TypeVar("TUpdateRecord")
-
-
-class FetchDelta(t.NamedTuple, t.Generic[TUpdateRecord, state.TFetchCheckpoint]):
-    updates: TUpdateRecord
-    checkpoint: state.TFetchCheckpoint
 
 
 class SignalExchangeAPI(
@@ -29,7 +23,7 @@ class SignalExchangeAPI(
         TCollabConfig,
         state.TFetchCheckpoint,
         state.TFetchedSignalMetadata,
-        TUpdateRecord,
+        state.TUpdateRecord,
     ],
     ABC,
 ):
@@ -101,11 +95,11 @@ class SignalExchangeAPI(
     @abstractmethod
     def naive_fetch_merge(
         cls,
-        old: TUpdateRecord,
-        new: TUpdateRecord,
+        old: state.TUpdateRecord,
+        new: state.TUpdateRecord,
     ) -> None:
         """
-        Merge an update produced by fetch in-memory.
+        Merge a new update produced by fetch into an old update in place.
 
         This is the fallback method of creating state when there isn't a
         specialized storage for the fetch type.
@@ -122,10 +116,11 @@ class SignalExchangeAPI(
         raise NotImplementedError
 
     @classmethod
+    @abstractmethod
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: TUpdateRecord,
+        fetched: state.TUpdateRecord,
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
         """
         Convert the record from the API format to the format needed for indexing.
@@ -168,7 +163,7 @@ class SignalExchangeAPI(
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> t.Iterator[TFetchDelta]:
+    ) -> t.Iterator[state.FetchDelta[state.TUpdateRecord, state.TFetchCheckpoint]]:
         """
         Call out to external resources, fetching a batch of updates per yield.
 
@@ -273,7 +268,7 @@ TSignalExchangeAPI = SignalExchangeAPI[
     CollaborationConfigBase,
     state.FetchCheckpointBase,
     state.FetchedSignalMetadata,
-    state.FetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata],
+    t.Any,
 ]
 
 TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
