@@ -1,9 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-The fetcher is the component that talks to external APIs to get and put signals
+A solution that allows loading signals directly from a file.
 
-@see SignalExchangeAPI
+This is useful if you don't have access to an API, but still have a list of 
+hashes from somewhere.
 """
 
 

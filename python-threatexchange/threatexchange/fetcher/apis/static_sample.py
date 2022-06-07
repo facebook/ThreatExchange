@@ -1,9 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-The fetcher is the component that talks to external APIs to get and put signals
+Returns the hardcoded example signals from SignalType implementations.
 
-@see SignalExchangeAPI
+This makes it easier to demonstrate new signal types locally, even without
+access to any API.
+
+The CLI defaults to this being the only collaboration.
 """
 
 
