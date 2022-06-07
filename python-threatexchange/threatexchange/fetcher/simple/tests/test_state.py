@@ -4,8 +4,13 @@ from collections import defaultdict
 from dataclasses import dataclass
 import typing as t
 
-from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
-from threatexchange.fetcher.fetch_api import TSignalExchangeAPI, TSignalExchangeAPICls
+from threatexchange.fetcher.collab_config import (
+    CollaborationConfigBase,
+    CollaborationConfigWithDefaults,
+)
+from threatexchange.fetcher.fetch_api import (
+    TSignalExchangeAPI,
+)
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
     SignalOpinion,
@@ -85,8 +90,11 @@ class FakeFetchStore(SimpleFetchedStateStore):
     def __init__(
         self,
     ) -> None:
-        super().__init__(TSignalExchangeAPI)
+        super().__init__(TSignalExchangeAPI)  # type: ignore
         self._fake_storage: t.Dict[str, T_FetchDelta] = {}
+
+    def clear(self, collab: CollaborationConfigBase) -> None:
+        self._fake_storage.pop(collab.name, None)
 
     def _read_state(
         self,
@@ -115,7 +123,7 @@ def test_test_impls():
     checkpoint = FakeCheckpoint(100)
 
     md5 = "0" * 32
-    delta = FakeFetchDelta({1: FakeUpdateRecord(1, "tag", md5)}, checkpoint, False)
+    delta = FakeFetchDelta({1: FakeUpdateRecord(1, "tag", md5)}, checkpoint)
 
     record = SimpleFetchedSignalMetadata(
         [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {"tag"})]
@@ -123,7 +131,6 @@ def test_test_impls():
 
     assert delta.next_checkpoint() == checkpoint
     assert delta.record_count() == 1
-    assert delta.has_more() == True
 
     assert delta.get_for_signal_type(VideoMD5Signal) == {md5: record}
     assert delta.get_for_signal_type(RawTextSignal) == {}
@@ -251,7 +258,7 @@ def test_update_stream_delta():
 
     # If we appy updates all at once, we expect just the final state
     # Note - dict(updates) work because our merge behavior is replace
-    delta = FakeFetchDelta(dict(updates), checkpoint, True)
+    delta = FakeFetchDelta(dict(updates), checkpoint)
     assert delta.get_for_signal_type(VideoMD5Signal) == expected_states[-1]
 
     store.merge(collab, delta)
@@ -264,7 +271,7 @@ def test_update_stream_delta():
     # If we appy updates 1-by-1 we expect all the end states
     for i, update in enumerate(updates):
         checkpoint = FakeCheckpoint(100 + i)
-        delta = FakeFetchDelta(dict([update]), checkpoint, False)
+        delta = FakeFetchDelta(dict([update]), checkpoint)
         store.merge(collab, delta)
         store.flush()
         assert store.get_for_signal_type([collab], VideoMD5Signal) == {
@@ -369,7 +376,7 @@ def test_simple_update_delta():
 
     # If we appy updates all at once, we expect just the final state
     # Note - dict(updates) work because our merge behavior is replace
-    delta = FakeSimpleFetchDelta(dict(updates), checkpoint, True)
+    delta = FakeSimpleFetchDelta(dict(updates), checkpoint)
     assert delta.get_for_signal_type(VideoMD5Signal) == expected_states[-1]
 
     store.merge(collab, delta)
@@ -382,7 +389,7 @@ def test_simple_update_delta():
     # If we appy updates 1-by-1 we expect all the end states
     for i, update in enumerate(updates):
         checkpoint = FakeCheckpoint(100 + i)
-        delta = FakeSimpleFetchDelta(dict([update]), checkpoint, False)
+        delta = FakeSimpleFetchDelta(dict([update]), checkpoint)
         store.merge(collab, delta)
         store.flush()
         assert store.get_for_signal_type([collab], VideoMD5Signal) == {

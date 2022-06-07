@@ -28,9 +28,9 @@ def fetcher(api: StopNCIIAPI):
 def test_fetch(fetcher: SignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("time.time", lambda: 10**8)
     collab = CollaborationConfigWithDefaults("Test")
-    delta = t.cast(SimpleFetchDelta, fetcher.fetch_once([], collab, None))
+    it = fetcher.fetch_iter([], collab, None)
+    delta = t.cast(SimpleFetchDelta, next(it))
 
-    assert delta.has_more() is True
     assert delta.record_count() == 2
 
     checkpoint: StopNCIICheckpoint = delta.next_checkpoint()
@@ -56,8 +56,8 @@ def test_fetch(fetcher: SignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     assert bo.category == AggregateSignalOpinionCategory.WORTH_INVESTIGATING
     assert bo.tags == set()
 
-    delta = t.cast(SimpleFetchDelta, fetcher.fetch_once([], collab, None))
-    assert delta.has_more() is False
+    # Second fetch
+    delta = t.cast(SimpleFetchDelta, next(it))
     assert delta.record_count() == 1
     updates = delta.update_record
     assert len(updates) == 1
@@ -66,3 +66,4 @@ def test_fetch(fetcher: SignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     ao = a.get_as_aggregate_opinion()
     assert ao.category == AggregateSignalOpinionCategory.TRUE_POSITIVE
     assert ao.tags == {"Nude", "Objectionable"}
+    assert next(it, None) is None  # We fetched everything

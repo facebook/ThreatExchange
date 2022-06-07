@@ -66,7 +66,7 @@ class _UpdateCollabCommand(command_base.Command):
     documented.
     """
 
-    _API_CLS: t.ClassVar[t.Type[SignalExchangeAPI]] = SignalExchangeAPI
+    _API_CLS: t.ClassVar[t.Type[SignalExchangeAPI]]
 
     _IGNORE_FIELDS = {
         "name",

@@ -6,7 +6,7 @@ The fetcher is the component that talks to external APIs to get and put signals
 @see SignalExchangeAPI
 """
 
-
+from abc import ABC, abstractmethod
 import typing as t
 
 from threatexchange import common
@@ -21,7 +21,8 @@ TFetchDelta = t.TypeVar("TFetchDelta", bound=state.FetchDelta)
 class SignalExchangeAPI(
     t.Generic[
         TCollabConfig, state.TFetchCheckpoint, state.TFetchedSignalMetadata, TFetchDelta
-    ]
+    ],
+    ABC,
 ):
     """
     APIs to get and maybe put signals.
@@ -87,7 +88,7 @@ class SignalExchangeAPI(
         # Default - just knowing the type is enough
         return CollaborationConfigBase  # type: ignore
 
-    # TODO - this doens't work for StopNCII which sends the owner as a string
+    # TODO - this doesn't work for StopNCII which sends the owner as a string
     #        maybe this should take the full metadata?
     def resolve_owner(self, id: int) -> str:
         """
@@ -111,22 +112,28 @@ class SignalExchangeAPI(
         """
         return -1
 
-    def fetch_once(
+    @abstractmethod
+    def fetch_iter(
         self,
-        supported_signal_types: t.List[t.Type[SignalType]],
+        supported_signal_types: t.Sequence[t.Type[SignalType]],
         collab: TCollabConfig,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> TFetchDelta:
+    ) -> t.Iterator[TFetchDelta]:
         """
-        Call out to external resources, pulling down one "batch" of content.
+        Call out to external resources, fetching a batch of updates per yield.
 
         Many APIs are a sequence of events: (creates/updates, deletions)
         In that case, it's important the these events are strictly ordered.
         I.e. if the sequence is create => delete, if the sequence is reversed
         to delete => create, the end result is a stored record, when the
         expected is a deleted one.
+
+        The iterator may be abandoned before it is completely exhausted.
+
+        If the iterator returns, it should be because there is no more data
+        (i.e. the fetch is up to date).
         """
         raise NotImplementedError
 
@@ -222,55 +229,3 @@ TSignalExchangeAPI = SignalExchangeAPI[
 ]
 
 TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
-
-
-class SignalExchangeAPIWithIterFetch(
-    SignalExchangeAPI[
-        TCollabConfig, state.TFetchCheckpoint, state.TFetchedSignalMetadata, TFetchDelta
-    ],
-):
-    """
-    Provides an alternative fetch_once implementation to simplify state
-
-    @see fetch_iter
-    """
-
-    def __init__(self) -> None:
-        self._fetch_iters: t.Dict[str, t.Iterator[TFetchDelta]] = {}
-
-    def fetch_once(
-        self,
-        supported_signal_types: t.List[t.Type[SignalType]],
-        collab: TCollabConfig,
-        # None if fetching for the first time,
-        # otherwise the previous FetchDelta returned
-        checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> TFetchDelta:
-        it = self._fetch_iters.get(collab.name)
-        if it is None:
-            it = self.fetch_iter(supported_signal_types, collab, checkpoint)
-            self._fetch_iters[collab.name] = it
-        delta = next(it, None)
-        # This can happen if the last yielded element did not set done
-        # which will cause next() to be called again after the iterator
-        # is exhaused
-        assert delta is not None, "fetch_iter stopping yielding too early"
-        return delta
-
-    def fetch_iter(
-        self,
-        supported_signal_types: t.List[t.Type[SignalType]],
-        collab: TCollabConfig,
-        # None if fetching for the first time,
-        # otherwise the previous FetchDelta returned
-        checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> t.Iterator[TFetchDelta]:
-        """
-        An alternative to fetch_once implementation to simplify state.
-
-        Since we expect fetch_once to be called sequentially, we can safely
-        store things like next_page takens in the implementation.
-
-        TODO: This seems straight up better than fetch_once, refactor out
-        """
-        raise NotImplementedError

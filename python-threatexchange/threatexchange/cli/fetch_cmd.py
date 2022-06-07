@@ -169,18 +169,15 @@ class FetchCommand(command_base.Command):
         self.current_api = fetcher.get_name()
 
         try:
-            while not self.has_hit_limits():
-                delta: FetchDelta[
-                    FetchCheckpointBase, FetchedSignalMetadata
-                ] = fetcher.fetch_once(
-                    settings.get_all_signal_types(), collab, checkpoint
-                )
+            it = fetcher.fetch_iter(settings.get_all_signal_types(), collab, checkpoint)
+            delta: FetchDelta[FetchCheckpointBase, FetchedSignalMetadata]
+            for delta in it:
                 logging.info("Fetched %d records", delta.record_count())
                 next_checkpoint = delta.next_checkpoint()
                 self._fetch_progress(delta.record_count(), next_checkpoint)
                 assert next_checkpoint is not None  # Infinite loop protection
                 store.merge(collab, delta)
-                if not delta.has_more():
+                if self.has_hit_limits():
                     break
         except:
             self._stderr_current("failed to fetch!")
