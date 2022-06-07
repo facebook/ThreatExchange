@@ -13,21 +13,21 @@ from threatexchange.signal_type.signal_base import SignalType
 
 from threatexchange.fetcher import fetch_state as state
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
-
-from threatexchange.fetcher.simple.state import (
-    SimpleFetchDelta,
+from threatexchange.fetcher.fetch_api import (
+    SignalExchangeAPIWithSimpleUpdates,
 )
 
-TypedDelta = SimpleFetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata]
+_TypedDelta = state.FetchDelta[
+    t.Dict[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]],
+    state.FetchCheckpointBase,
+]
 
 
 class StaticSampleSignalExchangeAPI(
-    SignalExchangeAPI[
+    SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase,
         state.FetchCheckpointBase,
         state.FetchedSignalMetadata,
-        TypedDelta,
     ]
 ):
     """
@@ -45,7 +45,7 @@ class StaticSampleSignalExchangeAPI(
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> t.Iterator[TypedDelta]:
+    ) -> t.Iterator[_TypedDelta]:
         sample_signals: t.List[
             t.Tuple[t.Tuple[str, str], state.FetchedSignalMetadata]
         ] = []
@@ -56,7 +56,7 @@ class StaticSampleSignalExchangeAPI(
             t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]
         ] = dict(sample_signals)
 
-        yield TypedDelta(
+        yield _TypedDelta(
             updates,
             state.FetchCheckpointBase(),
         )

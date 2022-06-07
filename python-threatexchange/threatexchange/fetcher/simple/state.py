@@ -110,7 +110,7 @@ class SimpleFetchedSignalMetadata(fetch_state.FetchedSignalMetadata):
 
 @dataclass
 class _StateTracker:
-    api_cls: TSignalExchangeAPI
+    api_cls: TSignalExchangeAPICls
     _delta: t.Optional[fetch_state.FetchDeltaTyped]
     dirty: bool = False
 
@@ -125,11 +125,13 @@ class _StateTracker:
 
     @delta.setter
     def delta(self, value: fetch_state.FetchDeltaTyped) -> None:
-        if self.empty:
+        if self._delta is None:
+            old = None
             self._delta = value
         else:
-            self.api_cls.naive_fetch_merge(self._delta.updates, value.updates)
-            self._delta.checkpoint = value.checkpoint
+            old = self._delta.updates
+        self._delta.updates = self.api_cls.naive_fetch_merge(old, value.updates)
+        self._delta.checkpoint = value.checkpoint
         self.dirty = True
 
     @property
@@ -144,9 +146,9 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
 
     def __init__(
         self,
-        available_api_cls: t.Sequence[TSignalExchangeAPICls],
+        api_cls: TSignalExchangeAPICls,
     ) -> None:
-        self.api_cls_by_name = {api.get_name(): api for api in available_api_cls}
+        self.api_cls = api_cls
         self._state: t.Dict[str, _StateTracker] = {}
 
     def _read_state(
@@ -167,10 +169,9 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
 
     def _get_state(self, collab: CollaborationConfigBase) -> _StateTracker:
         if collab.name not in self._state:
-            api_cls = self.api_cls_by_name[collab.api]
             logging.debug("Loading state for %s", collab.name)
             delta = self._read_state(collab.name)
-            self._state[collab.name] = _StateTracker(api_cls, delta)
+            self._state[collab.name] = _StateTracker(self.api_cls, delta)
         return self._state[collab.name]
 
     def merge(

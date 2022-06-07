@@ -22,10 +22,14 @@ from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
     FetchDelta,
+    FetchDeltaTyped,
     FetchedSignalMetadata,
 )
 from threatexchange.fetcher.simple import state as simple_state
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
+from threatexchange.fetcher.fetch_api import (
+    SignalExchangeAPI,
+    SignalExchangeAPIWithSimpleUpdates,
+)
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
 
@@ -96,9 +100,6 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
     but compact enough to handle very large sets of data.
     """
 
-    JSON_CHECKPOINT_KEY = "checkpoint"
-    JSON_RECORDS_KEY = "records"
-
     def __init__(
         self, api_cls: t.Type[SignalExchangeAPI], fetched_state_dir: pathlib.Path
     ) -> None:
@@ -123,7 +124,8 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
     def _read_state(
         self,
         collab_name: str,
-    ) -> t.Optional[simple_state.T_FetchDelta]:
+    ) -> t.Optional[FetchDeltaTyped]:
+
         file = self.collab_file(collab_name)
         if not file.is_file():
             return None
@@ -132,15 +134,12 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
                 delta = pickle.load(f)
 
             assert isinstance(delta, FetchDelta), "Unexpected class type?"
-            delta = t.cast(simple_state.T_FetchDelta, delta)
+            delta = t.cast(FetchDeltaTyped, delta)
             assert (
-                delta.next_checkpoint().__class__.__name__
-                == self.api_cls.get_checkpoint_cls().__name__
+                delta.checkpoint.__class__ == self.api_cls.get_checkpoint_cls()
             ), "wrong checkpoint class?"
 
-            logging.debug(
-                "Loaded %s with %d records", collab_name, delta.record_count()
-            )
+            logging.debug("Loaded %s with %d records", collab_name, len(delta.updates))
             return delta
         except Exception:
             logging.exception("Failed to read state for %s", collab_name)
@@ -149,29 +148,28 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
                 "You might have to delete it with `threatexchange fetch --clear`"
             )
 
-    def _write_state(  # type: ignore[override]  # Fix in followup PR
+    def _write_state(
         self,
         collab_name: str,
-        delta: simple_state.SimpleFetchDelta[
-            FetchCheckpointBase, FetchedSignalMetadata
-        ],
+        delta: FetchDeltaTyped,
     ) -> None:
         file = self.collab_file(collab_name)
         if not file.parent.exists():
             file.parent.mkdir(parents=True)
 
-        record_sanity_check = next(
-            (record for record in delta.update_record.values()),
-            None,
-        )
-
-        if record_sanity_check is not None:
-            assert (  # Not isinstance - we want exactly this class
-                record_sanity_check.__class__ == self.api_cls.get_record_cls()
-            ), (
-                f"Record cls: want {self.api_cls.get_record_cls().__name__} "
-                f"got {record_sanity_check.__class__.__name__}"
+        if issubclass(self.api_cls, SignalExchangeAPIWithSimpleUpdates):
+            record_sanity_check = next(
+                (record for record in delta.updates.values()),
+                None,
             )
+
+            if record_sanity_check is not None:
+                assert (  # Not isinstance - we want exactly this class
+                    record_sanity_check.__class__ == self.api_cls.get_record_cls()
+                ), (
+                    f"Record cls: want {self.api_cls.get_record_cls().__name__} "
+                    f"got {record_sanity_check.__class__.__name__}"
+                )
         tmpfile = file.with_name(f".{file.name}")
         with tmpfile.open("wb") as f:
             pickle.dump(delta, f)

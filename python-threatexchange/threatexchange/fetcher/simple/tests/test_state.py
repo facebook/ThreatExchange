@@ -9,13 +9,13 @@ from threatexchange.fetcher.collab_config import (
     CollaborationConfigWithDefaults,
 )
 from threatexchange.fetcher.fetch_api import (
-    SignalExchangeAPI,
+    SignalExchangeAPIWithKeyedUpdates,
+    SignalExchangeAPIWithSimpleUpdates,
 )
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
     FetchDelta,
     FetchDeltaTyped,
-    FetchedSignalMetadata,
     SignalOpinion,
     SignalOpinionCategory,
 )
@@ -41,21 +41,14 @@ class FakeUpdateRecord:
     md5: str
 
 
-OpinionRecord = t.Dict[int, FakeUpdateRecord]
+OpinionRecord = t.Dict[int, t.Optional[FakeUpdateRecord]]
 OpinionDelta = FetchDelta[OpinionRecord, FetchCheckpointBase]
 
 K = t.TypeVar("K")
 V = t.TypeVar("V")
 
 
-class _FakeAPI(
-    SignalExchangeAPI[
-        CollaborationConfigBase,
-        FakeCheckpoint,
-        FetchedSignalMetadata,
-        t.Dict[K, V],
-    ]
-):
+class _FakeAPIMixin(t.Generic[K, V]):
     """
     Simulates an update types that uses per-owner opinions with an int ID.
 
@@ -63,20 +56,12 @@ class _FakeAPI(
     map it to hash => merged_opinions
     """
 
-    def __init__(self, fetches: t.Sequence[t.Dict[K, V]]) -> None:
+    def __init__(self, fetches: t.Sequence[t.Dict[K, t.Optional[V]]]) -> None:
         self.fetches = fetches
 
     @classmethod
     def get_fake_collab_config(cls) -> CollaborationConfigBase:
-        return CollaborationConfigWithDefaults("Test State", cls.get_name())
-
-    @classmethod
-    def naive_fetch_merge(cls, old: t.Dict[K, V], new: t.Dict[K, V]) -> None:
-        for k, v in new.items():
-            if v is None:
-                old.pop(k, None)
-            else:
-                old[k] = v
+        return CollaborationConfigWithDefaults("Test State", cls.get_name())  # type: ignore
 
     def fetch_iter(
         self,
@@ -84,19 +69,28 @@ class _FakeAPI(
         collab: CollaborationConfigBase,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
-        checkpoint: t.Optional[FetchCheckpointBase],
-    ) -> t.Iterator[FetchDelta[t.Dict[K, V], FetchCheckpointBase]]:
+        checkpoint: t.Optional[FakeCheckpoint],
+    ) -> t.Iterator[FetchDelta[t.Dict[K, t.Optional[V]], FakeCheckpoint]]:
         for i, update in enumerate(self.fetches):
-            yield OpinionDelta(update, FakeCheckpoint((i + 1) * 100))
+            yield FetchDelta(update, FakeCheckpoint((i + 1) * 100))
 
 
-class FakePerOwnerOpinionAPI(_FakeAPI[int, FakeUpdateRecord]):
+class FakePerOwnerOpinionAPI(
+    _FakeAPIMixin[int, FakeUpdateRecord],
+    SignalExchangeAPIWithKeyedUpdates[
+        CollaborationConfigBase,
+        FakeCheckpoint,
+        SimpleFetchedSignalMetadata,
+        int,
+        FakeUpdateRecord,
+    ],
+):
     @classmethod
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: t.Dict[int, FakeUpdateRecord],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FetchedSignalMetadata]]:
+        fetched: t.Dict[int, t.Optional[FakeUpdateRecord]],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, SimpleFetchedSignalMetadata]]:
         if VideoMD5Signal not in signal_types:
             return {}
 
@@ -124,26 +118,20 @@ class FakePerOwnerOpinionAPI(_FakeAPI[int, FakeUpdateRecord]):
         }
 
 
-class FakeNoConversionAPI(_FakeAPI[t.Tuple[str, str], SimpleFetchedSignalMetadata]):
-    @classmethod
-    def naive_convert_to_signal_type(
-        cls,
-        signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: t.Dict[t.Tuple[str, str], SimpleFetchedSignalMetadata],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FetchedSignalMetadata]]:
-        type_by_name = {st.get_name(): st for st in signal_types}
-        ret = {}
-        for (type_str, signal_str), metadata in fetched.items():
-            t = type_by_name.get(type_str)
-            if None in (t, metadata):
-                continue
-            ret.setdefault(t, {})[signal_str] = metadata
-        return ret
+class FakeNoConversionAPI(
+    _FakeAPIMixin[t.Tuple[str, str], SimpleFetchedSignalMetadata],
+    SignalExchangeAPIWithSimpleUpdates[
+        CollaborationConfigBase,
+        FakeCheckpoint,
+        SimpleFetchedSignalMetadata,
+    ],
+):
+    pass
 
 
 class FakeFetchStore(SimpleFetchedStateStore):
-    def __init__(self) -> None:
-        super().__init__([FakeNoConversionAPI, FakePerOwnerOpinionAPI])
+    def __init__(self, api_cls) -> None:
+        super().__init__(api_cls)
         self._fake_storage: t.Dict[str, FetchDeltaTyped] = {}
 
     def clear(self, collab: CollaborationConfigBase) -> None:
@@ -167,7 +155,7 @@ def test_test_impls():
     """
     Since we're faking these interfaces, lets make sure they behave as expected
     """
-    store = FakeFetchStore()
+    store = FakeFetchStore(FakePerOwnerOpinionAPI)
     config = FakePerOwnerOpinionAPI.get_fake_collab_config()
 
     assert store.get_checkpoint(config) == None
@@ -319,7 +307,7 @@ def test_update_stream_delta():
         {md5(2): h2_full},
     ]
 
-    store = FakeFetchStore()
+    store = FakeFetchStore(FakePerOwnerOpinionAPI)
     collab = FakePerOwnerOpinionAPI.get_fake_collab_config()
 
     # Note - dict(updates) work because our merge behavior is replace
@@ -334,7 +322,7 @@ def test_update_stream_delta():
         collab.name: expected_states[-1]
     }
 
-    store = FakeFetchStore()
+    store = FakeFetchStore(FakePerOwnerOpinionAPI)
     # If we appy updates 1-by-1 we expect all the end states
     api = FakePerOwnerOpinionAPI([dict([t]) for t in updates])
     for i, delta in enumerate(api.fetch_iter([], collab, None)):
@@ -436,7 +424,7 @@ def test_simple_update_delta():
         {md5(2): h2_full},
     ]
 
-    store = FakeFetchStore()
+    store = FakeFetchStore(FakeNoConversionAPI)
     collab = FakeNoConversionAPI.get_fake_collab_config()
 
     # Note - dict(updates) work because our merge behavior is replace
@@ -449,7 +437,7 @@ def test_simple_update_delta():
         collab.name: expected_states[-1]
     }
 
-    store = FakeFetchStore()
+    store = FakeFetchStore(FakeNoConversionAPI)
     # If we appy updates 1-by-1 we expect all the end states
     api = FakeNoConversionAPI([dict([t]) for t in updates])
     for i, delta in enumerate(api.fetch_iter([], collab, None)):

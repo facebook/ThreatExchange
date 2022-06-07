@@ -95,11 +95,13 @@ class SignalExchangeAPI(
     @abstractmethod
     def naive_fetch_merge(
         cls,
-        old: state.TUpdateRecord,
+        old: t.Optional[state.TUpdateRecord],
         new: state.TUpdateRecord,
-    ) -> None:
+    ) -> state.TUpdateRecord:
         """
-        Merge a new update produced by fetch into an old update in place.
+        Merge a new update produced by fetch in-memory.
+
+        It is safe to merge into `old` in-place if supported, and return that.
 
         This is the fallback method of creating state when there isn't a
         specialized storage for the fetch type.
@@ -272,3 +274,73 @@ TSignalExchangeAPI = SignalExchangeAPI[
 ]
 
 TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
+
+
+K = t.TypeVar("K")
+V = t.TypeVar("V")
+
+
+class SignalExchangeAPIWithKeyedUpdates(
+    SignalExchangeAPI[
+        TCollabConfig,
+        state.TFetchCheckpoint,
+        state.TFetchedSignalMetadata,
+        t.Dict[K, t.Optional[V]],
+    ]
+):
+    """
+    An API that supports sequential updates with a common key (id, hash, etc).
+
+    This provides a simple approach for merging data.
+    A value of None for a value indicates that the record was deleted.
+    """
+
+    @classmethod
+    def naive_fetch_merge(
+        cls, old: t.Optional[t.Dict[K, t.Optional[V]]], new: t.Dict[K, t.Optional[V]]
+    ) -> t.Dict[K, t.Optional[V]]:
+        old = old or {}
+        for k, v in new.items():
+            if v is None:
+                old.pop(k, None)
+            else:
+                old[k] = v
+        return old
+
+
+class SignalExchangeAPIWithSimpleUpdates(
+    SignalExchangeAPIWithKeyedUpdates[
+        TCollabConfig,
+        state.TFetchCheckpoint,
+        state.TFetchedSignalMetadata,
+        t.Tuple[str, str],
+        state.TFetchedSignalMetadata,
+    ]
+):
+    """
+    An API that conveniently maps directly into the form needed by index.
+
+    If the API supports returning exactly the hashes and all the metadata needed
+    to make a decision on the hash without needing an indirection of ID (for example,
+    to support deletes), then you can choose to directly return it in a form that
+    maps directly into SignalType.
+    """
+
+    @classmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        fetched: t.Dict[t.Tuple[str, str], t.Optional[state.TFetchedSignalMetadata]],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
+        ret: t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]] = {}
+        type_by_name = {st.get_name(): st for st in signal_types}
+        for (type_str, signal_str), metadata in fetched.items():
+            s_type = type_by_name.get(type_str)
+            if s_type is None or metadata is None:
+                continue
+            inner = ret.get(s_type)
+            if inner is None:
+                inner = {}
+                ret[s_type] = inner
+            inner[signal_str] = metadata
+        return ret
