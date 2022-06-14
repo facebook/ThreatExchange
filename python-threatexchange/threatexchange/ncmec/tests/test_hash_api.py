@@ -102,7 +102,7 @@ def mock_get_impl(url: str, **params):
 
 @pytest.fixture
 def api(monkeypatch: pytest.MonkeyPatch):
-    api = NCMECHashAPI("", "")
+    api = NCMECHashAPI("fake_user", "fake_pass")
     session = None
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],

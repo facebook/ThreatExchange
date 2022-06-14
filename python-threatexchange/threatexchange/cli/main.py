@@ -140,7 +140,9 @@ def _get_fb_tx_app_token(config: CLiConfig) -> t.Optional[str]:
     return None
 
 
-def _get_stopncii_tokens(config: CLiConfig) -> t.Optional[StopNCIIKeys]:
+def _get_stopncii_tokens(
+    config: CLiConfig,
+) -> t.Tuple[t.Optional[str], t.Optional[str]]:
     """
     Get the API key from a variety of fallback sources
 
@@ -149,7 +151,7 @@ def _get_stopncii_tokens(config: CLiConfig) -> t.Optional[StopNCIIKeys]:
 
     environment_var = "TX_STOPNCII_KEYS"
 
-    def get_from_environ() -> t.Optional[t.Tuple[str, str]]:
+    def get_from_environ() -> t.Optional[StopNCIIKeys]:
         val = os.environ.get(environment_var)
         if val is None:
             return None
@@ -171,19 +173,19 @@ def _get_stopncii_tokens(config: CLiConfig) -> t.Optional[StopNCIIKeys]:
         val.fetch_function_key = val.fetch_function_key.strip()
 
         if val.keys_are_valid:
-            return val
+            return val.subscription_key, val.fetch_function_key
         print(
             "Warning! Your current StopNCII.org keys "
             f"{val!r} (from {source}) are invalid.",
             file=sys.stderr,
         )
         # Don't throw because we don't want to block commands that fix this
-        return None  # We probably don't expect to fall back here
-    return None
+        return None, None  # We probably don't expect to fall back here
+    return None, None
 
 
-def _get_ncmec_tokens(config: CLiConfig) -> t.Tuple[str, str]:
-    """Get the API keys for NCMEC from the config"""
+def _get_ncmec_credentials(config: CLiConfig) -> t.Tuple[str, str]:
+    """Get user+pass from NCMEC from the config"""
     environment_var = "TX_STOPNCII_KEYS"
     not_found = "", ""
 
@@ -197,7 +199,7 @@ def _get_ncmec_tokens(config: CLiConfig) -> t.Tuple[str, str]:
     potential_sources = (
         (get_from_environ(), f"{environment_var} environment variable"),
         (
-            config.ncmec_access,
+            config.ncmec_credentials,
             "`config api ncmec --user --pass` command",
         ),
     )
@@ -278,7 +280,7 @@ def _get_settings(
         StaticSampleSignalExchangeAPI(),
         LocalFileSignalExchangeAPI(),
         StopNCIISignalExchangeAPI(*_get_stopncii_tokens(config)),
-        NCMECSignalExchangeAPI(*_get_ncmec_tokens(config)),
+        NCMECSignalExchangeAPI(*_get_ncmec_credentials(config)),
         FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
     ]
     fetchers = meta.FetcherMapping(base_apis + extensions.api_instances)

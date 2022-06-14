@@ -7,9 +7,9 @@ Config command to setup the CLI and settings.
 
 import argparse
 from dataclasses import is_dataclass, Field, fields, MISSING
+from enum import Enum
 import itertools
 import json
-import importlib
 import logging
 import os
 import typing as t
@@ -35,6 +35,7 @@ from threatexchange.fetcher.apis.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
+from threatexchange.fetcher.apis.ncmec_api import NCMECSignalExchangeAPI
 from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type.signal_base import SignalType
 
@@ -191,10 +192,20 @@ class _UpdateCollabCommand(command_base.Command):
         if hasattr(field.type, "__args__"):
             target_type = field.type.__args__[0]
 
+        argparse_type = target_type
+        metavar = target_type.__name__
+
+        if issubclass(target_type, Enum):
+            argparse_type = common.argparse_choices_pre_type(
+                [m.name for m in target_type],
+                lambda s: target_type[s],
+            )
+            metavar = f"[{','.join(m.name for m in target_type)}]"
+
         ap.add_argument(
             f"--{field.name.replace('_', '-')}",
-            type=target_type,
-            metavar=target_type.__name__,
+            type=argparse_type,
+            metavar=metavar,
             help="[auto generated from config class]",
         )
 
@@ -248,6 +259,8 @@ class _UpdateCollabCommand(command_base.Command):
 
         for field in fields(self._API_CLS.get_config_class()):
             if not field.init:
+                if field.name == "api":
+                    self.edit_kwargs.pop("api")
                 continue
             if field.name in self._IGNORE_FIELDS:
                 continue
@@ -524,7 +537,7 @@ class ConfigContentCommand(command_base.Command):
 
 
 class ConfigThreatExchangeAPICommand(command_base.Command):
-    """Configure apis"""
+    """Configure Facebook ThreatExchange integration"""
 
     @classmethod
     def get_name(cls) -> str:
@@ -620,10 +633,39 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
             settings.set_persistent_config(config)
 
 
+class ConfigNCMECAPICommand(command_base.Command):
+    """Configure NCMEC hash api integration"""
+
+    @classmethod
+    def get_name(cls) -> str:
+        return NCMECSignalExchangeAPI.get_name()
+
+    @classmethod
+    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+        ap.add_argument(
+            "--credentials",
+            metavar="STR",
+            nargs=2,
+            help="set the username and password to access the NCMEC API",
+        )
+
+    def __init__(
+        self,
+        credentials: t.List[str],
+    ) -> None:
+        self.credentials = (credentials[0], credentials[1]) if credentials else None
+
+    def execute(self, settings: CLISettings) -> None:
+        if self.credentials is not None:
+            config = settings.get_persistent_config()
+            config.ncmec_credentials = self.credentials
+            settings.set_persistent_config(config)
+
+
 class ConfigAPICommand(command_base.CommandWithSubcommands):
     """Configure apis"""
 
-    _SUBCOMMANDS = [ConfigThreatExchangeAPICommand]
+    _SUBCOMMANDS = [ConfigThreatExchangeAPICommand, ConfigNCMECAPICommand]
 
     @classmethod
     def get_name(cls) -> str:

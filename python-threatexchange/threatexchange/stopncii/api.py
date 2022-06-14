@@ -322,7 +322,7 @@ class StopNCIIAPI:
         self._post(StopNCIIEndpoint.SubmitFeedback, json=payload)
 
 
-def is_valid_key(key: str) -> str:
+def is_valid_key(key: str) -> bool:
     """
     Returns true if the string looks like a valid access token
     """

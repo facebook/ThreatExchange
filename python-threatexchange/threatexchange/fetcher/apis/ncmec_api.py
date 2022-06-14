@@ -6,11 +6,9 @@ SignalExchangeAPI impl for the NCMEC hash exchange
 """
 
 
-from functools import lru_cache
 import logging
-import time
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from threatexchange.ncmec import hash_api as api
 
@@ -23,6 +21,9 @@ from threatexchange.fetcher.collab_config import (
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
+
+
+_API_NAME: str = "ncmec"
 
 
 @dataclass
@@ -42,11 +43,20 @@ class NCMECCheckpoint(
 
     @classmethod
     def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
-        return cls(response.max_timestamp, int(time.time()))
+        return cls(response.max_timestamp)
 
 
-class NCMECCollabConfig(CollaborationConfigWithDefaults, CollaborationConfigBase):
+@dataclass
+class _NCMECCollabConfigRequiredFields:
     environment: api.NCMECEnvironment
+
+
+@dataclass
+class NCMECCollabConfig(
+    CollaborationConfigWithDefaults,
+    _NCMECCollabConfigRequiredFields,
+):
+    api: str = field(init=False, default=_API_NAME)
 
 
 @dataclass
@@ -94,8 +104,8 @@ class NCMECSignalMetadata(state.FetchedSignalMetadata):
 
 def _get_conversion(
     signal_types: t.Sequence[t.Type[SignalType]],
-) -> t.Dict[t.Tuple[str, str], t.Type[SignalType]]:
-    ret = {}
+) -> t.Mapping[t.Tuple[api.NCMECEntryType, str], t.Type[SignalType]]:
+    ret: t.Dict[t.Tuple[api.NCMECEntryType, str], t.Type[SignalType]] = {}
     if VideoMD5Signal in signal_types:
         ret[api.NCMECEntryType.video, "md5"] = VideoMD5Signal
     if PdqSignal in signal_types:
@@ -141,6 +151,22 @@ class NCMECSignalExchangeAPI(
                 password,
             )
 
+    @classmethod
+    def get_name(cls) -> str:
+        return _API_NAME
+
+    @classmethod
+    def get_config_class(cls) -> t.Type[NCMECCollabConfig]:
+        return NCMECCollabConfig
+
+    @classmethod
+    def get_checkpoint_cls(cls) -> t.Type[NCMECCheckpoint]:
+        return NCMECCheckpoint
+
+    @classmethod
+    def get_record_cls(cls) -> t.Type[NCMECSignalMetadata]:
+        return NCMECSignalMetadata
+
     @property
     def client(self) -> api.NCMECHashAPI:
         if self._api is None:
@@ -149,7 +175,7 @@ class NCMECSignalExchangeAPI(
 
     def fetch_iter(
         self,
-        _supported_signal_types: t.List[t.Type[SignalType]],
+        _supported_signal_types: t.Sequence[t.Type[SignalType]],
         _collab: CollaborationConfigBase,
         checkpoint: t.Optional[NCMECCheckpoint],
     ) -> t.Iterator[
@@ -180,10 +206,12 @@ class NCMECSignalExchangeAPI(
         signal_types: t.Sequence[t.Type[SignalType]],
         fetched: NCMECUpdate,
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]]:
-        mapping: t.Dict[t.Tuple[str, str], t.Type[SignalType]] = _get_conversion()
+        mapping: t.Mapping[
+            t.Tuple[api.NCMECEntryType, str], t.Type[SignalType]
+        ] = _get_conversion(signal_types)
         ret: t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]] = {}
         for entry in fetched.values():
-            for fingerprint_type, fingerprint_value in entry.fingerprints.entries():
+            for fingerprint_type, fingerprint_value in entry.fingerprints.items():
                 st = mapping.get((entry.entry_type, fingerprint_type))
                 if st is not None:
                     try:
@@ -198,7 +226,7 @@ class NCMECSignalExchangeAPI(
                     metadata = ret.setdefault(st, {}).setdefault(
                         signal_value, NCMECSignalMetadata({})
                     )
-                    metadata.member_entries.setdefault(entry.member_id, {}).add(
-                        entry.classification
-                    )
+                    tags = metadata.member_entries.setdefault(entry.member_id, set())
+                    if entry.classification:
+                        tags.add(entry.classification)
         return ret

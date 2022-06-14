@@ -330,4 +330,4 @@ def _date_format(timestamp: int) -> str:
 
 
 def is_valid_user_pass(user: str, password: str) -> bool:
-    return user and password  # Is there anything more we can do here?
+    return bool(user and password)  # Is there anything more we can do here?
