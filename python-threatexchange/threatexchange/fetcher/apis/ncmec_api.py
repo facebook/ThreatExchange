@@ -6,12 +6,11 @@ SignalExchangeAPI impl for the NCMEC hash exchange
 """
 
 
+from functools import lru_cache
+import logging
 import time
 import typing as t
 from dataclasses import dataclass
-from threatexchange.fetcher.simple.state import (
-    SimpleFetchDelta,
-)
 
 from threatexchange.ncmec import hash_api as api
 
@@ -23,6 +22,7 @@ from threatexchange.fetcher.collab_config import (
 )
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.signal_type.pdq import PdqSignal
 
 
 @dataclass
@@ -45,29 +45,12 @@ class NCMECCheckpoint(
         return cls(response.max_timestamp, int(time.time()))
 
 
-class NCMECCollaboration(CollaborationConfigWithDefaults, CollaborationConfigBase):
+class NCMECCollabConfig(CollaborationConfigWithDefaults, CollaborationConfigBase):
     environment: api.NCMECEnvironment
 
 
-# @dataclass
-# class NCMECCspOpinion(state.SignalOpinion):
-#     ids: t.Set[str]
-#     category: state.SignalOpinionCategory = field(
-#         default=state.SignalOpinionCategory.TRUE_POSITIVE, init=False
-#     )
-
-
-# @dataclass
-# class NCMECHashMetadata(state.FetchedSignalMetadata):
-
-#     opinions: t.List[NCMECCspOpinion]
-
-#     def get_as_opinions(self) -> t.List[state.SignalOpinion]:
-#         return self.opinions
-
-
 @dataclass
-class _NCMECEntryMetadata(state.FetchedSignalMetadata):
+class NCMECEntryMetadata(state.FetchedSignalMetadata):
     """
     Placeholder to store entries from the API
 
@@ -109,7 +92,32 @@ class NCMECSignalMetadata(state.FetchedSignalMetadata):
         ]
 
 
-class NCMECSignalExchangeAPI(fetch_api.SignalExchangeAPIWithIterFetch[NCMECCheckpoint]):
+def _get_conversion(
+    signal_types: t.Sequence[t.Type[SignalType]],
+) -> t.Dict[t.Tuple[str, str], t.Type[SignalType]]:
+    ret = {}
+    if VideoMD5Signal in signal_types:
+        ret[api.NCMECEntryType.video, "md5"] = VideoMD5Signal
+    if PdqSignal in signal_types:
+        ret[api.NCMECEntryType.image, "pdq"] = PdqSignal
+    for st in signal_types:
+        if st.get_name() == "photodna":
+            ret[api.NCMECEntryType.image, "pdna"] = st
+            break
+    return ret
+
+
+NCMECUpdate = t.Dict[str, api.NCMECEntryUpdate]
+
+
+class NCMECSignalExchangeAPI(
+    fetch_api.SignalExchangeAPI[
+        NCMECCollabConfig,
+        NCMECCheckpoint,
+        NCMECSignalMetadata,
+        NCMECUpdate,
+    ]
+):
     """
     Conversion for the NCMEC hash API
 
@@ -134,7 +142,7 @@ class NCMECSignalExchangeAPI(fetch_api.SignalExchangeAPIWithIterFetch[NCMECCheck
             )
 
     @property
-    def api(self) -> api.NCMECHashAPI:
+    def client(self) -> api.NCMECHashAPI:
         if self._api is None:
             raise Exception("NCMEC username and password not configured.")
         return self._api
@@ -144,23 +152,53 @@ class NCMECSignalExchangeAPI(fetch_api.SignalExchangeAPIWithIterFetch[NCMECCheck
         _supported_signal_types: t.List[t.Type[SignalType]],
         _collab: CollaborationConfigBase,
         checkpoint: t.Optional[NCMECCheckpoint],
-    ) -> t.Iterator[SimpleFetchDelta[NCMECCheckpoint, NCMECSignalMetadata]]:
+    ) -> t.Iterator[
+        state.FetchDelta[t.Dict[str, api.NCMECEntryUpdate], NCMECCheckpoint]
+    ]:
         start_time = 0
         if checkpoint is not None:
             start_time = checkpoint.max_timestamp
-        for result in self.api.get_entries_iter(start_timestamp=start_time):
-            translated = (_get_update_mapping(u) for u in result.updates)
-            yield SimpleFetchDelta(
-                dict(t for t in translated if t[0][0]),
+        for result in self.client.get_entries_iter(start_timestamp=start_time):
+            yield state.FetchDelta(
+                {entry.id: entry for entry in result.updates},
                 NCMECCheckpoint.from_ncmec_fetch(result),
-                done=not result.next,
             )
 
+    @classmethod
+    def naive_fetch_merge(
+        cls,
+        old: t.Optional[NCMECUpdate],
+        new: NCMECUpdate,
+    ) -> NCMECUpdate:
+        old = old or {}
+        old.update(new)
+        return old
 
-def _get_update_mapping(
-    entry: api.NCMECEntryUpdate,
-) -> t.Tuple[t.Tuple[str, str], t.Optional[_NCMECEntryMetadata]]:
-    metadata = None
-    if not entry.deleted:
-        metadata = _NCMECEntryMetadata(entry)
-    return ((str(entry.member_id), entry.id), metadata)
+    @classmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        fetched: NCMECUpdate,
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]]:
+        mapping: t.Dict[t.Tuple[str, str], t.Type[SignalType]] = _get_conversion()
+        ret: t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]] = {}
+        for entry in fetched.values():
+            for fingerprint_type, fingerprint_value in entry.fingerprints.entries():
+                st = mapping.get((entry.entry_type, fingerprint_type))
+                if st is not None:
+                    try:
+                        signal_value = st.validate_signal_str(fingerprint_value)
+                    except Exception:
+                        logging.warning(
+                            "Invalid fingerprint (%s): %s",
+                            st.get_name(),
+                            fingerprint_value,
+                        )
+                        continue
+                    metadata = ret.setdefault(st, {}).setdefault(
+                        signal_value, NCMECSignalMetadata({})
+                    )
+                    metadata.member_entries.setdefault(entry.member_id, {}).add(
+                        entry.classification
+                    )
+        return ret

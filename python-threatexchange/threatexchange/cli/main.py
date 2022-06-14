@@ -23,12 +23,14 @@ from threatexchange import meta
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange.fb_threatexchange import api as tx_api
+from threatexchange.ncmec import hash_api as ncmec_api
 from threatexchange.fetcher.apis.file_api import LocalFileSignalExchangeAPI
 from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.fetcher.apis.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
 from threatexchange.fetcher.apis.stop_ncii_api import StopNCIISignalExchangeAPI
+from threatexchange.fetcher.apis.ncmec_api import NCMECSignalExchangeAPI
 
 from threatexchange.content_type import photo, video, text, url
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
@@ -40,7 +42,7 @@ from threatexchange.signal_type import (
     url_md5,
     trend_query,
 )
-from threatexchange.cli.cli_config import CLiConfig, CliState
+from threatexchange.cli.cli_config import CLiConfig, CliState, StopNCIIKeys
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import (
     command_base as base,
@@ -138,11 +140,83 @@ def _get_fb_tx_app_token(config: CLiConfig) -> t.Optional[str]:
     return None
 
 
-def _get_stopncii_tokens(
-    config: CLiConfig,
-) -> t.Tuple[t.Optional[str], t.Optional[str]]:
-    """Get the API keys for StopNCII from the config"""
-    return None, None  # TODO
+def _get_stopncii_tokens(config: CLiConfig) -> t.Optional[StopNCIIKeys]:
+    """
+    Get the API key from a variety of fallback sources
+
+    Examples might be environment, files, etc
+    """
+
+    environment_var = "TX_STOPNCII_KEYS"
+
+    def get_from_environ() -> t.Optional[t.Tuple[str, str]]:
+        val = os.environ.get(environment_var)
+        if val is None:
+            return None
+        subscription_key, _, fetch_key = val.partition(",")
+        return StopNCIIKeys(subscription_key, fetch_key)
+
+    potential_sources = (
+        (get_from_environ(), f"{environment_var} environment variable"),
+        (
+            config.stop_ncii_keys,
+            "`config api stop_ncii --api-keys` command",
+        ),
+    )
+
+    for val, source in potential_sources:
+        if not val:
+            continue
+        val.subscription_key = val.subscription_key.strip()
+        val.fetch_function_key = val.fetch_function_key.strip()
+
+        if val.keys_are_valid:
+            return val
+        print(
+            "Warning! Your current StopNCII.org keys "
+            f"{val!r} (from {source}) are invalid.",
+            file=sys.stderr,
+        )
+        # Don't throw because we don't want to block commands that fix this
+        return None  # We probably don't expect to fall back here
+    return None
+
+
+def _get_ncmec_tokens(config: CLiConfig) -> t.Tuple[str, str]:
+    """Get the API keys for NCMEC from the config"""
+    environment_var = "TX_STOPNCII_KEYS"
+    not_found = "", ""
+
+    def get_from_environ() -> t.Optional[t.Tuple[str, str]]:
+        val = os.environ.get(environment_var)
+        if val is None:
+            return None
+        user, _, password = val.partition(",")
+        return user, password
+
+    potential_sources = (
+        (get_from_environ(), f"{environment_var} environment variable"),
+        (
+            config.ncmec_access,
+            "`config api ncmec --user --pass` command",
+        ),
+    )
+
+    for val, source in potential_sources:
+        if not val:
+            continue
+        user, password = val
+
+        if ncmec_api.is_valid_user_pass(user, password):
+            return user, password
+        print(
+            "Warning! Your current NCMEC credentials "
+            f"user={user!r} pass={password!r} (from {source}) are invalid.",
+            file=sys.stderr,
+        )
+        # Don't throw because we don't want to block commands that fix this
+        return not_found  # We probably don't expect to fall back here
+    return not_found
 
 
 class _ExtendedTypes(t.NamedTuple):
@@ -204,6 +278,7 @@ def _get_settings(
         StaticSampleSignalExchangeAPI(),
         LocalFileSignalExchangeAPI(),
         StopNCIISignalExchangeAPI(*_get_stopncii_tokens(config)),
+        NCMECSignalExchangeAPI(*_get_ncmec_tokens(config)),
         FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
     ]
     fetchers = meta.FetcherMapping(base_apis + extensions.api_instances)
