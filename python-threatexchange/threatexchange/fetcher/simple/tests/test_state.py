@@ -9,20 +9,20 @@ from threatexchange.fetcher.collab_config import (
     CollaborationConfigWithDefaults,
 )
 from threatexchange.fetcher.fetch_api import (
-    TSignalExchangeAPI,
+    SignalExchangeAPIWithKeyedUpdates,
+    SignalExchangeAPIWithSimpleUpdates,
 )
 from threatexchange.fetcher.fetch_state import (
     FetchCheckpointBase,
+    FetchDelta,
+    FetchDeltaTyped,
     SignalOpinion,
     SignalOpinionCategory,
 )
 
 from threatexchange.fetcher.simple.state import (
-    FetchDeltaWithUpdateStream,
-    SimpleFetchDelta,
     SimpleFetchedSignalMetadata,
     SimpleFetchedStateStore,
-    T_FetchDelta,
 )
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.raw_text import RawTextSignal
@@ -41,12 +41,14 @@ class FakeUpdateRecord:
     md5: str
 
 
-@dataclass
-class FakeFetchDelta(
-    FetchDeltaWithUpdateStream[
-        FakeCheckpoint, SimpleFetchedSignalMetadata, int, FakeUpdateRecord
-    ]
-):
+OpinionRecord = t.Dict[int, t.Optional[FakeUpdateRecord]]
+OpinionDelta = FetchDelta[OpinionRecord, FetchCheckpointBase]
+
+K = t.TypeVar("K")
+V = t.TypeVar("V")
+
+
+class _FakeAPIMixin(t.Generic[K, V]):
     """
     Simulates an update types that uses per-owner opinions with an int ID.
 
@@ -54,44 +56,83 @@ class FakeFetchDelta(
     map it to hash => merged_opinions
     """
 
-    def get_for_signal_type(
-        self, signal_type: t.Type[SignalType]
-    ) -> t.Dict[str, SimpleFetchedSignalMetadata]:
+    def __init__(self, fetches: t.Sequence[t.Dict[K, t.Optional[V]]]) -> None:
+        self.fetches = fetches
+
+    @classmethod
+    def get_fake_collab_config(cls) -> CollaborationConfigBase:
+        return CollaborationConfigWithDefaults("Test State", cls.get_name())  # type: ignore
+
+    def fetch_iter(
+        self,
+        supported_signal_types: t.Sequence[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
+        checkpoint: t.Optional[FakeCheckpoint],
+    ) -> t.Iterator[FetchDelta[t.Dict[K, t.Optional[V]], FakeCheckpoint]]:
+        for i, update in enumerate(self.fetches):
+            yield FetchDelta(update, FakeCheckpoint((i + 1) * 100))
+
+
+class FakePerOwnerOpinionAPI(
+    _FakeAPIMixin[int, FakeUpdateRecord],
+    SignalExchangeAPIWithKeyedUpdates[
+        CollaborationConfigBase,
+        FakeCheckpoint,
+        SimpleFetchedSignalMetadata,
+        int,
+        FakeUpdateRecord,
+    ],
+):
+    @classmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        fetched: t.Dict[int, t.Optional[FakeUpdateRecord]],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, SimpleFetchedSignalMetadata]]:
+        if VideoMD5Signal not in signal_types:
+            return {}
+
         remapped: t.DefaultDict[str, t.DefaultDict[int, t.Set[str]]] = defaultdict(
             lambda: defaultdict(set)
         )
-        if signal_type == VideoMD5Signal:
-            for _k, update in self.update_record.items():
-                if update is not None:
-                    remapped[update.md5][update.owner].add(update.tag)
+        for update in fetched.values():
+            if update is not None:
+                remapped[update.md5][update.owner].add(update.tag)
 
         return {
-            h: SimpleFetchedSignalMetadata(
-                [
-                    SignalOpinion(
-                        owner=owner,
-                        category=SignalOpinionCategory.WORTH_INVESTIGATING,
-                        tags=tags,
-                    )
-                    for owner, tags in tags_per_owner.items()
-                ]
-            )
-            for h, tags_per_owner in remapped.items()
+            VideoMD5Signal: {
+                h: SimpleFetchedSignalMetadata(
+                    [
+                        SignalOpinion(
+                            owner=owner,
+                            category=SignalOpinionCategory.WORTH_INVESTIGATING,
+                            tags=tags,
+                        )
+                        for owner, tags in tags_per_owner.items()
+                    ]
+                )
+                for h, tags_per_owner in remapped.items()
+            }
         }
 
 
-class FakeSimpleFetchDelta(
-    SimpleFetchDelta[FakeCheckpoint, SimpleFetchedSignalMetadata]
+class FakeNoConversionAPI(
+    _FakeAPIMixin[t.Tuple[str, str], SimpleFetchedSignalMetadata],
+    SignalExchangeAPIWithSimpleUpdates[
+        CollaborationConfigBase,
+        FakeCheckpoint,
+        SimpleFetchedSignalMetadata,
+    ],
 ):
     pass
 
 
 class FakeFetchStore(SimpleFetchedStateStore):
-    def __init__(
-        self,
-    ) -> None:
-        super().__init__(TSignalExchangeAPI)  # type: ignore
-        self._fake_storage: t.Dict[str, T_FetchDelta] = {}
+    def __init__(self, api_cls) -> None:
+        super().__init__(api_cls)
+        self._fake_storage: t.Dict[str, FetchDeltaTyped] = {}
 
     def clear(self, collab: CollaborationConfigBase) -> None:
         self._fake_storage.pop(collab.name, None)
@@ -99,10 +140,10 @@ class FakeFetchStore(SimpleFetchedStateStore):
     def _read_state(
         self,
         collab_name: str,
-    ) -> t.Optional[T_FetchDelta]:
+    ) -> t.Optional[FetchDeltaTyped]:
         return self._fake_storage.get(collab_name)
 
-    def _write_state(self, collab_name: str, delta: T_FetchDelta) -> None:
+    def _write_state(self, collab_name: str, delta: FetchDeltaTyped) -> None:
         self._fake_storage[collab_name] = delta
 
 
@@ -114,26 +155,40 @@ def test_test_impls():
     """
     Since we're faking these interfaces, lets make sure they behave as expected
     """
-    store = FakeFetchStore()
-    config = CollaborationConfigWithDefaults("fake_collab_name")
+    store = FakeFetchStore(FakePerOwnerOpinionAPI)
+    config = FakePerOwnerOpinionAPI.get_fake_collab_config()
 
     assert store.get_checkpoint(config) == None
     assert store.get_for_signal_type([config], VideoMD5Signal) == {}
 
-    checkpoint = FakeCheckpoint(100)
-
     md5 = "0" * 32
-    delta = FakeFetchDelta({1: FakeUpdateRecord(1, "tag", md5)}, checkpoint)
+
+    api = FakePerOwnerOpinionAPI([{1: FakeUpdateRecord(1, "tag", md5)}])
+    deltas = list(api.fetch_iter([], config, None))
+    assert len(deltas) == 1
+    delta = deltas[0]
+    assert delta.checkpoint == FakeCheckpoint(100)
 
     record = SimpleFetchedSignalMetadata(
         [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {"tag"})]
     )
 
-    assert delta.next_checkpoint() == checkpoint
-    assert delta.record_count() == 1
+    assert FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], delta.updates
+    ) == {VideoMD5Signal: {md5: record}}
+    assert (
+        FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
+            [RawTextSignal], delta.updates
+        )
+        == {}
+    )
 
-    assert delta.get_for_signal_type(VideoMD5Signal) == {md5: record}
-    assert delta.get_for_signal_type(RawTextSignal) == {}
+    store.merge(config, delta)
+    store.flush()
+    assert store.get_for_signal_type([config], RawTextSignal) == {}
+    assert store.get_for_signal_type([config], VideoMD5Signal) == {
+        config.name: {md5: record}
+    }
 
 
 def test_update_stream_delta():
@@ -252,14 +307,14 @@ def test_update_stream_delta():
         {md5(2): h2_full},
     ]
 
-    store = FakeFetchStore()
-    collab = CollaborationConfigWithDefaults("fake_collab_name")
-    checkpoint = FakeCheckpoint(100)
+    store = FakeFetchStore(FakePerOwnerOpinionAPI)
+    collab = FakePerOwnerOpinionAPI.get_fake_collab_config()
+
+    # Note - dict(updates) work because our merge behavior is replace
+    api = FakePerOwnerOpinionAPI([dict(updates)])
 
     # If we appy updates all at once, we expect just the final state
-    # Note - dict(updates) work because our merge behavior is replace
-    delta = FakeFetchDelta(dict(updates), checkpoint)
-    assert delta.get_for_signal_type(VideoMD5Signal) == expected_states[-1]
+    delta = next(api.fetch_iter([], collab, None))
 
     store.merge(collab, delta)
     store.flush()
@@ -267,17 +322,16 @@ def test_update_stream_delta():
         collab.name: expected_states[-1]
     }
 
-    store = FakeFetchStore()
+    store = FakeFetchStore(FakePerOwnerOpinionAPI)
     # If we appy updates 1-by-1 we expect all the end states
-    for i, update in enumerate(updates):
-        checkpoint = FakeCheckpoint(100 + i)
-        delta = FakeFetchDelta(dict([update]), checkpoint)
+    api = FakePerOwnerOpinionAPI([dict([t]) for t in updates])
+    for i, delta in enumerate(api.fetch_iter([], collab, None)):
         store.merge(collab, delta)
         store.flush()
         assert store.get_for_signal_type([collab], VideoMD5Signal) == {
             collab.name: expected_states[i]
         }, f"Update {i}"
-        assert store.get_checkpoint(collab) == checkpoint
+        assert store.get_checkpoint(collab) == delta.checkpoint
 
 
 def test_simple_update_delta():
@@ -370,29 +424,26 @@ def test_simple_update_delta():
         {md5(2): h2_full},
     ]
 
-    store = FakeFetchStore()
-    collab = CollaborationConfigWithDefaults("fake_collab_name")
-    checkpoint = FakeCheckpoint(100)
+    store = FakeFetchStore(FakeNoConversionAPI)
+    collab = FakeNoConversionAPI.get_fake_collab_config()
 
-    # If we appy updates all at once, we expect just the final state
     # Note - dict(updates) work because our merge behavior is replace
-    delta = FakeSimpleFetchDelta(dict(updates), checkpoint)
-    assert delta.get_for_signal_type(VideoMD5Signal) == expected_states[-1]
-
+    api = FakeNoConversionAPI([dict(updates)])
+    # If we appy updates all at once, we expect just the final state
+    delta = next(api.fetch_iter([], collab, None))
     store.merge(collab, delta)
     store.flush()
     assert store.get_for_signal_type([collab], VideoMD5Signal) == {
         collab.name: expected_states[-1]
     }
 
-    store = FakeFetchStore()
+    store = FakeFetchStore(FakeNoConversionAPI)
     # If we appy updates 1-by-1 we expect all the end states
-    for i, update in enumerate(updates):
-        checkpoint = FakeCheckpoint(100 + i)
-        delta = FakeSimpleFetchDelta(dict([update]), checkpoint)
+    api = FakeNoConversionAPI([dict([t]) for t in updates])
+    for i, delta in enumerate(api.fetch_iter([], collab, None)):
         store.merge(collab, delta)
         store.flush()
         assert store.get_for_signal_type([collab], VideoMD5Signal) == {
             collab.name: expected_states[i]
         }, f"Update {i}"
-        assert store.get_checkpoint(collab) == checkpoint
+        assert store.get_checkpoint(collab) == delta.checkpoint

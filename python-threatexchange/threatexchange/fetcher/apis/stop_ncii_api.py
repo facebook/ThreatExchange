@@ -10,9 +10,6 @@ from functools import lru_cache
 import time
 import typing as t
 from dataclasses import dataclass
-from threatexchange.fetcher.simple.state import (
-    SimpleFetchDelta,
-)
 
 from threatexchange.stopncii import api
 
@@ -68,11 +65,10 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
 
 
 class StopNCIISignalExchangeAPI(
-    fetch_api.SignalExchangeAPI[
+    fetch_api.SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase,
         StopNCIICheckpoint,
         StopNCIISignalMetadata,
-        SimpleFetchDelta[StopNCIICheckpoint, StopNCIISignalMetadata],
     ]
 ):
     """
@@ -111,13 +107,18 @@ class StopNCIISignalExchangeAPI(
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
         _collab: CollaborationConfigBase,
         checkpoint: t.Optional[StopNCIICheckpoint],
-    ) -> t.Iterator[SimpleFetchDelta[StopNCIICheckpoint, StopNCIISignalMetadata]]:
+    ) -> t.Iterator[
+        state.FetchDelta[
+            t.Dict[t.Tuple[str, str], t.Optional[StopNCIISignalMetadata]],
+            StopNCIICheckpoint,
+        ]
+    ]:
         start_time = api.StopNCIIAPI.DEFAULT_START_TIME
         if checkpoint is not None:
             start_time = checkpoint.update_time
         for result in self.api.fetch_hashes_iter(start_timestamp=start_time):
             translated = (_get_delta_mapping(r) for r in result.hashRecords)
-            yield SimpleFetchDelta[StopNCIICheckpoint, StopNCIISignalMetadata](
+            yield state.FetchDelta(
                 dict(t for t in translated if t[0][0]),
                 StopNCIICheckpoint.from_stopncii_fetch(result),
             )

@@ -19,6 +19,9 @@ from threatexchange.signal_type.signal_base import SignalType
 Self = t.TypeVar("Self")
 
 
+TUpdateRecord = t.TypeVar("TUpdateRecord", bound=t.Sized)
+
+
 @dataclass
 class FetchCheckpointBase:
     """
@@ -41,6 +44,28 @@ class FetchCheckpointBase:
 TFetchCheckpoint = t.TypeVar("TFetchCheckpoint", bound=FetchCheckpointBase)
 
 
+@dataclass
+class FetchDelta(t.Generic[TUpdateRecord, TFetchCheckpoint]):
+    """
+    Represents an incremental chunk of state fetched from an API.
+
+    The exact storage format may vary by API, and a naive implementation
+    for combining updates to an in-memory state lives in the API, but it
+    often makes sense for a dedicate storage implementation to have a
+    more efficient implementation.
+
+    @see FetchStore
+    """
+
+    updates: TUpdateRecord
+    checkpoint: TFetchCheckpoint
+
+
+FetchDeltaTyped = FetchDelta[
+    t.Any, FetchCheckpointBase
+]  # to anchor checkpoint for typing
+
+
 class SignalOpinionCategory(IntEnum):
     """
     What the opinion on a signal is.
@@ -50,8 +75,11 @@ class SignalOpinionCategory(IntEnum):
     make more sense as a tag
     """
 
+    # TODO: Rename to DOES_NOT_FIT_CATEORY
     FALSE_POSITIVE = 0  # Signal generates false positives
+    # TODO: Rename to something else
     WORTH_INVESTIGATING = 1  # Indirect indicator
+    # TODO: Rename to FITS_CATEGORY
     TRUE_POSITIVE = 2  # Confirmed meets category
 
 
@@ -85,6 +113,7 @@ class AggregateSignalOpinionCategory(IntEnum):
     Keep in Sync with SignalOpinionCategory
     """
 
+    # TODO: Move concept of "my" signals into this
     FALSE_POSITIVE = 0  # Signal generates false positives
     WORTH_INVESTIGATING = 1  # Indirect indicator
     TRUE_POSITIVE = 2  # Confirmed meets category
@@ -155,17 +184,6 @@ class FetchedSignalMetadata:
     def get_as_opinions(self) -> t.List[SignalOpinion]:
         return [SignalOpinion.get_trivial()]
 
-    @classmethod
-    def merge_metadata(cls: t.Type[Self], _older: Self, newer: Self) -> Self:
-        """
-        The merge strategy when tailing a stream of updates.
-
-        Simple strategies might be:
-        1. Replace - newer records for the same signal complete replace old ones
-        2. Merge - new records are combined with old ones
-        """
-        return newer  # Default is replace
-
     def get_as_aggregate_opinion(self) -> AggregateSignalOpinion:
         return AggregateSignalOpinion.from_opinions(self.get_as_opinions())
 
@@ -179,57 +197,6 @@ class FetchedSignalMetadata:
 TFetchedSignalMetadata = t.TypeVar(
     "TFetchedSignalMetadata", bound=FetchedSignalMetadata
 )
-
-
-class FetchDelta(t.Generic[TFetchCheckpoint, TFetchedSignalMetadata]):
-    """
-    Contains the result of a fetch.
-
-    In order to make naive storage (such as on the CLI) work, implementations
-    of this class must be pickle-able.
-
-    Note that the way that this class organizes and stores data does not
-    need to be the same way that that the index class organizes data,
-    which is hash => Record.
-    """
-
-    def record_count(self) -> int:
-        """Helper for --limit"""
-        return 1
-
-    def next_checkpoint(self) -> TFetchCheckpoint:
-        """A serializable checkpoint for fetch."""
-        raise NotImplementedError
-
-    def merge(self: Self, newer: Self) -> None:
-        """
-        Merge the content of a subsequent fetch() call into this one.
-
-        Different APIs might have different approaches to merging.
-
-        You can assume the caller has kept track, and is only
-        merging in sequential order.
-
-        delta_1 = api.fetch_once(...)
-        delta_2 = api.fetch_once(..., delta_1.checkpoint)
-        delta_3 = api.fetch_once(..., delta_2.checkpoint)
-
-        delta_1.merge(delta_2)
-        delta_1.merge(delta_3)
-        """
-        raise NotImplementedError
-
-    def get_for_signal_type(
-        self, signal_type: t.Type[SignalType]
-    ) -> t.Dict[str, TFetchedSignalMetadata]:
-        """
-        Get as a map of signal => Metadata
-
-        This powers simple storage solutions, and provides the mapping
-        from how the API provides update to how the index needs.
-        """
-        raise NotImplementedError
-
 
 # TODO t.Generic[TFetchDeltaBase, TFetchedSignalDataBase, FetchCheckpointBase]
 #      to help keep track of the expected subclasses for an impl

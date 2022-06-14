@@ -4,16 +4,12 @@ import pytest
 import typing as t
 
 from threatexchange.fetcher.fetch_state import AggregateSignalOpinionCategory
-from threatexchange.fetcher.simple.state import SimpleFetchDelta
-
 from threatexchange.stopncii.tests.test_api import api
+
 from threatexchange.fetcher.apis.stop_ncii_api import (
-    StopNCIICheckpoint,
     StopNCIISignalExchangeAPI,
-    StopNCIISignalMetadata,
 )
 from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 
 from threatexchange.stopncii.api import StopNCIIAPI
 
@@ -25,27 +21,27 @@ def fetcher(api: StopNCIIAPI):
     return signal_exchange
 
 
-def test_fetch(fetcher: SignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
+def test_fetch(fetcher: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("time.time", lambda: 10**8)
     collab = CollaborationConfigWithDefaults("Test")
     it = fetcher.fetch_iter([], collab, None)
-    delta = t.cast(SimpleFetchDelta, next(it))
+    delta = next(it)
 
-    assert delta.record_count() == 2
+    assert len(delta.updates) == 2
 
-    checkpoint: StopNCIICheckpoint = delta.next_checkpoint()
-    assert checkpoint.get_progress_timestamp() == 1625175071
-    assert checkpoint.is_stale() is False
-    assert checkpoint.update_time == 1625175071
-    assert checkpoint.last_fetch_time == 10**8
+    assert delta.checkpoint.get_progress_timestamp() == 1625175071
+    assert delta.checkpoint.is_stale() is False
+    assert delta.checkpoint.update_time == 1625175071
+    assert delta.checkpoint.last_fetch_time == 10**8
 
-    updates = delta.update_record
-    assert len(updates) == 2
+    updates = delta.updates
     assert {t[0] for t in updates} == {"pdq"}
 
     tt = tuple(updates.values())
-    a = t.cast(StopNCIISignalMetadata, tt[0])
-    b = t.cast(StopNCIISignalMetadata, tt[1])
+    a = tt[0]
+    b = tt[1]
+    assert a is not None
+    assert b is not None
     assert len(a.feedbacks) == 0
     ao = a.get_as_aggregate_opinion()
     assert ao.category == AggregateSignalOpinionCategory.WORTH_INVESTIGATING
@@ -57,13 +53,13 @@ def test_fetch(fetcher: SignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     assert bo.tags == set()
 
     # Second fetch
-    delta = t.cast(SimpleFetchDelta, next(it))
-    assert delta.record_count() == 1
-    updates = delta.update_record
-    assert len(updates) == 1
-    assert "pdq" == tuple(updates)[0][0]
-    a = t.cast(StopNCIISignalMetadata, tuple(updates.values())[0])
+    delta = next(it)
+    assert len(delta.updates) == 1
+    assert "pdq" == tuple(delta.updates)[0][0]
+    a = tuple(delta.updates.values())[0]
+    assert a is not None
     ao = a.get_as_aggregate_opinion()
     assert ao.category == AggregateSignalOpinionCategory.TRUE_POSITIVE
     assert ao.tags == {"Nude", "Objectionable"}
+
     assert next(it, None) is None  # We fetched everything

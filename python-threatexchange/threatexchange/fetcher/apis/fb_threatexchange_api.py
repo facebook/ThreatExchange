@@ -12,12 +12,13 @@ import typing as t
 import time
 from dataclasses import dataclass, field
 from threatexchange.fb_threatexchange.threat_updates import ThreatUpdateJSON
-from threatexchange.fetcher.simple.state import SimpleFetchDelta
 
 from threatexchange.fb_threatexchange.api import ThreatExchangeAPI, _CursoredResponse
 
 from threatexchange.fetcher import fetch_state as state
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
+from threatexchange.fetcher.fetch_api import (
+    SignalExchangeAPIWithSimpleUpdates,
+)
 from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher.apis.fb_threatexchange_signal import (
@@ -162,17 +163,17 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
         )
 
 
-ThreatExchangeDelta = SimpleFetchDelta[
-    FBThreatExchangeCheckpoint, FBThreatExchangeIndicatorRecord
+ThreatExchangeDelta = state.FetchDelta[
+    t.Dict[t.Tuple[str, str], t.Optional[FBThreatExchangeIndicatorRecord]],
+    FBThreatExchangeCheckpoint,
 ]
 
 
 class FBThreatExchangeSignalExchangeAPI(
-    SignalExchangeAPI[
+    SignalExchangeAPIWithSimpleUpdates[
         FBThreatExchangeCollabConfig,
         FBThreatExchangeCheckpoint,
         FBThreatExchangeIndicatorRecord,
-        ThreatExchangeDelta,
     ]
 ):
     def __init__(self, fb_app_token: t.Optional[str] = None) -> None:
@@ -245,7 +246,7 @@ class FBThreatExchangeSignalExchangeAPI(
                         st.get_name(), u.indicator
                     ] = FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
 
-            yield SimpleFetchDelta(
+            yield ThreatExchangeDelta(
                 updates,
                 FBThreatExchangeCheckpoint(highest_time),
             )

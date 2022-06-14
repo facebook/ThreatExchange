@@ -7,6 +7,7 @@ The fetcher is the component that talks to external APIs to get and put signals
 """
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import typing as t
 
 from threatexchange import common
@@ -15,12 +16,14 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher import fetch_state as state
 
 TCollabConfig = t.TypeVar("TCollabConfig", bound=CollaborationConfigBase)
-TFetchDelta = t.TypeVar("TFetchDelta", bound=state.FetchDelta)
 
 
 class SignalExchangeAPI(
     t.Generic[
-        TCollabConfig, state.TFetchCheckpoint, state.TFetchedSignalMetadata, TFetchDelta
+        TCollabConfig,
+        state.TFetchCheckpoint,
+        state.TFetchedSignalMetadata,
+        state.TUpdateRecord,
     ],
     ABC,
 ):
@@ -88,7 +91,49 @@ class SignalExchangeAPI(
         # Default - just knowing the type is enough
         return CollaborationConfigBase  # type: ignore
 
-    # TODO - this doesn't work for StopNCII which sends the owner as a string
+    @classmethod
+    @abstractmethod
+    def naive_fetch_merge(
+        cls,
+        old: t.Optional[state.TUpdateRecord],
+        new: state.TUpdateRecord,
+    ) -> state.TUpdateRecord:
+        """
+        Merge a new update produced by fetch in-memory.
+
+        It is safe to merge into `old` in-place if supported, and return that.
+
+        This is the fallback method of creating state when there isn't a
+        specialized storage for the fetch type.
+
+        For example, if you have nothing else, merging NCMEC update records
+        together by ID will eventually get you an entire copy of the database.
+        However, if it started to get too big where it would be a problem to
+        load into memory, it would be better to store in a storage that
+        only let you update the IDs you had updates for, or let you build an
+        index based on other fields inside. If you were doing that, you
+        wouldn't use this and rely on a specialzied implementation for this
+        API that extends FetchStateStore.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        fetched: state.TUpdateRecord,
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
+        """
+        Convert the record from the API format to the format needed for indexing.
+
+        This is the fallback method of creating state when there isn't a
+        specialized storage for the fetch type.
+
+        """
+        raise NotImplementedError
+
+    # TODO - this doens't work for StopNCII which sends the owner as a string
     #        maybe this should take the full metadata?
     def resolve_owner(self, id: int) -> str:
         """
@@ -120,7 +165,7 @@ class SignalExchangeAPI(
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> t.Iterator[TFetchDelta]:
+    ) -> t.Iterator[state.FetchDelta[state.TUpdateRecord, state.TFetchCheckpoint]]:
         """
         Call out to external resources, fetching a batch of updates per yield.
 
@@ -225,7 +270,77 @@ TSignalExchangeAPI = SignalExchangeAPI[
     CollaborationConfigBase,
     state.FetchCheckpointBase,
     state.FetchedSignalMetadata,
-    state.FetchDelta[state.FetchCheckpointBase, state.FetchedSignalMetadata],
+    t.Any,
 ]
 
 TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
+
+
+K = t.TypeVar("K")
+V = t.TypeVar("V")
+
+
+class SignalExchangeAPIWithKeyedUpdates(
+    SignalExchangeAPI[
+        TCollabConfig,
+        state.TFetchCheckpoint,
+        state.TFetchedSignalMetadata,
+        t.Dict[K, t.Optional[V]],
+    ]
+):
+    """
+    An API that supports sequential updates with a common key (id, hash, etc).
+
+    This provides a simple approach for merging data.
+    A value of None for a value indicates that the record was deleted.
+    """
+
+    @classmethod
+    def naive_fetch_merge(
+        cls, old: t.Optional[t.Dict[K, t.Optional[V]]], new: t.Dict[K, t.Optional[V]]
+    ) -> t.Dict[K, t.Optional[V]]:
+        old = old or {}
+        for k, v in new.items():
+            if v is None:
+                old.pop(k, None)
+            else:
+                old[k] = v
+        return old
+
+
+class SignalExchangeAPIWithSimpleUpdates(
+    SignalExchangeAPIWithKeyedUpdates[
+        TCollabConfig,
+        state.TFetchCheckpoint,
+        state.TFetchedSignalMetadata,
+        t.Tuple[str, str],
+        state.TFetchedSignalMetadata,
+    ]
+):
+    """
+    An API that conveniently maps directly into the form needed by index.
+
+    If the API supports returning exactly the hashes and all the metadata needed
+    to make a decision on the hash without needing an indirection of ID (for example,
+    to support deletes), then you can choose to directly return it in a form that
+    maps directly into SignalType.
+    """
+
+    @classmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        fetched: t.Dict[t.Tuple[str, str], t.Optional[state.TFetchedSignalMetadata]],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
+        ret: t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]] = {}
+        type_by_name = {st.get_name(): st for st in signal_types}
+        for (type_str, signal_str), metadata in fetched.items():
+            s_type = type_by_name.get(type_str)
+            if s_type is None or metadata is None:
+                continue
+            inner = ret.get(s_type)
+            if inner is None:
+                inner = {}
+                ret[s_type] = inner
+            inner[signal_str] = metadata
+        return ret
