@@ -186,7 +186,7 @@ class NCMECSignalExchangeAPI(
             start_time = checkpoint.max_timestamp
         for result in self.client.get_entries_iter(start_timestamp=start_time):
             yield state.FetchDelta(
-                {entry.id: entry for entry in result.updates},
+                {f"{entry.member_id}-{entry.id}": entry for entry in result.updates},
                 NCMECCheckpoint.from_ncmec_fetch(result),
             )
 
