@@ -4,18 +4,18 @@ on:
     branches:
       - main
     paths:
-      - "ThreatExchange/tmk/cpp/**"
+      - "tmk/cpp/**"
       - ".github/workflows/tmk-ci-cpp.yml"
   pull_request:
     branches:
       - main
     paths:
-      - "ThreatExchange/tmk/cpp/**"
+      - "tmk/cpp/**"
       - ".github/workflows/tmk-ci-cpp.yml"
 
 defaults:
   run:
-    working-directory: ThreatExchange/tmk/cpp
+    working-directory: tmk/cpp
 
 jobs:
   build-and-test:
