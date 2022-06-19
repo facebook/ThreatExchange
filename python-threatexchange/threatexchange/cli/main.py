@@ -73,7 +73,9 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
     )
     # is_config = Safe mode to try and let you fix bad settings from CLI
     ap.set_defaults(is_config=False)
-    subparsers = ap.add_subparsers(title="verbs", help="which action to do")
+    subparsers = ap.add_subparsers(
+        dest="toplevel_command_name", title="verbs", help="which action to do"
+    )
     for command in get_subcommands():
         command.add_command_to_subparser(settings, subparsers)
 
@@ -311,6 +313,9 @@ def inner_main(
     namespace = ap.parse_args(args)
     if not namespace.is_config:
         extensions.assert_no_errors()
+    if not namespace.toplevel_command_name:
+        ap.print_help()
+        return
     execute_command(settings, namespace)
 
 
