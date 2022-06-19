@@ -98,12 +98,11 @@ NCMECUpdate = t.Dict[str, api.NCMECEntryUpdate]
 
 
 class NCMECSignalExchangeAPI(
-    fetch_api.SignalExchangeAPIWithKeyedUpdates[
+    fetch_api.SignalExchangeAPI[
         NCMECCollabConfig,
         NCMECCheckpoint,
         NCMECSignalMetadata,
-        str,
-        api.NCMECEntryUpdate,
+        NCMECUpdate,
     ]
 ):
     """
@@ -167,6 +166,14 @@ class NCMECSignalExchangeAPI(
                 {f"{entry.member_id}-{entry.id}": entry for entry in result.updates},
                 NCMECCheckpoint.from_ncmec_fetch(result),
             )
+
+    @classmethod
+    def naive_fetch_merge(
+        cls, old: t.Optional[NCMECUpdate], new: NCMECUpdate
+    ) -> NCMECUpdate:
+        ret = old or {}
+        ret.update(new)
+        return ret
 
     @classmethod
     def naive_convert_to_signal_type(
