@@ -62,10 +62,10 @@ class DatasetCommand(command_base.Command):
             help="print summary in terms of signals (default action)",
         )
         actions.add_argument(
-            "--print-records",
+            "--print-signals",
             "-P",
             action="store_true",
-            help="print records to screen",
+            help="print signals to screen",
         )
 
         type_selector = ap.add_mutually_exclusive_group()
@@ -78,7 +78,8 @@ class DatasetCommand(command_base.Command):
                 choices=[s.get_name() for s in settings.get_all_signal_types()],
                 type=settings.get_signal_type,
             ),
-            help="only process these sigals",
+            metavar="SIGNAL_TYPE",
+            help="only consider signals of this type",
         )
         type_selector.add_argument(
             "--only-content",
@@ -89,6 +90,7 @@ class DatasetCommand(command_base.Command):
                 choices=[s.get_name() for s in settings.get_all_content_types()],
                 type=settings.get_content_type,
             ),
+            metavar="CONTENT_TYPE",
             help="only process signals for these content types",
         )
         ap.add_argument(
@@ -118,12 +120,6 @@ class DatasetCommand(command_base.Command):
             help="[-P] store in csv format",
         )
         ap.add_argument(
-            "--limit",
-            "-l",
-            action="store_true",
-            help="[-P] only print this many records",
-        )
-        ap.add_argument(
             "--print-zeroes",
             "-z",
             action="store_true",
@@ -132,13 +128,13 @@ class DatasetCommand(command_base.Command):
 
     def __init__(
         # These all have defaults to make it easier to call
-        # only for rebuld
+        # only for rebuild
         self,
         # Mode
         clear_indices: bool = False,
         rebuild_indices: bool = False,
         signal_summary: bool = False,
-        print_records: bool = False,
+        print_signals: bool = False,
         # Signal selectors
         only_collabs: t.Sequence[str] = (),
         only_signals: t.Sequence[t.Type[SignalType]] = (),
@@ -148,13 +144,12 @@ class DatasetCommand(command_base.Command):
         print_zeroes: bool = False,
         signals_only: bool = False,
         csv: bool = False,
-        limit: t.Optional[int] = None,
     ) -> None:
         self.clear_indices = clear_indices
         self.rebuild_indices = rebuild_indices
-        self.print_records = print_records
+        self.print_signals = print_signals
         self.signal_summary = signal_summary or not (
-            print_records or rebuild_indices or clear_indices
+            print_signals or rebuild_indices or clear_indices
         )
 
         self.only_collabs = set(only_collabs)
@@ -165,7 +160,6 @@ class DatasetCommand(command_base.Command):
         self.print_zeroes = print_zeroes
         self.signals_only = signals_only
         self.csv = csv
-        self.limit = limit
 
     def execute(self, settings: CLISettings) -> None:
         # Maybe consider subcommands?
@@ -173,8 +167,8 @@ class DatasetCommand(command_base.Command):
             self.execute_clear_indices(settings)
         elif self.rebuild_indices:
             self.execute_generate_indices(settings)
-        elif self.print_records:
-            self.execute_print_records(settings)
+        elif self.print_signals:
+            self.execute_print_signals(settings)
         else:
             assert self.signal_summary
             self.execute_print_summary(settings)
@@ -202,6 +196,9 @@ class DatasetCommand(command_base.Command):
     ) -> t.Dict[
         t.Type[SignalType], t.Dict[str, t.List[t.Tuple[str, FetchedSignalMetadata]]]
     ]:
+        """
+        Get signals grouped by type => hash => collab name: metadata
+        """
         collabs = self.get_collabs(settings)
 
         collab_by_api: t.Dict[str, t.List[CollaborationConfigBase]] = {}
@@ -237,7 +234,7 @@ class DatasetCommand(command_base.Command):
             if count or self.print_zeroes:
                 print(f"{s_name}: {count}")
 
-    def execute_print_records(self, settings):
+    def execute_print_signals(self, settings):
         signals = self.get_signals(settings, self.get_signal_types(settings))
 
         print_fn = self._print_stdout
@@ -288,7 +285,7 @@ class DatasetCommand(command_base.Command):
         collab_name: str,
         signal_type: SignalType,
         signal_str: str,
-        metadata: t.Optional[FetchedSignalMetadata],
+        metadata: FetchedSignalMetadata,
     ) -> None:
         if not self.signals_only and len(self.only_collabs) != 1:
             print(repr(collab_name), end=" ")
@@ -305,7 +302,7 @@ class DatasetCommand(command_base.Command):
         collab_name: str,
         signal_type: SignalType,
         signal_str: str,
-        metadata: t.Optional[FetchedSignalMetadata],
+        metadata: FetchedSignalMetadata,
     ) -> None:
         agg = metadata.get_as_aggregate_opinion()
         csvwriter.writerow(
