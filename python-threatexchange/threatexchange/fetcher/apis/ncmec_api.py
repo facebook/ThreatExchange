@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-SignalExchangeAPI impl for the NCMEC hash exchange
+SignalExchangeAPI impl for the NCMEC hash exchange API
 
+@see NCMECSignalExchangeAPI
 """
 
 
@@ -60,30 +61,6 @@ class NCMECCollabConfig(
 
 
 @dataclass
-class NCMECEntryMetadata(state.FetchedSignalMetadata):
-    """
-    Placeholder to store entries from the API
-
-    TODO: It turns out I was not smart enough and build the API interface
-          poorly, which NCMEC has exposed.
-          The chain of Delta => Dict[(type, hash): ?Metadata] => Store => Index
-          breaks because NCME doesn't map easily to a unique (type, hash) pairing.
-          Instead, it has its own unique keys (esp_id, entry_id).
-
-          The fix is to seperate out the concerns needed for UpdateDelta to work
-          (any unique key, a combining function) from the concerns needed for Index
-          to work (group by signal type => Metadata).
-    """
-
-    entry: api.NCMECEntryUpdate
-
-    def get_as_opinions(self) -> t.List[state.SignalOpinion]:
-        raise NotImplementedError(
-            "Placeholder while I figure out the correct model for NCMEC"
-        )
-
-
-@dataclass
 class NCMECSignalMetadata(state.FetchedSignalMetadata):
     """
     NCMEC metadata includes who uploaded it, as well as what they tagged.
@@ -121,11 +98,12 @@ NCMECUpdate = t.Dict[str, api.NCMECEntryUpdate]
 
 
 class NCMECSignalExchangeAPI(
-    fetch_api.SignalExchangeAPI[
+    fetch_api.SignalExchangeAPIWithKeyedUpdates[
         NCMECCollabConfig,
         NCMECCheckpoint,
         NCMECSignalMetadata,
-        NCMECUpdate,
+        str,
+        api.NCMECEntryUpdate,
     ]
 ):
     """
@@ -191,16 +169,6 @@ class NCMECSignalExchangeAPI(
             )
 
     @classmethod
-    def naive_fetch_merge(
-        cls,
-        old: t.Optional[NCMECUpdate],
-        new: NCMECUpdate,
-    ) -> NCMECUpdate:
-        old = old or {}
-        old.update(new)
-        return old
-
-    @classmethod
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
@@ -211,6 +179,8 @@ class NCMECSignalExchangeAPI(
         ] = _get_conversion(signal_types)
         ret: t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]] = {}
         for entry in fetched.values():
+            if entry.deleted:
+                continue  # We expect len(fingerprints) == 0 here, but to be safe
             for fingerprint_type, fingerprint_value in entry.fingerprints.items():
                 st = mapping.get((entry.entry_type, fingerprint_type))
                 if st is not None:

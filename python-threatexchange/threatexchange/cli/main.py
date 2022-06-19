@@ -71,12 +71,6 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument(
-        "--app-token",
-        "-a",
-        metavar="TOKEN",
-        help="the App token for ThreatExchange",
-    )
     # is_config = Safe mode to try and let you fix bad settings from CLI
     ap.set_defaults(is_config=False)
     subparsers = ap.add_subparsers(title="verbs", help="which action to do")
@@ -186,7 +180,7 @@ def _get_stopncii_tokens(
 
 def _get_ncmec_credentials(config: CLiConfig) -> t.Tuple[str, str]:
     """Get user+pass from NCMEC from the config"""
-    environment_var = "TX_STOPNCII_KEYS"
+    environment_var = "TX_NCMEC_CREDENTIALS"
     not_found = "", ""
 
     def get_from_environ() -> t.Optional[t.Tuple[str, str]]:

@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import pytest
-import typing as t
 
 from threatexchange.fetcher.fetch_state import AggregateSignalOpinionCategory
 
@@ -28,44 +27,70 @@ def fetcher(api: NCMECHashAPI):
 def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     collab = NCMECCollabConfig(NCMECEnvironment.Industry, "Test")
     it = fetcher.fetch_iter([], collab, None)
-    delta = next(it)
+    first_update = {
+        "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()})
+    }
+    third_update = dict(first_update)
+    third_update.update(
+        {
+            "facefacefacefacefacefacefaceface": NCMECSignalMetadata({101: {"A1"}}),
+            "bacebacebacebacebacebacebacebace": NCMECSignalMetadata({101: {"A1"}}),
+        }
+    )
+    forth_update = dict(first_update)
+    forth_update.update(
+        {
+            "facefacefacefacefacefacefaceface": NCMECSignalMetadata({101: {"A2"}}),
+        }
+    )
 
+    # Fetch 1
+    delta = next(it)
     assert len(delta.updates) == 4
+    total_updates = fetcher.naive_fetch_merge(None, delta.updates)
 
     assert delta.checkpoint.get_progress_timestamp() == 1508858400
     assert delta.checkpoint.is_stale() is False
     assert delta.checkpoint.max_timestamp == 1508858400
 
     assert set(delta.updates) == {"43-image4", "42-image1", "42-video1", "42-video4"}
-    updates = delta.updates
 
-    assert_expected_updates(updates)
+    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], total_updates
+    )[VideoMD5Signal]
+    assert as_signals == first_update
 
     delta = next(it)
     assert len(delta.updates) == 1
 
     assert {t for t in delta.updates} == {"42-image10"}
-    updates = fetcher.naive_fetch_merge(updates, delta.updates)
-    assert_expected_updates(updates)
+    total_updates = fetcher.naive_fetch_merge(total_updates, delta.updates)
+    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], total_updates
+    )[VideoMD5Signal]
+    assert as_signals == first_update
 
+    ## Fetch 3
+    delta = next(it)
+    assert len(delta.updates) == 2
+    assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
+    total_updates = fetcher.naive_fetch_merge(total_updates, delta.updates)
 
-def assert_expected_updates(updates: NCMECUpdate):
-    """We can do this because the return of the API return is hardcoded"""
-    as_signal_types = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], updates
-    )
+    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], total_updates
+    )[VideoMD5Signal]
+    assert as_signals == third_update
 
-    assert len(as_signal_types) == 1
-    vmd5s = as_signal_types[VideoMD5Signal]
-    assert len(vmd5s) == 1
-    signal_metadata: NCMECSignalMetadata
-    vmd5, signal_metadata = next(iter(vmd5s.items()))
-    assert vmd5 == "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+    ## Fetch 4
+    delta = next(it)
+    assert len(delta.updates) == 2
+    assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
+    total_updates = fetcher.naive_fetch_merge(total_updates, delta.updates)
 
-    opinions = signal_metadata.get_as_opinions()
-    assert len(opinions) == 1
-    opinion = opinions[0]
-    assert opinion.owner == 42
-    agg = signal_metadata.get_as_aggregate_opinion()
-    assert agg.category == AggregateSignalOpinionCategory.TRUE_POSITIVE
-    assert agg.tags == set()
+    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], total_updates
+    )[VideoMD5Signal]
+    assert as_signals == forth_update
+
+    ## No more data
+    assert next(it, None) is None
