@@ -36,15 +36,15 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
         args = list(self.COMMON_CALL_ARGS)
         args.extend(given_args)
         print("Calling: $ threatexchange", " ".join(args), file=sys.stderr)
-        try:
-            with patch("sys.stdout", new=StringIO()) as fake_out, patch(
-                "sys.argv", new=args
-            ):
+        with patch("sys.stdout", new=StringIO()) as fake_out, patch(
+            "sys.argv", new=["threatexchange"] + args
+        ):
+            try:
                 inner_main(args, state_dir=self._state_dir)
-        except SystemExit as se:
-            if se.code != 0:
-                raise E2ETestSystemExit(se.code)
-        return fake_out.getvalue()
+            except SystemExit as se:
+                if se.code != 0:
+                    raise E2ETestSystemExit(se.code)
+            return fake_out.getvalue()
 
     def assert_cli_output(
         self, args: t.Iterable[str], expected_output: t.Union[str, t.Dict[int, str]]
