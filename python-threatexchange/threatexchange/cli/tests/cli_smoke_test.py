@@ -11,6 +11,7 @@ class CLISmokeTest(ThreatExchangeCLIE2eTest):
 
         View the pretty output with py.test -s
         """
+        self.cli_call()  # root help
         self.cli_call("--help")  # root help
         for command in main.get_subcommands():
             self.cli_call(command.get_name(), "--help")
