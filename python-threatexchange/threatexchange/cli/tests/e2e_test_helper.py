@@ -36,7 +36,7 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
         args = list(self.COMMON_CALL_ARGS)
         args.extend(given_args)
         print("Calling: $ threatexchange", " ".join(args), file=sys.stderr)
-        with patch("sys.stdout", new=StringIO()) as fake_out, patch(
+        with patch("sys.stdout", new=StringIO(newline=None)) as fake_out, patch(
             "sys.argv", new=["threatexchange"] + args
         ):
             try:

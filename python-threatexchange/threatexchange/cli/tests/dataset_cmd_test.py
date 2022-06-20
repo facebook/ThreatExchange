@@ -1,5 +1,8 @@
 from threatexchange.cli.tests.e2e_test_helper import ThreatExchangeCLIE2eTest
 
+from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.cli.main import _DEFAULT_SIGNAL_TYPES
+
 
 class DatasetCommandTest(ThreatExchangeCLIE2eTest):
     def test(self):
@@ -11,6 +14,8 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         future developers.
         """
         self.assert_cli_output(("dataset",), "")  # No datas yet
+        signal_count = sum(len(st.get_examples()) for st in _DEFAULT_SIGNAL_TYPES)
+
         self.cli_call("fetch")
 
         self.assert_cli_output(
@@ -38,6 +43,7 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
 
         # The sort of printed output is currently not stable
         output = self.cli_call("dataset", "-P")
+        assert output.count("\n") == signal_count
         assert (
             "'Sample Signals' url "
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/ "
@@ -59,6 +65,30 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
             ("dataset", "-P", "-s", "url", "-S"),
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/",
         )
+        # CSV stuff
+        output = self.cli_call("dataset", "-P", "--csv")
+        assert output.count("\n") - 1 == signal_count  # -1 for header
+        assert (
+            "Sample Signals,url,"
+            "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
+            "WORTH_INVESTIGATING,"
+        ) in output
+        # Repeat same filters - however, these don't change the output format except -S\
+        csv_header = "collab,signal_type,signal_str,category,tags\n"
+        self.assert_cli_output(
+            ("dataset", "-P", "--csv", "-s", "url"),
+            csv_header + "Sample Signals,url,"
+            "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
+            "WORTH_INVESTIGATING,",
+        )
+        self.assert_cli_output(
+            ("dataset", "-P", "--csv", "-s", "url", "-c", "Sample Signals"),
+            csv_header + "Sample Signals,url,"
+            "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
+            "WORTH_INVESTIGATING,",
+        )
+        # --csv and -S not combinable
+        self.assert_cli_usage_error(("dataset", "-P", "--csv", "-S"))
 
     def test_indices(self):
         self.cli_call("fetch", "--skip-index-rebuild")

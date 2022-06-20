@@ -79,7 +79,7 @@ class DatasetCommand(command_base.Command):
                 type=settings.get_signal_type,
             ),
             metavar="SIGNAL_TYPE",
-            help="only consider signals of this type",
+            help="only use signals of this type",
         )
         type_selector.add_argument(
             "--only-content",
@@ -91,7 +91,13 @@ class DatasetCommand(command_base.Command):
                 type=settings.get_content_type,
             ),
             metavar="CONTENT_TYPE",
-            help="only process signals for these content types",
+            help="only use signals for these content types",
+        )
+        ap.add_argument(
+            "--print-zeroes",
+            "-z",
+            action="store_true",
+            help="[--signal-summary] print counts of 0",
         )
         ap.add_argument(
             "--only-collabs",
@@ -99,31 +105,27 @@ class DatasetCommand(command_base.Command):
             nargs="+",
             default=[],
             metavar="NAME",
-            help="[-S|-P] only count items with this tag",
+            help="[-S|-P] only use items with this tag",
         )
         ap.add_argument(
             "--only-tags",
             "-t",
+            nargs="+",
             default=[],
             metavar="STR",
-            help="[-S|-P] only count items with these tags",
+            help="[-S|-P] only use items with these tags",
         )
-        ap.add_argument(
+        csv_mutual_group = ap.add_mutually_exclusive_group()
+        csv_mutual_group.add_argument(
             "--signals-only",
             "-S",
             action="store_true",
             help="[-P] only print signals",
         )
-        ap.add_argument(
+        csv_mutual_group.add_argument(
             "--csv",
             action="store_true",
-            help="[-P] store in csv format",
-        )
-        ap.add_argument(
-            "--print-zeroes",
-            "-z",
-            action="store_true",
-            help="when printing counts, print 0 values",
+            help="[-P] print in csv format (including header)",
         )
 
     def __init__(
@@ -285,7 +287,7 @@ class DatasetCommand(command_base.Command):
         collab_name: str,
         signal_type: SignalType,
         signal_str: str,
-        metadata: FetchedSignalMetadata,
+        metadata: t.Optional[FetchedSignalMetadata],
     ) -> None:
         if not self.signals_only and len(self.only_collabs) != 1:
             print(repr(collab_name), end=" ")
@@ -302,8 +304,9 @@ class DatasetCommand(command_base.Command):
         collab_name: str,
         signal_type: SignalType,
         signal_str: str,
-        metadata: FetchedSignalMetadata,
+        metadata: t.Optional[FetchedSignalMetadata],
     ) -> None:
+        assert metadata is not None
         agg = metadata.get_as_aggregate_opinion()
         csvwriter.writerow(
             {
