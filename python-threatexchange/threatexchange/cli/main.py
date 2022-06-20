@@ -55,6 +55,15 @@ from threatexchange.cli import (
 )
 from threatexchange.signal_type.signal_base import SignalType
 
+_DEFAULT_SIGNAL_TYPES: t.Sequence[t.Type[SignalType]] = [
+    pdq.PdqSignal,
+    md5.VideoMD5Signal,
+    raw_text.RawTextSignal,
+    url_signal.URLSignal,
+    url_md5.UrlMD5Signal,
+    trend_query.TrendQuerySignal,
+]
+
 
 def get_subcommands() -> t.List[t.Type[base.Command]]:
     return [
@@ -262,15 +271,7 @@ def _get_settings(
     signals = meta.SignalTypeMapping(
         [photo.PhotoContent, video.VideoContent, url.URLContent, text.TextContent]
         + extensions.content_types,
-        [
-            pdq.PdqSignal,
-            md5.VideoMD5Signal,
-            raw_text.RawTextSignal,
-            url_signal.URLSignal,
-            url_md5.UrlMD5Signal,
-            trend_query.TrendQuerySignal,
-        ]
-        + extensions.signal_types,
+        list(_DEFAULT_SIGNAL_TYPES) + extensions.signal_types,
     )
     base_apis: t.List[SignalExchangeAPI] = [
         StaticSampleSignalExchangeAPI(),

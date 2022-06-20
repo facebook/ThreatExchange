@@ -36,7 +36,7 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
         args = list(self.COMMON_CALL_ARGS)
         args.extend(given_args)
         print("Calling: $ threatexchange", " ".join(args), file=sys.stderr)
-        with patch("sys.stdout", new=StringIO()) as fake_out, patch(
+        with patch("sys.stdout", new=StringIO(newline=None)) as fake_out, patch(
             "sys.argv", new=["threatexchange"] + args
         ):
             try:
@@ -47,13 +47,17 @@ class ThreatExchangeCLIE2eTest(unittest.TestCase):
             return fake_out.getvalue()
 
     def assert_cli_output(
-        self, args: t.Iterable[str], expected_output: t.Union[str, t.Dict[int, str]]
+        self,
+        args: t.Iterable[str],
+        expected_output: t.Union[str, t.Iterable[str], t.Dict[int, str]],
     ) -> None:
         output = self.cli_call(*args)
         if isinstance(expected_output, str):
             self.assertEqual(expected_output.strip(), output.strip())
             return
         lines = output.strip().split("\n")
+        if not isinstance(expected_output, dict):
+            expected_output = dict(enumerate(expected_output))
         for line, expected_line_output in expected_output.items():
             if line < 0:
                 self.assertGreaterEqual(line, -len(lines), expected_line_output)
