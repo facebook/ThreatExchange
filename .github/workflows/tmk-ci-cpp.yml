@@ -1,0 +1,29 @@
+name: tmk CI - cpp
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "tmk/cpp/**"
+      - ".github/workflows/tmk-ci-cpp.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "tmk/cpp/**"
+      - ".github/workflows/tmk-ci-cpp.yml"
+
+defaults:
+  run:
+    working-directory: tmk/cpp
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: make
+        run: |
+          sudo apt-get update
+          sudo apt-get install ffmpeg
+          make

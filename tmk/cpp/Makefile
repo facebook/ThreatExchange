@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------
 CXX=g++ # please customize according to your system --- Note: Apple clang is not supported 
 CC=$(CXX) -O2 -std=c++14 -I../.. #
-FFMPEG=/Users/barrett/homebrew/bin/ffmpeg # please customize according to your installation
+FFMPEG=/usr/bin/ffmpeg # please customize according to your installation (but do not commit)
 
 ifeq ($(OS),Windows_NT)
   CC_IF_WIN=$(CXX) -O2 -std=gnu++14 -I../..
