@@ -22,7 +22,7 @@ class E2ETestSystemExit(Exception):
 
 class ThreatExchangeCLIE2eHelper:
 
-    COMMON_CALL_ARGS: t.ClassVar[t.Sequence[str]] = ()
+    COMMON_CALL_ARGS: t.Sequence[str] = ()
 
     _state_dir: pathlib.Path
 
