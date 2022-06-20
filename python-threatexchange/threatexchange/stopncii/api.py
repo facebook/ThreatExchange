@@ -320,3 +320,10 @@ class StopNCIIAPI:
             feedback_dicts.append(fb_dict)
         payload = {"count": len(feedbacks), "hashFeedbacks": feedback_dicts}
         self._post(StopNCIIEndpoint.SubmitFeedback, json=payload)
+
+
+def is_valid_key(key: str) -> bool:
+    """
+    Returns true if the string looks like a valid access token
+    """
+    return bool(key)  # TODO

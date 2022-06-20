@@ -210,6 +210,7 @@ class NCMECHashAPI:
         password: str,
         environment: NCMECEnvironment = NCMECEnvironment.test_Industry,
     ) -> None:
+        assert is_valid_user_pass(username, password)
         self.username = username
         self.password = password
         self._base_url = environment.value
@@ -326,3 +327,7 @@ class NCMECHashAPI:
 def _date_format(timestamp: int) -> str:
     """ISO 8601 format yyyy-MM-dd'T'HH:mm:ss.SSSZ"""
     return datetime.fromtimestamp(timestamp).strftime(_DATE_FORMAT_STR)
+
+
+def is_valid_user_pass(user: str, password: str) -> bool:
+    return bool(user and password)  # Is there anything more we can do here?

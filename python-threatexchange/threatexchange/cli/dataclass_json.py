@@ -26,12 +26,12 @@ def _as_dict(obj: t.Any) -> t.Dict[str, t.Any]:
 
 def dataclass_dump(fp: t.IO[str], obj) -> None:
     json_dict = _as_dict(obj)
-    return json.dump(json_dict, fp, indent=2, default=_json_set_default)
+    return json.dump(json_dict, fp, indent=2, default=_json_cast_default)
 
 
 def dataclass_dumps(fp: t.IO[str], obj) -> str:
     json_dict = _as_dict(obj)
-    return json.dumps(json_dict, indent=2, default=_json_set_default)
+    return json.dumps(json_dict, indent=2, default=_json_cast_default)
 
 
 def dataclass_load_file(
@@ -59,11 +59,13 @@ def dataclass_load_dict(json_dict: t.Dict[str, t.Any], cls: t.Type[T]) -> T:
     return dacite.from_dict(
         data_class=cls,
         data=json_dict,
-        config=dacite.Config(cast=[Enum, set]),
+        config=dacite.Config(cast=[Enum, set, tuple]),
     )
 
 
-def _json_set_default(obj):
+def _json_cast_default(obj):
     if isinstance(obj, set):
         return list(obj)
+    if isinstance(obj, Enum):
+        return obj.value
     raise TypeError

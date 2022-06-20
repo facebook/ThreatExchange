@@ -24,6 +24,15 @@ NEXT_UNESCAPED = (
     "&to=2017-10-30T00%3A00%3A00.000Z&start=2001&size=1000&max=3000"
 )
 
+NEXT_UNESCAPED2 = (
+    "/v2/entries?from=2017-10-20T00%3A00%3A00.000Z"
+    "&to=2017-10-30T00%3A00%3A00.000Z&start=3001&size=1000&max=4000"
+)
+NEXT_UNESCAPED3 = (
+    "/v2/entries?from=2017-10-20T00%3A00%3A00.000Z"
+    "&to=2017-10-30T00%3A00%3A00.000Z&start=4001&size=1000&max=5000"
+)
+
 ENTRIES_XML = """
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
@@ -84,6 +93,61 @@ ENTRIES_XML2 = """
             </fingerprints>
         </image>
     </images>
+    <paging>
+        <next>/v2/entries?from=2017-10-20T00%3A00%3A00.000Z&amp;to=2017-10-30T00%3A00%3A00.000Z&amp;start=3001&amp;size=1000&amp;max=4000</next>
+    </paging>
+</queryResult>
+""".strip()
+
+# This example isn't in the documentation, but shows how updates work
+ENTRIES_XML3 = """
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
+    <videos count="2" maxTimestamp="2019-11-25T15:10:00Z">
+        <video>
+            <member id="101">TX Example</member>
+            <timestamp>2019-11-25T15:10:00Z</timestamp>
+            <id>willupdate</id>
+            <classification>A1</classification>
+            <fingerprints>
+                <md5>facefacefacefacefacefacefaceface</md5>
+            </fingerprints>
+        </video>
+        <video>
+            <member id="101">TX Example</member>
+            <timestamp>2019-11-24T15:10:00Z</timestamp>
+            <id>willdelete</id>
+            <classification>A1</classification>
+            <fingerprints>
+                <md5>bacebacebacebacebacebacebacebace</md5>
+            </fingerprints>
+        </video>
+    </videos>
+    <paging>
+        <next>/v2/entries?from=2017-10-20T00%3A00%3A00.000Z&amp;to=2017-10-30T00%3A00%3A00.000Z&amp;start=4001&amp;size=1000&amp;max=5000</next>
+    </paging>
+</queryResult>
+""".strip()
+
+ENTRIES_XML4 = """
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
+    <videos count="2" maxTimestamp="2019-11-24T15:10:00Z">
+        <video>
+            <member id="101">TX Example</member>
+            <timestamp>2019-11-24T15:10:00Z</timestamp>
+            <id>willupdate</id>
+            <classification>A2</classification>
+            <fingerprints>
+                <md5>facefacefacefacefacefacefaceface</md5>
+            </fingerprints>
+        </video>
+        <deletedVideo>
+            <member id="101">TX Example</member>
+            <timestamp>2019-11-25T15:10:00Z</timestamp>
+            <id>willdelete</id>
+        </deletedVideo>
+    </videos>
 </queryResult>
 """.strip()
 
@@ -92,6 +156,10 @@ def mock_get_impl(url: str, **params):
     content = ENTRIES_XML
     if url.endswith(NEXT_UNESCAPED):
         content = ENTRIES_XML2
+    if url.endswith(NEXT_UNESCAPED2):
+        content = ENTRIES_XML3
+    if url.endswith(NEXT_UNESCAPED3):
+        content = ENTRIES_XML4
     # Void your warantee by messing with requests state
     resp = requests.Response()
     resp._content = content.encode()
@@ -102,7 +170,7 @@ def mock_get_impl(url: str, **params):
 
 @pytest.fixture
 def api(monkeypatch: pytest.MonkeyPatch):
-    api = NCMECHashAPI("", "")
+    api = NCMECHashAPI("fake_user", "fake_pass")
     session = None
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],
@@ -181,6 +249,17 @@ def test_mocked_get_hashes(api: NCMECHashAPI):
 
     assert len(second_result.updates) == 1
     assert second_result.max_timestamp == 1571929800
-    assert second_result.next == ""
+    assert second_result.next != ""
     five = second_result.updates[0]
     assert_fifth_entry(five)
+
+    # These later results don't need to be tested for this test, matters
+    # for the SignalExchange API
+    third_result = api.get_entries(next_=second_result.next)
+    assert third_result.next != ""
+    assert third_result not in (result, second_result)
+    forth_result = api.get_entries(next_=third_result.next)
+    assert forth_result not in (result, second_result, third_result)
+    assert forth_result.next == ""
+
+    # The other updates don't need to be tested here

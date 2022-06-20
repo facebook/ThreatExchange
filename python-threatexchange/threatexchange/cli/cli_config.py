@@ -17,6 +17,7 @@ import logging
 
 from dacite import WrongTypeError
 
+from threatexchange.stopncii import api as stopncii_api
 from threatexchange.fetcher import collab_config
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.content_type import content_base
@@ -32,11 +33,28 @@ CONFIG_FILENAME = "config.json"
 
 
 @dataclass
+class StopNCIIKeys:
+    subscription_key: str
+    fetch_function_key: str
+    # Someday, additional keys
+
+    @property
+    def keys_are_valid(self):
+        return all(
+            stopncii_api.is_valid_key(k)
+            for k in (self.subscription_key, self.fetch_function_key)
+        )
+
+
+@dataclass
 class CLiConfig:
     """A place to store misc configuration for the CLI"""
 
     fb_threatexchange_api_token: t.Optional[str] = None
+    ncmec_credentials: t.Optional[t.Tuple[str, str]] = None
+    stop_ncii_keys: t.Optional[StopNCIIKeys] = None
     extensions: t.Set[str] = field(default_factory=set)
+    # Every item needs a default for backwards compatibility
 
 
 class CliState(collab_config.CollaborationConfigStoreBase):

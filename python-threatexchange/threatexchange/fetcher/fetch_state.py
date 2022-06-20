@@ -198,6 +198,7 @@ TFetchedSignalMetadata = t.TypeVar(
     "TFetchedSignalMetadata", bound=FetchedSignalMetadata
 )
 
+
 # TODO t.Generic[TFetchDeltaBase, TFetchedSignalDataBase, FetchCheckpointBase]
 #      to help keep track of the expected subclasses for an impl
 class FetchedStateStoreBase(ABC):
