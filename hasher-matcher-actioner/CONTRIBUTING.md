@@ -32,12 +32,12 @@ If you are using [VS Code](https://code.visualstudio.com/), and we recommend you
 1. [Windows Only] Sadly, the devcontainer will misbehave unless all the file endings are unix style (LF) instead of windows style (CRLF). You most likely checked out the repo with autocrlf set to "true", which means you have the wrong line endings. The fastest way to fix this is to simply re-clone the whole repository with autocrlf=input (though with more steps it's possible to fix it inplace).
 
 ```
-$ OLD_CLRF="$(git config --get core.autocrlf)"  # Save your old value
-$ git config --global core.autocrfl input
+$ OLD_CRLF="$(git config --get core.autocrlf)"  # Save your old value
+$ git config --global core.autocrlf input
 $ git clone https://github.com/facebook/ThreatExchange.git devcontainer-ThreatExchange # Or call it whatever you want
 $ cd devcontainer-ThreatExchange
-$ git config --local core.autocrfl input
-$ git config --global core.autocrfl "$OLD_CLRF"
+$ git config --local core.autocrlf input
+$ git config --global core.autocrlf "$OLD_CRLF"
 ```
 If we were smarter, we'd have the devcontainer built on a checkout of the repo, but this was faster to figure out than getting git configs in.
 
