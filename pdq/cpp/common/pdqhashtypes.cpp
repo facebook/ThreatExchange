@@ -195,6 +195,10 @@ Hash256 Hash256::fuzz(int numErrorBits) {
   return rv;
 }
 
+int hammingDistance(const Hash256& hash1, const Hash256& hash2) {
+  return hash1.hammingDistance(hash2);
+}
+
 } // namespace hashing
 } // namespace pdq
 } // namespace facebook
