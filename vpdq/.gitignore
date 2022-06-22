@@ -1,0 +1,16 @@
+*.o
+*.a
+*.dSYM
+
+*.jar
+*.class
+*.json
+
+.swp
+.swo
+.DS_Store
+*.swp
+*.swo
+
+cpp/test
+cpp/build
