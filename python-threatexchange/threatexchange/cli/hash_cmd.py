@@ -5,14 +5,19 @@
 Hash command to convert content into signatures.
 """
 
+import argparse
 import pathlib
 import sys
 import typing as t
 from threatexchange.cli.cli_config import CLISettings
-from threatexchange.cli.exceptions import CommandError
 
-from threatexchange.signal_type.signal_base import BytesHasher, FileHasher, TextHasher
+from threatexchange.signal_type.signal_base import (
+    BytesHasher,
+    SignalType,
+    TextHasher,
+)
 from threatexchange.cli import command_base
+from threatexchange.cli.helpers import FlexFilesInputAction
 
 
 # TODO consider refactor to handle overlap with match
@@ -23,13 +28,11 @@ class HashCommand(command_base.Command):
     Reads inputs as filenames by default, though it will attempt to read
     inline with --inline. Most useful with with content type `text`.
 
-    You can also pass in via stdin by using "-" as the content.
+    You can also pass in via stdin not passing in any files
     """
 
-    USE_STDIN = "-"
-
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap) -> None:
+    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
 
         signal_types = [
             s
@@ -44,38 +47,29 @@ class HashCommand(command_base.Command):
         )
 
         ap.add_argument(
+            "files",
+            nargs=argparse.REMAINDER,
+            action=FlexFilesInputAction,
+            help="list of files or -- to interpret remainder as a string",
+        )
+
+        ap.add_argument(
             "--signal-type",
             "-S",
             choices=[s.get_name() for s in signal_types],
             help="only generate these signal types",
         )
 
-        ap.add_argument(
-            "--inline",
-            "-I",
-            action="store_true",
-            help="interpret content inline instead of as filenames",
-        )
-
-        ap.add_argument(
-            "content",
-            nargs="+",
-            help="list of content or '-' for stdin",
-        )
-
     def __init__(
         self,
         content_type: str,
         signal_type: t.Optional[str],
-        inline: bool,
-        content: t.Union[t.List[str], t.TextIO],
+        files: t.List[pathlib.Path],
     ) -> None:
         self.content_type_str = content_type
         self.signal_type = signal_type
 
-        if content == [self.USE_STDIN]:
-            content = sys.stdin
-        self.input_generator = self._parse_input(content, inline)
+        self.files = files
 
     def _parse_input(
         self,
@@ -98,21 +92,18 @@ class HashCommand(command_base.Command):
             if self.signal_type in (None, s.get_name())
         ]
 
-        file_hashers = [s for s in all_signal_types if issubclass(s, FileHasher)]
+        byte_hashers = [s for s in all_signal_types if issubclass(s, BytesHasher)]
         str_hashers = [s for s in all_signal_types if issubclass(s, TextHasher)]
 
-        for inp in self.input_generator:
-            hash_fn = lambda s, t: s.hash_from_file(t)
-            signal_types: t.List[t.Any] = file_hashers
-            if isinstance(inp, str):
-                hash_fn = lambda s, t: s.hash_from_str(t)
-                signal_types = str_hashers
-            for signal_type in signal_types:
-                try:
-                    hash_str = hash_fn(signal_type, inp)
-                    if hash_str:
-                        print(signal_type.get_name(), hash_str)
-                except FileNotFoundError:
-                    raise CommandError(
-                        f"The file {inp} doesn't exist or the file path is incorrect", 2
-                    )
+        for file in self.files:
+            for s_hasher in str_hashers:
+                hash_str = s_hasher.hash_from_str(file.read_text())
+                _print_hash(s_hasher, hash_str)
+            for b_hasher in byte_hashers:  # type: ignore  # mypy thinks its mixin
+                hash_str = b_hasher.hash_from_bytes(file.read_bytes())
+                _print_hash(b_hasher, hash_str)  # type: ignore  # mypy thinks its mixin
+
+
+def _print_hash(s_type: t.Type[SignalType], hash_str: str) -> None:
+    if hash_str:
+        print(s_type.get_name(), hash_str)
