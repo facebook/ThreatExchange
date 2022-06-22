@@ -171,6 +171,8 @@ struct Hash256 {
   }
 };
 
+int hammingDistance(const Hash256& hash1, const Hash256& hash2);
+
 } // namespace hashing
 } // namespace pdq
 } // namespace facebook
