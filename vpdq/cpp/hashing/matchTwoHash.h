@@ -31,8 +31,7 @@ bool matchTwoHashBrute(
     int qualityTolerance,
     double& qMatch,
     double& tMatch,
-    bool verbose
-    );
+    bool verbose);
 } // namespace hashing
 } // namespace vpdq
 } // namespace facebook

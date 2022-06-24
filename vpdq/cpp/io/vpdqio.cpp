@@ -51,7 +51,11 @@ bool loadHashesFromFileOrDie(
     }
 
     if (tmp.size() != 3) {
-      fprintf(stderr, "%s: Wrong format of Hash\"%s\".\n", programName, str.c_str());
+      fprintf(
+          stderr,
+          "%s: Wrong format of Hash\"%s\".\n",
+          programName,
+          str.c_str());
       return false;
     }
     pdqHashes.push_back(
