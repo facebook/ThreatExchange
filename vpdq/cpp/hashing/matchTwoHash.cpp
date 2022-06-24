@@ -14,8 +14,7 @@ bool matchTwoHashBrute(
     int qualityTolerance,
     double& qMatch,
     double& tMatch,
-    bool verbose,
-    const char* argv0) {
+    bool verbose) {
   vector<vpdq::hashing::vpdqFeature> queryFiltered, targetFiltered;
   size_t i = 0, j = 0;
   int qMatchCnt = 0;
