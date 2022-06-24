@@ -1,6 +1,6 @@
 # Documentation
 
-Please see [../README.md](https://github.com/facebookexternal/ThreatExchange-PDQ/blob/main/vpdq/README.md) and [../../README.md](hhttps://github.com/facebookexternal/ThreatExchange-PDQ/blob/main/README.md) for context, and [../hashing.pdf](https://github.com/facebook/ThreatExchange/blob/main/hashing/hashing.pdf) for thorough documentation.
+Please see [../README.md](https://github.com/facebook/ThreatExchange/blob/main/vpdq/README.md) and [../../README.md](https://github.com/facebook/ThreatExchange/blob/main/README.md) for context, and [../hashing.pdf](https://github.com/facebook/ThreatExchange/blob/main/hashing/hashing.pdf) for thorough documentation.
 
 # Dependencies
 
