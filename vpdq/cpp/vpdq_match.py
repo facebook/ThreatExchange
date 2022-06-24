@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 
+
 def get_argparse() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -12,37 +13,38 @@ def get_argparse() -> argparse.ArgumentParser:
         "-f",
         "--queryHashFolder",
         metavar="QUERY_HASH_Folder_PATH",
-        help="Query Hashes Folder's Name"
-        )
+        help="Query Hashes Folder's Name",
+    )
     ap.add_argument(
         "-i",
         "--targetHashFile",
         metavar="TARGET_HASH_FILE_PATH",
-        help="Target Hash file path for comparing with the query hashes"
-        )
+        help="Target Hash file path for comparing with the query hashes",
+    )
 
     ap.add_argument(
         "-t",
         "--matchDistanceTolerance",
-        metavar="Matching_Distance_Tolerance",
+        metavar="Matching_distanceTolerance",
         help="The hamming distance tolerance of between two frames. If the hamming distance is bigger than the tolerance, it will be considered as unmatched",
-        default="31"
-        )
+        default="31",
+    )
     ap.add_argument(
         "-q",
         "--qualityTolerance",
-        metavar="Matching_Quality_Tolerance",
+        metavar="Matching_qualityTolerance",
         help="The quality tolerance of matching two frames. If either frames is below this quality level then they will not be compared",
-        default="50"
-        )
+        default="50",
+    )
     ap.add_argument(
         "-v",
         "--verbose",
         metavar="Verbose",
         help="If verbose, will print detailed information.",
-        default= False
-        )
+        default=False,
+    )
     return ap
+
 
 def main():
     ap = get_argparse()
@@ -50,30 +52,38 @@ def main():
     targetHashFile = args.targetHashFile
     queryHashFolder = args.queryHashFolder
     verbose = args.verbose
-    distance_tolerance = args.matchDistanceTolerance
-    quality_tolerance = args.qualityTolerance
+    distanceTolerance = args.matchDistanceTolerance
+    qualityTolerance = args.qualityTolerance
     for file in os.listdir(queryHashFolder):
-        if file.endswith('.txt'):
-            print("\nMatching Target:"+targetHashFile + "\n Query: " + f"{queryHashFolder}/{file}")
+        if file.endswith(".txt"):
+            print(
+                "\nMatching Target:"
+                + targetHashFile
+                + "\n Query: "
+                + f"{queryHashFolder}/{file}"
+            )
             query_file = f"{queryHashFolder}/{file}"
             if verbose:
-                subprocess.call([
-                    "./build/match-hashes-brute",
-                    "-v",
-                    query_file,
-                    targetHashFile,
-                    distance_tolerance,
-                    quality_tolerance
-                    ])
+                subprocess.call(
+                    [
+                        "./build/match-hashes-brute",
+                        "-v",
+                        query_file,
+                        targetHashFile,
+                        distanceTolerance,
+                        qualityTolerance,
+                    ]
+                )
             else:
-                subprocess.call([
-                    "./build/match-hashes-brute",
-                    query_file,
-                    targetHashFile,
-                    distance_tolerance,
-                    quality_tolerance
-                    ])
-
+                subprocess.call(
+                    [
+                        "./build/match-hashes-brute",
+                        query_file,
+                        targetHashFile,
+                        distanceTolerance,
+                        qualityTolerance,
+                    ]
+                )
 
 
 if __name__ == "__main__":

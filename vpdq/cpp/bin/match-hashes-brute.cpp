@@ -60,8 +60,7 @@ int main(int argc, char** argv) {
       qualityTolerance,
       qMatch,
       tMatch,
-      verbose,
-      argv[0]);
+      verbose);
   if (!ret) {
     return -1;
   }

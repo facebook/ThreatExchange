@@ -20,7 +20,7 @@ namespace hashing {
  * @param verbose If produce detailed output for diagnostic purposes
  * @param secondsPerHash The time period of picking frames in vpdq
  * @param downsampleFrameDimension The down-scale dimensions for vpdq
- * @param argv0
+ * @param programName The name of executable program which invokes the function
  *
  * @return If successfully hash the video
  */
@@ -33,7 +33,7 @@ bool hashVideoFile(
     const int secondsPerHash,
     const int width,
     const int height,
-    const char* argv0);
+    const char* programName);
 } // namespace hashing
 } // namespace vpdq
 } // namespace facebook

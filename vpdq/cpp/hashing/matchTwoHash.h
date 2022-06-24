@@ -20,7 +20,7 @@ namespace hashing {
  * @param qMatch Percentage of matches in query hash
  * @param tMatch Percentage of matches in target hash
  * @param verbose If produce detailed output for diagnostic purposes
- * @param argv0
+ * @param programName The name of executable program which invokes the function
  *
  * @return If successfully hash the video
  */
@@ -31,8 +31,8 @@ bool matchTwoHashBrute(
     int qualityTolerance,
     double& qMatch,
     double& tMatch,
-    bool verbose,
-    const char* argv0);
+    bool verbose
+    );
 } // namespace hashing
 } // namespace vpdq
 } // namespace facebook

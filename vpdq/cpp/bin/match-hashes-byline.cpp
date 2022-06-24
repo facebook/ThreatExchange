@@ -10,7 +10,7 @@ static void usage(char* argv0, int rc) {
   FILE* fp = (rc == 0) ? stdout : stderr;
   fprintf(
       fp,
-      "Usage: %s [options] file1name file2name hamming_distance_tolerance quality_tolerance\n",
+      "Usage: %s [options] file1name file2name hamming_distanceTolerance qualityTolerance\n",
       argv0);
   fprintf(fp, "Options:\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
@@ -20,8 +20,8 @@ static void usage(char* argv0, int rc) {
 int main(int argc, char** argv) {
   int argi = 1;
   bool verbose = false;
-  int distance_tolerance = 0;
-  int quality_tolerance = 0;
+  int distanceTolerance = 0;
+  int qualityTolerance = 0;
 
   for (; argi < argc; argi++) {
     if (argv[argi][0] != '-') {
@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  distance_tolerance = atoi(argv[argi + 2]);
-  quality_tolerance = atoi(argv[argi + 3]);
+  distanceTolerance = atoi(argv[argi + 2]);
+  qualityTolerance = atoi(argv[argi + 3]);
 
   if (video1Hashes.size() != video2Hashes.size()) {
     fprintf(
@@ -64,8 +64,8 @@ int main(int argc, char** argv) {
   size_t count = 0;
   size_t total_hashed_compared = 0;
   for (size_t i = 0; i < video1Hashes.size(); i++) {
-    if (video1Hashes[i].quality < quality_tolerance ||
-        video2Hashes[i].quality < quality_tolerance) {
+    if (video1Hashes[i].quality < qualityTolerance ||
+        video2Hashes[i].quality < qualityTolerance) {
       if (verbose) {
         printf(
             "Skipping Line %zu Hash1: %s Hash2: %s, because of low quality Hash1: %d Hash2: %d \n",
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
     }
     total_hashed_compared++;
     if (video1Hashes[i].pdqHash.hammingDistance(video2Hashes[i].pdqHash) <
-        distance_tolerance) {
+        distanceTolerance) {
       count++;
       if (verbose) {
         printf(

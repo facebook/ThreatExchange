@@ -28,14 +28,14 @@ namespace io {
 bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
-    const char* argv0) {
+    const char* programName) {
   ifstream inputfp(inputHashFileName);
   string str;
   if (!inputfp.is_open()) {
     fprintf(
         stderr,
         "%s: could not open \"%s\".\n",
-        argv0,
+        programName,
         inputHashFileName.c_str());
     return false;
   }
@@ -51,7 +51,7 @@ bool loadHashesFromFileOrDie(
     }
 
     if (tmp.size() != 3) {
-      fprintf(stderr, "%s: Wrong format of Hash\"%s\".\n", argv0, str.c_str());
+      fprintf(stderr, "%s: Wrong format of Hash\"%s\".\n", programName, str.c_str());
       return false;
     }
     pdqHashes.push_back(
@@ -63,7 +63,7 @@ bool loadHashesFromFileOrDie(
     fprintf(
         stderr,
         "%s: Empty hash file \"%s\".\n",
-        argv0,
+        programName,
         inputHashFileName.c_str());
     return false;
   }
@@ -73,14 +73,14 @@ bool loadHashesFromFileOrDie(
 bool outputVPDQFeatureToFile(
     const string& outputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
-    const char* argv0) {
+    const char* programName) {
   ofstream outputfp;
   outputfp.open(outputHashFileName.c_str());
   if (!outputfp.is_open()) {
     fprintf(
         stderr,
         "%s: could not open \"%s\".\n",
-        argv0,
+        programName,
         outputHashFileName.c_str());
     return false;
   }
@@ -102,7 +102,7 @@ bool readVideoResolution(
     const string& inputVideoFileName,
     int& width,
     int& height,
-    const char* argv0) {
+    const char* programName) {
   AVFormatContext* pFormatCtx = avformat_alloc_context();
   int rc =
       avformat_open_input(&pFormatCtx, inputVideoFileName.c_str(), NULL, NULL);
@@ -110,7 +110,7 @@ bool readVideoResolution(
     fprintf(
         stderr,
         "%s: could not open video \"%s\".\n",
-        argv0,
+        programName,
         inputVideoFileName.c_str());
     return false;
   }
@@ -121,7 +121,7 @@ bool readVideoResolution(
     fprintf(
         stderr,
         "%s: could not find video stream info \"%s\".\n",
-        argv0,
+        programName,
         inputVideoFileName.c_str());
     return false;
   }
@@ -135,7 +135,7 @@ bool readVideoResolution(
     fprintf(
         stderr,
         "%s: could not find video stream \"%s\".\n",
-        argv0,
+        programName,
         inputVideoFileName.c_str());
     return false;
   }

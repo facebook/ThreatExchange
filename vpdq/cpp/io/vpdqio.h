@@ -13,17 +13,17 @@ namespace io {
 bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
-    const char* argv0);
+    const char* programName);
 
 bool outputVPDQFeatureToFile(
     const string& outputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
-    const char* argv0);
+    const char* programName);
 bool readVideoResolution(
     const string& inputVideoFileName,
     int& width,
     int& height,
-    const char* argv0);
+    const char* programName);
 } // namespace io
 } // namespace vpdq
 } // namespace facebook
