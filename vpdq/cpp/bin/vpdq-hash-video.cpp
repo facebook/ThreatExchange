@@ -19,10 +19,10 @@ static void usage(char* argv0, int rc) {
       fp,
       "-d|--output-directory ...: instead of specifiying "
       "output-file name, just give a directory and the output file name will "
-      "be auto-computed from the input video file name.\n");
+      "be auto-computed from the input video file name. For example, avideofile.mp4 -> output_directory>/avideofile.txt\n");
   fprintf(
       fp,
-      "-s|--downsample-frame-dimension ...: The down scaling resolution for video\n");
+      "-s|--downsample-frame-dimension ...: The down scaling resolution for video. The input number will be the height and width of the downscaled video. For example, -s 160 -> will make video of 1080x720 to 160x160.\n");
   exit(rc);
 }
 

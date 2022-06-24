@@ -2,10 +2,6 @@
 *.a
 *.dSYM
 
-*.jar
-*.class
-*.json
-
 .swp
 .swo
 .DS_Store
