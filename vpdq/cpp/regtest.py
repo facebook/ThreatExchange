@@ -15,6 +15,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="POSITIVE_INTEGER",
         help="The frequence(per second) a hash is generated from the video",
         default="1",
+        type=int,
     )
     ap.add_argument(
         "-d",
@@ -22,6 +23,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="OUTPUT_HASH_Folder_PATH",
         help="Output Hash Folder's Name",
         default="/ThreatExchange/vpdq/output-hashes",
+        type=dir_path,
     )
     ap.add_argument(
         "-i",
@@ -29,6 +31,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="INPUTPUT_VIDEO_FOLDER_PATH",
         help="Input Video Folder",
         default="/ThreatExchange/tmk/sample-videos",
+        type=dir_path,
     )
     ap.add_argument(
         "-s",
@@ -36,6 +39,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="Downsample_Frame_Dimension",
         help="Resolution to downsample the video to before hashing frames.. If it is 0, will use the original dimension of the video to hash",
         default="0",
+        type=int,
     )
     ap.add_argument(
         "-t",
@@ -43,6 +47,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="Matching_distanceTolerance",
         help="The hamming distance tolerance of between two frames. If the hamming distance is bigger than the tolerance, it will be considered as unmatched",
         default="10",
+        type=int,
     )
     ap.add_argument(
         "-q",
@@ -50,51 +55,76 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="Matching_qualityTolerance",
         help="The quality tolerance of matching two frames. If either frames is below this quality level then they will not be compared",
         default="80",
+        type=int,
     )
     ap.add_argument(
         "-v",
         "--verbose",
-        metavar="Verbose",
         help="If verbose, will print detailed information.",
-        default=False,
+        action="store_true",
     )
     return ap
 
 
+def dir_path(string):
+    if os.path.isdir(string):
+        return string
+    else:
+        raise argparse.ArgumentTypeError(f"readable_dir: {string} is not a valid path")
+
+
 def main():
     ap = get_argparse()
-    args, unknownargs = ap.parse_known_args(sys.argv)
+    args = ap.parse_args()
     inputVideoFolder = args.inputVideoFolder
     outputHashFolder = args.outputHashFolder
     ffmpegPath = args.ffmpegPath
-    secondsPerHash = args.secondsPerHash
-    downsampleFrameDimension = args.downsampleFrameDimension
+    secondsPerHash = str(args.secondsPerHash)
+    downsampleFrameDimension = str(args.downsampleFrameDimension)
     verbose = args.verbose
     # TODO: Add more general options for other video encodings.
     for file in os.listdir(inputVideoFolder):
         if file.endswith(".mp4"):
-            subprocess.call(
-                [
-                    "./build/vpdq-hash-video",
-                    "-f",
-                    ffmpegPath,
-                    "-r",
-                    secondsPerHash,
-                    "-d",
-                    outputHashFolder,
-                    "-s",
-                    downsampleFrameDimension,
-                    "-i",
-                    inputVideoFolder + "/" + file,
-                ]
-            )
+            if verbose:
+                subprocess.call(
+                    [
+                        "./build/vpdq-hash-video",
+                        "-v",
+                        "-f",
+                        ffmpegPath,
+                        "-r",
+                        secondsPerHash,
+                        "-d",
+                        outputHashFolder,
+                        "-s",
+                        downsampleFrameDimension,
+                        "-i",
+                        inputVideoFolder + "/" + file,
+                    ]
+                )
+            else:
+                subprocess.call(
+                    [
+                        "./build/vpdq-hash-video",
+                        "-f",
+                        ffmpegPath,
+                        "-r",
+                        secondsPerHash,
+                        "-d",
+                        outputHashFolder,
+                        "-s",
+                        downsampleFrameDimension,
+                        "-i",
+                        inputVideoFolder + "/" + file,
+                    ]
+                )
 
     cdir = os.getcwd()
     pdir = os.path.dirname(cdir)
     sample = pdir + ("/sample-hashes")
     output = outputHashFolder
-    distanceTolerance = args.matchDistanceTolerance
-    qualityTolerance = args.qualityTolerance
+    distanceTolerance = str(args.matchDistanceTolerance)
+    qualityTolerance = str(args.qualityTolerance)
     for file in os.listdir(sample):
         if file.endswith(".txt"):
             print("\nMatching File " + file)

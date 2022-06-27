@@ -14,12 +14,15 @@ def get_argparse() -> argparse.ArgumentParser:
         "--queryHashFolder",
         metavar="QUERY_HASH_Folder_PATH",
         help="Query Hashes Folder's Name",
+        type=dir_path,
+        required=True,
     )
     ap.add_argument(
         "-i",
         "--targetHashFile",
         metavar="TARGET_HASH_FILE_PATH",
         help="Target Hash file path for comparing with the query hashes",
+        required=True,
     )
 
     ap.add_argument(
@@ -28,6 +31,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="Matching_distanceTolerance",
         help="The hamming distance tolerance of between two frames. If the hamming distance is bigger than the tolerance, it will be considered as unmatched",
         default="31",
+        type=int,
     )
     ap.add_argument(
         "-q",
@@ -35,25 +39,32 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="Matching_qualityTolerance",
         help="The quality tolerance of matching two frames. If either frames is below this quality level then they will not be compared",
         default="50",
+        type=int,
     )
     ap.add_argument(
         "-v",
         "--verbose",
-        metavar="Verbose",
         help="If verbose, will print detailed information.",
-        default=False,
+        action="store_true",
     )
     return ap
 
 
+def dir_path(string):
+    if os.path.isdir(string):
+        return string
+    else:
+        raise argparse.ArgumentTypeError(f"readable_dir: {string} is not a valid path")
+
+
 def main():
     ap = get_argparse()
-    args, unknownargs = ap.parse_known_args(sys.argv)
+    args = ap.parse_args()
     targetHashFile = args.targetHashFile
     queryHashFolder = args.queryHashFolder
     verbose = args.verbose
-    distanceTolerance = args.matchDistanceTolerance
-    qualityTolerance = args.qualityTolerance
+    distanceTolerance = str(args.matchDistanceTolerance)
+    qualityTolerance = str(args.qualityTolerance)
     for file in os.listdir(queryHashFolder):
         if file.endswith(".txt"):
             print(
