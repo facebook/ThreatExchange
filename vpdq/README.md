@@ -74,8 +74,8 @@ for c_frame in c_unique_frames :
       c_unique_frames_matched_count++
       break
 
-q_pct_matched = len(q_unique_frames_matched_count) * 100 / len(q_unique_frames)
-c_pct_matched = len(c_unique_frames_matched_count) * 100 / len(c_unique_frames)
+q_pct_matched = q_unique_frames_matched_count * 100 / len(q_unique_frames)
+c_pct_matched = c_unique_frames_matched_count * 100 / len(c_unique_frames)
 
 is_match = c_pct_matched >= P_c and q_pct_matched >= P_q
 ```
@@ -144,7 +144,7 @@ Matching File chair-22-with-small-logo-bar.txt
 ```
 
 #### Look for matches between provided hashes and your own hashes
-It is a demo shows how to use vpdq_match to compare one target hash with all the querid hashes in a folder.
+This demo shows how to use vpdq_match to compare one target hash with all the queried hashes in a folder.
 
 #### Brute-force matching
 ```
