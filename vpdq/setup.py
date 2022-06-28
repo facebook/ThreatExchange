@@ -20,7 +20,6 @@ class Build(build_py):
         command = ["make"]
         if subprocess.call(command) != 0:
             sys.exit(-1)
-        # os.chdir("../../../")
         os.chdir("../../")
         build_py.run(self)
 

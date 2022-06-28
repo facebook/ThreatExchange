@@ -2,7 +2,6 @@
 
 import unittest
 import typing as t
-import functools
 import vpdq_matcher
 import vpdq_util
 import os

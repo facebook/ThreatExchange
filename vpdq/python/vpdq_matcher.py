@@ -92,7 +92,6 @@ def match_VPDQ_hash_brute(
     )
 
 
-# TODO: Add quality Filter
 def match_VPDQ_FAISS(target_hash, VPDQ_index, quality_tolerance, distance_tolerance):
     """Searches this VPDQ index for target hashes within the index that are no more than the threshold away from the query hashes by
         hamming distance.
