@@ -31,11 +31,11 @@ cdef extern from "vpdq/cpp/hashing/vpdqHashType.h" namespace "facebook::vpdq::ha
 
 cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hashing":
     bool hashVideoFile(
-        string inputVideoFileName,
+        string input_video_filename,
         vector[vpdqFeature]& pdqHashes,
-        string ffmpegPath,
+        string ffmpeg_path,
         bool verbose,
-        int secondsPerHash,
+        int seconds_per_hash,
         int width,
         int height,
         const char* argv0
@@ -70,34 +70,34 @@ def hamming_distance(hash1, hash2):
     """
     return hammingDistance(hash1, hash2)
 
-def computeHash(inputVideoFileName, ffmpegPath, verbose, secondsPerHash, width, height):
+def computeHash(input_video_filename, ffmpeg_path, verbose, seconds_per_hash, width, height):
     """Compute vpdq hash
 
     Args:
-        inputVideoFileName (str): Input video file path
-        ffmpegPath (str): ffmpeg path
+        input_video_filename (str): Input video file path
+        ffmpeg_path (str): ffmpeg path
         verbose (bool): If verbose, will print detailed information
-        secondsPerHash (int): The frequence(per second) a hash is generated from the video
+        seconds_per_hash (int): The frequence(per second) a hash is generated from the video
         width (int): Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
         height (int): Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
     Returns:
         list of vpdq_feature: VPDQ hash from the video
     """
-    cdef vector[vpdqFeature] vpdqHash;
+    cdef vector[vpdqFeature] vpdq_hash;
     if width == 0:
-        vid = cv2.VideoCapture(inputVideoFileName)
+        vid = cv2.VideoCapture(input_video_filename)
         width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
 
     if height == 0:
-        vid = cv2.VideoCapture(inputVideoFileName)
+        vid = cv2.VideoCapture(input_video_filename)
         height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     rt = hashVideoFile(
-        inputVideoFileName.encode('utf-8'),
-        vpdqHash,
-        ffmpegPath.encode('utf-8'),
+        input_video_filename.encode('utf-8'),
+        vpdq_hash,
+        ffmpeg_path.encode('utf-8'),
         verbose,
-        secondsPerHash,
+        seconds_per_hash,
         width,
         height,
         "vpdqPY"
@@ -105,5 +105,5 @@ def computeHash(inputVideoFileName, ffmpegPath, verbose, secondsPerHash, width, 
 
     hashs= [vpdq_feature(hash.quality,
                          hash.frameNumber,
-                         hash.pdqHash)  for hash in vpdqHash]
+                         hash.pdqHash)  for hash in vpdq_hash]
     return hashs
