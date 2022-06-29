@@ -3,12 +3,12 @@
 import numpy as np
 cimport numpy as np
 import cv2
+import typing as t
 
 from dataclasses import dataclass
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from vpdq_util import hash_to_hex
 
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
@@ -47,18 +47,37 @@ class vpdq_feature:
     frame_number: int
     hash: Hash256
     hex: str
-    def __init__(self, quality, frame_number, hash):
+    def __init__(self, quality: int, frame_number: int, hash: 'vpdq_hash'):
         self.quality = quality
         self.frame_number = frame_number
         self.hash = hash
         self.hex = hash_to_hex(hash)
-    def hamming_distance(self, that):
+
+    def hamming_distance(self, that: 'vpdq_feature')-> int:
         return hammingDistance(self.hash, that.hash)
 
-def fromString(str_hash):
+def hash_to_hex(hash_value: 'pdq_hash'):
+    """Convect from pdq hash to hex str
+
+    Args:
+        hash_value (Hash256):
+
+    Returns:
+        str: hex str of hash
+    """
+    hash_value = hash_value["w"]
+    hash_vector = np.array([(hash_value[(k & 255) >> 4] >> (k & 15)) & 1 for k in range(256)])[
+        ::-1
+    ]
+    bin_str = "".join([str(x) for x in hash_vector])
+    hex_str = "%0*X" % ((len(bin_str) + 3) // 4, int(bin_str, 2))
+    hex_str = hex_str.lower()
+    return hex_str
+
+def fromString(str_hash: str):
     return fromStringOrDie(str(str_hash).encode('utf-8'))
 
-def hamming_distance(hash1, hash2):
+def hamming_distance(hash1: 'pdq_hash', hash2: 'pdq_hash'):
     """Return the hamming distance between two pdq hashes
 
     Args:
@@ -70,7 +89,7 @@ def hamming_distance(hash1, hash2):
     """
     return hammingDistance(hash1, hash2)
 
-def computeHash(input_video_filename, ffmpeg_path, verbose, seconds_per_hash, width, height):
+def computeHash(input_video_filename: str, ffmpeg_path: str, verbose: bool, seconds_per_hash: int, width: int, height: int):
     """Compute vpdq hash
 
     Args:
