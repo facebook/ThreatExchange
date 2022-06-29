@@ -16,7 +16,7 @@ def read_file_to_hash(input_hash_filename):
         for line in lines:
             line = line.strip()
             content = line.split(",")
-            pdq_hash = vpdq.fromString(content[2])
+            pdq_hash = vpdq.str_to_hash(content[2])
             feature = vpdq.vpdq_feature(int(content[1]), int(content[0]), pdq_hash)
             hash.append(feature)
 

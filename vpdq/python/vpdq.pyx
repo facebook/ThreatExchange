@@ -75,7 +75,7 @@ def hash_to_hex(hash_value):
     hex_str = hex_str.lower()
     return hex_str
 
-def fromString(str_hash: str):
+def str_to_hash(str_hash: str):
     return fromStringOrDie(str(str_hash).encode('utf-8'))
 
 def hamming_distance(hash1: 'Hash256', hash2: 'Hash256'):
