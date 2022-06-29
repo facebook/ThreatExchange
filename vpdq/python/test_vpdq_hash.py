@@ -6,11 +6,11 @@ import os
 
 SAMPLE_HASH_FOLDER = "/vpdq/sample-hashes"
 SAMPLE_VIDEOS = "/tmk/sample-videos"
-# FFMPEG = "/usr/bin/ffmpeg" # please customize according to your installation (but do not commit)
-FFMPEG = "/Users/xiangnan/homebrew/opt/ffmpeg@4/bin/ffmpeg"
+FFMPEG = "/usr/bin/ffmpeg"  # please customize according to your installation (but do not commit)
 SECOND_PER_HASH = 1
 DISTANCE_TOLERANCE = 31
 QUALITY_TOLERANCE = 0
+
 
 class TestVPDQHash:
     def test_VPDQ_hash(self):
@@ -40,6 +40,6 @@ class TestVPDQHash:
             hash2 = self.sample_hashes[k]
             assert len(hash1) == len(hash2)
             for h1, h2 in zip(hash1, hash2):
-                if(h1.quality >= QUALITY_TOLERANCE and h2.quality >= QUALITY_TOLERANCE):
+                if h1.quality >= QUALITY_TOLERANCE and h2.quality >= QUALITY_TOLERANCE:
                     assert h1.hamming_distance(h2) < DISTANCE_TOLERANCE
                     assert h1.frame_number == h2.frame_number

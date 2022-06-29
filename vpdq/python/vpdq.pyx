@@ -53,7 +53,7 @@ class vpdq_feature:
         self.hash = hash
         self.hex = hash_to_hex(hash)
 
-    def hamming_distance(self, that: 'vpdq_feature')-> int:
+    def hamming_distance(self, that: 'vpdq_feature') -> int:
         return hammingDistance(self.hash, that.hash)
 
 def hash_to_hex(hash_value) -> str:
@@ -78,7 +78,8 @@ def fromString(str_hash: str) -> 'Hash256':
     return fromStringOrDie(str(str_hash).encode('utf-8'))
 
 def hamming_distance(hash1: 'Hash256', hash2: 'Hash256') -> int:
-    """Return the hamming distance between two pdq hashes
+    """
+    Return the hamming distance between two pdq hashes
 
     Args:
         hash1 (Hash256)
