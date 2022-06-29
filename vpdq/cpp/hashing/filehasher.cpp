@@ -16,6 +16,8 @@ namespace hashing {
 /**
  * Get frames by passing video file through ffmpeg
  * Then get pdq hashes for selected frames every secondsPerHash
+ * The return boolean represents whether the hashing process is successful or
+ *not.
  **/
 
 bool hashVideoFile(
@@ -77,7 +79,11 @@ bool hashVideoFile(
       // Call pdqHasher to hash the frame
       int quality;
       if (!phasher->hashFrame(rawFrameBuffer.get(), pdqHash, quality)) {
-        fprintf(stderr, "%s: failed to hash frame buffer %d.\n", argv0, fno);
+        fprintf(
+            stderr,
+            "%s: failed to hash frame buffer. Frame width or height smaller than minimum hashable dimension. %d.\n",
+            argv0,
+            fno);
         return false;
       }
       // Push to pdqHashes vector
