@@ -58,7 +58,6 @@ int FrameBufferHasherFactory::getFrameHasherDownscaleDimension() {
 std::unique_ptr<AbstractFrameBufferHasher>
 FrameBufferHasherFactory::createFrameHasher(int frameHeight, int frameWidth) {
   return std::make_unique<PDQFrameBufferHasher>(frameHeight, frameWidth);
-  ;
 }
 
 } // namespace hashing
