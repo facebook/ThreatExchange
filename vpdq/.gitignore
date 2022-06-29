@@ -1,0 +1,13 @@
+*.o
+*.a
+*.dSYM
+
+.swp
+.swo
+.DS_Store
+*.swp
+*.swo
+
+cpp/test
+cpp/build
+output-hashes/*
