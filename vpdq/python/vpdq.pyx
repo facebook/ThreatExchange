@@ -18,6 +18,7 @@ cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashi
         Hash256 hash1,
         Hash256 hash2
     )
+
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing::Hash256":
     Hash256 fromStringOrDie(
         char* hex_str
