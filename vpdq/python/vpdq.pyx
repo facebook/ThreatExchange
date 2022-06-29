@@ -54,10 +54,10 @@ class vpdq_feature:
         self.hash = hash
         self.hex = hash_to_hex(hash)
 
-    def hamming_distance(self, that: 'vpdq_feature') -> int:
+    def hamming_distance(self, that: 'vpdq_feature'):
         return hammingDistance(self.hash, that.hash)
 
-def hash_to_hex(hash_value) -> str:
+def hash_to_hex(hash_value):
     """Convect from pdq hash to hex str
 
     Args:
@@ -75,10 +75,10 @@ def hash_to_hex(hash_value) -> str:
     hex_str = hex_str.lower()
     return hex_str
 
-def fromString(str_hash: str) -> 'Hash256':
+def fromString(str_hash: str):
     return fromStringOrDie(str(str_hash).encode('utf-8'))
 
-def hamming_distance(hash1: 'Hash256', hash2: 'Hash256') -> int:
+def hamming_distance(hash1: 'Hash256', hash2: 'Hash256'):
     """
     Return the hamming distance between two pdq hashes
 
@@ -96,7 +96,7 @@ def computeHash(input_video_filename: str,
                 verbose: bool,
                 seconds_per_hash: int,
                 width: int,
-                height: int) -> t.List['vpdq_feature']:
+                height: int):
     """Compute vpdq hash
 
     Args:
