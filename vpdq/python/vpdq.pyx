@@ -47,7 +47,7 @@ class vpdq_feature:
     frame_number: int
     hash: Hash256
     hex: str
-    def __init__(self, quality: int, frame_number: int, hash: 'vpdq_hash'):
+    def __init__(self, quality: int, frame_number: int, hash: 'Hash256'):
         self.quality = quality
         self.frame_number = frame_number
         self.hash = hash
@@ -56,7 +56,7 @@ class vpdq_feature:
     def hamming_distance(self, that: 'vpdq_feature')-> int:
         return hammingDistance(self.hash, that.hash)
 
-def hash_to_hex(hash_value: 'pdq_hash'):
+def hash_to_hex(hash_value) -> str:
     """Convect from pdq hash to hex str
 
     Args:
@@ -74,10 +74,10 @@ def hash_to_hex(hash_value: 'pdq_hash'):
     hex_str = hex_str.lower()
     return hex_str
 
-def fromString(str_hash: str):
+def fromString(str_hash: str) -> 'Hash256':
     return fromStringOrDie(str(str_hash).encode('utf-8'))
 
-def hamming_distance(hash1: 'pdq_hash', hash2: 'pdq_hash'):
+def hamming_distance(hash1: 'Hash256', hash2: 'Hash256') -> int:
     """Return the hamming distance between two pdq hashes
 
     Args:
@@ -89,7 +89,12 @@ def hamming_distance(hash1: 'pdq_hash', hash2: 'pdq_hash'):
     """
     return hammingDistance(hash1, hash2)
 
-def computeHash(input_video_filename: str, ffmpeg_path: str, verbose: bool, seconds_per_hash: int, width: int, height: int):
+def computeHash(input_video_filename: str,
+                ffmpeg_path: str,
+                verbose: bool,
+                seconds_per_hash: int,
+                width: int,
+                height: int) -> t.List['vpdq_feature']:
     """Compute vpdq hash
 
     Args:
