@@ -18,6 +18,9 @@ cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashi
         Hash256 hash1,
         Hash256 hash2
     )
+    string hashToString(
+        Hash256 hash
+    )
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing::Hash256":
     Hash256 fromStringOrDie(
@@ -66,14 +69,7 @@ def hash_to_hex(hash_value):
     Returns:
         str: hex str of hash
     """
-    hash_value = hash_value["w"]
-    hash_vector = np.array([(hash_value[(k & 255) >> 4] >> (k & 15)) & 1 for k in range(256)])[
-        ::-1
-    ]
-    bin_str = "".join([str(x) for x in hash_vector])
-    hex_str = "%0*X" % ((len(bin_str) + 3) // 4, int(bin_str, 2))
-    hex_str = hex_str.lower()
-    return hex_str
+    return hashToString(hash_value)
 
 def str_to_hash(str_hash: str):
     return fromStringOrDie(str(str_hash).encode('utf-8'))
