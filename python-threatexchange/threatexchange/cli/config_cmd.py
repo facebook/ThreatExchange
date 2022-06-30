@@ -93,13 +93,16 @@ class _UpdateCollabCommand(command_base.Command):
 
         ap.add_argument("collab_name", help="the name of the collab")
         ap.set_defaults(api_name=cls._API_CLS.get_name())
-        on_off = ap.add_mutually_exclusive_group()
         ap.add_argument(
             "--create",
             "-C",
             action="store_true",
             help="indicate you intend to create a config",
         )
+
+        cfg_common_ap = ap.add_argument_group(description="common to all collabs")
+        on_off = cfg_common_ap.add_mutually_exclusive_group()
+
         # This goofy syntax allows --enable, --enable=1, and enable=0 to disable
         on_off.add_argument(
             "--enable",
@@ -124,58 +127,6 @@ class _UpdateCollabCommand(command_base.Command):
         for field in fields(cfg_cls):
             cls._add_argument(config_ap, field)
 
-        # ap.add_argument(
-        #     "--only-signal-types",
-        #     "-s",
-        #     nargs="*",
-        #     type=common.argparse_choices_pre_type(
-        #         [s.get_name() for s in settings.get_all_signal_types()],
-        #         settings.get_signal_type,
-        #     ),
-        #     metavar="NAME",
-        #     help="limit to these signal types",
-        # )
-        # ap.add_argument(
-        #     "--not-signal-types",
-        #     "-S",
-        #     nargs="*",
-        #     type=common.argparse_choices_pre_type(
-        #         [s.get_name() for s in settings.get_all_signal_types()],
-        #         settings.get_signal_type,
-        #     ),
-        #     metavar="NAME",
-        #     help="dont use these signal types",
-        # )
-        # ap.add_argument(
-        #     "--only-owners",
-        #     "-o",
-        #     nargs="*",
-        #     type=int,
-        #     metavar="ID",
-        #     help="only use signals from these owner ids",
-        # )
-        # ap.add_argument(
-        #     "--not-owners",
-        #     "-O",
-        #     nargs="*",
-        #     type=int,
-        #     metavar="ID",
-        #     help="dont use signals from these owner ids",
-        # )
-        # ap.add_argument(
-        #     "--only-tags",
-        #     "-t",
-        #     nargs="*",
-        #     metavar="TAG",
-        #     help="use only signals with one of these tags",
-        # )
-        # ap.add_argument(
-        #     "--not-tags",
-        #     "-T",
-        #     nargs="*",
-        #     metavar="TAG",
-        #     help="don't use signals with one of these tags",
-        # )
         ap.add_argument(
             "--json",
             "-J",
@@ -226,12 +177,6 @@ class _UpdateCollabCommand(command_base.Command):
         create: bool,
         collab_name: str,
         enable: t.Optional[int],
-        only_signal_types: t.Optional[t.List[SignalType]],
-        not_signal_types: t.Optional[t.List[SignalType]],
-        only_owners: t.Optional[t.List[int]],
-        not_owners: t.Optional[t.List[str]],
-        only_tags: t.Optional[t.List[str]],
-        not_tags: t.Optional[t.List[str]],
         is_json: bool,
     ) -> None:
         self.namespace = full_argparse_namespace
@@ -250,23 +195,6 @@ class _UpdateCollabCommand(command_base.Command):
 
         if enable is not None:
             self.edit_kwargs["enabled"] = bool(enable)
-
-        if only_signal_types is not None or create:
-            self.edit_kwargs["only_signal_types"] = {
-                s.get_name() for s in only_signal_types or ()
-            }
-        if not_signal_types is not None or create:
-            self.edit_kwargs["not_signal_types"] = {
-                s.get_name() for s in not_signal_types or ()
-            }
-        if only_owners is not None or create:
-            self.edit_kwargs["only_owners"] = set(only_owners or ())
-        if not_owners is not None or create:
-            self.edit_kwargs["not_owners"] = set(not_owners or ())
-        if only_tags is not None or create:
-            self.edit_kwargs["only_tags"] = set(only_tags or ())
-        if not_tags is not None or create:
-            self.edit_kwargs["not_tags"] = set(not_tags or ())
 
         for field in fields(self._API_CLS.get_config_class()):
             if not field.init:
