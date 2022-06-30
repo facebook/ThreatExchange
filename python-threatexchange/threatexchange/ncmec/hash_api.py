@@ -180,9 +180,9 @@ class NCMECEnvironment(Enum):
     content exists on them.
     """
 
-    Industry = "https://exttest.cybertip.org/hashsharing"
-    NGO = "https://hashsharing-test.ncmec.org/npo"
-    Exploitative = "https://hashsharing-test.ncmec.org/exploitative"
+    Industry = "https://report.cybertip.org/hashsharing"
+    NGO = "https://hashsharing.ncmec.org/npo"
+    Exploitative = "https://hashsharing.ncmec.org/exploitative"
 
     test_Industry = "https://exttest.cybertip.org/hashsharing"
     test_NGO = "https://hashsharing-test.ncmec.org/npo"
