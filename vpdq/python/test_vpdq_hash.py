@@ -8,8 +8,8 @@ SAMPLE_HASH_FOLDER = "/vpdq/sample-hashes"
 SAMPLE_VIDEOS = "/tmk/sample-videos"
 FFMPEG = "/usr/bin/ffmpeg"  # please customize according to your installation (but do not commit)
 SECOND_PER_HASH = 1
-DISTANCE_TOLERANCE = 31
-QUALITY_TOLERANCE = 0
+DISTANCE_TOLERANCE = 10
+QUALITY_TOLERANCE = 50
 
 
 class TestVPDQHash:
