@@ -20,10 +20,8 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import (
-    FetchCheckpointBase,
     FetchDelta,
     FetchDeltaTyped,
-    FetchedSignalMetadata,
 )
 from threatexchange.fetcher.simple import state as simple_state
 from threatexchange.fetcher.fetch_api import (
@@ -108,7 +106,7 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
 
     def collab_file(self, collab_name: str) -> pathlib.Path:
         """The file location for collaboration state"""
-        return self.dir / f"{collab_name}.state.json"
+        return self.dir / f"{collab_name}.state.pickle"
 
     def clear(self, collab: CollaborationConfigBase) -> None:
         """Delete a collaboration and its state directory"""
