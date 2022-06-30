@@ -12,6 +12,7 @@ import itertools
 import json
 import logging
 import os
+from pydoc import describe
 import typing as t
 
 from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
@@ -73,12 +74,12 @@ class _UpdateCollabCommand(command_base.Command):
         "name",
         "api",
         "enabled",
-        "only_signal_types",
-        "not_signal_types",
-        "only_owners",
-        "not_owners",
-        "only_tags",
-        "not_tags",
+        # "only_signal_types",
+        # "not_signal_types",
+        # "only_owners",
+        # "not_owners",
+        # "only_tags",
+        # "not_tags",
     }
 
     @classmethod
@@ -115,58 +116,66 @@ class _UpdateCollabCommand(command_base.Command):
             const=0,
             help="disable the config",
         )
-        ap.add_argument(
-            "--only-signal-types",
-            "-s",
-            nargs="*",
-            type=common.argparse_choices_pre_type(
-                [s.get_name() for s in settings.get_all_signal_types()],
-                settings.get_signal_type,
-            ),
-            metavar="NAME",
-            help="limit to these signal types",
+
+        config_ap = ap.add_argument_group(
+            description=f"specific to {cls._API_CLS.get_name()}"
         )
-        ap.add_argument(
-            "--not-signal-types",
-            "-S",
-            nargs="*",
-            type=common.argparse_choices_pre_type(
-                [s.get_name() for s in settings.get_all_signal_types()],
-                settings.get_signal_type,
-            ),
-            metavar="NAME",
-            help="dont use these signal types",
-        )
-        ap.add_argument(
-            "--only-owners",
-            "-o",
-            nargs="*",
-            type=int,
-            metavar="ID",
-            help="only use signals from these owner ids",
-        )
-        ap.add_argument(
-            "--not-owners",
-            "-O",
-            nargs="*",
-            type=int,
-            metavar="ID",
-            help="dont use signals from these owner ids",
-        )
-        ap.add_argument(
-            "--only-tags",
-            "-t",
-            nargs="*",
-            metavar="TAG",
-            help="use only signals with one of these tags",
-        )
-        ap.add_argument(
-            "--not-tags",
-            "-T",
-            nargs="*",
-            metavar="TAG",
-            help="don't use signals with one of these tags",
-        )
+
+        for field in fields(cfg_cls):
+            cls._add_argument(config_ap, field)
+
+        # ap.add_argument(
+        #     "--only-signal-types",
+        #     "-s",
+        #     nargs="*",
+        #     type=common.argparse_choices_pre_type(
+        #         [s.get_name() for s in settings.get_all_signal_types()],
+        #         settings.get_signal_type,
+        #     ),
+        #     metavar="NAME",
+        #     help="limit to these signal types",
+        # )
+        # ap.add_argument(
+        #     "--not-signal-types",
+        #     "-S",
+        #     nargs="*",
+        #     type=common.argparse_choices_pre_type(
+        #         [s.get_name() for s in settings.get_all_signal_types()],
+        #         settings.get_signal_type,
+        #     ),
+        #     metavar="NAME",
+        #     help="dont use these signal types",
+        # )
+        # ap.add_argument(
+        #     "--only-owners",
+        #     "-o",
+        #     nargs="*",
+        #     type=int,
+        #     metavar="ID",
+        #     help="only use signals from these owner ids",
+        # )
+        # ap.add_argument(
+        #     "--not-owners",
+        #     "-O",
+        #     nargs="*",
+        #     type=int,
+        #     metavar="ID",
+        #     help="dont use signals from these owner ids",
+        # )
+        # ap.add_argument(
+        #     "--only-tags",
+        #     "-t",
+        #     nargs="*",
+        #     metavar="TAG",
+        #     help="use only signals with one of these tags",
+        # )
+        # ap.add_argument(
+        #     "--not-tags",
+        #     "-T",
+        #     nargs="*",
+        #     metavar="TAG",
+        #     help="don't use signals with one of these tags",
+        # )
         ap.add_argument(
             "--json",
             "-J",
@@ -174,9 +183,6 @@ class _UpdateCollabCommand(command_base.Command):
             action="store_true",
             help="instead, interpret the argument as JSON and use that to edit the config",
         )
-
-        for field in fields(cfg_cls):
-            cls._add_argument(ap, field)
 
     @classmethod
     def _add_argument(cls, ap: argparse.ArgumentParser, field: Field) -> None:
@@ -202,11 +208,16 @@ class _UpdateCollabCommand(command_base.Command):
             )
             metavar = f"[{','.join(m.name for m in target_type)}]"
 
+        help = "[missing] Add a help annotation on the config class!"
+        if field.metadata:
+            metavar = field.metadata.get("metavar", metavar)
+            help = field.metadata.get("help", help)
+
         ap.add_argument(
             f"--{field.name.replace('_', '-')}",
             type=argparse_type,
             metavar=metavar,
-            help="[auto generated from config class]",
+            help=help,
         )
 
     def __init__(

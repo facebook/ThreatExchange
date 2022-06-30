@@ -10,7 +10,7 @@ hashes from somewhere.
 
 import os
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from threatexchange.fetcher import fetch_state as state
@@ -28,14 +28,22 @@ _TypedDelta = state.FetchDelta[
 
 @dataclass
 class _FileCollaborationConfigRequiredFields:
-    filename: str
+    filename: str = field(
+        metadata={"help": "the absolute file path to the signal file"}
+    )
 
 
 @dataclass
 class FileCollaborationConfig(
     CollaborationConfigWithDefaults, _FileCollaborationConfigRequiredFields
 ):
-    signal_type: t.Optional[str] = None
+    signal_type: t.Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "if the file row doesn't list the signal type, interpret as this type (SignalType.get_name())",
+            "metavar": "SIGNAL_TYPE",
+        },
+    )
 
 
 class LocalFileSignalExchangeAPI(

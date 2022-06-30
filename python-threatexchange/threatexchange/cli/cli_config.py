@@ -264,15 +264,7 @@ class CLISettings:
             )
             self._sample_message_printed = True
         return collab_config.CollaborationConfigBase(
-            "Sample Signals",
-            StaticSampleSignalExchangeAPI.get_name(),
-            enabled=True,
-            only_signal_types={s.get_name() for s in self.get_all_signal_types()},
-            not_signal_types=set(),
-            only_owners=set(),
-            not_owners=set(),
-            only_tags=set(),
-            not_tags=set(),
+            "Sample Signals", StaticSampleSignalExchangeAPI.get_name(), enabled=True
         )
 
     def get_collabs_for_fetcher(
