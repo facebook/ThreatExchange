@@ -172,6 +172,7 @@ struct Hash256 {
 };
 
 int hammingDistance(const Hash256& hash1, const Hash256& hash2);
+std::string hashToString(const Hash256& hash);
 
 } // namespace hashing
 } // namespace pdq
