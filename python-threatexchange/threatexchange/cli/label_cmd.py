@@ -1,8 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 from argparse import ArgumentParser, ArgumentTypeError
-import logging
+import argparse
+import pathlib
 import typing as t
+from threatexchange.cli.helpers import FlexFilesInputAction
 from threatexchange.fetcher.fetch_state import SignalOpinion, SignalOpinionCategory
 
 
@@ -17,7 +19,11 @@ from threatexchange.cli import command_base
 
 class LabelCommand(command_base.Command):
     """
-    Label signals and content for sharing.
+    [WIP] Label signals and content for sharing.
+
+    Warning! This command is still under construction, and is not yet stable.
+    Please open an issue at https://github.com/facebook/ThreatExchange/issues
+    if you need the development team to prioritize stabilitizing it.
 
     There are three main types of labeling:
 
@@ -34,39 +40,44 @@ class LabelCommand(command_base.Command):
 
 
     Examples:
-      $ threatexchange label "Sample Collab" text
+    ```
+    $ threatexchange label "Sample Collab" text -l example,foo -- Some text I'm labeling
+    ```
     """
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: ArgumentParser) -> None:
         label_with = ap.add_mutually_exclusive_group()
         label_with.add_argument(
-            "--tags",
+            "--labels",
+            "-l",
             type=lambda s: set(s.strip().split(",")),
             metavar="CSV",
             default=set(),
-            help="tags to apply to item",
+            help="labels to apply to item",
         )
 
         label_with.add_argument(
             "--seen",
             action="store_true",
-            help="tags to apply to item",
+            help="mark you've seen this item",
         )
 
         label_with.add_argument(
             "--false-positive",
             action="store_true",
-            help="tags to apply to item",
+            help="mark that this doesn't belong in the collaboration",
         )
 
         label_with.add_argument(
             "--true-positive",
             action="store_true",
-            help="tags to apply to item",
+            help="mark that this does belong in the collaboration",
         )
 
-        ap.add_argument(
+        signal_group = ap.add_mutually_exclusive_group()
+
+        signal_group.add_argument(
             "--only-signals",
             "-S",
             nargs="+",
@@ -78,11 +89,15 @@ class LabelCommand(command_base.Command):
             help="limit to this signal type",
         )
 
-        ap.add_argument(
-            "--is-hash",
+        signal_group.add_argument(
+            "--as-hash",
             "-H",
-            action="store_true",
-            help="interpret content as a hash (requires a single -S)",
+            metavar="SIGNAL_TYPE",
+            type=common.argparse_choices_pre_type(
+                [s.get_name() for s in settings.get_all_signal_types()],
+                settings.get_signal_type,
+            ),
+            help="interpret input as a hash of this type",
         )
 
         ap.add_argument(
@@ -101,32 +116,30 @@ class LabelCommand(command_base.Command):
         )
 
         ap.add_argument(
-            "content",
-            help="the content you are labeling",
+            "files",
+            nargs=argparse.REMAINDER,
+            action=FlexFilesInputAction,
+            help="list of files or -- to interpret remainder as a string",
         )
 
     def __init__(
         self,
         content_type: t.Type[ContentType],
-        content: str,
-        is_hash: bool,
+        files: t.List[pathlib.Path],
+        as_hash: t.Optional[t.Type[SignalType]],
         collab: CollaborationConfigBase,
         only_signals: t.List[t.Type[SignalType]],
-        tags: t.Set[str],
+        labels: t.Set[str],
         true_positive: bool,
         false_positive: bool,
         seen: bool,
     ) -> None:
         self.collab = collab
         self.content_type = content_type
-        self.content = content
-        self.tags = tags
+        self.files = files
+        self.labels = labels
         self.only_signals = only_signals
-        self.is_hash = is_hash
-
-        if is_hash:
-            if len(self.only_signals) != 1:
-                raise ArgumentTypeError("[-H] use only one argument for -S")
+        self.as_hash = as_hash
 
         if self.collab is None:
             raise ArgumentTypeError("No such collaboration!")
@@ -140,26 +153,30 @@ class LabelCommand(command_base.Command):
             self.action = self.execute_seen
 
     def execute(self, settings: CLISettings) -> None:
+        self.stderr("This command is not implemented yet, and most actions won't work")
         self.action(settings)
 
     def execute_upload(self, settings: CLISettings) -> None:
         api = settings.get_api_for_collab(self.collab)
-        signal_types = self.only_signals or settings.get_signal_types_for_content(
-            self.content_type
-        )
+        # signal_types = self.only_signals or settings.get_signal_types_for_content(
+        #     self.content_type
+        # )
 
-        if self.is_hash:
-            hash_val = signal_types[0].validate_signal_str(self.content)
-            api.report_opinion(
-                self.collab,
-                signal_types[0],
-                hash_val,
-                SignalOpinion(
-                    api.get_own_owner_id(self.collab),
-                    SignalOpinionCategory.TRUE_POSITIVE,
-                    self.tags,
-                ),
-            )
+        if self.as_hash is not None:
+            for f in self.files:
+                signal_type = self.as_hash
+                hash_val = signal_type.validate_signal_str(f.read_text())
+                api.report_opinion(
+                    self.collab,
+                    signal_type,
+                    hash_val,
+                    SignalOpinion(
+                        api.get_own_owner_id(self.collab),
+                        SignalOpinionCategory.TRUE_POSITIVE,
+                        self.labels,
+                    ),
+                )
+            return
         raise NotImplementedError
 
     def execute_seen(self, settings: CLISettings) -> None:
