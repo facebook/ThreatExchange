@@ -57,7 +57,7 @@ class ConfigCollabListCommand(command_base.Command):
     def execute(self, settings: CLISettings) -> None:
         for collab in settings.get_all_collabs():
             api = settings.get_api_for_collab(collab)
-            print(collab.name, f"({api.get_name()})")
+            print(api.get_name(), collab.name)
 
 
 class _UpdateCollabCommand(command_base.Command):
@@ -120,12 +120,13 @@ class _UpdateCollabCommand(command_base.Command):
             help="disable the config",
         )
 
-        config_ap = ap.add_argument_group(
-            description=f"specific to {cls._API_CLS.get_name()}"
-        )
-
-        for field in fields(cfg_cls):
-            cls._add_argument(config_ap, field)
+        type_specific_fields = [f for f in fields(cfg_cls) if cls._is_argument_field(f)]
+        if type_specific_fields:
+            config_ap = ap.add_argument_group(
+                description=f"specific to {cls._API_CLS.get_name()}"
+            )
+            for field in type_specific_fields:
+                cls._add_argument(config_ap, field)
 
         ap.add_argument(
             "--json",
@@ -136,11 +137,16 @@ class _UpdateCollabCommand(command_base.Command):
         )
 
     @classmethod
-    def _add_argument(cls, ap: argparse.ArgumentParser, field: Field) -> None:
+    def _is_argument_field(cls, field: Field) -> bool:
         if not field.init:
-            return
+            return False
         if field.name in cls._IGNORE_FIELDS:
-            return
+            return False
+        return True
+
+    @classmethod
+    def _add_argument(cls, ap: argparse.ArgumentParser, field: Field) -> None:
+        assert cls._is_argument_field(field)
         assert not isinstance(
             field.type, ForwardRef
         ), "rework class to not have forward ref"
@@ -168,6 +174,7 @@ class _UpdateCollabCommand(command_base.Command):
             f"--{field.name.replace('_', '-')}",
             type=argparse_type,
             metavar=metavar,
+            required=field.default is MISSING and field.default_factory is MISSING,
             help=help,
         )
 
