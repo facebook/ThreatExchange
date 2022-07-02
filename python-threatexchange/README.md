@@ -104,7 +104,7 @@ While the CLI was designed for use with signal exchanges. The normal flow is rou
 ```bash
 $ threatexchange --help  # The help should give a decent overview of functionalities
 
-# Step 1: We can skip this step if using data
+# Step 1: We can skip this step if using the sample data
 $ threatexchange collab edit ...
 
 # Step 2: This will save progress, and we'll want to rerun it to get new data periodically
