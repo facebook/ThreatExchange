@@ -145,7 +145,7 @@ class _UpdateCollabCommand(command_base.Command):
         return True
 
     @classmethod
-    def _add_argument(cls, ap: argparse.ArgumentParser, field: Field) -> None:
+    def _add_argument(cls, ap: argparse._ArgumentGroup, field: Field) -> None:
         assert cls._is_argument_field(field)
         assert not isinstance(
             field.type, ForwardRef
