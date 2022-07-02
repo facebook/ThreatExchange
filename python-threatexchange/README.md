@@ -94,26 +94,73 @@ The `threatexchange` cli is designed to rapidly demonstrate the value of the lib
 
 ## Usage
 
-While the CLI was designed for use with signal exchanges, it also comes with a built-in copy of data that is loaded 
+While the CLI was designed for use with signal exchanges. The normal flow is roughly: 
+1. configure collaborations
+2. fetch from APIs
+3. build indices 
+4. match data
+5. contribute labels and data
 
 ```bash
 $ threatexchange --help  # The help should give a decent overview of functionalities
 
-# You can immediately begin matching against text data
+# Step 1: We can skip this step if using the sample data
+$ threatexchange collab edit ...
+
+# Step 2: This will save progress, and we'll want to rerun it to get new data periodically
+$ threatexchange fetch
+
+# Step 3: This is done by default at the end of step 2, but you can also trigger it manually
+$ threatexchange dataset --rebuild-indices
+
+# Step 4: You can match a variety of content and formats
 $ threatexchange match text -- 'bball now?'
-<stderr omitted>
 raw_text - (Sample Signals) WORTH_INVESTIGATING
 trend_query - (Sample Signals) WORTH_INVESTIGATING
-
-# Hashing is also available out of the box
+# You can also debug matching by looking at what hashes are generated:
 $ threatexchange hash video example.mp4
 video_md5 f09791b743c21f26a189c33b798b8e46
+
+# Step 5: Contribute labels 
+$ threatexchange label ...
 ```
 
-## State
+### Viewing Signals
+TODO
+```
+$ threatexchange dataset 
+$ threatexchange dataset -P --csv > out.csv
+```
+
+### Connecting to APIs
+#### ThreatExchange
+If you have access to [Meta's ThreatExchange](https://developers.facebook.com/programs/threatexchange/), you can use the library with [PrivacyGroups](https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-privacy-group) with [threat_updates](https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-updates/) enabled.
+
+```
+# Step 1 - configure the default credentials
+$ threatexchange config api fb_threat_exchange --access-token '<TOKEN>'
+
+# Step 2 - import configuration
+$ threatexchange config api fb_threat_exchange -L
+1012185296055235 'Example Collaboration' ...
+$ threatexchange config api fb_threat_exchange -I 1012185296055235
+# You can also manually configure the connection via
+$ threatexchange config collab edit fb_threat_exchange ...
+
+$ threatexchange fetch
+```
+
+#### NCMEC 
+TODO
+
+#### StopNCII.org
+TODO
+
+## Appendix 
+### State
 The CLI stores state in `~/.threatexchange`. There are a few commands which will manipulate this directory, but if you need to factory reset, do `rm -r ~/.threatexchange`
 
-## As an E2E Solution
+### The CLI as an E2E Solution
 While hasher-matcher-actioner is this repository's attempt at a scaled end-to-end solution, the CLI uses the same libraries and can emulate the same functionality.
 
 In order to do that, you'll need to solve a few problems:
