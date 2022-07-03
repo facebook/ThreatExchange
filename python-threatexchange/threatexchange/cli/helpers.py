@@ -38,6 +38,8 @@ class FlexFilesInputAction(argparse.Action):
 
     def __call__(self, _parser, namespace, values, _option_string=None):
         args: t.List[str] = list(values)
+        if not args:
+            raise argparse.ArgumentError(self, "this argument is required")
         # We have special behavior for -- but argparse sometimes eats it during parsing...
         if "--" in sys.argv and sys.argv[-len(args) - 1] == "--":
             args.insert(0, "--")
@@ -57,6 +59,6 @@ class FlexFilesInputAction(argparse.Action):
                 break
             path = pathlib.Path(filename)
             if not path.is_file():
-                raise CommandError(f"No such file {path}", 2)
+                raise argparse.ArgumentError(self, f"no such file {path}")
             ret.append(path)
         setattr(namespace, self.dest, ret)

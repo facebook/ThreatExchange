@@ -27,7 +27,7 @@ def test_file(hash_cli: ThreatExchangeCLIE2eHelper, tmp_file: pathlib.Path):
         "url_md5 6d3af727a4e7b025fd59a5469b3a9c57",
     )
 
-    hash_cli.assert_cli_usage_error(("url", "blah.txt"), "No such file blah.txt")
+    hash_cli.assert_cli_usage_error(("url", "blah.txt"))
 
 
 def test_dashdash(hash_cli: ThreatExchangeCLIE2eHelper):
@@ -46,7 +46,7 @@ def test_stdin(
 
     monkeypatch.setattr("sys.stdin", tmp_file.open())
     hash_cli.assert_cli_output(
-        ("url",),
+        ("url", "-"),
         "url_md5 6d3af727a4e7b025fd59a5469b3a9c57",
     )
 
@@ -65,3 +65,8 @@ def test_mixed(hash_cli: ThreatExchangeCLIE2eHelper, tmp_path: pathlib.Path):
             "url_md5 fb8191ebebc85f9eb6fd21e198f20979",
         ],
     )
+
+
+def test_missing(hash_cli: ThreatExchangeCLIE2eHelper):
+    hash_cli.assert_cli_usage_error(())
+    hash_cli.assert_cli_usage_error(("photo",))
