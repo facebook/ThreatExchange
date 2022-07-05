@@ -100,8 +100,8 @@ def computeHash(input_video_filename: str,
         ffmpeg_path (str): ffmpeg path
         verbose (bool): If verbose, will print detailed information
         seconds_per_hash (int): The frequence(per second) a hash is generated from the video
-        width (int): Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
-        height (int): Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
+        downsample_width (int): Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
+        downsample_height (int): Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
     Returns:
         list of vpdq_feature: VPDQ hash from the video
     """
