@@ -13,7 +13,7 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "-o|--output-hash-file-name ...\n");
   fprintf(fp, "-r|--seconds-per-hash ...:Must be a positive integer\n");
   fprintf(fp, "Options:\n");
-  fprintf(fp, "-f|--ffmpeg-path: Specific ffmpeg's address you want to use\n");
+  fprintf(fp, "-f|--ffmpeg-path: Specific path to ffmpeg you want to use\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
   fprintf(
       fp,

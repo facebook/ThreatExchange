@@ -12,7 +12,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "-f",
         "--ffmpegPath",
         metavar="FFMPEG_PATH",
-        help="Specific ffmpeg's address you want to use",
+        help="Specific path to ffmpeg you want to use",
         default="ffmpeg",
     )
     ap.add_argument(

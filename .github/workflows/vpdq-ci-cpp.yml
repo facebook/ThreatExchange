@@ -2,7 +2,7 @@ name: vpdq CI - cpp
 on:
   push:
     branches:
-      - VPDQ-FFMPEG_PATH
+      - main
     paths:
       - "vpdq/cpp/**"
       - ".github/workflows/vpdq-ci-cpp.yml"
