@@ -89,10 +89,10 @@ def hamming_distance(hash1: 'Hash256', hash2: 'Hash256'):
 
 def computeHash(input_video_filename: str,
                 ffmpeg_path: str,
-                verbose: bool,
                 seconds_per_hash: int,
-                width: int,
-                height: int):
+                verbose: bool = False,
+                downsample_width: int = 0,
+                downsample_height: int = 0):
     """Compute vpdq hash
 
     Args:
@@ -106,13 +106,13 @@ def computeHash(input_video_filename: str,
         list of vpdq_feature: VPDQ hash from the video
     """
     cdef vector[vpdqFeature] vpdq_hash;
-    if width == 0:
+    if downsample_width == 0:
         vid = cv2.VideoCapture(input_video_filename)
-        width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+        downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
 
-    if height == 0:
+    if downsample_height == 0:
         vid = cv2.VideoCapture(input_video_filename)
-        height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        downsample_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     rt = hashVideoFile(
         input_video_filename.encode('utf-8'),
@@ -120,12 +120,12 @@ def computeHash(input_video_filename: str,
         ffmpeg_path.encode('utf-8'),
         verbose,
         seconds_per_hash,
-        width,
-        height,
+        downsample_width,
+        downsample_height,
         "vpdqPY"
         )
 
-    hashs= [vpdq_feature(hash.quality,
+    hashes= [vpdq_feature(hash.quality,
                          hash.frameNumber,
                          hash.pdqHash)  for hash in vpdq_hash]
-    return hashs
+    return hashes

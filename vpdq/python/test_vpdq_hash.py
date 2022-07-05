@@ -3,6 +3,7 @@ import typing as t
 import pytest
 import test_util
 import os
+import pathlib
 
 SAMPLE_HASH_FOLDER = "/vpdq/sample-hashes"
 SAMPLE_VIDEOS = "/tmk/sample-videos"
@@ -15,8 +16,8 @@ QUALITY_TOLERANCE = 50
 class TestVPDQHash:
     def test_VPDQ_hash(self):
         d = os.path.dirname(os.path.dirname(os.getcwd()))
-        hash_folder = d + SAMPLE_HASH_FOLDER
-        video_folder = d + SAMPLE_VIDEOS
+        hash_folder = pathlib.Path(d + SAMPLE_HASH_FOLDER)
+        video_folder = pathlib.Path(d + SAMPLE_VIDEOS)
         self.test_hashes = {}
         self.sample_hashes = {}
 
@@ -30,7 +31,11 @@ class TestVPDQHash:
         for file in sorted(os.listdir(video_folder)):
             if file.endswith(".mp4"):
                 video_file = f"{video_folder}/{file}"
-                ret = vpdq.computeHash(video_file, FFMPEG, False, SECOND_PER_HASH, 0, 0)
+                ret = vpdq.computeHash(
+                    input_video_filename=video_file,
+                    ffmpeg_path=FFMPEG,
+                    seconds_per_hash=SECOND_PER_HASH,
+                )
                 name = os.path.splitext(file)[0]
                 self.test_hashes[name] = ret
 
