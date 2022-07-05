@@ -35,6 +35,5 @@ jobs:
           python-version: '3.x'
           architecture: 'x64'
       - run: |
-          cd ..
           mkdir -p output-hashes
-          python regtest.py -d ${GITHUB_WORKSPACE}/vpdq/output-hashes -i ${GITHUB_WORKSPACE}/tmk/sample-videos
+          python regtest.py -d ${GITHUB_WORKSPACE}/vpdq/cpp/output-hashes -i ${GITHUB_WORKSPACE}/tmk/sample-videos
