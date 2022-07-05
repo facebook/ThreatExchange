@@ -8,7 +8,13 @@ def get_argparse() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("-f", "--ffmpegPath", metavar="FFMPEG_PATH", help="ffmpeg path")
+    ap.add_argument(
+        "-f",
+        "--ffmpegPath",
+        metavar="FFMPEG_PATH",
+        help="Specific ffmpeg's address you want to use",
+        default="ffmpeg",
+    )
     ap.add_argument(
         "-r",
         "--secondsPerHash",
@@ -82,7 +88,6 @@ def main():
     secondsPerHash = str(args.secondsPerHash)
     downsampleFrameDimension = str(args.downsampleFrameDimension)
     verbose = args.verbose
-    # TODO: Add more general options for other video encodings.
     for file in os.listdir(inputVideoFolder):
         if file.endswith(".mp4"):
             if verbose:
