@@ -1,14 +1,27 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-A wrapper around multi-stage ThreatExchange operations.
+Wrapper for the `threatexchange` library, can serve as a simple e2e solution.
 
-Includes simple matching and writing back. Useful for quickly validating new
-sources of ThreatExchange data. A possible template for a native
-implementation in your own architecture.
+The flow the CLI is generally:
+  1. Configure collaborations and APIs with (or skip to use fake sample data)
+     $ threatexchange config collab edit
+     $ threatexchange config api  # to set up credentials if needed
+  2. Fetch data and build match indices
+     $ threatexchange fetch
+  3. Match data
+     $ threatexchange match photo my_photo.jpg
+  4. Contribute labels to external APIs
+     $ threatexchange label photo my_photo.jpg dog 
+     $ threatexchange label photo my_photo.jpg --false-positive
 
-This helper heavily relies on a config file to provide consistent behavior
-between stages, and a state file to store hashes.
+Additionally, there are a number of utility commands:
+  * threatexchange dataset
+  * threatexchange hash
+
+See the --help of subcommands for more information.
+
+State is persisted between runs, entirely in the ~/.threatexchange directory
 """
 
 import argparse

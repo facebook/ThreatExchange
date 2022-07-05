@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import collections
@@ -23,6 +22,14 @@ from threatexchange.cli import command_base
 class FetchCommand(command_base.Command):
     """
     Download content from signal exchange APIs to disk.
+
+    Fetches data for collaborations that you've configured with
+      $ threatexchange config collab edit
+
+    Fetching is checkpointed, and you can safely interrupt by using CTRL+C.
+
+    Some APIs require that you regularly re-fetch them within some number
+    of days or else the stored data becomes invalid.
     """
 
     PROGRESS_PRINT_INTERVAL_SEC = 30
