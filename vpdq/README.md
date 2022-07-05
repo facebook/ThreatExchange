@@ -120,7 +120,7 @@ $ make
 ```
 Then you will have executable "vpdq-hash-video", "match-hashes-byline" and "match-hashes-brute". And two python scripts "vpdq_match.py" and "regtest.py" to run the executables. Please run executable with "-h" for more detailed reference information and usages.
 
-#### Installing FFmpeg
+#### Install FFmpeg
 
 Before using VPDQ to create hashes, FFmpeg must be installed. (Easier to use if Accessible via the `$PATH` environment variable)
 

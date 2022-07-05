@@ -88,6 +88,7 @@ def main():
     secondsPerHash = str(args.secondsPerHash)
     downsampleFrameDimension = str(args.downsampleFrameDimension)
     verbose = args.verbose
+    # TODO: Add more general options for other video encodings.
     for file in os.listdir(inputVideoFolder):
         if file.endswith(".mp4"):
             if verbose:
