@@ -2,7 +2,7 @@ name: vpdq CI - cpp
 on:
   push:
     branches:
-      - main
+      - VPDQ-FFMPEG_PATH
     paths:
       - "vpdq/cpp/**"
       - ".github/workflows/vpdq-ci-cpp.yml"
@@ -30,3 +30,10 @@ jobs:
           cd build
           cmake ..
           make
+      - uses: actions/setup-python@v4
+        with:
+        python-version: '3.x'
+        architecture: 'x64'
+        run: |
+          mkdir -p output-hashes
+          python regtest.py -d /ThreatExchange/vpdq/output-hashes -i ThreatExchange/tmk/sample-videos
