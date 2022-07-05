@@ -29,7 +29,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="OUTPUT_HASH_Folder_PATH",
         help="Output Hash Folder's Name",
         default="/ThreatExchange/vpdq/output-hashes",
-        # type=dir_path,
+        type=dir_path,
     )
     ap.add_argument(
         "-i",
@@ -37,7 +37,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="INPUTPUT_VIDEO_FOLDER_PATH",
         help="Input Video Folder",
         default="/ThreatExchange/tmk/sample-videos",
-        # type=dir_path,
+        type=dir_path,
     )
     ap.add_argument(
         "-s",
