@@ -23,16 +23,16 @@ class TestVPDQHash:
 
         for file in sorted(os.listdir(hash_folder)):
             if file.endswith(".txt"):
-                hash_file = f"{hash_folder}/{file}"
+                hash_file = pathlib.Path(f"{hash_folder}/{file}")
                 ret = test_util.read_file_to_hash(hash_file)
                 name = os.path.splitext(file)[0]
                 self.sample_hashes[name] = ret
 
         for file in sorted(os.listdir(video_folder)):
             if file.endswith(".mp4"):
-                video_file = f"{video_folder}/{file}"
+                video_file = pathlib.Path(f"{video_folder}/{file}")
                 ret = vpdq.computeHash(
-                    input_video_filename=video_file,
+                    input_video_filename=str(video_file),
                     ffmpeg_path=FFMPEG,
                     seconds_per_hash=SECOND_PER_HASH,
                 )
