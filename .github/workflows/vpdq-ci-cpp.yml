@@ -32,8 +32,8 @@ jobs:
           make
       - uses: actions/setup-python@v4
         with:
-        python-version: '3.x'
-        architecture: 'x64'
-        run: |
+          python-version: '3.x'
+          architecture: 'x64'
+      - run: |
           mkdir -p output-hashes
-          python regtest.py -d /ThreatExchange/vpdq/output-hashes -i ThreatExchange/tmk/sample-videos
+          python regtest.py -d /ThreatExchange/vpdq/output-hashes -i /ThreatExchange/tmk/sample-videos
