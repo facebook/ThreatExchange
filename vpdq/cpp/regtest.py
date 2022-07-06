@@ -6,7 +6,7 @@ import argparse
 
 def get_argparse() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        description=__doc__
     )
     ap.add_argument(
         "-f",
