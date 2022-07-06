@@ -20,15 +20,26 @@ from threatexchange.cli import command_base
 from threatexchange.cli.helpers import FlexFilesInputAction
 
 
-# TODO consider refactor to handle overlap with match
 class HashCommand(command_base.Command):
     """
-    Hash content into signatures (aka hashes).
+    Take content and convert it into signatures (aka hashes)
 
-    Reads inputs as filenames by default, though it will attempt to read
-    inline with --inline. Most useful with with content type `text`.
+    # Input
+    You can pass in data to the command in a few different ways:
+    (Note - you may not be able to hash text without an extension)
+    ```
+    # As an input file that contains one signal
+    $ threatexchange hash photo my_photo.jpg
 
-    You can also pass in via stdin not passing in any files
+    # As stdin
+    $ echo This is my cool text | threatexchange hash text -
+
+    # Inline
+    $ threatexchange hash text -- This is my cool text
+    ```
+
+    # Output
+    <SignalType> <hash string>
     """
 
     @classmethod
