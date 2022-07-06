@@ -8,7 +8,6 @@ Match command for parsing simple data sources against the dataset.
 import argparse
 import logging
 import pathlib
-import sys
 import typing as t
 
 
@@ -32,29 +31,48 @@ TMatcher = t.Callable[[pathlib.Path], t.List[IndexMatch]]
 
 class MatchCommand(command_base.Command):
     """
-    Match content to items in ThreatExchange.
+    Match content to fetched signals
 
-    Using the dataset from the fetch command, try to match content. Not all
-    content and hashing types are implemented, so it's possible that you
-    can download signals, but not match them via this command. In some cases
-    the implementation in this package is sub-optimal, either in completeness
-    (i.e. only matching exact when near-matching is supported), or in runtime
-    (i.e. using a linear implementation when a sublinear implementation exists)
+    Runs the given content through applicable SignalTypes, and compare it
+    with previously fetched signals stored in the index files. Only
+    SignalTypes supported by the CLI and your extensions can be matched,
+    even if you can fetch them. Any matches will be printed to screen.
 
+    # Input
+    You can pass in data to the command in a few different ways:
+    ```
+    # As an input file that contains one signal
+    $ threatexchange match photo my_photo.jpg
+
+    # As stdin
+    $ echo This is my cool text | threatexchange match text -
+
+    # Inline
+    $ threatexchange match text -- This is my cool text
+    ```
+
+    # Output
     The output of this command is in the following format:
 
-      <matched descriptor id> <signal type> <label1> <label2...>
+    <signal type> - (<Collab Name>) <opinion category> <label1>,<label2>,...
 
-    If tying this into your own integrity systems, if the result of this match
-    is human review, you'll want to store the matched descriptor id and make
-    a call to
-
-      all_in_one label descriptor <matched descriptor id>
-
-    with the results of that review.
+    The category is key to understanding what you might want to do with a match.
+    Here's an explanation of the categories. Opinion categories:
+    * TRUE_POSITIVE:
+      All contributors of this signal believe that matching content should fit
+      the collaboration
+    * WORTH_INVESTIGATING:
+      This content needs manual investigation to confirm or fanout to find the
+      content that fits the collaboration
+    * DISPUTED:
+      Some members have said that this signal can be used to find content
+      that fits the collaboration, but others have said it matches content
+      that does not belong in the collaboration.
+    * FALSE_POSITIVE:
+      Members have said content that matches does not belong in the
+      collaboration, or that this is information content that should not
+      trigger normal side-effects (i.e. human review).
     """
-
-    USE_STDIN = "-"
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
