@@ -6,9 +6,15 @@ import argparse
 
 def get_argparse() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        description=__doc__
     )
-    ap.add_argument("-f", "--ffmpegPath", metavar="FFMPEG_PATH", help="ffmpeg path")
+    ap.add_argument(
+        "-f",
+        "--ffmpegPath",
+        metavar="FFMPEG_PATH",
+        help="Specific path to ffmpeg you want to use",
+        default="ffmpeg",
+    )
     ap.add_argument(
         "-r",
         "--secondsPerHash",

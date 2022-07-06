@@ -9,11 +9,11 @@ static void usage(char* argv0, int rc) {
   FILE* fp = (rc == 0) ? stdout : stderr;
   fprintf(fp, "Usage: %s [options]\n", argv0);
   fprintf(fp, "Required:\n");
-  fprintf(fp, "-f|--ffmpeg-path ...\n");
   fprintf(fp, "-i|--input-video-file-name ...\n");
   fprintf(fp, "-o|--output-hash-file-name ...\n");
   fprintf(fp, "-r|--seconds-per-hash ...:Must be a positive integer\n");
   fprintf(fp, "Options:\n");
+  fprintf(fp, "-f|--ffmpeg-path: Specific path to ffmpeg you want to use\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
   fprintf(
       fp,
@@ -71,7 +71,7 @@ string stripExtension(const string& path, const string& delimiter) {
 int main(int argc, char** argv) {
   int argi = 1;
   bool verbose = false;
-  string ffmpegPath = "";
+  string ffmpegPath = "ffmpeg";
   string inputVideoFileName = "";
   string outputHashFileName = "";
   string outputDirectory = "";
@@ -126,11 +126,6 @@ int main(int argc, char** argv) {
       downsampleFrameDimension = atoi(argv[argi++]);
       continue;
     }
-    usage(argv[0], 1);
-  }
-
-  if (ffmpegPath.empty()) {
-    fprintf(stderr, "%s: --ffmpeg-path missing\n", argv[0]);
     usage(argv[0], 1);
   }
 
