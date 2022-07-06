@@ -63,7 +63,7 @@ class ThreatExchangeCLIE2eHelper:
     def assert_cli_usage_error(
         self, args: t.Iterable[str], msg_regex: str = None
     ) -> None:
-        with pytest.raises((CommandError, E2ETestSystemExit), match=msg_regex) as ex:
+        with pytest.raises((CommandError, E2ETestSystemExit), match=msg_regex) as ex:  # type: ignore
             self.cli_call(*args)
         exception = t.cast(t.Union[CommandError, E2ETestSystemExit], ex.value)
         assert exception.returncode == 2
