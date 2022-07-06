@@ -9,7 +9,9 @@ from threatexchange.cli.tests.e2e_test_helper import (
 
 
 @pytest.fixture
-def hash_cli(te_cli: ThreatExchangeCLIE2eHelper) -> ThreatExchangeCLIE2eHelper:
+def hash_cli(
+    te_cli: ThreatExchangeCLIE2eHelper,
+) -> ThreatExchangeCLIE2eHelper:
     te_cli.COMMON_CALL_ARGS = ("hash",)
     return te_cli
 

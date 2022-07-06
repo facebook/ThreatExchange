@@ -49,7 +49,9 @@ class NCMECCheckpoint(
 
 @dataclass
 class _NCMECCollabConfigRequiredFields:
-    environment: api.NCMECEnvironment
+    environment: api.NCMECEnvironment = field(
+        metadata={"help": "which database to connect to"}
+    )
 
 
 @dataclass
