@@ -1,0 +1,158 @@
+<html>
+
+<head>
+	<meta charset='UTF-8'>
+	<title>NCII</title>
+	<link rel="stylesheet" href="./styles/style.css">
+	<script src="./scripts/pdq-photo-hasher.js"></script>
+	<script type='module'>
+		import { getPDQMD5Hash } from "./scripts/pdq.js";
+
+		const chunkSize = 64 * 1024 * 1024;
+		const fileReader = new FileReader();
+
+		// Execute the following codes once the DOM contents are loaded completely.
+		document.addEventListener("DOMContentLoaded", (event) => {
+
+			document.getElementById("uploadFiles").onclick = function () {
+				document.getElementById("uploadFiles").classList.add("upload--loading");
+				document.getElementsByClassName("upload-hidden")[0].click();
+			}
+
+			document.getElementById("myfile").onchange = function (event) {
+				// Call the method for generating the PDQ/MD5 hash by calling exposed web assembly methods. 
+				getFileHash(event.target.files);
+			};
+		});
+
+		async function getFileHash(files) {
+			// Loop through the selected files files.
+			for (let i = 0; i < files.length; i++) {
+				let fname = '';
+				let tempfname = '';
+				let reader = new FileReader();
+
+				let file = files.item(i);
+				if (file) {
+					fname = file.name;
+					if (fname) {
+						tempfname = `${fname.substr(0, fname.lastIndexOf("."))}_temp.pnm`;
+					}
+				}
+
+				reader.onloadend = async function (e) {
+
+					let result = reader.result;
+					const data = new Uint8Array(result);
+
+					let isImageFile = file.type.includes("image");
+					const isVideoFile = file.type.includes("video");
+					const dataArray = [];
+					let hashResult = "";
+
+					if (isImageFile) {
+						hashResult = await getPDQMD5Hash(data, fname, tempfname, isImageFile, isVideoFile, null);
+						// Call the method for displaying the hash result returned by webassembly.
+						displayHashResult(fname, hashResult, formatFileSize(file.size, 2));
+					}
+					else if (isVideoFile) {
+						const chunkNumber = Math.floor(file.size / chunkSize);
+
+						for (let i = 0; i <= chunkNumber; i++) {
+							const chunk = file.slice(
+								chunkSize * i,
+								Math.min(chunkSize * (i + 1), file.size)
+							);
+
+							fileReader.onload = async (e) => {
+								const fileData = new Uint8Array(e.target.result);
+								dataArray.push(fileData);
+								hashResult = await getPDQMD5Hash(data, fname, tempfname, isImageFile, isVideoFile, dataArray);
+								// Call the method for displaying the hash result returned by webassembly.
+								displayHashResult(fname, hashResult, formatFileSize(file.size, 2));
+							};
+
+							fileReader.readAsArrayBuffer(chunk);
+						}
+					}
+					else {
+						// Call the method for displaying the hash result returned by webassembly.
+						displayHashResult(fname, hashResult, formatFileSize(file.size, 2));
+					}
+
+				}
+
+				reader.readAsArrayBuffer(file);
+			}
+		}
+
+		// This method is used for displaying the Hash value returned by the web assembly.
+		function displayHashResult(fileName, hashResult, fileSize) {
+			document.getElementById("resHeader").style.display = "block";
+			document.getElementById("uploadFiles").classList.remove("upload--loading");
+
+			// Generate a new table row and cell contents and append to result table .
+			const resultTable = document.getElementById('resBody').insertRow(-1);
+			if (resultTable) {
+				if (hashResult) {
+					const cellOne = resultTable.insertCell(0);
+					const cellTwo = resultTable.insertCell(1);
+					const cellThree = resultTable.insertCell(2);
+					cellOne.innerHTML = fileName;
+					cellTwo.innerHTML = hashResult;
+					cellThree.innerHTML = fileSize;
+				}
+				else {
+					const cellOne = resultTable.insertCell(0);
+					cellOne.colSpan = "3";
+					cellOne.innerHTML = `File ${fileName} cannot be processed.Please ensure only Image/Video files are only selected for calculating file Hash.`;
+				}
+			}
+		}
+
+		/**
+			This method is used for getting the file size.
+		**/
+		function formatFileSize(bytes, decimalPoint) {
+			if (bytes == 0) return '0 Bytes';
+			var k = 1024,
+				dm = decimalPoint || 2,
+				sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+				i = Math.floor(Math.log(bytes) / Math.log(k));
+			return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+		}
+	</script>
+
+</head>
+
+<body>
+
+	<div class="body-container-wrapper">
+		<div class="page-center">
+			<h1>Upload Your files here</h1>
+
+			<a class="upload" id="uploadFiles"><span>Select files</span></a>
+
+			<form id="upload" enctype="multipart/form-data">
+				<div id="drop">
+					<input type="file" name="img" id="myfile" class="upload-hidden"
+						accept=".jpeg,.jpg,.png,.gif,.psd,.tiff,.xcf,.tga,.miff,.ico,.dcm,.xpm,.pcx,.bmp,video/*" />
+				</div>
+			</form>
+
+			<table id="result">
+				<thead id="resHeader" style="display:none">
+					<tr>
+						<th style="width: 40%;">Uploaded File</th>
+						<th style="width: 50%;">Hash</th>
+						<th style="width: 10%;">File Size</th>
+					</tr>
+				</thead>
+				<tbody id="resBody"></tbody>
+			</table>
+		</div>
+	</div>
+
+</body>
+
+</html>
