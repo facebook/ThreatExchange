@@ -1,5 +1,6 @@
 # distutils: language = c++
 # cython: language_level=3
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import numpy as np
 cimport numpy as np
 import cv2
@@ -46,7 +47,7 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
     )
 
 @dataclass
-class vpdq_feature:
+class VpdqFeature:
     quality: int
     frame_number: int
     hash: Hash256
@@ -60,11 +61,11 @@ class vpdq_feature:
     def hamming_distance(self, that: 'vpdq_feature'):
         return hammingDistance(self.hash, that.hash)
 
-def hash_to_hex(hash_value):
+def hash_to_hex(hash_value : 'Hash256'):
     """Convect from pdq hash to hex str
 
     Args:
-        hash_value (Hash256):
+        hash_value
 
     Returns:
         str: hex str of hash
@@ -79,8 +80,8 @@ def hamming_distance(hash1: 'Hash256', hash2: 'Hash256'):
     Return the hamming distance between two pdq hashes
 
     Args:
-        hash1 (Hash256)
-        hash2 (Hash256)
+        hash1
+        hash2
 
     Returns:
         int: The hamming distance
@@ -96,12 +97,12 @@ def computeHash(input_video_filename: str,
     """Compute vpdq hash
 
     Args:
-        input_video_filename (str): Input video file path
-        ffmpeg_path (str): ffmpeg path
-        verbose (bool): If verbose, will print detailed information
-        seconds_per_hash (int): The frequence(per second) a hash is generated from the video
-        downsample_width (int): Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
-        downsample_height (int): Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
+        input_video_filename: Input video file path
+        ffmpeg_path: ffmpeg path
+        verbose: If verbose, will print detailed information
+        seconds_per_hash: The frequence(per second) a hash is generated from the video
+        downsample_width: Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
+        downsample_height: Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
     Returns:
         list of vpdq_feature: VPDQ hash from the video
     """
@@ -122,10 +123,11 @@ def computeHash(input_video_filename: str,
         seconds_per_hash,
         downsample_width,
         downsample_height,
-        "vpdqPY"
+        'vpdqPY',
         )
+    if not rt:
+        raise Exception('Fail to create VPDQ hash')
 
-    hashes= [vpdq_feature(hash.quality,
-                         hash.frameNumber,
-                         hash.pdqHash)  for hash in vpdq_hash]
+    hashes = [VpdqFeature(hash.quality, hash.frameNumber, hash.pdqHash)
+              for hash in vpdq_hash]
     return hashes

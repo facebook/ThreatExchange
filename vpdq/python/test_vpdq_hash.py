@@ -1,48 +1,67 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import vpdq
-import typing as t
 import pytest
 import test_util
 import os
-import pathlib
+from pathlib import Path
 
-SAMPLE_HASH_FOLDER = "/vpdq/sample-hashes"
-SAMPLE_VIDEOS = "/tmk/sample-videos"
+SAMPLE_HASH_FOLDER = Path("vpdq/sample-hashes")
+SAMPLE_VIDEOS = Path("tmk/sample-videos")
 FFMPEG = "/usr/bin/ffmpeg"  # please customize according to your installation (but do not commit)
 SECOND_PER_HASH = 1
 DISTANCE_TOLERANCE = 10
 QUALITY_TOLERANCE = 50
+TEST_FILES = [
+    "chair-19-sd-bar",
+    "chair-20-sd-bar",
+    "chair-22-sd-grey-bar",
+    "chair-22-sd-sepia-bar",
+    "chair-22-with-large-logo-bar",
+    "chair-22-with-small-logo-bar",
+    "chair-orig-22-fhd-no-bar",
+    "chair-orig-22-hd-no-bar",
+    "chair-orig-22-sd-bar",
+    "doorknob-hd-no-bar",
+    "pattern-hd-no-bar",
+    "pattern-longer-no-bar",
+    "pattern-sd-grey-bar",
+    "pattern-sd-with-large-logo-bar",
+    "pattern-sd-with-small-logo-bar",
+]
 
 
 class TestVPDQHash:
-    def test_VPDQ_hash(self):
-        d = os.path.dirname(os.path.dirname(os.getcwd()))
-        hash_folder = pathlib.Path(d + SAMPLE_HASH_FOLDER)
-        video_folder = pathlib.Path(d + SAMPLE_VIDEOS)
+    def test_compare_hashes(self):
+        """This regression test is creating hashes from sample videos and compare them with the provided hashes line by line.
+        Two VPDQ features are considered the same if each line of the hashes are within DISTANCE_TOLERANCE.
+        For hashes that have a quality lower than QUALITY_TOLERANCE, the test will skip them for comoparing.
+        """
+        d = Path.cwd().parent.parent
+        hash_folder = d / SAMPLE_HASH_FOLDER
+        video_folder = d / SAMPLE_VIDEOS
         self.test_hashes = {}
         self.sample_hashes = {}
 
-        for file in sorted(os.listdir(hash_folder)):
-            if file.endswith(".txt"):
-                hash_file = pathlib.Path(f"{hash_folder}/{file}")
-                ret = test_util.read_file_to_hash(hash_file)
-                name = os.path.splitext(file)[0]
-                self.sample_hashes[name] = ret
+        for file in TEST_FILES:
+            hash_file = Path(f"{hash_folder}/{file}.txt")
+            ret = test_util.read_file_to_hash(hash_file)
+            assert ret is not None
+            self.sample_hashes[file] = ret
 
-        for file in sorted(os.listdir(video_folder)):
-            if file.endswith(".mp4"):
-                video_file = pathlib.Path(f"{video_folder}/{file}")
-                ret = vpdq.computeHash(
-                    input_video_filename=str(video_file),
-                    ffmpeg_path=FFMPEG,
-                    seconds_per_hash=SECOND_PER_HASH,
-                )
-                name = os.path.splitext(file)[0]
-                self.test_hashes[name] = ret
+        for file in TEST_FILES:
+            video_file = Path(f"{video_folder}/{file}.mp4")
+            ret = vpdq.computeHash(
+                input_video_filename=str(video_file),
+                ffmpeg_path=FFMPEG,
+                seconds_per_hash=SECOND_PER_HASH,
+            )
+            assert ret is not None
+            self.test_hashes[file] = ret
 
-        for k in self.sample_hashes.keys():
-            print("Comparing hash for video: " + k)
-            hash1 = self.test_hashes[k]
-            hash2 = self.sample_hashes[k]
+        for file in TEST_FILES:
+            print("Comparing hash for video: " + file)
+            hash1 = self.test_hashes[file]
+            hash2 = self.sample_hashes[file]
             assert len(hash1) == len(hash2)
             for h1, h2 in zip(hash1, hash2):
                 if h1.quality >= QUALITY_TOLERANCE and h2.quality >= QUALITY_TOLERANCE:
