@@ -1,5 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+import typing as t
 import pytest
 
 from threatexchange.exchanges.clients.ncmec.tests.test_hash_api import api
@@ -10,6 +11,7 @@ from threatexchange.exchanges.impl.ncmec_api import (
 )
 
 from threatexchange.exchanges.clients.ncmec.hash_api import (
+    NCMECEntryUpdate,
     NCMECEnvironment,
     NCMECHashAPI,
 )
@@ -47,7 +49,8 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     # Fetch 1
     delta = next(it)
     assert len(delta.updates) == 4
-    total_updates = fetcher.naive_fetch_merge(None, delta.updates)
+    total_updates: t.Dict[str, NCMECEntryUpdate] = {}
+    fetcher.naive_fetch_merge(total_updates, delta.updates)
 
     assert delta.checkpoint.get_progress_timestamp() == 1508858400
     assert delta.checkpoint.is_stale() is False
@@ -64,7 +67,7 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     assert len(delta.updates) == 1
 
     assert {t for t in delta.updates} == {"42-image10"}
-    total_updates = fetcher.naive_fetch_merge(total_updates, delta.updates)
+    fetcher.naive_fetch_merge(total_updates, delta.updates)
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], total_updates
     )[VideoMD5Signal]
@@ -74,7 +77,7 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     delta = next(it)
     assert len(delta.updates) == 2
     assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
-    total_updates = fetcher.naive_fetch_merge(total_updates, delta.updates)
+    fetcher.naive_fetch_merge(total_updates, delta.updates)
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], total_updates
@@ -85,7 +88,7 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     delta = next(it)
     assert len(delta.updates) == 2
     assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
-    total_updates = fetcher.naive_fetch_merge(total_updates, delta.updates)
+    fetcher.naive_fetch_merge(total_updates, delta.updates)
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], total_updates

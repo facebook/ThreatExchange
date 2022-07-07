@@ -56,11 +56,12 @@ class _StateTracker:
     @delta.setter
     def delta(self, value: fetch_state.FetchDeltaTyped) -> None:
         if self._delta is None:
-            old = None
+            old = {}
             self._delta = value
         else:
             old = self._delta.updates
-        self._delta.updates = self.api_cls.naive_fetch_merge(old, value.updates)
+        self.api_cls.naive_fetch_merge(old, value.updates)
+        self._delta.updates = old
         self._delta.checkpoint = value.checkpoint
         self.dirty = True
 

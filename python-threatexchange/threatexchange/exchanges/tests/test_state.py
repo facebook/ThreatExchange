@@ -9,7 +9,7 @@ from threatexchange.exchanges.collab_config import (
     CollaborationConfigWithDefaults,
 )
 from threatexchange.exchanges.signal_exchange_api import (
-    SignalExchangeAPIWithKeyedUpdates,
+    SignalExchangeAPI,
     SignalExchangeAPIWithSimpleUpdates,
 )
 from threatexchange.exchanges.fetch_state import (
@@ -18,6 +18,8 @@ from threatexchange.exchanges.fetch_state import (
     FetchDeltaTyped,
     SignalOpinion,
     SignalOpinionCategory,
+    TUpdateRecordKey,
+    TUpdateRecordValue,
 )
 
 from threatexchange.exchanges.helpers import (
@@ -42,13 +44,10 @@ class FakeUpdateRecord:
 
 
 OpinionRecord = t.Dict[int, t.Optional[FakeUpdateRecord]]
-OpinionDelta = FetchDelta[OpinionRecord, FetchCheckpointBase]
-
-K = t.TypeVar("K")
-V = t.TypeVar("V")
+OpinionDelta = FetchDelta[int, t.Optional[FakeUpdateRecord], FetchCheckpointBase]
 
 
-class _FakeAPIMixin(t.Generic[K, V]):
+class _FakeAPIMixin(t.Generic[TUpdateRecordKey, TUpdateRecordValue]):
     """
     Simulates an update types that uses per-owner opinions with an int ID.
 
@@ -56,8 +55,13 @@ class _FakeAPIMixin(t.Generic[K, V]):
     map it to hash => merged_opinions
     """
 
-    def __init__(self, fetches: t.Sequence[t.Dict[K, t.Optional[V]]]) -> None:
-        self.fetches = fetches
+    def __init__(
+        self,
+        fetches: t.Sequence[t.Dict[TUpdateRecordKey, t.Optional[TUpdateRecordValue]]],
+    ) -> None:
+        self.fetches: t.Sequence[
+            t.Dict[TUpdateRecordKey, t.Optional[TUpdateRecordValue]]
+        ] = fetches
 
     @classmethod
     def get_fake_collab_config(cls) -> CollaborationConfigBase:
@@ -70,14 +74,14 @@ class _FakeAPIMixin(t.Generic[K, V]):
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[FakeCheckpoint],
-    ) -> t.Iterator[FetchDelta[t.Dict[K, t.Optional[V]], FakeCheckpoint]]:
+    ) -> t.Iterator[FetchDelta[TUpdateRecordKey, TUpdateRecordValue, FakeCheckpoint]]:
         for i, update in enumerate(self.fetches):
             yield FetchDelta(update, FakeCheckpoint((i + 1) * 100))
 
 
 class FakePerOwnerOpinionAPI(
     _FakeAPIMixin[int, FakeUpdateRecord],
-    SignalExchangeAPIWithKeyedUpdates[
+    SignalExchangeAPI[
         CollaborationConfigBase,
         FakeCheckpoint,
         SimpleFetchedSignalMetadata,
@@ -89,7 +93,7 @@ class FakePerOwnerOpinionAPI(
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: t.Dict[int, t.Optional[FakeUpdateRecord]],
+        fetched: t.Mapping[int, t.Optional[FakeUpdateRecord]],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, SimpleFetchedSignalMetadata]]:
         if VideoMD5Signal not in signal_types:
             return {}
