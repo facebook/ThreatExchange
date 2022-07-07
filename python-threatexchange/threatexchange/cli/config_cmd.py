@@ -54,8 +54,8 @@ class ConfigCollabListCommand(command_base.Command):
         pass
 
     def execute(self, settings: CLISettings) -> None:
-        for collab in settings.get_all_collabs():
-            api = settings.get_api_for_collab(collab)
+        for collab in settings.get_all_collabs(default_to_sample=False):
+            api = settings.apis.get_for_collab(collab)
             print(api.get_name(), collab.name)
 
 
@@ -173,7 +173,7 @@ class _UpdateCollabCommand(command_base.Command):
             f"--{field.name.replace('_', '-')}",
             type=argparse_type,
             metavar=metavar,
-            required=field.default is MISSING and field.default_factory is MISSING,
+            required=field.default is MISSING and field.default_factory is MISSING,  # type: ignore
             help=help,
         )
 
@@ -249,10 +249,9 @@ class ConfigCollabForAPICommand(command_base.CommandWithSubcommands):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-        apis = settings.get_fetchers()
         cls._SUBCOMMANDS = [
             cls._create_command_for_api(api)
-            for api in apis
+            for api in settings.apis
             if api.__class__ is not StaticSampleSignalExchangeAPI
         ]
 
@@ -388,7 +387,7 @@ class ConfigExtensionsCommand(command_base.Command):
                     f"Not able to instanciate API {new_api.get_name()} - throws {e}"
                 )
             apis.append(instance)
-        apis.extend(settings.get_fetchers())
+        apis.extend(settings.apis.get_all())
         tx_meta.FetcherMapping(apis)
 
         self.print_extension(manifest)
@@ -456,7 +455,7 @@ class ConfigSignalCommand(command_base.Command):
         self.action(settings)
 
     def execute_list(self, settings: CLISettings) -> None:
-        signals = settings.get_all_signal_types()
+        signals = settings.get_all_signal_types(default_to_sample=False)
         for name, class_name in sorted(
             (st.get_name(), _fully_qualified_name(st)) for st in signals
         ):
@@ -546,9 +545,9 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
     def get_te_api(self, settings: CLISettings) -> ThreatExchangeAPI:
         te = next(
             (
-                f
-                for f in settings.get_fetchers()
-                if isinstance(f, FBThreatExchangeSignalExchangeAPI)
+                api
+                for api in settings.apis
+                if isinstance(api, FBThreatExchangeSignalExchangeAPI)
             ),
             None,
         )
@@ -632,7 +631,7 @@ class ConfigAPICommand(command_base.CommandWithSubcommands):
         return "api"
 
     def execute(self, settings: CLISettings) -> None:
-        apis = settings.get_fetchers()
+        apis = settings.apis.get_all()
         for name in sorted(a.get_name() for a in apis):
             print(name)
 
