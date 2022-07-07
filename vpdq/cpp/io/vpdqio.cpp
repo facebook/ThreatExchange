@@ -154,7 +154,7 @@ bool readVideoResolution(
   return true;
 }
 
-bool readVideoResolution(
+bool readVideoDuration(
     const string& inputVideoFileName, int& duration, const char* programName) {
   AVFormatContext* pFormatCtx = avformat_alloc_context();
   int rc =

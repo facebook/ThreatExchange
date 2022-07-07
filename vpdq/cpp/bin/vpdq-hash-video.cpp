@@ -161,18 +161,34 @@ int main(int argc, char** argv) {
   }
   // Hash the video and store the hashes and correspoding info
   // TODO: Create a vpdq feature class
+  int duration = 0;
+  bool rc = facebook::vpdq::io::readVideoDuration(
+      inputVideoFileName, duration, argv[0]);
+  if (!rc) {
+    fprintf(
+        stderr,
+        "%s: failed to read video duration \"%s\".\n",
+        argv[0],
+        inputVideoFileName.c_str());
+    return 1;
+  }
   std::vector<facebook::vpdq::hashing::vpdqFeature> pdqHashes;
   int width = downsampleFrameDimension;
   int height = downsampleFrameDimension;
   if (downsampleFrameDimension == 0) {
-    facebook::vpdq::io::readVideoResolution(
+    rc = facebook::vpdq::io::readVideoResolution(
         inputVideoFileName, width, height, argv[0]);
+    if (!rc) {
+      fprintf(
+          stderr,
+          "%s: failed to read video resolution \"%s\".\n",
+          argv[0],
+          inputVideoFileName.c_str());
+      return 1;
+    }
   }
-  int duration = 0;
-  facebook::vpdq::io::readVideoResolution(
-      inputVideoFileName, duration, argv[0]);
 
-  bool rc = facebook::vpdq::hashing::hashVideoFile(
+  rc = facebook::vpdq::hashing::hashVideoFile(
       inputVideoFileName,
       pdqHashes,
       ffmpegPath,
