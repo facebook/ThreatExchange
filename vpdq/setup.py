@@ -25,7 +25,7 @@ class Build(build_py):
 
 EXTENSIONS = [
     Extension(
-        'python.vpdq',
+        'vpdq',
         ['python/vpdq.pyx'],
         extra_objects=["cpp/build/libvpdqlib.a"],
         include_dirs=['../', numpy.get_include()],
@@ -34,6 +34,17 @@ EXTENSIONS = [
 ]
 
 setup(
+    name = 'vpdq',
+    author = 'Facebook',
+    descripition = 'Python bindings for Facebook VPDQ hash',
+    author_email="threatexchange@fb.com",
+    version='0.1.0',
+    install_requires=[
+        "numpy",
+        "cython",
+        "opencv-python",
+    ],
+    include_package_data=True,
     cmdclass={'build_py': Build},
     ext_modules=EXTENSIONS
     )
