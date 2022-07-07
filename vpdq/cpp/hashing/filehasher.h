@@ -36,7 +36,7 @@ bool hashVideoFile(
     const int secondsPerHash,
     const int width,
     const int height,
-    const int duration,
+    const double duration_in_sec,
     const char* programName);
 } // namespace hashing
 } // namespace vpdq

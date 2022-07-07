@@ -161,9 +161,9 @@ int main(int argc, char** argv) {
   }
   // Hash the video and store the hashes and correspoding info
   // TODO: Create a vpdq feature class
-  int duration = 0;
+  double duration_in_sec = 0;
   bool rc = facebook::vpdq::io::readVideoDuration(
-      inputVideoFileName, duration, argv[0]);
+      inputVideoFileName, duration_in_sec, argv[0]);
   if (!rc) {
     fprintf(
         stderr,
@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
       secondsPerHash,
       width,
       height,
-      duration,
+      duration_in_sec,
       argv[0]);
   if (!rc) {
     fprintf(

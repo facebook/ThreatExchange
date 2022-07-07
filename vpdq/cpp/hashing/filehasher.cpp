@@ -29,7 +29,7 @@ bool hashVideoFile(
     const int secondsPerHash,
     const int width,
     const int height,
-    const int duration,
+    const double duration_in_sec,
     const char* argv0) {
   stringstream ss;
 
@@ -104,14 +104,9 @@ bool hashVideoFile(
           (int)fread_rc);
     }
   }
-  double secPerFrame = (double)duration / fno;
+  double secPerFrame = (double)duration_in_sec / fno;
   for (size_t i = 0; i < pdqHashes.size(); i++) {
-    vpdqFeature cur = pdqHashes[i];
-    pdqHashes[i] = (vpdqFeature){
-        .pdqHash = cur.pdqHash,
-        .frameNumber = cur.frameNumber,
-        .quality = cur.quality,
-        .timeStamp = cur.frameNumber * secPerFrame};
+    pdqHashes[i].timeStamp = pdqHashes[i].frameNumber * secPerFrame;
   }
   return true;
 }
