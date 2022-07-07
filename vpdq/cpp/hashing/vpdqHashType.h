@@ -13,6 +13,7 @@ struct vpdqFeature {
   facebook::pdq::hashing::Hash256 pdqHash;
   int frameNumber;
   int quality;
+  double timeStamp;
 };
 
 } // namespace hashing

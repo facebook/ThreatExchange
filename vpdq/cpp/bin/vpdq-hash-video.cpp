@@ -168,6 +168,10 @@ int main(int argc, char** argv) {
     facebook::vpdq::io::readVideoResolution(
         inputVideoFileName, width, height, argv[0]);
   }
+  int duration = 0;
+  facebook::vpdq::io::readVideoResolution(
+      inputVideoFileName, duration, argv[0]);
+
   bool rc = facebook::vpdq::hashing::hashVideoFile(
       inputVideoFileName,
       pdqHashes,
@@ -176,6 +180,7 @@ int main(int argc, char** argv) {
       secondsPerHash,
       width,
       height,
+      duration,
       argv[0]);
   if (!rc) {
     fprintf(
