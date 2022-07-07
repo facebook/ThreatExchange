@@ -25,7 +25,7 @@ using namespace facebook::pdq::io;
 namespace facebook {
 namespace vpdq {
 namespace io {
-
+int PRECESION = 3;
 bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
@@ -98,7 +98,7 @@ bool outputVPDQFeatureToFile(
     outputfp << ",";
     outputfp << s.pdqHash.format().c_str();
     outputfp << ",";
-    outputfp << setprecision(3) << fixed << s.timeStamp;
+    outputfp << setprecision(PRECESION) << fixed << s.timeStamp;
     outputfp << "\n";
   }
   // close outputfile
