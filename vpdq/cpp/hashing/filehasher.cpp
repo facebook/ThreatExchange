@@ -110,7 +110,7 @@ bool hashVideoFile(
     pdqHashes[i] = (vpdqFeature){
         .pdqHash = cur.pdqHash,
         .frameNumber = cur.frameNumber,
-        .quality = cur.frameNumber,
+        .quality = cur.quality,
         .timeStamp = cur.frameNumber * secPerFrame};
   }
   return true;
