@@ -25,7 +25,7 @@ from threatexchange.fetcher.apis.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 
-_API_NAME = "fb_threat_exchange"
+_API_NAME = "fb_threatexchange"
 
 
 @dataclass
