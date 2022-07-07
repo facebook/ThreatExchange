@@ -12,7 +12,6 @@ import itertools
 import json
 import logging
 import os
-from pydoc import describe
 import typing as t
 
 from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
@@ -432,7 +431,7 @@ class ConfigExtensionsCommand(command_base.Command):
 
 
 class ConfigSignalCommand(command_base.Command):
-    """Configure signal types"""
+    """Configure and view available SignalTypes"""
 
     @classmethod
     def get_name(cls) -> str:
@@ -443,6 +442,7 @@ class ConfigSignalCommand(command_base.Command):
         ap.add_argument(
             "action",
             choices=["list"],
+            nargs="?",
             default="list",
             help="what to do",
         )
@@ -456,13 +456,15 @@ class ConfigSignalCommand(command_base.Command):
         self.action(settings)
 
     def execute_list(self, settings: CLISettings) -> None:
-        collabs = settings.get_all_collabs()
-        for api, name in sorted((c.api, c.name) for c in collabs):
-            print(api, name)
+        signals = settings.get_all_signal_types()
+        for name, class_name in sorted(
+            (st.get_name(), _fully_qualified_name(st)) for st in signals
+        ):
+            print(name, class_name)
 
 
 class ConfigContentCommand(command_base.Command):
-    """Configure content types"""
+    """Configure and view available ContentTypes"""
 
     @classmethod
     def get_name(cls) -> str:
@@ -471,15 +473,27 @@ class ConfigContentCommand(command_base.Command):
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
-            "--list",
-            action="store_true",
-            help="list the names of Content Types (default action)",
+            "action",
+            choices=["list"],
+            nargs="?",
+            default="list",
+            help="what to do",
         )
 
+    def __init__(self, action: str) -> None:
+        self.action = {
+            "list": self.execute_list,
+        }[action]
+
     def execute(self, settings: CLISettings) -> None:
+        self.action(settings)
+
+    def execute_list(self, settings: CLISettings) -> None:
         content_types = settings.get_all_content_types()
-        for name in sorted(c.get_name() for c in content_types):
-            print(name)
+        for name, class_name in sorted(
+            (c.get_name(), _fully_qualified_name(c)) for c in content_types
+        ):
+            print(name, class_name)
 
 
 class ConfigThreatExchangeAPICommand(command_base.Command):
@@ -609,7 +623,7 @@ class ConfigNCMECAPICommand(command_base.Command):
 
 
 class ConfigAPICommand(command_base.CommandWithSubcommands):
-    """Configure apis"""
+    """Configure and view available SignalExchangeAPIs"""
 
     _SUBCOMMANDS = [ConfigThreatExchangeAPICommand, ConfigNCMECAPICommand]
 
@@ -633,3 +647,7 @@ class ConfigCommand(command_base.CommandWithSubcommands):
         ConfigAPICommand,
         ConfigExtensionsCommand,
     ]
+
+
+def _fully_qualified_name(klass: t.Type):
+    return f"{klass.__module__}.{klass.__qualname__}"
