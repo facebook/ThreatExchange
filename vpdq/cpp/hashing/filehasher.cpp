@@ -105,8 +105,8 @@ bool hashVideoFile(
     }
   }
   double secPerFrame = (double)duration_in_sec / fno;
-  for (size_t i = 0; i < pdqHashes.size(); i++) {
-    pdqHashes[i].timeStamp = pdqHashes[i].frameNumber * secPerFrame;
+  for (auto& frameFeature : pdqHashes) {
+    frameFeature.timeStamp = frameFeature.frameNumber * secPerFrame;
   }
   return true;
 }
