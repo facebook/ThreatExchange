@@ -160,7 +160,7 @@ bool readVideoResolution(
 
 bool readVideoDuration(
     const string& inputVideoFileName,
-    double& duration_in_sec,
+    double& durationInSec,
     const char* programName) {
   AVFormatContext* pFormatCtx = avformat_alloc_context();
   int rc =
@@ -173,7 +173,7 @@ bool readVideoDuration(
         inputVideoFileName.c_str());
     return false;
   }
-  duration_in_sec = (double)pFormatCtx->duration / MILLISEC_IN_SEC;
+  durationInSec = (double)pFormatCtx->duration / MILLISEC_IN_SEC;
   return true;
 }
 } // namespace io

@@ -29,7 +29,7 @@ bool hashVideoFile(
     const int secondsPerHash,
     const int width,
     const int height,
-    const double duration_in_sec,
+    const double durationInSec,
     const char* argv0) {
   stringstream ss;
 
@@ -104,7 +104,7 @@ bool hashVideoFile(
           (int)fread_rc);
     }
   }
-  double secPerFrame = (double)duration_in_sec / fno;
+  double secPerFrame = (double)durationInSec / fno;
   for (auto& frameFeature : pdqHashes) {
     frameFeature.timeStamp = frameFeature.frameNumber * secPerFrame;
   }

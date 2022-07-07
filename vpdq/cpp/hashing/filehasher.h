@@ -21,7 +21,7 @@ namespace hashing {
  * @param secondsPerHash The time period of picking frames in vpdq
  * @param width Specified width of the input video
  * @param height Specified height of the input video
- * @param duration Duration of the input video in seconds
+ * @param durationInSec Duration of the input video in seconds
  * @param downsampleFrameDimension The down-scale dimensions for vpdq
  * @param programName The name of executable program which invokes the function
  *
@@ -36,7 +36,7 @@ bool hashVideoFile(
     const int secondsPerHash,
     const int width,
     const int height,
-    const double duration_in_sec,
+    const double durationInSec,
     const char* programName);
 } // namespace hashing
 } // namespace vpdq

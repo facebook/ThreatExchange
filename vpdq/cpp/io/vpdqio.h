@@ -26,7 +26,7 @@ bool readVideoResolution(
     const char* programName);
 bool readVideoDuration(
     const string& inputVideoFileName,
-    double& duration_in_sec,
+    double& durationInSec,
     const char* programName);
 } // namespace io
 } // namespace vpdq
