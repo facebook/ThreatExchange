@@ -98,7 +98,7 @@ bool outputVPDQFeatureToFile(
     outputfp << ",";
     outputfp << s.pdqHash.format().c_str();
     outputfp << ",";
-    outputfp << setprecision(3) << s.timeStamp;
+    outputfp << setprecision(3) << fixed << s.timeStamp;
     outputfp << "\n";
   }
   // close outputfile
