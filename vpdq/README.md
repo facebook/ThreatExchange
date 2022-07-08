@@ -12,16 +12,16 @@ Both TMK and vPDQ are backed by PDQ, and so inherit both PDQ’s strengths and w
 ## Producing a Hash
 The algorithm for producing the “hash” is simple: given a video, convert it into a sequence of frame images at some interval (for example, 1 frame/second). For each frame image, use the PDQ hashing algorithm on each.
 
-We can annotate these hashes with their frame number, quality(0-100 which measures gradients/features,from least featureful to most featureful) and time stamp(sec). So for a 5 minute video at 1 frame/sec, we might have:
-| Frame | Quality | PDQ Hash | Time Stamp |
+We can annotate these hashes with their frame number, quality(0-100 which measures gradients/features,from least featureful to most featureful) and timestamp(sec). So for a 5 minute video at 1 frame/sec, we might have:
+| Frame | Quality | PDQ Hash | Timestamp(sec) |
 | ------------- | ------------- | ------------- | ------------- |
 | 1  | 100 | face000...  | 0.000  |
 | 2  | 99  | face000...  | 0.033  |
 | 3  | 94  | face011...  | 0.067  |
 | 4  | 97  | face111...  | 1.000  |
 | ... | ...  |...  |...  |
-| 29999 | 89  | 88784444 | 989.933 |
-| 30000 | 92  | 88884444 | 989.967 |
+| 29999 | 89  | 88784444... | 989.933 |
+| 30000 | 92  | 88884444... | 989.967 |
 
 For the matching algorithm, the frame numbers are not used, but they can still be useful for identifying matching segments when comparing videos.
 
@@ -50,7 +50,7 @@ There are four inputs to the comparison algorithm, which determines if two video
 The query video’s frame PDQ hashes Q
 The comparison video’s frame PDQ hashes C
 The PDQ match distance D (example: 31)
-The PDQ quality filter tolerance F (example: 80), if either hash is below this quality level then they will not be compared
+The PDQ quality filter tolerance F (example: 50), if either hash is below this quality level then they will not be compared
 The comparison match percentage threshold P<sub>c</sub> (example: 80%)
 How much of the comparison video must be matched to consider a match
 The query match percentage threshold P<sub>q</sub> (example: 0%)

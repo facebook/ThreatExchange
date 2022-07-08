@@ -4,6 +4,7 @@ import pytest
 import test_util
 import os
 from pathlib import Path
+import sys
 
 SAMPLE_HASH_FOLDER = Path("vpdq/sample-hashes")
 SAMPLE_VIDEOS = Path("tmk/sample-videos")
@@ -34,7 +35,7 @@ class TestVPDQHash:
         Two VPDQ features are considered the same if each line of the hashes are within DISTANCE_TOLERANCE.
         For hashes that have a quality lower than QUALITY_TOLERANCE, the test will skip them for comoparing.
         """
-        d = Path.cwd().parent.parent.parent
+        d = Path(__file__).parents[3]
         hash_folder = d / SAMPLE_HASH_FOLDER
         video_folder = d / SAMPLE_VIDEOS
         test_hashes = {}
