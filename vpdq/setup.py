@@ -5,16 +5,20 @@ import sys
 import subprocess
 import os
 import numpy
+from pathlib import Path
+
+read_me = Path.cwd() / Path("README.md")
 
 
 class Build(build_py):
     """Customized setuptools build command - builds protos on build."""
+
     def run(self):
         os.chdir("cpp")
-        command = ["mkdir","build"]
+        command = ["mkdir", "build"]
         subprocess.call(command)
         os.chdir("build")
-        command = ["cmake",".."]
+        command = ["cmake", ".."]
         if subprocess.call(command) != 0:
             sys.exit(-1)
         command = ["make"]
@@ -23,28 +27,34 @@ class Build(build_py):
         os.chdir("../../")
         build_py.run(self)
 
+
 EXTENSIONS = [
     Extension(
-        'vpdq',
-        ['python/vpdq.pyx'],
+        "vpdq",
+        ["python/vpdq.pyx"],
         extra_objects=["cpp/build/libvpdqlib.a"],
-        include_dirs=['../', numpy.get_include()],
-        language='c++',
-        extra_compile_args=['--std=c++11'])
+        include_dirs=["../", numpy.get_include()],
+        language="c++",
+        extra_compile_args=["--std=c++11"],
+    )
 ]
 
 setup(
-    name = 'vpdq',
-    author = 'Facebook',
-    descripition = 'Python bindings for Facebook VPDQ hash',
+    name="vpdq",
+    author="Facebook",
+    descripition="Python bindings for Facebook VPDQ hash",
     author_email="threatexchange@fb.com",
-    version='0.1.0',
+    version="0.1.0",
+    license_files="LICENSE.txt",
+    license="BSD",
+    long_description=read_me.open().read(),
+    long_description_content_type="text/markdown",
     install_requires=[
         "numpy",
         "cython",
         "opencv-python",
     ],
     include_package_data=True,
-    cmdclass={'build_py': Build},
-    ext_modules=EXTENSIONS
-    )
+    cmdclass={"build_py": Build},
+    ext_modules=EXTENSIONS,
+)

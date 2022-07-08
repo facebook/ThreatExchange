@@ -39,29 +39,29 @@ class TestVPDQHash:
         d = Path.cwd().parent.parent
         hash_folder = d / SAMPLE_HASH_FOLDER
         video_folder = d / SAMPLE_VIDEOS
-        self.test_hashes = {}
-        self.sample_hashes = {}
+        test_hashes = {}
+        sample_hashes = {}
 
         for file in TEST_FILES:
             hash_file = Path(f"{hash_folder}/{file}.txt")
+            assert hash_file.is_file()
             ret = test_util.read_file_to_hash(hash_file)
             assert ret is not None
-            self.sample_hashes[file] = ret
+            sample_hashes[file] = ret
 
-        for file in TEST_FILES:
             video_file = Path(f"{video_folder}/{file}.mp4")
+            assert video_file.is_file()
             ret = vpdq.computeHash(
                 input_video_filename=str(video_file),
                 ffmpeg_path=FFMPEG,
                 seconds_per_hash=SECOND_PER_HASH,
             )
             assert ret is not None
-            self.test_hashes[file] = ret
+            test_hashes[file] = ret
 
-        for file in TEST_FILES:
             print("Comparing hash for video: " + file)
-            hash1 = self.test_hashes[file]
-            hash2 = self.sample_hashes[file]
+            hash1 = test_hashes[file]
+            hash2 = sample_hashes[file]
             assert len(hash1) == len(hash2)
             for h1, h2 in zip(hash1, hash2):
                 if h1.quality >= QUALITY_TOLERANCE and h2.quality >= QUALITY_TOLERANCE:
