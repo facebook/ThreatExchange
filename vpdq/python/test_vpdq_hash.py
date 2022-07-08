@@ -59,7 +59,7 @@ class TestVPDQHash:
             assert ret is not None
             test_hashes[file] = ret
 
-            print("Comparing hash for video: " + file)
+            print("Comparing hash for video:", file)
             hash1 = test_hashes[file]
             hash2 = sample_hashes[file]
             assert len(hash1) == len(hash2)

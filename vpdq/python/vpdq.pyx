@@ -45,23 +45,24 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         int height,
         const char* argv0
     )
-
 @dataclass
 class VpdqFeature:
     quality: int
     frame_number: int
     hash: Hash256
     hex: str
-    def __init__(self, quality: int, frame_number: int, hash: 'Hash256'):
+
+    def __init__(self, quality: int, frame_number: int, hash: "Hash256"):
         self.quality = quality
         self.frame_number = frame_number
         self.hash = hash
         self.hex = hash_to_hex(hash)
 
-    def hamming_distance(self, that: 'vpdq_feature'):
+    def hamming_distance(self, that: "vpdq_feature"):
         return hammingDistance(self.hash, that.hash)
 
-def hash_to_hex(hash_value : 'Hash256'):
+
+def hash_to_hex(hash_value: "Hash256"):
     """Convect from pdq hash to hex str
 
     Args:
@@ -72,10 +73,12 @@ def hash_to_hex(hash_value : 'Hash256'):
     """
     return hashToString(hash_value)
 
-def str_to_hash(str_hash: str):
-    return fromStringOrDie(str(str_hash).encode('utf-8'))
 
-def hamming_distance(hash1: 'Hash256', hash2: 'Hash256'):
+def str_to_hash(str_hash: str):
+    return fromStringOrDie(str(str_hash).encode("utf-8"))
+
+
+def hamming_distance(hash1: "Hash256", hash2: "Hash256"):
     """
     Return the hamming distance between two pdq hashes
 
@@ -88,12 +91,15 @@ def hamming_distance(hash1: 'Hash256', hash2: 'Hash256'):
     """
     return hammingDistance(hash1, hash2)
 
-def computeHash(input_video_filename: str,
-                ffmpeg_path: str,
-                seconds_per_hash: int,
-                verbose: bool = False,
-                downsample_width: int = 0,
-                downsample_height: int = 0):
+
+def computeHash(
+    input_video_filename: str,
+    ffmpeg_path: str,
+    seconds_per_hash: int,
+    verbose: bool = False,
+    downsample_width: int = 0,
+    downsample_height: int = 0,
+):
     """Compute vpdq hash
 
     Args:
@@ -116,18 +122,19 @@ def computeHash(input_video_filename: str,
         downsample_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     rt = hashVideoFile(
-        input_video_filename.encode('utf-8'),
+        input_video_filename.encode("utf-8"),
         vpdq_hash,
-        ffmpeg_path.encode('utf-8'),
+        ffmpeg_path.encode("utf-8"),
         verbose,
         seconds_per_hash,
         downsample_width,
         downsample_height,
-        'vpdqPY',
-        )
+        "vpdqPY",
+    )
     if not rt:
-        raise Exception('Fail to create VPDQ hash')
+        raise Exception("Fail to create VPDQ hash")
 
-    hashes = [VpdqFeature(hash.quality, hash.frameNumber, hash.pdqHash)
-              for hash in vpdq_hash]
+    hashes = [
+        VpdqFeature(hash.quality, hash.frameNumber, hash.pdqHash) for hash in vpdq_hash
+    ]
     return hashes
