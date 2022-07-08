@@ -12,16 +12,16 @@ Both TMK and vPDQ are backed by PDQ, and so inherit both PDQ’s strengths and w
 ## Producing a Hash
 The algorithm for producing the “hash” is simple: given a video, convert it into a sequence of frame images at some interval (for example, 1 frame/second). For each frame image, use the PDQ hashing algorithm on each.
 
-We can annotate these hashes with their frame number. So for a 5 minute video at 1 frame/sec, we might have:
-| Frame | PDQ Hash|
-| ------------- | ------------- |
-| 1  | face000...  |
-| 2  | face000...  |
-| 3  | face011...  |
-| 4  | face111...  |
-| ... | ...  |
-| 29999 | 88784444 |
-| 30000 | 88884444 |
+We can annotate these hashes with their frame number, quality(0-100 which measures gradients/features,from least featureful to most featureful) and time stamp(sec). So for a 5 minute video at 1 frame/sec, we might have:
+| Frame | Quality | PDQ Hash | Time Stamp |
+| ------------- | ------------- | ------------- | ------------- |
+| 1  | 100 | face000...  | 0.000  |
+| 2  | 99  | face000...  | 0.033  |
+| 3  | 94  | face011...  | 0.067  |
+| 4  | 97  | face111...  | 1.000  |
+| ... | ...  |...  |...  |
+| 29999 | 89  | 88784444 | 989.933 |
+| 30000 | 92  | 88884444 | 989.967 |
 
 For the matching algorithm, the frame numbers are not used, but they can still be useful for identifying matching segments when comparing videos.
 
