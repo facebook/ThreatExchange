@@ -455,7 +455,7 @@ class ConfigSignalCommand(command_base.Command):
         self.action(settings)
 
     def execute_list(self, settings: CLISettings) -> None:
-        signals = settings.get_all_signal_types(default_to_sample=False)
+        signals = settings.get_all_signal_types()
         for name, class_name in sorted(
             (st.get_name(), _fully_qualified_name(st)) for st in signals
         ):
