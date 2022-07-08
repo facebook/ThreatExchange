@@ -3,7 +3,7 @@
 import pytest
 import typing as t
 
-from threatexchange.fetcher.fetch_state import AggregateSignalOpinionCategory
+from threatexchange.exchanges.fetch_state import AggregateSignalOpinionCategory
 from threatexchange.exchanges.clients.stopncii.tests.test_api import api
 
 from threatexchange.exchanges.impl.stop_ncii_api import StopNCIISignalExchangeAPI

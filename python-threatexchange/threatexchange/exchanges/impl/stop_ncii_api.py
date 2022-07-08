@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from threatexchange.exchanges.clients.stopncii import api
 
-from threatexchange.fetcher import fetch_state as state
+from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
 from threatexchange.exchanges.collab_config import (
     CollaborationConfigBase,

@@ -11,7 +11,7 @@ from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli.dataset_cmd import DatasetCommand
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
-from threatexchange.fetcher.fetch_state import (
+from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     FetchDeltaTyped,
     FetchedStateStoreBase,

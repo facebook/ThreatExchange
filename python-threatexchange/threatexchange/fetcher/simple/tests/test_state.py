@@ -12,7 +12,7 @@ from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPIWithKeyedUpdates,
     SignalExchangeAPIWithSimpleUpdates,
 )
-from threatexchange.fetcher.fetch_state import (
+from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     FetchDelta,
     FetchDeltaTyped,

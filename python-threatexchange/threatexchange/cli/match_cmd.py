@@ -14,7 +14,7 @@ import typing as t
 from threatexchange import common
 from threatexchange.cli.fetch_cmd import FetchCommand
 from threatexchange.cli.helpers import FlexFilesInputAction
-from threatexchange.fetcher.fetch_state import FetchedSignalMetadata
+from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
 
 from threatexchange.signal_type.index import IndexMatch, SignalTypeIndex
 from threatexchange.cli.exceptions import CommandError

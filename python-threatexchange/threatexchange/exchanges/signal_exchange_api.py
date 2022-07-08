@@ -13,7 +13,7 @@ import typing as t
 from threatexchange import common
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher import fetch_state as state
+from threatexchange.exchanges import fetch_state as state
 
 TCollabConfig = t.TypeVar("TCollabConfig", bound=CollaborationConfigBase)
 

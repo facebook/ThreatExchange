@@ -11,7 +11,7 @@ from threatexchange.exchanges.signal_exchange_api import (
 )
 
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher import fetch_state
+from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 
 K = t.TypeVar("K")

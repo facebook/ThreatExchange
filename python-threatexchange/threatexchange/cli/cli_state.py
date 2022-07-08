@@ -19,7 +19,7 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
-from threatexchange.fetcher.fetch_state import (
+from threatexchange.exchanges.fetch_state import (
     FetchDelta,
     FetchDeltaTyped,
 )

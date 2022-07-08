@@ -17,7 +17,7 @@ from threatexchange.exchanges.clients.fb_threatexchange.threat_updates import (
 
 from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
 
-from threatexchange.fetcher import fetch_state as state
+from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPIWithSimpleUpdates,
 )
