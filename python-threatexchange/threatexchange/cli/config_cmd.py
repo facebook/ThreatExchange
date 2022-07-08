@@ -519,8 +519,7 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
         )
 
         # Not actually a type of import cmd, but to add exclusivity logic
-        config_cmds = import_cmds.add_argument_group()
-        config_cmds.add_argument(
+        import_cmds.add_argument(
             "--api-token",
             help="set the default api token (https://developers.facebook.com/tools/accesstoken/)",
         )
