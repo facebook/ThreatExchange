@@ -7,8 +7,6 @@ from pathlib import Path
 
 SAMPLE_HASH_FOLDER = Path("vpdq/sample-hashes")
 SAMPLE_VIDEOS = Path("tmk/sample-videos")
-FFMPEG = "/usr/bin/ffmpeg"  # please customize according to your installation (but do not commit)
-SECOND_PER_HASH = 1
 DISTANCE_TOLERANCE = 10
 QUALITY_TOLERANCE = 50
 TEST_FILES = [
@@ -53,8 +51,6 @@ class TestVPDQHash:
             assert video_file.is_file()
             ret = vpdq.computeHash(
                 input_video_filename=str(video_file),
-                ffmpeg_path=FFMPEG,
-                seconds_per_hash=SECOND_PER_HASH,
             )
             assert ret is not None
             test_hashes[file] = ret
