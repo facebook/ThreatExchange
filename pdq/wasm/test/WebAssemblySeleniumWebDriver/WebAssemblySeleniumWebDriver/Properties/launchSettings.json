@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WebAssemblySeleniumWebDriver": {
+      "commandName": "Project",
+      "commandLineArgs": "chrome pdqmd5 C:/Development/NCII/POCs/web-assembly-selenium/TestData/PDQMD5TestData.csv http://localhost:9095"
+    }
+  }
+}

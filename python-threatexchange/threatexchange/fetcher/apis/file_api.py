@@ -10,7 +10,7 @@ hashes from somewhere.
 
 import os
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from threatexchange.fetcher import fetch_state as state
@@ -28,14 +28,22 @@ _TypedDelta = state.FetchDelta[
 
 @dataclass
 class _FileCollaborationConfigRequiredFields:
-    filename: str
+    filename: str = field(
+        metadata={"help": "the absolute file path to the signal file"}
+    )
 
 
 @dataclass
 class FileCollaborationConfig(
     CollaborationConfigWithDefaults, _FileCollaborationConfigRequiredFields
 ):
-    signal_type: t.Optional[str] = None
+    signal_type: t.Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "if the file row doesn't list the signal type, interpret as this type (SignalType.get_name())",
+            "metavar": "SIGNAL_TYPE",
+        },
+    )
 
 
 class LocalFileSignalExchangeAPI(
@@ -93,10 +101,10 @@ class LocalFileSignalExchangeAPI(
         if opinion.tags:
             raise NotImplementedError
         path = Path(collab.filename)
-        with path.open("rb") as f:
-            f.seek(-1, os.SEEK_END)
-            has_newline = f.read1(1) == b"\n"
+        with path.open("rb") as rf:
+            rf.seek(-1, os.SEEK_END)
+            has_newline = rf.read1(1) == b"\n"  # type: ignore  # mypy bug? read1 noexist
         # Appending will overwrite previous ones, and compaction is for scrubs
-        with path.open("wa") as f:
+        with path.open("wta") as wf:
             nl = "" if has_newline else "\n"
-            f.write(f"{nl}{s_type.get_name()} {signal}\n")
+            wf.write(f"{nl}{s_type.get_name()} {signal}\n")

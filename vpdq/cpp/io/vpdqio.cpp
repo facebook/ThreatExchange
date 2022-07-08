@@ -7,6 +7,7 @@ extern "C" {
 }
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -25,6 +26,9 @@ namespace facebook {
 namespace vpdq {
 namespace io {
 
+const int TIMESTAMP_OUTPUT_PRECISION = 3;
+const int MILLISEC_IN_SEC = 1000000;
+
 bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
@@ -41,16 +45,16 @@ bool loadHashesFromFileOrDie(
   }
 
   while (getline(inputfp, str)) {
-    vector<string> tmp;
+    vector<string> frameValues;
     stringstream ss(str);
 
     while (ss.good()) {
       string substr;
       getline(ss, substr, ',');
-      tmp.push_back(substr);
+      frameValues.push_back(substr);
     }
 
-    if (tmp.size() != 3) {
+    if (frameValues.size() != 4) {
       fprintf(
           stderr,
           "%s: Wrong format of Hash\"%s\".\n",
@@ -59,9 +63,10 @@ bool loadHashesFromFileOrDie(
       return false;
     }
     pdqHashes.push_back(
-        {pdq::hashing::Hash256::fromStringOrDie((char*)tmp[2].c_str()),
-         atoi(tmp[0].c_str()),
-         atoi(tmp[1].c_str())});
+        {pdq::hashing::Hash256::fromStringOrDie((char*)frameValues[2].c_str()),
+         atoi(frameValues[0].c_str()),
+         atoi(frameValues[1].c_str()),
+         atof(frameValues[3].c_str())});
   }
   if (pdqHashes.size() == 0) {
     fprintf(
@@ -95,6 +100,9 @@ bool outputVPDQFeatureToFile(
     outputfp << s.quality;
     outputfp << ",";
     outputfp << s.pdqHash.format().c_str();
+    outputfp << ",";
+    outputfp << setprecision(TIMESTAMP_OUTPUT_PRECISION) << fixed
+             << s.timeStamp;
     outputfp << "\n";
   }
   // close outputfile
@@ -147,6 +155,25 @@ bool readVideoResolution(
       pFormatCtx->streams[videoStream]->codecpar;
   height = videoParameter->height;
   width = videoParameter->width;
+  return true;
+}
+
+bool readVideoDuration(
+    const string& inputVideoFileName,
+    double& durationInSec,
+    const char* programName) {
+  AVFormatContext* pFormatCtx = avformat_alloc_context();
+  int rc =
+      avformat_open_input(&pFormatCtx, inputVideoFileName.c_str(), NULL, NULL);
+  if (rc != 0) {
+    fprintf(
+        stderr,
+        "%s: could not open video \"%s\".\n",
+        programName,
+        inputVideoFileName.c_str());
+    return false;
+  }
+  durationInSec = (double)pFormatCtx->duration / MILLISEC_IN_SEC;
   return true;
 }
 } // namespace io

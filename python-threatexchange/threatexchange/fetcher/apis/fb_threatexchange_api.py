@@ -25,12 +25,17 @@ from threatexchange.fetcher.apis.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 
-_API_NAME = "fb_threat_exchange"
+_API_NAME = "fb_threatexchange"
 
 
 @dataclass
 class _FBThreatExchangeCollabConfigRequiredFields:
-    privacy_group: int
+    privacy_group: int = field(
+        metadata={
+            "help": "ThreatPrivacyGroup ID for this collaboration",
+            "metavar": "id",
+        }
+    )
 
 
 @dataclass
@@ -39,7 +44,13 @@ class FBThreatExchangeCollabConfig(
     _FBThreatExchangeCollabConfigRequiredFields,
 ):
     api: str = field(init=False, default=_API_NAME)
-    app_token_override: t.Optional[str] = None
+    app_token_override: t.Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "if you need to use a specific app for this collaboration",
+            "metavar": "APP_TOKEN",
+        },
+    )
 
 
 @dataclass

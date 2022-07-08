@@ -26,16 +26,18 @@ class CollaborationConfigBase:
     # Whether to fetch/sync. Some implementations (like the CLI) may gate matching
     # to avoid waiting for an index rebuild to stop processing matches
     enabled: bool
-    # Only fetch and index these types
-    only_signal_types: t.Set[str]
-    # Don't fetch and index these types
-    not_signal_types: t.Set[str]
-    # Only use signals from these owners
-    only_owners: t.Set[int]
-    not_owners: t.Set[int]
-    # Only use signals with these tags
-    only_tags: t.Set[str]
-    not_tags: t.Set[str]
+    # TODO - eventually re-merge these back into collab config, or allow them as
+    #        mixins
+    # # Only fetch and index these types
+    # only_signal_types: t.Set[str]
+    # # Don't fetch and index these types
+    # not_signal_types: t.Set[str]
+    # # Only use signals from these owners
+    # only_owners: t.Set[int]
+    # not_owners: t.Set[int]
+    # # Only use signals with these tags
+    # only_tags: t.Set[str]
+    # not_tags: t.Set[str]
 
 
 @dataclass
@@ -46,12 +48,12 @@ class CollaborationConfigWithDefaults(CollaborationConfigBase):
 
     api: str = ""
     enabled: bool = True
-    only_signal_types: t.Set[str] = field(default_factory=set)
-    not_signal_types: t.Set[str] = field(default_factory=set)
-    only_owners: t.Set[int] = field(default_factory=set)
-    not_owners: t.Set[int] = field(default_factory=set)
-    only_tags: t.Set[str] = field(default_factory=set)
-    not_tags: t.Set[str] = field(default_factory=set)
+    # only_signal_types: t.Set[str] = field(default_factory=set)
+    # not_signal_types: t.Set[str] = field(default_factory=set)
+    # only_owners: t.Set[int] = field(default_factory=set)
+    # not_owners: t.Set[int] = field(default_factory=set)
+    # only_tags: t.Set[str] = field(default_factory=set)
+    # not_tags: t.Set[str] = field(default_factory=set)
 
 
 class CollaborationConfigStoreBase:

@@ -54,9 +54,9 @@ class ConfigCollabListCommand(command_base.Command):
         pass
 
     def execute(self, settings: CLISettings) -> None:
-        for collab in settings.get_all_collabs():
-            api = settings.get_api_for_collab(collab)
-            print(collab.name, f"({api.get_name()})")
+        for collab in settings.get_all_collabs(default_to_sample=False):
+            api = settings.apis.get_for_collab(collab)
+            print(api.get_name(), collab.name)
 
 
 class _UpdateCollabCommand(command_base.Command):
@@ -73,12 +73,12 @@ class _UpdateCollabCommand(command_base.Command):
         "name",
         "api",
         "enabled",
-        "only_signal_types",
-        "not_signal_types",
-        "only_owners",
-        "not_owners",
-        "only_tags",
-        "not_tags",
+        # "only_signal_types",
+        # "not_signal_types",
+        # "only_owners",
+        # "not_owners",
+        # "only_tags",
+        # "not_tags",
     }
 
     @classmethod
@@ -92,13 +92,16 @@ class _UpdateCollabCommand(command_base.Command):
 
         ap.add_argument("collab_name", help="the name of the collab")
         ap.set_defaults(api_name=cls._API_CLS.get_name())
-        on_off = ap.add_mutually_exclusive_group()
         ap.add_argument(
             "--create",
             "-C",
             action="store_true",
             help="indicate you intend to create a config",
         )
+
+        cfg_common_ap = ap.add_argument_group(description="common to all collabs")
+        on_off = cfg_common_ap.add_mutually_exclusive_group()
+
         # This goofy syntax allows --enable, --enable=1, and enable=0 to disable
         on_off.add_argument(
             "--enable",
@@ -115,58 +118,15 @@ class _UpdateCollabCommand(command_base.Command):
             const=0,
             help="disable the config",
         )
-        ap.add_argument(
-            "--only-signal-types",
-            "-s",
-            nargs="*",
-            type=common.argparse_choices_pre_type(
-                [s.get_name() for s in settings.get_all_signal_types()],
-                settings.get_signal_type,
-            ),
-            metavar="NAME",
-            help="limit to these signal types",
-        )
-        ap.add_argument(
-            "--not-signal-types",
-            "-S",
-            nargs="*",
-            type=common.argparse_choices_pre_type(
-                [s.get_name() for s in settings.get_all_signal_types()],
-                settings.get_signal_type,
-            ),
-            metavar="NAME",
-            help="dont use these signal types",
-        )
-        ap.add_argument(
-            "--only-owners",
-            "-o",
-            nargs="*",
-            type=int,
-            metavar="ID",
-            help="only use signals from these owner ids",
-        )
-        ap.add_argument(
-            "--not-owners",
-            "-O",
-            nargs="*",
-            type=int,
-            metavar="ID",
-            help="dont use signals from these owner ids",
-        )
-        ap.add_argument(
-            "--only-tags",
-            "-t",
-            nargs="*",
-            metavar="TAG",
-            help="use only signals with one of these tags",
-        )
-        ap.add_argument(
-            "--not-tags",
-            "-T",
-            nargs="*",
-            metavar="TAG",
-            help="don't use signals with one of these tags",
-        )
+
+        type_specific_fields = [f for f in fields(cfg_cls) if cls._is_argument_field(f)]
+        if type_specific_fields:
+            config_ap = ap.add_argument_group(
+                description=f"specific to {cls._API_CLS.get_name()}"
+            )
+            for field in type_specific_fields:
+                cls._add_argument(config_ap, field)
+
         ap.add_argument(
             "--json",
             "-J",
@@ -175,15 +135,17 @@ class _UpdateCollabCommand(command_base.Command):
             help="instead, interpret the argument as JSON and use that to edit the config",
         )
 
-        for field in fields(cfg_cls):
-            cls._add_argument(ap, field)
+    @classmethod
+    def _is_argument_field(cls, field: Field) -> bool:
+        if not field.init:
+            return False
+        if field.name in cls._IGNORE_FIELDS:
+            return False
+        return True
 
     @classmethod
-    def _add_argument(cls, ap: argparse.ArgumentParser, field: Field) -> None:
-        if not field.init:
-            return
-        if field.name in cls._IGNORE_FIELDS:
-            return
+    def _add_argument(cls, ap: argparse._ArgumentGroup, field: Field) -> None:
+        assert cls._is_argument_field(field)
         assert not isinstance(
             field.type, ForwardRef
         ), "rework class to not have forward ref"
@@ -202,11 +164,17 @@ class _UpdateCollabCommand(command_base.Command):
             )
             metavar = f"[{','.join(m.name for m in target_type)}]"
 
+        help = "[missing] Add a help annotation on the config class!"
+        if field.metadata:
+            metavar = field.metadata.get("metavar", metavar)
+            help = field.metadata.get("help", help)
+
         ap.add_argument(
             f"--{field.name.replace('_', '-')}",
             type=argparse_type,
             metavar=metavar,
-            help="[auto generated from config class]",
+            required=field.default is MISSING and field.default_factory is MISSING,  # type: ignore
+            help=help,
         )
 
     def __init__(
@@ -215,12 +183,6 @@ class _UpdateCollabCommand(command_base.Command):
         create: bool,
         collab_name: str,
         enable: t.Optional[int],
-        only_signal_types: t.Optional[t.List[SignalType]],
-        not_signal_types: t.Optional[t.List[SignalType]],
-        only_owners: t.Optional[t.List[int]],
-        not_owners: t.Optional[t.List[str]],
-        only_tags: t.Optional[t.List[str]],
-        not_tags: t.Optional[t.List[str]],
         is_json: bool,
     ) -> None:
         self.namespace = full_argparse_namespace
@@ -239,23 +201,6 @@ class _UpdateCollabCommand(command_base.Command):
 
         if enable is not None:
             self.edit_kwargs["enabled"] = bool(enable)
-
-        if only_signal_types is not None or create:
-            self.edit_kwargs["only_signal_types"] = {
-                s.get_name() for s in only_signal_types or ()
-            }
-        if not_signal_types is not None or create:
-            self.edit_kwargs["not_signal_types"] = {
-                s.get_name() for s in not_signal_types or ()
-            }
-        if only_owners is not None or create:
-            self.edit_kwargs["only_owners"] = set(only_owners or ())
-        if not_owners is not None or create:
-            self.edit_kwargs["not_owners"] = set(not_owners or ())
-        if only_tags is not None or create:
-            self.edit_kwargs["only_tags"] = set(only_tags or ())
-        if not_tags is not None or create:
-            self.edit_kwargs["not_tags"] = set(not_tags or ())
 
         for field in fields(self._API_CLS.get_config_class()):
             if not field.init:
@@ -304,10 +249,9 @@ class ConfigCollabForAPICommand(command_base.CommandWithSubcommands):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-        apis = settings.get_fetchers()
         cls._SUBCOMMANDS = [
             cls._create_command_for_api(api)
-            for api in apis
+            for api in settings.apis
             if api.__class__ is not StaticSampleSignalExchangeAPI
         ]
 
@@ -443,7 +387,7 @@ class ConfigExtensionsCommand(command_base.Command):
                     f"Not able to instanciate API {new_api.get_name()} - throws {e}"
                 )
             apis.append(instance)
-        apis.extend(settings.get_fetchers())
+        apis.extend(settings.apis.get_all())
         tx_meta.FetcherMapping(apis)
 
         self.print_extension(manifest)
@@ -486,7 +430,7 @@ class ConfigExtensionsCommand(command_base.Command):
 
 
 class ConfigSignalCommand(command_base.Command):
-    """Configure signal types"""
+    """Configure and view available SignalTypes"""
 
     @classmethod
     def get_name(cls) -> str:
@@ -497,6 +441,7 @@ class ConfigSignalCommand(command_base.Command):
         ap.add_argument(
             "action",
             choices=["list"],
+            nargs="?",
             default="list",
             help="what to do",
         )
@@ -510,13 +455,15 @@ class ConfigSignalCommand(command_base.Command):
         self.action(settings)
 
     def execute_list(self, settings: CLISettings) -> None:
-        collabs = settings.get_all_collabs()
-        for api, name in sorted((c.api, c.name) for c in collabs):
-            print(api, name)
+        signals = settings.get_all_signal_types()
+        for name, class_name in sorted(
+            (st.get_name(), _fully_qualified_name(st)) for st in signals
+        ):
+            print(name, class_name)
 
 
 class ConfigContentCommand(command_base.Command):
-    """Configure content types"""
+    """Configure and view available ContentTypes"""
 
     @classmethod
     def get_name(cls) -> str:
@@ -525,15 +472,27 @@ class ConfigContentCommand(command_base.Command):
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
-            "--list",
-            action="store_true",
-            help="list the names of Content Types (default action)",
+            "action",
+            choices=["list"],
+            nargs="?",
+            default="list",
+            help="what to do",
         )
 
+    def __init__(self, action: str) -> None:
+        self.action = {
+            "list": self.execute_list,
+        }[action]
+
     def execute(self, settings: CLISettings) -> None:
+        self.action(settings)
+
+    def execute_list(self, settings: CLISettings) -> None:
         content_types = settings.get_all_content_types()
-        for name in sorted(c.get_name() for c in content_types):
-            print(name)
+        for name, class_name in sorted(
+            (c.get_name(), _fully_qualified_name(c)) for c in content_types
+        ):
+            print(name, class_name)
 
 
 class ConfigThreatExchangeAPICommand(command_base.Command):
@@ -586,9 +545,9 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
     def get_te_api(self, settings: CLISettings) -> ThreatExchangeAPI:
         te = next(
             (
-                f
-                for f in settings.get_fetchers()
-                if isinstance(f, FBThreatExchangeSignalExchangeAPI)
+                api
+                for api in settings.apis
+                if isinstance(api, FBThreatExchangeSignalExchangeAPI)
             ),
             None,
         )
@@ -663,7 +622,7 @@ class ConfigNCMECAPICommand(command_base.Command):
 
 
 class ConfigAPICommand(command_base.CommandWithSubcommands):
-    """Configure apis"""
+    """Configure and view available SignalExchangeAPIs"""
 
     _SUBCOMMANDS = [ConfigThreatExchangeAPICommand, ConfigNCMECAPICommand]
 
@@ -672,7 +631,7 @@ class ConfigAPICommand(command_base.CommandWithSubcommands):
         return "api"
 
     def execute(self, settings: CLISettings) -> None:
-        apis = settings.get_fetchers()
+        apis = settings.apis.get_all()
         for name in sorted(a.get_name() for a in apis):
             print(name)
 
@@ -687,3 +646,7 @@ class ConfigCommand(command_base.CommandWithSubcommands):
         ConfigAPICommand,
         ConfigExtensionsCommand,
     ]
+
+
+def _fully_qualified_name(klass: t.Type):
+    return f"{klass.__module__}.{klass.__qualname__}"

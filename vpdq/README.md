@@ -120,13 +120,27 @@ $ make
 ```
 Then you will have executable "vpdq-hash-video", "match-hashes-byline" and "match-hashes-brute". And two python scripts "vpdq_match.py" and "regtest.py" to run the executables. Please run executable with "-h" for more detailed reference information and usages.
 
+#### Install FFmpeg
+
+Before using VPDQ to create hashes, FFmpeg must be installed. (Easier to use if Accessible via the `$PATH` environment variable)
+
+There are a variety of ways to install FFmpeg, such as the [official download links](https://ffmpeg.org/download.html), or using your package manager of choice (e.g. `sudo apt install ffmpeg` on Debian/Ubuntu, `brew install ffmpeg` on OS X, etc.).
+
+Regardless of how FFmpeg is installed, you can check if your environment path is set correctly by running the `ffmpeg` command from the terminal, as in the following example (truncated for brevity):
+
+```
+$ ffmpeg
+ffmpeg version 4.4.2 Copyright (c) 2000-2021 the FFmpeg developers
+```
+
+> **Note**: The actual version information displayed here may vary from one system to another; but if a message such as `ffmpeg: command not found` appears instead of the version information, FFmpeg is not properly installed.
 
 #### Compute hashes of sample videos and compare to previous outputs
 Hash the provided sample videos and compare the output hashes with sample hashes line by line.
 
 ```
 cd cpp
-python3 regtest.py -i ../ThreatExchange/tmk/sample-videos -d ../ThreatExchange/vpdq/output-hashes -f /usr/bin/ffmpeg
+python3 regtest.py -i ../ThreatExchange/tmk/sample-videos -d ../ThreatExchange/vpdq/output-hashes
 Matching File pattern-sd-with-small-logo-bar.txt
 100.000000 Percentage  matches
 

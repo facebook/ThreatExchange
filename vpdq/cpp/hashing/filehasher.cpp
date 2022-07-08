@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <fstream>
 #include <iomanip>
@@ -28,6 +29,7 @@ bool hashVideoFile(
     const int secondsPerHash,
     const int width,
     const int height,
+    const double durationInSec,
     const char* argv0) {
   stringstream ss;
 
@@ -87,7 +89,7 @@ bool hashVideoFile(
         return false;
       }
       // Push to pdqHashes vector
-      pdqHashes.push_back({pdqHash, fno, quality});
+      pdqHashes.push_back({pdqHash, fno, quality, 0});
       if (verbose) {
         printf("PDQHash: %s \n", pdqHash.format().c_str());
       }
@@ -101,6 +103,10 @@ bool hashVideoFile(
           numRGBTriples,
           (int)fread_rc);
     }
+  }
+  double secPerFrame = (double)durationInSec / fno;
+  for (auto& frameFeature : pdqHashes) {
+    frameFeature.timeStamp = frameFeature.frameNumber * secPerFrame;
   }
   return true;
 }

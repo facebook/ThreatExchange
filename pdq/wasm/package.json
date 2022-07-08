@@ -1,0 +1,10 @@
+{
+  "name": "pdqmd5web",
+  "version": "1.0.0",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wasm-imagemagick": "^1.2.8",
+    "hash-wasm": "^4.7.0"
+  }
+}

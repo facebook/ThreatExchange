@@ -22,6 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
       - name: make
         run: |
           sudo apt-get update
@@ -30,3 +33,7 @@ jobs:
           cd build
           cmake ..
           make
+      - name: regression test
+        run: |
+          mkdir -p output-hashes
+          python regtest.py -d ${GITHUB_WORKSPACE}/vpdq/cpp/output-hashes -i ${GITHUB_WORKSPACE}/tmk/sample-videos

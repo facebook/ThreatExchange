@@ -56,7 +56,7 @@ class FetchCommand(command_base.Command):
         )
         ap.add_argument(
             "--only-api",
-            choices=[f.get_name() for f in settings.get_fetchers()],
+            choices=[api.get_name() for api in settings.apis],
             help="only fetch from this API",
         )
         ap.add_argument(
@@ -103,9 +103,8 @@ class FetchCommand(command_base.Command):
         return False
 
     def execute(self, settings: CLISettings) -> None:
-        fetchers = settings.get_fetchers()
         # Verify collab arguments
-        self.collabs = settings.get_all_collabs(default_to_sample=True)
+        self.collabs = settings.get_all_collabs()
         if self.only_collab:
             self.collabs = [c for c in self.collabs if c.name == self.only_collab]
             if not self.collabs:
@@ -119,21 +118,21 @@ class FetchCommand(command_base.Command):
         # Do work
         if self.clear:
             self.stderr("Clearing fetched state")
-            for fetcher in settings.get_fetchers():
-                store = settings.get_fetch_store_for_fetcher(fetcher)
+            for api in settings.apis:
+                store = settings.fetched_state.get_for_api(api.__class__)
                 for collab in self.collabs:
                     if self.only_collab not in (None, collab.name):
                         continue
-                    logging.info("Clearing %s - %s", fetcher.get_name(), collab.name)
+                    logging.info("Clearing %s - %s", api.get_name(), collab.name)
                     store.clear(collab)
             return
 
         all_succeeded = True
         any_succeded = False
 
-        for fetcher in fetchers:
-            logging.info("Fetching all %s's configs", fetcher.get_name())
-            succeeded = self.execute_for_fetcher(settings, fetcher)
+        for api in settings.apis:
+            logging.info("Fetching all %s's configs", api.get_name())
+            succeeded = self.execute_for_fetcher(settings, api)
             all_succeeded &= succeeded
             any_succeded |= succeeded
 
@@ -167,7 +166,7 @@ class FetchCommand(command_base.Command):
         collab: CollaborationConfigBase,
     ) -> bool:
 
-        store = settings.get_fetch_store_for_fetcher(fetcher.__class__)
+        store = settings.fetched_state.get_for_api(fetcher.__class__)
         checkpoint = self._verify_store_and_checkpoint(store, collab)
 
         self.progress_fetched_count = 0
