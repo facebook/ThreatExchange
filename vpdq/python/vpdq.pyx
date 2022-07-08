@@ -55,16 +55,16 @@ class VpdqFeature:
     frame_number: int
     hash: Hash256
     hex: str
-    time_stamp: double
+    timestamp: double
 
     def __init__(
-        self, quality: int, frame_number: int, hash: "Hash256", time_stamp: double
+        self, quality: int, frame_number: int, hash: "Hash256", timestamp: double
     ):
         self.quality = quality
         self.frame_number = frame_number
         self.hash = hash
         self.hex = hash_to_hex(hash)
-        self.time_stamp = time_stamp
+        self.timestamp = timestamp
 
     def hamming_distance(self, that: "vpdq_feature"):
         return hammingDistance(self.hash, that.hash)
