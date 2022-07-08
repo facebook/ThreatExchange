@@ -8,6 +8,7 @@ import numpy
 from pathlib import Path
 
 read_me = Path.cwd() / Path("README.md")
+long_description = read_me.read_text()
 
 
 class Build(build_py):
@@ -47,7 +48,7 @@ setup(
     version="0.1.0",
     license_files="LICENSE.txt",
     license="BSD",
-    long_description=read_me.open().read(),
+    long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
         "numpy",
