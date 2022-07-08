@@ -157,7 +157,7 @@ class LabelCommand(command_base.Command):
         self.action(settings)
 
     def execute_upload(self, settings: CLISettings) -> None:
-        api = settings.get_api_for_collab(self.collab)
+        api = settings.apis.get_for_collab(self.collab)
         # signal_types = self.only_signals or settings.get_signal_types_for_content(
         #     self.content_type
         # )

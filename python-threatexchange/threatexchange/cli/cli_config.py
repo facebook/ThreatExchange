@@ -172,6 +172,48 @@ class CliState(collab_config.CollaborationConfigStoreBase):
         self.path_for_collab_config(collab).unlink(missing_ok=True)
 
 
+@dataclass
+class _SignalExchangeAccessor:
+    """Convenience wrapper for operations on the SignalExchangeAPI"""
+
+    _parent: "CLISettings"
+
+    def get_all(self) -> t.ValuesView[SignalExchangeAPI]:
+        return self._parent._mapping.fetcher.fetchers_by_name.values()
+
+    def get_for_collab(
+        self, collab: collab_config.CollaborationConfigBase
+    ) -> SignalExchangeAPI:
+        return self._parent._mapping.fetcher.fetchers_by_name[collab.api]
+
+    def __iter__(self) -> t.Iterator[SignalExchangeAPI]:
+        yield from self.get_all()
+
+
+@dataclass
+class _FetchStoreAccessor:
+    """Convenience wrapper for operations on the state"""
+
+    _parent: "CLISettings"
+
+    def empty(self) -> bool:
+        """Return the collabs with stored state"""
+        collabs = self._parent.get_all_collabs()
+        return not any(
+            collab for collab in collabs if self.get_for_collab(collab).exists(collab)
+        )
+
+    def get_for_api(self, api: t.Type[SignalExchangeAPI]) -> CliSimpleState:
+        return CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
+
+    def get_for_collab(
+        self, collab: collab_config.CollaborationConfigBase
+    ) -> CliSimpleState:
+        return self.get_for_api(
+            self._parent._mapping.fetcher.fetchers_by_name[collab.api].__class__
+        )
+
+
 class CLISettings:
     """
     A God object for all miscellanious persisted state to make the CLI work
@@ -187,6 +229,8 @@ class CLISettings:
         self._sample_message_printed = False
         self._config: t.Optional[CLiConfig] = None
         self.index = CliIndexStore(cli_state.index_dir)
+        self.fetched_state = _FetchStoreAccessor(self)
+        self.apis = _SignalExchangeAccessor(self)
 
     def get_persistent_config(self) -> CLiConfig:
         if self._config is None:
@@ -214,33 +258,13 @@ class CLISettings:
     ) -> t.List[t.Type[signal_base.SignalType]]:
         return self._mapping.signal_and_content.signal_type_by_content[content_type]
 
-    def get_fetchers(self):
-        return [fs for fs in self._mapping.fetcher.fetchers_by_name.values()]
-
-    def get_api_for_collab(
-        self, collab: collab_config.CollaborationConfigBase
-    ) -> SignalExchangeAPI:
-        return self._mapping.fetcher.fetchers_by_name[collab.api]
-
-    def get_fetch_store_for_fetcher(
-        self, fetcher: t.Type[SignalExchangeAPI]
-    ) -> FetchedStateStoreBase:
-        return CliSimpleState(fetcher, self._state.dir_for_fetched_state(fetcher))
-
-    def get_fetch_store_for_collab(
-        self, collab: collab_config.CollaborationConfigBase
-    ) -> FetchedStateStoreBase:
-        return self.get_fetch_store_for_fetcher(
-            self._mapping.fetcher.fetchers_by_name[collab.api].__class__
-        )
-
     @property
     def in_demo_mode(self) -> bool:
         """Has no live collabs"""
         return not self._state.get_all_collabs()
 
     def get_all_collabs(
-        self, *, default_to_sample: bool = False
+        self, *, default_to_sample: bool = True
     ) -> t.List[collab_config.CollaborationConfigBase]:
         if self.in_demo_mode and default_to_sample:
             return [self._get_sample_collab()]

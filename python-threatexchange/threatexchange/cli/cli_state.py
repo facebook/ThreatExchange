@@ -108,6 +108,15 @@ class CliSimpleState(simple_state.SimpleFetchedStateStore):
         """The file location for collaboration state"""
         return self.dir / f"{collab_name}.state.pickle"
 
+    def exists(self, collab: CollaborationConfigBase) -> bool:
+        """
+        Returns true if the state file is available
+
+        This usually means that state is available, but the file could also be
+        corrupt or unparsable.
+        """
+        return self.collab_file(collab.name).is_file()
+
     def clear(self, collab: CollaborationConfigBase) -> None:
         """Delete a collaboration and its state directory"""
         file = self.collab_file(collab.name)

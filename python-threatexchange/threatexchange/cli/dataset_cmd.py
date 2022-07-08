@@ -6,10 +6,10 @@ import csv
 import sys
 import typing as t
 import logging
+from threatexchange.cli.exceptions import CommandError
 
 
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange import signal_type
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.fetcher.collab_config import CollaborationConfigBase
@@ -164,6 +164,14 @@ class DatasetCommand(command_base.Command):
         self.csv = csv
 
     def execute(self, settings: CLISettings) -> None:
+        if settings.fetched_state.empty():
+            if not settings.in_demo_mode:
+                raise CommandError("No stored state available. Do you need to fetch?")
+            # FetchCommand currently imports dataset for index build, so inline for circular import
+            from threatexchange.cli.fetch_cmd import FetchCommand
+
+            self.stderr("You haven't fetched any state, so we'll call `fetch` for you!")
+            FetchCommand().execute(settings)
         # Maybe consider subcommands?
         if self.clear_indices:
             self.execute_clear_indices(settings)
@@ -186,9 +194,7 @@ class DatasetCommand(command_base.Command):
         return set(signal_types)
 
     def get_collabs(self, settings: CLISettings) -> t.List[CollaborationConfigBase]:
-        collabs = [
-            c for c in settings.get_all_collabs(default_to_sample=True) if c.enabled
-        ]
+        collabs = [c for c in settings.get_all_collabs() if c.enabled]
         if self.only_collabs:
             collabs = [c for c in collabs if c.name in self.only_collabs]
         return collabs
@@ -213,7 +219,7 @@ class DatasetCommand(command_base.Command):
                 t.List[t.Tuple[str, FetchedSignalMetadata]],
             ] = {}
             for collabs_for_store in collab_by_api.values():
-                store = settings.get_fetch_store_for_collab(collabs_for_store[0])
+                store = settings.fetched_state.get_for_collab(collabs_for_store[0])
                 by_collab = store.get_for_signal_type(collabs_for_store, s_type)
                 for collab, signals in by_collab.items():
                     for signal, record in signals.items():

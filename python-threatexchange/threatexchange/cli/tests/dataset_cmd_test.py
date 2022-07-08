@@ -13,11 +13,9 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         of development, which will unexpectedly break this test, so apologies
         future developers.
         """
-        self.assert_cli_output(("dataset",), "")  # No datas yet
         signal_count = sum(len(st.get_examples()) for st in _DEFAULT_SIGNAL_TYPES)
 
-        self.cli_call("fetch")
-
+        # Since we didn't set a collab config, this will fetch on first call
         self.assert_cli_output(
             ("dataset",),
             [
