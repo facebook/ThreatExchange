@@ -12,7 +12,7 @@ from threatexchange.cli.exceptions import CommandError
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.fetcher.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import FetchedSignalMetadata
 
 from threatexchange.cli import command_base

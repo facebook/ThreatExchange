@@ -4,11 +4,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 import typing as t
 
-from threatexchange.fetcher.collab_config import (
+from threatexchange.exchanges.collab_config import (
     CollaborationConfigBase,
     CollaborationConfigWithDefaults,
 )
-from threatexchange.fetcher.fetch_api import (
+from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPIWithKeyedUpdates,
     SignalExchangeAPIWithSimpleUpdates,
 )

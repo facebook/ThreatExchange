@@ -18,13 +18,13 @@ import logging
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.fetcher.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.fetcher.fetch_state import (
     FetchDelta,
     FetchDeltaTyped,
 )
 from threatexchange.fetcher.simple import state as simple_state
-from threatexchange.fetcher.fetch_api import (
+from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     SignalExchangeAPIWithSimpleUpdates,
 )

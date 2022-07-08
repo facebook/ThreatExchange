@@ -46,7 +46,7 @@ from threatexchange.fetcher.apis.stop_ncii_api import StopNCIISignalExchangeAPI
 from threatexchange.fetcher.apis.ncmec_api import NCMECSignalExchangeAPI
 
 from threatexchange.content_type import photo, video, text, url
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.signal_type import (
     pdq,
     md5,
