@@ -50,6 +50,7 @@ There are four inputs to the comparison algorithm, which determines if two video
 The query video’s frame PDQ hashes Q
 The comparison video’s frame PDQ hashes C
 The PDQ match distance D (example: 31)
+The PDQ quality filter tolerance F (example: 80), if either hash is below this quality level then they will not be compared
 The comparison match percentage threshold P<sub>c</sub> (example: 80%)
 How much of the comparison video must be matched to consider a match
 The query match percentage threshold P<sub>q</sub> (example: 0%)
@@ -62,20 +63,22 @@ q_unique_frames  = set(Q)
 c_unique_frames  = set(C)
 q_unique_frames_matched_count = 0
 c_unique_frames_matched_count = 0
-for q_frame in q_unique_frames :
-  for c_frame in c_unique_frames :
+q_unique_filtered_frames = filter(q_unique_frames, quality >= F)
+c_unique_filtered_frames = filter(c_unique_frames, quality >= F)
+for q_frame in q_unique_filtered_frames :
+  for c_frame in c_unique_filtered_frames :
     if pdq_dist(q_frame, c_frame) <= D:
       q_unique_frames_matched_count++
       break
 
-for c_frame in c_unique_frames :
-  for q_frame in q_unique_frames :
+for c_frame in c_unique_filtered_frames :
+  for q_frame in q_unique_filtered_frames :
     if pdq_dist(q_frame, c_frame) <= D:
       c_unique_frames_matched_count++
       break
 
-q_pct_matched = q_unique_frames_matched_count * 100 / len(q_unique_frames)
-c_pct_matched = c_unique_frames_matched_count * 100 / len(c_unique_frames)
+q_pct_matched = q_unique_frames_matched_count * 100 / len(q_unique_filtered_frames)
+c_pct_matched = c_unique_frames_matched_count * 100 / len(c_unique_filtered_frames)
 
 is_match = c_pct_matched >= P_c and q_pct_matched >= P_q
 ```
