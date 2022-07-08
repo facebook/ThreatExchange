@@ -35,7 +35,7 @@ import pathlib
 from threatexchange import meta
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
-from threatexchange.fb_threatexchange import api as tx_api
+from threatexchange.clients.fb_threatexchange import api as tx_api
 from threatexchange.clients.ncmec import hash_api as ncmec_api
 from threatexchange.fetcher.apis.file_api import LocalFileSignalExchangeAPI
 from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
