@@ -7,8 +7,10 @@ import pathlib
 import re
 import typing as t
 
-from threatexchange.fb_threatexchange import threat_updates
-from threatexchange.fb_threatexchange.descriptor import SimpleDescriptorRollup
+from threatexchange.exchanges.clients.fb_threatexchange import threat_updates
+from threatexchange.exchanges.clients.fb_threatexchange.descriptor import (
+    SimpleDescriptorRollup,
+)
 
 _EXTENSION = ".te"
 

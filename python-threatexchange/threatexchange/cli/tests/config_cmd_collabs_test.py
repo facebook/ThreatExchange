@@ -3,7 +3,7 @@ from threatexchange.cli.tests.e2e_test_helper import (
     ThreatExchangeCLIE2eHelper,
     te_cli,
 )
-from threatexchange.ncmec.hash_api import NCMECEnvironment
+from threatexchange.exchanges.clients.ncmec.hash_api import NCMECEnvironment
 
 
 @pytest.fixture

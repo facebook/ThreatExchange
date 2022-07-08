@@ -17,7 +17,7 @@ import logging
 
 from dacite import WrongTypeError
 
-from threatexchange.stopncii import api as stopncii_api
+from threatexchange.exchanges.clients.stopncii import api as stopncii_api
 from threatexchange.fetcher import collab_config
 from threatexchange.fetcher.fetch_api import SignalExchangeAPI
 from threatexchange.content_type import content_base

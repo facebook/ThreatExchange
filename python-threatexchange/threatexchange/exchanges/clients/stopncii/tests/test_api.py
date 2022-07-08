@@ -1,5 +1,5 @@
 import pytest
-from threatexchange.stopncii.api import (
+from threatexchange.exchanges.clients.stopncii.api import (
     StopNCIIAPI,
     StopNCIICaseStatus,
     StopNCIICSPFeedbackValue,

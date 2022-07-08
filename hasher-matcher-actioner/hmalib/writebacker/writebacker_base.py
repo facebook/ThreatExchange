@@ -15,7 +15,7 @@ from hmalib.common.mocks import MockedThreatExchangeAPI
 
 from hmalib.aws_secrets import AWSSecrets
 
-from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
+from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
 
 logger = get_logger(__name__)
 

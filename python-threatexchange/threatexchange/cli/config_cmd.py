@@ -14,7 +14,7 @@ import logging
 import os
 import typing as t
 
-from threatexchange.fb_threatexchange.api import ThreatExchangeAPI
+from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
 
 
 try:

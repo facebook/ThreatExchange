@@ -11,7 +11,7 @@ import logging
 import typing as t
 from dataclasses import dataclass, field
 
-from threatexchange.ncmec import hash_api as api
+from threatexchange.exchanges.clients.ncmec import hash_api as api
 
 from threatexchange.fetcher import fetch_state as state
 from threatexchange.fetcher import fetch_api

@@ -2,9 +2,7 @@
 
 import pytest
 
-from threatexchange.fetcher.fetch_state import AggregateSignalOpinionCategory
-
-from threatexchange.ncmec.tests.test_hash_api import api
+from threatexchange.exchanges.clients.ncmec.tests.test_hash_api import api
 from threatexchange.fetcher.apis.ncmec_api import (
     NCMECCollabConfig,
     NCMECSignalExchangeAPI,
@@ -12,7 +10,10 @@ from threatexchange.fetcher.apis.ncmec_api import (
     NCMECUpdate,
 )
 
-from threatexchange.ncmec.hash_api import NCMECEnvironment, NCMECHashAPI
+from threatexchange.exchanges.clients.ncmec.hash_api import (
+    NCMECEnvironment,
+    NCMECHashAPI,
+)
 
 from threatexchange.signal_type.md5 import VideoMD5Signal
 

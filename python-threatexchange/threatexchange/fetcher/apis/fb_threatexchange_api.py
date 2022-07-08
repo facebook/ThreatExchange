@@ -11,9 +11,11 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/
 import typing as t
 import time
 from dataclasses import dataclass, field
-from threatexchange.fb_threatexchange.threat_updates import ThreatUpdateJSON
+from threatexchange.exchanges.clients.fb_threatexchange.threat_updates import (
+    ThreatUpdateJSON,
+)
 
-from threatexchange.fb_threatexchange.api import ThreatExchangeAPI, _CursoredResponse
+from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
 
 from threatexchange.fetcher import fetch_state as state
 from threatexchange.fetcher.fetch_api import (

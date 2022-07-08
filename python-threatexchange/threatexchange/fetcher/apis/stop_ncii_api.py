@@ -11,7 +11,7 @@ import time
 import typing as t
 from dataclasses import dataclass
 
-from threatexchange.stopncii import api
+from threatexchange.exchanges.clients.stopncii import api
 
 from threatexchange.fetcher import fetch_state as state
 from threatexchange.fetcher import fetch_api

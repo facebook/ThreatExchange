@@ -20,7 +20,7 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 
 # Maybe move to a common library someday
-from threatexchange.fb_threatexchange.api import TimeoutHTTPAdapter
+from threatexchange.exchanges.clients.fb_threatexchange.api import TimeoutHTTPAdapter
 
 
 _DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%SZ"
