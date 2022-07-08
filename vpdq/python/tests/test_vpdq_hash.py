@@ -35,9 +35,9 @@ class TestVPDQHash:
         Two VPDQ features are considered the same if each line of the hashes are within DISTANCE_TOLERANCE.
         For hashes that have a quality lower than QUALITY_TOLERANCE, the test will skip them for comoparing.
         """
-        d = Path(__file__).parents[3]
-        hash_folder = d / SAMPLE_HASH_FOLDER
-        video_folder = d / SAMPLE_VIDEOS
+        project_dir = Path(__file__).parents[3]
+        hash_folder = project_dir / SAMPLE_HASH_FOLDER
+        video_folder = project_dir / SAMPLE_VIDEOS
         test_hashes = {}
         sample_hashes = {}
 
