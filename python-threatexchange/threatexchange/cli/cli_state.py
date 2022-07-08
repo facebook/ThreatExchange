@@ -23,7 +23,7 @@ from threatexchange.exchanges.fetch_state import (
     FetchDelta,
     FetchDeltaTyped,
 )
-from threatexchange.fetcher.simple import helpers as simple_state
+from threatexchange.exchanges import helpers
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     SignalExchangeAPIWithSimpleUpdates,
@@ -90,7 +90,7 @@ class CliIndexStore:
             return signal_type.get_index_cls().deserialize(fin)
 
 
-class CliSimpleState(simple_state.SimpleFetchedStateStore):
+class CliSimpleState(helpers.SimpleFetchedStateStore):
     """
     A simple on-disk storage format for the CLI.
 
