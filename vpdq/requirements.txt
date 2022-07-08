@@ -1,0 +1,5 @@
+setuptools >= 40.6.0
+wheel
+numpy
+cython
+opencv-python
