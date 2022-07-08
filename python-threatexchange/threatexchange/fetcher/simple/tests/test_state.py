@@ -20,7 +20,7 @@ from threatexchange.exchanges.fetch_state import (
     SignalOpinionCategory,
 )
 
-from threatexchange.fetcher.simple.state import (
+from threatexchange.fetcher.simple.helpers import (
     SimpleFetchedSignalMetadata,
     SimpleFetchedStateStore,
 )

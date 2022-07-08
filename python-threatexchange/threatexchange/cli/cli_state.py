@@ -23,7 +23,7 @@ from threatexchange.exchanges.fetch_state import (
     FetchDelta,
     FetchDeltaTyped,
 )
-from threatexchange.fetcher.simple import state as simple_state
+from threatexchange.fetcher.simple import helpers as simple_state
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     SignalExchangeAPIWithSimpleUpdates,

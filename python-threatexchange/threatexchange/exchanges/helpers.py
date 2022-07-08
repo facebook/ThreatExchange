@@ -1,14 +1,16 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+"""
+Helpers for implementing SignalExchangeAPIs or state.
+
+They demonstrate how the methods in SignalExchangeAPI can be used to 
+reproduce databases of signals, as well as simple recipes for stage.
+"""
 
 from dataclasses import dataclass, field
 import logging
 import typing as t
-from threatexchange.exchanges.signal_exchange_api import (
-    SignalExchangeAPI,
-    TSignalExchangeAPI,
-    TSignalExchangeAPICls,
-)
+from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.exchanges import fetch_state
