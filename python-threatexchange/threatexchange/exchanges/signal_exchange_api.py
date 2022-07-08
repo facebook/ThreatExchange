@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import typing as t
 
 from threatexchange import common
-from threatexchange.fetcher.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher import fetch_state as state
 

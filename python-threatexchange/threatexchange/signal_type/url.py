@@ -10,7 +10,7 @@ import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.url import URLContent
 from threatexchange.signal_type import signal_base
-from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 

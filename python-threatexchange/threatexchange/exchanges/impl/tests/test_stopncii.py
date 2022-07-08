@@ -6,10 +6,8 @@ import typing as t
 from threatexchange.fetcher.fetch_state import AggregateSignalOpinionCategory
 from threatexchange.exchanges.clients.stopncii.tests.test_api import api
 
-from threatexchange.fetcher.apis.stop_ncii_api import (
-    StopNCIISignalExchangeAPI,
-)
-from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
+from threatexchange.exchanges.impl.stop_ncii_api import StopNCIISignalExchangeAPI
+from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
 
 from threatexchange.exchanges.clients.stopncii.api import StopNCIIAPI
 

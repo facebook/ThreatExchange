@@ -19,7 +19,7 @@ from threatexchange.hashing.pdq_utils import pdq_match, simple_distance
 from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.signal_type.raw_text import RawTextSignal
 from threatexchange.signal_type import signal_base
-from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 

@@ -18,12 +18,12 @@ from threatexchange.exchanges.clients.fb_threatexchange.threat_updates import (
 from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
 
 from threatexchange.fetcher import fetch_state as state
-from threatexchange.fetcher.fetch_api import (
+from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPIWithSimpleUpdates,
 )
-from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
+from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 

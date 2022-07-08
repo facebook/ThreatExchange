@@ -15,9 +15,8 @@ from dataclasses import dataclass
 
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
-from threatexchange.fetcher.fetch_state import FetchedStateStoreBase
-from threatexchange.fetcher.collab_config import CollaborationConfigStoreBase
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.collab_config import CollaborationConfigStoreBase
 
 
 class SignalTypeMapping:

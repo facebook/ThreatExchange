@@ -14,10 +14,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from threatexchange.fetcher import fetch_state as state
-from threatexchange.fetcher.fetch_api import (
+from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPIWithSimpleUpdates,
 )
-from threatexchange.fetcher.collab_config import CollaborationConfigWithDefaults
+from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
 
 _TypedDelta = state.FetchDelta[

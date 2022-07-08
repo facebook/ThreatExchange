@@ -13,7 +13,7 @@ from enum import IntEnum
 from abc import ABC, abstractmethod
 import typing as t
 
-from threatexchange.fetcher.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
 
 Self = t.TypeVar("Self")

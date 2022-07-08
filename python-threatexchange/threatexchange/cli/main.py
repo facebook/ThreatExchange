@@ -37,16 +37,16 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange.exchanges.clients.fb_threatexchange import api as tx_api
 from threatexchange.exchanges.clients.ncmec import hash_api as ncmec_api
-from threatexchange.fetcher.apis.file_api import LocalFileSignalExchangeAPI
-from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
-from threatexchange.fetcher.apis.fb_threatexchange_api import (
+from threatexchange.exchanges.impl.file_api import LocalFileSignalExchangeAPI
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
-from threatexchange.fetcher.apis.stop_ncii_api import StopNCIISignalExchangeAPI
-from threatexchange.fetcher.apis.ncmec_api import NCMECSignalExchangeAPI
+from threatexchange.exchanges.impl.stop_ncii_api import StopNCIISignalExchangeAPI
+from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
 
 from threatexchange.content_type import photo, video, text, url
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.signal_type import (
     pdq,
     md5,

@@ -30,13 +30,13 @@ from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import command_base
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.fetcher.apis.fb_threatexchange_api import (
+from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCollabConfig,
     FBThreatExchangeSignalExchangeAPI,
 )
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
-from threatexchange.fetcher.apis.ncmec_api import NCMECSignalExchangeAPI
-from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type.signal_base import SignalType
 
 

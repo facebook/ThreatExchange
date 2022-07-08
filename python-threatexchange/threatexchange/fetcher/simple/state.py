@@ -4,7 +4,7 @@
 from dataclasses import dataclass, field
 import logging
 import typing as t
-from threatexchange.fetcher.fetch_api import (
+from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     TSignalExchangeAPI,
     TSignalExchangeAPICls,
@@ -12,7 +12,7 @@ from threatexchange.fetcher.fetch_api import (
 
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.fetcher import fetch_state
-from threatexchange.fetcher.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
 
 K = t.TypeVar("K")
 V = t.TypeVar("V")

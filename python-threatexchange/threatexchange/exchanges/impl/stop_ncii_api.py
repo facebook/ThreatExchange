@@ -14,8 +14,8 @@ from dataclasses import dataclass
 from threatexchange.exchanges.clients.stopncii import api
 
 from threatexchange.fetcher import fetch_state as state
-from threatexchange.fetcher import fetch_api
-from threatexchange.fetcher.collab_config import (
+from threatexchange.exchanges import signal_exchange_api
+from threatexchange.exchanges.collab_config import (
     CollaborationConfigBase,
 )
 from threatexchange.signal_type.signal_base import SignalType
@@ -65,7 +65,7 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
 
 
 class StopNCIISignalExchangeAPI(
-    fetch_api.SignalExchangeAPIWithSimpleUpdates[
+    signal_exchange_api.SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase,
         StopNCIICheckpoint,
         StopNCIISignalMetadata,

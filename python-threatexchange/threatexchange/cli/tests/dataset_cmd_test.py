@@ -1,6 +1,6 @@
 from threatexchange.cli.tests.e2e_test_helper import ThreatExchangeCLIE2eTest
 
-from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.cli.main import _DEFAULT_SIGNAL_TYPES
 
 

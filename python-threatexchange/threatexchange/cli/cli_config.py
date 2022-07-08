@@ -18,11 +18,11 @@ import logging
 from dacite import WrongTypeError
 
 from threatexchange.exchanges.clients.stopncii import api as stopncii_api
-from threatexchange.fetcher import collab_config
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
+from threatexchange.exchanges import collab_config
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.content_type import content_base
 from threatexchange.fetcher.fetch_state import FetchedStateStoreBase
-from threatexchange.fetcher.apis.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
 from threatexchange.meta import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
