@@ -3,11 +3,10 @@
 import pytest
 
 from threatexchange.exchanges.clients.ncmec.tests.test_hash_api import api
-from threatexchange.fetcher.apis.ncmec_api import (
+from threatexchange.exchanges.impl.ncmec_api import (
     NCMECCollabConfig,
     NCMECSignalExchangeAPI,
     NCMECSignalMetadata,
-    NCMECUpdate,
 )
 
 from threatexchange.exchanges.clients.ncmec.hash_api import (

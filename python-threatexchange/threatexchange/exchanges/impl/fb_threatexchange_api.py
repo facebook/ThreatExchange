@@ -23,7 +23,7 @@ from threatexchange.exchanges.signal_exchange_api import (
 )
 from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 

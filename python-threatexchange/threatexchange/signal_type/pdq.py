@@ -12,7 +12,7 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type import signal_base
 from threatexchange.hashing.pdq_utils import simple_distance
-from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 

@@ -13,7 +13,7 @@ from threatexchange.content_type.text import TextContent
 
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
-from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 

@@ -13,7 +13,7 @@ from threatexchange.content_type.url import URLContent
 from threatexchange.signal_type import signal_base
 from threatexchange import common
 from threatexchange.signal_type.url import URLSignal
-from threatexchange.fetcher.apis.fb_threatexchange_signal import (
+from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 
