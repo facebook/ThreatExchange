@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 
 from threatexchange.exchanges.clients.ncmec import hash_api as api
 
-from threatexchange.fetcher import fetch_state as state
+from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
 from threatexchange.exchanges.collab_config import (
     CollaborationConfigBase,

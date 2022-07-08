@@ -14,7 +14,7 @@ import typing as t
 
 from threatexchange.signal_type.signal_base import SignalType
 
-from threatexchange.fetcher import fetch_state as state
+from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPIWithSimpleUpdates,

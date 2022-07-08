@@ -13,7 +13,7 @@ import typing as t
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from threatexchange.fetcher import fetch_state as state
+from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPIWithSimpleUpdates,
 )

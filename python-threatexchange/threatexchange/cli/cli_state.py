@@ -19,11 +19,11 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
-from threatexchange.fetcher.fetch_state import (
+from threatexchange.exchanges.fetch_state import (
     FetchDelta,
     FetchDeltaTyped,
 )
-from threatexchange.fetcher.simple import state as simple_state
+from threatexchange.exchanges import helpers
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     SignalExchangeAPIWithSimpleUpdates,
@@ -90,7 +90,7 @@ class CliIndexStore:
             return signal_type.get_index_cls().deserialize(fin)
 
 
-class CliSimpleState(simple_state.SimpleFetchedStateStore):
+class CliSimpleState(helpers.SimpleFetchedStateStore):
     """
     A simple on-disk storage format for the CLI.
 

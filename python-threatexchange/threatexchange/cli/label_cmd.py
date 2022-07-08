@@ -5,7 +5,7 @@ import argparse
 import pathlib
 import typing as t
 from threatexchange.cli.helpers import FlexFilesInputAction
-from threatexchange.fetcher.fetch_state import SignalOpinion, SignalOpinionCategory
+from threatexchange.exchanges.fetch_state import SignalOpinion, SignalOpinionCategory
 
 
 from threatexchange.signal_type.signal_base import MatchesStr, SignalType, TextHasher
