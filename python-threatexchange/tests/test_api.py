@@ -4,8 +4,8 @@ import os
 import unittest
 import collections.abc
 
-from threatexchange.clients.fb_threatexchange.api import ThreatExchangeAPI
-from threatexchange.clients.fb_threatexchange.api_representations import (
+from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
+from threatexchange.exchanges.clients.fb_threatexchange.api_representations import (
     ThreatPrivacyGroup,
 )
 
