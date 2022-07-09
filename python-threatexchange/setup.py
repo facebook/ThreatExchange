@@ -21,8 +21,6 @@ for extension_dir in extensions_dir.iterdir():
             requirements.read_text().strip().split("\n")
         )
 
-extras_require["pdf"] = ["py-tlsh", "pdfminer.six"]
-
 all_extras = set(sum(extras_require.values(), []))
 extras_require["test"] = sorted({"pytest"} | all_extras)
 extras_require["package"] = ["wheel"]
