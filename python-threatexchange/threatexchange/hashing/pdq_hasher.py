@@ -5,7 +5,7 @@ import io
 import pdqhash
 import pathlib
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 import typing as t
 
 
