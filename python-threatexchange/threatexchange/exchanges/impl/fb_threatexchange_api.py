@@ -360,7 +360,7 @@ class FBThreatExchangeSignalExchangeAPI(
                     continue
                 for tx_s_type in s_types:
                     s_type_specific_signal_str = (
-                        tx_s_type.normalize_threatexchange_indicator(
+                        tx_s_type.normalize_fb_threatexchange_indicator(
                             type_str, signal_str, tag
                         )
                     )

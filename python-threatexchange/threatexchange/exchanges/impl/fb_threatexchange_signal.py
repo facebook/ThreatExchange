@@ -50,7 +50,7 @@ class HasFbThreatExchangeIndicatorType:
     ] = set()
 
     @classmethod
-    def normalize_threatexchange_indicator(
+    def normalize_fb_threatexchange_indicator(
         cls, tx_type: str, tx_indicator: str, tx_tag: t.Optional[str]
     ) -> str:
         """

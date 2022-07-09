@@ -46,3 +46,13 @@ class URLSignal(
     @staticmethod
     def get_examples() -> t.List[str]:
         return ["https://developers.facebook.com/docs/threat-exchange/reference/apis/"]
+
+    @classmethod
+    def normalize_fb_threatexchange_indicator(
+        cls, tx_type: str, tx_indicator: str, tx_tag: t.Optional[str]
+    ) -> str:
+        if tx_type == "UNCLICKABLE_URL" and tx_indicator.startswith("[h]"):
+            return f"h{tx_indicator[3:]}"
+        return super().normalize_fb_threatexchange_indicator(
+            tx_type, tx_indicator, tx_tag
+        )
