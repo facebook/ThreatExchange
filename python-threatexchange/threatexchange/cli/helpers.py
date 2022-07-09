@@ -47,7 +47,6 @@ class FlexFilesInputAction(argparse.Action):
             args.insert(0, "--")
         ret = []
         for i, filename in enumerate(args):
-            path = pathlib.Path(filename)
             if filename.strip() == "-":
                 with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
                     logging.debug("Writing stdin to %s", tmp.name)
@@ -58,6 +57,7 @@ class FlexFilesInputAction(argparse.Action):
                 with tempfile.NamedTemporaryFile("w", delete=False) as tmp:
                     logging.debug("Writing -- to %s", tmp.name)
                     tmp.write(" ".join(args[i + 1 :]))
+                filename = tmp.name
                 ret.append(pathlib.Path(tmp.name))
                 break
             elif filename.startswith(("http://", "https://")):
@@ -66,9 +66,9 @@ class FlexFilesInputAction(argparse.Action):
                 with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
                     logging.debug("Writing -- to %s", tmp.name)
                     tmp.write(resp.content)
-                ret.append(pathlib.Path(tmp.name))
-                break
-            elif not path.is_file():
+                filename = pathlib.Path(tmp.name)
+            path = pathlib.Path(filename)
+            if not path.is_file():
                 raise argparse.ArgumentError(self, f"no such file {path}")
             ret.append(path)
         setattr(namespace, self.dest, ret)
