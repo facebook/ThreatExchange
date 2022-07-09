@@ -33,6 +33,8 @@ cdef extern from "vpdq/cpp/hashing/vpdqHashType.h" namespace "facebook::vpdq::ha
         Hash256 pdqHash;
         int frameNumber;
         int quality;
+        float timeStamp;
+
 
 cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hashing":
     bool hashVideoFile(
@@ -43,20 +45,26 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         int seconds_per_hash,
         int width,
         int height,
+        float duration_in_sec,
         const char* argv0
     )
+
 @dataclass
 class VpdqFeature:
     quality: int
     frame_number: int
     hash: Hash256
     hex: str
+    timestamp: double
 
-    def __init__(self, quality: int, frame_number: int, hash: "Hash256"):
+    def __init__(
+        self, quality: int, frame_number: int, hash: "Hash256", timestamp: double
+    ):
         self.quality = quality
         self.frame_number = frame_number
         self.hash = hash
         self.hex = hash_to_hex(hash)
+        self.timestamp = timestamp
 
     def hamming_distance(self, that: "vpdq_feature"):
         return hammingDistance(self.hash, that.hash)
@@ -94,8 +102,8 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256"):
 
 def computeHash(
     input_video_filename: str,
-    ffmpeg_path: str,
-    seconds_per_hash: int,
+    ffmpeg_path: str = "ffmpeg",
+    seconds_per_hash: int = 1,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
@@ -113,12 +121,12 @@ def computeHash(
         list of vpdq_feature: VPDQ hash from the video
     """
     cdef vector[vpdqFeature] vpdq_hash;
+    vid = cv2.VideoCapture(input_video_filename)
+    duration_in_sec = vid.get(cv2.CAP_PROP_POS_MSEC)
     if downsample_width == 0:
-        vid = cv2.VideoCapture(input_video_filename)
         downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
 
     if downsample_height == 0:
-        vid = cv2.VideoCapture(input_video_filename)
         downsample_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     rt = hashVideoFile(
@@ -129,12 +137,14 @@ def computeHash(
         seconds_per_hash,
         downsample_width,
         downsample_height,
+        duration_in_sec,
         "vpdqPY",
     )
     if not rt:
         raise Exception("Fail to create VPDQ hash")
 
     hashes = [
-        VpdqFeature(hash.quality, hash.frameNumber, hash.pdqHash) for hash in vpdq_hash
+        VpdqFeature(hash.quality, hash.frameNumber, hash.pdqHash, hash.timeStamp)
+        for hash in vpdq_hash
     ]
     return hashes

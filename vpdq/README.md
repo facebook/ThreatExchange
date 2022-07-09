@@ -12,16 +12,16 @@ Both TMK and vPDQ are backed by PDQ, and so inherit both PDQ’s strengths and w
 ## Producing a Hash
 The algorithm for producing the “hash” is simple: given a video, convert it into a sequence of frame images at some interval (for example, 1 frame/second). For each frame image, use the PDQ hashing algorithm on each.
 
-We can annotate these hashes with their frame number. So for a 5 minute video at 1 frame/sec, we might have:
-| Frame | PDQ Hash|
-| ------------- | ------------- |
-| 1  | face000...  |
-| 2  | face000...  |
-| 3  | face011...  |
-| 4  | face111...  |
-| ... | ...  |
-| 29999 | 88784444 |
-| 30000 | 88884444 |
+We can annotate these hashes with their frame number, quality(0-100 which measures gradients/features,from least featureful to most featureful) and timestamp(sec). So for a 5 minute video at 1 frame/sec, we might have:
+| Frame | Quality | PDQ Hash | Timestamp(sec) |
+| ------------- | ------------- | ------------- | ------------- |
+| 1  | 100 | face000...  | 0.000  |
+| 2  | 99  | face000...  | 0.033  |
+| 3  | 94  | face011...  | 0.067  |
+| 4  | 97  | face111...  | 1.000  |
+| ... | ...  |...  |...  |
+| 29999 | 89  | 88784444... | 989.933 |
+| 30000 | 92  | 88884444... | 989.967 |
 
 For the matching algorithm, the frame numbers are not used, but they can still be useful for identifying matching segments when comparing videos.
 
@@ -50,6 +50,7 @@ There are four inputs to the comparison algorithm, which determines if two video
 The query video’s frame PDQ hashes Q
 The comparison video’s frame PDQ hashes C
 The PDQ match distance D (example: 31)
+The PDQ quality filter tolerance F (example: 50), if either hash is below this quality level then they will not be compared
 The comparison match percentage threshold P<sub>c</sub> (example: 80%)
 How much of the comparison video must be matched to consider a match
 The query match percentage threshold P<sub>q</sub> (example: 0%)
@@ -62,20 +63,22 @@ q_unique_frames  = set(Q)
 c_unique_frames  = set(C)
 q_unique_frames_matched_count = 0
 c_unique_frames_matched_count = 0
-for q_frame in q_unique_frames :
-  for c_frame in c_unique_frames :
+q_unique_filtered_frames = filter(q_unique_frames, quality >= F)
+c_unique_filtered_frames = filter(c_unique_frames, quality >= F)
+for q_frame in q_unique_filtered_frames :
+  for c_frame in c_unique_filtered_frames :
     if pdq_dist(q_frame, c_frame) <= D:
       q_unique_frames_matched_count++
       break
 
-for c_frame in c_unique_frames :
-  for q_frame in q_unique_frames :
+for c_frame in c_unique_filtered_frames :
+  for q_frame in q_unique_filtered_frames :
     if pdq_dist(q_frame, c_frame) <= D:
       c_unique_frames_matched_count++
       break
 
-q_pct_matched = q_unique_frames_matched_count * 100 / len(q_unique_frames)
-c_pct_matched = c_unique_frames_matched_count * 100 / len(c_unique_frames)
+q_pct_matched = q_unique_frames_matched_count * 100 / len(q_unique_filtered_frames)
+c_pct_matched = c_unique_frames_matched_count * 100 / len(c_unique_filtered_frames)
 
 is_match = c_pct_matched >= P_c and q_pct_matched >= P_q
 ```
