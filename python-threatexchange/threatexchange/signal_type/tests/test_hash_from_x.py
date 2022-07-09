@@ -4,14 +4,13 @@ import unittest
 
 from threatexchange.signal_type import (
     md5,
-    pdq_ocr,
     pdq,
     raw_text,
     trend_query,
     url_md5,
     url,
 )
-from threatexchange.signal_type.signal_base import FileHasher, TextHasher
+from threatexchange.signal_type.signal_base import TextHasher
 
 
 class SignalTypeHashTest(unittest.TestCase):
@@ -22,7 +21,6 @@ class SignalTypeHashTest(unittest.TestCase):
     # TODO - maybe make a metaclass for this to automatically detect?
     SIGNAL_TYPES_TO_TEST = [
         md5.VideoMD5Signal,
-        pdq_ocr.PdqOcrSignal,
         pdq.PdqSignal,
         raw_text.RawTextSignal,
         trend_query.TrendQuerySignal,

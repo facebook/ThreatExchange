@@ -9,7 +9,7 @@ try:
 except ImportError:
     _DISABLED = True
 else:
-    from threatexchange.extensions.text_tlsh.text_tlsh import TextTLSHSignal
+    from threatexchange.extensions.tlsh.text_tlsh import TextTLSHSignal
 
 
 @unittest.skipIf(_DISABLED, "tlsh not installed")
