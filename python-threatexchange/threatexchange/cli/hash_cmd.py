@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
@@ -7,12 +6,15 @@ Hash command to convert content into signatures.
 
 import argparse
 import pathlib
-import sys
 import typing as t
+from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from threatexchange.signal_type.signal_base import (
     BytesHasher,
+    FileHasher,
     SignalType,
     TextHasher,
 )
@@ -53,7 +55,10 @@ class HashCommand(command_base.Command):
 
         ap.add_argument(
             "content_type",
-            choices={c.get_name() for s in signal_types for c in s.get_content_types()},
+            type=common.argparse_choices_pre_type(
+                [c.get_name() for c in settings.get_all_content_types()],
+                settings.get_content_type,
+            ),
             help="what kind of content to hash",
         )
 
@@ -67,20 +72,36 @@ class HashCommand(command_base.Command):
         ap.add_argument(
             "--signal-type",
             "-S",
-            choices=[s.get_name() for s in signal_types],
-            help="only generate these signal types",
+            type=common.argparse_choices_pre_type(
+                [s.get_name() for s in settings.get_all_signal_types()],
+                settings.get_signal_type,
+            ),
+            help="only generate for this signal types",
+        )
+
+        ap.add_argument(
+            "--extract-content",
+            "-E",
+            action="count",
+            default=0,
+            help="Process the content further to extract more signals. Can be repeated.",
         )
 
     def __init__(
         self,
-        content_type: str,
-        signal_type: t.Optional[str],
+        content_type: ContentType,
+        signal_type: t.Optional[t.Type[SignalType]],
         files: t.List[pathlib.Path],
+        extract_content: int,
     ) -> None:
-        self.content_type_str = content_type
+        self.content_type = content_type
         self.signal_type = signal_type
 
         self.files = files
+
+        self.extract_steps = extract_content
+        self.hashers: t.List[t.Type[SignalType]] = []
+        self.seen: t.Set[t.Tuple[t.Type[ContentType], str]] = set()
 
     def _parse_input(
         self,
@@ -95,26 +116,46 @@ class HashCommand(command_base.Command):
                 yield pathlib.Path(token)
 
     def execute(self, settings: CLISettings) -> None:
-        content_type = settings.get_content_type(self.content_type_str)
+        if self.signal_type is None:
+            all_signal_types = settings.get_all_signal_types()
+        else:
+            all_signal_types = [self.signal_type]
+        self.hashers = [s for s in all_signal_types if issubclass(s, FileHasher)]
+        self.extract(settings, self.extract_steps, self.content_type, self.files)
 
-        all_signal_types = [
-            s
-            for s in settings.get_signal_types_for_content(content_type)
-            if self.signal_type in (None, s.get_name())
-        ]
+    def extract(
+        self,
+        settings: CLISettings,
+        steps: int,
+        content_type: ContentType,
+        files: t.Sequence[pathlib.Path],
+        level: int = 0,
+    ) -> None:
+        hashers = [h for h in self.hashers if content_type in h.get_content_types()]
+        for file in files:
+            if self.extract_steps:
+                md5 = VideoMD5Signal.hash_from_file(file)
+                k = (content_type, md5)
+                if k in self.seen:
+                    continue
+                self.seen.add(k)
+            for s_type in hashers:
+                hash_str = s_type.hash_from_file(file)  # type: ignore  # mixin
+                if hash_str:
+                    print(f"{'  ' * level}{s_type.get_name()}", hash_str)
 
-        byte_hashers = [s for s in all_signal_types if issubclass(s, BytesHasher)]
-        str_hashers = [s for s in all_signal_types if issubclass(s, TextHasher)]
-
-        for file in self.files:
-            for s_hasher in str_hashers:
-                hash_str = s_hasher.hash_from_str(file.read_text())
-                _print_hash(s_hasher, hash_str)
-            for b_hasher in byte_hashers:  # type: ignore  # mypy thinks its mixin
-                hash_str = b_hasher.hash_from_bytes(file.read_bytes())
-                _print_hash(b_hasher, hash_str)  # type: ignore  # mypy thinks its mixin
-
-
-def _print_hash(s_type: t.Type[SignalType], hash_str: str) -> None:
-    if hash_str:
-        print(s_type.get_name(), hash_str)
+            if steps > 0:
+                ret = content_type.extract_additional_content(
+                    file, settings.get_all_content_types()
+                )
+                for next_content, next_files in ret.items():
+                    if not next_files:
+                        continue
+                    print(
+                        f"{'  ' * level}Extracted",
+                        len(next_files),
+                        next_content.get_name(),
+                    )
+                    self.extract(
+                        settings, steps - 1, next_content, next_files, level + 1
+                    )

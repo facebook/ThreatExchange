@@ -6,6 +6,7 @@ Wrapper around the pdf content type.
 """
 
 from io import StringIO
+from tempfile import NamedTemporaryFile
 import typing as t
 from pathlib import Path
 
@@ -28,16 +29,15 @@ class PDFContent(ContentType):
 
     @classmethod
     def extract_additional_content(
-        cls, content_arg: str
-    ) -> t.List[t.Tuple[t.Type[ContentType], str]]:
-        path = Path(content_arg)
-        if not path.is_file():
-            raise Exception(f"Not a file: {content_arg}")
-        if path.suffix != ".pdf":
-            raise Exception(f"Not a .pdf: {content_arg}")
+        cls, content_in_file: Path, available_content: t.Sequence[t.Type[ContentType]]
+    ) -> t.Dict[t.Type[ContentType], t.List[Path]]:
+        if not content_in_file.is_file():
+            raise Exception(f"Not a file: {content_in_file}")
+        if content_in_file.suffix != ".pdf":
+            raise Exception(f"Not a .pdf: {content_in_file}")
 
         text = StringIO()
-        with path.open("rb") as in_file:
+        with content_in_file.open("rb") as in_file:
             parser = PDFParser(in_file)
             doc = PDFDocument(parser)
             rsrcmgr = PDFResourceManager()
@@ -45,6 +45,6 @@ class PDFContent(ContentType):
             interpreter = PDFPageInterpreter(rsrcmgr, device)
             for page in PDFPage.create_pages(doc):
                 interpreter.process_page(page)
-        return [
-            (TextContent, text.getvalue()),
-        ]
+        with NamedTemporaryFile("wt", delete=False) as f:
+            f.write(text.getvalue())
+        return {TextContent: Path(f.name)}

@@ -59,6 +59,8 @@ setup(
     url="https://www.github.com/facebook/ThreatExchange",
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
+        "urlextract",
+        "beautifulsoup4",
         "python-Levenshtein",
         "requests>=2.26.0",
         "urllib3>=1.26.0",  # For allow_methods
