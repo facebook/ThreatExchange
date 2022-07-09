@@ -24,7 +24,7 @@ class URLSignal(
     Wrapper around URL links, such as https://github.com/
     """
 
-    INDICATOR_TYPE = ("URI", "RAW_URI")
+    INDICATOR_TYPE = {"URI", "RAW_URI"}
 
     @classmethod
     def get_content_types(cls) -> t.List[t.Type[ContentType]]:
