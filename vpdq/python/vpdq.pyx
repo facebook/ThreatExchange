@@ -42,10 +42,10 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         vector[vpdqFeature]& pdqHashes,
         string ffmpeg_path,
         bool verbose,
-        int seconds_per_hash,
+        float seconds_per_hash,
         int width,
         int height,
-        float duration_in_sec,
+        float frame_per_sec,
         const char* argv0
     )
 
@@ -103,7 +103,7 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256"):
 def computeHash(
     input_video_filename: str,
     ffmpeg_path: str = "ffmpeg",
-    seconds_per_hash: int = 1,
+    seconds_per_hash: flaot = 0,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
@@ -122,7 +122,7 @@ def computeHash(
     """
     cdef vector[vpdqFeature] vpdq_hash;
     vid = cv2.VideoCapture(input_video_filename)
-    duration_in_sec = vid.get(cv2.CAP_PROP_POS_MSEC)
+    frame_per_sec = vid.get(cv2.CAP_PROP_FPS)
     if downsample_width == 0:
         downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
 
@@ -137,7 +137,7 @@ def computeHash(
         seconds_per_hash,
         downsample_width,
         downsample_height,
-        duration_in_sec,
+        frame_per_sec,
         "vpdqPY",
     )
     if not rt:

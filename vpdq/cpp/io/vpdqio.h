@@ -28,6 +28,10 @@ bool readVideoDuration(
     const string& inputVideoFileName,
     double& durationInSec,
     const char* programName);
+bool readVideoFPS(
+    const string& inputVideoFileName,
+    double& framePerSec,
+    const char* programName);
 } // namespace io
 } // namespace vpdq
 } // namespace facebook

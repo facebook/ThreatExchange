@@ -26,10 +26,10 @@ bool hashVideoFile(
     vector<hashing::vpdqFeature>& pdqHashes,
     const string& ffmpegPath,
     bool verbose,
-    const int secondsPerHash,
+    const double secondsPerHash,
     const int width,
     const int height,
-    const double durationInSec,
+    const double framePerSec,
     const char* argv0) {
   stringstream ss;
 
@@ -63,7 +63,12 @@ bool hashVideoFile(
   int numRGBTriples = height * width;
   int fno = 0;
   unique_ptr<uint8_t[]> rawFrameBuffer(new uint8_t[numRGBTriples * 3]);
-
+  int frameMod = secondsPerHash * framePerSec;
+  if (frameMod == 0) {
+    // Avoid truncate to zero on corner-case with seconds_per_pdq_hash = 1
+    // and FPS < 1.
+    frameMod = 1;
+  }
   // Loop through the video frames
   while (!feof(inputFp)) {
     size_t fread_rc = fread(rawFrameBuffer.get(), 3, numRGBTriples, inputFp);
@@ -74,7 +79,7 @@ bool hashVideoFile(
       break;
     }
     pdq::hashing::Hash256 pdqHash;
-    if (fno % secondsPerHash == 0) {
+    if (fno % frameMod == 0) {
       if (verbose) {
         printf("selectframe %d\n", fno);
       }
@@ -89,7 +94,7 @@ bool hashVideoFile(
         return false;
       }
       // Push to pdqHashes vector
-      pdqHashes.push_back({pdqHash, fno, quality, 0});
+      pdqHashes.push_back({pdqHash, fno, quality, (double)fno / framePerSec});
       if (verbose) {
         printf("PDQHash: %s \n", pdqHash.format().c_str());
       }
@@ -103,10 +108,6 @@ bool hashVideoFile(
           numRGBTriples,
           (int)fread_rc);
     }
-  }
-  double secPerFrame = (double)durationInSec / fno;
-  for (auto& frameFeature : pdqHashes) {
-    frameFeature.timeStamp = frameFeature.frameNumber * secPerFrame;
   }
   return true;
 }

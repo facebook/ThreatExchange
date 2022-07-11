@@ -33,7 +33,7 @@ bool hashVideoFile(
     vector<hashing::vpdqFeature>& pdqHashes,
     const std::string& ffmpegPath,
     bool verbose,
-    const int secondsPerHash,
+    const double secondsPerHash,
     const int width,
     const int height,
     const double durationInSec,

@@ -11,7 +11,7 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "Required:\n");
   fprintf(fp, "-i|--input-video-file-name ...\n");
   fprintf(fp, "-o|--output-hash-file-name ...\n");
-  fprintf(fp, "-r|--seconds-per-hash ...:Must be a positive integer\n");
+  fprintf(fp, "-r|--seconds-per-hash ...:Must be a non-negative float\n");
   fprintf(fp, "Options:\n");
   fprintf(fp, "-f|--ffmpeg-path: Specific path to ffmpeg you want to use\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
   string inputVideoFileName = "";
   string outputHashFileName = "";
   string outputDirectory = "";
-  int secondsPerHash = 0;
+  double secondsPerHash = 0;
   int downsampleFrameDimension = 0;
 
   while ((argi < argc) && argv[argi][0] == '-') {
@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      secondsPerHash = atoi(argv[argi++]);
+      secondsPerHash = atof(argv[argi++]);
       continue;
     }
     if (flag == "-d" || flag == "--output-directory") {
@@ -144,10 +144,10 @@ int main(int argc, char** argv) {
     usage(argv[0], 1);
   }
 
-  if (secondsPerHash <= 0) {
+  if (secondsPerHash < 0) {
     fprintf(
         stderr,
-        "%s: --seconds-per-hash must be an integer bigger than 0\n",
+        "%s: --seconds-per-hash must be a non-negative float.\n",
         argv[0]);
     usage(argv[0], 1);
   }
@@ -161,13 +161,13 @@ int main(int argc, char** argv) {
   }
   // Hash the video and store the hashes and correspoding info
   // TODO: Create a vpdq feature class
-  double durationInSec = 0;
-  bool rc = facebook::vpdq::io::readVideoDuration(
-      inputVideoFileName, durationInSec, argv[0]);
+  double framePerSec = 0;
+  bool rc = facebook::vpdq::io::readVideoFPS(
+      inputVideoFileName, framePerSec, argv[0]);
   if (!rc) {
     fprintf(
         stderr,
-        "%s: failed to read video duration \"%s\".\n",
+        "%s: failed to read video FPS \"%s\".\n",
         argv[0],
         inputVideoFileName.c_str());
     return 1;
@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
       secondsPerHash,
       width,
       height,
-      durationInSec,
+      framePerSec,
       argv[0]);
   if (!rc) {
     fprintf(
