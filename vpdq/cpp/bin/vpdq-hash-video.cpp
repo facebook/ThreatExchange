@@ -11,7 +11,9 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "Required:\n");
   fprintf(fp, "-i|--input-video-file-name ...\n");
   fprintf(fp, "-o|--output-hash-file-name ...\n");
-  fprintf(fp, "-r|--seconds-per-hash ...:Must be a non-negative float. If it is 0, will generate every frame's hash\n");
+  fprintf(
+      fp,
+      "-r|--seconds-per-hash ...:Must be a non-negative float. If it is 0, will generate every frame's hash\n");
   fprintf(fp, "Options:\n");
   fprintf(fp, "-f|--ffmpeg-path: Specific path to ffmpeg you want to use\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
