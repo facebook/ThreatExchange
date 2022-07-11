@@ -65,8 +65,8 @@ bool hashVideoFile(
   unique_ptr<uint8_t[]> rawFrameBuffer(new uint8_t[numRGBTriples * 3]);
   int frameMod = secondsPerHash * framesPerSec;
   if (frameMod == 0) {
-    // Avoid truncate to zero on corner-case with seconds_per_pdq_hash = 1
-    // and FPS < 1.
+    // Avoid truncate to zero on corner-case with secondsPerHash = 1
+    // and framesPerSec < 1.
     frameMod = 1;
   }
   // Loop through the video frames

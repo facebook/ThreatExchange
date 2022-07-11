@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
   if (!rc) {
     fprintf(
         stderr,
-        "%s: failed to read video FPS \"%s\".\n",
+        "%s: failed to read video frames per second \"%s\".\n",
         argv[0],
         inputVideoFileName.c_str());
     return 1;
