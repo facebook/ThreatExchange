@@ -30,7 +30,7 @@ bool readVideoDuration(
     const char* programName);
 bool readVideoFPS(
     const string& inputVideoFileName,
-    double& framePerSec,
+    double& framesPerSec,
     const char* programName);
 } // namespace io
 } // namespace vpdq

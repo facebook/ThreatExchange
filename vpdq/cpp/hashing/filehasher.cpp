@@ -29,7 +29,7 @@ bool hashVideoFile(
     const double secondsPerHash,
     const int width,
     const int height,
-    const double framePerSec,
+    const double framesPerSec,
     const char* argv0) {
   stringstream ss;
 
@@ -63,7 +63,7 @@ bool hashVideoFile(
   int numRGBTriples = height * width;
   int fno = 0;
   unique_ptr<uint8_t[]> rawFrameBuffer(new uint8_t[numRGBTriples * 3]);
-  int frameMod = secondsPerHash * framePerSec;
+  int frameMod = secondsPerHash * framesPerSec;
   if (frameMod == 0) {
     // Avoid truncate to zero on corner-case with seconds_per_pdq_hash = 1
     // and FPS < 1.
@@ -94,7 +94,7 @@ bool hashVideoFile(
         return false;
       }
       // Push to pdqHashes vector
-      pdqHashes.push_back({pdqHash, fno, quality, (double)fno / framePerSec});
+      pdqHashes.push_back({pdqHash, fno, quality, (double)fno / framesPerSec});
       if (verbose) {
         printf("PDQHash: %s \n", pdqHash.format().c_str());
       }

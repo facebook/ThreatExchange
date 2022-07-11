@@ -45,7 +45,7 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         float seconds_per_hash,
         int width,
         int height,
-        float frame_per_sec,
+        float frames_per_sec,
         const char* argv0
     )
 
@@ -114,7 +114,7 @@ def computeHash(
         input_video_filename: Input video file path
         ffmpeg_path: ffmpeg path
         verbose: If verbose, will print detailed information
-        seconds_per_hash: The frequence(per second) a hash is generated from the video
+        seconds_per_hash: The frequence(per second) a hash is generated from the video. If it is 0, will generate every frame's hash
         downsample_width: Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
         downsample_height: Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
     Returns:
@@ -122,7 +122,7 @@ def computeHash(
     """
     cdef vector[vpdqFeature] vpdq_hash;
     vid = cv2.VideoCapture(input_video_filename)
-    frame_per_sec = vid.get(cv2.CAP_PROP_FPS)
+    frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
     if downsample_width == 0:
         downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
 
@@ -137,7 +137,7 @@ def computeHash(
         seconds_per_hash,
         downsample_width,
         downsample_height,
-        frame_per_sec,
+        frames_per_sec,
         "vpdqPY",
     )
     if not rt:

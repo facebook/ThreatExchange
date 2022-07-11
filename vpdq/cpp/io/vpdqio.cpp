@@ -179,7 +179,7 @@ bool readVideoDuration(
 
 bool readVideoFPS(
     const string& inputVideoFileName,
-    double& framePerSec,
+    double& framesPerSec,
     const char* programName) {
   AVFormatContext* pFormatCtx = avformat_alloc_context();
   int rc =
@@ -218,7 +218,7 @@ bool readVideoFPS(
     return false;
   }
   AVRational fr = pFormatCtx->streams[videoStream]->avg_frame_rate;
-  framePerSec = (double)fr.num / (double)fr.den;
+  framesPerSec = (double)fr.num / (double)fr.den;
   return true;
 }
 } // namespace io
