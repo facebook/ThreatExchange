@@ -103,7 +103,7 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256"):
 def computeHash(
     input_video_filename: str,
     ffmpeg_path: str = "ffmpeg",
-    seconds_per_hash: flaot = 0,
+    seconds_per_hash: float = 0,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
