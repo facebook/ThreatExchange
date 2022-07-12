@@ -1,6 +1,7 @@
 import vpdq
 import json
 from json import JSONEncoder
+import typing as t
 
 QUALITY = "quality"
 HASH = "hash"
@@ -8,7 +9,10 @@ TIMESTAMP = "timestamp"
 TARGET_MATCH_PERCENT = "target_match_percent"
 QUERY_MATCH_PERCENT = "query_match_percent"
 
-def vpdq_to_json(vpdq_features):
+
+def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
+    """Convert from VPDQ features to json object and return the json object as a str
+    """
     data = {}
     for feature in vpdq_features:
         frame_number = feature.frame_number
@@ -19,7 +23,9 @@ def vpdq_to_json(vpdq_features):
     return json.dumps(data)
 
 
-def json_to_vpdq(json_str):
+def json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
+    """Load a str as a json object and convert from json object to VPDQ features
+    """
     features = []
     vpdq_json = json.loads(json_str)
     for frame_number in vpdq_json:
@@ -32,7 +38,7 @@ def json_to_vpdq(json_str):
     return features
 
 
-def dedupe(hashes):
+def dedupe(hashes: t.List[vpdq.VpdqFeature]) -> t.List[vpdq.VpdqFeature]:
     """Filter out the VPDQ feature with exact same hash in a list of VPDQ features
 
     Args:
@@ -50,7 +56,9 @@ def dedupe(hashes):
     return ret
 
 
-def quality_filter(hashes, quality_tolerance):
+def quality_filter(
+    hashes: t.List[vpdq.VpdqFeature], quality_tolerance: int
+) -> t.List[vpdq.VpdqFeature]:
     """Filter VPDQ feature that has a quality lower than quality_tolerance
 
     Args:

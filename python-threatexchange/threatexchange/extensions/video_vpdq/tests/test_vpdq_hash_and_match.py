@@ -20,7 +20,6 @@ HASH = "test_hash.txt"
 WORKDIR = Path.cwd()
 
 
-
 @unittest.skipIf(_DISABLED, "vpdq not installed")
 class VPDQHasherModuleUnitTest(unittest.TestCase):
     def test_vpdq_from_string_path(self):
@@ -31,5 +30,3 @@ class VPDQHasherModuleUnitTest(unittest.TestCase):
         )
         self.assertEqual(getattr(res, TARGET_MATCH_PERCENT), 100)
         self.assertEqual(getattr(res, QUERY_MATCH_PERCENT), 100)
-
-
