@@ -1,9 +1,9 @@
-import vpdq
+import vpdq  # type: ignore
 import typing as t
 import binascii
 import numpy  # type: ignore
 from .vpdq_util import dedupe, quality_filter, TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT
-from collections import namedtuple
+from collections import namedtuple  # type: ignore
 
 BITS_IN_VPDQ = 256
 VPDQMatchTuple = "VPDQMatchTuple"
@@ -65,11 +65,9 @@ def match_VPDQ_hash_brute(
     query_match_cnt = match_VPDQ_in_another(
         filtered_query, filtered_target, distance_tolerance
     )
-    MatchResult = namedtuple(
-        VPDQMatchTuple, [TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT]
-    )
+    MatchResult = namedtuple(VPDQMatchTuple, [TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT])  # type: ignore
     res = MatchResult(
         target_match_cnt * 100 / len(filtered_target),
         query_match_cnt * 100 / len(filtered_query),
-    )
+    )  # type: ignore
     return res

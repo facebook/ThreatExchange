@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(str(Path(__file__).parents[1]))
 try:
-    import vpdq as _
+    import vpdq as _  # type: ignore
 
     _DISABLED = False
 except (ImportError, ModuleNotFoundError) as e:
@@ -17,7 +17,7 @@ else:
         read_file_to_hash,
         TARGET_MATCH_PERCENT,
         QUERY_MATCH_PERCENT,
-    )
+    )  # type: ignore
 
 VIDEO = "test_video.mp4"
 HASH = "test_hash.txt"
