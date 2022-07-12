@@ -11,7 +11,6 @@ from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 
-
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
     cdef struct Hash256:
         unsigned short w[16];
@@ -42,10 +41,10 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         vector[vpdqFeature]& pdqHashes,
         string ffmpeg_path,
         bool verbose,
-        float seconds_per_hash,
+        double seconds_per_hash,
         int width,
         int height,
-        float frames_per_sec,
+        double frames_per_sec,
         const char* argv0
     )
 
@@ -103,7 +102,7 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256"):
 def computeHash(
     input_video_filename: str,
     ffmpeg_path: str = "ffmpeg",
-    seconds_per_hash: float = 0,
+    seconds_per_hash: double = 0,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
