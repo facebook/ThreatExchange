@@ -18,10 +18,10 @@ def get_argparse() -> argparse.ArgumentParser:
     ap.add_argument(
         "-r",
         "--secondsPerHash",
-        metavar="POSITIVE_INTEGER",
-        help="The frequence(per second) a hash is generated from the video",
-        default="1",
-        type=int,
+        metavar="NON_NEGATIVE_FLOAT",
+        help="The frequence(per second) a hash is generated from the video. If it is 0, will generate every frame's hash",
+        default="0",
+        type=float,
     )
     ap.add_argument(
         "-d",
