@@ -12,7 +12,7 @@ QUERY_MATCH_PERCENT = "query_match_percent"
 
 def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
     """Convert from VPDQ features to json object and return the json object as a str"""
-    data = {} # data: dict
+    data = {}  # data: dict
     for feature in vpdq_features:
         frame_number = feature.frame_number
         data[frame_number] = {}

@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import pytest
-import test_util
+import vpdq_test_util
 from pathlib import Path
 import sys
 
@@ -24,7 +24,7 @@ WORKDIR = Path.cwd()
 class TestVPDQHasherMatcher:
     def test_vpdq_from_string_path(self):
         computed_hash = VideoVPDQSignal.hash_from_str(str(WORKDIR / VIDEO))
-        expected_hash = test_util.read_file_to_hash(str(WORKDIR / HASH))
+        expected_hash = vpdq_test_util.read_file_to_hash(str(WORKDIR / HASH))
         res, _ = VideoVPDQSignal.compare_hash(
             computed_hash, vpdq_to_json(expected_hash)
         )
