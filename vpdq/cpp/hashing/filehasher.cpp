@@ -63,6 +63,7 @@ bool hashVideoFile(
   int numRGBTriples = height * width;
   int fno = 0;
   unique_ptr<uint8_t[]> rawFrameBuffer(new uint8_t[numRGBTriples * 3]);
+  // Intentional floor operation calculate frameMod as an integer
   int frameMod = secondsPerHash * framesPerSec;
   if (frameMod == 0) {
     // Avoid truncate to zero on corner-case with secondsPerHash = 1
