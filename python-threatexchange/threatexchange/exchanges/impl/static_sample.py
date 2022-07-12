@@ -21,7 +21,8 @@ from threatexchange.exchanges.signal_exchange_api import (
 )
 
 _TypedDelta = state.FetchDelta[
-    t.Dict[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]],
+    t.Tuple[str, str],
+    state.FetchedSignalMetadata,
     state.FetchCheckpointBase,
 ]
 

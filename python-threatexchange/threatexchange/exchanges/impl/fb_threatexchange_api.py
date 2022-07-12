@@ -177,7 +177,8 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
 
 
 ThreatExchangeDelta = state.FetchDelta[
-    t.Dict[t.Tuple[str, str], t.Optional[FBThreatExchangeIndicatorRecord]],
+    t.Tuple[str, str],
+    FBThreatExchangeIndicatorRecord,
     FBThreatExchangeCheckpoint,
 ]
 

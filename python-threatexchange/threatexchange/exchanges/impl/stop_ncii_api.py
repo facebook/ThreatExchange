@@ -109,7 +109,8 @@ class StopNCIISignalExchangeAPI(
         checkpoint: t.Optional[StopNCIICheckpoint],
     ) -> t.Iterator[
         state.FetchDelta[
-            t.Dict[t.Tuple[str, str], t.Optional[StopNCIISignalMetadata]],
+            t.Tuple[str, str],
+            StopNCIISignalMetadata,
             StopNCIICheckpoint,
         ]
     ]:

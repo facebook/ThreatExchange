@@ -18,8 +18,10 @@ from threatexchange.signal_type.signal_base import SignalType
 
 Self = t.TypeVar("Self")
 
-
-TUpdateRecord = t.TypeVar("TUpdateRecord", bound=t.Sized)
+# Note - key is artificially restricted, but it's simple to add more or even
+#        remove the restriction entirely if eventually needed
+TUpdateRecordKey = t.TypeVar("TUpdateRecordKey", str, int, t.Tuple[str, str])
+TUpdateRecordValue = t.TypeVar("TUpdateRecordValue")
 
 
 @dataclass
@@ -45,24 +47,24 @@ TFetchCheckpoint = t.TypeVar("TFetchCheckpoint", bound=FetchCheckpointBase)
 
 
 @dataclass
-class FetchDelta(t.Generic[TUpdateRecord, TFetchCheckpoint]):
+class FetchDelta(t.Generic[TUpdateRecordKey, TUpdateRecordValue, TFetchCheckpoint]):
     """
     Represents an incremental chunk of state fetched from an API.
 
     The exact storage format may vary by API, and a naive implementation
     for combining updates to an in-memory state lives in the API, but it
-    often makes sense for a dedicate storage implementation to have a
+    often makes sense for a dedicated storage implementation to have a
     more efficient implementation.
 
     @see FetchStore
     """
 
-    updates: TUpdateRecord
+    updates: t.Dict[TUpdateRecordKey, t.Optional[TUpdateRecordValue]]
     checkpoint: TFetchCheckpoint
 
 
 FetchDeltaTyped = FetchDelta[
-    t.Any, FetchCheckpointBase
+    t.Any, t.Any, FetchCheckpointBase
 ]  # to anchor checkpoint for typing
 
 
