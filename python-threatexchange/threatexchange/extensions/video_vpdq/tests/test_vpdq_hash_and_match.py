@@ -12,7 +12,7 @@ except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
     from threatexchange.extensions.video_vpdq.video_vpdq import VideoVPDQSignal
-    from vpdq_util import vpdq_to_json, read_file_to_hash, TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT  # type: ignore
+    from vpdq_util import vpdq_to_json, read_file_to_hash, TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT  # type: ignore # Import from parent
 
 VIDEO = "test_video.mp4"
 HASH = "test_hash.txt"

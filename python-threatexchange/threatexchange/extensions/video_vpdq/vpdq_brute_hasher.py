@@ -3,7 +3,7 @@ import typing as t
 import binascii
 import numpy  # type: ignore
 from .vpdq_util import dedupe, quality_filter, TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT
-from collections import namedtuple  # type: ignore
+from collections import namedtuple
 
 BITS_IN_VPDQ = 256
 VPDQMatchTuple = "VPDQMatchTuple"
