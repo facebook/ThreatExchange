@@ -15,7 +15,7 @@ def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
     data: t.Dict[str, t.Dict] = {}
     for feature in vpdq_features:
         frame_number = feature.frame_number
-        data[frame_number]: t.Dict[str, t.Any] = {}
+        data[frame_number] = {}
         data[frame_number][QUALITY] = feature.quality
         data[frame_number][HASH] = feature.hash
         data[frame_number][TIMESTAMP] = feature.timestamp
