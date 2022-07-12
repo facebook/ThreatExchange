@@ -1,4 +1,4 @@
-import vpdq
+import vpdq # type: ignore
 import json
 from json import JSONEncoder
 import typing as t
@@ -12,7 +12,7 @@ QUERY_MATCH_PERCENT = "query_match_percent"
 
 def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
     """Convert from VPDQ features to json object and return the json object as a str"""
-    data = {}  # data: Dict[str, Dict] = ...
+    data = {}  # data: Dict[str, Dict]
     for feature in vpdq_features:
         frame_number = feature.frame_number
         data[frame_number] = {}

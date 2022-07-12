@@ -4,7 +4,7 @@
 Wrapper around the vpdq signal type.
 """
 
-import vpdq
+import vpdq # type: ignore
 from .vpdq_util import json_to_vpdq, vpdq_to_json
 from .vpdq_brute_hasher import match_VPDQ_hash_brute
 import pathlib
@@ -66,7 +66,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.TextHasher):
             distance_threshold,
             cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
         )
-        return signal_base.HashComparisonResult(match_percent, distance_threshold)
+        return signal_base.HashComparisonResult(match_percent, distance_threshold) # type: ignore
 
     @staticmethod
     def get_examples() -> t.List[str]:
