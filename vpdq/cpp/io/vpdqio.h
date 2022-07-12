@@ -14,23 +14,19 @@ bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
     const char* programName);
-
 bool outputVPDQFeatureToFile(
     const string& outputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
     const char* programName);
-bool readVideoResolution(
+bool readVideoStreamInfo(
     const string& inputVideoFileName,
     int& width,
     int& height,
+    double& framesPerSec,
     const char* programName);
 bool readVideoDuration(
     const string& inputVideoFileName,
     double& durationInSec,
-    const char* programName);
-bool readVideoFPS(
-    const string& inputVideoFileName,
-    double& framesPerSec,
     const char* programName);
 } // namespace io
 } // namespace vpdq

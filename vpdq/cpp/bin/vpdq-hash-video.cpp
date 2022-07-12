@@ -162,14 +162,15 @@ int main(int argc, char** argv) {
     outputHashFileName = outputDirectory + "/" + b + ".txt";
   }
   // Hash the video and store the hashes and correspoding info
-  // TODO: Create a vpdq feature class
   double framesPerSec = 0;
-  bool rc = facebook::vpdq::io::readVideoFPS(
-      inputVideoFileName, framesPerSec, argv[0]);
+  int videoWidth = 0;
+  int videoHeight = 0;
+  bool rc = facebook::vpdq::io::readVideoStreamInfo(
+      inputVideoFileName, videoWidth, videoHeight, framesPerSec, argv[0]);
   if (!rc) {
     fprintf(
         stderr,
-        "%s: failed to read video frames per second \"%s\".\n",
+        "%s: failed to read video stream information\"%s\".\n",
         argv[0],
         inputVideoFileName.c_str());
     return 1;
@@ -178,16 +179,8 @@ int main(int argc, char** argv) {
   int width = downsampleFrameDimension;
   int height = downsampleFrameDimension;
   if (downsampleFrameDimension == 0) {
-    rc = facebook::vpdq::io::readVideoResolution(
-        inputVideoFileName, width, height, argv[0]);
-    if (!rc) {
-      fprintf(
-          stderr,
-          "%s: failed to read video resolution \"%s\".\n",
-          argv[0],
-          inputVideoFileName.c_str());
-      return 1;
-    }
+    width = videoWidth;
+    height = videoHeight;
   }
 
   rc = facebook::vpdq::hashing::hashVideoFile(

@@ -110,10 +110,11 @@ bool outputVPDQFeatureToFile(
   return true;
 }
 
-bool readVideoResolution(
+bool readVideoStreamInfo(
     const string& inputVideoFileName,
     int& width,
     int& height,
+    double& framesPerSec,
     const char* programName) {
   AVFormatContext* pFormatCtx = avformat_alloc_context();
   int rc =
@@ -155,9 +156,11 @@ bool readVideoResolution(
       pFormatCtx->streams[videoStream]->codecpar;
   height = videoParameter->height;
   width = videoParameter->width;
+  AVRational fr = pFormatCtx->streams[videoStream]->avg_frame_rate;
+  framesPerSec = (double)fr.num / (double)fr.den;
   return true;
 }
-
+// readVideoDuration is not used in calculating VPDQ for now
 bool readVideoDuration(
     const string& inputVideoFileName,
     double& durationInSec,
@@ -174,51 +177,6 @@ bool readVideoDuration(
     return false;
   }
   durationInSec = (double)pFormatCtx->duration / MILLISEC_IN_SEC;
-  return true;
-}
-
-bool readVideoFPS(
-    const string& inputVideoFileName,
-    double& framesPerSec,
-    const char* programName) {
-  AVFormatContext* pFormatCtx = avformat_alloc_context();
-  int rc =
-      avformat_open_input(&pFormatCtx, inputVideoFileName.c_str(), NULL, NULL);
-  if (rc != 0) {
-    fprintf(
-        stderr,
-        "%s: could not open video \"%s\".\n",
-        programName,
-        inputVideoFileName.c_str());
-    return false;
-  }
-  AVCodecContext* pCodecCtx;
-  int videoStream = -1;
-  rc = avformat_find_stream_info(pFormatCtx, NULL);
-  if (rc < 0) {
-    fprintf(
-        stderr,
-        "%s: could not find video stream info \"%s\".\n",
-        programName,
-        inputVideoFileName.c_str());
-    return false;
-  }
-  for (int i = 0; i < pFormatCtx->nb_streams; i++) {
-    if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-        videoStream < 0) {
-      videoStream = i;
-    }
-  }
-  if (videoStream == -1) {
-    fprintf(
-        stderr,
-        "%s: could not find video stream \"%s\".\n",
-        programName,
-        inputVideoFileName.c_str());
-    return false;
-  }
-  AVRational fr = pFormatCtx->streams[videoStream]->avg_frame_rate;
-  framesPerSec = (double)fr.num / (double)fr.den;
   return true;
 }
 } // namespace io
