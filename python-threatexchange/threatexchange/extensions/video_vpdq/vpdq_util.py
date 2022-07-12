@@ -1,4 +1,4 @@
-import vpdq # type: ignore
+import vpdq  # type: ignore
 import json
 from json import JSONEncoder
 import typing as t
