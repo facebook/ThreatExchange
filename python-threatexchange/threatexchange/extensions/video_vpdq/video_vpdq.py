@@ -5,7 +5,9 @@ Wrapper around the vpdq signal type.
 """
 
 import vpdq
-import vpdq_util
+from .vpdq_util import json_to_vpdq, vpdq_to_json
+from .vpdq_brute_hasher import match_VPDQ_hash_brute
+import pathlib
 import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.video import VideoContent
@@ -13,7 +15,7 @@ from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type import signal_base
 
 
-class VPDQSignal(signal_base.SimpleSignalType, signal_base.BytesHasher):
+class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.TextHasher):
     """
     Simple signal type for video using VPDQ.
 
@@ -30,7 +32,7 @@ class VPDQSignal(signal_base.SimpleSignalType, signal_base.BytesHasher):
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
         """VPDQ hex str contains 64 hexidecimal characters."""
-        vpdq_hashes = vpdq_util.json_to_vpdq(signal_str)
+        vpdq_hashes = json_to_vpdq(signal_str)
         for hash in vpdq_hashes:
             if not re.match("^[0-9a-f]{64}$", hash.hex):
                 raise ValueError("invalid VPDQ hash")
@@ -43,20 +45,25 @@ class VPDQSignal(signal_base.SimpleSignalType, signal_base.BytesHasher):
     @classmethod
     def hash_from_file(cls, path: pathlib.Path) -> str:
         vpdq_hashes = vpdq.computeHash(str(path))
-        return vpdq_util.vpdq_to_json(vpdq_hashes)
+        return vpdq_to_json(vpdq_hashes)
+
+    @classmethod
+    def hash_from_str(cls, path: str) -> str:
+        vpdq_hashes = vpdq.computeHash(path.rstrip())
+        return vpdq_to_json(vpdq_hashes)
+
 
     @classmethod
     def compare_hash(
         cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
     ) -> signal_base.HashComparisonResult:
-        vpdq_hashes1 = vpdq_util.vpdq_to_json(hash1)
-        vpdq_hashes2 = vpdq_util.vpdq_to_json(hash2)
+        vpdq_hash1 = json_to_vpdq(hash1)
+        vpdq_hash2 = json_to_vpdq(hash2)
         if distance_threshold is None:
             distance_threshold = cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD
-        ret = vpdq_brute_hasher.match_VPDQ_hash_brute(
-            hash1, hash2, distance_threshold, cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD
+        ret = match_VPDQ_hash_brute(
+            vpdq_hash1, vpdq_hash2, distance_threshold, cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD
         )
-
         return signal_base.HashComparisonResult(ret, distance_threshold)
 
     @staticmethod
