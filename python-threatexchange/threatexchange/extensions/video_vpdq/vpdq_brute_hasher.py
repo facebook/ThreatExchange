@@ -74,5 +74,4 @@ def match_VPDQ_hash_brute(
         target_match_cnt * 100 / len(filtered_target),
         query_match_cnt * 100 / len(filtered_query),
     )
-
     return res
