@@ -5,7 +5,8 @@ from json import JSONEncoder
 QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
-
+TARGET_MATCH_PERCENT = "target_match_percent"
+QUERY_MATCH_PERCENT = "query_match_percent"
 
 def vpdq_to_json(vpdq_features):
     data = {}

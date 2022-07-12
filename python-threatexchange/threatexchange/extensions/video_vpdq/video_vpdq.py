@@ -11,14 +11,14 @@ import pathlib
 import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.video import VideoContent
-
+import re
 from threatexchange.signal_type import signal_base
 
 
 class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.TextHasher):
     """
     Simple signal type for video using VPDQ.
-
+    Read about VPDQ at https://github.com/facebook/ThreatExchange/tree/main/vpdq
     """
 
     INDICATOR_TYPE = "HASH_VIDEO_VPDQ"
@@ -52,7 +52,6 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.TextHasher):
         vpdq_hashes = vpdq.computeHash(path.rstrip())
         return vpdq_to_json(vpdq_hashes)
 
-
     @classmethod
     def compare_hash(
         cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
@@ -61,10 +60,13 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.TextHasher):
         vpdq_hash2 = json_to_vpdq(hash2)
         if distance_threshold is None:
             distance_threshold = cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD
-        ret = match_VPDQ_hash_brute(
-            vpdq_hash1, vpdq_hash2, distance_threshold, cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD
+        match_percent = match_VPDQ_hash_brute(
+            vpdq_hash1,
+            vpdq_hash2,
+            distance_threshold,
+            cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
         )
-        return signal_base.HashComparisonResult(ret, distance_threshold)
+        return signal_base.HashComparisonResult(match_percent, distance_threshold)
 
     @staticmethod
     def get_examples() -> t.List[str]:

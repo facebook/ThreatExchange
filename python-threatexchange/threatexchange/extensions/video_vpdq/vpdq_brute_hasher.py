@@ -2,12 +2,13 @@ import vpdq
 import typing as t
 import binascii
 import numpy  # type: ignore
-from vpdq_util import dedupe, quality_filter
+from vpdq_util import dedupe, quality_filter, TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT
+from collections import namedtuple
 
 BITS_IN_VPDQ = 256
+VPDQMatchTuple = "VPDQMatchTuple"
 
-
-def match_VPDQ_in_another(hash1, hash2, distance_tolerance):
+def match_VPDQ_in_another(hash1: vpdq.VpdqFeature, hash2: vpdq.VpdqFeature, distance_tolerance: int) -> int:
     """Count matches of hash1 in hash2
 
     Args:
@@ -29,8 +30,8 @@ def match_VPDQ_in_another(hash1, hash2, distance_tolerance):
 
 
 def match_VPDQ_hash_brute(
-    target_hash, query_hash, quality_tolerance, distance_tolerance
-):
+    target_hash: vpdq.VpdqFeature, query_hash: vpdq.VpdqFeature, quality_tolerance: int, distance_tolerance: int
+) -> t.Dict[str, int]:
     """Match two VPDQ hashes. Return the query-match percentage and target-match percentage
 
     Args:
@@ -56,7 +57,6 @@ def match_VPDQ_hash_brute(
     query_match_cnt = match_VPDQ_in_another(
         filtered_query, filtered_target, distance_tolerance
     )
-    return {
-        "target_match_percent": target_match_cnt * 100 / len(filtered_target),
-        "query_match_percent": query_match_cnt * 100 / len(filtered_query),
-    }
+    MatchResult = namedtuple(VPDQMatchTuple,[TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT])
+    return MatchResult(target_match_cnt * 100 / len(filtered_target), query_match_cnt * 100 / len(filtered_query))
+
