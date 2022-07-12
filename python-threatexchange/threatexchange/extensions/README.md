@@ -38,7 +38,7 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | API | threatexchange | stopncii | StopNCII.org
 | API | threatexchange | sample | Static sample signals
 | API | threatexchange | local_file | Load content from a file
-| API | N/A | ncmec | Reserved to prevent confusion with NCMEC API
+| API | threatexchange | ncmec | NCMEC hash API
 | API | N/A | iwf | Reserved to prevent confusion with IWF API
 
 ## Writing a ThreatExchange Expansion Module
