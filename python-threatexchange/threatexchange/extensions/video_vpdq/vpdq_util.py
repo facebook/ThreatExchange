@@ -6,7 +6,6 @@ import typing as t
 import pathlib
 from dataclasses import dataclass
 
-
 QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
@@ -30,14 +29,16 @@ def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
         data[frame_number] = {}
         data[frame_number][QUALITY] = feature.quality
         data[frame_number][HASH] = feature.hash
-        data[frame_number][TIMESTAMP] = feature.timestamp
+        # VPDQ feature's timestamp is round to 3 decimals
+        data[frame_number][TIMESTAMP] = round(feature.timestamp, 3)
     return json.dumps(data)
 
 
 def json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
     """Load a str as a json object and convert from json object to VPDQ features"""
     features = []
-    vpdq_json = json.loads(json_str)
+    # VPDQ feature's timestamp is round to 3 decimals
+    vpdq_json = json.loads(json_str, parse_float=lambda x: round(float(x), 3))
     for frame_number in vpdq_json:
         feature = vpdq_json[frame_number]
         features.append(
