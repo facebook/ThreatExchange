@@ -38,7 +38,7 @@ def match_VPDQ_hash_brute(
     query_hash: t.List[vpdq.VpdqFeature],
     quality_tolerance: int,
     distance_tolerance: int,
-) -> t.NamedTuple:
+) -> VPDQMatchResult:
     """Match two VPDQ hashes. Return the query-match percentage and target-match percentage
 
     Args:
