@@ -12,7 +12,6 @@ from pathlib import Path
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.text import TextContent
 
-# TODO - defend against missing extensions imports
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfdocument import PDFDocument
