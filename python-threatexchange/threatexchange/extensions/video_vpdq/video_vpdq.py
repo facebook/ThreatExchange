@@ -72,7 +72,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     @staticmethod
     def get_examples() -> t.List[str]:
         frame_number = 0
-        timestamp = 0
+        timestamp = 0.0
         quality = 100
         VPDQ_features = []
         for pdq_hash in PdqSignal.get_examples():
