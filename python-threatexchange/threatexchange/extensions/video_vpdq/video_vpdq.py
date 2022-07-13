@@ -32,12 +32,30 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
 
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
-        """VPDQ signal_str is a list of VPDQ features"""
-        """VPDQ feature contains quality(int), frame_number(int), hash(Hash256), hex(str) and timestamp(double)"""
-        """Hex is hexadecimal string contains 64 hexidecimal characters."""
-        """frame_number is non-negative integer."""
-        """quality is a 0-100 interger(inclusive)."""
-        """timestamp is the start time of the frame for the VPDQ feature in second."""
+        """
+        VPDQ signal_str is the json serialization from a list of VPDQ features
+        VPDQ feature contains quality(int), frame_number(int), hash(Hash256), hex(str) and timestamp(double)
+        Hex is a hexadecimal string contains 64 hexidecimal characters
+        frame_number is an non-negative integer
+        quality is a 0-100 interger(inclusive)
+        timestamp(sec, round to 3 decimal) is the start time of the frame for the VPDQ feature
+        The json serialization will converts the the list of VPDQ features to list of json objects
+        where frame_number is the key:
+        {(frame_number)
+            0: {
+                "quality": 100,
+                "hash": Hash256,
+                "timestamp": 0.0
+                },
+
+            1: {
+                "quality": 100,
+                "hash": Hash256,
+                "timestamp": 0.1
+                },
+                ...
+        }
+        """
         vpdq_hashes = json_to_vpdq(signal_str)
         last_frame_number = -1
         for hash in vpdq_hashes:

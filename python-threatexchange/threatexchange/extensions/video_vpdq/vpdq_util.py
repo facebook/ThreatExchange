@@ -9,6 +9,7 @@ from dataclasses import dataclass
 QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
+VPDQ_FEATURE_NUM = 4
 
 
 @dataclass
@@ -98,6 +99,8 @@ def read_file_to_hash(
         for line in file.readlines():
             line = line.strip()
             content = line.split(",")
+            if len(content) != VPDQ_FEATURE_NUM:
+                raise ValueError("Reading invalid VPDQ hash file")
             pdq_hash = vpdq.str_to_hash(content[2])
             feature = vpdq.VpdqFeature(
                 int(content[1]), int(content[0]), pdq_hash, float(content[3])
