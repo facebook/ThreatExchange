@@ -1,5 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import vpdq  # type: ignore
+import vpdq
 import json
 from json import JSONEncoder
 import typing as t

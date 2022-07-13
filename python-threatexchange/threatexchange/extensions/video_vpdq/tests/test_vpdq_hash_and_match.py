@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 try:
-    import vpdq as _  # type: ignore
+    import vpdq as _
 
     _DISABLED = False
 except (ImportError, ModuleNotFoundError) as e:
@@ -19,6 +19,7 @@ else:
 VIDEO = "tmk/sample-videos/chair-20-sd-bar.mp4"
 HASH = "vpdq/sample-hashes/chair-20-sd-bar.txt"
 ROOTDIR = Path(__file__).parents[5]
+
 
 @pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 class TestVPDQHasherMatcher:
