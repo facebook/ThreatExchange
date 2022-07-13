@@ -15,6 +15,7 @@ VPDQ_STR_FEATURE_NUM = 4
 @dataclass
 class VPDQMatchResult:
     """Data class for VPDQ match result"""
+
     target_match_percent: float
     query_match_percent: float
 
