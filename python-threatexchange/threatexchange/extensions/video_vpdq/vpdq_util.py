@@ -14,6 +14,7 @@ VPDQ_STR_FEATURE_NUM = 4
 
 @dataclass
 class VPDQMatchResult:
+    """Data class for VPDQ match result"""
     target_match_percent: float
     query_match_percent: float
 
@@ -112,7 +113,7 @@ def str_to_feature(hash_str: str) -> vpdq.VpdqFeature:
         VPDQ feature from the string"""
     content = hash_str.split(",")
     if len(content) != VPDQ_STR_FEATURE_NUM:
-        raise ValueError("Reading invalid VPDQ hash file")
+        raise ValueError("Reading invalid VPDQ feature string")
     vpdq_hash = vpdq.str_to_hash(content[2])
     feature = vpdq.VpdqFeature(
         int(content[1]), int(content[0]), vpdq_hash, float(content[3])
