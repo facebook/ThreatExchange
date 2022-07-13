@@ -55,6 +55,13 @@ class FetchCommand(command_base.Command):
             help="stop fetching after this many seconds",
         )
         ap.add_argument(
+            "--checkpoint-every",
+            type=int,
+            metavar="SEC",
+            default=600,
+            help="write state to disk if still fetching, or 0 to disable",
+        )
+        ap.add_argument(
             "--only-api",
             choices=[api.get_name() for api in settings.apis],
             help="only fetch from this API",
@@ -74,6 +81,7 @@ class FetchCommand(command_base.Command):
         skip_index_rebuild: bool = False,
         only_api: t.Optional[str] = None,
         only_collab: t.Optional[str] = None,
+        checkpoint_every: int = 600,
     ) -> None:
         self.clear = clear
         self.time_limit_sec = time_limit_sec
@@ -86,6 +94,8 @@ class FetchCommand(command_base.Command):
         # Limits
         self.total_fetched_count = 0
         self.start_time = time.time()
+        self.last_checkpoint_time = time.time()
+        self.checkpoint_every = checkpoint_every
 
         # Progress
         self.last_update_time: t.Optional[int] = None
@@ -101,6 +111,11 @@ class FetchCommand(command_base.Command):
             if time.time() - self.start_time >= self.time_limit_sec:
                 return True
         return False
+
+    def should_checkpoint(self):
+        if self.checkpoint_every <= 0:
+            return False
+        return time.time() > self.checkpoint_every + self.last_checkpoint_time
 
     def execute(self, settings: CLISettings) -> None:
         # Verify collab arguments
@@ -172,26 +187,36 @@ class FetchCommand(command_base.Command):
         self.progress_fetched_count = 0
         self.current_collab = collab.name
         self.current_api = fetcher.get_name()
+        completed = False
 
         try:
             it = fetcher.fetch_iter(settings.get_all_signal_types(), collab, checkpoint)
             delta: FetchDeltaTyped
             for delta in it:
-                logging.info("Fetched %d records", len(delta.updates))
+                logging.info("fetch() with %d new records", len(delta.updates))
                 next_checkpoint = delta.checkpoint
                 self._fetch_progress(len(delta.updates), next_checkpoint)
                 assert next_checkpoint is not None  # Infinite loop protection
                 store.merge(collab, delta)
                 if self.has_hit_limits():
+                    self.stderr("Hit limits, checkpointing")
                     break
-        except:
+                if self.should_checkpoint():
+                    self._print_progress(checkpoint=True)
+                    store.flush()
+                    self.last_checkpoint_time = time.time()
+            completed = True
+        except Exception:
             self._stderr_current("failed to fetch!")
             logging.exception("Failed to fetch %s", collab.name)
             return False
+        except KeyboardInterrupt:
+            self._stderr_current("Interrupted, writing a checkpoint...")
+            raise
         finally:
             store.flush()
 
-        self._print_progress(done=True)
+        self._print_progress(done=completed)
         return True
 
     def _verify_store_and_checkpoint(
@@ -223,10 +248,12 @@ class FetchCommand(command_base.Command):
             f"[{self.current_api}] {self.current_collab} - {msg}",
         )
 
-    def _print_progress(self, *, done=False):
-        processed = "Syncing..."
+    def _print_progress(self, *, done=False, checkpoint=False):
+        processed = "Fetching..."
         if done:
             processed = "Up to date"
+        elif checkpoint:
+            processed = "Checkpointing"
         elif self.progress_fetched_count:
             processed = f"Downloaded {self.progress_fetched_count} updates"
 
@@ -240,6 +267,6 @@ class FetchCommand(command_base.Command):
                 from_time = datetime.datetime.fromtimestamp(
                     self.last_update_time
                 ).isoformat()
-            from_time = f", at {from_time}"
+            from_time = f" at {from_time}"
 
         self._stderr_current(f"{processed}{from_time}")

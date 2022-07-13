@@ -236,7 +236,7 @@ class FBThreatExchangeSignalExchangeAPI(
         cursor = self.api.get_threat_updates(
             collab.privacy_group,
             start_time=start_time,
-            page_size=500,
+            page_size=100,
             fields=ThreatUpdateJSON.te_threat_updates_fields(),
             decode_fn=ThreatUpdateJSON,
         )
