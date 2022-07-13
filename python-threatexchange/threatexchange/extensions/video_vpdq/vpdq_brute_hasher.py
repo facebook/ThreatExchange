@@ -1,13 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import vpdq  # type: ignore
+import vpdq
 import typing as t
 import binascii
-import numpy  # type: ignore
-from .vpdq_util import dedupe, quality_filter, TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT
-from collections import namedtuple
+import numpy
+from .vpdq_util import dedupe, quality_filter, VPDQMatchResult
 
 BITS_IN_VPDQ = 256
-VPDQMatchTuple = "VPDQMatchTuple"
 
 
 def match_VPDQ_in_another(
@@ -44,16 +42,16 @@ def match_VPDQ_hash_brute(
     """Match two VPDQ hashes. Return the query-match percentage and target-match percentage
 
     Args:
-        target_hash (list of VPDQ feature): Target VPDQ hash
-        query_hash (list of VPDQ feature): Query VPDQ hash
-        quality_tolerance (int): The quality tolerance of matching two frames.
+        target_hash : Target VPDQ hash
+        query_hash : Query VPDQ hash
+        quality_tolerance : The quality tolerance of matching two frames.
         If either frames is below this quality level then they will not be compared
-        distance_tolerance (int): The hamming distance tolerance of between two frames.
+        distance_tolerance : The hamming distance tolerance of between two frames.
         If the hamming distance is bigger than the tolerance, it will be considered as unmatched
 
     Returns:
         float: Percentage matched in total target hash
-        flaot: Percentage matched in total query hash
+        float: Percentage matched in total query hash
 
     """
     target_match_cnt = 0
@@ -66,9 +64,7 @@ def match_VPDQ_hash_brute(
     query_match_cnt = match_VPDQ_in_another(
         filtered_query, filtered_target, distance_tolerance
     )
-    MatchResult = namedtuple(VPDQMatchTuple, [TARGET_MATCH_PERCENT, QUERY_MATCH_PERCENT])  # type: ignore
-    res = MatchResult(
+    return VPDQMatchResult(
         target_match_cnt * 100 / len(filtered_target),
         query_match_cnt * 100 / len(filtered_query),
-    )  # type: ignore
-    return res
+    )

@@ -3,12 +3,23 @@ import vpdq  # type: ignore
 import json
 from json import JSONEncoder
 import typing as t
+import pathlib
+from dataclasses import dataclass
+
 
 QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
-TARGET_MATCH_PERCENT = "target_match_percent"
-QUERY_MATCH_PERCENT = "query_match_percent"
+
+
+@dataclass
+class VPDQMatchResult:
+    target_match_percent: float
+    query_match_percent: float
+
+    def __init__(self, target_match_percent: float = 0, query_match_percent: float = 0):
+        self.target_match_percent = target_match_percent
+        self.query_match_percent = query_match_percent
 
 
 def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
@@ -41,7 +52,7 @@ def dedupe(hashes: t.List[vpdq.VpdqFeature]) -> t.List[vpdq.VpdqFeature]:
     """Filter out the VPDQ feature with exact same hash in a list of VPDQ features
 
     Args:
-        hashes (list of VPDQ feature)
+        hashes
 
     Returns:
         list of VPDQ feature: List of VPDQeatures with unique hashes
@@ -61,28 +72,29 @@ def quality_filter(
     """Filter VPDQ feature that has a quality lower than quality_tolerance
 
     Args:
-        hashes (list of VPDQ feature)
-        distance_tolerance (int): If frames is this quality level then it will be ignored
+        hashes
+        distance_tolerance : If frames is this quality level then it will be ignored
 
     Returns:
-        list of VPDQ feature: List of VPDQeatures with quality higher than distance_tolerance
+        List of VPDQFeatures with quality higher than distance_tolerance
     """
     return list(filter(lambda hash: hash.quality >= quality_tolerance, hashes))
 
 
-def read_file_to_hash(input_hash_filename: str) -> t.List[vpdq.VpdqFeature]:
+def read_file_to_hash(
+    input_hash_filename: t.Union[str, pathlib.Path]
+) -> t.List[vpdq.VpdqFeature]:
     """Read hash file and return vpdq hash
 
     Args:
-        input_hash_filename (str): Input hash file path
+        input_hash_filename : Input hash file path
 
     Returns:
-        list of VpdqFeature: vpdq hash from the hash file"""
+        vpdq hash from the hash file"""
 
     hash = []
     with open(input_hash_filename, "r") as file:
-        lines = file.readlines()
-        for line in lines:
+        for line in file.readlines():
             line = line.strip()
             content = line.split(",")
             pdq_hash = vpdq.str_to_hash(content[2])
