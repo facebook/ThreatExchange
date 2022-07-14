@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import pytest
 from pathlib import Path
-import sys
 
 try:
     import vpdq as _

@@ -1,8 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import vpdq
 import typing as t
-import binascii
-import numpy
 from .vpdq_util import dedupe, quality_filter, VPDQMatchResult
 
 BITS_IN_VPDQ = 256
