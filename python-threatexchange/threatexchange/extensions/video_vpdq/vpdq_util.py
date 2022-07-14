@@ -109,7 +109,7 @@ def dump_hash_to_file(
     output_hash_filename: t.Union[str, pathlib.Path],
     vpdq_features: t.List[vpdq.VpdqFeature],
 ) -> None:
-    """Read hash file and write list of VPDQ features
+    """Write list of VPDQ features to output hash file
 
     Args:
         Input hash file path
