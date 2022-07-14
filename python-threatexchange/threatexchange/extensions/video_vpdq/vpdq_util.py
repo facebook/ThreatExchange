@@ -112,7 +112,7 @@ def dump_hash_to_file(
     """Write list of VPDQ features to output hash file
 
     Args:
-        Input hash file path
+        Output hash file path
         VPDQ features write to the output file"""
     with open(output_hash_filename, "w") as file:
         file.write(vpdq_to_json(vpdq_features))
