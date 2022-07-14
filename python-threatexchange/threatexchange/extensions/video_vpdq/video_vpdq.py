@@ -85,8 +85,8 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         match_percent = match_VPDQ_hash_brute(
             vpdq_hash1,
             vpdq_hash2,
-            cls.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
             cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
+            cls.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
         )
         is_match = (
             max(match_percent.query_match_percent, match_percent.target_match_percent)
