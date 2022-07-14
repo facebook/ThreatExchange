@@ -104,9 +104,10 @@ def read_file_to_hash(
     with open(input_hash_filename, "r") as file:
         return json_to_vpdq(file.read())
 
+
 def dump_hash_to_file(
     output_hash_filename: t.Union[str, pathlib.Path],
-    vpdq_features: t.List[vpdq.VpdqFeature]
+    vpdq_features: t.List[vpdq.VpdqFeature],
 ) -> None:
     """Read hash file and write list of VPDQ features
 
