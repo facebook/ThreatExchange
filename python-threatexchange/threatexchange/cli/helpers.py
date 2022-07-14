@@ -8,6 +8,8 @@ import tempfile
 import shutil
 import typing as t
 
+import requests
+
 from threatexchange.cli.exceptions import CommandError
 
 """
@@ -55,8 +57,16 @@ class FlexFilesInputAction(argparse.Action):
                 with tempfile.NamedTemporaryFile("w", delete=False) as tmp:
                     logging.debug("Writing -- to %s", tmp.name)
                     tmp.write(" ".join(args[i + 1 :]))
+                filename = tmp.name
                 ret.append(pathlib.Path(tmp.name))
                 break
+            elif filename.startswith(("http://", "https://")):
+                resp = requests.get(filename, allow_redirects=True)
+                resp.raise_for_status()
+                with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
+                    logging.debug("Writing -- to %s", tmp.name)
+                    tmp.write(resp.content)
+                filename = pathlib.Path(tmp.name)
             path = pathlib.Path(filename)
             if not path.is_file():
                 raise argparse.ArgumentError(self, f"no such file {path}")

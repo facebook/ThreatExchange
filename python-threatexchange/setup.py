@@ -1,37 +1,25 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from codecs import open
+from pathlib import Path
 from os import path
-
 from setuptools import find_packages, setup
 
+here = Path(__file__).parent
 
-here = path.abspath(path.dirname(__file__))
-with open(path.join(here, "README.md"), encoding="utf-8") as f:
-    long_description = f.read()
+description = (here / "DESCRIPTION.rst").read_text(encoding="utf-8").strip()
+long_description = (here / "README.md").read_text(encoding="utf-8").strip()
+version = (here / "version.txt").read_text(encoding="utf-8").strip()
 
-with open(path.join(here, "DESCRIPTION.rst"), encoding="utf-8") as f:
-    description = f.read()
+extensions_dir = here / "threatexchange" / "extensions"
 
-with open(path.join(here, "version.txt"), encoding="utf-8") as f:
-    version = f.read().strip()
+extras_require = {}
 
-extras_require = {
-    "faiss": ["faiss-cpu>=1.6.3", "numpy"],
-    "pdq_hasher": [
-        "numpy",
-        "pdqhash>=0.2.2",
-        "Pillow",
-    ],
-    "ocr": [
-        "pytesseract",
-    ],
-    "pdf": [
-        "py-tlsh",
-        "pdfminer.six",
-    ],
-}
+for extension_dir in extensions_dir.iterdir():
+    requirements = extension_dir / "requirements.txt"
+    if requirements.is_file():
+        extras_require[f"extensions.{extension_dir.name}"] = (
+            requirements.read_text().strip().split("\n")
+        )
 
 all_extras = set(sum(extras_require.values(), []))
 extras_require["test"] = sorted({"pytest"} | all_extras)
@@ -53,7 +41,7 @@ setup(
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
     ],
     keywords="facebook threatexchange",
     url="https://www.github.com/facebook/ThreatExchange",
@@ -65,6 +53,10 @@ setup(
         "dataclasses",
         "python-dateutil",
         "dacite",
+        "Pillow",  # pdq
+        "pdqhash>=0.2.2",  # pdq
+        "faiss-cpu>=1.6.3",  # faiss
+        "numpy",  # faiss
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},

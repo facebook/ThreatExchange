@@ -96,15 +96,13 @@ def _get_conversion(
     return ret
 
 
-NCMECUpdate = t.Dict[str, api.NCMECEntryUpdate]
-
-
 class NCMECSignalExchangeAPI(
     signal_exchange_api.SignalExchangeAPI[
         NCMECCollabConfig,
         NCMECCheckpoint,
         NCMECSignalMetadata,
-        NCMECUpdate,
+        str,
+        api.NCMECEntryUpdate,
     ]
 ):
     """
@@ -157,9 +155,7 @@ class NCMECSignalExchangeAPI(
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
         _collab: CollaborationConfigBase,
         checkpoint: t.Optional[NCMECCheckpoint],
-    ) -> t.Iterator[
-        state.FetchDelta[t.Dict[str, api.NCMECEntryUpdate], NCMECCheckpoint]
-    ]:
+    ) -> t.Iterator[state.FetchDelta[str, api.NCMECEntryUpdate, NCMECCheckpoint]]:
         start_time = 0
         if checkpoint is not None:
             start_time = checkpoint.max_timestamp
@@ -170,18 +166,21 @@ class NCMECSignalExchangeAPI(
             )
 
     @classmethod
-    def naive_fetch_merge(
-        cls, old: t.Optional[NCMECUpdate], new: NCMECUpdate
-    ) -> NCMECUpdate:
-        ret = old or {}
-        ret.update(new)
-        return ret
+    def fetch_value_merge(
+        cls,
+        old: t.Optional[api.NCMECEntryUpdate],
+        new: t.Optional[api.NCMECEntryUpdate],
+    ) -> t.Optional[api.NCMECEntryUpdate]:
+        assert new is not None, "fetch shouldn't do this"
+        if new.deleted:
+            return None
+        return new
 
     @classmethod
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: NCMECUpdate,
+        fetched: t.Mapping[str, api.NCMECEntryUpdate],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]]:
         mapping: t.Mapping[
             t.Tuple[api.NCMECEntryType, str], t.Type[SignalType]

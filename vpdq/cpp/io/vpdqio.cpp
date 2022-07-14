@@ -110,10 +110,11 @@ bool outputVPDQFeatureToFile(
   return true;
 }
 
-bool readVideoResolution(
+bool readVideoStreamInfo(
     const string& inputVideoFileName,
     int& width,
     int& height,
+    double& framesPerSec,
     const char* programName) {
   AVFormatContext* pFormatCtx = avformat_alloc_context();
   int rc =
@@ -155,9 +156,11 @@ bool readVideoResolution(
       pFormatCtx->streams[videoStream]->codecpar;
   height = videoParameter->height;
   width = videoParameter->width;
+  AVRational fr = pFormatCtx->streams[videoStream]->avg_frame_rate;
+  framesPerSec = (double)fr.num / (double)fr.den;
   return true;
 }
-
+// readVideoDuration is not used in calculating VPDQ for now
 bool readVideoDuration(
     const string& inputVideoFileName,
     double& durationInSec,

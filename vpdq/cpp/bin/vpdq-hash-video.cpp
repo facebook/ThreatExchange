@@ -11,7 +11,9 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "Required:\n");
   fprintf(fp, "-i|--input-video-file-name ...\n");
   fprintf(fp, "-o|--output-hash-file-name ...\n");
-  fprintf(fp, "-r|--seconds-per-hash ...:Must be a positive integer\n");
+  fprintf(
+      fp,
+      "-r|--seconds-per-hash ...:Must be a non-negative float. If it is 0, will generate every frame's hash\n");
   fprintf(fp, "Options:\n");
   fprintf(fp, "-f|--ffmpeg-path: Specific path to ffmpeg you want to use\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
@@ -75,7 +77,7 @@ int main(int argc, char** argv) {
   string inputVideoFileName = "";
   string outputHashFileName = "";
   string outputDirectory = "";
-  int secondsPerHash = 0;
+  double secondsPerHash = 0;
   int downsampleFrameDimension = 0;
 
   while ((argi < argc) && argv[argi][0] == '-') {
@@ -109,7 +111,7 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      secondsPerHash = atoi(argv[argi++]);
+      secondsPerHash = atof(argv[argi++]);
       continue;
     }
     if (flag == "-d" || flag == "--output-directory") {
@@ -144,10 +146,10 @@ int main(int argc, char** argv) {
     usage(argv[0], 1);
   }
 
-  if (secondsPerHash <= 0) {
+  if (secondsPerHash < 0) {
     fprintf(
         stderr,
-        "%s: --seconds-per-hash must be an integer bigger than 0\n",
+        "%s: --seconds-per-hash must be a non-negative float.\n",
         argv[0]);
     usage(argv[0], 1);
   }
@@ -160,14 +162,15 @@ int main(int argc, char** argv) {
     outputHashFileName = outputDirectory + "/" + b + ".txt";
   }
   // Hash the video and store the hashes and correspoding info
-  // TODO: Create a vpdq feature class
-  double durationInSec = 0;
-  bool rc = facebook::vpdq::io::readVideoDuration(
-      inputVideoFileName, durationInSec, argv[0]);
+  double framesPerSec = 0;
+  int videoWidth = 0;
+  int videoHeight = 0;
+  bool rc = facebook::vpdq::io::readVideoStreamInfo(
+      inputVideoFileName, videoWidth, videoHeight, framesPerSec, argv[0]);
   if (!rc) {
     fprintf(
         stderr,
-        "%s: failed to read video duration \"%s\".\n",
+        "%s: failed to read video stream information\"%s\".\n",
         argv[0],
         inputVideoFileName.c_str());
     return 1;
@@ -176,16 +179,8 @@ int main(int argc, char** argv) {
   int width = downsampleFrameDimension;
   int height = downsampleFrameDimension;
   if (downsampleFrameDimension == 0) {
-    rc = facebook::vpdq::io::readVideoResolution(
-        inputVideoFileName, width, height, argv[0]);
-    if (!rc) {
-      fprintf(
-          stderr,
-          "%s: failed to read video resolution \"%s\".\n",
-          argv[0],
-          inputVideoFileName.c_str());
-      return 1;
-    }
+    width = videoWidth;
+    height = videoHeight;
   }
 
   rc = facebook::vpdq::hashing::hashVideoFile(
@@ -196,7 +191,7 @@ int main(int argc, char** argv) {
       secondsPerHash,
       width,
       height,
-      durationInSec,
+      framesPerSec,
       argv[0]);
   if (!rc) {
     fprintf(

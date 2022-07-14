@@ -21,7 +21,8 @@ from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaul
 from threatexchange.signal_type.signal_base import SignalType
 
 _TypedDelta = state.FetchDelta[
-    t.Dict[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]],
+    t.Tuple[str, str],
+    state.FetchedSignalMetadata,
     state.FetchCheckpointBase,
 ]
 

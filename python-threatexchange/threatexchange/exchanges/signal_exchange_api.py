@@ -23,7 +23,8 @@ class SignalExchangeAPI(
         TCollabConfig,
         state.TFetchCheckpoint,
         state.TFetchedSignalMetadata,
-        state.TUpdateRecord,
+        state.TUpdateRecordKey,
+        state.TUpdateRecordValue,
     ],
     ABC,
 ):
@@ -42,9 +43,13 @@ class SignalExchangeAPI(
     might be multiple contributors (owners) to signals inside of an API.
 
     An instance of this class can retain state (caching connecting, etc)
-    as needed.
+    as needed, and objects may be persisted to fetch multiple configs.
 
-    Methods with an implementation are optional, but may rely on
+    = On fetch_iter() returns =
+    In order to efficiently store state, it's assumed that data pulled from
+    the API can be partitioned in some way by key. If this doesn't make sense
+    for your API, or it's mostly a toy implementation, empty string is a
+    valid key, and the value can be the entire dataset.
 
     = On Owner IDs =
     Some APIs may not have any concept of owner ID (because the owner is the
@@ -92,37 +97,56 @@ class SignalExchangeAPI(
         return CollaborationConfigBase  # type: ignore
 
     @classmethod
-    @abstractmethod
+    def fetch_value_merge(
+        cls,
+        old: t.Optional[state.TUpdateRecordValue],
+        new: t.Optional[state.TUpdateRecordValue],  # can be modified in-place
+    ) -> t.Optional[state.TUpdateRecordValue]:
+        """
+        Merge a new update produced by fetch.
+
+        Returning a value of None indicates that the entry should be deleted.
+
+        Most implementations will probably prefer the default, which is to
+        replace the record entirely.
+
+        It is safe to mutate `new` inline and return it, if needed.
+        """
+        # Default implementation is replace
+        return new
+
+    @classmethod
+    # @t.Final post 3.8
     def naive_fetch_merge(
         cls,
-        old: t.Optional[state.TUpdateRecord],
-        new: state.TUpdateRecord,
-    ) -> state.TUpdateRecord:
+        old: t.Dict[
+            state.TUpdateRecordKey, state.TUpdateRecordValue
+        ],  # modified in place
+        new: t.Mapping[state.TUpdateRecordKey, t.Optional[state.TUpdateRecordValue]],
+    ) -> None:
         """
-        Merge a new update produced by fetch in-memory.
+        Merge the results of a fetch in-memory.
 
-        It is safe to merge into `old` in-place if supported, and return that.
-
-        This is the fallback method of creating state when there isn't a
-        specialized storage for the fetch type.
+        This implementation is mostly for demonstration purposes and testing,
+        since even simple usecases may prefer to avoid loading the whole dataset
+        in memory and merging by key.
 
         For example, if you have nothing else, merging NCMEC update records
-        together by ID will eventually get you an entire copy of the database.
-        However, if it started to get too big where it would be a problem to
-        load into memory, it would be better to store in a storage that
-        only let you update the IDs you had updates for, or let you build an
-        index based on other fields inside. If you were doing that, you
-        wouldn't use this and rely on a specialzied implementation for this
-        API that extends FetchStateStore.
+        together keyed by ID will eventually get you an entire copy of the database.
         """
-        raise NotImplementedError
+        for k, v in new.items():
+            new_v = cls.fetch_value_merge(old.get(k), v)
+            if new_v is None:
+                old.pop(k, None)  # type: ignore
+            else:
+                old[k] = new_v
 
     @classmethod
     @abstractmethod
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: state.TUpdateRecord,
+        fetched: t.Mapping[state.TUpdateRecordKey, state.TUpdateRecordValue],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
         """
         Convert the record from the API format to the format needed for indexing.
@@ -165,7 +189,11 @@ class SignalExchangeAPI(
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> t.Iterator[state.FetchDelta[state.TUpdateRecord, state.TFetchCheckpoint]]:
+    ) -> t.Iterator[
+        state.FetchDelta[
+            state.TUpdateRecordKey, state.TUpdateRecordValue, state.TFetchCheckpoint
+        ]
+    ]:
         """
         Call out to external resources, fetching a batch of updates per yield.
 
@@ -174,6 +202,9 @@ class SignalExchangeAPI(
         I.e. if the sequence is create => delete, if the sequence is reversed
         to delete => create, the end result is a stored record, when the
         expected is a deleted one.
+
+        Updates are assumed to have a keys that can partition the dataset. See the
+        note on this in the class docstring.
 
         The iterator may be abandoned before it is completely exhausted.
 
@@ -271,45 +302,14 @@ TSignalExchangeAPI = SignalExchangeAPI[
     state.FetchCheckpointBase,
     state.FetchedSignalMetadata,
     t.Any,
+    t.Any,
 ]
 
 TSignalExchangeAPICls = t.Type[TSignalExchangeAPI]
 
 
-K = t.TypeVar("K")
-V = t.TypeVar("V")
-
-
-class SignalExchangeAPIWithKeyedUpdates(
-    SignalExchangeAPI[
-        TCollabConfig,
-        state.TFetchCheckpoint,
-        state.TFetchedSignalMetadata,
-        t.Dict[K, t.Optional[V]],
-    ]
-):
-    """
-    An API that supports sequential updates with a common key (id, hash, etc).
-
-    This provides a simple approach for merging data.
-    A value of None for a value indicates that the record was deleted.
-    """
-
-    @classmethod
-    def naive_fetch_merge(
-        cls, old: t.Optional[t.Dict[K, t.Optional[V]]], new: t.Dict[K, t.Optional[V]]
-    ) -> t.Dict[K, t.Optional[V]]:
-        old = old or {}
-        for k, v in new.items():
-            if v is None:
-                old.pop(k, None)
-            else:
-                old[k] = v
-        return old
-
-
 class SignalExchangeAPIWithSimpleUpdates(
-    SignalExchangeAPIWithKeyedUpdates[
+    SignalExchangeAPI[
         TCollabConfig,
         state.TFetchCheckpoint,
         state.TFetchedSignalMetadata,
@@ -330,7 +330,7 @@ class SignalExchangeAPIWithSimpleUpdates(
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: t.Dict[t.Tuple[str, str], t.Optional[state.TFetchedSignalMetadata]],
+        fetched: t.Mapping[t.Tuple[str, str], t.Optional[state.TFetchedSignalMetadata]],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
         ret: t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]] = {}
         type_by_name = {st.get_name(): st for st in signal_types}

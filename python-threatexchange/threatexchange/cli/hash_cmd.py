@@ -7,7 +7,6 @@ Hash command to convert content into signatures.
 
 import argparse
 import pathlib
-import sys
 import typing as t
 from threatexchange.cli.cli_config import CLISettings
 
@@ -61,7 +60,7 @@ class HashCommand(command_base.Command):
             "files",
             nargs=argparse.REMAINDER,
             action=FlexFilesInputAction,
-            help="list of files or -- to interpret remainder as a string",
+            help="list of files, URLs, - for stdin, or -- to interpret remainder as a string",
         )
 
         ap.add_argument(
@@ -102,7 +101,6 @@ class HashCommand(command_base.Command):
             for s in settings.get_signal_types_for_content(content_type)
             if self.signal_type in (None, s.get_name())
         ]
-
         byte_hashers = [s for s in all_signal_types if issubclass(s, BytesHasher)]
         str_hashers = [s for s in all_signal_types if issubclass(s, TextHasher)]
 

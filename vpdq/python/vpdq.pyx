@@ -11,7 +11,6 @@ from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 
-
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
     cdef struct Hash256:
         unsigned short w[16];
@@ -42,10 +41,10 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         vector[vpdqFeature]& pdqHashes,
         string ffmpeg_path,
         bool verbose,
-        int seconds_per_hash,
+        double seconds_per_hash,
         int width,
         int height,
-        float duration_in_sec,
+        double frames_per_sec,
         const char* argv0
     )
 
@@ -103,7 +102,7 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256"):
 def computeHash(
     input_video_filename: str,
     ffmpeg_path: str = "ffmpeg",
-    seconds_per_hash: int = 1,
+    seconds_per_hash: double = 0,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
@@ -114,7 +113,7 @@ def computeHash(
         input_video_filename: Input video file path
         ffmpeg_path: ffmpeg path
         verbose: If verbose, will print detailed information
-        seconds_per_hash: The frequence(per second) a hash is generated from the video
+        seconds_per_hash: The frequence(per second) a hash is generated from the video. If it is 0, will generate every frame's hash
         downsample_width: Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
         downsample_height: Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
     Returns:
@@ -122,7 +121,7 @@ def computeHash(
     """
     cdef vector[vpdqFeature] vpdq_hash;
     vid = cv2.VideoCapture(input_video_filename)
-    duration_in_sec = vid.get(cv2.CAP_PROP_POS_MSEC)
+    frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
     if downsample_width == 0:
         downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
 
@@ -137,7 +136,7 @@ def computeHash(
         seconds_per_hash,
         downsample_width,
         downsample_height,
-        duration_in_sec,
+        frames_per_sec,
         "vpdqPY",
     )
     if not rt:
