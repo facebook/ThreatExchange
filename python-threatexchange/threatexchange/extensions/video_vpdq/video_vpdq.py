@@ -20,7 +20,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     """
     Simple signal type for video using VPDQ.
     VPDQ signal_str is the json serialization from a list of VPDQ features
-    The json serialization will converts the the list of VPDQ features to list of json objects
+    The json serialization will convert the the list of VPDQ features to list of json objects
     where frame_number is the key:
     {(frame_number)
         0: {
@@ -78,7 +78,8 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     def compare_hash(
         cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
     ) -> signal_base.HashComparisonResult:
-        """ "If the max of the two match percentages is over 80% match percent with 31 distance threshold, it's a match."""
+        """If the max of the two match percentages is over VPDQ_CONFIDENT_MATCH_THRESHOLD
+        with VPDQ_CONFIDENT_DISTANCE_THRESHOLD, it's a match."""
         vpdq_hash1 = json_to_vpdq(hash1)
         vpdq_hash2 = json_to_vpdq(hash2)
         match_percent = match_VPDQ_hash_brute(

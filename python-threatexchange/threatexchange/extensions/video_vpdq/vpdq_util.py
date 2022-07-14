@@ -64,7 +64,7 @@ def dedupe(features: t.List[vpdq.VpdqFeature]) -> t.List[vpdq.VpdqFeature]:
         features
 
     Returns:
-        List of VPDQeatures with unique features
+        List of VPDQ Features with unique features
     """
     unique_features = set()
     ret = []
