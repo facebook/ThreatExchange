@@ -10,16 +10,17 @@ QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
 VPDQ_STR_FEATURE_NUM = 4
+VPDQ_TIMESTAMP_PRECISION = 3
 
 
 @dataclass
 class VPDQMatchResult:
     """Data class for VPDQ match result"""
 
-    target_match_percent: float
-    query_match_percent: float
+    target_match_percent: float = 0.0
+    query_match_percent: float = 0.0
 
-    def __init__(self, target_match_percent: float = 0, query_match_percent: float = 0):
+    def __init__(self, target_match_percent, query_match_percent):
         self.target_match_percent = target_match_percent
         self.query_match_percent = query_match_percent
 
@@ -33,7 +34,9 @@ def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
         data[frame_number][QUALITY] = feature.quality
         data[frame_number][HASH] = feature.hash
         # VPDQ feature's timestamp is round to 3 decimals
-        data[frame_number][TIMESTAMP] = round(feature.timestamp, 3)
+        data[frame_number][TIMESTAMP] = round(
+            feature.timestamp, VPDQ_TIMESTAMP_PRECISION
+        )
     return json.dumps(data)
 
 
@@ -41,7 +44,9 @@ def json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
     """Load a str as a json object and convert from json object to VPDQ features"""
     features = []
     # VPDQ feature's timestamp is round to 3 decimals
-    vpdq_json = json.loads(json_str, parse_float=lambda x: round(float(x), 3))
+    vpdq_json = json.loads(
+        json_str, parse_float=lambda x: round(float(x), VPDQ_TIMESTAMP_PRECISION)
+    )
     for frame_number in vpdq_json:
         feature = vpdq_json[frame_number]
         features.append(
@@ -59,7 +64,7 @@ def dedupe(features: t.List[vpdq.VpdqFeature]) -> t.List[vpdq.VpdqFeature]:
         features
 
     Returns:
-        list of VPDQ feature: List of VPDQeatures with unique features
+        List of VPDQeatures with unique features
     """
     unique_features = set()
     ret = []
@@ -77,12 +82,12 @@ def quality_filter(
 
     Args:
         features
-        distance_tolerance : If frames is this quality level then it will be ignored
+        quality_tolerance : If frames is this quality level then it will be ignored
 
     Returns:
-        List of VPDQFeatures with quality higher than distance_tolerance
+        List of VPDQFeatures with quality higher than quality_tolerance
     """
-    return list(filter(lambda hash: hash.quality >= quality_tolerance, features))
+    return [f for f in features if f.quality >= quality_tolerance]
 
 
 def read_file_to_hash(
@@ -91,32 +96,22 @@ def read_file_to_hash(
     """Read hash file and return list of VPDQ features
 
     Args:
-        input_hash_filename : Input hash file path
+        Input hash file path
 
     Returns:
         VPDQ features from the hash file"""
 
-    features = []
     with open(input_hash_filename, "r") as file:
-        for line in file.readlines():
-            line = line.strip()
-            features.append(str_to_feature(line))
-    return features
+        return json_to_vpdq(file.read())
 
-
-def str_to_feature(hash_str: str) -> vpdq.VpdqFeature:
-    """Convert string to a VPDQ feature
+def dump_hash_to_file(
+    output_hash_filename: t.Union[str, pathlib.Path],
+    vpdq_features: t.List[vpdq.VpdqFeature]
+) -> None:
+    """Read hash file and write list of VPDQ features
 
     Args:
-        hash_str : VPDQ feature's string representation
-        frame_number,quality,hash(hex_str),timestamp
-    Returns:
-        VPDQ feature from the string"""
-    content = hash_str.split(",")
-    if len(content) != VPDQ_STR_FEATURE_NUM:
-        raise ValueError("Reading invalid VPDQ feature string")
-    vpdq_hash = vpdq.str_to_hash(content[2])
-    feature = vpdq.VpdqFeature(
-        int(content[1]), int(content[0]), vpdq_hash, float(content[3])
-    )
-    return feature
+        Input hash file path
+        VPDQ features write to the output file"""
+    with open(output_hash_filename, "w") as file:
+        file.write(vpdq_to_json(vpdq_features))

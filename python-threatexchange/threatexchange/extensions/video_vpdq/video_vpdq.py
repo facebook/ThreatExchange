@@ -53,7 +53,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         VPDQ feature contains quality(int), frame_number(int), hash(Hash256), hex(hex_str of the hash) and timestamp(double)
         Hex is a hexadecimal string contains 64 hexidecimal characters
         frame_number is an non-negative integer
-        quality is a 0-100 interger(inclusive)
+        quality is a 0-100 integer(inclusive)
         timestamp(sec, round to 3 decimal) is the start time of the frame for the VPDQ feature
         """
         vpdq_hashes = json_to_vpdq(signal_str)
@@ -82,7 +82,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         match_percent = match_VPDQ_hash_brute(
             vpdq_hash1,
             vpdq_hash2,
-            cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
+            cls.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
             cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
         )
         return signal_base.HashComparisonResult(match_percent, distance_threshold)  # type: ignore #video vpdq should return two percentages instead of just true or false
@@ -99,6 +99,6 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
                     quality, frame_number, vpdq.str_to_hash(pdq_hash), timestamp
                 )
             )
-            timestamp += 0.1
+            timestamp += 1.0
             frame_number += 1
         return [vpdq_to_json(VPDQ_features)]

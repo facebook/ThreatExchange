@@ -17,7 +17,7 @@ else:
     )
 
 VIDEO = "tmk/sample-videos/chair-20-sd-bar.mp4"
-HASH = "vpdq/sample-hashes/chair-20-sd-bar.txt"
+HASH = "python-threatexchange/threatexchange/extensions/video_vpdq/tests/test_hash.txt"
 ROOTDIR = Path(__file__).parents[5]
 
 

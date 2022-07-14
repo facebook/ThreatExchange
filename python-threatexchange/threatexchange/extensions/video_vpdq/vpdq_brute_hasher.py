@@ -24,13 +24,7 @@ def match_VPDQ_in_another(
     Returns:
         int: The count of matches of hash1 in hash2
     """
-    cnt = 0
-    for h1 in hash1:
-        for h2 in hash2:
-            if h1.hamming_distance(h2) < distance_tolerance:
-                cnt += 1
-                break
-    return cnt
+    return sum(any(h1.hamming_distance(h2) <= distance_tolerance for h2 in hash2) for h1 in hash1)
 
 
 def match_VPDQ_hash_brute(
