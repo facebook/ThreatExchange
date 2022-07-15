@@ -9,7 +9,6 @@ from dataclasses import dataclass
 QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
-VPDQ_STR_FEATURE_NUM = 4
 VPDQ_TIMESTAMP_PRECISION = 3
 
 
