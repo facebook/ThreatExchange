@@ -17,12 +17,8 @@ VPDQ_TIMESTAMP_PRECISION = 3
 class VPDQMatchResult:
     """Data class for VPDQ match result"""
 
-    target_match_percent: float = 0.0
     query_match_percent: float = 0.0
-
-    def __init__(self, target_match_percent, query_match_percent):
-        self.target_match_percent = target_match_percent
-        self.query_match_percent = query_match_percent
+    compared_match_percent: float = 0.0
 
 
 def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
@@ -47,8 +43,7 @@ def json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
     vpdq_json = json.loads(
         json_str, parse_float=lambda x: round(float(x), VPDQ_TIMESTAMP_PRECISION)
     )
-    for frame_number in vpdq_json:
-        feature = vpdq_json[frame_number]
+    for frame_number, feature in vpdq_json.items():
         features.append(
             vpdq.VpdqFeature(
                 feature[QUALITY], frame_number, feature[HASH], feature[TIMESTAMP]

@@ -37,4 +37,4 @@ class TestVPDQHasherMatcher:
             VideoVPDQSignal.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
         )
         assert res.query_match_percent == 100
-        assert res.target_match_percent == 100
+        assert res.compared_match_percent == 100

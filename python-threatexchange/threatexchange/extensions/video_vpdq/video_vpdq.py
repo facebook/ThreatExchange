@@ -25,7 +25,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     {(frame_number)
         0: {
             "quality": 100,
-            "hash": Hash256,
+            "hash": PDQHash,
             "timestamp": 0.0
             },
 
@@ -88,11 +88,11 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
             cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
             cls.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
         )
-        is_match = (
-            max(match_percent.query_match_percent, match_percent.target_match_percent)
-            >= cls.VPDQ_CONFIDENT_MATCH_THRESHOLD
+        max_match_percent = max(
+            match_percent.query_match_percent, match_percent.compared_match_percent
         )
-        return signal_base.HashComparisonResult.from_bool(is_match)
+        is_match = max_match_percent >= cls.VPDQ_CONFIDENT_MATCH_THRESHOLD
+        return signal_base.HashComparisonResult(is_match, max_match_percent)
 
     @staticmethod
     def get_examples() -> t.List[str]:
