@@ -92,7 +92,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
             match_percent.query_match_percent, match_percent.compared_match_percent
         )
         is_match = max_match_percent >= cls.VPDQ_CONFIDENT_MATCH_THRESHOLD
-        return signal_base.HashComparisonResult(is_match, max_match_percent)
+        return signal_base.HashComparisonResult(is_match, int(max_match_percent))
 
     @staticmethod
     def get_examples() -> t.List[str]:
