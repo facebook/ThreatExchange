@@ -26,7 +26,9 @@ class VPDQFlatHashIndex:
         self.video_id_to_vpdq: t.Dict[VPDQ_VIDEOID_TYPE, t.List[vpdq.VpdqFeature]] = {}
         super().__init__()
 
-    def get_video_frame_counts(self, video_id: VPDQ_VIDEOID_TYPE, quality_tolerance: int) -> int:
+    def get_video_frame_counts(
+        self, video_id: VPDQ_VIDEOID_TYPE, quality_tolerance: int
+    ) -> int:
         """
         Args:
             video_id
