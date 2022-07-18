@@ -3,10 +3,12 @@
 import vpdq
 import faiss
 from .vpdq_util import dedupe, quality_filter
+from threatexchange.signal_type.index import (
+    T as IndexT,
+)
 import typing as t
 import numpy
 import binascii
-
 
 BITS_IN_VPDQ = 256
 VPDQ_VIDEOID_TYPE = t.Union[str, int]
@@ -41,13 +43,14 @@ class VPDQFlatHashIndex:
     def add_single_video(
         self,
         hashes: t.List[vpdq.VpdqFeature],
-        video_id: VPDQ_VIDEOID_TYPE,
+        entry: IndexT,
     ) -> None:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
             video_id : Unique video id corresponeds to the hashes in a single video
         """
+        video_id = entry["video_id"]
         if video_id in self.video_id_to_vpdq:
             raise ValueError("invalid VPDQ Index Video ID, this ID already exists")
         hashes = dedupe(hashes)
