@@ -45,11 +45,12 @@ class VPDQFlatIndex(SignalTypeIndex):
         results = self.index.search_with_distance_in_result(
             features, self.get_match_threshold()
         )
-        matches = []
+        res = []
         for feature in features:
-            match = results[feature.hex]
-            matches.append(match[6], match[0:6])
-        return matches
+            matches = results[feature.hex]
+            for match in matches:
+                res.append(IndexMatch(match[6], match[0:6]))
+        return res
 
     def add(self, signal_str: str, video_id: IndexT) -> None:
         self.index.add_single_video(json_to_vpdq(signal_str), video_id)

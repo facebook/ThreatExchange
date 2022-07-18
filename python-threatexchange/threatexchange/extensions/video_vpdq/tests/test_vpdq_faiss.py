@@ -28,4 +28,4 @@ class TestVPDQIndex:
         index = VPDQFlatIndex()
         index.add(vpdq_to_json(hash), "test_hash")
         res = index.query(vpdq_to_json(hash[0:1]))
-        assert len(res[hash[0].hex]) == 18
+        assert len(res) == 18
