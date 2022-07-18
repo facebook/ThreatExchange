@@ -53,7 +53,8 @@ class VPDQFlatIndex(SignalTypeIndex):
         return res
 
     def add(self, signal_str: str, entry: IndexT) -> None:
-        self.index.add_single_video(json_to_vpdq(signal_str), entry)
+        t.cast(entry, t.Dict)
+        self.index.add_single_video(json_to_vpdq(signal_str), entry["video_id"])
 
     def add_all(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
         for signal_str, entry in entries:
