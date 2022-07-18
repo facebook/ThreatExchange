@@ -41,7 +41,7 @@ class VPDQFlatHashIndex:
     def add_single_video(
         self,
         hashes: t.List[vpdq.VpdqFeature],
-        video_id: VPDQ_VIDEOID_TYPE,
+        video_id: IndexT,
     ) -> None:
         """
         Args:
@@ -64,7 +64,7 @@ class VPDQFlatHashIndex:
         self,
         queries: t.List[vpdq.VpdqFeature],
         threshhold: int,
-    ) -> t.List[IndexMatch[IndexT]]:
+    ) -> t.Dict[str, t.List]:
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away from the query hashes by
         hamming distance.

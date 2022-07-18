@@ -41,9 +41,15 @@ class VPDQFlatIndex(SignalTypeIndex):
         """
 
         # query takes a signal hash but index supports batch queries hence [hash]
-        return self.index.search_with_distance_in_result(
-            json_to_vpdq(hash), self.get_match_threshold()
+        features = json_to_vpdq(hash)
+        results = self.index.search_with_distance_in_result(
+            features, self.get_match_threshold()
         )
+        matches = []
+        for feature in features:
+            match = results[feature.hex]
+            matches.append(match[6], match[0:6])
+        return matches
 
     def add(self, signal_str: str, video_id: IndexT) -> None:
         self.index.add_single_video(json_to_vpdq(signal_str), video_id)
