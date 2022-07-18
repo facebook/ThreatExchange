@@ -22,8 +22,8 @@ class VPDQFlatHashIndex:
     def __init__(self) -> None:
         faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
         self.faiss_index = faiss_index
-        self.idx_to_vpdq: t.List[t.Tuple[VPDQ_VIDEOID_TYPE, vpdq.VpdqFeature]] = []
-        self.video_id_to_vpdq: t.Dict[VPDQ_VIDEOID_TYPE, t.List[vpdq.VpdqFeature]] = {}
+        self.idx_to_vpdq: t.List[t.Tuple[IndexT, vpdq.VpdqFeature]] = []
+        self.video_id_to_vpdq: t.Dict[IndexT, t.List[vpdq.VpdqFeature]] = {}
         super().__init__()
 
     def get_video_frame_counts(
