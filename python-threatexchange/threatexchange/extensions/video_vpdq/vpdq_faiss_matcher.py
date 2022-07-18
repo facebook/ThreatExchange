@@ -21,7 +21,7 @@ class VPDQFlatHashIndex:
     def __init__(self) -> None:
         faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
         self.faiss_index = faiss_index
-        self.idx_to_vpdq: t.List[t.Tuple[IndexT, IndexT]] = []
+        self.idx_to_vpdq: t.List[t.Tuple[IndexT, vpdq.VpdqFeature]] = []
         self.video_id_to_vpdq: t.Dict[IndexT, t.List[vpdq.VpdqFeature]] = {}
         super().__init__()
 

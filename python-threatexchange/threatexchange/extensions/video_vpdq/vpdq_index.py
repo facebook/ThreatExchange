@@ -41,14 +41,13 @@ class VPDQFlatIndex(SignalTypeIndex):
         """
 
         # query takes a signal hash but index supports batch queries hence [hash]
-        results = self.index.search_with_distance_in_result(
+        return self.index.search_with_distance_in_result(
             json_to_vpdq(hash), self.get_match_threshold()
         )
-        return results
 
     def add(self, signal_str: str, video_id: IndexT) -> None:
         self.index.add_single_video(json_to_vpdq(signal_str), video_id)
 
     def add_all(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
         for signal_str, video_id in entries:
-            self.add(json_to_vpdq(signal_str), video_id)
+            self.add(signal_str, video_id)
