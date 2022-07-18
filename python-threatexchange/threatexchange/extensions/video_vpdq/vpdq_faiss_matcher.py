@@ -9,6 +9,7 @@ import binascii
 from threatexchange.signal_type.index import T as IndexT, IndexMatch
 
 BITS_IN_VPDQ = 256
+VPDQ_VIDEOID_TYPE = t.Union[str, int]
 
 
 class VPDQFlatHashIndex:
@@ -21,11 +22,11 @@ class VPDQFlatHashIndex:
     def __init__(self) -> None:
         faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
         self.faiss_index = faiss_index
-        self.idx_to_vpdq: t.List[t.Tuple[IndexT, vpdq.VpdqFeature]] = []
-        self.video_id_to_vpdq: t.Dict[IndexT, t.List[vpdq.VpdqFeature]] = {}
+        self.idx_to_vpdq: t.List[t.Tuple[VPDQ_VIDEOID_TYPE, vpdq.VpdqFeature]] = []
+        self.video_id_to_vpdq: t.Dict[VPDQ_VIDEOID_TYPE, t.List[vpdq.VpdqFeature]] = {}
         super().__init__()
 
-    def get_video_frame_counts(self, video_id: IndexT, quality_tolerance: int) -> int:
+    def get_video_frame_counts(self, video_id: VPDQ_VIDEOID_TYPE, quality_tolerance: int) -> int:
         """
         Args:
             video_id
@@ -38,7 +39,7 @@ class VPDQFlatHashIndex:
     def add_single_video(
         self,
         hashes: t.List[vpdq.VpdqFeature],
-        video_id: IndexT,
+        video_id: VPDQ_VIDEOID_TYPE,
     ) -> None:
         """
         Args:
