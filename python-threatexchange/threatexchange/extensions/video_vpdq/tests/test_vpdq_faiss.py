@@ -21,7 +21,7 @@ ROOTDIR = Path(__file__).parents[5]
 
 @pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 class TestVPDQIndex:
-    def test_vpdq_from_string_path(self):
+    def test_simple(self):
         hash = read_file_to_hash(ROOTDIR / HASH)
         index = VPDQFlatIndex()
         index.add(vpdq_to_json(hash), "test_hash")
