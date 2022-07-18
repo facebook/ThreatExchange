@@ -50,6 +50,8 @@ class VPDQFlatHashIndex:
             hashes : One video's VPDQ features of to create the index with
             video_id : Unique video id corresponeds to the hashes in a single video
         """
+        if entry is not t.Dict or entry["video_id"] is None:
+            raise ValueError("invalid VPDQ entry, this must exist a video_id")
         video_id = entry["video_id"]
         if video_id in self.video_id_to_vpdq:
             raise ValueError("invalid VPDQ Index Video ID, this ID already exists")
