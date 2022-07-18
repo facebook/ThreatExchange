@@ -21,7 +21,7 @@ from threatexchange.extensions.video_vpdq.vpdq_util import json_to_vpdq
 
 class VPDQFlatIndex(SignalTypeIndex):
     """
-    Wrapper around the pdq faiss index lib using PDQMultiHashIndex
+    Wrapper around the vpdq faiss index lib using VPDQFlatHashIndex
     """
 
     @classmethod

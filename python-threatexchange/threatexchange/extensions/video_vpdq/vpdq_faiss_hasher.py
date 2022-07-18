@@ -45,6 +45,8 @@ class VPDQFlatHashIndex:
             hashes (sequence of VPDQ feature): One video's VPDQ features of to create the index with
             video_id (int): Video id corresponeds to the hashes in a single video
         """
+        if video_id in self.video_id_to_vpdq:
+            raise ValueError("invalid VPDQ Index Video ID, this ID already exists")
         hashes = dedupe(hashes)
         self.idx_to_vpdq.extend([(video_id, h) for h in hashes])
         self.video_id_to_vpdq[video_id] = hashes
