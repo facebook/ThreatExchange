@@ -5,9 +5,7 @@ Implementation of SignalTypeIndex abstraction for PDQ by wrapping
 hashing.pdq_faiss_matcher.
 """
 
-import collections
 import typing as t
-import pickle
 
 from threatexchange.signal_type.index import (
     SignalTypeIndex,

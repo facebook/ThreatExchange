@@ -28,8 +28,8 @@ class VPDQFlatHashIndex:
     def get_video_frame_counts(self, video_id: IndexT, quality_tolerance: int):
         """
         Args:
-            video_id (int)
-            quality_tolerance (int)
+            video_id 
+            quality_tolerance 
         Returns:
             Size of VPDQ features in the video that has a quality larger or equal to quality_tolerance
         """
@@ -42,8 +42,8 @@ class VPDQFlatHashIndex:
     ):
         """
         Args:
-            hashes (sequence of VPDQ feature): One video's VPDQ features of to create the index with
-            video_id (int): Video id corresponeds to the hashes in a single video
+            hashes : One video's VPDQ features of to create the index with
+            video_id : Unique video id corresponeds to the hashes in a single video
         """
         if video_id in self.video_id_to_vpdq:
             raise ValueError("invalid VPDQ Index Video ID, this ID already exists")
@@ -77,16 +77,16 @@ class VPDQFlatHashIndex:
             that were within threshold hamming distance of that query. These matches will be (id, video_id, frame_number,
             hex_str of hash, quality, distance). The inner sequences may be empty in the case of no hashes within the index.
             The same VPDQ feature may also appear in more than one inner sequence if it matches multiple query hashes.
-            For example the hash "000000000000000000000000000000000000000000000000000000000000FFFF" would match both
-            "00000000000000000000000000000000000000000000000000000000FFFFFFFF" and
+            For example the hash "000000000000000000000000000000000000000000000000000000000000ffff" would match both
+            "00000000000000000000000000000000000000000000000000000000fffffff" and
             "0000000000000000000000000000000000000000000000000000000000000000" for a threshold of 16. Thus it would appear in
             the entry for both the hashes if they were both in the queries list.
 
             eg.
-            query_str =>  (id, video_id, frame_number, hex_str of hash, quality, distance)
+            query_str =>  (id, video_id, frame_number, hex_str of hash, quality, timestamp, distance)
             result = {
-                "000000000000000000000000000000000000000000000000000000000000FFFF": [
-                    (12345678901, 5, 38, "00000000000000000000000000000000000000000000000000000000FFFFFFFF",97, 16.0)
+                "000000000000000000000000000000000000000000000000000000000000ffff": [
+                    (12345678901, "video1", 38, "00000000000000000000000000000000000000000000000000000000fffffff",97, 0.1, 16.0)
                 ]
             }
         """

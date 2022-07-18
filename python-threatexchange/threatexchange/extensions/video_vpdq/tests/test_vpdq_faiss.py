@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import pytest
+
 try:
     import vpdq as _
 
@@ -12,12 +13,12 @@ from pathlib import Path
 from threatexchange.extensions.video_vpdq.vpdq_index import VPDQFlatIndex
 from threatexchange.extensions.video_vpdq.vpdq_util import (
     vpdq_to_json,
-    json_to_vpdq,
     read_file_to_hash,
 )
 
 HASH = "python-threatexchange/threatexchange/extensions/video_vpdq/tests/test_hash.txt"
 ROOTDIR = Path(__file__).parents[5]
+
 
 @pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 class TestVPDQIndex:
@@ -27,4 +28,3 @@ class TestVPDQIndex:
         index.add(vpdq_to_json(hash), "test_hash")
         res = index.query(vpdq_to_json(hash[0:1]))
         assert len(res[hash[0].hex]) == 18
-
