@@ -1,6 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import pytest
+from pathlib import Path
 
 try:
     import vpdq as _
@@ -8,13 +9,13 @@ try:
     _DISABLED = False
 except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
-import typing as t
-from pathlib import Path
-from threatexchange.extensions.video_vpdq.vpdq_index import VPDQFlatIndex
-from threatexchange.extensions.video_vpdq.vpdq_util import (
-    vpdq_to_json,
-    read_file_to_hash,
-)
+else:
+    import typing as t
+    from threatexchange.extensions.video_vpdq.vpdq_index import VPDQFlatIndex
+    from threatexchange.extensions.video_vpdq.vpdq_util import (
+        vpdq_to_json,
+        read_file_to_hash,
+    )
 
 HASH = "python-threatexchange/threatexchange/extensions/video_vpdq/tests/test_hash.txt"
 ROOTDIR = Path(__file__).parents[5]

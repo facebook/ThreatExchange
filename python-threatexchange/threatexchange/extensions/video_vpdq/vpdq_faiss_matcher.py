@@ -1,3 +1,5 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
 import vpdq
 import faiss
 from .vpdq_util import dedupe, quality_filter
@@ -19,8 +21,8 @@ class VPDQFlatHashIndex:
     def __init__(self) -> None:
         faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
         self.faiss_index = faiss_index
-        self.idx_to_vpdq = []
-        self.video_id_to_vpdq = {}
+        self.idx_to_vpdq: t.List[t.Tuple[IndexT, IndexT]] = []
+        self.video_id_to_vpdq: t.Dict[IndexT, t.List[vpdq.VpdqFeature]] = {}
         super().__init__()
 
     def get_video_frame_counts(self, video_id: IndexT, quality_tolerance: int) -> int:
@@ -35,7 +37,7 @@ class VPDQFlatHashIndex:
 
     def add_single_video(
         self,
-        hashes: t.Iterable[vpdq.VpdqFeature],
+        hashes: t.List[vpdq.VpdqFeature],
         video_id: IndexT,
     ) -> None:
         """
@@ -57,7 +59,7 @@ class VPDQFlatHashIndex:
 
     def search_with_distance_in_result(
         self,
-        queries: t.Sequence[vpdq.VpdqFeature],
+        queries: t.List[vpdq.VpdqFeature],
         threshhold: int,
     ) -> t.List[IndexMatch[IndexT]]:
         """
