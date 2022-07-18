@@ -13,7 +13,7 @@ from threatexchange.signal_type.index import (
     T as IndexT,
 )
 
-from threatexchange.extensions.video_vpdq.vpdq_faiss_hasher import VPDQFlatHashIndex
+from threatexchange.extensions.video_vpdq.vpdq_faiss_matcher import VPDQFlatHashIndex
 from threatexchange.extensions.video_vpdq.vpdq_util import json_to_vpdq
 
 
@@ -23,7 +23,7 @@ class VPDQFlatIndex(SignalTypeIndex):
     """
 
     @classmethod
-    def get_match_threshold(cls):
+    def get_match_threshold(cls) -> int:
         return 31  # VPDQ_CONFIDENT_MATCH_THRESHOLD
 
     @classmethod

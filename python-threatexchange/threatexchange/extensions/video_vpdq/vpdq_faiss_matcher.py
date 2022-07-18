@@ -4,9 +4,7 @@ from .vpdq_util import dedupe, quality_filter
 import typing as t
 import numpy
 import binascii
-from threatexchange.signal_type.index import (
-    T as IndexT,
-)
+from threatexchange.signal_type.index import T as IndexT, IndexMatch
 
 BITS_IN_VPDQ = 256
 
@@ -25,11 +23,11 @@ class VPDQFlatHashIndex:
         self.video_id_to_vpdq = {}
         super().__init__()
 
-    def get_video_frame_counts(self, video_id: IndexT, quality_tolerance: int):
+    def get_video_frame_counts(self, video_id: IndexT, quality_tolerance: int) -> int:
         """
         Args:
-            video_id 
-            quality_tolerance 
+            video_id
+            quality_tolerance
         Returns:
             Size of VPDQ features in the video that has a quality larger or equal to quality_tolerance
         """
@@ -39,7 +37,7 @@ class VPDQFlatHashIndex:
         self,
         hashes: t.Iterable[vpdq.VpdqFeature],
         video_id: IndexT,
-    ):
+    ) -> None:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
@@ -61,14 +59,14 @@ class VPDQFlatHashIndex:
         self,
         queries: t.Sequence[vpdq.VpdqFeature],
         threshhold: int,
-    ):
+    ) -> t.List[IndexMatch[IndexT]]:
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away from the query hashes by
         hamming distance.
 
         Args:
-            queries (sequence of VPDQ feature): The VPDQ features to against the index
-            threshold (int): Threshold value to use for this search. The hamming distance between the result hashes and the related query will
+            queries : The VPDQ features to against the index
+            threshold : Threshold value to use for this search. The hamming distance between the result hashes and the related query will
             be no more than the threshold value. i.e., hamming_dist(q_i,r_i_j) <= threshold.
 
         Returns:
@@ -119,10 +117,3 @@ class VPDQFlatHashIndex:
                 )
             result[query.hex] = match_tuples
         return result
-
-    def __getstate__(self):
-        data = faiss.serialize_index_binary(self.faiss_index)
-        return data
-
-    def __setstate__(self, data):
-        self.faiss_index = faiss.deserialize_index_binary(data)

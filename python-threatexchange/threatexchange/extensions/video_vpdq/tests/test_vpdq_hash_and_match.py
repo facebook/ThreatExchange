@@ -15,7 +15,7 @@ else:
         json_to_vpdq,
         read_file_to_hash,
     )
-    from threatexchange.extensions.video_vpdq.vpdq_brute_hasher import (
+    from threatexchange.extensions.video_vpdq.vpdq_brute_matcher import (
         match_VPDQ_hash_brute,
     )
 
