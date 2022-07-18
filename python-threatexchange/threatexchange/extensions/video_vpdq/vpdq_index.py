@@ -13,7 +13,10 @@ from threatexchange.signal_type.index import (
     T as IndexT,
 )
 
-from threatexchange.extensions.video_vpdq.vpdq_faiss_matcher import VPDQFlatHashIndex
+from threatexchange.extensions.video_vpdq.vpdq_faiss_matcher import (
+    VPDQFlatHashIndex,
+    VPDQ_VIDEOID_TYPE,
+)
 from threatexchange.extensions.video_vpdq.vpdq_util import json_to_vpdq
 
 
@@ -52,9 +55,9 @@ class VPDQFlatIndex(SignalTypeIndex):
                 res.append(IndexMatch(match[6], match[0:6]))
         return res
 
-    def add(self, signal_str: str, video_id: IndexT) -> None:
+    def add(self, signal_str: str, video_id: VPDQ_VIDEOID_TYPE) -> None:
         self.index.add_single_video(json_to_vpdq(signal_str), video_id)
 
-    def add_all(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
+    def add_all(self, entries: t.Iterable[t.Tuple[str, VPDQ_VIDEOID_TYPE]]) -> None:
         for signal_str, video_id in entries:
             self.add(signal_str, video_id)
