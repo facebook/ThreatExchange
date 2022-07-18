@@ -16,6 +16,7 @@ from threatexchange.signal_type.index import (
 from threatexchange.extensions.video_vpdq.vpdq_faiss_matcher import VPDQFlatHashIndex
 from threatexchange.extensions.video_vpdq.vpdq_util import json_to_vpdq
 
+VIDEO_ID = "video_id"
 
 class VPDQFlatIndex(SignalTypeIndex):
     """
@@ -30,7 +31,7 @@ class VPDQFlatIndex(SignalTypeIndex):
     def _get_empty_index(self) -> VPDQFlatHashIndex:
         return VPDQFlatHashIndex()
 
-    def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]] = ()) -> None:
+    def __init__(self, entries: t.Iterable[t.Tuple[str, t.Dict]] = ()) -> None:
         super().__init__()
         self.index: VPDQFlatHashIndex = self._get_empty_index()
         self.add_all(entries=entries)
@@ -53,7 +54,10 @@ class VPDQFlatIndex(SignalTypeIndex):
         return res
 
     def add(self, signal_str: str, entry: t.Dict) -> None:
-        self.index.add_single_video(json_to_vpdq(signal_str), entry["video_id"])
+        if entry[VIDEO_ID] is None:
+            raise ValueError("invalid VPDQ entry, this must exist a video_id")
+        video_id = entry[VIDEO_ID]
+        self.index.add_single_video(json_to_vpdq(signal_str), video_id)
 
     def add_all(self, entries: t.Iterable[t.Tuple[str, t.Dict]]) -> None:
         for signal_str, entry in entries:
