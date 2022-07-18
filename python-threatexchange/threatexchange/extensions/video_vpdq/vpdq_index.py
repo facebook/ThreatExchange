@@ -18,6 +18,7 @@ from threatexchange.extensions.video_vpdq.vpdq_util import json_to_vpdq
 
 VIDEO_ID = "video_id"
 
+
 class VPDQFlatIndex(SignalTypeIndex):
     """
     Wrapper around the vpdq faiss index lib using VPDQFlatHashIndex
