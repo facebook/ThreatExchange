@@ -3,9 +3,7 @@
 import vpdq
 import faiss
 from .vpdq_util import dedupe, quality_filter
-from threatexchange.signal_type.index import (
-    T as IndexT,
-)
+from threatexchange.extensions.video_vpdq.vpdq_util import VPDQMatchResult
 import typing as t
 import numpy
 import binascii
@@ -62,7 +60,7 @@ class VPDQFlatHashIndex:
         )
         self.faiss_index.add(numpy.array(vectors))
 
-    def search_with_distance_in_result(
+    def search_with_raw_features_in_result(
         self,
         queries: t.List[vpdq.VpdqFeature],
         threshhold: int,
@@ -124,3 +122,53 @@ class VPDQFlatHashIndex:
                 )
             result[query.hex] = match_tuples
         return result
+
+    def search_with_match_percentage_in_result(
+        self, target_hash, quality_tolerance, distance_tolerance
+    ):
+        """Searches this VPDQ index for target hashes within the index that are no more than the threshold away from the query hashes by
+            hamming distance.
+
+        Args:
+            target_hash (list of VPDQfeature): Target VPDQ hash
+            VPDQ_index (VPDQFlatHashIndex): Query VPDQ hash
+            quality_tolerance (int): The quality tolerance of matching two frames.
+            If either frames is below this quality level then they will not be compared
+            distance_tolerance (int): The hamming distance tolerance of between two frames.
+            If the hamming distance is bigger than the tolerance, it will be considered as unmatched
+
+        Returns:
+            float: Percentage matched in total target hash
+            flaot: Percentage matched in total query hash
+        """
+        target_hash = quality_filter(dedupe(target_hash), quality_tolerance)
+        ret = self.search_with_raw_features_in_result(target_hash, distance_tolerance)
+        target_matched = {}
+        index_matched = {}
+        for r in ret:
+            for matched_frame in ret[r]:
+                # query_str =>  (id, video_id, frame_number, hex_str of hash, quality, timestamp, distance)
+                _, video_id, frame_number, _, quality, _, _ = matched_frame
+                if quality < quality_tolerance:
+                    continue
+
+                if video_id not in target_matched:
+                    target_matched[video_id] = set()
+                target_matched[video_id].add(r)
+
+                if video_id not in index_matched:
+                    index_matched[video_id] = set()
+                index_matched[video_id].add(frame_number)
+
+        return [
+            (
+                video_id,
+                VPDQMatchResult(
+                    len(target_matched[video_id]) * 100 / len(target_hash),
+                    len(index_matched[video_id])
+                    * 100
+                    / self.get_video_frame_counts(video_id, quality_tolerance),
+                ),
+            )
+            for video_id in sorted(target_matched)
+        ]
