@@ -11,7 +11,7 @@ import typing as t
 from threatexchange.cli.cli_config import CLISettings
 
 from threatexchange.signal_type.signal_base import (
-    BytesHasher,
+    FileHasher,
     SignalType,
     TextHasher,
 )
@@ -47,7 +47,7 @@ class HashCommand(command_base.Command):
         signal_types = [
             s
             for s in settings.get_all_signal_types()
-            if issubclass(s, (TextHasher, BytesHasher))
+            if issubclass(s, (TextHasher, FileHasher))
         ]
 
         ap.add_argument(
@@ -95,22 +95,22 @@ class HashCommand(command_base.Command):
 
     def execute(self, settings: CLISettings) -> None:
         content_type = settings.get_content_type(self.content_type_str)
-
         all_signal_types = [
             s
             for s in settings.get_signal_types_for_content(content_type)
             if self.signal_type in (None, s.get_name())
         ]
-        byte_hashers = [s for s in all_signal_types if issubclass(s, BytesHasher)]
+
+        file_hashers = [s for s in all_signal_types if issubclass(s, FileHasher)]
         str_hashers = [s for s in all_signal_types if issubclass(s, TextHasher)]
 
         for file in self.files:
             for s_hasher in str_hashers:
                 hash_str = s_hasher.hash_from_str(file.read_text())
                 _print_hash(s_hasher, hash_str)
-            for b_hasher in byte_hashers:  # type: ignore  # mypy thinks its mixin
-                hash_str = b_hasher.hash_from_bytes(file.read_bytes())
-                _print_hash(b_hasher, hash_str)  # type: ignore  # mypy thinks its mixin
+            for f_hasher in file_hashers:  # type: ignore  # mypy thinks its mixin
+                hash_str = f_hasher.hash_from_file(file)
+                _print_hash(f_hasher, hash_str)  # type: ignore  # mypy thinks its mixin
 
 
 def _print_hash(s_type: t.Type[SignalType], hash_str: str) -> None:
