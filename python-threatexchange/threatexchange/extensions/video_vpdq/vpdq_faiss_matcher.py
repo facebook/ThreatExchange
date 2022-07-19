@@ -126,10 +126,10 @@ class VPDQFlatHashIndex:
 
     def search_with_match_percentage_in_result(
         self,
-        query_hash: t.List(vpdq.VpdqFeature),
+        query_hash: t.List[vpdq.VpdqFeature],
         quality_tolerance: int,
         distance_tolerance: int,
-    ) -> t.List[t.Tuple(VPDQ_VIDEOID_TYPE, VPDQMatchResult)]:
+    ) -> t.List[t.Tuple[VPDQ_VIDEOID_TYPE, VPDQMatchResult]]:
         """Searches this VPDQ index for target hashes within the index that are no more than the threshold away from the query hashes by
             hamming distance.
 
@@ -146,8 +146,8 @@ class VPDQFlatHashIndex:
         """
         query_hash = quality_filter(dedupe(query_hash), quality_tolerance)
         ret = self.search_with_raw_features_in_result(query_hash, distance_tolerance)
-        query_matched = {}
-        index_matched = {}
+        query_matched: t.Dict[VPDQ_VIDEOID_TYPE, t.Set] = {}
+        index_matched: t.Dict[VPDQ_VIDEOID_TYPE, t.Set] = {}
         for r in ret:
             for matched_frame in ret[r]:
                 # query_str =>  (id, video_id, frame_number, hex_str of hash, quality, timestamp, distance)
