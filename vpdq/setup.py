@@ -7,8 +7,10 @@ import os
 import numpy
 from pathlib import Path
 
-read_me = Path.cwd() / Path("vpdq/README.md")
+DIR = Path(__file__).parent
+read_me = DIR / Path("vpdq/README.md")
 long_description = read_me.read_text()
+version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
 class build_ext(build_ext):
     def run(self):
@@ -35,7 +37,7 @@ setup(
     author="Facebook",
     descripition="Python bindings for Facebook VPDQ hash",
     author_email="threatexchange@fb.com",
-    version="0.1.7",
+    version=version,
     license_files="LICENSE.txt",
     license="BSD",
     long_description=long_description,
