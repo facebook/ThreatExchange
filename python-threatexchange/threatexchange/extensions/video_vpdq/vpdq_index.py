@@ -26,11 +26,15 @@ class VPDQFlatIndex(SignalTypeIndex):
     """
 
     @classmethod
-    def get_match_threshold(cls) -> int:
+    def get_match_distance_threshold(cls) -> int:
         return VideoVPDQSignal.VPDQ_CONFIDENT_DISTANCE_THRESHOLD
 
     @classmethod
-    def _get_empty_index(self) -> VPDQFlatHashIndex:
+    def get_match_quality_threshold(cls) -> int:
+        return VideoVPDQSignal.VPDQ_CONFIDENT_QUALITY_THRESHOLD
+
+    @classmethod
+    def _get_empty_index(cls) -> VPDQFlatHashIndex:
         return VPDQFlatHashIndex()
 
     def __init__(self, entries: t.Iterable[t.Tuple[str, t.Dict]] = ()) -> None:
@@ -45,27 +49,28 @@ class VPDQFlatIndex(SignalTypeIndex):
         """
 
         # query takes a signal hash but index supports batch queries hence [hash]
-        features = json_to_vpdq(hash)
-        results = self.index.search_with_match_percentage_in_result(
-            features,
-            VideoVPDQSignal.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
-            VideoVPDQSignal.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
+        results = self.query_raw_result(
+            hash,
+            self.get_match_quality_threshold,
+            self.get_match_quality_threshold,
         )
         matches = []
         for match in results:
-            match_result = match[1]
+            video_id, match_result = match
             max_percent = max(
                 match_result.query_match_percent, match_result.compared_match_percent
             )
             matches.append(
-                IndexMatch(int(max_percent), self.video_id_to_entry[match[0]])
+                IndexMatch(int(max_percent), self.video_id_to_entry[video_id])
             )
         return matches
 
     def query_raw_result(self, hash: str) -> t.Dict[str, t.List]:
         features = json_to_vpdq(hash)
         results = self.index.search_with_raw_features_in_result(
-            features, self.get_match_threshold()
+            features,
+            self.get_match_quality_threshold,
+            self.get_match_quality_threshold,
         )
         return results
 

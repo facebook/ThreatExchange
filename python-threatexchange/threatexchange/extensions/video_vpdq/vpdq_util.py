@@ -11,6 +11,8 @@ QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
 VPDQ_TIMESTAMP_PRECISION = 3
+BITS_IN_VPDQ = 256
+VPDQ_VIDEOID_TYPE = t.Union[str, int]
 
 
 @dataclass

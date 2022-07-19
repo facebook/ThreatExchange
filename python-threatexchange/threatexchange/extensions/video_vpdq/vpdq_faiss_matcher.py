@@ -3,13 +3,14 @@
 import vpdq
 import faiss
 from .vpdq_util import dedupe, quality_filter
-from threatexchange.extensions.video_vpdq.vpdq_util import VPDQMatchResult
+from threatexchange.extensions.video_vpdq.vpdq_util import (
+    VPDQMatchResult,
+    BITS_IN_VPDQ,
+    VPDQ_VIDEOID_TYPE,
+)
 import typing as t
 import numpy
 import binascii
-
-BITS_IN_VPDQ = 256
-VPDQ_VIDEOID_TYPE = t.Union[str, int]
 
 
 class VPDQFlatHashIndex:
@@ -64,7 +65,8 @@ class VPDQFlatHashIndex:
     def search_with_raw_features_in_result(
         self,
         queries: t.List[vpdq.VpdqFeature],
-        threshhold: int,
+        quality_tolerance: int,
+        distance_tolerance: int,
     ) -> t.Dict[str, t.List]:
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away from the query hashes by
@@ -72,7 +74,9 @@ class VPDQFlatHashIndex:
 
         Args:
             queries : The VPDQ features to against the index
-            threshold : Threshold value to use for this search. The hamming distance between the result hashes and the related query will
+            quality_tolerance : The quality tolerance of matching two frames.
+            If either frames is below this quality level then they will not be queired and added to result
+            distance_tolerance : Threshold value to use for this search. The hamming distance between the result hashes and the related query will
             be no more than the threshold value. i.e., hamming_dist(q_i,r_i_j) <= threshold.
 
         Returns:
@@ -95,13 +99,15 @@ class VPDQFlatHashIndex:
             }
         """
 
-        queries = dedupe(queries)
+        queries = quality_filter(dedupe(queries), quality_tolerance)
         query_vectors = [
             numpy.frombuffer(binascii.unhexlify(q.hex), dtype=numpy.uint8)
             for q in queries
         ]
         qs = numpy.array(query_vectors)
-        limits, similarities, I = self.faiss_index.range_search(qs, threshhold + 1)
+        limits, similarities, I = self.faiss_index.range_search(
+            qs, distance_tolerance + 1
+        )
 
         result = {}
         for i, query in enumerate(queries):
@@ -110,17 +116,18 @@ class VPDQFlatHashIndex:
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
             for match, distance in zip(matches, distances):
                 video_id, vpdq_match = self.idx_to_vpdq[match]
-                match_tuples.append(
-                    (
-                        match,
-                        video_id,
-                        vpdq_match.frame_number,
-                        vpdq_match.hex,
-                        vpdq_match.quality,
-                        vpdq_match.timestamp,
-                        distance,
+                if vpdq_match.quality >= quality_tolerance:
+                    match_tuples.append(
+                        (
+                            match,
+                            video_id,
+                            vpdq_match.frame_number,
+                            vpdq_match.hex,
+                            vpdq_match.quality,
+                            vpdq_match.timestamp,
+                            distance,
+                        )
                     )
-                )
             result[query.hex] = match_tuples
         return result
 
@@ -136,24 +143,23 @@ class VPDQFlatHashIndex:
         Args:
             query_hash : Query VPDQ hash
             VPDQ_index : VPDQ index to be searched for query hash
-            quality_tolerance (int): The quality tolerance of matching two frames.
-            If either frames is below this quality level then they will not be compared
-            distance_tolerance (int): The hamming distance tolerance of between two frames.
+            quality_tolerance : The quality tolerance of matching two frames.
+            If either frames is below this quality level then they will not be queired and added to result
+            distance_tolerance : The hamming distance tolerance of between two frames.
             If the hamming distance is bigger than the tolerance, it will be considered as unmatched
 
         Returns:
             VPDQ Video id corresponds with its VPDQMatchResult
         """
-        query_hash = quality_filter(dedupe(query_hash), quality_tolerance)
-        ret = self.search_with_raw_features_in_result(query_hash, distance_tolerance)
+        ret = self.search_with_raw_features_in_result(
+            query_hash, quality, distance_tolerance
+        )
         query_matched: t.Dict[VPDQ_VIDEOID_TYPE, t.Set] = {}
         index_matched: t.Dict[VPDQ_VIDEOID_TYPE, t.Set] = {}
         for r in ret:
             for matched_frame in ret[r]:
                 # query_str =>  (id, video_id, frame_number, hex_str of hash, quality, timestamp, distance)
                 _, video_id, frame_number, _, quality, _, _ = matched_frame
-                if quality < quality_tolerance:
-                    continue
 
                 if video_id not in query_matched:
                     query_matched[video_id] = set()
