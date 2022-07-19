@@ -40,7 +40,7 @@ def main():
     os.chdir("../")
     if args.release:
         print("build vpdq source distribution")
-        run_command(["python3", "setup.py", "sdist"])
+        run_command(["python3", "setup.py", "sdist", "bdist_wheel"])
     if args.install:
         print("install vpdq source locally")
         run_command(["pip3", "install", "-e", "."])
