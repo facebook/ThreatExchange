@@ -101,7 +101,11 @@ class HashCommand(command_base.Command):
             if self.signal_type in (None, s.get_name())
         ]
 
-        file_hashers = [s for s in all_signal_types if issubclass(s, FileHasher)]
+        file_hashers = [
+            s
+            for s in all_signal_types
+            if issubclass(s, FileHasher) and not issubclass(s, TextHasher)
+        ]
         str_hashers = [s for s in all_signal_types if issubclass(s, TextHasher)]
 
         for file in self.files:
