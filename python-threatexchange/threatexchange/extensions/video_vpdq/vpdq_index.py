@@ -57,7 +57,7 @@ class VPDQFlatIndex(SignalTypeIndex):
             max_percent = max(
                 match_result.query_match_percent, match_result.compared_match_percent
             )
-            matches.append(IndexMatch(max_percent, self.video_id_to_entry[match[0]]))
+            matches.append(IndexMatch(int(max_percent), self.video_id_to_entry[match[0]]))
         return matches
 
     def query_raw_result(self, hash: str) -> t.Dict[str, t.List]:
