@@ -152,7 +152,7 @@ class VPDQFlatHashIndex:
             VPDQ Video id corresponds with its VPDQMatchResult
         """
         ret = self.search_with_raw_features_in_result(
-            query_hash, quality, distance_tolerance
+            query_hash, quality_tolerance, distance_tolerance
         )
         query_matched: t.Dict[VPDQ_VIDEOID_TYPE, t.Set] = {}
         index_matched: t.Dict[VPDQ_VIDEOID_TYPE, t.Set] = {}

@@ -43,16 +43,16 @@ class VPDQFlatIndex(SignalTypeIndex):
         self.video_id_to_entry: t.Dict = {}
         self.add_all(entries=entries)
 
-    def query(self, hash: str) -> t.List[IndexMatch[IndexT]]:
+    def query(self, cls, hash: str) -> t.List[IndexMatch[IndexT]]:
         """
         Look up entries against the index, up to the max supported distance.
         """
 
         # query takes a signal hash but index supports batch queries hence [hash]
-        results = self.query_raw_result(
+        results = self.index.search_with_match_percentage_in_result(
             hash,
-            self.get_match_quality_threshold,
-            self.get_match_quality_threshold,
+            cls.get_match_quality_threshold,
+            cls.get_match_quality_threshold,
         )
         matches = []
         for match in results:
@@ -65,12 +65,12 @@ class VPDQFlatIndex(SignalTypeIndex):
             )
         return matches
 
-    def query_raw_result(self, hash: str) -> t.Dict[str, t.List]:
+    def query_raw_result(self, cls, hash: str) -> t.Dict[str, t.List]:
         features = json_to_vpdq(hash)
         results = self.index.search_with_raw_features_in_result(
             features,
-            self.get_match_quality_threshold,
-            self.get_match_quality_threshold,
+            cls.get_match_quality_threshold,
+            cls.get_match_quality_threshold,
         )
         return results
 
