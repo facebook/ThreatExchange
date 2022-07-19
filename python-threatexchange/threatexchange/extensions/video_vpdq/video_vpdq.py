@@ -6,7 +6,7 @@ Wrapper around the vpdq signal type.
 
 import vpdq
 from .vpdq_util import json_to_vpdq, vpdq_to_json
-from .vpdq_brute_hasher import match_VPDQ_hash_brute
+from .vpdq_brute_matcher import match_VPDQ_hash_brute
 import pathlib
 import typing as t
 from threatexchange.content_type.content_base import ContentType
