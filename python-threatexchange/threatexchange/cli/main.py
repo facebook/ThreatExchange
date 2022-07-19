@@ -31,6 +31,7 @@ import os
 import sys
 import typing as t
 import pathlib
+import shutil
 
 from threatexchange import meta
 from threatexchange.content_type.content_base import ContentType
@@ -95,6 +96,11 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
     )
     # is_config = Safe mode to try and let you fix bad settings from CLI
     ap.set_defaults(is_config=False)
+    ap.add_argument(
+        "--factory-reset",
+        action="store_true",
+        help="Remove all state, bringing you back to a fresh install",
+    )
     subparsers = ap.add_subparsers(
         dest="toplevel_command_name", title="verbs", help="which action to do"
     )
@@ -325,6 +331,10 @@ def inner_main(
     settings, extensions = _get_settings(config, state_dir)
     ap = get_argparse(settings)
     namespace = ap.parse_args(args)
+    if namespace.factory_reset:
+        print("Resetting to factory defaults.", file=sys.stderr)
+        shutil.rmtree(str(state_dir.expanduser().absolute()))
+        return
     if not namespace.is_config:
         extensions.assert_no_errors()
     if not namespace.toplevel_command_name:
