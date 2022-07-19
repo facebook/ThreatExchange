@@ -45,7 +45,8 @@ setup(
     install_requires=[
         "numpy",
         "cython",
-        "opencv-python"
+        "opencv-python",
+        "opencv-python-headless"
     ],
     include_package_data=True,
     cmdclass={'build_ext': build_ext},
