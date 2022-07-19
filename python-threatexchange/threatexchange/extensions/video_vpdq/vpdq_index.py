@@ -49,8 +49,9 @@ class VPDQFlatIndex(SignalTypeIndex):
         """
 
         # query takes a signal hash but index supports batch queries hence [hash]
+        features = json_to_vpdq(hash)
         results = self.index.search_with_match_percentage_in_result(
-            hash,
+            features,
             VideoVPDQSignal.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
             VideoVPDQSignal.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
         )
