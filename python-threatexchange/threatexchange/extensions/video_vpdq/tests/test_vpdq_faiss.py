@@ -30,4 +30,4 @@ class TestVPDQIndex:
         res = index.query_raw_result(vpdq_to_json(hash[0:1]))
         assert len(res[hash[0].hex]) == 18
         res = index.query(vpdq_to_json(hash[0:1]))
-        print(res[0].distance, res[0].metadata)
+        assert res[0].distance == 100
