@@ -46,7 +46,7 @@ def main():
         run_command(["pip3", "install", "-e", "."])
     os.remove(SETUP)
     os.remove(MANIFEST)
-    if DIR / DIST.exists() and DIR / DIST.is_dir():
+    if (DIR / DIST).exists() and (DIR / DIST).is_dir():
         shutil.rmtree(DIR / DIST)
     shutil.move(PARENTDIR / DIST, DIR / DIST)
 
