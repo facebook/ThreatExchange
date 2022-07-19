@@ -32,7 +32,7 @@ class VPDQFlatHashIndex:
     ) -> int:
         """
         Args:
-            video_id : Unique video id correspondes to video
+            video_id : Unique video id corresponds to video
             quality_tolerance : The quality tolerance of frames.
             If frame is below this quality level then they will not be counted
         Returns:
@@ -48,7 +48,7 @@ class VPDQFlatHashIndex:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
-            video_id : Unique video id correspondes to video
+            video_id : Unique video id corresponds to video
         """
         if video_id in self.video_id_to_vpdq:
             raise ValueError("invalid VPDQ Index Video ID, this ID already exists")
@@ -83,7 +83,7 @@ class VPDQFlatHashIndex:
         sequence of matches per query
             For each query provided in queries, the returned sequence will contain a sequence of matches within the index
             that were within threshold hamming distance of that query. These matches will be (id, video_id, frame_number,
-            hex_str of hash, quality, distance). The inner sequences may be empty in the case of no hashes within the index.
+            hex_str of hash, quality, timestamp, distance). The inner sequences may be empty in the case of no hashes within the index.
             The same VPDQ feature may also appear in more than one inner sequence if it matches multiple query hashes.
             For example the hash "000000000000000000000000000000000000000000000000000000000000ffff" would match both
             "00000000000000000000000000000000000000000000000000000000fffffff" and
@@ -137,7 +137,7 @@ class VPDQFlatHashIndex:
         quality_tolerance: int,
         distance_tolerance: int,
     ) -> t.List[t.Tuple[VPDQ_VIDEOID_TYPE, VPDQMatchResult]]:
-        """Searches this VPDQ index for target hashes within the index that are no more than the threshold away from the query hashes by
+        """Searches this VPDQ index for query hashes within the index that are no more than the threshold away from the query hashes by
             hamming distance.
 
         Args:
