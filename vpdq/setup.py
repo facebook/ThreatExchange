@@ -35,7 +35,7 @@ EXTENSIONS = [
 setup(
     name="vpdq",
     author="Facebook",
-    descripition="Python bindings for Facebook VPDQ hash",
+    description="Python bindings for Facebook VPDQ hash",
     author_email="threatexchange@fb.com",
     version=version,
     license_files="LICENSE.txt",
