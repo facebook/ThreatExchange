@@ -1,40 +1,30 @@
 from setuptools import setup
 from setuptools.extension import Extension
-from setuptools.command.build_py import build_py
+from setuptools.command.build_ext import build_ext                                     
 import sys
 import subprocess
 import os
 import numpy
 from pathlib import Path
 
-read_me = Path.cwd() / Path("README.md")
+read_me = Path.cwd() / Path("vpdq/README.md")
 long_description = read_me.read_text()
 
-
-class Build(build_py):
-    """Customized setuptools build command - builds protos on build."""
-
+class build_ext(build_ext):
     def run(self):
-        os.chdir("cpp")
-        command = ["mkdir", "build"]
-        subprocess.call(command)
-        os.chdir("build")
-        command = ["cmake", ".."]
-        if subprocess.call(command) != 0:
-            sys.exit(-1)
+        os.chdir("vpdq/cpp")
         command = ["make"]
         if subprocess.call(command) != 0:
             sys.exit(-1)
         os.chdir("../../")
-        build_py.run(self)
-
+        super().run()
 
 EXTENSIONS = [
     Extension(
         "vpdq",
-        ["python/vpdq.pyx"],
-        extra_objects=["cpp/build/libvpdqlib.a"],
-        include_dirs=["../", numpy.get_include()],
+        ["vpdq/python/vpdq.pyx"],
+        extra_objects=["vpdq/cpp/libvpdq.a"],
+        include_dirs=[".", numpy.get_include()],
         language="c++",
         extra_compile_args=["--std=c++11"],
     )
@@ -45,7 +35,7 @@ setup(
     author="Facebook",
     descripition="Python bindings for Facebook VPDQ hash",
     author_email="threatexchange@fb.com",
-    version="0.1.0",
+    version="0.1.7",
     license_files="LICENSE.txt",
     license="BSD",
     long_description=long_description,
@@ -53,9 +43,9 @@ setup(
     install_requires=[
         "numpy",
         "cython",
-        "opencv-python",
+        "opencv-python"
     ],
     include_package_data=True,
-    cmdclass={"build_py": Build},
+    cmdclass={'build_ext': build_ext},
     ext_modules=EXTENSIONS,
 )
