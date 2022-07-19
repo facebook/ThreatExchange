@@ -60,7 +60,7 @@ class VPDQFlatIndex(SignalTypeIndex):
             matches.append(IndexMatch(max_percent, self.video_id_to_entry[match[0]]))
         return matches
 
-    def query_raw_result(self, hash: str) -> t.List[IndexMatch[IndexT]]:
+    def query_raw_result(self, hash: str) -> t.Dict[str, t.List]:
         features = json_to_vpdq(hash)
         results = self.index.search_with_raw_features_in_result(
             features, self.get_match_threshold()

@@ -31,8 +31,9 @@ class VPDQFlatHashIndex:
     ) -> int:
         """
         Args:
-            video_id
-            quality_tolerance
+            video_id : Unique video id correspondes to video
+            quality_tolerance : The quality tolerance of frames.
+            If frame is below this quality level then they will not be counted
         Returns:
             Size of VPDQ features in the video that has a quality larger or equal to quality_tolerance
         """
@@ -46,7 +47,7 @@ class VPDQFlatHashIndex:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
-            video_id : Unique video id corresponeds to the hashes in a single video
+            video_id : Unique video id correspondes to video
         """
         if video_id in self.video_id_to_vpdq:
             raise ValueError("invalid VPDQ Index Video ID, this ID already exists")
@@ -124,26 +125,28 @@ class VPDQFlatHashIndex:
         return result
 
     def search_with_match_percentage_in_result(
-        self, target_hash, quality_tolerance, distance_tolerance
-    ):
+        self,
+        query_hash: t.List(vpdq.VpdqFeature),
+        quality_tolerance: int,
+        distance_tolerance: int,
+    ) -> t.List[t.Tuple(VPDQ_VIDEOID_TYPE, VPDQMatchResult)]:
         """Searches this VPDQ index for target hashes within the index that are no more than the threshold away from the query hashes by
             hamming distance.
 
         Args:
-            target_hash (list of VPDQfeature): Target VPDQ hash
-            VPDQ_index (VPDQFlatHashIndex): Query VPDQ hash
+            query_hash : Query VPDQ hash
+            VPDQ_index : VPDQ index to be searched for query hash
             quality_tolerance (int): The quality tolerance of matching two frames.
             If either frames is below this quality level then they will not be compared
             distance_tolerance (int): The hamming distance tolerance of between two frames.
             If the hamming distance is bigger than the tolerance, it will be considered as unmatched
 
         Returns:
-            float: Percentage matched in total target hash
-            flaot: Percentage matched in total query hash
+            VPDQ Video id corresponds with its VPDQMatchResult
         """
-        target_hash = quality_filter(dedupe(target_hash), quality_tolerance)
-        ret = self.search_with_raw_features_in_result(target_hash, distance_tolerance)
-        target_matched = {}
+        query_hash = quality_filter(dedupe(query_hash), quality_tolerance)
+        ret = self.search_with_raw_features_in_result(query_hash, distance_tolerance)
+        query_matched = {}
         index_matched = {}
         for r in ret:
             for matched_frame in ret[r]:
@@ -152,9 +155,9 @@ class VPDQFlatHashIndex:
                 if quality < quality_tolerance:
                     continue
 
-                if video_id not in target_matched:
-                    target_matched[video_id] = set()
-                target_matched[video_id].add(r)
+                if video_id not in query_matched:
+                    query_matched[video_id] = set()
+                query_matched[video_id].add(r)
 
                 if video_id not in index_matched:
                     index_matched[video_id] = set()
@@ -164,11 +167,11 @@ class VPDQFlatHashIndex:
             (
                 video_id,
                 VPDQMatchResult(
-                    len(target_matched[video_id]) * 100 / len(target_hash),
+                    len(query_matched[video_id]) * 100 / len(query_hash),
                     len(index_matched[video_id])
                     * 100
                     / self.get_video_frame_counts(video_id, quality_tolerance),
                 ),
             )
-            for video_id in sorted(target_matched)
+            for video_id in sorted(query_matched)
         ]
