@@ -47,19 +47,19 @@ class VPDQFlatHashIndex:
         Returns:
         sequence of matches per query
             For each query provided in queries, the returned sequence will contain a sequence of matches within the index
-            that were within threshold hamming distance of that query. These matches will be (id, video_id, frame_number,
-            hex_str of hash, quality, timestamp, distance). The inner sequences may be empty in the case of no hashes
-            within the index. The same VPDQ feature may also appear in more than one inner sequence if it matches multiple
-            query hashes. For example the hash "000000000000000000000000000000000000000000000000000000000000ffff" would match both
+            that were within threshold hamming distance of that query. These matches will be (idx, distance).
+            The inner sequences may be empty in the case of no hashes within the index.
+            The same VPDQ feature may also appear in more than one inner sequence if it matches multiple query hashes.
+            For example the hash "000000000000000000000000000000000000000000000000000000000000ffff" would match both
             "00000000000000000000000000000000000000000000000000000000fffffff" and
             "0000000000000000000000000000000000000000000000000000000000000000" for a threshold of 16. Thus it would appear in
             the entry for both the hashes if they were both in the queries list.
 
             eg.
-            query_str =>  (id, video_id, frame_number, hex_str of hash, quality, timestamp, distance)
+            query_str =>  (idx, distance)
             result = {
                 "000000000000000000000000000000000000000000000000000000000000ffff": [
-                    (12345678901, "video1", 38, "00000000000000000000000000000000000000000000000000000000fffffff",97, 0.1, 16.0)
+                    (12345678901, 16.0)
                 ]
             }
         """
