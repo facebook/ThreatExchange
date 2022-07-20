@@ -51,13 +51,6 @@ class FakeSignalExchange(
         CollaborationConfigBase, FetchCheckpointBase, FetchedSignalMetadata, str, str
     ]
 ):
-    def naive_convert_to_signal_type(
-        cls,
-        signal_types: t.Sequence[t.Type[SignalType]],
-        fetched: t.Mapping[str, str],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FetchedSignalMetadata]]:
-        return {}
-
     @classmethod
     def naive_convert_to_signal_type(
         cls,

@@ -79,8 +79,8 @@ class HashCommand(command_base.Command):
 
     def __init__(
         self,
-        content_type: ContentType,
-        signal_type: t.Optional[SignalType],
+        content_type: t.Type[ContentType],
+        signal_type: t.Optional[t.Type[SignalType]],
         files: t.List[pathlib.Path],
     ) -> None:
         self.content_type = content_type
@@ -97,9 +97,10 @@ class HashCommand(command_base.Command):
         if self.signal_type is not None:
             if self.signal_type not in hashers:
                 raise CommandError.user(
-                    f"{self.signal_type.get_name()} does not apply to {self.content_type.get_name()}"
+                    f"{self.signal_type.get_name()} "
+                    f"does not apply to {self.content_type.get_name()}"
                 )
-            hashers = [self.signal_type]
+            hashers = [self.signal_type]  # type: ignore  # can't detect intersection types
 
         for file in self.files:
             for hasher in hashers:
