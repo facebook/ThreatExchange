@@ -22,20 +22,18 @@ class VPDQFlatHashIndex:
         self.faiss_index = faiss_index
         super().__init__()
 
-    def add_single_video(self, hashes: t.List[vpdq.VpdqFeature]) -> None:
+    def add_single_video(self, hashes: t.Sequence[vpdq.VpdqFeature]) -> None:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
         """
         hex_hashes = [h.hex for h in hashes]
         hash_bytes = [binascii.unhexlify(h) for h in hex_hashes]
-        vectors = list(
-            map(lambda h: numpy.frombuffer(h, dtype=numpy.uint8), hash_bytes)
-        )
+        vectors = [numpy.frombuffer(h, dtype=numpy.uint8) for h in hash_bytes]
         self.faiss_index.add(numpy.array(vectors))
 
-    def search_with_raw_features_in_result(
-        self, queries: t.List[vpdq.VpdqFeature], distance_tolerance: int
+    def search_with_distance_in_result(
+        self, queries: t.Sequence[vpdq.VpdqFeature], distance_tolerance: int
     ) -> t.Dict[str, t.List]:
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away
@@ -43,8 +41,6 @@ class VPDQFlatHashIndex:
 
         Args:
             queries : The VPDQ features to against the index
-            quality_tolerance : The quality tolerance of matching two frames.
-            If either frames is below this quality level then they will not be queired and added to result
             distance_tolerance : Threshold value to use for this search. The hamming distance between the result hashes
             and the related query will be no more than the threshold value. i.e., hamming_dist(q_i,r_i_j) <= threshold.
 

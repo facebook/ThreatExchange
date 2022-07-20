@@ -76,16 +76,21 @@ class VPDQIndex(SignalTypeIndex):
         return matches
 
     def query_raw_result(self, query_hash: str) -> t.Dict[str, t.List]:
+        """
+        Look up entries against the index, up to the max supported distance.
+        Return Dict of query_hash -> (index vpdq_feature matched, dist, matched vpdq_feature's entry)
+        """
         features = prepare_vpdq_feature(query_hash, self.quality_threshold)
-        results = self.index.search_with_raw_features_in_result(
+        results = self.index.search_with_distance_in_result(
             features, self.get_match_distance_threshold()
         )
         matches = {}
         for hash in results:
             match_tuples = []
             for match in results[hash]:
+                # query_str =>  (matched_idx, entry)
                 entry_id, vpdq_match = self.idx_to_vpdq[match[0]]
-                match_tuples.append([vpdq_match.hex, match[1], self.entries[entry_id]])
+                match_tuples.append([vpdq_match, match[1], self.entries[entry_id]])
             matches[hash] = match_tuples
         return matches
 
@@ -99,23 +104,19 @@ class VPDQIndex(SignalTypeIndex):
         Args:
             query_hash : Query VPDQ hash
             VPDQ_index : VPDQ index to be searched for query hash
-            quality_tolerance : The quality tolerance of matching two frames.
-            If either frames is below this quality level then they will not be queired and added to result
-            distance_tolerance : The hamming distance tolerance of between two frames.
-            If the hamming distance is bigger than the tolerance, it will be considered as unmatched
 
         Returns:
-            VPDQ Video id corresponds with its VPDQMatchResult
+            VPDQ entry id corresponds with its VPDQMatchResult
         """
         features = prepare_vpdq_feature(query_hash, self.quality_threshold)
-        results = self.index.search_with_raw_features_in_result(
+        results = self.index.search_with_distance_in_result(
             features, self.get_match_distance_threshold()
         )
         query_matched: t.Dict[int, t.Set] = {}
         index_matched: t.Dict[int, t.Set] = {}
         for hash in results:
             for match in results[hash]:
-                # query_str =>  (match, entry)
+                # query_str =>  (matched_idx, entry)
                 entry_id, vpdq_match = self.idx_to_vpdq[match[0]]
 
                 if entry_id not in query_matched:

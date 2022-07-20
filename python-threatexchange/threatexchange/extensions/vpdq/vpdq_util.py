@@ -117,6 +117,15 @@ def dump_hash_to_file(
         file.write(vpdq_to_json(vpdq_features))
 
 
-def prepare_vpdq_feature(signal_str: str, quality_tolerance: int):
+def prepare_vpdq_feature(
+    signal_str: str, quality_tolerance: int
+) -> t.Sequence[vpdq.VpdqFeature]:
+    """Convert signal_str to deduped and quality-filtered vdqp features
+
+    Args:
+    quality_tolerance : The quality tolerance of matching two frames.
+    If either frames is below this quality level then they will not be queired and added to result
+    """
+
     features = json_to_vpdq(signal_str)
     return dedupe(quality_filter(features, quality_tolerance))

@@ -48,6 +48,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     VPDQ_CONFIDENT_MATCH_THRESHOLD = 80.0
     VPDQ_CONFIDENT_QUALITY_THRESHOLD = VPDQ_CONFIDENT_QUALITY_THRESHOLD
     VPDQ_CONFIDENT_DISTANCE_THRESHOLD = VPDQ_CONFIDENT_DISTANCE_THRESHOLD
+
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:
         return [VideoContent]
