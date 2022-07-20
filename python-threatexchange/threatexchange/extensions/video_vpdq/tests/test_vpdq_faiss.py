@@ -11,7 +11,7 @@ except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
     import typing as t
-    from threatexchange.extensions.video_vpdq.vpdq_index import VPDQFlatIndex
+    from threatexchange.extensions.video_vpdq.vpdq_index import VPDQIndex
     from threatexchange.extensions.video_vpdq.vpdq_util import (
         vpdq_to_json,
         read_file_to_hash,
@@ -25,7 +25,7 @@ ROOTDIR = Path(__file__).parents[5]
 class TestVPDQIndex:
     def test_simple(self):
         hash = read_file_to_hash(ROOTDIR / HASH)
-        index = VPDQFlatIndex()
+        index = VPDQIndex()
         index.add(vpdq_to_json(hash), {"video_id": "test_hash"})
         res = index.query_raw_result(vpdq_to_json(hash[0:1]))
         assert len(res[hash[0].hex]) == 18

@@ -3,11 +3,7 @@
 import vpdq
 import faiss
 from threatexchange.extensions.video_vpdq.vpdq_util import (
-    VPDQMatchResult,
     BITS_IN_VPDQ,
-    VPDQ_VIDEOID_TYPE,
-    quality_filter,
-    dedupe
 )
 import typing as t
 import numpy
@@ -25,19 +21,6 @@ class VPDQFlatHashIndex:
         faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
         self.faiss_index = faiss_index
         super().__init__()
-
-    def get_video_frame_counts(
-        self, video_id: VPDQ_VIDEOID_TYPE, quality_tolerance: int
-    ) -> int:
-        """
-        Args:
-            video_id : Unique video id corresponds to video
-            quality_tolerance : The quality tolerance of frames.
-            If frame is below this quality level then they will not be counted
-        Returns:
-            Size of VPDQ features in the video that has a quality larger or equal to quality_tolerance
-        """
-        return len(quality_filter(self.video_id_to_vpdq[video_id], quality_tolerance))
 
     def add_single_video(self, hashes: t.List[vpdq.VpdqFeature]) -> None:
         """
@@ -106,4 +89,3 @@ class VPDQFlatHashIndex:
                 )
             result[query.hex] = match_tuples
         return result
-
