@@ -13,7 +13,6 @@ from threatexchange.cli.cli_config import CLISettings
 from threatexchange.signal_type.signal_base import (
     FileHasher,
     SignalType,
-    TextHasher,
 )
 from threatexchange.cli import command_base
 from threatexchange.cli.helpers import FlexFilesInputAction
