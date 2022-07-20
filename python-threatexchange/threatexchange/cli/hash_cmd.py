@@ -45,9 +45,7 @@ class HashCommand(command_base.Command):
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
 
         signal_types = [
-            s
-            for s in settings.get_all_signal_types()
-            if issubclass(s, (TextHasher, FileHasher))
+            s for s in settings.get_all_signal_types() if issubclass(s, FileHasher)
         ]
 
         ap.add_argument(
@@ -101,20 +99,12 @@ class HashCommand(command_base.Command):
             if self.signal_type in (None, s.get_name())
         ]
 
-        file_hashers = [
-            s
-            for s in all_signal_types
-            if issubclass(s, FileHasher) and not issubclass(s, TextHasher)
-        ]
-        str_hashers = [s for s in all_signal_types if issubclass(s, TextHasher)]
+        hashers = [s for s in all_signal_types if issubclass(s, FileHasher)]
 
         for file in self.files:
-            for s_hasher in str_hashers:
-                hash_str = s_hasher.hash_from_str(file.read_text())
-                _print_hash(s_hasher, hash_str)
-            for f_hasher in file_hashers:  # type: ignore  # mypy thinks its mixin
-                hash_str = f_hasher.hash_from_file(file)
-                _print_hash(f_hasher, hash_str)  # type: ignore  # mypy thinks its mixin
+            for hasher in hashers:
+                hash_str = hasher.hash_from_file(file)
+                _print_hash(hasher, hash_str)
 
 
 def _print_hash(s_type: t.Type[SignalType], hash_str: str) -> None:
