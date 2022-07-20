@@ -9,6 +9,7 @@ import typing as t
 import vpdq
 from threatexchange.signal_type.index import (
     SignalTypeIndex,
+    VPDQIndexMatch,
     IndexMatch,
     T as IndexT,
 )
@@ -52,7 +53,7 @@ class VPDQIndex(SignalTypeIndex):
         self.video_length.append(len(features))
         self.index.add_single_video(features)
 
-    def query(self, hash: str) -> t.List[IndexMatch[IndexT]]:
+    def query(self, hash: str) -> t.List[IndexMatch]:
         """
         Look up entries against the index, up to the max supported distance.
         """
@@ -62,10 +63,13 @@ class VPDQIndex(SignalTypeIndex):
         matches = []
         for match in results:
             entry_id, match_result = match
-            max_percent = max(
-                match_result.query_match_percent, match_result.compared_match_percent
+            matches.append(
+                VPDQIndexMatch(
+                    match_result.query_match_percent,
+                    match_result.compared_match_percent,
+                    self.entries[entry_id],
+                )
             )
-            matches.append(IndexMatch(int(max_percent), self.entries[entry_id]))
         return matches
 
     def query_raw_result(self, query_hash: str) -> t.Dict[str, t.List]:
@@ -84,7 +88,7 @@ class VPDQIndex(SignalTypeIndex):
 
     def query_with_match_percentage_in_result(
         self,
-        query_hash: t.List[vpdq.VpdqFeature],
+        query_hash: str,
     ) -> t.List[t.Tuple[int, VPDQMatchResult]]:
         """Searches this VPDQ index for query hashes within the index that are no more than the threshold away
         from the query hashes by hamming distance.
