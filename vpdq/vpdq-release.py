@@ -16,12 +16,12 @@ DIST = "dist"
 
 
 def get_argparse() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser()
     ap.add_argument(
         "-r",
         "--release",
         help="If release, will return the source distribution in the root dir.",
-        action="store_false",
+        action="store_true",
     )
     ap.add_argument(
         "-i",
@@ -41,19 +41,21 @@ def main():
     if args.release:
         print("build vpdq source distribution")
         run_command(["python3", "setup.py", "sdist", "bdist_wheel"])
+        if (DIR / DIST).exists() and (DIR / DIST).is_dir():
+            shutil.rmtree(DIR / DIST)
+        shutil.move(PARENTDIR / DIST, DIR / DIST)
+        os.remove(SETUP)
+        os.remove(MANIFEST)
+    
     if args.install:
         print("install vpdq source locally")
         run_command(["pip3", "install", "-e", "."])
-    os.remove(SETUP)
-    os.remove(MANIFEST)
-    if (DIR / DIST).exists() and (DIR / DIST).is_dir():
-        shutil.rmtree(DIR / DIST)
-    shutil.move(PARENTDIR / DIST, DIR / DIST)
+    
 
 
 def run_command(command):
     try:
-        subprocess.call(command)
+        subprocess.check_call(command)
     except subprocess.CalledProcessError as e:
         print(e.output)
     print("successfully run command", command)

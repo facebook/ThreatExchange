@@ -14,11 +14,13 @@ version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
 class build_ext(build_ext):
     def run(self):
-        os.chdir("vpdq/cpp")
         command = ["make"]
-        if subprocess.call(command) != 0:
-            sys.exit(-1)
-        os.chdir("../../")
+        try:
+            subprocess.check_call(command, cwd="vpdq/cpp")
+        except subprocess.CalledProcessError as e:
+            print(e.output)
+            print("fail to compile vpdq/pdq library")
+            sys.exit(1)
         super().run()
 
 EXTENSIONS = [
