@@ -2,7 +2,7 @@
 
 import vpdq
 import faiss
-from threatexchange.extensions.video_vpdq.vpdq_util import (
+from threatexchange.extensions.vpdq.vpdq_util import (
     BITS_IN_VPDQ,
 )
 import typing as t

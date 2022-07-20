@@ -11,13 +11,13 @@ except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
     import typing as t
-    from threatexchange.extensions.video_vpdq.vpdq_index import VPDQIndex
-    from threatexchange.extensions.video_vpdq.vpdq_util import (
+    from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
+    from threatexchange.extensions.vpdq.vpdq_util import (
         vpdq_to_json,
         read_file_to_hash,
     )
 
-HASH = "python-threatexchange/threatexchange/extensions/video_vpdq/tests/test_hash.txt"
+HASH = "python-threatexchange/threatexchange/extensions/vpdq/tests/test_hash.txt"
 ROOTDIR = Path(__file__).parents[5]
 
 
@@ -25,7 +25,7 @@ ROOTDIR = Path(__file__).parents[5]
 def test_simple():
     hash = read_file_to_hash(ROOTDIR / HASH)
     index = VPDQIndex()
-    index.add(vpdq_to_json(hash), ["entryInfo"])
+    index.add(vpdq_to_json(hash), ["test_video"])
     res = index.query_raw_result(vpdq_to_json(hash[0:1]))
     assert len(res[hash[0].hex]) == 18
     res = index.query(vpdq_to_json(hash[0:1]))

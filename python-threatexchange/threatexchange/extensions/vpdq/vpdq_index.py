@@ -13,10 +13,12 @@ from threatexchange.signal_type.index import (
     IndexMatch,
     T as IndexT,
 )
-from threatexchange.extensions.video_vpdq.vpdq_faiss_matcher import VPDQFlatHashIndex
-from threatexchange.extensions.video_vpdq.vpdq_util import (
+from threatexchange.extensions.vpdq.vpdq_faiss import VPDQFlatHashIndex
+from threatexchange.extensions.vpdq.vpdq_util import (
     prepare_vpdq_feature,
     VPDQMatchResult,
+    VPDQ_CONFIDENT_QUALITY_THRESHOLD,
+    VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
 )
 
 
@@ -27,27 +29,28 @@ class VPDQIndex(SignalTypeIndex):
 
     @classmethod
     def get_match_distance_threshold(cls) -> int:
-        return 31  ##VPDQ_CONFIDENT_DISTANCE_THRESHOLD
-
-    @classmethod
-    def get_match_quality_threshold(cls) -> int:
-        return 50  ##VPDQ_CONFIDENT_QUALITY_THRESHOLD
+        return VPDQ_CONFIDENT_DISTANCE_THRESHOLD
 
     @classmethod
     def _get_empty_index(cls) -> VPDQFlatHashIndex:
         return VPDQFlatHashIndex()
 
-    def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]] = ()) -> None:
+    def __init__(
+        self,
+        entries: t.Iterable[t.Tuple[str, IndexT]] = (),
+        quality_threshold: int = VPDQ_CONFIDENT_QUALITY_THRESHOLD,
+    ) -> None:
         super().__init__()
         self.index: VPDQFlatHashIndex = self._get_empty_index()
         self.entries: t.List = []
         self.idx_to_vpdq: t.List[t.Tuple[int, vpdq.VpdqFeature]] = []
         self.video_length: t.List[int] = []
+        self.quality_threshold = quality_threshold
         self.add_all(entries=entries)
 
     def add(self, signal_str: str, entry: IndexT) -> None:
         entry_id = len(self.entries)
-        features = prepare_vpdq_feature(signal_str, self.get_match_quality_threshold())
+        features = prepare_vpdq_feature(signal_str, self.quality_threshold)
         self.entries.append(entry)
         self.idx_to_vpdq.extend([(entry_id, f) for f in features])
         self.video_length.append(len(features))
@@ -60,7 +63,7 @@ class VPDQIndex(SignalTypeIndex):
 
         # query takes a signal hash but index supports batch queries hence [hash]
         results = self.query_with_match_percentage_in_result(hash)
-        matches = []
+        matches: t.List[IndexMatch[IndexT]] = []
         for match in results:
             entry_id, match_result = match
             matches.append(
@@ -73,7 +76,7 @@ class VPDQIndex(SignalTypeIndex):
         return matches
 
     def query_raw_result(self, query_hash: str) -> t.Dict[str, t.List]:
-        features = prepare_vpdq_feature(query_hash, self.get_match_quality_threshold())
+        features = prepare_vpdq_feature(query_hash, self.quality_threshold)
         results = self.index.search_with_raw_features_in_result(
             features, self.get_match_distance_threshold()
         )
@@ -104,7 +107,7 @@ class VPDQIndex(SignalTypeIndex):
         Returns:
             VPDQ Video id corresponds with its VPDQMatchResult
         """
-        features = prepare_vpdq_feature(query_hash, self.get_match_quality_threshold())
+        features = prepare_vpdq_feature(query_hash, self.quality_threshold)
         results = self.index.search_with_raw_features_in_result(
             features, self.get_match_distance_threshold()
         )
