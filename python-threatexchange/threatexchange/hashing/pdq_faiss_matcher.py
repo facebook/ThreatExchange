@@ -124,7 +124,7 @@ class PDQHashIndex(ABC):
             numpy.frombuffer(binascii.unhexlify(q), dtype=numpy.uint8) for q in queries
         ]
         qs = numpy.array(query_vectors)
-        limits, similarities, neighbors = self.faiss_index.range_search(qs, threshhold + 1)
+        limits, similarities, I = self.faiss_index.range_search(qs, threshhold + 1)
 
         # for custom ids, we understood them initially as uint64 numbers and then coerced them internally to be signed
         # int64s, so we need to reverse this before returning them back to the caller. For non custom ids, this will
@@ -134,7 +134,7 @@ class PDQHashIndex(ABC):
         result = {}
         for i, query in enumerate(queries):
             match_tuples = []
-            matches = [idx.item() for idx in neighbors[limits[i] : limits[i + 1]]]
+            matches = [idx.item() for idx in I[limits[i] : limits[i + 1]]]
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
             for match, distance in zip(matches, distances):
                 # (Id, Hash, Distance)

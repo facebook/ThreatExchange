@@ -69,14 +69,14 @@ class VPDQFlatHashIndex:
             for q in queries
         ]
         qs = numpy.array(query_vectors)
-        limits, similarities, I = self.faiss_index.range_search(
+        limits, similarities, neighbors = self.faiss_index.range_search(
             qs, distance_tolerance + 1
         )
 
         result = {}
         for i, query in enumerate(queries):
             match_tuples = []
-            matches = [idx.item() for idx in I[limits[i] : limits[i + 1]]]
+            matches = [idx.item() for idx in neighbors[limits[i] : limits[i + 1]]]
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
             for match, distance in zip(matches, distances):
                 match_tuples.append(
