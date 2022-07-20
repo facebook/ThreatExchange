@@ -42,7 +42,7 @@ class VPDQIndex(SignalTypeIndex):
         self.index: VPDQFlatHashIndex = self._get_empty_index()
         self.entries: t.List = []
         self.idx_to_vpdq: t.List[t.Tuple[int, vpdq.VpdqFeature]] = []
-        self.video_length = []
+        self.video_length: t.List[int] = []
         self.add_all(entries=entries)
 
     def add(self, signal_str: str, entry: IndexT) -> None:
@@ -53,7 +53,7 @@ class VPDQIndex(SignalTypeIndex):
         self.video_length.append(len(features))
         self.index.add_single_video(features)
 
-    def query(self, hash: str) -> t.List[IndexMatch]:
+    def query(self, hash: str) -> t.List[IndexMatch[IndexT]]:
         """
         Look up entries against the index, up to the max supported distance.
         """
