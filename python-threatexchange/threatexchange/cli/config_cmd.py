@@ -361,6 +361,9 @@ class ConfigExtensionsCommand(command_base.Command):
     def execute_add(self, settings: CLISettings) -> None:
         if not self.module:
             raise CommandError("module is required", 2)
+        if self.module in settings.get_persistent_config().extensions:
+            self.execute_list(settings)
+            return
 
         manifest = self.get_manifest(self.module)
 
@@ -390,7 +393,7 @@ class ConfigExtensionsCommand(command_base.Command):
         apis.extend(settings.apis.get_all())
         tx_meta.FetcherMapping(apis)
 
-        self.print_extension(manifest)
+        self.execute_list(settings)
 
         config = settings.get_persistent_config()
         config.extensions.add(self.module)
