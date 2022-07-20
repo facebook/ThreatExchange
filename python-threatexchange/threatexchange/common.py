@@ -94,3 +94,24 @@ def argparse_choices_pre_type(choices: t.List[str], type: t.Callable[[str], t.An
         return type(s)
 
     return ret
+
+
+def argparse_choices_pre_type_kwargs(
+    choices: t.List[str], type: t.Callable[[str], t.Any]
+):
+    """
+    Argparse parses choices after type, which is sometimes undesirable.
+
+    So fix it with duct tape. type=argparse_choices_pre_type()
+    """
+
+    def ret(s: str):
+        if s not in choices:
+            raise argparse.ArgumentTypeError(
+                "invalid choice: {} (choose from {})".format(
+                    s, ", ".join(repr(c) for c in choices)
+                ),
+            )
+        return type(s)
+
+    return {"type": ret, "metavar": "{%s}" % ",".join(choices)}

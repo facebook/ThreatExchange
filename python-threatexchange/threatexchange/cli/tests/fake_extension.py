@@ -1,0 +1,78 @@
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+import pathlib
+import typing as t
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.fetch_state import (
+    FetchCheckpointBase,
+    FetchDelta,
+    FetchedSignalMetadata,
+)
+
+from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
+from threatexchange.signal_type.signal_base import (
+    FileHasher,
+    HashComparisonResult,
+    SignalType,
+)
+from threatexchange.content_type.content_base import ContentType
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+
+
+class FakeContent(ContentType):
+    pass
+
+
+class FakeSignal(SignalType, FileHasher):
+    @classmethod
+    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+        """Which content types this Signal applies to (usually just one)"""
+        return [FakeContent]
+
+    @classmethod
+    def compare_hash(
+        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
+    ) -> HashComparisonResult:
+        return HashComparisonResult.from_bool(hash1 == hash2)
+
+    @classmethod
+    def hash_from_file(cls, file: pathlib.Path) -> str:
+        return "fake"  # A perfect hashing algorithm
+
+    @classmethod
+    def get_examples(cls) -> t.List[str]:
+        return ["fake", "not fake"]
+
+
+class FakeSignalExchange(
+    SignalExchangeAPI[
+        CollaborationConfigBase, FetchCheckpointBase, FetchedSignalMetadata, str, str
+    ]
+):
+    @classmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        fetched: t.Mapping[str, str],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FetchedSignalMetadata]]:
+        return {}
+
+    def fetch_iter(
+        self,
+        supported_signal_types: t.Sequence[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
+        # None if fetching for the first time,
+        # otherwise the previous FetchDelta returned
+        checkpoint: t.Optional[FetchCheckpointBase],
+    ) -> t.Iterator[FetchDelta[str, str, FetchCheckpointBase]]:
+        return
+        yield  # how to write an empty generator
+
+
+TX_MANIFEST = ThreatExchangeExtensionManifest(
+    signal_types=(FakeSignal,),
+    content_types=(FakeContent,),
+    apis=(FakeSignalExchange,),
+)
