@@ -37,24 +37,24 @@ def main():
     args = ap.parse_args()
     shutil.copy(DIR / SETUP, PARENTDIR / SETUP)
     shutil.copy(DIR / MANIFEST, PARENTDIR / MANIFEST)
-    os.chdir("../")
+    os.chdir(PARENTDIR)
     if args.release:
         print("build vpdq source distribution")
-        run_command(["python3", "setup.py", "sdist", "bdist_wheel"])
+        run_command(["python3", "setup.py", "sdist", "bdist_wheel"], PARENTDIR)
         if (DIR / DIST).exists() and (DIR / DIST).is_dir():
             shutil.rmtree(DIR / DIST)
         shutil.move(PARENTDIR / DIST, DIR / DIST)
     if args.install:
         print("install vpdq source locally")
-        run_command(["pip3", "install", "-e", "."])
+        run_command(["pip3", "install", "-e", "."], PARENTDIR)
     os.remove(SETUP)
     os.remove(MANIFEST)
     
 
 
-def run_command(command):
+def run_command(command, cwd = "."):
     try:
-        subprocess.check_call(command)
+        subprocess.check_call(command, cwd=cwd)
     except subprocess.CalledProcessError as e:
         print(e.output)
 
