@@ -113,3 +113,7 @@ def dump_hash_to_file(
         VPDQ features write to the output file"""
     with open(output_hash_filename, "w") as file:
         file.write(vpdq_to_json(vpdq_features))
+
+def prepare_vpdq_feature(signal_str: str, quality_tolerance: int):
+    features = json_to_vpdq(signal_str)
+    return dedupe(quality_filter(features, quality_tolerance))

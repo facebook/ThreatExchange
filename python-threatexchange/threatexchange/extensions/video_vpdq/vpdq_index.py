@@ -14,10 +14,7 @@ from threatexchange.signal_type.index import (
 )
 from threatexchange.extensions.video_vpdq.vpdq_faiss_matcher import VPDQFlatHashIndex
 from threatexchange.extensions.video_vpdq.vpdq_util import (
-    json_to_vpdq,
-    dedupe,
-    quality_filter,
-    vpdq_to_json,
+    prepare_vpdq_feature,
     VPDQMatchResult,
 )
 
@@ -44,14 +41,16 @@ class VPDQIndex(SignalTypeIndex):
         self.index: VPDQFlatHashIndex = self._get_empty_index()
         self.entries: t.List = []
         self.idx_to_vpdq: t.List[t.Tuple[int, vpdq.VpdqFeature]] = []
+        self.video_length = []
         self.add_all(entries=entries)
 
-    def add(self, signal_str: str, entry: t.Dict) -> None:
+    def add(self, signal_str: str, entry: IndexT) -> None:
         entry_id = len(self.entries)
-        hashes = dedupe(json_to_vpdq(signal_str))
+        features = prepare_vpdq_feature(signal_str, self.get_match_quality_threshold())
         self.entries.append(entry)
-        self.idx_to_vpdq.extend([(entry_id, h) for h in hashes])
-        self.index.add_single_video(json_to_vpdq(signal_str))
+        self.idx_to_vpdq.extend([(entry_id, f) for f in features])
+        self.video_length.append(len(features))
+        self.index.add_single_video(features)
 
     def query(self, hash: str) -> t.List[IndexMatch[IndexT]]:
         """
@@ -69,17 +68,17 @@ class VPDQIndex(SignalTypeIndex):
             matches.append(IndexMatch(int(max_percent), self.entries[entry_id]))
         return matches
 
-    def query_raw_result(self, hash: str) -> t.Dict[str, t.List]:
-        features = json_to_vpdq(hash)
+    def query_raw_result(self, query_hash: str) -> t.Dict[str, t.List]:
+        features = prepare_vpdq_feature(query_hash, self.get_match_quality_threshold())
         results = self.index.search_with_raw_features_in_result(
-            features, self.get_match_distance_threshold
+            features, self.get_match_distance_threshold()
         )
         matches = {}
         for hash in results:
             match_tuples = []
-            for match in hash:
+            for match in results[hash]:
                 entry_id, vpdq_match = self.idx_to_vpdq[match[0]]
-                match_tuples.append([vpdq_match, match[1], self.entries[entry_id]])
+                match_tuples.append([vpdq_match.hex, match[1], self.entries[entry_id]])
             matches[hash] = match_tuples
         return matches
 
@@ -101,14 +100,14 @@ class VPDQIndex(SignalTypeIndex):
         Returns:
             VPDQ Video id corresponds with its VPDQMatchResult
         """
-        features = json_to_vpdq(hash)
+        features = prepare_vpdq_feature(query_hash, self.get_match_quality_threshold())
         results = self.index.search_with_raw_features_in_result(
-            features, self.get_match_distance_threshold
+            features, self.get_match_distance_threshold()
         )
         query_matched: t.Dict[int, t.Set] = {}
         index_matched: t.Dict[int, t.Set] = {}
         for hash in results:
-            for match in hash:
+            for match in results[hash]:
                 # query_str =>  (match, entry)
                 entry_id, vpdq_match = self.idx_to_vpdq[match[0]]
 
@@ -119,27 +118,13 @@ class VPDQIndex(SignalTypeIndex):
                 if entry_id not in index_matched:
                     index_matched[entry_id] = set()
                 index_matched[entry_id].add(vpdq_match.frame_number)
-
         return [
             (
                 entry_id,
                 VPDQMatchResult(
-                    len(query_matched[entry_id]) * 100 / len(query_hash),
-                    len(index_matched[entry_id])
-                    * 100
-                    / self.get_video_frame_counts(entry_id),
+                    len(query_matched[entry_id]) * 100 / len(features),
+                    len(index_matched[entry_id]) * 100 / self.video_length[entry_id],
                 ),
             )
             for entry_id in sorted(query_matched)
         ]
-
-    def get_video_frame_counts(self, entry_id: int) -> int:
-        """
-        Args:
-            entry_id : Unique id corresponds to List of Vpdq Features
-            quality_tolerance : The quality tolerance of frames.
-            If frame is below this quality level then they will not be counted
-        Returns:
-            Size of VPDQ features in the video that has a quality larger or equal to quality_tolerance
-        """
-        return len(self.idx_to_entries[entry_id])

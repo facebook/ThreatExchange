@@ -29,7 +29,9 @@ class VPDQFlatHashIndex:
         """
         hex_hashes = [h.hex for h in hashes]
         hash_bytes = [binascii.unhexlify(h) for h in hex_hashes]
-        vectors = [map(lambda h: numpy.frombuffer(h, dtype=numpy.uint8), hash_bytes)]
+        vectors = list(
+            map(lambda h: numpy.frombuffer(h, dtype=numpy.uint8), hash_bytes)
+        )
         self.faiss_index.add(numpy.array(vectors))
 
     def search_with_raw_features_in_result(
