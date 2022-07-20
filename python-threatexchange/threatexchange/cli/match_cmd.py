@@ -79,7 +79,7 @@ class MatchCommand(command_base.Command):
 
         ap.add_argument(
             "content_type",
-            type=common.argparse_choices_pre_type(
+            **common.argparse_choices_pre_type_kwargs(
                 [c.get_name() for c in settings.get_all_content_types()],
                 settings.get_content_type,
             ),
@@ -89,7 +89,7 @@ class MatchCommand(command_base.Command):
         ap.add_argument(
             "--only-signal",
             "-S",
-            type=common.argparse_choices_pre_type(
+            **common.argparse_choices_pre_type_kwargs(
                 [s.get_name() for s in settings.get_all_signal_types()],
                 settings.get_signal_type,
             ),
