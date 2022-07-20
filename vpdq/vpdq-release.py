@@ -49,14 +49,14 @@ def main():
         run_command(["pip3", "install", "-e", "."], PARENTDIR)
     os.remove(SETUP)
     os.remove(MANIFEST)
-    
 
 
-def run_command(command, cwd = "."):
+def run_command(command, cwd="."):
     try:
         subprocess.check_call(command, cwd=cwd)
     except subprocess.CalledProcessError as e:
         print(e.output)
+
 
 if __name__ == "__main__":
     main()
