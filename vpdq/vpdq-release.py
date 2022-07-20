@@ -44,12 +44,11 @@ def main():
         if (DIR / DIST).exists() and (DIR / DIST).is_dir():
             shutil.rmtree(DIR / DIST)
         shutil.move(PARENTDIR / DIST, DIR / DIST)
-        os.remove(SETUP)
-        os.remove(MANIFEST)
-    
     if args.install:
         print("install vpdq source locally")
         run_command(["pip3", "install", "-e", "."])
+    os.remove(SETUP)
+    os.remove(MANIFEST)
     
 
 
@@ -58,8 +57,6 @@ def run_command(command):
         subprocess.check_call(command)
     except subprocess.CalledProcessError as e:
         print(e.output)
-    print("successfully run command", command)
-
 
 if __name__ == "__main__":
     main()
