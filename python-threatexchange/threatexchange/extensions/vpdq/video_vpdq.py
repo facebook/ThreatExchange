@@ -11,7 +11,7 @@ from .vpdq_util import (
     VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
     VPDQ_CONFIDENT_QUALITY_THRESHOLD,
 )
-from .vpdq_brute_hasher import match_VPDQ_hash_brute
+from .vpdq_brute_matcher import match_VPDQ_hash_brute
 import pathlib
 import typing as t
 from threatexchange.content_type.content_base import ContentType
