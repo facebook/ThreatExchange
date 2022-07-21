@@ -46,13 +46,14 @@ class FBThreatExchangeCollabConfig(
     _FBThreatExchangeCollabConfigRequiredFields,
 ):
     api: str = field(init=False, default=_API_NAME)
-    app_token_override: t.Optional[str] = field(
-        default=None,
-        metadata={
-            "help": "if you need to use a specific app for this collaboration",
-            "metavar": "APP_TOKEN",
-        },
-    )
+    # TODO - to restore someday in the future
+    # app_token_override: t.Optional[str] = field(
+    #     default=None,
+    #     metadata={
+    #         "help": "if you need to use a specific app for this collaboration",
+    #         "metavar": "APP_TOKEN",
+    #     },
+    # )
 
 
 @dataclass
