@@ -36,7 +36,7 @@ class VPDQIndex(PickledSignalTypeIndex[IndexT]):
             t.Tuple[t.List[vpdq.VpdqFeature], IndexT]
         ] = []
         self._index_idx_to_vpdqHex_and_entry: t.List[t.Tuple[int, t.List[int]]] = []
-        self._unique_vpdqHex: t.Set[str] = {}
+        self._unique_vpdqHex_to_idx: t.Dict[str, int] = {}
         self.quality_threshold = quality_threshold
 
     def add(self, signal_str: str, entry: IndexT) -> None:
@@ -46,10 +46,10 @@ class VPDQIndex(PickledSignalTypeIndex[IndexT]):
         # Use hex to represent the feature because it saves the space
         unique_features = []
         for f in features:
-            idx = self._unique_vpdqHex.get(f.hex)
+            idx = self._unique_vpdqHex_to_idx.get(f.hex)
             if idx is None:
-                idx = len(self._unique_vpdqHex)
-                self._unique_vpdqHex[f.hex] = idx
+                idx = len(self._unique_vpdqHex_to_idx)
+                self._unique_vpdqHex_to_idx[f.hex] = idx
                 self._index_idx_to_vpdqHex_and_entry.append((f.hex, list()))
                 unique_features.append(f)
             self._index_idx_to_vpdqHex_and_entry[idx][1].append(entry_id)
