@@ -13,7 +13,7 @@ from threatexchange.signal_type.index import (
     IndexMatch,
     T as IndexT,
 )
-from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
+from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex, VPDQFlatHashIndex
 from threatexchange.extensions.vpdq.vpdq_util import (
     prepare_vpdq_feature,
     VPDQMatchResult,
@@ -33,7 +33,7 @@ class VPDQIndex(SignalTypeIndex):
 
     @classmethod
     def _get_empty_index(cls) -> VPDQHashIndex:
-        return VPDQHashIndex()
+        return VPDQFlatHashIndex()
 
     def __init__(
         self,
@@ -88,7 +88,7 @@ class VPDQIndex(SignalTypeIndex):
         for hash in results:
             match_tuples = []
             for match in results[hash]:
-                # query_str =>  (matched_idx, entry)
+                # query_str =>  (matched_idx, distance)
                 entry_id, vpdq_match = self.idx_to_vpdq[match[0]]
                 match_tuples.append([vpdq_match, match[1], self.entries[entry_id]])
             matches[hash] = match_tuples
@@ -116,7 +116,7 @@ class VPDQIndex(SignalTypeIndex):
         index_matched: t.Dict[int, t.Set] = {}
         for hash in results:
             for match in results[hash]:
-                # query_str =>  (matched_idx, entry)
+                # query_str =>  (matched_idx, distance)
                 entry_id, vpdq_match = self.idx_to_vpdq[match[0]]
 
                 if entry_id not in query_matched:

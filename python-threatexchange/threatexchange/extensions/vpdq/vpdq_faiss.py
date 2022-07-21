@@ -11,16 +11,10 @@ import binascii
 
 
 class VPDQHashIndex:
-    """Wrapper around an faiss binary index for use with searching for similar VPDQ features
+    """Wrapper around an faiss binary index for use with searching for similar VPDQ features"""
 
-    The "flat" variant uses an exhaustive search approach that may use less memory than other approaches and may be more
-    performant when using larger thresholds for VPDQ similarity.
-    """
-
-    def __init__(self) -> None:
-        faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
+    def __init__(self, faiss_index: faiss.Index) -> None:
         self.faiss_index = faiss_index
-        super().__init__()
 
     def add_single_video(self, hashes: t.Sequence[vpdq.VpdqFeature]) -> None:
         """
@@ -79,3 +73,14 @@ class VPDQHashIndex:
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
             result[query.hex] = list(zip(matches, distances))
         return result
+
+
+class VPDQFlatHashIndex(VPDQHashIndex):
+    """
+    The "flat" variant uses an exhaustive search approach that may use less memory than other approaches and may be more
+    performant when using larger thresholds for VPDQ similarity.
+    """
+
+    def __init__(self) -> None:
+        faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
+        super().__init__(faiss_index)
