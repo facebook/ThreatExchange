@@ -60,7 +60,7 @@ def test_duplicate_hashes():
     assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 100, "video1"))
     assert compare_match_result(res[1], VPDQIndexMatch(-1, 100, 100, "video2"))
 
-
+@pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 def compare_match_result(res1: VPDQIndexMatch, res2: VPDQIndexMatch) -> bool:
     return (
         res1.compared_match_percent == res2.compared_match_percent
