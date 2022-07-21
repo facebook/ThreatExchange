@@ -103,7 +103,6 @@ class VPDQIndex(SignalTypeIndex):
 
         Args:
             query_hash : Query VPDQ hash
-            VPDQ_index : VPDQ index to be searched for query hash
 
         Returns:
             VPDQ entry id corresponds with its VPDQMatchResult

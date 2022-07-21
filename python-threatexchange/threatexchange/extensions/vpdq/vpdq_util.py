@@ -123,8 +123,8 @@ def prepare_vpdq_feature(
     """Convert signal_str to deduped and quality-filtered vdqp features
 
     Args:
-    quality_tolerance : The quality tolerance of matching two frames.
-    If either frames is below this quality level then they will not be queired and added to result
+    quality_tolerance : The quality tolerance of VPDQ Feature.
+    If VPDQ Feature is below this quality level then it will not be added
     """
 
     features = json_to_vpdq(signal_str)
