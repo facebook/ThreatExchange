@@ -77,5 +77,5 @@ class VPDQHashIndex:
         for i, query in enumerate(queries):
             matches = [idx.item() for idx in neighbors[limits[i] : limits[i + 1]]]
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
-            result[query.hex] = zip(matches, distances)
+            result[query.hex] = list(zip(matches, distances))
         return result
