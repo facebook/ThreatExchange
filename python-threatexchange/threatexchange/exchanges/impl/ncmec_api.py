@@ -60,6 +60,12 @@ class NCMECCollabConfig(
     _NCMECCollabConfigRequiredFields,
 ):
     api: str = field(init=False, default=_API_NAME)
+    only_esp_ids: t.Set[int] = field(
+        default_factory=set,
+        metadata={
+            "help": "Only take entries from these eletronic service provider (ESP) ids"
+        },
+    )
 
 
 @dataclass
@@ -153,15 +159,20 @@ class NCMECSignalExchangeAPI(
     def fetch_iter(
         self,
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
-        _collab: CollaborationConfigBase,
+        collab: NCMECCollabConfig,
         checkpoint: t.Optional[NCMECCheckpoint],
     ) -> t.Iterator[state.FetchDelta[str, api.NCMECEntryUpdate, NCMECCheckpoint]]:
         start_time = 0
         if checkpoint is not None:
             start_time = checkpoint.max_timestamp
         for result in self.client.get_entries_iter(start_timestamp=start_time):
+            updates = result.updates
+            if collab.only_esp_ids:
+                updates = [
+                    entry for entry in updates if entry.member_id in collab.only_esp_ids
+                ]
             yield state.FetchDelta(
-                {f"{entry.member_id}-{entry.id}": entry for entry in result.updates},
+                {f"{entry.member_id}-{entry.id}": entry for entry in updates},
                 NCMECCheckpoint.from_ncmec_fetch(result),
             )
 

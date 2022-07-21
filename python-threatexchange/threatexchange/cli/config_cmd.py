@@ -6,6 +6,7 @@ Config command to setup the CLI and settings.
 """
 
 import argparse
+import collections.abc
 from dataclasses import is_dataclass, Field, fields, MISSING
 from enum import Enum
 import itertools
@@ -143,19 +144,31 @@ class _UpdateCollabCommand(command_base.Command):
             field.type, t.ForwardRef
         ), "rework class to not have forward ref"
 
-        target_type = field.type
-        if hasattr(field.type, "__args__"):
-            target_type = field.type.__args__[0]
-
-        argparse_type = target_type
-        metavar = target_type.__name__
-
-        if issubclass(target_type, Enum):
+        origin = t.get_origin(field.type)
+        argparse_type: t.Callable[[str], t.Any] = field.type
+        metavar: str
+        if isinstance(field.type, type) and issubclass(field.type, Enum):
             argparse_type = common.argparse_choices_pre_type(
-                [m.name for m in target_type],
-                lambda s: target_type[s],
+                [m.name for m in field.type],
+                lambda s: field.type[s],
             )
-            metavar = f"[{','.join(m.name for m in target_type)}]"
+            metavar = f"[{','.join(m.name for m in field.type)}]"
+        elif origin is not None:
+            arg_type = t.get_args(field.type)[0]
+            if isinstance(origin, type) and issubclass(
+                origin, collections.abc.Collection
+            ):
+                argparse_type = lambda s: origin(p.strip() for p in s.split(","))  # type: ignore  # mypy not smart enough for origin == type
+                metavar = f"{arg_type.__name__}[,{arg_type.__name__}[,...]]"
+            elif origin == t.Union:  # Should this be is?
+                argparse_type = arg_type
+                metavar = arg_type.__name__
+            else:
+                raise AssertionError(
+                    f"Unhandled complex type for {field.name}: {field.type}"
+                )
+        else:
+            metavar = field.type.__name__
 
         help = "[missing] Add a help annotation on the config class!"
         if field.metadata:
