@@ -37,7 +37,6 @@ def main():
     args = ap.parse_args()
     shutil.copy(DIR / SETUP, PARENTDIR / SETUP)
     shutil.copy(DIR / MANIFEST, PARENTDIR / MANIFEST)
-    os.chdir(PARENTDIR)
     if args.release:
         print("build vpdq source distribution")
         run_command(["python3", "setup.py", "sdist", "bdist_wheel"], PARENTDIR)
@@ -47,8 +46,8 @@ def main():
     if args.install:
         print("install vpdq source locally")
         run_command(["pip3", "install", "-e", "."], PARENTDIR)
-    os.remove(SETUP)
-    os.remove(MANIFEST)
+    os.remove(PARENTDIR / SETUP)
+    os.remove(PARENTDIR / MANIFEST)
 
 
 def run_command(command, cwd="."):
