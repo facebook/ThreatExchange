@@ -22,3 +22,45 @@ def test_required_argument(cli: ThreatExchangeCLIE2eHelper) -> None:
     )
     cli.assert_cli_output((), expected_output=f"ncmec {name}")  # Defaults to list
     cli.assert_cli_output(("list",), expected_output=f"ncmec {name}")
+
+
+def test_complex_types(cli: ThreatExchangeCLIE2eHelper) -> None:
+    cli.cli_call(
+        "tx",
+        "config",
+        "extensions",
+        "add",
+        "threatexchange.cli.tests.fake_extension",
+    )
+    cli.cli_call(
+        "edit",
+        "fake",
+        "fake",
+        "--an-int=1",
+        "--a-str=a",
+        "--an-enum=OPTION_A",
+        "--a-list=1,2,3",
+        "--a-set=3,2",
+        "--create",
+    )
+    expected = """
+{
+  "an_int": 1,
+  "a_str": "a",
+  "a_list": [
+    "1",
+    "2",
+    "3"
+  ],
+  "a_set": [
+    2,
+    3
+  ],
+  "an_enum": "a",
+  "name": "fake",
+  "api": "fake",
+  "enabled": true,
+  "optional": null
+}
+    """.strip()
+    cli.assert_cli_output(["print", "fake"], expected)

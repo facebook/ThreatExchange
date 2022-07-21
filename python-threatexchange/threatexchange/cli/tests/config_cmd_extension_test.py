@@ -44,14 +44,13 @@ def test_extension_manipulate(cli: ThreatExchangeCLIE2eHelper) -> None:
 
 def test_extensions_in_other_cmds(cli: ThreatExchangeCLIE2eHelper) -> None:
     cli.cli_call("add", "threatexchange.cli.tests.fake_extension")
-    cli.COMMON_CALL_ARGS = ()
     cli.assert_cli_output(
-        ["hash", "--signal-type=fake", "fake", "--", "lolol"], "fake fake"
+        ["tx", "hash", "--signal-type=fake", "fake", "--", "lolol"], "fake fake"
     )
     cli.assert_cli_output(
-        ["hash", "--signal-type=fake", "fake", "--", "lolol"], "fake fake"
+        ["tx", "hash", "--signal-type=fake", "fake", "--", "lolol"], "fake fake"
     )
     cli.assert_cli_output(
-        ["match", "--only-signal=fake", "fake", "--", "lolol"],
+        ["tx", "match", "--only-signal=fake", "fake", "--", "lolol"],
         "fake - (Sample Signals) WORTH_INVESTIGATING",
     )

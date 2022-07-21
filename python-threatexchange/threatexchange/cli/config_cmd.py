@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
@@ -22,7 +21,7 @@ from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange import meta as tx_meta
 from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
-from threatexchange.cli import command_base
+from threatexchange.cli import command_base, dataclass_json
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCollabConfig,
@@ -31,7 +30,6 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
-from threatexchange.signal_type.signal_base import SignalType
 
 
 class ConfigCollabListCommand(command_base.Command):
@@ -51,6 +49,49 @@ class ConfigCollabListCommand(command_base.Command):
         for collab in settings.get_all_collabs(default_to_sample=False):
             api = settings.apis.get_for_collab(collab)
             print(api.get_name(), collab.name)
+
+
+class ConfigCollabPrintCommand(command_base.Command):
+
+    """
+    Print a collab config to screen.
+
+    This can be used to share configs via creation from JSON:
+
+    ```
+    $ threatexchange config collab print $name > file
+    $ cat file
+    {
+        "filename": "/local/file.txt",
+        "name": "my_collab",
+        "api": "local_file",
+        "enabled": true,
+        "signal_type": null
+    }
+    $ threatexchange config collab delete my_collab
+    $ threatexchange config collab edit local_file --create --json "$(cat file)"
+    ```
+    """
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "print"
+
+    @classmethod
+    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+        ap.add_argument("collab_name", help="the name of the collab")
+
+    def __init__(
+        self,
+        collab_name: str,
+    ) -> None:
+        self.collab_name = collab_name
+
+    def execute(self, settings: CLISettings) -> None:
+        collab = settings.get_collab(self.collab_name)
+        if collab is None:
+            raise CommandError.user(f"No such collab {self.collab_name}")
+        print(dataclass_json.dataclass_dumps(collab))
 
 
 class _UpdateCollabCommand(command_base.Command):
@@ -158,7 +199,7 @@ class _UpdateCollabCommand(command_base.Command):
             if isinstance(origin, type) and issubclass(
                 origin, collections.abc.Collection
             ):
-                argparse_type = lambda s: origin(p.strip() for p in s.split(","))  # type: ignore  # mypy not smart enough for origin == type
+                argparse_type = lambda s: origin(arg_type(p.strip()) for p in s.split(","))  # type: ignore  # mypy not smart enough for origin == type
                 metavar = f"{arg_type.__name__}[,{arg_type.__name__}[,...]]"
             elif origin == t.Union:  # Should this be is?
                 argparse_type = arg_type
@@ -201,7 +242,7 @@ class _UpdateCollabCommand(command_base.Command):
 
         # Technically you could combine the flags and JSON, but you'd be weird
         if create:
-            self.edit_kwargs["name"] = collab_name
+            self.edit_kwargs["name"] = self.collab_name
             self.edit_kwargs["enabled"] = True
             self.edit_kwargs["api"] = self._API_CLS.get_name()
 
@@ -303,6 +344,7 @@ class ConfigCollabCommand(command_base.CommandWithSubcommands):
 
     _SUBCOMMANDS = [
         ConfigCollabListCommand,
+        ConfigCollabPrintCommand,
         ConfigCollabForAPICommand,
         ConfigCollabDeleteCommand,
     ]

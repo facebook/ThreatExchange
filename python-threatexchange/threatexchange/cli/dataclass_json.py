@@ -29,7 +29,7 @@ def dataclass_dump(fp: t.IO[str], obj) -> None:
     return json.dump(json_dict, fp, indent=2, default=_json_cast_default)
 
 
-def dataclass_dumps(fp: t.IO[str], obj) -> str:
+def dataclass_dumps(obj) -> str:
     json_dict = _as_dict(obj)
     return json.dumps(json_dict, indent=2, default=_json_cast_default)
 
