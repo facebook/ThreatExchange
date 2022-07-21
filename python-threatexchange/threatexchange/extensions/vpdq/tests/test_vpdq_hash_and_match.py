@@ -9,20 +9,20 @@ try:
     _DISABLED = False
 except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
-else:
-    from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
-    from threatexchange.extensions.vpdq.vpdq_util import (
-        vpdq_to_json,
-        json_to_vpdq,
-        read_file_to_hash,
-        dedupe,
-        quality_filter,
-        VPDQ_QUALITY_THRESHOLD,
-        VPDQ_DISTANCE_THRESHOLD,
-    )
-    from threatexchange.extensions.vpdq.vpdq_brute_matcher import (
-        match_VPDQ_hash_brute,
-    )
+
+from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
+from threatexchange.extensions.vpdq.vpdq_util import (
+    vpdq_to_json,
+    json_to_vpdq,
+    read_file_to_hash,
+    dedupe,
+    quality_filter,
+    VPDQ_QUALITY_THRESHOLD,
+    VPDQ_DISTANCE_THRESHOLD,
+)
+from threatexchange.extensions.vpdq.vpdq_brute_matcher import (
+    match_VPDQ_hash_brute,
+)
 
 VIDEO = "tmk/sample-videos/chair-20-sd-bar.mp4"
 HASH = "python-threatexchange/threatexchange/extensions/vpdq/tests/test_hash.txt"

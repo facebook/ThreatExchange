@@ -11,20 +11,17 @@ try:
     _DISABLED = False
 except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
-else:
-    import typing as t
-    from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
-    from threatexchange.extensions.vpdq.vpdq_util import (
-        prepare_vpdq_feature,
-        json_to_vpdq,
-        vpdq_to_json,
-        VPDQ_QUALITY_THRESHOLD,
-    )
-    from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
 
-    from threatexchange.signal_type.index import (
-        VPDQIndexMatch,
-    )
+from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
+from threatexchange.extensions.vpdq.vpdq_util import (
+    prepare_vpdq_feature,
+    VPDQ_QUALITY_THRESHOLD,
+)
+from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
+
+from threatexchange.signal_type.index import (
+    VPDQIndexMatch,
+)
 
 ROOTDIR = Path(__file__).parents[5]
 hash = VideoVPDQSignal.get_examples()[0]
