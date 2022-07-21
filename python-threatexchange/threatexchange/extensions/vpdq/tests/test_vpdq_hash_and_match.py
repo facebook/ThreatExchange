@@ -17,6 +17,8 @@ else:
         read_file_to_hash,
         dedupe,
         quality_filter,
+        VPDQ_QUALITY_THRESHOLD,
+        VPDQ_DISTANCE_THRESHOLD
     )
     from threatexchange.extensions.vpdq.vpdq_brute_matcher import (
         match_VPDQ_hash_brute,
@@ -46,8 +48,8 @@ class TestVPDQHasherMatcher:
         res = match_VPDQ_hash_brute(
             json_to_vpdq(computed_hash),
             expected_hash,
-            VideoVPDQSignal.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
-            VideoVPDQSignal.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
+            VPDQ_QUALITY_THRESHOLD,
+            VPDQ_DISTANCE_THRESHOLD,
         )
         assert res.query_match_percent == 100
         assert res.compared_match_percent == 100

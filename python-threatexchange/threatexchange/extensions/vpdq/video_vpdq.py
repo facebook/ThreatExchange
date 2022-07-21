@@ -8,8 +8,8 @@ import vpdq
 from .vpdq_util import (
     json_to_vpdq,
     vpdq_to_json,
-    VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
-    VPDQ_CONFIDENT_QUALITY_THRESHOLD,
+    VPDQ_DISTANCE_THRESHOLD,
+    VPDQ_QUALITY_THRESHOLD,
 )
 from .vpdq_brute_matcher import match_VPDQ_hash_brute
 import pathlib
@@ -46,8 +46,6 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
 
     INDICATOR_TYPE = "HASH_VIDEO_VPDQ"
     VPDQ_CONFIDENT_MATCH_THRESHOLD = 80.0
-    VPDQ_CONFIDENT_QUALITY_THRESHOLD = VPDQ_CONFIDENT_QUALITY_THRESHOLD
-    VPDQ_CONFIDENT_DISTANCE_THRESHOLD = VPDQ_CONFIDENT_DISTANCE_THRESHOLD
 
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:
@@ -84,14 +82,14 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
     ) -> signal_base.HashComparisonResult:
         """If the max of the two match percentages is over VPDQ_CONFIDENT_MATCH_THRESHOLD
-        with VPDQ_CONFIDENT_DISTANCE_THRESHOLD, it's a match."""
+        with VPDQ_DISTANCE_THRESHOLD, it's a match."""
         vpdq_hash1 = json_to_vpdq(hash1)
         vpdq_hash2 = json_to_vpdq(hash2)
         match_percent = match_VPDQ_hash_brute(
             vpdq_hash1,
             vpdq_hash2,
-            cls.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
-            cls.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
+            VPDQ_QUALITY_THRESHOLD,
+            VPDQ_DISTANCE_THRESHOLD,
         )
         max_match_percent = max(
             match_percent.query_match_percent, match_percent.compared_match_percent

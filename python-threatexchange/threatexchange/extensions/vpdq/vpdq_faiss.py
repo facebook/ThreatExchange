@@ -13,22 +13,26 @@ import binascii
 class VPDQHashIndex:
     """Wrapper around an faiss binary index for use with searching for similar VPDQ features"""
 
-    def __init__(self, faiss_index: faiss.Index) -> None:
-        self.faiss_index = faiss_index
+    def __init__(self, faiss_index: t.Optional[faiss.Index] = None) -> None:
+        """
+        If none faiss index is provided, will use "brute-force" faiss search
+        """
+        self.faiss_index = (
+            faiss.IndexBinaryFlat(BITS_IN_VPDQ) if faiss_index is None else faiss_index
+        )
 
-    def add_single_video(self, hashes: t.Sequence[vpdq.VpdqFeature]) -> None:
+    def add_single_video(self, hashes: t.List[vpdq.VpdqFeature]) -> None:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
         """
-        hex_hashes = [h.hex for h in hashes]
-        hash_bytes = [binascii.unhexlify(h) for h in hex_hashes]
+        hash_bytes = [binascii.unhexlify(h.hex) for h in hashes]
         vectors = [numpy.frombuffer(h, dtype=numpy.uint8) for h in hash_bytes]
         self.faiss_index.add(numpy.array(vectors))
 
     def search_with_distance_in_result(
-        self, queries: t.Sequence[vpdq.VpdqFeature], distance_tolerance: int
-    ) -> t.Dict[str, t.List]:
+        self, queries: t.List[vpdq.VpdqFeature], distance_tolerance: int
+    ) -> t.Dict[str, t.List[t.Tuple[int, int]]]:
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away
         from the query hashes by hamming distance.
@@ -74,13 +78,9 @@ class VPDQHashIndex:
             result[query.hex] = list(zip(matches, distances))
         return result
 
+    def __getstate__(self):
+        data = faiss.serialize_index_binary(self.faiss_index)
+        return data
 
-class VPDQFlatHashIndex(VPDQHashIndex):
-    """
-    The "flat" variant uses an exhaustive search approach that may use less memory than other approaches and may be more
-    performant when using larger thresholds for VPDQ similarity.
-    """
-
-    def __init__(self) -> None:
-        faiss_index = faiss.IndexBinaryFlat(BITS_IN_VPDQ)
-        super().__init__(faiss_index)
+    def __setstate__(self, data):
+        self.faiss_index = faiss.deserialize_index_binary(data)
