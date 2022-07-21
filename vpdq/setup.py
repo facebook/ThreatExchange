@@ -16,7 +16,7 @@ class build_ext(build_ext):
     def run(self):
         command = ["make"]
         try:
-            subprocess.check_call(command, cwd="vpdq/cpp")
+            subprocess.check_call(command, cwd= DIR / "vpdq/cpp")
         except subprocess.CalledProcessError as e:
             print(e.output)
             print("fail to compile vpdq/pdq library")
