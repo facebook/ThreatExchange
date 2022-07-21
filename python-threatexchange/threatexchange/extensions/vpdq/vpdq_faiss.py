@@ -10,7 +10,7 @@ import numpy
 import binascii
 
 
-class VPDQFlatHashIndex:
+class VPDQHashIndex:
     """Wrapper around an faiss binary index for use with searching for similar VPDQ features
 
     The "flat" variant uses an exhaustive search approach that may use less memory than other approaches and may be more
@@ -75,15 +75,7 @@ class VPDQFlatHashIndex:
 
         result = {}
         for i, query in enumerate(queries):
-            match_tuples = []
             matches = [idx.item() for idx in neighbors[limits[i] : limits[i + 1]]]
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
-            for match, distance in zip(matches, distances):
-                match_tuples.append(
-                    (
-                        match,
-                        distance,
-                    )
-                )
-            result[query.hex] = match_tuples
+            result[query.hex] = zip(matches, distances)
         return result

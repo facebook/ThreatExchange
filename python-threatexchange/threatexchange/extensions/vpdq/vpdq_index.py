@@ -13,7 +13,7 @@ from threatexchange.signal_type.index import (
     IndexMatch,
     T as IndexT,
 )
-from threatexchange.extensions.vpdq.vpdq_faiss import VPDQFlatHashIndex
+from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
 from threatexchange.extensions.vpdq.vpdq_util import (
     prepare_vpdq_feature,
     VPDQMatchResult,
@@ -32,8 +32,8 @@ class VPDQIndex(SignalTypeIndex):
         return VPDQ_CONFIDENT_DISTANCE_THRESHOLD
 
     @classmethod
-    def _get_empty_index(cls) -> VPDQFlatHashIndex:
-        return VPDQFlatHashIndex()
+    def _get_empty_index(cls) -> VPDQHashIndex:
+        return VPDQHashIndex()
 
     def __init__(
         self,
@@ -41,7 +41,7 @@ class VPDQIndex(SignalTypeIndex):
         quality_threshold: int = VPDQ_CONFIDENT_QUALITY_THRESHOLD,
     ) -> None:
         super().__init__()
-        self.index: VPDQFlatHashIndex = self._get_empty_index()
+        self.index: VPDQHashIndex = self._get_empty_index()
         self.entries: t.List = []
         self.idx_to_vpdq: t.List[t.Tuple[int, vpdq.VpdqFeature]] = []
         self.video_length: t.List[int] = []
