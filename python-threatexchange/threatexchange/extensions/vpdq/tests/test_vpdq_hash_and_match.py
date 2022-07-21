@@ -18,7 +18,7 @@ else:
         dedupe,
         quality_filter,
         VPDQ_QUALITY_THRESHOLD,
-        VPDQ_DISTANCE_THRESHOLD
+        VPDQ_DISTANCE_THRESHOLD,
     )
     from threatexchange.extensions.vpdq.vpdq_brute_matcher import (
         match_VPDQ_hash_brute,

@@ -50,7 +50,11 @@ class IndexMatch(t.Generic[T]):
 
 class VPDQIndexMatch(IndexMatch):
     def __init__(
-        self, distance: int, query_match_percent: float, compared_match_percent: float, metadata: T
+        self,
+        distance: int,
+        query_match_percent: float,
+        compared_match_percent: float,
+        metadata: T,
     ) -> None:
         super().__init__(distance, metadata)
         self.query_match_percent = query_match_percent

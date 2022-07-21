@@ -41,6 +41,7 @@ def test_simple():
     assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 100, example_meta_data))
 
 
+@pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 def test_serialize():
     index = VPDQIndex.build([[hash, example_meta_data]])
     pickled_data = pickle.dumps(index)
