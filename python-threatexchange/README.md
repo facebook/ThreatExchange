@@ -138,12 +138,12 @@ $ threatexchange dataset -P --csv > out.csv
 This is the fastest way to experiment with the CLI functionality and saving contents
 
 ```
-$ tx hash photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true
+$ threatexchange hash photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true
 pdq f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22
-$ tx hash photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true >> ~/file.txt
-$ tx config collab edit local_file --filename ~/file.txt '~/file.txt' --create
-$ tx fetch
-$ tx match photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true
+$ threatexchange hash photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true >> ~/file.txt
+$ threatexchange config collab edit local_file --filename ~/file.txt '~/file.txt' --create
+$ threatexchange fetch
+$ threatexchange match photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true
 pdq - (~/file.txt) WORTH_INVESTIGATING
 ```
 
