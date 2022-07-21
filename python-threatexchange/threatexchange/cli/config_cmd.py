@@ -17,13 +17,6 @@ import typing as t
 from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
 
 
-try:
-    from typing import ForwardRef  # >= 3.7
-except ImportError:
-    # <3.7
-    from typing import _ForwardRef as ForwardRef  # type: ignore
-
-
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange import meta as tx_meta
 from threatexchange import common
@@ -147,7 +140,7 @@ class _UpdateCollabCommand(command_base.Command):
     def _add_argument(cls, ap: argparse._ArgumentGroup, field: Field) -> None:
         assert cls._is_argument_field(field)
         assert not isinstance(
-            field.type, ForwardRef
+            field.type, t.ForwardRef
         ), "rework class to not have forward ref"
 
         target_type = field.type
