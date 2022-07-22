@@ -179,7 +179,7 @@ class SimpleDescriptorRollup:
         return self.first_descriptor_id, self.added_on, " ".join(self.labels)
 
     @classmethod
-    def from_row(cls, row: t.List) -> "SimpleDescriptorRollup":
+    def from_row(cls, row: t.List[str]) -> "SimpleDescriptorRollup":
         """Simple conversion from CSV row"""
         labels = []
         if row[2]:
