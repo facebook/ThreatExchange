@@ -15,6 +15,7 @@ from threatexchange.hashing.pdq_utils import simple_distance
 from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
+from threatexchange.signal_type.pdq_index import PDQIndex
 
 
 class PdqSignal(
@@ -45,6 +46,10 @@ class PdqSignal(
     @classmethod
     def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         return [PhotoContent]
+
+    @classmethod
+    def get_index_cls(cls) -> t.Type[PDQIndex]:
+        return PDQIndex
 
     @classmethod
     def compare_hash(

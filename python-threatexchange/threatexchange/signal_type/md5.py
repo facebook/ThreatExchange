@@ -41,6 +41,10 @@ class VideoMD5Signal(
         return [VideoContent]
 
     @classmethod
+    def get_index_cls(cls) -> t.Type[signal_base.TrivialSignalTypeIndex]:
+        return signal_base.TrivialSignalTypeIndex
+
+    @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
         normalized = signal_str.strip().lower()
         if not re.match("^[0-9a-f]{32}$", normalized):

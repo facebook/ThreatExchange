@@ -64,7 +64,13 @@ class SignalType:
     @classmethod
     def get_index_cls(cls) -> t.Type[index.SignalTypeIndex]:
         """Return the index class that handles this signal type"""
-        return TrivialSignalTypeIndex
+        # Confused about which one to start with?
+        # Make a subclass of:
+        #   1. TrivialLinearSearchHashIndex: Just use compare_hash
+        #   2. TrivialLinearSearchMatchIndex: If you are MatchesStr
+        # Or if you only support exact matching (like MD5):
+        #   3. TrivialSignalTypeIndex
+        raise NotImplementedError
 
     @classmethod
     def compare_hash(

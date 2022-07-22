@@ -21,6 +21,7 @@ from threatexchange.signal_type.signal_base import (
     FileHasher,
     HashComparisonResult,
     SignalType,
+    TrivialSignalTypeIndex,
 )
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
@@ -60,6 +61,10 @@ class FakeSignal(SignalType, FileHasher):
     def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         """Which content types this Signal applies to (usually just one)"""
         return [FakeContent]
+
+    @classmethod
+    def get_index_cls(cls) -> t.Type[TrivialSignalTypeIndex]:
+        return TrivialSignalTypeIndex
 
     @classmethod
     def compare_hash(
