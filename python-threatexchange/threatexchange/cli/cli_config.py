@@ -24,7 +24,7 @@ from threatexchange.content_type import content_base
 from threatexchange.exchanges.fetch_state import FetchedStateStoreBase
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
-from threatexchange.meta import FunctionalityMapping
+from threatexchange.type_mapping import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.cli import dataclass_json as cli_json
 

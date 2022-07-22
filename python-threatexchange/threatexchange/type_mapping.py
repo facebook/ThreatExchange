@@ -3,6 +3,12 @@
 """
 A way to connect all the key interfaces of the library.
 
+This is entirely optional, and you can always use the classes directly
+without any trouble, but you may find some of the validation methods
+useful, especially if you are relying on the various .get_name() functions
+as storage keys, since there are helpers here for asserting they are
+all unique.
+
 Since matching may need to look up context from the original fetching,
 this is all the parts needed to get you there.
 

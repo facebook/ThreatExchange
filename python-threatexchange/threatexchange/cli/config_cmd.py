@@ -18,7 +18,7 @@ from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchang
 
 
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
-from threatexchange import meta as tx_meta
+from threatexchange import type_mapping as tx_meta
 from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import command_base, dataclass_json
