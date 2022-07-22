@@ -6,8 +6,8 @@ Wrapper around the Photo PDQ signal type.
 
 import typing as t
 import pathlib
-import warnings
 
+from threatexchange.hashing.pdq_hasher import pdq_from_bytes, pdq_from_file
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type import signal_base
@@ -15,14 +15,6 @@ from threatexchange.hashing.pdq_utils import simple_distance
 from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
-
-
-# TODO force this as a required library?
-def _raise_pillow_warning():
-    warnings.warn(
-        "PDQ from raw image data requires Pillow and pdqhash to be installed; install threatexchange with the [pdq_hasher] extra to use them",
-        category=UserWarning,
-    )
 
 
 class PdqSignal(
@@ -51,7 +43,7 @@ class PdqSignal(
     PDQ_CONFIDENT_MATCH_THRESHOLD = 31
 
     @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+    def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         return [PhotoContent]
 
     @classmethod
@@ -66,22 +58,12 @@ class PdqSignal(
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
-        try:
-            from threatexchange.hashing.pdq_hasher import pdq_from_file
-        except:
-            _raise_pillow_warning()
-            return ""
         pdq_hash, _quality = pdq_from_file(file)
         return pdq_hash
 
     @classmethod
-    def hash_from_bytes(self, bytes_: bytes) -> str:
-        try:
-            from threatexchange.hashing.pdq_hasher import pdq_from_bytes
-        except:
-            _raise_pillow_warning()
-            return ""
-        pdq_hash, quality = pdq_from_bytes(bytes_)
+    def hash_from_bytes(cls, bytes_: bytes) -> str:
+        pdq_hash, _quality = pdq_from_bytes(bytes_)
         return pdq_hash
 
     @staticmethod
