@@ -1,8 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-Implementation of SignalTypeIndex abstraction for PDQ by wrapping
-hashing.pdq_faiss_matcher.
+Implementation of SignalTypeIndex abstraction for VPDQ by wrapping
+vpdq_faiss.
 """
 
 import typing as t
@@ -36,7 +36,7 @@ class VPDQIndex(PickledSignalTypeIndex[IndexT]):
             t.Tuple[t.List[vpdq.VpdqFeature], IndexT]
         ] = []
         self._index_idx_to_vpdqHex_and_entry: t.List[t.Tuple[int, t.List[int]]] = []
-        self._unique_vpdqHex_to_idx: t.Dict[str, int] = {}
+        self._unique_vpdqHex_to_index_idx: t.Dict[str, int] = {}
         self.quality_threshold = quality_threshold
 
     def add(self, signal_str: str, entry: IndexT) -> None:
@@ -46,10 +46,10 @@ class VPDQIndex(PickledSignalTypeIndex[IndexT]):
         # Use hex to represent the feature because it saves the space
         unique_features = []
         for f in features:
-            idx = self._unique_vpdqHex_to_idx.get(f.hex)
+            idx = self._unique_vpdqHex_to_index_idx.get(f.hex)
             if idx is None:
-                idx = len(self._unique_vpdqHex_to_idx)
-                self._unique_vpdqHex_to_idx[f.hex] = idx
+                idx = len(self._unique_vpdqHex_to_index_idx)
+                self._unique_vpdqHex_to_index_idx[f.hex] = idx
                 self._index_idx_to_vpdqHex_and_entry.append((f.hex, list()))
                 unique_features.append(f)
             self._index_idx_to_vpdqHex_and_entry[idx][1].append(entry_id)
@@ -85,15 +85,19 @@ class VPDQIndex(PickledSignalTypeIndex[IndexT]):
                     if entry_id not in index_matched:
                         index_matched[entry_id] = set()
                     index_matched[entry_id].add(vpdq_match)
-                # Dist(-1) is meaningless here, because VPDQ match does not return a single dist
         for entry_id in query_matched.keys():
+            query_matched_percent = len(query_matched[entry_id]) * 100 / len(features)
+            index_matched_percent = (
+                len(index_matched[entry_id])
+                * 100
+                / len(self._entry_idx_to_features_and_entires[entry_id][0])
+            )
+            # Dist(-1) is meaningless here, because VPDQ match does not return a single dist
             matches.append(
                 VPDQIndexMatch(
                     -1,
-                    len(query_matched[entry_id]) * 100 / len(features),
-                    len(index_matched[entry_id])
-                    * 100
-                    / len(self._entry_idx_to_features_and_entires[entry_id][0]),
+                    query_matched_percent,
+                    index_matched_percent,
                     self._entry_idx_to_features_and_entires[entry_id][1],
                 )
             )

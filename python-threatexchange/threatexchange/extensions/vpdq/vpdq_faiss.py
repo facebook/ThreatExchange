@@ -2,9 +2,7 @@
 
 import vpdq
 import faiss
-from threatexchange.extensions.vpdq.vpdq_util import (
-    BITS_IN_VPDQ,
-)
+from threatexchange.hashing import BITS_IN_PDQ
 import typing as t
 import numpy
 import binascii
@@ -18,7 +16,7 @@ class VPDQHashIndex:
         If none faiss index is provided, will use "brute-force" faiss search
         """
         self.faiss_index = (
-            faiss.IndexBinaryFlat(BITS_IN_VPDQ) if faiss_index is None else faiss_index
+            faiss.IndexBinaryFlat(BITS_IN_PDQ) if faiss_index is None else faiss_index
         )
 
     def add_single_video(self, hashes: t.List[vpdq.VpdqFeature]) -> None:
@@ -53,7 +51,7 @@ class VPDQHashIndex:
             "0000000000000000000000000000000000000000000000000000000000000000" for a threshold of 16. Thus it would appear in
             the entry for both the hashes if they were both in the queries list.
 
-            eg.
+            e.g.
             query_str =>  (idx, distance)
             result = {
                 "000000000000000000000000000000000000000000000000000000000000ffff": [

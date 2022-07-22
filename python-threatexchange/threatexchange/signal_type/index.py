@@ -48,7 +48,7 @@ class IndexMatch(t.Generic[T]):
         self.metadata = metadata
 
 
-class VPDQIndexMatch(IndexMatch):
+class VPDQIndexMatch(IndexMatch[T]):
     def __init__(
         self,
         distance: int,
