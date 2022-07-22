@@ -1,0 +1,16 @@
+include pdq/cpp/common/pdqhashtypes.cpp
+include pdq/cpp/hashing/pdqhashing.cpp
+include pdq/cpp/io/hashio.cpp
+include pdq/cpp/downscaling/downscaling.cpp
+include pdq/cpp/hashing/torben.cpp
+include pdq/cpp/common/pdqhashtypes.h
+include pdq/cpp/common/pdqbasetypes.h
+include pdq/cpp/hashing/pdqhashing.h
+include pdq/cpp/io/hashio.h
+include pdq/cpp/downscaling/downscaling.h
+include pdq/cpp/hashing/torben.h
+include vpdq/LICENSE.txt
+include vpdq/README.md
+include vpdq/version.txt
+include vpdq/cpp/Makefile
+recursive-include vpdq *.py *pyx *.cpp *.h

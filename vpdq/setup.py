@@ -1,40 +1,34 @@
 from setuptools import setup
 from setuptools.extension import Extension
-from setuptools.command.build_py import build_py
+from setuptools.command.build_ext import build_ext                                     
 import sys
 import subprocess
 import os
 import numpy
 from pathlib import Path
 
-read_me = Path.cwd() / Path("README.md")
+DIR = Path(__file__).parent
+read_me = DIR / Path("vpdq/README.md")
 long_description = read_me.read_text()
+version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
-
-class Build(build_py):
-    """Customized setuptools build command - builds protos on build."""
-
+class build_ext(build_ext):
     def run(self):
-        os.chdir("cpp")
-        command = ["mkdir", "build"]
-        subprocess.call(command)
-        os.chdir("build")
-        command = ["cmake", ".."]
-        if subprocess.call(command) != 0:
-            sys.exit(-1)
         command = ["make"]
-        if subprocess.call(command) != 0:
-            sys.exit(-1)
-        os.chdir("../../")
-        build_py.run(self)
-
+        try:
+            subprocess.check_call(command, cwd= DIR / "vpdq/cpp")
+        except subprocess.CalledProcessError as e:
+            print(e.output)
+            print("fail to compile vpdq/pdq library")
+            sys.exit(1)
+        super().run()
 
 EXTENSIONS = [
     Extension(
         "vpdq",
-        ["python/vpdq.pyx"],
-        extra_objects=["cpp/build/libvpdqlib.a"],
-        include_dirs=["../", numpy.get_include()],
+        ["vpdq/python/vpdq.pyx"],
+        extra_objects=["vpdq/cpp/libvpdq.a"],
+        include_dirs=[".", numpy.get_include()],
         language="c++",
         extra_compile_args=["--std=c++11"],
     )
@@ -43,9 +37,9 @@ EXTENSIONS = [
 setup(
     name="vpdq",
     author="Facebook",
-    descripition="Python bindings for Facebook VPDQ hash",
+    description="Python bindings for Facebook VPDQ hash",
     author_email="threatexchange@fb.com",
-    version="0.1.0",
+    version=version,
     license_files="LICENSE.txt",
     license="BSD",
     long_description=long_description,
@@ -54,8 +48,9 @@ setup(
         "numpy",
         "cython",
         "opencv-python",
+        "opencv-python-headless"
     ],
     include_package_data=True,
-    cmdclass={"build_py": Build},
+    cmdclass={'build_ext': build_ext},
     ext_modules=EXTENSIONS,
 )
