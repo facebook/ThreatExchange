@@ -4,7 +4,7 @@ import typing as t
 from threatexchange.hashing.pdq_utils import hex_to_binary_str, BITS_IN_PDQ
 
 # Hex -> 4 digits Binary
-BITS_IN_PDQ_HEX = BITS_IN_PDQ / 4
+BITS_IN_PDQ_HEX = int(BITS_IN_PDQ / 4)
 
 
 def get_zero_hash() -> str:

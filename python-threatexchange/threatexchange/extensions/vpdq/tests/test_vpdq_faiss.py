@@ -3,6 +3,7 @@
 from cmath import sin
 import json
 import pytest
+import random
 from pathlib import Path
 import pickle
 
@@ -22,10 +23,16 @@ else:
         VPDQ_QUALITY_THRESHOLD,
     )
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
-
+    from utils import (
+        get_random_hash,
+        get_similar_hash,
+        get_zero_hash,
+    )
     from threatexchange.signal_type.index import (
         VPDQIndexMatch,
     )
+    from threatexchange.hashing.pdq_utils import simple_distance
+
 
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 
@@ -33,6 +40,18 @@ if not _DISABLED:
     EXAMPLE_META_DATA = {"name": "example_video"}
     hash = VideoVPDQSignal.get_examples()[0]
     features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
+
+
+def test_utils():
+    assert (
+        get_zero_hash()
+        == "0000000000000000000000000000000000000000000000000000000000000000"
+    )
+    for i in range(10):
+        random_dist = random.randint(0, 255)
+        random_hash = get_random_hash()
+        similar_hash = get_similar_hash(random_hash, random_dist)
+        assert simple_distance(similar_hash, random_hash) == random_dist
 
 
 def test_simple():
