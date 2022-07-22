@@ -23,11 +23,7 @@ else:
         VPDQ_QUALITY_THRESHOLD,
     )
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
-    from utils import (
-        get_random_hash,
-        get_similar_hash,
-        get_zero_hash,
-    )
+    from utils import get_random_hash, get_similar_hash, get_zero_hash, get_random_VPDQs
     from threatexchange.signal_type.index import (
         VPDQIndexMatch,
     )
@@ -58,6 +54,14 @@ def test_utils():
         assert False
     except ValueError:
         assert True
+    video_len = 100
+    features = get_random_VPDQs(video_len)
+    assert len(features) == video_len
+    last_timestamp = -1
+    for feature in features:
+        assert feature.quality == 100
+        assert feature.timestamp == last_timestamp + 1
+        last_timestamp = feature.timestamp
 
 
 def test_simple():

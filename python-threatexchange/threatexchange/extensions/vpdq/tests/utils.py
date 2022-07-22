@@ -41,7 +41,8 @@ def get_random_VPDQs(
     timestamp = 0.0
     for i in range(video_length):
         feature = vpdq.VpdqFeature(
-            quality, i, vpdq.str_to_hash(get_random_hash), timestamp
+            quality, i, vpdq.str_to_hash(get_random_hash()), timestamp
         )
         timestamp += seconds_per_hash
         ret.append(feature)
+    return ret
