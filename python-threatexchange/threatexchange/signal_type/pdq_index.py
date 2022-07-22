@@ -10,7 +10,6 @@ import typing as t
 import pickle
 
 from threatexchange.signal_type.index import (
-    PickledSignalTypeIndex,
     SignalTypeIndex,
     IndexMatch,
     T as IndexT,
@@ -22,7 +21,7 @@ from threatexchange.hashing.pdq_faiss_matcher import (
 )
 
 
-class PDQIndex(PickledSignalTypeIndex):
+class PDQIndex(SignalTypeIndex[IndexT]):
     """
     Wrapper around the pdq faiss index lib using PDQMultiHashIndex
     """

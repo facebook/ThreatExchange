@@ -162,21 +162,9 @@ class SignalTypeIndex(t.Generic[T]):
 
         Could also be premature optimization, you decide!
         """
-        raise NotImplementedError
+        fout.write(pickle.dumps(self))
 
     @classmethod
     def deserialize(cls: t.Type[Self], fin: t.BinaryIO) -> Self:
         """Instanciate an index from a previous call to serialize"""
-        raise NotImplementedError
-
-
-PickedSelf = t.TypeVar("PickedSelf", bound=SignalTypeIndex)
-
-
-class PickledSignalTypeIndex(SignalTypeIndex[T]):
-    def serialize(self, fout: t.BinaryIO) -> None:
-        fout.write(pickle.dumps(self))
-
-    @classmethod
-    def deserialize(cls: t.Type[PickedSelf], fin: t.BinaryIO) -> PickedSelf:
         return pickle.loads(fin.read())
