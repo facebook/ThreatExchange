@@ -67,9 +67,10 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
                 raise ValueError("invalid VPDQ hash")
             if hash.quality < 0 or hash.quality > 100:
                 raise ValueError("invalid VPDQ quality")
-            if hash.frame_number < 0 or hash.frame_number <= last_frame_number:
+            frame_number = int(hash.frame_number)
+            if frame_number < 0 or frame_number <= last_frame_number:
                 raise ValueError("invalid VPDQ frame number")
-            last_frame_number = hash.frame_number
+            last_frame_number = frame_number
         return signal_str
 
     @classmethod
