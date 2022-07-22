@@ -345,6 +345,19 @@ class FBThreatExchangeSignalExchangeAPI(
         signal_types: t.Sequence[t.Type[SignalType]],
         fetched: t.Dict[t.Tuple[str, str], t.Optional[FBThreatExchangeIndicatorRecord]],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, FBThreatExchangeIndicatorRecord]]:
+        """
+        Convert ThreatExchange Indicator records to SignalTypes.
+
+        We override this method from the base in order to make the signal type
+        mapping just once.
+
+        ThreatExchange uses a helper mixin that SignalTypes can implement in order
+        to instruct the API how to convert ThreatExchange's ThreatType into
+        a SignalType. ThreatExchange supports multiple ThreatTypes for the same
+        SignalType, and so it's possible there are duplicate records. It's even
+        possible that the uploader isn't consistent with their labeling for the
+        "identical" records in ThreatExchange.
+        """
         ret: t.Dict[
             t.Type[SignalType], t.Dict[str, FBThreatExchangeIndicatorRecord]
         ] = {}
