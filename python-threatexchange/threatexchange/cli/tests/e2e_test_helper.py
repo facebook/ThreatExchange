@@ -23,12 +23,23 @@ class E2ETestSystemExit(Exception):
 
 class ThreatExchangeCLIE2eHelper:
 
+    # A keystroke saver, prefix these args to the beginning
+    # of every call.
+    # You can bypass by making the first arg "tx" or
+    # "threatexchange".
     COMMON_CALL_ARGS: t.Sequence[str] = ()
 
     _state_dir: pathlib.Path
 
     def cli_call(self, *given_args: str) -> str:
-        args = list(self.COMMON_CALL_ARGS)
+        """
+        Call the threatexchange CLI
+        """
+        args: t.List[str] = []
+        if next(iter(given_args), None) in ("tx", "threatexchange"):
+            given_args = given_args[1:]
+        else:
+            args.extend(self.COMMON_CALL_ARGS)
         args.extend(given_args)
         print("Calling: $ threatexchange", " ".join(args), file=sys.stderr)
         with patch("sys.stdout", new=StringIO(newline=None)) as fake_out, patch(
