@@ -24,7 +24,7 @@ def get_similar_hash(signal_str: str, dist: int) -> str:
     for i in order:
         if dist == 0:
             bin_str = "".join(bin_list)
-            # 2: ignores the 0x at the begining of the hex_str
+            # [2:] ignores the 0x at the begining of the hex_str
             hex_str = hex(int(bin_str, 2))[2:].zfill(BITS_IN_PDQ_HEX)
             return hex_str
         bin_list[i] = str(int(bin_list[i]) ^ 1)
