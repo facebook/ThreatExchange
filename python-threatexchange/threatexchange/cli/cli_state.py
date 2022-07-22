@@ -16,7 +16,10 @@ import typing as t
 import logging
 
 from threatexchange.signal_type.index import SignalTypeIndex
-from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.signal_type.signal_base import (
+    SignalType,
+    is_correct_index_for_signal_type,
+)
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.fetch_state import (
@@ -74,7 +77,9 @@ class CliIndexStore:
         self, signal_type: t.Type[signal_base.SignalType], index: SignalTypeIndex
     ) -> None:
         """Persist a SignalTypeIndex to disk"""
-        assert signal_type.get_index_cls() == index.__class__
+        assert is_correct_index_for_signal_type(
+            signal_type, index
+        ), f"{signal_type} vs {index}"
         path = self._index_file(signal_type)
         with path.open("wb") as fout:
             index.serialize(fout)

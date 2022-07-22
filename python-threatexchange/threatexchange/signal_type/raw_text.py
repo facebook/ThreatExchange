@@ -1,11 +1,9 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
 Wrapper around the raw text signal type.
 """
 
-import math
 import typing as t
 
 import Levenshtein
@@ -61,10 +59,6 @@ class RawTextSignal(
             distance <= max_match_distance, distance
         )
 
-    @classmethod
-    def get_index_cls(cls) -> t.Type[index.SignalTypeIndex]:
-        return LevenshteinLinearSearch
-
     @staticmethod
     def get_examples() -> t.List[str]:
         return [
@@ -79,8 +73,3 @@ class RawTextSignal(
             ),
             "bball now?",
         ]
-
-
-class LevenshteinLinearSearch(signal_base.TrivialLinearSearchMatchIndex):
-    _SIGNAL_TYPE = RawTextSignal
-    # Could also convert these on ingestion
