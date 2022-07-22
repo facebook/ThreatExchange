@@ -1,10 +1,7 @@
-from io import BytesIO
-from tkinter import Image
 from unittest.mock import Mock
 import pytest
 import requests
 from threatexchange.exchanges.clients.ncmec.hash_api import (
-    NCMECEndpoint,
     NCMECEntryType,
     NCMECEntryUpdate,
     NCMECHashAPI,
