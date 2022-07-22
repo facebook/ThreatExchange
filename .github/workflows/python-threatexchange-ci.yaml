@@ -56,6 +56,7 @@ jobs:
         run: |
           echo $TIME
           sudo apt-get update
+          echo $TIME
           sudo apt-get install ffmpeg
           echo $TIME
       - name: Install dependencies
