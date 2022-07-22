@@ -62,11 +62,11 @@ class StopNCIICSPFeedback:
     source: str = ""  # Name of the Content Service Provider (CSP)
 
     @classmethod
-    def as_dict_for_post(self) -> t.Dict[str, t.Any]:
+    def as_dict_for_post(cls) -> t.Dict[str, t.Any]:
         """The json-friendly format to send in post requests"""
         return {
-            "tags": list(self.tags),
-            "feedbackValue": str(self.feedbackValue),
+            "tags": list(cls.tags),
+            "feedbackValue": str(cls.feedbackValue),
         }
 
 

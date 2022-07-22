@@ -28,7 +28,7 @@ class TextTLSHSignal(signal_base.SimpleSignalType, signal_base.TextHasher):
     INDICATOR_TYPE = "HASH_TEXT_TLSH"
 
     @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+    def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         return [TextContent]
 
     @classmethod

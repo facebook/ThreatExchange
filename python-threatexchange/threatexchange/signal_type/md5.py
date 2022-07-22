@@ -37,7 +37,7 @@ class VideoMD5Signal(
     INDICATOR_TYPE = "VIDEO_HASH_MD5"
 
     @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+    def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         return [VideoContent]
 
     @classmethod
@@ -59,7 +59,7 @@ class VideoMD5Signal(
         return file_hash.hexdigest()
 
     @classmethod
-    def hash_from_bytes(self, bytes_: bytes) -> str:
+    def hash_from_bytes(cls, bytes_: bytes) -> str:
         bytes_hash = hashlib.md5()
         bytes_hash.update(bytes_)
         return bytes_hash.hexdigest()

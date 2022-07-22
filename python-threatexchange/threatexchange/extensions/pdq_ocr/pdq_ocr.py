@@ -46,7 +46,7 @@ class PdqOcrSignal(
     LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD = 90
 
     @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+    def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         return [PhotoContent]
 
     @classmethod

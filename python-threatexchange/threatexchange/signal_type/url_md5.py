@@ -30,7 +30,7 @@ class UrlMD5Signal(
     INDICATOR_TYPE = "HASH_URL_MD5"
 
     @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+    def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         return [URLContent]
 
     @classmethod

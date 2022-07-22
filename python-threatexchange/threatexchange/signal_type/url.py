@@ -27,7 +27,7 @@ class URLSignal(
     INDICATOR_TYPE = ("URI", "RAW_URI")
 
     @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+    def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         return [URLContent]
 
     @classmethod

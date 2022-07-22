@@ -61,9 +61,9 @@ class Command:
         )
 
     @classmethod
-    def get_description(self) -> str:
+    def get_description(cls) -> str:
         """The long help of the command"""
-        return self.__doc__ or ""
+        return cls.__doc__ or ""
 
     @classmethod
     def get_help(cls) -> str:
