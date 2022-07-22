@@ -11,6 +11,8 @@ QUALITY = "quality"
 HASH = "hash"
 TIMESTAMP = "timestamp"
 VPDQ_TIMESTAMP_PRECISION = 3
+VPDQ_QUALITY_THRESHOLD = 50
+VPDQ_DISTANCE_THRESHOLD = 31
 
 
 @dataclass
@@ -111,3 +113,17 @@ def dump_hash_to_file(
         VPDQ features write to the output file"""
     with open(output_hash_filename, "w") as file:
         file.write(vpdq_to_json(vpdq_features))
+
+
+def prepare_vpdq_feature(
+    signal_str: str, quality_tolerance: int
+) -> t.List[vpdq.VpdqFeature]:
+    """Convert signal_str to deduped and quality-filtered vdqp features
+
+    Args:
+    quality_tolerance : The quality tolerance of VPDQ Feature.
+    If VPDQ Feature is below this quality level then it will not be added
+    """
+
+    features = json_to_vpdq(signal_str)
+    return dedupe(quality_filter(features, quality_tolerance))

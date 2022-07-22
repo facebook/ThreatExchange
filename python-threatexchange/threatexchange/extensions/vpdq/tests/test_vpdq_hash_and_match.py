@@ -10,20 +10,22 @@ try:
 except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
-    from threatexchange.extensions.video_vpdq.video_vpdq import VideoVPDQSignal
-    from threatexchange.extensions.video_vpdq.vpdq_util import (
+    from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
+    from threatexchange.extensions.vpdq.vpdq_util import (
         vpdq_to_json,
         json_to_vpdq,
         read_file_to_hash,
         dedupe,
         quality_filter,
+        VPDQ_QUALITY_THRESHOLD,
+        VPDQ_DISTANCE_THRESHOLD,
     )
-    from threatexchange.extensions.video_vpdq.vpdq_brute_matcher import (
+    from threatexchange.extensions.vpdq.vpdq_brute_matcher import (
         match_VPDQ_hash_brute,
     )
 
 VIDEO = "tmk/sample-videos/chair-20-sd-bar.mp4"
-HASH = "python-threatexchange/threatexchange/extensions/video_vpdq/tests/test_hash.txt"
+HASH = "python-threatexchange/threatexchange/extensions/vpdq/tests/test_hash.txt"
 ROOTDIR = Path(__file__).parents[5]
 
 
@@ -46,8 +48,8 @@ class TestVPDQHasherMatcher:
         res = match_VPDQ_hash_brute(
             json_to_vpdq(computed_hash),
             expected_hash,
-            VideoVPDQSignal.VPDQ_CONFIDENT_QUALITY_THRESHOLD,
-            VideoVPDQSignal.VPDQ_CONFIDENT_DISTANCE_THRESHOLD,
+            VPDQ_QUALITY_THRESHOLD,
+            VPDQ_DISTANCE_THRESHOLD,
         )
         assert res.query_match_percent == 100
         assert res.compared_match_percent == 100
