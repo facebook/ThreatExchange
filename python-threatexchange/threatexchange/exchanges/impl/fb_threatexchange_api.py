@@ -122,12 +122,12 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
             if isinstance(tags, dict):
                 tags = sorted(tag["text"] for tag in tags["data"])
 
-            category = state.SignalOpinionCategory.WORTH_INVESTIGATING
+            category = state.SignalOpinionCategory.INVESTIGATION_SEED
 
             if status == "MALICIOUS":
-                category = state.SignalOpinionCategory.TRUE_POSITIVE
+                category = state.SignalOpinionCategory.POSITIVE_CLASS
             elif status == "NON_MALICIOUS":
-                category = state.SignalOpinionCategory.FALSE_POSITIVE
+                category = state.SignalOpinionCategory.NEGATIVE_CLASS
 
             explicit_opinions[owner_id] = FBThreatExchangeOpinion(
                 owner_id, category, tags, td_id
@@ -137,11 +137,13 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
                 rxn = reaction["key"]
                 owner = int(reaction["value"])
                 if rxn == "HELPFUL":
-                    implicit_opinions[owner] = state.SignalOpinionCategory.TRUE_POSITIVE
+                    implicit_opinions[
+                        owner
+                    ] = state.SignalOpinionCategory.POSITIVE_CLASS
                 elif rxn == "DISAGREE_WITH_TAGS" and owner not in implicit_opinions:
                     implicit_opinions[
                         owner
-                    ] = state.SignalOpinionCategory.FALSE_POSITIVE
+                    ] = state.SignalOpinionCategory.NEGATIVE_CLASS
 
         for owner_id, category in implicit_opinions.items():
             if owner_id in explicit_opinions:
@@ -316,7 +318,7 @@ class FBThreatExchangeSignalExchangeAPI(
             signal,
             state.SignalOpinion(
                 owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.TRUE_POSITIVE,
+                category=state.SignalOpinionCategory.POSITIVE_CLASS,
                 tags=set(),
             ),
         )
@@ -334,7 +336,7 @@ class FBThreatExchangeSignalExchangeAPI(
             signal,
             state.SignalOpinion(
                 owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.FALSE_POSITIVE,
+                category=state.SignalOpinionCategory.NEGATIVE_CLASS,
                 tags=set(),
             ),
         )

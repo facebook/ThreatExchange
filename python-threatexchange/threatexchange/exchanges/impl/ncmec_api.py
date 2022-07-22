@@ -81,7 +81,7 @@ class NCMECSignalMetadata(state.FetchedSignalMetadata):
     def get_as_opinions(self) -> t.List[state.SignalOpinion]:
         return [
             state.SignalOpinion(
-                member_id, state.SignalOpinionCategory.TRUE_POSITIVE, tags
+                member_id, state.SignalOpinionCategory.POSITIVE_CLASS, tags
             )
             for member_id, tags in self.member_entries.items()
         ]

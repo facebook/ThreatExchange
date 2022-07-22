@@ -42,12 +42,12 @@ def test_fetch(exchange: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPa
     assert b is not None
     assert len(a.feedbacks) == 0
     ao = a.get_as_aggregate_opinion()
-    assert ao.category == AggregateSignalOpinionCategory.WORTH_INVESTIGATING
+    assert ao.category == AggregateSignalOpinionCategory.INVESTIGATION_SEED
     assert ao.tags == set()
 
     assert len(b.feedbacks) == 0
     bo = b.get_as_aggregate_opinion()
-    assert bo.category == AggregateSignalOpinionCategory.WORTH_INVESTIGATING
+    assert bo.category == AggregateSignalOpinionCategory.INVESTIGATION_SEED
     assert bo.tags == set()
 
     # Second fetch
@@ -57,7 +57,7 @@ def test_fetch(exchange: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPa
     a = tuple(delta.updates.values())[0]
     assert a is not None
     ao = a.get_as_aggregate_opinion()
-    assert ao.category == AggregateSignalOpinionCategory.TRUE_POSITIVE
+    assert ao.category == AggregateSignalOpinionCategory.POSITIVE_CLASS
     assert ao.tags == {"Nude", "Objectionable"}
 
     assert next(it, None) is None  # We fetched everything

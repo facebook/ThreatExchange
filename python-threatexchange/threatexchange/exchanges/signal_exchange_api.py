@@ -267,7 +267,7 @@ class SignalExchangeAPI(
             signal,
             state.SignalOpinion(
                 owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.TRUE_POSITIVE,
+                category=state.SignalOpinionCategory.POSITIVE_CLASS,
                 tags=set(),
             ),
         )
@@ -291,7 +291,7 @@ class SignalExchangeAPI(
             signal,
             state.SignalOpinion(
                 owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.FALSE_POSITIVE,
+                category=state.SignalOpinionCategory.NEGATIVE_CLASS,
                 tags=set(),
             ),
         )

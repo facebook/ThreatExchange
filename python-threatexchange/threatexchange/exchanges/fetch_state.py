@@ -74,15 +74,15 @@ class SignalOpinionCategory(IntEnum):
 
     Some APIs may not support all of these, but each of these should influence
     what action you might take as a result of matching, otherwise it might
-    make more sense as a tag
+    make more sense as a tag.
     """
 
-    # TODO: Rename to DOES_NOT_FIT_CATEORY
-    FALSE_POSITIVE = 0  # Signal generates false positives
-    # TODO: Rename to something else
-    WORTH_INVESTIGATING = 1  # Indirect indicator
-    # TODO: Rename to FITS_CATEGORY
-    TRUE_POSITIVE = 2  # Confirmed meets category
+    # Signal generates false positives, or is test/example data
+    NEGATIVE_CLASS = 0
+    # Indirect indicator, requires verifying. Can lead to POSITIVE_CLASS content
+    INVESTIGATION_SEED = 1
+    # Signal corresponds to content that fits collaboration categories
+    POSITIVE_CLASS = 2
 
 
 @dataclass
@@ -105,7 +105,7 @@ class SignalOpinion:
 
     @classmethod
     def get_trivial(cls):
-        return cls(0, SignalOpinionCategory.WORTH_INVESTIGATING, [])
+        return cls(0, SignalOpinionCategory.INVESTIGATION_SEED, [])
 
 
 class AggregateSignalOpinionCategory(IntEnum):
@@ -116,9 +116,9 @@ class AggregateSignalOpinionCategory(IntEnum):
     """
 
     # TODO: Move concept of "my" signals into this
-    FALSE_POSITIVE = 0  # Signal generates false positives
-    WORTH_INVESTIGATING = 1  # Indirect indicator
-    TRUE_POSITIVE = 2  # Confirmed meets category
+    NEGATIVE_CLASS = 0
+    INVESTIGATION_SEED = 1
+    POSITIVE_CLASS = 2
     DISPUTED = 3  # Some positive, some negative
 
     @classmethod
@@ -151,7 +151,7 @@ class AggregateSignalOpinionCategory(IntEnum):
         hi = max(old, new)
         if lo == hi:
             return hi
-        return cls.DISPUTED if lo == cls.FALSE_POSITIVE else hi
+        return cls.DISPUTED if lo == cls.NEGATIVE_CLASS else hi
 
 
 @dataclass

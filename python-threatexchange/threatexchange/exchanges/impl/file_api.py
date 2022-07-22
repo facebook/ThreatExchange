@@ -97,7 +97,7 @@ class LocalFileSignalExchangeAPI(
         signal: str,
         opinion: state.SignalOpinion,
     ) -> None:
-        if opinion.category != state.SignalOpinionCategory.TRUE_POSITIVE:
+        if opinion.category != state.SignalOpinionCategory.POSITIVE_CLASS:
             raise NotImplementedError
         if opinion.tags:
             raise NotImplementedError
