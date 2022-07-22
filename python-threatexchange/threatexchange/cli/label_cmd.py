@@ -138,11 +138,7 @@ class LabelCommand(command_base.Command):
                     self.collab,
                     signal_type,
                     hash_val,
-                    SignalOpinion(
-                        -1,  # TODO - remove
-                        SignalOpinionCategory.POSITIVE_CLASS,
-                        self.labels,
-                    ),
+                    SignalOpinion(SignalOpinionCategory.POSITIVE_CLASS, self.labels),
                 )
             return
         raise NotImplementedError

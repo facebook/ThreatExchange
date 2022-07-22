@@ -78,6 +78,13 @@ class NCMECCollabConfig(
 
 
 @dataclass
+class NCMECOpinion(state.SignalOpinion):
+    member_id: int
+
+    # TODO record if it's my opinion
+
+
+@dataclass
 class NCMECSignalMetadata(state.FetchedSignalMetadata):
     """
     NCMEC metadata includes who uploaded it, as well as what they tagged.
@@ -87,10 +94,12 @@ class NCMECSignalMetadata(state.FetchedSignalMetadata):
 
     member_entries: t.Dict[int, t.Set[str]]
 
-    def get_as_opinions(self) -> t.List[state.SignalOpinion]:
+    def get_as_opinions(self) -> t.Sequence[NCMECOpinion]:
         return [
-            state.SignalOpinion(
-                member_id, state.SignalOpinionCategory.POSITIVE_CLASS, tags
+            NCMECOpinion(
+                state.SignalOpinionCategory.POSITIVE_CLASS,
+                tags,
+                member_id,
             )
             for member_id, tags in self.member_entries.items()
         ]

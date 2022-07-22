@@ -30,12 +30,8 @@ class SimpleFetchedSignalMetadata(fetch_state.FetchedSignalMetadata):
 
     opinions: t.List[fetch_state.SignalOpinion] = field(default_factory=list)
 
-    def get_as_opinions(self) -> t.List[fetch_state.SignalOpinion]:
+    def get_as_opinions(self) -> t.Sequence[fetch_state.SignalOpinion]:
         return self.opinions
-
-    @classmethod
-    def get_trivial(cls):
-        return cls([fetch_state.SignalOpinion.get_trivial()])
 
 
 @dataclass

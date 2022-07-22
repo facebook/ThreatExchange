@@ -88,7 +88,15 @@ class FBThreatExchangeOpinion(state.SignalOpinion):
 
     REACTION_DESCRIPTOR_ID: t.ClassVar[int] = -1
 
+    owner_app_id: int
+    tags: t.Set[str]
     descriptor_id: t.Optional[int]
+
+    def is_mine(self) -> bool:
+        return False  # TODO
+
+    def get_tags(self) -> t.Collection[str]:
+        return []
 
 
 @dataclass
@@ -130,7 +138,7 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
                 category = state.SignalOpinionCategory.NEGATIVE_CLASS
 
             explicit_opinions[owner_id] = FBThreatExchangeOpinion(
-                owner_id, category, tags, td_id
+                category, set(tags), owner_id, td_id
             )
 
             for reaction in td_json.get("reactions", []):
@@ -149,9 +157,9 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
             if owner_id in explicit_opinions:
                 continue
             explicit_opinions[owner_id] = FBThreatExchangeOpinion(
-                owner_id,
                 category,
                 set(),
+                owner_id,
                 FBThreatExchangeOpinion.REACTION_DESCRIPTOR_ID,
             )
 

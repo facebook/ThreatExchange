@@ -50,16 +50,14 @@ class StopNCIICheckpoint(
 class StopNCIISignalMetadata(state.FetchedSignalMetadata):
     feedbacks: t.List[api.StopNCIICSPFeedback]
 
-    def get_as_opinions(self) -> t.List[state.SignalOpinion]:
+    def get_as_opinions(self) -> t.Sequence[state.SignalOpinion]:
         opinions = [
-            state.SignalOpinion(-1, _opinion_mapping(f.feedbackValue), f.tags)
+            state.SignalOpinion(_opinion_mapping(f.feedbackValue), f.tags)
             for f in self.feedbacks
         ]
         # implicitly, all records from StopNCII are from user-submitted cases
         opinions.append(
-            state.SignalOpinion(
-                0, state.SignalOpinionCategory.INVESTIGATION_SEED, set()
-            ),
+            state.SignalOpinion(state.SignalOpinionCategory.INVESTIGATION_SEED, set()),
         )
         return opinions
 

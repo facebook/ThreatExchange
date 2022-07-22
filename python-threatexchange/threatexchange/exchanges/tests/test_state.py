@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as t
 
 from threatexchange.exchanges.collab_config import (
@@ -16,16 +16,14 @@ from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     FetchDelta,
     FetchDeltaTyped,
+    FetchedSignalMetadata,
     SignalOpinion,
     SignalOpinionCategory,
     TUpdateRecordKey,
     TUpdateRecordValue,
 )
 
-from threatexchange.exchanges.helpers import (
-    SimpleFetchedSignalMetadata,
-    SimpleFetchedStateStore,
-)
+from threatexchange.exchanges.helpers import SimpleFetchedStateStore
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.raw_text import RawTextSignal
 from threatexchange.signal_type.signal_base import SignalType
@@ -43,8 +41,17 @@ class FakeUpdateRecord:
     md5: str
 
 
-OpinionRecord = t.Dict[int, t.Optional[FakeUpdateRecord]]
-OpinionDelta = FetchDelta[int, t.Optional[FakeUpdateRecord], FetchCheckpointBase]
+@dataclass
+class SignalOpinionWithOwner(SignalOpinion):
+    owner_id: int
+
+
+@dataclass
+class FakeSignalMetadata(FetchedSignalMetadata):
+    opinions: t.List[SignalOpinionWithOwner] = field(default_factory=list)
+
+    def get_as_opinions(self) -> t.Sequence[SignalOpinionWithOwner]:
+        return self.opinions
 
 
 class _FakeAPIMixin(t.Generic[TUpdateRecordKey, TUpdateRecordValue]):
@@ -84,7 +91,7 @@ class FakePerOwnerOpinionAPI(
     SignalExchangeAPI[
         CollaborationConfigBase,
         FakeCheckpoint,
-        SimpleFetchedSignalMetadata,
+        FakeSignalMetadata,
         int,
         FakeUpdateRecord,
     ],
@@ -94,7 +101,7 @@ class FakePerOwnerOpinionAPI(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
         fetched: t.Mapping[int, t.Optional[FakeUpdateRecord]],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, SimpleFetchedSignalMetadata]]:
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FakeSignalMetadata]]:
         if VideoMD5Signal not in signal_types:
             return {}
 
@@ -107,10 +114,10 @@ class FakePerOwnerOpinionAPI(
 
         return {
             VideoMD5Signal: {
-                h: SimpleFetchedSignalMetadata(
+                h: FakeSignalMetadata(
                     [
-                        SignalOpinion(
-                            owner=owner,
+                        SignalOpinionWithOwner(
+                            owner_id=owner,
                             category=SignalOpinionCategory.INVESTIGATION_SEED,
                             tags=tags,
                         )
@@ -123,11 +130,11 @@ class FakePerOwnerOpinionAPI(
 
 
 class FakeNoConversionAPI(
-    _FakeAPIMixin[t.Tuple[str, str], SimpleFetchedSignalMetadata],
+    _FakeAPIMixin[t.Tuple[str, str], FakeSignalMetadata],
     SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase,
         FakeCheckpoint,
-        SimpleFetchedSignalMetadata,
+        FakeSignalMetadata,
     ],
 ):
     pass
@@ -173,8 +180,8 @@ def test_test_impls():
     delta = deltas[0]
     assert delta.checkpoint == FakeCheckpoint(100)
 
-    record = SimpleFetchedSignalMetadata(
-        [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {"tag"})]
+    record = FakeSignalMetadata(
+        [SignalOpinionWithOwner(SignalOpinionCategory.INVESTIGATION_SEED, {"tag"}, 1)]
     )
 
     assert FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
@@ -218,37 +225,49 @@ def test_update_stream_delta():
         (4, None),  # Completely remove hash
     ]
 
-    h1_full = SimpleFetchedSignalMetadata(
+    h1_full = FakeSignalMetadata(
         [
-            SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}),
-            SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+            SignalOpinionWithOwner(
+                SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}, 1
+            ),
+            SignalOpinionWithOwner(SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2),
         ]
     )
-    h2_full = SimpleFetchedSignalMetadata(
+    h2_full = FakeSignalMetadata(
         [
-            SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t2}),
+            SignalOpinionWithOwner(SignalOpinionCategory.INVESTIGATION_SEED, {t2}, 3),
         ]
     )
 
     expected_states = [
         # Hash 1
         {
-            md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1})]
+            md5(1): FakeSignalMetadata(
+                [
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t1}, 1
+                    )
+                ]
             )
         },
         {
-            md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2})]
+            md5(1): FakeSignalMetadata(
+                [
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}, 1
+                    )
+                ]
             )
         },
         {md5(1): h1_full},
         # Hash 2
         {
             md5(1): h1_full,
-            md5(2): SimpleFetchedSignalMetadata(
+            md5(2): FakeSignalMetadata(
                 [
-                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t1}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t1}, 3
+                    ),
                 ]
             ),
         },
@@ -258,52 +277,70 @@ def test_update_stream_delta():
         },
         # Hash 1 again
         {
-            md5(1): SimpleFetchedSignalMetadata(
+            md5(1): FakeSignalMetadata(
                 [
-                    SignalOpinion(
-                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}, 1
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
+                    ),
                 ]
             ),
             md5(2): h2_full,
         },
         {
-            md5(1): SimpleFetchedSignalMetadata(
+            md5(1): FakeSignalMetadata(
                 [
-                    SignalOpinion(
-                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}, 1
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
-                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
+                    ),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 3
+                    ),
                 ]
             ),
             md5(2): h2_full,
         },
         # Deletes
         {
-            md5(1): SimpleFetchedSignalMetadata(
+            md5(1): FakeSignalMetadata(
                 [
-                    SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t2}),
-                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
-                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t2}, 1
+                    ),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
+                    ),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 3
+                    ),
                 ]
             ),
             md5(2): h2_full,
         },
         {
-            md5(1): SimpleFetchedSignalMetadata(
+            md5(1): FakeSignalMetadata(
                 [
-                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
-                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
+                    ),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 3
+                    ),
                 ]
             ),
             md5(2): h2_full,
         },
         {
-            md5(1): SimpleFetchedSignalMetadata(
+            md5(1): FakeSignalMetadata(
                 [
-                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 3
+                    ),
                 ]
             ),
             md5(2): h2_full,
@@ -346,15 +383,17 @@ def test_simple_update_delta():
     t2 = "other"
     t3 = "foo"
 
-    h1_full = SimpleFetchedSignalMetadata(
+    h1_full = FakeSignalMetadata(
         [
-            SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}),
-            SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+            SignalOpinionWithOwner(
+                SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}, 1
+            ),
+            SignalOpinionWithOwner(SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2),
         ]
     )
-    h2_full = SimpleFetchedSignalMetadata(
+    h2_full = FakeSignalMetadata(
         [
-            SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t2}),
+            SignalOpinionWithOwner(SignalOpinionCategory.INVESTIGATION_SEED, {t2}, 3),
         ]
     )
 
@@ -362,14 +401,22 @@ def test_simple_update_delta():
         # Hash 1
         (
             key(1),
-            SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1})]
+            FakeSignalMetadata(
+                [
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t1}, 1
+                    )
+                ]
             ),
         ),
         (
             key(1),
-            SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2})]
+            FakeSignalMetadata(
+                [
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}, 1
+                    )
+                ]
             ),
         ),
         (key(1), h1_full),
@@ -381,12 +428,14 @@ def test_simple_update_delta():
         # Hash 1 again
         (
             key(1),
-            SimpleFetchedSignalMetadata(
+            FakeSignalMetadata(
                 [
-                    SignalOpinion(
-                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
+                    SignalOpinionWithOwner(
+                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t, 3}
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
+                    ),
                 ]
             ),
         ),
@@ -397,13 +446,21 @@ def test_simple_update_delta():
     expected_states = [
         # Hash 1
         {
-            md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1})]
+            md5(1): FakeSignalMetadata(
+                [
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t1}, 1
+                    )
+                ]
             )
         },
         {
-            md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2})]
+            md5(1): FakeSignalMetadata(
+                [
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}, 1
+                    )
+                ]
             )
         },
         {md5(1): h1_full},
@@ -414,12 +471,14 @@ def test_simple_update_delta():
         },
         # Hash 1 again
         {
-            md5(1): SimpleFetchedSignalMetadata(
+            md5(1): FakeSignalMetadata(
                 [
-                    SignalOpinion(
-                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
+                    SignalOpinionWithOwner(
+                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t, 3}
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinionWithOwner(
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
+                    ),
                 ]
             ),
             md5(2): h2_full,
