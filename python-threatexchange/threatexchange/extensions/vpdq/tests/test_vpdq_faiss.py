@@ -28,9 +28,12 @@ else:
     )
 
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
-EXAMPLE_META_DATA = {"name": "example_video"}
-hash = VideoVPDQSignal.get_examples()[0]
-features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
+
+if not _DISABLED:
+    EXAMPLE_META_DATA = {"name": "example_video"}
+    hash = VideoVPDQSignal.get_examples()[0]
+    features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
+
 
 def test_simple():
     index = VPDQIndex.build([[hash, EXAMPLE_META_DATA]])
@@ -40,11 +43,13 @@ def test_simple():
     # A complete match to itself
     assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 100, EXAMPLE_META_DATA))
 
+
 def test_half_match():
     index = VPDQIndex.build([[hash, EXAMPLE_META_DATA]])
-    half_hash = features[0:int(len(features)/2)]
+    half_hash = features[0 : int(len(features) / 2)]
     res = index.query(vpdq_to_json(half_hash))
     assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 50, EXAMPLE_META_DATA))
+
 
 def test_serialize():
     index = VPDQIndex.build([[hash, EXAMPLE_META_DATA]])
@@ -59,8 +64,12 @@ def test_duplicate_hashes():
     index.add(hash, {"name": "video2"})
     res = index.query(hash)
     # A complete match to itself
-    assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 100, {"name": "video1"}))
-    assert compare_match_result(res[1], VPDQIndexMatch(-1, 100, 100, {"name": "video2"}))
+    assert compare_match_result(
+        res[0], VPDQIndexMatch(-1, 100, 100, {"name": "video1"})
+    )
+    assert compare_match_result(
+        res[1], VPDQIndexMatch(-1, 100, 100, {"name": "video2"})
+    )
 
 
 def compare_match_result(res1, res2) -> bool:
