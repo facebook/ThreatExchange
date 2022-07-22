@@ -58,6 +58,7 @@ def test_utils():
     features = get_random_VPDQs(video_len)
     assert len(features) == video_len
     last_timestamp = -1
+    VideoVPDQSignal.validate_signal_str(vpdq_to_json(features))
     for feature in features:
         assert feature.quality == 100
         assert feature.timestamp == last_timestamp + 1

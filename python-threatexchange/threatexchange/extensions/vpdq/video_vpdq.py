@@ -63,7 +63,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         vpdq_hashes = json_to_vpdq(signal_str)
         last_frame_number = -1
         for hash in vpdq_hashes:
-            if not re.match("^[0-9a-f]{64}$", hash.hex):
+            if not re.match("^[0-9a-f]{64}$", str(hash.hex, "utf-8")):
                 raise ValueError("invalid VPDQ hash")
             if hash.quality < 0 or hash.quality > 100:
                 raise ValueError("invalid VPDQ quality")
