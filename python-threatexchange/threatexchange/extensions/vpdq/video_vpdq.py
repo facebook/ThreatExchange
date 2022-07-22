@@ -54,7 +54,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
 
     @classmethod
     def get_index_cls(cls):
-        return VPDQHashIndex
+        return VPDQIndex
 
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
@@ -117,7 +117,3 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
             timestamp += 1.0
             frame_number += 1
         return [vpdq_to_json(VPDQ_features)]
-
-
-class VPDQHashIndex(VPDQIndex):
-    _SIGNAL_TYPE = VideoVPDQSignal
