@@ -31,6 +31,12 @@ class URLSignal(
         return [URLContent]
 
     @classmethod
+    def get_index_cls(cls) -> t.Type[signal_base.TrivialSignalTypeIndex]:
+        # TODO - There are a lot more considerations than this
+        #        as well as normalizations that could be applied
+        return signal_base.TrivialSignalTypeIndex
+
+    @classmethod
     def matches_str(
         cls, signal: str, haystack: str, distance_threshold: t.Optional[int] = None
     ) -> signal_base.HashComparisonResult:

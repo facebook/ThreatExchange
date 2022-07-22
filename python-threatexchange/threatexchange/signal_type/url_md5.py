@@ -34,6 +34,10 @@ class UrlMD5Signal(
         return [URLContent]
 
     @classmethod
+    def get_index_cls(cls) -> t.Type[signal_base.TrivialSignalTypeIndex]:
+        return signal_base.TrivialSignalTypeIndex
+
+    @classmethod
     def hash_from_str(cls, url: str) -> str:
         encoded_url = common.normalize_url(url)
         url_hash = hashlib.md5(encoded_url)
