@@ -13,12 +13,12 @@ def get_zero_hash() -> str:
 
 
 def get_random_hash() -> str:
-    """Return random pdq hash"""
+    """Return a random pdq hash"""
     return "".join(("%x" % random.randint(0, 15)) for i in range(BITS_IN_PDQ_HEX))
 
 
 def get_similar_hash(signal_str: str, dist: int) -> str:
-    """Return a pdq hash with hamming distance away from signal_str"""
+    """Return a pdq hash with dist hamming distance away from signal_str"""
     order = list(range(BITS_IN_PDQ))
     random.shuffle(order)
     bin_list = list(hex_to_binary_str(signal_str))
@@ -34,7 +34,7 @@ def get_similar_hash(signal_str: str, dist: int) -> str:
 
 
 def get_random_VPDQs(
-    video_length: int, seconds_per_hash: int = 1.0, quality: int = 100
+    video_length: int, seconds_per_hash: float = 1.0, quality: int = 100
 ) -> t.List[vpdq.VpdqFeature]:
     """Return a List of random VPDQ features with same quality and each feature's time stamp differs by seconds_per_hash"""
     ret: t.List[vpdq.VpdqFeature] = []
