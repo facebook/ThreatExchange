@@ -50,10 +50,10 @@ class SignalTypeMapping:
         return list(self.signal_type_by_content.get(content, ()))
 
 
-class FetcherMapping:
-    def __init__(self, fetchers: t.Sequence[SignalExchangeAPI]) -> None:
-        _validate_signal_apis(f.__class__ for f in fetchers)
-        self.fetchers_by_name = {f.get_name(): f for f in fetchers}
+class SignalExchangeAPIMapping:
+    def __init__(self, apis: t.Sequence[SignalExchangeAPI]) -> None:
+        _validate_signal_apis(f.__class__ for f in apis)
+        self.api_by_name = {f.get_name(): f for f in apis}
 
 
 @dataclass
@@ -66,7 +66,7 @@ class FunctionalityMapping:
     """
 
     signal_and_content: SignalTypeMapping
-    fetcher: FetcherMapping
+    exchange: SignalExchangeAPIMapping
     collabs: CollaborationConfigStoreBase
 
 

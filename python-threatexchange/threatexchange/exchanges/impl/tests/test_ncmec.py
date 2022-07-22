@@ -20,15 +20,15 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
 @pytest.fixture
-def fetcher(api: NCMECHashAPI):
+def exchange(api: NCMECHashAPI):
     signal_exchange = NCMECSignalExchangeAPI("user", "pass")
     signal_exchange._api = api
     return signal_exchange
 
 
-def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
+def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     collab = NCMECCollabConfig(NCMECEnvironment.Industry, "Test")
-    it = fetcher.fetch_iter([], collab, None)
+    it = exchange.fetch_iter([], collab, None)
     first_update = {
         "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()})
     }
@@ -50,7 +50,7 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     delta = next(it)
     assert len(delta.updates) == 4
     total_updates: t.Dict[str, NCMECEntryUpdate] = {}
-    fetcher.naive_fetch_merge(total_updates, delta.updates)
+    exchange.naive_fetch_merge(total_updates, delta.updates)
 
     assert delta.checkpoint.get_progress_timestamp() == 1508858400
     assert delta.checkpoint.is_stale() is False
@@ -67,7 +67,7 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     assert len(delta.updates) == 1
 
     assert {t for t in delta.updates} == {"42-image10"}
-    fetcher.naive_fetch_merge(total_updates, delta.updates)
+    exchange.naive_fetch_merge(total_updates, delta.updates)
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], total_updates
     )[VideoMD5Signal]
@@ -77,7 +77,7 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     delta = next(it)
     assert len(delta.updates) == 2
     assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
-    fetcher.naive_fetch_merge(total_updates, delta.updates)
+    exchange.naive_fetch_merge(total_updates, delta.updates)
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], total_updates
@@ -88,7 +88,7 @@ def test_fetch(fetcher: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch)
     delta = next(it)
     assert len(delta.updates) == 2
     assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
-    fetcher.naive_fetch_merge(total_updates, delta.updates)
+    exchange.naive_fetch_merge(total_updates, delta.updates)
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], total_updates

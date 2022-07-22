@@ -147,7 +147,7 @@ class FetchCommand(command_base.Command):
 
         for api in settings.apis:
             logging.info("Fetching all %s's configs", api.get_name())
-            succeeded = self.execute_for_fetcher(settings, api)
+            succeeded = self.execute_for_api(settings, api)
             all_succeeded &= succeeded
             any_succeded |= succeeded
 
@@ -158,39 +158,37 @@ class FetchCommand(command_base.Command):
         if not all_succeeded:
             raise command_base.CommandError("Some collabs had errors!", 3)
 
-    def execute_for_fetcher(
-        self, settings: CLISettings, fetcher: SignalExchangeAPI
-    ) -> bool:
+    def execute_for_api(self, settings: CLISettings, api: SignalExchangeAPI) -> bool:
         success = True
         for collab in self.collabs:
-            if collab.api != fetcher.get_name():
+            if collab.api != api.get_name():
                 continue
             if not collab.enabled:
                 logging.debug(
                     "Skipping %s, disabled",
                 )
                 continue
-            fetch_ok = self.execute_for_collab(settings, fetcher, collab)
+            fetch_ok = self.execute_for_collab(settings, api, collab)
             success &= fetch_ok
         return success
 
     def execute_for_collab(
         self,
         settings: CLISettings,
-        fetcher: SignalExchangeAPI,
+        api: SignalExchangeAPI,
         collab: CollaborationConfigBase,
     ) -> bool:
 
-        store = settings.fetched_state.get_for_api(fetcher.__class__)
+        store = settings.fetched_state.get_for_api(api.__class__)
         checkpoint = self._verify_store_and_checkpoint(store, collab)
 
         self.progress_fetched_count = 0
         self.current_collab = collab.name
-        self.current_api = fetcher.get_name()
+        self.current_api = api.get_name()
         completed = False
 
         try:
-            it = fetcher.fetch_iter(settings.get_all_signal_types(), collab, checkpoint)
+            it = api.fetch_iter(settings.get_all_signal_types(), collab, checkpoint)
             delta: FetchDeltaTyped
             for delta in it:
                 logging.info("fetch() with %d new records", len(delta.updates))

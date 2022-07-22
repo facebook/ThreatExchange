@@ -1,18 +1,17 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-Settings used to inform a fetcher what to fetch
+Settings used to inform a SignalExchangeAPI what to fetch
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import typing as t
 
 
 @dataclass
 class CollaborationConfigBase:
     """
-    Settings used to inform a fetcher what to fetch.
+    Settings used to inform a SignalExchangeAPI what to fetch.
 
     Extend with any additional fields that you need to inform your API how
     and what to fetch.
