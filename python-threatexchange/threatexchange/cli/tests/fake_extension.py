@@ -57,7 +57,7 @@ class FakeCollabConfig(
 
 class FakeSignal(SignalType, FileHasher):
     @classmethod
-    def get_content_types(self) -> t.List[t.Type[ContentType]]:
+    def get_content_types(cls) -> t.List[t.Type[ContentType]]:
         """Which content types this Signal applies to (usually just one)"""
         return [FakeContent]
 
