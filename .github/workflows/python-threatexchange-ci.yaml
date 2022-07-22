@@ -50,13 +50,10 @@ jobs:
       - name: Install ffmpeg
         id: ffmpeg
         run: |
-          printf '::set-output name=timestamp::%(%s)T\n'
           sudo apt-get update
           sudo apt-get install ffmpeg
       - name: Install dependencies
         run: |
-          printf -v now '%(%s)T'
-          duration=$((now - ${{ steps.ffmpeg.outputs.timestamp }}))
           python -m pip install --upgrade pip
           pip install -e ".[test]"
       - name: Test with pytest
