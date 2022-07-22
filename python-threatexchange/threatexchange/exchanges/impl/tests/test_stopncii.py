@@ -13,16 +13,16 @@ from threatexchange.exchanges.clients.stopncii.api import StopNCIIAPI
 
 
 @pytest.fixture
-def fetcher(api: StopNCIIAPI):
+def exchange(api: StopNCIIAPI):
     signal_exchange = StopNCIISignalExchangeAPI(None, None)
     signal_exchange._api = api
     return signal_exchange
 
 
-def test_fetch(fetcher: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
+def test_fetch(exchange: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("time.time", lambda: 10**8)
     collab = CollaborationConfigWithDefaults("Test")
-    it = fetcher.fetch_iter([], collab, None)
+    it = exchange.fetch_iter([], collab, None)
     delta = next(it)
 
     assert len(delta.updates) == 2

@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-The fetcher is the component that talks to external APIs to get and put signals
+The SignalExchangeAPI talks to external APIs to read/write signals
 
 @see SignalExchangeAPI
 """
@@ -29,10 +29,12 @@ class SignalExchangeAPI(
     ABC,
 ):
     """
-    APIs to get and maybe put signals.
+    APIs to read and maybe write signals.
 
-    Fetchers ideally can checkpoint their progress, so that they can tail
-    updates.
+    SignalExchangeAPIs should checkpoint their progress, so that they
+    can tail updates. If this is not possible, they can instead use
+    checkpoints to record how long it has been since a full fetch, and
+    trigger a refresh if a certain amount of time has passed.
 
     While this interface is primarily intended for connecting with
     externally hosted servers, it might be useful to write adopters for

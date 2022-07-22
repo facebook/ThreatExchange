@@ -96,7 +96,11 @@ class SignalType:
     @staticmethod
     def get_examples() -> t.List[str]:
         """
-        @see threatexchange.fetcher.simple.static_sample
+        Return example signals, which can be used for tests or demos.
+
+        Strings returned by this class are automatically pulled in by the
+        StaticSampleSignalExchangeAPI, which it will "fetch" and build
+        indices for if the Signal is enabled.
         """
         return []
 

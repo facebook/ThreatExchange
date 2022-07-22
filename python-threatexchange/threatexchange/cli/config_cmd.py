@@ -18,8 +18,7 @@ from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchang
 
 
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
-from threatexchange import meta as tx_meta
-from threatexchange import common
+from threatexchange import common, interface_validation
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import command_base, dataclass_json
 from threatexchange.cli.exceptions import CommandError
@@ -416,7 +415,7 @@ class ConfigExtensionsCommand(command_base.Command):
         manifest = self.get_manifest(self.module)
 
         # Validate our new setups by pretending to create a new mapping with the new classes
-        content_and_settings = tx_meta.SignalTypeMapping(
+        content_and_settings = interface_validation.SignalTypeMapping(
             list(
                 itertools.chain(
                     settings.get_all_content_types(), manifest.content_types
@@ -439,7 +438,7 @@ class ConfigExtensionsCommand(command_base.Command):
                 )
             apis.append(instance)
         apis.extend(settings.apis.get_all())
-        tx_meta.FetcherMapping(apis)
+        interface_validation.SignalExchangeAPIMapping(apis)
 
         self.execute_list(settings)
 

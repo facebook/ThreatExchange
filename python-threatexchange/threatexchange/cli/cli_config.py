@@ -24,7 +24,7 @@ from threatexchange.content_type import content_base
 from threatexchange.exchanges.fetch_state import FetchedStateStoreBase
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
-from threatexchange.meta import FunctionalityMapping
+from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.cli import dataclass_json as cli_json
 
@@ -179,12 +179,12 @@ class _SignalExchangeAccessor:
     _parent: "CLISettings"
 
     def get_all(self) -> t.ValuesView[SignalExchangeAPI]:
-        return self._parent._mapping.fetcher.fetchers_by_name.values()
+        return self._parent._mapping.exchange.api_by_name.values()
 
     def get_for_collab(
         self, collab: collab_config.CollaborationConfigBase
     ) -> SignalExchangeAPI:
-        return self._parent._mapping.fetcher.fetchers_by_name[collab.api]
+        return self._parent._mapping.exchange.api_by_name[collab.api]
 
     def __iter__(self) -> t.Iterator[SignalExchangeAPI]:
         yield from self.get_all()
@@ -210,7 +210,7 @@ class _FetchStoreAccessor:
         self, collab: collab_config.CollaborationConfigBase
     ) -> CliSimpleState:
         return self.get_for_api(
-            self._parent._mapping.fetcher.fetchers_by_name[collab.api].__class__
+            self._parent._mapping.exchange.api_by_name[collab.api].__class__
         )
 
 
@@ -291,8 +291,8 @@ class CLISettings:
             "Sample Signals", StaticSampleSignalExchangeAPI.get_name(), enabled=True
         )
 
-    def get_collabs_for_fetcher(
-        self, fetcher: SignalExchangeAPI
+    def get_collabs_for_api(
+        self, api: SignalExchangeAPI
     ) -> t.List[collab_config.CollaborationConfigBase]:
-        api_name = fetcher.get_name()
+        api_name = api.get_name()
         return [c for c in self.get_all_collabs() if c.api == api_name]

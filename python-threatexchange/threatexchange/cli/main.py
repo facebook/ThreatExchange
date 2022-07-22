@@ -33,7 +33,7 @@ import typing as t
 import pathlib
 import shutil
 
-from threatexchange import meta
+from threatexchange import interface_validation
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange.exchanges.clients.fb_threatexchange import api as tx_api
@@ -287,7 +287,7 @@ def _get_settings(
 
     extensions = _get_extended_functionality(config)
 
-    signals = meta.SignalTypeMapping(
+    signals = interface_validation.SignalTypeMapping(
         [photo.PhotoContent, video.VideoContent, url.URLContent, text.TextContent]
         + extensions.content_types,
         list(_DEFAULT_SIGNAL_TYPES) + extensions.signal_types,
@@ -299,11 +299,15 @@ def _get_settings(
         NCMECSignalExchangeAPI(*_get_ncmec_credentials(config)),
         FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
     ]
-    fetchers = meta.FetcherMapping(base_apis + extensions.api_instances)
-    state = CliState(list(fetchers.fetchers_by_name.values()), dir=dir)
+    apis = interface_validation.SignalExchangeAPIMapping(
+        base_apis + extensions.api_instances
+    )
+    state = CliState(list(apis.api_by_name.values()), dir=dir)
 
     return (
-        CLISettings(meta.FunctionalityMapping(signals, fetchers, state), state),
+        CLISettings(
+            interface_validation.FunctionalityMapping(signals, apis, state), state
+        ),
         extensions,
     )
 

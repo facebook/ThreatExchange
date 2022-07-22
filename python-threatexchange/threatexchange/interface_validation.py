@@ -3,6 +3,12 @@
 """
 A way to connect all the key interfaces of the library.
 
+This is entirely optional, and you can always use the classes directly
+without any trouble, but you may find some of the validation methods
+useful, especially if you are relying on the various .get_name() functions
+as storage keys, since there are helpers here for asserting they are
+all unique.
+
 Since matching may need to look up context from the original fetching,
 this is all the parts needed to get you there.
 
@@ -44,10 +50,10 @@ class SignalTypeMapping:
         return list(self.signal_type_by_content.get(content, ()))
 
 
-class FetcherMapping:
-    def __init__(self, fetchers: t.Sequence[SignalExchangeAPI]) -> None:
-        _validate_signal_apis(f.__class__ for f in fetchers)
-        self.fetchers_by_name = {f.get_name(): f for f in fetchers}
+class SignalExchangeAPIMapping:
+    def __init__(self, apis: t.Sequence[SignalExchangeAPI]) -> None:
+        _validate_signal_apis(f.__class__ for f in apis)
+        self.api_by_name = {f.get_name(): f for f in apis}
 
 
 @dataclass
@@ -60,7 +66,7 @@ class FunctionalityMapping:
     """
 
     signal_and_content: SignalTypeMapping
-    fetcher: FetcherMapping
+    exchange: SignalExchangeAPIMapping
     collabs: CollaborationConfigStoreBase
 
 

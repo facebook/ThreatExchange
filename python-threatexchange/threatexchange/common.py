@@ -52,7 +52,7 @@ def normalize_string(s: str) -> str:
     s = re.sub("(.)(\1)+", "\1\1", s)
     # Strip non alphanumerics (including spaces)
     #
-    s = re.sub("[\W_]", "", s)
+    s = re.sub(r"[\W_]", "", s)
     return s
 
 
