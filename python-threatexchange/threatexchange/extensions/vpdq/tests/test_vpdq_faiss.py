@@ -41,7 +41,9 @@ def test_simple():
     assert len(index._index_idx_to_vpdqHex_and_entry) == len(features)
     res = index.query(hash)
     # A complete match to itself
-    assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 100, EXAMPLE_META_DATA))
+    assert compare_match_result(
+        res[0], VPDQIndexMatch(100, 100, 100, EXAMPLE_META_DATA)
+    )
 
 
 def test_half_match():
