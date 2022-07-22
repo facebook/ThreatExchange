@@ -1,5 +1,3 @@
-from distutils.command.sdist import sdist
-from platform import release
 import shutil
 from pathlib import Path
 import os

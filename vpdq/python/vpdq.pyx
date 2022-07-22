@@ -1,8 +1,6 @@
 # distutils: language = c++
 # cython: language_level=3
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-import numpy as np
-cimport numpy as np
 import cv2
 import typing as t
 

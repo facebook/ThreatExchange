@@ -3,8 +3,6 @@ from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext                                     
 import sys
 import subprocess
-import os
-import numpy
 from pathlib import Path
 
 DIR = Path(__file__).parent
@@ -28,7 +26,7 @@ EXTENSIONS = [
         "vpdq",
         ["vpdq/python/vpdq.pyx"],
         extra_objects=["vpdq/cpp/libvpdq.a"],
-        include_dirs=[".", numpy.get_include()],
+        include_dirs=["."],
         language="c++",
         extra_compile_args=["--std=c++11"],
     )
@@ -45,7 +43,6 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     install_requires=[
-        "numpy",
         "cython",
         "opencv-python",
         "opencv-python-headless"
