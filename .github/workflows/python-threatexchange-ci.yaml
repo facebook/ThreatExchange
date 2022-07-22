@@ -47,12 +47,16 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install ffmpeg
+        env:
+          TIME: "${{ steps.current-time.outputs.time }}"
         run: |
-          echo $NOW
+          echo $TIME
           sudo apt-get update
           sudo apt-get install ffmpeg
-          echo $NOW
+          echo $TIME
+      - name: Install dependencies
+        run: |
           python -m pip install --upgrade pip
           pip install -e ".[test]"
       - name: Test with pytest
