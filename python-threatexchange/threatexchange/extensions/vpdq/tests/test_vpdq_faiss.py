@@ -52,6 +52,12 @@ def test_utils():
         random_hash = get_random_hash()
         similar_hash = get_similar_hash(random_hash, random_dist)
         assert simple_distance(similar_hash, random_hash) == random_dist
+    try:
+        invalid_dist = 256
+        get_similar_hash(get_random_hash(), invalid_dist)
+        assert False
+    except ValueError:
+        assert True
 
 
 def test_simple():
