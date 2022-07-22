@@ -41,14 +41,17 @@ def test_simple():
     assert len(index._index_idx_to_vpdqHex_and_entry) == len(features)
     res = index.query(hash)
     # A complete match to itself
-    assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 100, EXAMPLE_META_DATA))
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 100, EXAMPLE_META_DATA))
 
 
 def test_half_match():
     index = VPDQIndex.build([[hash, EXAMPLE_META_DATA]])
     half_hash = features[0 : int(len(features) / 2)]
     res = index.query(vpdq_to_json(half_hash))
-    assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 50, EXAMPLE_META_DATA))
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 50, EXAMPLE_META_DATA))
+    index = VPDQIndex.build([[vpdq_to_json(half_hash), EXAMPLE_META_DATA]])
+    res = index.query(hash)
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 50, 100, EXAMPLE_META_DATA))
 
 
 def test_serialize():
@@ -56,7 +59,9 @@ def test_serialize():
     pickled_data = pickle.dumps(index)
     reconstructed_index = pickle.loads(pickled_data)
     res = reconstructed_index.query(hash)
-    assert compare_match_result(res[0], VPDQIndexMatch(-1, 100, 100, EXAMPLE_META_DATA))
+    assert compare_match_result(
+        res[0], VPDQIndexMatch(100, 100, 100, EXAMPLE_META_DATA)
+    )
 
 
 def test_duplicate_hashes():
@@ -65,10 +70,10 @@ def test_duplicate_hashes():
     res = index.query(hash)
     # A complete match to itself
     assert compare_match_result(
-        res[0], VPDQIndexMatch(-1, 100, 100, {"name": "video1"})
+        res[0], VPDQIndexMatch(100, 100, 100, {"name": "video1"})
     )
     assert compare_match_result(
-        res[1], VPDQIndexMatch(-1, 100, 100, {"name": "video2"})
+        res[1], VPDQIndexMatch(100, 100, 100, {"name": "video2"})
     )
 
 

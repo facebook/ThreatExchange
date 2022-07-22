@@ -92,10 +92,12 @@ class VPDQIndex(PickledSignalTypeIndex[IndexT]):
                 * 100
                 / len(self._entry_idx_to_features_and_entires[entry_id][0])
             )
-            # Dist(-1) is meaningless here, because VPDQ match does not return a single dist
+            # max_matched_percent is returned as dist(int) here for a temporal solution
+            # TODO: Make dist attribute internal detail in IndexMatch Class
+            max_matched_percent = int(max(query_matched_percent, index_matched_percent))
             matches.append(
                 VPDQIndexMatch(
-                    -1,
+                    max_matched_percent,
                     query_matched_percent,
                     index_matched_percent,
                     self._entry_idx_to_features_and_entires[entry_id][1],
