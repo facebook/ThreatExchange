@@ -6,7 +6,7 @@ import binascii
 import numpy  # type: ignore
 from abc import ABC, abstractmethod
 
-from .pdq_utils import BITS_IN_PDQ
+from threatexchange.hashing.pdq_utils import BITS_IN_PDQ
 
 PDQ_HASH_TYPE = t.Union[str, bytes]
 
