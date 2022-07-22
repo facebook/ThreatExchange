@@ -19,6 +19,7 @@ from threatexchange.content_type.video import VideoContent
 import re
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 
 
 class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
@@ -50,6 +51,10 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     @classmethod
     def get_content_types(self) -> t.List[t.Type[ContentType]]:
         return [VideoContent]
+
+    @classmethod
+    def get_index_cls(cls):
+        return VPDQHashIndex
 
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
@@ -112,3 +117,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
             timestamp += 1.0
             frame_number += 1
         return [vpdq_to_json(VPDQ_features)]
+
+
+class VPDQHashIndex(VPDQIndex):
+    _SIGNAL_TYPE = VideoVPDQSignal
