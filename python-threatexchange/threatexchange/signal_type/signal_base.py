@@ -166,7 +166,7 @@ class SimpleSignalType(SignalType):
         return HashComparisonResult.from_bool(hash1 == hash2)
 
 
-class TrivialSignalTypeIndex(index.PickledSignalTypeIndex[index.T]):
+class TrivialSignalTypeIndex(index.SignalTypeIndex[index.T]):
     """
     Index that does only exact matches
     """
@@ -185,7 +185,7 @@ class TrivialSignalTypeIndex(index.PickledSignalTypeIndex[index.T]):
         l.append(entry)
 
 
-class TrivialLinearSearchHashIndex(index.PickledSignalTypeIndex[index.T]):
+class TrivialLinearSearchHashIndex(index.SignalTypeIndex[index.T]):
     """
     Index that does a linear search and serializes with pickle
 
@@ -211,15 +211,14 @@ class TrivialLinearSearchHashIndex(index.PickledSignalTypeIndex[index.T]):
         self.state.append((signal_str, entry))
 
 
-class TrivialLinearSearchMatchIndex(index.PickledSignalTypeIndex[index.T]):
+class TrivialLinearSearchMatchIndex(index.SignalTypeIndex[index.T]):
     """
     Index that does a linear search and serializes with pickle
 
     O(n) is the best n, clearly.
     """
 
-    # You'll have to override with each usecase, because I wasn't sure
-    # If pickle would behave expectedly here
+    # You'll have to override with each usecase
     _SIGNAL_TYPE: t.Type[MatchesStr]
 
     def __init__(self) -> None:

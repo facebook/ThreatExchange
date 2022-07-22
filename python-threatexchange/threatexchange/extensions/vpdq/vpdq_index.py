@@ -8,7 +8,7 @@ vpdq_faiss.
 import typing as t
 import vpdq
 from threatexchange.signal_type.index import (
-    PickledSignalTypeIndex,
+    SignalTypeIndex,
     VPDQIndexMatch,
     IndexMatch,
     T as IndexT,
@@ -21,7 +21,7 @@ from threatexchange.extensions.vpdq.vpdq_util import (
 )
 
 
-class VPDQIndex(PickledSignalTypeIndex[IndexT]):
+class VPDQIndex(SignalTypeIndex[IndexT]):
     """
     Wrapper around the vpdq faiss index lib using VPDQHashIndex
     """

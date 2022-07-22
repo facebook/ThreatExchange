@@ -111,7 +111,7 @@ class TrendQuerySignal(
         ]
 
 
-class TrendQueryIndex(index.PickledSignalTypeIndex[index.T]):
+class TrendQueryIndex(index.SignalTypeIndex[index.T]):
     def __init__(self) -> None:
         self.state: t.Dict[str, t.Tuple[TrendQuery, t.List[index.T]]] = {}
 
