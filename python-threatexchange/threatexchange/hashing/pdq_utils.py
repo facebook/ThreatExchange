@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import random
 
 BITS_IN_PDQ = 256
+PDQ_HEX_STR_LEN = int(BITS_IN_PDQ / 4)
 
 
 def simple_distance_binary(bin_a, bin_b):
@@ -22,12 +24,23 @@ def simple_distance(hex_a, hex_b):
 
 def hex_to_binary_str(pdq_hex):
     """
-    Convert a hexadecimal string to a binary string. Requires input string to be length BITS_IN_PDQ / 4.
+    Convert a hexadecimal string to a binary string. Requires input string to be length PDQ_HEX_STR_LEN.
     """
-    assert len(pdq_hex) == BITS_IN_PDQ / 4
+    assert len(pdq_hex) == PDQ_HEX_STR_LEN
     # padding to 4 bindigits each hexdigit
     result = "".join(bin(int(c, 16))[2:].zfill(4) for c in pdq_hex)
     assert len(result) == BITS_IN_PDQ
+    return result
+
+
+def binary_str_to_hex(pdq_binary):
+    """
+    Convert a binary string to a hexadecimal string. Requires input string to be length BITS_IN_PDQ.
+    """
+    assert len(pdq_binary) == BITS_IN_PDQ
+    # [2:] ignores the 0x at the begining of the hex_str
+    result = hex(int(pdq_binary, 2))[2:].zfill(PDQ_HEX_STR_LEN)
+    assert len(result) == PDQ_HEX_STR_LEN
     return result
 
 
@@ -37,3 +50,25 @@ def pdq_match(pdq_hex_a: str, pdq_hex_b: str, threshold: int) -> bool:
     """
     distance = simple_distance(pdq_hex_a, pdq_hex_b)
     return distance <= threshold
+
+
+def get_zero_hash() -> str:
+    """Return a pdq hash str that is zero for every byte"""
+    return "0" * PDQ_HEX_STR_LEN
+
+
+def get_random_hash() -> str:
+    """Return a random pdq hash"""
+    return f"{random.randrange(2**256):0{PDQ_HEX_STR_LEN}x}"
+
+
+def get_similar_hash(pdq_hex: str, dist: int) -> str:
+    """Return a pdq hash with dist hamming distance away from pdq_hex"""
+    if dist > BITS_IN_PDQ:
+        raise ValueError("Not possible")
+    order = random.sample(range(BITS_IN_PDQ), k=dist)
+    bin_list = list(hex_to_binary_str(pdq_hex))
+    for i in order:
+        bin_list[i] = str(int(bin_list[i]) ^ 1)
+    bin_str = "".join(bin_list)
+    return binary_str_to_hex(bin_str)
