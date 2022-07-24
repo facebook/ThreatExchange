@@ -90,5 +90,11 @@ def disable_signal_exchange_api(
     config = ToggleableSignalExchangeAPIConfig.get(
         ToggleableSignalExchangeAPIConfig.get_name_from_type(cls)
     )
+
+    if not config:
+        return DisableSignalExchangeAPIResult.FAILED
+
+    config = t.cast(ToggleableSignalExchangeAPIConfig, config)
     config.enabled = False
     update_config(config)
+    return DisableSignalExchangeAPIResult.DISABLED
