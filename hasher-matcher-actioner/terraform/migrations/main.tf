@@ -10,3 +10,9 @@ resource "null_resource" "default_signal_content_type_configs" {
     command = "python -m hmalib.scripts.cli.main migrate 2022_04_02_default_content_signal_type_configs --config-table ${var.config_table.name}"
   }
 }
+
+resource "null_resource" "default_signal_exchange_apis" {
+  provisioner "local-exec" {
+    command = "python -m hmalib.scripts.cli.main migrate 2022_07_24_default_signal_exchange_apis --config-table ${var.config_table.name}"
+  }
+}

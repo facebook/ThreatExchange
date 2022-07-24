@@ -23,8 +23,8 @@ from threatexchange.meta import (
     CollaborationConfigStoreBase,
 )
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.fetcher.fetch_api import SignalExchangeAPI
-from threatexchange.fetcher.apis.fb_threatexchange_api import (
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
 from threatexchange.content_type.photo import PhotoContent
