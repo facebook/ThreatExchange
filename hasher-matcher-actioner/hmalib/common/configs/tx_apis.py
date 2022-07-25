@@ -30,7 +30,7 @@ class ToggleableSignalExchangeAPIConfig(HMAConfig):
     def get_name_from_type(signal_exchange_api: t.Type[SignalExchangeAPI]) -> str:
         return f"signal_exchange_api:{full_class_name(signal_exchange_api)}"
 
-    def to_concrete_class(self):
+    def to_concrete_class(self) -> t.Type[SignalExchangeAPI]:
         return import_class(self.signal_exchange_api_class)
 
 
