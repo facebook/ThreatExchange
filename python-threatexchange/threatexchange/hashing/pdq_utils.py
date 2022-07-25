@@ -49,6 +49,3 @@ def pdq_match(pdq_hex_a: str, pdq_hex_b: str, threshold: int) -> bool:
     """
     distance = simple_distance(pdq_hex_a, pdq_hex_b)
     return distance <= threshold
-
-
-

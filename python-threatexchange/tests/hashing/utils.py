@@ -2,6 +2,7 @@
 import random
 from threatexchange.hashing.pdq_utils import *
 
+
 def get_zero_hash() -> str:
     """Return a pdq hash hex str that is zero for every byte"""
     return "0" * PDQ_HEX_STR_LEN
