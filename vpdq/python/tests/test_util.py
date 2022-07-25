@@ -32,5 +32,5 @@ def output_hash_to_file(output_hash_filename, hashes):
 
     with open(output_hash_filename, "w") as file:
         for cur in hashes:
-            file.write(f"{cur.frame_number},{cur.quality},{vpdq.hash_to_hex(cur.hash['w'])},{cur.timestamp:.3f}")
+            file.write(f"{cur.frame_number},{cur.quality},{hash_to_hex(cur.hash['w'])},{cur.timestamp:.3f}")
             file.write("\n")
