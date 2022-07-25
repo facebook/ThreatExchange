@@ -5,7 +5,7 @@ import unittest
 import random
 
 from threatexchange.content_type.video import VideoContent
-from threatexchange.meta import SignalTypeMapping
+from threatexchange.interface_validation import SignalTypeMapping
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from hmalib.common.config import HMAConfig
