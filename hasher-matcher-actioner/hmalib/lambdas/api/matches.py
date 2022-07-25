@@ -21,7 +21,7 @@ from threatexchange.signal_type.pdq import PdqSignal
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
-from threatexchange.meta import FunctionalityMapping, SignalTypeMapping
+from threatexchange.interface_validation import FunctionalityMapping, SignalTypeMapping
 
 from hmalib.common.models.pipeline import MatchRecord
 from hmalib.common.models.signal import (

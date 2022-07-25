@@ -16,10 +16,11 @@ import typing as t
 from numpy import append
 
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.meta import (
+from threatexchange.interface_validation import (
     FunctionalityMapping,
+    SignalExchangeAPIMapping,
     SignalTypeMapping,
-    FetcherMapping,
+    SignalExchangeAPIMapping,
     CollaborationConfigStoreBase,
 )
 from threatexchange.signal_type.signal_base import SignalType
@@ -172,7 +173,7 @@ class HMAFunctionalityMapping(FunctionalityMapping):
     # mypy has this weird behaviour where not overriding all fields leads to a
     # "Too many arguments error". Either type:ignore at __init__ callsites or
     # re-define them here.
-    fetcher: FetcherMapping
+    fetcher: SignalExchangeAPIMapping
     collabs: CollaborationConfigStoreBase
 
 
@@ -191,6 +192,6 @@ def get_pytx_functionality_mapping() -> HMAFunctionalityMapping:
 
     return HMAFunctionalityMapping(
         HMASignalTypeMapping.get_from_config(),
-        FetcherMapping(fetchers=fetchers),
+        SignalExchangeAPIMapping(fetchers=fetchers),
         None,
     )

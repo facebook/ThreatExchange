@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 import unittest
+from enum import Enum
 import typing as t
 
 from hmalib.common import aws_dataclass
@@ -72,6 +73,15 @@ class SkipInit(SkipInitBase):
     a: int = field(default=2, init=False)
 
 
+class States(Enum):
+    FIRST = "https://FIRST.org/"
+
+
+@dataclass
+class HasEnum(aws_dataclass.HasAWSSerialization):
+    an_enum: States
+
+
 class AWSDataclassTest(unittest.TestCase):
 
     DEFAULT_OBJECTS = [
@@ -111,6 +121,14 @@ class AWSDataclassTest(unittest.TestCase):
     def test_all_objects(self):
         for o in self.DEFAULT_OBJECTS:
             self.assertSerializesCorrectly(o)
+
+    def test_enum(self):
+        obj = HasEnum(an_enum=States.FIRST)
+        serialized = obj.to_aws()
+        unserialized = HasEnum.from_aws(serialized)
+
+        self.assertEqual(obj, unserialized)
+        self.assertIsInstance(unserialized.an_enum, Enum)
 
     @unittest.skip("Not yet supported")
     def test_self_nested_object(self):

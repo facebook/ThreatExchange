@@ -11,7 +11,7 @@ from mypy_boto3_sns.client import SNSClient
 from mypy_boto3_dynamodb.service_resource import Table
 import typing as t
 
-from threatexchange.meta import FunctionalityMapping
+from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.signal_type.index import IndexMatch, SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 

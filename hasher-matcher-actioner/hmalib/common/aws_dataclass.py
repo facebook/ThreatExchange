@@ -26,7 +26,9 @@ How to use:
 """
 
 from decimal import Decimal
+import inspect
 from dataclasses import dataclass, field, fields, is_dataclass
+from enum import Enum
 
 import json
 import typing as t
@@ -89,6 +91,8 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
         # floating point is not truly supported in dynamodb
         # See note above
         return {Decimal(str(s)) for s in py_field}  # type: ignore # mypy/issues/10003
+    if isinstance(py_field, Enum):
+        return py_field.name  # type: ignore # mypy/issues/10003
 
     if origin is list:  # L
         return [py_to_aws(v, args[0]) for v in py_field]  # type: ignore # mypy/issues/10003
@@ -129,6 +133,8 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
     elif check_type is set and args:
         if args[0] not in (str, float, int, Decimal):
             check_type = list
+    elif inspect.isclass(in_type) and issubclass(in_type, Enum):
+        check_type = str
 
     if not isinstance(aws_field, check_type or in_type):
         # If you are getting random deserialization errors in tests that you did
@@ -155,6 +161,8 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
         return {int(s) for s in aws_field}  # type: ignore # mypy/issues/10003
     if in_type is t.Set[float]:  # SN
         return {float(s) for s in aws_field}  # type: ignore # mypy/issues/10003
+    if inspect.isclass(in_type) and issubclass(in_type, Enum):
+        return getattr(in_type, aws_field)  # type: ignore
 
     if origin is set:  # L - special case
         return {aws_to_py(args[0], v) for v in aws_field}  # type: ignore # mypy/issues/10003
