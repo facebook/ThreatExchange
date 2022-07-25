@@ -38,12 +38,18 @@ class TestPDQUtils(unittest.TestCase):
 
     def test_get_similar_hash(self):
         for i in range(10):
-            random_dist = random.randint(0, 255)
+            random_dist = random.randint(0, BITS_IN_PDQ)
             random_hash = get_random_hash()
             similar_hash = get_similar_hash(random_hash, random_dist)
             self.assertEqual(simple_distance(similar_hash, random_hash), random_dist)
-        invalid_dist = 257
-        self.assertRaises(ValueError, get_similar_hash, get_random_hash(), invalid_dist)
+        random_hash = get_random_hash()
+        self.assertEqual(get_similar_hash(random_hash, 0), random_hash)
+        # Max dist
+        get_similar_hash(get_random_hash(), BITS_IN_PDQ)
+        # Invalid dist
+        self.assertRaises(
+            ValueError, get_similar_hash, get_random_hash(), BITS_IN_PDQ + 1
+        )
 
     def test_distance_binary(self):
         self.assertEqual(
