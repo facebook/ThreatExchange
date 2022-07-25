@@ -15,12 +15,8 @@ except (ImportError, ModuleNotFoundError) as e:
 else:
     import typing as t
     from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
-    from threatexchange.extensions.vpdq.vpdq_util import (
-        prepare_vpdq_feature,
-        json_to_vpdq,
-        vpdq_to_json,
-        VPDQ_QUALITY_THRESHOLD,
-    )
+    from threatexchange.extensions.vpdq.vpdq_util import *
+    from threatexchange.hashing.pdq_utils import *
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
 
     from threatexchange.signal_type.index import (
@@ -33,6 +29,26 @@ if not _DISABLED:
     EXAMPLE_META_DATA = {"name": "example_video"}
     hash = VideoVPDQSignal.get_examples()[0]
     features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
+
+
+def test_utils():
+    example_hash = VideoVPDQSignal.get_examples()[0]
+    example_features = json_to_vpdq(example_hash)
+    assert example_hash == vpdq_to_json(example_features)
+
+    feature_size = len(example_features)
+    assert len(dedupe(example_features)) == feature_size
+    assert len(quality_filter(example_features, 50)) == feature_size
+    assert len(quality_filter(example_features, 101)) == 0
+    example_features.append(example_features[0])
+    assert len(dedupe(example_features)) == feature_size
+
+    frame_counts = 100
+    features = get_random_VPDQs(frame_counts)
+    assert len(features) == frame_counts
+    VideoVPDQSignal.validate_signal_str(vpdq_to_json(features))
+    pdq_hashes = [get_random_hash() for i in range(frame_counts)]
+    VideoVPDQSignal.validate_signal_str(vpdq_to_json(pdq_hashes))
 
 
 def test_simple():
@@ -76,6 +92,104 @@ def test_duplicate_hashes():
     )
     assert compare_match_result(
         res[1], VPDQIndexMatch(100, 100, 100, {"name": "video2"})
+    )
+
+
+def test_no_match():
+    video1 = pdq_hashes_to_VPDQ_features(
+        [get_similar_hash(get_zero_hash(), 50) for i in range(10)]
+    )
+    video2 = pdq_hashes_to_VPDQ_features(
+        [get_similar_hash(get_zero_hash(), 82) for i in range(10)]
+    )
+
+    index = VPDQIndex.build([[vpdq_to_json(video1), {"name": "video1"}]])
+    res = index.query(vpdq_to_json(video2))
+    assert len(res) == 0
+
+    index = VPDQIndex.build([[vpdq_to_json(video2), {"name": "video2"}]])
+    res = index.query(vpdq_to_json(video1))
+    assert len(res) == 0
+
+
+def test_matches():
+    video1 = pdq_hashes_to_VPDQ_features(
+        [get_similar_hash(get_zero_hash(), 5) for i in range(9)]
+    )
+    video2 = pdq_hashes_to_VPDQ_features(
+        [get_similar_hash(hash.hex, 20) for hash in video1]
+    )
+    video1.append(
+        vpdq.VpdqFeature(
+            100, 10, vpdq.str_to_hash(get_similar_hash(get_zero_hash(), 255)), 10
+        )
+    )
+    video2.append(
+        vpdq.VpdqFeature(
+            100, 10, vpdq.str_to_hash(get_similar_hash(video1[0].hex, 128)), 10
+        )
+    )
+    index = VPDQIndex.build([[vpdq_to_json(video1), {"name": "video1"}]])
+    res = index.query(vpdq_to_json(video2))
+    assert compare_match_result(res[0], VPDQIndexMatch(90, 90, 90, {"name": "video1"}))
+
+    index = VPDQIndex.build([[vpdq_to_json(video2), {"name": "video2"}]])
+    res = index.query(vpdq_to_json(video1))
+    assert compare_match_result(res[0], VPDQIndexMatch(90, 90, 90, {"name": "video2"}))
+
+    del video1[-1]
+    index = VPDQIndex.build([[vpdq_to_json(video1), {"name": "video1"}]])
+    res = index.query(vpdq_to_json(video2))
+    assert compare_match_result(
+        res[0], VPDQIndexMatch(100, 90, 100, {"name": "video1"})
+    )
+
+    del video2[-1]
+    index = VPDQIndex.build([[vpdq_to_json(video1), {"name": "video1"}]])
+    res = index.query(vpdq_to_json(video2))
+
+    assert compare_match_result(
+        res[0], VPDQIndexMatch(100, 100, 100, {"name": "video1"})
+    )
+
+
+def test_duplicate_matches():
+    video1 = pdq_hashes_to_VPDQ_features(
+        [get_similar_hash(get_zero_hash(), 5) for i in range(9)]
+    )
+    video2 = pdq_hashes_to_VPDQ_features(
+        [get_similar_hash(hash.hex, 20) for hash in video1]
+    )
+    video1.append(vpdq.VpdqFeature(100, 9, vpdq.str_to_hash(video1[8].hex), 9))
+
+    index = VPDQIndex.build([[vpdq_to_json(video1), {"name": "video1"}]])
+    res = index.query(vpdq_to_json(video2))
+    assert compare_match_result(
+        res[0], VPDQIndexMatch(100, 100, 100, {"name": "video1"})
+    )
+
+
+def test_duplicate_video_matches():
+    max_hash = get_similar_hash(get_zero_hash(), 256)
+    video1 = pdq_hashes_to_VPDQ_features([get_zero_hash(), max_hash])
+    video2 = video1[0:1]
+    video3 = pdq_hashes_to_VPDQ_features(
+        [get_similar_hash(hash.hex, 31) for hash in video1]
+    )
+
+    index = VPDQIndex()
+    index.add_all(
+        [
+            [vpdq_to_json(video1), {"name": "video1"}],
+            [vpdq_to_json(video2), {"name": "video2"}],
+        ]
+    )
+    res = index.query(vpdq_to_json(video3))
+    assert compare_match_result(
+        res[0], VPDQIndexMatch(100, 100, 100, {"name": "video1"})
+    )
+    assert compare_match_result(
+        res[1], VPDQIndexMatch(100, 50, 100, {"name": "video2"})
     )
 
 
