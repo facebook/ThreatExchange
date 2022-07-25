@@ -67,7 +67,7 @@ class VpdqFeature:
         return hammingDistance(self.hash, that.hash)
 
 
-def hash_to_hex(hash_value: "Hash256"):
+def hash_to_hex(hash_value: "Hash256") -> str:
     """Convect from pdq hash to hex str
 
     Args:
@@ -76,14 +76,14 @@ def hash_to_hex(hash_value: "Hash256"):
     Returns:
         str: hex str of hash
     """
-    return hashToString(hash_value)
+    return str(hashToString(hash_value), "utf-8")
 
 
 def str_to_hash(str_hash: str):
     return fromStringOrDie(str(str_hash).encode("utf-8"))
 
 
-def hamming_distance(hash1: "Hash256", hash2: "Hash256"):
+def hamming_distance(hash1: "Hash256", hash2: "Hash256") -> int:
     """
     Return the hamming distance between two pdq hashes
 
