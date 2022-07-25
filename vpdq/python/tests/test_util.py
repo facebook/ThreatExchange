@@ -1,9 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import vpdq
-import typing as t
 
-
-def read_file_to_hash(input_hash_filename: str) -> t.List[vpdq.VpdqFeature]:
+def read_file_to_hash(input_hash_filename: str) -> list[vpdq.VpdqFeature]:
     """Read hash file and return vpdq hash
 
     Args:
