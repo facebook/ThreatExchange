@@ -58,14 +58,14 @@ def get_zero_hash() -> str:
 
 
 def get_random_hash() -> str:
-    """Return a random pdq hash"""
+    """Return a random pdq hash str"""
     return f"{random.randrange(2**256):0{PDQ_HEX_STR_LEN}x}"
 
 
 def get_similar_hash(pdq_hex: str, dist: int) -> str:
     """Return a pdq hash with dist hamming distance away from pdq_hex"""
-    if dist > BITS_IN_PDQ:
-        raise ValueError("Not possible")
+    if dist > BITS_IN_PDQ or dist < 0:
+        raise ValueError("Invalid distance value")
     order = random.sample(range(BITS_IN_PDQ), k=dist)
     bin_list = list(hex_to_binary_str(pdq_hex))
     for i in order:

@@ -50,6 +50,7 @@ class TestPDQUtils(unittest.TestCase):
         self.assertRaises(
             ValueError, get_similar_hash, get_random_hash(), BITS_IN_PDQ + 1
         )
+        self.assertRaises(ValueError, get_similar_hash, get_random_hash(), -1)
 
     def test_distance_binary(self):
         self.assertEqual(
