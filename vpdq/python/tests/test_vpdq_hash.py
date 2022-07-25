@@ -41,12 +41,12 @@ def test_vpdq_utils():
     ret = test_util.read_file_to_hash(sample)
     with open(sample, "r") as file:
         lines = file.readlines()
-        for line, feature in zip(lines, ret):
-            line = line.strip()
-            content = line.split(",")
-            hex_hash = content[2]
-            assert vpdq.str_to_hash(hex_hash) == feature.hash
-            assert vpdq.hash_to_hex(feature.hash) == hex_hash
+    for line, feature in zip(lines, ret):
+        line = line.strip()
+        content = line.split(",")
+        hex_hash = content[2]
+        assert vpdq.str_to_hash(hex_hash) == feature.hash
+        assert vpdq.hash_to_hex(feature.hash) == hex_hash
 
 
 def test_compare_hashes():
