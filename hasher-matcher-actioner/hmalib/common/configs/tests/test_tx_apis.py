@@ -18,12 +18,10 @@ class TXApiConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
 
     def test_get_all_empty(self):
         with self.fresh_dynamodb():
-            HMAConfig.initialize(self.TABLE_NAME)
             self.assertEqual(ToggleableSignalExchangeAPIConfig.get_all(), [])
 
     def test_write_to_empty(self):
         with self.fresh_dynamodb():
-            HMAConfig.initialize(self.TABLE_NAME)
             self.assertEqual(ToggleableSignalExchangeAPIConfig.get_all(), [])
 
             resp = add_signal_exchange_api(
@@ -35,7 +33,6 @@ class TXApiConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
 
     def test_rewrite(self):
         with self.fresh_dynamodb():
-            HMAConfig.initialize(self.TABLE_NAME)
             add_signal_exchange_api(
                 klass="threatexchange.exchanges.impl.fb_threatexchange_api.FBThreatExchangeSignalExchangeAPI"
             )
@@ -47,7 +44,6 @@ class TXApiConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
 
     def test_fail(self):
         with self.fresh_dynamodb():
-            HMAConfig.initialize(self.TABLE_NAME)
             resp = add_signal_exchange_api(
                 klass="does.not.contain.class.FBThreatExchangeSignalExchangeAPI"
             )
@@ -55,7 +51,6 @@ class TXApiConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
 
     def test_disable(self):
         with self.fresh_dynamodb():
-            HMAConfig.initialize(self.TABLE_NAME)
             add_signal_exchange_api(
                 "threatexchange.exchanges.impl.ncmec_api.NCMECCollabConfig"
             )
