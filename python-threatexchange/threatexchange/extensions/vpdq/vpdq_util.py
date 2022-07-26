@@ -48,7 +48,7 @@ def json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
     for frame_number, feature in vpdq_json.items():
         features.append(
             vpdq.VpdqFeature(
-                feature[QUALITY], frame_number, feature[HASH], feature[TIMESTAMP]
+                feature[QUALITY], int(frame_number), feature[HASH], feature[TIMESTAMP]
             )
         )
     return features
