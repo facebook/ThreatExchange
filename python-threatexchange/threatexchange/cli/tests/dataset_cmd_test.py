@@ -45,19 +45,19 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         assert (
             "'Sample Signals' url "
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/ "
-            "WORTH_INVESTIGATING"
+            "INVESTIGATION_SEED"
         ) in output
         # The filters change the print output
         self.assert_cli_output(
             ("dataset", "-P", "-s", "url"),
             "'Sample Signals' "
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/ "
-            "WORTH_INVESTIGATING",
+            "INVESTIGATION_SEED",
         )
         self.assert_cli_output(
             ("dataset", "-P", "-s", "url", "-c", "Sample Signals"),
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/ "
-            "WORTH_INVESTIGATING",
+            "INVESTIGATION_SEED",
         )
         self.assert_cli_output(
             ("dataset", "-P", "-s", "url", "-S"),
@@ -69,7 +69,7 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         assert (
             "Sample Signals,url,"
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
-            "WORTH_INVESTIGATING,"
+            "INVESTIGATION_SEED,"
         ) in output
         # Repeat same filters - however, these don't change the output format except -S\
         csv_header = "collab,signal_type,signal_str,category,tags\n"
@@ -77,13 +77,13 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
             ("dataset", "-P", "--csv", "-s", "url"),
             csv_header + "Sample Signals,url,"
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
-            "WORTH_INVESTIGATING,",
+            "INVESTIGATION_SEED,",
         )
         self.assert_cli_output(
             ("dataset", "-P", "--csv", "-s", "url", "-c", "Sample Signals"),
             csv_header + "Sample Signals,url,"
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
-            "WORTH_INVESTIGATING,",
+            "INVESTIGATION_SEED,",
         )
         # --csv and -S not combinable
         self.assert_cli_usage_error(("dataset", "-P", "--csv", "-S"))

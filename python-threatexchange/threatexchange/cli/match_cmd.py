@@ -61,7 +61,7 @@ class MatchCommand(command_base.Command):
     * TRUE_POSITIVE:
       All contributors of this signal believe that matching content should fit
       the collaboration
-    * WORTH_INVESTIGATING:
+    * INVESTIGATION_SEED:
       This content needs manual investigation to confirm or fanout to find the
       content that fits the collaboration
     * DISPUTED:

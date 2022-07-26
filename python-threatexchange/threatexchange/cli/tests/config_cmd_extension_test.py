@@ -3,7 +3,6 @@ from threatexchange.cli.tests.e2e_test_helper import (
     ThreatExchangeCLIE2eHelper,
     te_cli,
 )
-from threatexchange.exchanges.clients.ncmec.hash_api import NCMECEnvironment
 
 
 @pytest.fixture
@@ -52,5 +51,5 @@ def test_extensions_in_other_cmds(cli: ThreatExchangeCLIE2eHelper) -> None:
     )
     cli.assert_cli_output(
         ["tx", "match", "--only-signal=fake", "fake", "--", "lolol"],
-        "fake - (Sample Signals) WORTH_INVESTIGATING",
+        "fake - (Sample Signals) INVESTIGATION_SEED",
     )

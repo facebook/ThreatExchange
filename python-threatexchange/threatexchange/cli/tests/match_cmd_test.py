@@ -14,14 +14,14 @@ class MatchCommandTest(ThreatExchangeCLIE2eTest):
         with tempfile.NamedTemporaryFile() as fp:
             # Empty file
             self.assert_cli_output(
-                ("video", fp.name), "video_md5 - (Sample Signals) WORTH_INVESTIGATING"
+                ("video", fp.name), "video_md5 - (Sample Signals) INVESTIGATION_SEED"
             )
 
     def test_hash(self):
         hash = VideoMD5Signal.get_examples()[0]
         self.assert_cli_output(
             ("-H", "video", "--", hash),
-            "video_md5 - (Sample Signals) WORTH_INVESTIGATING",
+            "video_md5 - (Sample Signals) INVESTIGATION_SEED",
         )
 
     def test_invalid_hash(self):
