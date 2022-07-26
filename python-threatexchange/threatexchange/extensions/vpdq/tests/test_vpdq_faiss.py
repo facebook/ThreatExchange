@@ -100,12 +100,8 @@ def test_duplicate_hashes():
     index.add(hash, VIDEO2_META_DATA)
     res = index.query(hash)
     # A complete match to itself
-    assert compare_match_result(
-        res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA)
-    )
-    assert compare_match_result(
-        res[1], VPDQIndexMatch(100, 100, 100, VIDEO2_META_DATA)
-    )
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA))
+    assert compare_match_result(res[1], VPDQIndexMatch(100, 100, 100, VIDEO2_META_DATA))
 
 
 def test_no_match():
@@ -153,17 +149,13 @@ def test_matches():
     del video1[-1]
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
-    assert compare_match_result(
-        res[0], VPDQIndexMatch(100, 90, 100, VIDEO1_META_DATA)
-    )
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 90, 100, VIDEO1_META_DATA))
 
     del video2[-1]
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
 
-    assert compare_match_result(
-        res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA)
-    )
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA))
 
 
 def test_duplicate_matches():
@@ -177,14 +169,19 @@ def test_duplicate_matches():
 
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
-    assert compare_match_result(
-        res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA)
-    )
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA))
 
 
 def test_duplicate_video_matches():
     max_hash = get_similar_hash(get_zero_hash(), 256)
-    video1 = pdq_hashes_to_VPDQ_features([get_zero_hash(), get_similar_hash(get_zero_hash(), 85), get_similar_hash(get_zero_hash(), 170), max_hash])
+    video1 = pdq_hashes_to_VPDQ_features(
+        [
+            get_zero_hash(),
+            get_similar_hash(get_zero_hash(), 85),
+            get_similar_hash(get_zero_hash(), 170),
+            max_hash,
+        ]
+    )
     video2 = video1[0:2]
     video3 = pdq_hashes_to_VPDQ_features(
         [get_similar_hash(hash.hex, 31) for hash in video1]
@@ -198,12 +195,8 @@ def test_duplicate_video_matches():
         ]
     )
     res = index.query(vpdq_to_json(video3))
-    assert compare_match_result(
-        res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA)
-    )
-    assert compare_match_result(
-        res[1], VPDQIndexMatch(100, 50, 100, VIDEO2_META_DATA)
-    )
+    assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 100, VIDEO1_META_DATA))
+    assert compare_match_result(res[1], VPDQIndexMatch(100, 50, 100, VIDEO2_META_DATA))
 
 
 def compare_match_result(res1, res2) -> bool:
