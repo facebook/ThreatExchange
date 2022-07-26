@@ -5,7 +5,7 @@ name: Publish threatexchange to pypi
 on:
   push:
     branches:
-      - main
+      - VPDQ-release-workflow
     paths:
       - "vpdq/version.txt"
 
