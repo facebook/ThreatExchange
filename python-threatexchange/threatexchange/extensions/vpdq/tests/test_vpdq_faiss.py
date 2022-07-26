@@ -57,7 +57,9 @@ def test_utils():
     assert len(features) == frame_counts
     VideoVPDQSignal.validate_signal_str(vpdq_to_json(features))
     pdq_hashes = [get_random_hash() for i in range(frame_counts)]
-    VideoVPDQSignal.validate_signal_str(vpdq_to_json(pdq_hashes_to_VPDQ_features(pdq_hashes)))
+    VideoVPDQSignal.validate_signal_str(
+        vpdq_to_json(pdq_hashes_to_VPDQ_features(pdq_hashes))
+    )
 
 
 def test_simple():

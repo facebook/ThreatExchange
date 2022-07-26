@@ -127,6 +127,3 @@ def prepare_vpdq_feature(
 
     features = json_to_vpdq(signal_str)
     return dedupe(quality_filter(features, quality_tolerance))
-
-
-
