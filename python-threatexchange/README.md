@@ -16,7 +16,11 @@ ThreatExchange is in the middle of a big refactor starting in #944 and isn't ful
 If you don't have `pip`, learn how to install it [here](https://pip.pypa.io/en/stable/installation/).
 
 ```bash
-$ python3 -m pip install threatexchange [--upgrade]
+# Test version - 0.99.0 and higher contain newest version of the library 
+$ python3 -m pip install 'threatexchange>=0.99.0' --upgrade --extra-index-url=https://test.pypi.org/simple/
+
+# Stable version, currently very far out of date
+$ python3 -m pip install threatexchange --upgrade
 ```
 
 # Introduction

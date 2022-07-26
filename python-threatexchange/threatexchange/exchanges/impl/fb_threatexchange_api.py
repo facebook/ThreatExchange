@@ -8,6 +8,8 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/
 """
 
 
+from collections import defaultdict
+import logging
 import typing as t
 import time
 from dataclasses import dataclass, field
@@ -112,7 +114,7 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
         for td_json in te_json.raw_json["descriptors"]["data"]:
             td_id = int(td_json["id"])
             owner_id = int(td_json["owner"]["id"])
-            status = (td_json["status"],)
+            status = td_json["status"]
             # added_on = td_json["added_on"]
             tags = td_json.get("tags", [])
             # This is needed because ThreatExchangeAPI.get_threat_descriptors()
@@ -155,6 +157,23 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
             # Visibility bug of some kind on TE API :(
             return None
         return cls(list(explicit_opinions.values()))
+
+    def merge(self, other: "FBThreatExchangeIndicatorRecord") -> None:
+        """
+        Combine another indicator record with this one.
+
+        This is needed when there are multiple records in ThreatExchange
+        of equivalent types - i.e.
+          * URI
+          * RAW_URI
+          * UNCLICKABLE_URL
+
+        Most of the time, platforms record the exact same record for each,
+        but it's not guaranteed.
+        """
+        # We could try to dedupe identical opinions, but instead just take
+        # them all
+        self.opinions.extend(other.opinions)
 
     @staticmethod
     def te_threat_updates_fields() -> t.Tuple[str, ...]:
@@ -241,6 +260,7 @@ class FBThreatExchangeSignalExchangeAPI(
             fields=ThreatUpdateJSON.te_threat_updates_fields(),
             decode_fn=ThreatUpdateJSON,
         )
+        type_mapping = _make_indicator_type_mapping(supported_signal_types)
 
         batch: t.List[ThreatUpdateJSON] = []
         highest_time = 0
@@ -251,15 +271,11 @@ class FBThreatExchangeSignalExchangeAPI(
                 # Is supposed to be strictly increasing
                 highest_time = max(update.time, highest_time)
 
-            # TODO - We can clobber types that map into multiple
-            type_mapping = _make_indicator_type_mapping(supported_signal_types)
             updates = {}
             for u in batch:
-                st = type_mapping.get(u.threat_type)
-                if st is not None:
-                    updates[
-                        st.get_name(), u.indicator
-                    ] = FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
+                updates[u.threat_type, u.indicator] = _indicator_applies(
+                    u, type_mapping
+                )
 
             yield ThreatExchangeDelta(
                 updates,
@@ -323,19 +339,149 @@ class FBThreatExchangeSignalExchangeAPI(
             ),
         )
 
+    @classmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        fetched: t.Mapping[
+            t.Tuple[str, str], t.Optional[FBThreatExchangeIndicatorRecord]
+        ],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FBThreatExchangeIndicatorRecord]]:
+        """
+        Convert ThreatExchange Indicator records to SignalTypes.
+
+        We override this method from the base in order to make the signal type
+        mapping just once.
+
+        ThreatExchange uses a helper mixin that SignalTypes can implement in order
+        to instruct the API how to convert ThreatExchange's ThreatType into
+        a SignalType. ThreatExchange supports multiple ThreatTypes for the same
+        SignalType, and so it's possible there are duplicate records. It's even
+        possible that the uploader isn't consistent with their labeling for the
+        "identical" records in ThreatExchange.
+        """
+        ret: t.Dict[
+            t.Type[SignalType], t.Dict[str, FBThreatExchangeIndicatorRecord]
+        ] = {}
+        mapping = _make_indicator_type_mapping(signal_types)
+
+        for (type_str, signal_str), metadata in fetched.items():
+            potential_types = mapping.get(type_str)
+            if potential_types is None or metadata is None:
+                continue
+            indicator_tags = {t for opinion in metadata.opinions for t in opinion.tags}
+            for tag, s_types in potential_types.items():
+                if tag is not None and tag not in indicator_tags:
+                    continue
+                for tx_s_type in s_types:
+                    s_type_specific_signal_str = (
+                        tx_s_type.normalize_fb_threatexchange_indicator(
+                            type_str, signal_str, tag
+                        )
+                    )
+                    s_type = t.cast(t.Type[SignalType], tx_s_type)
+                    inner = ret.get(s_type)
+                    if inner is None:
+                        inner = {}
+                        ret[s_type] = inner
+                    to_insert = _merge_record_for_signal_type(
+                        metadata, tag, inner.get(s_type_specific_signal_str)
+                    )
+                    if to_insert is not None:
+                        inner[s_type_specific_signal_str] = to_insert
+
+        return ret
+
+
+def _merge_record_for_signal_type(
+    tx_record: FBThreatExchangeIndicatorRecord,
+    tag: t.Optional[str],
+    existing: t.Optional[FBThreatExchangeIndicatorRecord],
+) -> t.Optional[FBThreatExchangeIndicatorRecord]:
+    if tag is not None:
+        applicable_opinions = [
+            o for o in tx_record.opinions if any(t in tag for t in o.tags)
+        ]
+        if not applicable_opinions:
+            return None
+        if len(applicable_opinions) != len(tx_record.opinions):
+            tx_record = FBThreatExchangeIndicatorRecord(applicable_opinions)
+    if existing is not None:
+        existing.merge(tx_record)
+        return None
+    return tx_record
+
+
+def _indicator_applies(
+    u: ThreatUpdateJSON,
+    type_mapping: t.Mapping[
+        str,
+        t.Mapping[
+            t.Optional[str], t.Sequence[t.Type[HasFbThreatExchangeIndicatorType]]
+        ],
+    ],
+) -> t.Optional[FBThreatExchangeIndicatorRecord]:
+    """Based on the available signal types, return a record"""
+    potential_signal_type = type_mapping.get(u.threat_type)
+    if potential_signal_type is None:
+        return None
+    indicator = FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
+    if indicator is None:
+        return None
+    if None in potential_signal_type:
+        return indicator
+    if any(
+        tag in potential_signal_type
+        for opinion in indicator.opinions
+        for tag in opinion.tags
+    ):
+        return indicator
+    return None
+
 
 def _make_indicator_type_mapping(
     supported_signal_types: t.Sequence[t.Type[SignalType]],
-) -> t.Dict[str, t.Type[SignalType]]:
-    # TODO - We can clobber types that map into multiple
-    type_mapping: t.Dict[str, t.Type[SignalType]] = {}
+) -> t.Mapping[
+    str,
+    t.Mapping[t.Optional[str], t.Sequence[t.Type[HasFbThreatExchangeIndicatorType]]],
+]:
+    """
+    Based on the given signal types, create a map for converting ThreatIndicators.
+
+    The returned mapping is ThreatType => ?tag => SignalType.
+
+    For example, with MD5, and one test type:
+    ```
+    {
+       "HASH_VIDEO_MD5": {
+           None: [VideoMd5Signal],
+        },
+        "HASH_MD5": {
+           "media_type_video": [VideoMD5Signal]
+        }
+        "DEBUG_STRING": {
+            "type:foo": [FooType],
+        }
+    }
+    ```
+    """
+    ret: t.DefaultDict[
+        str,
+        t.DefaultDict[
+            t.Optional[str], t.List[t.Type[HasFbThreatExchangeIndicatorType]]
+        ],
+    ] = defaultdict(lambda: defaultdict(list))
     for st in supported_signal_types:
-        if issubclass(st, HasFbThreatExchangeIndicatorType):
-            types = st.INDICATOR_TYPE
-            if isinstance(types, str):
-                types = (types,)
-            type_mapping.update((t, st) for t in types)
+        if not issubclass(st, HasFbThreatExchangeIndicatorType):
+            continue
+        types = st.INDICATOR_TYPE
+        if isinstance(types, str):
+            types = {types: None}
+        elif isinstance(types, set):
+            types = {tag: None for tag in types}
         else:
-            # Setdefault here to prefer names claimed by above
-            type_mapping.setdefault(st.get_name().upper(), st)
-    return type_mapping
+            assert isinstance(types, dict)
+        for type_, tag in types.items():
+            ret[type_][tag].append(st)
+
+    return ret

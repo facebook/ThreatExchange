@@ -2,8 +2,12 @@
 
 import unittest
 import binascii
+import random
 
 from threatexchange.hashing.pdq_utils import *
+from threatexchange.signal_type.pdq import PdqSignal
+from tests.hashing.utils import get_zero_hash, get_random_hash, get_similar_hash
+
 
 test_hashes = [
     "0000000000000000000000000000000000000000000000000000000000000000",
@@ -23,6 +27,32 @@ class TestPDQUtils(unittest.TestCase):
         self.assertEqual(
             hex_to_binary_str(test_hashes[1]), "00001111" * (BITS_IN_PDQ // 8)
         )
+
+    def test_binary_to_hex(self):
+        for test_hash in test_hashes:
+            bin_hash = hex_to_binary_str(test_hash)
+            self.assertEqual(binary_str_to_hex(bin_hash), test_hash)
+
+    def test_get_random_hash(self):
+        for i in range(100):
+            random_hash = get_random_hash()
+            self.assertTrue(PdqSignal.validate_signal_str(random_hash))
+
+    def test_get_similar_hash(self):
+        for i in range(10):
+            random_dist = random.randint(0, BITS_IN_PDQ)
+            random_hash = get_random_hash()
+            similar_hash = get_similar_hash(random_hash, random_dist)
+            self.assertEqual(simple_distance(similar_hash, random_hash), random_dist)
+        random_hash = get_random_hash()
+        self.assertEqual(get_similar_hash(random_hash, 0), random_hash)
+        # Max dist
+        get_similar_hash(get_random_hash(), BITS_IN_PDQ)
+        # Invalid dist
+        self.assertRaises(
+            ValueError, get_similar_hash, get_random_hash(), BITS_IN_PDQ + 1
+        )
+        self.assertRaises(ValueError, get_similar_hash, get_random_hash(), -1)
 
     def test_distance_binary(self):
         self.assertEqual(

@@ -5,8 +5,8 @@ import subprocess
 import argparse
 
 
-DIR = Path(__file__).parent
-PARENTDIR = Path(__file__).parents[1]
+DIR = Path(__file__).resolve().parent
+PARENTDIR = Path(__file__).resolve().parents[1]
 
 SETUP = "setup.py"
 MANIFEST = "MANIFEST.in"
