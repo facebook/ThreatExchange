@@ -446,7 +446,24 @@ def _make_indicator_type_mapping(
     t.Mapping[t.Optional[str], t.Sequence[t.Type[HasFbThreatExchangeIndicatorType]]],
 ]:
     """
-    Based on the given signal types, create a map for converting ThreatIndicators
+    Based on the given signal types, create a map for converting ThreatIndicators.
+
+    The returned mapping is ThreatType => ?tag => SignalType.
+
+    For example, with MD5, and one test type:
+    ```
+    {
+       "HASH_VIDEO_MD5": {
+           None: [VideoMd5Signal],
+        },
+        "HASH_MD5": {
+           "media_type_video": [VideoMD5Signal]
+        }
+        "DEBUG_STRING": {
+            "type:foo": [FooType],
+        }
+    }
+    ```
     """
     ret: t.DefaultDict[
         str,
