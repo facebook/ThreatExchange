@@ -21,13 +21,45 @@ class HasFbThreatExchangeIndicatorType:
         INDICATOR_TYPE = "HASH_PDQ"
         ...
     ```
+
+    Some types might have multiple representations in ThreatExchange, like URL:
+
+    ```
+    INDICATOR_TYPE = ("URI", "RAW_URI", "UNCLICKABLE_URL")
+    ```
+
+    One of the strengths of ThreatExchange is its flexibility in conventions.
+    As long as it takes less than 1MB of storage, we can serialize any data using
+    the DEBUG_STRING indicator type. For that, we need to also use the tags feature.
+    One convention is to use a `signal_type:` prefix.
+
+    ```
+    INDICATOR_TYPE = {"DEBUG_STRING": "signal_type:my_prototype_signal"}
+    ```
+    Later one it has a real type, you can update to
+    ```
+    INDICATOR_TYPE = {
+        "MY_PROTOTYPE_SIGNAL": None,
+        "DEBUG_STRING": "signal_type:my_prototype_signal",
+    }
+    ```
     """
 
-    INDICATOR_TYPE: t.ClassVar[t.Union[str, t.Tuple[str, ...]]] = ()
+    INDICATOR_TYPE: t.ClassVar[
+        t.Union[str, t.Set[str], t.Dict[str, t.Optional[str]]]
+    ] = set()
 
     @classmethod
-    def facebook_threatexchange_indicator_applies(cls, indicator_type: str) -> bool:
-        types = cls.INDICATOR_TYPE
-        if isinstance(cls.INDICATOR_TYPE, str):
-            types = (cls.INDICATOR_TYPE,)
-        return indicator_type in types
+    def normalize_fb_threatexchange_indicator(
+        cls, tx_type: str, tx_indicator: str, tx_tag: t.Optional[str]
+    ) -> str:
+        """
+        Cleanup signals that might change format depending on type.
+
+        Example:
+        RAW_URI: https://www.facebook.com
+        UNCLICKABLE_URL: [h]ttps://www.facebook.com
+
+        Post normalized: https://www.facebook.com
+        """
+        return tx_indicator

@@ -34,7 +34,7 @@ class VideoMD5Signal(
     that are capable of some notion of similarity, such as TMK+PDQF.
     """
 
-    INDICATOR_TYPE = "VIDEO_HASH_MD5"
+    INDICATOR_TYPE = {"HASH_VIDEO_MD5": None, "HASH_MD5": "media_type_video"}
 
     @classmethod
     def get_content_types(cls) -> t.List[t.Type[ContentType]]:
