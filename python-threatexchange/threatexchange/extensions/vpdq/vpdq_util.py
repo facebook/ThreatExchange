@@ -6,7 +6,6 @@ from json import JSONEncoder
 import typing as t
 import pathlib
 from dataclasses import dataclass
-from threatexchange.hashing.pdq_utils import get_random_hash
 
 QUALITY = "quality"
 HASH = "hash"
@@ -49,7 +48,7 @@ def json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
     for frame_number, feature in vpdq_json.items():
         features.append(
             vpdq.VpdqFeature(
-                feature[QUALITY], frame_number, feature[HASH], feature[TIMESTAMP]
+                feature[QUALITY], int(frame_number), feature[HASH], feature[TIMESTAMP]
             )
         )
     return features
@@ -130,25 +129,4 @@ def prepare_vpdq_feature(
     return dedupe(quality_filter(features, quality_tolerance))
 
 
-def get_random_VPDQs(
-    frame_count: int, seconds_per_frame: float = 1.0, quality: int = 100
-) -> t.List[vpdq.VpdqFeature]:
-    """Return a List which contains frame_count random VPDQ features with same quality and each feature's time stamp differs by seconds_per_frame"""
-    return [
-        vpdq.VpdqFeature(
-            quality, i, vpdq.str_to_hash(get_random_hash()), i * seconds_per_frame
-        )
-        for i in range(frame_count)
-    ]
 
-
-def pdq_hashes_to_VPDQ_features(
-    pdq_hashes: t.List[str], seconds_per_frame: float = 1.0, quality: int = 100
-) -> t.List[vpdq.VpdqFeature]:
-    """Return a List of VPDQ features generated from pdq_hashes with same quality and each feature's time stamp differs by seconds_per_frame"""
-    return [
-        vpdq.VpdqFeature(
-            quality, i, vpdq.str_to_hash(pdq_hashes[i]), i * seconds_per_frame
-        )
-        for i in range(len(pdq_hashes))
-    ]

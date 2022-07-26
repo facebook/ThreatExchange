@@ -1,13 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from cmath import sin
 import json
 import pytest
 from pathlib import Path
 import pickle
 
 try:
-    import vpdq as _
+    import vpdq
 
     _DISABLED = False
 except (ImportError, ModuleNotFoundError) as e:
@@ -15,10 +14,20 @@ except (ImportError, ModuleNotFoundError) as e:
 else:
     import typing as t
     from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
-    from threatexchange.extensions.vpdq.vpdq_util import *
-    from threatexchange.hashing.pdq_utils import *
+    from threatexchange.extensions.vpdq.vpdq_util import (
+        json_to_vpdq,
+        prepare_vpdq_feature,
+        VPDQ_QUALITY_THRESHOLD,
+        vpdq_to_json,
+        dedupe,
+        quality_filter,
+    )
+    from threatexchange.extensions.vpdq.tests.utils import (
+        get_random_VPDQs,
+        pdq_hashes_to_VPDQ_features,
+    )
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
-
+    from tests.hashing.utils import get_random_hash, get_similar_hash, get_zero_hash
     from threatexchange.signal_type.index import (
         VPDQIndexMatch,
     )
@@ -48,7 +57,7 @@ def test_utils():
     assert len(features) == frame_counts
     VideoVPDQSignal.validate_signal_str(vpdq_to_json(features))
     pdq_hashes = [get_random_hash() for i in range(frame_counts)]
-    VideoVPDQSignal.validate_signal_str(vpdq_to_json(pdq_hashes))
+    VideoVPDQSignal.validate_signal_str(vpdq_to_json(pdq_hashes_to_VPDQ_features(pdq_hashes)))
 
 
 def test_simple():
