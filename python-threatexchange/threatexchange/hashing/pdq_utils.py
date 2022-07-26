@@ -5,7 +5,7 @@ BITS_IN_PDQ = 256
 PDQ_HEX_STR_LEN = int(BITS_IN_PDQ / 4)
 
 
-def simple_distance_binary(bin_a, bin_b):
+def simple_distance_binary(bin_a: str, bin_b: str) -> int:
     """
     Returns the hamming distance of two binary strings.
     """
@@ -14,14 +14,14 @@ def simple_distance_binary(bin_a, bin_b):
     return sum(bin_a[i] != bin_b[i] for i in range(BITS_IN_PDQ))
 
 
-def simple_distance(hex_a, hex_b):
+def simple_distance(hex_a: str, hex_b: str) -> int:
     """
     Returns the binary hamming distance of two hexadecimal strings.
     """
     return simple_distance_binary(hex_to_binary_str(hex_a), hex_to_binary_str(hex_b))
 
 
-def hex_to_binary_str(pdq_hex):
+def hex_to_binary_str(pdq_hex: str) -> str:
     """
     Convert a hexadecimal string to a binary string. Requires input string to be length PDQ_HEX_STR_LEN.
     """
@@ -32,7 +32,7 @@ def hex_to_binary_str(pdq_hex):
     return result
 
 
-def binary_str_to_hex(pdq_binary):
+def binary_str_to_hex(pdq_binary: str) -> str:
     """
     Convert a binary string to a hexadecimal string. Requires input string to be length BITS_IN_PDQ.
     """

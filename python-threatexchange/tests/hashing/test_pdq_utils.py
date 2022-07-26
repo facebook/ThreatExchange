@@ -6,7 +6,8 @@ import random
 
 from threatexchange.hashing.pdq_utils import *
 from threatexchange.signal_type.pdq import PdqSignal
-from tests.hashing.utils import *
+from tests.hashing.utils import get_zero_hash, get_random_hash, get_similar_hash
+
 
 test_hashes = [
     "0000000000000000000000000000000000000000000000000000000000000000",
