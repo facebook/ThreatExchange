@@ -6,6 +6,7 @@ Wrapper around the Photo PDQ signal type.
 
 import typing as t
 import pathlib
+import re
 
 from threatexchange.hashing.pdq_hasher import pdq_from_bytes, pdq_from_file
 from threatexchange.content_type.content_base import ContentType
@@ -50,6 +51,13 @@ class PdqSignal(
     @classmethod
     def get_index_cls(cls) -> t.Type[PDQIndex]:
         return PDQIndex
+
+    @classmethod
+    def validate_signal_str(cls, signal_str: str) -> str:
+        """PDQ hash contains 64 hexidecimal characters."""
+        if not re.match("^[0-9a-f]{64}$", signal_str):
+            raise ValueError("invalid PDQ hash")
+        return signal_str
 
     @classmethod
     def compare_hash(
