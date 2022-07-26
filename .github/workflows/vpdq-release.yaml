@@ -1,11 +1,11 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-name: Publish threatexchange to pypi
+name: Publish vpdq to pypi
 
 on:
   push:
     branches:
-      - VPDQ-release-workflow
+      - main
     paths:
       - "vpdq/version.txt"
 
@@ -39,4 +39,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.pypi_password }}
-          packages_dir: python-threatexchange/dist
+          packages_dir: vpdq/dist
