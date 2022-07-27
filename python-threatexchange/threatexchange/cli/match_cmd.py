@@ -69,7 +69,9 @@ class MatchCommand(command_base.Command):
       that does not belong in the collaboration.
     * NEGATIVE_CLASS:
       Members have said content that matches does not belong in the
-      collaboration, or that this is informational content that should be treated.
+      collaboration, matches the wrong content on their platform, or that this
+      is informational content that shouldn't be treated the same as
+      POSITIVE_CLASS content.
     """
 
     @classmethod
