@@ -76,11 +76,7 @@ class TrendQuerySignal(
         return signal_str
 
     @classmethod
-    def matches_str(
-        cls, hash: str, haystack: str, distance_threshold: t.Optional[int] = None
-    ) -> signal_base.HashComparisonResult:
-        if distance_threshold is not None:
-            raise ValueError("distance_threshold not supported")
+    def matches_str(cls, hash: str, haystack: str) -> signal_base.HashComparisonResult:
         tq = TrendQuery(json.loads(hash))
         return signal_base.HashComparisonResult.from_bool(tq.matches(haystack))
 

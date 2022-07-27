@@ -58,12 +58,12 @@ class PdqOcrSignal(
 
     @classmethod
     def compare_hash(
-        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
+        cls,
+        hash1: str,
+        hash2: str,
+        pdq_dist_threshold: int = PDQ_PLUS_OCR_CONFIDENT_MATCH_THRESHOLD,
     ) -> signal_base.HashComparisonResult:
-        pdq_dist_threshold = cls.PDQ_PLUS_OCR_CONFIDENT_MATCH_THRESHOLD
-        if distance_threshold is not None:
-            assert 0 <= distance_threshold <= 256
-            pdq_dist_threshold = distance_threshold
+        assert 0 <= pdq_dist_threshold <= 256
         pdq_hash_1, _, ocr_text_1 = hash1.partition(",")
         pdq_hash_2, _, ocr_text_2 = hash2.partition(",")
         assert all(

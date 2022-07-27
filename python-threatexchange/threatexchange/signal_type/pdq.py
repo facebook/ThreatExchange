@@ -61,13 +61,13 @@ class PdqSignal(
 
     @classmethod
     def compare_hash(
-        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
+        cls,
+        hash1: str,
+        hash2: str,
+        pdq_dist_threshold: int = PDQ_CONFIDENT_MATCH_THRESHOLD,
     ) -> signal_base.HashComparisonResult:
-        thresh = cls.PDQ_CONFIDENT_MATCH_THRESHOLD
-        if distance_threshold is not None:
-            thresh = distance_threshold
         dist = simple_distance(hash1, hash2)
-        return signal_base.HashComparisonResult.from_dist(dist, thresh)
+        return signal_base.HashComparisonResult.from_dist(dist, pdq_dist_threshold)
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:

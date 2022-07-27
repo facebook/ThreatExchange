@@ -41,15 +41,12 @@ class RawTextSignal(
 
     @classmethod
     def matches_str(
-        cls, signal: str, haystack: str, distance_threshold: t.Optional[int] = None
+        cls, signal: str, haystack: str, pct_diff_threshold: int = 5
     ) -> signal_base.HashComparisonResult:
-        threshold = 5  # Match considered if 95% match
-        if distance_threshold is not None:
-            assert 0 < distance_threshold <= 100
-            threshold = distance_threshold
+        assert 0 < pct_diff_threshold <= 100
         a = common.normalize_string(signal)
         b = common.normalize_string(haystack)
-        max_match_distance = len(a) - len(a) * (100 - threshold) / 100
+        max_match_distance = len(a) - len(a) * (100 - pct_diff_threshold) / 100
 
         ldiff = abs(len(a) - len(b))
 

@@ -15,7 +15,7 @@ from threatexchange.signal_type import index
 
 class HashComparisonResult(t.NamedTuple):
     match: bool
-    distance: int
+    distance: int  # TODO - remove
 
     @classmethod
     def from_match(cls, dist: int = 0) -> "HashComparisonResult":
@@ -73,9 +73,7 @@ class SignalType:
         raise NotImplementedError
 
     @classmethod
-    def compare_hash(
-        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
-    ) -> HashComparisonResult:
+    def compare_hash(cls, hash1: str, hash2: str) -> HashComparisonResult:
         """
         Compare the distance of two hashes, the key operation for matching.
 
@@ -133,9 +131,7 @@ class TextHasher(FileHasher):
 
 class MatchesStr:
     @classmethod
-    def matches_str(
-        cls, signal: str, haystack: str, distance_threshold: t.Optional[int] = None
-    ) -> HashComparisonResult:
+    def matches_str(cls, signal: str, haystack: str) -> HashComparisonResult:
         """
         Compare the distance of two hashes, the key operation for matching.
 
@@ -168,11 +164,7 @@ class SimpleSignalType(SignalType):
     """
 
     @classmethod
-    def compare_hash(
-        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
-    ) -> HashComparisonResult:
-        if distance_threshold is not None:
-            raise ValueError("distance_threshold not supported")
+    def compare_hash(cls, hash1: str, hash2: str) -> HashComparisonResult:
         return HashComparisonResult.from_bool(hash1 == hash2)
 
 
