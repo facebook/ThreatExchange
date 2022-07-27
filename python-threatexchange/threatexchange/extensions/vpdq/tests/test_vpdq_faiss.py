@@ -53,6 +53,7 @@ if not _DISABLED:
 
 def test_utils():
     example_hash = VideoVPDQSignal.get_examples()[0]
+    assert VideoVPDQSignal.validate_signal_str(example_hash)
     example_features = json_to_vpdq(example_hash)
     assert example_hash == vpdq_to_json(example_features)
 
