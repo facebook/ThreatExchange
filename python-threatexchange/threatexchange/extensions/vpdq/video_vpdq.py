@@ -10,6 +10,8 @@ from .vpdq_util import (
     vpdq_to_json,
     VPDQ_DISTANCE_THRESHOLD,
     VPDQ_QUALITY_THRESHOLD,
+    VPDQ_QUERY_MATCH_THRESHOLD,
+    VPDQ_INDEX_MATCH_THRESHOLD,
 )
 from .vpdq_brute_matcher import match_VPDQ_hash_brute
 import pathlib
@@ -54,7 +56,11 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
 
     @classmethod
     def get_index_cls(cls):
-        return VPDQIndex
+        return VPDQIndex(
+            VPDQ_QUALITY_THRESHOLD,
+            VPDQ_QUERY_MATCH_THRESHOLD,
+            VPDQ_INDEX_MATCH_THRESHOLD,
+        )
 
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:

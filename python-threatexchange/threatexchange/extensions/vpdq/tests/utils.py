@@ -2,6 +2,7 @@
 import vpdq
 import typing as t
 from tests.hashing.utils import get_random_hash
+from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 
 
 def get_random_VPDQs(
@@ -24,3 +25,8 @@ def pdq_hashes_to_VPDQ_features(
         vpdq.VpdqFeature(quality, i, vpdq.str_to_hash(pdq_hash), i * seconds_per_frame)
         for i, pdq_hash in enumerate(pdq_hashes)
     ]
+
+
+def get_zero_threshold_index() -> VPDQIndex:
+    # Get a VPDQIndex hash that returns every index match
+    return VPDQIndex(query_match_threshold=0, index_match_threshold=0)

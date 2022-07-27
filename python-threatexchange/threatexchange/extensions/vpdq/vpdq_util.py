@@ -13,6 +13,8 @@ TIMESTAMP = "timestamp"
 VPDQ_TIMESTAMP_PRECISION = 3
 VPDQ_QUALITY_THRESHOLD = 50
 VPDQ_DISTANCE_THRESHOLD = 31
+VPDQ_QUERY_MATCH_THRESHOLD = 80.0
+VPDQ_INDEX_MATCH_THRESHOLD = 80.0
 
 
 @dataclass
@@ -124,6 +126,5 @@ def prepare_vpdq_feature(
     quality_tolerance : The quality tolerance of VPDQ Feature.
     If VPDQ Feature is below this quality level then it will not be added
     """
-
     features = json_to_vpdq(signal_str)
     return dedupe(quality_filter(features, quality_tolerance))
