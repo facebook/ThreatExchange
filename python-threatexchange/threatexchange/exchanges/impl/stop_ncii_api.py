@@ -58,7 +58,7 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
         # implicitly, all records from StopNCII are from user-submitted cases
         opinions.append(
             state.SignalOpinion(
-                0, state.SignalOpinionCategory.WORTH_INVESTIGATING, set()
+                0, state.SignalOpinionCategory.INVESTIGATION_SEED, set()
             ),
         )
         return opinions
@@ -157,7 +157,7 @@ def _type_mapping() -> t.Dict[api.StopNCIISignalType, str]:
 
 def _opinion_mapping(fb: api.StopNCIICSPFeedbackValue) -> state.SignalOpinionCategory:
     if fb == api.StopNCIICSPFeedbackValue.Blocked:
-        return state.SignalOpinionCategory.TRUE_POSITIVE
+        return state.SignalOpinionCategory.POSITIVE_CLASS
     if fb == api.StopNCIICSPFeedbackValue.NotBlocked:
-        return state.SignalOpinionCategory.FALSE_POSITIVE
-    return state.SignalOpinionCategory.WORTH_INVESTIGATING
+        return state.SignalOpinionCategory.NEGATIVE_CLASS
+    return state.SignalOpinionCategory.INVESTIGATION_SEED

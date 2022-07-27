@@ -111,7 +111,7 @@ class FakePerOwnerOpinionAPI(
                     [
                         SignalOpinion(
                             owner=owner,
-                            category=SignalOpinionCategory.WORTH_INVESTIGATING,
+                            category=SignalOpinionCategory.INVESTIGATION_SEED,
                             tags=tags,
                         )
                         for owner, tags in tags_per_owner.items()
@@ -174,7 +174,7 @@ def test_test_impls():
     assert delta.checkpoint == FakeCheckpoint(100)
 
     record = SimpleFetchedSignalMetadata(
-        [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {"tag"})]
+        [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {"tag"})]
     )
 
     assert FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
@@ -220,13 +220,13 @@ def test_update_stream_delta():
 
     h1_full = SimpleFetchedSignalMetadata(
         [
-            SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1, t2}),
-            SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+            SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}),
+            SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
         ]
     )
     h2_full = SimpleFetchedSignalMetadata(
         [
-            SignalOpinion(3, SignalOpinionCategory.WORTH_INVESTIGATING, {t2}),
+            SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t2}),
         ]
     )
 
@@ -234,12 +234,12 @@ def test_update_stream_delta():
         # Hash 1
         {
             md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1})]
+                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1})]
             )
         },
         {
             md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1, t2})]
+                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2})]
             )
         },
         {md5(1): h1_full},
@@ -248,7 +248,7 @@ def test_update_stream_delta():
             md5(1): h1_full,
             md5(2): SimpleFetchedSignalMetadata(
                 [
-                    SignalOpinion(3, SignalOpinionCategory.WORTH_INVESTIGATING, {t1}),
+                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t1}),
                 ]
             ),
         },
@@ -261,9 +261,9 @@ def test_update_stream_delta():
             md5(1): SimpleFetchedSignalMetadata(
                 [
                     SignalOpinion(
-                        1, SignalOpinionCategory.WORTH_INVESTIGATING, {t2, t3}
+                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
                 ]
             ),
             md5(2): h2_full,
@@ -272,10 +272,10 @@ def test_update_stream_delta():
             md5(1): SimpleFetchedSignalMetadata(
                 [
                     SignalOpinion(
-                        1, SignalOpinionCategory.WORTH_INVESTIGATING, {t2, t3}
+                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
-                    SignalOpinion(3, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
                 ]
             ),
             md5(2): h2_full,
@@ -284,9 +284,9 @@ def test_update_stream_delta():
         {
             md5(1): SimpleFetchedSignalMetadata(
                 [
-                    SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t2}),
-                    SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
-                    SignalOpinion(3, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+                    SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t2}),
+                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
                 ]
             ),
             md5(2): h2_full,
@@ -294,8 +294,8 @@ def test_update_stream_delta():
         {
             md5(1): SimpleFetchedSignalMetadata(
                 [
-                    SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
-                    SignalOpinion(3, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
+                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
                 ]
             ),
             md5(2): h2_full,
@@ -303,7 +303,7 @@ def test_update_stream_delta():
         {
             md5(1): SimpleFetchedSignalMetadata(
                 [
-                    SignalOpinion(3, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+                    SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
                 ]
             ),
             md5(2): h2_full,
@@ -348,13 +348,13 @@ def test_simple_update_delta():
 
     h1_full = SimpleFetchedSignalMetadata(
         [
-            SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1, t2}),
-            SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+            SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2}),
+            SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
         ]
     )
     h2_full = SimpleFetchedSignalMetadata(
         [
-            SignalOpinion(3, SignalOpinionCategory.WORTH_INVESTIGATING, {t2}),
+            SignalOpinion(3, SignalOpinionCategory.INVESTIGATION_SEED, {t2}),
         ]
     )
 
@@ -363,13 +363,13 @@ def test_simple_update_delta():
         (
             key(1),
             SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1})]
+                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1})]
             ),
         ),
         (
             key(1),
             SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1, t2})]
+                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2})]
             ),
         ),
         (key(1), h1_full),
@@ -384,9 +384,9 @@ def test_simple_update_delta():
             SimpleFetchedSignalMetadata(
                 [
                     SignalOpinion(
-                        1, SignalOpinionCategory.WORTH_INVESTIGATING, {t2, t3}
+                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
                 ]
             ),
         ),
@@ -398,12 +398,12 @@ def test_simple_update_delta():
         # Hash 1
         {
             md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1})]
+                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1})]
             )
         },
         {
             md5(1): SimpleFetchedSignalMetadata(
-                [SignalOpinion(1, SignalOpinionCategory.WORTH_INVESTIGATING, {t1, t2})]
+                [SignalOpinion(1, SignalOpinionCategory.INVESTIGATION_SEED, {t1, t2})]
             )
         },
         {md5(1): h1_full},
@@ -417,9 +417,9 @@ def test_simple_update_delta():
             md5(1): SimpleFetchedSignalMetadata(
                 [
                     SignalOpinion(
-                        1, SignalOpinionCategory.WORTH_INVESTIGATING, {t2, t3}
+                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}
                     ),
-                    SignalOpinion(2, SignalOpinionCategory.WORTH_INVESTIGATING, {t3}),
+                    SignalOpinion(2, SignalOpinionCategory.INVESTIGATION_SEED, {t3}),
                 ]
             ),
             md5(2): h2_full,

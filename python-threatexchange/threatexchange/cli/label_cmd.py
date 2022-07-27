@@ -172,7 +172,7 @@ class LabelCommand(command_base.Command):
                     hash_val,
                     SignalOpinion(
                         api.get_own_owner_id(self.collab),
-                        SignalOpinionCategory.TRUE_POSITIVE,
+                        SignalOpinionCategory.POSITIVE_CLASS,
                         self.labels,
                     ),
                 )

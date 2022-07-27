@@ -119,8 +119,8 @@ $ threatexchange dataset --rebuild-indices
 
 # Step 4: You can match a variety of content and formats
 $ threatexchange match text -- 'bball now?'
-raw_text - (Sample Signals) WORTH_INVESTIGATING
-trend_query - (Sample Signals) WORTH_INVESTIGATING
+raw_text - (Sample Signals) INVESTIGATION_SEED
+trend_query - (Sample Signals) INVESTIGATION_SEED
 # You can also debug matching by looking at what hashes are generated:
 $ threatexchange hash video example.mp4
 video_md5 f09791b743c21f26a189c33b798b8e46
@@ -148,7 +148,7 @@ $ threatexchange hash photo https://github.com/facebook/ThreatExchange/blob/main
 $ threatexchange config collab edit local_file --filename ~/file.txt '~/file.txt' --create
 $ threatexchange fetch
 $ threatexchange match photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true
-pdq - (~/file.txt) WORTH_INVESTIGATING
+pdq - (~/file.txt) INVESTIGATION_SEED
 ```
 
 #### ThreatExchange
