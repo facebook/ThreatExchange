@@ -4,6 +4,7 @@ import json
 import pytest
 from pathlib import Path
 import pickle
+import random
 
 try:
     import vpdq
@@ -35,11 +36,19 @@ else:
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 
 if not _DISABLED:
-    EXAMPLE_META_DATA = {"name": "example_video"}
-    VIDEO1_META_DATA = {"name": "video1"}
-    VIDEO2_META_DATA = {"name": "video2"}
+    EXAMPLE_META_DATA = {"example_video"}
+    VIDEO1_META_DATA = {"video1"}
+    VIDEO2_META_DATA = {"video2"}
     hash = VideoVPDQSignal.get_examples()[0]
     features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
+    h1 = get_similar_hash(get_zero_hash(), 16)
+    h2 = get_similar_hash(get_zero_hash(), 128)
+    h3 = get_similar_hash(get_zero_hash(), 240)
+    g1 = [get_similar_hash(h1, i) for i in range(0, 16)]
+    g2 = [get_similar_hash(h2, i) for i in range(0, 16)]
+    g3 = [get_similar_hash(h3, i) for i in range(0, 16)]
+    # Three groups of hashes that are 128 hamming distance away from each other.
+    # The hashes match with each other within the group. And each group's hashes don't match.
 
 
 def test_utils():
@@ -105,12 +114,8 @@ def test_duplicate_hashes():
 
 
 def test_no_match():
-    video1 = pdq_hashes_to_VPDQ_features(
-        [get_similar_hash(get_zero_hash(), 50) for i in range(10)]
-    )
-    video2 = pdq_hashes_to_VPDQ_features(
-        [get_similar_hash(get_zero_hash(), 82) for i in range(10)]
-    )
+    video1 = pdq_hashes_to_VPDQ_features(g1)
+    video2 = pdq_hashes_to_VPDQ_features(g2)
 
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
@@ -122,12 +127,10 @@ def test_no_match():
 
 
 def test_matches():
-    video1 = pdq_hashes_to_VPDQ_features(
-        [get_similar_hash(get_zero_hash(), 5) for i in range(9)]
-    )
-    video2 = pdq_hashes_to_VPDQ_features(
-        [get_similar_hash(hash.hex, 20) for hash in video1]
-    )
+    # Two videos (length 10) each with one unmatched frame. Query video2 with index built from video1 and vice versa.
+    # Delete the unmatched frame from video1 and query. Then Delete the unmatched frame from video2 and query.
+    video1 = pdq_hashes_to_VPDQ_features(random.sample(g1, 9))
+    video2 = pdq_hashes_to_VPDQ_features(random.sample(g1, 9))
     video1.append(
         vpdq.VpdqFeature(
             100, 10, vpdq.str_to_hash(get_similar_hash(get_zero_hash(), 255)), 10
@@ -159,11 +162,11 @@ def test_matches():
 
 
 def test_duplicate_matches():
-    video1 = pdq_hashes_to_VPDQ_features(
-        [get_similar_hash(get_zero_hash(), 5) for i in range(9)]
-    )
+    # There are video1 (length 10) with one duplicate frame and Video2 (length 9) where matches with all unique frames in video1.
+    # The match percentage is (100, 100) because the duplicate one is deduped and not counted.
+    video1 = pdq_hashes_to_VPDQ_features(random.sample(g1, 9))
     video2 = pdq_hashes_to_VPDQ_features(
-        [get_similar_hash(hash.hex, 20) for hash in video1]
+        [get_similar_hash(hash.hex, 31) for hash in video1]
     )
     video1.append(vpdq.VpdqFeature(100, 9, vpdq.str_to_hash(video1[8].hex), 9))
 
@@ -173,19 +176,11 @@ def test_duplicate_matches():
 
 
 def test_duplicate_video_matches():
-    max_hash = get_similar_hash(get_zero_hash(), 256)
-    video1 = pdq_hashes_to_VPDQ_features(
-        [
-            get_zero_hash(),
-            get_similar_hash(get_zero_hash(), 85),
-            get_similar_hash(get_zero_hash(), 170),
-            max_hash,
-        ]
-    )
-    video2 = video1[0:2]
-    video3 = pdq_hashes_to_VPDQ_features(
-        [get_similar_hash(hash.hex, 31) for hash in video1]
-    )
+    # There are video1 with 10 frames (from g1 and g2 evenly) and video2 which contains the duplicated first five frames in video2.
+    # Video3's frames are matched with video1's that belong to same group.
+    video1 = pdq_hashes_to_VPDQ_features(random.sample(g1, 5) + random.sample(g2, 5))
+    video2 = video1[0:5]
+    video3 = pdq_hashes_to_VPDQ_features(random.sample(g1, 5) + random.sample(g2, 5))
 
     index = VPDQIndex()
     index.add_all(

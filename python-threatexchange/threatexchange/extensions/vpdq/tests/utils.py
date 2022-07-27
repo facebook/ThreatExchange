@@ -21,8 +21,6 @@ def pdq_hashes_to_VPDQ_features(
 ) -> t.List[vpdq.VpdqFeature]:
     """Return a List of VPDQ features generated from pdq_hashes with same quality and each feature's time stamp differs by seconds_per_frame"""
     return [
-        vpdq.VpdqFeature(
-            quality, i, vpdq.str_to_hash(pdq_hashes[i]), i * seconds_per_frame
-        )
-        for i in range(len(pdq_hashes))
+        vpdq.VpdqFeature(quality, i, vpdq.str_to_hash(pdq_hash), i * seconds_per_frame)
+        for i, pdq_hash in enumerate(pdq_hashes)
     ]
