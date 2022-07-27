@@ -213,7 +213,7 @@ class PDQHasher {
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  static function boxAlongRows(
+  static function boxAlongCols(
     &$in_image, // 2D array of float
     &$out_image, // 2D array of float
     $num_rows,
@@ -272,7 +272,7 @@ class PDQHasher {
     }
   }
 
-  static function boxAlongCols(
+  static function boxAlongRows(
     &$in_image, // 2D array of float
     &$out_image, // 2D array of float
     $num_rows,
