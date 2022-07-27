@@ -115,7 +115,7 @@ def test_empty_video_and_signal_str():
 
     res = index.query(empty_signal_str)
     assert len(res) == 0
-    
+
     with pytest.raises(ValueError):
         VPDQIndex.build([[vpdq_to_json(empty_video), VIDEO2_META_DATA]])
     with pytest.raises(ValueError):
