@@ -155,7 +155,7 @@ def test_match_below_and_abolve_deafault_query_threshold():
     assert compare_match_result(res[0], VPDQIndexMatch(100, 90, 100, VIDEO4_META_DATA))
 
 
-def test_match_below_and_abolve_deafault_query_threshold():
+def test_match_below_and_abolve_deafault_index_threshold():
     # Indexed video1 contains five out of ten frames that match with quered video4 -> index percent 50% and filtered
     # Indexed video2 contains eight out of ten frames that match with quered video4 -> index percent 80% and return
     # Indexed video3 contains nine out of ten frames that match with quered video4 -> index percent 90% and return
