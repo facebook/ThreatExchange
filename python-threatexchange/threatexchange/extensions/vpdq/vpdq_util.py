@@ -124,6 +124,7 @@ def prepare_vpdq_feature(
     quality_tolerance : The quality tolerance of VPDQ Feature.
     If VPDQ Feature is below this quality level then it will not be added
     """
-
+    if not signal_str:
+        return []
     features = json_to_vpdq(signal_str)
     return dedupe(quality_filter(features, quality_tolerance))
