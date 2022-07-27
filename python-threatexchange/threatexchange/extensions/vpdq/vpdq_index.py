@@ -42,6 +42,10 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
     def add(self, signal_str: str, entry: IndexT) -> None:
         entry_id = len(self._entry_idx_to_features_and_entires)
         features = prepare_vpdq_feature(signal_str, self.quality_threshold)
+        if not features:
+            raise ValueError(
+                "Empty video after deduping/filtering should not be indexed"
+            )
         self._entry_idx_to_features_and_entires.append((features, entry))
         # Use hex to represent the feature because it saves the space
         unique_features = []
@@ -67,6 +71,8 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
             List of VPDQIndexMatch
         """
         features = prepare_vpdq_feature(query_hash, self.quality_threshold)
+        if not features:
+            return []
         results = self.index.search_with_distance_in_result(
             features, VPDQ_DISTANCE_THRESHOLD
         )
