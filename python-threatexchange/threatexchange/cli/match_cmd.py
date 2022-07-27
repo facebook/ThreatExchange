@@ -58,9 +58,8 @@ class MatchCommand(command_base.Command):
 
     The category is key to understanding what you might want to do with a match.
     Here's an explanation of the categories. Opinion categories:
-    * TRUE_POSITIVE:
-      All contributors of this signal believe that matching content should fit
-      the collaboration
+    * POSITIVE_CLASS:
+      All contributors of this signal believe that matching content should belong
     * INVESTIGATION_SEED:
       This content needs manual investigation to confirm or fanout to find the
       content that fits the collaboration
@@ -68,10 +67,9 @@ class MatchCommand(command_base.Command):
       Some members have said that this signal can be used to find content
       that fits the collaboration, but others have said it matches content
       that does not belong in the collaboration.
-    * FALSE_POSITIVE:
+    * NEGATIVE_CLASS:
       Members have said content that matches does not belong in the
-      collaboration, or that this is information content that should not
-      trigger normal side-effects (i.e. human review).
+      collaboration, or that this is informational content that should be treated.
     """
 
     @classmethod
