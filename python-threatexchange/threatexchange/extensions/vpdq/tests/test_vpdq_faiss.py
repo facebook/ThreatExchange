@@ -104,7 +104,7 @@ def test_serialize():
     )
 
 
-def test_empty_video():
+def test_empty_video_and_signal_str():
     empty_video = []
     empty_signal_str = ""
     video1 = pdq_hashes_to_VPDQ_features(g1)
@@ -115,8 +115,11 @@ def test_empty_video():
 
     res = index.query(empty_signal_str)
     assert len(res) == 0
+    
     with pytest.raises(ValueError):
         VPDQIndex.build([[vpdq_to_json(empty_video), VIDEO2_META_DATA]])
+    with pytest.raises(ValueError):
+        VPDQIndex.build([[vpdq_to_json(empty_signal_str), VIDEO2_META_DATA]])
 
 
 def test_duplicate_hashes():
