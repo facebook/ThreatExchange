@@ -858,7 +858,8 @@ class PDQHasher {
   static function computeHashAndQualityFromFilename(
     $filename,
     $show_timings = false,
-    $dump = false
+    $dump = false,
+    $downsample = false
   ) {
 
     $t01 = microtime(true);
@@ -879,7 +880,7 @@ class PDQHasher {
 
     //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     $t1 = microtime(true);
-    $image = self::readImageFromFilename($filename, true);
+    $image = self::readImageFromFilename($filename, $downsample);
     $t2 = microtime(true);
     if ($show_timings) {
       printf("X000-READ %.6f\n", $t2-$t1);
