@@ -12,7 +12,6 @@ from threatexchange.signal_type.index import (
     VPDQIndexMatch,
     IndexMatch,
     T as IndexT,
-    Self,
 )
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
 from threatexchange.extensions.vpdq.vpdq_util import (
@@ -22,6 +21,8 @@ from threatexchange.extensions.vpdq.vpdq_util import (
     VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
     VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
 )
+
+Self = t.TypeVar("Self", bound="VPDQIndex")
 
 
 class VPDQIndex(SignalTypeIndex[IndexT]):
