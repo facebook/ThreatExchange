@@ -47,6 +47,7 @@ class IndexMatch(t.Generic[T]):
         self.distance = distance
         self.metadata = metadata
 
+
 Self = t.TypeVar("Self", bound="SignalTypeIndex")
 
 
