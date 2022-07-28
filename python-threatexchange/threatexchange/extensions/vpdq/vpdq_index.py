@@ -12,7 +12,7 @@ from threatexchange.signal_type.index import (
     VPDQIndexMatch,
     IndexMatch,
     T as IndexT,
-    Self
+    Self,
 )
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
 from threatexchange.extensions.vpdq.vpdq_util import (
