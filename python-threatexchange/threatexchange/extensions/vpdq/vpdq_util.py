@@ -40,6 +40,8 @@ def vpdq_to_json(vpdq_features: t.List[vpdq.VpdqFeature]) -> str:
 
 def json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
     """Load a str as a json object and convert from json object to VPDQ features"""
+    if not json_str:
+        return []
     features = []
     # VPDQ feature's timestamp is round to 3 decimals
     vpdq_json = json.loads(
@@ -124,6 +126,5 @@ def prepare_vpdq_feature(
     quality_tolerance : The quality tolerance of VPDQ Feature.
     If VPDQ Feature is below this quality level then it will not be added
     """
-
     features = json_to_vpdq(signal_str)
     return dedupe(quality_filter(features, quality_tolerance))
