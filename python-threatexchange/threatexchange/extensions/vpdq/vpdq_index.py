@@ -6,6 +6,7 @@ vpdq_faiss.
 """
 
 import typing as t
+from typing_extensions import Self
 import vpdq
 from threatexchange.signal_type.index import (
     SignalTypeIndex,
@@ -47,12 +48,12 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
 
     @classmethod
     def build(
-        cls: t.Type[SignalTypeIndex[IndexT]],
+        cls: Self,
         entries: t.Iterable[t.Tuple[str, IndexT]],
         quality_threshold: int = VPDQ_QUALITY_THRESHOLD,
         query_match_threshold_pct: float = VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
         index_match_threshold_pct: float = VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
-    ) -> SignalTypeIndex[IndexT]:
+    ) -> Self:
         ret = cls(
             quality_threshold, query_match_threshold_pct, index_match_threshold_pct
         )
