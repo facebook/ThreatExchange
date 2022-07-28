@@ -20,9 +20,9 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
 @pytest.fixture
-def exchange(api: NCMECHashAPI):
+def exchange(api: NCMECHashAPI, monkeypatch: pytest.MonkeyPatch):
     signal_exchange = NCMECSignalExchangeAPI("user", "pass")
-    signal_exchange._api = api
+    monkeypatch.setattr(signal_exchange, "get_client", lambda _environment: api)
     return signal_exchange
 
 
