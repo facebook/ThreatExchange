@@ -9,7 +9,6 @@ import typing as t
 import vpdq
 from threatexchange.signal_type.index import (
     SignalTypeIndex,
-    VPDQIndexMatch,
     IndexMatch,
     T as IndexT,
 )
@@ -19,6 +18,19 @@ from threatexchange.extensions.vpdq.vpdq_util import (
     VPDQ_QUALITY_THRESHOLD,
     VPDQ_DISTANCE_THRESHOLD,
 )
+
+
+class VPDQIndexMatch(IndexMatch[IndexT]):
+    def __init__(
+        self,
+        distance: int,
+        query_match_percent: float,
+        compared_match_percent: float,
+        metadata: IndexT,
+    ) -> None:
+        super().__init__(distance, metadata)
+        self.query_match_percent = query_match_percent
+        self.compared_match_percent = compared_match_percent
 
 
 class VPDQIndex(SignalTypeIndex[IndexT]):

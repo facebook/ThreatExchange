@@ -14,7 +14,7 @@ except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
     import typing as t
-    from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
+    from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex, VPDQIndexMatch
     from threatexchange.extensions.vpdq.vpdq_util import (
         json_to_vpdq,
         prepare_vpdq_feature,
@@ -29,9 +29,7 @@ else:
     )
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
     from tests.hashing.utils import get_random_hash, get_similar_hash, get_zero_hash
-    from threatexchange.signal_type.index import (
-        VPDQIndexMatch,
-    )
+
 
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 
