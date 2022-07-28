@@ -26,7 +26,6 @@ else:
     from threatexchange.extensions.vpdq.tests.utils import (
         get_random_VPDQs,
         pdq_hashes_to_VPDQ_features,
-        get_zero_threshold_index,
     )
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
     from tests.hashing.utils import get_random_hash, get_similar_hash, get_zero_hash
@@ -88,12 +87,12 @@ def test_simple():
 
 
 def test_half_match():
-    index = get_zero_threshold_index()
+    index = VPDQIndex()
     index.add(hash, EXAMPLE_META_DATA)
     half_hash = features[0 : int(len(features) / 2)]
     res = index.query(vpdq_to_json(half_hash))
     assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 50, EXAMPLE_META_DATA))
-    index = get_zero_threshold_index()
+    index = VPDQIndex()
     index.add(vpdq_to_json(half_hash), EXAMPLE_META_DATA)
     res = index.query(hash)
     assert compare_match_result(res[0], VPDQIndexMatch(100, 50, 100, EXAMPLE_META_DATA))
@@ -131,7 +130,7 @@ def test_no_match():
     assert len(res) == 0
 
 
-def test_match_below_and_abolve_deafault_query_threshold():
+def test_match_below_and_above_80pct_query_threshold():
     # Video1 contains five out of ten frames that match with indexed video4 -> query percent 50% and filtered
     # Video2 contains eight out of ten frames that match with indexed video4 -> query percent 80% and return
     # Video3 contains nine out of ten frames that match with indexed video4 -> query percent 90% and return
@@ -144,7 +143,10 @@ def test_match_below_and_abolve_deafault_query_threshold():
     video3 = pdq_hashes_to_VPDQ_features(random.sample(g1, 1) + random.sample(g3, 9))
     video4 = pdq_hashes_to_VPDQ_features(random.sample(g3, 10))
 
-    index = VPDQIndex.build([[vpdq_to_json(video4), VIDEO4_META_DATA]])
+    index = VPDQIndex.build(
+        [[vpdq_to_json(video4), VIDEO4_META_DATA]],
+        query_match_threshold_pct=80,
+    )
     res = index.query(vpdq_to_json(video1))
     assert len(res) == 0
 
@@ -155,7 +157,7 @@ def test_match_below_and_abolve_deafault_query_threshold():
     assert compare_match_result(res[0], VPDQIndexMatch(100, 90, 100, VIDEO4_META_DATA))
 
 
-def test_match_below_and_abolve_deafault_index_threshold():
+def test_match_below_and_above_80pct_index_threshold():
     # Indexed video1 contains five out of ten frames that match with quered video4 -> index percent 50% and filtered
     # Indexed video2 contains eight out of ten frames that match with quered video4 -> index percent 80% and return
     # Indexed video3 contains nine out of ten frames that match with quered video4 -> index percent 90% and return
@@ -169,15 +171,24 @@ def test_match_below_and_abolve_deafault_index_threshold():
     video3 = pdq_hashes_to_VPDQ_features(random.sample(g1, 1) + random.sample(g3, 9))
     video4 = pdq_hashes_to_VPDQ_features(random.sample(g3, 10))
 
-    index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
+    index = VPDQIndex.build(
+        [[vpdq_to_json(video1), VIDEO1_META_DATA]],
+        index_match_threshold_pct=80,
+    )
     res = index.query(vpdq_to_json(video4))
     assert len(res) == 0
 
-    index = VPDQIndex.build([[vpdq_to_json(video2), VIDEO2_META_DATA]])
+    index = VPDQIndex.build(
+        [[vpdq_to_json(video2), VIDEO2_META_DATA]],
+        index_match_threshold_pct=80,
+    )
     res = index.query(vpdq_to_json(video4))
     assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 80, VIDEO2_META_DATA))
 
-    index = VPDQIndex.build([[vpdq_to_json(video3), VIDEO3_META_DATA]])
+    index = VPDQIndex.build(
+        [[vpdq_to_json(video3), VIDEO3_META_DATA]],
+        index_match_threshold_pct=80,
+    )
     res = index.query(vpdq_to_json(video4))
     assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 90, VIDEO3_META_DATA))
 
@@ -238,7 +249,7 @@ def test_duplicate_video_matches():
     video2 = video1[0:5]
     video3 = pdq_hashes_to_VPDQ_features(random.sample(g1, 5) + random.sample(g2, 5))
 
-    index = get_zero_threshold_index()
+    index = VPDQIndex()
     index.add_all(
         [
             [vpdq_to_json(video1), VIDEO1_META_DATA],

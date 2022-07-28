@@ -27,6 +27,3 @@ def pdq_hashes_to_VPDQ_features(
     ]
 
 
-def get_zero_threshold_index() -> VPDQIndex:
-    # Get a VPDQIndex hash that returns every index match
-    return VPDQIndex(query_match_threshold=0, index_match_threshold=0)
