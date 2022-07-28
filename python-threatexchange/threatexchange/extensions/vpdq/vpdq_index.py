@@ -48,7 +48,7 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
 
     @classmethod
     def build(
-        cls: Self,
+        cls: t.Type[Self],
         entries: t.Iterable[t.Tuple[str, IndexT]],
         quality_threshold: int = VPDQ_QUALITY_THRESHOLD,
         query_match_threshold_pct: float = VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
