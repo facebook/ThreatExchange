@@ -6,13 +6,13 @@ vpdq_faiss.
 """
 
 import typing as t
-from typing_extensions import Self
 import vpdq
 from threatexchange.signal_type.index import (
     SignalTypeIndex,
     VPDQIndexMatch,
     IndexMatch,
     T as IndexT,
+    Self
 )
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
 from threatexchange.extensions.vpdq.vpdq_util import (
