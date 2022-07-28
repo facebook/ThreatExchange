@@ -19,17 +19,19 @@ from threatexchange.extensions.vpdq.vpdq_util import (
     VPDQ_DISTANCE_THRESHOLD,
 )
 
+
 class VPDQIndexMatch(IndexMatch[IndexT]):
     def __init__(
         self,
         distance: int,
         query_match_percent: float,
         compared_match_percent: float,
-        metadata: T,
+        metadata: IndexT,
     ) -> None:
         super().__init__(distance, metadata)
         self.query_match_percent = query_match_percent
         self.compared_match_percent = compared_match_percent
+
 
 class VPDQIndex(SignalTypeIndex[IndexT]):
     """
