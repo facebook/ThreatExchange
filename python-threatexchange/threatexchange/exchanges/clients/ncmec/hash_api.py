@@ -8,7 +8,7 @@ https://report.cybertip.org/hashsharing/v2/documentation.pdf
 """
 
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from enum import Enum, unique
 import logging
@@ -23,7 +23,7 @@ from requests.packages.urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.fb_threatexchange.api import TimeoutHTTPAdapter
 
 
-_DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%S%z"
+_DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%SZ"
 _DEFAULT_ELE = ET.Element("")
 
 T = t.TypeVar("T")
@@ -155,9 +155,9 @@ class GetEntriesResponse:
             max_ts = max(
                 max_ts,
                 int(
-                    datetime.strptime(
-                        content_xml.str("maxTimestamp"), _DATE_FORMAT_STR
-                    ).timestamp()
+                    datetime.strptime(content_xml.str("maxTimestamp"), _DATE_FORMAT_STR)
+                    .replace(tzinfo=timezone.utc)
+                    .timestamp()
                 ),
             )
             updates.extend(NCMECEntryUpdate.from_xml(c) for c in content_xml)
