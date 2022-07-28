@@ -38,7 +38,7 @@ class URLSignal(
 
     @classmethod
     def matches_str(
-        cls, signal: str, haystack: str, distance_threshold: t.Optional[int] = None
+        cls, signal: str, haystack: str
     ) -> signal_base.HashComparisonResult:
         # TODO - normalization
         return signal_base.HashComparisonResult.from_bool(signal == haystack)

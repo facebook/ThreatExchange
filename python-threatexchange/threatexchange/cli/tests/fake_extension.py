@@ -67,9 +67,7 @@ class FakeSignal(SignalType, FileHasher):
         return TrivialSignalTypeIndex
 
     @classmethod
-    def compare_hash(
-        cls, hash1: str, hash2: str, distance_threshold: t.Optional[int] = None
-    ) -> HashComparisonResult:
+    def compare_hash(cls, hash1: str, hash2: str) -> HashComparisonResult:
         return HashComparisonResult.from_bool(hash1 == hash2)
 
     @classmethod
