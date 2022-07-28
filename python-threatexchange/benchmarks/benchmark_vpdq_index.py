@@ -12,7 +12,11 @@ from contextlib import contextmanager, nullcontext
 from threatexchange.extensions.vpdq.vpdq_brute_matcher import match_VPDQ_hash_brute
 from threatexchange.extensions.vpdq.tests.utils import get_random_VPDQs
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
-from threatexchange.extensions.vpdq.vpdq_util import vpdq_to_json, VPDQ_QUALITY_THRESHOLD, VPDQ_DISTANCE_THRESHOLD
+from threatexchange.extensions.vpdq.vpdq_util import (
+    vpdq_to_json,
+    VPDQ_QUALITY_THRESHOLD,
+    VPDQ_DISTANCE_THRESHOLD,
+)
 
 import typing as t
 
@@ -20,7 +24,7 @@ from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
 from threatexchange.signal_type.signal_base import TrivialLinearSearchHashIndex
 
-    
+
 Oint = t.Optional[int]
 
 
@@ -28,6 +32,7 @@ class IndexType(Enum):
     BRUTE_FORCE = "brute_force"
     FLAT = "flat"
     SIGNAL_TYPE = "signal_type"
+
     def __str__(self) -> str:
         return self.value
 
@@ -55,12 +60,12 @@ def run_benchmark(
 ):
 
     data_generation_timer = nullcontext()
-    if video_frames*dataset_size > 10000:
+    if video_frames * dataset_size > 10000:
         data_generation_timer = timer("Generating data", True)
     with data_generation_timer:
         hh = [get_random_VPDQs(video_frames) for _ in range(dataset_size)]
     if test_type == IndexType.SIGNAL_TYPE:
-        build = VPDQIndex.build(vpdq_to_json(hh))
+        build = lambda: build_signal(hh)
     elif test_type == IndexType.BRUTE_FORCE:
         build = lambda: hh
     elif test_type == IndexType.FLAT:
@@ -76,13 +81,14 @@ def run_benchmark(
         query_generation_timer = timer("Generating queries", True)
     with query_generation_timer:
         hq = get_random_VPDQs(query_size)
-
     if test_type == IndexType.SIGNAL_TYPE:
-        query = lambda: index.query(vpdq_to_json(hq))
+        query = lambda: sigal_match(hq, index)
     elif test_type == IndexType.BRUTE_FORCE:
         query = lambda: brute_force_match(hq, index)
     elif test_type == IndexType.FLAT:
-        query = lambda: index.search_with_distance_in_result(hq)
+        query = lambda: index.search_with_distance_in_result(
+            hq, VPDQ_DISTANCE_THRESHOLD
+        )
     else:
         raise ValueError("Forgot to handle a type?")
 
@@ -91,14 +97,31 @@ def run_benchmark(
     query_time = t()
     print(f"  Per query: {1000 * query_time / query_size:.4f}ms")
 
-def build_flat(xb):
+
+def build_flat(videos):
     index = VPDQHashIndex()
-    index.add_single_video(xb)
+    for v in videos:
+        index.add_single_video(v)
     return index
+
+
+def build_signal(hashes):
+    index = VPDQIndex()
+    for h in hashes:
+        index.add(vpdq_to_json(h), object())
+    return index
+
+
+def sigal_match(hash, index):
+    index.query(vpdq_to_json(hash))
+
 
 def brute_force_match(query, hashes):
     for hash in hashes:
-        match_VPDQ_hash_brute(query, hash, VPDQ_QUALITY_THRESHOLD, VPDQ_DISTANCE_THRESHOLD)
+        match_VPDQ_hash_brute(
+            query, hash, VPDQ_QUALITY_THRESHOLD, VPDQ_DISTANCE_THRESHOLD
+        )
+
 
 def get_argparse():
     ap = argparse.ArgumentParser(description=__doc__)
@@ -113,7 +136,7 @@ def get_argparse():
         "--dataset-size",
         "-n",
         type=int,
-        default=10000,
+        default=2000,
         help="How large to make the dataset",
     )
     ap.add_argument(
