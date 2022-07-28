@@ -38,7 +38,7 @@ bool hashVideoFile(
   // FFMPEG command to process the downsampled video
 
   string ffmpegLogLevel =
-      verbose ? "" : "-loglevel warning -hide_banner -stats";
+      verbose ? "" : "-loglevel error -hide_banner -nostats";
   string command = ffmpegPath + " " + ffmpegLogLevel + " -nostdin -i " +
       escapedInputVideoFileName + " -s " + to_string(width) + ":" +
       to_string(height) + " -an -f rawvideo -c:v rawvideo -pix_fmt rgb24" +
