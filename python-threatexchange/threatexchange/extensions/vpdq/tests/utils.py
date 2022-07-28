@@ -25,5 +25,3 @@ def pdq_hashes_to_VPDQ_features(
         vpdq.VpdqFeature(quality, i, vpdq.str_to_hash(pdq_hash), i * seconds_per_frame)
         for i, pdq_hash in enumerate(pdq_hashes)
     ]
-
-
