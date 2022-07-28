@@ -110,7 +110,11 @@ class FileHasher:
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
-        """Get a string representation of the hash from a file"""
+        """
+        Get a string representation of the hash from a file.
+
+        If a hash cannot be generated, empty string should be returned.
+        """
         raise NotImplementedError
 
 
@@ -121,7 +125,11 @@ class TextHasher(FileHasher):
 
     @classmethod
     def hash_from_str(cls, text: str) -> str:
-        """Get a string representation of the hash from a string"""
+        """
+        Get a string representation of the hash from a string.
+
+        If a hash cannot be generated, empty string should be returned.
+        """
         raise NotImplementedError
 
     @classmethod
@@ -148,7 +156,11 @@ class BytesHasher(FileHasher):
 
     @classmethod
     def hash_from_bytes(cls, bytes_: bytes) -> str:
-        """Get a string representation of the hash from bytes."""
+        """
+        Get a string representation of the hash from bytes.
+
+        If a hash cannot be generated, empty string should be returned.
+        """
         raise NotImplementedError
 
     @classmethod

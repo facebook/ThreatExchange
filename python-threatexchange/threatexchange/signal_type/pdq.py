@@ -5,10 +5,9 @@ Wrapper around the Photo PDQ signal type.
 """
 
 import typing as t
-import pathlib
 import re
 
-from threatexchange.hashing.pdq_hasher import pdq_from_bytes, pdq_from_file
+from threatexchange.hashing.pdq_hasher import pdq_from_bytes
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type import signal_base
@@ -43,6 +42,8 @@ class PdqSignal(
     # This may need to be updated (TODO make more configurable)
     # Hashes of distance less than or equal to this threshold are considered a 'match'
     PDQ_CONFIDENT_MATCH_THRESHOLD = 31
+    # Images with less than quality 50 are too unreliable to match on
+    QUALITY_THRESHOLD = 50
 
     @classmethod
     def get_content_types(cls) -> t.List[t.Type[ContentType]]:
@@ -70,13 +71,10 @@ class PdqSignal(
         return signal_base.HashComparisonResult.from_dist(dist, pdq_dist_threshold)
 
     @classmethod
-    def hash_from_file(cls, file: pathlib.Path) -> str:
-        pdq_hash, _quality = pdq_from_file(file)
-        return pdq_hash
-
-    @classmethod
     def hash_from_bytes(cls, bytes_: bytes) -> str:
-        pdq_hash, _quality = pdq_from_bytes(bytes_)
+        pdq_hash, quality = pdq_from_bytes(bytes_)
+        if quality < cls.QUALITY_THRESHOLD:
+            return ""
         return pdq_hash
 
     @staticmethod
