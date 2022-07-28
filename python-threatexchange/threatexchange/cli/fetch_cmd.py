@@ -195,6 +195,17 @@ class FetchCommand(command_base.Command):
                 next_checkpoint = delta.checkpoint
                 self._fetch_progress(len(delta.updates), next_checkpoint)
                 assert next_checkpoint is not None  # Infinite loop protection
+                if checkpoint is not None:
+                    prev_time = checkpoint.get_progress_timestamp()
+                    next_time = next_checkpoint.get_progress_timestamp()
+                    if prev_time and next_time:
+                        assert prev_time <= next_time, (
+                            "checkpoint time rewound? ",
+                            "This can indicate a serious ",
+                            "problem with the API and checkpointing",
+                        )
+                checkpoint = next_checkpoint  # Only used for the rewind check
+
                 store.merge(collab, delta)
                 if self.has_hit_limits():
                     self.stderr("Hit limits, checkpointing")
