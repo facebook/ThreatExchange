@@ -35,6 +35,7 @@ class IndexType(Enum):
     def __str__(self) -> str:
         return self.value
 
+
 @contextmanager
 def timer(context: str, print_on_enter: bool = False):
     if print_on_enter:
@@ -83,7 +84,7 @@ def run_benchmark(
         query = lambda: index.search_with_distance_in_result(
             hq, VPDQ_DISTANCE_THRESHOLD
         )
-    
+
     with timer("query") as t:
         query()
     query_time = t()
@@ -129,7 +130,7 @@ def get_argparse():
         "-n",
         type=int,
         default=2000,
-        help="How large to make the dataset",
+        help="How many videos in the dataset",
     )
     ap.add_argument(
         "--query-size",
