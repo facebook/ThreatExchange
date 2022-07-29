@@ -16,7 +16,6 @@ from threatexchange.exchanges.clients.ncmec import hash_api as api
 from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
 from threatexchange.exchanges.collab_config import (
-    CollaborationConfigBase,
     CollaborationConfigWithDefaults,
 )
 from threatexchange.signal_type.signal_base import SignalType
@@ -127,12 +126,8 @@ class NCMECSignalExchangeAPI(
         password: str = "",
     ) -> None:
         super().__init__()
-        self._api = None
-        if username and password:
-            self._api = api.NCMECHashAPI(
-                username,
-                password,
-            )
+        self._username = username
+        self._password = password
 
     @classmethod
     def get_name(cls) -> str:
@@ -150,11 +145,10 @@ class NCMECSignalExchangeAPI(
     def get_record_cls(cls) -> t.Type[NCMECSignalMetadata]:
         return NCMECSignalMetadata
 
-    @property
-    def client(self) -> api.NCMECHashAPI:
-        if self._api is None:
-            raise Exception("NCMEC username and password not configured.")
-        return self._api
+    def get_client(self, environment: api.NCMECEnvironment) -> api.NCMECHashAPI:
+        if not api.is_valid_user_pass(self._username, self._password):
+            raise Exception("NCMEC username and password not configured or invalid.")
+        return api.NCMECHashAPI(self._username, self._password, environment)
 
     def fetch_iter(
         self,
@@ -165,7 +159,8 @@ class NCMECSignalExchangeAPI(
         start_time = 0
         if checkpoint is not None:
             start_time = checkpoint.max_timestamp
-        for result in self.client.get_entries_iter(start_timestamp=start_time):
+        client = self.get_client(collab.environment)
+        for result in client.get_entries_iter(start_timestamp=start_time):
             updates = result.updates
             if collab.only_esp_ids:
                 updates = [

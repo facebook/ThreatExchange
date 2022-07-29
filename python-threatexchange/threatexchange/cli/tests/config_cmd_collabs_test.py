@@ -24,6 +24,37 @@ def test_required_argument(cli: ThreatExchangeCLIE2eHelper) -> None:
     cli.assert_cli_output(("list",), expected_output=f"ncmec {name}")
 
 
+def test_editing_collab(cli: ThreatExchangeCLIE2eHelper) -> None:
+    name = "collab_name"
+    expected = """
+{
+  "environment": "%s",
+  "name": "collab_name",
+  "api": "ncmec",
+  "enabled": true,
+  "only_esp_ids": []
+}
+    """.strip()
+    cli.cli_call(
+        "edit",
+        "ncmec",
+        "-C",
+        name,
+        f"--environment={NCMECEnvironment.test_NGO.name}",
+    )
+    cli.assert_cli_output(["print", name], expected % NCMECEnvironment.test_NGO.value)
+    cli.cli_call(
+        "edit",
+        "ncmec",
+        name,
+        f"--environment={NCMECEnvironment.test_Exploitative.name}",
+    )
+
+    cli.assert_cli_output(
+        ["print", name], expected % NCMECEnvironment.test_Exploitative.value
+    )
+
+
 def test_complex_types(cli: ThreatExchangeCLIE2eHelper) -> None:
     cli.cli_call(
         "tx",

@@ -4,7 +4,7 @@ import pytest
 from pathlib import Path
 
 try:
-    import vpdq as _
+    import vpdq
 
     _DISABLED = False
 except (ImportError, ModuleNotFoundError) as e:

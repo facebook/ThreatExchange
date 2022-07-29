@@ -208,7 +208,7 @@ class NCMECHashAPI:
         self,
         username: str,
         password: str,
-        environment: NCMECEnvironment = NCMECEnvironment.test_Industry,
+        environment: NCMECEnvironment,
     ) -> None:
         assert is_valid_user_pass(username, password)
         self.username = username
