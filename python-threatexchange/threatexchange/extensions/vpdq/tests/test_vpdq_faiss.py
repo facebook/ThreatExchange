@@ -23,7 +23,7 @@ else:
         dedupe,
         quality_filter,
     )
-    from threatexchange.extensions.vpdq.tests.utils import (
+    from utils import (
         get_random_VPDQs,
         pdq_hashes_to_VPDQ_features,
     )
