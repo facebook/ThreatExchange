@@ -19,9 +19,8 @@ from threatexchange.extensions.vpdq.vpdq_util import (
 )
 
 import typing as t
-
+import random
 from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
-from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
 
 
 Oint = t.Optional[int]
@@ -49,16 +48,26 @@ def timer(context: str, print_on_enter: bool = False):
 
 def run_benchmark(
     test_type: IndexType,
-    video_frames: int,
+    average_frames: int,
+    jitter_noise: int,
     dataset_size: int,
     query_size: int,
 ):
-
+    assert jitter_noise <= average_frames
+    assert average_frames > 0
+    assert dataset_size > 0
+    assert query_size > 0
+    
     data_generation_timer = nullcontext()
-    if video_frames * dataset_size > 10000:
+    if average_frames * dataset_size > 10000:
         data_generation_timer = timer("Generating data", True)
     with data_generation_timer:
-        hashes = [get_random_VPDQs(video_frames) for _ in range(dataset_size)]
+        hashes = [
+            get_random_VPDQs(
+                average_frames + random.randint(-jitter_noise, jitter_noise)
+            )
+            for _ in range(dataset_size)
+        ]
     if test_type == IndexType.SIGNAL_TYPE:
         build = lambda: build_signal(hashes)
     elif test_type == IndexType.BRUTE_FORCE:
@@ -77,7 +86,7 @@ def run_benchmark(
     with query_generation_timer:
         hq = get_random_VPDQs(query_size)
     if test_type == IndexType.SIGNAL_TYPE:
-        query = lambda: sigal_match(hq, index)
+        query = lambda: signal_match(hq, index)
     elif test_type == IndexType.BRUTE_FORCE:
         query = lambda: brute_force_match(hq, index)
     elif test_type == IndexType.FLAT:
@@ -105,7 +114,7 @@ def build_signal(hashes):
     return index
 
 
-def sigal_match(hash, index):
+def signal_match(hash, index):
     index.query(vpdq_to_json(hash))
 
 
@@ -119,15 +128,22 @@ def brute_force_match(query, hashes):
 def get_argparse():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
-        "--video-frames",
-        "-v",
+        "--average-frames",
+        "-f",
         type=int,
         default=500,
         help="How many frames in each video",
     )
     ap.add_argument(
+        "--jitter-noise",
+        "-j",
+        type=int,
+        default=50,
+        help="How many frames varies between each video in uniformal distribution",
+    )
+    ap.add_argument(
         "--dataset-size",
-        "-n",
+        "-v",
         type=int,
         default=2000,
         help="How many videos in the dataset",
