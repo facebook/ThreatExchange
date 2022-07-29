@@ -14,13 +14,18 @@ $show_timings = false;
 //$show_timings = true;
 $dump = false;
 
+$downsample = false;
+
 foreach ($filenames as $filename) {
 
-  list ($hash, $quality) = PDQHasher::computeHashAndQualityFromFilename($filename, $show_timings, $dump);
+  list ($hash, $quality) = PDQHasher::computeHashAndQualityFromFilename($filename, $show_timings, $dump, $downsample);
   $s = $hash->toHexString();
   echo "$s,$quality,purephp,$filename\n";
-
-  list ($hash, $quality) = PDQHasher::computeStringHashAndQualityFromFilenameUsingExtension($filename, $show_timings, $dump);
-  echo "$hash,$quality,extnphp,$filename\n";
+  if (function_exists('pdq_compute_string_hash_and_quality_from_image_resource')) {
+    list ($hash, $quality) = PDQHasher::computeStringHashAndQualityFromFilenameUsingExtension($filename, $show_timings, $dump);
+    echo "$hash,$quality,extnphp,$filename\n";
+  } else {
+    echo "php extension not available";
+  }
 
 }

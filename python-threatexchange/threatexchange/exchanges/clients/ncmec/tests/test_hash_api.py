@@ -5,6 +5,7 @@ from threatexchange.exchanges.clients.ncmec.hash_api import (
     NCMECEntryType,
     NCMECEntryUpdate,
     NCMECHashAPI,
+    NCMECEnvironment,
 )
 
 STATUS_XML = """
@@ -167,7 +168,7 @@ def mock_get_impl(url: str, **params):
 
 @pytest.fixture
 def api(monkeypatch: pytest.MonkeyPatch):
-    api = NCMECHashAPI("fake_user", "fake_pass")
+    api = NCMECHashAPI("fake_user", "fake_pass", NCMECEnvironment.test_Industry)
     session = None
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],

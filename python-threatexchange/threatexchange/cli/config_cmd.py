@@ -251,7 +251,7 @@ class _UpdateCollabCommand(command_base.Command):
         for field in fields(self._API_CLS.get_config_class()):
             if not field.init:
                 if field.name == "api":
-                    self.edit_kwargs.pop("api")
+                    self.edit_kwargs.pop("api", None)
                 continue
             if field.name in self._IGNORE_FIELDS:
                 continue
