@@ -28,7 +28,11 @@ else:
         pdq_hashes_to_VPDQ_features,
     )
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
-    from tests.hashing.utils import get_random_hash, get_similar_hash, get_zero_hash
+    from threatexchange.tests.hashing.utils import (
+        get_random_hash,
+        get_similar_hash,
+        get_zero_hash,
+    )
 
 
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
