@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
-Script to benchmark performance of faiss
+Script to benchmark performance of vpdq brute_force, index with faiss and faiss only
 """
 
 import argparse
@@ -22,7 +22,6 @@ import typing as t
 
 from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
-from threatexchange.signal_type.signal_base import TrivialLinearSearchHashIndex
 
 
 Oint = t.Optional[int]
@@ -35,11 +34,6 @@ class IndexType(Enum):
 
     def __str__(self) -> str:
         return self.value
-
-
-class BruteForceIndex(TrivialLinearSearchHashIndex):
-    _SIGNAL_TYPE = VideoVPDQSignal
-
 
 @contextmanager
 def timer(context: str, print_on_enter: bool = False):
@@ -63,15 +57,15 @@ def run_benchmark(
     if video_frames * dataset_size > 10000:
         data_generation_timer = timer("Generating data", True)
     with data_generation_timer:
-        hh = [get_random_VPDQs(video_frames) for _ in range(dataset_size)]
+        hashes = [get_random_VPDQs(video_frames) for _ in range(dataset_size)]
     if test_type == IndexType.SIGNAL_TYPE:
-        build = lambda: build_signal(hh)
+        build = lambda: build_signal(hashes)
     elif test_type == IndexType.BRUTE_FORCE:
-        build = lambda: hh
+        build = lambda: hashes
     elif test_type == IndexType.FLAT:
-        build = lambda: build_flat(hh)
+        build = lambda: build_flat(hashes)
     else:
-        raise ValueError("Forgot to handle a type?")
+        raise ValueError("Invalid test type")
 
     with timer("build"):
         index = build()
@@ -89,9 +83,7 @@ def run_benchmark(
         query = lambda: index.search_with_distance_in_result(
             hq, VPDQ_DISTANCE_THRESHOLD
         )
-    else:
-        raise ValueError("Forgot to handle a type?")
-
+    
     with timer("query") as t:
         query()
     query_time = t()
