@@ -1,9 +1,8 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import vpdq
 import typing as t
-from tests.hashing.utils import get_random_hash
 from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
-
+from threatexchange.tests.hashing.utils import get_random_hash
 
 def get_random_VPDQs(
     frame_count: int, seconds_per_frame: float = 1.0, quality: int = 100
