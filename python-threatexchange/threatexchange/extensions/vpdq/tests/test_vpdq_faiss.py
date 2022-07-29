@@ -36,13 +36,7 @@ else:
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 
 if not _DISABLED:
-    EXAMPLE_META_DATA = dict(
-        {
-            "hash_type": "vpdq",
-            "video_id": 5,
-        }
-    )
-
+    EXAMPLE_META_DATA = {"hash_type": "vpdq", "video_id": 5}
     VIDEO1_META_DATA = object()
     VIDEO2_META_DATA = object()
     VIDEO3_META_DATA = object()
