@@ -17,7 +17,11 @@ from threatexchange.extensions.vpdq.vpdq_util import (
     prepare_vpdq_feature,
     VPDQ_QUALITY_THRESHOLD,
     VPDQ_DISTANCE_THRESHOLD,
+    VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
+    VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
 )
+
+Self = t.TypeVar("Self", bound="VPDQIndex")
 
 
 class VPDQIndexMatch(IndexMatch[IndexT]):
@@ -41,6 +45,8 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
     def __init__(
         self,
         quality_threshold: int = VPDQ_QUALITY_THRESHOLD,
+        query_match_threshold_pct: float = VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
+        index_match_threshold_pct: float = VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
     ) -> None:
         super().__init__()
         self.index: VPDQHashIndex = VPDQHashIndex()
@@ -50,6 +56,22 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
         self._index_idx_to_vpdqHex_and_entry: t.List[t.Tuple[int, t.List[int]]] = []
         self._unique_vpdqHex_to_index_idx: t.Dict[str, int] = {}
         self.quality_threshold = quality_threshold
+        self.query_match_threshold_pct = query_match_threshold_pct
+        self.index_match_threshold_pct = index_match_threshold_pct
+
+    @classmethod
+    def build(
+        cls: t.Type[Self],
+        entries: t.Iterable[t.Tuple[str, IndexT]],
+        quality_threshold: int = VPDQ_QUALITY_THRESHOLD,
+        query_match_threshold_pct: float = VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
+        index_match_threshold_pct: float = VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
+    ) -> Self:
+        ret = cls(
+            quality_threshold, query_match_threshold_pct, index_match_threshold_pct
+        )
+        ret.add_all(entries)
+        return ret
 
     def add(self, signal_str: str, entry: IndexT) -> None:
         entry_id = len(self._entry_idx_to_features_and_entires)
@@ -113,12 +135,16 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
             # max_matched_percent is returned as dist(int) here for a temporal solution
             # TODO: Make dist attribute internal detail in IndexMatch Class
             max_matched_percent = int(max(query_matched_percent, index_matched_percent))
-            matches.append(
-                VPDQIndexMatch(
-                    max_matched_percent,
-                    query_matched_percent,
-                    index_matched_percent,
-                    self._entry_idx_to_features_and_entires[entry_id][1],
+            if (
+                query_matched_percent >= self.query_match_threshold_pct
+                and index_matched_percent >= self.index_match_threshold_pct
+            ):
+                matches.append(
+                    VPDQIndexMatch(
+                        max_matched_percent,
+                        query_matched_percent,
+                        index_matched_percent,
+                        self._entry_idx_to_features_and_entires[entry_id][1],
+                    )
                 )
-            )
         return matches
