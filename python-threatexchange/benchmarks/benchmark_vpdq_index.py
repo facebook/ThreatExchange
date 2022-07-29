@@ -57,7 +57,7 @@ def run_benchmark(
     assert average_frames > 0
     assert dataset_size > 0
     assert query_size > 0
-    
+
     data_generation_timer = nullcontext()
     if average_frames * dataset_size > 10000:
         data_generation_timer = timer("Generating data", True)
