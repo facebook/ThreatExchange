@@ -36,7 +36,13 @@ else:
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 
 if not _DISABLED:
-    EXAMPLE_META_DATA = {"example_video"}
+    EXAMPLE_META_DATA = dict(
+        {
+            "hash_type": "vpdq",
+            "video_id": 5,
+        }
+    )
+
     VIDEO1_META_DATA = object()
     VIDEO2_META_DATA = object()
     VIDEO3_META_DATA = object()
@@ -87,13 +93,13 @@ def test_simple():
 
 
 def test_half_match():
-    index = VPDQIndex()
-    index.add(hash, EXAMPLE_META_DATA)
+    index = VPDQIndex.build([[hash, EXAMPLE_META_DATA]], query_match_threshold_pct=0)
     half_hash = features[0 : int(len(features) / 2)]
     res = index.query(vpdq_to_json(half_hash))
     assert compare_match_result(res[0], VPDQIndexMatch(100, 100, 50, EXAMPLE_META_DATA))
-    index = VPDQIndex()
-    index.add(vpdq_to_json(half_hash), EXAMPLE_META_DATA)
+    index = VPDQIndex.build(
+        [[vpdq_to_json(half_hash), EXAMPLE_META_DATA]], query_match_threshold_pct=0
+    )
     res = index.query(hash)
     assert compare_match_result(res[0], VPDQIndexMatch(100, 50, 100, EXAMPLE_META_DATA))
 
@@ -127,6 +133,19 @@ def test_no_match():
 
     index = VPDQIndex.build([[vpdq_to_json(video2), VIDEO2_META_DATA]])
     res = index.query(vpdq_to_json(video1))
+    assert len(res) == 0
+
+
+def test_no_match_with_zero_threshold():
+    # Index should not return any non-match result even if threshold is zero
+    video1 = pdq_hashes_to_VPDQ_features(g1)
+    video2 = pdq_hashes_to_VPDQ_features(g2)
+    index = VPDQIndex.build(
+        [[vpdq_to_json(video1), VIDEO1_META_DATA]],
+        query_match_threshold_pct=0,
+        index_match_threshold_pct=0,
+    )
+    res = index.query(vpdq_to_json(video2))
     assert len(res) == 0
 
 
@@ -249,7 +268,7 @@ def test_duplicate_video_matches():
     video2 = video1[0:5]
     video3 = pdq_hashes_to_VPDQ_features(random.sample(g1, 5) + random.sample(g2, 5))
 
-    index = VPDQIndex()
+    index = VPDQIndex(query_match_threshold_pct=0)
     index.add_all(
         [
             [vpdq_to_json(video1), VIDEO1_META_DATA],
