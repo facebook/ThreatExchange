@@ -2,6 +2,7 @@
 import vpdq
 import typing as t
 from tests.hashing.utils import get_random_hash
+from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 
 
 def get_random_VPDQs(

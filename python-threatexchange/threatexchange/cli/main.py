@@ -32,6 +32,12 @@ import sys
 import typing as t
 import pathlib
 import shutil
+import warnings
+
+# Import pdq first with its hash order warning squelched, it's before our time
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from threatexchange.signal_type import pdq
 
 from threatexchange import interface_validation
 from threatexchange.content_type.content_base import ContentType
@@ -49,7 +55,6 @@ from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
 from threatexchange.content_type import photo, video, text, url
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.signal_type import (
-    pdq,
     md5,
     raw_text,
     url as url_signal,

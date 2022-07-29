@@ -48,19 +48,6 @@ class IndexMatch(t.Generic[T]):
         self.metadata = metadata
 
 
-class VPDQIndexMatch(IndexMatch[T]):
-    def __init__(
-        self,
-        distance: int,
-        query_match_percent: float,
-        compared_match_percent: float,
-        metadata: T,
-    ) -> None:
-        super().__init__(distance, metadata)
-        self.query_match_percent = query_match_percent
-        self.compared_match_percent = compared_match_percent
-
-
 Self = t.TypeVar("Self", bound="SignalTypeIndex")
 
 
