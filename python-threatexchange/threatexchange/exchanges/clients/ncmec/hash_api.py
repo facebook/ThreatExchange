@@ -176,7 +176,7 @@ class GetEntriesResponse:
         start = parsed.get("start")
         size = parsed.get("size")
         max_ = parsed.get("max")
-        if None in (start, size, max_):
+        if start is None or size is None or max_ is None:
             return None
         return int(start[0]), int(size[0]), int(max_[0])
 

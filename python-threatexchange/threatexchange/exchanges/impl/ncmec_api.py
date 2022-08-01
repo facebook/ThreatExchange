@@ -200,19 +200,15 @@ class NCMECSignalExchangeAPI(
         def log(event: str) -> None:
             """Helper to log fetch events"""
             if duration < 1800:
-                duration_str = "seconds"
-                duration_val = duration
+                duration_str = f"{duration} seconds"
             elif duration < 43200:
-                duration_str = "hours"
-                duration_val = duration / 3600
+                duration_str = f"{duration / 3600:.2f} hours"
             else:
-                duration_str = "days"
-                duration_val = duration / (3600 * 24)
+                duration_str = f"{duration / (3600 * 24):.2f} days"
             logging.info(
-                "NCMEC API %s @%s (%0.2f %s)",
+                "NCMEC API %s @%s (%s)",
                 event,
                 api._date_format(current_time),
-                duration_val,
                 duration_str,
             )
 
