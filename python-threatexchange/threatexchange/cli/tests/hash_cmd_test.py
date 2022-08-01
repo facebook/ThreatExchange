@@ -46,11 +46,12 @@ def test_stdin(
 ):
     tmp_file.write_text("http://evil.com")
 
-    monkeypatch.setattr("sys.stdin", tmp_file.open())
-    hash_cli.assert_cli_output(
-        ("url", "-"),
-        "url_md5 6d3af727a4e7b025fd59a5469b3a9c57",
-    )
+    with tmp_file.open() as fake_stin:
+        monkeypatch.setattr("sys.stdin", fake_stin)
+        hash_cli.assert_cli_output(
+            ("url", "-"),
+            "url_md5 6d3af727a4e7b025fd59a5469b3a9c57",
+        )
 
 
 def test_mixed(hash_cli: ThreatExchangeCLIE2eHelper, tmp_path: pathlib.Path):
