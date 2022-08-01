@@ -37,10 +37,11 @@ class NCMECCheckpoint(
     NCMEC IDs seem to stay around forever, so no need for is_stale()
     """
 
-    max_timestamp: int
+    # The biggest value of "to", and the next "from"
+    get_entries_max_ts: int
 
     def get_progress_timestamp(self) -> t.Optional[int]:
-        return self.max_timestamp
+        return self.get_entries_max_ts
 
     @classmethod
     def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
@@ -183,7 +184,7 @@ class NCMECSignalExchangeAPI(
         """
         start_time = 0
         if checkpoint is not None:
-            start_time = checkpoint.max_timestamp
+            start_time = checkpoint.get_entries_max_ts
         # Avoid being exactly at end time for updates showing up multiple
         # times in the fetch, since entries are not ordered by time
         end_time = int(time.time()) - 5

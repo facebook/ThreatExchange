@@ -2,6 +2,7 @@
 
 import typing as t
 import pytest
+import time
 
 from threatexchange.exchanges.clients.ncmec.tests.test_hash_api import api
 from threatexchange.exchanges.impl.ncmec_api import (
@@ -27,73 +28,41 @@ def exchange(api: NCMECHashAPI, monkeypatch: pytest.MonkeyPatch):
 
 
 def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
+    frozen_time = 1664496000
+    monkeypatch.setattr("time.time", lambda: frozen_time)
     collab = NCMECCollabConfig(NCMECEnvironment.Industry, "Test")
     it = exchange.fetch_iter([], collab, None)
-    first_update = {
-        "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()})
-    }
-    third_update = dict(first_update)
-    third_update.update(
-        {
-            "facefacefacefacefacefacefaceface": NCMECSignalMetadata({101: {"A1"}}),
-            "bacebacebacebacebacebacebacebace": NCMECSignalMetadata({101: {"A1"}}),
-        }
-    )
-    forth_update = dict(first_update)
-    forth_update.update(
-        {
-            "facefacefacefacefacefacefaceface": NCMECSignalMetadata({101: {"A2"}}),
-        }
-    )
+    # Since our test data from test_hash_api is is all in one fetch sequence,
+    # we'd have to craft some specialized data to get the NCMECSignalAPI split it
+    # into multiple updates
 
     # Fetch 1
-    delta = next(it)
-    assert len(delta.updates) == 4
+    delta = next(it, None)
+    assert delta is not None
+    assert len(delta.updates) == 7
     total_updates: t.Dict[str, NCMECEntryUpdate] = {}
     exchange.naive_fetch_merge(total_updates, delta.updates)
 
-    assert delta.checkpoint.get_progress_timestamp() == 1508858400
+    assert delta.checkpoint.get_progress_timestamp() == frozen_time - 5
     assert delta.checkpoint.is_stale() is False
-    assert delta.checkpoint.max_timestamp == 1508858400
+    assert delta.checkpoint.get_entries_max_ts == frozen_time - 5
 
-    assert set(delta.updates) == {"43-image4", "42-image1", "42-video1", "42-video4"}
-
-    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], total_updates
-    )[VideoMD5Signal]
-    assert as_signals == first_update
-
-    delta = next(it)
-    assert len(delta.updates) == 1
-
-    assert {t for t in delta.updates} == {"42-image10"}
-    exchange.naive_fetch_merge(total_updates, delta.updates)
-    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], total_updates
-    )[VideoMD5Signal]
-    assert as_signals == first_update
-
-    ## Fetch 3
-    delta = next(it)
-    assert len(delta.updates) == 2
-    assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
-    exchange.naive_fetch_merge(total_updates, delta.updates)
+    assert set(delta.updates) == {
+        "43-image4",
+        "42-image1",
+        "42-video1",
+        "42-video4",
+        "42-image10",
+        "101-willdelete",
+        "101-willupdate",
+    }
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], total_updates
     )[VideoMD5Signal]
-    assert as_signals == third_update
-
-    ## Fetch 4
-    delta = next(it)
-    assert len(delta.updates) == 2
-    assert {t for t in delta.updates} == {"101-willdelete", "101-willupdate"}
-    exchange.naive_fetch_merge(total_updates, delta.updates)
-
-    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], total_updates
-    )[VideoMD5Signal]
-    assert as_signals == forth_update
-
+    assert as_signals == {
+        "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()}),
+        "facefacefacefacefacefacefaceface": NCMECSignalMetadata({101: {"A2"}}),
+    }
     ## No more data
     assert next(it, None) is None
