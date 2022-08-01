@@ -29,8 +29,14 @@ ROOTDIR = Path(__file__).parents[5]
 
 @pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 def test_vpdq_from_string_path():
+    video_file = ROOTDIR / VIDEO
+    hash_file = ROOTDIR / HASH
+    if not video_file.is_file() or not hash_file.is_file():
+        pytest.xfail("missing test file")
     computed_hash = VideoVPDQSignal.hash_from_file(ROOTDIR / VIDEO)
-    expected_hash = read_file_to_hash(ROOTDIR / HASH)
+    expected_hash = read_file_to_hash(hash_file)
+    if not json_to_vpdq(computed_hash):
+        pytest.skip("ffmpeg not installed for vpdq")
     assert vpdq_to_json(json_to_vpdq(computed_hash)) == computed_hash
     res = match_VPDQ_hash_brute(
         json_to_vpdq(computed_hash),
