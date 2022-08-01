@@ -23,7 +23,6 @@ import random
 from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 
 
-
 class IndexType(Enum):
     BRUTE_FORCE = "brute_force"
     FLAT = "flat"
