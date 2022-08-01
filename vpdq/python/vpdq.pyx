@@ -118,12 +118,16 @@ def computeHash(
     Returns:
         list of vpdq_feature: VPDQ hash from the video
     """
-    assert Path(input_video_filename).is_file()
-    assert seconds_per_hash >= 0
-    assert downsample_width >= 0
-    assert downsample_height >= 0
+    if not Path(input_video_filename).is_file():
+        raise ValueError("Input_video_filename doesn't exist")
+    if seconds_per_hash < 0:
+        raise ValueError("Seconds_per_hash must be non-negative")
+    if downsample_width < 0:
+        raise ValueError("Downsample_width must be non-negative")
+    if downsample_height < 0:
+        raise ValueError("Downsample_height must be non-negative")
     cdef vector[vpdqFeature] vpdq_hash;
-    vid = cv2.VideoCapture(input_video_filename)
+    vid = cv2.VideoCapture(str(input_video_filename))
     frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
     if downsample_width == 0:
         downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)

@@ -49,6 +49,21 @@ def test_vpdq_utils():
         assert vpdq.hash_to_hex(feature.hash) == hex_hash
 
 
+def test_error_checking():
+    video_file = Path(f"{video_folder}/{TEST_FILES[0]}.mp4")
+    with pytest.raises(ValueError):
+        assert not vpdq.computeHash(
+            input_video_filename=video_file, seconds_per_hash=-1
+        )
+        assert not vpdq.computeHash(
+            input_video_filename=video_file, downsample_width=-1
+        )
+        assert not vpdq.computeHash(
+            input_video_filename=video_file, downsample_height=-1
+        )
+        assert not vpdq.computeHash(input_video_filename="nonexisting")
+
+
 def test_compare_hashes():
     """This regression test is creating hashes from sample videos and compare them with the provided hashes line by line.
     Two VPDQ features are considered the same if each line of the hashes are within DISTANCE_TOLERANCE.
@@ -65,7 +80,7 @@ def test_compare_hashes():
         video_file = Path(f"{video_folder}/{file}.mp4")
         assert video_file.is_file()
         ret = vpdq.computeHash(
-            input_video_filename=str(video_file),
+            input_video_filename=video_file,
         )
         assert ret is not None
         test_hashes[file] = ret
