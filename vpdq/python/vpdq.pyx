@@ -10,7 +10,16 @@ from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 
-subprocess.check_call("ffmpeg")
+try:
+    # A call to check if ffmpeg is installed for vPDQ
+    # FFMPEG is required to compute vPDQ hash
+    subprocess.check_call("ffmpeg", stdout=subprocess.DEVNULL, 
+    stderr=subprocess.STDOUT)
+except (subprocess.CalledProcessError, FileNotFoundError) as e:
+    if isinstance(e, FileNotFoundError):
+        raise Exception("FFMPEG is not installed. VPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
+    pass
+
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
     cdef struct Hash256:
