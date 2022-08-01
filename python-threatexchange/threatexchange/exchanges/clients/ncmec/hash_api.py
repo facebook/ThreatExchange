@@ -7,6 +7,7 @@ You can find the complete documentation at
 https://report.cybertip.org/hashsharing/v2/documentation.pdf
 """
 
+import re
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from dataclasses import dataclass
@@ -15,6 +16,8 @@ import logging
 import time
 import typing as t
 from io import BytesIO
+import html
+import urllib.parse
 
 import requests
 from requests.packages.urllib3.util.retry import Retry
@@ -165,6 +168,29 @@ class GetEntriesResponse:
         next_ = xml.maybe("paging", "next").element.text or ""
         return cls(updates, max_ts or fallback_max_time, next_)
 
+    def get_next_info(self) -> t.Optional[t.Tuple[int, int, int]]:
+        if not self.next:
+            return None
+        s = html.unescape(self.next)
+        parsed = urllib.parse.parse_qs(s)
+        start = parsed.get("start")
+        size = parsed.get("size")
+        max_ = parsed.get("max")
+        if None in (start, size, max_):
+            return None
+        return int(start[0]), int(size[0]), int(max_[0])
+
+    @property
+    def entries_in_range(self) -> int:
+        if not self.next:
+            return len(self.updates)
+        info = self.get_next_info()
+        return (
+            len(self.updates) + 1
+            if info is None
+            else info[2] - info[0] + len(self.updates)
+        )
+
 
 @unique
 class NCMECEndpoint(Enum):
@@ -202,7 +228,9 @@ class NCMECHashAPI:
     documentation.
     """
 
-    VERSION = "v2"
+    VERSION: t.ClassVar[str] = "v2"
+
+    ENTRIES_PER_FETCH: t.ClassVar[int] = 1000
 
     def __init__(
         self,
@@ -292,11 +320,17 @@ class NCMECHashAPI:
         self,
         *,
         start_timestamp: int = 0,
+        end_timestamp: int = 0,
         next_: str = "",
     ) -> GetEntriesResponse:
         """
         Fetch a series of update records from the hash API.
+
+        DANGER! The NCMEC API does not return entries in time order! If you
+        don't exhaust the entire iterator, you can't trust the max timestamp!
         """
+        if not end_timestamp:
+            end_timestamp = int(time.time())
         # Need a dict here for python keyword 'from'
         params: t.Dict[str, t.Any] = {
             "from": _date_format(start_timestamp),
@@ -304,21 +338,28 @@ class NCMECHashAPI:
         response = self._get(
             NCMECEndpoint.entries,
             next_=next_,
-            to=_date_format(int(time.time())),
+            to=_date_format(end_timestamp),
             **params,
         )
         return GetEntriesResponse.from_xml(_XMLWrapper(response), int(time.time()))
 
     def get_entries_iter(
-        self, start_timestamp: int = 0
+        self, start_timestamp: int = 0, end_timestamp: int = 0
     ) -> t.Iterator[GetEntriesResponse]:
         """
         A simple wrapper around get_entries to keep fetching until complete.
+
+        If you don't exhaust the iterator, you can't make any assumptions about how
+        much of the data you have fetched. @see get_entries
         """
         has_more = True
         next_ = ""
         while has_more:
-            result = self.get_entries(start_timestamp=start_timestamp, next_=next_)
+            result = self.get_entries(
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                next_=next_,
+            )
             next_ = result.next
             has_more = bool(next_)
             yield result
