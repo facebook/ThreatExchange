@@ -7,7 +7,7 @@ try:
     import vpdq
 
     _DISABLED = False
-except (ImportError, ModuleNotFoundError) as e:
+except (ImportError, ModuleNotFoundError, FileNotFoundError) as e:
     _DISABLED = True
 else:
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
@@ -29,14 +29,8 @@ ROOTDIR = Path(__file__).parents[5]
 
 @pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 def test_vpdq_from_string_path():
-    video_file = ROOTDIR / VIDEO
-    hash_file = ROOTDIR / HASH
-    if not video_file.is_file() or not hash_file.is_file():
-        pytest.xfail("missing test file")
-    computed_hash = VideoVPDQSignal.hash_from_file(video_file)
-    expected_hash = read_file_to_hash(hash_file)
-    if not json_to_vpdq(computed_hash):
-        pytest.skip("ffmpeg not installed for vpdq")
+    computed_hash = VideoVPDQSignal.hash_from_file(ROOTDIR / VIDEO)
+    expected_hash = read_file_to_hash(ROOTDIR / HASH)
     assert vpdq_to_json(json_to_vpdq(computed_hash)) == computed_hash
     res = match_VPDQ_hash_brute(
         json_to_vpdq(computed_hash),

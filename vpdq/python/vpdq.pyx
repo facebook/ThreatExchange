@@ -3,11 +3,14 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import cv2
 import typing as t
+import subprocess
 
 from dataclasses import dataclass
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
+
+subprocess.check_call("ffmpeg")
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
     cdef struct Hash256:
