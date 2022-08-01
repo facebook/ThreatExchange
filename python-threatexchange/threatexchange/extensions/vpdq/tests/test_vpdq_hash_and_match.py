@@ -33,7 +33,7 @@ def test_vpdq_from_string_path():
     hash_file = ROOTDIR / HASH
     if not video_file.is_file() or not hash_file.is_file():
         pytest.xfail("missing test file")
-    computed_hash = VideoVPDQSignal.hash_from_file(ROOTDIR / VIDEO)
+    computed_hash = VideoVPDQSignal.hash_from_file(video_file)
     expected_hash = read_file_to_hash(hash_file)
     if not json_to_vpdq(computed_hash):
         pytest.skip("ffmpeg not installed for vpdq")
