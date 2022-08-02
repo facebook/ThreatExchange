@@ -7,7 +7,6 @@ You can find the complete documentation at
 https://report.cybertip.org/hashsharing/v2/documentation.pdf
 """
 
-import re
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from dataclasses import dataclass
