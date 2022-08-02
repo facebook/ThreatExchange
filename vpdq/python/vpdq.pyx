@@ -13,7 +13,7 @@ from libcpp.string cimport string
 try:
     # A call to check if ffmpeg is installed for vPDQ
     # FFMPEG is required to compute vPDQ hash
-    subprocess.check_call(["ffmpeg", "-L"], stdout=subprocess.DEVNULL)
+    subprocess.check_call(["ffmpeg", "-L"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 except FileNotFoundError as e:
     raise Exception("FFMPEG is not installed. VPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
 
