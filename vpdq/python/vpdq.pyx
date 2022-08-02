@@ -15,7 +15,7 @@ try:
     # FFMPEG is required to compute vPDQ hash
     subprocess.check_call(["ffmpeg", "-L"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 except FileNotFoundError as e:
-    raise Exception("FFMPEG is not installed. VPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
+    raise ImportError("FFMPEG is not installed. VPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
 
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":

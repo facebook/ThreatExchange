@@ -10,7 +10,7 @@ try:
     import vpdq
 
     _DISABLED = False
-except Exception:
+except (ImportError, FileNotFoundError) as e:
     _DISABLED = True
 else:
     import typing as t
