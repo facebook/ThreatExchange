@@ -51,17 +51,27 @@ def test_vpdq_utils():
 
 def test_error_checking():
     video_file = Path(f"{video_folder}/{TEST_FILES[0]}.mp4")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as error_info:
         assert not vpdq.computeHash(
             input_video_filename=video_file, seconds_per_hash=-1
         )
+    assert str(error_info.value) == "Seconds_per_hash must be non-negative"
+
+    with pytest.raises(ValueError) as error_info:
         assert not vpdq.computeHash(
             input_video_filename=video_file, downsample_width=-1
         )
+    assert str(error_info.value) == "Downsample_width must be non-negative"
+
+    with pytest.raises(ValueError) as error_info:
         assert not vpdq.computeHash(
             input_video_filename=video_file, downsample_height=-1
         )
+    assert str(error_info.value) == "Downsample_height must be non-negative"
+
+    with pytest.raises(ValueError) as error_info:
         assert not vpdq.computeHash(input_video_filename="nonexisting")
+    assert str(error_info.value) == "Input_video_filename doesn't exist"
 
 
 def test_compare_hashes():

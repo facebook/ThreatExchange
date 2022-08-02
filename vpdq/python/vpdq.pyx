@@ -126,8 +126,9 @@ def computeHash(
         raise ValueError("Downsample_width must be non-negative")
     if downsample_height < 0:
         raise ValueError("Downsample_height must be non-negative")
+    str_path = str(input_video_filename)
     cdef vector[vpdqFeature] vpdq_hash;
-    vid = cv2.VideoCapture(str(input_video_filename))
+    vid = cv2.VideoCapture(str_path)
     frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
     if downsample_width == 0:
         downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -136,7 +137,7 @@ def computeHash(
         downsample_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     rt = hashVideoFile(
-        str(input_video_filename).encode("utf-8"),
+        str_path.encode("utf-8"),
         vpdq_hash,
         ffmpeg_path.encode("utf-8"),
         verbose,
