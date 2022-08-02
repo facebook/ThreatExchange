@@ -191,9 +191,9 @@ class NCMECSignalExchangeAPI(
 
         client = self.get_client(collab.environment)
         # We could probably mutate start time, but new variable for clarity
-        current_time = start_time
+        current_start = start_time
         # The range we are fetching
-        duration = end_time - current_time
+        duration = end_time - current_start
         # A counter for when we want to increase our duration
         # We want to be conservative
         low_fetch_counter = 0
@@ -209,38 +209,43 @@ class NCMECSignalExchangeAPI(
             logging.info(
                 "NCMEC API %s @%s (%s)",
                 event,
-                api._date_format(current_time),
+                api._date_format(current_start),
                 duration_str,
             )
 
-        while current_time < end_time:
+        while current_start < end_time:
             duration = max(1, duration)  # Infinite loop defense
             # Don't fetch past our designated end
-            current_end = min(end_time, current_time + duration)
+            current_end = min(end_time, current_start + duration)
             updates: t.List[api.NCMECEntryUpdate] = []
             for i, entry in enumerate(
                 client.get_entries_iter(
-                    start_timestamp=current_time, end_timestamp=current_end
+                    start_timestamp=current_start, end_timestamp=current_end
                 )
             ):
                 if i == 0:  # First batch, check for overfetch
-                    if entry.entries_in_range > self.MAX_FETCH_SIZE and duration > 1:
+                    if (
+                        entry.estimated_entries_in_range > self.MAX_FETCH_SIZE
+                        and duration > 1
+                    ):
                         log(
-                            f"est {entry.entries_in_range} is over max fetch, duration reduced"
+                            f"est {entry.estimated_entries_in_range} is over max fetch, duration reduced"
                         )
                         # We want to at last shrink by our shrink factor
                         duration = min(
                             duration // self.FETCH_SHRINK_FACTOR,
                             # Especially in early fetches, we are overfetching
                             # by a huge amount, so shrink in proportion to overfetch
-                            duration * self.MAX_FETCH_SIZE // entry.entries_in_range,
+                            duration
+                            * self.MAX_FETCH_SIZE
+                            // entry.estimated_entries_in_range,
                         )
                         low_fetch_counter = 0  # Don't grow right after a shrink
                         break  # Retry get_entries_iter with new parameters
                     else:
                         # Our entry estimatation (based on the cursor parameters)
                         # occasionally seem to over-estimate
-                        log(f"est {entry.entries_in_range} entries")
+                        log(f"est {entry.estimated_entries_in_range} entries")
                 elif i % 100 == 0:
                     # If we get down to one second, we can potentially be
                     # fetching an arbitrary large amount of data in one go,
@@ -269,7 +274,7 @@ class NCMECSignalExchangeAPI(
                     {f"{entry.member_id}-{entry.id}": entry for entry in updates},
                     NCMECCheckpoint(current_end),
                 )
-                current_time = current_end
+                current_start = current_end
 
     @classmethod
     def fetch_value_merge(

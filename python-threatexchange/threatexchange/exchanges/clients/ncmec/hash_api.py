@@ -141,6 +141,25 @@ class NCMECEntryUpdate:
         )
 
 
+class GetEntriesNextInfo(t.NamedTuple):
+    """Wrapper around parsed "next" param data. Fields match param names"""
+
+    start: int  # Might be- the start ID of the next fetch
+    size: int  # How many records to fetch (always seems to be 1000)
+    max: int  # The largest id in the time range
+
+    @classmethod
+    def from_next(cls, next_: str) -> t.Optional["GetEntriesNextInfo"]:
+        s = html.unescape(next_)
+        parsed = urllib.parse.parse_qs(s)
+        start = parsed.get("start")
+        size = parsed.get("size")
+        max_ = parsed.get("max")
+        if not start or not size or not max_:
+            return None
+        return GetEntriesNextInfo(int(start[0]), int(size[0]), int(max_[0]))
+
+
 @dataclass
 class GetEntriesResponse:
     updates: t.List[NCMECEntryUpdate]
@@ -168,27 +187,21 @@ class GetEntriesResponse:
         next_ = xml.maybe("paging", "next").element.text or ""
         return cls(updates, max_ts or fallback_max_time, next_)
 
-    def get_next_info(self) -> t.Optional[t.Tuple[int, int, int]]:
+    def get_next_info(self) -> t.Optional[GetEntriesNextInfo]:
         if not self.next:
             return None
-        s = html.unescape(self.next)
-        parsed = urllib.parse.parse_qs(s)
-        start = parsed.get("start")
-        size = parsed.get("size")
-        max_ = parsed.get("max")
-        if start is None or size is None or max_ is None:
-            return None
-        return int(start[0]), int(size[0]), int(max_[0])
+        return GetEntriesNextInfo.from_next(self.next)
 
     @property
-    def entries_in_range(self) -> int:
+    def estimated_entries_in_range(self) -> int:
+        """Uses the "next" params to try and guess entries in range"""
         if not self.next:
             return len(self.updates)
         info = self.get_next_info()
         return (
-            len(self.updates) + 1
+            len(self.updates) + 1  # Parse error of some kind
             if info is None
-            else info[2] - info[0] + len(self.updates)
+            else info.max - info.start + len(self.updates)
         )
 
 
@@ -329,8 +342,7 @@ class NCMECHashAPI:
         DANGER! The NCMEC API does not return entries in time order! If you
         don't exhaust the entire iterator, you can't trust the max timestamp!
         """
-        if not end_timestamp:
-            end_timestamp = int(time.time())
+        end_timestamp = end_timestamp or int(time.time())
         # Need a dict here for python keyword 'from'
         params: t.Dict[str, t.Any] = {
             "from": _date_format(start_timestamp),
@@ -344,7 +356,7 @@ class NCMECHashAPI:
         return GetEntriesResponse.from_xml(_XMLWrapper(response), int(time.time()))
 
     def get_entries_iter(
-        self, start_timestamp: int = 0, end_timestamp: int = 0
+        self, *, start_timestamp: int = 0, end_timestamp: int = 0
     ) -> t.Iterator[GetEntriesResponse]:
         """
         A simple wrapper around get_entries to keep fetching until complete.
