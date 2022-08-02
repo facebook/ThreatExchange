@@ -5,7 +5,7 @@ import typing as t
 
 from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
 from threatexchange.signal_type.index import SignalTypeIndex
-from threatexchange.signal_type.pdq_index import PDQIndex
+from threatexchange.signal_type.pdq.pdq_index import PDQIndex
 
 
 class TestIndexUpdates(unittest.TestCase):

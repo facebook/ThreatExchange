@@ -4,7 +4,7 @@
 Wrapper around the vpdq signal type.
 """
 
-import vpdq
+import threatexchange.extensions.vpdq.module as module
 from .vpdq_util import (
     json_to_vpdq,
     vpdq_to_json,
@@ -18,7 +18,7 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.video import VideoContent
 import re
 from threatexchange.signal_type import signal_base
-from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.pdq.pdq import PdqSignal
 from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 
 
@@ -79,7 +79,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
 
     @classmethod
     def hash_from_file(cls, path: pathlib.Path) -> str:
-        vpdq_hashes = vpdq.computeHash(str(path))
+        vpdq_hashes = module.computeHash(str(path))
         return vpdq_to_json(vpdq_hashes)
 
     @classmethod
@@ -108,8 +108,8 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         VPDQ_features = []
         for pdq_hash in PdqSignal.get_examples():
             VPDQ_features.append(
-                vpdq.VpdqFeature(
-                    quality, frame_number, vpdq.str_to_hash(pdq_hash), timestamp
+                module.VpdqFeature(
+                    quality, frame_number, module.str_to_hash(pdq_hash), timestamp
                 )
             )
             timestamp += 1.0

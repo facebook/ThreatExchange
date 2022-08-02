@@ -6,7 +6,7 @@ import typing as t
 import functools
 
 from threatexchange.signal_type.index import IndexMatch
-from threatexchange.signal_type.pdq_index import PDQIndex
+from threatexchange.signal_type.pdq.pdq_index import PDQIndex
 
 test_entries = [
     (

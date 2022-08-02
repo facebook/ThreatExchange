@@ -4,12 +4,12 @@ import unittest
 
 from threatexchange.signal_type import (
     md5,
-    pdq,
     raw_text,
     trend_query,
     url_md5,
     url,
 )
+from threatexchange.signal_type.pdq import pdq
 from threatexchange.signal_type.signal_base import TextHasher
 
 

@@ -37,7 +37,7 @@ import warnings
 # Import pdq first with its hash order warning squelched, it's before our time
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    from threatexchange.signal_type import pdq
+    from threatexchange.signal_type.pdq import pdq
 
 from threatexchange import interface_validation
 from threatexchange.content_type.content_base import ContentType
