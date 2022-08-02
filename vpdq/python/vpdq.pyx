@@ -13,12 +13,9 @@ from libcpp.string cimport string
 try:
     # A call to check if ffmpeg is installed for vPDQ
     # FFMPEG is required to compute vPDQ hash
-    subprocess.check_call("ffmpeg", stdout=subprocess.DEVNULL, 
-    stderr=subprocess.STDOUT)
-except (subprocess.CalledProcessError, FileNotFoundError) as e:
-    if isinstance(e, FileNotFoundError):
-        raise Exception("FFMPEG is not installed. VPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
-    pass
+    subprocess.check_call(["ffmpeg", "-L"], stdout=subprocess.DEVNULL)
+except FileNotFoundError as e:
+    raise Exception("FFMPEG is not installed. VPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
 
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
