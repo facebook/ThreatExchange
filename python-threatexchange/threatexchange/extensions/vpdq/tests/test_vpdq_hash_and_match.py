@@ -7,7 +7,7 @@ try:
     import vpdq
 
     _DISABLED = False
-except (ImportError, ModuleNotFoundError, FileNotFoundError) as e:
+except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
     from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
