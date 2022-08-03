@@ -33,13 +33,20 @@ The python-threatexchange library aims to simplify the exchange of signals via p
 ## Philosophy of the Library
 This library is maintained by a small team at Meta with a limited range of experience, and so we will prioritize the use cases we are most familiar with. We believe that accessibility is a barrier for many platforms and so will put as much as we can in the open. We also understand that it may not make sense to use only publicly visible approaches, and welcome platform-specific modifications and derivatives. However, we also accept pull requests! If you think functionality is widely applicable, or you have a bug bothering you, we accept pull requests! If you are thinking a larger change may be needed (such as adding an entirely new subcommand to the CLI), we appreciate if you reach out to talk through a feature before submitting it!
 
-## General Expectation for Compatibility and Versioning
-1. Major versions (1.X.X => 2.0.0) are not guaranteed to be backwards compatible. However, post 1.0.0, tooling to try and migrate state forward will be available. Please reach out if you need help migrating forward. 
-2. Minor versions (1.0.X => 1.1.X) will be backwards compatible, with the exception that CLI flags or commands may be renamed if it's not feasible to provide an alias
-
 # Key Concepts
 
 Below is a quick overview of the key concepts. If you dig deeper into the library, there are additional considerations that might apply if you are creating your own extensions.
+
+![basic concepts](https://user-images.githubusercontent.com/1654004/182606322-b7b4e627-c21f-47da-ac8c-f6a57d8ba9c6.png)
+
+The basic flow of data through the system is:
+1. Configure which sources of data (signals) you want to pull from (aka collaborations)
+2. Download from all sources
+3. Store the signals and build an efficient matching datastructure (index)
+4. Match content against stored signals
+
+### Collaborations
+A collaboration represents a single collection of data from a single API. This often ties to practical usage such as "A1 video hashes from the NCMEC industry database" or "terrorism photo hashes from Meta's ThreatExchange only from specific applications". In cases where a platform may want to test or take different actions on matching data from one location, Collaborations provide a way to do so. 
 
 
 ### SignalType, Signals, Indices
@@ -82,10 +89,6 @@ A SignalExchangeAPI is a location that allows for the exchange of Signals. It's 
 The interface defines how a full copy of signals for a single Collaboration can be fetched using sequential, checkpoint-able updates. It also must provide a solution for naive implementations of storage by merging a copy of the data in memory. 
 
 For some applications, the amount of data will be too large to fit in memory - in that case, a solution that can efficiently merge updates produced by the fetch() function is all that is needed.
-
-### Collaborations
-A collaboration represents a single collection of data from a single API. This often ties to practical usage such as "A1 video hashes from the NCMEC industry database". In cases where a platform may want to test or take different actions on matching data from one location, Collaborations provide a way to do so.  
-
 
 ### Extensions
 This library can make use of extensions provided by any party, public or private, as long as they conform to the conventions established in the library. Extensions are a way to prototype out new techniques, and quickly make them available in existing exchanges. Some exchanges, like ThreatExchange, allow sharing arbitrary data with arbitrary labels, and so a new technique can be rapidly demonstrated cross-platform even if not officially supported. 
@@ -136,7 +139,7 @@ $ threatexchange dataset
 $ threatexchange dataset -P --csv > out.csv
 ```
 
-### Connecting to APIs
+### Connecting to APIs and Getting Signals
 
 #### A local file
 This is the fastest way to experiment with the CLI functionality and saving contents
@@ -145,10 +148,10 @@ This is the fastest way to experiment with the CLI functionality and saving cont
 $ threatexchange hash photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true
 pdq f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22
 $ threatexchange hash photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true >> ~/file.txt
-$ threatexchange config collab edit local_file --filename ~/file.txt '~/file.txt' --create
+$ threatexchange config collab edit local_file --filename ~/file.txt 'file.txt' --create
 $ threatexchange fetch
 $ threatexchange match photo https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/b.jpg?raw=true
-pdq - (~/file.txt) INVESTIGATION_SEED
+pdq - (file.txt) INVESTIGATION_SEED
 ```
 
 #### ThreatExchange
@@ -157,26 +160,88 @@ If you have access to [Meta's ThreatExchange](https://developers.facebook.com/pr
 ```
 # Step 1 - configure the default credentials
 $ threatexchange config api fb_threat_exchange --access-token '<TOKEN>'
+# Step 1 Alternative 1 - TX_ACCESS_TOKEN Environment variable
+$ TX_ACCESS_TOKEN='<TOKEN>'
+$ export TX_ACCESS_TOKEN
+
+# Step 1 Alternative 2 - ~/.txtoken file
+$ touch ~/.txtoken
+$ chmod 600 ~/.txtoken
+$ echo '<TOKEN>' > ~/.txtoken file
 
 # Step 2 - import configuration
 $ threatexchange config api fb_threat_exchange -L
 1012185296055235 'Example Collaboration' ...
 $ threatexchange config api fb_threat_exchange -I 1012185296055235
-# You can also manually configure the connection via
-$ threatexchange config collab edit fb_threat_exchange ...
+
+# Step 2 Alternative - manually configure via
+$ threatexchange config collab edit fb_threatexchange ...
 
 $ threatexchange fetch
 ```
 
-#### NCMEC 
-TODO
+#### NCMEC Hash API
+The [National Center for Exploited and Missing Children (NCMEC)](https://www.missingkids.org/) hosts a number of media hash exchanges related to Child Sexual Abuse Material (CSAM). If you have an account with NCMEC and credentials, you download and use hashes from that API.
+
+```
+# Step 1 - configure the default credentials
+$ threatexchange config api ncmec --credentials '<USER>' '<PASSWORD>'
+# Step 1 Alternative 1 - TX_NCMEC_CREDENTIALS Environment variable
+$ TX_NCMEC_CREDENTIALS='<TOKEN>'
+$ export TX_NCMEC_CREDENTIALS
+
+# Step 2 - set up config
+# Example: NGO database only using esp=1
+$ threatexchange config collab edit ncmec --create 'NCMEC NGO' --environment=NGO --only-esp 
+
+$ threatexchange fetch
+```
 
 #### StopNCII.org
-TODO
+[StopNCII.org](https://stopncii.org/) allows people to upload media hashes of intimate imagery when someone is threatening to share them. If you are a partner with credentials, you can download and use hashes from that API.
+
+```
+# Step 1 - configure the default credentials - TX_STOPNCII_KEYS Environment variable
+$ TX_STOPNCII_KEYS='<TOKEN>'
+$ export TX_STOPNCII_KEYS
+
+# Step 2 - set up config
+$ threatexchange config collab edit stop_ncii --create 'StopNCII' 
+
+$ threatexchange fetch
+```
 
 ## Appendix 
 ### State
 The CLI stores state in `~/.threatexchange`. There are a few commands which will manipulate this directory, but if you need to factory reset, do `rm -r ~/.threatexchange`
+
+## General Expectation for Compatibility and Versioning
+We strive to provide a stable library for use in production systems. To that end, we will use version numbers to help platforms which are using the threatexchange libraries in their own codebase.
+
+Public Interfaces:
+* Any API used in extensions (SignalType, ContentType, etc), including their names and paths.
+  * Implementations of those APIs in the library (i.e. PDQSignal), (though excluding internal details of those implementations) 
+* CLI commands and flags
+  * CLI output format that might be part of a pipeline (ex: `threatexchange dataset -P` and `threatexchange match` stdout) 
+* CLI state
+
+Private Interfaces/Internal Details:
+* CLI command implementations
+* CLI Logging/stderr
+* Any CLI behavior marked as unstable, prototype, or draft in its --help
+
+1. Major versions (1.X.X => 2.0.0) Will have breaking changes
+   1. Extensions (SignalType, ContentType, SignalExchangeAPI) may not be backwards compatible
+   2. State (FetchedSignalMetadata, file formats): May not be compatible, but libraries or the CLI may attempt to automatically migrate if possible. Tooling to migrate state may also be available.
+   3. CLI: Storage formats, commands, may all have changed.
+   4. Library: Files may be moved or renamed
+2. Minor versions (1.0.X => 1.1.X) May change public interfaces, but only in ways that are backwards compatible
+   1. Extensions: May gain new methods, or have signatures with new arguments with defaults
+   2. State: May be changed only if automatic migration is possible with how the CLI uses it (`__setstate__` with pickle, TBD with dacite)
+   3. CLI: Flags may change behavior or move only if previous invocations will do the same thing (i.e. nargs could go from 1 to '*' or '+', or the flag can be renamed if a hidden alias is maintained)
+   4. Library: Files not in the public interface may be moved or renamed.
+3. Revision numbers (1.0.0 => 1.0.1) will be fully backwards compatible.
+
 
 ### The CLI as an E2E Solution
 While hasher-matcher-actioner is this repository's attempt at a scaled end-to-end solution, the CLI uses the same libraries and can emulate the same functionality.
