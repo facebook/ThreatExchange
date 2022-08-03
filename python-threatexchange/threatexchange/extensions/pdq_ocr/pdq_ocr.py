@@ -11,7 +11,7 @@ import pathlib
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 
-from threatexchange.signal_type.pdq.pdq import PdqSignal
+from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.raw_text import RawTextSignal
 from threatexchange.signal_type import signal_base
 from threatexchange.exchanges.impl.fb_threatexchange_signal import (

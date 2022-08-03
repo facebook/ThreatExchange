@@ -1,6 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-import threatexchange.extensions.vpdq.module as module
+import vpdq
 import faiss
 from threatexchange.signal_type.pdq.pdq_utils import BITS_IN_PDQ
 import typing as t
@@ -19,7 +19,7 @@ class VPDQHashIndex:
             faiss.IndexBinaryFlat(BITS_IN_PDQ) if faiss_index is None else faiss_index
         )
 
-    def add_single_video(self, hashes: t.List[module.VpdqFeature]) -> None:
+    def add_single_video(self, hashes: t.List[vpdq.VpdqFeature]) -> None:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
@@ -29,7 +29,7 @@ class VPDQHashIndex:
         self.faiss_index.add(numpy.array(vectors))
 
     def search_with_distance_in_result(
-        self, queries: t.List[module.VpdqFeature], distance_tolerance: int
+        self, queries: t.List[vpdq.VpdqFeature], distance_tolerance: int
     ) -> t.Dict[str, t.List[t.Tuple[int, int]]]:
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away

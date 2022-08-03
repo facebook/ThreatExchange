@@ -9,7 +9,7 @@ from threatexchange.signal_type import (
     url_md5,
     url,
 )
-from threatexchange.signal_type.pdq import pdq
+from threatexchange.signal_type.pdq import signal
 from threatexchange.signal_type.signal_base import TextHasher
 
 
@@ -21,7 +21,7 @@ class SignalTypeHashTest(unittest.TestCase):
     # TODO - maybe make a metaclass for this to automatically detect?
     SIGNAL_TYPES_TO_TEST = [
         md5.VideoMD5Signal,
-        pdq.PdqSignal,
+        signal.PdqSignal,
         raw_text.RawTextSignal,
         trend_query.TrendQuerySignal,
         url_md5.UrlMD5Signal,
