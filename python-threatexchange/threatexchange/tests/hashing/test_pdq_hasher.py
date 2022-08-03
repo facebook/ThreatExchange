@@ -5,7 +5,7 @@ import pathlib
 import tempfile
 import unittest
 
-from threatexchange.hashing import pdq_hasher
+from threatexchange.signal_type.pdq import pdq_hasher
 
 RANDOM_IMAGE_BASE64 = """iVBORw0KGgoAAAANSUhEUgAAABoAAAAcCAYAAAB/E6/TAAABQGlDQ1BJQ0MgUHJvZmlsZQAAKJFj
 YGASSCwoyGFhYGDIzSspCnJ3UoiIjFJgf8rAzMDDwMGgziCUmFxc4BgQ4ANUwgCjUcG3awyMIPqy

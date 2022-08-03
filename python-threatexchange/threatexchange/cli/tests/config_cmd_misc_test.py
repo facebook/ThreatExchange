@@ -16,7 +16,7 @@ def cli(
 
 def test_config_signal(cli: ThreatExchangeCLIE2eHelper) -> None:
     expected = [
-        "pdq threatexchange.signal_type.pdq.PdqSignal",
+        "pdq threatexchange.signal_type.pdq.signal.PdqSignal",
         "raw_text threatexchange.signal_type.raw_text.RawTextSignal",
         "trend_query threatexchange.signal_type.trend_query.TrendQuerySignal",
         "url threatexchange.signal_type.url.URLSignal",

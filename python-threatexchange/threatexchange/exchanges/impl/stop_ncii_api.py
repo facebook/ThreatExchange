@@ -19,7 +19,7 @@ from threatexchange.exchanges.collab_config import (
     CollaborationConfigBase,
 )
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.url import URLSignal
 from threatexchange.signal_type.raw_text import RawTextSignal

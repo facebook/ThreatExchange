@@ -2,7 +2,7 @@
 
 import vpdq
 import faiss
-from threatexchange.hashing.pdq_utils import BITS_IN_PDQ
+from threatexchange.signal_type.pdq.pdq_utils import BITS_IN_PDQ
 import typing as t
 import numpy
 import binascii
