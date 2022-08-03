@@ -24,8 +24,16 @@ from dataclasses import dataclass
 import pickle
 import typing as t
 
+
 T = t.TypeVar("T")
-Self = t.TypeVar("Self")
+CT = t.TypeVar("CT", bound="Comparable")
+
+
+class Comparable(t.Protocol):
+    """Helper for annotating comparable types."""
+
+    def __le__(self: CT, other: CT) -> bool:
+        ...
 
 
 @dataclass
@@ -43,11 +51,13 @@ class SignalComparisonResult:
 
 
 @dataclass
-class SignalComparisonResultWithSimpleDistance(t.Generic[T]):
-    distance: T
+class SignalComparisonResultWithSimpleDistance(t.Generic[CT], SignalComparisonResult):
+    distance: CT
 
     @classmethod
-    def from_dist(cls: t.Type[Self], dist: T, threshold: T) -> Self:
+    def from_dist(
+        cls, dist: CT, threshold: CT
+    ) -> "SignalComparisonResultWithSimpleDistance[CT]":
         return cls(dist <= threshold, dist)
 
     def distance_str(self) -> str:
