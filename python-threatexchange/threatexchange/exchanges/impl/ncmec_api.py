@@ -47,14 +47,6 @@ class NCMECCheckpoint(
     def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
         return cls(response.max_timestamp)
 
-    def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
-        """Implemented for pickle version compatibility."""
-        # 0.99.0 => 1.0.0:
-        ### field 'max_timestamp' renamed to 'get_entries_max_ts'
-        if "max_timestamp" in d:
-            d["get_entries_max_ts"] = d.pop("max_timestamp")
-        self.__dict__ = d
-
 
 @dataclass
 class _NCMECCollabConfigRequiredFields:
@@ -97,6 +89,7 @@ class NCMECSignalMetadata(state.FetchedSignalMetadata):
     def get_as_opinions(self) -> t.Sequence[NCMECOpinion]:
         return [
             NCMECOpinion(
+                False,  # TODO - get my own esp_id
                 state.SignalOpinionCategory.POSITIVE_CLASS,
                 tags,
                 member_id,

@@ -51,13 +51,16 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
     feedbacks: t.List[api.StopNCIICSPFeedback]
 
     def get_as_opinions(self) -> t.Sequence[state.SignalOpinion]:
+        # TODO - handle which opinions are mine
         opinions = [
-            state.SignalOpinion(_opinion_mapping(f.feedbackValue), f.tags)
+            state.SignalOpinion(False, _opinion_mapping(f.feedbackValue), f.tags)
             for f in self.feedbacks
         ]
         # implicitly, all records from StopNCII are from user-submitted cases
         opinions.append(
-            state.SignalOpinion(state.SignalOpinionCategory.INVESTIGATION_SEED, set()),
+            state.SignalOpinion(
+                False, state.SignalOpinionCategory.INVESTIGATION_SEED, set()
+            ),
         )
         return opinions
 

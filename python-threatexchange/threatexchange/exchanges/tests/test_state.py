@@ -44,6 +44,7 @@ class FakeUpdateRecord:
 @dataclass
 class SignalOpinionWithOwner(SignalOpinion):
     owner_id: int
+    is_mine: bool = field(init=False, default=False)
 
 
 @dataclass
