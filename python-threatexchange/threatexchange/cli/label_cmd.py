@@ -47,32 +47,13 @@ class LabelCommand(command_base.Command):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: ArgumentParser) -> None:
-        label_with = ap.add_mutually_exclusive_group()
-        label_with.add_argument(
+        ap.add_argument(
             "--labels",
             "-l",
             type=lambda s: set(s.strip().split(",")),
             metavar="CSV",
             default=set(),
             help="labels to apply to item",
-        )
-
-        label_with.add_argument(
-            "--seen",
-            action="store_true",
-            help="mark you've seen this item",
-        )
-
-        label_with.add_argument(
-            "--false-positive",
-            action="store_true",
-            help="mark that this doesn't belong in the collaboration",
-        )
-
-        label_with.add_argument(
-            "--true-positive",
-            action="store_true",
-            help="mark that this does belong in the collaboration",
         )
 
         signal_group = ap.add_mutually_exclusive_group()
@@ -130,9 +111,6 @@ class LabelCommand(command_base.Command):
         collab: CollaborationConfigBase,
         only_signals: t.List[t.Type[SignalType]],
         labels: t.Set[str],
-        true_positive: bool,
-        false_positive: bool,
-        seen: bool,
     ) -> None:
         self.collab = collab
         self.content_type = content_type
@@ -144,19 +122,9 @@ class LabelCommand(command_base.Command):
         if self.collab is None:
             raise ArgumentTypeError("No such collaboration!")
 
-        self.action = self.execute_upload
-        if true_positive:
-            self.action = self.execute_true_positive
-        elif false_positive:
-            self.action = self.execute_false_positive
-        elif seen:
-            self.action = self.execute_seen
-
     def execute(self, settings: CLISettings) -> None:
         self.stderr("This command is not implemented yet, and most actions won't work")
-        self.action(settings)
 
-    def execute_upload(self, settings: CLISettings) -> None:
         api = settings.apis.get_for_collab(self.collab)
         # signal_types = self.only_signals or settings.get_signal_types_for_content(
         #     self.content_type
@@ -171,21 +139,12 @@ class LabelCommand(command_base.Command):
                     signal_type,
                     hash_val,
                     SignalOpinion(
-                        api.get_own_owner_id(self.collab),
+                        -1,  # TODO - remove
                         SignalOpinionCategory.POSITIVE_CLASS,
                         self.labels,
                     ),
                 )
             return
-        raise NotImplementedError
-
-    def execute_seen(self, settings: CLISettings) -> None:
-        raise NotImplementedError
-
-    def execute_true_positive(self, settings: CLISettings) -> None:
-        raise NotImplementedError
-
-    def execute_false_positive(self, settings: CLISettings) -> None:
         raise NotImplementedError
 
 
