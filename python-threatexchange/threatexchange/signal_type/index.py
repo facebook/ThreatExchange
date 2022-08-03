@@ -20,11 +20,47 @@ At scale, the flow for matching looks something like:
 
 """
 
-import typing as t
+from dataclasses import dataclass
 import pickle
-
+import typing as t
 
 T = t.TypeVar("T")
+Self = t.TypeVar("Self")
+
+
+@dataclass
+class SignalComparisonResult:
+    match: bool
+
+    def distance_str(self) -> str:
+        """
+        Return a short string with data about the match for more context.
+
+        Displayed without spaces on the CLI in `threatexchange match`, so
+        prefer a format without spaces.
+        """
+        return str(self.match)
+
+
+@dataclass
+class SignalComparisonResultWithSimpleDistance(t.Generic[T]):
+    distance: T
+
+    @classmethod
+    def from_dist(cls: t.Type[Self], dist: T, threshold: T) -> Self:
+        return cls(dist <= threshold, dist)
+
+    def distance_str(self) -> str:
+        """
+        Return a short string with data about the match for more context.
+
+        Displayed without spaces on the CLI in `threatexchange match`, so
+        prefer a format without spaces.
+        """
+        return str(self.distance)
+
+
+SignalComparisonResultWithIntDistance = SignalComparisonResultWithSimpleDistance[int]
 
 
 class IndexMatch(t.Generic[T]):
