@@ -106,3 +106,7 @@ export default function PreviewableDropzone({
     </div>
   );
 }
+
+PreviewableDropzone.defaultProps = {
+  file: undefined,
+};
