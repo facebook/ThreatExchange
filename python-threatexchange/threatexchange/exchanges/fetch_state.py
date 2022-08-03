@@ -111,9 +111,9 @@ class SignalOpinion:
     def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
         """Implemented for pickle version compatibility."""
         # 0.99.0 => 1.0.0:
-        ### field 'owner_id': int replaced to 'is_mine': bool
-        if "owner_id" in d:
-            d.pop("owner_id")
+        ### field 'owner': int replaced to 'is_mine': bool
+        if "owner" in d:
+            d.pop("owner")
             d["is_mine"] = False
         self.__dict__ = d
 

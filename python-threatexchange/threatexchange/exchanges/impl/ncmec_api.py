@@ -71,9 +71,15 @@ class NCMECCollabConfig(
 
 @dataclass
 class NCMECOpinion(state.SignalOpinion):
-    member_id: int
+    esp_id: int
 
-    # TODO record if it's my opinion
+    def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
+        """Implemented for pickle version compatibility."""
+        # 0.99.0 => 1.0.0:
+        ### field 'owner_id' renamed to 'esp_id'
+        if "owner" in d:
+            d["esp_id"] = d["owner"]
+        super().__setstate__(d)
 
 
 @dataclass

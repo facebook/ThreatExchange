@@ -95,9 +95,8 @@ class FBThreatExchangeOpinion(state.SignalOpinion):
         """Implemented for pickle version compatibility."""
         # 0.99.0 => 1.0.0:
         ### field 'owner_id' renamed to 'owner_app_id' and 'is_mine'
-        if "owner_id" in d:
-            d["owner_app_id"] = d.pop("owner_id")
-            d["is_mine"] = False
+        if "owner" in d:
+            d["owner_app_id"] = d["owner"]
         super().__setstate__(d)
 
 
