@@ -80,3 +80,5 @@ index.add(unique_frames)
 ```
 
 
+#### Benchmark
+The benchmark tests building index and searching between brute-force, raw FAISS and vPDQ index (with FAISS). The result is presented at [python-threatexchange/benchmarks/README.MD](../../../benchmarks/README.MD)
