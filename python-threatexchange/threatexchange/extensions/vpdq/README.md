@@ -75,7 +75,8 @@ for c1_frame in c1_unique_filtered_frames:
             unique_vpdq_to_idx[c1_frame] = idx
             idx_to_vpdq_and_video_id.append((c1_frame, 1))
             unique_frames.append(c1_frame)
-        idx_to_vpdq_and_video_id[idx][1].append(1) # Duplicate hashes won't be added to the index but instead add its video_id to the existing hash's video_id list
+        idx_to_vpdq_and_video_id[idx][1].append(1) 
+        # Duplicate hashes won't be added to the index but instead add its video_id to the existing hash's video_id list
 index.add(unique_frames)
 ```
 
