@@ -187,7 +187,7 @@ Matching Target ../ThreatExchange/vpdq/cpp/sampletest/chair-19-sd-bar.txt with .
 ```
 
 ## vPDQ Python Library
-This is a python-binding library based on the CPP implementation. FFMPEG is also required for vPDQ python library.
+A python-binding library written in Cython based on the CPP implementation. FFMPEG is also required for vPDQ python library.
 
 ### Getting started
 
@@ -212,6 +212,11 @@ cd vpdq
 py.test
 ```
 
+#### Simple Usecase
+```
+import vpdq
+vpdqFeatures = vpdq.computeHash("file_path")
+```
 #### Faiss matching (Intergated with python-threatexchange)
 [FAISS](https://github.com/facebookresearch/faiss) has been successfully intergated with the vPDQ in python-threatexchange libyrary. The decripiton of algorithm can be found at [python-threatexchange/threatexchange/extension/vpdq/README.md](../python-threatexchange/threatexchange/extensions/vpdq/README.md)
 
