@@ -21,6 +21,7 @@ At scale, the flow for matching looks something like:
 """
 
 from dataclasses import dataclass
+from functools import total_ordering
 import pickle
 import typing as t
 
@@ -32,45 +33,57 @@ CT = t.TypeVar("CT", bound="Comparable")
 class Comparable(t.Protocol):
     """Helper for annotating comparable types."""
 
+    def __lt__(self: CT, other: CT) -> bool:
+        pass
+
     def __le__(self: CT, other: CT) -> bool:
-        ...
+        pass
 
 
-@dataclass
-class SignalComparisonResult:
-    match: bool
+class SignalSimilarityInfo:
+    """
+    Metadata with context about a comparison between content or signals.
 
-    def distance_str(self) -> str:
+    This can be used for logging and debugging, but could also be re-used
+    as an argument to match functions to use as thresholds.
+    """
+
+    def pretty_str(self) -> str:
         """
         Return a short string with data about the match for more context.
 
         Displayed without spaces on the CLI in `threatexchange match`, so
         prefer a format without spaces.
+
+        If an empty string is returned, it's assumed that there is
         """
-        return str(self.match)
+        return ""
 
 
 @dataclass
-class SignalComparisonResultWithSimpleDistance(t.Generic[CT], SignalComparisonResult):
+# @total_ordering
+# Can't use yet, need to move library mypy past
+# https://github.com/python/mypy/issues/11728
+class SignalSimilarityInfoWithSingleDistance(t.Generic[CT], SignalSimilarityInfo):
     distance: CT
 
-    @classmethod
-    def from_dist(
-        cls, dist: CT, threshold: CT
-    ) -> "SignalComparisonResultWithSimpleDistance[CT]":
-        return cls(dist <= threshold, dist)
-
-    def distance_str(self) -> str:
-        """
-        Return a short string with data about the match for more context.
-
-        Displayed without spaces on the CLI in `threatexchange match`, so
-        prefer a format without spaces.
-        """
+    def pretty_str(self) -> str:
         return str(self.distance)
 
+    def __lt__(self, other: t.Any) -> bool:
+        if isinstance(other, SignalSimilarityInfoWithSingleDistance):
+            if isinstance(self.distance, other.distance.__class__):
+                return self.distance < other.distance
+        return NotImplemented
 
-SignalComparisonResultWithIntDistance = SignalComparisonResultWithSimpleDistance[int]
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, SignalSimilarityInfoWithSingleDistance):
+            if isinstance(self.distance, other.distance.__class__):
+                return self.distance == other.distance
+        return super().__eq__(other)
+
+
+SignalSimilarityInfoWithIntDistance = SignalSimilarityInfoWithSingleDistance[int]
 
 
 class IndexMatch(t.Generic[T]):
