@@ -1,5 +1,5 @@
 # Contributing
-Please see [../CONTRIBUTING.md](../CONTRIBUTING.md) for how to make contribution
+Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contribution
 ### Code Style
 threatexchange uses [black](https://pypi.org/project/black/) for consistent formatting across
 the projects python source files. After installing black locally, you can automatically
