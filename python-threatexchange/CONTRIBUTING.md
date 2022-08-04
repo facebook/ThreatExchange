@@ -1,26 +1,5 @@
 # Contributing
-
-If you would like to contribute to python-threatexchange, you can do the following:
-
-[Fork][fork] the repo and then [clone][clone] it locally:
-
-[fork]: https://help.github.com/articles/fork-a-repo/
-[clone]: https://help.github.com/articles/which-remote-url-should-i-use/
-
-    git clone git@github.com:your-username/ThreatExchange
-
-## Branch locally and develop!
-Make a branch in your cloned fork. We suggest naming the branch by feature name
-or “issue_XX” where XX is the issue number the branch is associated with. Make
-your changes in your branch and test thoroughly. If this is a large feature you
-can push your branch to your fork often. This allows you to request feedback for
-how things are progressing instead of dumping a large code change all at once.
-
-When making commits to your branch, make sure you write [well-formed][wf] commit
-messages and update documentation accordingly (see the next section).
-
-[wf]: https://github.com/erlang/otp/wiki/Writing-good-commit-messages
-
+Please see [../CONTRIBUTING.md] for how to make contribution(../CONTRIBUTING.md)
 ### Code Style
 threatexchange uses [black](https://pypi.org/project/black/) for consistent formatting across
 the projects python source files. After installing black locally, you can automatically
