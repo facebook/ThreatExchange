@@ -39,6 +39,9 @@ class Comparable(t.Protocol):
         pass
 
 
+NO_DISTANCE_STR = "-"
+
+
 class SignalSimilarityInfo:
     """
     Metadata with context about a comparison between content or signals.
@@ -64,14 +67,11 @@ class SignalSimilarityInfo:
 
     def pretty_str(self) -> str:
         """
-        Return a short string with data about the match for more context.
+        A short string without whitespace about a match with more context.
 
-        Displayed without spaces on the CLI in `threatexchange match`, so
-        prefer a format without spaces.
-
-        If an empty string is returned, it's assumed that there is
+        See it in action on the CLI in `threatexchange match`.
         """
-        return ""
+        return NO_DISTANCE_STR
 
 
 @dataclass

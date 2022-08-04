@@ -5,7 +5,7 @@
 Wrapper around the raw text signal type.
 """
 
-import math
+from dataclasses import dataclass
 import typing as t
 
 import Levenshtein
@@ -18,6 +18,35 @@ from threatexchange.signal_type import index
 from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
+
+
+@dataclass
+class RawTextDistance(index.SignalSimilarityInfo):
+    """
+    Even though we use simple int thresholds, display as a 0-100% match.
+
+    We re-project it onto the length of the query string.
+    """
+
+    distance: int
+    query_str_len: int
+
+    @property
+    def diff_fraction(self) -> float:
+        """0.0 -> 1.0 how different query was from target"""
+        return min(self.distance, self.query_str_len) / max(1, self.query_str_len)
+
+    @property
+    def match_fraction(self) -> float:
+        """0.0 -> 1.0 roughly what percent of the string matched"""
+        return 1 - self.diff_fraction
+
+    @classmethod
+    def from_levenshtein(cls, needle: str, distance: int) -> "RawTextDistance":
+        return cls(distance, len(needle))
+
+    def pretty_str(self) -> str:
+        return f"{(self.match_fraction) * 100:.0f}%"
 
 
 class RawTextSignal(
@@ -41,7 +70,7 @@ class RawTextSignal(
 
     @classmethod
     def matches_str(
-        cls, signal: str, haystack: str, pct_diff_threshold: int = 5
+        cls, signal: str, haystack: str, pct_diff_threshold: float = 5.0
     ) -> signal_base.SignalComparisonResult:
         assert 0 < pct_diff_threshold <= 100
         a = common.normalize_string(signal)
@@ -55,9 +84,10 @@ class RawTextSignal(
                 ldiff, max_match_distance
             )
 
-        distance = Levenshtein.distance(a, b)
-        return signal_base.SignalComparisonResult.from_simple_dist(
-            distance, max_match_distance
+        distance: int = Levenshtein.distance(a, b)
+        return signal_base.SignalComparisonResult(
+            distance <= max_match_distance,
+            RawTextDistance.from_levenshtein(a, distance),
         )
 
     @classmethod
