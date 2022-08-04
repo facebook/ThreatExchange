@@ -61,7 +61,7 @@ for query_video_id in  query_matched.keys():
     index_matched_percent = (len(index_matched[query_video_id])* 100/ len(video_id_to_vpdq[query_video_id])
 ```
 
-However, this only works for two unique comparison videos, because FAISS will replace the same existing pdqHash. For example, if c1 and c2 sahre a same frame hash SF. When adding to the index in order c1-c2, the search for SF will return the second SF's idx(c2's hash) and we will lose the match result in c1. Thus, a preprocess is required in addition and frame hashes are added into the idx_to_vpdq_and_video_id separately with its video_id:
+However, this only works for two unique comparison videos, because FAISS will replace the same existing pdqHash. For example, if c1 and c2 sahre a same frame hash SF. When adding to the index in order c1-c2, c2's SF will replace c1's SF. Then, the search for SF will only return the second SF's idx(c2's hash) and we will lose the match result in c1. Thus, a preprocess is required before adding and frame hashes are added into the idx_to_vpdq_and_video_id separately with its video_id:
 ```
 unique_vpdq_to_idx = Dict() (vpdq, int)
 unique_frames = set()
