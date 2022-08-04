@@ -4,8 +4,8 @@ import unittest
 import binascii
 import random
 
-from threatexchange.hashing.pdq_utils import *
-from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.pdq.pdq_utils import *
+from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.tests.hashing.utils import (
     get_zero_hash,
     get_random_hash,

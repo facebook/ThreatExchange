@@ -14,7 +14,7 @@ from threatexchange.signal_type.index import (
     IndexMatch,
     T as IndexT,
 )
-from threatexchange.hashing.pdq_faiss_matcher import (
+from threatexchange.signal_type.pdq.pdq_faiss_matcher import (
     PDQMultiHashIndex,
     PDQFlatHashIndex,
     PDQHashIndex,

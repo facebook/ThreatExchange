@@ -118,7 +118,7 @@ class SignalExchangeAPI(
         return new
 
     @classmethod
-    # @t.Final post 3.8
+    @t.final
     def naive_fetch_merge(
         cls,
         old: t.Dict[
@@ -159,30 +159,6 @@ class SignalExchangeAPI(
         """
         raise NotImplementedError
 
-    # TODO - this doens't work for StopNCII which sends the owner as a string
-    #        maybe this should take the full metadata?
-    def resolve_owner(self, id: int) -> str:
-        """
-        Convert an owner ID into a human readable name (if available).
-
-        If empty string is returned, a placeholder will be used instead.
-        """
-        return ""
-
-    def get_own_owner_id(self, collab: TCollabConfig) -> int:
-        """
-        Return the owner ID of this caller. Opinions with that ID are "ours".
-
-        SignalOpinions returned by fetch() where the owner id is
-        the return of get_own_owner_id() are assumed to be owned by you, which
-        can result in some additional metadata being added to matches, for
-        example in the `match` command of the CLI.
-
-        A default implementation is provided that is assumed to not match any
-        real owner ID.
-        """
-        return -1
-
     @abstractmethod
     def fetch_iter(
         self,
@@ -215,20 +191,21 @@ class SignalExchangeAPI(
         """
         raise NotImplementedError
 
-    def report_seen(
-        self,
-        collab: TCollabConfig,
-        s_type: SignalType,
-        signal: str,
-        metadata: state.TFetchedSignalMetadata,
-    ) -> None:
-        """
-        Report that you observed this signal.
+    # TODO - Restore in a future version
+    # def report_seen(
+    #     self,
+    #     collab: TCollabConfig,
+    #     s_type: SignalType,
+    #     signal: str,
+    #     metadata: state.TFetchedSignalMetadata,
+    # ) -> None:
+    #     """
+    #     Report that you observed this signal.
 
-        This is an optional API, and places that use it should catch
-        the NotImplementError.
-        """
-        raise NotImplementedError
+    #     This is an optional API, and places that use it should catch
+    #     the NotImplementError.
+    #     """
+    #     raise NotImplementedError
 
     def report_opinion(
         self,
@@ -247,54 +224,6 @@ class SignalExchangeAPI(
         the NotImplementError.
         """
         raise NotImplementedError
-
-    def report_true_positive(
-        self,
-        collab: TCollabConfig,
-        s_type: t.Type[SignalType],
-        signal: str,
-        metadata: state.TFetchedSignalMetadata,
-    ) -> None:
-        """
-        Report that a previously seen signal was a true positive.
-
-        This is an optional API, and places that use it should catch
-        the NotImplementError.
-        """
-        self.report_opinion(
-            collab,
-            s_type,
-            signal,
-            state.SignalOpinion(
-                owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.POSITIVE_CLASS,
-                tags=set(),
-            ),
-        )
-
-    def report_false_positive(
-        self,
-        collab: TCollabConfig,
-        s_type: t.Type[SignalType],
-        signal: str,
-        metadata: state.TFetchedSignalMetadata,
-    ) -> None:
-        """
-        Report that a previously seen signal is a false positive.
-
-        This is an optional API, and places that use it should catch
-        the NotImplementError.
-        """
-        self.report_opinion(
-            collab,
-            s_type,
-            signal,
-            state.SignalOpinion(
-                owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.NEGATIVE_CLASS,
-                tags=set(),
-            ),
-        )
 
 
 # A convenience helper since mypy can't intuit that bound != t.Any

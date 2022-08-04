@@ -18,7 +18,7 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.video import VideoContent
 import re
 from threatexchange.signal_type import signal_base
-from threatexchange.signal_type.pdq import PdqSignal
+from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
 
 

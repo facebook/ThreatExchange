@@ -162,7 +162,10 @@ class MatchCommand(command_base.Command):
         signal_types = [s for s in signal_types if issubclass(s, types)]
         if self.as_hashes and len(signal_types) > 1:
             raise CommandError(
-                "Too many SignalTypes for --as-hashes. Use also --only-signal", 2
+                f"Error: '{self.content_type.get_name()}' supports more than one SignalType."
+                " for '--hashes' also use '--only-signal' to specify one of "
+                f"{[s.get_name() for s in signal_types]}",
+                2,
             )
 
         logging.info(

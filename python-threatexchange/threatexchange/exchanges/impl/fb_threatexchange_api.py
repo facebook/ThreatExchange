@@ -284,63 +284,6 @@ class FBThreatExchangeSignalExchangeAPI(
                 FBThreatExchangeCheckpoint(highest_time),
             )
 
-    def report_seen(
-        self,
-        collab: FBThreatExchangeCollabConfig,
-        s_type: SignalType,
-        signal: str,
-        metadata: FBThreatExchangeIndicatorRecord,
-    ) -> None:
-        # TODO - this is supported by the API
-        raise NotImplementedError
-
-    def report_opinion(
-        self,
-        collab: FBThreatExchangeCollabConfig,
-        s_type: t.Type[SignalType],
-        signal: str,
-        opinion: state.SignalOpinion,
-    ) -> None:
-        # TODO - this is supported by the API
-        raise NotImplementedError
-
-    def report_true_positive(
-        self,
-        collab: FBThreatExchangeCollabConfig,
-        s_type: t.Type[SignalType],
-        signal: str,
-        metadata: FBThreatExchangeIndicatorRecord,
-    ) -> None:
-        # TODO - this is supported by the API
-        self.report_opinion(
-            collab,
-            s_type,
-            signal,
-            state.SignalOpinion(
-                owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.POSITIVE_CLASS,
-                tags=set(),
-            ),
-        )
-
-    def report_false_positive(
-        self,
-        collab: FBThreatExchangeCollabConfig,
-        s_type: t.Type[SignalType],
-        signal: str,
-        _metadata: FBThreatExchangeIndicatorRecord,
-    ) -> None:
-        self.report_opinion(
-            collab,
-            s_type,
-            signal,
-            state.SignalOpinion(
-                owner=self.get_own_owner_id(collab),
-                category=state.SignalOpinionCategory.NEGATIVE_CLASS,
-                tags=set(),
-            ),
-        )
-
     @classmethod
     def naive_convert_to_signal_type(
         cls,

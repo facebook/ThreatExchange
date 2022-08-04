@@ -1,7 +1,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import random
 from functools import reduce
-from threatexchange.hashing.pdq_utils import PDQ_HEX_STR_LEN, BITS_IN_PDQ
+from threatexchange.signal_type.pdq.pdq_utils import PDQ_HEX_STR_LEN, BITS_IN_PDQ
 
 
 def get_zero_hash() -> str:

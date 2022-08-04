@@ -3,11 +3,21 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import cv2
 import typing as t
+import subprocess
 
+from pathlib import Path
 from dataclasses import dataclass
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
+
+try:
+    # A call to check if ffmpeg is installed for vPDQ
+    # FFMPEG is required to compute vPDQ hash
+    subprocess.check_call(["ffmpeg", "-L"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+except FileNotFoundError as e:
+    raise ImportError("FFMPEG is not installed.vPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
+
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
     cdef struct Hash256:
@@ -98,7 +108,7 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256") -> int:
 
 
 def computeHash(
-    input_video_filename: str,
+    input_video_filename: t.Union[str, Path],
     ffmpeg_path: str = "ffmpeg",
     seconds_per_hash: double = 0,
     verbose: bool = False,
@@ -117,8 +127,17 @@ def computeHash(
     Returns:
         list of vpdq_feature: VPDQ hash from the video
     """
+    str_path = str(input_video_filename)
+    if not Path(str_path).is_file():
+        raise ValueError("Input_video_filename doesn't exist")
+    if seconds_per_hash < 0:
+        raise ValueError("Seconds_per_hash must be non-negative")
+    if downsample_width < 0:
+        raise ValueError("Downsample_width must be non-negative")
+    if downsample_height < 0:
+        raise ValueError("Downsample_height must be non-negative")
     cdef vector[vpdqFeature] vpdq_hash;
-    vid = cv2.VideoCapture(input_video_filename)
+    vid = cv2.VideoCapture(str_path)
     frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
     if downsample_width == 0:
         downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -127,7 +146,7 @@ def computeHash(
         downsample_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     rt = hashVideoFile(
-        input_video_filename.encode("utf-8"),
+        str_path.encode("utf-8"),
         vpdq_hash,
         ffmpeg_path.encode("utf-8"),
         verbose,
