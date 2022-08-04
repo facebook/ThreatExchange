@@ -39,9 +39,9 @@ class URLSignal(
     @classmethod
     def matches_str(
         cls, signal: str, haystack: str
-    ) -> signal_base.HashComparisonResult:
+    ) -> signal_base.SignalComparisonResult:
         # TODO - normalization
-        return signal_base.HashComparisonResult.from_bool(signal == haystack)
+        return signal_base.SignalComparisonResult.from_bool_only(signal == haystack)
 
     @staticmethod
     def get_examples() -> t.List[str]:

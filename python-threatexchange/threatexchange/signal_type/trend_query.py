@@ -76,9 +76,11 @@ class TrendQuerySignal(
         return signal_str
 
     @classmethod
-    def matches_str(cls, hash: str, haystack: str) -> signal_base.HashComparisonResult:
+    def matches_str(
+        cls, hash: str, haystack: str
+    ) -> signal_base.SignalComparisonResult:
         tq = TrendQuery(json.loads(hash))
-        return signal_base.HashComparisonResult.from_bool(tq.matches(haystack))
+        return signal_base.SignalComparisonResult.from_bool_only(tq.matches(haystack))
 
     @classmethod
     def get_index_cls(cls) -> t.Type[index.SignalTypeIndex]:

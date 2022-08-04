@@ -19,7 +19,7 @@ from threatexchange.exchanges.fetch_state import (
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange.signal_type.signal_base import (
     FileHasher,
-    HashComparisonResult,
+    SignalComparisonResult,
     SignalType,
     TrivialSignalTypeIndex,
 )
@@ -67,8 +67,8 @@ class FakeSignal(SignalType, FileHasher):
         return TrivialSignalTypeIndex
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> HashComparisonResult:
-        return HashComparisonResult.from_bool(hash1 == hash2)
+    def compare_hash(cls, hash1: str, hash2: str) -> SignalComparisonResult:
+        return SignalComparisonResult.from_bool_only(hash1 == hash2)
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:

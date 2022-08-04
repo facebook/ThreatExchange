@@ -42,7 +42,7 @@ class RawTextSignal(
     @classmethod
     def matches_str(
         cls, signal: str, haystack: str, pct_diff_threshold: int = 5
-    ) -> signal_base.HashComparisonResult:
+    ) -> signal_base.SignalComparisonResult:
         assert 0 < pct_diff_threshold <= 100
         a = common.normalize_string(signal)
         b = common.normalize_string(haystack)
@@ -51,11 +51,13 @@ class RawTextSignal(
         ldiff = abs(len(a) - len(b))
 
         if ldiff > max_match_distance:
-            return signal_base.HashComparisonResult.from_no_match(ldiff)
+            return signal_base.SignalComparisonResult.from_simple_dist(
+                ldiff, max_match_distance
+            )
 
         distance = Levenshtein.distance(a, b)
-        return signal_base.HashComparisonResult(
-            distance <= max_match_distance, distance
+        return signal_base.SignalComparisonResult.from_simple_dist(
+            distance, max_match_distance
         )
 
     @classmethod

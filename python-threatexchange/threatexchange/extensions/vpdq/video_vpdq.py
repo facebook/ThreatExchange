@@ -83,7 +83,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         return vpdq_to_json(vpdq_hashes)
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> signal_base.HashComparisonResult:
+    def compare_hash(cls, hash1: str, hash2: str) -> signal_base.SignalComparisonResult:
         """If the max of the two match percentages is over VPDQ_CONFIDENT_MATCH_THRESHOLD
         with VPDQ_DISTANCE_THRESHOLD, it's a match."""
         vpdq_hash1 = json_to_vpdq(hash1)
@@ -98,7 +98,8 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
             match_percent.query_match_percent, match_percent.compared_match_percent
         )
         is_match = max_match_percent >= cls.VPDQ_CONFIDENT_MATCH_THRESHOLD
-        return signal_base.HashComparisonResult(is_match, int(max_match_percent))
+        # TODO vPDQ distance type
+        return signal_base.SignalComparisonResult.from_bool_only(is_match)
 
     @staticmethod
     def get_examples() -> t.List[str]:
