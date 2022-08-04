@@ -108,6 +108,21 @@ for c_id in candidate_video_ids:
 
 Beyond pruning frames from candidates, it may be desirable to further prune to just sampled or key frames in candidate videos to control index size, but this may result in videos being incorrectly pruned.
 
+## Install FFmpeg
+
+Before using VPDQ to create hashes, FFmpeg must be installed. (Easier to use if Accessible via the `$PATH` environment variable)
+
+There are a variety of ways to install FFmpeg, such as the [official download links](https://ffmpeg.org/download.html), or using your package manager of choice (e.g. `sudo apt install ffmpeg` on Debian/Ubuntu, `brew install ffmpeg` on OS X, etc.).
+
+Regardless of how FFmpeg is installed, you can check if your environment path is set correctly by running the `ffmpeg` command from the terminal, as in the following example (truncated for brevity):
+
+```
+$ ffmpeg
+ffmpeg version 4.4.2 Copyright (c) 2000-2021 the FFmpeg developers
+```
+
+> **Note**: The actual version information displayed here may vary from one system to another; but if a message such as `ffmpeg: command not found` appears instead of the version information, FFmpeg is not properly installed.
+
 ## CPP Implmentation
 This implementation does not have Pruning Frames and Pruning Candidates.
 ### Getting started
@@ -122,21 +137,6 @@ $ cmake ..
 $ make
 ```
 Then you will have executable "vpdq-hash-video", "match-hashes-byline" and "match-hashes-brute". And two python scripts "vpdq_match.py" and "regtest.py" to run the executables. Please run executable with "-h" for more detailed reference information and usages.
-
-#### Install FFmpeg
-
-Before using VPDQ to create hashes, FFmpeg must be installed. (Easier to use if Accessible via the `$PATH` environment variable)
-
-There are a variety of ways to install FFmpeg, such as the [official download links](https://ffmpeg.org/download.html), or using your package manager of choice (e.g. `sudo apt install ffmpeg` on Debian/Ubuntu, `brew install ffmpeg` on OS X, etc.).
-
-Regardless of how FFmpeg is installed, you can check if your environment path is set correctly by running the `ffmpeg` command from the terminal, as in the following example (truncated for brevity):
-
-```
-$ ffmpeg
-ffmpeg version 4.4.2 Copyright (c) 2000-2021 the FFmpeg developers
-```
-
-> **Note**: The actual version information displayed here may vary from one system to another; but if a message such as `ffmpeg: command not found` appears instead of the version information, FFmpeg is not properly installed.
 
 #### Compute hashes of sample videos and compare to previous outputs
 Hash the provided sample videos and compare the output hashes with sample hashes line by line.
@@ -186,8 +186,50 @@ Matching Target ../ThreatExchange/vpdq/cpp/sampletest/chair-19-sd-bar.txt with .
 
 ```
 
-#### Faiss matching (Work in Progress)
+## vPDQ Python Library
+A python-binding library written in Cython based on the CPP implementation. FFMPEG is also required for vPDQ python library.
 
+### Getting started
+
+#### Local install
+
+```
+cd vpdq
+python vpdq-release.py -i
+```
+
+#### Install from Pip
+(https://pypi.org/project/vpdq/)
+
+```
+pip install --upgrade pip
+pip install vpdq
+```
+
+#### Regression Test
+
+```
+cd vpdq
+py.test
+```
+
+#### Simple Usecase
+```
+import vpdq
+vpdqHashes = vpdq.computeHash("file_path")
+for hash in vpdqHashes:
+  print(str(hash.frame_number) + "," + hash.hex + "," + str(hash.quality) + "," + str(hash.timestamp))
+```
+Sample Output:
+```
+0,e271017837246aaccddea259648fb7d62f435c89d9e99b2497763e216c8d055c,100,0
+1,c0f11178372c6aaccddea259648fbfd62f434c89c9e99b249772be216c8d055c,98,1
+2,c0f10b78372c6aacc5dea25b748fb7d22f434c89c9a9db249772b6216c8d855c,80,2
+3,c0f00b7837247aaccddea25b128fb7d22f434c894da9cb349776b621668dc55c,100,3
+....
+```
+#### Faiss matching (Intergated with python-threatexchange)
+[FAISS](https://github.com/facebookresearch/faiss) has been successfully intergated with vPDQ in python-threatexchange library. The decripiton of algorithm can be found at [python-threatexchange/threatexchange/extension/vpdq/README.md](../python-threatexchange/threatexchange/extensions/vpdq/README.md)
 
 ## Contact
 
