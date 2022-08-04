@@ -2,8 +2,8 @@
 Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions
 ### Code Style
 vPDQ uses [black](https://pypi.org/project/black/) for consistent formatting across
-the projects Python source files and clang-format for formating CPP source files. 
-After installing black and clang-format locally, you can automatically format all the vpdq files by running the following command from the repository root.
+the projects Python source files and clang-format for formatting CPP source files. 
+After installing black and clang-format locally, you can automatically format all the vPDQ files by running the following command from the repository root.
 
 ```shell
 black ./vpdq/
