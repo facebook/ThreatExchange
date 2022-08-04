@@ -199,6 +199,7 @@ python vpdq-release.py -i
 ```
 
 #### Install from Pip
+(https://pypi.org/project/vpdq/)
 
 ```
 pip install --upgrade pip
