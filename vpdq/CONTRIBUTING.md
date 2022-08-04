@@ -1,5 +1,5 @@
 # Contributing
-Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions
+Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions develop locally and open PRs
 ### Code Style
 vPDQ uses [black](https://pypi.org/project/black/) for consistent formatting across
 the projects Python source files and clang-format for formatting CPP source files. 

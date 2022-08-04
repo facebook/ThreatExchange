@@ -1,5 +1,5 @@
 # Contributing
-Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions
+Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions develop locally and open PRs
 ### Code Style
 threatexchange uses [black](https://pypi.org/project/black/) for consistent formatting across
 the projects python source files. After installing black locally, you can automatically
@@ -24,23 +24,6 @@ fastest way to do this is
     make package
     make local_install
     threatexchange --help
-
-## Documenting Changes
-It is important to keep documentation up-to-date. Make sure to add and update
-docstrings where appropriate.
-
-## Submit a PR
-Once you are happy with your changes and ready for a PR, you can submit a PR to
-the main project. In most cases you’ll be looking to compare against the Main
-branch, but there are instances where you’re making changes that you want to go
-into a specific branch. Make sure when submitting your PR that you choose the
-right destination branch.
-
-Once you’ve submitted a PR you're waiting on us. In most cases we like to have
-a core developer get some eyes on the code and the feature to make sure
-there’s no general issues. They might require you to go back and make some more
-changes (simply edit your local branch and push to the branch associated with
-the PR; it will get updated automagically!) .
 
 ## Releasing Changes
 Releases of the library are managed by a [GitHub action](../.github/workflows/python-threatexchange-release.yaml),
