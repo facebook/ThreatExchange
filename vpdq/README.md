@@ -216,10 +216,20 @@ py.test
 #### Simple Usecase
 ```
 import vpdq
-vpdqFeatures = vpdq.computeHash("file_path")
+vpdqHashes = vpdq.computeHash("file_path")
+for hash in vpdqHashes:
+  print(str(hash.frame_number) + "," + hash.hex + "," + str(hash.quality) + "," + str(hash.timestamp))
+```
+Sample Output:
+```
+0,e271017837246aaccddea259648fb7d62f435c89d9e99b2497763e216c8d055c,100,0
+1,c0f11178372c6aaccddea259648fbfd62f434c89c9e99b249772be216c8d055c,98,1
+2,c0f10b78372c6aacc5dea25b748fb7d22f434c89c9a9db249772b6216c8d855c,80,2
+3,c0f00b7837247aaccddea25b128fb7d22f434c894da9cb349776b621668dc55c,100,3
+....
 ```
 #### Faiss matching (Intergated with python-threatexchange)
-[FAISS](https://github.com/facebookresearch/faiss) has been successfully intergated with the vPDQ in python-threatexchange libyrary. The decripiton of algorithm can be found at [python-threatexchange/threatexchange/extension/vpdq/README.md](../python-threatexchange/threatexchange/extensions/vpdq/README.md)
+[FAISS](https://github.com/facebookresearch/faiss) has been successfully intergated with vPDQ in python-threatexchange library. The decripiton of algorithm can be found at [python-threatexchange/threatexchange/extension/vpdq/README.md](../python-threatexchange/threatexchange/extensions/vpdq/README.md)
 
 ## Contact
 
