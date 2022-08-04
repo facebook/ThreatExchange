@@ -10,6 +10,9 @@ import typing as t
 import pickle
 
 from threatexchange.signal_type.index import (
+    IndexMatchUntyped,
+    SignalSimilarityInfoWithIntDistance,
+    SignalSimilarityInfoWithSingleDistance,
     SignalTypeIndex,
     IndexMatch,
     T as IndexT,
@@ -19,6 +22,8 @@ from threatexchange.signal_type.pdq.pdq_faiss_matcher import (
     PDQFlatHashIndex,
     PDQHashIndex,
 )
+
+PDQIndexMatch = IndexMatchUntyped[SignalSimilarityInfoWithIntDistance, IndexT]
 
 
 class PDQIndex(SignalTypeIndex[IndexT]):
@@ -43,7 +48,7 @@ class PDQIndex(SignalTypeIndex[IndexT]):
     def __len__(self) -> int:
         return len(self.local_id_to_entry)
 
-    def query(self, hash: str) -> t.List[IndexMatch[IndexT]]:
+    def query(self, hash: str) -> t.Sequence[PDQIndexMatch[IndexT]]:
         """
         Look up entries against the index, up to the max supported distance.
         """
@@ -55,7 +60,12 @@ class PDQIndex(SignalTypeIndex[IndexT]):
 
         matches = []
         for id, _, distance in results[hash]:
-            matches.append(IndexMatch(distance, self.local_id_to_entry[id][1]))
+            matches.append(
+                IndexMatchUntyped(
+                    SignalSimilarityInfoWithSingleDistance(int(distance)),
+                    self.local_id_to_entry[id][1],
+                )
+            )
         return matches
 
     def add(self, signal_str: str, entry: IndexT) -> None:

@@ -7,9 +7,11 @@ vpdq_faiss.
 
 import typing as t
 import vpdq
+
 from threatexchange.signal_type.index import (
     SignalTypeIndex,
     IndexMatch,
+    SignalSimilarityInfoWithIntDistance,
     T as IndexT,
 )
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
@@ -32,7 +34,7 @@ class VPDQIndexMatch(IndexMatch[IndexT]):
         compared_match_percent: float,
         metadata: IndexT,
     ) -> None:
-        super().__init__(distance, metadata)
+        super().__init__(SignalSimilarityInfoWithIntDistance(distance), metadata)
         self.query_match_percent = query_match_percent
         self.compared_match_percent = compared_match_percent
 

@@ -188,7 +188,6 @@ class MatchCommand(command_base.Command):
         for path in self.files:
             for s_type, index in indices:
                 seen = set()  # TODO - maybe take the highest certainty?
-                results = []
                 if self.as_hashes:
                     results = _match_hashes(path, s_type, index)
                 else:
@@ -205,7 +204,7 @@ class MatchCommand(command_base.Command):
 
 def _match_file(
     path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
-) -> t.List[IndexMatch]:
+) -> t.Sequence[IndexMatch]:
     if issubclass(s_type, MatchesStr):
         return index.query(path.read_text())
     assert issubclass(s_type, FileHasher)
@@ -214,8 +213,8 @@ def _match_file(
 
 def _match_hashes(
     path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
-) -> t.List[IndexMatch]:
-    ret = []
+) -> t.Sequence[IndexMatch]:
+    ret: t.List[IndexMatch] = []
     for hash in path.read_text().splitlines():
         hash = hash.strip()
         if not hash:

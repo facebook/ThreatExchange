@@ -34,7 +34,7 @@ class PDQHashIndex(ABC):
         super().__init__()
 
     @abstractmethod
-    def hash_at(self, idx: int):
+    def hash_at(self, idx: int) -> str:
         """
         Returns the hash located at the given index. The index order is determined by the initial order of hashes used to
         create this index.
@@ -105,7 +105,7 @@ class PDQHashIndex(ABC):
         self,
         queries: t.Sequence[str],
         threshhold: int,
-    ):
+    ) -> t.Dict[str, t.List[t.Tuple[int, str, numpy.float32]]]:
         """
         Search method that return a mapping from query_str =>  (id, hash, distance)
 
@@ -184,7 +184,7 @@ class PDQFlatHashIndex(PDQHashIndex):
         i64_ids = list(map(uint64_to_int64, custom_ids))
         self.faiss_index.add_with_ids(numpy.array(vectors), numpy.array(i64_ids))
 
-    def hash_at(self, idx: int):
+    def hash_at(self, idx: int) -> str:
         i64_id = uint64_to_int64(idx)
         vector = self.faiss_index.reconstruct(i64_id)
         return binascii.hexlify(vector.tobytes()).decode()
@@ -267,7 +267,7 @@ class PDQMultiHashIndex(PDQHashIndex):
         self.mih_index.nflip = threshhold // self.mih_index.nhash
         return super().search_with_distance_in_result(queries, threshhold)
 
-    def hash_at(self, idx: int):
+    def hash_at(self, idx: int) -> str:
         i64_id = uint64_to_int64(idx)
         if self.index_rev_map:
             index_id = self.index_rev_map[i64_id]

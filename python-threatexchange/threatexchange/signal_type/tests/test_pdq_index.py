@@ -5,8 +5,10 @@ import pickle
 import typing as t
 import functools
 
-from threatexchange.signal_type.index import IndexMatch
-from threatexchange.signal_type.pdq.pdq_index import PDQIndex
+from threatexchange.signal_type.index import (
+    SignalSimilarityInfoWithIntDistance,
+)
+from threatexchange.signal_type.pdq.pdq_index import PDQIndex, PDQIndexMatch
 
 test_entries = [
     (
@@ -61,34 +63,39 @@ class TestPDQIndex(unittest.TestCase):
     def setUp(self):
         self.index = PDQIndex.build(test_entries)
 
-    def assertEqualPDQIndexMatchResults(self, result, expected):
+    def assertEqualPDQIndexMatchResults(
+        self, result: t.List[PDQIndexMatch], expected: t.List[PDQIndexMatch]
+    ):
         self.assertEqual(
             len(result), len(expected), "search results not of expected length"
         )
+
+        accum_type = t.Dict[int, t.Set[int]]
 
         # Between python 3.8.6 and 3.8.11, something caused the order of results
         # from the index to change. This was noticed for items which had the
         # same distance. To allow for this, we convert result and expected
         # arrays from
-        #   [IndexMatch, IndexMatch] to { distance: <set of IndexMatch.metadata hash> }
-        # This allows you to compare [IndexMatch A, IndexMatch B] with
-        # [IndexMatch B, IndexMatch A] as long as A.distance == B.distance.
-
-        def quality_indexed_dict_reducer(acc, item):
-            acc[item.distance] = acc.get(item.distance, set())
+        #   [PDQIndexMatch, PDQIndexMatch] to { distance: <set of PDQIndexMatch.metadata hash> }
+        # This allows you to compare [PDQIndexMatch A, PDQIndexMatch B] with
+        # [PDQIndexMatch B, PDQIndexMatch A] as long as A.distance == B.distance.
+        def quality_indexed_dict_reducer(
+            acc: accum_type, item: PDQIndexMatch
+        ) -> accum_type:
+            acc[item.match_info.distance] = acc.get(item.match_info.distance, set())
             # Instead of storing the unhashable item.metadata dict, store its
             # hash so we can compare using self.assertSetEqual
-            acc[item.distance].add(hash(frozenset(item.metadata)))
+            acc[item.match_info.distance].add(hash(frozenset(item.metadata)))
             return acc
 
         # Convert results to distance -> set of metadata map
-        distance_to_result_items_map: t.Dict[int, t.Set[t.Dict]] = functools.reduce(
-            quality_indexed_dict_reducer, result, dict()
+        distance_to_result_items_map: accum_type = functools.reduce(
+            quality_indexed_dict_reducer, result, {}
         )
 
         # Convert expected to distance -> set of metadata map
-        distance_to_expected_items_map: t.Dict[int, t.Set[t.Dict]] = functools.reduce(
-            quality_indexed_dict_reducer, expected, dict()
+        distance_to_expected_items_map: accum_type = functools.reduce(
+            quality_indexed_dict_reducer, expected, {}
         )
 
         assert len(distance_to_expected_items_map) == len(
@@ -106,7 +113,14 @@ class TestPDQIndex(unittest.TestCase):
         result = self.index.query(entry_hash)
         self.assertEqualPDQIndexMatchResults(
             result,
-            [IndexMatch(0, test_entries[1][1]), IndexMatch(16, test_entries[0][1])],
+            [
+                PDQIndexMatch(
+                    SignalSimilarityInfoWithIntDistance(0), test_entries[1][1]
+                ),
+                PDQIndexMatch(
+                    SignalSimilarityInfoWithIntDistance(16), test_entries[0][1]
+                ),
+            ],
         )
 
     def test_search_index_with_no_match(self):
@@ -130,5 +144,12 @@ class TestPDQIndex(unittest.TestCase):
         result = reconstructed_index.query(query)
         self.assertEqualPDQIndexMatchResults(
             result,
-            [IndexMatch(0, test_entries[1][1]), IndexMatch(16, test_entries[0][1])],
+            [
+                PDQIndexMatch(
+                    SignalSimilarityInfoWithIntDistance(0), test_entries[1][1]
+                ),
+                PDQIndexMatch(
+                    SignalSimilarityInfoWithIntDistance(16), test_entries[0][1]
+                ),
+            ],
         )
