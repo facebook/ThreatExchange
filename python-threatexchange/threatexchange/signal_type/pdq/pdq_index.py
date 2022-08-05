@@ -5,16 +5,12 @@ Implementation of SignalTypeIndex abstraction for PDQ by wrapping
 hashing.pdq_faiss_matcher.
 """
 
-import collections
 import typing as t
-import pickle
 
 from threatexchange.signal_type.index import (
     IndexMatchUntyped,
     SignalSimilarityInfoWithIntDistance,
-    SignalSimilarityInfoWithSingleDistance,
     SignalTypeIndex,
-    IndexMatch,
     T as IndexT,
 )
 from threatexchange.signal_type.pdq.pdq_faiss_matcher import (
@@ -62,7 +58,7 @@ class PDQIndex(SignalTypeIndex[IndexT]):
         for id, _, distance in results[hash]:
             matches.append(
                 IndexMatchUntyped(
-                    SignalSimilarityInfoWithSingleDistance(int(distance)),
+                    SignalSimilarityInfoWithIntDistance(int(distance)),
                     self.local_id_to_entry[id][1],
                 )
             )
