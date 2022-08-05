@@ -66,9 +66,6 @@ def _build_collab_config(
     collab_config_class: str, attributes_serialized: str
 ) -> CollaborationConfigBase:
     cls = import_class(collab_config_class)
-    # Fields not in the constructor get missed out. eg.
-    # FBThreatExchangeCollabConfig.api
-    init_field_names = [f.name for f in fields(cls) if f.init]
     return dacite.from_dict(
         cls,
         data={
@@ -76,7 +73,6 @@ def _build_collab_config(
             for (k, v) in json.loads(
                 attributes_serialized,
             ).items()
-            if k in init_field_names
         },
         config=dacite.Config(cast=[Enum, t.Set]),
     )
