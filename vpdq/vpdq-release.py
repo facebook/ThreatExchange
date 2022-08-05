@@ -37,7 +37,7 @@ def main():
     shutil.copy(DIR / MANIFEST, PARENTDIR / MANIFEST)
     if args.release:
         print("build vpdq source distribution")
-        run_command(["python3", "setup.py", "sdist", "bdist_wheel"], PARENTDIR)
+        run_command(["python3", "setup.py", "sdist"], PARENTDIR)
         if (DIR / DIST).exists() and (DIR / DIST).is_dir():
             shutil.rmtree(DIR / DIST)
         shutil.move(PARENTDIR / DIST, DIR / DIST)
