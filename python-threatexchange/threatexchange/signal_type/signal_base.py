@@ -208,7 +208,10 @@ class TrivialSignalTypeIndex(index.SignalTypeIndex[index.T]):
         self.state: t.Dict[str, t.List[index.T]] = {}
 
     def query(self, query: str) -> t.List[index.IndexMatch[index.T]]:
-        return [index.IndexMatch(0, meta) for meta in self.state.get(query, [])]
+        return [
+            index.IndexMatch(index.SignalSimilarityInfo(), meta)
+            for meta in self.state.get(query, [])
+        ]
 
     def add(self, signal_str: str, entry: index.T) -> None:
         l = self.state.get(signal_str)
@@ -237,7 +240,7 @@ class TrivialLinearSearchHashIndex(index.SignalTypeIndex[index.T]):
         for hash, payload in self.state:
             res = self._SIGNAL_TYPE.compare_hash(hash, query_hash)
             if res.match:
-                ret.append(index.IndexMatch(0, payload))
+                ret.append(index.IndexMatch(res.distance, payload))
         return ret
 
     def add(self, signal_str: str, entry: index.T) -> None:
@@ -263,7 +266,7 @@ class TrivialLinearSearchMatchIndex(index.SignalTypeIndex[index.T]):
         for signal, payload in self.state:
             res = self._SIGNAL_TYPE.matches_str(signal, query_hash)
             if res.match:
-                ret.append(index.IndexMatch(0, payload))
+                ret.append(index.IndexMatch(res.distance, payload))
         return ret
 
     def add(self, signal_str: str, entry: index.T) -> None:

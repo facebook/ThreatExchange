@@ -118,7 +118,9 @@ class TrendQueryIndex(index.SignalTypeIndex[index.T]):
         ret: t.List[index.IndexMatch[index.T]] = []
         for tq, values in self.state.values():
             if tq.matches(hash):
-                ret.extend(index.IndexMatch(0, v) for v in values)
+                ret.extend(
+                    index.IndexMatch(index.SignalSimilarityInfo(), v) for v in values
+                )
         return ret
 
     def add(self, hash: str, value: index.T) -> None:

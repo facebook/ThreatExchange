@@ -25,6 +25,7 @@ import typing as t
 
 
 T = t.TypeVar("T")
+S_Co = t.TypeVar("S_Co", covariant=True, bound="SignalSimilarityInfo")
 CT = t.TypeVar("CT", bound="Comparable")
 
 
@@ -107,7 +108,7 @@ class SignalSimilarityInfoWithSingleDistance(t.Generic[CT], SignalSimilarityInfo
 SignalSimilarityInfoWithIntDistance = SignalSimilarityInfoWithSingleDistance[int]
 
 
-class IndexMatch(t.Generic[T]):
+class IndexMatchUntyped(t.Generic[S_Co, T]):
     """
     Wrapper around a match to the index, which may or may not
     be an actual match based on the distance settings for a source.
@@ -119,13 +120,16 @@ class IndexMatch(t.Generic[T]):
     NamedTuple can't be made generic, so here's an equivalent
     """
 
-    __slots__ = ["distance", "metadata"]
-    distance: int
+    __slots__ = ["match_info", "metadata"]
+    match_info: S_Co
     metadata: T
 
-    def __init__(self, distance: int, metadata: T) -> None:
-        self.distance = distance
+    def __init__(self, match_info: S_Co, metadata: T) -> None:
+        self.match_info = match_info
         self.metadata = metadata
+
+
+IndexMatch = IndexMatchUntyped[SignalSimilarityInfo, T]
 
 
 Self = t.TypeVar("Self", bound="SignalTypeIndex")
@@ -177,7 +181,7 @@ class SignalTypeIndex(t.Generic[T]):
     """
 
     # TODO - this doesn't handle bytes queries / BytesHashers
-    def query(self, query: str) -> t.List[IndexMatch[T]]:
+    def query(self, query: str) -> t.Sequence[IndexMatch[T]]:
         """
         Look up entries against the index, up to the max supported distance.
 
