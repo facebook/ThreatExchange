@@ -106,6 +106,13 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
         action="store_true",
         help="Remove all state, bringing you back to a fresh install",
     )
+    ap.add_argument(
+        "--verbose",
+        "-v",
+        action="count",
+        default=0,
+        help="display logging output (repeat for more)",
+    )
     subparsers = ap.add_subparsers(
         dest="toplevel_command_name", title="verbs", help="which action to do"
     )
@@ -317,16 +324,18 @@ def _get_settings(
     )
 
 
-def _setup_logging():
+def _setup_logging(level_str: str, *, initial: bool = False) -> None:
     level = logging.DEBUG
-    verbose = os.getenv("TX_VERBOSE", "0")
-    if verbose == "0":
+    if level_str == "0":
         level = logging.CRITICAL
-    if verbose == "1":
+    elif level_str == "1":
         level = logging.INFO
-    logging.basicConfig(
-        format="%(asctime)s %(levelname).1s] %(message)s", level=level, force=True
-    )
+    if initial:
+        logging.basicConfig(
+            format="%(asctime)s %(levelname).1s] %(message)s", level=level, force=True
+        )
+    else:
+        logging.getLogger().setLevel(level)
 
 
 def inner_main(
@@ -340,6 +349,8 @@ def inner_main(
     settings, extensions = _get_settings(config, state_dir)
     ap = get_argparse(settings)
     namespace = ap.parse_args(args)
+    if namespace.verbose:
+        _setup_logging(str(namespace.verbose))
     if namespace.factory_reset:
         print("Resetting to factory defaults.", file=sys.stderr)
         shutil.rmtree(str(state_dir.expanduser().absolute()))
@@ -354,7 +365,7 @@ def inner_main(
 
 def main():
     """The main called by pip"""
-    _setup_logging()
+    _setup_logging(os.getenv("TX_VERBOSE", "0"), initial=True)
     try:
         inner_main()
     except base.CommandError as ce:

@@ -30,6 +30,9 @@ class FetchCommand(command_base.Command):
 
     Some APIs require that you regularly re-fetch them within some number
     of days or else the stored data becomes invalid.
+
+    This command is laconic by default, try `threatexchange -v fetch` for
+    more granular details.
     """
 
     PROGRESS_PRINT_INTERVAL_SEC = 30
