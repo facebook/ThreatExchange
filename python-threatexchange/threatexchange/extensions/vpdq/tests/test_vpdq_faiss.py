@@ -297,10 +297,10 @@ def test_duplicate_video_matches():
     assert compare_match_result(res[1], VPDQIndexMatch(100, 50, 100, VIDEO2_META_DATA))
 
 
-def compare_match_result(res1, res2) -> bool:
+def compare_match_result(res1: VPDQIndexMatch, res2: VPDQIndexMatch) -> bool:
     return (
         res1.compared_match_percent == res2.compared_match_percent
         and res1.query_match_percent == res2.query_match_percent
         and res1.metadata == res2.metadata
-        and res1.distance == res2.distance
+        and res1.match_info == res2.match_info
     )
