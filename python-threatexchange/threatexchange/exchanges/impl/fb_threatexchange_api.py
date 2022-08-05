@@ -278,14 +278,11 @@ class FBThreatExchangeSignalExchangeAPI(
         )
         type_mapping = _make_indicator_type_mapping(supported_signal_types)
 
-        batch: t.List[ThreatUpdateJSON] = []
-        highest_time = 0
-        for fetch in cursor:
-            for update in fetch:
-                # TODO catch errors here
-                batch.append(update)
-                # Is supposed to be strictly increasing
-                highest_time = max(update.time, highest_time)
+        highest_time = start_time or 0
+        batch: t.List[ThreatUpdateJSON]
+        for batch in cursor:
+            assert batch, "empty update?"
+            highest_time = max(highest_time, max(update.time for update in batch))
 
             updates = {}
             for u in batch:
