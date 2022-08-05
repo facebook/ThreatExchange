@@ -117,10 +117,10 @@ class DatasetCommand(command_base.Command):
         )
         csv_mutual_group = ap.add_mutually_exclusive_group()
         csv_mutual_group.add_argument(
-            "--signals-only",
+            "--print-signals-only",
             "-S",
             action="store_true",
-            help="[-P] only print signals",
+            help="[-P] print type and signal only, no metadata",
         )
         csv_mutual_group.add_argument(
             "--csv",
@@ -144,7 +144,7 @@ class DatasetCommand(command_base.Command):
         only_tags: t.Sequence[str] = (),
         # Print stuff
         print_zeroes: bool = False,
-        signals_only: bool = False,
+        print_signals_only: bool = False,
         csv: bool = False,
     ) -> None:
         self.clear_indices = clear_indices
@@ -160,7 +160,7 @@ class DatasetCommand(command_base.Command):
         self.only_tags = set(only_tags)
 
         self.print_zeroes = print_zeroes
-        self.signals_only = signals_only
+        self.print_signals_only = print_signals_only
         self.csv = csv
 
     def execute(self, settings: CLISettings) -> None:
@@ -255,7 +255,7 @@ class DatasetCommand(command_base.Command):
 
         for signal_type, per_signal in signals.items():
             for signal_str, collab_signals in per_signal.items():
-                if self.signals_only:
+                if self.print_signals_only:
                     print_fn("", signal_type, signal_str, None)
                     continue
                 for collab_name, metadata in collab_signals:
@@ -295,12 +295,12 @@ class DatasetCommand(command_base.Command):
         signal_str: str,
         metadata: t.Optional[FetchedSignalMetadata],
     ) -> None:
-        if not self.signals_only and len(self.only_collabs) != 1:
+        if not self.print_signals_only and len(self.only_collabs) != 1:
             print(repr(collab_name), end=" ")
         if len(self.only_signals) != 1:
             print(signal_type.get_name(), end=" ")
         print(signal_str, end="")
-        if not self.signals_only:
+        if not self.print_signals_only:
             print("", metadata, end="")
         print()
 
