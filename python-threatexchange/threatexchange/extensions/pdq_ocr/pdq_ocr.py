@@ -62,7 +62,7 @@ class PdqOcrSignal(
         hash1: str,
         hash2: str,
         pdq_dist_threshold: int = PDQ_PLUS_OCR_CONFIDENT_MATCH_THRESHOLD,
-    ) -> signal_base.HashComparisonResult:
+    ) -> signal_base.SignalComparisonResult:
         assert 0 <= pdq_dist_threshold <= 256
         pdq_hash_1, _, ocr_text_1 = hash1.partition(",")
         pdq_hash_2, _, ocr_text_2 = hash2.partition(",")
@@ -76,7 +76,9 @@ class PdqOcrSignal(
         text_result = RawTextSignal.matches_str(
             ocr_text_1, ocr_text_2, cls.LEVENSHTEIN_DISTANCE_PERCENT_THRESHOLD
         )
-        return signal_base.HashComparisonResult(text_result.match, pdq_result.distance)
+        return signal_base.SignalComparisonResult(
+            text_result.match, pdq_result.distance
+        )
 
     @staticmethod
     def get_examples() -> t.List[str]:

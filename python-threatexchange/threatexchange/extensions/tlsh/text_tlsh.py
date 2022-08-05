@@ -51,9 +51,9 @@ class TextTLSHSignal(signal_base.SimpleSignalType, signal_base.TextHasher):
         hash1: str,
         hash2: str,
         tlsh_threshold: int = TLSH_CONFIDENT_MATCH_THRESHOLD,
-    ) -> signal_base.HashComparisonResult:
-        dist = tlsh.diffxlen(hash1, hash2)
-        return signal_base.HashComparisonResult.from_dist(dist, tlsh_threshold)
+    ) -> signal_base.SignalComparisonResult:
+        dist: int = tlsh.diffxlen(hash1, hash2)
+        return signal_base.SignalComparisonResult.from_simple_dist(dist, tlsh_threshold)
 
     @staticmethod
     def get_examples() -> t.List[str]:

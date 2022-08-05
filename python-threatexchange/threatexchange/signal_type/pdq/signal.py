@@ -66,9 +66,11 @@ class PdqSignal(
         hash1: str,
         hash2: str,
         pdq_dist_threshold: int = PDQ_CONFIDENT_MATCH_THRESHOLD,
-    ) -> signal_base.HashComparisonResult:
+    ) -> signal_base.SignalComparisonResult:
         dist = simple_distance(hash1, hash2)
-        return signal_base.HashComparisonResult.from_dist(dist, pdq_dist_threshold)
+        return signal_base.SignalComparisonResult.from_simple_dist(
+            dist, pdq_dist_threshold
+        )
 
     @classmethod
     def hash_from_bytes(cls, bytes_: bytes) -> str:

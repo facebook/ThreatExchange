@@ -120,11 +120,10 @@ class MatchesStrAutoTest(SignalTypeAutoTest):
 
     def test_matches_str(self):
         for t in self.get_matches_str_cases():
-            print(t)
             signal, haystack = t[:2]
             expect_match = t[2] if len(t) > 2 else True
 
             result = self.TYPE.matches_str(signal, haystack)
             assert result.match == expect_match, f"Case: {t}"
             if len(t) > 3:
-                assert result.distance == t[3], f"Case: {t}"
+                assert result.distance.distance == t[3], f"Case: {t}"

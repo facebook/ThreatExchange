@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
@@ -21,7 +20,6 @@ At scale, the flow for matching looks something like:
 """
 
 from dataclasses import dataclass
-from functools import total_ordering
 import pickle
 import typing as t
 
@@ -46,7 +44,22 @@ class SignalSimilarityInfo:
 
     This can be used for logging and debugging, but could also be re-used
     as an argument to match functions to use as thresholds.
+
+    This information often is treated as a distance, and so comparison
+    operators
     """
+
+    def __lt__(self, other: t.Any) -> bool:
+        if isinstance(other, SignalSimilarityInfoWithSingleDistance):
+            return False  # < operator valid, but by default, not ordered
+        return NotImplemented
+
+    def __le__(self, other: t.Any) -> bool:
+        # Provide a default impl
+        return self < other or self == other
+
+    # # Don't define __gt__ or __ge__ because of unexpected interactions with
+    # # functools.total_ordering
 
     def pretty_str(self) -> str:
         """
@@ -61,7 +74,7 @@ class SignalSimilarityInfo:
 
 
 @dataclass
-# @total_ordering
+# @functools.total_ordering
 # Can't use yet, need to move library mypy past
 # https://github.com/python/mypy/issues/11728
 class SignalSimilarityInfoWithSingleDistance(t.Generic[CT], SignalSimilarityInfo):
@@ -70,17 +83,25 @@ class SignalSimilarityInfoWithSingleDistance(t.Generic[CT], SignalSimilarityInfo
     def pretty_str(self) -> str:
         return str(self.distance)
 
-    def __lt__(self, other: t.Any) -> bool:
+    def _comparable(
+        self, other: t.Any
+    ) -> t.Optional["SignalSimilarityInfoWithSingleDistance[CT]"]:
         if isinstance(other, SignalSimilarityInfoWithSingleDistance):
             if isinstance(self.distance, other.distance.__class__):
-                return self.distance < other.distance
-        return NotImplemented
+                return other
+        return None
+
+    def __lt__(self, other: t.Any) -> bool:
+        checked = self._comparable(other)
+        if checked is None:
+            return NotImplemented
+        return self.distance < checked.distance
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, SignalSimilarityInfoWithSingleDistance):
-            if isinstance(self.distance, other.distance.__class__):
-                return self.distance == other.distance
-        return super().__eq__(other)
+        checked = self._comparable(other)
+        if checked is None:
+            return super().__eq__(other)
+        return self.distance == checked.distance
 
 
 SignalSimilarityInfoWithIntDistance = SignalSimilarityInfoWithSingleDistance[int]

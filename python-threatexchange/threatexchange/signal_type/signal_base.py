@@ -13,25 +13,44 @@ from threatexchange.content_type import content_base
 from threatexchange.signal_type import index
 
 
-class HashComparisonResult(t.NamedTuple):
+class SignalComparisonResult(t.NamedTuple):
     match: bool
-    distance: int  # TODO - remove
+    distance: index.SignalSimilarityInfo
 
     @classmethod
-    def from_match(cls, dist: int = 0) -> "HashComparisonResult":
-        return cls(True, dist)
+    def from_bool_only(cls, matches: bool) -> "SignalComparisonResult":
+        """For SignalTypes with no distance"""
+        return cls.from_match_only() if matches else cls.from_no_match_only()
 
     @classmethod
-    def from_no_match(cls, dist: int = 1) -> "HashComparisonResult":
-        return cls(False, dist)
+    def from_match_only(cls) -> "SignalComparisonResult":
+        """For SignalTypes with no distance"""
+        return cls(True, index.SignalSimilarityInfo())
 
     @classmethod
-    def from_dist(cls, dist: int, threshold: int) -> "HashComparisonResult":
-        return cls(dist <= threshold, dist)
+    def from_no_match_only(cls) -> "SignalComparisonResult":
+        """For SignalTypes with no distance"""
+        return cls(False, index.SignalSimilarityInfo())
 
     @classmethod
-    def from_bool(cls, matches: bool) -> "HashComparisonResult":
-        return cls.from_match() if matches else cls.from_no_match()
+    def from_simple_dist(
+        cls, dist: index.CT, threshold: index.CT
+    ) -> "SignalComparisonResult":
+        """For SignalTypes with simple distance"""
+        return cls(
+            dist <= threshold,
+            index.SignalSimilarityInfoWithSingleDistance[index.CT](dist),
+        )
+
+    @classmethod
+    def from_dist(
+        cls, dist: index.SignalSimilarityInfo, threshold: index.SignalSimilarityInfo
+    ) -> "SignalComparisonResult":
+        """For SignalTypes w"""
+        return cls(
+            dist <= threshold,
+            dist,
+        )
 
 
 class SignalType:
@@ -73,7 +92,7 @@ class SignalType:
         raise NotImplementedError
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> HashComparisonResult:
+    def compare_hash(cls, hash1: str, hash2: str) -> SignalComparisonResult:
         """
         Compare the distance of two hashes, the key operation for matching.
 
@@ -139,7 +158,7 @@ class TextHasher(FileHasher):
 
 class MatchesStr:
     @classmethod
-    def matches_str(cls, signal: str, haystack: str) -> HashComparisonResult:
+    def matches_str(cls, signal: str, haystack: str) -> SignalComparisonResult:
         """
         Compare the distance of two hashes, the key operation for matching.
 
@@ -176,8 +195,8 @@ class SimpleSignalType(SignalType):
     """
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> HashComparisonResult:
-        return HashComparisonResult.from_bool(hash1 == hash2)
+    def compare_hash(cls, hash1: str, hash2: str) -> SignalComparisonResult:
+        return SignalComparisonResult.from_bool_only(hash1 == hash2)
 
 
 class TrivialSignalTypeIndex(index.SignalTypeIndex[index.T]):
@@ -218,7 +237,7 @@ class TrivialLinearSearchHashIndex(index.SignalTypeIndex[index.T]):
         for hash, payload in self.state:
             res = self._SIGNAL_TYPE.compare_hash(hash, query_hash)
             if res.match:
-                ret.append(index.IndexMatch(res.distance, payload))
+                ret.append(index.IndexMatch(0, payload))
         return ret
 
     def add(self, signal_str: str, entry: index.T) -> None:
@@ -244,7 +263,7 @@ class TrivialLinearSearchMatchIndex(index.SignalTypeIndex[index.T]):
         for signal, payload in self.state:
             res = self._SIGNAL_TYPE.matches_str(signal, query_hash)
             if res.match:
-                ret.append(index.IndexMatch(res.distance, payload))
+                ret.append(index.IndexMatch(0, payload))
         return ret
 
     def add(self, signal_str: str, entry: index.T) -> None:
