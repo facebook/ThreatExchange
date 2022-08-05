@@ -122,7 +122,7 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
             return
         state.delta = delta
 
-    def flush(self):
+    def flush(self) -> None:
         for collab_name, state in self._state.items():
             if state.dirty:
                 assert state.delta is not None

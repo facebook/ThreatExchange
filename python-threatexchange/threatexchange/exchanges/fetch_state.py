@@ -43,7 +43,9 @@ class FetchCheckpointBase:
         return None
 
 
-TFetchCheckpoint = t.TypeVar("TFetchCheckpoint", bound=FetchCheckpointBase)
+TFetchCheckpoint = t.TypeVar(
+    "TFetchCheckpoint", covariant=True, bound=FetchCheckpointBase
+)
 
 
 @dataclass
@@ -211,7 +213,7 @@ class FetchedSignalMetadata:
 
 
 TFetchedSignalMetadata = t.TypeVar(
-    "TFetchedSignalMetadata", bound=FetchedSignalMetadata
+    "TFetchedSignalMetadata", covariant=True, bound=FetchedSignalMetadata
 )
 
 

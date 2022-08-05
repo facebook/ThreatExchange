@@ -11,6 +11,7 @@ from threatexchange.exchanges.collab_config import (
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     SignalExchangeAPIWithSimpleUpdates,
+    TSignalExchangeAPICls,
 )
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
@@ -142,7 +143,7 @@ class FakeNoConversionAPI(
 
 
 class FakeFetchStore(SimpleFetchedStateStore):
-    def __init__(self, api_cls) -> None:
+    def __init__(self, api_cls: TSignalExchangeAPICls) -> None:
         super().__init__(api_cls)
         self._fake_storage: t.Dict[str, FetchDeltaTyped] = {}
 
@@ -159,11 +160,11 @@ class FakeFetchStore(SimpleFetchedStateStore):
         self._fake_storage[collab_name] = delta
 
 
-def md5(n):
+def md5(n: int) -> str:
     return f"{n:032x}"
 
 
-def test_test_impls():
+def test_test_impls() -> None:
     """
     Since we're faking these interfaces, lets make sure they behave as expected
     """
@@ -203,7 +204,7 @@ def test_test_impls():
     }
 
 
-def test_update_stream_delta():
+def test_update_stream_delta() -> None:
     t1 = "tag"
     t2 = "other"
     t3 = "foo"
@@ -376,9 +377,9 @@ def test_update_stream_delta():
         assert store.get_checkpoint(collab) == delta.checkpoint
 
 
-def test_simple_update_delta():
-    def key(n):
-        return (VideoMD5Signal.get_name(), md5(n))
+def test_simple_update_delta() -> None:
+    def key(n: int) -> t.Tuple[str, str]:
+        return VideoMD5Signal.get_name(), md5(n)
 
     t1 = "tag"
     t2 = "other"
@@ -432,7 +433,7 @@ def test_simple_update_delta():
             FakeSignalMetadata(
                 [
                     SignalOpinionWithOwner(
-                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t, 3}
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}, 1
                     ),
                     SignalOpinionWithOwner(
                         SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
@@ -475,7 +476,7 @@ def test_simple_update_delta():
             md5(1): FakeSignalMetadata(
                 [
                     SignalOpinionWithOwner(
-                        1, SignalOpinionCategory.INVESTIGATION_SEED, {t2, t, 3}
+                        SignalOpinionCategory.INVESTIGATION_SEED, {t2, t3}, 1
                     ),
                     SignalOpinionWithOwner(
                         SignalOpinionCategory.INVESTIGATION_SEED, {t3}, 2
