@@ -10,7 +10,7 @@ include pdq/cpp/io/hashio.h
 include pdq/cpp/downscaling/downscaling.h
 include pdq/cpp/hashing/torben.h
 include vpdq/LICENSE.txt
-include vpdq/README.md
+include vpdq/python/README.md
 include vpdq/version.txt
 include vpdq/cpp/Makefile
 recursive-include vpdq *.py *pyx *.cpp *.h

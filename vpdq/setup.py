@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 DIR = Path(__file__).parent
-read_me = DIR / Path("vpdq/README.md")
+read_me = DIR / Path("vpdq/python/README.md")
 long_description = read_me.read_text()
 version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
