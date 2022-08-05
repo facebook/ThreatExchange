@@ -3,7 +3,12 @@
 import pytest
 import typing as t
 
-from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.signal_type.signal_base import (
+    FileHasher,
+    MatchesStr,
+    SignalType,
+    TextHasher,
+)
 
 
 class SignalTypeHashTest:
@@ -63,7 +68,10 @@ class SignalTypeAutoTest(SignalTypeHashTest):
         assert examples, f"Add some examples to {self.TYPE.__name__}.get_examples()"
         for example in examples:
             self.assert_signal_str_valid(example)
-            assert self.TYPE.compare_hash(example, example).match, f"Case: {example}"
+            if issubclass(self.TYPE, FileHasher):
+                assert self.TYPE.compare_hash(
+                    example, example
+                ).match, f"Case: {example}"
 
     def get_validate_hash_cases(self) -> t.Iterable[THashValidateCase]:
         raise NotImplementedError
@@ -83,6 +91,7 @@ class SignalTypeAutoTest(SignalTypeHashTest):
 
     def test_compare_hash(self):
         for t in self.get_compare_hash_cases():
+            assert issubclass(self.TYPE, FileHasher)  # For typing
             a, b = t[:2]
             expect_match = t[2] if len(t) > 2 else True
 
@@ -101,6 +110,7 @@ class TextHasherAutoTest(SignalTypeAutoTest):
         raise NotImplementedError
 
     def test_hash_from_str(self):
+        assert issubclass(self.TYPE, TextHasher)  # For typing
         for s, hashed in self.get_hashes_from_str_cases():
             assert self.TYPE.hash_from_str(s) == hashed, f"Case: {(s, hashed)}"
 

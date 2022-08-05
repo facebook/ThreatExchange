@@ -16,10 +16,7 @@ class TestRawTextSignal(MatchesStrAutoTest):
         ]
 
     def get_compare_hash_cases(self):
-        return [
-            ("a", "a"),
-            ("a", "b", False),
-        ]
+        return []
 
     def get_matches_str_cases(self):
         return [

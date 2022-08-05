@@ -82,10 +82,12 @@ class TestPDQIndex(unittest.TestCase):
         def quality_indexed_dict_reducer(
             acc: accum_type, item: PDQIndexMatch
         ) -> accum_type:
-            acc[item.match_info.distance] = acc.get(item.match_info.distance, set())
+            acc[item.similarity_info.distance] = acc.get(
+                item.similarity_info.distance, set()
+            )
             # Instead of storing the unhashable item.metadata dict, store its
             # hash so we can compare using self.assertSetEqual
-            acc[item.match_info.distance].add(hash(frozenset(item.metadata)))
+            acc[item.similarity_info.distance].add(hash(frozenset(item.metadata)))
             return acc
 
         # Convert results to distance -> set of metadata map
