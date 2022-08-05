@@ -120,7 +120,7 @@ class DatasetCommand(command_base.Command):
             "--print-signals-only",
             "-S",
             action="store_true",
-            help="[-P] only print signals, no metadata",
+            help="[-P] print type and signal only, no metadata",
         )
         csv_mutual_group.add_argument(
             "--csv",
