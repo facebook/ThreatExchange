@@ -199,7 +199,14 @@ class MatchCommand(command_base.Command):
                         if collab in seen:
                             continue
                         seen.add(collab)
-                        print(s_type.get_name(), f"- ({collab})", fetched_data)
+                        # Supposed to be without whitespace, but let's make sure
+                        distance_str = "".join(r.match_info.pretty_str().split())
+                        print(
+                            s_type.get_name(),
+                            distance_str,
+                            f"({collab})",
+                            fetched_data,
+                        )
 
 
 def _match_file(
