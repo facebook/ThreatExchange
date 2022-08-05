@@ -62,9 +62,8 @@ class SignalSimilarityInfo:
         # Provide a default impl
         return self < other or self == other
 
-    # # Don't define __gt__ or __ge__ because of unexpected interactions with
-    # # functools.total_ordering
-
+    # Don't define __gt__ or __ge__ because of unexpected interactions with
+    # functools.total_ordering
     def pretty_str(self) -> str:
         """
         A short string without whitespace about a match with more context.
@@ -127,6 +126,14 @@ class IndexMatchUntyped(t.Generic[S_Co, T]):
     def __init__(self, similarity_info: S_Co, metadata: T) -> None:
         self.similarity_info = similarity_info
         self.metadata = metadata
+
+    def __eq__(self, other: t.Any) -> bool:
+        if isinstance(other, IndexMatchUntyped):
+            return (
+                self.similarity_info == other.similarity_info
+                and self.metadata == other.metadata
+            )
+        return super().__eq__(other)
 
 
 IndexMatch = IndexMatchUntyped[SignalSimilarityInfo, T]
