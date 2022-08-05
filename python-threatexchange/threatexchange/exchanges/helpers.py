@@ -30,12 +30,8 @@ class SimpleFetchedSignalMetadata(fetch_state.FetchedSignalMetadata):
 
     opinions: t.List[fetch_state.SignalOpinion] = field(default_factory=list)
 
-    def get_as_opinions(self) -> t.List[fetch_state.SignalOpinion]:
+    def get_as_opinions(self) -> t.Sequence[fetch_state.SignalOpinion]:
         return self.opinions
-
-    @classmethod
-    def get_trivial(cls):
-        return cls([fetch_state.SignalOpinion.get_trivial()])
 
 
 @dataclass
@@ -126,7 +122,7 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
             return
         state.delta = delta
 
-    def flush(self):
+    def flush(self) -> None:
         for collab_name, state in self._state.items():
             if state.dirty:
                 assert state.delta is not None

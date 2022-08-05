@@ -71,7 +71,7 @@ class SignalType:
     """
 
     @classmethod
-    def get_name(cls):
+    def get_name(cls) -> str:
         """A compact name in lower_with_underscore style (used in filenames)"""
         return common.class_name_to_human_name(cls.__name__, "Signal")
 

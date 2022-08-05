@@ -47,14 +47,6 @@ class NCMECCheckpoint(
     def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
         return cls(response.max_timestamp)
 
-    def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
-        """Implemented for pickle version compatibility."""
-        # 0.99.0 => 1.0.0:
-        ### field 'max_timestamp' renamed to 'get_entries_max_ts'
-        if "max_timestamp" in d:
-            d["get_entries_max_ts"] = d.pop("max_timestamp")
-        self.__dict__ = d
-
 
 @dataclass
 class _NCMECCollabConfigRequiredFields:
@@ -78,6 +70,19 @@ class NCMECCollabConfig(
 
 
 @dataclass
+class NCMECOpinion(state.SignalOpinion):
+    esp_id: int
+
+    def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
+        """Implemented for pickle version compatibility."""
+        # 0.99.0 => 1.0.0:
+        ### field 'owner_id' renamed to 'esp_id'
+        if "owner" in d:
+            d["esp_id"] = d["owner"]
+        super().__setstate__(d)
+
+
+@dataclass
 class NCMECSignalMetadata(state.FetchedSignalMetadata):
     """
     NCMEC metadata includes who uploaded it, as well as what they tagged.
@@ -87,10 +92,13 @@ class NCMECSignalMetadata(state.FetchedSignalMetadata):
 
     member_entries: t.Dict[int, t.Set[str]]
 
-    def get_as_opinions(self) -> t.List[state.SignalOpinion]:
+    def get_as_opinions(self) -> t.Sequence[NCMECOpinion]:
         return [
-            state.SignalOpinion(
-                member_id, state.SignalOpinionCategory.POSITIVE_CLASS, tags
+            NCMECOpinion(
+                False,  # TODO - get my own esp_id
+                state.SignalOpinionCategory.POSITIVE_CLASS,
+                tags,
+                member_id,
             )
             for member_id, tags in self.member_entries.items()
         ]

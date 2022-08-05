@@ -88,7 +88,16 @@ class FBThreatExchangeOpinion(state.SignalOpinion):
 
     REACTION_DESCRIPTOR_ID: t.ClassVar[int] = -1
 
+    owner_app_id: int
     descriptor_id: t.Optional[int]
+
+    def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
+        """Implemented for pickle version compatibility."""
+        # 0.99.0 => 1.0.0:
+        ### field 'owner_id' renamed to 'owner_app_id' and 'is_mine'
+        if "owner" in d:
+            d["owner_app_id"] = d["owner"]
+        super().__setstate__(d)
 
 
 @dataclass
@@ -103,7 +112,7 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
 
     @classmethod
     def from_threatexchange_json(
-        cls, te_json: ThreatUpdateJSON
+        cls, my_app_id: int, te_json: ThreatUpdateJSON
     ) -> t.Optional["FBThreatExchangeIndicatorRecord"]:
         if te_json.should_delete:
             return None
@@ -130,7 +139,11 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
                 category = state.SignalOpinionCategory.NEGATIVE_CLASS
 
             explicit_opinions[owner_id] = FBThreatExchangeOpinion(
-                owner_id, category, tags, td_id
+                owner_id == my_app_id,
+                category,
+                set(tags),
+                owner_id,
+                td_id,
             )
 
             for reaction in td_json.get("reactions", []):
@@ -149,9 +162,10 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
             if owner_id in explicit_opinions:
                 continue
             explicit_opinions[owner_id] = FBThreatExchangeOpinion(
-                owner_id,
+                owner_id == my_app_id,
                 category,
                 set(),
+                owner_id,
                 FBThreatExchangeOpinion.REACTION_DESCRIPTOR_ID,
             )
 
@@ -276,7 +290,7 @@ class FBThreatExchangeSignalExchangeAPI(
             updates = {}
             for u in batch:
                 updates[u.threat_type, u.indicator] = _indicator_applies(
-                    u, type_mapping
+                    self.api.app_id, u, type_mapping
                 )
 
             yield ThreatExchangeDelta(
@@ -358,6 +372,7 @@ def _merge_record_for_signal_type(
 
 
 def _indicator_applies(
+    my_app_id: int,
     u: ThreatUpdateJSON,
     type_mapping: t.Mapping[
         str,
@@ -370,7 +385,7 @@ def _indicator_applies(
     potential_signal_type = type_mapping.get(u.threat_type)
     if potential_signal_type is None:
         return None
-    indicator = FBThreatExchangeIndicatorRecord.from_threatexchange_json(u)
+    indicator = FBThreatExchangeIndicatorRecord.from_threatexchange_json(my_app_id, u)
     if indicator is None:
         return None
     if None in potential_signal_type:

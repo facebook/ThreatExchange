@@ -1,11 +1,9 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
 Wrappers for the json returned by the ThreatExchange API to typed objects.
 """
 
-import collections
 import typing as t
 
 
