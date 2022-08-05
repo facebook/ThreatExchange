@@ -1,15 +1,14 @@
 # vpdq
-This is a Python binding library to the vPDQ (video PDQ) hashing algorithm by Facebook. The project is at [github](https://github.com/facebook/ThreatExchange/tree/main/vpdq)
+This is a Python binding library to the vPDQ (video PDQ) hashing algorithm by Meta. The project is at [github](https://github.com/facebook/ThreatExchange/tree/main/vpdq)
 
 ## Installation
 ### Install library
 ```
-pip install --upgrade pip
 pip install vpdq
 ```
 ### Install FFmpeg
 
-Before using VPDQ to create hashes, FFmpeg must be installed. (Easier to use if Accessible via the `$PATH` environment variable)
+Before using VPDQ to create hashes, you must install FFmpeg. FFmpeg is easiest to use if accessible via the `$PATH` environment variable.
 
 There are a variety of ways to install FFmpeg, such as the [official download links](https://ffmpeg.org/download.html), or using your package manager of choice (e.g. `sudo apt install ffmpeg` on Debian/Ubuntu, `brew install ffmpeg` on OS X, etc.).
 
