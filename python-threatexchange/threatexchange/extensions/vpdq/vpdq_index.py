@@ -5,13 +5,14 @@ Implementation of SignalTypeIndex abstraction for VPDQ by wrapping
 vpdq_faiss.
 """
 
+from dataclasses import dataclass
 import typing as t
 import vpdq
 
 from threatexchange.signal_type.index import (
+    SignalSimilarityInfo,
     SignalTypeIndex,
     IndexMatch,
-    SignalSimilarityInfoWithIntDistance,
     T as IndexT,
 )
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
@@ -26,17 +27,13 @@ from threatexchange.extensions.vpdq.vpdq_util import (
 Self = t.TypeVar("Self", bound="VPDQIndex")
 
 
-class VPDQIndexMatch(IndexMatch[IndexT]):
-    def __init__(
-        self,
-        distance: int,
-        query_match_percent: float,
-        compared_match_percent: float,
-        metadata: IndexT,
-    ) -> None:
-        super().__init__(SignalSimilarityInfoWithIntDistance(distance), metadata)
-        self.query_match_percent = query_match_percent
-        self.compared_match_percent = compared_match_percent
+@dataclass
+class VPDQSimilarityInfo(SignalSimilarityInfo):
+    query_match_percent: float
+    compared_match_percent: float
+
+    def pretty_str(self) -> str:
+        return f"{self.query_match_percent:.0f}%[{self.compared_match_percent:.0f}%])"
 
 
 class VPDQIndex(SignalTypeIndex[IndexT]):
@@ -134,18 +131,15 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
                 * 100
                 / len(self._entry_idx_to_features_and_entires[entry_id][0])
             )
-            # max_matched_percent is returned as dist(int) here for a temporal solution
-            # TODO: Make dist attribute internal detail in IndexMatch Class
-            max_matched_percent = int(max(query_matched_percent, index_matched_percent))
             if (
                 query_matched_percent >= self.query_match_threshold_pct
                 and index_matched_percent >= self.index_match_threshold_pct
             ):
                 matches.append(
-                    VPDQIndexMatch(
-                        max_matched_percent,
-                        query_matched_percent,
-                        index_matched_percent,
+                    IndexMatch(
+                        VPDQSimilarityInfo(
+                            query_matched_percent, index_matched_percent
+                        ),
                         self._entry_idx_to_features_and_entires[entry_id][1],
                     )
                 )

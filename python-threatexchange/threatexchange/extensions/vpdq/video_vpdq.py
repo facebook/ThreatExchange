@@ -5,13 +5,15 @@ Wrapper around the vpdq signal type.
 """
 
 import vpdq
-from .vpdq_util import (
+from threatexchange.extensions.vpdq.vpdq_util import (
+    VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
     json_to_vpdq,
     vpdq_to_json,
     VPDQ_DISTANCE_THRESHOLD,
+    VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
     VPDQ_QUALITY_THRESHOLD,
 )
-from .vpdq_brute_matcher import match_VPDQ_hash_brute
+from threatexchange.extensions.vpdq.vpdq_brute_matcher import match_VPDQ_hash_brute
 import pathlib
 import typing as t
 from threatexchange.content_type.content_base import ContentType
@@ -19,7 +21,7 @@ from threatexchange.content_type.video import VideoContent
 import re
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
+from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo, VPDQIndex
 
 
 class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
@@ -44,9 +46,6 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     }
     Read about VPDQ at https://github.com/facebook/ThreatExchange/tree/main/vpdq
     """
-
-    INDICATOR_TYPE = "HASH_VIDEO_VPDQ"
-    VPDQ_CONFIDENT_MATCH_THRESHOLD = 80.0
 
     @classmethod
     def get_content_types(cls) -> t.List[t.Type[ContentType]]:
@@ -83,9 +82,13 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         return vpdq_to_json(vpdq_hashes)
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> signal_base.SignalComparisonResult:
-        """If the max of the two match percentages is over VPDQ_CONFIDENT_MATCH_THRESHOLD
-        with VPDQ_DISTANCE_THRESHOLD, it's a match."""
+    def compare_hash(
+        cls,
+        hash1: str,
+        hash2: str,
+        query_match_pct_thresh: float = VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
+        compare_match_pct_thresh: float = VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
+    ) -> signal_base.SignalComparisonResult:
         vpdq_hash1 = json_to_vpdq(hash1)
         vpdq_hash2 = json_to_vpdq(hash2)
         match_percent = match_VPDQ_hash_brute(
@@ -94,12 +97,15 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
             VPDQ_QUALITY_THRESHOLD,
             VPDQ_DISTANCE_THRESHOLD,
         )
-        max_match_percent = max(
-            match_percent.query_match_percent, match_percent.compared_match_percent
+        return signal_base.SignalComparisonResult(
+            (
+                match_percent.query_match_percent >= query_match_pct_thresh
+                and match_percent.compared_match_percent >= compare_match_pct_thresh
+            ),
+            VPDQSimilarityInfo(
+                match_percent.query_match_percent, match_percent.compared_match_percent
+            ),
         )
-        is_match = max_match_percent >= cls.VPDQ_CONFIDENT_MATCH_THRESHOLD
-        # TODO vPDQ distance type
-        return signal_base.SignalComparisonResult.from_bool_only(is_match)
 
     @staticmethod
     def get_examples() -> t.List[str]:
