@@ -200,7 +200,7 @@ class MatchCommand(command_base.Command):
                             continue
                         seen.add(collab)
                         # Supposed to be without whitespace, but let's make sure
-                        distance_str = "".join(r.match_info.pretty_str().split())
+                        distance_str = "".join(r.similarity_info.pretty_str().split())
                         print(
                             s_type.get_name(),
                             distance_str,

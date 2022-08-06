@@ -120,12 +120,12 @@ class IndexMatchUntyped(t.Generic[S_Co, T]):
     NamedTuple can't be made generic, so here's an equivalent
     """
 
-    __slots__ = ["match_info", "metadata"]
-    match_info: S_Co
+    __slots__ = ["similarity_info", "metadata"]
+    similarity_info: S_Co
     metadata: T
 
-    def __init__(self, match_info: S_Co, metadata: T) -> None:
-        self.match_info = match_info
+    def __init__(self, similarity_info: S_Co, metadata: T) -> None:
+        self.similarity_info = similarity_info
         self.metadata = metadata
 
 

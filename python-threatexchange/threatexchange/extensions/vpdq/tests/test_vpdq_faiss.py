@@ -302,5 +302,5 @@ def compare_match_result(res1: VPDQIndexMatch, res2: VPDQIndexMatch) -> bool:
         res1.compared_match_percent == res2.compared_match_percent
         and res1.query_match_percent == res2.query_match_percent
         and res1.metadata == res2.metadata
-        and res1.match_info == res2.match_info
+        and res1.similarity_info == res2.similarity_info
     )

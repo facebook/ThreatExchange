@@ -67,10 +67,6 @@ class FakeSignal(SignalType, FileHasher):
         return TrivialSignalTypeIndex
 
     @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> SignalComparisonResult:
-        return SignalComparisonResult.from_bool_only(hash1 == hash2)
-
-    @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
         return "fake"  # A perfect hashing algorithm
 

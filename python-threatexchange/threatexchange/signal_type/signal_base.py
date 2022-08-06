@@ -1,10 +1,10 @@
-#!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 """
 Core abstractions for signal types.
 """
 
+import abc
 import pathlib
 import typing as t
 
@@ -53,7 +53,7 @@ class SignalComparisonResult(t.NamedTuple):
         )
 
 
-class SignalType:
+class SignalType(abc.ABC):
     """
     Abstraction for different signal types.
 
@@ -76,11 +76,13 @@ class SignalType:
         return common.class_name_to_human_name(cls.__name__, "Signal")
 
     @classmethod
+    @abc.abstractmethod
     def get_content_types(cls) -> t.List[t.Type[content_base.ContentType]]:
         """Which content types this Signal applies to (usually just one)"""
-        raise NotImplementedError
+        pass
 
     @classmethod
+    @abc.abstractmethod
     def get_index_cls(cls) -> t.Type[index.SignalTypeIndex]:
         """Return the index class that handles this signal type"""
         # Confused about which one to start with?
@@ -89,17 +91,7 @@ class SignalType:
         #   2. TrivialLinearSearchMatchIndex: If you are MatchesStr
         # Or if you only support exact matching (like MD5):
         #   3. TrivialSignalTypeIndex
-        raise NotImplementedError
-
-    @classmethod
-    def compare_hash(cls, hash1: str, hash2: str) -> SignalComparisonResult:
-        """
-        Compare the distance of two hashes, the key operation for matching.
-
-        Note that this can just be a reference/helper, and the efficient
-        version of the algorithm can live in the index class.
-        """
-        raise NotImplementedError
+        pass
 
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
@@ -111,6 +103,7 @@ class SignalType:
         return signal_str.strip()
 
     @staticmethod
+    @abc.abstractmethod
     def get_examples() -> t.List[str]:
         """
         Return example signals, which can be used for tests or demos.
@@ -122,19 +115,31 @@ class SignalType:
         return []
 
 
-class FileHasher:
+class FileHasher(abc.ABC):
     """
     This class can hash files.
     """
 
     @classmethod
+    @abc.abstractmethod
+    def compare_hash(cls, hash1: str, hash2: str) -> SignalComparisonResult:
+        """
+        Compare the distance of two hashes, the key operation for matching.
+
+        Note that this can just be a reference/helper, and the efficient
+        version of the algorithm can live in the index class.
+        """
+        pass
+
+    @classmethod
+    @abc.abstractmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
         """
         Get a string representation of the hash from a file.
 
         If a hash cannot be generated, empty string should be returned.
         """
-        raise NotImplementedError
+        pass
 
 
 class TextHasher(FileHasher):
@@ -143,29 +148,31 @@ class TextHasher(FileHasher):
     """
 
     @classmethod
+    @abc.abstractmethod
     def hash_from_str(cls, text: str) -> str:
         """
         Get a string representation of the hash from a string.
 
         If a hash cannot be generated, empty string should be returned.
         """
-        raise NotImplementedError
+        pass
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
         return cls.hash_from_str(file.read_text())
 
 
-class MatchesStr:
+class MatchesStr(abc.ABC):
     @classmethod
+    @abc.abstractmethod
     def matches_str(cls, signal: str, haystack: str) -> SignalComparisonResult:
         """
-        Compare the distance of two hashes, the key operation for matching.
+        Compare the signal and text, the key operation for matching.
 
         Note that this can just be a reference/helper, and the efficient
         version of the algorithm can live in the index class.
         """
-        raise NotImplementedError
+        pass
 
 
 class BytesHasher(FileHasher):
@@ -174,13 +181,14 @@ class BytesHasher(FileHasher):
     """
 
     @classmethod
+    @abc.abstractmethod
     def hash_from_bytes(cls, bytes_: bytes) -> str:
         """
         Get a string representation of the hash from bytes.
 
         If a hash cannot be generated, empty string should be returned.
         """
-        raise NotImplementedError
+        pass
 
     @classmethod
     def hash_from_file(cls, file: pathlib.Path) -> str:
@@ -230,7 +238,7 @@ class TrivialLinearSearchHashIndex(index.SignalTypeIndex[index.T]):
 
     # You'll have to override with each usecase, because I wasn't sure
     # If pickle would behave expectedly here
-    _SIGNAL_TYPE: t.Type[SignalType]
+    _SIGNAL_TYPE: t.Type[FileHasher]
 
     def __init__(self) -> None:
         self.state: t.List[t.Tuple[str, index.T]] = []
