@@ -64,6 +64,38 @@ class SignalExchangeAPI(
     """
 
     @classmethod
+    @abstractmethod
+    def for_collab(cls, collab: TCollabConfig) -> "SignalExchangeAPI":
+        """
+        An alternative constructor to get a working instance of the API.
+
+        An instance provided by this class is expected to:
+        1. Be fully authenticated or throw an exception
+        2. All methods are callable if supported by the base implementation
+
+        For implementations that do need additional configuration or
+        authentification, this method is a good place to attempt to pull in
+        default authentification from known locations. Your general options
+        are:
+        1. From an environment variable
+        2. From a file in a known location (ideally chmod 500)
+        3. From a keychain service or similar running in the background
+        4. From the collaboration config itself
+
+        If you aren't able to get required authentification, it's best to
+        include what options a user has - even if that's just a link to
+        the README.
+
+        Don't:
+        * Prompt the user via stdin
+        * Return an instance that will throw when any methods are called
+
+        Usages of this library will only attempt to instanciate an API
+        when they have an API call to make - all methods for manipulating
+        local state are classmethods.
+        """
+
+    @classmethod
     def get_name(cls) -> str:
         """
         A simple string name unique to SignalExchangeAPIs in use.
@@ -164,7 +196,6 @@ class SignalExchangeAPI(
     def fetch_iter(
         self,
         supported_signal_types: t.Sequence[t.Type[SignalType]],
-        collab: TCollabConfig,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
@@ -210,7 +241,6 @@ class SignalExchangeAPI(
 
     def report_opinion(
         self,
-        collab: TCollabConfig,
         s_type: t.Type[SignalType],
         signal: str,
         opinion: state.SignalOpinion,
