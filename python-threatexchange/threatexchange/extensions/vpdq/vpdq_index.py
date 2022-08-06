@@ -33,7 +33,7 @@ class VPDQDistance(SignalSimilarityInfo):
     compared_match_percent: float
 
     def pretty_str(self) -> str:
-        return f"{self.query_match_percent:.2f}%(vs-{self.compared_match_percent:.2f}%)"
+        return f"{self.query_match_percent:.0f}%[{self.compared_match_percent:.0f}%])"
 
 
 class VPDQIndex(SignalTypeIndex[IndexT]):
