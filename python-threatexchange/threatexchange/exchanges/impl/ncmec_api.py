@@ -307,6 +307,7 @@ class NCMECSignalExchangeAPI(
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
+        collab: NCMECCollabConfig,
         fetched: t.Mapping[str, api.NCMECEntryUpdate],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]]:
         mapping: t.Mapping[

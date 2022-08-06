@@ -137,7 +137,7 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
             state = self._get_state(collab)
             if not state.empty:
                 by_signal = state.api_cls.naive_convert_to_signal_type(
-                    [signal_type], state.delta.updates
+                    [signal_type], collab, state.delta.updates
                 ).get(signal_type, {})
                 if by_signal:
                     ret[collab.name] = by_signal
