@@ -2,7 +2,6 @@
 
 import typing as t
 import pytest
-import time
 
 from threatexchange.exchanges.clients.ncmec.tests.test_hash_api import api
 from threatexchange.exchanges.impl.ncmec_api import (
@@ -66,3 +65,27 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     }
     ## No more data
     assert next(it, None) is None
+
+    # Test esp_id filter
+    collab.only_esp_ids = {101}
+    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], collab, total_updates
+    )[VideoMD5Signal]
+    assert as_signals == {
+        "facefacefacefacefacefacefaceface": NCMECSignalMetadata({101: {"A2"}}),
+    }
+    collab.only_esp_ids = {42}
+    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], collab, total_updates
+    )[VideoMD5Signal]
+    assert as_signals == {
+        "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()}),
+    }
+    collab.only_esp_ids = set()
+    as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
+        [VideoMD5Signal], collab, total_updates
+    )[VideoMD5Signal]
+    assert as_signals == {
+        "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()}),
+        "facefacefacefacefacefacefaceface": NCMECSignalMetadata({101: {"A2"}}),
+    }
