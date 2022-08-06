@@ -3,7 +3,7 @@
 import pytest
 import pickle
 import random
-from threatexchange.extensions.vpdq.vpdq_index import VPDQDistance
+from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo
 
 from threatexchange.signal_type.index import IndexMatch
 
@@ -83,20 +83,20 @@ def test_simple():
     assert len(index._index_idx_to_vpdqHex_and_entry) == len(features)
     res = index.query(hash)
     # A complete match to itself
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 100.0), EXAMPLE_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), EXAMPLE_META_DATA)
 
 
 def test_half_match():
     index = VPDQIndex.build([[hash, EXAMPLE_META_DATA]], query_match_threshold_pct=0)
     half_hash = features[0 : int(len(features) / 2)]
     res = index.query(vpdq_to_json(half_hash))
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 50.0), EXAMPLE_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 50.0), EXAMPLE_META_DATA)
 
     index = VPDQIndex.build(
         [[vpdq_to_json(half_hash), EXAMPLE_META_DATA]], query_match_threshold_pct=0
     )
     res = index.query(hash)
-    assert res[0] == IndexMatch(VPDQDistance(50.0, 100.0), EXAMPLE_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(50.0, 100.0), EXAMPLE_META_DATA)
 
 
 def test_serialize():
@@ -104,7 +104,7 @@ def test_serialize():
     pickled_data = pickle.dumps(index)
     reconstructed_index = pickle.loads(pickled_data)
     res = reconstructed_index.query(hash)
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 100.0), EXAMPLE_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), EXAMPLE_META_DATA)
 
 
 def test_empty_video_():
@@ -133,8 +133,8 @@ def test_duplicate_hashes():
     index.add(hash, VIDEO2_META_DATA)
     res = index.query(hash)
     # A complete match to itself
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 100.0), VIDEO1_META_DATA)
-    assert res[1] == IndexMatch(VPDQDistance(100.0, 100.0), VIDEO2_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), VIDEO1_META_DATA)
+    assert res[1] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), VIDEO2_META_DATA)
 
 
 def test_no_match():
@@ -184,10 +184,10 @@ def test_match_below_and_above_80pct_query_threshold():
     assert len(res) == 0
 
     res = index.query(vpdq_to_json(video2))
-    assert res[0] == IndexMatch(VPDQDistance(80.0, 100.0), VIDEO4_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(80.0, 100.0), VIDEO4_META_DATA)
 
     res = index.query(vpdq_to_json(video3))
-    assert res[0] == IndexMatch(VPDQDistance(90.0, 100.0), VIDEO4_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(90.0, 100.0), VIDEO4_META_DATA)
 
 
 def test_match_below_and_above_80pct_index_threshold():
@@ -216,14 +216,14 @@ def test_match_below_and_above_80pct_index_threshold():
         index_match_threshold_pct=80,
     )
     res = index.query(vpdq_to_json(video4))
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 80.0), VIDEO2_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 80.0), VIDEO2_META_DATA)
 
     index = VPDQIndex.build(
         [[vpdq_to_json(video3), VIDEO3_META_DATA]],
         index_match_threshold_pct=80,
     )
     res = index.query(vpdq_to_json(video4))
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 90.0), VIDEO3_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 90.0), VIDEO3_META_DATA)
 
 
 def test_matches():
@@ -243,22 +243,22 @@ def test_matches():
     )
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
-    assert res[0] == IndexMatch(VPDQDistance(90.0, 90.0), VIDEO1_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(90.0, 90.0), VIDEO1_META_DATA)
 
     index = VPDQIndex.build([[vpdq_to_json(video2), VIDEO2_META_DATA]])
     res = index.query(vpdq_to_json(video1))
-    assert res[0] == IndexMatch(VPDQDistance(90.0, 90.0), VIDEO2_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(90.0, 90.0), VIDEO2_META_DATA)
 
     del video1[-1]
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
-    assert res[0] == IndexMatch(VPDQDistance(90.0, 100.0), VIDEO1_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(90.0, 100.0), VIDEO1_META_DATA)
 
     del video2[-1]
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
 
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 100.0), VIDEO1_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), VIDEO1_META_DATA)
 
 
 def test_duplicate_matches():
@@ -272,7 +272,7 @@ def test_duplicate_matches():
 
     index = VPDQIndex.build([[vpdq_to_json(video1), VIDEO1_META_DATA]])
     res = index.query(vpdq_to_json(video2))
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 100.0), VIDEO1_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), VIDEO1_META_DATA)
 
 
 def test_duplicate_video_matches():
@@ -290,5 +290,5 @@ def test_duplicate_video_matches():
         ]
     )
     res = index.query(vpdq_to_json(video3))
-    assert res[0] == IndexMatch(VPDQDistance(100.0, 100.0), VIDEO1_META_DATA)
-    assert res[1] == IndexMatch(VPDQDistance(50.0, 100.0), VIDEO2_META_DATA)
+    assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), VIDEO1_META_DATA)
+    assert res[1] == IndexMatch(VPDQSimilarityInfo(50.0, 100.0), VIDEO2_META_DATA)

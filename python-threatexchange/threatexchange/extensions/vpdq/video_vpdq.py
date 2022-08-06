@@ -21,7 +21,7 @@ from threatexchange.content_type.video import VideoContent
 import re
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.extensions.vpdq.vpdq_index import VPDQDistance, VPDQIndex
+from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo, VPDQIndex
 
 
 class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
@@ -102,7 +102,7 @@ class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
                 match_percent.query_match_percent >= query_match_pct_thresh
                 and match_percent.compared_match_percent >= compare_match_pct_thresh
             ),
-            VPDQDistance(
+            VPDQSimilarityInfo(
                 match_percent.query_match_percent, match_percent.compared_match_percent
             ),
         )

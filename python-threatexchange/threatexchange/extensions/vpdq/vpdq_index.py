@@ -28,7 +28,7 @@ Self = t.TypeVar("Self", bound="VPDQIndex")
 
 
 @dataclass
-class VPDQDistance(SignalSimilarityInfo):
+class VPDQSimilarityInfo(SignalSimilarityInfo):
     query_match_percent: float
     compared_match_percent: float
 
@@ -137,7 +137,9 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
             ):
                 matches.append(
                     IndexMatch(
-                        VPDQDistance(query_matched_percent, index_matched_percent),
+                        VPDQSimilarityInfo(
+                            query_matched_percent, index_matched_percent
+                        ),
                         self._entry_idx_to_features_and_entires[entry_id][1],
                     )
                 )
