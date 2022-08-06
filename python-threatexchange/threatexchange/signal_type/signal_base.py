@@ -167,7 +167,7 @@ class MatchesStr(abc.ABC):
     @abc.abstractmethod
     def matches_str(cls, signal: str, haystack: str) -> SignalComparisonResult:
         """
-        Compare the distance of two hashes, the key operation for matching.
+        Compare the signal and text, the key operation for matching.
 
         Note that this can just be a reference/helper, and the efficient
         version of the algorithm can live in the index class.
