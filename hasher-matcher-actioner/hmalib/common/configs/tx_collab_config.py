@@ -8,12 +8,13 @@ interfaces require it, keeping it as just another class for now.
 """
 
 from dataclasses import dataclass, asdict, fields
-from enum import Enum
 import typing as t
-import json
-import dacite
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.utils.dataclass_json import (
+    dataclass_dumps,
+    dataclass_loads,
+)
 
 from hmalib.common.mappings import full_class_name, import_class
 from hmalib.common.config import HMAConfig, create_config, update_config
@@ -27,7 +28,7 @@ def _config_name(clazz: t.Type[CollaborationConfigBase], name: str):
 @dataclass
 class EditableCollaborationConfig(HMAConfig):
     """
-    Store collaboration configs as HMAConfigs. Attriutes of collaboration config
+    Store collaboration configs as HMAConfigs. Attributes of collaboration config
     are stored as serialized json.
 
     Clients are not expected to work with this class directly. Use methods
@@ -45,37 +46,11 @@ class EditableCollaborationConfig(HMAConfig):
     attributes_json_serialized: str
 
 
-class _DaciteJSONEncoder(json.JSONEncoder):
-    """
-    The actual attributes of the CollabConfig subclass are stored using a
-    serialized JSON. Since this JSON will be used with dacite to regenerate the
-    CollabConfig object, do what dacite expects.
-
-    Serialize enums to their values; and sets to lists.
-    """
-
-    def default(self, obj):
-        if isinstance(obj, Enum):
-            return obj.value
-        elif isinstance(obj, set):
-            return [x for x in obj]
-        return json.JSONEncoder.default(self, obj)
-
-
 def _build_collab_config(
     collab_config_class: str, attributes_serialized: str
 ) -> CollaborationConfigBase:
     cls = import_class(collab_config_class)
-    return dacite.from_dict(
-        cls,
-        data={
-            k: v
-            for (k, v) in json.loads(
-                attributes_serialized,
-            ).items()
-        },
-        config=dacite.Config(cast=[Enum, t.Set]),
-    )
+    return dataclass_loads(attributes_serialized, cls)
 
 
 def get_collab_config(
@@ -110,9 +85,7 @@ def create_collab_config(collab_config: CollaborationConfigBase):
         EditableCollaborationConfig(
             name=_config_name(collab_config.__class__, collab_config.name),
             collab_config_class=full_class_name(collab_config.__class__),
-            attributes_json_serialized=json.dumps(
-                asdict(collab_config), cls=_DaciteJSONEncoder
-            ),
+            attributes_json_serialized=dataclass_dumps(collab_config),
         )
     )
 
@@ -129,7 +102,5 @@ def update_collab_config(collab_config: CollaborationConfigBase):
         raise ValueError("EditableCollabConfig object does not exist as an HMAConfig.")
 
     ec.collab_config_class = full_class_name(collab_config.__class__)
-    ec.attributes_json_serialized = json.dumps(
-        asdict(collab_config), cls=_DaciteJSONEncoder
-    )
+    ec.attributes_json_serialized = dataclass_dumps(collab_config)
     update_config(ec)

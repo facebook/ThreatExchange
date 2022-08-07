@@ -96,8 +96,14 @@ class TXCollabConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
             self.assertEqual(3, len(all_configs))
 
             ncmec_config = next(
-                iter([_ for _ in all_configs if isinstance(_, NCMECCollabConfig)])
+                iter(
+                    [
+                        conf
+                        for conf in all_configs
+                        if isinstance(conf, NCMECCollabConfig)
+                    ]
+                )
             )
             self.assertEqual(ncmec_config.environment, NCMECEnvironment.Exploitative)
-            self.assertEqual(ncmec_config.only_esp_ids, set([1, 2, 3]))
+            self.assertEqual(ncmec_config.only_esp_ids, {1, 2, 3})
             self.assertEqual(ncmec_config.name, "child-safety")
