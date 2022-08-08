@@ -16,7 +16,7 @@ using black through your IDE settings.
 When in doubt, follow the style of the file you are editing, and if starting new files, be consistent within.
 
 ## python typing and `mypy`
-We aiming for full strict coverage via PEP484 tying annotations. However, this is a work in progress. We use [mypy](https://mypy.readthedocs.io/en/stable/index.html) to verifying typing.
+We aiming for full strict coverage via PEP484 tying annotations. However, this is a work in progress. We use [mypy](https://mypy.readthedocs.io/en/stable/index.html) to do typechecking.
 
 ### `# type: ignore`
 We're not all typing experts yet, and we've confused ourselves with Generics, Aliases and object heirarchies, and occasionally `# type: ignored`. If you end up in a sticky situation and decide to throw in the towel on typing and use `# type: ignore`, use `mypy --show-error-codes` to only ignore the specific error code, and expect discussion on the PR on the level of effort needed to make the code compliant.
