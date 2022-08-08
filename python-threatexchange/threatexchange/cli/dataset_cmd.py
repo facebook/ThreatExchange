@@ -248,7 +248,7 @@ class DatasetCommand(command_base.Command):
         print_fn = self._print_stdout
         if self.csv:
             csv_writer = csv.DictWriter(
-                sys.stdout, ["collab", "signal_type", "signal_str", "category", "tags"]
+                sys.stdout, ["signal_type", "signal_str", "collab", "category", "tags"]
             )
             csv_writer.writeheader()
             print_fn = lambda *args: self._print_csv(csv_writer, *args)
@@ -295,14 +295,16 @@ class DatasetCommand(command_base.Command):
         signal_str: str,
         metadata: t.Optional[FetchedSignalMetadata],
     ) -> None:
-        if not self.print_signals_only and len(self.only_collabs) != 1:
-            print(repr(collab_name), end=" ")
         if len(self.only_signals) != 1:
             print(signal_type.get_name(), end=" ")
+
         print(signal_str, end="")
+
         if not self.print_signals_only:
+            if len(self.only_collabs) != 1:
+                print("", repr(collab_name), end="")
             print("", metadata, end="")
-        print()
+        print()  # Complete line
 
     def _print_csv(
         self,
@@ -316,9 +318,9 @@ class DatasetCommand(command_base.Command):
         agg = metadata.get_as_aggregate_opinion()
         csvwriter.writerow(
             {
-                "collab": collab_name,
-                "signal_str": signal_str,
                 "signal_type": signal_type.get_name(),
+                "signal_str": signal_str,
+                "collab": collab_name,
                 "category": agg.category.name,
                 "tags": " ".join(agg.tags),
             }
