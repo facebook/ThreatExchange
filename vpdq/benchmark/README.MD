@@ -50,6 +50,15 @@ Original resolution Python hashing time: 34.8951s
   Number of mismatches:121, 0.02 percent in total.
   Average 17.63 hamming distance away.
 
+python3 benchmark.py -s 64
+Python hashing time: 3.1143s
+  Total hash:7069  Per hash: 0.4406ms
+CPP hashing time: 3.5193s
+  Total hash:7069  Per hash: 0.4979ms
+Calculate deviations in downsampled hashes, since hash resolution is non-native
+Original resolution Python hashing time: 35.2615s
+  Number of mismatches:20, 0.00 percent in total.
+  Average 9.39 hamming distance away.
 
 % python3 benchmark.py -s 60 
 Python hashing time: 3.0915s
