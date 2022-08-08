@@ -317,6 +317,8 @@ class NCMECSignalExchangeAPI(
         for entry in fetched.values():
             if entry.deleted:
                 continue  # We expect len(fingerprints) == 0 here, but to be safe
+            if collab.only_esp_ids and entry.member_id not in collab.only_esp_ids:
+                continue
             for fingerprint_type, fingerprint_value in entry.fingerprints.items():
                 st = mapping.get((entry.entry_type, fingerprint_type))
                 if st is not None:
