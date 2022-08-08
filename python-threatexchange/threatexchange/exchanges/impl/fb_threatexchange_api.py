@@ -146,6 +146,7 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
                 td_id,
             )
 
+            # See: https://developers.facebook.com/docs/threat-exchange/reference/apis/reaction-type/
             for reaction in td_json.get("reactions", []):
                 rxn = reaction["key"]
                 for owner in reaction["value"].split(","):
