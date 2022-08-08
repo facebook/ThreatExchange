@@ -20,7 +20,7 @@ from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchang
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange import common, interface_validation
 from threatexchange.cli.cli_config import CLISettings
-from threatexchange.cli import command_base, dataclass_json
+from threatexchange.cli import command_base
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCollabConfig,
@@ -29,6 +29,7 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.utils import dataclass_json
 
 
 class ConfigCollabListCommand(command_base.Command):
