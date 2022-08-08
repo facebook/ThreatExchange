@@ -28,7 +28,7 @@ def timer(context: str, print_on_enter: bool = False):
 
 
 def get_argparse() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser()
     ap.add_argument(
         "-f",
         "--ffmpegPath",
@@ -63,17 +63,22 @@ def run_benchmark(
             ffmpegPath, secondsPerHash, downsampleFrameDimension
         )
     feature_size = 0
-    for feature in python_features:
-        feature_size += len(feature)
+    feature_size = sum(len(feature) for feature in python_features)
     python_time = pt()
     print(
-        f"  Total hash:{ feature_size}  Per hash: {1000*python_time /  feature_size:.4f}ms"
+        "  Total hash:",
+        feature_size,
+        "Per hash:",
+        f"{1000*python_time /  feature_size:.4f}ms",
     )
     with timer("CPP hashing time") as ct:
         run_cpp(ffmpegPath, secondsPerHash, downsampleFrameDimension)
     cpp_time = ct()
     print(
-        f"  Total hash:{ feature_size}  Per hash: {1000*cpp_time /  feature_size:.4f}ms"
+        "  Total hash:",
+        feature_size,
+        "Per hash:",
+        f"{1000*cpp_time /  feature_size:.4f}ms",
     )
     if downsampleFrameDimension != 0:
         print(
@@ -90,7 +95,7 @@ def run_benchmark(
                     mis_match += 1
                 total_dist += dist
         print(
-            f"  Number of mismatches:{mis_match}, {mis_match/ feature_size:.2f} percent in total."
+            f"  Number of mismatches: {mis_match}, {mis_match/ feature_size:.2f} percent in total."
         )
         print(f"  Average {total_dist/ feature_size:.2f} hamming distance away.")
 
@@ -105,7 +110,7 @@ def run_python(
         if file.endswith(".mp4"):
             hash_list.append(
                 vpdq.computeHash(
-                    str(VIDEOS) + "/" + file,
+                    str(VIDEOS / file),
                     ffmpeg_path=ffmpegPath,
                     seconds_per_hash=secondsPerHash,
                     downsample_width=downsampleFrameDimension,
@@ -122,7 +127,7 @@ def run_cpp(
 ):
     for file in os.listdir(VIDEOS):
         if file.endswith(".mp4"):
-            subprocess.call(
+            subprocess.check_call(
                 [
                     str(CPP_EXEC),
                     "-f",
@@ -136,8 +141,6 @@ def run_cpp(
                     "-i",
                     str(VIDEOS) + "/" + file,
                 ],
-                stderr=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
             )
 
 
