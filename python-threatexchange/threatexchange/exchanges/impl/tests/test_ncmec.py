@@ -58,7 +58,7 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     }
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], total_updates
+        [VideoMD5Signal], collab, total_updates
     )[VideoMD5Signal]
     assert as_signals == {
         "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()}),

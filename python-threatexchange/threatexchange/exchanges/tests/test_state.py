@@ -102,6 +102,7 @@ class FakePerOwnerOpinionAPI(
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
         fetched: t.Mapping[int, t.Optional[FakeUpdateRecord]],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, FakeSignalMetadata]]:
         if VideoMD5Signal not in signal_types:
@@ -187,11 +188,11 @@ def test_test_impls() -> None:
     )
 
     assert FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], delta.updates
+        [VideoMD5Signal], config, delta.updates
     ) == {VideoMD5Signal: {md5: record}}
     assert (
         FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
-            [RawTextSignal], delta.updates
+            [RawTextSignal], config, delta.updates
         )
         == {}
     )

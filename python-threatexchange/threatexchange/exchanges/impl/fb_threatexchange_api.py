@@ -299,6 +299,7 @@ class FBThreatExchangeSignalExchangeAPI(
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
+        collab: FBThreatExchangeCollabConfig,
         fetched: t.Mapping[
             t.Tuple[str, str], t.Optional[FBThreatExchangeIndicatorRecord]
         ],

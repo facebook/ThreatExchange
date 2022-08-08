@@ -148,6 +148,7 @@ class SignalExchangeAPI(
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
+        collab: TCollabConfig,
         fetched: t.Mapping[state.TUpdateRecordKey, state.TUpdateRecordValue],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
         """
@@ -261,6 +262,7 @@ class SignalExchangeAPIWithSimpleUpdates(
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
+        collab: TCollabConfig,
         fetched: t.Mapping[t.Tuple[str, str], t.Optional[state.TFetchedSignalMetadata]],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
         ret: t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]] = {}
