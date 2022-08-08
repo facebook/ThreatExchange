@@ -10,7 +10,7 @@ try:
 except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
-    from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
+    from threatexchange.extensions.vpdq.vpdq import VPDQSignal
     from threatexchange.extensions.vpdq.vpdq_util import (
         vpdq_to_json,
         json_to_vpdq,
@@ -29,7 +29,7 @@ ROOTDIR = Path(__file__).parents[5]
 
 @pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 def test_vpdq_from_string_path():
-    computed_hash = VideoVPDQSignal.hash_from_file(ROOTDIR / VIDEO)
+    computed_hash = VPDQSignal.hash_from_file(ROOTDIR / VIDEO)
     expected_hash = read_file_to_hash(ROOTDIR / HASH)
     assert vpdq_to_json(json_to_vpdq(computed_hash)) == computed_hash
     res = match_VPDQ_hash_brute(
