@@ -2,7 +2,7 @@
 Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions develop locally and open PRs
 
 ## Code Style
-threatexchange uses [black](https://pypi.org/project/black/) for consistent formatting across
+threatexchange uses [black](https://PyPI.org/project/black/) for consistent formatting across
 the projects python source files. After installing black locally, you can automatically
 format all the python-threatexchange files by running the following command from the repository root.
 
@@ -22,7 +22,7 @@ We are aiming for full strict coverage via PEP484 typing annotations. However, t
 We are not all typing experts yet, and we've confused ourselves with Generics, Aliases and object hierarchies, and occasionally `# type: ignored`. If you end up in a sticky situation and decide to throw in the towel on typing and use `# type: ignore`, use `mypy --show-error-codes` to only ignore the specific error code, and expect discussion on the PR on the level of effort needed to make the code compliant.
 
 ### New Files or Directories
-When creating new files or directories, please first try and make them compatibility with `--strict` to do this, add in the mypy.ini file
+When creating new files or directories, please first try and make them compatible with `--strict` to do this, add in the mypy.ini file
 ```
 [path.to.module]
 strict = True
@@ -53,17 +53,17 @@ fastest way to do this is
     make local_install
     threatexchange --help
 
-## Releasing A New PyPi version
+## Releasing A New PyPI version
 Releases of the library are managed by a [GitHub action](../.github/workflows/python-threatexchange-release.yaml), which are triggered by changes to [version.txt](./version.txt). 
 
 Version releases should be in a PR on their own, and not included with functional changes.
 
-To create a new release to [PyPI](https://pypi.org/project/threatexchange/), update [version.txt](./version.txt)
+To create a new release to [PyPI](https://PyPI.org/project/threatexchange/), update [version.txt](./version.txt)
 to the new release name in a PR. Once the PR is approved and merged, the CI process
-will publish the new version to [PyPI](https://pypi.org/), shortly after a test publish to Test PyPI.
+will publish the new version to [PyPI](https://PyPI.org/), shortly after a test publish to Test PyPI.
 
-### PyPi test instance versions
-We sometimes do release candidate previews to the PyPi test instance. If you have the credentials for the threatexchange account, you can build and release a test package by heading to the python-threatexchange root directory and do:
+### PyPI test instance versions
+We sometimes do release candidate previews to the PyPI test instance. If you have the credentials for the threatexchange account, you can build and release a test package by heading to the python-threatexchange root directory and do:
 
 ```shell
 $ make clean
