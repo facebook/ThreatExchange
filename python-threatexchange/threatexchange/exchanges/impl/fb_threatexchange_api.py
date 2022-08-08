@@ -117,8 +117,8 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
         if te_json.should_delete:
             return None
 
-        explicit_opinions = {}
-        implicit_opinions = {}
+        explicit_opinions: t.Dict[int, FBThreatExchangeOpinion] = {}
+        implicit_opinions: t.Dict[int, state.SignalOpinionCategory] = {}
 
         for td_json in te_json.raw_json["descriptors"]["data"]:
             td_id = int(td_json["id"])
@@ -146,17 +146,22 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
                 td_id,
             )
 
+            # See: https://developers.facebook.com/docs/threat-exchange/reference/apis/reaction-type/
             for reaction in td_json.get("reactions", []):
                 rxn = reaction["key"]
-                owner = int(reaction["value"])
-                if rxn == "HELPFUL":
-                    implicit_opinions[
-                        owner
-                    ] = state.SignalOpinionCategory.POSITIVE_CLASS
-                elif rxn == "DISAGREE_WITH_TAGS" and owner not in implicit_opinions:
-                    implicit_opinions[
-                        owner
-                    ] = state.SignalOpinionCategory.NEGATIVE_CLASS
+                for owner in reaction["value"].split(","):
+                    owner_id = int(owner)
+                    if rxn == "HELPFUL":
+                        implicit_opinions[
+                            owner_id
+                        ] = state.SignalOpinionCategory.POSITIVE_CLASS
+                    elif (
+                        rxn == "DISAGREE_WITH_TAGS"
+                        and owner_id not in implicit_opinions
+                    ):
+                        implicit_opinions[
+                            owner_id
+                        ] = state.SignalOpinionCategory.NEGATIVE_CLASS
 
         for owner_id, category in implicit_opinions.items():
             if owner_id in explicit_opinions:
