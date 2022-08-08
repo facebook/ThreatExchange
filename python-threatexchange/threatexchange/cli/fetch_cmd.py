@@ -209,7 +209,7 @@ class FetchCommand(command_base.Command):
                 self._fetch_progress(len(delta.updates), next_checkpoint)
                 if checkpoint is not None:
                     prev_time = checkpoint.get_progress_timestamp()
-                    if None not in (prev_time, progress_time):
+                    if prev_time is not None and progress_time is not None:
                         assert prev_time <= progress_time, (
                             "checkpoint time rewound? ",
                             "This can indicate a serious ",
