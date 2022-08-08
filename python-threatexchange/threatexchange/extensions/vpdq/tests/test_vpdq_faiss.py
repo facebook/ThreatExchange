@@ -28,7 +28,7 @@ else:
         get_random_VPDQs,
         pdq_hashes_to_VPDQ_features,
     )
-    from threatexchange.extensions.vpdq.video_vpdq import VideoVPDQSignal
+    from threatexchange.extensions.vpdq.vpdq import VPDQSignal
     from threatexchange.tests.hashing.utils import (
         get_random_hash,
         get_similar_hash,
@@ -43,7 +43,7 @@ if not _DISABLED:
     VIDEO2_META_DATA = object()
     VIDEO3_META_DATA = object()
     VIDEO4_META_DATA = object()
-    hash = VideoVPDQSignal.get_examples()[0]
+    hash = VPDQSignal.get_examples()[0]
     features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
     h1 = get_similar_hash(get_zero_hash(), 16)
     h2 = get_similar_hash(get_zero_hash(), 128)
@@ -56,7 +56,7 @@ if not _DISABLED:
 
 
 def test_utils():
-    example_hash = VideoVPDQSignal.get_examples()[0]
+    example_hash = VPDQSignal.get_examples()[0]
     example_features = json_to_vpdq(example_hash)
     assert example_hash == vpdq_to_json(example_features)
 
@@ -70,9 +70,9 @@ def test_utils():
     frame_counts = 100
     features = get_random_VPDQs(frame_counts)
     assert len(features) == frame_counts
-    VideoVPDQSignal.validate_signal_str(vpdq_to_json(features))
+    VPDQSignal.validate_signal_str(vpdq_to_json(features))
     pdq_hashes = [get_random_hash() for i in range(frame_counts)]
-    VideoVPDQSignal.validate_signal_str(
+    VPDQSignal.validate_signal_str(
         vpdq_to_json(pdq_hashes_to_VPDQ_features(pdq_hashes))
     )
 

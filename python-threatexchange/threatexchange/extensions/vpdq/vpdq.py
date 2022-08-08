@@ -24,7 +24,7 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo, VPDQIndex
 
 
-class VideoVPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
+class VPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     """
     Simple signal type for video using VPDQ.
     VPDQ signal_str is the json serialization from a list of VPDQ features
