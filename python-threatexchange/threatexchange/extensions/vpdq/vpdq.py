@@ -77,8 +77,8 @@ class VPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
         return signal_str
 
     @classmethod
-    def hash_from_file(cls, path: pathlib.Path, seconds_per_hash:float = 0) -> str:
-        vpdq_hashes = vpdq.computeHash(str(path), seconds_per_hash = seconds_per_hash)
+    def hash_from_file(cls, path: pathlib.Path, seconds_per_hash: float = 0) -> str:
+        vpdq_hashes = vpdq.computeHash(str(path), seconds_per_hash=seconds_per_hash)
         return vpdq_to_json(vpdq_hashes)
 
     @classmethod
