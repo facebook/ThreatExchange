@@ -9,7 +9,7 @@ import sys
 SAMPLE_HASH_FOLDER = Path("vpdq/sample-hashes")
 SAMPLE_VIDEOS = Path("tmk/sample-videos")
 DISTANCE_TOLERANCE = 10
-QUALITY_TOLERANCE = 50
+QUALITY_TOLERANCE = 80
 TEST_FILES = [
     "chair-19-sd-bar",
     "chair-20-sd-bar",
@@ -20,6 +20,7 @@ TEST_FILES = [
     "chair-orig-22-fhd-no-bar",
     "chair-orig-22-hd-no-bar",
     "chair-orig-22-sd-bar",
+    "doorknob-hd-no-bar",
     "pattern-hd-no-bar",
     "pattern-longer-no-bar",
     "pattern-sd-grey-bar",
