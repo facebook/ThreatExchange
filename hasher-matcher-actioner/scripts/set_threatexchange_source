@@ -54,7 +54,7 @@ elif [ $1 == "local" ]; then
         \) -exec cp --parents {} ../hasher-matcher-actioner/$LOCAL_LIB_LOCATION \;
     popd
 
-    rm -r $LOCAL_LIB_LOCATION/threatexchange.egg-info
+    [ -f "$LOCAL_LIB_LOCATION/threatexchange.egg-info" ] && rm "$LOCAL_LIB_LOCATION/threatexchange.egg-info"
 
     # Install in editable mode..
     python3 -m pip install -e $LOCAL_LIB_LOCATION
