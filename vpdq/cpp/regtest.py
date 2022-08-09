@@ -52,7 +52,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "--matchDistanceTolerance",
         metavar="Matching_distanceTolerance",
         help="The hamming distance tolerance of between two frames. If the hamming distance is bigger than the tolerance, it will be considered as unmatched",
-        default="10",
+        default="31",
         type=int,
     )
     ap.add_argument(
@@ -60,7 +60,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "--qualityTolerance",
         metavar="Matching_qualityTolerance",
         help="The quality tolerance of matching two frames. If either frames is below this quality level then they will not be compared",
-        default="80",
+        default="50",
         type=int,
     )
     ap.add_argument(

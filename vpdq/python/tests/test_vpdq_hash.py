@@ -8,8 +8,8 @@ import sys
 
 SAMPLE_HASH_FOLDER = Path("vpdq/sample-hashes")
 SAMPLE_VIDEOS = Path("tmk/sample-videos")
-DISTANCE_TOLERANCE = 10
-QUALITY_TOLERANCE = 80
+DISTANCE_TOLERANCE = 50
+QUALITY_TOLERANCE = 31
 TEST_FILES = [
     "chair-19-sd-bar",
     "chair-20-sd-bar",
