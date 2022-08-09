@@ -76,7 +76,7 @@ class BaseMatchFilter:
             metadata_results = []
             for metadata_obj in match.metadata:
                 filter_one_result = self.should_process_metadata_obj(
-                    metadata_obj, index_signal_type, match.distance
+                    metadata_obj, index_signal_type, match.similarity_info
                 )
                 if type(filter_one_result) != bool or filter_one_result:
                     # If should_process_metadata_obj returned a non boolean
