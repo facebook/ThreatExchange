@@ -81,6 +81,7 @@ def test_compare_hashes():
         assert video_file.is_file()
         ret = vpdq.computeHash(
             input_video_filename=video_file,
+            seconds_per_hash = 0
         )
         assert ret is not None
         test_hashes[file] = ret
