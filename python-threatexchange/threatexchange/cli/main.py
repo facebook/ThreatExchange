@@ -169,11 +169,11 @@ def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
         ncmec_creds = NCMECCredentials(*config.ncmec_credentials)
 
     with FBThreatExchangeCredentials.set_default(
-        te_creds, cfg_cmd(FBThreatExchangeCredentials.API_CLS, "--api-token")
+        te_creds, cfg_cmd(FBThreatExchangeSignalExchangeAPI, "--api-token")
     ), NCMECCredentials.set_default(
-        ncmec_creds, cfg_cmd(NCMECCredentials.API_CLS, "--user --pass")
+        ncmec_creds, cfg_cmd(NCMECSignalExchangeAPI, "--user --pass")
     ), StopNCIICredentials.set_default(
-        stop_ncii_creds, cfg_cmd(StopNCIICredentials.API_CLS, "<TBD>")  # TODO
+        stop_ncii_creds, cfg_cmd(StopNCIISignalExchangeAPI, "<TBD>")  # TODO
     ):
         try:
             yield
@@ -190,7 +190,7 @@ def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
 class _ExtendedTypes(t.NamedTuple):
     content_types: t.List[t.Type[ContentType]]
     signal_types: t.List[t.Type[SignalType]]
-    api_instances: t.List[t.Type[SignalExchangeAPI]]
+    api_types: t.List[t.Type[SignalExchangeAPI]]
     load_failures: t.List[str]
 
     def assert_no_errors(self) -> None:
@@ -216,7 +216,7 @@ def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
         else:
             ret.signal_types.extend(manifest.signal_types)
             ret.content_types.extend(manifest.content_types)
-            ret.api_instances.extend(manifest.apis)
+            ret.api_types.extend(manifest.apis)
     return ret
 
 
@@ -242,7 +242,7 @@ def _get_settings(
         FBThreatExchangeSignalExchangeAPI,
     ]
     apis = interface_validation.SignalExchangeAPIMapping(
-        base_apis + extensions.api_instances
+        base_apis + extensions.api_types
     )
     state = CliState(list(apis.api_by_name.values()), dir=dir)
 

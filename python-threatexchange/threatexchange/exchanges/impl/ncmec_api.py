@@ -153,9 +153,13 @@ class NCMECSignalExchangeAPI(
         self._password = password
 
     @classmethod
-    def for_collab(cls, collab: NCMECCollabConfig) -> "NCMECSignalExchangeAPI":
-        creds = NCMECCredentials.get()
-        return NCMECSignalExchangeAPI(collab, creds.user, creds.password)
+    def for_collab(
+        cls,
+        collab: NCMECCollabConfig,
+        credentials: t.Optional["NCMECCredentials"] = None,
+    ) -> "NCMECSignalExchangeAPI":
+        credentials = credentials or NCMECCredentials.get(cls)
+        return cls(collab, credentials.user, credentials.password)
 
     @classmethod
     def get_name(cls) -> str:

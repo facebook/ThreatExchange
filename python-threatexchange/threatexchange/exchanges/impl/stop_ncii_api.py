@@ -4,7 +4,6 @@
 
 
 from functools import lru_cache
-import os
 import time
 import typing as t
 from dataclasses import dataclass
@@ -63,6 +62,23 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
         return opinions
 
 
+@dataclass
+class StopNCIICredentials(signal_exchange_api.CredentialHelper):
+    ENV_VARIABLE: t.ClassVar[str] = "TX_STOPNCII_KEYS"
+    FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
+
+    function_key: str
+    subscription_key: str
+
+    @classmethod
+    def _from_str(cls, s: str) -> "StopNCIICredentials":
+        user, _, passw = s.strip().partition(",")
+        return cls(user, passw)
+
+    def _are_valid(self) -> bool:
+        return bool(self.function_key and self.subscription_key)
+
+
 class StopNCIISignalExchangeAPI(
     signal_exchange_api.SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase,
@@ -93,10 +109,12 @@ class StopNCIISignalExchangeAPI(
     def for_collab(
         cls,
         collab: CollaborationConfigBase,
+        credentials: t.Optional[StopNCIICredentials] = None,
     ) -> "StopNCIISignalExchangeAPI":
-        creds = StopNCIICredentials.get()
-        return StopNCIISignalExchangeAPI(
-            collab, api.StopNCIIAPI(creds.function_key, creds.subscription_key)
+        credentials = credentials or StopNCIICredentials.get(cls)
+        return cls(
+            collab,
+            api.StopNCIIAPI(credentials.function_key, credentials.subscription_key),
         )
 
     def fetch_iter(
@@ -157,21 +175,3 @@ def _opinion_mapping(fb: api.StopNCIICSPFeedbackValue) -> state.SignalOpinionCat
     if fb == api.StopNCIICSPFeedbackValue.NotBlocked:
         return state.SignalOpinionCategory.NEGATIVE_CLASS
     return state.SignalOpinionCategory.INVESTIGATION_SEED
-
-
-@dataclass
-class StopNCIICredentials(signal_exchange_api.CredentialHelper):
-    API_CLS: t.ClassVar[t.Type[StopNCIISignalExchangeAPI]] = StopNCIISignalExchangeAPI
-    ENV_VARIABLE: t.ClassVar[str] = "TX_STOPNCII_KEYS"
-    FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
-
-    function_key: str
-    subscription_key: str
-
-    @classmethod
-    def _from_str(cls, s: str) -> "StopNCIICredentials":
-        user, _, passw = s.strip().partition(",")
-        return cls(user, passw)
-
-    def _are_valid(self) -> bool:
-        return bool(self.function_key and self.subscription_key)

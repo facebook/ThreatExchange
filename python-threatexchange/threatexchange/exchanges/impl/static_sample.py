@@ -46,7 +46,7 @@ class StaticSampleSignalExchangeAPI(
     def for_collab(
         cls, collab: CollaborationConfigBase
     ) -> "StaticSampleSignalExchangeAPI":
-        return StaticSampleSignalExchangeAPI()
+        return cls()
 
     def fetch_iter(
         self,

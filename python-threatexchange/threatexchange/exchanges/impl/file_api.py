@@ -69,7 +69,7 @@ class LocalFileSignalExchangeAPI(
     def for_collab(
         cls, collab: FileCollaborationConfig
     ) -> "LocalFileSignalExchangeAPI":
-        return LocalFileSignalExchangeAPI(collab)
+        return cls(collab)
 
     def fetch_iter(
         self,

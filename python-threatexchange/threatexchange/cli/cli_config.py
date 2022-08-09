@@ -17,23 +17,20 @@ import logging
 
 from dacite import WrongTypeError
 
-from threatexchange.exchanges.clients.stopncii import api as stopncii_api
 from threatexchange.exchanges import collab_config
 from threatexchange.exchanges.impl.stop_ncii_api import StopNCIICredentials
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     TCollabConfig,
-    TSignalExchangeAPI,
     TSignalExchangeAPICls,
 )
 from threatexchange.content_type import content_base
-from threatexchange.exchanges.fetch_state import FetchedStateStoreBase
 from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
 from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
-from threatexchange.utils import dataclass_json as cli_json
+from threatexchange.utils import dataclass_json
 
 
 CONFIG_FILENAME = "config.json"
@@ -104,12 +101,12 @@ class CliState(collab_config.CollaborationConfigStoreBase):
         return self.collab_dir / f"{config.name}.json"
 
     def get_persistent_config(self) -> CLiConfig:
-        return cli_json.dataclass_load_file(
+        return dataclass_json.dataclass_load_file(
             self.config_file, CLiConfig, default=CLiConfig()
         )
 
     def update_persistent_config(self, config: CLiConfig):
-        cli_json.dataclass_dump_file(self.config_file, config)
+        dataclass_json.dataclass_dump_file(self.config_file, config)
 
     def dir_for_fetched_state(
         self,
@@ -147,7 +144,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
                         logging.warning("Ignoring collab config of unknown type: %s", f)
                         continue
                 try:
-                    config = cli_json.dataclass_load_dict(content, ctype)
+                    config = dataclass_json.dataclass_load_dict(content, ctype)
                     ret.append(config)
                 except WrongTypeError:
                     logging.exception("Failed to parse collab config: %s", f)
@@ -158,7 +155,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
         """Create or update a collaboration"""
         assert collab.api, "didn't set API?"
         path = self.path_for_collab_config(collab)
-        cli_json.dataclass_dump_file(path, collab)
+        dataclass_json.dataclass_dump_file(path, collab)
 
     def delete_collab(self, collab: collab_config.CollaborationConfigBase) -> None:
         """Delete a collaboration"""

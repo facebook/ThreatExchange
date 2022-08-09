@@ -6,10 +6,8 @@ The SignalExchangeAPI talks to external APIs to read/write signals
 @see SignalExchangeAPI
 """
 
-from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from abc import ABC, ABCMeta, abstractmethod
 import contextlib
-from genericpath import isfile
 import logging
 import os
 import pathlib
@@ -69,9 +67,9 @@ class SignalExchangeAPI(
 
     """
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def for_collab(collab: TCollabConfig) -> "SignalExchangeAPI":
+    def for_collab(cls, collab: TCollabConfig) -> "SignalExchangeAPI":
         """
         An alternative constructor to get a working instance of the API.
 
@@ -324,7 +322,7 @@ class SignalExchangeAPIInvalidAuthException(Exception):
     or a multitude of other reasons.
     """
 
-    def __init__(self, src_api: TSignalExchangeAPICls, message: str) -> None:
+    def __init__(self, src_api: t.Type[SignalExchangeAPI], message: str) -> None:
         self.src_api = src_api
         self.message = message
 
@@ -335,7 +333,11 @@ class SignalExchangeAPIMissingAuthException(Exception):
     """
 
     def __init__(
-        self, src_api: TSignalExchangeAPICls, *, file_hint: str = "", env_hint: str = ""
+        self,
+        src_api: t.Type[SignalExchangeAPI],
+        *,
+        file_hint: str = "",
+        env_hint: str = "",
     ) -> None:
         self.src_api = src_api
         self.hints: t.List[str] = []
@@ -372,15 +374,18 @@ class CredentialHelper:
     Wrapper to help standardize credential sources, and tie to exceptions
     """
 
-    API_CLS: t.ClassVar[t.Type[SignalExchangeAPI]]
     ENV_VARIABLE: t.ClassVar[str] = ""
     FILE_NAME: t.ClassVar[str] = ""
 
+    # This is slated to be removed in a future version!
+    # It's a placeholder approach while for_collab() gains the auth argument
     _DEFAULT: t.ClassVar[t.Optional["CredentialHelper"]] = None  # t.Self
     _DEFAULT_SRC: t.ClassVar[str] = ""
 
     @classmethod
-    def get(cls: t.Type[CredentialSelf]) -> CredentialSelf:
+    def get(
+        cls: t.Type[CredentialSelf], for_cls: t.Type[SignalExchangeAPI]
+    ) -> CredentialSelf:
         srcs: t.List[t.Tuple[t.Callable[[], t.Optional[CredentialSelf]], str]] = [
             ((lambda: cls._DEFAULT), cls._DEFAULT_SRC),  # type: ignore[list-item,return-value]
             (cls._from_env, f"environment variable {cls.ENV_VARIABLE}"),
@@ -397,9 +402,9 @@ class CredentialHelper:
                 logging.exception("Exception during parsing %s", src)
                 pass
             raise SignalExchangeAPIInvalidAuthException(
-                cls.API_CLS, f"Invalid credentials from {src}"
+                for_cls, f"Invalid credentials from {src}"
             )
-        ex = SignalExchangeAPIMissingAuthException(cls.API_CLS)
+        ex = SignalExchangeAPIMissingAuthException(for_cls)
         if cls._DEFAULT_SRC:
             ex.hints.append(cls._DEFAULT_SRC)
         if cls.ENV_VARIABLE:
@@ -416,6 +421,8 @@ class CredentialHelper:
         Set the default (highest preferred) credentials manually.
 
         They won't be checked for validity until a future get()
+
+        This call can be used as contextmanager to unset within a `with` statement
         """
         cls._DEFAULT = new_default  # type: ignore[assignment]  # need t.Self
         cls._DEFAULT_SRC = src

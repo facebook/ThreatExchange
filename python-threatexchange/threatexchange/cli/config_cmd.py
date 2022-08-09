@@ -582,7 +582,7 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
         self.action(settings)
 
     def get_te_api(self) -> ThreatExchangeAPI:
-        creds = FBThreatExchangeCredentials.get()
+        creds = FBThreatExchangeCredentials.get(FBThreatExchangeSignalExchangeAPI)
         return ThreatExchangeAPI(creds.api_token)
 
     def execute_list_collabs(self, settings: CLISettings) -> None:

@@ -242,11 +242,13 @@ class FBThreatExchangeSignalExchangeAPI(
 
     @classmethod
     def for_collab(
-        cls, collab: FBThreatExchangeCollabConfig
+        cls,
+        collab: FBThreatExchangeCollabConfig,
+        credentials: t.Optional["FBThreatExchangeCredentials"] = None,
     ) -> "FBThreatExchangeSignalExchangeAPI":
-        creds = FBThreatExchangeCredentials.get()
-        client = ThreatExchangeAPI(creds.api_token)
-        return FBThreatExchangeSignalExchangeAPI(client, collab)
+        credentials = credentials or FBThreatExchangeCredentials.get(cls)
+        client = ThreatExchangeAPI(credentials.api_token)
+        return cls(client, collab)
 
     @classmethod
     def get_name(cls) -> str:
