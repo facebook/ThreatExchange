@@ -29,7 +29,7 @@ ROOTDIR = Path(__file__).parents[5]
 
 @pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 def test_vpdq_from_string_path():
-    computed_hash = VPDQSignal.hash_from_file(ROOTDIR / VIDEO, seconds_per_hash=0)
+    computed_hash = VPDQSignal.hash_from_file(ROOTDIR / VIDEO)
     expected_hash = read_file_to_hash(ROOTDIR / HASH)
     assert vpdq_to_json(json_to_vpdq(computed_hash)) == computed_hash
     res = match_VPDQ_hash_brute(
