@@ -110,7 +110,7 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256") -> int:
 def computeHash(
     input_video_filename: t.Union[str, Path],
     ffmpeg_path: str = "ffmpeg",
-    seconds_per_hash: double = 0,
+    seconds_per_hash: double = 1,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
