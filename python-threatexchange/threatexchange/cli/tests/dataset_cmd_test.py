@@ -43,15 +43,16 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         output = self.cli_call("dataset", "-P")
         assert output.count("\n") == signal_count
         assert (
-            "'Sample Signals' url "
+            "url "
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/ "
+            "'Sample Signals' "
             "INVESTIGATION_SEED"
         ) in output
         # The filters change the print output
         self.assert_cli_output(
             ("dataset", "-P", "-s", "url"),
-            "'Sample Signals' "
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/ "
+            "'Sample Signals' "
             "INVESTIGATION_SEED",
         )
         self.assert_cli_output(
@@ -67,23 +68,24 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         output = self.cli_call("dataset", "-P", "--csv")
         assert output.count("\n") - 1 == signal_count  # -1 for header
         assert (
-            "Sample Signals,url,"
+            "url,"
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
+            "Sample Signals,"
             "INVESTIGATION_SEED,"
         ) in output
         # Repeat same filters - however, these don't change the output format except -S\
-        csv_header = "collab,signal_type,signal_str,category,tags\n"
+        csv_header = "signal_type,signal_str,collab,category,tags\n"
         self.assert_cli_output(
             ("dataset", "-P", "--csv", "-s", "url"),
-            csv_header + "Sample Signals,url,"
+            csv_header + "url,"
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
-            "INVESTIGATION_SEED,",
+            "Sample Signals,INVESTIGATION_SEED,",
         )
         self.assert_cli_output(
             ("dataset", "-P", "--csv", "-s", "url", "-c", "Sample Signals"),
-            csv_header + "Sample Signals,url,"
+            csv_header + "url,"
             "https://developers.facebook.com/docs/threat-exchange/reference/apis/,"
-            "INVESTIGATION_SEED,",
+            "Sample Signals,INVESTIGATION_SEED,",
         )
         # --csv and -S not combinable
         self.assert_cli_usage_error(("dataset", "-P", "--csv", "-S"))
