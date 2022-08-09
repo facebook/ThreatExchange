@@ -51,6 +51,7 @@ elif [ $1 == "local" ]; then
         -o -name "*.rst" \
         -o -name "*.md"  \
         -o -name "*.txt" \
+        -o -name "PKG-INFO" \
         \) -exec cp --parents {} ../hasher-matcher-actioner/$LOCAL_LIB_LOCATION \;
     popd
 
