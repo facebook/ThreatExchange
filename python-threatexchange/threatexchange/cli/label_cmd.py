@@ -125,7 +125,7 @@ class LabelCommand(command_base.Command):
     def execute(self, settings: CLISettings) -> None:
         self.stderr("This command is not implemented yet, and most actions won't work")
 
-        api = settings.apis.get_for_collab(self.collab)
+        api = settings.apis.get_instance_for_collab(self.collab)
         # signal_types = self.only_signals or settings.get_signal_types_for_content(
         #     self.content_type
         # )
@@ -135,7 +135,6 @@ class LabelCommand(command_base.Command):
                 signal_type = self.as_hash
                 hash_val = signal_type.validate_signal_str(f.read_text())
                 api.report_opinion(
-                    self.collab,
                     signal_type,
                     hash_val,
                     SignalOpinion(

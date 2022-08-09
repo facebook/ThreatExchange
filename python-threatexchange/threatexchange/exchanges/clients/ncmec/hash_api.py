@@ -255,7 +255,7 @@ class NCMECHashAPI:
         self.password = password
         self._base_url = environment.value
 
-    def _get_session(self, endpoint: NCMECEndpoint) -> requests.Session:
+    def _get_session(self) -> requests.Session:
         """
         Custom requests sesson
 
@@ -295,7 +295,7 @@ class NCMECHashAPI:
             url = self._base_url + next_
             params = {}
 
-        with self._get_session(endpoint) as session:
+        with self._get_session() as session:
             response = session.get(url, params=params)
         # Gate this log just in case decode() blows up
         if logging.getLogger().isEnabledFor(logging.DEBUG):
@@ -317,7 +317,7 @@ class NCMECHashAPI:
         """
 
         url = "/".join((self._base_url, endpoint.value))
-        with self._get_session(endpoint) as session:
+        with self._get_session() as session:
             response = session.post(url, data=data)
             response.raise_for_status()
             return response

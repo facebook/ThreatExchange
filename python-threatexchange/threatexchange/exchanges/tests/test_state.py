@@ -64,6 +64,10 @@ class _FakeAPIMixin(t.Generic[TUpdateRecordKey, TUpdateRecordValue]):
     map it to hash => merged_opinions
     """
 
+    @classmethod
+    def for_collab(cls, collab: CollaborationConfigBase) -> SignalExchangeAPI:
+        raise NotImplementedError("Shouldn't be called")
+
     def __init__(
         self,
         fetches: t.Sequence[t.Dict[TUpdateRecordKey, t.Optional[TUpdateRecordValue]]],
@@ -79,7 +83,6 @@ class _FakeAPIMixin(t.Generic[TUpdateRecordKey, TUpdateRecordValue]):
     def fetch_iter(
         self,
         supported_signal_types: t.Sequence[t.Type[SignalType]],
-        collab: CollaborationConfigBase,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[FakeCheckpoint],
@@ -178,7 +181,7 @@ def test_test_impls() -> None:
     md5 = "0" * 32
 
     api = FakePerOwnerOpinionAPI([{1: FakeUpdateRecord(1, "tag", md5)}])
-    deltas = list(api.fetch_iter([], config, None))
+    deltas = list(api.fetch_iter([], None))
     assert len(deltas) == 1
     delta = deltas[0]
     assert delta.checkpoint == FakeCheckpoint(100)
@@ -358,7 +361,7 @@ def test_update_stream_delta() -> None:
     api = FakePerOwnerOpinionAPI([dict(updates)])
 
     # If we appy updates all at once, we expect just the final state
-    delta = next(api.fetch_iter([], collab, None))
+    delta = next(api.fetch_iter([], None))
 
     store.merge(collab, delta)
     store.flush()
@@ -369,7 +372,7 @@ def test_update_stream_delta() -> None:
     store = FakeFetchStore(FakePerOwnerOpinionAPI)
     # If we appy updates 1-by-1 we expect all the end states
     api = FakePerOwnerOpinionAPI([dict([t]) for t in updates])
-    for i, delta in enumerate(api.fetch_iter([], collab, None)):
+    for i, delta in enumerate(api.fetch_iter([], None)):
         store.merge(collab, delta)
         store.flush()
         assert store.get_for_signal_type([collab], VideoMD5Signal) == {
@@ -496,7 +499,7 @@ def test_simple_update_delta() -> None:
     # Note - dict(updates) work because our merge behavior is replace
     api = FakeNoConversionAPI([dict(updates)])
     # If we appy updates all at once, we expect just the final state
-    delta = next(api.fetch_iter([], collab, None))
+    delta = next(api.fetch_iter([], None))
     store.merge(collab, delta)
     store.flush()
     assert store.get_for_signal_type([collab], VideoMD5Signal) == {
@@ -506,7 +509,7 @@ def test_simple_update_delta() -> None:
     store = FakeFetchStore(FakeNoConversionAPI)
     # If we appy updates 1-by-1 we expect all the end states
     api = FakeNoConversionAPI([dict([t]) for t in updates])
-    for i, delta in enumerate(api.fetch_iter([], collab, None)):
+    for i, delta in enumerate(api.fetch_iter([], None)):
         store.merge(collab, delta)
         store.flush()
         assert store.get_for_signal_type([collab], VideoMD5Signal) == {

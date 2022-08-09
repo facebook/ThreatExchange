@@ -1,12 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-"""
-SignalExchangeAPI impl StopNCII.org
-
-"""
+"""SignalExchangeAPI implementation for StopNCII.org"""
 
 
 from functools import lru_cache
+import os
 import time
 import typing as t
 from dataclasses import dataclass
@@ -84,29 +82,26 @@ class StopNCIISignalExchangeAPI(
 
     def __init__(
         self,
-        subscription_key: t.Optional[str],
-        fetch_function_key: t.Optional[str],
-        additional_function_keys: t.Optional[t.Dict[api.StopNCIIEndpoint, str]] = None,
+        collab: CollaborationConfigBase,
+        client: api.StopNCIIAPI,
     ) -> None:
         super().__init__()
-        self._api = None
-        if subscription_key is not None and fetch_function_key is not None:
-            self._api = api.StopNCIIAPI(
-                subscription_key,
-                fetch_function_key,
-                additional_function_keys,
-            )
+        self.collab = collab
+        self.api = client
 
-    @property
-    def api(self) -> api.StopNCIIAPI:
-        if self._api is None:
-            raise Exception("StopNCII.org access tokens not configured.")
-        return self._api
+    @classmethod
+    def for_collab(
+        cls,
+        collab: CollaborationConfigBase,
+    ) -> "StopNCIISignalExchangeAPI":
+        creds = StopNCIICredentials.get()
+        return StopNCIISignalExchangeAPI(
+            collab, api.StopNCIIAPI(creds.function_key, creds.subscription_key)
+        )
 
     def fetch_iter(
         self,
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
-        _collab: CollaborationConfigBase,
         checkpoint: t.Optional[StopNCIICheckpoint],
     ) -> t.Iterator[
         state.FetchDelta[
@@ -162,3 +157,21 @@ def _opinion_mapping(fb: api.StopNCIICSPFeedbackValue) -> state.SignalOpinionCat
     if fb == api.StopNCIICSPFeedbackValue.NotBlocked:
         return state.SignalOpinionCategory.NEGATIVE_CLASS
     return state.SignalOpinionCategory.INVESTIGATION_SEED
+
+
+@dataclass
+class StopNCIICredentials(signal_exchange_api.CredentialHelper):
+    API_CLS: t.ClassVar[t.Type[StopNCIISignalExchangeAPI]] = StopNCIISignalExchangeAPI
+    ENV_VARIABLE: t.ClassVar[str] = "TX_STOPNCII_KEYS"
+    FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
+
+    function_key: str
+    subscription_key: str
+
+    @classmethod
+    def _from_str(cls, s: str) -> "StopNCIICredentials":
+        user, _, passw = s.strip().partition(",")
+        return cls(user, passw)
+
+    def _are_valid(self) -> bool:
+        return bool(self.function_key and self.subscription_key)

@@ -324,6 +324,6 @@ class StopNCIIAPI:
 
 def is_valid_key(key: str) -> bool:
     """
-    Returns true if the string looks like a valid access token
+    Returns true if the string looks like a valid stopncii key
     """
     return bool(key)  # TODO
