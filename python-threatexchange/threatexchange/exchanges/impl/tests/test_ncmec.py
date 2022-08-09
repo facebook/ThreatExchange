@@ -57,7 +57,7 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     }
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], collab, total_updates
+        [VideoMD5Signal], exchange.collab, total_updates
     )[VideoMD5Signal]
     assert as_signals == {
         "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()}),
@@ -67,6 +67,7 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     assert next(it, None) is None
 
     # Test esp_id filter
+    collab = NCMECCollabConfig(NCMECEnvironment.Industry, "Test")
     collab.only_esp_ids = {101}
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], collab, total_updates
