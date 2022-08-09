@@ -20,11 +20,6 @@ from hmalib.common.mappings import full_class_name, import_class
 from hmalib.common.config import HMAConfig, create_config, update_config
 
 
-def _config_name(clazz: t.Type[CollaborationConfigBase], name: str):
-    """Use this to make the EditableCollaborationConfig's name unique."""
-    return f"{clazz.__name__}/{name}"
-
-
 @dataclass
 class EditableCollaborationConfig(HMAConfig):
     """
@@ -53,15 +48,13 @@ def _build_collab_config(
     return dataclass_loads(attributes_serialized, cls)
 
 
-def get_collab_config(
-    clazz: t.Type[CollaborationConfigBase], name: str
-) -> t.Optional[CollaborationConfigBase]:
+def get_collab_config(name: str) -> t.Optional[CollaborationConfigBase]:
     """
     Get CollaborationConfigBase of class and name if one exists as an HMAConfig.
 
     None if not.
     """
-    ec = EditableCollaborationConfig.get(_config_name(clazz, name))
+    ec = EditableCollaborationConfig.get(name)
     if ec is None:
         return None
     return _build_collab_config(ec.collab_config_class, ec.attributes_json_serialized)
@@ -83,7 +76,7 @@ def create_collab_config(collab_config: CollaborationConfigBase):
     """
     create_config(
         EditableCollaborationConfig(
-            name=_config_name(collab_config.__class__, collab_config.name),
+            name=collab_config.name,
             collab_config_class=full_class_name(collab_config.__class__),
             attributes_json_serialized=dataclass_dumps(collab_config),
         )
@@ -94,9 +87,7 @@ def update_collab_config(collab_config: CollaborationConfigBase):
     """
     Update an existing CollaborationConfigBase as HMAConfig.
     """
-    ec = EditableCollaborationConfig.get(
-        _config_name(collab_config.__class__, collab_config.name)
-    )
+    ec = EditableCollaborationConfig.get(collab_config.name)
 
     if ec is None:
         raise ValueError("EditableCollabConfig object does not exist as an HMAConfig.")

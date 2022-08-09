@@ -43,7 +43,7 @@ class TXCollabConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
                 )
             )
             config = tx_collab_config.get_collab_config(
-                FBThreatExchangeCollabConfig, name="Threatcollaboration Something"
+                name="Threatcollaboration Something"
             )
             self.assertEqual("Threatcollaboration Something", config.name)
             self.assertEqual(1212312, config.privacy_group)
@@ -56,7 +56,7 @@ class TXCollabConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
                 )
             )
             config = tx_collab_config.get_collab_config(
-                FBThreatExchangeCollabConfig, name="Threatcollaboration Something"
+                name="Threatcollaboration Something"
             )
             self.assertEqual("Threatcollaboration Something", config.name)
             self.assertEqual(1212312, config.privacy_group)
@@ -66,7 +66,7 @@ class TXCollabConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
             tx_collab_config.update_collab_config(config)
 
             config = tx_collab_config.get_collab_config(
-                FBThreatExchangeCollabConfig, name="Threatcollaboration Something"
+                name="Threatcollaboration Something"
             )
             self.assertEqual(444333, config.privacy_group)
 
@@ -88,7 +88,7 @@ class TXCollabConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
                 NCMECCollabConfig(
                     name="child-safety",
                     environment=NCMECEnvironment.Exploitative,
-                    only_esp_ids=set([1, 2, 3]),
+                    only_esp_ids={1, 2, 3},
                 )
             )
 
