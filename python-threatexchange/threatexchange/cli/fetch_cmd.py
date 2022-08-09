@@ -194,15 +194,23 @@ class FetchCommand(command_base.Command):
             it = api.fetch_iter(settings.get_all_signal_types(), collab, checkpoint)
             delta: FetchDeltaTyped
             for delta in it:
-                logging.info("fetch() with %d new records", len(delta.updates))
+                assert delta.checkpoint is not None  # Infinite loop protection
+                progress_time = delta.checkpoint.get_progress_timestamp()
+                logging.info(
+                    "fetch() with %d new records%s",
+                    len(delta.updates),
+                    (
+                        ""
+                        if progress_time is None
+                        else f" @ {_timeformat(progress_time)}"
+                    ),
+                )
                 next_checkpoint = delta.checkpoint
                 self._fetch_progress(len(delta.updates), next_checkpoint)
-                assert next_checkpoint is not None  # Infinite loop protection
                 if checkpoint is not None:
                     prev_time = checkpoint.get_progress_timestamp()
-                    next_time = next_checkpoint.get_progress_timestamp()
-                    if prev_time and next_time:
-                        assert prev_time <= next_time, (
+                    if prev_time is not None and progress_time is not None:
+                        assert prev_time <= progress_time, (
                             "checkpoint time rewound? ",
                             "This can indicate a serious ",
                             "problem with the API and checkpointing",
@@ -276,9 +284,11 @@ class FetchCommand(command_base.Command):
             elif self.last_update_time >= time.time() - 1:
                 from_time = "moments ago"
             else:
-                from_time = datetime.datetime.fromtimestamp(
-                    self.last_update_time
-                ).isoformat()
+                from_time = _timeformat(self.last_update_time)
             from_time = f" at {from_time}"
 
         self._stderr_current(f"{processed}{from_time}")
+
+
+def _timeformat(timestamp: int) -> str:
+    return datetime.datetime.fromtimestamp(timestamp).isoformat()
