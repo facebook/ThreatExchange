@@ -1,8 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import vpdq
+import typing as t
 
 
-def read_file_to_hash(input_hash_filename: str) -> list[vpdq.VpdqFeature]:
+def read_file_to_hash(input_hash_filename: str) -> t.List[vpdq.VpdqFeature]:
     """Read hash file and return vpdq hash
 
     Args:
@@ -22,16 +23,3 @@ def read_file_to_hash(input_hash_filename: str) -> list[vpdq.VpdqFeature]:
         hash.append(feature)
 
     return hash
-
-
-def output_hash_to_file(output_hash_filename, hashes):
-    """Output vpdq hash to txt file
-
-    Args:
-        output_hash_filename (str): Output hash file path
-        hash (list of VpdqFeature): Vpdq Hash"""
-
-    with open(output_hash_filename, "w") as file:
-        for cur in hashes:
-            file.write(f"{cur.frame_number},{cur.quality},{hash_to_hex(cur.hash['w'])},{cur.timestamp:.3f}")
-            file.write("\n")
