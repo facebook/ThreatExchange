@@ -1,9 +1,9 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
 import typing as t
-import faiss  # type: ignore
+import faiss
 import binascii
-import numpy  # type: ignore
+import numpy
 from abc import ABC, abstractmethod
 
 from threatexchange.signal_type.pdq.pdq_utils import BITS_IN_PDQ

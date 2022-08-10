@@ -50,7 +50,7 @@ class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
 
     # ToDo this violates Liskov but is already used in Prod and will require a larger refactor
     @classmethod
-    def store(  # type: ignore
+    def store(
         cls, state_dir: pathlib.Path, contents: t.Iterable["CliIndicatorSerialization"]
     ) -> t.List[pathlib.Path]:
         # Stores in multiple files split by indicator type

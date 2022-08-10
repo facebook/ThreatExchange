@@ -21,9 +21,8 @@ from threatexchange.exchanges.clients.fb_threatexchange.api import (
     is_valid_app_token,
 )
 
-from threatexchange.exchanges import fetch_state as state
+from threatexchange.exchanges import auth, fetch_state as state
 from threatexchange.exchanges.signal_exchange_api import (
-    CredentialHelper,
     SignalExchangeAPIWithSimpleUpdates,
 )
 from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
@@ -108,7 +107,7 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
 
     opinions: t.List[FBThreatExchangeOpinion]
 
-    def get_as_opinions(  # type: ignore  # Why can't mypy tell this is a subclass?
+    def get_as_opinions(
         self,
     ) -> t.List[FBThreatExchangeOpinion]:
         return self.opinions
@@ -220,6 +219,21 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
         )
 
 
+@dataclass
+class FBThreatExchangeCredentials(auth.CredentialHelper):
+    ENV_VARIABLE: t.ClassVar[str] = "TX_ACCESS_TOKEN"
+    FILE_NAME: t.ClassVar[str] = "~/.txtoken"
+
+    api_token: str
+
+    @classmethod
+    def _from_str(cls, s: str) -> t.Optional["FBThreatExchangeCredentials"]:
+        return cls(s.strip())
+
+    def _are_valid(self) -> bool:
+        return is_valid_app_token(self.api_token)
+
+
 ThreatExchangeDelta = state.FetchDelta[
     t.Tuple[str, str],
     FBThreatExchangeIndicatorRecord,
@@ -228,11 +242,14 @@ ThreatExchangeDelta = state.FetchDelta[
 
 
 class FBThreatExchangeSignalExchangeAPI(
+    auth.SignalExchangeWithAuth[
+        FBThreatExchangeCollabConfig, FBThreatExchangeCredentials
+    ],
     SignalExchangeAPIWithSimpleUpdates[
         FBThreatExchangeCollabConfig,
         FBThreatExchangeCheckpoint,
         FBThreatExchangeIndicatorRecord,
-    ]
+    ],
 ):
     def __init__(
         self, client: ThreatExchangeAPI, collab: FBThreatExchangeCollabConfig
@@ -244,7 +261,7 @@ class FBThreatExchangeSignalExchangeAPI(
     def for_collab(
         cls,
         collab: FBThreatExchangeCollabConfig,
-        credentials: t.Optional["FBThreatExchangeCredentials"] = None,
+        credentials: t.Optional[FBThreatExchangeCredentials] = None,
     ) -> "FBThreatExchangeSignalExchangeAPI":
         credentials = credentials or FBThreatExchangeCredentials.get(cls)
         client = ThreatExchangeAPI(credentials.api_token)
@@ -254,17 +271,21 @@ class FBThreatExchangeSignalExchangeAPI(
     def get_name(cls) -> str:
         return _API_NAME
 
-    @classmethod
-    def get_checkpoint_cls(cls) -> t.Type[FBThreatExchangeCheckpoint]:
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[FBThreatExchangeCheckpoint]:
         return FBThreatExchangeCheckpoint
 
-    @classmethod
-    def get_record_cls(cls) -> t.Type[FBThreatExchangeIndicatorRecord]:
+    @staticmethod
+    def get_record_cls() -> t.Type[FBThreatExchangeIndicatorRecord]:
         return FBThreatExchangeIndicatorRecord
 
-    @classmethod
-    def get_config_class(cls) -> t.Type[FBThreatExchangeCollabConfig]:
+    @staticmethod
+    def get_config_cls() -> t.Type[FBThreatExchangeCollabConfig]:
         return FBThreatExchangeCollabConfig
+
+    @staticmethod
+    def get_credential_cls() -> t.Type[FBThreatExchangeCredentials]:
+        return FBThreatExchangeCredentials
 
     def fetch_iter(
         self,
@@ -448,21 +469,3 @@ def _make_indicator_type_mapping(
             ret[type_][tag].append(st)
 
     return ret
-
-
-@dataclass
-class FBThreatExchangeCredentials(CredentialHelper):
-    API_CLS: t.ClassVar[
-        t.Type[FBThreatExchangeSignalExchangeAPI]
-    ] = FBThreatExchangeSignalExchangeAPI
-    ENV_VARIABLE: t.ClassVar[str] = "TX_ACCESS_TOKEN"
-    FILE_NAME: t.ClassVar[str] = "~/.txtoken"
-
-    api_token: str
-
-    @classmethod
-    def _from_str(cls, s: str) -> t.Optional["FBThreatExchangeCredentials"]:
-        return cls(s.strip())
-
-    def _are_valid(self) -> bool:
-        return is_valid_app_token(self.api_token)

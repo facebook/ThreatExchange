@@ -61,9 +61,17 @@ class LocalFileSignalExchangeAPI(
 
     collab: FileCollaborationConfig
 
-    @classmethod
-    def get_config_class(cls) -> t.Type[FileCollaborationConfig]:
+    @staticmethod
+    def get_config_cls() -> t.Type[FileCollaborationConfig]:
         return FileCollaborationConfig
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[state.FetchCheckpointBase]:
+        return state.FetchCheckpointBase
+
+    @staticmethod
+    def get_record_cls() -> t.Type[state.FetchedSignalMetadata]:
+        return state.FetchedSignalMetadata
 
     @classmethod
     def for_collab(

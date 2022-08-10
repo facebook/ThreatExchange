@@ -12,6 +12,7 @@ from threatexchange.exchanges.clients.stopncii import api
 
 from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.collab_config import (
     CollaborationConfigBase,
 )
@@ -63,7 +64,7 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
 
 
 @dataclass
-class StopNCIICredentials(signal_exchange_api.CredentialHelper):
+class StopNCIICredentials(auth.CredentialHelper):
     ENV_VARIABLE: t.ClassVar[str] = "TX_STOPNCII_KEYS"
     FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
 
@@ -80,11 +81,12 @@ class StopNCIICredentials(signal_exchange_api.CredentialHelper):
 
 
 class StopNCIISignalExchangeAPI(
+    auth.SignalExchangeWithAuth[CollaborationConfigBase, StopNCIICredentials],
     signal_exchange_api.SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase,
         StopNCIICheckpoint,
         StopNCIISignalMetadata,
-    ]
+    ],
 ):
     """
     Conversion for the StopNCII.org API
@@ -104,6 +106,22 @@ class StopNCIISignalExchangeAPI(
         super().__init__()
         self.collab = collab
         self.api = client
+
+    @staticmethod
+    def get_config_cls() -> t.Type[CollaborationConfigBase]:
+        return CollaborationConfigBase
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[StopNCIICheckpoint]:
+        return StopNCIICheckpoint
+
+    @staticmethod
+    def get_record_cls() -> t.Type[StopNCIISignalMetadata]:
+        return StopNCIISignalMetadata
+
+    @staticmethod
+    def get_credential_cls() -> t.Type[StopNCIICredentials]:
+        return StopNCIICredentials
 
     @classmethod
     def for_collab(
