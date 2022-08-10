@@ -425,7 +425,6 @@ class ConfigExtensionsCommand(command_base.Command):
             ),
         )
 
-        # For APIs, we also need to make sure they can be instanciated without args for the CLI
         apis = list(manifest.apis)
         apis.extend(settings.apis.get_all())
         interface_validation.SignalExchangeAPIMapping(apis)
