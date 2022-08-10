@@ -35,20 +35,15 @@ import pathlib
 import shutil
 import warnings
 
-from threatexchange.cli.exceptions import CommandError
-
-
 # Import pdq first with its hash order warning squelched, it's before our time
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from threatexchange.signal_type.pdq import signal
 
+from threatexchange.cli.exceptions import CommandError
 from threatexchange import interface_validation
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
-from threatexchange.exchanges.clients.stopncii import api as stopncii_api
-from threatexchange.exchanges.clients.fb_threatexchange import api as tx_api
-from threatexchange.exchanges.clients.ncmec import hash_api as ncmec_api
 from threatexchange.exchanges.impl.file_api import LocalFileSignalExchangeAPI
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
@@ -65,8 +60,8 @@ from threatexchange.exchanges.impl.ncmec_api import (
 )
 
 from threatexchange.content_type import photo, video, text, url
-from threatexchange.exchanges.signal_exchange_api import (
-    SignalExchangeAPI,
+from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.auth import (
     SignalExchangeAPIInvalidAuthException,
     SignalExchangeAPIMissingAuthException,
 )
@@ -150,7 +145,7 @@ def execute_command(settings: CLISettings, namespace) -> None:
     if "full_argparse_namespace" in arg_names:
         command_args["full_argparse_namespace"] = namespace
 
-    command = command_cls(**command_args)  # type: ignore[call-arg]
+    command = command_cls(**command_args)
     command.execute(settings)
 
 

@@ -6,11 +6,7 @@ The SignalExchangeAPI talks to external APIs to read/write signals
 @see SignalExchangeAPI
 """
 
-from abc import ABC, ABCMeta, abstractmethod
-import contextlib
-import logging
-import os
-import pathlib
+from abc import ABC, abstractmethod
 import typing as t
 
 from threatexchange import common
@@ -78,17 +74,9 @@ class SignalExchangeAPI(
         2. All methods are callable if supported by the base implementation
 
         For implementations that do need additional configuration or
-        authentification, this method is a good place to attempt to pull in
-        default authentification from known locations. Your general options
-        are:
-        1. From an environment variable
-        2. From a file in a known location (ideally chmod 400)
-        3. From a keychain service or similar running in the background
-        4. From the collaboration config itself
-
-        If you aren't able to get required authentification, it's best to
-        include what options a user has in the exception - even if that's
-        just a link to the README.
+        authentification, @see threatexchange.exchanges.auth
+        If not explicitly given auth by those helpers, the implementation
+        should attempt to find its own, and throw an exception otherwise.
 
         Don't:
         * Prompt the user via stdin
@@ -117,23 +105,23 @@ class SignalExchangeAPI(
                 name = name[: -len(suffix)]
         return common.class_name_to_human_name(name, "Signal")
 
-    @classmethod
-    def get_checkpoint_cls(cls) -> t.Type[state.TFetchCheckpoint]:
+    @staticmethod
+    @abstractmethod
+    def get_checkpoint_cls() -> t.Type[state.TFetchCheckpoint]:
         """Returns the dataclass used to control checkpoint for this API"""
-        # Default = no checkpoints
-        return state.FetchCheckpointBase  # type: ignore
+        pass
 
-    @classmethod
-    def get_record_cls(cls) -> t.Type[state.TFetchedSignalMetadata]:
+    @staticmethod
+    @abstractmethod
+    def get_record_cls() -> t.Type[state.TFetchedSignalMetadata]:
         """Returns the dataclass used to store records for this API"""
-        # Default = no metadata
-        return state.FetchedSignalMetadata  # type: ignore
+        pass
 
-    @classmethod
-    def get_config_class(cls) -> t.Type[TCollabConfig]:
+    @staticmethod
+    @abstractmethod
+    def get_config_cls() -> t.Type[TCollabConfig]:
         """Returns the dataclass used to store records for this API"""
-        # Default - just knowing the type is enough
-        return CollaborationConfigBase  # type: ignore
+        pass
 
     @classmethod
     def fetch_value_merge(
@@ -262,6 +250,9 @@ class SignalExchangeAPI(
         raise NotImplementedError
 
 
+# Convenience for avoiding mypy strict errors
+AnySignalExchangeAPI = SignalExchangeAPI[t.Any, t.Any, t.Any, t.Any, t.Any]
+
 # A convenience helper since mypy can't intuit that bound != t.Any
 # For methods like get_checkpoint_cls
 TSignalExchangeAPI = SignalExchangeAPI[
@@ -312,157 +303,3 @@ class SignalExchangeAPIWithSimpleUpdates(
                 ret[s_type] = inner
             inner[signal_str] = metadata
         return ret
-
-
-class SignalExchangeAPIInvalidAuthException(Exception):
-    """
-    An exception you can use to hint users their authentification is bad
-
-    This can be because it's incorrectly formatted, it's been expired,
-    or a multitude of other reasons.
-    """
-
-    def __init__(self, src_api: t.Type[SignalExchangeAPI], message: str) -> None:
-        self.src_api = src_api
-        self.message = message
-
-
-class SignalExchangeAPIMissingAuthException(Exception):
-    """
-    An exception you can use to hint users how to authentificate your API
-    """
-
-    def __init__(
-        self,
-        src_api: t.Type[SignalExchangeAPI],
-        *,
-        file_hint: str = "",
-        env_hint: str = "",
-    ) -> None:
-        self.src_api = src_api
-        self.hints: t.List[str] = []
-        if env_hint:
-            self.add_env_hint(env_hint)
-        if file_hint:
-            self.add_file_hint(file_hint)
-
-    def add_file_hint(self, filename: str) -> None:
-        self.hints.append(
-            f"creating (and maybe `chmod 400`) a file with credentials at {filename}"
-        )
-
-    def add_env_hint(self, variable_name: str) -> None:
-        self.hints.append(f"populating an environment variable called {variable_name}")
-
-    def pretty_str(self) -> str:
-        lines = [
-            f"Couldn't authenticate {self.src_api.get_name()}, "
-            "it's missing authentification!"
-        ]
-        if self.hints:
-            lines.append("You can fix this by:")
-            for i, hint in enumerate(self.hints, 1):
-                lines.append(f"  {i}. {hint}")
-        return "\n".join(lines)
-
-
-CredentialSelf = t.TypeVar("CredentialSelf", bound="CredentialHelper")
-
-
-class CredentialHelper:
-    """
-    Wrapper to help standardize credential sources, and tie to exceptions
-    """
-
-    ENV_VARIABLE: t.ClassVar[str] = ""
-    FILE_NAME: t.ClassVar[str] = ""
-
-    # This is slated to be removed in a future version!
-    # It's a placeholder approach while for_collab() gains the auth argument
-    _DEFAULT: t.ClassVar[t.Optional["CredentialHelper"]] = None  # t.Self
-    _DEFAULT_SRC: t.ClassVar[str] = ""
-
-    @classmethod
-    def get(
-        cls: t.Type[CredentialSelf], for_cls: t.Type[SignalExchangeAPI]
-    ) -> CredentialSelf:
-        srcs: t.List[t.Tuple[t.Callable[[], t.Optional[CredentialSelf]], str]] = [
-            ((lambda: cls._DEFAULT), cls._DEFAULT_SRC),  # type: ignore[list-item,return-value]
-            (cls._from_env, f"environment variable {cls.ENV_VARIABLE}"),
-            (cls._from_file, f"file {cls.FILE_NAME}"),
-        ]
-        for fn, src in srcs:
-            try:
-                creds = fn()
-                if creds is None:
-                    continue
-                if creds._are_valid():
-                    return creds
-            except Exception:
-                logging.exception("Exception during parsing %s", src)
-                pass
-            raise SignalExchangeAPIInvalidAuthException(
-                for_cls, f"Invalid credentials from {src}"
-            )
-        ex = SignalExchangeAPIMissingAuthException(for_cls)
-        if cls._DEFAULT_SRC:
-            ex.hints.append(cls._DEFAULT_SRC)
-        if cls.ENV_VARIABLE:
-            ex.add_env_hint(cls.ENV_VARIABLE)
-        if cls.FILE_NAME:
-            ex.add_file_hint(cls.FILE_NAME)
-        raise ex
-
-    @classmethod
-    def set_default(
-        cls: t.Type[CredentialSelf], new_default: t.Optional[CredentialSelf], src: str
-    ) -> contextlib.AbstractContextManager:
-        """
-        Set the default (highest preferred) credentials manually.
-
-        They won't be checked for validity until a future get()
-
-        This call can be used as contextmanager to unset within a `with` statement
-        """
-        cls._DEFAULT = new_default  # type: ignore[assignment]  # need t.Self
-        cls._DEFAULT_SRC = src
-        return cls._unset_default_context()
-
-    @classmethod
-    @contextlib.contextmanager
-    def _unset_default_context(cls: t.Type[CredentialSelf]) -> t.Iterator[None]:
-        yield
-        cls.clear_default()
-
-    @classmethod
-    def clear_default(cls) -> None:
-        """Reset the default"""
-        cls.set_default(None, "")
-
-    @classmethod
-    def _from_str(cls: t.Type[CredentialSelf], s: str) -> t.Optional[CredentialSelf]:
-        """Parse credentials from a string"""
-        return None
-
-    @classmethod
-    def _from_file(cls: t.Type[CredentialSelf]) -> t.Optional[CredentialSelf]:
-        """Parse credentials from a file"""
-        if not cls.FILE_NAME:
-            return None
-        path = pathlib.Path(cls.FILE_NAME).expanduser()
-        if not path.is_file():
-            return None
-        return cls._from_str(path.read_text().strip())
-
-    @classmethod
-    def _from_env(cls: t.Type[CredentialSelf]) -> t.Optional[CredentialSelf]:
-        """Parse credentials from an environment variable"""
-        if not cls.ENV_VARIABLE:
-            return None
-        s = os.environ.get(cls.ENV_VARIABLE)
-        if not s:
-            return None
-        return cls._from_str(s)
-
-    def _are_valid(self) -> bool:
-        return True

@@ -61,9 +61,17 @@ class LocalFileSignalExchangeAPI(
 
     collab: FileCollaborationConfig
 
-    @classmethod
-    def get_config_class(cls) -> t.Type[FileCollaborationConfig]:
+    @staticmethod
+    def get_config_cls() -> t.Type[FileCollaborationConfig]:
         return FileCollaborationConfig
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[state.FetchCheckpointBase]:
+        return state.FetchCheckpointBase
+
+    @staticmethod
+    def get_record_cls() -> t.Type[state.FetchedSignalMetadata]:
+        return state.FetchedSignalMetadata
 
     @classmethod
     def for_collab(
@@ -109,7 +117,7 @@ class LocalFileSignalExchangeAPI(
         path = Path(self.collab.filename)
         with path.open("rb") as rf:
             rf.seek(-1, os.SEEK_END)
-            has_newline = rf.read1(1) == b"\n"  # type: ignore  # mypy bug? read1 noexist
+            has_newline = rf.read1(1) == b"\n"
         # Appending will overwrite previous ones, and compaction is for scrubs
         with path.open("wta") as wf:
             nl = "" if has_newline else "\n"

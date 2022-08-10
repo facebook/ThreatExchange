@@ -34,13 +34,23 @@ class StaticSampleSignalExchangeAPI(
         state.FetchedSignalMetadata,
     ]
 ):
-    """
-    Return a static set of sample data for demonstration.
-    """
+    """Return a static set of sample data for demonstration"""
 
     @classmethod
     def get_name(cls) -> str:
         return "sample"
+
+    @staticmethod
+    def get_config_cls() -> t.Type[CollaborationConfigBase]:
+        return CollaborationConfigBase
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[state.FetchCheckpointBase]:
+        return state.FetchCheckpointBase
+
+    @staticmethod
+    def get_record_cls() -> t.Type[state.FetchedSignalMetadata]:
+        return state.FetchedSignalMetadata
 
     @classmethod
     def for_collab(

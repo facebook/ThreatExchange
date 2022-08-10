@@ -81,7 +81,7 @@ class FakeSignalExchange(
     ]
 ):
     @classmethod
-    def get_config_class(cls) -> t.Type[FakeCollabConfig]:
+    def get_config_cls(cls) -> t.Type[FakeCollabConfig]:
         return FakeCollabConfig
 
     @classmethod

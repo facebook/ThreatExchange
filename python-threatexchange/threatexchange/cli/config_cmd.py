@@ -120,7 +120,7 @@ class _UpdateCollabCommand(command_base.Command):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-        cfg_cls = cls._API_CLS.get_config_class()
+        cfg_cls = cls._API_CLS.get_config_cls()
         assert is_dataclass(cfg_cls)
 
         ap.add_argument("collab_name", help="the name of the collab")
@@ -218,7 +218,7 @@ class _UpdateCollabCommand(command_base.Command):
             f"--{field.name.replace('_', '-')}",
             type=argparse_type,
             metavar=metavar,
-            required=field.default is MISSING and field.default_factory is MISSING,  # type: ignore
+            required=field.default is MISSING and field.default_factory is MISSING,
             help=help,
         )
 
@@ -247,7 +247,7 @@ class _UpdateCollabCommand(command_base.Command):
         if enable is not None:
             self.edit_kwargs["enabled"] = bool(enable)
 
-        for field in fields(self._API_CLS.get_config_class()):
+        for field in fields(self._API_CLS.get_config_cls()):
             if not field.init:
                 if field.name == "api":
                     self.edit_kwargs.pop("api", None)
@@ -272,14 +272,14 @@ class _UpdateCollabCommand(command_base.Command):
                     2,
                 )
             assert (
-                existing.__class__ == self._API_CLS.get_config_class()
+                existing.__class__ == self._API_CLS.get_config_cls()
             ), "api name the same, but class different?"
             for name, val in self.edit_kwargs.items():
                 setattr(existing, name, val)
             settings._state.update_collab(existing)
         elif self.create:
             logging.debug("Creating config with args: %s", self.edit_kwargs)
-            to_create = self._API_CLS.get_config_class()(**self.edit_kwargs)
+            to_create = self._API_CLS.get_config_cls()(**self.edit_kwargs)
             settings._state.update_collab(to_create)
         else:
             raise CommandError("no such config! Did you mean to use --create?", 2)

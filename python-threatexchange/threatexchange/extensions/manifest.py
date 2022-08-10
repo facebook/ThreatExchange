@@ -42,7 +42,7 @@ class ThreatExchangeExtensionManifest:
             raise ValueError(f"No such module '{module_name}'")
 
         try:
-            manifest = module.TX_MANIFEST  # type: ignore
+            manifest = module.TX_MANIFEST
         except AttributeError:
             raise ValueError(f"Module is missing TX_MANIFEST")
 

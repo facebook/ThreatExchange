@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from threatexchange.exchanges.clients.ncmec import hash_api as api
 
-from threatexchange.exchanges import fetch_state as state
+from threatexchange.exchanges import auth, fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
 from threatexchange.exchanges.collab_config import (
     CollaborationConfigWithDefaults,
@@ -119,14 +119,32 @@ def _get_conversion(
     return ret
 
 
+@dataclass
+class NCMECCredentials(auth.CredentialHelper):
+    ENV_VARIABLE: t.ClassVar[str] = "TX_NCMEC_CREDENTIALS"
+    FILE_NAME: t.ClassVar[str] = "~/.tx_ncmec_credentials"
+
+    user: str
+    password: str
+
+    @classmethod
+    def _from_str(cls, s: str) -> "NCMECCredentials":
+        user, _, passw = s.strip().partition(":")
+        return cls(user, passw)
+
+    def _are_valid(self) -> bool:
+        return bool(self.user and self.password)
+
+
 class NCMECSignalExchangeAPI(
+    auth.SignalExchangeWithAuth[NCMECCollabConfig, NCMECCredentials],
     signal_exchange_api.SignalExchangeAPI[
         NCMECCollabConfig,
         NCMECCheckpoint,
         NCMECSignalMetadata,
         str,
         api.NCMECEntryUpdate,
-    ]
+    ],
 ):
     """
     Conversion for the NCMEC hash API
@@ -165,17 +183,21 @@ class NCMECSignalExchangeAPI(
     def get_name(cls) -> str:
         return _API_NAME
 
-    @classmethod
-    def get_config_class(cls) -> t.Type[NCMECCollabConfig]:
+    @staticmethod
+    def get_config_cls() -> t.Type[NCMECCollabConfig]:
         return NCMECCollabConfig
 
-    @classmethod
-    def get_checkpoint_cls(cls) -> t.Type[NCMECCheckpoint]:
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[NCMECCheckpoint]:
         return NCMECCheckpoint
 
-    @classmethod
-    def get_record_cls(cls) -> t.Type[NCMECSignalMetadata]:
+    @staticmethod
+    def get_record_cls() -> t.Type[NCMECSignalMetadata]:
         return NCMECSignalMetadata
+
+    @staticmethod
+    def get_credential_cls() -> t.Type[NCMECCredentials]:
+        return NCMECCredentials
 
     def get_client(self, environment: api.NCMECEnvironment) -> api.NCMECHashAPI:
         if not api.is_valid_user_pass(self._username, self._password):
@@ -348,21 +370,3 @@ class NCMECSignalExchangeAPI(
                     if entry.classification:
                         tags.add(entry.classification)
         return ret
-
-
-@dataclass
-class NCMECCredentials(signal_exchange_api.CredentialHelper):
-    API_CLS: t.ClassVar[t.Type[NCMECSignalExchangeAPI]] = NCMECSignalExchangeAPI
-    ENV_VARIABLE: t.ClassVar[str] = "TX_NCMEC_CREDENTIALS"
-    FILE_NAME: t.ClassVar[str] = "~/.tx_ncmec_credentials"
-
-    user: str
-    password: str
-
-    @classmethod
-    def _from_str(cls, s: str) -> "NCMECCredentials":
-        user, _, passw = s.strip().partition(":")
-        return cls(user, passw)
-
-    def _are_valid(self) -> bool:
-        return bool(self.user and self.password)

@@ -80,6 +80,18 @@ class _FakeAPIMixin(t.Generic[TUpdateRecordKey, TUpdateRecordValue]):
     def get_fake_collab_config(cls) -> CollaborationConfigBase:
         return CollaborationConfigWithDefaults("Test State", cls.get_name())  # type: ignore
 
+    @staticmethod
+    def get_config_cls() -> t.Type[CollaborationConfigBase]:
+        return CollaborationConfigBase
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[FakeCheckpoint]:
+        return FakeCheckpoint
+
+    @staticmethod
+    def get_record_cls() -> t.Type[FakeSignalMetadata]:
+        return FakeSignalMetadata
+
     def fetch_iter(
         self,
         supported_signal_types: t.Sequence[t.Type[SignalType]],

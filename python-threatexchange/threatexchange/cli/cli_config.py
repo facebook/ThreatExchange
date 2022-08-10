@@ -61,9 +61,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
     ):
         self._dir = dir.expanduser()
 
-        self._name_to_ctype = {
-            ft.get_name(): ft.get_config_class() for ft in fetch_types
-        }
+        self._name_to_ctype = {ft.get_name(): ft.get_config_cls() for ft in fetch_types}
 
         self._cache: t.Optional[
             t.Dict[str, collab_config.CollaborationConfigBase]
@@ -181,10 +179,7 @@ class _SignalExchangeAccessor:
         t.Any,
     ]:
         api_cls = self._parent._mapping.exchange.api_by_name[collab.api]
-        # This is a hard typing challenge, and cast() doesn't seem to work
-        # By lookup by name, we are guaranteed to pick an API with the right
-        # typing signature, but of an unknown class
-        return api_cls.for_collab(collab)  # type: ignore[arg-type]
+        return api_cls.for_collab(collab)
 
     def __iter__(self) -> t.Iterator[TSignalExchangeAPICls]:
         yield from self.get_all()
