@@ -164,3 +164,16 @@ def computeHash(
         for hash in vpdq_hash
     ]
     return hashes
+
+
+def _cli():
+    import argparse
+
+    ap = argparse.ArgumentParser(
+        description="a simple wrapper for the vPDQ hashing algorithm"
+    )
+    ap.add_argument("file", help="the file to hash")
+    ns = ap.parse_args()
+    hashes = computeHash(ns.file)
+    for hash in hashes:
+        print(f"{hash.hex},{hash.quality},{hash.timestamp:.3f}")
