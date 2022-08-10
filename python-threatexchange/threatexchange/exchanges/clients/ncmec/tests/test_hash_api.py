@@ -176,7 +176,7 @@ def api(monkeypatch: pytest.MonkeyPatch):
         __enter__=lambda _: session,
         __exit__=lambda *args: None,
     )
-    monkeypatch.setattr(api, "_get_session", lambda e: session)
+    monkeypatch.setattr(api, "_get_session", lambda: session)
     return api
 
 

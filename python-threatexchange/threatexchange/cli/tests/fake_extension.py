@@ -96,7 +96,6 @@ class FakeSignalExchange(
     def fetch_iter(
         self,
         supported_signal_types: t.Sequence[t.Type[SignalType]],
-        collab: FakeCollabConfig,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[FetchCheckpointBase],

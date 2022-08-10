@@ -138,17 +138,28 @@ class NCMECSignalExchangeAPI(
         3. As of 5/2022 there are no false positive or seen statuses
     """
 
-    MAX_FETCH_SIZE = 400000
-    FETCH_SHRINK_FACTOR = 4
+    MAX_FETCH_SIZE: t.ClassVar[int] = 400000
+    FETCH_SHRINK_FACTOR: t.ClassVar[int] = 4
 
     def __init__(
         self,
-        username: str = "",
-        password: str = "",
+        collab: NCMECCollabConfig,
+        username: str,
+        password: str,
     ) -> None:
         super().__init__()
+        self.collab = collab
         self._username = username
         self._password = password
+
+    @classmethod
+    def for_collab(
+        cls,
+        collab: NCMECCollabConfig,
+        credentials: t.Optional["NCMECCredentials"] = None,
+    ) -> "NCMECSignalExchangeAPI":
+        credentials = credentials or NCMECCredentials.get(cls)
+        return cls(collab, credentials.user, credentials.password)
 
     @classmethod
     def get_name(cls) -> str:
@@ -174,7 +185,6 @@ class NCMECSignalExchangeAPI(
     def fetch_iter(
         self,
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
-        collab: NCMECCollabConfig,
         checkpoint: t.Optional[NCMECCheckpoint],
     ) -> t.Iterator[state.FetchDelta[str, api.NCMECEntryUpdate, NCMECCheckpoint]]:
         """
@@ -205,7 +215,7 @@ class NCMECSignalExchangeAPI(
         # times in the fetch, since entries are not ordered by time
         end_time = int(time.time()) - 5
 
-        client = self.get_client(collab.environment)
+        client = self.get_client(self.collab.environment)
         # We could probably mutate start time, but new variable for clarity
         current_start = start_time
         # The range we are fetching
@@ -338,3 +348,21 @@ class NCMECSignalExchangeAPI(
                     if entry.classification:
                         tags.add(entry.classification)
         return ret
+
+
+@dataclass
+class NCMECCredentials(signal_exchange_api.CredentialHelper):
+    API_CLS: t.ClassVar[t.Type[NCMECSignalExchangeAPI]] = NCMECSignalExchangeAPI
+    ENV_VARIABLE: t.ClassVar[str] = "TX_NCMEC_CREDENTIALS"
+    FILE_NAME: t.ClassVar[str] = "~/.tx_ncmec_credentials"
+
+    user: str
+    password: str
+
+    @classmethod
+    def _from_str(cls, s: str) -> "NCMECCredentials":
+        user, _, passw = s.strip().partition(":")
+        return cls(user, passw)
+
+    def _are_valid(self) -> bool:
+        return bool(self.user and self.password)

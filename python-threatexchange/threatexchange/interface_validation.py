@@ -21,7 +21,9 @@ from dataclasses import dataclass
 
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.signal_exchange_api import (
+    TSignalExchangeAPICls,
+)
 from threatexchange.exchanges.collab_config import CollaborationConfigStoreBase
 
 
@@ -51,8 +53,8 @@ class SignalTypeMapping:
 
 
 class SignalExchangeAPIMapping:
-    def __init__(self, apis: t.Sequence[SignalExchangeAPI]) -> None:
-        _validate_signal_apis(f.__class__ for f in apis)
+    def __init__(self, apis: t.Sequence[TSignalExchangeAPICls]) -> None:
+        _validate_signal_apis(apis)
         self.api_by_name = {f.get_name(): f for f in apis}
 
 
@@ -70,7 +72,7 @@ class FunctionalityMapping:
     collabs: CollaborationConfigStoreBase
 
 
-def _validate_signal_apis(apis: t.Iterable[t.Type[SignalExchangeAPI]]):
+def _validate_signal_apis(apis: t.Iterable[TSignalExchangeAPICls]):
     names = set()
     for a in apis:
         name = a.get_name()

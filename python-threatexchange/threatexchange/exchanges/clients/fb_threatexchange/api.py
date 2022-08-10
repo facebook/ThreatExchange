@@ -113,7 +113,10 @@ class ThreatExchangeAPI:
     }
 
     def __init__(
-        self, api_token: str, *, endpoint_override: t.Optional[str] = None
+        self,
+        api_token: str,
+        *,
+        endpoint_override: t.Optional[str] = None,
     ) -> None:
         self.api_token = api_token
         self._base_url = endpoint_override or self._TE_BASE_URL

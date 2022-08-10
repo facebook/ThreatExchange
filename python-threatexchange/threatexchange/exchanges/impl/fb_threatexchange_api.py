@@ -9,7 +9,6 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/
 
 
 from collections import defaultdict
-import logging
 import typing as t
 import time
 from dataclasses import dataclass, field
@@ -17,10 +16,14 @@ from threatexchange.exchanges.clients.fb_threatexchange.threat_updates import (
     ThreatUpdateJSON,
 )
 
-from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
+from threatexchange.exchanges.clients.fb_threatexchange.api import (
+    ThreatExchangeAPI,
+    is_valid_app_token,
+)
 
 from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges.signal_exchange_api import (
+    CredentialHelper,
     SignalExchangeAPIWithSimpleUpdates,
 )
 from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
@@ -231,16 +234,21 @@ class FBThreatExchangeSignalExchangeAPI(
         FBThreatExchangeIndicatorRecord,
     ]
 ):
-    def __init__(self, fb_app_token: t.Optional[str] = None) -> None:
-        self._api = None
-        if fb_app_token is not None:
-            self._api = ThreatExchangeAPI(fb_app_token)
+    def __init__(
+        self, client: ThreatExchangeAPI, collab: FBThreatExchangeCollabConfig
+    ) -> None:
+        self.client = client
+        self.collab = collab
 
-    @property
-    def api(self) -> ThreatExchangeAPI:
-        if self._api is None:
-            raise Exception("App Developer token not configured.")
-        return self._api
+    @classmethod
+    def for_collab(
+        cls,
+        collab: FBThreatExchangeCollabConfig,
+        credentials: t.Optional["FBThreatExchangeCredentials"] = None,
+    ) -> "FBThreatExchangeSignalExchangeAPI":
+        credentials = credentials or FBThreatExchangeCredentials.get(cls)
+        client = ThreatExchangeAPI(credentials.api_token)
+        return cls(client, collab)
 
     @classmethod
     def get_name(cls) -> str:
@@ -258,24 +266,16 @@ class FBThreatExchangeSignalExchangeAPI(
     def get_config_class(cls) -> t.Type[FBThreatExchangeCollabConfig]:
         return FBThreatExchangeCollabConfig
 
-    def resolve_owner(self, id: int) -> str:
-        # TODO -This is supported by the API
-        raise NotImplementedError
-
-    def get_own_owner_id(self, collab: FBThreatExchangeCollabConfig) -> int:
-        return self.api.app_id
-
     def fetch_iter(
         self,
         supported_signal_types: t.Sequence[t.Type[SignalType]],
-        collab: FBThreatExchangeCollabConfig,
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[FBThreatExchangeCheckpoint],
     ) -> t.Iterator[ThreatExchangeDelta]:
         start_time = None if checkpoint is None else checkpoint.update_time
-        cursor = self.api.get_threat_updates(
-            collab.privacy_group,
+        cursor = self.client.get_threat_updates(
+            self.collab.privacy_group,
             start_time=start_time,
             page_size=100,
             fields=ThreatUpdateJSON.te_threat_updates_fields(),
@@ -292,7 +292,7 @@ class FBThreatExchangeSignalExchangeAPI(
             updates = {}
             for u in batch:
                 updates[u.threat_type, u.indicator] = _indicator_applies(
-                    self.api.app_id, u, type_mapping
+                    self.client.app_id, u, type_mapping
                 )
 
             yield ThreatExchangeDelta(
@@ -448,3 +448,21 @@ def _make_indicator_type_mapping(
             ret[type_][tag].append(st)
 
     return ret
+
+
+@dataclass
+class FBThreatExchangeCredentials(CredentialHelper):
+    API_CLS: t.ClassVar[
+        t.Type[FBThreatExchangeSignalExchangeAPI]
+    ] = FBThreatExchangeSignalExchangeAPI
+    ENV_VARIABLE: t.ClassVar[str] = "TX_ACCESS_TOKEN"
+    FILE_NAME: t.ClassVar[str] = "~/.txtoken"
+
+    api_token: str
+
+    @classmethod
+    def _from_str(cls, s: str) -> t.Optional["FBThreatExchangeCredentials"]:
+        return cls(s.strip())
+
+    def _are_valid(self) -> bool:
+        return is_valid_app_token(self.api_token)

@@ -47,6 +47,7 @@ class FileCollaborationConfig(
     )
 
 
+@dataclass
 class LocalFileSignalExchangeAPI(
     SignalExchangeAPIWithSimpleUpdates[
         FileCollaborationConfig,
@@ -58,20 +59,25 @@ class LocalFileSignalExchangeAPI(
     Read simple signal files off the local disk.
     """
 
+    collab: FileCollaborationConfig
+
     @classmethod
     def get_config_class(cls) -> t.Type[FileCollaborationConfig]:
         return FileCollaborationConfig
 
+    @classmethod
+    def for_collab(
+        cls, collab: FileCollaborationConfig
+    ) -> "LocalFileSignalExchangeAPI":
+        return cls(collab)
+
     def fetch_iter(
         self,
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
-        collab: FileCollaborationConfig,
-        # None if fetching for the first time,
-        # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
     ) -> t.Iterator[_TypedDelta]:
         """Fetch the whole file"""
-        path = Path(collab.filename)
+        path = Path(self.collab.filename)
         assert path.exists(), f"No such file {path}"
         assert path.is_file(), f"{path} is not a file (is it a dir?)"
 
@@ -81,7 +87,7 @@ class LocalFileSignalExchangeAPI(
 
         updates: t.Dict[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]] = {}
         for line in lines:
-            signal_type = collab.signal_type
+            signal_type = self.collab.signal_type
             signal = line.strip()
             if signal_type is None:
                 signal_type, _, signal = signal.partition(" ")
@@ -92,7 +98,6 @@ class LocalFileSignalExchangeAPI(
 
     def report_opinion(
         self,
-        collab: FileCollaborationConfig,
         s_type: t.Type[SignalType],
         signal: str,
         opinion: state.SignalOpinion,
@@ -101,7 +106,7 @@ class LocalFileSignalExchangeAPI(
             raise NotImplementedError
         if opinion.tags:
             raise NotImplementedError
-        path = Path(collab.filename)
+        path = Path(self.collab.filename)
         with path.open("rb") as rf:
             rf.seek(-1, os.SEEK_END)
             has_newline = rf.read1(1) == b"\n"  # type: ignore  # mypy bug? read1 noexist

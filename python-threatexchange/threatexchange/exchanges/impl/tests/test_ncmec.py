@@ -21,7 +21,8 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 
 @pytest.fixture
 def exchange(api: NCMECHashAPI, monkeypatch: pytest.MonkeyPatch):
-    signal_exchange = NCMECSignalExchangeAPI("user", "pass")
+    collab = NCMECCollabConfig(NCMECEnvironment.Industry, "Test")
+    signal_exchange = NCMECSignalExchangeAPI(collab, "user", "pass")
     monkeypatch.setattr(signal_exchange, "get_client", lambda _environment: api)
     return signal_exchange
 
@@ -29,8 +30,7 @@ def exchange(api: NCMECHashAPI, monkeypatch: pytest.MonkeyPatch):
 def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
     frozen_time = 1664496000
     monkeypatch.setattr("time.time", lambda: frozen_time)
-    collab = NCMECCollabConfig(NCMECEnvironment.Industry, "Test")
-    it = exchange.fetch_iter([], collab, None)
+    it = exchange.fetch_iter([], None)
     # Since our test data from test_hash_api is is all in one fetch sequence,
     # we'd have to craft some specialized data to get the NCMECSignalAPI split it
     # into multiple updates
@@ -57,7 +57,7 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     }
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], collab, total_updates
+        [VideoMD5Signal], exchange.collab, total_updates
     )[VideoMD5Signal]
     assert as_signals == {
         "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": NCMECSignalMetadata({42: set()}),
@@ -67,6 +67,7 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     assert next(it, None) is None
 
     # Test esp_id filter
+    collab = NCMECCollabConfig(NCMECEnvironment.Industry, "Test")
     collab.only_esp_ids = {101}
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], collab, total_updates

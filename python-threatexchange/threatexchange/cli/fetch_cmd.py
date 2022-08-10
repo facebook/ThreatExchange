@@ -10,7 +10,10 @@ import typing as t
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli.dataset_cmd import DatasetCommand
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
-from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.signal_exchange_api import (
+    SignalExchangeAPI,
+    TSignalExchangeAPICls,
+)
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     FetchDeltaTyped,
@@ -137,7 +140,7 @@ class FetchCommand(command_base.Command):
         if self.clear:
             self.stderr("Clearing fetched state")
             for api in settings.apis:
-                store = settings.fetched_state.get_for_api(api.__class__)
+                store = settings.fetched_state.get_for_api(api)
                 for collab in self.collabs:
                     if self.only_collab not in (None, collab.name):
                         continue
@@ -161,7 +164,9 @@ class FetchCommand(command_base.Command):
         if not all_succeeded:
             raise command_base.CommandError("Some collabs had errors!", 3)
 
-    def execute_for_api(self, settings: CLISettings, api: SignalExchangeAPI) -> bool:
+    def execute_for_api(
+        self, settings: CLISettings, api: TSignalExchangeAPICls
+    ) -> bool:
         success = True
         for collab in self.collabs:
             if collab.api != api.get_name():
@@ -171,17 +176,16 @@ class FetchCommand(command_base.Command):
                     "Skipping %s, disabled",
                 )
                 continue
-            fetch_ok = self.execute_for_collab(settings, api, collab)
+            fetch_ok = self.execute_for_collab(settings, collab)
             success &= fetch_ok
         return success
 
     def execute_for_collab(
         self,
         settings: CLISettings,
-        api: SignalExchangeAPI,
         collab: CollaborationConfigBase,
     ) -> bool:
-
+        api = settings.apis.get_instance_for_collab(collab)
         store = settings.fetched_state.get_for_api(api.__class__)
         checkpoint = self._verify_store_and_checkpoint(store, collab)
 
@@ -191,7 +195,7 @@ class FetchCommand(command_base.Command):
         completed = False
 
         try:
-            it = api.fetch_iter(settings.get_all_signal_types(), collab, checkpoint)
+            it = api.fetch_iter(settings.get_all_signal_types(), checkpoint)
             delta: FetchDeltaTyped
             for delta in it:
                 assert delta.checkpoint is not None  # Infinite loop protection

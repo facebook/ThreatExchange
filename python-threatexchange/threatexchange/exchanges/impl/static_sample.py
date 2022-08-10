@@ -42,12 +42,15 @@ class StaticSampleSignalExchangeAPI(
     def get_name(cls) -> str:
         return "sample"
 
+    @classmethod
+    def for_collab(
+        cls, collab: CollaborationConfigBase
+    ) -> "StaticSampleSignalExchangeAPI":
+        return cls()
+
     def fetch_iter(
         self,
         supported_signal_types: t.Sequence[t.Type[SignalType]],
-        collab: CollaborationConfigBase,
-        # None if fetching for the first time,
-        # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[state.TFetchCheckpoint],
     ) -> t.Iterator[_TypedDelta]:
         sample_signals: t.List[

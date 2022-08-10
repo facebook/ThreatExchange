@@ -17,33 +17,23 @@ import logging
 
 from dacite import WrongTypeError
 
-from threatexchange.exchanges.clients.stopncii import api as stopncii_api
 from threatexchange.exchanges import collab_config
-from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.impl.stop_ncii_api import StopNCIICredentials
+from threatexchange.exchanges.signal_exchange_api import (
+    SignalExchangeAPI,
+    TCollabConfig,
+    TSignalExchangeAPICls,
+)
 from threatexchange.content_type import content_base
-from threatexchange.exchanges.fetch_state import FetchedStateStoreBase
+from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
 from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
-from threatexchange.utils import dataclass_json as cli_json
+from threatexchange.utils import dataclass_json
 
 
 CONFIG_FILENAME = "config.json"
-
-
-@dataclass
-class StopNCIIKeys:
-    subscription_key: str
-    fetch_function_key: str
-    # Someday, additional keys
-
-    @property
-    def keys_are_valid(self):
-        return all(
-            stopncii_api.is_valid_key(k)
-            for k in (self.subscription_key, self.fetch_function_key)
-        )
 
 
 @dataclass
@@ -52,7 +42,7 @@ class CLiConfig:
 
     fb_threatexchange_api_token: t.Optional[str] = None
     ncmec_credentials: t.Optional[t.Tuple[str, str]] = None
-    stop_ncii_keys: t.Optional[StopNCIIKeys] = None
+    stop_ncii_keys: t.Optional[StopNCIICredentials] = None
     extensions: t.Set[str] = field(default_factory=set)
     # Every item needs a default for backwards compatibility
 
@@ -111,12 +101,12 @@ class CliState(collab_config.CollaborationConfigStoreBase):
         return self.collab_dir / f"{config.name}.json"
 
     def get_persistent_config(self) -> CLiConfig:
-        return cli_json.dataclass_load_file(
+        return dataclass_json.dataclass_load_file(
             self.config_file, CLiConfig, default=CLiConfig()
         )
 
     def update_persistent_config(self, config: CLiConfig):
-        cli_json.dataclass_dump_file(self.config_file, config)
+        dataclass_json.dataclass_dump_file(self.config_file, config)
 
     def dir_for_fetched_state(
         self,
@@ -154,7 +144,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
                         logging.warning("Ignoring collab config of unknown type: %s", f)
                         continue
                 try:
-                    config = cli_json.dataclass_load_dict(content, ctype)
+                    config = dataclass_json.dataclass_load_dict(content, ctype)
                     ret.append(config)
                 except WrongTypeError:
                     logging.exception("Failed to parse collab config: %s", f)
@@ -165,7 +155,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
         """Create or update a collaboration"""
         assert collab.api, "didn't set API?"
         path = self.path_for_collab_config(collab)
-        cli_json.dataclass_dump_file(path, collab)
+        dataclass_json.dataclass_dump_file(path, collab)
 
     def delete_collab(self, collab: collab_config.CollaborationConfigBase) -> None:
         """Delete a collaboration"""
@@ -178,15 +168,25 @@ class _SignalExchangeAccessor:
 
     _parent: "CLISettings"
 
-    def get_all(self) -> t.ValuesView[SignalExchangeAPI]:
+    def get_all(self) -> t.ValuesView[TSignalExchangeAPICls]:
         return self._parent._mapping.exchange.api_by_name.values()
 
-    def get_for_collab(
-        self, collab: collab_config.CollaborationConfigBase
-    ) -> SignalExchangeAPI:
-        return self._parent._mapping.exchange.api_by_name[collab.api]
+    def get_instance_for_collab(
+        self, collab: TCollabConfig
+    ) -> SignalExchangeAPI[
+        TCollabConfig,
+        fetch_state.FetchCheckpointBase,
+        fetch_state.FetchedSignalMetadata,
+        t.Any,
+        t.Any,
+    ]:
+        api_cls = self._parent._mapping.exchange.api_by_name[collab.api]
+        # This is a hard typing challenge, and cast() doesn't seem to work
+        # By lookup by name, we are guaranteed to pick an API with the right
+        # typing signature, but of an unknown class
+        return api_cls.for_collab(collab)  # type: ignore[arg-type]
 
-    def __iter__(self) -> t.Iterator[SignalExchangeAPI]:
+    def __iter__(self) -> t.Iterator[TSignalExchangeAPICls]:
         yield from self.get_all()
 
 
@@ -209,9 +209,7 @@ class _FetchStoreAccessor:
     def get_for_collab(
         self, collab: collab_config.CollaborationConfigBase
     ) -> CliSimpleState:
-        return self.get_for_api(
-            self._parent._mapping.exchange.api_by_name[collab.api].__class__
-        )
+        return self.get_for_api(self._parent._mapping.exchange.api_by_name[collab.api])
 
 
 class CLISettings:

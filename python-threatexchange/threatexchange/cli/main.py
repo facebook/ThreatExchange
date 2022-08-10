@@ -25,6 +25,7 @@ State is persisted between runs, entirely in the ~/.threatexchange directory
 """
 
 import argparse
+from contextlib import contextmanager
 import logging
 import inspect
 import os
@@ -34,6 +35,9 @@ import pathlib
 import shutil
 import warnings
 
+from threatexchange.cli.exceptions import CommandError
+
+
 # Import pdq first with its hash order warning squelched, it's before our time
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
@@ -42,18 +46,30 @@ with warnings.catch_warnings():
 from threatexchange import interface_validation
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
+from threatexchange.exchanges.clients.stopncii import api as stopncii_api
 from threatexchange.exchanges.clients.fb_threatexchange import api as tx_api
 from threatexchange.exchanges.clients.ncmec import hash_api as ncmec_api
 from threatexchange.exchanges.impl.file_api import LocalFileSignalExchangeAPI
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
+    FBThreatExchangeCredentials,
     FBThreatExchangeSignalExchangeAPI,
 )
-from threatexchange.exchanges.impl.stop_ncii_api import StopNCIISignalExchangeAPI
-from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
+from threatexchange.exchanges.impl.stop_ncii_api import (
+    StopNCIICredentials,
+    StopNCIISignalExchangeAPI,
+)
+from threatexchange.exchanges.impl.ncmec_api import (
+    NCMECCredentials,
+    NCMECSignalExchangeAPI,
+)
 
 from threatexchange.content_type import photo, video, text, url
-from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.signal_exchange_api import (
+    SignalExchangeAPI,
+    SignalExchangeAPIInvalidAuthException,
+    SignalExchangeAPIMissingAuthException,
+)
 from threatexchange.signal_type import (
     md5,
     raw_text,
@@ -61,7 +77,7 @@ from threatexchange.signal_type import (
     url_md5,
     trend_query,
 )
-from threatexchange.cli.cli_config import CLiConfig, CliState, StopNCIIKeys
+from threatexchange.cli.cli_config import CLiConfig, CliState
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import (
     command_base as base,
@@ -124,7 +140,7 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
 
 def execute_command(settings: CLISettings, namespace) -> None:
     assert hasattr(namespace, "command_cls")
-    command_cls = namespace.command_cls
+    command_cls: t.Type[base.Command] = namespace.command_cls
     logging.debug("Setup complete, handing off to %s", command_cls.__name__)
     # Init everything
     command_argspec = inspect.getfullargspec(command_cls.__init__)
@@ -134,133 +150,47 @@ def execute_command(settings: CLISettings, namespace) -> None:
     if "full_argparse_namespace" in arg_names:
         command_args["full_argparse_namespace"] = namespace
 
-    command = command_cls(**command_args)
+    command = command_cls(**command_args)  # type: ignore[call-arg]
     command.execute(settings)
 
 
-def _get_fb_tx_app_token(config: CLiConfig) -> t.Optional[str]:
-    """
-    Get the API key from a variety of fallback sources
+@contextmanager
+def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
+    te_creds = None
+    ncmec_creds = None
+    stop_ncii_creds = config.stop_ncii_keys
 
-    Examples might be environment, files, etc
-    """
+    def cfg_cmd(src_api: t.Type[SignalExchangeAPI], flags: str) -> str:
+        return f"threatexchange config api {src_api.get_name()} {flags}"
 
-    file_loc = pathlib.Path("~/.txtoken").expanduser()
-    environment_var = "TX_ACCESS_TOKEN"
+    if config.fb_threatexchange_api_token:
+        te_creds = FBThreatExchangeCredentials(config.fb_threatexchange_api_token)
+    if config.ncmec_credentials:
+        ncmec_creds = NCMECCredentials(*config.ncmec_credentials)
 
-    potential_sources = (
-        (os.environ.get(environment_var), f"{environment_var} environment variable"),
-        (
-            config.fb_threatexchange_api_token,
-            "`config api fb_threat_exchange --api-token` command",
-        ),
-        (file_loc.exists() and file_loc.read_text(), f"{file_loc} file"),
-    )
-
-    for val, source in potential_sources:
-        if not val:
-            continue
-        val = val.strip()
-        if tx_api.is_valid_app_token(val):
-            return val
-        print(
-            (
-                f"Warning! Your current app token {val!r} (from {source}) is invalid.\n"
-                "Double check that it's an 'App Token' from "
-                "https://developers.facebook.com/tools/accesstoken/",
-            ),
-            file=sys.stderr,
-        )
-        # Don't throw because we don't want to block commands that fix this
-        return None  # We probably don't expect to fall back here
-    return None
-
-
-def _get_stopncii_tokens(
-    config: CLiConfig,
-) -> t.Tuple[t.Optional[str], t.Optional[str]]:
-    """
-    Get the API key from a variety of fallback sources
-
-    Examples might be environment, files, etc
-    """
-
-    environment_var = "TX_STOPNCII_KEYS"
-
-    def get_from_environ() -> t.Optional[StopNCIIKeys]:
-        val = os.environ.get(environment_var)
-        if val is None:
-            return None
-        subscription_key, _, fetch_key = val.partition(",")
-        return StopNCIIKeys(subscription_key, fetch_key)
-
-    potential_sources = (
-        (get_from_environ(), f"{environment_var} environment variable"),
-        (
-            config.stop_ncii_keys,
-            "`config api stop_ncii --api-keys` command",
-        ),
-    )
-
-    for val, source in potential_sources:
-        if not val:
-            continue
-        val.subscription_key = val.subscription_key.strip()
-        val.fetch_function_key = val.fetch_function_key.strip()
-
-        if val.keys_are_valid:
-            return val.subscription_key, val.fetch_function_key
-        print(
-            "Warning! Your current StopNCII.org keys "
-            f"{val!r} (from {source}) are invalid.",
-            file=sys.stderr,
-        )
-        # Don't throw because we don't want to block commands that fix this
-        return None, None  # We probably don't expect to fall back here
-    return None, None
-
-
-def _get_ncmec_credentials(config: CLiConfig) -> t.Tuple[str, str]:
-    """Get user+pass from NCMEC from the config"""
-    environment_var = "TX_NCMEC_CREDENTIALS"
-    not_found = "", ""
-
-    def get_from_environ() -> t.Optional[t.Tuple[str, str]]:
-        val = os.environ.get(environment_var)
-        if val is None:
-            return None
-        user, _, password = val.partition(",")
-        return user, password
-
-    potential_sources = (
-        (get_from_environ(), f"{environment_var} environment variable"),
-        (
-            config.ncmec_credentials,
-            "`config api ncmec --user --pass` command",
-        ),
-    )
-
-    for val, source in potential_sources:
-        if not val:
-            continue
-        user, password = val
-
-        if ncmec_api.is_valid_user_pass(user, password):
-            return user, password
-        print(
-            "Warning! Your current NCMEC credentials "
-            f"user={user!r} pass={password!r} (from {source}) are invalid.",
-            file=sys.stderr,
-        )
-        # Don't throw because we don't want to block commands that fix this
-        return not_found  # We probably don't expect to fall back here
-    return not_found
+    with FBThreatExchangeCredentials.set_default(
+        te_creds, cfg_cmd(FBThreatExchangeSignalExchangeAPI, "--api-token")
+    ), NCMECCredentials.set_default(
+        ncmec_creds, cfg_cmd(NCMECSignalExchangeAPI, "--user --pass")
+    ), StopNCIICredentials.set_default(
+        stop_ncii_creds, cfg_cmd(StopNCIISignalExchangeAPI, "<TBD>")  # TODO
+    ):
+        try:
+            yield
+        except SignalExchangeAPIInvalidAuthException as ia:
+            logging.exception("Original invalid auth error")
+            raise CommandError.user(
+                f"Invalid auth for {ia.src_api.get_name()}: {ia.message}"
+            ) from ia
+        except SignalExchangeAPIMissingAuthException as ma:
+            logging.exception("Original missing auth error")
+            raise CommandError.user(ma.pretty_str()) from ma
 
 
 class _ExtendedTypes(t.NamedTuple):
     content_types: t.List[t.Type[ContentType]]
     signal_types: t.List[t.Type[SignalType]]
-    api_instances: t.List[SignalExchangeAPI]
+    api_types: t.List[t.Type[SignalExchangeAPI]]
     load_failures: t.List[str]
 
     def assert_no_errors(self) -> None:
@@ -286,7 +216,7 @@ def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
         else:
             ret.signal_types.extend(manifest.signal_types)
             ret.content_types.extend(manifest.content_types)
-            ret.api_instances.extend(api() for api in manifest.apis)
+            ret.api_types.extend(manifest.apis)
     return ret
 
 
@@ -304,15 +234,15 @@ def _get_settings(
         + extensions.content_types,
         list(_DEFAULT_SIGNAL_TYPES) + extensions.signal_types,
     )
-    base_apis: t.List[SignalExchangeAPI] = [
-        StaticSampleSignalExchangeAPI(),
-        LocalFileSignalExchangeAPI(),
-        StopNCIISignalExchangeAPI(*_get_stopncii_tokens(config)),
-        NCMECSignalExchangeAPI(*_get_ncmec_credentials(config)),
-        FBThreatExchangeSignalExchangeAPI(_get_fb_tx_app_token(config)),
+    base_apis: t.List[t.Type[SignalExchangeAPI]] = [
+        StaticSampleSignalExchangeAPI,
+        LocalFileSignalExchangeAPI,
+        StopNCIISignalExchangeAPI,
+        NCMECSignalExchangeAPI,
+        FBThreatExchangeSignalExchangeAPI,
     ]
     apis = interface_validation.SignalExchangeAPIMapping(
-        base_apis + extensions.api_instances
+        base_apis + extensions.api_types
     )
     state = CliState(list(apis.api_by_name.values()), dir=dir)
 
@@ -360,7 +290,8 @@ def inner_main(
     if not namespace.toplevel_command_name:
         ap.print_help()
         return
-    execute_command(settings, namespace)
+    with _handle_api_creds(settings.get_persistent_config()):
+        execute_command(settings, namespace)
 
 
 def main():

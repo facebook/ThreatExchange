@@ -15,8 +15,6 @@ import os
 import typing as t
 
 from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
-
-
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange import common, interface_validation
 from threatexchange.cli.cli_config import CLISettings
@@ -24,6 +22,7 @@ from threatexchange.cli import command_base
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCollabConfig,
+    FBThreatExchangeCredentials,
     FBThreatExchangeSignalExchangeAPI,
 )
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
@@ -47,8 +46,7 @@ class ConfigCollabListCommand(command_base.Command):
 
     def execute(self, settings: CLISettings) -> None:
         for collab in settings.get_all_collabs(default_to_sample=False):
-            api = settings.apis.get_for_collab(collab)
-            print(api.get_name(), collab.name)
+            print(collab.api, collab.name)
 
 
 class ConfigCollabPrintCommand(command_base.Command):
@@ -304,12 +302,12 @@ class ConfigCollabForAPICommand(command_base.CommandWithSubcommands):
 
     @classmethod
     def _create_command_for_api(
-        cls, api: SignalExchangeAPI
+        cls, api: t.Type[SignalExchangeAPI]
     ) -> t.Type[command_base.Command]:
         """Don't try this at home!"""
 
         class _GeneratedUpdateCommand(_UpdateCollabCommand):
-            _API_CLS = api.__class__
+            _API_CLS = api
 
         _GeneratedUpdateCommand.__name__ = (
             f"{_GeneratedUpdateCommand.__name__}_{api.get_name()}"
@@ -427,17 +425,7 @@ class ConfigExtensionsCommand(command_base.Command):
             ),
         )
 
-        # For APIs, we also need to make sure they can be instanciated without args for the CLI
-        apis = []
-        for new_api in manifest.apis:
-            try:
-                instance = new_api()
-            except Exception as e:
-                logging.exception(f"Failed to instanciante API {new_api.get_name()}")
-                raise CommandError(
-                    f"Not able to instanciate API {new_api.get_name()} - throws {e}"
-                )
-            apis.append(instance)
+        apis = list(manifest.apis)
         apis.extend(settings.apis.get_all())
         interface_validation.SignalExchangeAPIMapping(apis)
 
@@ -592,20 +580,12 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
     def execute(self, settings: CLISettings) -> None:
         self.action(settings)
 
-    def get_te_api(self, settings: CLISettings) -> ThreatExchangeAPI:
-        te = next(
-            (
-                api
-                for api in settings.apis
-                if isinstance(api, FBThreatExchangeSignalExchangeAPI)
-            ),
-            None,
-        )
-        assert te is not None
-        return te.api
+    def get_te_api(self) -> ThreatExchangeAPI:
+        creds = FBThreatExchangeCredentials.get(FBThreatExchangeSignalExchangeAPI)
+        return ThreatExchangeAPI(creds.api_token)
 
     def execute_list_collabs(self, settings: CLISettings) -> None:
-        api = self.get_te_api(settings)
+        api = self.get_te_api()
 
         unique_privacy_groups = {
             pg.id: pg for pg in api.get_threat_privacy_groups_member()
@@ -625,7 +605,7 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
             print(line)
 
     def execute_import(self, settings: CLISettings, privacy_group_id: int) -> None:
-        api = self.get_te_api(settings)
+        api = self.get_te_api()
         pg = api.get_privacy_group(privacy_group_id)
         if settings.get_collab(pg.name) is not None:
             raise CommandError(
