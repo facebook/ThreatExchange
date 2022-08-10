@@ -145,7 +145,7 @@ def execute_command(settings: CLISettings, namespace) -> None:
     if "full_argparse_namespace" in arg_names:
         command_args["full_argparse_namespace"] = namespace
 
-    command = command_cls(**command_args)  # type: ignore[call-arg]
+    command = command_cls(**command_args)
     command.execute(settings)
 
 

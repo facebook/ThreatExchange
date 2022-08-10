@@ -117,7 +117,7 @@ class LocalFileSignalExchangeAPI(
         path = Path(self.collab.filename)
         with path.open("rb") as rf:
             rf.seek(-1, os.SEEK_END)
-            has_newline = rf.read1(1) == b"\n"  # type: ignore  # mypy bug? read1 noexist
+            has_newline = rf.read1(1) == b"\n"
         # Appending will overwrite previous ones, and compaction is for scrubs
         with path.open("wta") as wf:
             nl = "" if has_newline else "\n"

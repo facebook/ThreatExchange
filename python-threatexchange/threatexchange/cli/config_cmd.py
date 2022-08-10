@@ -218,7 +218,7 @@ class _UpdateCollabCommand(command_base.Command):
             f"--{field.name.replace('_', '-')}",
             type=argparse_type,
             metavar=metavar,
-            required=field.default is MISSING and field.default_factory is MISSING,  # type: ignore
+            required=field.default is MISSING and field.default_factory is MISSING,
             help=help,
         )
 
