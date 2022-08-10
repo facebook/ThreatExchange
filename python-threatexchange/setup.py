@@ -31,26 +31,25 @@ extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 setup(
     name="threatexchange",
     version=version,
-    description="Python Library for Facebook ThreatExchange",
+    description="Python Library for Signal Exchange",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Facebook",
     author_email="threatexchange@fb.com",
     license="BSD",
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
-    keywords="facebook threatexchange",
+    keywords="facebook threatexchange ncmec stopncii pdq",
     url="https://www.github.com/facebook/ThreatExchange",
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
         "python-Levenshtein",
         "requests>=2.26.0",
         "urllib3>=1.26.0",  # For allow_methods
-        "dataclasses",
         "python-dateutil",
         "dacite",
         "Pillow",  # pdq
