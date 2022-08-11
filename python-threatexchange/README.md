@@ -8,18 +8,11 @@ To get similar functionality in a deployable service, check out hasher-matcher-a
 
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/facebook/ThreatExchange/python-threatexchange%20CI) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/threatexchange) ![PyPI - Downloads](https://img.shields.io/pypi/dm/threatexchange) ![PyPI](https://img.shields.io/pypi/v/threatexchange) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
 
-## Please Pardon Our Dust
-ThreatExchange is in the middle of a big refactor starting in #944 and isn't fully stable yet. Track progress at https://github.com/facebook/ThreatExchange/projects/3
-
 ## Installation
 
 If you don't have `pip`, learn how to install it [here](https://pip.pypa.io/en/stable/installation/).
 
 ```bash
-# Test version - 0.99.0 and higher contain newest version of the library 
-$ python3 -m pip install 'threatexchange>=0.99.0' --upgrade --extra-index-url=https://test.pypi.org/simple/
-
-# Stable version, currently very far out of date
 $ python3 -m pip install threatexchange --upgrade
 ```
 
