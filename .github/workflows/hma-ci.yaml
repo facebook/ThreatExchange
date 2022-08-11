@@ -71,4 +71,4 @@ jobs:
           bash ./scripts/set_threatexchange_source local
       - name: Test with pytest
         run: |
-          python -m py.test
+          python -m py.test hmalib

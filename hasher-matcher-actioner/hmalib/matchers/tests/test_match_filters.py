@@ -162,7 +162,7 @@ class MatchFiltersTestCase(BanksTableTestBase, unittest.TestCase):
             match_1 = self._active_pg_match()
             match_2 = self._active_pg_match()
 
-            match_2.distance = 100
+            match_2.similarity_info = 100
 
             matcher = Matcher("", [PdqSignal, VideoMD5Signal], self.table_manager)
             filtered_matches = matcher.filter_match_results(
@@ -176,7 +176,7 @@ class MatchFiltersTestCase(BanksTableTestBase, unittest.TestCase):
             )
 
             self.assertEqual(
-                filtered_matches[0].distance,
+                filtered_matches[0].similarity_info,
                 0,
                 "Filtered out the wrong match. Match with distance = 100 should be filtered out.",
             )

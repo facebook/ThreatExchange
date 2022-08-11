@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from threatexchange.signal_type.index import SignalTypeIndex
-from threatexchange.signal_type.pdq_index import PDQIndex
+from threatexchange.signal_type.pdq.pdq_index import PDQIndex
 from hmalib import metrics
 
 from hmalib.common.logging import get_logger

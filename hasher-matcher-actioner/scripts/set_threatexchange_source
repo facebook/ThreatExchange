@@ -43,7 +43,20 @@ elif [ $1 == "local" ]; then
     # Copy and install from source. Copying is necessary. A link would not work.
     # Dockerbuilds can't follow symlinks outside their context directory.
     printf 'Copying current sources to local-threatexchange.\n'
-    cp -r ../python-threatexchange/ $LOCAL_LIB_LOCATION
+    mkdir -p $LOCAL_LIB_LOCATION
+
+    pushd ../python-threatexchange
+    find . -type f \( \
+        -name "*.py" \
+        -o -name "*.rst" \
+        -o -name "*.md"  \
+        -o -name "*.txt" \
+        -o -name "PKG-INFO" \
+        \) -exec cp --parents {} ../hasher-matcher-actioner/$LOCAL_LIB_LOCATION \;
+    popd
+
+    [ -f "$LOCAL_LIB_LOCATION/threatexchange.egg-info" ] && rm "$LOCAL_LIB_LOCATION/threatexchange.egg-info"
+
     # Install in editable mode..
     python3 -m pip install -e $LOCAL_LIB_LOCATION
 
