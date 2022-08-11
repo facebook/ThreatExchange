@@ -1,6 +1,5 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
-from importlib.metadata import entry_points
 from setuptools import setup
 from setuptools.extension import Extension
 from setuptools.command.build_ext import build_ext
