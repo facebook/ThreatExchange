@@ -35,11 +35,12 @@ import typing as t
 import pytest
 
 from threatexchange.exchanges.fetch_state import (
+    FetchCheckpointBase,
     SignalOpinion,
     SignalOpinionCategory,
 )
 from threatexchange.exchanges.impl.fb_threatexchange_api import FBThreatExchangeOpinion
-from threatexchange.exchanges.impl.ncmec_api import NCMECOpinion
+from threatexchange.exchanges.impl.ncmec_api import NCMECCheckpoint, NCMECOpinion
 
 
 def get_SignalOpinion() -> t.Tuple[SignalOpinion, t.Sequence[object]]:
@@ -142,9 +143,37 @@ def get_NCMECOpinion() -> t.Tuple[NCMECOpinion, t.Sequence[object]]:
     return (current, [owner_moved])
 
 
+def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
+    ## Current
+    max_ts = 1197433091
+
+    # 1.0.x
+    current = NCMECCheckpoint(get_entries_max_ts=max_ts)
+
+    # 0.99.x
+    @dataclass
+    class NCMECCheckpointTsMoved(FetchCheckpointBase):
+        """
+        0.99.x => 1.0.0
+
+        max_timestamp: int => get_entries_max_ts
+        """
+
+        max_timestamp: int
+
+    ts_moved = NCMECCheckpointTsMoved(max_timestamp=max_ts)
+
+    return (current, [ts_moved])
+
+
 @pytest.mark.parametrize(
     ("current_version", "historical_versions"),
-    [get_SignalOpinion(), get_FBThreatExchangeOpinion(), get_NCMECOpinion()],
+    [
+        get_SignalOpinion(),
+        get_FBThreatExchangeOpinion(),
+        get_NCMECOpinion(),
+        get_NCMECCheckpoint(),
+    ],
 )
 def test_previous_pickle_state(
     current_version: object, historical_versions: t.Sequence[object]
