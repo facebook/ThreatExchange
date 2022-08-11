@@ -154,8 +154,9 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     @dataclass
     class NCMECCheckpointTsMoved(FetchCheckpointBase):
         """
-        NCMEC primarily revolves around polling the timestamp.
-        NCMEC IDs seem to stay around forever, so no need for is_stale()
+        0.99.x => 1.0.0
+
+        max_timestamp: int => get_entries_max_ts
         """
 
         max_timestamp: int
@@ -167,7 +168,12 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
 
 @pytest.mark.parametrize(
     ("current_version", "historical_versions"),
-    [get_SignalOpinion(), get_FBThreatExchangeOpinion(), get_NCMECOpinion()],
+    [
+        get_SignalOpinion(),
+        get_FBThreatExchangeOpinion(),
+        get_NCMECOpinion(),
+        get_NCMECCheckpoint(),
+    ],
 )
 def test_previous_pickle_state(
     current_version: object, historical_versions: t.Sequence[object]
