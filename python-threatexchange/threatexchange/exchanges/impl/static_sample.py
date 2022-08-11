@@ -23,14 +23,14 @@ from threatexchange.exchanges.signal_exchange_api import (
 _TypedDelta = state.FetchDelta[
     t.Tuple[str, str],
     state.FetchedSignalMetadata,
-    state.FetchCheckpointBase,
+    state.NoCheckpointing,
 ]
 
 
 class StaticSampleSignalExchangeAPI(
     SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase,
-        state.FetchCheckpointBase,
+        state.NoCheckpointing,
         state.FetchedSignalMetadata,
     ]
 ):
@@ -45,8 +45,8 @@ class StaticSampleSignalExchangeAPI(
         return CollaborationConfigBase
 
     @staticmethod
-    def get_checkpoint_cls() -> t.Type[state.FetchCheckpointBase]:
-        return state.FetchCheckpointBase
+    def get_checkpoint_cls() -> t.Type[state.NoCheckpointing]:
+        return state.NoCheckpointing
 
     @staticmethod
     def get_record_cls() -> t.Type[state.FetchedSignalMetadata]:
@@ -75,7 +75,7 @@ class StaticSampleSignalExchangeAPI(
 
         yield _TypedDelta(
             updates,
-            state.FetchCheckpointBase(),
+            state.NoCheckpointing(),
         )
 
 

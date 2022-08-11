@@ -3,7 +3,6 @@
 import pytest
 import pickle
 import random
-from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo
 
 from threatexchange.signal_type.index import IndexMatch
 
@@ -15,6 +14,7 @@ except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
     import typing as t
+    from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo
     from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
     from threatexchange.extensions.vpdq.vpdq_util import (
         json_to_vpdq,

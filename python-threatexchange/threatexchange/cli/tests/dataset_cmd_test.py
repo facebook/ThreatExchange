@@ -1,6 +1,5 @@
 from threatexchange.cli.tests.e2e_test_helper import ThreatExchangeCLIE2eTest
 
-from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.cli.main import _DEFAULT_SIGNAL_TYPES
 
 
@@ -19,7 +18,7 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         self.assert_cli_output(
             ("dataset",),
             [
-                "pdq: 138",
+                "pdq: 16",
                 "raw_text: 3",
                 "video_md5: 2",
                 "trend_query: 1",
@@ -30,7 +29,7 @@ class DatasetCommandTest(ThreatExchangeCLIE2eTest):
         self.assert_cli_output(
             ("dataset", "--signal-summary"),
             [
-                "pdq: 138",
+                "pdq: 16",
                 "raw_text: 3",
                 "video_md5: 2",
                 "trend_query: 1",

@@ -43,6 +43,15 @@ class FetchCheckpointBase:
         return None
 
 
+class NoCheckpointing(FetchCheckpointBase):
+    """
+    A checkpoint for SignalExchangeAPIs that always fetch the entire state
+    """
+
+    def is_stale(self) -> bool:
+        return True
+
+
 TFetchCheckpoint = t.TypeVar(
     "TFetchCheckpoint", covariant=True, bound=FetchCheckpointBase
 )

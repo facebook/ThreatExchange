@@ -101,6 +101,9 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
             self._state[collab.name] = _StateTracker(self.api_cls, delta)
         return self._state[collab.name]
 
+    def clear(self, collab: CollaborationConfigBase) -> None:
+        self._state.pop(collab.name, None)
+
     def merge(
         self,
         collab: CollaborationConfigBase,

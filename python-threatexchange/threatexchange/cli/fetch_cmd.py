@@ -249,6 +249,7 @@ class FetchCommand(command_base.Command):
         checkpoint = store.get_checkpoint(collab)
 
         if checkpoint is not None and checkpoint.is_stale():
+            logging.info("checkpoint stale for %s, clearing", collab.name)
             store.clear(collab)
             return None
 
