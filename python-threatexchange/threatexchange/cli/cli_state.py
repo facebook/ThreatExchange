@@ -119,6 +119,7 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
 
     def clear(self, collab: CollaborationConfigBase) -> None:
         """Delete a collaboration and its state directory"""
+        super().clear(collab)
         file = self.collab_file(collab.name)
         if file.is_file():
             logging.info("Removing %s", file)
@@ -144,7 +145,7 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
             delta = t.cast(FetchDeltaTyped, delta)
             assert (
                 delta.checkpoint.__class__ == self.api_cls.get_checkpoint_cls()
-            ), "wrong checkpoint class?"
+            ), f"wrong checkpoint class stored in {file}?"
 
             logging.debug("Loaded %s with %d records", collab_name, len(delta.updates))
             return delta

@@ -121,6 +121,12 @@ class MatchCommand(command_base.Command):
             action="store_true",
             help="hide matches if someone has disputed them",
         )
+        ap.add_argument(
+            "--all",
+            "-A",
+            action="store_true",
+            help="show all matches, not just one per collaboration",
+        )
 
     def __init__(
         self,
@@ -130,6 +136,7 @@ class MatchCommand(command_base.Command):
         files: t.List[pathlib.Path],
         show_false_positives: bool,
         hide_disputed: bool,
+        all: bool,
     ) -> None:
         self.content_type = content_type
         self.only_signal = only_signal
@@ -137,6 +144,7 @@ class MatchCommand(command_base.Command):
         self.show_false_positives = show_false_positives
         self.hide_disputed = hide_disputed
         self.files = files
+        self.all = all
 
         if only_signal and content_type not in only_signal.get_content_types():
             raise CommandError(
@@ -196,7 +204,7 @@ class MatchCommand(command_base.Command):
                 for r in results:
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
                     for collab, fetched_data in metadatas:
-                        if collab in seen:
+                        if not self.all and collab in seen:
                             continue
                         seen.add(collab)
                         # Supposed to be without whitespace, but let's make sure

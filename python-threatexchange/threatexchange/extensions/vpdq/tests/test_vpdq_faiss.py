@@ -3,7 +3,6 @@
 import pytest
 import pickle
 import random
-from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo
 
 from threatexchange.signal_type.index import IndexMatch
 
@@ -15,7 +14,7 @@ except (ImportError, ModuleNotFoundError) as e:
     _DISABLED = True
 else:
     import typing as t
-    from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex
+    from threatexchange.extensions.vpdq.vpdq_index import VPDQIndex, VPDQSimilarityInfo
     from threatexchange.extensions.vpdq.vpdq_util import (
         json_to_vpdq,
         prepare_vpdq_feature,
@@ -37,20 +36,36 @@ else:
 
 pytestmark = pytest.mark.skipif(_DISABLED, reason="vpdq not installed")
 
+
+def pdq_to_vpdq(hahes):
+    ret = []
+    timestamp = 0.0
+    frame_number = 0
+    for pdq_hash in hahes:
+        ret.append(
+            vpdq.VpdqFeature(100.0, frame_number, vpdq.str_to_hash(pdq_hash), timestamp)
+        )
+        timestamp += 1.0
+        frame_number += 1
+    return vpdq_to_json(ret)
+
+
 if not _DISABLED:
     EXAMPLE_META_DATA = {"hash_type": "vpdq", "video_id": 5}
     VIDEO1_META_DATA = object()
     VIDEO2_META_DATA = object()
     VIDEO3_META_DATA = object()
     VIDEO4_META_DATA = object()
-    hash = VPDQSignal.get_examples()[0]
-    features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
     h1 = get_similar_hash(get_zero_hash(), 16)
-    h2 = get_similar_hash(get_zero_hash(), 128)
-    h3 = get_similar_hash(get_zero_hash(), 240)
+    h2 = get_similar_hash(get_zero_hash(), 16 + (32 + 1))
+    h3 = get_similar_hash(get_zero_hash(), 16 + (32 + 1) * 2)
+    h4 = get_similar_hash(get_zero_hash(), 16 + (32 + 1) * 3)
     g1 = [get_similar_hash(h1, i) for i in range(0, 16)]
     g2 = [get_similar_hash(h2, i) for i in range(0, 16)]
     g3 = [get_similar_hash(h3, i) for i in range(0, 16)]
+
+    hash = pdq_to_vpdq([h1, h2, h3, h4])
+    features = prepare_vpdq_feature(hash, VPDQ_QUALITY_THRESHOLD)
     # Three groups of hashes that are 128 hamming distance away from each other.
     # The hashes match with each other within the group. And each group's hashes don't match.
 
