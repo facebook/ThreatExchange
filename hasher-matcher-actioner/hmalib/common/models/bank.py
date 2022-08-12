@@ -11,8 +11,9 @@ from mypy_boto3_dynamodb.service_resource import Table
 
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.utils.dataclass_json import dataclass_dumps, dataclass_loads
 
-from hmalib.common.mappings import HMASignalTypeMapping
+from hmalib.common.mappings import HMASignalTypeMapping, import_class, full_class_name
 from hmalib.common.models.models_base import (
     DynamoDBCursorKey,
     DynamoDBItem,
@@ -35,6 +36,7 @@ This is enforced by the 4th type of entry in the default table index.
 Item                  | PK                        | SK                             
 ----------------------|---------------------------|------------------------------
 Bank                  | #bank_object              | <bank_id>                      
+BankInfo              | #bank_info                | <bank_id>
 BankMember            | <bank_id>#<content_type>  | member#<bank_member_id>        
 BankMemberSignal      | <bank_member_id>          | signal#<signal_id>             
 <signal_id>           | signal_type#<signal_type> | signal_value#<signal_value>    
@@ -141,6 +143,47 @@ class Bank(DynamoDBItem):
             bank_tags=list(self.bank_tags),
         )
         return result
+
+
+@dataclass
+class BankInfo(DynamoDBItem):
+    """
+    Things about the bank. First use case is the fetcher side state. We'll store
+    fetch checkpoints.
+    """
+
+    BANK_INFO_PARTITION_KEY = "#bank_info"
+
+    bank_id: str
+
+    # A fully formed class name like hmalib.common.foo.bar.BankMeta
+    info_class: str
+
+    # Use dacite or something else to serialize / deserialize
+    info_serialized: str
+
+    def to_dynamodb_item(self) -> t.Dict:
+        return {
+            "PK": self.BANK_INFO_PARTITION_KEY,
+            "SK": self.bank_id,
+            "BankId": self.bank_id,
+            "InfoClass": self.info_class,
+            "InfoSerialized": self.info_serialized,
+        }
+
+    @classmethod
+    def from_dynamodb_item(cls, item: t.Dict) -> "BankInfo":
+        return cls(
+            bank_id=item["BankId"],
+            info_class=item["InfoClass"],
+            info_serialized=item["InfoSerialized"],
+        )
+
+    def to_info(self) -> t.Any:
+        """
+        Convert to an object of info_class.
+        """
+        return dataclass_loads(self.info_serialized, import_class(self.info_class))
 
 
 @dataclass
@@ -473,6 +516,21 @@ class BanksTable:
             bank.write_to_table(table=self._table)
 
         return bank
+
+    def get_bank_info(self, bank_id: str) -> t.Any:
+        return BankInfo.from_dynamodb_item(
+            self._table.get_item(
+                Key={"SK": bank_id, "PK": BankInfo.BANK_INFO_PARTITION_KEY}
+            )["Item"]
+        ).to_info()
+
+    def update_bank_info(self, bank_id: str, info: t.Any):
+        info_obj = BankInfo(
+            bank_id=bank_id,
+            info_class=full_class_name(info.__class__),
+            info_serialized=dataclass_dumps(info),
+        )
+        info_obj.write_to_table(table=self._table)
 
     def get_all_bank_members_page(
         self,
