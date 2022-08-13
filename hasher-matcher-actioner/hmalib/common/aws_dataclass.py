@@ -62,7 +62,9 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
 
     if origin == t.Union:
         if len(args) != 2 or type(None) not in args:
-            raise AWSSerializationFailure("Serialization error: Only t.Optional is supported as a Union Type.")
+            raise AWSSerializationFailure(
+                "Serialization error: Only t.Optional is supported as a Union Type."
+            )
 
         # For union types, call py_to_aws and return the first successful
         # serialization result.
@@ -157,7 +159,9 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
 
     if origin == t.Union:
         if len(args) != 2 or type(None) not in args:
-            raise AWSSerializationFailure("Deserialization error: Only t.Optional is supported as a Union Type.")
+            raise AWSSerializationFailure(
+                "Deserialization error: Only t.Optional is supported as a Union Type."
+            )
 
         # For union types, call aws_to_py and return the first successful
         # serialization result.
