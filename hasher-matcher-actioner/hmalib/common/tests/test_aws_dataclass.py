@@ -162,3 +162,23 @@ class AWSDataclassTest(unittest.TestCase):
             self.assertSerializesCorrectly,
             o_fail,
         )
+
+    def test_only_optional_unions_allowed(self):
+        # We want to discourage typing unions where multiple types are used.
+        # Only optional is supported out of the box.
+        @dataclass
+        class _NastyOptional_WithTwoTypes(aws_dataclass.HasAWSSerialization):
+            fieldd: t.Union[int, float] = 12.0
+
+        @dataclass
+        class _NastyOptional_WithThreeTypes(aws_dataclass.HasAWSSerialization):
+            fieldd: t.Union[int, float, str] = "really"
+
+        nasties = [_NastyOptional_WithTwoTypes(), _NastyOptional_WithThreeTypes()]
+
+        for o_nasty in nasties:
+            self.assertRaises(
+                aws_dataclass.AWSSerializationFailure,
+                self.assertSerializesCorrectly,
+                o_nasty,
+            )
