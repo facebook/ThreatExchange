@@ -37,40 +37,41 @@ class EditableCollaborationConfig(HMAConfig):
     # threatexchange.exchanges.impl.fb_threatexchange_api.FBThreatExchangeCollabConfig
     collab_config_class: str
 
-    # Use these attributes to instantiate a collab_config
+    # Use these attributes to instantiate a pytx collab_config object
     attributes_json_serialized: str
 
+    # A single collab configs would be connected to multiple banks.
+    #   a) One where we import signals
+    #   b) One from which we export signals
+    #   c) one to which we add false positives
+    # As we have not yet established how exactly all of this would work, we'll
+    # start with implementing just (a) collab_config → imported bank
+    import_as_bank_id: str
 
-def _build_collab_config(
-    collab_config_class: str, attributes_serialized: str
-) -> CollaborationConfigBase:
-    cls = import_class(collab_config_class)
-    return dataclass_loads(attributes_serialized, cls)
+    def to_pytx_collab_config(self) -> CollaborationConfigBase:
+        cls = import_class(self.collab_config_class)
+        return dataclass_loads(self.attributes_json_serialized, cls)
 
 
-def get_collab_config(name: str) -> t.Optional[CollaborationConfigBase]:
+def get_collab_config(name: str) -> t.Optional[EditableCollaborationConfig]:
     """
     Get CollaborationConfigBase of class and name if one exists as an HMAConfig.
 
     None if not.
     """
-    ec = EditableCollaborationConfig.get(name)
-    if ec is None:
-        return None
-    return _build_collab_config(ec.collab_config_class, ec.attributes_json_serialized)
+    return EditableCollaborationConfig.get(name)
 
 
-def get_all_collab_configs() -> t.List[CollaborationConfigBase]:
+def get_all_collab_configs() -> t.List[EditableCollaborationConfig]:
     """
     Get all CollaborationConfigBase objects stored as HMAConfig.
     """
-    return [
-        _build_collab_config(ec.collab_config_class, ec.attributes_json_serialized)
-        for ec in EditableCollaborationConfig.get_all()
-    ]
+    return EditableCollaborationConfig.get_all()
 
 
-def create_collab_config(collab_config: CollaborationConfigBase):
+def create_collab_config(
+    collab_config: CollaborationConfigBase, import_as_bank_id: str
+):
     """
     Store a new CollaborationConfigBase as HMAConfig.
     """
@@ -79,13 +80,19 @@ def create_collab_config(collab_config: CollaborationConfigBase):
             name=collab_config.name,
             collab_config_class=full_class_name(collab_config.__class__),
             attributes_json_serialized=dataclass_dumps(collab_config),
+            import_as_bank_id=import_as_bank_id,
         )
     )
 
 
-def update_collab_config(collab_config: CollaborationConfigBase):
+def update_collab_config(
+    collab_config: CollaborationConfigBase, import_as_bank_id: t.Optional[str] = None
+):
     """
     Update an existing CollaborationConfigBase as HMAConfig.
+
+    For arguments other than `collab_config`, this is a patch style API.
+    import_as_bank_id is only updated if provided.
     """
     ec = EditableCollaborationConfig.get(collab_config.name)
 
@@ -94,4 +101,8 @@ def update_collab_config(collab_config: CollaborationConfigBase):
 
     ec.collab_config_class = full_class_name(collab_config.__class__)
     ec.attributes_json_serialized = dataclass_dumps(collab_config)
+
+    if import_as_bank_id:
+        ec.import_as_bank_id = import_as_bank_id
+
     update_config(ec)
