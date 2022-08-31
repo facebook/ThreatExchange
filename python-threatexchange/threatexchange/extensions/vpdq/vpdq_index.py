@@ -7,7 +7,6 @@ vpdq_faiss.
 
 from dataclasses import dataclass
 import typing as t
-import vpdq
 
 from threatexchange.signal_type.index import (
     SignalSimilarityInfo,
@@ -17,6 +16,7 @@ from threatexchange.signal_type.index import (
 )
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
 from threatexchange.extensions.vpdq.vpdq_util import (
+    VpdqCompactFeature,
     prepare_vpdq_feature,
     VPDQ_QUALITY_THRESHOLD,
     VPDQ_DISTANCE_THRESHOLD,
@@ -49,8 +49,8 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
     ) -> None:
         super().__init__()
         self.index: VPDQHashIndex = VPDQHashIndex()
-        self._entry_idx_to_features_and_entires: t.List[
-            t.Tuple[t.List[vpdq.VpdqFeature], IndexT]
+        self._entry_idx_to_features_and_entries: t.List[
+            t.Tuple[t.List[VpdqCompactFeature], IndexT]
         ] = []
         self._index_idx_to_vpdqHex_and_entry: t.List[t.Tuple[int, t.List[int]]] = []
         self._unique_vpdqHex_to_index_idx: t.Dict[str, int] = {}
@@ -73,21 +73,21 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
         return ret
 
     def add(self, signal_str: str, entry: IndexT) -> None:
-        entry_id = len(self._entry_idx_to_features_and_entires)
+        entry_id = len(self._entry_idx_to_features_and_entries)
         features = prepare_vpdq_feature(signal_str, self.quality_threshold)
         if not features:
             raise ValueError(
                 "Empty video after deduping/filtering should not be indexed"
             )
-        self._entry_idx_to_features_and_entires.append((features, entry))
+        self._entry_idx_to_features_and_entries.append((features, entry))
         # Use hex to represent the feature because it saves the space
         unique_features = []
         for f in features:
-            idx = self._unique_vpdqHex_to_index_idx.get(f.hex)
+            idx = self._unique_vpdqHex_to_index_idx.get(f.pdq_hex)
             if idx is None:
                 idx = len(self._unique_vpdqHex_to_index_idx)
-                self._unique_vpdqHex_to_index_idx[f.hex] = idx
-                self._index_idx_to_vpdqHex_and_entry.append((f.hex, list()))
+                self._unique_vpdqHex_to_index_idx[f.pdq_hex] = idx
+                self._index_idx_to_vpdqHex_and_entry.append((idx, list()))
                 unique_features.append(f)
             self._index_idx_to_vpdqHex_and_entry[idx][1].append(entry_id)
         if unique_features:
@@ -129,7 +129,7 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
             index_matched_percent = (
                 len(index_matched[entry_id])
                 * 100
-                / len(self._entry_idx_to_features_and_entires[entry_id][0])
+                / len(self._entry_idx_to_features_and_entries[entry_id][0])
             )
             if (
                 query_matched_percent >= self.query_match_threshold_pct
@@ -140,7 +140,7 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
                         VPDQSimilarityInfo(
                             query_matched_percent, index_matched_percent
                         ),
-                        self._entry_idx_to_features_and_entires[entry_id][1],
+                        self._entry_idx_to_features_and_entries[entry_id][1],
                     )
                 )
         return matches
