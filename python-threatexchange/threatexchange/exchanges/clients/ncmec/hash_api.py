@@ -208,6 +208,7 @@ class GetEntriesResponse:
 class NCMECEndpoint(Enum):
     status = "status"
     entries = "entries"
+    members = "members"
 
 
 class NCMECEnvironment(Enum):
@@ -327,6 +328,14 @@ class NCMECHashAPI:
         response = self._get(NCMECEndpoint.status)
         member = _XMLWrapper(response)["member"]
         return StatusResult(member.int("id"), member.text)
+
+    def members(self) -> t.List[StatusResult]:
+        """Query the members endpoint, which gives you a list of esps"""
+        response = self._get(NCMECEndpoint.members)
+        return [
+            StatusResult(member.int("id"), member.text)
+            for member in _XMLWrapper(response)
+        ]
 
     def get_entries(
         self,
