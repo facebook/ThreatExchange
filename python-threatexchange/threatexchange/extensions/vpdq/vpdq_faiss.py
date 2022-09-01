@@ -2,6 +2,7 @@
 
 import vpdq
 import faiss
+from threatexchange.extensions.vpdq.vpdq_util import VpdqCompactFeature
 from threatexchange.signal_type.pdq.pdq_utils import BITS_IN_PDQ
 import typing as t
 import numpy
@@ -19,17 +20,17 @@ class VPDQHashIndex:
             faiss.IndexBinaryFlat(BITS_IN_PDQ) if faiss_index is None else faiss_index
         )
 
-    def add_single_video(self, hashes: t.List[vpdq.VpdqFeature]) -> None:
+    def add_single_video(self, hashes: t.List[VpdqCompactFeature]) -> None:
         """
         Args:
             hashes : One video's VPDQ features of to create the index with
         """
-        hash_bytes = [binascii.unhexlify(h.hex) for h in hashes]
+        hash_bytes = [binascii.unhexlify(h.pdq_hex) for h in hashes]
         vectors = [numpy.frombuffer(h, dtype=numpy.uint8) for h in hash_bytes]
         self.faiss_index.add(numpy.array(vectors))
 
     def search_with_distance_in_result(
-        self, queries: t.List[vpdq.VpdqFeature], distance_tolerance: int
+        self, queries: t.List[VpdqCompactFeature], distance_tolerance: int
     ) -> t.Dict[str, t.List[t.Tuple[int, int]]]:
         """
         Searches this index for PDQ hashes within the index that are no more than the threshold away
@@ -61,7 +62,7 @@ class VPDQHashIndex:
         """
 
         query_vectors = [
-            numpy.frombuffer(binascii.unhexlify(q.hex), dtype=numpy.uint8)
+            numpy.frombuffer(binascii.unhexlify(q.pdq_hex), dtype=numpy.uint8)
             for q in queries
         ]
         qs = numpy.array(query_vectors)
@@ -73,7 +74,7 @@ class VPDQHashIndex:
         for i, query in enumerate(queries):
             matches = [idx.item() for idx in neighbors[limits[i] : limits[i + 1]]]
             distances = [idx for idx in similarities[limits[i] : limits[i + 1]]]
-            result[query.hex] = list(zip(matches, distances))
+            result[query.pdq_hex] = list(zip(matches, distances))
         return result
 
     def __getstate__(self):

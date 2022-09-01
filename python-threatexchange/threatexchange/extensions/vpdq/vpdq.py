@@ -4,21 +4,21 @@
 Wrapper around the vpdq signal type.
 """
 
-import vpdq
 from threatexchange.extensions.vpdq.vpdq_util import (
     VPDQ_INDEX_MATCH_THRESHOLD_PERCENT,
+    VpdqCompactFeature,
     json_to_vpdq,
     vpdq_to_json,
     VPDQ_DISTANCE_THRESHOLD,
     VPDQ_QUERY_MATCH_THRESHOLD_PERCENT,
     VPDQ_QUALITY_THRESHOLD,
+    hash_file_compact,
 )
 from threatexchange.extensions.vpdq.vpdq_brute_matcher import match_VPDQ_hash_brute
 import pathlib
 import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.video import VideoContent
-import re
 from threatexchange.signal_type import signal_base
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.extensions.vpdq.vpdq_index import VPDQSimilarityInfo, VPDQIndex
@@ -58,28 +58,14 @@ class VPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
         """
-        VPDQ feature contains quality(int), frame_number(int), hash(Hash256), hex(hex_str of the hash) and timestamp(double)
-        Hex is a hexadecimal string contains 64 hexidecimal characters
-        frame_number is an non-negative integer
-        quality is a 0-100 integer(inclusive)
-        timestamp(sec, round to 3 decimal) is the start time of the frame for the VPDQ feature
+        @see VpdqCompactFeature
         """
-        vpdq_hashes = json_to_vpdq(signal_str)
-        last_frame_number = -1
-        for hash in vpdq_hashes:
-            if not re.match("^[0-9a-f]{64}$", hash.hex):
-                raise ValueError("invalid VPDQ hash")
-            if hash.quality < 0 or hash.quality > 100:
-                raise ValueError("invalid VPDQ quality")
-            if hash.frame_number < 0 or hash.frame_number <= last_frame_number:
-                raise ValueError("invalid VPDQ frame number")
-            last_frame_number = hash.frame_number
+        json_to_vpdq(signal_str)  # throws value error on failure
         return signal_str
 
     @classmethod
     def hash_from_file(cls, path: pathlib.Path, seconds_per_hash: float = 1) -> str:
-        vpdq_hashes = vpdq.computeHash(str(path), seconds_per_hash=seconds_per_hash)
-        return vpdq_to_json(vpdq_hashes)
+        return vpdq_to_json(hash_file_compact(str(path), seconds_per_hash))
 
     @classmethod
     def compare_hash(
@@ -109,16 +95,8 @@ class VPDQSignal(signal_base.SimpleSignalType, signal_base.FileHasher):
 
     @staticmethod
     def get_examples() -> t.List[str]:
-        frame_number = 0
-        timestamp = 0.0
-        quality = 100
-        VPDQ_features = []
-        for pdq_hash in PdqSignal.get_examples():
-            VPDQ_features.append(
-                vpdq.VpdqFeature(
-                    quality, frame_number, vpdq.str_to_hash(pdq_hash), timestamp
-                )
-            )
-            timestamp += 1.0
-            frame_number += 1
-        return [vpdq_to_json(VPDQ_features)]
+        from_pdq_sample = [
+            VpdqCompactFeature(pdq_hash, 100, float(timestamp))
+            for timestamp, pdq_hash in enumerate(PdqSignal.get_examples())
+        ]
+        return [vpdq_to_json(from_pdq_sample)]

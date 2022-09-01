@@ -10,7 +10,7 @@ import time
 from enum import Enum
 from contextlib import contextmanager, nullcontext
 from threatexchange.extensions.vpdq.vpdq_brute_matcher import match_VPDQ_hash_brute
-from threatexchange.extensions.vpdq.tests.utils import get_random_VPDQs
+from threatexchange.extensions.vpdq.tests.utils import get_random_vpdq_features
 from threatexchange.extensions.vpdq.vpdq_faiss import VPDQHashIndex
 from threatexchange.extensions.vpdq.vpdq_util import (
     vpdq_to_json,
@@ -60,7 +60,7 @@ def run_benchmark(
         data_generation_timer = timer("Generating data", True)
     with data_generation_timer:
         hashes = [
-            get_random_VPDQs(
+            get_random_vpdq_features(
                 average_frames + random.randint(-jitter_noise, jitter_noise)
             )
             for _ in range(dataset_size)
@@ -81,7 +81,7 @@ def run_benchmark(
     if query_size > 10000:
         query_generation_timer = timer("Generating queries", True)
     with query_generation_timer:
-        hq = get_random_VPDQs(query_size)
+        hq = get_random_vpdq_features(query_size)
     if test_type == IndexType.SIGNAL_TYPE:
         query = lambda: signal_match(hq, index)
     elif test_type == IndexType.BRUTE_FORCE:

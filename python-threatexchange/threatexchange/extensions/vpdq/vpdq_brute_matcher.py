@@ -1,12 +1,15 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import vpdq
+
 import typing as t
-from .vpdq_util import dedupe, quality_filter, VPDQMatchResult
+
+from threatexchange.signal_type.pdq.pdq_utils import simple_distance
+from .vpdq_util import VpdqCompactFeature, dedupe, quality_filter, VPDQMatchResult
 
 
 def match_VPDQ_in_another(
-    hash1: t.List[vpdq.VpdqFeature],
-    hash2: t.List[vpdq.VpdqFeature],
+    hash1: t.List[VpdqCompactFeature],
+    hash2: t.List[VpdqCompactFeature],
     distance_tolerance: int,
 ) -> int:
     """Count matches of hash1 in hash2
@@ -21,14 +24,17 @@ def match_VPDQ_in_another(
         int: The count of matches of hash1 in hash2
     """
     return sum(
-        any(h1.hamming_distance(h2) <= distance_tolerance for h2 in hash2)
+        any(
+            simple_distance(h1.pdq_hex, h2.pdq_hex) <= distance_tolerance
+            for h2 in hash2
+        )
         for h1 in hash1
     )
 
 
 def match_VPDQ_hash_brute(
-    query_hash: t.List[vpdq.VpdqFeature],
-    compared_hash: t.List[vpdq.VpdqFeature],
+    query_hash: t.List[VpdqCompactFeature],
+    compared_hash: t.List[VpdqCompactFeature],
     quality_tolerance: int,
     distance_tolerance: int,
 ) -> VPDQMatchResult:
