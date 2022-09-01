@@ -173,17 +173,3 @@ def prepare_vpdq_feature(
     """
     features = json_to_vpdq(signal_str)
     return dedupe(quality_filter(features, quality_tolerance))
-
-
-def go():
-    old_features = OLD_read_file_to_hash(
-        "/workspaces/devcontainer-ThreatExchange/python-threatexchange/threatexchange/extensions/vpdq/tests/test_hash.txt"
-    )
-    new_json = vpdq_to_json(
-        [VpdqCompactFeature.from_vpdq_feature(f) for f in old_features], indent=2
-    )
-    with open(
-        "/workspaces/devcontainer-ThreatExchange/python-threatexchange/threatexchange/extensions/vpdq/tests/test_hash2.txt",
-        "w",
-    ) as fp:
-        fp.write(new_json)
