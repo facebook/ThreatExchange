@@ -27,6 +27,7 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | Signal | threatexchange | video_md5 | MD5 of video
 | Signal | threatexchange.extensions.pdq_ocr | pdq_ocr | photos+text (memes)
 | Signal | threatexchange.extensions.text_tlsh | text_tlsh | tlsh scanning on text
+| Signal | threatexchange.extensions.vpdq | vpdq | vPDQ video hashing
 | Signal | TBD | tmk_pdqf | The planned name for TMK+PDQF video hashing 
 | Signal | N/A | photodna | Reserved to prevent confusion with PhotoDNA
 | Content | threatexchange | text | Text files and strings
