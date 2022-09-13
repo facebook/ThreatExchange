@@ -55,7 +55,7 @@ setup(
         "Pillow",  # pdq
         "pdqhash>=0.2.2",  # pdq
         "faiss-cpu>=1.6.3",  # faiss
-        "numpy",  # faiss
+        "numpy>=1.23.2",  # faiss
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},
