@@ -95,12 +95,18 @@ class MatchCommand(command_base.Command):
             ),
             help="limit to this signal type",
         )
+        ap.add_argument(
+            "--print-query-signal",
+            "-p",
+            action="store_true",
+            help="when there is a match, print signal used to query (or - if n/a)",
+        )
 
         ap.add_argument(
             "--hashes",
             "-H",
             action="store_true",
-            help=("force input to be interpreted as signals for the given signal type"),
+            help="force input to be interpreted as signals for the given signal type",
         )
 
         ap.add_argument(
@@ -136,6 +142,7 @@ class MatchCommand(command_base.Command):
         files: t.List[pathlib.Path],
         show_false_positives: bool,
         hide_disputed: bool,
+        print_query_signal: bool,
         all: bool,
     ) -> None:
         self.content_type = content_type
@@ -143,6 +150,7 @@ class MatchCommand(command_base.Command):
         self.as_hashes = hashes
         self.show_false_positives = show_false_positives
         self.hide_disputed = hide_disputed
+        self.print_query_signal = print_query_signal
         self.files = files
         self.all = all
 
@@ -201,35 +209,35 @@ class MatchCommand(command_base.Command):
                 else:
                     results = _match_file(path, s_type, index)
 
-                for r in results:
+                for r, query_signal in results:
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
                     for collab, fetched_data in metadatas:
-                        if not self.all and collab in seen:
+                        k = (collab, query_signal)
+                        if not self.all and k in seen:
                             continue
-                        seen.add(collab)
+                        seen.add(k)
                         # Supposed to be without whitespace, but let's make sure
                         distance_str = "".join(r.similarity_info.pretty_str().split())
-                        print(
-                            s_type.get_name(),
-                            distance_str,
-                            f"({collab})",
-                            fetched_data,
-                        )
+                        print(s_type.get_name(), distance_str, end=" ")
+                        if self.print_query_signal:
+                            print(query_signal or "-", end=" ")
+                        print(f"({collab})", fetched_data)
 
 
 def _match_file(
     path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
-) -> t.Sequence[IndexMatch]:
+) -> t.Sequence[t.Tuple[IndexMatch, t.Optional[str]]]:
     if issubclass(s_type, MatchesStr):
-        return index.query(path.read_text())
+        return [(r, None) for r in index.query(path.read_text())]
     assert issubclass(s_type, FileHasher)
-    return index.query(s_type.hash_from_file(path))
+    signal_str = s_type.hash_from_file(path)
+    return [(r, signal_str) for r in index.query(signal_str)]
 
 
 def _match_hashes(
     path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
-) -> t.Sequence[IndexMatch]:
-    ret: t.List[IndexMatch] = []
+) -> t.Sequence[t.Tuple[IndexMatch, str]]:
+    ret: t.List[t.Tuple[IndexMatch, str]] = []
     for hash in path.read_text().splitlines():
         hash = hash.strip()
         if not hash:
@@ -245,5 +253,5 @@ def _match_hashes(
                 f"{hash_repr} from {path} is not a valid hash for {s_type.get_name()}",
                 2,
             )
-        ret.extend(index.query(hash))
+        ret.extend((r, hash) for r in index.query(hash))
     return ret
