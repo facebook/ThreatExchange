@@ -2,7 +2,7 @@
 
 Originally, this library was meant specifically for Facebook's [ThreatExchange](https://developers.facebook.com/docs/threat-exchange/) platform. However, we think that the concept of open source trust and safety could benefit from a library that allows the infrastructure for sharing signals and hashes from many sources, and potentially apply many techniques. 
 
-Not all techniques will make sense for all usecases, but there are several concepts like "Content", "Signal", and "API" which we think are universally applicable. 
+Not all techniques will make sense for all use cases, but there are several concepts like "Content", "Signal", and "Exchange" which we think are universally applicable. 
 
 Using the pattern described here, you can quickly bundle content, signals, and APIs that can then be compatible with the threatexchange CLI, and Hasher-Matcher-Actioner tools.
 
@@ -45,7 +45,7 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 ## Writing a ThreatExchange Expansion Module
 Using the interfaces for SignalType, ContentType, and SignalExchangeAPI, create classes that extend as many of those as you think should be bundled together. 
 
-Next, in a module (`__init__.py` is fine), you'll want to have a varible named `TX_MANIFEST` that is assigned a `ThreatExchangeExtensionManifest` object. From there, simply list all the objects that you've implemented.
+Next, in a module (`__init__.py` is fine), you'll want to have a variable named `TX_MANIFEST` that is assigned a `ThreatExchangeExtensionManifest` object. From there, simply list all the objects that you've implemented.
 
 ```
 # maybe in __init__.py...
@@ -69,7 +69,7 @@ PEP423 suggests "threatexchangecontributions.X" as potential package name, but t
 ### Handling Dependencies on Other Extensions or Libraries
 If your extension will function correctly without another extension (for example an API that can fetch some signal types without the SignalType), we suggest making a decision between having your library work without it (for example, by checking whether that SignalType is importable), or by simply making it required. If distributing your extension via pypi, using extra requires for the additional functionality seems to be a good compromise.
 
-If your SignalType requires modules be avaialable to work at all, we suggest making those modules required if there's not an easy fallback.
+If your SignalType requires modules be available to work at all, we suggest making those modules required if there's not an easy fallback.
 
 Here's an common example with FAISS:
 
@@ -109,7 +109,7 @@ Added my.module.name:
     zed - ZedAPI
 
 # What do I have?
-$ threatexchange threatexchange config extensions list
+$ threatexchange config extensions list
 threatexchangecontributions.myproject
 
 # I don't want this anymore!
