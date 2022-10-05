@@ -68,13 +68,15 @@ class StopNCIICredentials(auth.CredentialHelper):
     ENV_VARIABLE: t.ClassVar[str] = "TX_STOPNCII_KEYS"
     FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
 
-    subscription_key: str
     fetch_function_key: str
+    subscription_key: str
 
     @classmethod
     def _from_str(cls, s: str) -> "StopNCIICredentials":
-        subscription_key, _, fetch_function_key = s.strip().partition(",")
-        return cls(fetch_function_key, subscription_key)
+        fetch_function_key, _, subscription_key = s.strip().partition(",")
+        return cls(
+            subscription_key=subscription_key, fetch_function_key=fetch_function_key
+        )
 
     def _are_valid(self) -> bool:
         return bool(self.fetch_function_key and self.subscription_key)
