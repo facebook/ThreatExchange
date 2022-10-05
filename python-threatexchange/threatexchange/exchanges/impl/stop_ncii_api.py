@@ -68,16 +68,18 @@ class StopNCIICredentials(auth.CredentialHelper):
     ENV_VARIABLE: t.ClassVar[str] = "TX_STOPNCII_KEYS"
     FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
 
-    function_key: str
+    fetch_function_key: str
     subscription_key: str
 
     @classmethod
     def _from_str(cls, s: str) -> "StopNCIICredentials":
-        user, _, passw = s.strip().partition(",")
-        return cls(user, passw)
+        fetch_function_key, _, subscription_key = s.strip().partition(",")
+        return cls(
+            subscription_key=subscription_key, fetch_function_key=fetch_function_key
+        )
 
     def _are_valid(self) -> bool:
-        return bool(self.function_key and self.subscription_key)
+        return bool(self.fetch_function_key and self.subscription_key)
 
 
 class StopNCIISignalExchangeAPI(
@@ -132,7 +134,9 @@ class StopNCIISignalExchangeAPI(
         credentials = credentials or StopNCIICredentials.get(cls)
         return cls(
             collab,
-            api.StopNCIIAPI(credentials.function_key, credentials.subscription_key),
+            api.StopNCIIAPI(
+                credentials.subscription_key, credentials.fetch_function_key
+            ),
         )
 
     def fetch_iter(

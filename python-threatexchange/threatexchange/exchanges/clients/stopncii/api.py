@@ -92,7 +92,9 @@ class FetchHashesResponse:
     """
 
     count: int  # How many records are there?
-    nextPageToken: str  # Cursor for paginating, not valid over long periods of time
+    nextPageToken: t.Optional[
+        str
+    ]  # Cursor for paginating, not valid over long periods of time
     nextSetTimestamp: int  # The best timestamp to use to store as a checkpoint
     hasMoreRecords: bool  # If the cursor is fully played out
     hashRecords: t.List[StopNCIIHashRecord]  # The records
@@ -248,7 +250,7 @@ class StopNCIIAPI:
                 start_timestamp=start_timestamp, next_page=next_page
             )
             has_more = result.hasMoreRecords
-            next_page = result.nextPageToken
+            next_page = result.nextPageToken or ""
             yield result
 
     def submit_hash(
