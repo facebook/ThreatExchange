@@ -1,18 +1,18 @@
 # ================================================================
 ifneq ($(findstring wasm, $(MAKECMDGOALS)), wasm)
-CXX=g++ # please customize according to your system --- Note: Apple clang on M1 is not currently supported 
+CXX=g++ # please customize according to your system --- Note: Apple clang on M1 is not currently supported
 CC=$(CXX) -g -std=c++11
-WFLAGS=-Wall -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation -Wno-unknown-warning-option -Werror
+WFLAGS=-Wall -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation -Wno-unknown-warning-option -Werror -Wno-deprecated-declarations
 LFLAGS=-lm -lpthread
 else
 CC=emcc -g -std=c++11 -D BUILD_WASM -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_RUNTIME_METHODS=['ccall','UTF8ToString ']  -s  EXPORTED_FUNCTIONS=['_getHash'] -s FORCE_FILESYSTEM=1 -s LLD_REPORT_UNDEFINED -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s DISABLE_EXCEPTION_CATCHING=0 -s ALLOW_MEMORY_GROWTH=1
-WFLAGS=-Wall -Wno-char-subscripts -Werror
+WFLAGS=-Wall -Wno-char-subscripts -Werror -Wno-deprecated-declarations
 LFLAGS=-lm
 endif
 
 IFLAGS=-I../.. -I.
 # -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation is because of CImg.h
-WFLAGS=-Wall -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation -Wno-unknown-warning-option -Werror
+WFLAGS=-Wall -Wno-char-subscripts -Wno-stringop-truncation -Wno-class-memaccess -Wno-misleading-indentation -Wno-unknown-warning-option -Werror -Wno-deprecated-declarations
 LFLAGS=-lm -lpthread
 
 CCOPT=$(CC) $(CFLAGS) $(IFLAGS) $(WFLAGS) -O3
