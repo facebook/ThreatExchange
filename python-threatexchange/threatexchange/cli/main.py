@@ -26,9 +26,11 @@ State is persisted between runs, entirely in the ~/.threatexchange directory
 
 import argparse
 from contextlib import contextmanager
+from importlib import metadata
 import logging
 import inspect
 import os
+import subprocess
 import sys
 import typing as t
 import pathlib
@@ -116,6 +118,12 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
         "--factory-reset",
         action="store_true",
         help="Remove all state, bringing you back to a fresh install",
+    )
+    ap.add_argument(
+        "--version",
+        action="store_true",
+        dest="print_version",
+        help="print the version and exit",
     )
     ap.add_argument(
         "--verbose",
@@ -279,6 +287,21 @@ def inner_main(
     if namespace.factory_reset:
         print("Resetting to factory defaults.", file=sys.stderr)
         shutil.rmtree(str(state_dir.expanduser().absolute()))
+        return
+    if namespace.print_version:
+        here = pathlib.Path(os.path.realpath(__file__)).parent
+        if (here / ".local_install_detection.txt").is_file():
+            version_txt = (here.parent.parent / "version.txt").read_text().strip()
+            git_hash = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(here.absolute()),
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            version = f"{version_txt or '???'} dev-{git_hash or '???'}"
+        else:
+            version = metadata.version("threatexchange")
+        print(version)
         return
     if not namespace.is_config:
         extensions.assert_no_errors()
