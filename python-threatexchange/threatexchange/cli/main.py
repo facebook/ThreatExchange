@@ -290,9 +290,12 @@ def inner_main(
         return
     if namespace.print_version:
         here = pathlib.Path(os.path.realpath(__file__)).parent
-        version = metadata.version("threatexchange")
         if (here / ".local_install_detection.txt").is_file():
-            version += " dev-" + subprocess.getoutput("git rev-parse HEAD")
+            version_txt = (here.parent.parent / "version.txt").read_text().strip()
+            git_hash = subprocess.getoutput("git rev-parse HEAD")
+            version = f"{version_txt} dev-{git_hash or '???'}"
+        else:
+            version = metadata.version("threatexchange")
         print(version)
         return
     if not namespace.is_config:
