@@ -292,8 +292,13 @@ def inner_main(
         here = pathlib.Path(os.path.realpath(__file__)).parent
         if (here / ".local_install_detection.txt").is_file():
             version_txt = (here.parent.parent / "version.txt").read_text().strip()
-            git_hash = subprocess.getoutput("git rev-parse HEAD")
-            version = f"{version_txt} dev-{git_hash or '???'}"
+            git_hash = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=str(here.absolute()),
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            version = f"{version_txt or '???'} dev-{git_hash or '???'}"
         else:
             version = metadata.version("threatexchange")
         print(version)
