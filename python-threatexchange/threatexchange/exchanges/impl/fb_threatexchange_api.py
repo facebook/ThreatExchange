@@ -127,10 +127,10 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
             if "owner" not in td_json:
                 # Regrettable bug in threatexchange where descriptor from
                 # `descriptors` is visible but `owner` field is not.
-                # It's on Meta to fix this bug, for now, just drop record.
-                # Dropping record isn't create, because it breaks the correctness
-                # of threat_updates, since it can oscillate between visible and
-                # not separately from the threat_update order.
+                # It's on Meta to fix this bug, but for now just drop the record.
+                # This bug breaks the correctness of threat_updates, because
+                # it can oscillate between visible and not separately from the
+                # threat_update order.
                 # TODO: Should we log this?
                 continue
             owner_id = int(td_json["owner"]["id"])
