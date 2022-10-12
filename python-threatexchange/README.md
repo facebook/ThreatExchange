@@ -191,12 +191,17 @@ $ threatexchange fetch
 ```
 
 #### StopNCII.org
-[StopNCII.org](https://stopncii.org/) allows people to upload media hashes of intimate imagery when someone is threatening to share them. If you are a partner with credentials, you can download and use hashes from that API.
+[StopNCII.org](https://stopncii.org/) allows people to upload hashes of intimate imagery/videos when someone is threatening to share them. If you are a partner with credentials, you can download and use hashes from that API.
 
 ```
-# Step 1 - configure the default credentials - TX_STOPNCII_KEYS Environment variable
-$ TX_STOPNCII_KEYS='<TOKEN>'
+# Step 1 - TX_ACCESS_TOKEN Environment variable - comma separated
+$ TX_STOPNCII_KEYS='<SUBSCRIPTION_KEY>,<FUNCTION_KEY>'
 $ export TX_STOPNCII_KEYS
+
+# Step 1 Alternative - ~/.tx_stopncii_keys file
+$ touch ~/.tx_stopncii_keys
+$ chmod 600 ~/.tx_stopncii_keys
+$ echo '<SUBSCRIPTION_KEY>,<FUNCTION_KEY>' > ~/.tx_stopncii_keys
 
 # Step 2 - set up config
 $ threatexchange config collab edit stop_ncii --create 'StopNCII' 
