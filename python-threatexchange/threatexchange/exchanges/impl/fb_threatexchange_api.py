@@ -124,6 +124,15 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
 
         for td_json in te_json.raw_json["descriptors"]["data"]:
             td_id = int(td_json["id"])
+            if "owner" not in td_json:
+                # Regrettable bug in threatexchange where descriptor from
+                # `descriptors` is visible but `owner` field is not.
+                # It's on Meta to fix this bug, but for now just drop the record.
+                # This bug breaks the correctness of threat_updates, because
+                # it can oscillate between visible and not separately from the
+                # threat_update order.
+                # TODO: Should we log this?
+                continue
             owner_id = int(td_json["owner"]["id"])
             status = td_json["status"]
             # added_on = td_json["added_on"]
@@ -312,9 +321,10 @@ class FBThreatExchangeSignalExchangeAPI(
 
             updates = {}
             for u in batch:
-                updates[u.threat_type, u.indicator] = _indicator_applies(
-                    self.client.app_id, u, type_mapping
+                converted = FBThreatExchangeIndicatorRecord.from_threatexchange_json(
+                    self.client.app_id, u
                 )
+                updates[u.threat_type, u.indicator] = converted
 
             yield ThreatExchangeDelta(
                 updates,
@@ -349,8 +359,10 @@ class FBThreatExchangeSignalExchangeAPI(
         mapping = _make_indicator_type_mapping(signal_types)
 
         for (type_str, signal_str), metadata in fetched.items():
+            if metadata is None:
+                continue
             potential_types = mapping.get(type_str)
-            if potential_types is None or metadata is None:
+            if potential_types is None:
                 continue
             indicator_tags = {t for opinion in metadata.opinions for t in opinion.tags}
             for tag, s_types in potential_types.items():
@@ -393,34 +405,6 @@ def _merge_record_for_signal_type(
         existing.merge(tx_record)
         return None
     return tx_record
-
-
-def _indicator_applies(
-    my_app_id: int,
-    u: ThreatUpdateJSON,
-    type_mapping: t.Mapping[
-        str,
-        t.Mapping[
-            t.Optional[str], t.Sequence[t.Type[HasFbThreatExchangeIndicatorType]]
-        ],
-    ],
-) -> t.Optional[FBThreatExchangeIndicatorRecord]:
-    """Based on the available signal types, return a record"""
-    potential_signal_type = type_mapping.get(u.threat_type)
-    if potential_signal_type is None:
-        return None
-    indicator = FBThreatExchangeIndicatorRecord.from_threatexchange_json(my_app_id, u)
-    if indicator is None:
-        return None
-    if None in potential_signal_type:
-        return indicator
-    if any(
-        tag in potential_signal_type
-        for opinion in indicator.opinions
-        for tag in opinion.tags
-    ):
-        return indicator
-    return None
 
 
 def _make_indicator_type_mapping(
