@@ -70,12 +70,25 @@ class StopNCIICredentials(auth.CredentialHelper):
 
     fetch_function_key: str
     subscription_key: str
+    base_url_override: t.Optional[str]
 
     @classmethod
     def _from_str(cls, s: str) -> "StopNCIICredentials":
-        fetch_function_key, _, subscription_key = s.strip().partition(",")
+        parts = s.strip().split(",")
+        if len(parts) == 2:
+            fetch_function_key, subscription_key = parts
+            base_url_override = None
+        elif len(parts) == 3:
+            fetch_function_key, subscription_key, base_url_override = parts
+        else:
+            raise ValueError(
+                "Invalid stopNCII credentials format. Should be 'function_key,subscription_key' OR 'function_key_subscription_key,base_url_override'."
+            )
+
         return cls(
-            subscription_key=subscription_key, fetch_function_key=fetch_function_key
+            subscription_key=subscription_key,
+            fetch_function_key=fetch_function_key,
+            base_url_override=base_url_override,
         )
 
     def _are_valid(self) -> bool:
@@ -135,7 +148,9 @@ class StopNCIISignalExchangeAPI(
         return cls(
             collab,
             api.StopNCIIAPI(
-                credentials.subscription_key, credentials.fetch_function_key
+                credentials.subscription_key,
+                credentials.fetch_function_key,
+                base_url_override=credentials.base_url_override,
             ),
         )
 

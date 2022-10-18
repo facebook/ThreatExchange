@@ -128,10 +128,13 @@ class StopNCIIAPI:
         subscription_key: str,
         fetch_function_key: str,
         additional_function_keys: t.Optional[t.Dict[StopNCIIEndpoint, str]] = None,
+        base_url_override: t.Optional[str] = None,
     ) -> None:
         self._function_keys = dict(additional_function_keys or {})
         self._function_keys[StopNCIIEndpoint.FetchHashes] = fetch_function_key
         self._subscription_key = subscription_key
+
+        self._base_url = base_url_override or self.BASE_URL
 
     def _get_session(self, endpoint: StopNCIIEndpoint):
         """
@@ -160,7 +163,7 @@ class StopNCIIAPI:
             }
         )
         session.mount(
-            self.BASE_URL,
+            self._base_url,
             adapter=TimeoutHTTPAdapter(
                 timeout=60,
                 max_retries=Retry(
@@ -181,7 +184,7 @@ class StopNCIIAPI:
         Same timeouts and retry strategy as `_get_session` above.
         """
 
-        url = "/".join((self.BASE_URL, endpoint.value))
+        url = "/".join((self._base_url, endpoint.value))
         with self._get_session(endpoint) as session:
             response = session.get(url, params=params)
             response.raise_for_status()
@@ -194,7 +197,7 @@ class StopNCIIAPI:
         No timeout or retry strategy.
         """
 
-        url = "/".join((self.BASE_URL, endpoint.value))
+        url = "/".join((self._base_url, endpoint.value))
         with self._get_session(endpoint) as session:
             response = session.post(url, json=json)
             response.raise_for_status()
