@@ -78,8 +78,12 @@ class StopNCIICredentials(auth.CredentialHelper):
         if len(parts) == 2:
             fetch_function_key, subscription_key = parts
             base_url_override = None
-        else:
+        elif len(parts) == 3:
             fetch_function_key, subscription_key, base_url_override = parts
+        else:
+            raise ValueError(
+                "Invalid stopNCII credentials format. Should be 'function_key,subscription_key' OR 'function_key_subscription_key,base_url_override'."
+            )
 
         return cls(
             subscription_key=subscription_key,
