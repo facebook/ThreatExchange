@@ -60,6 +60,25 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
             "Rework your dataclasses to avoid forward references."
         )
 
+    if origin == t.Union:
+        if len(args) != 2 or type(None) not in args:
+            raise AWSSerializationFailure(
+                "Serialization error: Only t.Optional is supported as a Union Type."
+            )
+
+        # For union types, call py_to_aws and return the first successful
+        # serialization result.
+        for unioned_type in args:
+            try:
+                result = py_to_aws(py_field, unioned_type)  # type: ignore
+                return result
+            except AWSSerializationFailure:
+                pass
+
+        raise AWSSerializationFailure(
+            f"Serialization error: UnionType'{args}', but value '{py_field}' does not match any of the unioned types."
+        )
+
     if not isinstance(py_field, check_type):
         raise AWSSerializationFailure(
             "Serialization error: "
@@ -93,6 +112,8 @@ def py_to_aws(py_field: t.Any, in_type: t.Optional[t.Type[T]] = None) -> T:
         return {Decimal(str(s)) for s in py_field}  # type: ignore # mypy/issues/10003
     if isinstance(py_field, Enum):
         return py_field.name  # type: ignore # mypy/issues/10003
+    if in_type == type(None):  # in 3.8, NoneType does not exist in builtins or in types
+        return None  # type: ignore
 
     if origin is list:  # L
         return [py_to_aws(v, args[0]) for v in py_field]  # type: ignore # mypy/issues/10003
@@ -135,6 +156,25 @@ def aws_to_py(in_type: t.Type[T], aws_field: t.Any) -> T:
             check_type = list
     elif inspect.isclass(in_type) and issubclass(in_type, Enum):
         check_type = str
+
+    if origin == t.Union:
+        if len(args) != 2 or type(None) not in args:
+            raise AWSSerializationFailure(
+                "Deserialization error: Only t.Optional is supported as a Union Type."
+            )
+
+        # For union types, call aws_to_py and return the first successful
+        # serialization result.
+        for unioned_type in args:
+            try:
+                result = aws_to_py(unioned_type, aws_field)  # type: ignore
+                return result
+            except AWSSerializationFailure:
+                pass
+
+        raise AWSSerializationFailure(
+            f"Deserialization error: UnionType'{args}', but value '{aws_field}' does not match any of the unioned types."
+        )
 
     if not isinstance(aws_field, check_type or in_type):
         # If you are getting random deserialization errors in tests that you did

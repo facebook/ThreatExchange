@@ -28,6 +28,11 @@ class Complicated:
 
 
 @dataclass
+class SimpleOptional(aws_dataclass.HasAWSSerialization):
+    a: t.Optional[int] = field(default=None)
+
+
+@dataclass
 class SimpleInt:
     a: int = 2
 
@@ -143,3 +148,37 @@ class AWSDataclassTest(unittest.TestCase):
         n.n = n
         # No recursion guard currently
         self.assertSerializesCorrectly(head)
+
+    def test_optional_attribute(self):
+        o_left_none = SimpleOptional()
+        self.assertSerializesCorrectly(o_left_none)
+
+        o_filled = SimpleOptional(12)
+        self.assertSerializesCorrectly(o_filled)
+
+        o_fail = SimpleOptional("should_fail")
+        self.assertRaises(
+            aws_dataclass.AWSSerializationFailure,
+            self.assertSerializesCorrectly,
+            o_fail,
+        )
+
+    def test_only_optional_unions_allowed(self):
+        # We want to discourage typing unions where multiple types are used.
+        # Only optional is supported out of the box.
+        @dataclass
+        class _NastyOptional_WithTwoTypes(aws_dataclass.HasAWSSerialization):
+            fieldd: t.Union[int, float] = 12.0
+
+        @dataclass
+        class _NastyOptional_WithThreeTypes(aws_dataclass.HasAWSSerialization):
+            fieldd: t.Union[int, float, str] = "really"
+
+        nasties = [_NastyOptional_WithTwoTypes(), _NastyOptional_WithThreeTypes()]
+
+        for o_nasty in nasties:
+            self.assertRaises(
+                aws_dataclass.AWSSerializationFailure,
+                self.assertSerializesCorrectly,
+                o_nasty,
+            )
