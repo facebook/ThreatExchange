@@ -603,6 +603,44 @@ class BanksTable:
         bank_member.write_to_table(self._table)
         return bank_member
 
+    def add_bank_member_with_key(
+        self,
+        bank_id: str,
+        bank_member_id: str,
+        content_type: t.Type[ContentType],
+        storage_bucket: t.Optional[str],
+        storage_key: t.Optional[str],
+        raw_content: t.Optional[str],
+        notes: str,
+        is_media_unavailable: bool = False,
+        bank_member_tags: t.Set[str] = set(),
+    ) -> BankMember:
+        """
+        Very similar to add_bank_member(). Except, this allows the caller to
+        specify a bank_member_id rather than generate one automatically.
+
+        If bank_member_id already exists, will throw a KeyError.
+        """
+        now = datetime.now()
+        bank_member = BankMember(
+            bank_id=bank_id,
+            bank_member_id=bank_member_id,
+            content_type=content_type,
+            storage_bucket=storage_bucket,
+            storage_key=storage_key,
+            raw_content=raw_content,
+            notes=notes,
+            created_at=now,
+            updated_at=now,
+            is_media_unavailable=is_media_unavailable,
+            bank_member_tags=bank_member_tags,
+        )
+
+        written = bank_member.write_to_table_if_not_found(self._table)
+        if not written:
+            raise KeyError
+        return bank_member
+
     def update_bank_member(
         self, bank_member_id: str, notes: str, bank_member_tags: t.Set[str]
     ):
