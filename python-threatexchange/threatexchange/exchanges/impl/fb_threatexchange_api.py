@@ -332,14 +332,17 @@ class FBThreatExchangeSignalExchangeAPI(
             )
 
     @classmethod
-    def naive_convert_to_signal_type(
+    def naive_convert_to_signal_type_path(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
         collab: FBThreatExchangeCollabConfig,
         fetched: t.Mapping[
             t.Tuple[str, str], t.Optional[FBThreatExchangeIndicatorRecord]
         ],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FBThreatExchangeIndicatorRecord]]:
+    ) -> t.Tuple[
+        t.Dict[t.Type[SignalType], t.Dict[str, FBThreatExchangeIndicatorRecord]],
+        t.Sequence[t.Tuple[str, str]],
+    ]:
         """
         Convert ThreatExchange Indicator records to SignalTypes.
 
@@ -353,13 +356,17 @@ class FBThreatExchangeSignalExchangeAPI(
         possible that the uploader isn't consistent with their labeling for the
         "identical" records in ThreatExchange.
         """
-        ret: t.Dict[
+        updates: t.Dict[
             t.Type[SignalType], t.Dict[str, FBThreatExchangeIndicatorRecord]
         ] = {}
+        deletes: t.Set[t.Tuple[str, str]] = set()
+
         mapping = _make_indicator_type_mapping(signal_types)
 
         for (type_str, signal_str), metadata in fetched.items():
             if metadata is None:
+                # This is a delete
+                deletes.add((type_str, signal_str))
                 continue
             potential_types = mapping.get(type_str)
             if potential_types is None:
@@ -375,17 +382,14 @@ class FBThreatExchangeSignalExchangeAPI(
                         )
                     )
                     s_type = t.cast(t.Type[SignalType], tx_s_type)
-                    inner = ret.get(s_type)
-                    if inner is None:
-                        inner = {}
-                        ret[s_type] = inner
+                    inner = updates.setdefault(s_type, {})
                     to_insert = _merge_record_for_signal_type(
                         metadata, tag, inner.get(s_type_specific_signal_str)
                     )
                     if to_insert is not None:
                         inner[s_type_specific_signal_str] = to_insert
 
-        return ret
+        return (updates, list(deletes))
 
 
 def _merge_record_for_signal_type(

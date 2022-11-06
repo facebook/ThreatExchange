@@ -114,14 +114,17 @@ class FakePerOwnerOpinionAPI(
     ],
 ):
     @classmethod
-    def naive_convert_to_signal_type(
+    def naive_convert_to_signal_type_patch(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
         collab: CollaborationConfigBase,
-        fetched: t.Mapping[int, t.Optional[FakeUpdateRecord]],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, FakeSignalMetadata]]:
+        fetched: t.Mapping[int, FakeUpdateRecord],
+    ) -> t.Tuple[
+        t.Mapping[t.Type[SignalType], t.Dict[str, FakeSignalMetadata]],
+        t.Sequence[int],
+    ]:
         if VideoMD5Signal not in signal_types:
-            return {}
+            return ({}, [])
 
         remapped: t.DefaultDict[str, t.DefaultDict[int, t.Set[str]]] = defaultdict(
             lambda: defaultdict(set)
@@ -130,21 +133,24 @@ class FakePerOwnerOpinionAPI(
             if update is not None:
                 remapped[update.md5][update.owner].add(update.tag)
 
-        return {
-            VideoMD5Signal: {
-                h: FakeSignalMetadata(
-                    [
-                        SignalOpinionWithOwner(
-                            owner_id=owner,
-                            category=SignalOpinionCategory.INVESTIGATION_SEED,
-                            tags=tags,
-                        )
-                        for owner, tags in tags_per_owner.items()
-                    ]
-                )
-                for h, tags_per_owner in remapped.items()
-            }
-        }
+        return (
+            {
+                VideoMD5Signal: {
+                    h: FakeSignalMetadata(
+                        [
+                            SignalOpinionWithOwner(
+                                owner_id=owner,
+                                category=SignalOpinionCategory.INVESTIGATION_SEED,
+                                tags=tags,
+                            )
+                            for owner, tags in tags_per_owner.items()
+                        ]
+                    )
+                    for h, tags_per_owner in remapped.items()
+                }
+            },
+            [],
+        )
 
 
 class FakeNoConversionAPI(
@@ -202,12 +208,20 @@ def test_test_impls() -> None:
         [SignalOpinionWithOwner(SignalOpinionCategory.INVESTIGATION_SEED, {"tag"}, 1)]
     )
 
+    # delta.updates is of type Dict[int, Optional[FakeUpdateRecord]] which is
+    # not covariant with Mapping[int, FakeUpdateRecord].
+    filtered_updates: t.Dict[int, FakeUpdateRecord] = {}
+    for k in delta.updates:
+        value = delta.updates[k]
+        if value is not None:
+            filtered_updates[k] = value
+
     assert FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
-        [VideoMD5Signal], config, delta.updates
+        [VideoMD5Signal], config, filtered_updates
     ) == {VideoMD5Signal: {md5: record}}
     assert (
         FakePerOwnerOpinionAPI.naive_convert_to_signal_type(
-            [RawTextSignal], config, delta.updates
+            [RawTextSignal], config, filtered_updates
         )
         == {}
     )

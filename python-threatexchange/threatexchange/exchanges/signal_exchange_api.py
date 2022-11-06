@@ -169,19 +169,46 @@ class SignalExchangeAPI(
                 old[k] = new_v
 
     @classmethod
-    @abstractmethod
     def naive_convert_to_signal_type(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
         collab: TCollabConfig,
         fetched: t.Mapping[state.TUpdateRecordKey, state.TUpdateRecordValue],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
+    ) -> t.Mapping[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
         """
         Convert the record from the API format to the format needed for indexing.
 
         This is the fallback method of creating state when there isn't a
         specialized storage for the fetch type.
+        """
+        patch = cls.naive_convert_to_signal_type_patch(signal_types, collab, fetched)
+        return patch[0]
 
+    @classmethod
+    @abstractmethod
+    def naive_convert_to_signal_type_patch(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        collab: TCollabConfig,
+        fetched: t.Mapping[state.TUpdateRecordKey, state.TUpdateRecordValue],
+    ) -> t.Tuple[
+        t.Mapping[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]],
+        t.Sequence[state.TUpdateRecordKey],
+    ]:
+        """
+        Convert records from the API's format to a format needed for patching to
+        a persistent storage.
+
+        The returned tuple contains:
+        1. a mapping from signal_type -> signal_value -> signal_metadata
+        2. a list of keys that must be deleted.
+
+        Note the mapping already removes the deleted signals. So, if the API
+        tells you to add A and remove B, this function should return:
+        (
+            signal_type -> A -> A metadata,
+            [B]
+        )
         """
         raise NotImplementedError
 
@@ -285,21 +312,31 @@ class SignalExchangeAPIWithSimpleUpdates(
     """
 
     @classmethod
-    def naive_convert_to_signal_type(
+    def naive_convert_to_signal_type_patch(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
         collab: TCollabConfig,
         fetched: t.Mapping[t.Tuple[str, str], t.Optional[state.TFetchedSignalMetadata]],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]]:
-        ret: t.Dict[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]] = {}
+    ) -> t.Tuple[
+        t.Mapping[t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]],
+        t.Sequence[t.Tuple[str, str]],
+    ]:
+        updated: t.Dict[
+            t.Type[SignalType], t.Dict[str, state.TFetchedSignalMetadata]
+        ] = {}
+        deleted: t.List[t.Tuple[str, str]] = []
+
         type_by_name = {st.get_name(): st for st in signal_types}
+
         for (type_str, signal_str), metadata in fetched.items():
             s_type = type_by_name.get(type_str)
-            if s_type is None or metadata is None:
+            if s_type is None:
                 continue
-            inner = ret.get(s_type)
-            if inner is None:
-                inner = {}
-                ret[s_type] = inner
-            inner[signal_str] = metadata
-        return ret
+            elif metadata is None:
+                # Implies delete
+                deleted.append((type_str, signal_str))
+            else:
+                inner = updated.setdefault(s_type, {})
+                inner[signal_str] = metadata
+
+        return (updated, deleted)

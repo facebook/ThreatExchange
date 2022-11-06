@@ -344,19 +344,25 @@ class NCMECSignalExchangeAPI(
         return new
 
     @classmethod
-    def naive_convert_to_signal_type(
+    def naive_convert_to_signal_type_patch(
         cls,
         signal_types: t.Sequence[t.Type[SignalType]],
         collab: NCMECCollabConfig,
         fetched: t.Mapping[str, api.NCMECEntryUpdate],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]]:
+    ) -> t.Tuple[
+        t.Mapping[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]],
+        t.Sequence[str],
+    ]:
         mapping: t.Mapping[
             t.Tuple[api.NCMECEntryType, str], t.Type[SignalType]
         ] = _get_conversion(signal_types)
-        ret: t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]] = {}
-        for entry in fetched.values():
+
+        updates: t.Dict[t.Type[SignalType], t.Dict[str, NCMECSignalMetadata]] = {}
+        deletes: t.List[str] = []
+
+        for entry_key, entry in fetched.items():
             if entry.deleted:
-                continue  # We expect len(fingerprints) == 0 here, but to be safe
+                deletes.append(entry_key)
             if collab.only_esp_ids and entry.member_id not in collab.only_esp_ids:
                 continue
             for fingerprint_type, fingerprint_value in entry.fingerprints.items():
@@ -371,10 +377,10 @@ class NCMECSignalExchangeAPI(
                             fingerprint_value,
                         )
                         continue
-                    metadata = ret.setdefault(st, {}).setdefault(
+                    metadata = updates.setdefault(st, {}).setdefault(
                         signal_value, NCMECSignalMetadata({})
                     )
                     tags = metadata.member_entries.setdefault(entry.member_id, set())
                     if entry.classification:
                         tags.add(entry.classification)
-        return ret
+        return (updates, deletes)
