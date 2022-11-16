@@ -44,6 +44,7 @@ class StopNCIICSPFeedbackValue(enum.Enum):
     """The feedback that a CSP has given on a hash"""
 
     Unknown = "Unknown"
+    # While undocumented, the API appears to use this value
     Undefined = "Undefined"
     None_ = "None"  # Allows you to tag without associating a state
     QualityUnknown = "QualityUnknown"  # Unsure what this is used for
