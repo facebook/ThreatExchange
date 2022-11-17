@@ -163,3 +163,85 @@ def test_mocked_get_hashes_iter(api: StopNCIIAPI):
     assert_first_record(one)
     assert_second_record(two)
     assert_third_record(three)
+
+
+def mock_get_impl_error_enum(endpoint: str, **json):
+    assert endpoint == StopNCIIEndpoint.FetchHashes
+    return {
+        "count": 3,
+        "nextSetTimestamp": 1625167824,
+        "nextPageToken": PAGE_TOKEN[:-1] + "4",
+        "hasMoreRecords": False,
+        "hashRecords": [
+            {
+                "lastModtimestamp": 1625175071,
+                "hashValue": "9def0b7dafa86a1c90f2abd78e79ceb25ec3d1a4b3d4bc7a4354baf7717ea038",
+                "hashStatus": "Active",
+                "caseNumbers": {"cc592711-7068-442f-b5d2-24d50d389751": "Active"},
+                "signalType": "ImagePDQ",
+                "CSPFeedbacks": [
+                    {
+                        "source": "Facebook",
+                        "feedbackValue": "Blocked",
+                        "tags": ["Nude", "Objectionable"],
+                    }
+                ],
+            },
+            {
+                "lastModtimestamp": 1625175071,
+                "hashValue": "9def0b7dafa86a1c90f2abd78e79ceb25ec3d1a4b3d4bc7a4354baf7717ea038",
+                "hashStatus": "Active",
+                "caseNumbers": {"cc592711-7068-442f-b5d2-24d50d389751": "Active"},
+                "signalType": "ImagePDQ",
+                "CSPFeedbacks": [
+                    {
+                        "source": "Facebook",
+                        "feedbackValue": "RandomFeedbackValue",
+                        "tags": ["Nude", "Objectionable"],
+                    }
+                ],
+            },
+            {
+                "lastModtimestamp": 1661426988,
+                "hashValue": "95d087d087f8f41cf00771c707f713c7675d07f8c618f00ef00f07f307e37087",
+                "hashStatus": "Active",
+                "caseNumbers": {
+                    "bce008ff-e114-4815-9de8-8f4a50bfd471": "Active",
+                    "df018705-fb65-4481-a036-cce0ab02168a": "Active",
+                    "504b123a-0fd9-4b95-b7ad-42abf88a1d09": "Received",
+                    "ab2754fb-836d-4947-b633-e0c6c7d55255": "Active",
+                    "cfaa8342-4f7e-4f5f-88bd-9fd083eafe57": "Active"
+                },
+                "signalType": "ImagePDQ",
+                "hashRegions": [
+                    "UK"
+                ],
+                "CSPFeedbacks": [
+                    {
+                        "source": "TikTok",
+                        "feedbackValue": "Undefined",
+                        "tags": [
+                            "Tag-One",
+                            "Tag-eight"
+                        ]
+                    },
+                    {
+                        "source": "Twitter",
+                        "feedbackValue": "Undefined",
+                        "tags": [
+                            "Tag-One",
+                            "Tag-eight"
+                        ]
+                    },
+                ]
+            }
+        ],
+    }
+
+
+def test_mocked_get_hashes_with_undefined_enum(monkeypatch: pytest.MonkeyPatch):
+    error_enum_api = StopNCIIAPI("", "")
+    monkeypatch.setattr(error_enum_api, "_get", mock_get_impl_error_enum)
+    result = error_enum_api.fetch_hashes()
+    assert result.count == 3
+    assert len(result.hashRecords) == 1  # since only one record has valid feedbackValue

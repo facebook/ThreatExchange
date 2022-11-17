@@ -3,6 +3,7 @@
 """Simple implementation for the StopNCII REST API"""
 
 from dataclasses import dataclass, asdict, field
+import copy
 import enum
 import logging
 import time
@@ -226,11 +227,28 @@ class StopNCIIAPI:
         logging.debug("StopNCII FetchHashes called: %s", params)
         json_val = self._get(StopNCIIEndpoint.FetchHashes, **params)
         logging.debug("StopNCII FetchHashes returns: %s", json_val)
-        return dacite.from_dict(
+        # If there is a malformed record or a change that would prevent the deserialization
+        # of a record, skip over it instead of crashing. Please open an issue if you see the logging
+        # statement below.
+        records: t.List[StopNCIIHashRecord] = []
+        for record in json_val.get("hashRecords", []):
+            try:
+                records.append(
+                    dacite.from_dict(
+                        data_class=StopNCIIHashRecord,
+                        data=record,
+                        config=dacite.Config(cast=[enum.Enum, set]),
+                    )
+                )
+            except ValueError as e:
+                logging.error("Convert response from JSON to Dataclass failed, err: %s, record: %s", e, record)
+        response: FetchHashesResponse = dacite.from_dict(
             data_class=FetchHashesResponse,
-            data=json_val,
+            data={**json_val, "hashRecords": []},
             config=dacite.Config(cast=[enum.Enum, set]),
         )
+        response.hashRecords = records
+        return response
 
     def fetch_hashes_iter(
         self, start_timestamp: int = DEFAULT_START_TIME
