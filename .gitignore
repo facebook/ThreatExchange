@@ -18,3 +18,4 @@ pdq/java/bazel-testlogs/
 .mypy_cache/
 .vscode/
 *.d.ts
+.idea/
