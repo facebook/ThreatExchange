@@ -210,31 +210,23 @@ def mock_get_impl_error_enum(endpoint: str, **json):
                     "df018705-fb65-4481-a036-cce0ab02168a": "Active",
                     "504b123a-0fd9-4b95-b7ad-42abf88a1d09": "Received",
                     "ab2754fb-836d-4947-b633-e0c6c7d55255": "Active",
-                    "cfaa8342-4f7e-4f5f-88bd-9fd083eafe57": "Active"
+                    "cfaa8342-4f7e-4f5f-88bd-9fd083eafe57": "Active",
                 },
                 "signalType": "ImagePDQ",
-                "hashRegions": [
-                    "UK"
-                ],
+                "hashRegions": ["UK"],
                 "CSPFeedbacks": [
                     {
                         "source": "TikTok",
                         "feedbackValue": "Undefined",
-                        "tags": [
-                            "Tag-One",
-                            "Tag-eight"
-                        ]
+                        "tags": ["Tag-One", "Tag-eight"],
                     },
                     {
                         "source": "Twitter",
                         "feedbackValue": "Undefined",
-                        "tags": [
-                            "Tag-One",
-                            "Tag-eight"
-                        ]
+                        "tags": ["Tag-One", "Tag-eight"],
                     },
-                ]
-            }
+                ],
+            },
         ],
     }
 
