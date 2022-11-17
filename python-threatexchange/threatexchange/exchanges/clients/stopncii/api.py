@@ -241,7 +241,11 @@ class StopNCIIAPI:
                     )
                 )
             except ValueError as e:
-                logging.error("Convert response from JSON to Dataclass failed, err: %s, record: %s", e, record)
+                logging.error(
+                    "Convert response from JSON to Dataclass failed, err: %s, record: %s",
+                    e,
+                    record,
+                )
         response: FetchHashesResponse = dacite.from_dict(
             data_class=FetchHashesResponse,
             data={**json_val, "hashRecords": []},
