@@ -239,18 +239,9 @@ def mock_get_impl_error_enum(endpoint: str, **json):
     }
 
 
-@pytest.fixture
-def error_enum_api(monkeypatch: pytest.MonkeyPatch):
+def test_mocked_get_hashes_with_undefined_enum(monkeypatch: pytest.MonkeyPatch):
     error_enum_api = StopNCIIAPI("", "")
     monkeypatch.setattr(error_enum_api, "_get", mock_get_impl_error_enum)
-    return error_enum_api
-
-
-def test_mocked_get_hashes_with_undefined_enum(error_enum_api: StopNCIIAPI):
-    try:
-        result = error_enum_api.fetch_hashes()
-        assert result.count == 3
-        assert len(result.hashRecords) == 2
-        assert any(i.feedbackValue == StopNCIICSPFeedbackValue.Undefined for i in result.hashRecords[1].CSPFeedbacks)
-    except Exception as exc:
-        assert False, f"fetch_hashes raised an exception {exc}"
+    result = error_enum_api.fetch_hashes()
+    assert result.count == 3
+    assert len(result.hashRecords) == 1  # since only one record has valid feedbackValue

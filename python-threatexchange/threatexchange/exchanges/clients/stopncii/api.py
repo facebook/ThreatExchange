@@ -45,8 +45,6 @@ class StopNCIICSPFeedbackValue(enum.Enum):
     """The feedback that a CSP has given on a hash"""
 
     Unknown = "Unknown"
-    # While undocumented, the API appears to use this value
-    Undefined = "Undefined"
     None_ = "None"  # Allows you to tag without associating a state
     QualityUnknown = "QualityUnknown"  # Unsure what this is used for
     PendingReview = "PendingReview"  # There was a match
@@ -229,6 +227,9 @@ class StopNCIIAPI:
         logging.debug("StopNCII FetchHashes called: %s", params)
         json_val = self._get(StopNCIIEndpoint.FetchHashes, **params)
         logging.debug("StopNCII FetchHashes returns: %s", json_val)
+        # If there is a malformed record or a change that would prevent the deserialization
+        # of a record, skip over it instead of crashing. Please open an issue if you see the logging
+        # statement below.
         records: t.List[StopNCIIHashRecord] = []
         for record in json_val.get("hashRecords", []):
             try:
