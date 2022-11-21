@@ -28,6 +28,7 @@ from hmalib.lambdas.api.submit import (
     get_submit_api,
     submit_content_request_from_s3_object,
 )
+from hmalib.lambdas.api.collabs import get_collabs_api
 
 # Set to 10MB for images
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024
@@ -146,10 +147,12 @@ def bottle_init_once() -> t.Tuple[
         get_actions_api(hma_config_table=HMA_CONFIG_TABLE),
     )
 
+    bank_table = dynamodb.Table(BANKS_TABLE)
+
     app.mount(
         "/banks/",
         get_bank_api(
-            bank_table=dynamodb.Table(BANKS_TABLE),
+            bank_table=bank_table,
             bank_user_media_bucket=BANKS_MEDIA_BUCKET_NAME,
             submissions_queue_url=SUBMISSIONS_QUEUE_URL,
             signal_type_mapping=functionality_mapping.signal_and_content,
@@ -168,6 +171,15 @@ def bottle_init_once() -> t.Tuple[
         "/lcc/",
         get_lcc_api(
             storage_path=LCC_DURABLE_FS_PATH,
+            signal_type_mapping=functionality_mapping.signal_and_content,
+        ),
+    )
+
+    app.mount(
+        "/collabs/",
+        get_collabs_api(
+            hma_config_table=HMA_CONFIG_TABLE,
+            bank_table=bank_table,
             signal_type_mapping=functionality_mapping.signal_and_content,
         ),
     )

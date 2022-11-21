@@ -20,6 +20,7 @@ import ViewBank from './pages/bank-management/ViewBank';
 import ViewBankMember from './pages/bank-management/ViewBankMember';
 import {AppWithNotifications} from './AppWithNotifications';
 import {AppWithConfirmations} from './AppWithConfirmations';
+import ViewCollaborations from './pages/collaborations/ViewCollaborations';
 
 export default function App(): JSX.Element {
   return (
@@ -63,6 +64,9 @@ export default function App(): JSX.Element {
                   </Route>
                   <Route path="/banks/">
                     <ViewAllBanks />
+                  </Route>
+                  <Route path="/collabs/">
+                    <ViewCollaborations />
                   </Route>
                   <Route path="/dashboard/">
                     <Dashboard />

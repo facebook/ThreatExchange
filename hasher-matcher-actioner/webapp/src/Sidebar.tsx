@@ -67,6 +67,14 @@ export default function Sidebar(
             Banks
           </NavLink>
         </li>
+        <li className="nav-item">
+          <NavLink
+            activeClassName="text-white bg-secondary rounded"
+            to="/collabs/"
+            className="nav-link px-2">
+            Collaborations
+          </NavLink>
+        </li>
       </ul>
 
       <ul className="navbar-nav push-down pb-2 pt-1">

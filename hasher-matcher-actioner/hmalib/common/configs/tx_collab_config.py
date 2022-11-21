@@ -9,6 +9,7 @@ interfaces require it, keeping it as just another class for now.
 
 from dataclasses import dataclass, asdict, fields
 import typing as t
+import json
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.utils.dataclass_json import (
@@ -51,6 +52,15 @@ class EditableCollaborationConfig(HMAConfig):
     def to_pytx_collab_config(self) -> CollaborationConfigBase:
         cls = import_class(self.collab_config_class)
         return dataclass_loads(self.attributes_json_serialized, cls)
+
+    def to_json(self) -> t.Dict:
+        # Used in APIs.
+        return {
+            "name": self.name,
+            "import_as_bank_id": self.import_as_bank_id,
+            "collab_config_class": self.collab_config_class,
+            "attributes": json.loads(self.attributes_json_serialized),
+        }
 
 
 def get_collab_config(name: str) -> t.Optional[EditableCollaborationConfig]:

@@ -13,6 +13,7 @@ import {
 } from './messages/BankMessages';
 import {toDate} from './utils/DateTimeUtils';
 import {ContentType, getContentTypeForString} from './utils/constants';
+import {Collab} from './messages/CollabMessages';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -743,4 +744,16 @@ export async function fetchIndexesLastModified(): Promise<Date> {
 
 export async function rebuildAllIndexes(): Promise<undefined> {
   return apiPost('indexes/rebuild-all').then();
+}
+
+// Collab APIs
+
+type AllCollabsEnvelope = {
+  collabs: Collab[];
+};
+
+export async function fetchAllCollabs(): Promise<Array<Collab>> {
+  return apiGet<AllCollabsEnvelope>('collabs/').then(
+    response => response.collabs,
+  );
 }
