@@ -517,12 +517,14 @@ class BanksTable:
 
         return bank
 
-    def get_bank_info(self, bank_id: str) -> t.Any:
-        return BankInfo.from_dynamodb_item(
-            self._table.get_item(
-                Key={"SK": bank_id, "PK": BankInfo.BANK_INFO_PARTITION_KEY}
-            )["Item"]
-        ).to_info()
+    def get_bank_info(self, bank_id: str) -> t.Optional[t.Any]:
+        resp = self._table.get_item(
+            Key={"SK": bank_id, "PK": BankInfo.BANK_INFO_PARTITION_KEY}
+        )
+        if "Item" in resp:
+            return BankInfo.from_dynamodb_item(resp["Item"]).to_info()
+
+        return None
 
     def update_bank_info(self, bank_id: str, info: t.Any):
         info_obj = BankInfo(
@@ -545,14 +547,14 @@ class BanksTable:
             result = self._table.query(
                 ScanIndexForward=False,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
-                FilterExpression=Key("IsRemoved").eq(False),
+                # FilterExpression=Key("IsRemoved").eq(False),
                 Limit=PAGE_SIZE,
             )
         else:
             result = self._table.query(
                 ScanIndexForward=False,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
-                FilterExpression=Key("IsRemoved").eq(False),
+                # FilterExpression=Key("IsRemoved").eq(False),
                 ExclusiveStartKey=exclusive_start_key,
                 Limit=PAGE_SIZE,
             )
@@ -651,7 +653,7 @@ class BanksTable:
 
     def update_bank_member(
         self, bank_member_id: str, notes: str, bank_member_tags: t.Set[str]
-    ):
+    ) -> BankMember:
         """
         Updates the notes and tags for a bank member identified by bank_member_id.
         """
@@ -852,12 +854,15 @@ class BanksTable:
             signal_type_mapping=self._signal_type_mapping,
         )
 
-    def get_keyed_bank_member(self, bank_id, member_key: str) -> BankMember:
+    def get_keyed_bank_member(self, bank_id, member_key: str) -> t.Optional[BankMember]:
         """
         Retrieve a bank_member which has a known key. Such a member must have
         been created using self.add_keyed_bank_member(...).
         """
-        return self.get_bank_member(self._key_for_bank(bank_id, member_key))
+        try:
+            return self.get_bank_member(self._key_for_bank(bank_id, member_key))
+        except IndexError:
+            return None
 
     def get_bank_member_signal_from_id(
         self, signal_id: str

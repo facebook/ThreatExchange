@@ -15,7 +15,7 @@ import functools
 from mypy_boto3_s3.service_resource import Bucket
 from mypy_boto3_s3.type_defs import MetricsAndOperatorTypeDef
 from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
-from threatexchange.signal_type.pdq_index import PDQIndex, PDQFlatIndex
+from threatexchange.signal_type.pdq.pdq_index import PDQIndex, PDQFlatIndex
 
 from hmalib.common.logging import get_logger
 from hmalib import metrics
