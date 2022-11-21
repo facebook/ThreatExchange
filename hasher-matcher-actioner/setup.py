@@ -7,7 +7,7 @@ from setuptools import setup
 extras_require = {
     "cli": [
         "pandas==1.3.5",
-        "numpy==1.22.1",
+        "numpy>=1.23.2",
     ]
 }
 
