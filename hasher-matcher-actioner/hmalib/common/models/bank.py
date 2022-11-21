@@ -547,14 +547,14 @@ class BanksTable:
             result = self._table.query(
                 ScanIndexForward=False,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
-                # FilterExpression=Key("IsRemoved").eq(False),
+                FilterExpression=Key("IsRemoved").eq(False),
                 Limit=PAGE_SIZE,
             )
         else:
             result = self._table.query(
                 ScanIndexForward=False,
                 KeyConditionExpression=Key("PK").eq(expected_pk),
-                # FilterExpression=Key("IsRemoved").eq(False),
+                FilterExpression=Key("IsRemoved").eq(False),
                 ExclusiveStartKey=exclusive_start_key,
                 Limit=PAGE_SIZE,
             )
