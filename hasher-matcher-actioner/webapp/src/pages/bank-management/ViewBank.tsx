@@ -55,9 +55,15 @@ function BankDetails({bankId}: BankTabProps): JSX.Element {
 
 export default function ViewBank(): JSX.Element {
   const {bankId, tab} = useParams<{bankId: string; tab: string}>();
+  const [bank, setBank] = useState<Bank>();
   const history = useHistory();
 
-  const pageTitle = 'Edit Bank';
+  useEffect(() => {
+    fetchBank(bankId).then(setBank);
+  }, []);
+
+  const pageTitle =
+    bank && bank.bank_name ? `Edit Bank: ${bank.bank_name}` : 'Edit Bank';
   const returnURL = '/banks/';
 
   return (
