@@ -305,7 +305,7 @@ def get_bank_api(
         )
 
     @bank_api.post("/update-bank-member/<bank_member_id>", apply=[jsoninator])
-    def update_bank_member(bank_member_id=None) -> Bank:
+    def update_bank_member(bank_member_id=None) -> BankMember:
         """
         Update notes and tags for a bank_member_id.
         """
