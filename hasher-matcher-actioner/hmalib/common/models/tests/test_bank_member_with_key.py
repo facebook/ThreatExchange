@@ -112,5 +112,5 @@ class BankMemberWithKeyTestCase(BanksTableTestBase, unittest.TestCase):
             )
             self.assertSetEqual(
                 {PDQ_1, PDQ_2, MD5},
-                set(map(lambda x: x.signal_value, all_signals)),
+                set([x.signal_value for x in all_signals]),
             )

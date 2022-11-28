@@ -22,15 +22,21 @@ from hmalib.common.logging import get_logger
 logger = get_logger(__name__)
 
 
-class NoImportAsBankDefined(Exception):
-    def __init__(self, collab_config: EditableCollaborationConfig):
-        self.collab_config = collab_config
-        super().__init__(
-            f"CollabConfig {collab_config.name} is not connected to an importable bank. Create a bank, and save again using tx_collab_config apis."
-        )
-
-
 class MultipleContentTypesInFetchDeltaRow(Exception):
+    """
+    At present, we can't handle if a single fetch delta update
+    (FetchDelta.updates[]), when passed through
+    SignalExchangeAPI.naive_convert_to_signal_type(...) returns signals with
+    differing content types.
+
+    Eg. imagine a ncmec id ends up returing an PDQ AND an MD5. We would not know
+    which type of bank member to create.
+
+    In the long run, this can be addressed by creating a new content-type eg.
+    unavailable which explicitly states that a bank member does not have media
+    attached.
+    """
+
     pass
 
 
@@ -41,6 +47,31 @@ class BankCollabFetchStore:
 
     Use with a single collab passed when creating an instance. Create multiple
     instances when working with more than one collab.
+
+    References
+    ===
+    Borrows heavily from python-threatexchange's fetch_cmd.py. fetch_cmd.py and
+    bank_store.py together are the strictest users of python-threatexchange's
+    SignalExchangeAPI interface methods.
+
+    fetch_cmd stores the fetched data in a SignalExchange specific format
+    defined by SignalExchangeAPI's generic typevars. Different
+    SignalExchangeAPI's data is later converted into a common type during
+    indexing by calling SignalExchangeAPI.naive_convert_to_signal_type.
+
+    bank_store OTOH, calls naive_convert_to_signal_type at fetch time itself and
+    stores data from all SignalExchangeAPIs using a consistent API defined by
+    HMA banks and bank-members. Each TUpdateRecordKey in SignalExchangeAPI is
+    stored as a bank-member in HMA.
+
+    Another key distinction is what's loaded into memory. fetch_cmd ends up
+    loading the entire dataset into memory. In pytx CLI, this is not an issue
+    because the data is expected to be co-located on the same computer where
+    fetch is running. With HMA, loading the whole bank into memory would be
+    time-consuming. So, instead we distill the results of
+    SignalExchangeAPI.fetch_value_merge and
+    SignalExchagneAPI.naive_convert_to_signal_type calls into updates and
+    deletes and issue those commands to the underlying banks.
     """
 
     def __init__(
@@ -53,11 +84,10 @@ class BankCollabFetchStore:
         self.collab = collab
         self._signal_types = signal_types
 
-        try:
-            self._import_bank = banks_table.get_bank(collab.import_as_bank_id)
-        except Exception:
-            logger.error(f"No bank configured for exporting collab: {collab.name}")
-            raise NoImportAsBankDefined(collab_config=collab)
+        assert (
+            collab.import_as_bank_id
+        ), f"CollabConfig {collab.name} is not connected to an importable bank. Create a bank, and save again using tx_collab_config apis."
+        self._import_bank = banks_table.get_bank(collab.import_as_bank_id)
 
         pytx_collab = self.collab.to_pytx_collab_config()
         self._api_cls: t.Type[SignalExchangeAPI] = {
@@ -90,6 +120,8 @@ class BankCollabFetchStore:
         """
         if type(key) == str:
             return key
+        elif type(key) == int:
+            return f"{int}"
         elif (
             type(key) == tuple and len(key) == 2 and type(key[0]) == type(key[1]) == str
         ):
@@ -112,20 +144,18 @@ class BankCollabFetchStore:
 
     def merge(self, delta: FetchDelta) -> None:
         """
-        David's suggestion was:
-        1. try to merge updates one at a time to determine what get's added,
-        what gets deleted.
-        2. SignalExchangeAPI.naive_fetch_merge is considered demonstration only
-        and should not be used here.
+        Takes each update from `delta.updates` and transforms it using
+        fetch_value_merge against an empty update.
 
-        NCMEC FetchDelta.updates key
-        - entry.member_id-entry.id -> multiple hashes...
-        StopNCII, FBThreatExchange FetchDelta.updates key
-        - hash-type, hash-value
+        This merged update then is classified into a create/update or a delete
+        and stored in the appropriate list in the BankCollabFetchStore instance.
+
+        The lists BankCollabFetchStore._unflushed_updates and _unflushed_deletes
+        are then flushed into banks when flush() is called.
         """
 
         if len(delta.updates) == 0:
-            logger.warning("merge() called with no updates")
+            logger.warning("merge() called with no updates for collab %s", self.collab)
             return
 
         delta_updates = t.cast(
@@ -176,19 +206,6 @@ class BankCollabFetchStore:
 
         logger.info("Setting checkpoint for collab: %s", self.collab.name)
         self.set_checkpoint(checkpoint)
-
-    def clear(self) -> None:
-        """
-        This one might be a time-consuming operation.
-
-        The ideal way would be to get a list of all bank members and then remove
-        them and their signals. However, that would have to rely on paginated
-        queries and batch operations which are both slow in dynamodb.
-
-        An easier way out would be to iterate over all collab configs, unlink
-        their banks and then
-        """
-        raise NotImplementedError
 
     def _handle_upsert(self, key: TUpdateRecordKey, value: TUpdateRecordValue):
         """

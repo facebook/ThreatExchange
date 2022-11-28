@@ -17,13 +17,10 @@ class BanksTableTestBase(DynamoDBTableTestBase):
     @contextmanager
     def fresh_table_manager(self):
         with self.fresh_dynamodb():
-            try:
-                yield BanksTable(
-                    self.get_table(),
-                    signal_type_mapping=get_default_signal_type_mapping(),
-                )
-            finally:
-                pass
+            yield BanksTable(
+                self.get_table(),
+                signal_type_mapping=get_default_signal_type_mapping(),
+            )
 
     @classmethod
     def get_table_definition(cls) -> t.Any:
