@@ -59,10 +59,10 @@ class BankCollabFetchStore:
     SignalExchangeAPI's data is later converted into a common type during
     indexing by calling SignalExchangeAPI.naive_convert_to_signal_type.
 
-    bank_store OTOH, calls naive_convert_to_signal_type at fetch time itself and
-    stores data from all SignalExchangeAPIs using a consistent API defined by
-    HMA banks and bank-members. Each TUpdateRecordKey in SignalExchangeAPI is
-    stored as a bank-member in HMA.
+    bank_store on the other hand, calls naive_convert_to_signal_type at fetch
+    time itself and stores data from all SignalExchangeAPIs using a consistent
+    API defined by HMA banks and bank-members. Each TUpdateRecordKey in
+    SignalExchangeAPI is stored as a bank-member in HMA.
 
     Another key distinction is what's loaded into memory. fetch_cmd ends up
     loading the entire dataset into memory. In pytx CLI, this is not an issue
@@ -134,7 +134,7 @@ class BankCollabFetchStore:
     @property
     def _dirty(self) -> bool:
         # Are there unflushed updates?
-        return len(self._unflushed_updates) != 0 or len(self._unflushed_deletes) != 0
+        return bool(self._unflushed_updates) or bool(self._unflushed_deletes)
 
     def get_checkpoint(self) -> t.Optional[FetchCheckpointBase]:
         return self.banks_table.get_bank_info(self._import_bank.bank_id)
@@ -163,8 +163,10 @@ class BankCollabFetchStore:
         )
 
         for update_key, update_value in delta_updates.items():
-            # NCMECSignalExchangeAPI.fetch_iter() does not clear metadata,
-            # need to call fetch_value_merge to clear metadata.
+            # https://github.com/facebook/ThreatExchange/issues/1218
+            # NCMECSignalExchangeAPI.fetch_iter() does not return None metadata
+            # need to call fetch_value_merge to make that happen. If this is
+            # fixed, we can delete the following line.
             update_value = self._api_cls.fetch_value_merge(None, update_value)
 
             if update_value is None:  # This is a delete.
@@ -180,22 +182,21 @@ class BankCollabFetchStore:
             # self._delta check is avoidable as it is covered by self._dirty,
             # but python type checker gets annoyed.
 
-            del_count = 0
-            while len(self._unflushed_deletes) > 0:
-                delete = self._unflushed_deletes.pop()
+            del_count = len(self._unflushed_deletes)
+            for delete in self._unflushed_deletes:
                 self._handle_delete(delete)
-                del_count = del_count + 1
+
+            self._unflushed_deletes.clear()
             logger.info(
                 "BankCollabFetchStore flushed %d deletes for collab: %s",
                 del_count,
                 self.collab.name,
             )
 
-            upsert_count = 0
-            for update_key in list(self._unflushed_updates.keys()):
-                update_value = self._unflushed_updates.pop(update_key)
+            upsert_count = len(self._unflushed_updates)
+            for update_key, update_value in self._unflushed_updates.items():
                 self._handle_upsert(update_key, update_value)
-                upsert_count = upsert_count + 1
+            self._unflushed_updates = {}
             logger.info(
                 "BankCollabFetchStore flushed %d upserts for collab: %s",
                 upsert_count,
@@ -214,6 +215,10 @@ class BankCollabFetchStore:
 
         A single update can translate into multiple signals, but all will be
         stored as part of the same bank-member.
+
+        If the update when passed through naive_convert_to_signal_type results
+        in no signals, it will result in self._handle_delete being called with
+        the `key` arg.
         """
         str_key = self._coerce_key(key)
 
@@ -225,17 +230,25 @@ class BankCollabFetchStore:
 
         if len(signal_type_view) == 0:
             # Cases where none of the signal types in the update can be
-            # processed. eg. NCMEC returning pdna
-            return
+            # processed. This should result in a delete.
+            #
+            # Imagine an exchange returned a phash and a PDQ for an image in the
+            # same key. Later, they removed the PDQ hash, but not the phash.
+            # Unless we take action here, the PDQ never gets removed from the
+            # bank.
+            return self._handle_delete(key=key)
 
         # Ascertain that all signal_types map from the same content type.
         # HMA at present can't store multiple content types in one bank
         # member.
-        unique_content_types = set(
+        unique_content_types = {
             # Is there a signal type that may have multiple content_types?
-            list(map(lambda st: st.get_content_types()[0], signal_type_view.keys()))
-        )
+            st.get_content_types()[0]
+            for st in signal_type_view.keys()
+        }
         if len(unique_content_types) > 1:
+            # TODO: https://github.com/facebook/ThreatExchange/issues/1221
+            # Support multiple content types returned in a single fetch update
             raise MultipleContentTypesInFetchDeltaRow()
 
         content_type = unique_content_types.pop()

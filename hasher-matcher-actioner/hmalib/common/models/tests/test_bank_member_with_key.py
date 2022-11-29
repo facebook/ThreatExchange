@@ -16,11 +16,12 @@ from hmalib.common.models.tests.test_signal_uniqueness import BanksTableTestBase
 
 
 class BankMemberWithKeyTestCase(BanksTableTestBase, unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._id_count = 0
+
     def _create_bank(self) -> str:
         """Create a bank with a unique id."""
-        if not hasattr(self, "_id_count"):
-            self._id_count = 0
-
         self._id_count = self._id_count + 1
 
         table_manager = BanksTable(
@@ -112,5 +113,5 @@ class BankMemberWithKeyTestCase(BanksTableTestBase, unittest.TestCase):
             )
             self.assertSetEqual(
                 {PDQ_1, PDQ_2, MD5},
-                set([x.signal_value for x in all_signals]),
+                {x.signal_value for x in all_signals},
             )
