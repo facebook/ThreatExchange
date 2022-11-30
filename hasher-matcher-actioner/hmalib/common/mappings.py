@@ -120,6 +120,10 @@ class HMASignalTypeMapping:
 
         return HMASignalTypeMapping(enabled_content_types, enabled_signal_types)
 
+    @property
+    def signal_types(self) -> t.List[t.Type[SignalType]]:
+        return self._internal_pytx_obj.signal_type_by_name.values()
+
     def get_signal_type(self, name: str) -> t.Optional[t.Type[SignalType]]:
         return self._internal_pytx_obj.signal_type_by_name.get(name, None)
 
@@ -162,19 +166,16 @@ class HMASignalTypeMapping:
 
 
 @dataclass
-class HMAFunctionalityMapping(FunctionalityMapping):
+class HMAFunctionalityMapping:
     """
-    Overrides signal_and_content on FunctionalityMapping so it is of type
-    HMAFunctionalityMapping.
+    Accessor for signal_and_content types. Among signal_and_content types,
+    fetchers and collab configs, only signal_and_content_types appear 'static'
+    enough to require a convenience accessor.
+
+    It is used in a bunch of places.
     """
 
     signal_and_content: HMASignalTypeMapping
-
-    # mypy has this weird behaviour where not overriding all fields leads to a
-    # "Too many arguments error". Either type:ignore at __init__ callsites or
-    # re-define them here.
-    fetcher: SignalExchangeAPIMapping
-    collabs: CollaborationConfigStoreBase
 
 
 def get_pytx_functionality_mapping() -> HMAFunctionalityMapping:
@@ -182,16 +183,6 @@ def get_pytx_functionality_mapping() -> HMAFunctionalityMapping:
     Call from HMA entrypoints. Ensure HMAConfig.initialize() has already been
     called.
     """
-    fetchers: t.List[SignalExchangeAPI] = []
-
-    threatexchange_api_token = AWSSecrets().te_api_token()
-    if threatexchange_api_token not in (None, ""):
-        fetchers.append(
-            FBThreatExchangeSignalExchangeAPI(threatexchange_api_token),
-        )
-
     return HMAFunctionalityMapping(
         HMASignalTypeMapping.get_from_config(),
-        SignalExchangeAPIMapping(fetchers=fetchers),
-        None,
     )

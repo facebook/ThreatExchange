@@ -7,7 +7,7 @@ from setuptools import setup
 extras_require = {
     "cli": [
         "pandas==1.3.5",
-        "numpy==1.22.1",
+        "numpy>=1.23.2",
     ]
 }
 
@@ -24,7 +24,7 @@ setup(
     install_requires=[
         "boto3==1.20.37",
         "boto3-stubs[essential,sns,dynamodbstreams]==1.17.14.0",
-        "threatexchange[faiss,pdq_hasher]==0.0.29",
+        "threatexchange[faiss,pdq_hasher]==1.0.3",
         "bottle==0.12.20",
         "apig-wsgi==2.13.0",
         "pyjwt[crypto]==2.1.0",

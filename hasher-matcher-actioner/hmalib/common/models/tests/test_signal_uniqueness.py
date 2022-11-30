@@ -1,17 +1,27 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 
+from contextlib import contextmanager
 import unittest
 import typing as t
 from concurrent import futures
 
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-from hmalib.common.models.bank import BankedSignalEntry
+from hmalib.common.models.bank import BankedSignalEntry, BanksTable
+from hmalib.common.tests.mapping_common import get_default_signal_type_mapping
 
 from .ddb_test_common import DynamoDBTableTestBase
 
 
 class BanksTableTestBase(DynamoDBTableTestBase):
+    @contextmanager
+    def fresh_table_manager(self):
+        with self.fresh_dynamodb():
+            yield BanksTable(
+                self.get_table(),
+                signal_type_mapping=get_default_signal_type_mapping(),
+            )
+
     @classmethod
     def get_table_definition(cls) -> t.Any:
         table_name = "test-banks-table"

@@ -517,12 +517,14 @@ class BanksTable:
 
         return bank
 
-    def get_bank_info(self, bank_id: str) -> t.Any:
-        return BankInfo.from_dynamodb_item(
-            self._table.get_item(
-                Key={"SK": bank_id, "PK": BankInfo.BANK_INFO_PARTITION_KEY}
-            )["Item"]
-        ).to_info()
+    def get_bank_info(self, bank_id: str) -> t.Optional[t.Any]:
+        resp = self._table.get_item(
+            Key={"SK": bank_id, "PK": BankInfo.BANK_INFO_PARTITION_KEY}
+        )
+        if "Item" in resp:
+            return BankInfo.from_dynamodb_item(resp["Item"]).to_info()
+
+        return None
 
     def update_bank_info(self, bank_id: str, info: t.Any):
         info_obj = BankInfo(
@@ -603,10 +605,14 @@ class BanksTable:
         bank_member.write_to_table(self._table)
         return bank_member
 
-    def add_bank_member_with_key(
+    @classmethod
+    def _key_for_bank(cls, bank_id: str, member_key: str):
+        return f"{bank_id}::{member_key}"
+
+    def add_keyed_bank_member(
         self,
         bank_id: str,
-        bank_member_id: str,
+        member_key: str,
         content_type: t.Type[ContentType],
         storage_bucket: t.Optional[str],
         storage_key: t.Optional[str],
@@ -617,14 +623,18 @@ class BanksTable:
     ) -> BankMember:
         """
         Very similar to add_bank_member(). Except, this allows the caller to
-        specify a bank_member_id rather than generate one automatically.
+        specify a member_key which can be used to sync a bank-member if it is
+        fetched externally. eg. a unique id from a signal exchange.
 
-        If bank_member_id already exists, will throw a KeyError.
+        If a bank_member with the given member_key already exists, will throw a
+        KeyError.
+
+        Keys are enforced unique for a bank.
         """
         now = datetime.now()
         bank_member = BankMember(
             bank_id=bank_id,
-            bank_member_id=bank_member_id,
+            bank_member_id=self._key_for_bank(bank_id, member_key),
             content_type=content_type,
             storage_bucket=storage_bucket,
             storage_key=storage_key,
@@ -643,7 +653,7 @@ class BanksTable:
 
     def update_bank_member(
         self, bank_member_id: str, notes: str, bank_member_tags: t.Set[str]
-    ):
+    ) -> BankMember:
         """
         Updates the notes and tags for a bank member identified by bank_member_id.
         """
@@ -843,6 +853,16 @@ class BanksTable:
             )["Item"],
             signal_type_mapping=self._signal_type_mapping,
         )
+
+    def get_keyed_bank_member(self, bank_id, member_key: str) -> t.Optional[BankMember]:
+        """
+        Retrieve a bank_member which has a known key. Such a member must have
+        been created using self.add_keyed_bank_member(...).
+        """
+        try:
+            return self.get_bank_member(self._key_for_bank(bank_id, member_key))
+        except IndexError:
+            return None
 
     def get_bank_member_signal_from_id(
         self, signal_id: str
