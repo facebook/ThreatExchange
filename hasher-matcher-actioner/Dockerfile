@@ -10,7 +10,8 @@ RUN pip install -e .
 
 # Copy local-threatexchange if it exists and install threatexchange from it in
 # editable mode. This will override a copy of threatexchange fetched from pypi.
-COPY local-threatexchang[e] ./
+# Must copy .gitignore because COPY needs atleast one file to succeed.
+COPY .gitignore local-threatexchang[e] ./
 RUN if [ -d "local-threatexchange" ]; then pip install -e ./local-threatexchange; fi
 
 # LAMBDA_TASK_ROOT is recommended in the image [1]. I'm hoping this will prevent

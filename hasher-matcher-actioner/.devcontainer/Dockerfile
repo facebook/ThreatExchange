@@ -105,7 +105,7 @@ RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - \
   && apt-get update && apt-get install terraform
 
 # [Install GitHub CLI]
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0 \
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-key 23F3D4EA75716059 \
   && apt-add-repository https://cli.github.com/packages \
   && apt update \
   && apt install gh
