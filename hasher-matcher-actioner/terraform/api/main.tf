@@ -33,6 +33,7 @@ resource "aws_lambda_function" "api_root" {
   memory_size = 512
   environment {
     variables = {
+      SECRETS_PREFIX                        = var.secrets_prefix
       DYNAMODB_TABLE                        = var.datastore.name
       HMA_CONFIG_TABLE                      = var.config_table.name
       BANKS_TABLE                           = var.banks_datastore.name
@@ -204,6 +205,7 @@ resource "aws_lambda_function" "api_auth" {
   memory_size = 128
   environment {
     variables = {
+      SECRETS_PREFIX               = var.secrets_prefix
       HMA_ACCESS_TOKEN_SECRET_NAME = var.hma_api_access_tokens_secret.name
       USER_POOL_URL                = local.user_pool_url
       CLIENT_ID                    = var.api_authorizer_audience

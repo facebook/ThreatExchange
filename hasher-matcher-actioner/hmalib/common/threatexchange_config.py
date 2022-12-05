@@ -56,8 +56,8 @@ def create_privacy_group_if_not_exists(
             raise
 
 
-def sync_privacy_groups():
-    api_token = AWSSecrets().te_api_token()
+def sync_privacy_groups(secrets_prefix: str):
+    api_token = AWSSecrets(prefix=secrets_prefix).te_api_token()
     api = ThreatExchangeAPI(api_token)
     privacy_group_member_list = api.get_threat_privacy_groups_member()
     privacy_group_owner_list = api.get_threat_privacy_groups_owner()

@@ -8,6 +8,7 @@ import os
 import functools
 import json
 import typing as t
+from botocore.errorfactory import ClientError
 
 from hmalib.common.logging import get_logger
 
@@ -19,14 +20,52 @@ THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = "THREAT_EXCHANGE_API_TOKEN_SECRET_NAME"
 
 class AWSSecrets:
     """
-    A class for reading secrets stored in aws
+    A class for reading secrets stored in aws. We will be storing everything as
+    string, so unless specified, assume everything is a string.
+
+    Except for the older te_api_token and hma_api_tokens secrets, which get
+    their SecretIds from environment variables, all other secrets are stored
+    with a prefix in their ID. This is to prevent collisions with existing AWS
+    Secrets and other instances of HMA (like test, or a new version).
     """
 
     secrets_client: t.Any
 
-    def __init__(self):
+    def __init__(self, prefix: str):
         session = boto3.session.Session()
         self.secrets_client = session.client(service_name="secretsmanager")
+        self.prefix = prefix
+
+    def _get_full_secret_id(self, secret_id: str) -> str:
+        return f"{self.prefix}{secret_id}"
+
+    def get_secret(self, secret_id: str) -> str:
+        """
+        Get a secret if it exists. Raises ValueError if it does not.
+        """
+        try:
+            return self._get_str_secret(self._get_full_secret_id(secret_id))
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise ValueError(f"No secret with secret id: {secret_id}")
+            raise error
+
+    def put_secret(self, secret_id: str, secret_value: str):
+        """
+        Update a secret or create it if does not exist
+        """
+        try:
+            self.secrets_client.put_secret_value(
+                SecretId=self._get_full_secret_id(secret_id), SecretString=secret_value
+            )
+        except ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                self.secrets_client.create_secret(
+                    Name=self._get_full_secret_id(secret_id), SecretString=secret_value
+                )
+            else:
+                # Can't handle anything else.
+                raise error
 
     def update_te_api_token(self, token: str):
         f"""
@@ -69,6 +108,7 @@ class AWSSecrets:
 
     def _get_bin_secret(self, secret_name: str) -> bytes:
         """
+        Deprecated: Do not see any usage. Maybe safe to delete.
         For secerts stored in AWS Secrets Manager as binary
         """
         response = self._get_secret_value_response(secret_name)

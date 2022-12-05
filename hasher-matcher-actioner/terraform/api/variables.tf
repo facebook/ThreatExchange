@@ -5,6 +5,11 @@ variable "prefix" {
   type        = string
 }
 
+variable "secrets_prefix" {
+  description = "Prefix for all AWS Secrets created by the enduser."
+  type        = string
+}
+
 variable "api_and_webapp_user_pool_id" {
   description = "user pool id that can be used to create a URL to the JWT issuer (used by the api gateway authorizer)"
   type        = string

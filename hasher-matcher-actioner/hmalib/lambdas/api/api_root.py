@@ -53,6 +53,7 @@ LCC_DURABLE_FS_PATH = os.environ["LCC_DURABLE_FS_PATH"]
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 INDEXER_FUNCTION_NAME = os.environ["INDEXER_FUNCTION_NAME"]
 WRITEBACK_QUEUE_URL = os.environ["WRITEBACKS_QUEUE_URL"]
+SECRETS_PREFIX = os.environ["SECRETS_PREFIX"]
 
 
 @lru_cache(maxsize=1)
@@ -137,6 +138,7 @@ def bottle_init_once() -> t.Tuple[
             datastore_table=dynamodb.Table(DYNAMODB_TABLE),
             threat_exchange_data_bucket_name=THREAT_EXCHANGE_DATA_BUCKET_NAME,
             threat_exchange_data_folder=THREAT_EXCHANGE_DATA_FOLDER,
+            secrets_prefix=SECRETS_PREFIX,
         ),
     )
 

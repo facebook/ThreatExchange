@@ -284,6 +284,7 @@ def get_datasets_api(
     datastore_table: Table,
     threat_exchange_data_bucket_name: str,
     threat_exchange_data_folder: str,
+    secrets_prefix: str,
 ) -> bottle.Bottle:
     """
     ToDo / FixMe: this file is probably more about privacy groups than datasets...
@@ -362,7 +363,7 @@ def get_datasets_api(
         """
         Fetch new collaborations from ThreatExchange and sync with the configs stored in DynamoDB.
         """
-        sync_privacy_groups()
+        sync_privacy_groups(secrets_prefix)
         return SyncDatasetResponse(response="Privacy groups are up to date")
 
     @datasets_api.post("/delete/<key>", apply=[jsoninator])
@@ -452,7 +453,7 @@ def get_datasets_api(
         token = bottle.request.json["token"]
         is_valid_token = try_api_token(token)
         if is_valid_token:
-            AWSSecrets().update_te_api_token(token)
+            AWSSecrets(secrets_prefix).update_te_api_token(token)
             return {}
 
         bottle.response.status_code = 400

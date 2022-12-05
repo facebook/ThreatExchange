@@ -40,6 +40,8 @@ MAX_DESCRIPTORS_UPDATED = 20000
 # Print progress when polling threat_updates once every...<> seconds
 PROGRESS_PRINT_INTERVAL_SEC = 20
 
+SECRETS_PREFIX = os.environ["SECRETS_PREFIX"]
+
 
 @lru_cache(maxsize=None)
 def get_s3_client():
@@ -148,7 +150,7 @@ def lambda_handler(_event, _context):
     data = f"Triggered at time {current_time}, found {len(collabs)} collabs: {', '.join(names)}"
     logger.info(data)
 
-    api_token = AWSSecrets().te_api_token()
+    api_token = AWSSecrets(SECRETS_PREFIX).te_api_token()
     api = ThreatExchangeAPI(api_token)
 
     for collab in collabs:

@@ -24,6 +24,9 @@ locals {
   hma_api_tokens_secret_name = "hma/${var.prefix}_api_tokens"
 
   durable_storage_path = "/mnt/durable-storage"
+
+  secrets_prefix = "${var.prefix}_hma_secret/"
+
 }
 
 ### Config storage ###
@@ -147,8 +150,9 @@ module "counters" {
 }
 
 module "fetcher" {
-  source = "./fetcher"
-  prefix = var.prefix
+  source         = "./fetcher"
+  prefix         = var.prefix
+  secrets_prefix = local.secrets_prefix
 
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
@@ -467,6 +471,8 @@ module "api" {
   prefix                      = var.prefix
   api_and_webapp_user_pool_id = module.authentication.webapp_and_api_user_pool_id
   api_authorizer_audience     = module.authentication.webapp_and_api_user_pool_client_id
+  secrets_prefix              = local.secrets_prefix
+
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
     commands = {
