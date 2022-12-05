@@ -5,6 +5,11 @@ variable "prefix" {
   type        = string
 }
 
+variable "secrets_prefix" {
+  description = "Prefix for all AWS Secrets created by the enduser."
+  type        = string
+}
+
 variable "lambda_docker_info" {
   description = "Docker container information for lambda functions"
   type = object({

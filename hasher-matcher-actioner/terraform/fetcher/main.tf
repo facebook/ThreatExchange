@@ -31,6 +31,7 @@ resource "aws_lambda_function" "fetcher" {
   memory_size = 512
   environment {
     variables = {
+      SECRETS_PREFIX                        = var.secrets_prefix
       THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
       CONFIG_TABLE_NAME                     = var.config_table.name
       THREAT_EXCHANGE_DATA_FOLDER           = var.threat_exchange_data.data_folder

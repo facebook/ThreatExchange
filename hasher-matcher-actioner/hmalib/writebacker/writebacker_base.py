@@ -157,7 +157,7 @@ class ThreatExchangeWritebacker(Writebacker):
         mock_te_api = os.environ.get("MOCK_TE_API")
         if mock_te_api == "True":
             return MockedThreatExchangeAPI()
-        api_token = AWSSecrets().te_api_token()
+        api_token = AWSSecrets("").te_api_token()
         return ThreatExchangeAPI(api_token)
 
     def my_descriptor_from_all_descriptors(

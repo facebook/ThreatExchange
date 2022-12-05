@@ -14,6 +14,7 @@ from hmalib.common.logging import get_logger
 
 USER_POOL_URL = os.environ["USER_POOL_URL"]
 CLIENT_ID = os.environ["CLIENT_ID"]
+SECRETS_PREFIX = os.environ["SECRETS_PREFIX"]
 
 # https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-verifying-a-jwt.html
 KEYS_URL = f"{USER_POOL_URL}/.well-known/jwks.json"
@@ -101,7 +102,7 @@ def validate_jwt(token: str):
 @functools.lru_cache(maxsize=10)
 def validate_access_token(token: str) -> bool:
 
-    access_tokens = AWSSecrets().hma_api_tokens()
+    access_tokens = AWSSecrets(prefix=SECRETS_PREFIX).hma_api_tokens()
     if not access_tokens or not token:
         logger.debug("No access tokens found")
         return False
