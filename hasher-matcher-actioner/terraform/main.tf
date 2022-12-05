@@ -150,8 +150,9 @@ module "counters" {
 }
 
 module "fetcher" {
-  source = "./fetcher"
-  prefix = var.prefix
+  source         = "./fetcher"
+  prefix         = var.prefix
+  secrets_prefix = local.secrets_prefix
 
   lambda_docker_info = {
     uri = var.hma_lambda_docker_uri
