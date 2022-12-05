@@ -25,8 +25,8 @@ class AWSSecrets:
 
     Except for the older te_api_token and hma_api_tokens secrets, which get
     their SecretIds from environment variables, all other secrets are stored
-    with a prefix in their ID. This is to prevent with existing AWS Secrets and
-    other instances of HMA (like test, or a new version).
+    with a prefix in their ID. This is to prevent collisions with existing AWS
+    Secrets and other instances of HMA (like test, or a new version).
     """
 
     secrets_client: t.Any
@@ -41,7 +41,7 @@ class AWSSecrets:
 
     def get_secret(self, secret_id: str) -> str:
         """
-        Get a secret if it exist. Raises ValueError if it does not.
+        Get a secret if it exists. Raises ValueError if it does not.
         """
         try:
             return self._get_str_secret(self._get_full_secret_id(secret_id))
