@@ -55,8 +55,6 @@ class AWSSecrets:
         Update a secret or create it if does not exist
         """
         try:
-            print(self._get_full_secret_id(secret_id))
-
             self.secrets_client.put_secret_value(
                 SecretId=self._get_full_secret_id(secret_id), SecretString=secret_value
             )
