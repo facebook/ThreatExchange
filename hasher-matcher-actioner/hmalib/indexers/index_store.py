@@ -8,12 +8,13 @@ S3 Backed Index Management. Offers a menu of indexes.
   understand TMK better. :) -- @schatten
 """
 
+import typing as t
 from datetime import datetime
 import pickle
 import boto3
 import functools
-from mypy_boto3_s3.service_resource import Bucket
-from mypy_boto3_s3.type_defs import MetricsAndOperatorTypeDef
+
+from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
 from threatexchange.signal_type.pdq.pdq_index import PDQIndex, PDQFlatIndex
 
@@ -28,61 +29,47 @@ def get_s3_client():
     return boto3.client("s3")
 
 
-class S3BackedInstrumentedIndexMixin:
+class S3PickledIndexStore:
     """
-    Contains behavior common to all indexes that store their data on S3. Do not
-    override init. That must be delegated to a SignalTypeIndex implementation.
-
-    Also overrides methods to wrap instrumentation with hmalib.metrics library.
+    Store and retrieve indexes as pickled python files on S3.
     """
 
     INDEXES_PREFIX = "index/"
 
-    def save(self, bucket_name: str):
+    def __init__(self, bucket_name: str):
+        self.bucket_name = bucket_name
+
+    def save(self, index):
         with metrics.timer(metrics.names.indexer.upload_index):
-            index_file_bytes = pickle.dumps(self)
+            index_file_bytes = pickle.dumps(index)
             get_s3_client().put_object(
-                Bucket=bucket_name,
-                Key=self.__class__._get_index_s3_key(),
+                Bucket=self.bucket_name,
+                Key=self._get_index_s3_key(index.__class__),
                 Body=index_file_bytes,
             )
 
-    @classmethod
-    def load(cls, bucket_name: str):
+    def load(self, index_class: t.Type[SignalTypeIndex]):
         with metrics.timer(metrics.names.indexer.download_index):
             index_file_bytes = (
                 get_s3_client()
-                .get_object(Bucket=bucket_name, Key=cls._get_index_s3_key())["Body"]
+                .get_object(
+                    Bucket=self.bucket_name,
+                    Key=self._get_index_s3_key(index_class),
+                )["Body"]
                 .read()
             )
             return pickle.loads(index_file_bytes)
 
-    def get_index_class_name(self) -> str:
-        """
-        Name to help identify the index being used in HMA logs.
-        """
-        return self.__class__.__name__
-
-    @classmethod
-    def get_index_max_distance(cls) -> int:
-        """
-        Helper to distinguish if the next should be used based on configured thersholds.
-        Defaults to zero (i.e. only exact matches supported)
-        """
-        return 0
-
-    @classmethod
-    def get_latest_last_modified(cls, bucket_name: str) -> datetime:
+    def get_latest_last_modified(self) -> datetime:
         """
         Get the update time of the newest index.
         """
         objects = get_s3_client().list_objects_v2(
-            Bucket=bucket_name, Prefix=cls.INDEXES_PREFIX
+            Bucket=self.bucket_name, Prefix=self.INDEXES_PREFIX
         )
         return max(map(lambda item: item["LastModified"], objects["Contents"]))
 
-    @classmethod
-    def _get_index_s3_key(cls):
+    def _get_index_s3_key(self, cls: t.Type[SignalTypeIndex]):
         """
         Uses current class name to get a unique but consistent s3 key for this
         index type.
@@ -99,37 +86,7 @@ class S3BackedInstrumentedIndexMixin:
         fit. Eg. Partner specific PDQ index (eg. backed by something other than
         FAISS) can co-exist with our own.
 
-        ours:  index/hmalib.indexers.s3_indexers.S3BackedPDQIndex.index
+        ours:  index/threatexchange.signal_type.pdq.index.FlatPDQIndex.index
         their: index/partnername.integrity.indexers.CustomPDQIndex.index
         """
-        return f"{cls.INDEXES_PREFIX}{cls.__module__}.{cls.__name__}.index"
-
-
-class S3BackedMD5Index(TrivialSignalTypeIndex, S3BackedInstrumentedIndexMixin):
-    """
-    DO NOT OVERRIDE __init__(). Let TrivialSignalTypeIndex provide that.
-    """
-
-    pass
-
-
-class S3BackedPDQIndex(PDQIndex, S3BackedInstrumentedIndexMixin):
-    """
-    DO NOT OVERRIDE __init__(). Let PDQIndex provide that.
-    """
-
-    pass
-
-    @classmethod
-    def get_index_max_distance(cls) -> int:
-        return cls.get_match_threshold()
-
-
-class S3BackedPDQFlatIndex(PDQFlatIndex, S3BackedInstrumentedIndexMixin):
-    """
-    DO NOT OVERRIDE __init__(). Let PDQFlatIndex provide that.
-    """
-
-    @classmethod
-    def get_index_max_distance(cls) -> int:
-        return cls.get_match_threshold()
+        return f"{self.INDEXES_PREFIX}{cls.__module__}.{cls.__name__}.index"

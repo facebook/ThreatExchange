@@ -16,6 +16,8 @@ from hmalib.common.models.bank import BanksTable
 from hmalib.matchers.matchers_base import Matcher
 from hmalib.common.config import HMAConfig
 from hmalib.common.models.pipeline import PipelineHashRecord
+from hmalib.lambdas.common import get_signal_type_mapping
+
 
 INDEXES_BUCKET_NAME = os.environ["INDEXES_BUCKET_NAME"]
 BANKS_TABLE = os.environ["BANKS_TABLE"]
@@ -66,7 +68,10 @@ def lambda_handler(event, context):
     queues behind it and profit!
     """
     table = get_dynamodb().Table(DYNAMODB_TABLE)
-    banks_table = BanksTable(get_dynamodb().Table(BANKS_TABLE))
+
+    banks_table = BanksTable(
+        get_dynamodb().Table(BANKS_TABLE), get_signal_type_mapping()
+    )
 
     for sqs_record in event["Records"]:
         message = json.loads(sqs_record["body"])
@@ -82,7 +87,9 @@ def lambda_handler(event, context):
             )
             continue
 
-        hash_record = PipelineHashRecord.from_sqs_message(message)
+        hash_record = PipelineHashRecord.from_sqs_message(
+            message, get_signal_type_mapping()
+        )
         logger.info(
             "HashRecord for contentId: %s with contentHash: %s",
             hash_record.content_id,

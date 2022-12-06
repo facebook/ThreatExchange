@@ -794,8 +794,9 @@ class BanksTable:
         self,
         signal_type: t.Type[SignalType],
         exclusive_start_key: t.Optional[DynamoDBCursorKey] = None,
-        limit: int = 100,
+        limit: t.Optional[int] = None,
     ) -> PaginatedResponse[BankMemberSignal]:
+        # TODO: Respect limit.
         if not exclusive_start_key:
             result = self._table.query(
                 IndexName=BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX,
@@ -803,7 +804,6 @@ class BanksTable:
                 KeyConditionExpression=Key(
                     BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE
                 ).eq(signal_type.get_name()),
-                Limit=limit,
             )
         else:
             result = self._table.query(
@@ -813,7 +813,6 @@ class BanksTable:
                     BankMemberSignal.BANK_MEMBER_SIGNAL_CURSOR_INDEX_SIGNAL_TYPE
                 ).eq(signal_type.get_name()),
                 ExclusiveStartKey=exclusive_start_key,
-                Limit=limit,
             )
         return PaginatedResponse(
             t.cast(DynamoDBCursorKey, result.get("LastEvaluatedKey", None)),

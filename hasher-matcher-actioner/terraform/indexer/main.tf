@@ -86,8 +86,12 @@ resource "aws_lambda_function" "indexer" {
   image_config {
     command = [var.lambda_docker_info.commands.indexer]
   }
-  timeout     = 300
-  memory_size = 512
+  timeout     = 720 # 12 minutes
+  memory_size = 5120
+
+  ephemeral_storage {
+    size = 5120
+  }
 
   environment {
     variables = {
@@ -166,6 +170,11 @@ data "aws_iam_policy_document" "indexer" {
     effect    = "Allow"
     actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:UpdateItem"]
     resources = ["${var.banks_datastore.arn}*"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:PutItem", "dynamodb:DeleteItem"]
+    resources = [var.config_table.arn]
   }
   statement {
     effect = "Allow"
