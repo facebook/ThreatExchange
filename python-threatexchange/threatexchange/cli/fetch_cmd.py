@@ -10,6 +10,7 @@ import typing as t
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli.dataset_cmd import DatasetCommand
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.impl.ncmec_api import NCMECCheckpoint
 from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     TSignalExchangeAPICls,

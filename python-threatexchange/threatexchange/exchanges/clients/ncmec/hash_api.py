@@ -72,6 +72,17 @@ class _XMLWrapper:
         return nullthrows(self.element.text)
 
     @property
+    def has_text(self) -> bool:
+        """
+        Returns true if tag is of the form <a>foo</a>
+        Implies that .text will not throw.
+
+        Returns false for <a/>
+        Still returns true for <a></a>
+        """
+        return self.element.text is not None
+
+    @property
     def tag(self) -> str:
         """Suger for getting the tag name"""
         return self.element.tag
@@ -136,7 +147,9 @@ class NCMECEntryUpdate:
             entry_type=NCMECEntryType(type_str),
             deleted=deleted,
             classification=xml.maybe("classification").element.text,
-            fingerprints={x.tag: x.text for x in xml.maybe("fingerprints")},
+            fingerprints={
+                x.tag: x.text for x in xml.maybe("fingerprints") if x.has_text
+            },
         )
 
 
@@ -361,7 +374,13 @@ class NCMECHashAPI:
             to=_date_format(end_timestamp),
             **params,
         )
-        return GetEntriesResponse.from_xml(_XMLWrapper(response), int(time.time()))
+        try:
+            return GetEntriesResponse.from_xml(_XMLWrapper(response), int(time.time()))
+        except Exception:
+            raise Exception(
+                "Failed to parse response: %s",
+                ET.tostring(response, encoding="utf8", method="xml"),
+            )
 
     def get_entries_iter(
         self, *, start_timestamp: int = 0, end_timestamp: int = 0
