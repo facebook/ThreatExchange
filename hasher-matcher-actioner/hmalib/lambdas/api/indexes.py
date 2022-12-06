@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from mypy_boto3_lambda.client import LambdaClient
 
-from hmalib.indexers.s3_indexers import S3BackedInstrumentedIndexMixin
+from hmalib.indexers.index_store import S3PickledIndexStore
 from hmalib.lambdas.api.middleware import SubApp, jsoninator
 
 
@@ -39,11 +39,8 @@ def get_indexes_api(
         Returns the max of last_modified time of all indexes. Read as: when was
         the latest index rebuilt.
         """
-        return IndexesLastModifiedResponse(
-            S3BackedInstrumentedIndexMixin.get_latest_last_modified(
-                bucket_name=indexes_bucket_name
-            )
-        )
+        index_store = S3PickledIndexStore(indexes_bucket_name)
+        return IndexesLastModifiedResponse(index_store.get_latest_last_modified())
 
     @indexes_api.post("/rebuild-all")
     def rebuild_all_indexes():

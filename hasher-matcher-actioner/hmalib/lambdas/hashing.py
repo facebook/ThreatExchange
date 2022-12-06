@@ -34,6 +34,7 @@ from hmalib.banks import bank_operations
 from hmalib.common.models.pipeline import PipelineHashRecord
 from hmalib.common.models.bank import BanksTable
 from hmalib.common.content_sources import S3BucketContentSource, URLContentSource
+from hmalib.lambdas.common import get_signal_type_mapping
 
 logger = get_logger(__name__)
 sqs_client = boto3.client("sqs")
@@ -54,14 +55,6 @@ DYNAMODB_TABLE = os.environ["DYNAMODB_TABLE"]
 IMAGE_PREFIX = os.environ["IMAGE_PREFIX"]
 BANKS_TABLE = os.environ["BANKS_TABLE"]
 HMA_CONFIG_TABLE = os.environ["HMA_CONFIG_TABLE"]
-
-
-@functools.lru_cache(maxsize=None)
-def _get_signal_type_mapping() -> HMASignalTypeMapping:
-    """
-    Cache-get signalTypeMapping. Call only if HMAConfig has been initialized.
-    """
-    return get_pytx_functionality_mapping().signal_and_content
 
 
 @functools.lru_cache(maxsize=None)
@@ -90,11 +83,11 @@ def lambda_handler(event, context):
     HMAConfig.initialize(HMA_CONFIG_TABLE)
     banks_table = BanksTable(
         get_dynamodb().Table(BANKS_TABLE),
-        _get_signal_type_mapping(),
+        get_signal_type_mapping(),
     )
     sqs_client = get_sqs_client()
 
-    hasher = _get_hasher(_get_signal_type_mapping())
+    hasher = _get_hasher(get_signal_type_mapping())
 
     for sqs_record in event["Records"]:
         message = json.loads(sqs_record["body"])
@@ -109,7 +102,7 @@ def lambda_handler(event, context):
         if URLSubmissionMessage.could_be(message):
             media_to_process.append(
                 URLSubmissionMessage.from_sqs_message(
-                    message, _get_signal_type_mapping()
+                    message, get_signal_type_mapping()
                 )
             )
         elif S3ImageSubmissionBatchMessage.could_be(message):
@@ -122,7 +115,7 @@ def lambda_handler(event, context):
         elif BankSubmissionMessage.could_be(message):
             media_to_process.append(
                 BankSubmissionMessage.from_sqs_message(
-                    message, _get_signal_type_mapping()
+                    message, get_signal_type_mapping()
                 )
             )
         else:

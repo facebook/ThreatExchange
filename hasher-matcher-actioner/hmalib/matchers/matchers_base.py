@@ -20,6 +20,7 @@ from hmalib.common.models.pipeline import MatchRecord
 from hmalib import metrics
 from hmalib.common.logging import get_logger
 from hmalib.common.messages.match import BankedSignal, MatchMessage
+from hmalib.indexers.index_store import S3PickledIndexStore
 from hmalib.common.models.signal import ThreatExchangeSignalMetadata
 from hmalib.indexers.metadata import (
     BANKS_SOURCE_SHORT_CODE,
@@ -57,7 +58,7 @@ class Matcher:
         supported_signal_types: t.List[t.Type[SignalType]],
         banks_table: BanksTable,
     ):
-        self.index_bucket_name = index_bucket_name
+        self.index_store = S3PickledIndexStore(index_bucket_name)
         self.supported_signal_types = supported_signal_types
         self._cached_indexes: t.Dict[t.Type[SignalType], SignalTypeIndex] = {}
         self.banks_table = banks_table
@@ -129,7 +130,7 @@ class Matcher:
                 "content_hash": content_hash,
                 "updated_at": datetime.datetime.now(),
                 "signal_source": metadata_obj.get_source(),
-                "match_distance": int(match.distance),
+                "match_distance": int(match.similarity_info.distance),
             }
 
             if metadata_obj.get_source() == THREAT_EXCHANGE_SOURCE_SHORT_CODE:
@@ -223,9 +224,7 @@ class Matcher:
             self._cached_indexes[signal_type], index_cls
         ):
             with metrics.timer(metrics.names.indexer.download_index):
-                self._cached_indexes[signal_type] = index_cls.load(
-                    bucket_name=self.index_bucket_name
-                )
+                self._cached_indexes[signal_type] = self.index_store.load(index_cls)
 
         return self._cached_indexes[signal_type]
 
@@ -233,22 +232,10 @@ class Matcher:
     def _get_index_for_signal_type_matching(
         cls, signal_type: t.Type[SignalType], max_custom_threshold: int
     ):
-        indexes = signal_type.get_index_cls()
-        # disallow empty list
-        assert indexes
-        if len(indexes) == 1:
-            # if we only have one option just return
-            return indexes[0]
-
-        indexes.sort(key=lambda i: i.get_index_max_distance())
-
-        for index_cls in indexes:
-            if max_custom_threshold <= index_cls.get_index_max_distance():
-                return index_cls
-
-        # if we don't have an index that supports max threshold
-        # just return the one if the highest possible max distance
-        return indexes[-1]
+        # TODO: Figure out how to switch index type when max_custom_threshold
+        # changes.
+        index_type = signal_type.get_index_cls()
+        return index_type
 
     def publish_match_message(
         self,
