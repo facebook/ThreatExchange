@@ -14,7 +14,11 @@ resource "aws_lambda_function" "matcher_lambda" {
   }
 
   timeout     = 300
-  memory_size = 512
+  memory_size = 5120
+
+  ephemeral_storage {
+    size = 5120
+  }
 
   environment {
     variables = {
