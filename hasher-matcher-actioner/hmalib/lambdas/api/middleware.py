@@ -84,6 +84,7 @@ def jsoninator(
         t.Type[DictParseableWithSignalTypeMapping],
     ],
     from_query=False,
+    signal_type_mapping: t.Optional[HMASignalTypeMapping] = None,
 ):
     """
     Bottle plugin which allows you to create 'typed' views.
@@ -136,9 +137,23 @@ def jsoninator(
                 try:
                     # Try to extract request
                     if from_query:
-                        request_object = request_type.from_dict(bottle.request.query)
+                        if issubclass(request_type, DictParseableWithSignalTypeMapping):
+                            assert signal_type_mapping != None
+                            request_object = request_type.from_dict(
+                                bottle.request.query, signal_type_mapping
+                            )
+                        else:
+                            request_object = request_type.from_dict(
+                                bottle.request.query
+                            )
                     else:
-                        request_object = request_type.from_dict(bottle.request.json)
+                        if issubclass(request_type, DictParseableWithSignalTypeMapping):
+                            assert signal_type_mapping != None
+                            request_object = request_type.from_dict(
+                                bottle.request.json, signal_type_mapping
+                            )
+                        else:
+                            request_object = request_type.from_dict(bottle.request.json)
                 except Exception as e:
                     logger.error(
                         "Failed to deserialize request for type: %s", str(request_type)
