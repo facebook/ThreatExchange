@@ -1,4 +1,6 @@
 from unittest.mock import Mock
+import urllib.parse
+import typing as t
 import pytest
 import requests
 from threatexchange.exchanges.clients.ncmec.hash_api import (
@@ -149,6 +151,25 @@ ENTRIES_XML4 = """
 </queryResult>
 """.strip()
 
+ENTRIES_LARGE_FINGERPRINTS = """
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
+    <videos count="1" maxTimestamp="2019-11-24T15:10:00Z">
+        <video>
+            <member id="101">TX Example</member>
+            <timestamp>2019-11-24T15:10:00Z</timestamp>
+            <id>largetags</id>
+            <classification>A2</classification>
+            <fingerprints>
+                <md5>facefacefacefacefacefacefaceface</md5>
+                <tmk-pdqf rel="self" href="/v2/entries/1/fingerprints/TMK_PDQF"/>
+				<videntifier rel="self" href="/v2/entries/1/fingerprints/VIDENTIFIER"/>
+            </fingerprints>
+        </video>
+    </videos>
+</queryResult>
+""".strip()
+
 
 def mock_get_impl(url: str, **params):
     content = ENTRIES_XML
@@ -164,6 +185,26 @@ def mock_get_impl(url: str, **params):
     resp.status_code = 200
     resp.content  # Set the rest of Request's internal state
     return resp
+
+
+def set_api_return(content: str):
+    # Some day support next
+    # def next_str(i: int) -> str:
+    #     return (
+    #         "/v2/entries?from=2017-10-20T00%3A00%3A00.000Z"
+    #         f"&to=2017-10-30T00%3A00%3A00.000Z&start={i * 1000 + 1}&size=1000&max={(i + 1) * 1000}"
+    #     )
+    #
+    # content = xmls[(int(qs.get("start", "1")) - 1) // 1000]
+
+    def _mock_get_impl(url: str, **params):
+        resp = requests.Response()
+        resp._content = content.encode()
+        resp.status_code = 200
+        resp.content  # Set the rest of Request's internal state
+        return resp
+
+    return _mock_get_impl
 
 
 @pytest.fixture
@@ -261,3 +302,22 @@ def test_mocked_get_hashes(api: NCMECHashAPI):
     assert forth_result.next == ""
 
     # The other updates don't need to be tested here
+
+
+def test_large_fingerprint_entries(monkeypatch):
+    api = NCMECHashAPI("fake_user", "fake_pass", NCMECEnvironment.test_Industry)
+    session = Mock(
+        strict_spec=["get", "__enter__", "__exit__"],
+        get=set_api_return(ENTRIES_LARGE_FINGERPRINTS),
+        __enter__=lambda _: session,
+        __exit__=lambda *args: None,
+    )
+    monkeypatch.setattr(api, "_get_session", lambda: session)
+
+    result = api.get_entries()
+
+    assert len(result.updates) == 1
+    update = result.updates[0]
+    assert len(update.fingerprints) == 1
+    assert update.fingerprints == {"md5": "facefacefacefacefacefacefaceface"}
+    assert result.next == ""
