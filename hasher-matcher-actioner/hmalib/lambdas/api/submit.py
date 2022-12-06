@@ -350,7 +350,15 @@ def get_submit_api(
             force_resubmit=request.force_resubmit,
         )
 
-    @submit_api.post("/s3/", apply=[jsoninator(SubmitContents3ObjectRequestBody)])
+    @submit_api.post(
+        "/s3/",
+        apply=[
+            jsoninator(
+                SubmitContents3ObjectRequestBody,
+                signal_type_mapping=signal_type_mapping,
+            )
+        ],
+    )
     def submit_s3(
         request: SubmitContents3ObjectRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
@@ -372,7 +380,15 @@ def get_submit_api(
 
         return SubmitResponse(content_id=request.content_id, submit_successful=True)
 
-    @submit_api.post("/url/", apply=[jsoninator(SubmitContentViaURLRequestBody)])
+    @submit_api.post(
+        "/url/",
+        apply=[
+            jsoninator(
+                SubmitContentViaURLRequestBody,
+                signal_type_mapping=signal_type_mapping,
+            )
+        ],
+    )
     def submit_url(
         request: SubmitContentViaURLRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
@@ -392,7 +408,15 @@ def get_submit_api(
 
         return SubmitResponse(content_id=request.content_id, submit_successful=True)
 
-    @submit_api.post("/bytes/", apply=[jsoninator(SubmitContentBytesRequestBody)])
+    @submit_api.post(
+        "/bytes/",
+        apply=[
+            jsoninator(
+                SubmitContentBytesRequestBody,
+                signal_type_mapping=signal_type_mapping,
+            )
+        ],
+    )
     def submit_bytes(
         request: SubmitContentBytesRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
@@ -412,10 +436,17 @@ def get_submit_api(
         return SubmitResponse(content_id=request.content_id, submit_successful=True)
 
     @submit_api.post(
-        "/put-url/", apply=[jsoninator(SubmitContentViaPutURLUploadRequestBody)]
+        "/put-url/",
+        apply=[
+            jsoninator(
+                SubmitContentViaPutURLUploadRequestBody,
+                signal_type_mapping=signal_type_mapping,
+            )
+        ],
     )
     def submit_put_url(
         request: SubmitContentViaPutURLUploadRequestBody,
+        signal_type_mapping=signal_type_mapping,
     ) -> t.Union[SubmitViaUploadUrlResponse, SubmitError]:
         """
         Submission of content to HMA in two steps
@@ -444,7 +475,15 @@ def get_submit_api(
             message="Failed to generate upload url",
         )
 
-    @submit_api.post("/hash/", apply=[jsoninator(SubmitContentHashRequestBody)])
+    @submit_api.post(
+        "/hash/",
+        apply=[
+            jsoninator(
+                SubmitContentHashRequestBody,
+                signal_type_mapping=signal_type_mapping,
+            )
+        ],
+    )
     def submit_hash(
         request: SubmitContentHashRequestBody,
     ) -> t.Union[SubmitResponse, SubmitError]:
