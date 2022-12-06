@@ -210,6 +210,7 @@ def set_api_return(content: str):
 @pytest.fixture
 def api(monkeypatch: pytest.MonkeyPatch):
     api = NCMECHashAPI("fake_user", "fake_pass", NCMECEnvironment.test_Industry)
+    session = None
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],
         get=mock_get_impl,
