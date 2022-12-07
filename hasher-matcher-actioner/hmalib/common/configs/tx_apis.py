@@ -74,6 +74,11 @@ def add_signal_exchange_api(
     return AddSignalExchangeAPIResult.ADDED
 
 
+class SignalExchangeAPIStatus(Enum):
+    ENABLED = 1
+    DISABLED = 2
+
+
 class UpdateSignalExchangeAPIStatusResult(Enum):
     DISABLED = 1
     ENABLED = 2
@@ -81,7 +86,7 @@ class UpdateSignalExchangeAPIStatusResult(Enum):
 
 
 def set_status_signal_exchange_api(
-    klass: str, status: bool
+    klass: str, status: SignalExchangeAPIStatus
 ) -> UpdateSignalExchangeAPIStatusResult:
     """
     Convenience method. Will fail if klass does not translate to an actual
@@ -102,7 +107,7 @@ def set_status_signal_exchange_api(
         return UpdateSignalExchangeAPIStatusResult.FAILED
 
     config = t.cast(ToggleableSignalExchangeAPIConfig, config)
-    config.enabled = status
+    config.enabled = status == SignalExchangeAPIStatus.ENABLED
     update_config(config)
 
     return (

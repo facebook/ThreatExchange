@@ -16,6 +16,9 @@ from hmalib.common.configs.tx_apis import (
     add_signal_exchange_api,
     set_status_signal_exchange_api,
 )
+from hmalib.common.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_exchanges_api(hma_config_table: str, secrets_prefix: str) -> bottle.Bottle:
@@ -26,7 +29,7 @@ def get_exchanges_api(hma_config_table: str, secrets_prefix: str) -> bottle.Bott
     @exchanges_api.get("/")
     def get_exchanges():
         """
-        Get the currently enabled APIs.
+        Get all APIs that are currently configured (enabled and disabled).
         """
         apis = ToggleableSignalExchangeAPIConfig.get_all()
         return {
@@ -63,6 +66,9 @@ def get_exchanges_api(hma_config_table: str, secrets_prefix: str) -> bottle.Bott
         ]
 
         if not api:
+            logger.info(
+                "Tried to load credentials for non-existent exchange: %s", classname
+            )
             return {"result": "failed"}
 
         try:
@@ -70,6 +76,9 @@ def get_exchanges_api(hma_config_table: str, secrets_prefix: str) -> bottle.Bott
                 "credential_string": secrets.get_secret(api[0].get_credential_name())
             }
         except ValueError:
+            logger.info(
+                "Tried to load non-existent credential for exchange: %s", classname
+            )
             return {"result": "failed"}
 
     @exchanges_api.post("/set-credential-string")
