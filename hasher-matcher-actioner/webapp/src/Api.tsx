@@ -14,6 +14,7 @@ import {
 import {toDate} from './utils/DateTimeUtils';
 import {ContentType, getContentTypeForString} from './utils/constants';
 import {Collab} from './messages/CollabMessages';
+import {Exchange} from './messages/ExchangeMessages';
 
 async function getAuthorizationToken(): Promise<string> {
   const currentSession = await Auth.currentSession();
@@ -756,4 +757,59 @@ export async function fetchAllCollabs(): Promise<Array<Collab>> {
   return apiGet<AllCollabsEnvelope>('collabs/').then(
     response => response.collabs,
   );
+}
+
+// Exchange APIs
+type AllExchangesEnvelope = {
+  exchanges: {[key: string]: Exchange};
+};
+
+export async function fetchAllExchanges(): Promise<{
+  [key: string]: Exchange;
+}> {
+  return apiGet<AllExchangesEnvelope>('exchanges/').then(
+    response => response.exchanges,
+  );
+}
+
+export async function addNewExchange(className: string): Promise<void> {
+  return apiPost<{result: string}>(
+    'exchanges/add-new-exchange',
+    {},
+    {class: className},
+  ).then();
+}
+
+export async function updateExchangeStatus(
+  className: string,
+  enabled: boolean,
+): Promise<string> {
+  return apiPost<{result: string}>(
+    'exchanges/update-enabled',
+    {},
+    {class: className, enabled},
+  ).then(res => res.result);
+}
+
+export async function getExchangeCredentialString(
+  className: string,
+): Promise<string> {
+  return apiGet<{credential_string: string}>(
+    'exchanges/get-credential-string',
+    {class: className},
+  ).then(res => res.credential_string);
+}
+
+export async function setExchangeCredentialString(
+  className: string,
+  credentialString: string,
+): Promise<void> {
+  return apiPost<{result: string}>('exchanges/set-credential-string', {
+    class: className,
+    credential_string: credentialString,
+  }).then(res => {
+    if (res.result !== 'success') {
+      throw Error('Could not update credential string');
+    }
+  });
 }

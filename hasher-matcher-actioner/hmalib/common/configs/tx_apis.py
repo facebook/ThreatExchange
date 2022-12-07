@@ -9,7 +9,6 @@ import typing as t
 from enum import Enum
 
 from botocore.exceptions import ClientError
-from jinja2 import ModuleLoader
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 
 from hmalib.common.config import HMAConfig, create_config, update_config
@@ -32,6 +31,13 @@ class ToggleableSignalExchangeAPIConfig(HMAConfig):
 
     def to_concrete_class(self) -> t.Type[SignalExchangeAPI]:
         return import_class(self.signal_exchange_api_class)
+
+    def get_credential_name(self):
+        """
+        What name would we store the secret under. Only useful if signal
+        exchange class subclasses auth.SignalExchangeWithAuth.
+        """
+        return f"{self.signal_exchange_api_class}/api_credentials"
 
 
 class AddSignalExchangeAPIResult(Enum):
@@ -68,14 +74,20 @@ def add_signal_exchange_api(
     return AddSignalExchangeAPIResult.ADDED
 
 
-class DisableSignalExchangeAPIResult(Enum):
+class SignalExchangeAPIStatus(Enum):
+    ENABLED = 1
+    DISABLED = 2
+
+
+class UpdateSignalExchangeAPIStatusResult(Enum):
     DISABLED = 1
-    FAILED = 2
+    ENABLED = 2
+    FAILED = 3
 
 
-def disable_signal_exchange_api(
-    klass: str,
-) -> DisableSignalExchangeAPIResult:
+def set_status_signal_exchange_api(
+    klass: str, status: SignalExchangeAPIStatus
+) -> UpdateSignalExchangeAPIStatusResult:
     """
     Convenience method. Will fail if klass does not translate to an actual
     SignalExchangeAPI.
@@ -85,16 +97,21 @@ def disable_signal_exchange_api(
     except (ModuleNotFoundError, AttributeError) as ex:
         logger.error("Can't load class to disable SignalExchangeAPI: %s", klass)
         logger.exception(ex)
-        return DisableSignalExchangeAPIResult.FAILED
+        return UpdateSignalExchangeAPIStatusResult.FAILED
 
     config = ToggleableSignalExchangeAPIConfig.get(
         ToggleableSignalExchangeAPIConfig.get_name_from_type(cls)
     )
 
     if not config:
-        return DisableSignalExchangeAPIResult.FAILED
+        return UpdateSignalExchangeAPIStatusResult.FAILED
 
     config = t.cast(ToggleableSignalExchangeAPIConfig, config)
-    config.enabled = False
+    config.enabled = status == SignalExchangeAPIStatus.ENABLED
     update_config(config)
-    return DisableSignalExchangeAPIResult.DISABLED
+
+    return (
+        status
+        and UpdateSignalExchangeAPIStatusResult.ENABLED
+        or UpdateSignalExchangeAPIStatusResult.DISABLED
+    )

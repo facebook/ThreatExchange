@@ -19,6 +19,7 @@ from hmalib.lambdas.api.bank import get_bank_api
 from hmalib.lambdas.api.action_rules import get_action_rules_api
 from hmalib.lambdas.api.actions import get_actions_api
 from hmalib.lambdas.api.content import get_content_api
+from hmalib.lambdas.api.exchanges import get_exchanges_api
 from hmalib.lambdas.api.datasets import get_datasets_api
 from hmalib.lambdas.api.indexes import get_indexes_api
 from hmalib.lambdas.api.matches import get_matches_api
@@ -183,6 +184,13 @@ def bottle_init_once() -> t.Tuple[
             hma_config_table=HMA_CONFIG_TABLE,
             bank_table=bank_table,
             signal_type_mapping=functionality_mapping.signal_and_content,
+        ),
+    )
+
+    app.mount(
+        "/exchanges/",
+        get_exchanges_api(
+            hma_config_table=HMA_CONFIG_TABLE, secrets_prefix=SECRETS_PREFIX
         ),
     )
 
