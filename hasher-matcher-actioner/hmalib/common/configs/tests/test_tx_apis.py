@@ -7,7 +7,7 @@ from hmalib.common.config import HMAConfig
 from hmalib.common.models.tests.ddb_test_common import HMAConfigTestBase
 from hmalib.common.configs.tx_apis import (
     ToggleableSignalExchangeAPIConfig,
-    disable_signal_exchange_api,
+    set_status_signal_exchange_api,
     add_signal_exchange_api,
     AddSignalExchangeAPIResult,
 )
@@ -56,7 +56,7 @@ class TXApiConfigsTestCase(HMAConfigTestBase, unittest.TestCase):
             )
 
             self.assertTrue(ToggleableSignalExchangeAPIConfig.get_all()[0].enabled)
-            disable_signal_exchange_api(
-                "threatexchange.exchanges.impl.ncmec_api.NCMECCollabConfig"
+            set_status_signal_exchange_api(
+                "threatexchange.exchanges.impl.ncmec_api.NCMECCollabConfig", False
             )
             self.assertFalse(ToggleableSignalExchangeAPIConfig.get_all()[0].enabled)

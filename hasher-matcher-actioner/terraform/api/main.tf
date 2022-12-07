@@ -151,12 +151,15 @@ data "aws_iam_policy_document" "api_root" {
     resources = ["*"]
   }
 
-  statement {
-    effect    = "Allow"
-    actions   = ["secretsmanager:GetSecretValue", "secretsmanager:UpdateSecret"]
-    resources = [var.te_api_token_secret.arn]
-  }
 
+  statement {
+    effect  = "Allow"
+    actions = ["secretsmanager:GetSecretValue", "secretsmanager:CreateSecret", "secretsmanager:PutSecretValue"]
+    resources = [
+      var.te_api_token_secret.arn,
+      "arn:aws:secretsmanager:${data.aws_region.current.name}:${local.account_id}:secret:${var.secrets_prefix}*"
+    ]
+  }
   statement {
     effect    = "Allow"
     actions   = ["sqs:SendMessage"]

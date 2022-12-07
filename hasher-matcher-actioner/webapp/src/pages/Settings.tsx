@@ -15,10 +15,11 @@ import ActionPerformerSettingsTab, {
 } from './settings/ActionPerformerSettingsTab';
 import ThreatExchangeSettingsTab from './settings/ThreatExchangeSettingsTab';
 import IndexSettingsTab from './settings/IndexSettingsTab';
+import ExchangesTab from './settings/ExchangesTab';
 
 // This array must include the eventKey attribute value of any Tab in Tabs as
 // a part of the implementation to give each tab its own route.
-const tabEventKeys = ['threatexchange', 'actions', 'action-rules'];
+const tabEventKeys = ['exchanges', 'actions', 'action-rules', 'threatexchange'];
 
 export default function Settings(): JSX.Element {
   const {tab = tabEventKeys[0]} = useParams<{tab: string}>();
@@ -47,8 +48,8 @@ export default function Settings(): JSX.Element {
         onSelect={key => {
           history.push(`/settings/${key}`);
         }}>
-        <Tab eventKey="threatexchange" title="ThreatExchange">
-          <ThreatExchangeSettingsTab />
+        <Tab eventKey="exchanges" title="Exchanges">
+          <ExchangesTab />
         </Tab>
         <Tab eventKey="actions" title="Actions">
           <ActionPerformerSettingsTab
@@ -66,6 +67,9 @@ export default function Settings(): JSX.Element {
         </Tab>
         <Tab eventKey="index" title="Indexes">
           <IndexSettingsTab />
+        </Tab>
+        <Tab eventKey="threatexchange" title="ThreatExchange">
+          <ThreatExchangeSettingsTab />
         </Tab>
       </Tabs>
     </div>

@@ -11,8 +11,10 @@ import {
   OverlayTrigger,
   Card,
   Col,
+  Alert,
 } from 'react-bootstrap';
 import classNames from 'classnames';
+import {Link} from 'react-router-dom';
 import ThreatExchangePrivacyGroupCard from '../../components/settings/ThreatExchangePrivacyGroupCard';
 import {
   HolidaysDatasetInformationBlock,
@@ -125,6 +127,18 @@ export default function ThreatExchangeSettingsTab(): JSX.Element {
   }, []);
   return (
     <SettingsTabPane>
+      <Row>
+        <Col>
+          <Alert variant="warning">
+            <Alert.Heading>Warning</Alert.Heading>
+            <p>
+              We are now recommending you use the{' '}
+              <Link to="/collabs/">Collaborations</Link> feature to manage your
+              ThreatExchange Privacy Groups.
+            </p>
+          </Alert>
+        </Col>
+      </Row>
       <Row className="mt-3">
         <Col xs={{span: 8}}>
           <h3>ThreatExchange Datasets </h3>
