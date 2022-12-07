@@ -772,6 +772,14 @@ export async function fetchAllExchanges(): Promise<{
   );
 }
 
+export async function addNewExchange(className: string): Promise<void> {
+  return apiPost<{result: string}>(
+    'exchanges/add-new-exchange',
+    {},
+    {class: className},
+  ).then();
+}
+
 export async function updateExchangeStatus(
   className: string,
   enabled: boolean,

@@ -17,6 +17,7 @@ import {
 import {IonIcon} from '@ionic/react';
 import {eyeOutline, eyeOffOutline} from 'ionicons/icons';
 import {
+  addNewExchange,
   fetchAllExchanges,
   getExchangeCredentialString,
   setExchangeCredentialString,
@@ -135,11 +136,14 @@ function CredentialControl({cls}: CredentialControlProps): JSX.Element {
 
 export default function ExchangesTab(): JSX.Element {
   const [exchanges, setExchanges] = useState<{[key: string]: Exchange}>({});
+  const [showAddNewExchange, setShowAddNewExchange] = useState<boolean>(false);
+  const [newExchangeClass, setNewExchangeClass] = useState<string>();
+  const [refetchCounter, setRefetchCounter] = useState<number>(1);
   const notifications = useContext(NotificationsContext);
 
   useEffect(() => {
     fetchAllExchanges().then(setExchanges);
-  }, []);
+  }, [refetchCounter]);
 
   const setUpdateStatus = (className: string, status: boolean) => {
     const message = status
@@ -164,9 +168,24 @@ export default function ExchangesTab(): JSX.Element {
     setExchanges(newExchanges);
   };
 
+  const handleNewExchangeClassAdd = () => {
+    if (newExchangeClass) {
+      addNewExchange(newExchangeClass)
+        .then(() => {
+          notifications.success({message: 'Added new Signal Exchange API.'});
+          setRefetchCounter(refetchCounter + 1);
+          setShowAddNewExchange(false);
+        })
+        .catch(() => {
+          notifications.error({
+            message: 'Could not add new Signal Exchange API.',
+          });
+        });
+    }
+  };
+
   const exchangeRows = Object.keys(exchanges).map(cxClass => {
     const humanName = humanizeClassName(cxClass);
-
     return (
       <Row key={cxClass} className="mt-2">
         <Col>
@@ -210,6 +229,15 @@ export default function ExchangesTab(): JSX.Element {
         <Col>
           <SettingsTabPane.Title>Exchanges</SettingsTabPane.Title>
         </Col>
+        <Col>
+          <div className="float-right">
+            <Button
+              variant="success"
+              onClick={() => setShowAddNewExchange(true)}>
+              Add New Exchange
+            </Button>
+          </div>
+        </Col>
       </Row>
       <Row className="mb-3">
         <Col>
@@ -218,6 +246,33 @@ export default function ExchangesTab(): JSX.Element {
         </Col>
       </Row>
       <>{exchangeRows}</>
+      <Modal
+        show={showAddNewExchange}
+        onHide={() => setShowAddNewExchange(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Add a new Signal Exchange Type</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Label htmlFor="new-exchange-class">
+            Full classname for new signal exchange.
+          </Form.Label>
+          <Form.Control
+            type="text"
+            value={newExchangeClass}
+            id="new-exchange-class"
+            onChange={e => setNewExchangeClass(e.target.value)}
+          />
+          <div className="mt-3">
+            <Button
+              onClick={handleNewExchangeClassAdd}
+              disabled={
+                newExchangeClass === undefined || newExchangeClass === ''
+              }>
+              Add
+            </Button>
+          </div>
+        </Modal.Body>
+      </Modal>
     </SettingsTabPane>
   );
 }
