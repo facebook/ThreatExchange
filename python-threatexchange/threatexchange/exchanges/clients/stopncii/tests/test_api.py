@@ -257,6 +257,8 @@ def mock_feedbacks() -> t.Dict[t.Tuple[StopNCIISignalType, str], StopNCIICSPFeed
 
 
 def mock_submit_feedback_post_impl(endpoint: str, json):
+    # since tags field is `set`, may not inorder, needs to sort in advance
+    json["hashFeedbacks"][0]["tags"].sort()
     desired_json = {
         "count": 2,
         "hashFeedbacks": [
