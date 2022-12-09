@@ -2,8 +2,7 @@
 
 """Simple implementation for the StopNCII REST API"""
 
-from dataclasses import dataclass, asdict, field
-import copy
+from dataclasses import dataclass, field
 import enum
 import logging
 import time
@@ -62,12 +61,11 @@ class StopNCIICSPFeedback:
     tags: t.Set[str] = field(default_factory=set)  # Unstructured additional tags
     source: str = ""  # Name of the Content Service Provider (CSP)
 
-    @classmethod
-    def as_dict_for_post(cls) -> t.Dict[str, t.Any]:
+    def as_dict_for_post(self) -> t.Dict[str, t.Any]:
         """The json-friendly format to send in post requests"""
         return {
-            "tags": list(cls.tags),
-            "feedbackValue": str(cls.feedbackValue),
+            "tags": list(self.tags),
+            "feedbackValue": self.feedbackValue.value,
         }
 
 

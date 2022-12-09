@@ -256,11 +256,32 @@ def mock_feedbacks() -> t.Dict[t.Tuple[StopNCIISignalType, str], StopNCIICSPFeed
     }
 
 
-def test_post_feedbacks(api: StopNCIIAPI):
-    try:
-        api.submit_feedbacks(mock_feedbacks())
-    except Exception as e:
-        assert (
-            repr(e)
-            == """AttributeError("type object 'StopNCIICSPFeedback' has no attribute 'tags'")"""
-        )
+def mock_submit_feedback_post_impl(endpoint: str, json):
+    desired_json = {
+        "count": 2,
+        "hashFeedbacks": [
+            {
+                "tags": ["Adult", "Nude"],
+                "feedbackValue": "Deleted",
+                "hashValue": "2afc4a5c09628a7961c14d436493bba66b89b831453baa1d556ba385554daa82",
+            },
+            {
+                "tags": ["Nude"],
+                "feedbackValue": "Blocked",
+                "hashValue": "79e07de27d7295339435d63cd31cf35a7bfa29eb2885008500a588a5ea3ae75a",
+            },
+        ],
+    }
+    assert endpoint == StopNCIIEndpoint.SubmitFeedback
+    assert json == desired_json
+
+
+@pytest.fixture
+def submit_feedback_api(monkeypatch: pytest.MonkeyPatch):
+    return submit_feedback_api
+
+
+def test_post_feedbacks(monkeypatch: pytest.MonkeyPatch):
+    submit_feedback_api = StopNCIIAPI("", "")
+    monkeypatch.setattr(submit_feedback_api, "_post", mock_submit_feedback_post_impl)
+    submit_feedback_api.submit_feedbacks(mock_feedbacks())
