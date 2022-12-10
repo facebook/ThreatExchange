@@ -17,6 +17,7 @@ from threatexchange.exchanges.fetch_state import (
 from hmalib.common.configs.tx_collab_config import EditableCollaborationConfig
 from hmalib.common.configs.tx_apis import ToggleableSignalExchangeAPIConfig
 from hmalib.common.models.bank import BanksTable
+from hmalib.banks import bank_operations as bank_ops
 from hmalib.common.logging import get_logger
 
 logger = get_logger(__name__)
@@ -303,7 +304,7 @@ class BankCollabFetchStore:
             self._import_bank.bank_id, str_key
         )
         if member:
-            self.banks_table.remove_bank_member(member.bank_member_id)
+            bank_ops.remove_bank_member(self.banks_table, member.bank_member_id)
 
     def convert_opinions_to_label(self, opinions: t.Sequence[SignalOpinion]):
         """
@@ -315,5 +316,5 @@ class BankCollabFetchStore:
         ddb using self.banks_table) can be written.
         """
         return reduce(
-            lambda tags, acc: acc.union(tags), map(lambda x: x.tags, opinions)
+            lambda tags, acc: acc.union(tags), map(lambda x: x.tags, opinions), []
         )

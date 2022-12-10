@@ -91,6 +91,13 @@ class Fetcher:
             if c.to_pytx_collab_config().enabled
         ]
 
+    def get_store(
+        self, collab: tx_collab_config.EditableCollaborationConfig
+    ) -> BankCollabFetchStore:
+        return BankCollabFetchStore(
+            self.signal_type_mapping.signal_types, self.banks_table, collab
+        )
+
     def _execute_for_collab(
         self, collab: tx_collab_config.EditableCollaborationConfig
     ) -> bool:
@@ -99,9 +106,7 @@ class Fetcher:
             collab.to_pytx_collab_config().api
         ].for_collab(collab=collab.to_pytx_collab_config())
 
-        store = BankCollabFetchStore(
-            self.signal_type_mapping.signal_types, self.banks_table, collab
-        )
+        store = self.get_store(collab)
 
         checkpoint = store.get_checkpoint()
         if checkpoint:

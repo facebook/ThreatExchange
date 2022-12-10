@@ -678,10 +678,12 @@ class BanksTable:
 
     def remove_bank_member(self, bank_member_id: str):
         """
-        Removes the bank member and associated signals from the bank. Merely
-        marks as removed, does not physically delete from the store. DOES NOT
-        stop matching until index is updated. DOES NOT undo any actions already
-        taken.
+        Removes the bank member from the bank. Merely marks as removed, does not
+        physically delete from the store.
+
+        DOES NOT stop matching until index is updated.
+        DOES NOT undo any actions already taken.
+        DOES NOT delete associated signals. Consider bank_operations.remove_bank_member.
         """
         bank_member_keys = self._table.query(
             IndexName=BankMember.BANK_MEMBER_ID_INDEX,
