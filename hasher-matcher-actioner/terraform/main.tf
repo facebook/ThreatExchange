@@ -161,19 +161,11 @@ module "fetcher" {
     }
   }
 
-  datastore = module.datastore.primary_datastore
-
-  threat_exchange_data = {
-    bucket_name = module.hashing_data.threat_exchange_data_folder_info.bucket_name
-    data_folder = local.te_data_folder
-  }
-
   log_retention_in_days = var.log_retention_in_days
   additional_tags       = merge(var.additional_tags, local.common_tags)
   fetch_frequency       = var.fetch_frequency
-
-  te_api_token_secret = aws_secretsmanager_secret.te_api_token
-  config_table        = local.config_table
+  banks_datastore       = module.datastore.banks_datastore
+  config_table          = local.config_table
 }
 
 resource "aws_sns_topic" "matches" {

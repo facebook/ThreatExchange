@@ -2,6 +2,13 @@
 
 ### Lambda for fetcher ###
 
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+}
+
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
     effect  = "Allow"
@@ -31,12 +38,9 @@ resource "aws_lambda_function" "fetcher" {
   memory_size = 512
   environment {
     variables = {
-      SECRETS_PREFIX                        = var.secrets_prefix
-      THREAT_EXCHANGE_DATA_BUCKET_NAME      = var.threat_exchange_data.bucket_name
-      CONFIG_TABLE_NAME                     = var.config_table.name
-      THREAT_EXCHANGE_DATA_FOLDER           = var.threat_exchange_data.data_folder
-      THREAT_EXCHANGE_API_TOKEN_SECRET_NAME = var.te_api_token_secret.name
-      DYNAMODB_DATASTORE_TABLE              = var.datastore.name
+      SECRETS_PREFIX    = var.secrets_prefix
+      CONFIG_TABLE_NAME = var.config_table.name
+      BANKS_TABLE       = var.banks_datastore.name
     }
   }
   tags = merge(
@@ -81,18 +85,6 @@ data "aws_iam_policy_document" "fetcher" {
   statement {
     effect = "Allow"
     actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:ListBucket",
-    ]
-    resources = [
-      "arn:aws:s3:::*/*",
-      "arn:aws:s3:::${var.threat_exchange_data.bucket_name}"
-    ]
-  }
-  statement {
-    effect = "Allow"
-    actions = [
       "logs:CreateLogStream",
       "logs:PutLogEvents",
       "logs:DescribeLogStreams"
@@ -111,13 +103,16 @@ data "aws_iam_policy_document" "fetcher" {
   }
   statement {
     effect    = "Allow"
-    actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem"]
-    resources = [var.datastore.arn]
+    actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:Query", "dynamodb:PutItem"]
+    resources = [var.banks_datastore.arn]
   }
+
   statement {
-    effect    = "Allow"
-    actions   = ["secretsmanager:GetSecretValue"]
-    resources = [var.te_api_token_secret.arn]
+    effect  = "Allow"
+    actions = ["secretsmanager:GetSecretValue", "secretsmanager:CreateSecret", "secretsmanager:PutSecretValue"]
+    resources = [
+      "arn:aws:secretsmanager:${data.aws_region.current.name}:${local.account_id}:secret:${var.secrets_prefix}*"
+    ]
   }
 }
 
