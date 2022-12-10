@@ -13,7 +13,7 @@ import {
 } from './messages/BankMessages';
 import {toDate} from './utils/DateTimeUtils';
 import {ContentType, getContentTypeForString} from './utils/constants';
-import {Collab} from './messages/CollabMessages';
+import {Collab, CollabSchema} from './messages/CollabMessages';
 import {Exchange} from './messages/ExchangeMessages';
 
 async function getAuthorizationToken(): Promise<string> {
@@ -757,6 +757,28 @@ export async function fetchAllCollabs(): Promise<Array<Collab>> {
   return apiGet<AllCollabsEnvelope>('collabs/').then(
     response => response.collabs,
   );
+}
+
+type AllCollabSchemasEnvelope = {
+  schemas: Record<string, CollabSchema>;
+};
+
+export async function fetchAllCollabSchemas(): Promise<
+  Record<string, CollabSchema>
+> {
+  return apiGet<AllCollabSchemasEnvelope>('collabs/available-schemas').then(
+    response => response.schemas,
+  );
+}
+
+export async function addNewCollab(
+  className: string,
+  attributes: any,
+): Promise<void> {
+  return apiPost('collabs/add-collab-config', {
+    class: className,
+    attributes: JSON.stringify(attributes),
+  });
 }
 
 // Exchange APIs
