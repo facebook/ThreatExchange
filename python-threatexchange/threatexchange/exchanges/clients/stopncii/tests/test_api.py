@@ -1,4 +1,5 @@
 import pytest
+import typing as t
 from threatexchange.exchanges.clients.stopncii.api import (
     StopNCIIAPI,
     StopNCIICaseStatus,
@@ -6,8 +7,8 @@ from threatexchange.exchanges.clients.stopncii.api import (
     StopNCIIEndpoint,
     StopNCIIHashRecord,
     StopNCIISignalType,
+    StopNCIICSPFeedback,
 )
-
 
 PAGE_TOKEN = (
     "W3siY29tcG9zaXRlVG9rZW4iOnsidG9rZW4iOiIrUklEOn4xMnRWQUo4SzU2Y0NB"
@@ -127,7 +128,6 @@ def assert_third_record(record: StopNCIIHashRecord) -> None:
 
 
 def test_mocked_get_hashes(api: StopNCIIAPI):
-
     result = api.fetch_hashes()
 
     assert result.count == 2
@@ -237,3 +237,53 @@ def test_mocked_get_hashes_with_undefined_enum(monkeypatch: pytest.MonkeyPatch):
     result = error_enum_api.fetch_hashes()
     assert result.count == 3
     assert len(result.hashRecords) == 1  # since only one record has valid feedbackValue
+
+
+def mock_feedbacks() -> t.Dict[t.Tuple[StopNCIISignalType, str], StopNCIICSPFeedback]:
+    hash_str_1 = "2afc4a5c09628a7961c14d436493bba66b89b831453baa1d556ba385554daa82"
+    hash_str_2 = "79e07de27d7295339435d63cd31cf35a7bfa29eb2885008500a588a5ea3ae75a"
+    return {
+        (StopNCIISignalType.ImagePDQ, hash_str_1): StopNCIICSPFeedback(
+            feedbackValue=StopNCIICSPFeedbackValue.Deleted,
+            source="facebook",
+            tags={"Adult", "Nude"},
+        ),
+        (StopNCIISignalType.ImagePDQ, hash_str_2): StopNCIICSPFeedback(
+            feedbackValue=StopNCIICSPFeedbackValue.Blocked,
+            source="snapchat",
+            tags={"Nude"},
+        ),
+    }
+
+
+def mock_submit_feedback_post_impl(endpoint: str, json):
+    # since tags field is `set`, may not inorder, needs to sort in advance
+    json["hashFeedbacks"][0]["tags"].sort()
+    desired_json = {
+        "count": 2,
+        "hashFeedbacks": [
+            {
+                "tags": ["Adult", "Nude"],
+                "feedbackValue": "Deleted",
+                "hashValue": "2afc4a5c09628a7961c14d436493bba66b89b831453baa1d556ba385554daa82",
+            },
+            {
+                "tags": ["Nude"],
+                "feedbackValue": "Blocked",
+                "hashValue": "79e07de27d7295339435d63cd31cf35a7bfa29eb2885008500a588a5ea3ae75a",
+            },
+        ],
+    }
+    assert endpoint == StopNCIIEndpoint.SubmitFeedback
+    assert json == desired_json
+
+
+@pytest.fixture
+def submit_feedback_api(monkeypatch: pytest.MonkeyPatch):
+    return submit_feedback_api
+
+
+def test_post_feedbacks(monkeypatch: pytest.MonkeyPatch):
+    submit_feedback_api = StopNCIIAPI("", "")
+    monkeypatch.setattr(submit_feedback_api, "_post", mock_submit_feedback_post_impl)
+    submit_feedback_api.submit_feedbacks(mock_feedbacks())
