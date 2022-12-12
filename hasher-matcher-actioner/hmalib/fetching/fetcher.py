@@ -108,6 +108,13 @@ class Fetcher:
 
         return self.secrets.get_secret(
             api_classes_with_this_exchange[0].get_credential_name()
+
+
+    def get_store(
+        self, collab: tx_collab_config.EditableCollaborationConfig
+    ) -> BankCollabFetchStore:
+        return BankCollabFetchStore(
+            self.signal_type_mapping.signal_types, self.banks_table, collab
         )
 
     def _execute_for_collab(
@@ -127,9 +134,7 @@ class Fetcher:
         else:
             api_instance = api_cls.for_collab(collab=collab.to_pytx_collab_config())
 
-        store = BankCollabFetchStore(
-            self.signal_type_mapping.signal_types, self.banks_table, collab
-        )
+        store = self.get_store(collab)
 
         checkpoint = store.get_checkpoint()
         if checkpoint:

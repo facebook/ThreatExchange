@@ -27,7 +27,7 @@ import {NotificationsContext} from '../../AppWithNotifications';
 import {Exchange} from '../../messages/ExchangeMessages';
 import SettingsTabPane from './SettingsTabPane';
 
-function humanizeClassName(className: string) {
+export function humanizeClassName(className: string) {
   const parts = className.split('.');
   return parts[parts.length - 1];
 }

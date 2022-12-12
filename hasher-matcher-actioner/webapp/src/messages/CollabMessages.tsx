@@ -4,3 +4,16 @@ export type Collab = {
   collab_config_class: string;
   attributes: {[key: string]: string};
 };
+
+export type CollabSchemaComplexType = {
+  type: 'enum' | 'set';
+  possible_values?: Array<string>;
+  args?: string;
+};
+
+export type CollabSchemaFieldType =
+  | 'int'
+  | 'str'
+  | 'bool'
+  | CollabSchemaComplexType;
+export type CollabSchema = Record<string, CollabSchemaFieldType>;
