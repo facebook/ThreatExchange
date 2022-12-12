@@ -84,15 +84,6 @@ class FakeSignalMetadata(FetchedSignalMetadata):
         ]
 
 
-# terrible-design, but it is a test. module level state to be overriden before
-# creating a fetcher instance. Since FakeAPI is instantiated via a classmethod
-# and FakeAPI needs to be discoverable as hmalib.foo.bar.tests.FakeAPI, I can't
-# use any kind of dynamic class gen.
-FETCH_RESPONSES: t.Sequence[
-    t.Dict[TUpdateRecordKey, t.Optional[TUpdateRecordValue]]
-] = []
-
-
 class ImaginarySignalType(SignalType):
     @classmethod
     def get_content_types(cls) -> t.List[t.Type[ContentType]]:
@@ -108,6 +99,14 @@ class FakeAPI(
         FakeUpdateRecord,
     ]
 ):
+
+    # Since FakeAPI is instantiated via a classmethod and FakeAPI needs to be
+    # discoverable as hmalib.foo.bar.tests.FakeAPI, I can't use any kind of
+    # dynamic class gen.
+    fetch_responses: t.ClassVar[
+        t.Sequence[t.Dict[TUpdateRecordKey, t.Optional[TUpdateRecordValue]]]
+    ] = []
+
     @classmethod
     def for_collab(cls, collab: CollaborationConfigBase) -> SignalExchangeAPI:
         return FakeAPI()
@@ -117,7 +116,7 @@ class FakeAPI(
         supported_signal_types: t.Sequence[t.Type[SignalType]],
         checkpoint: t.Optional[FakeCheckpoint],
     ) -> t.Iterator[FetchDelta[str, FakeUpdateRecord, FakeCheckpoint]]:
-        for i, update in enumerate(FETCH_RESPONSES):
+        for i, update in enumerate(self.__class__.fetch_responses):
             yield FetchDelta(update, FakeCheckpoint((i + 1) * 100))
 
     @staticmethod
@@ -159,8 +158,11 @@ class FakeAPI(
 
 
 class FakeFetcher(Fetcher):
-    # Allows overriding store. Since the real fetcher must instantiate a store
-    # per collab, we need this override.
+    """
+    Allows overriding store. Since the real fetcher must instantiate a store per
+    collab, we need this override.
+    """
+
     def __init__(
         self,
         signal_type_mapping: HMASignalTypeMapping,
@@ -231,11 +233,13 @@ def pdq(n: int) -> str:
     return f"{n:064x}"
 
 
-# Each test case is a 3 value tuple. For each case n,
+# Each test case is a 3 [or 4] value tuple. For each case n,
 # tuple[0] is a human readable test name. We'll print this if tests fail.
 # tuple[1] is the update to be emitted by fetch_iter()
 # tuple[2] is the expected end state after all n tuple[1]s have been emitted.
-# tuple[3] if NotImplemented, indicates unsupported behavior.
+# tuple[3] if NotImplemented, indicates unsupported behavior. Unsupported means
+# a missing feature that is not catastrophic but should be addressed soon. An
+# example is fetch_iter K1 [PDQ] followed by K1 [PDNA] will not remove the PDQ.
 #
 # Note: the test cases are cumulative. Each test case will behave as if all the
 # previous tests have been performed on this store.
@@ -268,8 +272,10 @@ TEST_CASES = [
 
 
 def unwrap_bank_signals_response(response: PaginatedResponse) -> t.Set[str]:
-    # Helper to convert bank member signals response to something that can be
-    # compared with TEST_CASE data
+    """
+    Helper to convert bank member signals response to something that can be
+    compared with TEST_CASE data
+    """
     return {item.signal_value for item in response.items}
 
 
@@ -284,10 +290,8 @@ def test_for_case_until(i, banks_table):
     fake_config = get_fake_collab_config(bank.bank_id)
     create_config(fake_config)
 
-    global FETCH_RESPONSES
-    FETCH_RESPONSES = [tc[1] for tc in TEST_CASES[: i + 1]]
+    FakeAPI.fetch_responses = [tc[1] for tc in TEST_CASES[: i + 1]]
 
-    # fake_table = FakeBanksTable()
     fetch_store = BankCollabFetchStore(
         signal_type_mapping.signal_types, banks_table, fake_config
     )
