@@ -10,6 +10,7 @@ from enum import Enum
 
 from botocore.exceptions import ClientError
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
+from threatexchange.exchanges.impl.file_api import LocalFileSignalExchangeAPI
 
 from hmalib.common.config import HMAConfig, create_config, update_config
 from hmalib.common.logging import get_logger
@@ -31,6 +32,18 @@ class ToggleableSignalExchangeAPIConfig(HMAConfig):
 
     def to_concrete_class(self) -> t.Type[SignalExchangeAPI]:
         return import_class(self.signal_exchange_api_class)
+
+    @classmethod
+    def get_all(
+        cls: t.Type["ToggleableSignalExchangeAPIConfig"],
+    ) -> t.List["ToggleableSignalExchangeAPIConfig"]:
+        return [
+            api
+            for api in super(ToggleableSignalExchangeAPIConfig, cls).get_all()
+            # Do not want to handle local files without supporting s3 uploads
+            # for those files..
+            if api.to_concrete_class() is not LocalFileSignalExchangeAPI
+        ]
 
     def get_credential_name(self):
         """

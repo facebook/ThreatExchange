@@ -15,6 +15,7 @@ type PillBoxProps = {
   handleNewTagAdd: (tag: string) => void;
   handleTagDelete: (tag: string) => void;
   readOnly?: boolean;
+  placeholder?: string;
 };
 
 type PillProps = {
@@ -52,6 +53,7 @@ export default function PillBox({
   handleNewTagAdd,
   handleTagDelete,
   readOnly,
+  placeholder,
 }: PillBoxProps) {
   const [newTagValue, setNewTagValue] = useState<string>('');
 
@@ -87,7 +89,7 @@ export default function PillBox({
                 handleNewTagAddInner();
               }
             }}
-            placeholder="Add new tag"
+            placeholder={placeholder}
           />
           <InputGroup.Append>
             <Button onClick={handleNewTagAddInner} variant="secondary">
@@ -102,4 +104,5 @@ export default function PillBox({
 
 PillBox.defaultProps = {
   readOnly: false,
+  placeholder: 'Add new tag',
 };

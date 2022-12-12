@@ -10,6 +10,7 @@ import EmptyState from '../../components/EmptyState';
 import Loader from '../../components/Loader';
 import {Collab} from '../../messages/CollabMessages';
 import FixedWidthCenterAlignedLayout from '../layouts/FixedWidthCenterAlignedLayout';
+import AddCollaborationModal from './AddCollaborationModal';
 
 const KNOWN_PYTX_TYPES: Map<string, string> = new Map();
 KNOWN_PYTX_TYPES.set(
@@ -60,13 +61,15 @@ function CollabCard({
 export default function ViewCollaborations(): JSX.Element {
   const [neverFetched, setNeverFetched] = useState<boolean>(true);
   const [collabs, setCollabs] = useState<Collab[]>([]);
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [refetchCounter, setRefetchCounter] = useState<number>(1);
 
   useEffect(() => {
     fetchAllCollabs().then(_collabs => {
       setCollabs(_collabs);
       setNeverFetched(false);
     });
-  }, []);
+  }, [refetchCounter]);
 
   return (
     <FixedWidthCenterAlignedLayout>
@@ -76,7 +79,7 @@ export default function ViewCollaborations(): JSX.Element {
         </Col>
         <Col xs={{span: 4}}>
           <div className="float-right">
-            {collabs.length === 0 ? null : <Button>Add Collab</Button>}
+            <Button onClick={() => setShowAddModal(true)}>Add Collab</Button>
           </div>
         </Col>
       </Row>
@@ -99,6 +102,7 @@ export default function ViewCollaborations(): JSX.Element {
           <Col>
             {collabs.map(collab => (
               <CollabCard
+                key={collab.name}
                 name={collab.name}
                 import_as_bank_id={collab.import_as_bank_id}
                 collab_config_class={collab.collab_config_class}
@@ -108,6 +112,14 @@ export default function ViewCollaborations(): JSX.Element {
           </Col>
         ) : null}
       </Row>
+      <AddCollaborationModal
+        show={showAddModal}
+        onHide={() => setShowAddModal(false)}
+        didAdd={() => {
+          setShowAddModal(false);
+          setRefetchCounter(refetchCounter + 1);
+        }}
+      />
     </FixedWidthCenterAlignedLayout>
   );
 }
