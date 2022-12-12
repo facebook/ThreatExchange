@@ -108,7 +108,7 @@ class Fetcher:
 
         return self.secrets.get_secret(
             api_classes_with_this_exchange[0].get_credential_name()
-
+        )
 
     def get_store(
         self, collab: tx_collab_config.EditableCollaborationConfig
