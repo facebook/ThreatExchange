@@ -75,5 +75,9 @@
   },
   "remoteEnv": {
     "IN_DEVCONTAINER": "true"
+  },
+  "overrideCommand": true,
+  "features": {
+    "docker-in-docker": "latest"
   }
 }

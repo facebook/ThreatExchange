@@ -39,6 +39,7 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.content_type.text import TextContent
 from threatexchange.content_type.content_base import ContentType
 
+from hmalib.aws_secrets import AWSSecrets
 from hmalib.fetching.fetcher import Fetcher
 from hmalib.fetching.bank_store import BankCollabFetchStore
 from hmalib.common.mappings import HMASignalTypeMapping
@@ -169,7 +170,7 @@ class FakeFetcher(Fetcher):
         banks_table: BanksTable,
         store: BankCollabFetchStore,
     ):
-        super().__init__(signal_type_mapping, banks_table)
+        super().__init__(signal_type_mapping, banks_table, AWSSecrets(""))
         self._fake_store = store
 
     def get_store(self, collab: EditableCollaborationConfig) -> BankCollabFetchStore:
