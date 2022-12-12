@@ -4,14 +4,15 @@ from functools import lru_cache
 import typing as t
 import time
 
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.exchanges.fetch_state import FetchCheckpointBase, FetchDeltaTyped
 
 from hmalib.common.logging import get_logger
-from hmalib.common.mappings import HMASignalTypeMapping
+from hmalib.common.mappings import HMASignalTypeMapping, full_class_name
 from hmalib.common.models.bank import BanksTable
-
+from hmalib.aws_secrets import AWSSecrets
 from hmalib.common.configs import tx_collab_config
 from hmalib.common.configs.tx_apis import ToggleableSignalExchangeAPIConfig
 from hmalib.fetching.bank_store import BankCollabFetchStore
@@ -31,10 +32,14 @@ class Fetcher:
     """
 
     def __init__(
-        self, signal_type_mapping: HMASignalTypeMapping, banks_table: BanksTable
+        self,
+        signal_type_mapping: HMASignalTypeMapping,
+        banks_table: BanksTable,
+        secrets: AWSSecrets,
     ):
         self.signal_type_mapping = signal_type_mapping
         self.banks_table = banks_table
+        self.secrets = secrets
 
     def _get_api_classes_from_config(self):
         return [
@@ -91,6 +96,20 @@ class Fetcher:
             if c.to_pytx_collab_config().enabled
         ]
 
+    def _get_credential_string(self, signal_exchange_api_cls: str) -> str:
+        api_classes_with_this_exchange = [
+            api
+            for api in ToggleableSignalExchangeAPIConfig.get_all()
+            if api.signal_exchange_api_class == signal_exchange_api_cls
+        ]
+        assert (
+            api_classes_with_this_exchange
+        ), f"No SignalExhchange configured for {signal_exchange_api_cls}, but collab config was found."
+
+        return self.secrets.get_secret(
+            api_classes_with_this_exchange[0].get_credential_name()
+
+
     def get_store(
         self, collab: tx_collab_config.EditableCollaborationConfig
     ) -> BankCollabFetchStore:
@@ -102,9 +121,18 @@ class Fetcher:
         self, collab: tx_collab_config.EditableCollaborationConfig
     ) -> bool:
         logger.info("Fetching for collab: %s", collab.name)
-        api_instance = self.get_api_classes()[
-            collab.to_pytx_collab_config().api
-        ].for_collab(collab=collab.to_pytx_collab_config())
+        api_cls = self.get_api_classes()[collab.to_pytx_collab_config().api]
+
+        if issubclass(api_cls, auth.SignalExchangeWithAuth):
+            creds_class = api_cls.get_credential_cls()
+            creds = creds_class._from_str(
+                self._get_credential_string(full_class_name(api_cls))
+            )
+            api_instance = api_cls.for_collab(
+                collab=collab.to_pytx_collab_config(), credentials=creds
+            )
+        else:
+            api_instance = api_cls.for_collab(collab=collab.to_pytx_collab_config())
 
         store = self.get_store(collab)
 

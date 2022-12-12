@@ -19,24 +19,6 @@ variable "lambda_docker_info" {
     })
   })
 }
-
-
-variable "datastore" {
-  description = "DynamoDB Table to store hash and match information into"
-  type = object({
-    name = string
-    arn  = string
-  })
-}
-
-variable "threat_exchange_data" {
-  description = "Configuration information for the S3 Bucket that will hold ThreatExchange Data. data_folder is actually just a key prefix to search for but this is displyed as a folder in AWS UI"
-  type = object({
-    bucket_name = string
-    data_folder = string
-  })
-}
-
 variable "additional_tags" {
   description = "Additional resource tags"
   type        = map(string)
@@ -52,18 +34,18 @@ variable "fetch_frequency" {
   type        = string
 }
 
-variable "te_api_token_secret" {
-  description = "The aws secret where the ThreatExchange API token is stored"
-  type = object({
-    name = string
-    arn  = string
-  })
-}
-
 variable "config_table" {
   description = "The name and arn of the DynamoDB table used for persisting configs."
   type = object({
     arn  = string
     name = string
+  })
+}
+
+variable "banks_datastore" {
+  description = "DynamoDB Table to store bank information into"
+  type = object({
+    name = string
+    arn  = string
   })
 }

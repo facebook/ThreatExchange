@@ -206,8 +206,14 @@ class BankCollabFetchStore:
         else:
             logger.info("FetchStore is clean!")
 
-        logger.info("Setting checkpoint for collab: %s", self.collab.name)
-        self.set_checkpoint(checkpoint)
+        if checkpoint:
+            logger.info("Setting checkpoint for collab: %s", self.collab.name)
+            self.set_checkpoint(checkpoint)
+        else:
+            logger.warn(
+                "No checkpoint found for collab: %s. Next fetch will start at the beginnging of time.",
+                self.collab.name,
+            )
 
     def _handle_upsert(self, key: TUpdateRecordKey, value: TUpdateRecordValue):
         """
