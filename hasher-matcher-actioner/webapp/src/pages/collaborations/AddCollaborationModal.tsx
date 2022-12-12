@@ -1,7 +1,6 @@
 /**
  * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
  */
-import {getValue} from '@testing-library/user-event/dist/utils';
 import React, {useContext, useEffect, useState} from 'react';
 import {
   Modal,
@@ -11,6 +10,7 @@ import {
   Col,
   InputGroup,
   Button,
+  Alert,
 } from 'react-bootstrap';
 import {Link} from 'react-router-dom';
 import {addNewCollab, fetchAllCollabSchemas} from '../../Api';
@@ -71,8 +71,7 @@ function Field({type, name, value, onChange}: FieldProps) {
           ))}
         </Form.Control>
       );
-    } else {
-      // Must be set..
+    } else if (type.type === 'set') {
       control = (
         <PillBox
           handleNewTagAdd={tag => {
@@ -90,6 +89,23 @@ function Field({type, name, value, onChange}: FieldProps) {
           pills={value || []}
           placeholder="Add values..."
         />
+      );
+    } else {
+      control = (
+        <Alert variant="warning">
+          <Alert.Heading>Warning</Alert.Heading>
+          <p>
+            We do not currently support variables of type{' '}
+            <code>{type.type}</code>. Please file an{' '}
+            <a
+              target="_blank"
+              href="https://github.com/facebook/ThreatExchange/issues/new"
+              rel="noreferrer">
+              issue on github
+            </a>
+            .
+          </p>
+        </Alert>
       );
     }
   }
@@ -153,20 +169,20 @@ export default function AddCollaborationModal({
                     <Link to="/settings/exchanges">Settings</Link> and add one.
                   </p>
                 ) : (
-                  Object.entries(existingSchemas).map(
-                    ([className, thisSchema]) => (
-                      <Button
-                        key={className}
-                        variant="link"
-                        onClick={() => {
-                          setFieldValues({});
-                          setCollabClassName(className);
-                          setSchema(thisSchema);
-                        }}>
-                        {humanizeClassName(className)},
-                      </Button>
-                    ),
-                  )
+                  <Form.Control
+                    as="select"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setFieldValues({});
+                      setCollabClassName(e.target.value);
+                      setSchema(existingSchemas[e.target.value]);
+                    }}>
+                    <option>Select...</option>
+                    {Object.keys(existingSchemas).map(className => (
+                      <option value={className} key={className}>
+                        {humanizeClassName(className)}
+                      </option>
+                    ))}
+                  </Form.Control>
                 )}
               </p>
             </Col>

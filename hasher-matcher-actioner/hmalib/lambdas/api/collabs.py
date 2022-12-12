@@ -22,7 +22,6 @@ from hmalib.lambdas.api.middleware import SubApp, jsoninator, JSONifiable
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.utils.dataclass_json import dataclass_loads
-from threatexchange.exchanges.impl.file_api import LocalFileSignalExchangeAPI
 
 
 @dataclass
@@ -64,13 +63,7 @@ def get_collabs_api(
         for subclasses.
         """
         apis = tx_apis.ToggleableSignalExchangeAPIConfig.get_all()
-        config_classes = [
-            api.to_concrete_class().get_config_cls()
-            for api in apis
-            # Do not want to handle local files without supporting s3 uploads
-            # for those files..
-            if api.to_concrete_class() is not LocalFileSignalExchangeAPI
-        ]
+        config_classes = [api.to_concrete_class().get_config_cls() for api in apis]
         return {
             "schemas": {
                 full_class_name(config_cls): _to_schema(config_cls)
@@ -89,7 +82,7 @@ def get_collabs_api(
     @collabs_api.get("/get-schema-for-class")
     def get_schema_for_class():
         """
-        Get the schem for a specific class. This could be a new class or one
+        Get the schema for a specific class. This could be a new class or one
         that we already have a config for. Used on the UI to provide a form to
         create a new config.
         """
