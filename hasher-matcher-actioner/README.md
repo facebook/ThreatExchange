@@ -12,7 +12,7 @@ In the long term, approaches that don't necessarily involve hashing may also be 
 HMA runs on Amazon Web Services (AWS), the code itself is packeged with Docker, and Terraform is used to spin up and tear down instances. HMA is intended to be part of a content moderation solution running in your own stack, and so we expect many users will break up individual components, write their own Terraform scripts, or run natively as needed. Additionally, we've attempted to make it possible to insert hooks in every stage of the process, which is where the bridge between your own infrastracture and HMA might occur.
 
 # Running HMA 
-Running HMA on a cloud provided will cost you money! Make sure you are ready for that before running any commands that create cloud resources.
+Running HMA on a cloud provider will cost you money! Make sure you are ready for that before running any commands that create cloud resources.
 
 ## Dependencies
 You'll need an AWS account set up. Additionally, you'll need the following tools ready:
