@@ -26,7 +26,7 @@ Before using terraform, you will need to provide some additional configuration, 
 
 2. _(optional)_ `backend.tf`: This file is used for optionally defining a remote backend to store your terraform state. If you are working on development for the HMA prototype and are part of the facebook ThreatExchange team, it is highly suggested you use the configuration for this file in the internal wiki. That will enable state locking and remote state storage for your terraform environment.
 
-## Automated Development Environment
+## VS Code Devcontainers | Automated Development Environment 
 
 If you are using [VS Code](https://code.visualstudio.com/), and we recommend you do, you can use the Devcontainer technology to get started real quick and have a great developer experience. 
 1. [Windows Only] Sadly, the devcontainer will misbehave unless all the file endings are unix style (LF) instead of windows style (CRLF). You most likely checked out the repo with autocrlf set to "true", which means you have the wrong line endings. The fastest way to fix this is to simply re-clone the whole repository with autocrlf=input (though with more steps it's possible to fix it inplace).
@@ -79,9 +79,12 @@ The devcontainer provides all the tools you need to build and hack on HMA. Inclu
     Error: error creating EC2 VPC: VpcLimitExceeded: The maximum number of VPCs has been reached.
     ```
 
+4. **git@github.com: Permission denied (publickey).**
+    If you have not used git within the devcontainer for a while, an ssh cache gets invalidated. To refresh it, on your local computer, open a terminal and run `ssh git@github.com`. Then run any git command inside the devcontainer terminals.
+
 ## Building the Docker Lambda Image
 
-The lambda functions defined for HMA use docker images to hold the code executed by the functions. You will need to build and publish this docker image to a docker registry you own. eg. an AWS ECR repository.
+The lambda functions defined for HMA use docker images. You will need to build and publish this docker image to a docker registry you own. eg. an AWS ECR repository.
 
 There is a build script in [`scripts/update_lambda_docker_image.sh`](scripts/update_lambda_docker_image.sh) to help with this. This assumes there is an ECR repository already set up with the name `hma-lambda-dev` in your aws account. Run the script after providing a `DOCKER_TAG` environment variable. 
 
