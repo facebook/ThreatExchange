@@ -195,13 +195,13 @@ $ threatexchange fetch
 
 ```
 # Step 1 - TX_ACCESS_TOKEN Environment variable - comma separated
-$ TX_STOPNCII_KEYS='<SUBSCRIPTION_KEY>,<FUNCTION_KEY>'
+$ TX_STOPNCII_KEYS='<FUNCTION_KEY>,<SUBSCRIPTION_KEY>'
 $ export TX_STOPNCII_KEYS
 
 # Step 1 Alternative - ~/.tx_stopncii_keys file
 $ touch ~/.tx_stopncii_keys
 $ chmod 600 ~/.tx_stopncii_keys
-$ echo '<SUBSCRIPTION_KEY>,<FUNCTION_KEY>' > ~/.tx_stopncii_keys
+$ echo '<FUNCTION_KEY>,<SUBSCRIPTION_KEY>' > ~/.tx_stopncii_keys
 
 # Step 2 - set up config
 $ threatexchange config collab edit stop_ncii --create 'StopNCII' 
