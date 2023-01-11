@@ -6,7 +6,7 @@ python-threatexchange is designed to be extensible and comes with a simple model
 
 To get similar functionality in a deployable service, check out hasher-matcher-actioner.
 
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/facebook/ThreatExchange/python-threatexchange%20CI) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/threatexchange) ![PyPI - Downloads](https://img.shields.io/pypi/dm/threatexchange) ![PyPI](https://img.shields.io/pypi/v/threatexchange) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/facebook/ThreatExchange/python-threatexchange-ci.yaml?branch=main) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/threatexchange) ![PyPI - Downloads](https://img.shields.io/pypi/dm/threatexchange) ![PyPI](https://img.shields.io/pypi/v/threatexchange) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
 
 ## Installation
 
