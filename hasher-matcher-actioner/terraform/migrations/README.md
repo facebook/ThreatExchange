@@ -21,4 +21,4 @@ You have access to variable names defined in `[migrations/variables.tf](https://
 
 # Migrations are not working?
 
-At present, their is an annoying bug. Any `python -m hmalib._foo_` command run during migration fails because terraform is not running the command from the appropriate directory. Editing the working_directory has not led to a solution. This is something we need to address.
+At present, their is an annoying bug. Any `python -m hmalib._foo_` command run during migration fails because terraform is not running the command from the appropriate directory. Editing the working_directory has not led to a solution. This is something we need to address. See [#1249](https://github.com/facebook/ThreatExchange/issues/1249)
