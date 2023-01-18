@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 
 class Hash256AndMetadata:
-    """ Container for MIH queries """
+    """Container for MIH queries"""
 
     def __init__(self, hash, metadata) -> None:
         self.hash = hash
@@ -10,7 +11,7 @@ class Hash256AndMetadata:
 
 
 class HashAndQuality:
-    """ Container for multiple-value object: the hash is a 64-character hex
+    """Container for multiple-value object: the hash is a 64-character hex
     string and the quality is an integer in the range 0..100."""
 
     def __init__(self, hash, quality) -> None:
@@ -25,7 +26,7 @@ class HashAndQuality:
 
 
 class HashesAndQuality:
-    """ Container for multiple-value object. """
+    """Container for multiple-value object."""
 
     def __init__(
         self,

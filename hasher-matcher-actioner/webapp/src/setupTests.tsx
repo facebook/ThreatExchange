@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  */
 
 // jest-dom adds custom jest matchers for asserting on DOM nodes.

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import vpdq
 import pytest
 import test_util
@@ -79,10 +79,7 @@ def test_compare_hashes():
 
         video_file = Path(f"{video_folder}/{file}.mp4")
         assert video_file.is_file()
-        ret = vpdq.computeHash(
-            input_video_filename=video_file,
-            seconds_per_hash = 0
-        )
+        ret = vpdq.computeHash(input_video_filename=video_file, seconds_per_hash=0)
         assert ret is not None
         test_hashes[file] = ret
 

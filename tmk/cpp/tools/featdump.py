@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import sys
 import struct
@@ -26,26 +26,33 @@ import errno
 #   // to one another on a pipe if desired
 # };
 
+
 def dump_feat(filename):
-    '''
+    """
     Reads a .feat file and prints it. See tmkiotypes.h.
-    '''
+    """
 
-    expected_project_magic = 'TMK1'
-    expected_file_type_magic = 'FEAT'
+    expected_project_magic = "TMK1"
+    expected_file_type_magic = "FEAT"
 
-    with open(filename, 'rb') as handle:
-        project_magic = handle.read(4).decode('ascii')
-        file_type_magic = handle.read(4).decode('ascii')
-        frame_feature_algorithm_magic = handle.read(4).decode('ascii')
+    with open(filename, "rb") as handle:
+        project_magic = handle.read(4).decode("ascii")
+        file_type_magic = handle.read(4).decode("ascii")
+        frame_feature_algorithm_magic = handle.read(4).decode("ascii")
 
         if project_magic != expected_project_magic:
-            msg = "File \"%s\" has project magic \"%s\" not \"%s\"." % \
-                (filename, project_magic, expected_project_magic)
+            msg = 'File "%s" has project magic "%s" not "%s".' % (
+                filename,
+                project_magic,
+                expected_project_magic,
+            )
             raise Exception(msg)
         if file_type_magic != expected_file_type_magic:
-            msg = "File \"%s\" has file-type magic \"%s\" not \"%s\"." % \
-                (filename, file_type_magic, expected_file_type_magic)
+            msg = 'File "%s" has file-type magic "%s" not "%s".' % (
+                filename,
+                file_type_magic,
+                expected_file_type_magic,
+            )
             raise Exception(msg)
 
         frame_feature_dimension = handle.read(4)
@@ -54,8 +61,8 @@ def dump_feat(filename):
         handle.read(4)  # seek past
         handle.read(4)  # seek past
 
-        frame_feature_dimension = struct.unpack('i', frame_feature_dimension)[0]
-        frames_per_second = struct.unpack('i', frames_per_second)[0]
+        frame_feature_dimension = struct.unpack("i", frame_feature_dimension)[0]
+        frames_per_second = struct.unpack("i", frames_per_second)[0]
 
         print("filename                      %s" % filename)
         print("project_magic                 %s" % project_magic)
@@ -69,8 +76,7 @@ def dump_feat(filename):
             frame_feature = handle.read(4 * frame_feature_dimension)
             if not frame_feature:
                 break
-            frame_feature = struct.unpack('f' * frame_feature_dimension,
-                frame_feature)
+            frame_feature = struct.unpack("f" * frame_feature_dimension, frame_feature)
             frame_features.append(frame_feature)
         for frame_feature in frame_features:
             print(frame_feature)

@@ -1,5 +1,6 @@
 import os
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from pdqhashing.hasher.pdq_hasher import PDQHasher
 from pdqhashing.types.hash256 import Hash256
@@ -9,9 +10,8 @@ SAMPLE_MEDIA = os.path.dirname(__file__) + "/../../../../data/"
 
 
 class PdqTest(unittest.TestCase):
-
     def get_data(self):
-      return [
+        return [
             (
                 SAMPLE_MEDIA + "misc-images/b.jpg",
                 "d8f8f0cce0f4a84f0e370a22028f67f0b36e2ed596623e1d33e6b39c4e9c9b22",
@@ -88,7 +88,7 @@ class PdqTest(unittest.TestCase):
                 SAMPLE_MEDIA + "reg-test-input/dih/bridge-8-flip-minus-1.jpg",
                 "69f05aa8a4996a17c146a2da5aaaab07b61b5b60f8fc07fc83c3d0740bfcb0fa",
             ),
-    ]
+        ]
 
     def test_trace_enabled(self) -> None:
         pdq = PDQHasher()

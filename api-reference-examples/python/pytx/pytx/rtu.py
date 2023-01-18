@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from flask.views import View
 from flask import Flask, request
 
@@ -30,14 +30,16 @@ class RTUListener(object):
     :type debug: bool
     """
 
-    def __init__(self,
-                 get_response=None,
-                 host=None,
-                 port=None,
-                 listener_url=None,
-                 callback=None,
-                 ssl_context=None,
-                 debug=False):
+    def __init__(
+        self,
+        get_response=None,
+        host=None,
+        port=None,
+        listener_url=None,
+        callback=None,
+        ssl_context=None,
+        debug=False,
+    ):
 
         self.get_response = get_response
         self.host = host
@@ -67,13 +69,14 @@ class RTUListener(object):
 
         # Setup the app and add the custom URL rule for the listener.
         self.app = Flask(__name__)
-        self.app.add_url_rule(self.listener_url,
-                              view_func=ListenerView.as_view(
-                                  self.listener_url.replace('/', ''),
-                                  callback=self.callback,
-                                  get_response=self.get_response
-                              )
-                              )
+        self.app.add_url_rule(
+            self.listener_url,
+            view_func=ListenerView.as_view(
+                self.listener_url.replace("/", ""),
+                callback=self.callback,
+                get_response=self.get_response,
+            ),
+        )
         self.app.run(
             debug=debug,
             host=host,
@@ -88,8 +91,8 @@ class ListenerView(View):
     is 'hello'.
     """
 
-    methods = ['GET', 'POST']
-    get_response = 'hello'
+    methods = ["GET", "POST"]
+    get_response = "hello"
 
     def __init__(self, callback=None, get_response=None):
         self.callback = callback or self.default_callback
@@ -102,7 +105,7 @@ class ListenerView(View):
         GET and respond with the configured GET response.
         """
 
-        if request.method == 'POST':
+        if request.method == "POST":
             return self.callback(request=request.get_json(force=True))
         return self.get_response
 
@@ -117,5 +120,5 @@ class ListenerView(View):
         :type request: dict
         """
 
-        print('POST Data: {0}'.format(request))
-        return '200 OK'
+        print("POST Data: {0}".format(request))
+        return "200 OK"

@@ -1,5 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # From: https://github.com/marketplace/actions/clang-format-check#multiple-paths
-name: clang-format Check
+name: pdq clang-format Check
 on: 
   push:
     branches:
@@ -12,7 +14,7 @@ on:
       - main
     paths:
       - "pdq/cpp/**"
-      - ".github/workflows/pdq-ci-cpp-format.yml"
+      - ".github/workflows/pdq-ci-cpp-format.yml" 
 
 jobs:
   formatting-check:
@@ -25,3 +27,4 @@ jobs:
       with:
         clang-format-version: '14'
         check-path: 'pdq/cpp'
+        exclude-regex: 'CImg\.h'

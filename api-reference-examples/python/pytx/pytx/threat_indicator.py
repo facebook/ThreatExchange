@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from .common import Common
 from .vocabulary import ThreatIndicator as ti
 from .vocabulary import ThreatExchange as t
@@ -31,5 +31,4 @@ class ThreatIndicator(Common):
         c.RELATED,
     ]
 
-    _unique = [
-    ]
+    _unique = []

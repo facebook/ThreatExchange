@@ -1,5 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 # From: https://github.com/marketplace/actions/clang-format-check#multiple-paths
-name: clang-format Check vpdq
+name: vpdq clang-format Check vpdq
 on:
   push:
     branches:

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from threatexchange.signal_type.tests.signal_type_test_helper import MatchesStrAutoTest
 

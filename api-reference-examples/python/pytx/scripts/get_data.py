@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 """
 
 This script demonstrates using pytx to query the ThreatExchange API.
@@ -32,7 +32,7 @@ from pytx import (
     ThreatDescriptor,
     ThreatExchangeMember,
     ThreatIndicator,
-    utils
+    utils,
 )
 
 from pytx.vocabulary import (
@@ -40,7 +40,7 @@ from pytx.vocabulary import (
     MalwareFamilies as MF,
     ThreatDescriptor as TD,
     ThreatExchangeMember as XM,
-    ThreatIndicator as TI
+    ThreatIndicator as TI,
 )
 
 
@@ -50,24 +50,24 @@ def main():
 
     if args.object is None:
 
-        args.object = 'exchange_member'
-        args.output = 'exchange_members.csv'
+        args.object = "exchange_member"
+        args.output = "exchange_members.csv"
         query(args)
 
-        args.object = 'malware_analysis'
-        args.output = 'malware_analyses.csv'
+        args.object = "malware_analysis"
+        args.output = "malware_analyses.csv"
         query(args)
 
-        args.object = 'malware_family'
-        args.output = 'malware_families.csv'
+        args.object = "malware_family"
+        args.output = "malware_families.csv"
         query(args)
 
-        args.object = 'threat_descriptor'
-        args.output = 'threat_descriptors.csv'
+        args.object = "threat_descriptor"
+        args.output = "threat_descriptors.csv"
         query(args)
 
-        args.object = 'threat_indicator'
-        args.output = 'threat_indicators.csv'
+        args.object = "threat_indicator"
+        args.output = "threat_indicators.csv"
         query(args)
 
     else:
@@ -85,20 +85,22 @@ def query(args):
     result_limit = 1000
 
     # write results to this stream
-    output_stream = '/dev/stdout' if not args.output else args.output
+    output_stream = "/dev/stdout" if not args.output else args.output
 
     for day in range(args.days_back):
 
         # format date parameters for HTTP request
-        until, until_str, since, since_str = utils.get_time_params(args.end_date, day, '%d-%m-%Y')
+        until, until_str, since, since_str = utils.get_time_params(
+            args.end_date, day, "%d-%m-%Y"
+        )
 
-        with open(output_stream, 'wb') as ostream:
+        with open(output_stream, "wb") as ostream:
 
-            print('Writing to %s...' % output_stream)
+            print("Writing to %s..." % output_stream)
 
             writer = csv.writer(ostream)
 
-            if args.object == 'exchange_member':
+            if args.object == "exchange_member":
 
                 engine = ThreatExchangeMember
 
@@ -106,7 +108,7 @@ def query(args):
 
                 parameters = dict()
 
-            elif args.object == 'malware_analysis':
+            elif args.object == "malware_analysis":
 
                 engine = Malware
 
@@ -131,7 +133,7 @@ def query(args):
 
                 param_fields = Malware._default_fields
                 if args.full_sample:
-                    param_fields += ['sample_size', 'sample']
+                    param_fields += ["sample_size", "sample"]
 
                 parameters = dict(
                     fields=param_fields,
@@ -142,10 +144,10 @@ def query(args):
                     status=args.status,
                     share_level=args.share_level,
                     since=since_str,
-                    until=until_str
+                    until=until_str,
                 )
 
-            elif args.object == 'malware_family':
+            elif args.object == "malware_family":
 
                 engine = MalwareFamily
 
@@ -157,7 +159,7 @@ def query(args):
                     MF.FAMILY_TYPE,
                     MF.MALICIOUS,
                     MF.NAME,
-                    MF.SAMPLE_COUNT
+                    MF.SAMPLE_COUNT,
                 ]
 
                 parameters = dict(
@@ -166,10 +168,10 @@ def query(args):
                     text=args.text,
                     strict_text=args.strict_text,
                     since=since_str,
-                    until=until_str
+                    until=until_str,
                 )
 
-            elif args.object == 'threat_descriptor':
+            elif args.object == "threat_descriptor":
 
                 engine = ThreatDescriptor
 
@@ -191,7 +193,7 @@ def query(args):
                     TD.REVIEW_STATUS,
                     TD.SEVERITY,
                     TD.SHARE_LEVEL,
-                    TD.STATUS
+                    TD.STATUS,
                 ]
 
                 parameters = dict(
@@ -208,10 +210,10 @@ def query(args):
                     strict_text=args.strict_text,
                     type_=args.indicator_type,
                     since=since_str,
-                    until=until_str
+                    until=until_str,
                 )
 
-            elif args.object == 'threat_indicator':
+            elif args.object == "threat_indicator":
 
                 engine = ThreatIndicator
 
@@ -224,7 +226,7 @@ def query(args):
                     strict_text=args.strict_text,
                     type_=args.indicator_type,
                     since=since_str,
-                    until=until_str
+                    until=until_str,
                 )
 
             objects = engine.objects(**parameters)
@@ -241,25 +243,36 @@ def parse_arguments():
 
     add = parser.add_argument
 
-    add('-d', '--days_back', help='Number of days to look back', type=int, default=1)
-    add('-e', '--end_date', help='Date upper bound (inclusive) (UTC)', type=str, default=str(datetime.utcnow()))
-    add('-f', '--full_sample', help='Full sample', action='store_true')
-    add('-i', '--indicator_type', help='Threat indicator type')
-    add('-L', '--confidence_lb', help='Confidence lower bound', type=int)
-    add('-l', '--share_level', help='Share level')
-    add('-m', '--malware_type', help='Malware sample type')
-    add('-O', '--output', help='Output stream')
-    add('-o', '--object', help='Object type')
-    add('-r', '--review_status', help='Review status')
-    add('-s', '--status', help='Status')
-    add('-T', '--strict_text', help='Strict text query (no wildcards)', action='store_true')
-    add('-t', '--text', help='Text query')
-    add('-U', '--confidence_ub', help='Confidence upper bound', type=int)
-    add('-w', '--owner', help='Comma-separated list of AppIDs')
-    add('-x', '--include_expired', help='Include expired data', action='store_true')
+    add("-d", "--days_back", help="Number of days to look back", type=int, default=1)
+    add(
+        "-e",
+        "--end_date",
+        help="Date upper bound (inclusive) (UTC)",
+        type=str,
+        default=str(datetime.utcnow()),
+    )
+    add("-f", "--full_sample", help="Full sample", action="store_true")
+    add("-i", "--indicator_type", help="Threat indicator type")
+    add("-L", "--confidence_lb", help="Confidence lower bound", type=int)
+    add("-l", "--share_level", help="Share level")
+    add("-m", "--malware_type", help="Malware sample type")
+    add("-O", "--output", help="Output stream")
+    add("-o", "--object", help="Object type")
+    add("-r", "--review_status", help="Review status")
+    add("-s", "--status", help="Status")
+    add(
+        "-T",
+        "--strict_text",
+        help="Strict text query (no wildcards)",
+        action="store_true",
+    )
+    add("-t", "--text", help="Text query")
+    add("-U", "--confidence_ub", help="Confidence upper bound", type=int)
+    add("-w", "--owner", help="Comma-separated list of AppIDs")
+    add("-x", "--include_expired", help="Include expired data", action="store_true")
 
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

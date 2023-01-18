@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 set -e
 
@@ -33,7 +33,7 @@ elif [ $1 == "local" ]; then
     pip uninstall -y threatexchange # remove from current site-packages
 
     # Clean up existing installation
-    if [ -d $LOCAL_LIB_LOCATION ]; then 
+    if [ -d $LOCAL_LIB_LOCATION ]; then
         printf 'Found existing installation of local-threatexchange. Deleting...\n'
         rm -r $LOCAL_LIB_LOCATION
     else
@@ -49,7 +49,7 @@ elif [ $1 == "local" ]; then
     find . -type f \( \
         -name "*.py" \
         -o -name "*.rst" \
-        -o -name "*.md"  \
+        -o -name "*.md" \
         -o -name "*.txt" \
         -o -name "PKG-INFO" \
         \) -exec cp --parents {} ../hasher-matcher-actioner/$LOCAL_LIB_LOCATION \;

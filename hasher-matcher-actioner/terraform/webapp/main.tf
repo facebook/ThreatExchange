@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 resource "aws_s3_bucket" "webapp" {
   bucket = "${var.organization}-${var.prefix}-hma-webapp"

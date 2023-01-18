@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # First define the Indexing Schedule
 resource "aws_cloudwatch_event_rule" "indexing_trigger" {

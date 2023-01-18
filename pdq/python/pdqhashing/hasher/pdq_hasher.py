@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import math
 import time
@@ -13,7 +13,7 @@ from pdqhashing.utils.matrix import MatrixUtil
 
 
 class PDQHasher:
-    """ The only class state is the DCT matrix, so this class may either be
+    """The only class state is the DCT matrix, so this class may either be
     instantiated once per image, or instantiated once and used for all images;
     the latter will be slightly faster as the DCT matrix will not need to be
     recomputed once per image. Methods are threadsafe."""
@@ -61,7 +61,7 @@ class PDQHasher:
         return d
 
     def __init__(self) -> None:
-        """ Christoph Zauner 'Implementation and Benchmarking of Perceptual
+        """Christoph Zauner 'Implementation and Benchmarking of Perceptual
         Image Hash Functions' 2010
 
         See also comments on dct64To16. Input is (0..63)x(0..63); output is
@@ -306,7 +306,7 @@ class PDQHasher:
 
     @classmethod
     def computePDQImageDomainQualityMetric(cls, buffer64x64):
-        """ This is all heuristic (see the PDQ hashing doc). Quantization
+        """This is all heuristic (see the PDQ hashing doc). Quantization
         matters since we want to count *significant* gradients, not just the
         some of many small ones. The constants are all manually selected, and
         tuned as described in the document.
@@ -330,7 +330,7 @@ class PDQHasher:
         return quality
 
     def dct64To16(self, A, T, B):
-        """ Full 64x64 to 64x64 can be optimized e.g. the Lee algorithm.
+        """Full 64x64 to 64x64 can be optimized e.g. the Lee algorithm.
         But here we only want slots (1-16)x(1-16) of the full 64x64 output.
         Careful experiments showed that using Lee along all 64 slots in one
         dimension, then Lee along 16 slots in the second, followed by
@@ -452,7 +452,7 @@ class PDQHasher:
 
     @classmethod
     def computeJaroszFilterWindowSize(cls, dimension):
-        """ Round up. See comments at top of file for details. """
+        """Round up. See comments at top of file for details."""
         return int(
             (dimension + cls.PDQ_JAROSZ_WINDOW_SIZE_DIVISOR - 1)
             / cls.PDQ_JAROSZ_WINDOW_SIZE_DIVISOR

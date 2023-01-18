@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 output "submit_topic_arn" {
   value = aws_sns_topic.submit_event_notification_topic.arn

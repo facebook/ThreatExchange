@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
  * TODO: typescript supports enums. However, all files that use enums from here
  * need to be converted to typescript before we can change this file into

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import json
 
 from .access_token import get_access_token
@@ -6,9 +6,7 @@ from .request import Broker
 
 from .vocabulary import Batch as b
 from .vocabulary import ThreatExchange as t
-from .errors import (
-    pytxFetchError
-)
+from .errors import pytxFetchError
 
 
 class Batch(object):
@@ -25,10 +23,10 @@ class Batch(object):
     @classmethod
     def get_relative(cls, url):
         """
-         Parse the full URL to get the relative URL.
+        Parse the full URL to get the relative URL.
         """
 
-        return url.replace(t.URL, '')
+        return url.replace(t.URL, "")
 
     @classmethod
     def prepare_single_request(cls, request, name=None):
@@ -42,21 +40,21 @@ class Batch(object):
         :returns: dict
         """
 
-        d = {b.METHOD: request.get('type',
-                                   request.get('method', 'GET')),
-             b.RELATIVE_URL: Batch.get_relative(request.get('url',
-                                                            request.get('relative_url', '')))}
-        body = request.get('body', None)
+        d = {
+            b.METHOD: request.get("type", request.get("method", "GET")),
+            b.RELATIVE_URL: Batch.get_relative(
+                request.get("url", request.get("relative_url", ""))
+            ),
+        }
+        body = request.get("body", None)
         if body:
             d[b.BODY] = body
         if name:
-            d['name'] = name
+            d["name"] = name
         return d
 
     @classmethod
-    def submit(cls,
-               *args,
-               **kwargs):
+    def submit(cls, *args, **kwargs):
         """
         Submit batch request. All non-named args are considered to be
         dictionaries containing the following:
@@ -91,41 +89,45 @@ class Batch(object):
         """
 
         batch = []
-        retries = kwargs.get('retries', None)
+        retries = kwargs.get("retries", None)
         if retries:
-            del kwargs['retries']
-        headers = kwargs.get('headers', None)
+            del kwargs["retries"]
+        headers = kwargs.get("headers", None)
         if headers:
-            del kwargs['headers']
-        proxies = kwargs.get('proxies', None)
+            del kwargs["headers"]
+        proxies = kwargs.get("proxies", None)
         if proxies:
-            del kwargs['proxies']
-        verify = kwargs.get('verify', None)
+            del kwargs["proxies"]
+        verify = kwargs.get("verify", None)
         if verify:
-            del kwargs['verify']
-        include_headers = kwargs.get('include_headers', None)
+            del kwargs["verify"]
+        include_headers = kwargs.get("include_headers", None)
         if include_headers:
-            del kwargs['include_headers']
+            del kwargs["include_headers"]
             include_headers = Broker.sanitize_bool(include_headers)
-        omit_response = kwargs.get('omit_response', None)
+        omit_response = kwargs.get("omit_response", None)
         if omit_response:
-            del kwargs['omit_response']
+            del kwargs["omit_response"]
             omit_response = Broker.sanitize_bool(omit_response)
 
         for arg in args:
             batch.append(Batch.prepare_single_request(arg))
         for key, value in kwargs.iteritems():
             batch.append(Batch.prepare_single_request(value, name=key))
-        params = {t.ACCESS_TOKEN: get_access_token(),
-                  t.BATCH: json.dumps(batch),
-                  t.INCLUDE_HEADERS: include_headers,
-                  t.OMIT_RESPONSE_ON_SUCCESS: omit_response}
+        params = {
+            t.ACCESS_TOKEN: get_access_token(),
+            t.BATCH: json.dumps(batch),
+            t.INCLUDE_HEADERS: include_headers,
+            t.OMIT_RESPONSE_ON_SUCCESS: omit_response,
+        }
         try:
-            return Broker.post(t.URL,
-                               params=params,
-                               retries=retries,
-                               headers=headers,
-                               proxies=proxies,
-                               verify=verify)
+            return Broker.post(
+                t.URL,
+                params=params,
+                retries=retries,
+                headers=headers,
+                proxies=proxies,
+                verify=verify,
+            )
         except:
-            raise pytxFetchError('Error with batch request.')
+            raise pytxFetchError("Error with batch request.")

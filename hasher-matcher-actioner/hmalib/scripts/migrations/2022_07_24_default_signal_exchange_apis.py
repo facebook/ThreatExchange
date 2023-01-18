@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from hmalib.common.configs.tx_apis import add_signal_exchange_api
 from hmalib.scripts.migrations.migrations_base import MigrationBase

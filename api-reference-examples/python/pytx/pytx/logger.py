@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import logging
 
 __LOG = None
@@ -35,12 +35,12 @@ def setup_logger(log_file=None):
     global __LOG
 
     if log_file is not None:
-        __LOG = logging.getLogger('pytx')
+        __LOG = logging.getLogger("pytx")
         __LOG.setLevel(logging.DEBUG)
         fh = logging.FileHandler(log_file)
         fh.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
-            '%(asctime)s : %(name)s : %(levelname)s : %(message)s'
+            "%(asctime)s : %(name)s : %(levelname)s : %(message)s"
         )
         fh.setFormatter(formatter)
         __LOG.addHandler(fh)

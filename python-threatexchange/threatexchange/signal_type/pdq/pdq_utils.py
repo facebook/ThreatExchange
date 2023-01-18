@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 BITS_IN_PDQ = 256
 PDQ_HEX_STR_LEN = int(BITS_IN_PDQ / 4)

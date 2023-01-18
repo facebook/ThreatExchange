@@ -1,8 +1,9 @@
 # pyre-strict
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from pdqhashing.types.exceptions import PDQHashFormatException
 from pdqhashing.types.hash256 import Hash256
 import unittest
+
 
 class Hash256Test(unittest.TestCase):
     SAMPLE_HASH = "9c151c3af838278e3ef57c180c7d031c07aefd12f2ccc1e18f2a1e1c7d0ff163"

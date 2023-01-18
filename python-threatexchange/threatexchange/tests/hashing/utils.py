@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import random
 from functools import reduce
 from threatexchange.signal_type.pdq.pdq_utils import PDQ_HEX_STR_LEN, BITS_IN_PDQ

@@ -1,4 +1,4 @@
-REM Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+REM Copyright (c) Meta Platforms, Inc. and affiliates.
 @ECHO OFF
 
 REM Command file for Sphinx documentation

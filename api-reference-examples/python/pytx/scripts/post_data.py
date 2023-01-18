@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 """
 
 This script demonstrates using pytx to publish data to the ThreatExchange API. 
@@ -32,17 +32,17 @@ def parse_arguments():
 
     add = parser.add_argument
 
-    add('-d', '--description')
-    add('-i', '--indicator')
-    add('-l', '--share_level')
-    add('-m', '--privacy_members')
-    add('-p', '--privacy_type')
-    add('-s', '--status')
-    add('-T', '--tags')
-    add('-t', '--type')
+    add("-d", "--description")
+    add("-i", "--indicator")
+    add("-l", "--share_level")
+    add("-m", "--privacy_members")
+    add("-p", "--privacy_type")
+    add("-s", "--status")
+    add("-T", "--tags")
+    add("-t", "--type")
 
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 resource "aws_s3_bucket_public_access_block" "data_bucket" {
   bucket = var.data_bucket.bucket_name

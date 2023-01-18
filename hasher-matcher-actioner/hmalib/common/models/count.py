@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 """ Refer to hmalib.lambdas.ddb_stream_counter.lambda_handler's doc string to
 understand how these models are used. """

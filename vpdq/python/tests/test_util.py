@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import vpdq
 import typing as t
 
@@ -19,7 +19,9 @@ def read_file_to_hash(input_hash_filename: str) -> t.List[vpdq.VpdqFeature]:
         line = line.strip()
         content = line.split(",")
         pdq_hash = vpdq.str_to_hash(content[2])
-        feature = vpdq.VpdqFeature(int(content[1]), int(content[0]), pdq_hash, float(content[3]))
+        feature = vpdq.VpdqFeature(
+            int(content[1]), int(content[0]), pdq_hash, float(content[3])
+        )
         hash.append(feature)
 
     return hash

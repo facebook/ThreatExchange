@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import typing as t
 from threatexchange.extensions.vpdq.vpdq_util import VpdqCompactFeature
 from threatexchange.tests.hashing.utils import get_random_hash

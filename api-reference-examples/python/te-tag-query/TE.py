@@ -1,5 +1,5 @@
 # ================================================================
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 # ================================================================
 
 # General Python dependencies
@@ -364,7 +364,6 @@ class Net:
             descriptorBatchProcessorCallback(descriptors)
 
             pageIndex += 1
-
 
     # ----------------------------------------------------------------
     # Returns error message or None.

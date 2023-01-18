@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent

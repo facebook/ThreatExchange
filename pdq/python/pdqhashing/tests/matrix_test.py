@@ -1,7 +1,8 @@
 # pyre-strict
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from pdqhashing.utils.matrix import MatrixUtil
 import unittest
+
 
 class MatrixTest(unittest.TestCase):
     def test_torben(self) -> None:

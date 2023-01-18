@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # Allow import of threatexchange.signal_type.pdq.PdqSignal consistent with other
 # signal types.

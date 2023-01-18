@@ -4,7 +4,7 @@
 # TODO: pin version later. Otherwise starting up will be too slow.
 # Note: We specify AMD64 architecture as it is currently the only one supported for this devcontainer
 # relevant for ARM architecture machines as using `python:3.8-buster` will have it try to use that instead
-FROM amd64/python:3.8-buster
+FROM amd64/python:3.9-buster
 
 # [Unixname wrestling]
 # Some of our script (docker-related) are dependent on the unixname. Would 
