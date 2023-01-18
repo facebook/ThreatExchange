@@ -1,4 +1,6 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+// See https://aka.ms/new-console-template for more information
 //create object of chrome options
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;

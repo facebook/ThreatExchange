@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 var http = require("http"),
     url = require("url"),
     path = require("path"),

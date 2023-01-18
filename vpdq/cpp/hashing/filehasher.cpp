@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #include <math.h>
 #include <stdio.h>
 #include <fstream>

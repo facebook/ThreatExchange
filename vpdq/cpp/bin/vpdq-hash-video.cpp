@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #include <vector>
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>

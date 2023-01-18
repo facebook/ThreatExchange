@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /* Hashing Lambda Configuration Begins
  *

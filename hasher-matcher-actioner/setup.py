@@ -27,7 +27,7 @@ setup(
         "threatexchange[faiss,pdq_hasher]==1.0.3",
         "bottle==0.12.20",
         "apig-wsgi==2.13.0",
-        "pyjwt[crypto]==2.1.0",
+        "pyjwt[crypto]==2.4.0",
         "methodtools==0.4.5",
         "requests==2.27.1",
     ],

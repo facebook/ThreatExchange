@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 ## Integrations Lambda - maybe move to its own module
 data "aws_iam_policy_document" "lambda_assume_role" {
   statement {
@@ -22,15 +24,15 @@ resource "aws_lambda_function" "integrations" {
   memory_size = 512
   # hard coded for now in lambda. Should eventually becoem terraform variables
   #environment {
-    #variables = {
-    #  API_TOKEN = var.api_token
-    #  HMA_API_GATEWAY_URL  = var.api_url
-    #  WORKPLACE_APP_SECRET = var.workplace_app_secret
-    #}
+  #variables = {
+  #  API_TOKEN = var.api_token
+  #  HMA_API_GATEWAY_URL  = var.api_url
+  #  WORKPLACE_APP_SECRET = var.workplace_app_secret
+  #}
   #}
   tags = {
-      Name = "IntegrationsFunction"
-    }
+    Name = "IntegrationsFunction"
+  }
 }
 
 resource "aws_cloudwatch_log_group" "integrations" {

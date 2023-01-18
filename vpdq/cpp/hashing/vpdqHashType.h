@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #include <pdq/cpp/common/pdqhashtypes.h>
 
 #ifndef VPDQHASHTYPE_H

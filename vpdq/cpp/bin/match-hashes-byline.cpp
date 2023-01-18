@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #include <cstring>
 #include <pdq/cpp/io/hashio.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>

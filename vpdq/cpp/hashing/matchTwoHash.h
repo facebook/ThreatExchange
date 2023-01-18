@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 
 #ifndef MATCHTWOHASH_H

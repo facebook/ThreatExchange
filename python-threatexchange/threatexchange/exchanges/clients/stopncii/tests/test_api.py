@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import pytest
 import typing as t
 from threatexchange.exchanges.clients.stopncii.api import (

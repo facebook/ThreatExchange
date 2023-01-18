@@ -1,4 +1,6 @@
-﻿using OpenQA.Selenium;
+﻿// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+using OpenQA.Selenium;
 
 namespace WebAssemblySeleniumWebDriver.Services {
     public class PDQMD5Hashing {

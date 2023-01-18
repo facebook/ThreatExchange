@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #ifndef BUFFERHASHERS_H
 #define BUFFERHASHERS_H
 

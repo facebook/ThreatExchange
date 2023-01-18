@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import tempfile
 from threatexchange.cli.tests.e2e_test_helper import ThreatExchangeCLIE2eTest
 from threatexchange.signal_type.md5 import VideoMD5Signal

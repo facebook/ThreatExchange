@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 export type Collab = {
   name: string;
   import_as_bank_id: string;

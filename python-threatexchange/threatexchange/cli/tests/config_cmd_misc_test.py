@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import pytest
 from threatexchange.cli.tests.e2e_test_helper import (
     ThreatExchangeCLIE2eHelper,
