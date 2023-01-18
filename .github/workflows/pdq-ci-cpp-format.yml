@@ -14,7 +14,7 @@ on:
       - main
     paths:
       - "pdq/cpp/**"
-      - ".github/workflows/pdq-ci-cpp-format.yml"
+      - ".github/workflows/pdq-ci-cpp-format.yml" 
 
 jobs:
   formatting-check:
@@ -27,3 +27,4 @@ jobs:
       with:
         clang-format-version: '14'
         check-path: 'pdq/cpp'
+        exclude-regex: 'CImg\.h'
