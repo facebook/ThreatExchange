@@ -1,3 +1,4 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 output "durable_fs_security_group_ids" {
   value = [module.lcc_efs_vpc.default_security_group_id]

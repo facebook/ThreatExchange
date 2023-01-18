@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 from unittest.mock import Mock
 import urllib.parse
 import typing as t

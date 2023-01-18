@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import subprocess
 import os
 import sys
@@ -5,9 +7,7 @@ import argparse
 
 
 def get_argparse() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(
-        description=__doc__
-    )
+    ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "-f",
         "--ffmpegPath",

@@ -1,4 +1,6 @@
-﻿namespace WebAssemblySeleniumWebDriver.Utils {
+﻿// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+namespace WebAssemblySeleniumWebDriver.Utils {
     public class FileUtils {
         // This method accepts two strings the represent two files to
         // compare. A return value of 0 indicates that the contents of the files

@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #include <stdio.h>
 extern "C" {
 #include <libavcodec/avcodec.h>

@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 variable "prefix" {
   description = "Prefix to use for resource names"
   type        = string

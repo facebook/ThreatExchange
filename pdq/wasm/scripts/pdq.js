@@ -1,3 +1,5 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
 // Import hash wasm library for generating MD5 hash.
 import { createMD5 } from '../node_modules/hash-wasm/dist/index.esm.min.js';
 //import the library to talk to imagemagick

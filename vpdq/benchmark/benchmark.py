@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 from numpy import hamming
 import vpdq
 import subprocess
