@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # You may need
 #   sudo pip install pillow
@@ -19,21 +19,21 @@ import errno
 
 
 def dump_vstr(filename, frame_height, frame_width):
-    '''
+    """
     Reads a raw RGB-frame-rasters file and prints it.
-    '''
+    """
 
-    with open(filename, 'rb') as handle:
+    with open(filename, "rb") as handle:
 
-        prefix = os.path.basename(filename).replace('.rgb', '')
+        prefix = os.path.basename(filename).replace(".rgb", "")
         fno = 0
         while True:
             frame = handle.read(3 * frame_height * frame_width)
             if not frame:
                 break
-            image = Image.frombytes('RGB', (frame_width, frame_height), frame)
+            image = Image.frombytes("RGB", (frame_width, frame_height), frame)
             fname = "%s-%08d.jpg" % (prefix, fno)
-            image.save(fname, format='jpeg')
+            image.save(fname, format="jpeg")
             print(fname)
             fno += 1
 

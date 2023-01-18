@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 locals {
   common_tags = {
     "HMAPrefix" = var.prefix

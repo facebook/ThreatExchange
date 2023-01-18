@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # ================================================================
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # ================================================================
 # Example technique for retrieving all descriptors with a given tag from
@@ -655,7 +655,7 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descr
             elif option == "--help":
                 self.usage(0)
 
-            elif option == "--limit" or option == 'page-size':
+            elif option == "--limit" or option == "page-size":
                 if len(args) < 1:
                     self.usage(1)
                 urlParams["limit"] = args[0]
@@ -710,7 +710,7 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descr
                 args = args[1:]
 
             elif option == "--strict-text":
-                urlParams["strict_text"] = 'true'
+                urlParams["strict_text"] = "true"
 
             elif option == "--tag" or option == "--tags":
                 if len(args) < 1:
@@ -719,7 +719,7 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descr
                 args = args[1:]
 
             elif option == "--tags-are-anded":
-                urlParams["tags_are_anded"] = 'true'
+                urlParams["tags_are_anded"] = "true"
 
             elif option == "--text":
                 if len(args) < 1:
@@ -746,22 +746,29 @@ https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descr
                 )
                 sys.exit(1)
 
-        if urlParams.get('since') is None:
+        if urlParams.get("since") is None:
             eprint("%s %s: --since is required" % (self.progName, self.verbName))
             self.usage(1)
         if len(args) > 0:
-            eprint("%s %s: extraneous argument(s) %s" % (self.progName, self.verbName, ", ".join(args)))
+            eprint(
+                "%s %s: extraneous argument(s) %s"
+                % (self.progName, self.verbName, ", ".join(args))
+            )
             self.usage(1)
 
-        descriptorBatchProcessor = lambda descriptorBatch: self.DescriptorBatchProcessor(descriptorBatch, options)
+        descriptorBatchProcessor = (
+            lambda descriptorBatch: self.DescriptorBatchProcessor(
+                descriptorBatch, options
+            )
+        )
 
         TE.Net.doPowerSearch(descriptorBatchProcessor, urlParams, options)
-
 
     def DescriptorBatchProcessor(self, descriptorBatch, options):
         for descriptor in descriptorBatch:
             # Stub processing -- one would perhaps integrate with one's own system
             print(json.dumps(descriptor))
+
 
 # ================================================================
 class PaginateHandler(SubcommandHandler):

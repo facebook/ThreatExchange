@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 """
 Script to benchmark performance of vpdq brute_force, index with faiss and faiss only

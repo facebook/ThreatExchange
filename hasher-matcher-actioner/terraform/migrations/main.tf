@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # Chronologically add migration items that are necessary for a new version to
 # operate. terraform is already doing the state-management of the HMA versions.

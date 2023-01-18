@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 variable "matches_sns_topic_arn" {
   description = "ARN for the topic that collects matches from matchers."

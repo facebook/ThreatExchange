@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # The three resource configurations below were directly copied to
 # /authentication-shared/main.tf and adjusted so that their names were

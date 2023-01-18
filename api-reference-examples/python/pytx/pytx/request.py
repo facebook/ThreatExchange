@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import json
 import requests
 import urllib
@@ -13,10 +13,7 @@ from .vocabulary import ThreatExchange as t
 from .vocabulary import Paging as p
 from .vocabulary import PagingCursor as pc
 from .vocabulary import Response as R
-from .errors import (
-    pytxFetchError,
-    pytxValueError
-)
+from .errors import pytxFetchError, pytxValueError
 
 
 class Broker(object):
@@ -100,10 +97,10 @@ class Broker(object):
         :returns: str, None
         """
 
-        if value in (True, 'true', 'True', 1):
-            value = 'true'
-        elif value in (False, 'false', 'False', 0):
-            value = 'false'
+        if value in (True, "true", "True", 1):
+            value = "true"
+        elif value in (False, "false", "False", 0):
+            value = "false"
         else:
             value = None
         return value
@@ -121,8 +118,8 @@ class Broker(object):
         if resp.status_code != 200:
             error = json.loads(resp.text).get(R.ERROR, None)
             response = {}
-            response['status_code'] = resp.status_code
-            response['url'] = resp.url
+            response["status_code"] = resp.status_code
+            response["url"] = resp.url
             if error:
                 response[R.MESSAGE] = error.get(R.MESSAGE, None)
                 response[R.TYPE] = error.get(R.TYPE, None)
@@ -132,7 +129,7 @@ class Broker(object):
         try:
             results = json.loads(resp.text)
         except:
-            raise pytxFetchError('Unable to convert response to JSON.')
+            raise pytxFetchError("Unable to convert response to JSON.")
         return results
 
     @classmethod
@@ -156,24 +153,26 @@ class Broker(object):
             cls.validate_limit(limit)
 
     @classmethod
-    def build_get_parameters(cls,
-                             text=None,
-                             strict_text=None,
-                             type_=None,
-                             sample_type=None,
-                             fields=None,
-                             limit=None,
-                             since=None,
-                             until=None,
-                             include_expired=None,
-                             max_confidence=None,
-                             min_confidence=None,
-                             owner=None,
-                             status=None,
-                             review_status=None,
-                             share_level=None,
-                             sort_by=None,
-                             sort_order=None):
+    def build_get_parameters(
+        cls,
+        text=None,
+        strict_text=None,
+        type_=None,
+        sample_type=None,
+        fields=None,
+        limit=None,
+        since=None,
+        until=None,
+        include_expired=None,
+        max_confidence=None,
+        min_confidence=None,
+        owner=None,
+        status=None,
+        review_status=None,
+        share_level=None,
+        sort_by=None,
+        sort_order=None,
+    ):
         """
         Validate arguments and convert them into GET parameters.
 
@@ -226,7 +225,7 @@ class Broker(object):
         if type_:
             params[t.TYPE] = type_
         if fields:
-            params[t.FIELDS] = ','.join(fields) if isinstance(fields, list) else fields
+            params[t.FIELDS] = ",".join(fields) if isinstance(fields, list) else fields
         if limit:
             params[t.LIMIT] = limit
         if since:
@@ -268,20 +267,16 @@ class Broker(object):
         if retries is None:
             retries = 0
         session = requests.Session()
-        session.mount('https://',
-                      requests.adapters.HTTPAdapter(
-                          max_retries=Retry(total=retries,
-                                            status_forcelist=[500, 503]
-                                            )
-                      ))
+        session.mount(
+            "https://",
+            requests.adapters.HTTPAdapter(
+                max_retries=Retry(total=retries, status_forcelist=[500, 503])
+            ),
+        )
         return session
 
     @classmethod
-    def request_dict(cls,
-                     type_,
-                     url,
-                     params=None,
-                     body=None):
+    def request_dict(cls, type_, url, params=None, body=None):
         """
         Return a dictionary with the request type, URL, and optionally a body.
 
@@ -301,18 +296,12 @@ class Broker(object):
         full_url = prep.url
         if body:
             body = urllib.urlencode(body)
-        return {'type': type_,
-                'url': full_url,
-                'body': body}
+        return {"type": type_, "url": full_url, "body": body}
 
     @classmethod
-    def get(cls,
-            url,
-            params=None,
-            retries=None,
-            headers=None,
-            proxies=None,
-            verify=None):
+    def get(
+        cls, url, params=None, retries=None, headers=None, proxies=None, verify=None
+    ):
         """
         Send a GET request.
 
@@ -342,21 +331,15 @@ class Broker(object):
 
         params[t.ACCESS_TOKEN] = get_access_token()
         session = cls.build_session(retries)
-        resp = session.get(url,
-                           params=params,
-                           headers=headers,
-                           proxies=proxies,
-                           verify=verify)
+        resp = session.get(
+            url, params=params, headers=headers, proxies=proxies, verify=verify
+        )
         return cls.handle_results(resp)
 
     @classmethod
-    def post(cls,
-             url,
-             params=None,
-             retries=None,
-             headers=None,
-             proxies=None,
-             verify=None):
+    def post(
+        cls, url, params=None, retries=None, headers=None, proxies=None, verify=None
+    ):
         """
         Send a POST request.
 
@@ -386,21 +369,15 @@ class Broker(object):
 
         params[t.ACCESS_TOKEN] = get_access_token()
         session = cls.build_session(retries)
-        resp = session.post(url,
-                            params=params,
-                            headers=headers,
-                            proxies=proxies,
-                            verify=verify)
+        resp = session.post(
+            url, params=params, headers=headers, proxies=proxies, verify=verify
+        )
         return cls.handle_results(resp)
 
     @classmethod
-    def delete(cls,
-               url,
-               params=None,
-               retries=None,
-               headers=None,
-               proxies=None,
-               verify=None):
+    def delete(
+        cls, url, params=None, retries=None, headers=None, proxies=None, verify=None
+    ):
         """
         Send a DELETE request.
 
@@ -430,23 +407,23 @@ class Broker(object):
 
         params[t.ACCESS_TOKEN] = get_access_token()
         session = cls.build_session(retries)
-        resp = session.delete(url,
-                              params=params,
-                              headers=headers,
-                              proxies=proxies,
-                              verify=verify)
+        resp = session.delete(
+            url, params=params, headers=headers, proxies=proxies, verify=verify
+        )
         return cls.handle_results(resp)
 
     @classmethod
-    def get_generator(cls,
-                      klass,
-                      url,
-                      to_dict=False,
-                      params=None,
-                      retries=None,
-                      headers=None,
-                      proxies=None,
-                      verify=None):
+    def get_generator(
+        cls,
+        klass,
+        url,
+        to_dict=False,
+        params=None,
+        retries=None,
+        headers=None,
+        proxies=None,
+        verify=None,
+    ):
         """
         Generator for managing GET requests. For each GET request it will yield
         the next object in the results until there are no more objects. If the
@@ -475,7 +452,7 @@ class Broker(object):
         """
 
         if not klass:
-            raise pytxValueError('Must provide a valid object to query.')
+            raise pytxValueError("Must provide a valid object to query.")
         if not params:
             params = dict()
         if headers is None:
@@ -486,33 +463,29 @@ class Broker(object):
             verify = get_verify()
         next_ = True
         while next_:
-            results = cls.get(url,
-                              params=params,
-                              retries=retries,
-                              headers=headers,
-                              proxies=proxies,
-                              verify=verify)
+            results = cls.get(
+                url,
+                params=params,
+                retries=retries,
+                headers=headers,
+                proxies=proxies,
+                verify=verify,
+            )
             if do_log():
                 try:
                     has_paging = results.get(t.PAGING, None)
-                    before = ''
-                    after = ''
+                    before = ""
+                    after = ""
                     if has_paging is not None:
-                        before = results[t.PAGING][p.CURSORS].get(pc.BEFORE,
-                                                                  'None'
-                                                                  )
-                        after = results[t.PAGING][p.CURSORS].get(pc.AFTER,
-                                                                 'None'
-                                                                 )
+                        before = results[t.PAGING][p.CURSORS].get(pc.BEFORE, "None")
+                        after = results[t.PAGING][p.CURSORS].get(pc.AFTER, "None")
                     count = len(results[t.DATA])
                     log_message(
-                        'Cursor: BEFORE: %s, AFTER: %s, LEN: %d' % (before,
-                                                                    after,
-                                                                    count
-                                                                    )
+                        "Cursor: BEFORE: %s, AFTER: %s, LEN: %d"
+                        % (before, after, count)
                     )
                 except Exception as e:
-                    log_message('Missing key in response: %s' % e)
+                    log_message("Missing key in response: %s" % e)
             for data in results[t.DATA]:
                 if to_dict:
                     yield data
@@ -521,7 +494,7 @@ class Broker(object):
             try:
                 next_ = results[t.PAGING][t.NEXT]
             except:
-                log_message('No next in Pager to follow.')
+                log_message("No next in Pager to follow.")
                 next_ = False
             if next_:
                 url = next_

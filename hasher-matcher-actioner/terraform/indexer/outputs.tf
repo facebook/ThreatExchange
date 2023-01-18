@@ -1,5 +1,5 @@
 
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 output "indexer_function_name" {
   value = aws_lambda_function.indexer.function_name

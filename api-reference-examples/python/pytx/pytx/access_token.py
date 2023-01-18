@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 import os
 
 from .errors import pytxAccessTokenError
@@ -19,7 +19,7 @@ def _read_token_file(token_file):
     :raises: :class:`errors.pytxAccessTokenError`
     """
     try:
-        with open(token_file, 'r') as infile:
+        with open(token_file, "r") as infile:
             return infile.readline().strip()
     except IOError as e:
         raise pytxAccessTokenError(str(e))
@@ -38,7 +38,7 @@ def get_access_token():
         access_token()
 
     if not __ACCESS_TOKEN:
-        raise pytxAccessTokenError('Must access_token() before instantiating')
+        raise pytxAccessTokenError("Must access_token() before instantiating")
 
     return __ACCESS_TOKEN
 
@@ -50,14 +50,14 @@ def get_app_id():
 
     token = get_access_token()
     try:
-        return token.split('|')[0]
+        return token.split("|")[0]
     except:
-        raise pytxAccessTokenError('Could not derive app-id from token')
+        raise pytxAccessTokenError("Could not derive app-id from token")
 
 
 def _find_token_file():
-    for loc in [os.curdir, os.path.expanduser('~')]:
-        filepath = os.path.join(loc, '.pytx')
+    for loc in [os.curdir, os.path.expanduser("~")]:
+        filepath = os.path.join(loc, ".pytx")
         if os.path.exists(filepath):
             return filepath
 
@@ -88,7 +88,7 @@ def access_token(app_id=None, app_secret=None, token_file=None):
 
     # 1. Use the concatenation of the app_id and app_secret parameters
     if app_id and app_secret:
-        __ACCESS_TOKEN = app_id + '|' + app_secret
+        __ACCESS_TOKEN = app_id + "|" + app_secret
         return
 
     # 2. Use the value of the 'TX_ACCESS_TOKEN' environment variable.
@@ -100,7 +100,7 @@ def access_token(app_id=None, app_secret=None, token_file=None):
     env_app_id = os.environ.get(te.TX_APP_ID, None)
     env_app_secret = os.environ.get(te.TX_APP_SECRET, None)
     if env_app_id and env_app_secret:
-        __ACCESS_TOKEN = env_app_id + '|' + env_app_secret
+        __ACCESS_TOKEN = env_app_id + "|" + env_app_secret
         return
 
     # 4. Use the first line of the file '$PWD/.pytx' or ~/.pytx'
@@ -114,4 +114,4 @@ def access_token(app_id=None, app_secret=None, token_file=None):
         __ACCESS_TOKEN = _read_token_file(token_file)
         return
 
-    raise pytxAccessTokenError('Unable to set access token.')
+    raise pytxAccessTokenError("Unable to set access token.")

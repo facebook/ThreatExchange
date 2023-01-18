@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  */
 
 /* eslint-disable import/prefer-default-export */

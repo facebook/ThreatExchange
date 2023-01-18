@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from .request import Broker
 
 from .vocabulary import ThreatExchange as t
@@ -11,7 +11,7 @@ class ThreatExchangeMember(object):
     _URL = t.URL + t.VERSION + t.THREAT_EXCHANGE_MEMBERS
 
     _internal = [
-        '_access_token',
+        "_access_token",
     ]
 
     _fields = [
@@ -26,8 +26,7 @@ class ThreatExchangeMember(object):
         tem.EMAIL,
     ]
 
-    _unique = [
-    ]
+    _unique = []
 
     def __init__(self, **kwargs):
         """
@@ -44,7 +43,7 @@ class ThreatExchangeMember(object):
         """
 
         if attr not in self._fields and attr not in self._internal:
-            raise pytxAttributeError('%s is not a valid attribute' % attr)
+            raise pytxAttributeError("%s is not a valid attribute" % attr)
 
         try:
             return object.__getattribute__(self, attr)
@@ -63,14 +62,16 @@ class ThreatExchangeMember(object):
         return self.__getattr__(attr)
 
     @classmethod
-    def _get_generator(cls,
-                       url,
-                       to_dict=False,
-                       params=None,
-                       retries=None,
-                       headers=None,
-                       proxies=None,
-                       verify=None):
+    def _get_generator(
+        cls,
+        url,
+        to_dict=False,
+        params=None,
+        retries=None,
+        headers=None,
+        proxies=None,
+        verify=None,
+    ):
         """
         Send the GET request and return a generator.
 
@@ -94,12 +95,14 @@ class ThreatExchangeMember(object):
         if not params:
             params = dict()
 
-        members = Broker.get(url,
-                             params=params,
-                             retries=retries,
-                             headers=headers,
-                             proxies=proxies,
-                             verify=verify).get(t.DATA, [])
+        members = Broker.get(
+            url,
+            params=params,
+            retries=retries,
+            headers=headers,
+            proxies=proxies,
+            verify=verify,
+        ).get(t.DATA, [])
         total = len(members)
         if total == t.MIN_TOTAL:
             yield None
@@ -111,13 +114,15 @@ class ThreatExchangeMember(object):
                     yield Broker.get_new(cls, member)
 
     @classmethod
-    def objects(cls,
-                full_response=False,
-                dict_generator=False,
-                retries=None,
-                headers=None,
-                proxies=None,
-                verify=None):
+    def objects(
+        cls,
+        full_response=False,
+        dict_generator=False,
+        retries=None,
+        headers=None,
+        proxies=None,
+        verify=None,
+    ):
         """
         Get a list of Threat Exchange Members
 
@@ -139,18 +144,22 @@ class ThreatExchangeMember(object):
         """
 
         if full_response:
-            return Broker.get(cls._URL,
-                              retries=retries,
-                              headers=headers,
-                              proxies=proxies,
-                              verify=verify)
+            return Broker.get(
+                cls._URL,
+                retries=retries,
+                headers=headers,
+                proxies=proxies,
+                verify=verify,
+            )
         else:
-            return cls._get_generator(cls._URL,
-                                      to_dict=dict_generator,
-                                      retries=retries,
-                                      headers=headers,
-                                      proxies=proxies,
-                                      verify=verify)
+            return cls._get_generator(
+                cls._URL,
+                to_dict=dict_generator,
+                retries=retries,
+                headers=headers,
+                proxies=proxies,
+                verify=verify,
+            )
 
     def to_dict(self):
         """
@@ -159,7 +168,5 @@ class ThreatExchangeMember(object):
         :returns: dict
         """
 
-        d = dict(
-            (n, getattr(self, n, None)) for n in self._fields
-        )
+        d = dict((n, getattr(self, n, None)) for n in self._fields)
         return d

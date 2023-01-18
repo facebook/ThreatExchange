@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 # You may need
 #   sudo pip install pillow
@@ -37,24 +37,30 @@ import errno
 
 
 def dump_vstr(filename):
-    '''
+    """
     Reads a .vstr file and prints it. See tmkiotypes.h.
-    '''
+    """
 
-    expected_project_magic = 'TMK1'
-    expected_file_type_magic = 'VSTR'
+    expected_project_magic = "TMK1"
+    expected_file_type_magic = "VSTR"
 
-    with open(filename, 'rb') as handle:
-        project_magic = handle.read(4).decode('ascii')
-        file_type_magic = handle.read(4).decode('ascii')
+    with open(filename, "rb") as handle:
+        project_magic = handle.read(4).decode("ascii")
+        file_type_magic = handle.read(4).decode("ascii")
 
         if project_magic != expected_project_magic:
-            msg = "File \"%s\" has project magic \"%s\" not \"%s\"." % \
-                (filename, project_magic, expected_project_magic)
+            msg = 'File "%s" has project magic "%s" not "%s".' % (
+                filename,
+                project_magic,
+                expected_project_magic,
+            )
             raise Exception(msg)
         if file_type_magic != expected_file_type_magic:
-            msg = "File \"%s\" has file-type magic \"%s\" not \"%s\"." % \
-                (filename, file_type_magic, expected_file_type_magic)
+            msg = 'File "%s" has file-type magic "%s" not "%s".' % (
+                filename,
+                file_type_magic,
+                expected_file_type_magic,
+            )
             raise Exception(msg)
 
         frame_height = handle.read(4)
@@ -64,9 +70,9 @@ def dump_vstr(filename):
         handle.read(4)  # seek past
         handle.read(4)  # seek past
 
-        frame_height = struct.unpack('i', frame_height)[0]
-        frame_width = struct.unpack('i', frame_width)[0]
-        frames_per_second = struct.unpack('i', frames_per_second)[0]
+        frame_height = struct.unpack("i", frame_height)[0]
+        frame_width = struct.unpack("i", frame_width)[0]
+        frames_per_second = struct.unpack("i", frames_per_second)[0]
 
         print("filename                      %s" % filename)
         print("project_magic                 %s" % project_magic)
@@ -75,15 +81,15 @@ def dump_vstr(filename):
         print("frame_width                   %d" % frame_width)
         print("frames_per_second             %d" % frames_per_second)
 
-        prefix = os.path.basename(filename).replace('.vstr', '')
+        prefix = os.path.basename(filename).replace(".vstr", "")
         fno = 0
         while True:
             frame = handle.read(3 * frame_height * frame_width)
             if not frame:
                 break
-            image = Image.frombytes('RGB', (frame_width, frame_height), frame)
+            image = Image.frombytes("RGB", (frame_width, frame_height), frame)
             fname = "%s-%08d.jpg" % (prefix, fno)
-            image.save(fname, format='jpeg')
+            image.save(fname, format="jpeg")
             print(fname)
             fno += 1
 

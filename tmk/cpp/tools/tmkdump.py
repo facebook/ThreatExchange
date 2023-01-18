@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import sys
 import struct
@@ -33,25 +33,31 @@ import errno
 
 
 def dump_tmk_file(filename):
-    '''
+    """
     Reads a .tmk file and prints it. See tmkiotypes.h.
-    '''
+    """
 
-    expected_project_magic = 'TMK1'
-    expected_file_type_magic = 'FVEC'
+    expected_project_magic = "TMK1"
+    expected_file_type_magic = "FVEC"
 
-    with open(filename, 'rb') as handle:
-        project_magic = handle.read(4).decode('ascii')
-        file_type_magic = handle.read(4).decode('ascii')
-        frame_feature_algorithm_magic = handle.read(4).decode('ascii')
+    with open(filename, "rb") as handle:
+        project_magic = handle.read(4).decode("ascii")
+        file_type_magic = handle.read(4).decode("ascii")
+        frame_feature_algorithm_magic = handle.read(4).decode("ascii")
 
         if project_magic != expected_project_magic:
-            msg = "File \"%s\" has project magic \"%s\" not \"%s\"." % \
-                (filename, project_magic, expected_project_magic)
+            msg = 'File "%s" has project magic "%s" not "%s".' % (
+                filename,
+                project_magic,
+                expected_project_magic,
+            )
             raise Exception(msg)
         if file_type_magic != expected_file_type_magic:
-            msg = "File \"%s\" has file-type magic \"%s\" not \"%s\"." % \
-                (filename, file_type_magic, expected_file_type_magic)
+            msg = 'File "%s" has file-type magic "%s" not "%s".' % (
+                filename,
+                file_type_magic,
+                expected_file_type_magic,
+            )
             raise Exception(msg)
 
         frames_per_second = handle.read(4)
@@ -60,14 +66,11 @@ def dump_tmk_file(filename):
         frame_feature_dimension = handle.read(4)
         frame_feature_count = handle.read(4)
 
-        frames_per_second = struct.unpack('i', frames_per_second)[0]
-        num_periods = struct.unpack('i', num_periods)[0]
-        num_fourier_coefficients = struct.unpack('i',
-            num_fourier_coefficients)[0]
-        frame_feature_dimension = struct.unpack('i',
-            frame_feature_dimension)[0]
-        frame_feature_count = struct.unpack('i',
-            frame_feature_count)[0]
+        frames_per_second = struct.unpack("i", frames_per_second)[0]
+        num_periods = struct.unpack("i", num_periods)[0]
+        num_fourier_coefficients = struct.unpack("i", num_fourier_coefficients)[0]
+        frame_feature_dimension = struct.unpack("i", frame_feature_dimension)[0]
+        frame_feature_count = struct.unpack("i", frame_feature_count)[0]
 
         print("filename                      %s" % filename)
         print("project_magic                 %s" % project_magic)
@@ -79,28 +82,34 @@ def dump_tmk_file(filename):
         print("frame_feature_dimension       %d" % frame_feature_dimension)
         print("frame_feature_count           %d" % frame_feature_count)
 
-        periods = struct.unpack('i' * num_periods, handle.read(4 * num_periods))
+        periods = struct.unpack("i" * num_periods, handle.read(4 * num_periods))
         print(periods)
 
-        fourier_coefficients = struct.unpack('f' * num_fourier_coefficients,
-            handle.read(4 * num_fourier_coefficients))
+        fourier_coefficients = struct.unpack(
+            "f" * num_fourier_coefficients, handle.read(4 * num_fourier_coefficients)
+        )
         print(fourier_coefficients)
 
-        pure_average_feature = struct.unpack('f' * frame_feature_dimension,
-            handle.read(4 * frame_feature_dimension))
+        pure_average_feature = struct.unpack(
+            "f" * frame_feature_dimension, handle.read(4 * frame_feature_dimension)
+        )
         print(pure_average_feature)
 
         for i in range(0, num_periods):
             for j in range(0, num_fourier_coefficients):
-                cos_feature = struct.unpack('f' * frame_feature_dimension,
-                    handle.read(4 * frame_feature_dimension))
-                print("cos:%d:%d " % (i, j), end='')
+                cos_feature = struct.unpack(
+                    "f" * frame_feature_dimension,
+                    handle.read(4 * frame_feature_dimension),
+                )
+                print("cos:%d:%d " % (i, j), end="")
                 print(cos_feature)
         for i in range(0, num_periods):
             for j in range(0, num_fourier_coefficients):
-                sin_feature = struct.unpack('f' * frame_feature_dimension,
-                    handle.read(4 * frame_feature_dimension))
-                print("sin:%d:%d " % (i, j), end='')
+                sin_feature = struct.unpack(
+                    "f" * frame_feature_dimension,
+                    handle.read(4 * frame_feature_dimension),
+                )
+                print("sin:%d:%d " % (i, j), end="")
                 print(sin_feature)
 
 

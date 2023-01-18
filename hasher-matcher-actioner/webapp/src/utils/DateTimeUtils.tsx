@@ -1,5 +1,5 @@
 /**
- * Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  * the timestamps passed to this file originate from python however
  * https://stackoverflow.com/questions/19654578/python-utc-datetime-objects-iso-format-doesnt-include-z-zulu-or-zero-offset
  *  so we ~hack-ly add a Z to the isoDateStrings

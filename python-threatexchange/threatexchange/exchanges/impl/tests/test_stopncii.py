@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import pytest
 import typing as t
@@ -19,7 +19,7 @@ def exchange(api: StopNCIIAPI):
 
 
 def test_fetch(exchange: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr("time.time", lambda: 10**8)
+    monkeypatch.setattr("time.time", lambda: 10 ** 8)
     it = exchange.fetch_iter([], None)
     delta = next(it)
 
@@ -28,7 +28,7 @@ def test_fetch(exchange: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPa
     assert delta.checkpoint.get_progress_timestamp() == 1625175071
     assert delta.checkpoint.is_stale() is False
     assert delta.checkpoint.update_time == 1625175071
-    assert delta.checkpoint.last_fetch_time == 10**8
+    assert delta.checkpoint.last_fetch_time == 10 ** 8
 
     updates = delta.updates
     assert {t[0] for t in updates} == {"pdq"}

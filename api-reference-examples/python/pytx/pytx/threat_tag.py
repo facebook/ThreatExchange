@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from .common import Common
 from .vocabulary import ThreatTag as tt
 from .vocabulary import ThreatExchange as t
@@ -26,5 +26,4 @@ class ThreatTag(Common):
         tt.TYPE,
     ]
 
-    _unique = [
-    ]
+    _unique = []

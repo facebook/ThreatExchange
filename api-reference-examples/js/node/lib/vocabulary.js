@@ -1,4 +1,4 @@
-// Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+// Copyright (c) Meta Platforms, Inc. and affiliates.
 exports.v_ThreatExchange = {
     URL             : "https://graph.facebook.com/",
     VERSION         : "v2.3/",

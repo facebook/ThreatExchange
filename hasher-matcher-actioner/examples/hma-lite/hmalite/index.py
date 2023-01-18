@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from hmalite.config import HmaLiteConfig
 from threatexchange.signal_type import pdq_index

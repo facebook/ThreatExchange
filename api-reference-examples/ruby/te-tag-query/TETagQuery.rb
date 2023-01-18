@@ -1,7 +1,7 @@
 ##!/usr/bin/ruby
 
 # ================================================================
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # ================================================================
 # Example technique for retrieving all descriptors with a given tag from

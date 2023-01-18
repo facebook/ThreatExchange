@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from .common import Common
 from .vocabulary import ThreatDescriptor as td
 from .vocabulary import ThreatExchange as t
@@ -60,8 +60,6 @@ class ThreatDescriptor(Common):
         td.TYPE,
     ]
 
-    _connections = [
-    ]
+    _connections = []
 
-    _unique = [
-    ]
+    _unique = []

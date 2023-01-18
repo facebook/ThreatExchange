@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from .access_token import get_app_id
 from .common import Common
 from .request import Broker
@@ -34,18 +34,19 @@ class ThreatPrivacyGroup(Common):
         c.MEMBERS,
     ]
 
-    _unique = [
-    ]
+    _unique = []
 
     @classmethod
-    def mine(cls,
-             role=None,
-             full_response=False,
-             dict_generator=False,
-             retries=None,
-             headers=None,
-             proxies=None,
-             verify=None):
+    def mine(
+        cls,
+        role=None,
+        full_response=False,
+        dict_generator=False,
+        retries=None,
+        headers=None,
+        proxies=None,
+        verify=None,
+    ):
         """
         Find all of the Threat Privacy Groups that I am either the owner or a
         member.
@@ -70,38 +71,38 @@ class ThreatPrivacyGroup(Common):
         """
 
         if role is None:
-            raise pytxValueError('Must provide a role')
-        app_id = get_app_id() + '/'
-        if role == 'owner':
+            raise pytxValueError("Must provide a role")
+        app_id = get_app_id() + "/"
+        if role == "owner":
             role = t.THREAT_PRIVACY_GROUPS_OWNER
-        elif role == 'member':
+        elif role == "member":
             role = t.THREAT_PRIVACY_GROUPS_MEMBER
         else:
             raise pytxValueError('Role must be "owner" or "member"')
-        params = {'fields': ','.join(cls._fields)}
+        params = {"fields": ",".join(cls._fields)}
         url = t.URL + t.VERSION + app_id + role
         if full_response:
-            return Broker.get(url,
-                              params=params,
-                              retries=retries,
-                              headers=headers,
-                              proxies=proxies,
-                              verify=verify)
+            return Broker.get(
+                url,
+                params=params,
+                retries=retries,
+                headers=headers,
+                proxies=proxies,
+                verify=verify,
+            )
         else:
-            return Broker.get_generator(cls,
-                                        url,
-                                        params=params,
-                                        to_dict=dict_generator,
-                                        retries=retries,
-                                        headers=headers,
-                                        proxies=proxies,
-                                        verify=verify)
+            return Broker.get_generator(
+                cls,
+                url,
+                params=params,
+                to_dict=dict_generator,
+                retries=retries,
+                headers=headers,
+                proxies=proxies,
+                verify=verify,
+            )
 
-    def get_members(self,
-                    retries=None,
-                    headers=None,
-                    proxies=None,
-                    verify=None):
+    def get_members(self, retries=None, headers=None, proxies=None, verify=None):
         """
         Get the members of a Threat Privacy Group
 
@@ -117,22 +118,17 @@ class ThreatPrivacyGroup(Common):
         """
 
         url = self._DETAILS + tpg.MEMBERS
-        results = Broker.get(url,
-                             retries=retries,
-                             headers=headers,
-                             proxies=proxies,
-                             verify=verify)
+        results = Broker.get(
+            url, retries=retries, headers=headers, proxies=proxies, verify=verify
+        )
         if t.DATA in results:
             return results[t.DATA]
         else:
             return []
 
-    def set_members(self,
-                    members=None,
-                    retries=None,
-                    headers=None,
-                    proxies=None,
-                    verify=None):
+    def set_members(
+        self, members=None, retries=None, headers=None, proxies=None, verify=None
+    ):
         """
         Set the members of a Threat Privacy Group
 
@@ -150,12 +146,14 @@ class ThreatPrivacyGroup(Common):
         """
 
         if members is None:
-            raise pytxValueError('Must provide members as a str or list')
+            raise pytxValueError("Must provide members as a str or list")
         elif isinstance(members, list):
-            members = ','.join(members)
-        return Broker.post(self._DETAILS,
-                           params={'members': members},
-                           retries=retries,
-                           headers=headers,
-                           proxies=proxies,
-                           verify=verify)
+            members = ",".join(members)
+        return Broker.post(
+            self._DETAILS,
+            params={"members": members},
+            retries=retries,
+            headers=headers,
+            proxies=proxies,
+            verify=verify,
+        )

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from random import randint
 
@@ -7,7 +7,7 @@ from pdqhashing.types.exceptions import PDQHashFormatException
 
 
 class Hash256:
-    """ 256-bit hashes with Hamming distance """
+    """256-bit hashes with Hamming distance"""
 
     # 16 slots of 16 bits each.
     # See hashing/pdq/README-MIH.md in this repo for why not 8x32 or 32x8, etc.
@@ -184,10 +184,10 @@ class Hash256:
         return ",".join(str(v) for v in list(reversed(self.w)))
 
     def fuzz(self, numErrorBits):
-        """ Flips some number of bits randomly, with replacement.  (I.e. not all
+        """Flips some number of bits randomly, with replacement.  (I.e. not all
         flipped bits are guaranteed to be in different positions; if you pass
         argument of 10 then maybe 2 bits will be flipped and flipped back, and
-        only 6 flipped once.) """
+        only 6 flipped once.)"""
         rv = self.clone()
         i = 0
         while i < numErrorBits:

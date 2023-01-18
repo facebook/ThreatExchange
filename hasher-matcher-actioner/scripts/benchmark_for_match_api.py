@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 """
 Simple stress test for a deployed instance of HMA `for_matches` endpoint for a signal hash.

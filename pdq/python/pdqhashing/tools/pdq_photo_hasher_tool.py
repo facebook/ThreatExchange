@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 # isort:skip_file
 
 import argparse
@@ -13,14 +13,14 @@ from pdqhashing.types.hash256 import Hash256
 
 
 class PDQPhotoHasherTool:
-    """ Tool for computing PDQ hashes of image files (JPEG, PNG, etc.).
-        Example use from within pdqhashing directory in Instagram Container:
-        python tools/pdq_photo_hasher_tool.py ../media/sample_data/pdq/misc-images/b.jpg --pdq"""
+    """Tool for computing PDQ hashes of image files (JPEG, PNG, etc.).
+    Example use from within pdqhashing directory in Instagram Container:
+    python tools/pdq_photo_hasher_tool.py ../media/sample_data/pdq/misc-images/b.jpg --pdq"""
 
     PROGNAME = "PDQPhotoHasherTool"
 
     class Context:
-        """ Helper class for tracking image-to-image deltas"""
+        """Helper class for tracking image-to-image deltas"""
 
         numPDQHash = int()
         pdqHashPrev = Hash256()
@@ -269,10 +269,12 @@ class PDQPhotoHasherTool:
                         dihedralBag.hash, dihedralBag.quality
                     )
                     if doTimings:
-                        output += ",dims={},readSeconds={:.6f},hashSeconds={:.6f}".format(
-                            hashingMetadata.imageHeightTimesWidth,
-                            hashingMetadata.readSeconds,
-                            hashingMetadata.hashSeconds,
+                        output += (
+                            ",dims={},readSeconds={:.6f},hashSeconds={:.6f}".format(
+                                hashingMetadata.imageHeightTimesWidth,
+                                hashingMetadata.readSeconds,
+                                hashingMetadata.hashSeconds,
+                            )
                         )
                     output += ",orig={},rot90={},rot180={},,rot270={},flipx={},flipy={},flipp={},flipm={},filename={}".format(
                         dihedralBag.hash,
@@ -291,10 +293,12 @@ class PDQPhotoHasherTool:
                         dihedralBag.hash, dihedralBag.quality
                     )
                     if doTimings:
-                        output += ",dims={},readSeconds={:.6f},hashSeconds={:.6f}".format(
-                            hashingMetadata.imageHeightTimesWidth,
-                            hashingMetadata.readSeconds,
-                            hashingMetadata.hashSeconds,
+                        output += (
+                            ",dims={},readSeconds={:.6f},hashSeconds={:.6f}".format(
+                                hashingMetadata.imageHeightTimesWidth,
+                                hashingMetadata.readSeconds,
+                                hashingMetadata.hashSeconds,
+                            )
                         )
                     output += ",filename={}".format(filename)
                     print(output)

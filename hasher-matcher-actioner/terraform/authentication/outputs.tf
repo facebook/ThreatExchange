@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
 output "webapp_and_api_user_pool_id" {
   value = var.use_shared_user_pool ? var.webapp_and_api_shared_user_pool_id : aws_cognito_user_pool.webapp_and_api_user_pool[0].id
