@@ -72,7 +72,7 @@ class ThreatExchangeCLIE2eHelper:
             assert lines[line] == expected_line_output
 
     def assert_cli_usage_error(
-        self, args: t.Iterable[str], msg_regex: str = ''
+        self, args: t.Iterable[str], msg_regex: str = ""
     ) -> None:
         with pytest.raises((CommandError, E2ETestSystemExit), match=msg_regex) as ex:
             self.cli_call(*args)
