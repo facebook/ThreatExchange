@@ -18,7 +18,7 @@ test_hashes = [
     "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 ]
 
-MAX_UNSIGNED_INT64 = numpy.iinfo(numpy.uint64).max
+MAX_UNSIGNED_INT64 = numpy.iinfo(numpy.int64).max
 
 
 class MixinTests:
