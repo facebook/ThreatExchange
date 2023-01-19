@@ -272,7 +272,7 @@ class SignalExchangeAPIWithSimpleUpdates(
         state.TFetchCheckpoint,
         state.TFetchedSignalMetadata,
         t.Tuple[str, str],
-        state.TFetchedSignalMetadata,
+        t.Any,
     ]
 ):
     """

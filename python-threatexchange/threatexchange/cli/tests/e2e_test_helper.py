@@ -49,7 +49,7 @@ class ThreatExchangeCLIE2eHelper:
                 inner_main(args, state_dir=self._state_dir)
             except SystemExit as se:
                 if se.code != 0:
-                    raise E2ETestSystemExit(se.code)
+                    raise E2ETestSystemExit(t.cast(int, se.code))
             return fake_out.getvalue()
 
     def assert_cli_output(
@@ -72,7 +72,7 @@ class ThreatExchangeCLIE2eHelper:
             assert lines[line] == expected_line_output
 
     def assert_cli_usage_error(
-        self, args: t.Iterable[str], msg_regex: str = None
+        self, args: t.Iterable[str], msg_regex: str = ""
     ) -> None:
         with pytest.raises((CommandError, E2ETestSystemExit), match=msg_regex) as ex:
             self.cli_call(*args)

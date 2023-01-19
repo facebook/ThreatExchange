@@ -125,7 +125,9 @@ class ThreatExchangeAPI:
     def app_id(self):
         return int(self.api_token.partition("|")[0])
 
-    def get_json_from_url(self, url, params=None, *, json_obj_hook: t.Callable = None):
+    def get_json_from_url(
+        self, url, params=None, *, json_obj_hook: t.Optional[t.Callable] = None
+    ):
         """
         Perform an HTTP GET request, and return the JSON response payload.
         Same timeouts and retry strategy as `_get_session` above.
@@ -293,7 +295,7 @@ class ThreatExchangeAPI:
         types: t.Iterable[str] = (),
         page_size: t.Optional[int] = None,
         fields: t.Optional[t.Iterable[str]] = None,
-        decode_fn: t.Callable[[t.Any], t.Any] = None,
+        decode_fn: t.Optional[t.Callable[[t.Any], t.Any]] = None,
     ) -> _CursoredResponse:
         """Gets threat updates for the given privacy group."""
 

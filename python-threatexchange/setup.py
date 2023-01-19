@@ -26,7 +26,7 @@ all_extras = set(sum(extras_require.values(), []))
 extras_require["test"] = sorted({"pytest"} | all_extras)
 extras_require["package"] = ["wheel"]
 extras_require["lint"] = ["black"]
-extras_require["types"] = ["mypy", "types-python-dateutil", "types-requests"]
+extras_require["types"] = ["mypy==0.991", "types-python-dateutil", "types-requests"]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 # If you are developing pytx, use this install
 # Note that without ffmpeg (for vpdq) you may get errors still
