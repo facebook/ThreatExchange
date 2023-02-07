@@ -87,7 +87,6 @@ class FBThreatExchangeCheckpoint(state.FetchCheckpointBase):
 
 @dataclass
 class FBThreatExchangeOpinion(state.SignalOpinion):
-
     REACTION_DESCRIPTOR_ID: t.ClassVar[int] = -1
 
     owner_app_id: int
@@ -104,7 +103,6 @@ class FBThreatExchangeOpinion(state.SignalOpinion):
 
 @dataclass
 class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
-
     opinions: t.List[FBThreatExchangeOpinion]
 
     def get_as_opinions(

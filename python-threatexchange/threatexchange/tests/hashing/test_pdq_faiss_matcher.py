@@ -29,7 +29,7 @@ class MixinTests:
             self.assertEqual(
                 len(result), len(expected), "search results not of expected length"
             )
-            for (r, e) in zip(result, expected):
+            for r, e in zip(result, expected):
                 self.assertCountEqual(r, e)
 
         def test_search_index_for_exact_matches(self):
@@ -117,7 +117,6 @@ class TestPDQFlatHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase
 class TestPDQFlatHashIndexWithCustomIds(
     MixinTests.PDQHashIndexCommonTests, unittest.TestCase
 ):
-
     custom_ids = [MAX_UNSIGNED_INT64 - i for i in range(len(test_hashes))]
 
     def setUp(self):

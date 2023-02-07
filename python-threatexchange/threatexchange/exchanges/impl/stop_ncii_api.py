@@ -179,7 +179,6 @@ class StopNCIISignalExchangeAPI(
 def _get_delta_mapping(
     record: api.StopNCIIHashRecord,
 ) -> t.Tuple[t.Tuple[str, str], t.Optional[StopNCIISignalMetadata]]:
-
     type_str = _type_mapping().get(record.signalType)
     if not type_str:
         return ("", ""), None

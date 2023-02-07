@@ -70,9 +70,9 @@ def get_SignalOpinion() -> t.Tuple[SignalOpinion, t.Sequence[object]]:
     return (current, [owner_removed])
 
 
-def get_FBThreatExchangeOpinion() -> t.Tuple[
-    FBThreatExchangeOpinion, t.Sequence[object]
-]:
+def get_FBThreatExchangeOpinion() -> (
+    t.Tuple[FBThreatExchangeOpinion, t.Sequence[object]]
+):
     ## Current
     is_mine = False
     category = SignalOpinionCategory.POSITIVE_CLASS
