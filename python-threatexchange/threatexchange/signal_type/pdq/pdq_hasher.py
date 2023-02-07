@@ -18,17 +18,16 @@ def pdq_from_file(path: pathlib.Path) -> PDQOutput:
     Given a path to a file return the PDQ Hash string in hex.
     Current tested against: jpg
     """
-    img_pil = Image.open(path)
-    image = _check_dimension_and_expand_if_needed(np.asarray(img_pil))
-    return _pdq_from_numpy_array(image)
+    np_array = _convert_image_to_correct_array_dimension(Image.open(path))
+    return _pdq_from_numpy_array(np_array)
 
 
 def pdq_from_bytes(file_bytes: bytes) -> PDQOutput:
     """
     For the bytestream from an image file, compute PDQ Hash and quality.
     """
-    np_array = _check_dimension_and_expand_if_needed(
-        np.asarray(Image.open(io.BytesIO(file_bytes)))
+    np_array = _convert_image_to_correct_array_dimension(
+        Image.open(io.BytesIO(file_bytes))
     )
     return _pdq_from_numpy_array(np_array)
 
@@ -47,11 +46,20 @@ def _pdq_from_numpy_array(array: np.ndarray) -> PDQOutput:
     return hex_str, quality
 
 
-def _check_dimension_and_expand_if_needed(array: np.ndarray) -> np.ndarray:
+def _convert_image_to_correct_array_dimension(image: Image) -> np.ndarray:
     """
-    Convert 2 dim array to the 3 dim 'pdqhash' expects
-    (without this black and white images result in errors).
+    Handle possible image format conversion or
     """
+    if image.mode == "LA":
+        # LA images (luminance with alpha) return 3 dimensional ndarray
+        # which is incompatible with pdqhash
+        image = image.convert("RGB")
+
+    array = np.asarray(image)
+
+    # Convert possible 2D array to 3D array
+    # This is more efficient than converting to RGB for mode L images.
     if array.ndim == 2:
         array = np.concatenate([array[..., np.newaxis]] * 3, axis=2)
+
     return array

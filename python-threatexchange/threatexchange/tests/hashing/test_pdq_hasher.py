@@ -59,7 +59,15 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
             assert pdq_hash == RANDOM_IMAGE_PDQ
 
     def test_pdq_from_bytes(self):
-        """Runs the pdq hashser directly on bytes"""
+        """Runs the pdq hasher directly on bytes"""
         bytes_ = base64.b64decode(RANDOM_IMAGE_BASE64)
         pdq_hash = pdq_hasher.pdq_from_bytes(bytes_)[0]
         assert pdq_hash == RANDOM_IMAGE_PDQ
+
+    def test_pdq_from_file_la_png(self):
+        file_path = pathlib.Path("threatexchange/tests/hashing/resources/LA.png")
+        expected_pdq_output = (
+            "5dbc6c369dc4476538bcf307e61d80994c5ed0a5790efaf999bc499ad3b02421",
+            100,
+        )
+        assert pdq_hasher.pdq_from_file(file_path) == expected_pdq_output
