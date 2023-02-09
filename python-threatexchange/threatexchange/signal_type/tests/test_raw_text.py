@@ -6,7 +6,6 @@ from threatexchange.signal_type.raw_text import RawTextSignal
 
 
 class TestRawTextSignal(MatchesStrAutoTest):
-
     TYPE = RawTextSignal
 
     def get_validate_hash_cases(self):

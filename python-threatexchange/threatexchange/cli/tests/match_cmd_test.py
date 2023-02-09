@@ -6,7 +6,6 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
 class MatchCommandTest(ThreatExchangeCLIE2eTest):
-
     COMMON_CALL_ARGS = ("match",)
 
     def test_file_noexst(self):

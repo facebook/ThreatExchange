@@ -76,7 +76,6 @@ class MatchCommand(command_base.Command):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-
         ap.add_argument(
             "content_type",
             **common.argparse_choices_pre_type_kwargs(

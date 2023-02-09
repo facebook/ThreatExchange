@@ -133,7 +133,6 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
         self,
         collab_name: str,
     ) -> t.Optional[FetchDeltaTyped]:
-
         file = self.collab_file(collab_name)
         if not file.is_file():
             return None

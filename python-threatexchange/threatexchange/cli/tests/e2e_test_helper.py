@@ -22,7 +22,6 @@ class E2ETestSystemExit(Exception):
 
 
 class ThreatExchangeCLIE2eHelper:
-
     # A keystroke saver, prefix these args to the beginning
     # of every call.
     # You can bypass by making the first arg "tx" or

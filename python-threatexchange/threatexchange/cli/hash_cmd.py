@@ -42,7 +42,6 @@ class HashCommand(command_base.Command):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-
         signal_types = [
             s for s in settings.get_all_signal_types() if issubclass(s, FileHasher)
         ]

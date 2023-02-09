@@ -14,6 +14,7 @@ from threatexchange.exchanges.clients.fb_threatexchange.descriptor import (
 
 _EXTENSION = ".te"
 
+
 # TODO - merge SimpleDescriptorRollup here
 class CliIndicatorSerialization(threat_updates.ThreatUpdateSerialization):
     """A short compact serialization optimized for the CLI"""

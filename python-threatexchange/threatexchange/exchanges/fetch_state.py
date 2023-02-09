@@ -176,7 +176,6 @@ class AggregateSignalOpinionCategory(IntEnum):
 
 @dataclass
 class AggregateSignalOpinion:
-
     category: AggregateSignalOpinionCategory
     tags: t.Set[str]
 
