@@ -71,3 +71,13 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
             100,
         )
         assert pdq_hasher.pdq_from_file(file_path) == expected_pdq_output
+
+    def test_pdq_from_file_i_png(self):
+        file_path = pathlib.Path("threatexchange/tests/hashing/resources/I.png")
+        expected_pdq_output = (
+            "e57435b3ca5f03c8fc1ba1e4de1743e0bc1b4593987e7a8184783f83c0fc1f03",
+            11,
+        )
+        assert (
+            pdq_hasher.pdq_from_file(file_path, force_rgb=True) == expected_pdq_output
+        )

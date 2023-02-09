@@ -13,22 +13,23 @@ PDQOutput = t.Tuple[
 ]  # hexadecimal representation of the Hash vector and a numerical quality value
 
 
-def pdq_from_file(path: pathlib.Path) -> PDQOutput:
+def pdq_from_file(path: pathlib.Path, force_rgb=False) -> PDQOutput:
     """
     Given a path to a file return the PDQ Hash string in hex.
     Current tested against: jpg
     """
-    np_array = _convert_image_to_correct_array_dimension(Image.open(path))
-    return _pdq_from_numpy_array(np_array)
+    return _pdq_from_image(Image.open(path), force_rgb)
 
 
-def pdq_from_bytes(file_bytes: bytes) -> PDQOutput:
+def pdq_from_bytes(file_bytes: bytes, force_rgb=False) -> PDQOutput:
     """
     For the bytestream from an image file, compute PDQ Hash and quality.
     """
-    np_array = _convert_image_to_correct_array_dimension(
-        Image.open(io.BytesIO(file_bytes))
-    )
+    return _pdq_from_image(Image.open(io.BytesIO(file_bytes)), force_rgb)
+
+
+def _pdq_from_image(image: Image, force_rgb) -> PDQOutput:
+    np_array = _convert_image_to_correct_array_dimension(image, force_rgb)
     return _pdq_from_numpy_array(np_array)
 
 
@@ -46,11 +47,11 @@ def _pdq_from_numpy_array(array: np.ndarray) -> PDQOutput:
     return hex_str, quality
 
 
-def _convert_image_to_correct_array_dimension(image: Image) -> np.ndarray:
+def _convert_image_to_correct_array_dimension(image: Image, force_rgb) -> np.ndarray:
     """
     Handle possible image format conversion or
     """
-    if image.mode == "LA":
+    if force_rgb or image.mode == "LA":
         # LA images (luminance with alpha) return 3 dimensional ndarray
         # which is incompatible with pdqhash
         image = image.convert("RGB")
