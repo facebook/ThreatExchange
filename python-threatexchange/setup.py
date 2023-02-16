@@ -23,10 +23,14 @@ for extension_dir in extensions_dir.iterdir():
 
 all_extras = set(sum(extras_require.values(), []))
 # We might not get any value from splitting these all out
-extras_require["test"] = sorted({"pytest"} | all_extras)
-extras_require["package"] = ["wheel"]
-extras_require["lint"] = ["black"]
-extras_require["types"] = ["mypy==0.991", "types-python-dateutil", "types-requests"]
+extras_require["test"] = sorted({"pytest==7.2.1"} | all_extras)
+extras_require["package"] = ["wheel==0.38.4"]
+extras_require["lint"] = ["black==23.1.0"]
+extras_require["types"] = [
+    "mypy==0.991",
+    "types-python-dateutil==2.8.19.6",
+    "types-requests==2.28.11.12",
+]
 extras_require["all"] = sorted(set(sum(extras_require.values(), [])))
 # If you are developing pytx, use this install
 # Note that without ffmpeg (for vpdq) you may get errors still
@@ -51,15 +55,15 @@ setup(
     url="https://www.github.com/facebook/ThreatExchange",
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
-        "python-Levenshtein",
-        "requests>=2.26.0",
-        "urllib3>=1.26.0",  # For allow_methods
-        "python-dateutil",
-        "dacite",
-        "Pillow",  # pdq
-        "pdqhash>=0.2.2",  # pdq
-        "faiss-cpu>=1.6.3",  # faiss
-        "numpy>=1.23.2",  # faiss
+        "python-Levenshtein==0.20.9",
+        "requests==2.28.2",
+        "urllib3==1.26.14",  # For allow_methods
+        "python-dateutil==2.8.2",
+        "dacite==1.7.0",  # 0.18.0 broken our tests due to faulty caching
+        "Pillow==9.4.0",  # pdq
+        "pdqhash==0.2.3",  # pdq
+        "faiss-cpu==1.7.3",  # faiss
+        "numpy==1.24.2",  # faiss
     ],
     extras_require=extras_require,
     entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},
