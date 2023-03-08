@@ -177,11 +177,15 @@ class DatasetCommand(command_base.Command):
             self.execute_clear_indices(settings)
         elif self.rebuild_indices:
             self.execute_generate_indices(settings)
-        elif self.print_signals:
-            self.execute_print_signals(settings)
         else:
-            assert self.signal_summary
-            self.execute_print_summary(settings)
+            try:
+                if self.print_signals:
+                    self.execute_print_signals(settings)
+                else:
+                    assert self.signal_summary
+                    self.execute_print_summary(settings)
+            except BrokenPipeError:
+                pass  # No stack for pipe terminate, since these are read only
 
     def get_signal_types(self, settings: CLISettings) -> t.Set[t.Type[SignalType]]:
         signal_types = self.only_signals or settings.get_all_signal_types()
