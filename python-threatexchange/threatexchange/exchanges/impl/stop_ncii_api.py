@@ -62,6 +62,25 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
         )
         return opinions
 
+    def __str__(self) -> str:
+        """
+        A human-readable version of the opinion suitable for the terminal
+        """
+        confidence = 0
+        owner_strs = []
+
+        for feedback in sorted(self.feedbacks, key=lambda f: f.source):
+            if feedback.feedbackValue == api.StopNCIICSPFeedbackValue.Blocked:
+                confidence += 1
+                owner_strs.append(f"+{feedback.source}")
+            elif feedback.feedbackValue == api.StopNCIICSPFeedbackValue.NotBlocked:
+                confidence -= 1
+                owner_strs.append(f"-{feedback.source}")
+
+        confidence_str = f"{confidence:+d}" if owner_strs else str(confidence)
+
+        return f"{self.get_as_aggregate_opinion().category.name} {confidence_str} {','.join(owner_strs)}"
+
 
 @dataclass
 class StopNCIICredentials(auth.CredentialHelper):
