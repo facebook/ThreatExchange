@@ -64,7 +64,10 @@ class StopNCIISignalMetadata(state.FetchedSignalMetadata):
 
     def __str__(self) -> str:
         """
-        A human-readable version of the opinion suitable for the terminal
+        Specialized override for StopNCII.
+
+        For StopNCII, we "unowned" signals submitted by users, as well as well-formed
+        owner names.
         """
         confidence = 0
         owner_strs = []
