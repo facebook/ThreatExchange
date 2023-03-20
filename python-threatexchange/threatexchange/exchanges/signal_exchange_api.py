@@ -30,10 +30,13 @@ class SignalExchangeAPI(
     """
     APIs to read and maybe write signals.
 
-    SignalExchangeAPIs should checkpoint their progress, so that they
-    can tail updates. If this is not possible, they can instead use
-    checkpoints to record how long it has been since a full fetch, and
-    trigger a refresh if a certain amount of time has passed.
+    This is the key interface that ties together fetching and storing
+    hashes, indicators of harm, or other data ("signals"), potentially from
+    resources shared by multiple contributors.
+
+    Since these various sources of signals have different APIs and storage
+    formats, not only does this interface define how to fetch data, but
+    also provides a form that is simplest to iteratively update.
 
     While this interface is primarily intended for connecting with
     externally hosted servers, it might be useful to write adopters for
@@ -43,14 +46,45 @@ class SignalExchangeAPI(
     which is unique to that API. Additionally, it a assumed that there
     might be multiple contributors (owners) to signals inside of an API.
 
-    An instance of this class can retain state (caching connecting, etc)
-    as needed, and objects may be persisted to fetch multiple configs.
 
-    = On fetch_iter() returns =
-    In order to efficiently store state, it's assumed that data pulled from
-    the API can be partitioned in some way by key. If this doesn't make sense
-    for your API, or it's mostly a toy implementation, empty string is a
-    valid key, and the value can be the entire dataset.
+    = fetch_iter() and checkpointing
+    SignalExchangeAPIs should checkpoint their progress, so that they
+    can tail updates. If this is not possible, they can instead use
+    checkpoints to record how long it has been since a full fetch, and
+    trigger a refresh if a certain amount of time has passed.
+
+    An instance of this class can retain state (caching connecting, etc)
+    as needed.
+
+    = On UpdateRecords & SignalTypes + TFetchedSignalMetadata =
+    This class expects that there are two forms that data from the
+    exchange will need to be served in:
+    1. The "original format" that the API fetches in. This is one unique
+       key (TUpdateRecordKey) per value (TUpdateRecordValue) that is
+       otherwise opaque to the framework.
+    2. The "matching format" that SignalTypeIndex expects. This is one
+       unique signal (SignalType, value) per value
+       (TFetchedSignalMetadata).
+
+    An implementation of the interface returns format #1 from fetch_iter()
+    and converts format #1 to #2 via naive_convert_to_signal_type().
+
+    Why not just store everything in the index format by chaining
+    naive_convert_to_signal_type(fetch_iter()) ? Handling updates and
+    deletes on the API would be much more complicated if it relies on
+    refcounting returns of fetch_iter. Using the same key as the API does
+    allows for an implementation that does not need to load the entire
+    dataset into memory to merge it. Additionally, it's assumed that there
+    is potentially data returned by the API that might not directly translate
+    to signals, but be useful to some implementations, and that it would be
+    lost if it was translated immediately. For a storage implementation that
+    does discard the intermediate TUpdateRecordValue and immediately converts,
+    take a look at how HasherMatcherActioner does its storage.
+
+    Some trivial implementations may find that there is not a key that
+    makes sense - you can easily use (SignalType+value) as a string key,
+    or even just empty string and return the entire copy of the dataset
+    in TUpdateRecordValue.
 
     = On Authentification =
     It's expected that an instance of the class is fully authenticated,
@@ -60,7 +94,6 @@ class SignalExchangeAPI(
     it should attempt to authenticate itself via discovering it from the
     execution environment and passing it via __init__(). If constructed
     directly, it should not search for credentials.
-
     """
 
     @classmethod
@@ -168,6 +201,8 @@ class SignalExchangeAPI(
             else:
                 old[k] = new_v
 
+    # TODO - rename this to make it more clear what it's doing
+    #        and consider making it one-key-at-a-time
     @classmethod
     @abstractmethod
     def naive_convert_to_signal_type(
