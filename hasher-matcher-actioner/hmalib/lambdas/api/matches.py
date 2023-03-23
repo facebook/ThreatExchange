@@ -540,7 +540,7 @@ def get_matches_api(
         return match_objects
 
     @matches_api.get(
-        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True)]
+        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True, signal_type_mapping=signal_type_mapping)]
     )
     def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
         """
