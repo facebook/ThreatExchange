@@ -14,7 +14,7 @@ Additionally, if you want to make use of the provided scripts for doing things l
 2. [aws cli](https://aws.amazon.com/cli/)
 3. [make](https://www.gnu.org/software/make/)
 
-Beyond tooling you need to have access to an AWS account where the various resources defined in the terraform files here will be created. You will want to either have your AWS credentials either in your environment or in a centralized credentials file. (See the [aws terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication) for more information on these credentials) 
+Beyond tooling you need to have access to an AWS account where the various resources defined in the terraform files here will be created. You will want to either have your AWS credentials either in your environment or in a centralized credentials file. (See the [aws terraform provider documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs#authentication) for more information on these credentials)
 
 > **WARNING** `apply`ing these terraform files to your AWS account will result in resources being created that may be billed to your account.
 
@@ -26,9 +26,9 @@ Before using terraform, you will need to provide some additional configuration, 
 
 2. _(optional)_ `backend.tf`: This file is used for optionally defining a remote backend to store your terraform state. If you are working on development for the HMA prototype and are part of the facebook ThreatExchange team, it is highly suggested you use the configuration for this file in the internal wiki. That will enable state locking and remote state storage for your terraform environment.
 
-## VS Code Devcontainers | Automated Development Environment 
+## VS Code Devcontainers | Automated Development Environment
 
-If you are using [VS Code](https://code.visualstudio.com/), and we recommend you do, you can use the Devcontainer technology to get started real quick and have a great developer experience. 
+If you are using [VS Code](https://code.visualstudio.com/), and we recommend you do, you can use the Devcontainer technology to get started real quick and have a great developer experience.
 1. [Windows Only] Sadly, the devcontainer will misbehave unless all the file endings are unix style (LF) instead of windows style (CRLF). You most likely checked out the repo with autocrlf set to "true", which means you have the wrong line endings. The fastest way to fix this is to simply re-clone the whole repository with autocrlf=input (though with more steps it's possible to fix it inplace).
 
 ```
@@ -43,11 +43,14 @@ If we were smarter, we'd have the devcontainer built on a checkout of the repo, 
 
 2. Download VS Code from [the VS Code website](https://code.visualstudio.com/).
 
-3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) on your computer. 
+3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) on your computer.
 
 4. Install the [remote containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
 
-    Create `.hma-cmdhist` directory in your home directory. Use `$ mkdir -p ~/.hma-cmdhist` or equivalent for your OS.
+    The dev container creates two bind mounts to your host OS: `~/.aws` and `~/.hma-cmdhist`.
+    If you have already installed and used the AWS CLI, you'll have the `~/.aws` directory.
+    Create the `.hma-cmdhist` directory in your home directory. Use `$ mkdir -p ~/.hma-cmdhist` or equivalent for your OS.
+
 
 5. [Optional/Warning] You may need to tweak the devcontainer.json settings - to make specific changes depending on your operating system.
 ```
@@ -86,7 +89,7 @@ The devcontainer provides all the tools you need to build and hack on HMA. Inclu
 
 The lambda functions defined for HMA use docker images. You will need to build and publish this docker image to a docker registry you own. eg. an AWS ECR repository.
 
-There is a build script in [`scripts/update_lambda_docker_image.sh`](scripts/update_lambda_docker_image.sh) to help with this. This assumes there is an ECR repository already set up with the name `hma-lambda-dev` in your aws account. Run the script after providing a `DOCKER_TAG` environment variable. 
+There is a build script in [`scripts/update_lambda_docker_image.sh`](scripts/update_lambda_docker_image.sh) to help with this. This assumes there is an ECR repository already set up with the name `hma-lambda-dev` in your aws account. Run the script after providing a `DOCKER_TAG` environment variable.
 
 It is suggested to tag the image with the prefix you intend to use below in your terraform variables / environment. For example, if I am using the prefix `bodnarbm`, I might run the script like this
 
@@ -122,7 +125,7 @@ $ aws lambda update-function-code --function-name bodnarbm_pdq_matcher --image-u
 
 We have built a script to make this more palatable.
 
-If you want to use `python-threatexchange` from the parent directory. Your git checkout version, use 
+If you want to use `python-threatexchange` from the parent directory. Your git checkout version, use
 
 ```
 $ ./scripts/set_threatexchange_source local
@@ -205,13 +208,13 @@ event = {
 
 ## Running the API locally
 
-This could not be simpler. 
+This could not be simpler.
 
 ```
 $ python -m hmalib.scripts.cli.main run-api
 ```
 
-or 
+or
 ```
 $ hmacli run-api
 ```

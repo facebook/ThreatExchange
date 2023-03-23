@@ -4,7 +4,7 @@
 # TODO: pin version later. Otherwise starting up will be too slow.
 # Note: We specify AMD64 architecture as it is currently the only one supported for this devcontainer
 # relevant for ARM architecture machines as using `python:3.8-buster` will have it try to use that instead
-FROM amd64/python:3.9-buster
+FROM python:3.9-buster
 
 # [Unixname wrestling]
 # Some of our script (docker-related) are dependent on the unixname. Would 
@@ -95,14 +95,15 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg \
   --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
   &&  echo \
-  "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+  "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
   $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
   && apt-get update && apt-get -y install docker-ce-cli
 
 # [Install Terraform CLI]
-RUN curl -fsSL https://apt.releases.hashicorp.com/gpg | apt-key add - \
-  && apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
-  && apt-get update && apt-get install terraform
+# No apt install because Hashicorp only publish Debian packages for amd64
+RUN ARCH=$(dpkg --print-architecture) TERRAFORM_VER="1.4.2" \
+  && curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VER}/terraform_${TERRAFORM_VER}_linux_${ARCH}.zip" \
+     | zcat > /usr/local/bin/terraform && chmod +x /usr/local/bin/terraform
 
 # [Install GitHub CLI]
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-key 23F3D4EA75716059 \
