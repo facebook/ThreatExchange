@@ -540,7 +540,14 @@ def get_matches_api(
         return match_objects
 
     @matches_api.get(
-        "/for-hash/", apply=[jsoninator(MatchesForHashRequest, from_query=True)]
+        "/for-hash/",
+        apply=[
+            jsoninator(
+                MatchesForHashRequest,
+                from_query=True,
+                signal_type_mapping=signal_type_mapping,
+            )
+        ],
     )
     def for_hash(request: MatchesForHashRequest) -> MatchesForHashResponse:
         """
@@ -554,7 +561,12 @@ def get_matches_api(
             matches=_matches_for_hash(request.signal_type, request.signal_value)
         )
 
-    @matches_api.post("/for-media/", apply=[jsoninator(MatchesForMediaRequest)])
+    @matches_api.post(
+        "/for-media/",
+        apply=[
+            jsoninator(MatchesForMediaRequest, signal_type_mapping=signal_type_mapping)
+        ],
+    )
     def for_media(
         request: MatchesForMediaRequest,
     ) -> t.Union[MatchesForMediaResponse, MediaFetchError]:
