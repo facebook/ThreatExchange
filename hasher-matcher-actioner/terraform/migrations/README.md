@@ -1,8 +1,11 @@
 # What are migrations
 
-Migrations are commands to run when installing a new version of HMA. 
+Migrations are commands to run when installing a updated version of HMA e.g. to preform an upgrade of an older version.
 
-There may be things that can't be done from within terraform, like creating some database entries, or running an hmalib.cli command, etc.
+There may be things that can't be done from within terraform, like creating some database entries, or running an hmalib.cli command, etc, but sometime command like that could be needed to mirgate from an old version of HMA.
+
+NOTE: currently there are no actual migrations. The migration referenced in code are part of set any up (and could use a rename). 
+However support for providing migration still existing within the terraform.
 
 # How do I add a migration?
 

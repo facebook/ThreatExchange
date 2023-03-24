@@ -23,7 +23,9 @@ logger = get_logger(__name__)
 class _Migration(MigrationBase):
     def do_migrate(self):
         """
-        if any of the 4 default mappings do not exist, create them
+        Loads default core interfaces and extensions:
+            1. ContentTypes (Photo, Video)
+            2. SignalTypes (PDQ, vMD5)
         """
         try:
             create_config(
