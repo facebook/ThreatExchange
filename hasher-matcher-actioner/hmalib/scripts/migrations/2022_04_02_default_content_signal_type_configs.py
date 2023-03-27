@@ -35,10 +35,13 @@ class _Migration(MigrationBase):
                     enabled=True,
                 )
             )
-        except ClientError:
-            logger.warning(
-                "Attempted to add ToggleableContentTypeConfig for VideoContent, but it already exists."
-            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                logger.warning(
+                    "Attempted to add ToggleableContentTypeConfig for VideoContent, but it already exists."
+                )
+            else:
+                raise e
         try:
             create_config(
                 ToggleableContentTypeConfig(
@@ -47,10 +50,13 @@ class _Migration(MigrationBase):
                     enabled=True,
                 )
             )
-        except ClientError:
-            logger.warning(
-                "Attempted to add ToggleableContentTypeConfig for PhotoContent, but it already exists."
-            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                logger.warning(
+                    "Attempted to add ToggleableContentTypeConfig for PhotoContent, but it already exists."
+                )
+            else:
+                raise e
         try:
             create_config(
                 ToggleableSignalTypeConfig(
@@ -59,10 +65,13 @@ class _Migration(MigrationBase):
                     enabled=True,
                 )
             )
-        except ClientError:
-            logger.warning(
-                "Attempted to add ToggleableSignalTypeConfig for VideoMD5Signal, but it already exists."
-            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                logger.warning(
+                    "Attempted to add ToggleableSignalTypeConfig for VideoMD5Signal, but it already exists."
+                )
+            else:
+                raise e
         try:
             create_config(
                 ToggleableSignalTypeConfig(
@@ -71,7 +80,10 @@ class _Migration(MigrationBase):
                     enabled=True,
                 )
             )
-        except ClientError:
-            logger.warning(
-                "Attempted to add ToggleableSignalTypeConfig for PdqSignal, but it already exists."
-            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                logger.warning(
+                    "Attempted to add ToggleableSignalTypeConfig for PdqSignal, but it already exists."
+                )
+            else:
+                raise e
