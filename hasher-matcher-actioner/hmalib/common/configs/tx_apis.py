@@ -77,12 +77,15 @@ def add_signal_exchange_api(
                 enabled=True,
             )
         )
-    except ClientError:
-        logger.warning(
-            "Attempted to add SignalExchangeAPI with class: %s, but it already exists.",
-            klass,
-        )
-        return AddSignalExchangeAPIResult.ALREADY_EXISTS
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            logger.warning(
+                "Attempted to add SignalExchangeAPI with class: %s, but it already exists.",
+                klass,
+            )
+            return AddSignalExchangeAPIResult.ALREADY_EXISTS
+        else:
+            raise e
 
     return AddSignalExchangeAPIResult.ADDED
 
