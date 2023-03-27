@@ -1,54 +1,38 @@
-// For format details, see https://aka.ms/devcontainer.json.
 {
-  "name": "python-threatexchange-devserver",
+  "name": "python-threatexchange",
   "build": {
     "dockerfile": "Dockerfile",
+    "context": "..",
     "args": {
-      "unixname": "${env:USER}"
+      "VARIANT": "3.11-bullseye",
+      "NODE_VERSION": "lts/*"
     }
   },
-  // Set *default* container specific settings.json values on container create.
-  "settings": {
-    "terminal.integrated.profiles.linux": {
-      "bash": {
-        "path": "/bin/bash",
-        "args": [
-          "-l"
-        ]
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.linting.enabled": true,
+				"python.linting.pylintEnabled": true,
+				"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+				"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+				"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
+				"python.linting.banditPath": "/usr/local/py-utils/bin/bandit",
+				"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+				"python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+				"python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
+				"python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
+				"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint"
       },
-      "zsh": {
-        "path": "/bin/zsh",
-        "args": [
-          "-l"
-        ]
-      }
-    },
-    "editor.formatOnSave": true,
-    "python.formatting.blackPath": "black",
-    "python.formatting.provider": "black",
-    "python.testing.pytestArgs": [
-      "."
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true,
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]      
+    }
   },
-  // Add the IDs of extensions you want installed when the container is created.
-  "extensions": [
-    "ms-python.python",
-    "ms-azuretools.vscode-docker",
-    "eamodio.gitlens",
-    "stkb.rewrap"
-  ],
+  "remoteUser": "vscode",
+  "postCreateCommand": "pip install --editable .",
   "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.pytx-cmdhist,target=/commandhistory,type=bind"
-  ],
-  // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "sh .devcontainer/post-create",
-  "remoteEnv": {
-    "IN_DEVCONTAINER": "true"
-  },
-  "remoteUser": "${localEnv:USER}"
+    "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume"
+  ]
 }
