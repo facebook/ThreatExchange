@@ -1,8 +1,11 @@
 # What are migrations
 
-Migrations are commands to run when installing a new version of HMA. This includes both a fresh install or an upgrade of an older version. 
+Migrations are commands to run when installing a updated version of HMA e.g. to preform an upgrade of an older version.
 
-In both cases, there may be things that can't be done from within terraform, like creating some database entries, or running an hmalib.cli command, etc.
+There may be things that can't be done from within terraform, like creating some database entries, or running an hmalib.cli command, etc, but sometime command like that could be needed to mirgate from an old version of HMA.
+
+NOTE: currently there are no actual migrations. The migration referenced in code are part of set any up (and could use a rename). 
+However support for providing migration still existing within the terraform.
 
 # How do I add a migration?
 
@@ -12,13 +15,9 @@ At the end of the `[migrations/main.tf](https://github.com/facebook/ThreatExchan
 resource "null_resource" "some-name that identifies what this migration does" {
   provisioner "local-exec" {
     working_dir = "../../"
-    command     = "<whatever command you want to run. eg.> python -m hmalib.scripts.cli.main migrate 2022_04_02_default_content_signal_type_configs --config-table ${var.config_table.name}"
+    command     = "<whatever command you want to run. eg.> hmalib migrate 2022_04_02_default_content_signal_type_configs --config-table ${var.config_table.name}"
   }
 }
 ```
 
 You have access to variable names defined in `[migrations/variables.tf](https://github.com/facebook/ThreatExchange/blob/main/hasher-matcher-actioner/terraform/migrations/variables.tf)`
-
-# Migrations are not working?
-
-At present, their is an annoying bug. Any `python -m hmalib._foo_` command run during migration fails because terraform is not running the command from the appropriate directory. Editing the working_directory has not led to a solution. This is something we need to address. See [#1249](https://github.com/facebook/ThreatExchange/issues/1249)

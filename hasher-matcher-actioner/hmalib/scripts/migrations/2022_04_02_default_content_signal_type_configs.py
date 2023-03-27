@@ -2,6 +2,7 @@
 
 import typing as t
 
+from botocore.exceptions import ClientError
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.md5 import VideoMD5Signal
@@ -13,40 +14,64 @@ from hmalib.common.mappings import (
     ToggleableSignalTypeConfig,
     full_class_name,
 )
-
+from hmalib.common.logging import get_logger
 from hmalib.scripts.migrations.migrations_base import MigrationBase
+
+logger = get_logger(__name__)
 
 
 class _Migration(MigrationBase):
     def do_migrate(self):
-        create_config(
-            ToggleableContentTypeConfig(
-                name=ToggleableContentTypeConfig.get_name_from_type(VideoContent),
-                content_type_class=full_class_name(VideoContent),
-                enabled=True,
+        """
+        Loads default core interfaces and extensions:
+            1. ContentTypes (Photo, Video)
+            2. SignalTypes (PDQ, vMD5)
+        """
+        try:
+            create_config(
+                ToggleableContentTypeConfig(
+                    name=ToggleableContentTypeConfig.get_name_from_type(VideoContent),
+                    content_type_class=full_class_name(VideoContent),
+                    enabled=True,
+                )
             )
-        )
-
-        create_config(
-            ToggleableContentTypeConfig(
-                name=ToggleableContentTypeConfig.get_name_from_type(PhotoContent),
-                content_type_class=full_class_name(PhotoContent),
-                enabled=True,
+        except ClientError:
+            logger.warning(
+                "Attempted to add ToggleableContentTypeConfig for VideoContent, but it already exists."
             )
-        )
-
-        create_config(
-            ToggleableSignalTypeConfig(
-                name=ToggleableSignalTypeConfig.get_name_from_type(VideoMD5Signal),
-                signal_type_class=full_class_name(VideoMD5Signal),
-                enabled=True,
+        try:
+            create_config(
+                ToggleableContentTypeConfig(
+                    name=ToggleableContentTypeConfig.get_name_from_type(PhotoContent),
+                    content_type_class=full_class_name(PhotoContent),
+                    enabled=True,
+                )
             )
-        )
-
-        create_config(
-            ToggleableSignalTypeConfig(
-                name=ToggleableSignalTypeConfig.get_name_from_type(PdqSignal),
-                signal_type_class=full_class_name(PdqSignal),
-                enabled=True,
+        except ClientError:
+            logger.warning(
+                "Attempted to add ToggleableContentTypeConfig for PhotoContent, but it already exists."
             )
-        )
+        try:
+            create_config(
+                ToggleableSignalTypeConfig(
+                    name=ToggleableSignalTypeConfig.get_name_from_type(VideoMD5Signal),
+                    signal_type_class=full_class_name(VideoMD5Signal),
+                    enabled=True,
+                )
+            )
+        except ClientError:
+            logger.warning(
+                "Attempted to add ToggleableSignalTypeConfig for VideoMD5Signal, but it already exists."
+            )
+        try:
+            create_config(
+                ToggleableSignalTypeConfig(
+                    name=ToggleableSignalTypeConfig.get_name_from_type(PdqSignal),
+                    signal_type_class=full_class_name(PdqSignal),
+                    enabled=True,
+                )
+            )
+        except ClientError:
+            logger.warning(
+                "Attempted to add ToggleableSignalTypeConfig for PdqSignal, but it already exists."
+            )
