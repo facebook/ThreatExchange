@@ -39,7 +39,7 @@ class SignalExchangeAPI(
     also provides a form that is simplest to iteratively update.
 
     While this interface is primarily intended for connecting with
-    externally hosted servers, it might be useful to write adopters for
+    externally hosted servers, it might be useful to write adapters for
     certain formats of local files, which could be valuable for testing.
 
     Is assumed that fetched signals have some metadata attached to them,
@@ -107,7 +107,7 @@ class SignalExchangeAPI(
         2. All methods are callable if supported by the base implementation
 
         For implementations that do need additional configuration or
-        authentification, @see threatexchange.exchanges.auth
+        authentication, @see threatexchange.exchanges.auth
         If not explicitly given auth by those helpers, the implementation
         should attempt to find its own, and throw an exception otherwise.
 
