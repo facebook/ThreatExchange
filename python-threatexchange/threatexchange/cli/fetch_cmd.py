@@ -7,12 +7,11 @@ import logging
 import time
 import typing as t
 
-from threatexchange.cli.cli_config import CLISettings
+from threatexchange.config import TXSettings
+
 from threatexchange.cli.dataset_cmd import DatasetCommand
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
-from threatexchange.exchanges.impl.ncmec_api import NCMECCheckpoint
 from threatexchange.exchanges.signal_exchange_api import (
-    SignalExchangeAPI,
     TSignalExchangeAPICls,
 )
 from threatexchange.exchanges.fetch_state import (
@@ -42,7 +41,7 @@ class FetchCommand(command_base.Command):
     PROGRESS_PRINT_INTERVAL_SEC = 30
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap) -> None:
+    def init_argparse(cls, settings: TXSettings, ap) -> None:
         ap.add_argument(
             "--clear",
             action="store_true",
@@ -124,7 +123,7 @@ class FetchCommand(command_base.Command):
             return False
         return time.time() > self.checkpoint_every + self.last_checkpoint_time
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         # Verify collab arguments
         self.collabs = settings.get_all_collabs()
         if self.only_collab:
@@ -165,9 +164,7 @@ class FetchCommand(command_base.Command):
         if not all_succeeded:
             raise command_base.CommandError("Some collabs had errors!", 3)
 
-    def execute_for_api(
-        self, settings: CLISettings, api: TSignalExchangeAPICls
-    ) -> bool:
+    def execute_for_api(self, settings: TXSettings, api: TSignalExchangeAPICls) -> bool:
         success = True
         for collab in self.collabs:
             if collab.api != api.get_name():
@@ -183,7 +180,7 @@ class FetchCommand(command_base.Command):
 
     def execute_for_collab(
         self,
-        settings: CLISettings,
+        settings: TXSettings,
         collab: CollaborationConfigBase,
     ) -> bool:
         api = settings.apis.get_instance_for_collab(collab)

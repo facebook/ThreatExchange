@@ -14,10 +14,11 @@ import logging
 import os
 import typing as t
 
+from threatexchange.config import TXSettings
+
 from threatexchange.exchanges.clients.fb_threatexchange.api import ThreatExchangeAPI
 from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
 from threatexchange import common, interface_validation
-from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli import command_base
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
@@ -39,12 +40,12 @@ class ConfigCollabListCommand(command_base.Command):
         return "list"
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         # Ideas:
         #  * Filter by API
         pass
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         for collab in settings.get_all_collabs(default_to_sample=False):
             print(collab.api, collab.name)
 
@@ -76,7 +77,7 @@ class ConfigCollabPrintCommand(command_base.Command):
         return "print"
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument("collab_name", help="the name of the collab")
 
     def __init__(
@@ -85,7 +86,7 @@ class ConfigCollabPrintCommand(command_base.Command):
     ) -> None:
         self.collab_name = collab_name
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         collab = settings.get_collab(self.collab_name)
         if collab is None:
             raise CommandError.user(f"No such collab {self.collab_name}")
@@ -119,7 +120,7 @@ class _UpdateCollabCommand(command_base.Command):
         return cls._API_CLS.get_name()
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         cfg_cls = cls._API_CLS.get_config_cls()
         assert is_dataclass(cfg_cls)
 
@@ -258,7 +259,7 @@ class _UpdateCollabCommand(command_base.Command):
             if val is not None:
                 self.edit_kwargs[field.name] = val
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         existing = settings.get_collab(self.collab_name)
 
         if existing:
@@ -293,7 +294,7 @@ class ConfigCollabForAPICommand(command_base.CommandWithSubcommands):
         return "edit"
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         cls._SUBCOMMANDS = [
             cls._create_command_for_api(api)
             for api in settings.apis
@@ -324,13 +325,13 @@ class ConfigCollabDeleteCommand(command_base.Command):
         return "delete"
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument("collab_name", help="the collab to delete")
 
     def __init__(self, collab_name: str) -> None:
         self.collab_name = collab_name
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         collab = settings.get_collab(self.collab_name)
         if collab is None:
             raise CommandError("No such collab", 2)
@@ -351,7 +352,7 @@ class ConfigCollabCommand(command_base.CommandWithSubcommands):
     def get_name(cls) -> str:
         return "collab"
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         ConfigCollabListCommand().execute(settings)
 
 
@@ -363,7 +364,7 @@ class ConfigExtensionsCommand(command_base.Command):
         return "extensions"
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
             "action",
             choices=["list", "add", "remove"],
@@ -385,10 +386,10 @@ class ConfigExtensionsCommand(command_base.Command):
         }[action]
         self.module = module
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         self.action(settings)
 
-    def execute_list(self, settings: CLISettings) -> None:
+    def execute_list(self, settings: TXSettings) -> None:
         if self.module:
             manifest = self.get_manifest(self.module)
             self.print_extension(manifest)
@@ -404,7 +405,7 @@ class ConfigExtensionsCommand(command_base.Command):
         except ValueError as ve:
             raise CommandError(str(ve), 2)
 
-    def execute_add(self, settings: CLISettings) -> None:
+    def execute_add(self, settings: TXSettings) -> None:
         if not self.module:
             raise CommandError("module is required", 2)
         if self.module in settings.get_persistent_config().extensions:
@@ -435,7 +436,7 @@ class ConfigExtensionsCommand(command_base.Command):
         config.extensions.add(self.module)
         settings.set_persistent_config(config)
 
-    def execute_remove(self, settings: CLISettings) -> None:
+    def execute_remove(self, settings: TXSettings) -> None:
         if not self.module:
             raise CommandError("Which module you are remove is required", 2)
         config = settings.get_persistent_config()
@@ -476,7 +477,7 @@ class ConfigSignalCommand(command_base.Command):
         return "signal"
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
             "action",
             choices=["list"],
@@ -490,10 +491,10 @@ class ConfigSignalCommand(command_base.Command):
             "list": self.execute_list,
         }[action]
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         self.action(settings)
 
-    def execute_list(self, settings: CLISettings) -> None:
+    def execute_list(self, settings: TXSettings) -> None:
         signals = settings.get_all_signal_types()
         for name, class_name in sorted(
             (st.get_name(), _fully_qualified_name(st)) for st in signals
@@ -509,7 +510,7 @@ class ConfigContentCommand(command_base.Command):
         return "content"
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
             "action",
             choices=["list"],
@@ -523,10 +524,10 @@ class ConfigContentCommand(command_base.Command):
             "list": self.execute_list,
         }[action]
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         self.action(settings)
 
-    def execute_list(self, settings: CLISettings) -> None:
+    def execute_list(self, settings: TXSettings) -> None:
         content_types = settings.get_all_content_types()
         for name, class_name in sorted(
             (c.get_name(), _fully_qualified_name(c)) for c in content_types
@@ -542,7 +543,7 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
         return FBThreatExchangeSignalExchangeAPI.get_name()
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         import_cmds = ap.add_mutually_exclusive_group()
         import_cmds.add_argument(
             "--list-available-collabs",
@@ -577,14 +578,14 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
             tmp_for_typing = import_collab
             self.action = lambda s: self.execute_import(s, tmp_for_typing)
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         self.action(settings)
 
     def get_te_api(self) -> ThreatExchangeAPI:
         creds = FBThreatExchangeCredentials.get(FBThreatExchangeSignalExchangeAPI)
         return ThreatExchangeAPI(creds.api_token)
 
-    def execute_list_collabs(self, settings: CLISettings) -> None:
+    def execute_list_collabs(self, settings: TXSettings) -> None:
         api = self.get_te_api()
 
         unique_privacy_groups = {
@@ -604,7 +605,7 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
                 line = f"{line[:max_width-3]}..."
             print(line)
 
-    def execute_import(self, settings: CLISettings, privacy_group_id: int) -> None:
+    def execute_import(self, settings: TXSettings, privacy_group_id: int) -> None:
         api = self.get_te_api()
         pg = api.get_privacy_group(privacy_group_id)
         if settings.get_collab(pg.name) is not None:
@@ -615,7 +616,7 @@ class ConfigThreatExchangeAPICommand(command_base.Command):
             FBThreatExchangeCollabConfig(name=pg.name, privacy_group=privacy_group_id)
         )
 
-    def execute_config(self, settings: CLISettings) -> None:
+    def execute_config(self, settings: TXSettings) -> None:
         if self.api_token is not None:
             config = settings.get_persistent_config()
             config.fb_threatexchange_api_token = self.api_token
@@ -630,7 +631,7 @@ class ConfigNCMECAPICommand(command_base.Command):
         return NCMECSignalExchangeAPI.get_name()
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
             "--credentials",
             metavar="STR",
@@ -644,7 +645,7 @@ class ConfigNCMECAPICommand(command_base.Command):
     ) -> None:
         self.credentials = (credentials[0], credentials[1]) if credentials else None
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         if self.credentials is not None:
             config = settings.get_persistent_config()
             config.ncmec_credentials = self.credentials
@@ -660,7 +661,7 @@ class ConfigAPICommand(command_base.CommandWithSubcommands):
     def get_name(cls) -> str:
         return "api"
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         apis = settings.apis.get_all()
         for name in sorted(a.get_name() for a in apis):
             print(name)

@@ -13,7 +13,8 @@ import typing as t
 import sys
 
 from threatexchange import common
-from threatexchange.cli.cli_config import CLISettings
+from threatexchange.config import TXSettings
+
 from threatexchange.cli.exceptions import CommandError
 
 
@@ -24,7 +25,7 @@ class Command:
 
     @classmethod
     def add_command_to_subparser(
-        cls, settings: CLISettings, subparsers
+        cls, settings: TXSettings, subparsers
     ) -> argparse.ArgumentParser:
         """
         Shortcut for adding the command to the parser.
@@ -43,7 +44,7 @@ class Command:
 
     @classmethod
     def init_argparse(
-        cls, settings: CLISettings, argparse: argparse.ArgumentParser
+        cls, settings: TXSettings, argparse: argparse.ArgumentParser
     ) -> None:
         """
         Program the command subparser for __init__
@@ -83,7 +84,7 @@ class Command:
         """Convenience accessor to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         raise NotImplementedError
 
 
@@ -92,7 +93,7 @@ class CommandWithSubcommands(Command):
 
     @classmethod
     def add_command_to_subparser(
-        cls, settings: CLISettings, subparsers
+        cls, settings: TXSettings, subparsers
     ) -> argparse.ArgumentParser:
         command_ap = super().add_command_to_subparser(settings, subparsers)
         sub_subparsers = command_ap.add_subparsers()
@@ -102,5 +103,5 @@ class CommandWithSubcommands(Command):
 
         return command_ap
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         raise CommandError("subcommand is required", 2)

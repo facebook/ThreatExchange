@@ -12,6 +12,8 @@ import typing as t
 
 
 from threatexchange import common
+from threatexchange.config import TXSettings
+
 from threatexchange.cli.fetch_cmd import FetchCommand
 from threatexchange.cli.helpers import FlexFilesInputAction
 from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
@@ -19,7 +21,6 @@ from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
 from threatexchange.signal_type.index import IndexMatch, SignalTypeIndex
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.signal_type.signal_base import BytesHasher, SignalType
-from threatexchange.cli.cli_config import CLISettings
 from threatexchange.content_type.content_base import ContentType
 
 from threatexchange.signal_type.signal_base import MatchesStr, TextHasher, FileHasher
@@ -75,7 +76,7 @@ class MatchCommand(command_base.Command):
     """
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
             "content_type",
             **common.argparse_choices_pre_type_kwargs(
@@ -152,7 +153,7 @@ class MatchCommand(command_base.Command):
                 2,
             )
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         if not settings.index.list():
             if not settings.in_demo_mode:
                 raise CommandError("No indices available. Do you need to fetch?")

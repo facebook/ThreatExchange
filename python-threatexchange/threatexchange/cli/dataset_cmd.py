@@ -6,11 +6,11 @@ import csv
 import sys
 import typing as t
 import logging
+
+from threatexchange.config import TXSettings
+
 from threatexchange.cli.exceptions import CommandError
-
-
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.cli.cli_config import CLISettings
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
@@ -42,7 +42,7 @@ class DatasetCommand(command_base.Command):
     """
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: ArgumentParser) -> None:
         actions = ap.add_mutually_exclusive_group()
         actions.add_argument(
             "--rebuild-indices",
@@ -163,7 +163,7 @@ class DatasetCommand(command_base.Command):
         self.print_signals_only = print_signals_only
         self.csv = csv
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         if settings.fetched_state.empty():
             if not settings.in_demo_mode:
                 raise CommandError("No stored state available. Do you need to fetch?")
@@ -187,7 +187,7 @@ class DatasetCommand(command_base.Command):
             except BrokenPipeError:
                 pass  # No stack for pipe terminate, since these are read only
 
-    def get_signal_types(self, settings: CLISettings) -> t.Set[t.Type[SignalType]]:
+    def get_signal_types(self, settings: TXSettings) -> t.Set[t.Type[SignalType]]:
         signal_types = self.only_signals or settings.get_all_signal_types()
         if self.only_content:
             signal_types = [
@@ -197,14 +197,14 @@ class DatasetCommand(command_base.Command):
             ]
         return set(signal_types)
 
-    def get_collabs(self, settings: CLISettings) -> t.List[CollaborationConfigBase]:
+    def get_collabs(self, settings: TXSettings) -> t.List[CollaborationConfigBase]:
         collabs = [c for c in settings.get_all_collabs() if c.enabled]
         if self.only_collabs:
             collabs = [c for c in collabs if c.name in self.only_collabs]
         return collabs
 
     def get_signals(
-        self, settings: CLISettings, signal_types: t.Iterable[t.Type[SignalType]]
+        self, settings: TXSettings, signal_types: t.Iterable[t.Type[SignalType]]
     ) -> t.Dict[
         t.Type[SignalType], t.Dict[str, t.List[t.Tuple[str, FetchedSignalMetadata]]]
     ]:
@@ -237,7 +237,7 @@ class DatasetCommand(command_base.Command):
             by_type[s_type] = by_signal
         return by_type
 
-    def execute_print_summary(self, settings: CLISettings):
+    def execute_print_summary(self, settings: TXSettings):
         signals = self.get_signals(settings, self.get_signal_types(settings))
         by_type: t.Dict[str, int] = collections.Counter()
         for s_type, type_signals in signals.items():
@@ -265,13 +265,13 @@ class DatasetCommand(command_base.Command):
                 for collab_name, metadata in collab_signals:
                     print_fn(collab_name, signal_type, signal_str, metadata)
 
-    def execute_clear_indices(self, settings: CLISettings) -> None:
+    def execute_clear_indices(self, settings: TXSettings) -> None:
         only_signals = None
         if self.only_signals or self.only_content:
             only_signals = self.get_signal_types(settings)
         settings.index.clear(only_signals)
 
-    def execute_generate_indices(self, settings: CLISettings) -> None:
+    def execute_generate_indices(self, settings: TXSettings) -> None:
         signal_types = self.get_signal_types(settings)
 
         for s_type in signal_types:

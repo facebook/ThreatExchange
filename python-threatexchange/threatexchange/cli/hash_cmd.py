@@ -9,7 +9,8 @@ import argparse
 import pathlib
 import typing as t
 from threatexchange import common
-from threatexchange.cli.cli_config import CLISettings
+from threatexchange.config import TXSettings
+
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.content_type.content_base import ContentType
 
@@ -41,7 +42,7 @@ class HashCommand(command_base.Command):
     """
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: argparse.ArgumentParser) -> None:
         signal_types = [
             s for s in settings.get_all_signal_types() if issubclass(s, FileHasher)
         ]
@@ -87,7 +88,7 @@ class HashCommand(command_base.Command):
 
         self.files = files
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         hashers = [
             s
             for s in settings.get_signal_types_for_content(self.content_type)

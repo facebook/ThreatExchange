@@ -74,8 +74,8 @@ from threatexchange.signal_type import (
     url_md5,
     trend_query,
 )
-from threatexchange.cli.cli_config import CLiConfig, CliState
-from threatexchange.cli.cli_config import CLISettings
+from threatexchange.config import TXConfig, TXState, TXSettings
+
 from threatexchange.cli import (
     command_base as base,
     fetch_cmd,
@@ -108,7 +108,7 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
     ]
 
 
-def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
+def get_argparse(settings: TXSettings) -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -141,7 +141,7 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
     return ap
 
 
-def execute_command(settings: CLISettings, namespace) -> None:
+def execute_command(settings: TXSettings, namespace) -> None:
     assert hasattr(namespace, "command_cls")
     command_cls: t.Type[base.Command] = namespace.command_cls
     logging.debug("Setup complete, handing off to %s", command_cls.__name__)
@@ -158,7 +158,7 @@ def execute_command(settings: CLISettings, namespace) -> None:
 
 
 @contextmanager
-def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
+def _handle_api_creds(config: TXConfig) -> t.Iterator[None]:
     te_creds = None
     ncmec_creds = None
     stop_ncii_creds = config.stop_ncii_keys
@@ -208,7 +208,7 @@ class _ExtendedTypes(t.NamedTuple):
         )
 
 
-def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
+def _get_extended_functionality(config: TXConfig) -> _ExtendedTypes:
     ret = _ExtendedTypes([], [], [], [])
     for extension in config.extensions:
         logging.debug("Loading extension %s", extension)
@@ -224,8 +224,8 @@ def _get_extended_functionality(config: CLiConfig) -> _ExtendedTypes:
 
 
 def _get_settings(
-    config: CLiConfig, dir: pathlib.Path
-) -> t.Tuple[CLISettings, _ExtendedTypes]:
+    config: TXConfig, dir: pathlib.Path
+) -> t.Tuple[TXSettings, _ExtendedTypes]:
     """
     Configure the behavior and functionality.
     """
@@ -247,10 +247,10 @@ def _get_settings(
     apis = interface_validation.SignalExchangeAPIMapping(
         base_apis + extensions.api_types
     )
-    state = CliState(list(apis.api_by_name.values()), dir=dir)
+    state = TXState(list(apis.api_by_name.values()), dir=dir)
 
     return (
-        CLISettings(
+        TXSettings(
             interface_validation.FunctionalityMapping(signals, apis, state), state
         ),
         extensions,
@@ -278,7 +278,7 @@ def inner_main(
     ),
 ) -> None:
     """The main called by tests"""
-    config = CliState(
+    config = TXState(
         [], state_dir
     ).get_persistent_config()  # TODO fix the circular dependency
     settings, extensions = _get_settings(config, state_dir)

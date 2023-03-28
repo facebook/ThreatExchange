@@ -8,10 +8,11 @@ from threatexchange.cli.helpers import FlexFilesInputAction
 from threatexchange.exchanges.fetch_state import SignalOpinion, SignalOpinionCategory
 
 
-from threatexchange.signal_type.signal_base import MatchesStr, SignalType, TextHasher
+from threatexchange.signal_type.signal_base import SignalType
 
 from threatexchange import common
-from threatexchange.cli.cli_config import CLISettings
+from threatexchange.config import TXSettings
+
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.cli import command_base
@@ -46,7 +47,7 @@ class LabelCommand(command_base.Command):
     """
 
     @classmethod
-    def init_argparse(cls, settings: CLISettings, ap: ArgumentParser) -> None:
+    def init_argparse(cls, settings: TXSettings, ap: ArgumentParser) -> None:
         ap.add_argument(
             "--labels",
             "-l",
@@ -122,7 +123,7 @@ class LabelCommand(command_base.Command):
         if self.collab is None:
             raise ArgumentTypeError("No such collaboration!")
 
-    def execute(self, settings: CLISettings) -> None:
+    def execute(self, settings: TXSettings) -> None:
         self.stderr("This command is not implemented yet, and most actions won't work")
 
         api = settings.apis.get_instance_for_collab(self.collab)
@@ -145,7 +146,7 @@ class LabelCommand(command_base.Command):
         raise NotImplementedError
 
 
-def _collab_type(name: str, settings: CLISettings) -> CollaborationConfigBase:
+def _collab_type(name: str, settings: TXSettings) -> CollaborationConfigBase:
     ret = settings.get_collab(name)
     if ret is None:
         raise ArgumentTypeError(f"No such collab '{name}'!")

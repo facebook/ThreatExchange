@@ -17,7 +17,6 @@ import logging
 
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.cli.exceptions import CommandError
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.fetch_state import (
     FetchDelta,
@@ -32,9 +31,15 @@ from threatexchange.signal_type import signal_base
 from threatexchange.signal_type import index
 
 
-class CliIndexStore:
+class TXStateException(Exception):
     """
-    Persistance layer for SignalTypeIndex objects for the cli.
+    Something went wrong manipulating the state
+    """
+
+
+class TXIndexStore:
+    """
+    Persistance layer for SignalTypeIndex objects.
 
     They are just stored to a file directory, with names based on their type.
     """
@@ -90,9 +95,9 @@ class CliIndexStore:
             return signal_type.get_index_cls().deserialize(fin)
 
 
-class CliSimpleState(helpers.SimpleFetchedStateStore):
+class TXSimpleState(helpers.SimpleFetchedStateStore):
     """
-    A simple on-disk storage format for the CLI.
+    A simple on-disk storage format.
 
     Ideally, it should be easy to read manually (for debugging),
     but compact enough to handle very large sets of data.
@@ -148,12 +153,12 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
 
             logging.debug("Loaded %s with %d records", collab_name, len(delta.updates))
             return delta
-        except Exception:
+        except Exception as exc:
             logging.exception("Failed to read state for %s", collab_name)
-            raise CommandError(
+            raise TXStateException(
                 f"Failed to read state for {collab_name}. "
                 "You might have to delete it with `threatexchange fetch --clear`"
-            )
+            ) from exc
 
     def _write_state(
         self,

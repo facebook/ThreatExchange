@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 """
-Local storage and configuration for the CLI.
+Local storage and configuration.
 
 The CLI and Hasher-Matcher-Actioner are roughly parallel, but this isn't a 
 scalable service running on AWS. Instead, we have all of our state in
@@ -29,7 +29,7 @@ from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
 from threatexchange.interface_validation import FunctionalityMapping
-from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
+from threatexchange.state import TXSimpleState, TXIndexStore
 from threatexchange.utils import dataclass_json
 
 
@@ -37,8 +37,8 @@ CONFIG_FILENAME = "config.json"
 
 
 @dataclass
-class CLiConfig:
-    """A place to store misc configuration for the CLI"""
+class TXConfig:
+    """A place to store misc configuration"""
 
     fb_threatexchange_api_token: t.Optional[str] = None
     ncmec_credentials: t.Optional[t.Tuple[str, str]] = None
@@ -47,9 +47,9 @@ class CLiConfig:
     # Every item needs a default for backwards compatibility
 
 
-class CliState(collab_config.CollaborationConfigStoreBase):
+class TXState(collab_config.CollaborationConfigStoreBase):
     """
-    A wrapper around stateful information stored for the CLI.
+    A wrapper around stored stateful information.
 
     Everything is just in a single directory (usually ~/.threatexchange).
     """
@@ -91,19 +91,19 @@ class CliState(collab_config.CollaborationConfigStoreBase):
 
     @property
     def config_file(self) -> pathlib.Path:
-        return self._dir / "config.json"
+        return self._dir / CONFIG_FILENAME
 
     def path_for_collab_config(
         self, config: collab_config.CollaborationConfigBase
     ) -> pathlib.Path:
         return self.collab_dir / f"{config.name}.json"
 
-    def get_persistent_config(self) -> CLiConfig:
+    def get_persistent_config(self) -> TXConfig:
         return dataclass_json.dataclass_load_file(
-            self.config_file, CLiConfig, default=CLiConfig()
+            self.config_file, TXConfig, default=TXConfig()
         )
 
-    def update_persistent_config(self, config: CLiConfig):
+    def update_persistent_config(self, config: TXConfig):
         dataclass_json.dataclass_dump_file(self.config_file, config)
 
     def dir_for_fetched_state(
@@ -164,7 +164,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
 class _SignalExchangeAccessor:
     """Convenience wrapper for operations on the SignalExchangeAPI"""
 
-    _parent: "CLISettings"
+    _parent: "TXSettings"
 
     def get_all(self) -> t.ValuesView[TSignalExchangeAPICls]:
         return self._parent._mapping.exchange.api_by_name.values()
@@ -189,7 +189,7 @@ class _SignalExchangeAccessor:
 class _FetchStoreAccessor:
     """Convenience wrapper for operations on the state"""
 
-    _parent: "CLISettings"
+    _parent: "TXSettings"
 
     def empty(self) -> bool:
         """Return the collabs with stored state"""
@@ -198,39 +198,39 @@ class _FetchStoreAccessor:
             collab for collab in collabs if self.get_for_collab(collab).exists(collab)
         )
 
-    def get_for_api(self, api: t.Type[SignalExchangeAPI]) -> CliSimpleState:
-        return CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
+    def get_for_api(self, api: t.Type[SignalExchangeAPI]) -> TXSimpleState:
+        return TXSimpleState(api, self._parent._state.dir_for_fetched_state(api))
 
     def get_for_collab(
         self, collab: collab_config.CollaborationConfigBase
-    ) -> CliSimpleState:
+    ) -> TXSimpleState:
         return self.get_for_api(self._parent._mapping.exchange.api_by_name[collab.api])
 
 
-class CLISettings:
+class TXSettings:
     """
-    A God object for all miscellanious persisted state to make the CLI work
+    A God object for all miscellanious persisted state to make the library work
     """
 
     def __init__(
         self,
         mapping: FunctionalityMapping,
-        cli_state: CliState,
+        state: TXState,
     ) -> None:
         self._mapping = mapping
-        self._state = cli_state
+        self._state = state
         self._sample_message_printed = False
-        self._config: t.Optional[CLiConfig] = None
-        self.index = CliIndexStore(cli_state.index_dir)
+        self._config: t.Optional[TXConfig] = None
+        self.index = TXIndexStore(state.index_dir)
         self.fetched_state = _FetchStoreAccessor(self)
         self.apis = _SignalExchangeAccessor(self)
 
-    def get_persistent_config(self) -> CLiConfig:
+    def get_persistent_config(self) -> TXConfig:
         if self._config is None:
             self._config = self._state.get_persistent_config()
         return self._config
 
-    def set_persistent_config(self, config: CLiConfig) -> None:
+    def set_persistent_config(self, config: TXConfig) -> None:
         self._state.update_persistent_config(config)
         self._config = config
 
