@@ -273,7 +273,9 @@ def _setup_logging(level_str: str, *, initial: bool = False) -> None:
 
 def inner_main(
     args: t.Optional[t.Sequence[t.Text]] = None,
-    state_dir: pathlib.Path = pathlib.Path("~/.threatexchange"),
+    state_dir: pathlib.Path = pathlib.Path(
+        os.getenv("TX_STATEDIR", "~/.threatexchange")
+    ),
 ) -> None:
     """The main called by tests"""
     config = CliState(
