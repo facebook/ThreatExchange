@@ -30,7 +30,7 @@ class MatchCommandTest(ThreatExchangeCLIE2eTest):
         not_hash = "this is not an md5"
         self.assert_cli_usage_error(
             ("-H", "video", "--", not_hash),
-            f"Error attempting to infer Signal Type: '{not_hash.split()[0]}' is not a valid Signal Type.",
+            f"'{not_hash.split()[0]}' is not a valid hash for video_md5",
         )
 
     def test_valid_hash_with_prefix(self):
@@ -71,7 +71,7 @@ class MatchCommandTest(ThreatExchangeCLIE2eTest):
             fp.seek(0)
             self.assert_cli_usage_error(
                 ("-H", "photo", fp.name),
-                f"Error attempting to infer Signal Type: '{fakeprefix}' is not a valid Signal Type.",
+                f"Error: '{fakeprefix}' is not a valid Signal Type.*",
             )
 
     def test_prefix_and_no_prefixes(self):

@@ -173,15 +173,16 @@ class MatchCommand(command_base.Command):
         )
 
         if self.as_hashes:
-            hashes_grouped_by_prefix: t.Dict[
-                t.Optional[t.Type[SignalType]], t.Set[str]
-            ] = dict()
+            hashes_grouped_by_prefix: t.Dict[t.Optional[str], t.Set[str]] = {}
             # Infer the signal types from the prefixes (None is used as key for hashes with no prefix)
             for path in self.files:
                 _group_hashes_by_prefix(path, settings, hashes_grouped_by_prefix)
             # Validate the SignalType and append the None prefixes to the correct SignalType
-            self.validate_hashes_signal_type(hashes_grouped_by_prefix, signal_types)
-            signal_types = [key for key in hashes_grouped_by_prefix.keys() if key]
+            hashes_grouped_by_signal = self.validate(
+                settings, hashes_grouped_by_prefix, signal_types
+            )
+            signal_types = list(hashes_grouped_by_signal)
+
         indices: t.List[t.Tuple[t.Type[SignalType], SignalTypeIndex]] = []
         for s_type in signal_types:
             index = settings.index.load(s_type)
@@ -199,13 +200,13 @@ class MatchCommand(command_base.Command):
                 seen = set()  # TODO - maybe take the highest certainty?
                 if self.as_hashes:
                     results = _match_hashes(
-                        hashes_grouped_by_prefix[s_type], s_type, index
+                        hashes_grouped_by_signal[s_type], s_type, index
                     )
                 else:
                     results = _match_file(path, s_type, index)
 
                 for r in results:
-                    # TODO Improve visualisation of a single multiple hash query
+                    # TODO Improve output of a single multiple hash query
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
                     for collab, fetched_data in metadatas:
                         if not self.all and collab in seen:
@@ -220,51 +221,89 @@ class MatchCommand(command_base.Command):
                             fetched_data,
                         )
 
-    def validate_hashes_signal_type(
+    def validate(
         self,
-        hashes_grouped_by_prefix: t.Dict[t.Optional[t.Type[SignalType]], t.Set[str]],
+        settings: CLISettings,
+        hashes_grouped_by_prefix: t.Dict[t.Optional[str], t.Set[str]],
         signal_types: t.List[t.Type[SignalType]],
-    ) -> None:
-        if (
-            len(hashes_grouped_by_prefix) > 2
-            and None in hashes_grouped_by_prefix.keys()
-        ):
-            raise CommandError(
-                f"Error: Provided more than one SignalType and some hashes are missing a prefix",
-                2,
-            )
-        if self.only_signal:
-            if (
-                self.only_signal not in hashes_grouped_by_prefix.keys()
-                and None not in hashes_grouped_by_prefix.keys()
-            ):
+    ) -> t.Dict[t.Type[SignalType], t.Set[str]]:
+        """
+        Takes the hashes grouped by optional string prefix, performs all required validations.
+        Command line arguments, SignalType, hashes, and ambiguous SignalTypes are validated.
+        Returns a dict of validated SignalType, and validated hashes of each SignalType.
+        """
+
+        # There is a signal without a prefix and it's ambiguous (fix: -S)
+        if None in hashes_grouped_by_prefix:
+            if len(hashes_grouped_by_prefix) > 2 or len(signal_types) > 1:
+                # Ambiguous -- throw
                 raise CommandError(
-                    f"Error: SignalType '{self.only_signal} was provided, but inferred more from provided hashes."
-                    f"Inferred signal types: {', '.join(s_type.get_name() for s_type in hashes_grouped_by_prefix.keys() if s_type)}"
+                    f"Error: The SignalType is ambiguous for '{self.content_type.get_name()}'"
+                    "For '--hashes' please use '-S' or '--only-signal' to specify one of"
+                    f"{[s.get_name() for s in signal_types]}",
+                    2,
                 )
-        if (
-            len(signal_types) > 1
-            and len(hashes_grouped_by_prefix) == 1
-            and None in hashes_grouped_by_prefix.keys()
+            # unambiguous -- set
+            hashes_grouped_by_prefix.setdefault(
+                signal_types[0].get_name(), set()
+            ).update(hashes_grouped_by_prefix.pop(None))
+
+        # Validate that the SignalTypes and hashes are valid (fix: remove or update hash)
+        hashes_grouped_by_signal = self.validate_signal_type_and_hash(
+            settings, hashes_grouped_by_prefix
+        )
+
+        # There is a signal not valid for your arguments (fix: remove or change args)
+        if self.only_signal and (
+            self.only_signal not in hashes_grouped_by_signal
+            or len(hashes_grouped_by_signal) > 1
         ):
             raise CommandError(
-                f"Error: '{self.content_type.get_name()}' supports more than one SignalType"
-                "No prefix applied to the hashes, cannot infer correct SignalType"
+                f"Error: SignalType '{self.only_signal} was specified, but attempting to query with additional/different SignalTypes"
+                f"Please remove or change your arguments, or remove the additional SignalTypes"
             )
-        # As well as the above validations, also need to combine the None prefixes into the correct SignalType
-        if None in hashes_grouped_by_prefix.keys():
-            values = set().union(*hashes_grouped_by_prefix.values())
-            keys = list(hashes_grouped_by_prefix.keys())
-            keys.remove(None)
-            # Based on the validations, we know that there will only be one key here or one defined in settings
-            hashes_grouped_by_prefix.clear()
-            if not self.only_signal:
-                key: t.Optional[t.Type[SignalType]] = signal_types[0]
-                if len(keys) > 0:
-                    key = keys[0]
-            else:
-                key = self.only_signal
-            hashes_grouped_by_prefix[key] = values
+
+        return hashes_grouped_by_signal
+
+    def validate_signal_type_and_hash(
+        self,
+        settings: CLISettings,
+        hashes_grouped_by_prefix: t.Dict[t.Optional[str], t.Set[str]],
+    ) -> t.Dict[t.Type[SignalType], t.Set[str]]:
+        hashes_grouped_by_signal: t.Dict[t.Type[SignalType], t.Set[str]] = {}
+        for possible_signal, hashes in hashes_grouped_by_prefix.items():
+            if not possible_signal:
+                # This shouldn't be hit as we filter out the None key before
+                continue
+            # Validate the signal
+            try:
+                signal_type = settings.get_signal_type(possible_signal)
+            except:
+                logging.exception("Signal type %s is invalid.", possible_signal)
+                raise CommandError(
+                    f"Error: '{possible_signal}' is not a valid Signal Type."
+                    "Please remove or update this hash from your query",
+                    2,
+                )
+            # Validate the hashes
+            for hash in hashes:
+                try:
+                    hash = signal_type.validate_signal_str(hash.strip())
+                except:
+                    logging.exception(
+                        "%s failed verification on %s",
+                        signal_type.get_name() if signal_type else "None!",
+                        hash,
+                    )
+                    hash_repr = repr(hash)
+                    if len(hash_repr) > 50:
+                        hash_repr = hash_repr[:47] + "..."
+                    raise CommandError(
+                        f"{hash_repr} is not a valid hash for {signal_type.get_name() if signal_type else 'None!'}",
+                        2,
+                    )
+            hashes_grouped_by_signal[signal_type] = hashes
+        return hashes_grouped_by_signal
 
 
 def _match_file(
@@ -279,7 +318,7 @@ def _match_file(
 def _group_hashes_by_prefix(
     path: pathlib.Path,
     settings: CLISettings,
-    hashes_grouped_by_prefix: t.Dict[t.Optional[t.Type[SignalType]], t.Set[str]],
+    hashes_grouped_by_prefix: t.Dict[t.Optional[str], t.Set[str]],
 ) -> None:
     for line in path.read_text().splitlines():
         line = line.strip()
@@ -287,36 +326,12 @@ def _group_hashes_by_prefix(
             continue
         components = line.split()
         signal_type = None
-        if len(components) > 1:
+        if len(components) == 2:
             # Assume it has a prefix
-            possible_type = components[0]
-            hash = components[1].strip()
-            try:
-                signal_type = settings.get_signal_type(possible_type)
-                hash = signal_type.validate_signal_str(hash)
-            except KeyError:
-                logging.exception("Signal type '%s' is invalid", possible_type)
-                raise CommandError(
-                    f"Error attempting to infer Signal Type: '{possible_type}' is not a valid Signal Type.",
-                    2,
-                )
-            except Exception as e:
-                logging.exception(
-                    "%s failed verification on %s",
-                    signal_type.get_name() if signal_type else "None!",
-                    hash,
-                )
-                hash_repr = repr(hash)
-                if len(hash_repr) > 50:
-                    hash_repr = hash_repr[:47] + "..."
-                raise CommandError(
-                    f"{hash} from {path} is not a valid hash for {signal_type.get_name() if signal_type else 'None!'}",
-                    2,
-                )
+            signal_type, hash = components
         else:
             # Assume it doesn't have a prefix and is a raw hash
             hash = components[0]
-            # We can't validate it this point as we have no context on which signal type
         hashes = hashes_grouped_by_prefix.get(signal_type, set())
         hashes.add(hash)
         hashes_grouped_by_prefix[signal_type] = hashes
