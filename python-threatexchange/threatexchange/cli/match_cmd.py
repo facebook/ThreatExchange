@@ -173,13 +173,15 @@ class MatchCommand(command_base.Command):
         )
 
         if self.as_hashes:
-            hashes_grouped_by_prefix = dict()
+            hashes_grouped_by_prefix: t.Dict[
+                t.Optional[t.Type[SignalType]], t.Set[str]
+            ] = dict()
             # Infer the signal types from the prefixes (None is used as key for hashes with no prefix)
             for path in self.files:
                 _group_hashes_by_prefix(path, settings, hashes_grouped_by_prefix)
             # Validate the SignalType and append the None prefixes to the correct SignalType
             self.validate_hashes_signal_type(hashes_grouped_by_prefix, signal_types)
-            signal_types = list(hashes_grouped_by_prefix.keys())
+            signal_types = [key for key in hashes_grouped_by_prefix.keys() if key]
         indices: t.List[t.Tuple[t.Type[SignalType], SignalTypeIndex]] = []
         for s_type in signal_types:
             index = settings.index.load(s_type)
@@ -220,9 +222,9 @@ class MatchCommand(command_base.Command):
 
     def validate_hashes_signal_type(
         self,
-        hashes_grouped_by_prefix: t.Dict[t.Optional[SignalType], t.Set[str]],
+        hashes_grouped_by_prefix: t.Dict[t.Optional[t.Type[SignalType]], t.Set[str]],
         signal_types: t.List[t.Type[SignalType]],
-    ) -> bool:
+    ) -> None:
         if (
             len(hashes_grouped_by_prefix) > 2
             and None in hashes_grouped_by_prefix.keys()
@@ -257,7 +259,7 @@ class MatchCommand(command_base.Command):
             # Based on the validations, we know that there will only be one key here or one defined in settings
             hashes_grouped_by_prefix.clear()
             if not self.only_signal:
-                key = signal_types[0]
+                key: t.Optional[t.Type[SignalType]] = signal_types[0]
                 if len(keys) > 0:
                     key = keys[0]
             else:
@@ -277,7 +279,7 @@ def _match_file(
 def _group_hashes_by_prefix(
     path: pathlib.Path,
     settings: CLISettings,
-    hashes_grouped_by_prefix: t.Dict[t.Optional[SignalType], t.Set[str]],
+    hashes_grouped_by_prefix: t.Dict[t.Optional[t.Type[SignalType]], t.Set[str]],
 ) -> None:
     for line in path.read_text().splitlines():
         line = line.strip()
@@ -300,13 +302,15 @@ def _group_hashes_by_prefix(
                 )
             except Exception as e:
                 logging.exception(
-                    "%s failed verification on %s", signal_type.get_name(), hash
+                    "%s failed verification on %s",
+                    signal_type.get_name() if signal_type else "None!",
+                    hash,
                 )
                 hash_repr = repr(hash)
                 if len(hash_repr) > 50:
                     hash_repr = hash_repr[:47] + "..."
                 raise CommandError(
-                    f"{hash} from {path} is not a valid hash for {signal_type.get_name()}",
+                    f"{hash} from {path} is not a valid hash for {signal_type.get_name() if signal_type else 'None!'}",
                     2,
                 )
         else:
