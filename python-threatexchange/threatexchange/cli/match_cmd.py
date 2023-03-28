@@ -167,19 +167,19 @@ class MatchCommand(command_base.Command):
         if self.as_hashes:
             types = (BytesHasher, TextHasher, FileHasher)
         signal_types = [s for s in signal_types if issubclass(s, types)]
-        if self.as_hashes and len(signal_types) > 1:
-            raise CommandError(
-                f"Error: '{self.content_type.get_name()}' supports more than one SignalType."
-                " for '--hashes' also use '--only-signal' to specify one of "
-                f"{[s.get_name() for s in signal_types]}",
-                2,
-            )
-
         logging.info(
             "Signal types that apply: %s",
             ", ".join(s.get_name() for s in signal_types) or "None!",
         )
 
+        if self.as_hashes:
+            hashes_grouped_by_prefix = dict()
+            # Infer the signal types from the prefixes (None is used as key for hashes with no prefix)
+            for path in self.files:
+                _group_hashes_by_prefix(path, settings, hashes_grouped_by_prefix)
+            # Validate the SignalType and append the None prefixes to the correct SignalType
+            self.validate_hashes_signal_type(hashes_grouped_by_prefix, signal_types)
+            signal_types = list(hashes_grouped_by_prefix.keys())
         indices: t.List[t.Tuple[t.Type[SignalType], SignalTypeIndex]] = []
         for s_type in signal_types:
             index = settings.index.load(s_type)
@@ -196,11 +196,14 @@ class MatchCommand(command_base.Command):
             for s_type, index in indices:
                 seen = set()  # TODO - maybe take the highest certainty?
                 if self.as_hashes:
-                    results = _match_hashes(path, s_type, index)
+                    results = _match_hashes(
+                        hashes_grouped_by_prefix[s_type], s_type, index
+                    )
                 else:
                     results = _match_file(path, s_type, index)
 
                 for r in results:
+                    # TODO Improve visualisation of a single multiple hash query
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
                     for collab, fetched_data in metadatas:
                         if not self.all and collab in seen:
@@ -215,6 +218,52 @@ class MatchCommand(command_base.Command):
                             fetched_data,
                         )
 
+    def validate_hashes_signal_type(
+        self,
+        hashes_grouped_by_prefix: t.Dict[t.Optional[SignalType], t.Set[str]],
+        signal_types: t.List[t.Type[SignalType]],
+    ) -> bool:
+        if (
+            len(hashes_grouped_by_prefix) > 2
+            and None in hashes_grouped_by_prefix.keys()
+        ):
+            raise CommandError(
+                f"Error: Provided more than one SignalType and some hashes are missing a prefix",
+                2,
+            )
+        if self.only_signal:
+            if (
+                self.only_signal not in hashes_grouped_by_prefix.keys()
+                and None not in hashes_grouped_by_prefix.keys()
+            ):
+                raise CommandError(
+                    f"Error: SignalType '{self.only_signal} was provided, but inferred more from provided hashes."
+                    f"Inferred signal types: {', '.join(s_type.get_name() for s_type in hashes_grouped_by_prefix.keys() if s_type)}"
+                )
+        if (
+            len(signal_types) > 1
+            and len(hashes_grouped_by_prefix) == 1
+            and None in hashes_grouped_by_prefix.keys()
+        ):
+            raise CommandError(
+                f"Error: '{self.content_type.get_name()}' supports more than one SignalType"
+                "No prefix applied to the hashes, cannot infer correct SignalType"
+            )
+        # As well as the above validations, also need to combine the None prefixes into the correct SignalType
+        if None in hashes_grouped_by_prefix.keys():
+            values = set().union(*hashes_grouped_by_prefix.values())
+            keys = list(hashes_grouped_by_prefix.keys())
+            keys.remove(None)
+            # Based on the validations, we know that there will only be one key here or one defined in settings
+            hashes_grouped_by_prefix.clear()
+            if not self.only_signal:
+                key = signal_types[0]
+                if len(keys) > 0:
+                    key = keys[0]
+            else:
+                key = self.only_signal
+            hashes_grouped_by_prefix[key] = values
+
 
 def _match_file(
     path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
@@ -225,15 +274,62 @@ def _match_file(
     return index.query(s_type.hash_from_file(path))
 
 
+def _group_hashes_by_prefix(
+    path: pathlib.Path,
+    settings: CLISettings,
+    hashes_grouped_by_prefix: t.Dict[t.Optional[SignalType], t.Set[str]],
+) -> None:
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        components = line.split()
+        signal_type = None
+        if len(components) > 1:
+            # Assume it has a prefix
+            possible_type = components[0]
+            hash = components[1].strip()
+            try:
+                signal_type = settings.get_signal_type(possible_type)
+                hash = signal_type.validate_signal_str(hash)
+            except KeyError:
+                logging.exception("Signal type '%s' is invalid", possible_type)
+                raise CommandError(
+                    f"Error attempting to infer Signal Type: '{possible_type}' is not a valid Signal Type.",
+                    2,
+                )
+            except Exception as e:
+                logging.exception(
+                    "%s failed verification on %s", signal_type.get_name(), hash
+                )
+                hash_repr = repr(hash)
+                if len(hash_repr) > 50:
+                    hash_repr = hash_repr[:47] + "..."
+                raise CommandError(
+                    f"{hash} from {path} is not a valid hash for {signal_type.get_name()}",
+                    2,
+                )
+        else:
+            # Assume it doesn't have a prefix and is a raw hash
+            hash = components[0]
+            # We can't validate it this point as we have no context on which signal type
+        hashes = hashes_grouped_by_prefix.get(signal_type, set())
+        hashes.add(hash)
+        hashes_grouped_by_prefix[signal_type] = hashes
+
+
 def _match_hashes(
-    path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
+    hashes: t.Set[str],
+    s_type: t.Type[SignalType],
+    index: SignalTypeIndex,
 ) -> t.Sequence[IndexMatch]:
     ret: t.List[IndexMatch] = []
-    for hash in path.read_text().splitlines():
+    for hash in hashes:
         hash = hash.strip()
         if not hash:
             continue
         try:
+            # Need to keep this final validation as we are yet to have validated the hashes without a prefix
             hash = s_type.validate_signal_str(hash)
         except Exception:
             logging.exception("%s failed verification on %s", s_type.get_name(), hash)
@@ -241,7 +337,7 @@ def _match_hashes(
             if len(hash_repr) > 50:
                 hash_repr = hash_repr[:47] + "..."
             raise CommandError(
-                f"{hash_repr} from {path} is not a valid hash for {s_type.get_name()}",
+                f"{hash_repr} is not a valid hash for {s_type.get_name()}",
                 2,
             )
         ret.extend(index.query(hash))
