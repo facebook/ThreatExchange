@@ -1,5 +1,50 @@
 # Contributing
-Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions develop locally and open PRs
+
+Please see [CONTRIBUTING](../CONTRIBUTING.md) in the repo root for more general guidelines on how to contribute by
+developing locally and submitting pull requests on Github.
+
+## Development environments
+
+### Self-managed Python
+
+If you're a regular Python developer and already have a Python development environment that works for you,
+you can use it. `python-threatexchange` is laid out like any Python package, complete with `setup.py`
+where all dependencies are defined.
+
+### macOS, Homebrew, virtualenv
+
+Virtualenv is a commonly used tool in the Python ecosystem which creates lightweight isolated environments
+for a specific project. This avoids conflicting package dependencies when working on multiple Python projects.
+
+* Install Python - `brew install python`
+* Install virtualenv - `pip install virtualenv`
+* Create a virtualenv in this directory: `virtualenv .venv`
+* Activate the virtualenv: `source .venv/bin/activate`
+* Install `python-threatexchange` into the virtualenv in editable mode with dev extras: `pip install --editable '.[dev]'`
+* You should now be able to run the CLI by executing the `threatexchange` or `tx` command within the activated venv.
+
+### VSCode with a Dev Container
+
+In some circumstances there are barriers to using the above workflow, such as managed laptops
+which have restrictions on what can be installed. If you are a Meta employee using a corporate
+laptop you will most likely run into difficulties for this reason.
+
+In this case, you have the option to use a development container, which has tight integration with Visual Studio Code.
+The configuration for this is defined in the `.devcontainer` directory.
+
+To use this workflow:
+* Install VSCode. (If you're a Meta employee, be sure to install the stock VSCode as your preinstalled version won't be compatible).
+* Install Docker Desktop
+* Install the "Dev Containers" extension in VSCode
+* Clone this Git repo locally
+* Open the `python-threatexchange` project in the dev container:
+  * Cmd-Shift-P, "Dev Containers: Open Folder in Container..."
+  * Select this directory within the local Git repo (**not** the parent directory, the repo root)
+  * Wait for the container to build
+* Selecting Terminal > New Terminal from the VSCode menu will open a terminal in the dev container.
+
+This is a Debian based Linux container with all Python dependencies installed. The `threatexchange` and `tx` commands
+map directly to the live code in your editor, so there is no need to reinstall or resync between edits.
 
 ## Code Style
 threatexchange uses [black](https://PyPI.org/project/black/) for consistent formatting across
