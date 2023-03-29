@@ -171,9 +171,6 @@ class FetchCommand(command_base.Command):
 
         if any_succeded and not self.skip_index_rebuild:
             self.stderr("Rebuilding match indices...")
-
-            # TODO: Hack, pass the storage properly
-
             DatasetCommand().execute_generate_indices(settings)
 
         if not all_succeeded:
