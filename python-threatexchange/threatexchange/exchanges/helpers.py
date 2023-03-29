@@ -119,8 +119,6 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
         equivalent work.
         """
 
-        print("WHAT IS DELTA CHECKPOINT", delta.checkpoint)
-
         state = self._get_state(collab)
         if len(delta.updates) == 0 and delta.checkpoint in (
             None,
@@ -128,7 +126,6 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
         ):
             logging.warning("No op update for %s", collab.name)
             return
-        print("DELTAAA", delta)
         state.delta = delta
 
     def flush(self, collab: CollaborationConfigBase) -> None:
@@ -178,20 +175,6 @@ class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
         sense.
         """
 
-        print('get_for_signal_type from the simple fetched state store')
-        # ret = {}
-        # for collab in collabs:
-        #     state = self._get_state(collab)
-        #     if not state.empty:
-        #         by_signal = state.api_cls.naive_convert_to_signal_type(
-        #             [signal_type], collab, state.delta.updates
-        #         ).get(signal_type, {})
-        #         if by_signal:
-        #             ret[collab.name] = by_signal
-        # return ret
-
-        print("calling x get_for_signal_type")
-
         ret = {}
         for collab in collabs:
             with dbm.open(collab.name, 'c') as db:
@@ -202,18 +185,16 @@ class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
                     _k, _v = map(pickle.loads, [k, db[k]])
                     data[_k] = _v
                     k = db.nextkey(k)
-                print("MY DATA", data)
                 by_signal = self.api_cls.naive_convert_to_signal_type([signal_type], collab, data).get(signal_type, {})
-                print("MY BY SIGNAL", by_signal)
                 if by_signal:
                     ret[collab.name] = by_signal
-        print("MY RESULTS", ret)
         return ret
 
         # raise NotImplementedError
     
     def clear(self, collab: CollaborationConfigBase) -> None:
-        # open database with 'n' flag to create new db for the same collab and close
+        # open database with 'n' flag to create new db and close
+        # this should wipe out all keys and values for given collab db
         dbm.open(collab.name, 'n').close()
 
     def exists(self, collab: CollaborationConfigBase) -> bool:
@@ -229,7 +210,6 @@ class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
             db['checkpoint'] = db['_checkpoint'] if '_checkpoint' in db else None
     
     def merge(self, collab: CollaborationConfigBase, delta: fetch_state.FetchDelta) -> None:
-        print("CALLS MERGE")
         with dbm.open(collab.name, 'c') as db:
             if len(delta.updates) == 0 and delta.checkpoint in (
                 None,
@@ -239,12 +219,9 @@ class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
                 return
   
             for k, v in delta.updates.items():
-                print('KEY', k, 'VALUE', v)
                 db[pickle.dumps(k)] = pickle.dumps(v)
         
-        print('calls CREATE CHECKPOINT')
         with dbm.open(f'{collab.name}_checkpoint', 'c') as db:
-            print('CREATE CHECKPOINT')
             # Save _checkpoint value but "commit" it in flush() 
             db['_checkpoint'] = pickle.dumps(delta.checkpoint)
             

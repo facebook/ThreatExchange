@@ -195,9 +195,7 @@ class SignalExchangeAPI(
         together keyed by ID will eventually get you an entire copy of the database.
         """
         for k, v in new.items():
-            print("KEY VALUE OLD", "KEY", k, "VALUE", v)
             new_v = cls.fetch_value_merge(old.get(k), v)
-            print("new_v", new_v)
             if new_v is None:
                 old.pop(k, None)  # type: ignore
             else:
