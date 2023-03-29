@@ -23,6 +23,9 @@ from threatexchange.exchanges.fetch_state import (
 from threatexchange.cli import command_base
 
 
+from pprint import pprint
+
+
 class FetchCommand(command_base.Command):
     """
     Download content from signal exchange APIs to disk.
@@ -78,6 +81,10 @@ class FetchCommand(command_base.Command):
             metavar="NAME",
             help="only fetch for this collaboration",
         )
+        ap.add_argument(
+            "--storage",
+            choices=["dbm"]
+        )
 
     def __init__(
         self,
@@ -89,6 +96,7 @@ class FetchCommand(command_base.Command):
         only_api: t.Optional[str] = None,
         only_collab: t.Optional[str] = None,
         checkpoint_every: int = 600,
+        storage: t.Optional[str] = None
     ) -> None:
         self.clear = clear
         self.time_limit_sec = time_limit_sec
@@ -110,6 +118,9 @@ class FetchCommand(command_base.Command):
         self.last_update_printed = time.time() - self.PROGRESS_PRINT_INTERVAL_SEC + 5
         self.progress_fetched_count = 0
         self.counts: t.Dict[str, int] = collections.Counter()
+
+        # Storage settings
+        self.storage = storage
 
     def has_hit_limits(self):
         if self.limit is not None and self.total_fetched_count >= self.limit:
@@ -141,7 +152,7 @@ class FetchCommand(command_base.Command):
         if self.clear:
             self.stderr("Clearing fetched state")
             for api in settings.apis:
-                store = settings.fetched_state.get_for_api(api)
+                store = settings.fetched_state.get_for_api(api, self.storage)
                 for collab in self.collabs:
                     if self.only_collab not in (None, collab.name):
                         continue
@@ -160,6 +171,9 @@ class FetchCommand(command_base.Command):
 
         if any_succeded and not self.skip_index_rebuild:
             self.stderr("Rebuilding match indices...")
+
+            # TODO: Hack, pass the storage properly
+
             DatasetCommand().execute_generate_indices(settings)
 
         if not all_succeeded:
@@ -186,8 +200,9 @@ class FetchCommand(command_base.Command):
         settings: CLISettings,
         collab: CollaborationConfigBase,
     ) -> bool:
+        print("Calling execute_for_collab", self.storage)
         api = settings.apis.get_instance_for_collab(collab)
-        store = settings.fetched_state.get_for_api(api.__class__)
+        store = settings.fetched_state.get_for_api(api.__class__, self.storage)
         checkpoint = self._verify_store_and_checkpoint(store, collab)
 
         self.progress_fetched_count = 0
@@ -228,7 +243,7 @@ class FetchCommand(command_base.Command):
                     break
                 if self.should_checkpoint():
                     self._print_progress(checkpoint=True)
-                    store.flush()
+                    store.flush(collab)
                     self.last_checkpoint_time = time.time()
             completed = True
         except Exception:
@@ -239,7 +254,7 @@ class FetchCommand(command_base.Command):
             self._stderr_current("Interrupted, writing a checkpoint...")
             raise
         finally:
-            store.flush()
+            store.flush(collab)
 
         self._print_progress(done=completed)
         return True

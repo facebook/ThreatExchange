@@ -32,6 +32,8 @@ from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.utils import dataclass_json
 
+from threatexchange.exchanges.helpers import DMBFetchedStateStore
+
 
 CONFIG_FILENAME = "config.json"
 
@@ -44,6 +46,7 @@ class CLiConfig:
     ncmec_credentials: t.Optional[t.Tuple[str, str]] = None
     stop_ncii_keys: t.Optional[StopNCIICredentials] = None
     extensions: t.Set[str] = field(default_factory=set)
+    storage: t.Optional[str] = None
     # Every item needs a default for backwards compatibility
 
 
@@ -198,13 +201,16 @@ class _FetchStoreAccessor:
             collab for collab in collabs if self.get_for_collab(collab).exists(collab)
         )
 
-    def get_for_api(self, api: t.Type[SignalExchangeAPI]) -> CliSimpleState:
-        return CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
+    def get_for_api(self, api: t.Type[SignalExchangeAPI], storage=None) -> fetch_state.FetchedStateStoreBase:
+        print("PASSED STORAGE??", storage)
+        # if storage == "dbm":
+        return DMBFetchedStateStore(api)
+        # return CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
 
     def get_for_collab(
-        self, collab: collab_config.CollaborationConfigBase
-    ) -> CliSimpleState:
-        return self.get_for_api(self._parent._mapping.exchange.api_by_name[collab.api])
+        self, collab: collab_config.CollaborationConfigBase, storage=None
+    ) -> fetch_state.FetchedStateStoreBase:
+        return self.get_for_api(self._parent._mapping.exchange.api_by_name[collab.api], storage)
 
 
 class CLISettings:
