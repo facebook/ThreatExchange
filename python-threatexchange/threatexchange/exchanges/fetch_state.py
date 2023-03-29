@@ -263,7 +263,7 @@ class FetchedStateStoreBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def flush(self) -> None:
+    def flush(self, collab: CollaborationConfigBase) -> None:
         """
         Finish writing the results of previous merges to persistant state.
 
@@ -291,5 +291,12 @@ class FetchedStateStoreBase(ABC):
         TODO: This currently implies that you are going to load the entire dataset
         into memory, which once we start getting huge amounts of data, might not make
         sense.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def exists(self, collab: CollaborationConfigBase) -> bool:
+        """
+        Check if collab exists in storage
         """
         raise NotImplementedError

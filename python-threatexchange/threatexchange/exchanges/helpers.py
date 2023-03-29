@@ -7,6 +7,9 @@ They demonstrate how the methods in SignalExchangeAPI can be used to
 reproduce databases of signals, as well as simple recipes for stage.
 """
 
+from os import path
+import dbm
+import pickle
 from dataclasses import dataclass, field
 import logging
 import typing as t
@@ -116,6 +119,8 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
         equivalent work.
         """
 
+        print("WHAT IS DELTA CHECKPOINT", delta.checkpoint)
+
         state = self._get_state(collab)
         if len(delta.updates) == 0 and delta.checkpoint in (
             None,
@@ -123,9 +128,10 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
         ):
             logging.warning("No op update for %s", collab.name)
             return
+        print("DELTAAA", delta)
         state.delta = delta
 
-    def flush(self) -> None:
+    def flush(self, collab: CollaborationConfigBase) -> None:
         for collab_name, state in self._state.items():
             if state.dirty:
                 assert state.delta is not None
@@ -145,3 +151,111 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
                 if by_signal:
                     ret[collab.name] = by_signal
         return ret
+
+    def exists(self, collab: CollaborationConfigBase) -> bool:
+        raise NotImplementedError
+
+
+class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
+    def __init__(
+        self,
+        api_cls: TSignalExchangeAPICls,
+    ) -> None:
+        self.api_cls = api_cls
+
+
+    def get_for_signal_type(
+        self, collabs: t.List[CollaborationConfigBase], signal_type: t.Type[SignalType]
+    ) -> t.Dict[str, t.Dict[str, fetch_state.FetchedSignalMetadata]]:
+        """
+        Get as a map of CollabConfigBase.name() => {signal: Metadata}
+
+        This is meant for simple storage and indexing solutions, but at
+        scale, you likely want to store as IDs rather than the full metadata.
+
+        TODO: This currently implies that you are going to load the entire dataset
+        into memory, which once we start getting huge amounts of data, might not make
+        sense.
+        """
+
+        print('get_for_signal_type from the simple fetched state store')
+        # ret = {}
+        # for collab in collabs:
+        #     state = self._get_state(collab)
+        #     if not state.empty:
+        #         by_signal = state.api_cls.naive_convert_to_signal_type(
+        #             [signal_type], collab, state.delta.updates
+        #         ).get(signal_type, {})
+        #         if by_signal:
+        #             ret[collab.name] = by_signal
+        # return ret
+
+        print("calling x get_for_signal_type")
+
+        ret = {}
+        for collab in collabs:
+            with dbm.open(collab.name, 'c') as db:
+                k = db.firstkey()
+                data = {}
+                while k:
+                    print(k, db[k])
+                    _k, _v = map(pickle.loads, [k, db[k]])
+                    data[_k] = _v
+                    k = db.nextkey(k)
+                print("MY DATA", data)
+                by_signal = self.api_cls.naive_convert_to_signal_type([signal_type], collab, data).get(signal_type, {})
+                print("MY BY SIGNAL", by_signal)
+                if by_signal:
+                    ret[collab.name] = by_signal
+        print("MY RESULTS", ret)
+        return ret
+
+        # raise NotImplementedError
+    
+    def clear(self, collab: CollaborationConfigBase) -> None:
+        # open database with 'n' flag to create new db for the same collab and close
+        dbm.open(collab.name, 'n').close()
+
+    def exists(self, collab: CollaborationConfigBase) -> bool:
+        return dbm.whichdb(collab.name) is not None
+
+    def flush(self, collab: CollaborationConfigBase) -> None:
+        """
+        Finish writing the results of previous merges to persistant state.
+
+        This should also persist the checkpoint.
+        """
+        with dbm.open(f'{collab.name}_checkpoint', 'c') as db:
+            db['checkpoint'] = db['_checkpoint'] if '_checkpoint' in db else None
+    
+    def merge(self, collab: CollaborationConfigBase, delta: fetch_state.FetchDelta) -> None:
+        print("CALLS MERGE")
+        with dbm.open(collab.name, 'c') as db:
+            if len(delta.updates) == 0 and delta.checkpoint in (
+                None,
+                db['checkpoint'],
+            ):
+                logging.warning("No op update for %s", collab.name)
+                return
+  
+            for k, v in delta.updates.items():
+                print('KEY', k, 'VALUE', v)
+                db[pickle.dumps(k)] = pickle.dumps(v)
+        
+        print('calls CREATE CHECKPOINT')
+        with dbm.open(f'{collab.name}_checkpoint', 'c') as db:
+            print('CREATE CHECKPOINT')
+            # Save _checkpoint value but "commit" it in flush() 
+            db['_checkpoint'] = pickle.dumps(delta.checkpoint)
+            
+    def get_checkpoint(
+        self, collab: CollaborationConfigBase
+    ) -> t.Optional[fetch_state.FetchCheckpointBase]:
+        """
+        Returns the last checkpoint passed to merge() after a flush()
+        """
+        if dbm.whichdb(f'{collab.name}_checkpoint') is None:
+            return None
+
+        with dbm.open(f'{collab.name}_checkpoint', 'r') as db:
+            return pickle.loads(db['checkpoint']) if 'checkpoint' in db else None

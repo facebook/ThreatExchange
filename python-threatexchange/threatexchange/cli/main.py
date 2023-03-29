@@ -142,6 +142,7 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
 
 
 def execute_command(settings: CLISettings, namespace) -> None:
+    print("Hello from main")
     assert hasattr(namespace, "command_cls")
     command_cls: t.Type[base.Command] = namespace.command_cls
     logging.debug("Setup complete, handing off to %s", command_cls.__name__)
