@@ -42,6 +42,7 @@ $ git config --global core.autocrlf "$OLD_CRLF"
 If we were smarter, we'd have the devcontainer built on a checkout of the repo, but this was faster to figure out than getting git configs in.
 
 2. Download VS Code from [the VS Code website](https://code.visualstudio.com/).
+   1. If you are a Meta employee (thanks for looking into contributing!), don't skip this step, this version is different than your pre-installed one. 
 
 3. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) on your computer. 
 

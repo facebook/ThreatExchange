@@ -66,5 +66,10 @@ setup(
         "numpy==1.24.2",  # faiss
     ],
     extras_require=extras_require,
-    entry_points={"console_scripts": ["threatexchange = threatexchange.cli.main:main"]},
+    entry_points={
+        "console_scripts": [
+            "threatexchange = threatexchange.cli.main:main",
+            "tx = threatexchange.cli.main:main",
+        ],
+    },
 )
