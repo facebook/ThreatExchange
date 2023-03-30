@@ -22,12 +22,16 @@ You'll need an AWS account set up. Additionally, you'll need the following tools
 2. [jq cli](https://stedolan.github.io/jq/)
 3. [terraform cli](https://www.terraform.io/)
 4. [Docker](https://www.docker.com/)
+5. [python3](https://www.python.org/) (including `pip` and `venv`)
 
 ## Spinning Up an Instance
 In a horrifying misuse of Make, there is a makefile to help you get started and create some configs with default naming. More details on customization be found in [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ```bash
 $ cd hasher-matcher-actioner
+# Recommended: setup a virtual environment as make/terraform steps include pip install as part of initial deployment.
+$ python3 -m venv ~/.venv/hma
+$ source ~/.venv/hma/bin/activate 
 # Before doing this step, make sure to configure the aws cli with `aws configure`
 $ make dev_create_configs  # Will populate a terraform.tfvars backend.tf with default names
 # Optional: edit terraform.tfvars backend.tf to your preference for names of services

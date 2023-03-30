@@ -50,14 +50,6 @@ class FBThreatExchangeCollabConfig(
     _FBThreatExchangeCollabConfigRequiredFields,
 ):
     api: str = field(init=False, default=_API_NAME)
-    # TODO - to restore someday in the future
-    # app_token_override: t.Optional[str] = field(
-    #     default=None,
-    #     metadata={
-    #         "help": "if you need to use a specific app for this collaboration",
-    #         "metavar": "APP_TOKEN",
-    #     },
-    # )
 
 
 @dataclass
@@ -296,7 +288,9 @@ class FBThreatExchangeSignalExchangeAPI(
 
     def fetch_iter(
         self,
-        supported_signal_types: t.Sequence[t.Type[SignalType]],
+        # A future update might configure the collab to only store
+        # signal types it knows how to process
+        _supported_signal_types: t.Sequence[t.Type[SignalType]],
         # None if fetching for the first time,
         # otherwise the previous FetchDelta returned
         checkpoint: t.Optional[FBThreatExchangeCheckpoint],
@@ -309,8 +303,6 @@ class FBThreatExchangeSignalExchangeAPI(
             fields=ThreatUpdateJSON.te_threat_updates_fields(),
             decode_fn=ThreatUpdateJSON,
         )
-        type_mapping = _make_indicator_type_mapping(supported_signal_types)
-
         highest_time = start_time or 0
         batch: t.List[ThreatUpdateJSON]
         for batch in cursor:

@@ -681,8 +681,34 @@ module "dashboard" {
   api_gateway_id = module.api.api_gateway_id
 }
 
-module "migrations" {
-  source = "./migrations"
 
-  config_table = local.config_table
+
+# Create initial default signal exchange and signal + content type mapping from python-threatexchange 
+resource "null_resource" "default_system_config" {
+  depends_on = [
+    local.config_table
+  ]
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command     = "python3 -m pip install -e '.[all]'"
+  }
+
+  # AFTER v0.1.2 https://github.com/facebook/ThreatExchange/releases/tag/HMA-v0.1.2
+  provisioner "local-exec" {
+    working_dir = "../"
+    command     = "hmacli migrate 2022_04_02_default_content_signal_type_configs --config-table ${local.config_table.name}"
+  }
+
+  provisioner "local-exec" {
+    working_dir = "../"
+    command     = "hmacli migrate 2022_07_24_default_signal_exchange_apis --config-table ${local.config_table.name}"
+  }
+
+}
+
+# For now empty because all existing "migrations" were actually required parts of setup. modules kept for backwards compatibility (and possibly future use)   
+module "migrations" {
+  depends_on = [null_resource.default_system_config]
+  source     = "./migrations"
 }
