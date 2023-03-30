@@ -16,6 +16,7 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import FileHasher, SignalType
 from threatexchange.cli import command_base
 from threatexchange.cli.helpers import FlexFilesInputAction
+from threatexchange.hasher.hasher import Hasher
 
 
 class HashCommand(command_base.Command):
@@ -88,21 +89,7 @@ class HashCommand(command_base.Command):
         self.files = files
 
     def execute(self, settings: CLISettings) -> None:
-        hashers = [
-            s
-            for s in settings.get_signal_types_for_content(self.content_type)
-            if issubclass(s, FileHasher)
-        ]
-        if self.signal_type is not None:
-            if self.signal_type not in hashers:
-                raise CommandError.user(
-                    f"{self.signal_type.get_name()} "
-                    f"does not apply to {self.content_type.get_name()}"
-                )
-            hashers = [self.signal_type]  # type: ignore  # can't detect intersection types
-
-        for file in self.files:
-            for hasher in hashers:
-                hash_str = hasher.hash_from_file(file)
-                if hash_str:
-                    print(hasher.get_name(), hash_str)
+        hasher = Hasher(settings, self.content_type, self.signal_type)
+        hashes = hasher.hash(*self.files)
+        for hash in hashes:
+            print(hash)
