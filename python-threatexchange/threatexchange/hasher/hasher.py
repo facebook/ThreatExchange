@@ -21,13 +21,13 @@ class Hasher:
         if signal_type:
             if signal_type not in self.hashers:
                 raise ValueError(
-                    f"{self.signal_type.get_name()} "
-                    f"does not apply to {self.content_type.get_name()}"
+                    f"{signal_type.get_name()} "
+                    f"does not apply to {content_type.get_name()}"
                 )
-            self.hashers = [signal_type]
+            self.hashers = [signal_type] # type: ignore  # can't detect intersection types
 
     def hash(self, *files: pathlib.Path) -> t.List[str]:
-        resp : t.List[str] = []
+        resp: t.List[str] = []
         for file in files:
             for hasher in self.hashers:
                 hash_str = hasher.hash_from_file(file)
