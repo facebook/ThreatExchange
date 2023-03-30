@@ -104,7 +104,7 @@ data "aws_iam_policy_document" "fetcher" {
   statement {
     effect    = "Allow"
     actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem", "dynamodb:Query", "dynamodb:PutItem"]
-    resources = [var.banks_datastore.arn]
+    resources = ["${var.banks_datastore.arn}*"]
   }
 
   statement {
