@@ -2,7 +2,6 @@
 
 """
 Local storage and configuration for the CLI.
-
 The CLI and Hasher-Matcher-Actioner are roughly parallel, but this isn't a 
 scalable service running on AWS. Instead, we have all of our state in
 a file (likely ~/.threatexchange)
@@ -32,8 +31,6 @@ from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.utils import dataclass_json
 
-from threatexchange.exchanges.helpers import DMBFetchedStateStore
-
 
 CONFIG_FILENAME = "config.json"
 
@@ -46,14 +43,12 @@ class CLiConfig:
     ncmec_credentials: t.Optional[t.Tuple[str, str]] = None
     stop_ncii_keys: t.Optional[StopNCIICredentials] = None
     extensions: t.Set[str] = field(default_factory=set)
-    storage: t.Optional[str] = None
     # Every item needs a default for backwards compatibility
 
 
 class CliState(collab_config.CollaborationConfigStoreBase):
     """
     A wrapper around stateful information stored for the CLI.
-
     Everything is just in a single directory (usually ~/.threatexchange).
     """
 
@@ -201,16 +196,13 @@ class _FetchStoreAccessor:
             collab for collab in collabs if self.get_for_collab(collab).exists(collab)
         )
 
-    def get_for_api(self, api: t.Type[SignalExchangeAPI], storage=None) -> fetch_state.FetchedStateStoreBase:
-        print("PASSED STORAGE??", storage)
-        # if storage == "dbm":
-        return DMBFetchedStateStore(api)
-        # return CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
+    def get_for_api(self, api: t.Type[SignalExchangeAPI]) -> CliSimpleState:
+        return CliSimpleState(api, self._parent._state.dir_for_fetched_state(api))
 
     def get_for_collab(
-        self, collab: collab_config.CollaborationConfigBase, storage=None
-    ) -> fetch_state.FetchedStateStoreBase:
-        return self.get_for_api(self._parent._mapping.exchange.api_by_name[collab.api], storage)
+        self, collab: collab_config.CollaborationConfigBase
+    ) -> CliSimpleState:
+        return self.get_for_api(self._parent._mapping.exchange.api_by_name[collab.api])
 
 
 class CLISettings:
@@ -224,74 +216,3 @@ class CLISettings:
         cli_state: CliState,
     ) -> None:
         self._mapping = mapping
-        self._state = cli_state
-        self._sample_message_printed = False
-        self._config: t.Optional[CLiConfig] = None
-        self.index = CliIndexStore(cli_state.index_dir)
-        self.fetched_state = _FetchStoreAccessor(self)
-        self.apis = _SignalExchangeAccessor(self)
-
-    def get_persistent_config(self) -> CLiConfig:
-        if self._config is None:
-            self._config = self._state.get_persistent_config()
-        return self._config
-
-    def set_persistent_config(self, config: CLiConfig) -> None:
-        self._state.update_persistent_config(config)
-        self._config = config
-
-    def get_all_content_types(self) -> t.List[t.Type[content_base.ContentType]]:
-        return list(self._mapping.signal_and_content.content_by_name.values())
-
-    def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
-        return self._mapping.signal_and_content.content_by_name[name]
-
-    def get_all_signal_types(self) -> t.List[t.Type[signal_base.SignalType]]:
-        return list(self._mapping.signal_and_content.signal_type_by_name.values())
-
-    def get_signal_type(self, name: str) -> t.Type[signal_base.SignalType]:
-        return self._mapping.signal_and_content.signal_type_by_name[name]
-
-    def get_signal_types_for_content(
-        self, content_type: t.Type[content_base.ContentType]
-    ) -> t.List[t.Type[signal_base.SignalType]]:
-        return self._mapping.signal_and_content.signal_type_by_content[content_type]
-
-    @property
-    def in_demo_mode(self) -> bool:
-        """Has no live collabs"""
-        return not self._state.get_all_collabs()
-
-    def get_all_collabs(
-        self, *, default_to_sample: bool = True
-    ) -> t.List[collab_config.CollaborationConfigBase]:
-        if self.in_demo_mode and default_to_sample:
-            return [self._get_sample_collab()]
-        # Should this check whether the APIs are all valid?
-        return self._state.get_all_collabs()
-
-    def get_collab(
-        self,
-        name: str,
-    ) -> t.Optional[collab_config.CollaborationConfigBase]:
-        return self._state.get_collab(name)
-
-    def _get_sample_collab(self) -> collab_config.CollaborationConfigBase:
-        if not self._sample_message_printed:
-            print(
-                (
-                    "Looks like you haven't set up a collaboration config, "
-                    "so using the sample one against sample data"
-                ),
-                file=sys.stderr,
-            )
-            self._sample_message_printed = True
-        return collab_config.CollaborationConfigBase(
-            "Sample Signals", StaticSampleSignalExchangeAPI.get_name(), enabled=True
-        )
-
-    def get_collabs_for_api(
-        self, api: SignalExchangeAPI
-    ) -> t.List[collab_config.CollaborationConfigBase]:
-        api_name = api.get_name()
-        return [c for c in self.get_all_collabs() if c.api == api_name]

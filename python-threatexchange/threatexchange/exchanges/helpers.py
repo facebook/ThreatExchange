@@ -7,9 +7,6 @@ They demonstrate how the methods in SignalExchangeAPI can be used to
 reproduce databases of signals, as well as simple recipes for stage.
 """
 
-from os import path
-import dbm
-import pickle
 from dataclasses import dataclass, field
 import logging
 import typing as t
@@ -18,6 +15,7 @@ from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.storage import DBMStorage
 
 K = t.TypeVar("K")
 V = t.TypeVar("V")
@@ -153,7 +151,7 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
         raise NotImplementedError
 
 
-class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
+class DBMFetchedStateStore(fetch_state.FetchedStateStoreBase):
     def __init__(
         self,
         api_cls: TSignalExchangeAPICls,
@@ -177,28 +175,18 @@ class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
 
         ret = {}
         for collab in collabs:
-            with dbm.open(collab.name, 'c') as db:
-                k = db.firstkey()
-                data = {}
-                while k:
-                    print(k, db[k])
-                    _k, _v = map(pickle.loads, [k, db[k]])
-                    data[_k] = _v
-                    k = db.nextkey(k)
-                by_signal = self.api_cls.naive_convert_to_signal_type([signal_type], collab, data).get(signal_type, {})
-                if by_signal:
-                    ret[collab.name] = by_signal
+            db = DBMStorage().connect(collab.name)
+            data = {k: v for k, v in db}
+            by_signal = self.api_cls.naive_convert_to_signal_type([signal_type], collab, data).get(signal_type, {})
+            if by_signal:
+                ret[collab.name] = by_signal
         return ret
-
-        # raise NotImplementedError
     
     def clear(self, collab: CollaborationConfigBase) -> None:
-        # open database with 'n' flag to create new db and close
-        # this should wipe out all keys and values for given collab db
-        dbm.open(collab.name, 'n').close()
+        DBMStorage().connect(collab.name).drop()
 
     def exists(self, collab: CollaborationConfigBase) -> bool:
-        return dbm.whichdb(collab.name) is not None
+        return DBMStorage().connect(collab.name).exists()
 
     def flush(self, collab: CollaborationConfigBase) -> None:
         """
@@ -206,24 +194,25 @@ class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
 
         This should also persist the checkpoint.
         """
-        with dbm.open(f'{collab.name}_checkpoint', 'c') as db:
-            db['checkpoint'] = db['_checkpoint'] if '_checkpoint' in db else None
+        db = DBMStorage().connect(f'{collab.name}_checkpoint')
+        # "commit" the current temp _checkpoint as permanent
+        db.set('checkpoint', db.get('_checkpoint'))
     
     def merge(self, collab: CollaborationConfigBase, delta: fetch_state.FetchDelta) -> None:
-        with dbm.open(collab.name, 'c') as db:
-            if len(delta.updates) == 0 and delta.checkpoint in (
-                None,
-                db['checkpoint'],
-            ):
-                logging.warning("No op update for %s", collab.name)
-                return
-  
-            for k, v in delta.updates.items():
-                db[pickle.dumps(k)] = pickle.dumps(v)
+        db_cp = DBMStorage().connect(f'{collab.name}_checkpoint')
+        if len(delta.updates) == 0 and delta.checkpoint in (
+            None,
+            db_cp.get('checkpoint'),
+        ):
+            logging.warning("No op update for %s", collab.name)
+            return
+
+        db = DBMStorage().connect(collab.name)
+        for k, v in delta.updates.items():
+            db.set(k, v)
         
-        with dbm.open(f'{collab.name}_checkpoint', 'c') as db:
-            # Save _checkpoint value but "commit" it in flush() 
-            db['_checkpoint'] = pickle.dumps(delta.checkpoint)
+        # Save _checkpoint value but "commit" it in flush() 
+        db_cp.set('_checkpoint', delta.checkpoint)
             
     def get_checkpoint(
         self, collab: CollaborationConfigBase
@@ -231,8 +220,5 @@ class DMBFetchedStateStore(fetch_state.FetchedStateStoreBase):
         """
         Returns the last checkpoint passed to merge() after a flush()
         """
-        if dbm.whichdb(f'{collab.name}_checkpoint') is None:
-            return None
-
-        with dbm.open(f'{collab.name}_checkpoint', 'r') as db:
-            return pickle.loads(db['checkpoint']) if 'checkpoint' in db else None
+        db = DBMStorage().connect(f'{collab.name}_checkpoint')
+        return db.get('checkpoint')
