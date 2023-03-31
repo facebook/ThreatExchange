@@ -126,7 +126,7 @@ class SimpleFetchedStateStore(fetch_state.FetchedStateStoreBase):
             return
         state.delta = delta
 
-    def flush(self, collab: CollaborationConfigBase) -> None:
+    def flush(self) -> None:
         for collab_name, state in self._state.items():
             if state.dirty:
                 assert state.delta is not None
@@ -195,7 +195,7 @@ class DBMFetchedStateStore(fetch_state.FetchedStateStoreBase):
         This should also persist the checkpoint.
         """
         db = DBMStorage().connect(f'{collab.name}_checkpoint')
-        # "commit" the current temp _checkpoint as permanent
+        # promote the current temp _checkpoint as permanent
         db.set('checkpoint', db.get('_checkpoint'))
     
     def merge(self, collab: CollaborationConfigBase, delta: fetch_state.FetchDelta) -> None:

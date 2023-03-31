@@ -298,3 +298,4 @@ class FetchCommand(command_base.Command):
 
 def _timeformat(timestamp: int) -> str:
     return datetime.datetime.fromtimestamp(timestamp).isoformat()
+    

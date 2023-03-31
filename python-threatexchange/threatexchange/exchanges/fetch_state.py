@@ -263,7 +263,7 @@ class FetchedStateStoreBase(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def flush(self, collab: CollaborationConfigBase) -> None:
+    def flush(self) -> None:
         """
         Finish writing the results of previous merges to persistant state.
 
