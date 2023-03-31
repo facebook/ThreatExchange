@@ -79,8 +79,3 @@ class DBMStorage(GenericStorage):
 
     def __del__(self):
         self.db.close()
-
-    
-
-
-    
