@@ -541,6 +541,12 @@ def get_matches_api(
         return match_objects
 
     def _distance_from_match_if_exits(match: IndexMatch) -> int:
+        """
+        Existing API expects an int, the newer SignalType interface is
+        not as specific.
+        TODO update the API to return a string for distance so support
+        various differences.
+        """
         if hasattr(match.similarity_info, "distance") and isinstance(
             match.similarity_info.distance, int
         ):
