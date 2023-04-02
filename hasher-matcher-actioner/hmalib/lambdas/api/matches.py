@@ -15,6 +15,7 @@ from mypy_boto3_sqs.client import SQSClient
 from threatexchange.exchanges.clients.fb_threatexchange.descriptor import (
     ThreatDescriptor,
 )
+from threatexchange.signal_type.index import IndexMatch
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq import PdqSignal
@@ -513,7 +514,7 @@ def get_matches_api(
             match_objects.extend(
                 [
                     MatchesForHash(
-                        match_distance=int(match.distance),
+                        match_distance=_distance_from_match_if_exits(match),
                         matched_signal=signal_metadata,
                     )
                     for signal_metadata in Matcher.get_te_metadata_objects_from_match(
@@ -530,7 +531,7 @@ def get_matches_api(
                 metadata_obj = t.cast(BankedSignalIndexMetadata, metadata_obj)
                 match_objects.append(
                     MatchesForHash(
-                        match_distance=int(match.distance),
+                        match_distance=_distance_from_match_if_exits(match),
                         matched_signal=banks_table.get_bank_member(
                             metadata_obj.bank_member_id
                         ),
@@ -538,6 +539,19 @@ def get_matches_api(
                 )
 
         return match_objects
+
+    def _distance_from_match_if_exits(match: IndexMatch) -> int:
+        """
+        Existing API expects an int, the newer SignalType interface is
+        not as specific.
+        TODO update the API to return a string for distance so support
+        various differences.
+        """
+        if hasattr(match.similarity_info, "distance") and isinstance(
+            match.similarity_info.distance, int
+        ):
+            return int(match.similarity_info.distance)
+        return 0
 
     @matches_api.get(
         "/for-hash/",
