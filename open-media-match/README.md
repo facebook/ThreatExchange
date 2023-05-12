@@ -240,7 +240,7 @@ Two concurrent API call flows are illustrated here. From the left, we have the h
 
 ### Database Schema
 
-*TODO: Insert Diagram*
+![Database schema](diagrams/database-schema.svg)
 
 ### Indexing: FAISS
 
@@ -260,9 +260,7 @@ In Open Media Match, the hash lists are populated by the Curator, and the FAISS 
 
 At match time, the index returns the matching vectors and their associated content IDs. These IDs are then used to pull the full set of content metadata from the database which will inform the client system as to what exactly the candidate photo matched against.
 
-*TODO: Insert Diagram*
-
-It should also be possible to substitute FAISS with other Vector Database technologies if you are looking to use Open Media Match as a library or are customizing it further. Some example databases that will likely work:
+It should also be possible to split the index from the matcher, and substitute FAISS with other Vector Database technologies if you are looking to use Open Media Match as a library or are customizing it further. Some example databases that will likely work:
 * Pinecone
 * Milvus
 * Pgvector
