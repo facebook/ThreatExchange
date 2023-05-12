@@ -240,7 +240,7 @@ Two concurrent API call flows are illustrated here. From the left, we have the h
 
 ### Database Schema
 
-*TODO: Insert Diagram*
+![Database schema](diagrams/database-schema.svg)
 
 ### Indexing: FAISS
 
