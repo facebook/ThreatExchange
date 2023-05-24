@@ -56,7 +56,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     install_requires=[
         "python-Levenshtein==0.20.9",
-        "requests==2.28.2",
+        "requests==2.31.0",
         "urllib3==1.26.14",  # For allow_methods
         "python-dateutil==2.8.2",
         "dacite==1.7.0",  # 0.18.0 broken our tests due to faulty caching
