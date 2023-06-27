@@ -144,6 +144,8 @@ def computeHash(
 
     if downsample_height == 0:
         downsample_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    
+    vid.release()
 
     rt = hashVideoFile(
         str_path.encode("utf-8"),

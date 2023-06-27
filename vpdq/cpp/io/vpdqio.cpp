@@ -140,6 +140,7 @@ bool readVideoStreamInfo(
         "%s: could not find video stream info \"%s\".\n",
         programName,
         inputVideoFileName.c_str());
+    avformat_close_input(&pFormatCtx)
     return false;
   }
   for (int i = 0; i < pFormatCtx->nb_streams; i++) {
@@ -154,6 +155,7 @@ bool readVideoStreamInfo(
         "%s: could not find video stream \"%s\".\n",
         programName,
         inputVideoFileName.c_str());
+    avformat_close_input(&pFormatCtx);
     return false;
   }
   AVCodecParameters* videoParameter =
@@ -162,6 +164,7 @@ bool readVideoStreamInfo(
   width = videoParameter->width;
   AVRational fr = pFormatCtx->streams[videoStream]->avg_frame_rate;
   framesPerSec = (double)fr.num / (double)fr.den;
+  avformat_close_input(&pFormatCtx);
   return true;
 }
 // readVideoDuration is not used in calculating VPDQ for now
@@ -181,6 +184,7 @@ bool readVideoDuration(
     return false;
   }
   durationInSec = (double)pFormatCtx->duration / MILLISEC_IN_SEC;
+  avformat_close_input(&pFormatCtx);
   return true;
 }
 } // namespace io

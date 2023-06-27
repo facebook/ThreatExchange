@@ -60,6 +60,7 @@ bool hashVideoFile(
       vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(height, width);
   if (phasher == nullptr) {
     fprintf(stderr, "Error: Phasher is null");
+    pclose(inputFp);
     return false;
   }
 
@@ -96,6 +97,7 @@ bool hashVideoFile(
             "%s: failed to hash frame buffer. Frame width or height smaller than minimum hashable dimension. %d.\n",
             argv0,
             fno);
+        pclose(inputFp);
         return false;
       }
       // Push to pdqHashes vector
@@ -114,6 +116,7 @@ bool hashVideoFile(
           (int)fread_rc);
     }
   }
+  pclose(inputFp);
   return true;
 }
 
