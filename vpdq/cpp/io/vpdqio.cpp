@@ -140,7 +140,7 @@ bool readVideoStreamInfo(
         "%s: could not find video stream info \"%s\".\n",
         programName,
         inputVideoFileName.c_str());
-    avformat_close_input(&pFormatCtx)
+    avformat_close_input(&pFormatCtx);
     return false;
   }
   for (int i = 0; i < pFormatCtx->nb_streams; i++) {
