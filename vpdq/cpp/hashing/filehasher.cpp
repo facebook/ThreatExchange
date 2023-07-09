@@ -100,8 +100,19 @@ bool hashVideoFile(
         pclose(inputFp);
         return false;
       }
+
+      // Avoid divide by zero when calculating timestamp
+      // The timestamp will equal the frame number of the hash
+      // if framesPerSec <= 0. This is common on very short videos.
+      double timestamp = 0;
+      if (framesPerSec > 0) {
+        timestamp = (double)fno / framesPerSec;
+      } else {
+        timestamp = fno;
+      }
+
       // Push to pdqHashes vector
-      pdqHashes.push_back({pdqHash, fno, quality, (double)fno / framesPerSec});
+      pdqHashes.push_back({pdqHash, fno, quality, timestamp});
       if (verbose) {
         printf("PDQHash: %s \n", pdqHash.format().c_str());
       }
