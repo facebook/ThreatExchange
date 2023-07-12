@@ -95,8 +95,8 @@ def main():
         sys.exit(1)
     ap = get_argparse()
     args = ap.parse_args()
-    inputVideoFolder = args.inputVideoFolder
-    outputHashFolder = args.outputHashFolder
+    inputVideoFolder = Path(args.inputVideoFolder)
+    outputHashFolder = Path(args.outputHashFolder)
     ffmpegPath = args.ffmpegPath
     secondsPerHash = str(args.secondsPerHash)
     downsampleFrameDimension = str(args.downsampleFrameDimension)
@@ -107,7 +107,7 @@ def main():
     hashVideoExecutable = EXEC_DIR / "vpdq-hash-video"
     matchHashesExecutable = EXEC_DIR / "match-hashes-byline"
 
-    Path(outputHashFolder).mkdir(parents=True, exist_ok=True)
+    outputHashFolder.mkdir(parents=True, exist_ok=True)
 
     # TODO: Add more general options for other video extensions.
     for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
