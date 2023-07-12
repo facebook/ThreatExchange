@@ -163,10 +163,18 @@ bool readVideoStreamInfo(
   height = videoParameter->height;
   width = videoParameter->width;
   AVRational fr = pFormatCtx->streams[videoStream]->avg_frame_rate;
+
+  // if avg_frame_rate is 0, fall back to r_frame_rate which is the
+  // lowest framerate with which all timestamps can be represented accurately
+  if (fr.num == 0 || fr.den == 0) {
+    fr = pFormatCtx->streams[videoStream]->r_frame_rate;
+  }
+
   framesPerSec = (double)fr.num / (double)fr.den;
   avformat_close_input(&pFormatCtx);
   return true;
 }
+
 // readVideoDuration is not used in calculating VPDQ for now
 bool readVideoDuration(
     const string& inputVideoFileName,
