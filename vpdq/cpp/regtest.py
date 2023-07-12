@@ -1,9 +1,17 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import subprocess
-import os
 import sys
 import argparse
+from pathlib import Path
+import glob
+
+DIR = Path(__file__).parent
+VPDQ_DIR = DIR.parent
+SAMPLE_VIDEOS_DIR = VPDQ_DIR.parent / "tmk/sample-videos"
+SAMPLE_HASHES_DIR = VPDQ_DIR / "sample-hashes"
+OUTPUT_HASHES_DIR = VPDQ_DIR / "output-hashes"
+EXEC_DIR = VPDQ_DIR / "cpp/build"
 
 
 def get_argparse() -> argparse.ArgumentParser:
@@ -28,7 +36,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "--outputHashFolder",
         metavar="OUTPUT_HASH_Folder_PATH",
         help="Output Hash Folder's Name",
-        default="/ThreatExchange/vpdq/output-hashes",
+        default=OUTPUT_HASHES_DIR,
         type=dir_path,
     )
     ap.add_argument(
@@ -36,7 +44,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "--inputVideoFolder",
         metavar="INPUTPUT_VIDEO_FOLDER_PATH",
         help="Input Video Folder",
-        default="/ThreatExchange/tmk/sample-videos",
+        default=SAMPLE_VIDEOS_DIR,
         type=dir_path,
     )
     ap.add_argument(
@@ -73,13 +81,18 @@ def get_argparse() -> argparse.ArgumentParser:
 
 
 def dir_path(string):
-    if os.path.isdir(string):
+    if Path(string).is_dir():
         return string
-    else:
-        raise argparse.ArgumentTypeError(f"readable_dir: {string} is not a valid path")
+    raise argparse.ArgumentTypeError(
+        f"readable_dir: {string} is not a valid directory path"
+    )
 
 
 def main():
+    if not EXEC_DIR.exists():
+        print(f"Error: {EXEC_DIR} does not exist.")
+        print(f"Build vpdq before running regtest.")
+        sys.exit(1)
     ap = get_argparse()
     args = ap.parse_args()
     inputVideoFolder = args.inputVideoFolder
@@ -87,76 +100,70 @@ def main():
     ffmpegPath = args.ffmpegPath
     secondsPerHash = str(args.secondsPerHash)
     downsampleFrameDimension = str(args.downsampleFrameDimension)
-    verbose = args.verbose
-    # TODO: Add more general options for other video encodings.
-    for file in os.listdir(inputVideoFolder):
-        if file.endswith(".mp4"):
-            if verbose:
-                subprocess.call(
-                    [
-                        "./build/vpdq-hash-video",
-                        "-v",
-                        "-f",
-                        ffmpegPath,
-                        "-r",
-                        secondsPerHash,
-                        "-d",
-                        outputHashFolder,
-                        "-s",
-                        downsampleFrameDimension,
-                        "-i",
-                        inputVideoFolder + "/" + file,
-                    ]
-                )
-            else:
-                subprocess.call(
-                    [
-                        "./build/vpdq-hash-video",
-                        "-f",
-                        ffmpegPath,
-                        "-r",
-                        secondsPerHash,
-                        "-d",
-                        outputHashFolder,
-                        "-s",
-                        downsampleFrameDimension,
-                        "-i",
-                        inputVideoFolder + "/" + file,
-                    ]
-                )
-
-    cdir = os.getcwd()
-    pdir = os.path.dirname(cdir)
-    sample = pdir + ("/sample-hashes")
-    output = outputHashFolder
     distanceTolerance = str(args.matchDistanceTolerance)
     qualityTolerance = str(args.qualityTolerance)
-    for file in os.listdir(sample):
-        if file.endswith(".txt"):
-            print("\nMatching File " + file)
-            sampleFile = f"{sample}/{file}"
-            outputFile = f"{output}/{file}"
-            if verbose:
-                subprocess.call(
-                    [
-                        "./build/match-hashes-byline",
-                        "-v",
-                        sampleFile,
-                        outputFile,
-                        distanceTolerance,
-                        qualityTolerance,
-                    ]
-                )
-            else:
-                subprocess.call(
-                    [
-                        "./build/match-hashes-byline",
-                        sampleFile,
-                        outputFile,
-                        distanceTolerance,
-                        qualityTolerance,
-                    ]
-                )
+    verbose = args.verbose
+
+    hashVideoExecutable = EXEC_DIR / "vpdq-hash-video"
+    matchHashesExecutable = EXEC_DIR / "match-hashes-byline"
+
+    Path(outputHashFolder).mkdir(parents=True, exist_ok=True)
+
+    # TODO: Add more general options for other video extensions.
+    for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
+        file = Path(fileStr)
+
+        # Create output hash file or overwrite existing file
+        # This is hardcoded in cpp, and it
+        # does not create the file if it does not exist:
+        #
+        # vpdq-hash-video.cpp:
+        #
+        # // Strip containing directory:
+        # std::string b = basename(inputVideoFileName, "/");
+        # // Strip file extension:
+        # b = stripExtension(b, ".");
+        # outputHashFileName = outputDirectory + "/" + b + ".txt";
+
+        with open(outputHashFolder / f"{file.stem}.txt", "w"):
+            pass
+
+        command = [
+            hashVideoExecutable,
+            "-f",
+            ffmpegPath,
+            "-r",
+            secondsPerHash,
+            "-d",
+            outputHashFolder,
+            "-s",
+            downsampleFrameDimension,
+            "-i",
+            file,
+        ]
+
+        if verbose:
+            command.insert(1, "-v")
+
+        subprocess.call(command)
+
+    for fileStr in glob.iglob(f"{outputHashFolder}/**/*.txt", recursive=True):
+        file = Path(fileStr)
+        print(f"\nMatching File {file.name}")
+        outputFile = outputHashFolder / file.name
+
+        command = [
+            matchHashesExecutable,
+            file,
+            outputFile,
+            distanceTolerance,
+            qualityTolerance,
+        ]
+
+        if verbose:
+            command.insert(1, "-v")
+
+        subprocess.call(command)
 
 
 if __name__ == "__main__":
