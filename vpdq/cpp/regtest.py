@@ -89,10 +89,15 @@ def dir_path(string):
 
 
 def main():
-    if not EXEC_DIR.exists():
-        print(f"Error: {EXEC_DIR} does not exist.")
-        print(f"Build vpdq before running regtest.")
+    hashVideoExecutable = EXEC_DIR / "vpdq-hash-video"
+    matchHashesExecutable = EXEC_DIR / "match-hashes-byline"
+
+    if not hashVideoExecutable.exists() or not matchHashesExecutable.exists():
+        print(
+            "Error: Hashing executable/s not found. Build vpdq before running regtest."
+        )
         sys.exit(1)
+
     ap = get_argparse()
     args = ap.parse_args()
     inputVideoFolder = Path(args.inputVideoFolder)
@@ -103,9 +108,6 @@ def main():
     distanceTolerance = str(args.matchDistanceTolerance)
     qualityTolerance = str(args.qualityTolerance)
     verbose = args.verbose
-
-    hashVideoExecutable = EXEC_DIR / "vpdq-hash-video"
-    matchHashesExecutable = EXEC_DIR / "match-hashes-byline"
 
     outputHashFolder.mkdir(parents=True, exist_ok=True)
 
