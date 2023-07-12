@@ -29,14 +29,19 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-/**
- * Writes an AVFrame to file. Useful for debugging.
+/* @brief Writes an AVFrame to a file
+ *
+ * Useful for debugging.
  * Not used by any other functions.
  *
  * This can viewed using ffplay directly:
  * ffplay -f rawvideo -pixel_format rgb24 \
  * -video_size <WIDTH>x<HEIGHT> <filename>
- **/
+ *
+ * @param frame
+ * @param filename
+ * @return void
+ */
 static void saveFrameToFile(AVFrame* frame, const char* filename) {
   FILE* output = fopen(filename, "wb");
   for (int y = 0; y < frame->height; y++) {
@@ -51,11 +56,8 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
   fclose(output);
 }
 
-/**
- *  Decode and add vpdqFeature to the hashes vector
- *  Returns the number of frames processed or -1 if failure
- **/
-
+// Decode and add vpdqFeature to the hashes vector
+// Returns the number of frames processed or -1 if failure
 static int processFrame(
     AVPacket* packet,
     AVFrame* frame,
@@ -106,10 +108,8 @@ static int processFrame(
         return -1;
       }
 
-      /**
-       *  Write frame to file here for debugging:
-       *  saveFrameToFile(targetFrame, "frame.rgb");
-       **/
+      //  Write frame to file here for debugging:
+      //  saveFrameToFile(targetFrame, "frame.rgb");
 
       // Append vpdq feature to pdqHashes vector
       pdqHashes.push_back(
@@ -123,12 +123,7 @@ static int processFrame(
   return frameNumber;
 }
 
-/**
- * Get pdq hashes for selected frames every secondsPerHash
- * The return boolean represents whether the hashing process
- * is successful or not.
- **/
-
+// Get pdq hashes for selected frames every secondsPerHash
 bool hashVideoFile(
     const string& inputVideoFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
@@ -290,10 +285,9 @@ bool hashVideoFile(
 
   int frameMod = secondsPerHash * framesPerSec;
   if (frameMod == 0) {
-    /**
-     * Avoid truncate to zero on corner-case with secondsPerHash = 1
-     * and framesPerSec < 1.
-     **/
+    // Avoid truncate to zero on corner-case with secondsPerHash = 1
+    // and framesPerSec < 1.
+
     frameMod = 1;
   }
 
@@ -331,11 +325,9 @@ bool hashVideoFile(
   }
 
   if (!failed) {
-    /**
-     * Flush decode buffer
-     * See for more information:
-     * https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
-     **/
+    // Flush decode buffer
+    // See for more information:
+    // https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
 
     ret = processFrame(
         packet,
@@ -374,12 +366,10 @@ bool hashVideoFile(
 }
 #endif
 
-/**
- * Get pdq hashes for selected frames every secondsPerHash
- * The return boolean represents whether the hashing process
- * is successful or not.
- * This uses FFmpeg which does not require linking to libav* libraries.
- **/
+// Get pdq hashes for selected frames every secondsPerHash
+// The return boolean represents whether the hashing process
+// is successful or not.
+// This uses FFmpeg which does not require linking to libav* libraries.
 bool hashVideoFileFFMPEG(
     const string& inputVideoFileName,
     vector<hashing::vpdqFeature>& pdqHashes,

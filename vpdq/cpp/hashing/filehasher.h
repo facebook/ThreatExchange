@@ -31,7 +31,6 @@ namespace hashing {
  *
  * @return If successfully hash the video
  */
-
 bool hashVideoFile(
     const std::string& inputVideoFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
@@ -60,7 +59,6 @@ bool hashVideoFile(
  *
  * @return If successfully hash the video
  */
-
 bool hashVideoFileFFMPEG(
     const std::string& inputVideoFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
