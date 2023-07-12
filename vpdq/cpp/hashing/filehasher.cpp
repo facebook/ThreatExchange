@@ -217,15 +217,28 @@ bool hashVideoFile(
 
   // Create the output frame
   AVFrame* frame = av_frame_alloc();
+  if (frame == nullptr) {
+    avcodec_free_context(&codecContext);
+    avformat_close_input(&formatContext);
+    return false;
+  }
 
   // Pixel format for the image passed to PDQ
   constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
 
   // Create a frame for resizing and converting the decoded frame to RGB24
   AVFrame* targetFrame = av_frame_alloc();
+  if (targetFrame == nullptr) {
+    av_frame_free(&frame);
+    avcodec_free_context(&codecContext);
+    avformat_close_input(&formatContext);
+    return false;
+  }
+
   targetFrame->format = pixelFormat;
   targetFrame->width = width;
   targetFrame->height = height;
+
   if (av_image_alloc(
           targetFrame->data,
           targetFrame->linesize,
@@ -284,15 +297,13 @@ bool hashVideoFile(
     frameMod = 1;
   }
 
+  // Read frames in a loop and process them
   int frameNumber = 0;
   int ret = 0;
-  // Read frames in a loop and process them
   bool failed = false;
   while (av_read_frame(formatContext, packet) == 0) {
     // Check if the packet belongs to the video stream
     if (packet->stream_index == videoStreamIndex) {
-      int ret;
-
       ret = processFrame(
           packet,
           frame,
@@ -338,10 +349,12 @@ bool hashVideoFile(
         verbose,
         frameNumber,
         frameMod);
+
     if (ret == -1) {
       failed = true;
       fprintf(stderr, "Error: Cannot process frame\n");
     }
+
     av_packet_unref(packet);
   }
 
