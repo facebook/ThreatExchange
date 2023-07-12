@@ -17,7 +17,7 @@ on:
 
 defaults:
   run:
-    working-directory: vpdq/cpp
+    working-directory: vpdq
 
 jobs:
   build-and-test:
@@ -31,11 +31,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y make cmake ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
-          mkdir -p build
-          cd build
+          mkdir -p cpp/build
+          cd cpp/build
           cmake ..
           make
       - name: regression test
         run: |
-          mkdir -p output-hashes
-          python regtest.py -d ${GITHUB_WORKSPACE}/vpdq/cpp/output-hashes -i ${GITHUB_WORKSPACE}/tmk/sample-videos
+          mkdir -p cpp/output-hashes
+          python cpp/regtest.py -d ${GITHUB_WORKSPACE}/vpdq/cpp/output-hashes -i ${GITHUB_WORKSPACE}/tmk/sample-videos
