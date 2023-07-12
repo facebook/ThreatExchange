@@ -44,7 +44,7 @@ cdef extern from "vpdq/cpp/hashing/vpdqHashType.h" namespace "facebook::vpdq::ha
 
 
 cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hashing":
-    bool hashVideoFile(
+    bool hashVideoFileFFMPEG(
         string input_video_filename,
         vector[vpdqFeature]& pdqHashes,
         string ffmpeg_path,
@@ -147,7 +147,7 @@ def computeHash(
     
     vid.release()
 
-    rt = hashVideoFile(
+    rt = hashVideoFileFFMPEG(
         str_path.encode("utf-8"),
         vpdq_hash,
         ffmpeg_path.encode("utf-8"),
