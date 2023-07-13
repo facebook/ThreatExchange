@@ -8,24 +8,19 @@
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
 
-using namespace std;
-
 namespace facebook {
 namespace vpdq {
 namespace hashing {
 bool matchTwoHashBrute(
-    vector<vpdq::hashing::vpdqFeature> qHashes,
-    vector<vpdq::hashing::vpdqFeature> tHashes,
+    std::vector<vpdq::hashing::vpdqFeature> qHashes,
+    std::vector<vpdq::hashing::vpdqFeature> tHashes,
     int distanceTolerance,
     int qualityTolerance,
     double& qMatch,
     double& tMatch,
-    bool verbose) {
-  vector<vpdq::hashing::vpdqFeature> queryFiltered, targetFiltered;
-  int qMatchCnt = 0;
-  int tMatchCnt = 0;
-
+    const bool verbose) {
   // Filter low quality hashes for query
+  std::vector<vpdq::hashing::vpdqFeature> queryFiltered;
   for (const auto& qHash : qHashes) {
     if (qHash.quality >= qualityTolerance) {
       queryFiltered.push_back(qHash);
@@ -39,6 +34,7 @@ bool matchTwoHashBrute(
   }
 
   // Filter low quality hashes for target
+  std::vector<vpdq::hashing::vpdqFeature> targetFiltered;
   for (const auto& tHash : tHashes) {
     if (tHash.quality >= qualityTolerance) {
       targetFiltered.push_back(tHash);
@@ -52,6 +48,7 @@ bool matchTwoHashBrute(
   }
 
   // Get matches for query in target
+  unsigned int qMatchCnt = 0;
   for (const auto& qHash : queryFiltered) {
     for (const auto& tHash : targetFiltered) {
       if (qHash.pdqHash.hammingDistance(tHash.pdqHash) < distanceTolerance) {
@@ -67,6 +64,7 @@ bool matchTwoHashBrute(
   }
 
   // Get matches for target in query
+  unsigned int tMatchCnt = 0;
   for (const auto& tHash : targetFiltered) {
     for (const auto& qHash : queryFiltered) {
       if (tHash.pdqHash.hammingDistance(qHash.pdqHash) < distanceTolerance) {
@@ -81,8 +79,8 @@ bool matchTwoHashBrute(
     }
   }
 
-  qMatch = (float)qMatchCnt * 100 / queryFiltered.size();
-  tMatch = (float)tMatchCnt * 100 / targetFiltered.size();
+  qMatch = (qMatchCnt * 100.0) / queryFiltered.size();
+  tMatch = (tMatchCnt * 100.0) / targetFiltered.size();
   return true;
 }
 } // namespace hashing
