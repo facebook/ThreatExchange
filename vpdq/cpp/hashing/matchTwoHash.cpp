@@ -2,6 +2,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <iostream>
+
 #include <pdq/cpp/io/hashio.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
@@ -20,62 +22,65 @@ bool matchTwoHashBrute(
     double& tMatch,
     bool verbose) {
   vector<vpdq::hashing::vpdqFeature> queryFiltered, targetFiltered;
-  size_t i = 0, j = 0;
   int qMatchCnt = 0;
   int tMatchCnt = 0;
-  for (i = 0; i < qHashes.size(); i++) {
-    if (qHashes[i].quality >= qualityTolerance) {
-      queryFiltered.push_back(qHashes[i]);
+
+  // Filter low quality hashes for query
+  for (const auto& qHash : qHashes) {
+    if (qHash.quality >= qualityTolerance) {
+      queryFiltered.push_back(qHash);
     } else if (verbose) {
-      printf(
-          "Skipping Line %zu Skipping Query Hash: %s, because of low quality Query Hash: %d \n",
-          i,
-          qHashes[i].pdqHash.format().c_str(),
-          qHashes[i].quality);
-    }
-  }
-  for (i = 0; i < tHashes.size(); i++) {
-    if (tHashes[i].quality >= qualityTolerance) {
-      targetFiltered.push_back(tHashes[i]);
-    } else if (verbose) {
-      printf(
-          "Skipping Line %zu Skipping Target Hash: %s, because of low quality Target Hash: %d \n",
-          i,
-          tHashes[i].pdqHash.format().c_str(),
-          tHashes[i].quality);
+      auto i = &qHash - &qHashes[0];
+      std::cout << "Skipping Line " << i
+                << " Skipping Query Hash: " << qHash.pdqHash.format()
+                << ", because of low quality Query Hash: " << qHash.quality
+                << std::endl;
     }
   }
 
-  for (i = 0; i < queryFiltered.size(); i++) {
-    for (j = 0; j < targetFiltered.size(); j++) {
-      if (queryFiltered[i].pdqHash.hammingDistance(targetFiltered[j].pdqHash) <
-          distanceTolerance) {
+  // Filter low quality hashes for target
+  for (const auto& tHash : tHashes) {
+    if (tHash.quality >= qualityTolerance) {
+      targetFiltered.push_back(tHash);
+    } else if (verbose) {
+      auto j = &tHash - &tHashes[0];
+      std::cout << "Skipping Line " << j
+                << " Skipping Target Hash: " << tHash.pdqHash.format()
+                << ", because of low quality Target Hash: " << tHash.quality
+                << std::endl;
+    }
+  }
+
+  // Get matches for query in target
+  for (const auto& qHash : queryFiltered) {
+    for (const auto& tHash : targetFiltered) {
+      if (qHash.pdqHash.hammingDistance(tHash.pdqHash) < distanceTolerance) {
         qMatchCnt++;
         if (verbose) {
-          printf(
-              "Query Hash: %s Target Hash: %s match \n",
-              queryFiltered[i].pdqHash.format().c_str(),
-              targetFiltered[j].pdqHash.format().c_str());
+          std::cout << "Query Hash: " << qHash.pdqHash.format()
+                    << " Target Hash: " << tHash.pdqHash.format() << " match "
+                    << std::endl;
         }
         break;
       }
     }
   }
-  for (i = 0; i < targetFiltered.size(); i++) {
-    for (j = 0; j < queryFiltered.size(); j++) {
-      if (targetFiltered[i].pdqHash.hammingDistance(queryFiltered[j].pdqHash) <
-          distanceTolerance) {
+
+  // Get matches for target in query
+  for (const auto& tHash : targetFiltered) {
+    for (const auto& qHash : queryFiltered) {
+      if (tHash.pdqHash.hammingDistance(qHash.pdqHash) < distanceTolerance) {
         tMatchCnt++;
         if (verbose) {
-          printf(
-              "Query Hash: %s Target Hash: %s match \n",
-              queryFiltered[j].pdqHash.format().c_str(),
-              targetFiltered[i].pdqHash.format().c_str());
+          std::cout << "Query Hash: " << qHash.pdqHash.format()
+                    << " Target Hash: " << tHash.pdqHash.format() << " match "
+                    << std::endl;
         }
         break;
       }
     }
   }
+
   qMatch = (float)qMatchCnt * 100 / queryFiltered.size();
   tMatch = (float)tMatchCnt * 100 / targetFiltered.size();
   return true;
