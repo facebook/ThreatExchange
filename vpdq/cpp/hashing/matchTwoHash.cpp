@@ -11,73 +11,87 @@
 namespace facebook {
 namespace vpdq {
 namespace hashing {
+
+/**
+ * @brief Filter low quality hashes from a feature vector
+ *
+ * @param features Features to filter
+ * @param qualityTolerance Quality tolerance of comparing two hashes. If lower
+ * then it won't be included in the result
+ * @param verbose Print skipped hashes
+ *
+ * @return Feature vector without features with quality lower than
+ * qualityTolerance
+ */
+static std::vector<vpdq::hashing::vpdqFeature> filterFeatures(
+    const std::vector<vpdq::hashing::vpdqFeature>& features,
+    const int qualityTolerance,
+    const bool verbose) {
+  std::vector<vpdq::hashing::vpdqFeature> filteredHashes;
+  for (const auto& feature : features) {
+    if (feature.quality >= qualityTolerance) {
+      filteredHashes.push_back(feature);
+    } else if (verbose) {
+      auto index = &feature - &features[0];
+      std::cout << "Skipping Line " << index
+                << " Skipping Hash: " << feature.pdqHash.format()
+                << ", because of low quality: " << feature.quality << std::endl;
+    }
+  }
+  return filteredHashes;
+}
+
+/**
+ * @brief Get the number of matches between two feature vectors
+ *
+ * @param features1 Features to match
+ * @param features2 Features to match
+ * @param distanceTolerance Distance tolerance of considering a match. Lower is
+ * more similar.
+ * @param verbose Print features with matching hashes
+ *
+ * @return Number of matches
+ */
+static unsigned int findMatches(
+    const std::vector<vpdq::hashing::vpdqFeature>& features1,
+    const std::vector<vpdq::hashing::vpdqFeature>& features2,
+    const int distanceTolerance,
+    const bool verbose) {
+  unsigned int matchCnt = 0;
+  for (const auto& feature1 : features1) {
+    for (const auto& feature2 : features2) {
+      if (feature1.pdqHash.hammingDistance(feature2.pdqHash) <
+          distanceTolerance) {
+        matchCnt++;
+        if (verbose) {
+          std::cout << "Query Hash: " << feature1.pdqHash.format()
+                    << " Target Hash: " << feature2.pdqHash.format()
+                    << " match " << std::endl;
+        }
+        break;
+      }
+    }
+  }
+  return matchCnt;
+}
+
 bool matchTwoHashBrute(
     std::vector<vpdq::hashing::vpdqFeature> qHashes,
     std::vector<vpdq::hashing::vpdqFeature> tHashes,
-    int distanceTolerance,
-    int qualityTolerance,
+    const int distanceTolerance,
+    const int qualityTolerance,
     double& qMatch,
     double& tMatch,
     const bool verbose) {
-  // Filter low quality hashes for query
-  std::vector<vpdq::hashing::vpdqFeature> queryFiltered;
-  for (const auto& qHash : qHashes) {
-    if (qHash.quality >= qualityTolerance) {
-      queryFiltered.push_back(qHash);
-    } else if (verbose) {
-      auto i = &qHash - &qHashes[0];
-      std::cout << "Skipping Line " << i
-                << " Skipping Query Hash: " << qHash.pdqHash.format()
-                << ", because of low quality Query Hash: " << qHash.quality
-                << std::endl;
-    }
-  }
+  // Filter low quality hashes
+  auto queryFiltered = filterFeatures(qHashes, qualityTolerance, verbose);
+  auto targetFiltered = filterFeatures(tHashes, qualityTolerance, verbose);
 
-  // Filter low quality hashes for target
-  std::vector<vpdq::hashing::vpdqFeature> targetFiltered;
-  for (const auto& tHash : tHashes) {
-    if (tHash.quality >= qualityTolerance) {
-      targetFiltered.push_back(tHash);
-    } else if (verbose) {
-      auto j = &tHash - &tHashes[0];
-      std::cout << "Skipping Line " << j
-                << " Skipping Target Hash: " << tHash.pdqHash.format()
-                << ", because of low quality Target Hash: " << tHash.quality
-                << std::endl;
-    }
-  }
-
-  // Get matches for query in target
-  unsigned int qMatchCnt = 0;
-  for (const auto& qHash : queryFiltered) {
-    for (const auto& tHash : targetFiltered) {
-      if (qHash.pdqHash.hammingDistance(tHash.pdqHash) < distanceTolerance) {
-        qMatchCnt++;
-        if (verbose) {
-          std::cout << "Query Hash: " << qHash.pdqHash.format()
-                    << " Target Hash: " << tHash.pdqHash.format() << " match "
-                    << std::endl;
-        }
-        break;
-      }
-    }
-  }
-
-  // Get matches for target in query
-  unsigned int tMatchCnt = 0;
-  for (const auto& tHash : targetFiltered) {
-    for (const auto& qHash : queryFiltered) {
-      if (tHash.pdqHash.hammingDistance(qHash.pdqHash) < distanceTolerance) {
-        tMatchCnt++;
-        if (verbose) {
-          std::cout << "Query Hash: " << qHash.pdqHash.format()
-                    << " Target Hash: " << tHash.pdqHash.format() << " match "
-                    << std::endl;
-        }
-        break;
-      }
-    }
-  }
+  // Get count of query in target and target in query
+  auto qMatchCnt =
+      findMatches(queryFiltered, targetFiltered, distanceTolerance, verbose);
+  auto tMatchCnt =
+      findMatches(targetFiltered, queryFiltered, distanceTolerance, verbose);
 
   qMatch = (qMatchCnt * 100.0) / queryFiltered.size();
   tMatch = (tMatchCnt * 100.0) / targetFiltered.size();
