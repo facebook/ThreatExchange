@@ -29,8 +29,8 @@ namespace hashing {
 bool matchTwoHashBrute(
     std::vector<vpdq::hashing::vpdqFeature> qHashes,
     std::vector<vpdq::hashing::vpdqFeature> tHashes,
-    int distanceTolerance,
-    int qualityTolerance,
+    const int distanceTolerance,
+    const int qualityTolerance,
     double& qMatch,
     double& tMatch,
     const bool verbose);
