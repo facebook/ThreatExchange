@@ -51,12 +51,11 @@ class PDQHasher:
     DCT_matrix: List[List[float]] = []
 
     def compute_dct_matrix(self):
-        matrix_scale_factor = math.sqrt(2.0 / 64.0)
         d = [0] * 16
         for i in range(0, 16):
             di = [0] * 64
             for j in range(0, 64):
-                di[j] = math.cos((math.pi / 2 / 64.0) * (i + 1) * (2 * j + 1))
+                di[j] = self.DCT_MATRIX_SCALE_FACTOR * math.cos((math.pi / 2 / 64.0) * (i + 1) * (2 * j + 1))
             d[i] = di
         return d
 
