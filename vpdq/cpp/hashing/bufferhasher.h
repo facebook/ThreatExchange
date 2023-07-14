@@ -23,7 +23,6 @@ namespace hashing {
  * @param frameWidth Input frame's width
  *
  */
-
 class AbstractFrameBufferHasher {
  protected:
   int _frameHeight;

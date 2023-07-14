@@ -15,7 +15,7 @@ version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
 class build_ext(build_ext):
     def run(self):
-        command = ["make"]
+        command = ["make", "CYTHON=-DCYTHON"]
         try:
             subprocess.check_call(command, cwd=DIR / "vpdq/cpp")
         except subprocess.CalledProcessError as e:
