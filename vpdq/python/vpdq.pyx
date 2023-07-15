@@ -44,7 +44,7 @@ cdef extern from "vpdq/cpp/hashing/vpdqHashType.h" namespace "facebook::vpdq::ha
 
 
 cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hashing":
-    bool hashVideoFileFFMPEG(
+    bool hashVideoFile(
         string input_video_filename,
         vector[vpdqFeature]& pdqHashes,
         string ffmpeg_path,
@@ -55,6 +55,31 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         double frames_per_sec,
         const char* argv0
     )
+
+cdef extern from "vpdq/cpp/io/vpdqio.h" namespace "facebook::vpdq::io":
+    bool readVideoStreamInfo(
+        const string& inputVideoFileName,
+        int& width,
+        int& height,
+        double& framesPerSec,
+        const char* programName
+    )
+
+def read_video_stream_info(
+    inputVideoFileName: str,
+    programName: str
+):
+    cdef int width
+    cdef int height
+    cdef double framesPerSec
+    rt = readVideoStreamInfo(
+        inputVideoFileName.encode('utf-8'),
+        width,
+        height,
+        framesPerSec,
+        programName.encode("utf-8")
+    )
+    return width, height, framesPerSec
 
 @dataclass
 class VpdqFeature:
@@ -137,27 +162,24 @@ def computeHash(
     if downsample_height < 0:
         raise ValueError("Downsample_height must be non-negative")
     cdef vector[vpdqFeature] vpdq_hash;
-    vid = cv2.VideoCapture(str_path)
-    frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
-    if downsample_width == 0:
-        downsample_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
-
-    if downsample_height == 0:
-        downsample_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    vid.release()
+    width, height, frames_per_sec = read_video_stream_info(
+        str_path,
+        "vpdqPY",
+    )
 
-    rt = hashVideoFileFFMPEG(
+    rt = hashVideoFile(
         str_path.encode("utf-8"),
         vpdq_hash,
         ffmpeg_path.encode("utf-8"),
         verbose,
         seconds_per_hash,
-        downsample_width,
-        downsample_height,
+        width,
+        height,
         frames_per_sec,
         "vpdqPY",
     )
+
     if not rt:
         raise Exception("Fail to create VPDQ hash")
 
