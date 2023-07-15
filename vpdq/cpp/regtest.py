@@ -11,6 +11,7 @@ VPDQ_DIR = DIR.parent
 SAMPLE_HASHES_DIR = VPDQ_DIR / "sample-hashes"
 EXEC_DIR = VPDQ_DIR / "cpp/build"
 
+
 def get_argparse() -> argparse.ArgumentParser:
     DEFAULT_OUTPUT_HASHES_DIR = VPDQ_DIR / "output-hashes"
     DEFAULT_SAMPLE_VIDEOS_DIR = VPDQ_DIR.parent / "tmk/sample-videos"
@@ -108,6 +109,11 @@ def main():
     distanceTolerance = str(args.matchDistanceTolerance)
     qualityTolerance = str(args.qualityTolerance)
     verbose = args.verbose
+
+    if not inputVideoFolder.exists():
+        raise argparse.ArgumentTypeError(
+            f"inputVideoFolder: {inputVideoFolder} does not exist."
+        )
 
     outputHashFolder.mkdir(parents=True, exist_ok=True)
 
