@@ -52,7 +52,7 @@ static std::vector<vpdq::hashing::vpdqFeature> filterFeatures(
  *
  * @return Number of matches
  */
-static unsigned int findMatches(
+static std::vector<vpdq::hashing::vpdqFeature>::size_type findMatches(
     const std::vector<vpdq::hashing::vpdqFeature>& features1,
     const std::vector<vpdq::hashing::vpdqFeature>& features2,
     const int distanceTolerance,
