@@ -6,21 +6,32 @@ from setuptools.command.build_ext import build_ext
 import sys
 import subprocess
 from pathlib import Path
+from Cython.Build import cythonize
+import os
 
 DIR = Path(__file__).parent
 read_me = DIR / Path("vpdq/python/README.md")
 long_description = read_me.read_text()
 version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
+# Get the library directories and include directories from the environment variables
+# These variables should be set in your CMakeLists.txt file
+lib_dirs = os.getenv('LIBRARY_DIRS', '').split(':')
+include_dirs = os.getenv('INCLUDE_DIRS', '').split(':')
+include_dirs.extend(['../../../pdq/cpp/common/', "."])
 
 class build_ext(build_ext):
     def run(self):
-        command = ["make", "CYTHON=-DCYTHON"]
         try:
-            subprocess.check_call(command, cwd=DIR / "vpdq/cpp")
+            #subprocess.call(["pip", "uninstall", "vpdq"], cwd="vpdq/cpp")
+            subprocess.call(["rm", "-r", "build"], cwd="vpdq/cpp")
+            #subprocess.call(["rm", "vpdq.cpp"], cwd="vpdq/python")
+            subprocess.call(["mkdir", "build"], cwd="vpdq/cpp")
+            subprocess.check_call(["cmake", ".."], cwd="vpdq/cpp/build")
+            subprocess.check_call(["make"], cwd="vpdq/cpp/build")
         except subprocess.CalledProcessError as e:
             print(e.output)
-            print("fail to compile vpdq/pdq library")
+            print("fail to clean")
             sys.exit(1)
         super().run()
 
@@ -28,10 +39,12 @@ class build_ext(build_ext):
 EXTENSIONS = [
     Extension(
         "vpdq",
-        ["vpdq/python/vpdq.pyx"],
-        extra_objects=["vpdq/cpp/libvpdq.a"],
-        include_dirs=["."],
+        sources=["vpdq/python/vpdq.pyx"],
         language="c++",
+        libraries=["avdevice", "avfilter", "avformat", "avcodec", "swresample", "swscale", "avutil"],
+        extra_objects=["vpdq/cpp/build/libvpdqlib.a"],
+        library_dirs=lib_dirs,
+        include_dirs=include_dirs,
         extra_compile_args=["--std=c++11"],
     )
 ]
@@ -49,6 +62,6 @@ setup(
     install_requires=["cython", "opencv-python", "opencv-python-headless"],
     include_package_data=True,
     cmdclass={"build_ext": build_ext},
-    ext_modules=EXTENSIONS,
+    ext_modules=cythonize(EXTENSIONS),
     entry_points={"console_scripts": ["vpdq = vpdq:_cli"]},
 )
