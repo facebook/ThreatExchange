@@ -18,13 +18,6 @@ def get_argparse() -> argparse.ArgumentParser:
 
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
-        "-f",
-        "--ffmpegPath",
-        metavar="FFMPEG_PATH",
-        help="Specific path to ffmpeg you want to use",
-        default="ffmpeg",
-    )
-    ap.add_argument(
         "-r",
         "--secondsPerHash",
         metavar="NON_NEGATIVE_FLOAT",
@@ -103,7 +96,6 @@ def main():
     args = ap.parse_args()
     inputVideoFolder = Path(args.inputVideoFolder)
     outputHashFolder = Path(args.outputHashFolder)
-    ffmpegPath = args.ffmpegPath
     secondsPerHash = str(args.secondsPerHash)
     downsampleFrameDimension = str(args.downsampleFrameDimension)
     distanceTolerance = str(args.matchDistanceTolerance)
@@ -138,8 +130,6 @@ def main():
 
         command = [
             hashVideoExecutable,
-            "-f",
-            ffmpegPath,
             "-r",
             secondsPerHash,
             "-d",
