@@ -4,6 +4,8 @@ import subprocess
 import sys
 import argparse
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from shutil import copyfile
 import glob
 
 DIR = Path(__file__).parent
@@ -13,7 +15,6 @@ EXEC_DIR = VPDQ_DIR / "cpp/build"
 
 
 def get_argparse() -> argparse.ArgumentParser:
-    DEFAULT_OUTPUT_HASHES_DIR = VPDQ_DIR / "output-hashes"
     DEFAULT_SAMPLE_VIDEOS_DIR = VPDQ_DIR.parent / "tmk/sample-videos"
 
     ap = argparse.ArgumentParser(description=__doc__)
@@ -30,8 +31,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "--outputHashFolder",
         metavar="OUTPUT_HASH_Folder_PATH",
         help="Output Hash Folder's Name",
-        default=DEFAULT_OUTPUT_HASHES_DIR,
-        type=dir_path,
+        type=Path,
     )
     ap.add_argument(
         "-i",
@@ -39,7 +39,7 @@ def get_argparse() -> argparse.ArgumentParser:
         metavar="INPUTPUT_VIDEO_FOLDER_PATH",
         help="Input Video Folder",
         default=DEFAULT_SAMPLE_VIDEOS_DIR,
-        type=dir_path,
+        type=Path,
     )
     ap.add_argument(
         "-s",
@@ -74,14 +74,6 @@ def get_argparse() -> argparse.ArgumentParser:
     return ap
 
 
-def dir_path(string):
-    if Path(string).is_dir():
-        return string
-    raise argparse.ArgumentTypeError(
-        f"readable_dir: {string} is not a valid directory path"
-    )
-
-
 def main():
     hashVideoExecutable = EXEC_DIR / "vpdq-hash-video"
     matchHashesExecutable = EXEC_DIR / "match-hashes-byline"
@@ -94,8 +86,8 @@ def main():
 
     ap = get_argparse()
     args = ap.parse_args()
-    inputVideoFolder = Path(args.inputVideoFolder)
-    outputHashFolder = Path(args.outputHashFolder)
+    inputVideoFolder = args.inputVideoFolder
+    outputHashFolder = args.outputHashFolder
     secondsPerHash = str(args.secondsPerHash)
     downsampleFrameDimension = str(args.downsampleFrameDimension)
     distanceTolerance = str(args.matchDistanceTolerance)
@@ -107,60 +99,78 @@ def main():
             f"inputVideoFolder: {inputVideoFolder} does not exist."
         )
 
-    outputHashFolder.mkdir(parents=True, exist_ok=True)
+    with TemporaryDirectory() as tempOutputHashFolder:
+        """
+        Write the files to temp
+        If outputHashFolder is specified then
+        copy the output files there, overwriting existing files
+        """
 
-    # TODO: Add more general options for other video extensions.
-    for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
-        file = Path(fileStr)
+        tempOutputHashFolder = Path(tempOutputHashFolder)
+        if outputHashFolder is not None:
+            if not outputHashFolder.exists():
+                print(f"Creating output directory at {outputHashFolder}")
+                outputHashFolder.mkdir(parents=True, exist_ok=True)
 
-        # Create output hash file or overwrite existing file
-        # This is hardcoded in cpp, and it
-        # does not create the file if it does not exist:
-        #
-        # vpdq-hash-video.cpp:
-        #
-        # // Strip containing directory:
-        # std::string b = basename(inputVideoFileName, "/");
-        # // Strip file extension:
-        # b = stripExtension(b, ".");
-        # outputHashFileName = outputDirectory + "/" + b + ".txt";
+        # TODO: Add more general options for other video extensions.
+        for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
+            file = Path(fileStr)
 
-        with open(outputHashFolder / f"{file.stem}.txt", "w"):
-            pass
+            """
+            Create output hash file or overwrite existing file
+            This is hardcoded in cpp, and it
+            does not create the file if it does not exist:
+            
+            vpdq-hash-video.cpp:
+            
+            // Strip containing directory:
+            std::string b = basename(inputVideoFileName, "/");
+            // Strip file extension:
+            b = stripExtension(b, ".");
+            outputHashFileName = outputDirectory + "/" + b + ".txt";
+            """
+            outputHashFileName = tempOutputHashFolder / f"{file.stem}.txt"
+            with open(outputHashFileName, "w"):
+                pass
 
-        command = [
-            hashVideoExecutable,
-            "-r",
-            secondsPerHash,
-            "-d",
-            outputHashFolder,
-            "-s",
-            downsampleFrameDimension,
-            "-i",
-            file,
-        ]
+            command = [
+                hashVideoExecutable,
+                "-r",
+                secondsPerHash,
+                "-d",
+                tempOutputHashFolder,
+                "-s",
+                downsampleFrameDimension,
+                "-i",
+                file,
+            ]
 
-        if verbose:
-            command.insert(1, "-v")
+            if verbose:
+                command.insert(1, "-v")
 
-        subprocess.call(command)
+            subprocess.call(command)
 
-    for outputFileStr in glob.iglob(f"{outputHashFolder}/**/*.txt", recursive=True):
-        outputFile = Path(outputFileStr)
-        sampleFile = SAMPLE_HASHES_DIR / outputFile.name
-        print(f"\nMatching File {sampleFile.name}")
-        command = [
-            matchHashesExecutable,
-            sampleFile,
-            outputFile,
-            distanceTolerance,
-            qualityTolerance,
-        ]
+            if outputHashFolder is not None:
+                copyfile(file, outputHashFolder / outputHashFileName)
 
-        if verbose:
-            command.insert(1, "-v")
+        for outputFileStr in glob.iglob(
+            f"{tempOutputHashFolder}/**/*.txt", recursive=True
+        ):
+            outputFile = Path(outputFileStr)
+            sampleFile = SAMPLE_HASHES_DIR / outputFile.name
+            print(f"\nMatching File {sampleFile.name}")
+            command = [
+                matchHashesExecutable,
+                sampleFile,
+                outputFile,
+                distanceTolerance,
+                qualityTolerance,
+            ]
 
-        subprocess.call(command)
+            if verbose:
+                command.insert(1, "-v")
+
+            subprocess.call(command)
 
 
 if __name__ == "__main__":
