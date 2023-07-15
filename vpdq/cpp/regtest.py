@@ -8,13 +8,13 @@ import glob
 
 DIR = Path(__file__).parent
 VPDQ_DIR = DIR.parent
-SAMPLE_VIDEOS_DIR = VPDQ_DIR.parent / "tmk/sample-videos"
 SAMPLE_HASHES_DIR = VPDQ_DIR / "sample-hashes"
-OUTPUT_HASHES_DIR = VPDQ_DIR / "output-hashes"
 EXEC_DIR = VPDQ_DIR / "cpp/build"
 
-
 def get_argparse() -> argparse.ArgumentParser:
+    DEFAULT_OUTPUT_HASHES_DIR = VPDQ_DIR / "output-hashes"
+    DEFAULT_SAMPLE_VIDEOS_DIR = VPDQ_DIR.parent / "tmk/sample-videos"
+
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "-f",
@@ -36,7 +36,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "--outputHashFolder",
         metavar="OUTPUT_HASH_Folder_PATH",
         help="Output Hash Folder's Name",
-        default=OUTPUT_HASHES_DIR,
+        default=DEFAULT_OUTPUT_HASHES_DIR,
         type=dir_path,
     )
     ap.add_argument(
@@ -44,7 +44,7 @@ def get_argparse() -> argparse.ArgumentParser:
         "--inputVideoFolder",
         metavar="INPUTPUT_VIDEO_FOLDER_PATH",
         help="Input Video Folder",
-        default=SAMPLE_VIDEOS_DIR,
+        default=DEFAULT_SAMPLE_VIDEOS_DIR,
         type=dir_path,
     )
     ap.add_argument(
@@ -149,14 +149,13 @@ def main():
 
         subprocess.call(command)
 
-    for fileStr in glob.iglob(f"{outputHashFolder}/**/*.txt", recursive=True):
-        file = Path(fileStr)
-        print(f"\nMatching File {file.name}")
-        outputFile = outputHashFolder / file.name
-
+    for outputFileStr in glob.iglob(f"{outputHashFolder}/**/*.txt", recursive=True):
+        outputFile = Path(outputFileStr)
+        sampleFile = SAMPLE_HASHES_DIR / outputFile.name
+        print(f"\nMatching File {sampleFile.name}")
         command = [
             matchHashesExecutable,
-            file,
+            sampleFile,
             outputFile,
             distanceTolerance,
             qualityTolerance,
