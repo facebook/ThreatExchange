@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 import subprocess
 import argparse
+import sys
 
 
 DIR = Path(__file__).resolve().parent
@@ -55,6 +56,7 @@ def run_command(command, cwd="."):
         subprocess.check_call(command, cwd=cwd)
     except subprocess.CalledProcessError as e:
         print(e.output)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
