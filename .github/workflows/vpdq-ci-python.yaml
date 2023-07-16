@@ -38,6 +38,7 @@ jobs:
           sudo apt-get install ffmpeg
       - name: Install dependencies
         run: |
+          sudo apt-get install -y libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest
