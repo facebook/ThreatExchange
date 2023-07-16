@@ -168,6 +168,12 @@ def computeHash(
         "vpdqPY",
     )
 
+    if downsample_width > 0:
+        width = downsample_width
+    
+    if downsample_height > 0:
+        height = downsample_height
+
     rt = hashVideoFile(
         str_path.encode("utf-8"),
         vpdq_hash,
