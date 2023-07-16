@@ -111,7 +111,9 @@ def main():
             if not outputHashFolder.exists():
                 print(f"Creating output directory at {outputHashFolder}")
                 outputHashFolder.mkdir(parents=True, exist_ok=True)
-
+            print(f"Writing output to directory: {outputHashFolder}")
+        else:
+            print(f"Writing output to temp directory: {tempOutputHashFolder}")
         # TODO: Add more general options for other video extensions.
         for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
             file = Path(fileStr)
@@ -129,10 +131,10 @@ def main():
             b = stripExtension(b, ".");
             outputHashFileName = outputDirectory + "/" + b + ".txt";
             """
-            outputHashFileName = tempOutputHashFolder / f"{file.stem}.txt"
-            with open(outputHashFileName, "w"):
+            outputHashFile = tempOutputHashFolder / f"{file.stem}.txt"
+            with open(outputHashFile, "x+t"):
                 pass
-
+            print(f"\nHashing file {file.name}")
             command = [
                 hashVideoExecutable,
                 "-r",
@@ -155,13 +157,12 @@ def main():
                 sys.exit(1)
 
             if outputHashFolder is not None:
-                copyfile(file, outputHashFolder / outputHashFileName)
-
+                copyfile(outputHashFile, Path(outputHashFolder / outputHashFile.name))
         for outputFileStr in glob.iglob(
             f"{tempOutputHashFolder}/**/*.txt", recursive=True
         ):
             outputFile = Path(outputFileStr)
-            sampleFile = SAMPLE_HASHES_DIR / outputFile.name
+            sampleFile = Path(SAMPLE_HASHES_DIR / outputFile.name)
             print(f"\nMatching File {sampleFile.name}")
             command = [
                 matchHashesExecutable,
