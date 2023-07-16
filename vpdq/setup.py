@@ -68,7 +68,7 @@ setup(
     license="BSD",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    install_requires=["cython", "opencv-python", "opencv-python-headless"],
+    install_requires=["cython"],
     include_package_data=True,
     cmdclass={"build_ext": build_ext},
     ext_modules=EXTENSIONS,

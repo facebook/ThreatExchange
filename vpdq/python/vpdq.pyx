@@ -1,7 +1,6 @@
 # distutils: language = c++
 # cython: language_level=3
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-import cv2
 import typing as t
 import subprocess
 
