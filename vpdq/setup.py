@@ -18,7 +18,7 @@ version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 # These variables should be set in the CMakeLists.txt file
 lib_dirs = os.getenv("LIBRARY_DIRS", "").split(":")
 include_dirs = os.getenv("INCLUDE_DIRS", "").split(":")
-include_dirs.extend(["../../../pdq/cpp/common/", "."])  # Can this be changed?
+include_dirs.extend(["vpdq/pdq/cpp/common/", "."])  # Can this be changed?
 
 
 class build_ext(build_ext):
