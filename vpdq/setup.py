@@ -6,8 +6,8 @@ from setuptools.command.build_ext import build_ext
 import sys
 import subprocess
 from pathlib import Path
-from Cython.Build import cythonize
 import os
+import logging
 
 DIR = Path(__file__).parent
 read_me = DIR / Path("vpdq/python/README.md")
@@ -15,23 +15,23 @@ long_description = read_me.read_text()
 version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
 # Get the library directories and include directories from the environment variables
-# These variables should be set in your CMakeLists.txt file
+# These variables should be set in the CMakeLists.txt file
 lib_dirs = os.getenv('LIBRARY_DIRS', '').split(':')
 include_dirs = os.getenv('INCLUDE_DIRS', '').split(':')
-include_dirs.extend(['../../../pdq/cpp/common/', "."])
+include_dirs.extend(['../../../pdq/cpp/common/', "."]) # Can this be changed?
 
 class build_ext(build_ext):
     def run(self):
         try:
-            #subprocess.call(["pip", "uninstall", "vpdq"], cwd="vpdq/cpp")
-            subprocess.call(["rm", "-r", "build"], cwd="vpdq/cpp")
-            #subprocess.call(["rm", "vpdq.cpp"], cwd="vpdq/python")
-            subprocess.call(["mkdir", "build"], cwd="vpdq/cpp")
-            subprocess.check_call(["cmake", ".."], cwd="vpdq/cpp/build")
-            subprocess.check_call(["make"], cwd="vpdq/cpp/build")
+            logging.info("Creating build directory...")
+            subprocess.call(["mkdir", "build"], cwd=DIR / "vpdq/cpp")
+            logging.info("Running CMake...")
+            subprocess.check_call(["cmake", ".."], cwd=DIR / "vpdq/cpp/build")
+            logging.info("Compiling with Make...")
+            subprocess.check_call(["make"], cwd=DIR / "vpdq/cpp/build")
         except subprocess.CalledProcessError as e:
-            print(e.output)
-            print("fail to clean")
+            logging.error(e.output)
+            logging.error("Failed to clean or compile")
             sys.exit(1)
         super().run()
 
@@ -45,7 +45,7 @@ EXTENSIONS = [
         extra_objects=["vpdq/cpp/build/libvpdqlib.a"],
         library_dirs=lib_dirs,
         include_dirs=include_dirs,
-        extra_compile_args=["--std=c++11"],
+        extra_compile_args=["--std=c++14"],
     )
 ]
 
@@ -62,6 +62,6 @@ setup(
     install_requires=["cython", "opencv-python", "opencv-python-headless"],
     include_package_data=True,
     cmdclass={"build_ext": build_ext},
-    ext_modules=cythonize(EXTENSIONS),
+    ext_modules=EXTENSIONS,
     entry_points={"console_scripts": ["vpdq = vpdq:_cli"]},
 )

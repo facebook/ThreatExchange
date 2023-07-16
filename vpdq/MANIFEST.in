@@ -14,5 +14,5 @@ include pdq/cpp/hashing/torben.h
 include vpdq/LICENSE.txt
 include vpdq/python/README.md
 include vpdq/version.txt
-include vpdq/cpp/Makefile
+include vpdq/cpp/CMakeLists.txt
 recursive-include vpdq *.py *pyx *.cpp *.h
