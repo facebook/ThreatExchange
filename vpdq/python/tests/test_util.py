@@ -2,7 +2,7 @@
 import vpdq
 import typing as t
 from pathlib import Path
-from typing import Union
+from typing import List, Union
 
 
 def read_file_to_hash(input_hash_filename: str) -> t.List[vpdq.VpdqFeature]:
@@ -31,7 +31,7 @@ def read_file_to_hash(input_hash_filename: str) -> t.List[vpdq.VpdqFeature]:
 
 def generate_hashes(
     output_folder: Union[Path, str],
-    input_filepaths: list[Union[Path, str]],
+    input_filepaths: List[Union[Path, str]],
     overwrite: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
