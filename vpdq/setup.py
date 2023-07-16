@@ -18,7 +18,7 @@ version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 # These variables should be set in the CMakeLists.txt file
 lib_dirs = os.getenv("LIBRARY_DIRS", "").split(":")
 include_dirs = os.getenv("INCLUDE_DIRS", "").split(":")
-include_dirs.extend(["vpdq/pdq/cpp/common/", "."])  # Can this be changed?
+include_dirs.extend(["vpdq/pdq", "./"])
 
 
 class build_ext(build_ext):
@@ -32,7 +32,7 @@ class build_ext(build_ext):
             subprocess.check_call(["make"], cwd=DIR / "vpdq/cpp/build")
         except subprocess.CalledProcessError as e:
             logging.error(e.output)
-            logging.error("Failed to clean or compile")
+            logging.error("Failed to compile vpdq library.")
             sys.exit(1)
         super().run()
 

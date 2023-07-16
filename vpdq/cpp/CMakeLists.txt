@@ -65,10 +65,6 @@ add_executable(vpdq-hash-video
     bin/vpdq-hash-video.cpp
 )
 
-set_target_properties(vpdqlib
-    PROPERTIES
-    ENVIRONMENT "LIBRARY_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,IMPORTED_LOCATION>;INCLUDE_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,INTERFACE_INCLUDE_DIRECTORIES>"
-)
 
 target_link_libraries(vpdqlib
     PkgConfig::LIBAV
@@ -89,3 +85,8 @@ target_link_libraries(vpdq-hash-video
     PkgConfig::LIBAV
 )
 
+# Pass the include and libav* library directories to setup.py for Python binding
+set_target_properties(vpdqlib
+    PROPERTIES
+    ENVIRONMENT "LIBRARY_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,IMPORTED_LOCATION>;INCLUDE_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,INTERFACE_INCLUDE_DIRECTORIES>"
+)
