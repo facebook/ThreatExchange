@@ -122,9 +122,9 @@ def main():
             Create output hash file or overwrite existing file
             This is hardcoded in cpp, and it
             does not create the file if it does not exist:
-            
+
             vpdq-hash-video.cpp:
-            
+
             // Strip containing directory:
             std::string b = basename(inputVideoFileName, "/");
             // Strip file extension:
@@ -163,7 +163,9 @@ def main():
         ):
             outputFile = Path(outputFileStr)
             sampleFile = Path(SAMPLE_HASHES_DIR / outputFile.name)
-            print(f"\nMatching File {sampleFile.name}")
+            print(
+                f"\nMatching Video {sampleFile.name} from hash file {outputFile.name}"
+            )
             command = [
                 matchHashesExecutable,
                 sampleFile,
