@@ -16,9 +16,10 @@ version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
 
 # Get the library directories and include directories from the environment variables
 # These variables should be set in the CMakeLists.txt file
-lib_dirs = os.getenv('LIBRARY_DIRS', '').split(':')
-include_dirs = os.getenv('INCLUDE_DIRS', '').split(':')
-include_dirs.extend(['../../../pdq/cpp/common/', "."]) # Can this be changed?
+lib_dirs = os.getenv("LIBRARY_DIRS", "").split(":")
+include_dirs = os.getenv("INCLUDE_DIRS", "").split(":")
+include_dirs.extend(["../../../pdq/cpp/common/", "."])  # Can this be changed?
+
 
 class build_ext(build_ext):
     def run(self):
@@ -41,7 +42,15 @@ EXTENSIONS = [
         "vpdq",
         sources=["vpdq/python/vpdq.pyx"],
         language="c++",
-        libraries=["avdevice", "avfilter", "avformat", "avcodec", "swresample", "swscale", "avutil"],
+        libraries=[
+            "avdevice",
+            "avfilter",
+            "avformat",
+            "avcodec",
+            "swresample",
+            "swscale",
+            "avutil",
+        ],
         extra_objects=["vpdq/cpp/build/libvpdqlib.a"],
         library_dirs=lib_dirs,
         include_dirs=include_dirs,
