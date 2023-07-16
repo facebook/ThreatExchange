@@ -148,7 +148,11 @@ def main():
             if verbose:
                 command.insert(1, "-v")
 
-            subprocess.call(command)
+            try:
+                subprocess.check_call(command)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                sys.exit(1)
 
             if outputHashFolder is not None:
                 copyfile(file, outputHashFolder / outputHashFileName)
@@ -170,7 +174,11 @@ def main():
             if verbose:
                 command.insert(1, "-v")
 
-            subprocess.call(command)
+            try:
+                subprocess.check_call(command)
+            except subprocess.CalledProcessError as e:
+                print(e)
+                sys.exit(1)
 
 
 if __name__ == "__main__":
