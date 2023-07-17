@@ -132,8 +132,8 @@ struct Hash256 {
   bool operator>=(const Hash256& that) const;
   bool operator==(const Hash256& that) const;
 
-  static Hash256 fromLineOrDie(char* line, int linelen);
-  static Hash256 fromStringOrDie(char* string);
+  static Hash256 fromLineOrDie(std::string& line);
+  static Hash256 fromStringOrDie(const std::string& string);
 
   std::string format() const;
   void dump() { printf("%s", this->format().c_str()); }

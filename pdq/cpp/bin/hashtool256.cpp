@@ -6,6 +6,8 @@
 #define _GNU_SOURCE
 #endif
 
+#include <iostream>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -179,7 +181,7 @@ static void do_matrix(
   std::vector<Hash256> hashes2;
 
   if (argc == 0) {
-    loadHashesFromStream(stdin, hashes1);
+    loadHashesFromStream(std::cin, hashes1);
     hashes2 = hashes1;
   } else if (argc == 1) {
     loadHashesFromFile(argv[0], hashes1);
