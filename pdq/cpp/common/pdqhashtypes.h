@@ -10,6 +10,7 @@
 // ================================================================
 
 #include <pdq/cpp/common/pdqbasetypes.h>
+#include <pdq/cpp/common/pdqhamming.h>
 
 #include <stdio.h>
 #include <string>
@@ -73,14 +74,14 @@ struct Hash256 {
   int hammingNorm() {
     int n = 0;
     for (int i = 0; i < HASH256_NUM_WORDS; i++) {
-      n += __builtin_popcount(this->w[i]);
+      n += hammingNorm16(this->w[i]);
     }
     return n;
   }
   int hammingDistance(const Hash256& that) const {
     int n = 0;
     for (int i = 0; i < HASH256_NUM_WORDS; i++) {
-      n += __builtin_popcount(this->w[i] ^ that.w[i]);
+      n += hammingDistance16(this->w[i], that.w[i]);
     }
     return n;
   }

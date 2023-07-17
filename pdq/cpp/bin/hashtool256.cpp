@@ -125,7 +125,7 @@ static void do_slot_norms(
   for (auto hash : hashes) {
     printf("%s", hash.format().c_str());
     for (int i = 0; i < HASH256_NUM_WORDS; i++) {
-      printf(" %2d", __builtin_popcount(hash.w[i]));
+      printf(" %2d", hammingNorm16(hash.w[i]));
     }
     printf("\n");
   }
