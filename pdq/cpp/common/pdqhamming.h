@@ -12,7 +12,7 @@
 // performance by a few percent -- worth using but OK to live without.)
 #if !defined(_MSC_VER) && !defined(WIN32) && !defined(_WIN32) &&  \
     !defined(__WIN32__) && !defined(WIN64) && !defined(_WIN64) && \
-    !defined(__WIN64__) && !defined(__linux)
+    !defined(__WIN64__)
 #define USE_BUILTIN_POPCOUNT
 #endif
 
