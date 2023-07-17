@@ -7,14 +7,12 @@
 #ifndef MATCHTWOHASH_H
 #define MATCHTWOHASH_H
 
-using namespace std;
-
 namespace facebook {
 namespace vpdq {
 namespace hashing {
 /**
  * Compare two vpdq hash vectors in brute-force.
- * Result in two float percentage number qMatch, tMatch
+ * Result in two double percentages: qMatch, tMatch
  *
  * @param qHashes Query video's hash
  * @param tHashes Target video's hash
@@ -29,13 +27,13 @@ namespace hashing {
  * @return If successfully hash the video
  */
 bool matchTwoHashBrute(
-    vector<vpdq::hashing::vpdqFeature> qHashes,
-    vector<vpdq::hashing::vpdqFeature> tHashes,
-    int distanceTolerance,
-    int qualityTolerance,
+    std::vector<vpdq::hashing::vpdqFeature> qHashes,
+    std::vector<vpdq::hashing::vpdqFeature> tHashes,
+    const int distanceTolerance,
+    const int qualityTolerance,
     double& qMatch,
     double& tMatch,
-    bool verbose);
+    const bool verbose);
 } // namespace hashing
 } // namespace vpdq
 } // namespace facebook
