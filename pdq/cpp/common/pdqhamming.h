@@ -10,7 +10,11 @@
 // If your compiler doesn't support __builtin_popcount then feel free to
 // undefine this. (Experiments have shown that using builtin popcount helps
 // performance by a few percent -- worth using but OK to live without.)
+#if !defined(_MSC_VER) && !defined(WIN32) && !defined(_WIN32) &&  \
+    !defined(__WIN32__) && !defined(WIN64) && !defined(_WIN64) && \
+    !defined(__WIN64__)
 #define USE_BUILTIN_POPCOUNT
+#endif
 
 namespace facebook {
 namespace pdq {

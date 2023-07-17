@@ -37,7 +37,7 @@ bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
     const char* programName) {
-  ifstream inputfp(inputHashFileName);
+  std::ifstream inputfp(inputHashFileName);
   string str;
   if (!inputfp.is_open()) {
     fprintf(
@@ -67,7 +67,7 @@ bool loadHashesFromFileOrDie(
       return false;
     }
     pdqHashes.push_back(
-        {pdq::hashing::Hash256::fromStringOrDie((char*)frameValues[2].c_str()),
+        {pdq::hashing::Hash256::fromStringOrDie(frameValues[2]),
          atoi(frameValues[0].c_str()),
          atoi(frameValues[1].c_str()),
          atof(frameValues[3].c_str())});
