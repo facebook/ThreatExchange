@@ -4,6 +4,8 @@
 
 #include <pdq/cpp/common/pdqhashtypes.h>
 
+#include <random>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +19,9 @@ namespace hashing {
 const char hash256_format[] =
     "%04hx%04hx%04hx%04hx%04hx%04hx%04hx%04hx"
     "%04hx%04hx%04hx%04hx%04hx%04hx%04hx%04hx";
+
+std::random_device rd;
+std::mt19937 gen(rd());
 
 // ================================================================
 Hash256::Hash256(const char* hex_formatted_string) {
@@ -185,11 +190,10 @@ bool Hash256::operator==(const Hash256& that) const {
 }
 
 // ----------------------------------------------------------------
-// Does not itself call srandom(); caller must.
 Hash256 Hash256::fuzz(int numErrorBits) {
   Hash256 rv = *this;
   for (int i = 0; i < numErrorBits; i++) {
-    int idx = random() % 256;
+    int idx = std::uniform_int_distribution<int>(0, 255)(gen);
     rv.flipBit(idx);
   }
   return rv;

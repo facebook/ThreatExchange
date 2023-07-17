@@ -11,8 +11,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <unistd.h>
 #include <pdq/cpp/common/pdqhashtypes.h>
 #include <pdq/cpp/io/hashio.h>
 
@@ -73,9 +71,7 @@ static void usage(char* argv0, int rc) {
 
 // ----------------------------------------------------------------
 int main(int argc, char** argv) {
-  srandom(time(nullptr) ^ getpid()); // seed the RNG for Hash256::fuzz
-
-  // Parse command-line flags. I'm expliclily not using gflags or other such
+  // Parse command-line flags. I'm explicitly not using gflags or other such
   // libraries, to minimize the number of external dependencies for this
   // project.
   if (argc < 2) {
