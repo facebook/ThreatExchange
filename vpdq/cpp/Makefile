@@ -6,6 +6,7 @@ CC=g++ -fPIC -O2 $(CYTHON) -std=c++14 -I../..
 
 LIBHDR=\
 ../../pdq/cpp/common/pdqbasetypes.h \
+../../pdq/cpp/common/pdqhamming.h \
 ../../pdq/cpp/common/pdqhashtypes.h \
 ../../pdq/cpp/hashing/pdqhashing.h \
 ../../pdq/cpp/io/hashio.h \
@@ -17,6 +18,7 @@ LIBHDR=\
 
 LIBOBJ= \
 ../../pdq/cpp/common/pdqhashtypes.o \
+../../pdq/cpp/common/pdqhamming.o \
 ../../pdq/cpp/hashing/pdqhashing.o \
 ../../pdq/cpp/io/hashio.o \
 ../../pdq/cpp/downscaling/downscaling.o \

@@ -18,6 +18,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(SOURCES
     ../../pdq/cpp/common/pdqhashtypes.cpp
     ../../pdq/cpp/hashing/pdqhashing.cpp
+    ../../pdq/cpp/common/pdqhamming.cpp
     ../../pdq/cpp/io/hashio.cpp
     ../../pdq/cpp/downscaling/downscaling.cpp
     ../../pdq/cpp/hashing/torben.cpp
@@ -30,6 +31,7 @@ set(SOURCES
 SET(HEADERS
     ../../pdq/cpp/common/pdqbasetypes.h
     ../../pdq/cpp/common/pdqhashtypes.h
+    ../../pdq/cpp/common/pdqhamming.h
     ../../pdq/cpp/hashing/pdqhashing.h
     ../../pdq/cpp/io/hashio.h
     ../../pdq/cpp/downscaling/downscaling.h
