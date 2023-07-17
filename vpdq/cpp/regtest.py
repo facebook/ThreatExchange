@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from shutil import copyfile
 import glob
+import platform
 
 DIR = Path(__file__).parent
 VPDQ_DIR = DIR.parent
@@ -77,6 +78,10 @@ def get_argparse() -> argparse.ArgumentParser:
 def main():
     hashVideoExecutable = EXEC_DIR / "vpdq-hash-video"
     matchHashesExecutable = EXEC_DIR / "match-hashes-byline"
+
+    if platform.system() == "Windows":
+        hashVideoExecutable = Path(f"{hashVideoExecutable}.exe")
+        matchHashesExecutable = Path(f"{matchHashesExecutable}.exe")
 
     if not hashVideoExecutable.exists() or not matchHashesExecutable.exists():
         print(
