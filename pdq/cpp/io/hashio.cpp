@@ -4,6 +4,10 @@
 
 #include <pdq/cpp/io/hashio.h>
 
+#include <fstream>
+#include <iostream>
+#include <string>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,37 +18,33 @@ namespace io {
 // ----------------------------------------------------------------
 // See comments in header file
 bool loadHashAndMetadataFromStream(
-    FILE* fp,
+    std::istream& in,
     facebook::pdq::hashing::Hash256& hash,
     std::string& metadata,
     int counter) {
-  char prefix[] = "hash=";
-  int prefix_length = strlen(prefix);
-  char* line = nullptr;
-  size_t linelen = 0;
+  const std::string prefix = "hash=";
+  std::string line;
 
-  if ((ssize_t)(linelen = getline(&line, &linelen, fp)) == -1) {
+  if (!std::getline(in, line)) {
     return false;
   }
 
   // Chomp
-  if (linelen > 0) {
-    if (line[linelen - 1] == '\n') {
-      line[linelen - 1] = 0;
-    }
+  if (!line.empty() && line.back() == '\n') {
+    line.pop_back();
   }
 
   // Split hash from metadata on comma
-  char* cut = strchr(line, ',');
-  if (cut == nullptr) {
+  size_t cut_pos = line.find(',');
+  if (cut_pos == std::string::npos) {
     metadata = "idx=" + std::to_string(counter);
   } else {
-    *cut = 0;
-    metadata = std::string(&cut[1]);
+    metadata = line.substr(cut_pos + 1);
+    line = line.substr(0, cut_pos);
   }
-  if (!strncmp(line, prefix, prefix_length)) {
-    hash =
-        facebook::pdq::hashing::Hash256::fromStringOrDie(&line[prefix_length]);
+  if (line.substr(0, prefix.size()) == prefix) {
+    hash = facebook::pdq::hashing::Hash256::fromStringOrDie(
+        line.substr(prefix.size()));
   } else {
     hash = facebook::pdq::hashing::Hash256::fromStringOrDie(line);
   }
@@ -54,14 +54,14 @@ bool loadHashAndMetadataFromStream(
 // ----------------------------------------------------------------
 // See comments in header file
 void loadHashesAndMetadataFromStream(
-    FILE* fp,
+    std::istream& in,
     std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
         vector_of_pairs) {
   while (true) {
     int counter = vector_of_pairs.size() + 1;
     facebook::pdq::hashing::Hash256 hash;
     std::string metadata;
-    bool rc = loadHashAndMetadataFromStream(fp, hash, metadata, counter);
+    bool rc = loadHashAndMetadataFromStream(in, hash, metadata, counter);
     if (!rc) {
       break;
     }
@@ -71,17 +71,17 @@ void loadHashesAndMetadataFromStream(
 
 // ----------------------------------------------------------------
 bool loadHashesAndMetadataFromFile(
-    char* filename,
+    const char* filename,
     std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
         vector_of_pairs) {
-  FILE* fp = fopen(filename, "r");
-  if (fp == nullptr) {
+  std::ifstream in(filename);
+  if (!in) {
     perror("fopen");
     fprintf(stderr, "Could not open \"%s\" for read.\n", filename);
     return false;
   }
-  loadHashesAndMetadataFromStream(fp, vector_of_pairs);
-  (void)fclose(fp);
+  loadHashesAndMetadataFromStream(in, vector_of_pairs);
+  in.close();
   return true;
 }
 
@@ -92,7 +92,7 @@ bool loadHashesAndMetadataFromFiles(
     std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
         vector_of_pairs) {
   if (num_filenames == 0) {
-    loadHashesAndMetadataFromStream(stdin, vector_of_pairs);
+    loadHashesAndMetadataFromStream(std::cin, vector_of_pairs);
   } else {
     for (int i = 0; i < num_filenames; i++) {
       bool status =
@@ -111,7 +111,7 @@ void loadHashesFromFilesOrDie(
     int num_filenames,
     std::vector<facebook::pdq::hashing::Hash256>& hashes) {
   if (num_filenames == 0) {
-    loadHashesFromStream(stdin, hashes);
+    loadHashesFromStream(std::cin, hashes);
   } else {
     for (int i = 0; i < num_filenames; i++) {
       loadHashesFromFileOrDie(filenames[i], hashes);
@@ -121,7 +121,8 @@ void loadHashesFromFilesOrDie(
 
 // ----------------------------------------------------------------
 void loadHashesFromFileOrDie(
-    char* filename, std::vector<facebook::pdq::hashing::Hash256>& hashes) {
+    const char* filename,
+    std::vector<facebook::pdq::hashing::Hash256>& hashes) {
   if (!loadHashesFromFile(filename, hashes)) {
     // Error message already printed out
     exit(1);
@@ -130,26 +131,26 @@ void loadHashesFromFileOrDie(
 
 // ----------------------------------------------------------------
 bool loadHashesFromFile(
-    char* filename, std::vector<facebook::pdq::hashing::Hash256>& hashes) {
-  FILE* fp = fopen(filename, "r");
-  if (fp == nullptr) {
+    const char* filename,
+    std::vector<facebook::pdq::hashing::Hash256>& hashes) {
+  std::ifstream in(filename);
+  if (!in) {
     perror("fopen");
     fprintf(stderr, "Could not open \"%s\" for read.\n", filename);
     return false;
   }
-  loadHashesFromStream(fp, hashes);
-  fclose(fp);
+  loadHashesFromStream(in, hashes);
+  in.close();
   return true;
 }
 
 // ----------------------------------------------------------------
 void loadHashesFromStream(
-    FILE* fp, std::vector<facebook::pdq::hashing::Hash256>& hashes) {
-  char* line = nullptr;
-  size_t linelen = 0;
-  while ((ssize_t)(linelen = getline(&line, &linelen, fp)) != -1) {
+    std::istream& in, std::vector<facebook::pdq::hashing::Hash256>& hashes) {
+  std::string line;
+  while (std::getline(in, line)) {
     facebook::pdq::hashing::Hash256 hash =
-        facebook::pdq::hashing::Hash256::fromLineOrDie(line, linelen);
+        facebook::pdq::hashing::Hash256::fromLineOrDie(line);
     hashes.push_back(hash);
   }
 }

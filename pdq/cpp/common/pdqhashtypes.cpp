@@ -4,6 +4,8 @@
 
 #include <pdq/cpp/common/pdqhashtypes.h>
 
+#include <random>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +19,9 @@ namespace hashing {
 const char hash256_format[] =
     "%04hx%04hx%04hx%04hx%04hx%04hx%04hx%04hx"
     "%04hx%04hx%04hx%04hx%04hx%04hx%04hx%04hx";
+
+std::random_device rd;
+std::mt19937 gen(rd());
 
 // ================================================================
 Hash256::Hash256(const char* hex_formatted_string) {
@@ -50,24 +55,24 @@ Hash256::Hash256(const char* hex_formatted_string) {
 }
 
 // ----------------------------------------------------------------
-Hash256 Hash256::fromLineOrDie(char* line, int linelen) {
-  if (line[linelen - 1] == '\n') {
-    line[linelen - 1] = 0;
+Hash256 Hash256::fromLineOrDie(std::string& line) {
+  if (!line.empty() && line.back() == '\n') {
+    line.pop_back();
   }
   return Hash256::fromStringOrDie(line);
 }
 
 // ----------------------------------------------------------------
-Hash256 Hash256::fromStringOrDie(char* string) {
+Hash256 Hash256::fromStringOrDie(const std::string& string) {
   Hash256 h;
-  if (strlen(string) != 64) {
+  if (string.size() != 64) {
     // could throw; only current use is ops-tools which
     // would exit anyway.
-    fprintf(stderr, "Scan \"%s\" failed.\n", string);
+    fprintf(stderr, "Scan \"%s\" failed.\n", string.c_str());
     exit(1);
   }
   int rv = sscanf(
-      string,
+      string.c_str(),
       hash256_format,
       &h.w[15],
       &h.w[14],
@@ -88,7 +93,7 @@ Hash256 Hash256::fromStringOrDie(char* string) {
   if (rv != 16) {
     // could throw; only current use is ops-tools which
     // would exit anyway.
-    fprintf(stderr, "Scan \"%s\" failed.\n", string);
+    fprintf(stderr, "Scan \"%s\" failed.\n", string.c_str());
     exit(1);
   }
   return h;
@@ -185,11 +190,10 @@ bool Hash256::operator==(const Hash256& that) const {
 }
 
 // ----------------------------------------------------------------
-// Does not itself call srandom(); caller must.
 Hash256 Hash256::fuzz(int numErrorBits) {
   Hash256 rv = *this;
   for (int i = 0; i < numErrorBits; i++) {
-    int idx = random() % 256;
+    int idx = std::uniform_int_distribution<int>(0, 255)(gen);
     rv.flipBit(idx);
   }
   return rv;

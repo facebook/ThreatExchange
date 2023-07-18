@@ -6,11 +6,11 @@
 #define _GNU_SOURCE
 #endif
 
+#include <iostream>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <unistd.h>
 #include <pdq/cpp/common/pdqhashtypes.h>
 #include <pdq/cpp/io/hashio.h>
 
@@ -71,9 +71,7 @@ static void usage(char* argv0, int rc) {
 
 // ----------------------------------------------------------------
 int main(int argc, char** argv) {
-  srandom(time(nullptr) ^ getpid()); // seed the RNG for Hash256::fuzz
-
-  // Parse command-line flags. I'm expliclily not using gflags or other such
+  // Parse command-line flags. I'm explicitly not using gflags or other such
   // libraries, to minimize the number of external dependencies for this
   // project.
   if (argc < 2) {
@@ -127,7 +125,7 @@ static void do_slot_norms(
   for (auto hash : hashes) {
     printf("%s", hash.format().c_str());
     for (int i = 0; i < HASH256_NUM_WORDS; i++) {
-      printf(" %2d", __builtin_popcount(hash.w[i]));
+      printf(" %2d", hammingNorm16(hash.w[i]));
     }
     printf("\n");
   }
@@ -179,7 +177,7 @@ static void do_matrix(
   std::vector<Hash256> hashes2;
 
   if (argc == 0) {
-    loadHashesFromStream(stdin, hashes1);
+    loadHashesFromStream(std::cin, hashes1);
     hashes2 = hashes1;
   } else if (argc == 1) {
     loadHashesFromFile(argv[0], hashes1);
