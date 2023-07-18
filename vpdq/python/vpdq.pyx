@@ -140,10 +140,10 @@ def computeHash(
     vid = cv2.VideoCapture(str_path)
     frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
     if downsample_width == 0:
-        downsample_width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+        downsample_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     if downsample_height == 0:
-        downsample_height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        downsample_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
     vid.release()
 

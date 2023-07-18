@@ -37,6 +37,9 @@ libvpdq.a: $(LIBOBJ)
 ../../pdq/cpp/common/pdqhashtypes.o: ../../pdq/cpp/common/pdqhashtypes.cpp $(LIBHDR)
 	$(CC) -c ../../pdq/cpp/common/pdqhashtypes.cpp -o ../../pdq/cpp/common/pdqhashtypes.o
 
+../../pdq/cpp/common/pdqhamming.o: ../../pdq/cpp/common/pdqhamming.cpp $(LIBHDR)
+	$(CC) -c ../../pdq/cpp/common/pdqhamming.cpp -o ../../pdq/cpp/common/pdqhamming.o
+
 ../../pdq/cpp/io/hashio.o: ../../pdq/cpp/io/hashio.cpp $(LIBHDR)
 	$(CC) -c ../../pdq/cpp/io/hashio.cpp -o ../../pdq/cpp/io/hashio.o
 
