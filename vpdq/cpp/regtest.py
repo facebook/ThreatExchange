@@ -24,7 +24,8 @@ def get_os() -> str:
     elif platform.system() == "Linux":
         return "Linux"
     else:
-        raise Exception("Unsupported OS")
+        print("Unknown OS. Unexpected results may occur.")
+        return "Unknown"
 
 
 def get_argparse() -> argparse.ArgumentParser:
@@ -134,7 +135,7 @@ def main():
             if not outputHashFolder.exists():
                 print(f"Creating output directory at {outputHashFolder}")
                 outputHashFolder.mkdir(parents=True)
-            print(f"Writing output to directory: {outputHashFolder}")
+            print(f"Writing output hash files to directory: {outputHashFolder}")
         else:
             print(f"Writing output to temp directory: {tempOutputHashFolder}")
         # TODO: Add more general options for other video extensions.
@@ -160,6 +161,9 @@ def main():
             ]
 
             if verbose:
+                # Print all PDQHashes e.g.
+                # PDQHash: ebcc8b06b0666ea34cf9b85972a983a4f94668af05fc9d52aa9662f975499514
+                # selectframe 563
                 command.insert(1, "-v")
 
             try:
@@ -169,17 +173,13 @@ def main():
                     capture_output=True,
                     shell=(OS == "Windows"),
                 )
-                if verbose:
-                    # Print all PDQHashes e.g.
-                    # PDQHash: ebcc8b06b0666ea34cf9b85972a983a4f94668af05fc9d52aa9662f975499514
-                    # selectframe 563
-                    print(str(hash_proc.stdout, "utf-8"))
+                print(str(hash_proc.stdout, "utf-8"))
             except subprocess.CalledProcessError as e:
-                print(e.cmd)
+                print(" ".join([str(i) for i in e.cmd]))
                 print(str(e.stderr, "utf-8"))
                 sys.exit(1)
 
-            # Copy hash files to output directory if it is specified.
+            # Copy hash files to output directory if it is specified
             # This will overwrite existing files with the same
             # name as outputHashFile in the directory
             if outputHashFolder is not None:
@@ -201,6 +201,9 @@ def main():
             ]
 
             if verbose:
+                # Print all PDQHashes and if they match e.g.
+                # Line 201 Hash1: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e
+                # Hash2: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e match
                 command.insert(1, "-v")
 
             try:
@@ -210,11 +213,7 @@ def main():
                     capture_output=True,
                     shell=(OS == "Windows"),
                 )
-                if verbose:
-                    # Print all PDQHashes and if they match e.g.
-                    # Line 201 Hash1: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e
-                    # Hash2: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e match
-                    print(str(match_proc.stdout, "utf-8"))
+                print(str(match_proc.stdout, "utf-8"))
             except subprocess.CalledProcessError as e:
                 print(e.cmd)
                 print(str(e.stderr, "utf-8"))
