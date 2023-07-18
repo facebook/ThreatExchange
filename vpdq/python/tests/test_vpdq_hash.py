@@ -1,12 +1,12 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-import vpdq
+import vpdq  # type: ignore
 import pytest
 import test_util
 import os
 from pathlib import Path
 import glob
 import re
-from typing import Union
+from typing import Union, Sequence, NamedTuple
 from collections import namedtuple
 
 DIR = Path(__file__).parent
@@ -15,23 +15,6 @@ SAMPLE_HASH_FOLDER = VPDQ_DIR / "sample-hashes"
 SAMPLE_VIDEOS = VPDQ_DIR.parent / Path("tmk/sample-videos")
 DISTANCE_TOLERANCE = 31
 QUALITY_TOLERANCE = 50
-TEST_FILES = [
-    "chair-19-sd-bar",
-    "chair-20-sd-bar",
-    "chair-22-sd-grey-bar",
-    "chair-22-sd-sepia-bar",
-    "chair-22-with-large-logo-bar",
-    "chair-22-with-small-logo-bar",
-    "chair-orig-22-fhd-no-bar",
-    "chair-orig-22-hd-no-bar",
-    "chair-orig-22-sd-bar",
-    "doorknob-hd-no-bar",
-    "pattern-hd-no-bar",
-    "pattern-longer-no-bar",
-    "pattern-sd-grey-bar",
-    "pattern-sd-with-large-logo-bar",
-    "pattern-sd-with-small-logo-bar",
-]
 
 PROJECT_DIR = Path(__file__).parents[3]
 HASH_FOLDER = PROJECT_DIR / SAMPLE_HASH_FOLDER
@@ -39,18 +22,22 @@ VIDEO_FOLDER = PROJECT_DIR / SAMPLE_VIDEOS
 test_hashes = {}
 sample_hashes = {}
 
-TEST_FILES = []
-for fileStr in glob.iglob(f"{VIDEO_FOLDER}/**/*.mp4", recursive=True):
-    file = Path(fileStr)
-    if not (VIDEO_FOLDER / f"{file.name}").is_file():
-        print(f"Video file {file.name} doesn't exist. Skipping.")
-        continue
-    TEST_FILES.append(file)
-assert len(TEST_FILES) > 0
+
+def get_test_file_paths() -> Sequence[Path]:
+    test_files = []
+    for fileStr in glob.iglob(f"{VIDEO_FOLDER}/**/*.mp4", recursive=True):
+        file = Path(fileStr)
+        if not (VIDEO_FOLDER / f"{file.name}").is_file():
+            print(f"Video file {file.name} doesn't exist. Skipping.")
+            continue
+        test_files.append(file)
+    assert len(test_files) > 0
+    return test_files
 
 
 def test_vpdq_utils():
-    sample = Path(f"{HASH_FOLDER}/{TEST_FILES[0].stem}.txt")
+    test_files = get_test_file_paths()
+    sample = Path(f"{HASH_FOLDER}/{test_files[0].stem}.txt")
     assert sample.is_file()
     ret = test_util.read_file_to_hash(sample)
     with open(sample, "r") as file:
@@ -64,7 +51,8 @@ def test_vpdq_utils():
 
 
 def test_error_checking():
-    video_file = Path(f"{VIDEO_FOLDER}/{TEST_FILES[0].name}")
+    test_files = get_test_file_paths()
+    video_file = Path(f"{VIDEO_FOLDER}/{test_files[0].name}")
     with pytest.raises(ValueError, match="Seconds_per_hash must be non-negative"):
         vpdq.computeHash(input_video_filename=video_file, seconds_per_hash=-1)
 
@@ -78,12 +66,24 @@ def test_error_checking():
         vpdq.computeHash(input_video_filename="nonexisting")
 
 
-def get_downsampled_hash_files(input_hash_file_path: Union[Path, str]):
+def get_downsampled_hash_files(
+    input_hash_file_path: Union[Path, str]
+) -> Sequence[NamedTuple]:
+    """
+    Get all the downsampled hash files that match the input hash file name
+    The input hash file name should be in the format of <base_name>.txt
+    The downsampled hash file name should be in the format of <base_name>-<width>x<height>.txt
+    """
+
     # Define the regular expression pattern to match the desired filenames
     pattern = r"(.*)-(\d+)x(\d+)\.txt"
 
     # Get the base file name without resolution and extension
-    base_file_name = re.match(r"(.*)(?=\.txt)", input_hash_file_path.name).group(1)
+    base_file_name_match = re.match(r"(.*)(?=\.txt)", Path(input_hash_file_path).name)
+    if base_file_name_match is not None:
+        base_file_name = base_file_name_match.group(1)
+    else:
+        return []
 
     pathanddim = namedtuple("pathanddim", ["path", "width", "height"])
 
@@ -108,8 +108,9 @@ def test_compare_hashes():
     Two VPDQ features are considered the same if each line of the hashes are within DISTANCE_TOLERANCE.
     For hashes that have a quality lower than QUALITY_TOLERANCE, the test will skip them for comparing.
     """
+    test_files = get_test_file_paths()
 
-    for file in TEST_FILES:
+    for file in test_files:
         # Load the hash file truth
         hash_file = Path(f"{HASH_FOLDER}/{file.stem}.txt")
         assert hash_file.is_file()
@@ -177,15 +178,16 @@ def test_generate_hashes():
     If env OVERWRITE_HASHES is set, it will overwrite existing hashes in the folder.
     This can be used to update the hashes for the sample videos if vpdq is changed.
     """
+    test_files = get_test_file_paths()
 
     overwrite = os.getenv("OVERWRITE_HASHES") == "1"
     print(f"Generating hashes. Overwriting existing hashes: {overwrite}")
-    test_util.generate_hashes(SAMPLE_HASH_FOLDER, TEST_FILES, overwrite=overwrite)
+    test_util.generate_hashes(SAMPLE_HASH_FOLDER, test_files, overwrite=overwrite)
 
     # Generate 128x128 downsampled hashes for the sample videos
     test_util.generate_hashes(
         SAMPLE_HASH_FOLDER,
-        TEST_FILES,
+        test_files,
         overwrite=overwrite,
         downsample_width=128,
         downsample_height=128,
