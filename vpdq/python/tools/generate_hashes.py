@@ -67,13 +67,16 @@ def generate_hashes(
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
-) -> None:
+) -> int:
     """
     Generate vpdq hashes for the test videos
     and write them to files in output_folder
 
     If overwrite is set, it will overwrite existing hashes in the folder.
+
+    Returns the number of files hashed and written.
     """
+    hash_count = 0
     for fileStr in input_filepaths:
         file = Path(fileStr)
         if downsample_width > 0 and downsample_height > 0:
@@ -105,6 +108,8 @@ def generate_hashes(
                 output_file.write(
                     f"{feature.frame_number},{feature.quality},{vpdq.hash_to_hex(feature.hash)},{feature.timestamp:.3f}\n"
                 )
+        hash_count += 1
+    return hash_count
 
 
 def get_test_file_paths(video_folder: Path) -> Sequence[Path]:
@@ -137,10 +142,13 @@ def main():
     print(f"Outputting hashes to {outputHashFolder}")
     print("Overwriting existing hashes.") if overwrite else print("")
 
-    generate_hashes(outputHashFolder, test_files, overwrite=overwrite, verbose=verbose)
+    hash_count = generate_hashes(
+        outputHashFolder, test_files, overwrite=overwrite, verbose=verbose
+    )
+    print(f"Generated {hash_count} new hashes.")
 
     # Generate 128x128 downsampled hashes for the sample videos
-    generate_hashes(
+    downsampled_hash_count = generate_hashes(
         outputHashFolder,
         test_files,
         overwrite=overwrite,
@@ -148,6 +156,8 @@ def main():
         downsample_width=128,
         downsample_height=128,
     )
+
+    print(f"Generated {downsampled_hash_count} new downsampled hashes.")
 
 
 if __name__ == "__main__":
