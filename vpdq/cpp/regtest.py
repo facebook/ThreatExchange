@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 from shutil import copyfile
 import glob
 import platform
+from typing import Union
 
 DIR = Path(__file__).parent
 VPDQ_DIR = DIR.parent
@@ -15,7 +16,7 @@ SAMPLE_HASHES_DIR = VPDQ_DIR / "sample-hashes"
 EXEC_DIR = VPDQ_DIR / "cpp/build"
 
 
-def get_os():
+def get_os() -> str:
     if platform.system() == "Windows":
         return "Windows"
     elif platform.system() == "Darwin":
@@ -27,7 +28,7 @@ def get_os():
 
 
 def get_argparse() -> argparse.ArgumentParser:
-    DEFAULT_SAMPLE_VIDEOS_DIR = VPDQ_DIR.parent / "tmk/sample-videos"
+    default_input_videos_dir = VPDQ_DIR.parent / "tmk/sample-videos"
 
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
@@ -43,15 +44,15 @@ def get_argparse() -> argparse.ArgumentParser:
         "--outputHashFolder",
         metavar="OUTPUT_HASH_Folder_PATH",
         help="Output Hash Folder's Name",
-        type=Path,
+        type=validate_path,
     )
     ap.add_argument(
         "-i",
         "--inputVideoFolder",
         metavar="INPUTPUT_VIDEO_FOLDER_PATH",
         help="Input Video Folder",
-        default=DEFAULT_SAMPLE_VIDEOS_DIR,
-        type=Path,
+        default=default_input_videos_dir,
+        type=validate_path,
     )
     ap.add_argument(
         "-s",
@@ -86,17 +87,30 @@ def get_argparse() -> argparse.ArgumentParser:
     return ap
 
 
+def validate_path(path: Union[Path, str], err_msg: Union[str, None] = None) -> Path:
+    path = Path(path)
+    if not path.exists():
+        if err_msg is None:
+            err_msg = f"Path {path} does not exist."
+        raise argparse.ArgumentTypeError(err_msg)
+    return path
+
+
 def main():
+    OS = get_os()
+
     hashVideoExecutable = EXEC_DIR / "vpdq-hash-video"
     matchHashesExecutable = EXEC_DIR / "match-hashes-byline"
-
-    OS = get_os()
 
     if OS == "Windows":
         hashVideoExecutable = Path(f"{hashVideoExecutable}.exe")
         matchHashesExecutable = Path(f"{matchHashesExecutable}.exe")
 
-    if not hashVideoExecutable.exists() or not matchHashesExecutable.exists():
+    try:
+        validate_path(hashVideoExecutable)
+        validate_path(matchHashesExecutable)
+    except argparse.ArgumentTypeError as e:
+        print(e)
         print(
             "Error: Hashing executable/s not found. Build vpdq before running regtest."
         )
@@ -112,21 +126,14 @@ def main():
     qualityTolerance = str(args.qualityTolerance)
     verbose = args.verbose
 
-    if not inputVideoFolder.exists():
-        raise argparse.ArgumentTypeError(
-            f"inputVideoFolder: {inputVideoFolder} does not exist."
-        )
-
     with TemporaryDirectory() as tempOutputHashFolder:
-        # Write the files to temp
-        # If outputHashFolder is specified then
-        # copy the output files there, overwriting existing files
-
         tempOutputHashFolder = Path(tempOutputHashFolder)
+
+        # Create output directory if it does not exist and it is specified
         if outputHashFolder is not None:
             if not outputHashFolder.exists():
                 print(f"Creating output directory at {outputHashFolder}")
-                outputHashFolder.mkdir(parents=True, exist_ok=True)
+                outputHashFolder.mkdir(parents=True)
             print(f"Writing output to directory: {outputHashFolder}")
         else:
             print(f"Writing output to temp directory: {tempOutputHashFolder}")
@@ -134,17 +141,7 @@ def main():
         for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
             file = Path(fileStr)
 
-            # Create output hash file or overwrite existing file
-            # This is hardcoded in cpp, and it
-            # does not create the file if it does not exist:
-            #
-            # vpdq-hash-video.cpp:
-            #
-            # // Strip containing directory:
-            # std::string b = basename(inputVideoFileName, "/");
-            # // Strip file extension:
-            # b = stripExtension(b, ".");
-            # outputHashFileName = outputDirectory + "/" + b + ".txt";
+            # Create output hash file in a tempdir
             outputHashFile = tempOutputHashFolder / f"{file.stem}.txt"
             with open(outputHashFile, "x+t"):
                 pass
@@ -173,7 +170,7 @@ def main():
                     shell=(OS == "Windows"),
                 )
                 if verbose:
-                    # This will print all PDQHashes e.g.
+                    # Print all PDQHashes e.g.
                     # PDQHash: ebcc8b06b0666ea34cf9b85972a983a4f94668af05fc9d52aa9662f975499514
                     # selectframe 563
                     print(str(hash_proc.stdout, "utf-8"))
@@ -182,6 +179,9 @@ def main():
                 print(str(e.stderr, "utf-8"))
                 sys.exit(1)
 
+            # Copy hash files to output directory if it is specified.
+            # This will overwrite existing files with the same
+            # name as outputHashFile in the directory
             if outputHashFolder is not None:
                 copyfile(outputHashFile, Path(outputHashFolder / outputHashFile.name))
         for outputFileStr in glob.iglob(
@@ -211,7 +211,7 @@ def main():
                     shell=(OS == "Windows"),
                 )
                 if verbose:
-                    # This will print all PDQHashes e.g.
+                    # Print all PDQHashes and if they match e.g.
                     # Line 201 Hash1: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e
                     # Hash2: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e match
                     print(str(match_proc.stdout, "utf-8"))
