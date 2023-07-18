@@ -2,7 +2,6 @@
 import vpdq  # type: ignore
 import pytest
 import test_util
-import os
 from pathlib import Path
 import glob
 import re
@@ -164,31 +163,3 @@ def test_compare_hashes():
                 if h1.quality >= QUALITY_TOLERANCE and h2.quality >= QUALITY_TOLERANCE:
                     assert h1.hamming_distance(h2) < DISTANCE_TOLERANCE
                     assert h1.frame_number == h2.frame_number
-
-
-@pytest.mark.skipif(
-    os.getenv("GENERATE_HASHES") != "1", reason="Skip generating new hashes."
-)
-def test_generate_hashes():
-    """
-    This test is to generate hashes for the sample videos.
-    The hashes will be saved in the same folder as SAMPLE_HASH_FOLDER.
-    Hashes are generated
-
-    If env OVERWRITE_HASHES is set, it will overwrite existing hashes in the folder.
-    This can be used to update the hashes for the sample videos if vpdq is changed.
-    """
-    test_files = get_test_file_paths()
-
-    overwrite = os.getenv("OVERWRITE_HASHES") == "1"
-    print(f"Generating hashes. Overwriting existing hashes: {overwrite}")
-    test_util.generate_hashes(SAMPLE_HASH_FOLDER, test_files, overwrite=overwrite)
-
-    # Generate 128x128 downsampled hashes for the sample videos
-    test_util.generate_hashes(
-        SAMPLE_HASH_FOLDER,
-        test_files,
-        overwrite=overwrite,
-        downsample_width=128,
-        downsample_height=128,
-    )
