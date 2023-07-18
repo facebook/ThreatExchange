@@ -1,5 +1,5 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-import vpdq
+import vpdq  # type: ignore
 import typing as t
 
 
