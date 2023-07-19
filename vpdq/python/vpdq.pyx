@@ -2,20 +2,12 @@
 # cython: language_level=3
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 import typing as t
-import subprocess
 
 from pathlib import Path
 from dataclasses import dataclass
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-
-try:
-    # A call to check if ffmpeg is installed for vPDQ
-    # FFMPEG is required to compute vPDQ hash
-    subprocess.check_call(["ffmpeg", "-L"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-except FileNotFoundError as e:
-    raise ImportError("FFMPEG is not installed.vPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
 
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
@@ -143,7 +135,7 @@ def computeHash(
 
     Args:
         input_video_filename: Input video file path
-        ffmpeg_path: ffmpeg path
+        ffmpeg_path: ffmpeg path (this is not used anymore)
         verbose: If verbose, will print detailed information
         seconds_per_hash: The frequence(per second) a hash is generated from the video. If it is 0, will generate every frame's hash
         downsample_width: Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
