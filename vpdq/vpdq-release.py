@@ -5,7 +5,8 @@ from pathlib import Path
 import os
 import subprocess
 import argparse
-
+import sys
+import logging
 
 DIR = Path(__file__).resolve().parent
 PARENTDIR = Path(__file__).resolve().parents[1]
@@ -20,7 +21,7 @@ def get_argparse() -> argparse.ArgumentParser:
     ap.add_argument(
         "-r",
         "--release",
-        help="If release, will return the source distribution in the root dir.",
+        help="If release, will package the source distribution in the root dir.",
         action="store_true",
     )
     ap.add_argument(
@@ -35,26 +36,50 @@ def get_argparse() -> argparse.ArgumentParser:
 def main():
     ap = get_argparse()
     args = ap.parse_args()
+
+    logger = logging.getLogger("vpdq-release.py")
+    logger.setLevel(logging.INFO)
+    logging.basicConfig(level=logging.INFO)
+
+    # TODO: Why is this done? It makes running setup.py directly impossible.
+    # This has to be changed so that it's possible to run setup.py directly.
     shutil.copy(DIR / SETUP, PARENTDIR / SETUP)
     shutil.copy(DIR / MANIFEST, PARENTDIR / MANIFEST)
     if args.release:
-        print("build vpdq source distribution")
-        run_command(["python3", "setup.py", "sdist"], PARENTDIR)
+        logger.info("Packaging vpdq Python binding source for distribution")
+        try:
+            sdist_proc = subprocess.run(
+                ["python3", "setup.py", "sdist"],
+                cwd=PARENTDIR,
+                check=True,
+                capture_output=True,
+            )
+            logger.info(str(sdist_proc.stdout, "utf-8"))
+        except subprocess.CalledProcessError as e:
+            logger.critical(str(e.stderr, "utf-8"))
+            logger.critical("Failed to package vpdq for distribution.")
+            sys.exit(1)
+
         if (DIR / DIST).exists() and (DIR / DIST).is_dir():
             shutil.rmtree(DIR / DIST)
         shutil.move(PARENTDIR / DIST, DIR / DIST)
     if args.install:
-        print("install vpdq source locally")
-        run_command(["pip3", "install", "-e", "."], PARENTDIR)
+        logger.info("Installing vpdq Python binding")
+        try:
+            install_proc = subprocess.run(
+                ["pip3", "install", "-e", "."],
+                cwd=PARENTDIR,
+                check=True,
+                capture_output=True,
+            )
+            logger.info(str(install_proc.stdout, "utf-8"))
+        except subprocess.CalledProcessError as e:
+            logger.critical(str(e.stderr, "utf-8"))
+            logger.critical("Failed to install vpdq library.")
+            sys.exit(1)
+
     os.remove(PARENTDIR / SETUP)
     os.remove(PARENTDIR / MANIFEST)
-
-
-def run_command(command, cwd="."):
-    try:
-        subprocess.check_call(command, cwd=cwd)
-    except subprocess.CalledProcessError as e:
-        print(e.output)
 
 
 if __name__ == "__main__":

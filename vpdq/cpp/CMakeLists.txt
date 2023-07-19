@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.17)
 
-set(CMAKE_CXX_FLAGS "-O2")
+set(CMAKE_CXX_FLAGS "-O2 -fPIC")
 project(VPDQ)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
@@ -65,18 +65,28 @@ add_executable(vpdq-hash-video
     bin/vpdq-hash-video.cpp
 )
 
+
 target_link_libraries(vpdqlib
+    PkgConfig::LIBAV
+)
+
+target_link_libraries(match-hashes-byline
+    vpdqlib
+    PkgConfig::LIBAV
+)
+
+target_link_libraries(match-hashes-brute
+    vpdqlib
     PkgConfig::LIBAV
 )
 
 target_link_libraries(vpdq-hash-video
     vpdqlib
+    PkgConfig::LIBAV
 )
 
-target_link_libraries(match-hashes-brute
-    vpdqlib
-)
-
-target_link_libraries(match-hashes-byline
-    vpdqlib
+# Pass the include and libav* library directories to setup.py for Python binding
+set_target_properties(vpdqlib
+    PROPERTIES
+    ENVIRONMENT "LIBRARY_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,IMPORTED_LOCATION>;INCLUDE_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,INTERFACE_INCLUDE_DIRECTORIES>"
 )

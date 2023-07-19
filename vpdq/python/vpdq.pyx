@@ -1,22 +1,13 @@
 # distutils: language = c++
 # cython: language_level=3
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-import cv2
 import typing as t
-import subprocess
 
 from pathlib import Path
 from dataclasses import dataclass
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-
-try:
-    # A call to check if ffmpeg is installed for vPDQ
-    # FFMPEG is required to compute vPDQ hash
-    subprocess.check_call(["ffmpeg", "-L"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-except FileNotFoundError as e:
-    raise ImportError("FFMPEG is not installed.vPDQ requires FFMPEG. Visit https://ffmpeg.org/download.html to install. ")
 
 
 cdef extern from "pdq/cpp/common/pdqhashtypes.h" namespace "facebook::pdq::hashing":
@@ -44,7 +35,7 @@ cdef extern from "vpdq/cpp/hashing/vpdqHashType.h" namespace "facebook::vpdq::ha
 
 
 cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hashing":
-    bool hashVideoFileFFMPEG(
+    bool hashVideoFile(
         string input_video_filename,
         vector[vpdqFeature]& pdqHashes,
         string ffmpeg_path,
@@ -55,6 +46,31 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         double frames_per_sec,
         const char* argv0
     )
+
+cdef extern from "vpdq/cpp/io/vpdqio.h" namespace "facebook::vpdq::io":
+    bool readVideoStreamInfo(
+        const string& inputVideoFileName,
+        int& width,
+        int& height,
+        double& framesPerSec,
+        const char* programName
+    )
+
+def read_video_stream_info(
+    inputVideoFileName: str,
+    programName: str
+):
+    cdef int width
+    cdef int height
+    cdef double framesPerSec
+    rt = readVideoStreamInfo(
+        inputVideoFileName.encode('utf-8'),
+        width,
+        height,
+        framesPerSec,
+        programName.encode("utf-8")
+    )
+    return width, height, framesPerSec
 
 @dataclass
 class VpdqFeature:
@@ -119,7 +135,7 @@ def computeHash(
 
     Args:
         input_video_filename: Input video file path
-        ffmpeg_path: ffmpeg path
+        ffmpeg_path: ffmpeg path (this is not used anymore)
         verbose: If verbose, will print detailed information
         seconds_per_hash: The frequence(per second) a hash is generated from the video. If it is 0, will generate every frame's hash
         downsample_width: Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
@@ -137,27 +153,30 @@ def computeHash(
     if downsample_height < 0:
         raise ValueError("Downsample_height must be non-negative")
     cdef vector[vpdqFeature] vpdq_hash;
-    vid = cv2.VideoCapture(str_path)
-    frames_per_sec = vid.get(cv2.CAP_PROP_FPS)
-    if downsample_width == 0:
-        downsample_width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
-
-    if downsample_height == 0:
-        downsample_height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    vid.release()
+    width, height, frames_per_sec = read_video_stream_info(
+        str_path,
+        "vpdqPY",
+    )
 
-    rt = hashVideoFileFFMPEG(
+    if downsample_width > 0:
+        width = downsample_width
+    
+    if downsample_height > 0:
+        height = downsample_height
+
+    rt = hashVideoFile(
         str_path.encode("utf-8"),
         vpdq_hash,
         ffmpeg_path.encode("utf-8"),
         verbose,
         seconds_per_hash,
-        downsample_width,
-        downsample_height,
+        width,
+        height,
         frames_per_sec,
         "vpdqPY",
     )
+
     if not rt:
         raise Exception("Fail to create VPDQ hash")
 

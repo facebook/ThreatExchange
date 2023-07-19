@@ -2,7 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <string>
 #include <vector>
+
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
@@ -32,8 +34,6 @@ static void usage(char* argv0, int rc) {
   exit(rc);
 }
 
-// TODO: Move to a shared library
-// Directly copy from TMK
 /**
  *
  * Get the base name with extension of the input path
@@ -41,36 +41,32 @@ static void usage(char* argv0, int rc) {
  * ./dir/sub-dir/sample.txt -> sample.txt
  *
  * @param path Path of the target file
- * @param delimiter The character that marks the beginning or end
  *
  */
-string basename(const string& path, const string& delimiter) {
-  size_t n = path.length();
-  size_t i = path.rfind(delimiter, n);
-  if (i == string::npos) {
+std::string basename(const std::string& path) {
+  size_t i = path.find_last_of("\\/");
+  if (i == std::string::npos) {
     return path;
   } else {
-    return path.substr(i + 1, n - i);
+    return path.substr(i + 1);
   }
 }
 
 /**
  *
- * Stip the extension of the input path
+ * Strip the extension of the input filename
  *
  * .sample.txt -> sample
  *
- * @param path Path of the target file
- * @param delimiter The character that marks the beginning or end
+ * @param filename Path of the target file
  *
  */
-string stripExtension(const string& path, const string& delimiter) {
-  size_t n = path.length();
-  size_t i = path.rfind(delimiter, n);
-  if (i == string::npos) {
-    return path;
+std::string stripExtension(const std::string& filename) {
+  size_t n = filename.rfind('.');
+  if (n == std::string::npos) {
+    return filename;
   } else {
-    return path.substr(0, i);
+    return filename.substr(0, n);
   }
 }
 
@@ -158,13 +154,13 @@ int main(int argc, char** argv) {
     usage(argv[0], 1);
   }
 
-  if (outputDirectory != "") {
-    // Strip containing directory:
-    std::string b = basename(inputVideoFileName, "/");
-    // Strip file extension:
-    b = stripExtension(b, ".");
+  // Get the output hash file name if outputDirectory is specified
+  if (!outputDirectory.empty()) {
+    std::string b = basename(inputVideoFileName);
+    b = stripExtension(b);
     outputHashFileName = outputDirectory + "/" + b + ".txt";
   }
+
   // Hash the video and store the hashes and correspoding info
   double framesPerSec = 0;
   int videoWidth = 0;
