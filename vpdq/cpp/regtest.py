@@ -144,8 +144,7 @@ def main():
 
             # Create output hash file in a tempdir
             outputHashFile = tempOutputHashFolder / f"{file.stem}.txt"
-            with open(outputHashFile, "x+t"):
-                pass
+            outputHashFile.touch(exist_ok=False)
 
             print(f"\nHashing file {file.name}")
             command = [
