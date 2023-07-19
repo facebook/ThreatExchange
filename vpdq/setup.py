@@ -9,30 +9,50 @@ from pathlib import Path
 import os
 import logging
 
+logger = logging.getLogger("setup.py")
+logger.setLevel(logging.INFO)
+logging.basicConfig()
+
+# setup.py cannot be run directly, it has to be run through vpdq-release.py
+# because the paths are relative to the parent to the vpdq directory.
+# THIS HAS TO BE CHANGED!
+
 DIR = Path(__file__).parent
 read_me = DIR / Path("vpdq/python/README.md")
 long_description = read_me.read_text()
 version = (DIR / "vpdq/version.txt").read_text(encoding="utf-8").strip()
+cpp_dir = DIR / "vpdq/cpp"
+build_dir = cpp_dir / "build"
 
 # Get the library directories and include directories from the environment variables
 # These variables should be set in the CMakeLists.txt file
 lib_dirs = os.getenv("LIBRARY_DIRS", "").split(":")
 include_dirs = os.getenv("INCLUDE_DIRS", "").split(":")
+# Something about this doesn't work on Windows,
+# but it could be the environment variable passing itself.
 include_dirs.extend(["vpdq/pdq", "./"])
 
 
 class build_ext(build_ext):
     def run(self):
         try:
-            logging.info("Creating build directory...")
-            subprocess.call(["mkdir", "build"], cwd=DIR / "vpdq/cpp")
-            logging.info("Running CMake...")
-            subprocess.check_call(["cmake", ".."], cwd=DIR / "vpdq/cpp/build")
-            logging.info("Compiling with Make...")
-            subprocess.check_call(["make"], cwd=DIR / "vpdq/cpp/build")
+            # TODO: Clean the build directory AND vpdq.cpp before building
+            # Otherwise it won't generate a new version of vpdq.cpp for each run
+            logger.info("Creating build directory...")
+            subprocess.run(["mkdir", "build"], cwd=cpp_dir, check=False)
+            logger.info("Running CMake...")
+            cmake_proc = subprocess.run(
+                ["cmake", ".."], cwd=build_dir, check=True, capture_output=True
+            )
+            logger.info(str(cmake_proc.stdout, "utf-8"))
+            logger.info("Compiling with Make...")
+            make_proc = subprocess.run(
+                ["make"], cwd=build_dir, check=True, capture_output=True
+            )
+            logger.info(str(make_proc.stdout, "utf-8"))
         except subprocess.CalledProcessError as e:
-            logging.error(e.output)
-            logging.error("Failed to compile vpdq library.")
+            logger.critical(str(e.stderr, "utf-8"))
+            logger.critical("Failed to compile vpdq library.")
             sys.exit(1)
         super().run()
 
