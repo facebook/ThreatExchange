@@ -4,19 +4,20 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <cassert>
+#include <condition_variable>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <mutex>
+#include <queue>
 #include <string>
+#include <thread>
 
 #include <vpdq/cpp/hashing/bufferhasher.h>
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
-
-namespace facebook {
-namespace vpdq {
-namespace hashing {
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -27,6 +28,36 @@ extern "C" {
 #include <libavutil/mem.h>
 #include <libswscale/swscale.h>
 }
+
+namespace facebook {
+namespace vpdq {
+namespace hashing {
+
+struct FatFrame {
+  AVFrame* frame;
+  int frameNumber;
+};
+
+int num_consumers = std::thread::hardware_concurrency();
+
+static std::mutex queue_mutex;
+static std::queue<FatFrame> frame_queue;
+
+static std::mutex pdqHashes_mutex;
+static std::vector<hashing::vpdqFeature> pdqHashes1;
+
+static AVCodecContext* codecContext;
+static SwsContext* swsContext;
+int width;
+int height;
+
+static double frameRate;
+static int frameMod;
+
+std::condition_variable queue_condition;
+
+static std::mutex done_mutex;
+bool done = false;
 
 /* @brief Writes an AVFrame to a file
  *
@@ -62,22 +93,57 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
   outfile.close();
 }
 
+static AVFrame* createFrame(int width, int height) {
+  // Pixel format for the image passed to PDQ
+  constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
+
+  // Create a frame for resizing and converting the decoded frame to RGB24
+  AVFrame* targetFrame = av_frame_alloc();
+  if (targetFrame == nullptr) {
+    std::cerr << "Cannot allocate target frame" << std::endl;
+    return nullptr;
+  }
+
+  targetFrame->format = pixelFormat;
+  targetFrame->width = width;
+  targetFrame->height = height;
+
+  if (av_image_alloc(
+          targetFrame->data,
+          targetFrame->linesize,
+          width,
+          height,
+          pixelFormat,
+          1) < 0) {
+    std::cerr << "Cannot fill target frame image" << std::endl;
+    av_frame_free(&targetFrame);
+    return nullptr;
+  }
+  return targetFrame;
+}
+
 // Decode and add vpdqFeature to the hashes vector
 // Returns the number of frames processed
 static int processFrame(
     AVPacket* packet,
-    AVFrame* frame,
-    AVFrame* targetFrame,
-    SwsContext* swsContext,
-    AVCodecContext* codecContext,
-    std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher>& phasher,
-    vector<hashing::vpdqFeature>& pdqHashes,
-    double frameRate,
-    bool verbose,
-    int frameNumber,
-    int frameMod) {
+    // AVFrame* frame,
+    // AVFrame* targetFrame,
+    // SwsContext* swsContext,
+    // AVCodecContext* codecContext,
+    // std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher>& phasher,
+    // std::vector<hashing::vpdqFeature>& pdqHashes,
+    // double frameRate,
+    int frameNumber
+    // int frameMod)
+) {
+  AVFrame* frame = av_frame_alloc();
+  assert(frame != nullptr);
+  // TODO: check for frame good alloc
+  AVFrame* targetFrame = createFrame(width, height);
+  assert(targetFrame != nullptr);
   // Send the packet to the decoder
   int ret = avcodec_send_packet(codecContext, packet) < 0;
+  std::cout << codecContext->frame_num << std::endl;
   if (ret < 0) {
     throw std::runtime_error("Cannot send packet to decoder");
   }
@@ -101,34 +167,76 @@ static int processFrame(
           codecContext->height,
           targetFrame->data,
           targetFrame->linesize);
-      // Call pdqHasher to hash the frame
-      int quality;
-      pdq::hashing::Hash256 pdqHash;
-      bool ret = phasher->hashFrame(targetFrame->data[0], pdqHash, quality);
-      if (!ret) {
-        throw std::runtime_error(
-            "Failed to hash frame buffer." + std::string("Frame: ") +
-            std::to_string(frameNumber) +
-            std::string(
-                " Frame width or height smaller than the minimum hashable dimension"));
-      }
+      std::unique_lock<std::mutex> lock(queue_mutex);
+      FatFrame fatFrame = {targetFrame, frameNumber};
 
-      // Write frame to file here for debugging:
-      // saveFrameToFile(targetFrame, "frame.rgb");
-
-      // Append vpdq feature to pdqHashes vector
-      pdqHashes.push_back(
-          {pdqHash,
-           frameNumber,
-           quality,
-           static_cast<double>(frameNumber) / frameRate});
-      if (verbose) {
-        std::cout << "PDQHash: " << pdqHash.format() << std::endl;
-      }
+      frame_queue.push(fatFrame);
+      lock.unlock();
+      queue_condition.notify_one();
+      frameNumber++;
     }
     frameNumber += 1;
   }
+  av_frame_free(&frame);
   return frameNumber;
+}
+
+void hasher(bool verbose, AVFrame* frame, int frameNumber) {
+  int quality;
+  pdq::hashing::Hash256 pdqHash;
+
+  std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
+      vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(
+          frame->height, frame->width);
+
+  if (phasher == nullptr) {
+    throw std::runtime_error("phasher allocation failed");
+  }
+
+  bool ret = phasher->hashFrame(frame->data[0], pdqHash, quality);
+  if (!ret) {
+    throw std::runtime_error(
+        "Failed to hash frame buffer." + std::string("Frame: ") +
+        std::to_string(frameNumber) +
+        std::string(
+            " Frame width or height smaller than the minimum hashable dimension"));
+  }
+
+  // Write frame to file here for debugging:
+  // saveFrameToFile(frame, "frame.rgb");
+
+  // Append vpdq feature to pdqHashes vector
+  std::unique_lock<std::mutex> lock(pdqHashes_mutex);
+  pdqHashes1.push_back(
+      {pdqHash,
+       frameNumber,
+       quality,
+       static_cast<double>(frameNumber) / frameRate});
+  if (verbose) {
+    std::cout << "PDQHash: " << pdqHash.format() << std::endl;
+  }
+  lock.unlock();
+}
+
+void consumer() {
+  while (true) {
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    queue_condition.wait(lock, [] { return !frame_queue.empty() || done; });
+    if (frame_queue.empty() && done)
+      break;
+    FatFrame fatFrame = frame_queue.front();
+    frame_queue.pop();
+    lock.unlock();
+    AVFrame* frame = fatFrame.frame;
+    int frameNumber = fatFrame.frameNumber;
+    hasher(false, frame, frameNumber);
+    // processFrame(packetInfo.packet, packetInfo.verbose,
+    // packetInfo.frameNumber);
+    // av_packet_unref(packetInfo.packet);
+    // av_packet_free(&(packetInfo.packet));
+    av_freep(frame->data);
+    av_frame_free(&frame);
+  }
 }
 
 // Get pdq hashes for selected frames every secondsPerHash
@@ -153,6 +261,7 @@ bool hashVideoFile(
     av_log_set_level(AV_LOG_FATAL);
   }
 
+  av_log_set_level(AV_LOG_DEBUG);
   // Open the input file
   AVFormatContext* formatContext = nullptr;
   if (avformat_open_input(
@@ -190,8 +299,8 @@ bool hashVideoFile(
   // Get the width and height
   // If downsampleWidth or downsampleHeight is 0,
   // then use the video's original dimensions
-  int width = downsampleWidth;
-  int height = downsampleHeight;
+  width = downsampleWidth;
+  height = downsampleHeight;
   if (width == 0) {
     width = codecParameters->width;
   }
@@ -205,14 +314,6 @@ bool hashVideoFile(
     return false;
   }
 
-  std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
-      vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(height, width);
-  if (phasher == nullptr) {
-    std::cerr << "phasher allocation failed" << std::endl;
-    avformat_close_input(&formatContext);
-    return false;
-  }
-
   // Find the video decoder
   const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
   if (!codec) {
@@ -222,7 +323,7 @@ bool hashVideoFile(
   }
 
   // Create the codec context
-  AVCodecContext* codecContext = avcodec_alloc_context3(codec);
+  codecContext = avcodec_alloc_context3(codec);
   if (avcodec_parameters_to_context(codecContext, codecParameters) < 0) {
     std::cerr << "Cannot copy codec parameters to context" << std::endl;
     avformat_close_input(&formatContext);
@@ -258,7 +359,7 @@ bool hashVideoFile(
     avframeRate = formatContext->streams[videoStreamIndex]->r_frame_rate;
   }
 
-  double frameRate = static_cast<double>(avframeRate.num) /
+  frameRate = static_cast<double>(avframeRate.num) /
       static_cast<double>(avframeRate.den);
   if (frameRate == 0) {
     std::cerr << "Framerate is zero" << std::endl;
@@ -267,46 +368,11 @@ bool hashVideoFile(
     return false;
   }
 
-  // Create the output frame
-  AVFrame* frame = av_frame_alloc();
-  if (frame == nullptr) {
-    avcodec_free_context(&codecContext);
-    avformat_close_input(&formatContext);
-    return false;
-  }
-
   // Pixel format for the image passed to PDQ
   constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
 
-  // Create a frame for resizing and converting the decoded frame to RGB24
-  AVFrame* targetFrame = av_frame_alloc();
-  if (targetFrame == nullptr) {
-    av_frame_free(&frame);
-    avcodec_free_context(&codecContext);
-    avformat_close_input(&formatContext);
-    return false;
-  }
-
-  targetFrame->format = pixelFormat;
-  targetFrame->width = width;
-  targetFrame->height = height;
-
-  if (av_image_alloc(
-          targetFrame->data,
-          targetFrame->linesize,
-          width,
-          height,
-          pixelFormat,
-          1) < 0) {
-    std::cerr << "Cannot allocate target frame" << std::endl;
-    av_frame_free(&targetFrame);
-    av_frame_free(&frame);
-    avcodec_free_context(&codecContext);
-    avformat_close_input(&formatContext);
-  }
-
   // Create the image rescaler context
-  SwsContext* swsContext = sws_getContext(
+  swsContext = sws_getContext(
       codecContext->width,
       codecContext->height,
       codecContext->pix_fmt,
@@ -320,97 +386,72 @@ bool hashVideoFile(
 
   if (swsContext == nullptr) {
     std::cerr << "Cannot create sws context" << std::endl;
-    av_freep(targetFrame->data);
-    av_frame_free(&targetFrame);
-    av_frame_free(&frame);
     avcodec_free_context(&codecContext);
     avformat_close_input(&formatContext);
     return false;
   }
 
-  AVPacket* packet = av_packet_alloc();
-  if (packet == nullptr) {
+  AVPacket* base_packet = av_packet_alloc();
+  if (base_packet == nullptr) {
     std::cerr << "Cannot allocate packet" << std::endl;
     sws_freeContext(swsContext);
-    av_freep(targetFrame->data);
-    av_frame_free(&targetFrame);
-    av_frame_free(&frame);
     avcodec_free_context(&codecContext);
     avformat_close_input(&formatContext);
     return false;
   }
 
-  int frameMod = secondsPerHash * frameRate;
+  frameMod = secondsPerHash * frameRate;
   if (frameMod == 0) {
     // Avoid truncate to zero on corner-case where
     // secondsPerHash = 1 and frameRate < 1.
     frameMod = 1;
   }
 
+  std::vector<std::thread> consumer_threads;
+  for (int i = 0; i < 4; ++i) {
+    // for (int i = 0; i < num_consumers; ++i) {
+    consumer_threads.push_back(std::thread(consumer));
+  }
+
   // Read frames in a loop and process them
   int frameNumber = 0;
-  int ret = 0;
   bool failed = false;
-  while (av_read_frame(formatContext, packet) == 0) {
+  while (av_read_frame(formatContext, base_packet) == 0) {
+    AVPacket* packet = av_packet_clone(base_packet);
+    int ret;
     // Check if the packet belongs to the video stream
     if (packet->stream_index == videoStreamIndex) {
+      ret = processFrame(packet, frameNumber);
+    }
+    frameNumber = ret;
+    av_packet_unref(base_packet);
+  }
+  std::unique_lock<std::mutex> lock(queue_mutex);
+  done = true;
+  lock.unlock();
+  queue_condition.notify_all();
+  for (auto& thread : consumer_threads) {
+    thread.join();
+  }
+  /*
+    if (!failed) {
+      // Flush decode buffer
+      // See for more information:
+      //
+    https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
+
       try {
-        ret = processFrame(
-            packet,
-            frame,
-            targetFrame,
-            swsContext,
-            codecContext,
-            phasher,
-            pdqHashes,
-            frameRate,
-            verbose,
-            frameNumber,
-            frameMod);
+        ret = processFrame(packet, verbose, frameNumber);
       } catch (const std::runtime_error& e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
         failed = true;
-        av_packet_unref(packet);
-        break;
       }
 
-      frameNumber = ret;
+      av_packet_unref(packet);
     }
-
-    av_packet_unref(packet);
-  }
-
-  if (!failed) {
-    // Flush decode buffer
-    // See for more information:
-    // https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
-
-    try {
-      ret = processFrame(
-          packet,
-          frame,
-          targetFrame,
-          swsContext,
-          codecContext,
-          phasher,
-          pdqHashes,
-          frameRate,
-          verbose,
-          frameNumber,
-          frameMod);
-    } catch (const std::runtime_error& e) {
-      std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
-      failed = true;
-    }
-
-    av_packet_unref(packet);
-  }
-
-  av_packet_free(&packet);
+  */
+  av_packet_free(&base_packet);
   sws_freeContext(swsContext);
-  av_freep(targetFrame->data);
-  av_frame_free(&targetFrame);
-  av_frame_free(&frame);
   avcodec_free_context(&codecContext);
   avformat_close_input(&formatContext);
 
@@ -418,6 +459,7 @@ bool hashVideoFile(
     return false;
   }
 
+  pdqHashes.assign(pdqHashes1.begin(), pdqHashes1.end());
   return true;
 }
 
