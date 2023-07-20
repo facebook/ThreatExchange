@@ -347,6 +347,12 @@ class vpdqHasher {
   }
 
   void start_hashing() {
+    auto total_frames = frame_queue.size();
+    if (verbose) {
+      std::cout << "Started hashing " << total_frames << " frames."
+                << std::endl;
+    }
+
     // Hash the frames
     for (int i = 0; i < num_consumers; ++i) {
       consumer_threads.push_back(
@@ -354,12 +360,16 @@ class vpdqHasher {
     }
 
     std::unique_lock<std::mutex> lock(queue_mutex);
-    // std::cout << "Finished decoding frames" << std::endl;
     done_hashing = true;
     lock.unlock();
     queue_condition.notify_all();
     for (auto& thread : consumer_threads) {
       thread.join();
+    }
+
+    if (verbose) {
+      std::cout << "Finished hashing " << total_frames << " frames."
+                << std::endl;
     }
   }
 };
