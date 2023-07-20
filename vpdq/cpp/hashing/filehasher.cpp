@@ -405,7 +405,7 @@ bool hashVideoFile(
   }
 
   // Read frames in a loop and process them
-  int ret;
+  int ret = 0;
   int frameNumber = 0;
   bool failed = false;
   while (av_read_frame(formatContext, base_packet) == 0) {
