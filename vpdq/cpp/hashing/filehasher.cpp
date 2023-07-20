@@ -4,6 +4,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <algorithm>
 #include <cassert>
 #include <condition_variable>
 #include <fstream>
@@ -213,11 +214,12 @@ void hasher(bool verbose, AVFrame* frame, int frameNumber) {
 
   // Append vpdq feature to pdqHashes vector
   std::lock_guard<std::mutex> lock(pdqHashes_mutex);
-  pdqHashes1.push_back(
-      {pdqHash,
-       frameNumber,
-       quality,
-       static_cast<double>(frameNumber) / frameRate});
+  vpdqFeature feature = {
+      pdqHash,
+      frameNumber,
+      quality,
+      static_cast<double>(frameNumber) / frameRate};
+  pdqHashes1.push_back(feature);
   if (verbose) {
     std::cout << "PDQHash: " << pdqHash.format() << std::endl;
   }
@@ -333,16 +335,16 @@ bool hashVideoFile(
   }
 
   // Determine the number of threads to use and multithreading type
-  codecContext->thread_count = 1;
-  /*
-    if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
-      codecContext->thread_type = FF_THREAD_FRAME;
-    } else if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
-      codecContext->thread_type = FF_THREAD_SLICE;
-    } else {
-      codecContext->thread_count = 1;
-    }
-  */
+  codecContext->thread_count = 0;
+
+  if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
+    codecContext->thread_type = FF_THREAD_FRAME;
+  } else if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
+    codecContext->thread_type = FF_THREAD_SLICE;
+  } else {
+    codecContext->thread_count = 1;
+  }
+
   // Open the codec context
   if (avcodec_open2(codecContext, codec, nullptr) < 0) {
     std::cerr << "Cannot open codec context" << std::endl;
@@ -440,7 +442,9 @@ bool hashVideoFile(
     } catch (const std::runtime_error& e) {
       std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
       failed = true;
+      av_packet_unref(packet);
     }
+    frameNumber = ret;
     av_packet_unref(packet);
   }
 
@@ -468,6 +472,12 @@ bool hashVideoFile(
   }
   std::cout << "Hashed " << frameNumber << std::endl;
 
+  std::sort(
+      pdqHashes1.begin(),
+      pdqHashes1.end(),
+      [](const vpdqFeature& a, const vpdqFeature& b) {
+        return a.frameNumber < b.frameNumber;
+      });
   pdqHashes.assign(pdqHashes1.begin(), pdqHashes1.end());
   return true;
 }
