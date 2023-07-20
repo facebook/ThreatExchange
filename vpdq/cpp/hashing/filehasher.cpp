@@ -298,10 +298,6 @@ class vpdqHasher {
         vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(
             frame->height, frame->width);
 
-    if (phasher == nullptr) {
-      throw std::runtime_error("phasher allocation failed");
-    }
-
     bool ret = phasher->hashFrame(frame->data[0], pdqHash, quality);
     if (!ret) {
       throw std::runtime_error(
