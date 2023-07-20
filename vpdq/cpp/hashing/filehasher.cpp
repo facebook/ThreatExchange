@@ -169,7 +169,9 @@ static int processFrame(
           targetFrame->linesize);
 
       std::unique_lock<std::mutex> lock(queue_mutex);
-      FatFrame fatFrame = {targetFrame, frameNumber};
+      AVFrame* newTargetFrame = createFrame(width, height);
+      av_frame_copy(newTargetFrame, targetFrame);
+      FatFrame fatFrame = {newTargetFrame, frameNumber};
 
       frame_queue.push(fatFrame);
       lock.unlock();
@@ -178,6 +180,8 @@ static int processFrame(
     frameNumber += 1;
   }
   av_frame_free(&frame);
+  av_freep(&targetFrame->data[0]);
+  av_frame_free(&targetFrame);
   return frameNumber;
 }
 
@@ -232,7 +236,8 @@ void consumer() {
     int frameNumber = fatFrame.frameNumber;
     hasher(false, frame, frameNumber);
     av_freep(frame->data);
-    av_frame_free(&frame);
+    if (frame != nullptr)
+      av_frame_free(&frame);
   }
 }
 
@@ -328,16 +333,16 @@ bool hashVideoFile(
   }
 
   // Determine the number of threads to use and multithreading type
-  codecContext->thread_count = 0;
-
-  if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
-    codecContext->thread_type = FF_THREAD_FRAME;
-  } else if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
-    codecContext->thread_type = FF_THREAD_SLICE;
-  } else {
-    codecContext->thread_count = 1;
-  }
-
+  codecContext->thread_count = 1;
+  /*
+    if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
+      codecContext->thread_type = FF_THREAD_FRAME;
+    } else if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
+      codecContext->thread_type = FF_THREAD_SLICE;
+    } else {
+      codecContext->thread_count = 1;
+    }
+  */
   // Open the codec context
   if (avcodec_open2(codecContext, codec, nullptr) < 0) {
     std::cerr << "Cannot open codec context" << std::endl;
@@ -388,8 +393,8 @@ bool hashVideoFile(
     return false;
   }
 
-  AVPacket* base_packet = av_packet_alloc();
-  if (base_packet == nullptr) {
+  AVPacket* packet = av_packet_alloc();
+  if (packet == nullptr) {
     std::cerr << "Cannot allocate packet" << std::endl;
     sws_freeContext(swsContext);
     avcodec_free_context(&codecContext);
@@ -408,24 +413,23 @@ bool hashVideoFile(
   int ret = 0;
   int frameNumber = 0;
   bool failed = false;
-  while (av_read_frame(formatContext, base_packet) == 0) {
-    AVPacket* packet = av_packet_clone(base_packet);
+  while (av_read_frame(formatContext, packet) == 0) {
     // Check if the packet belongs to the video stream
     if (packet->stream_index == videoStreamIndex) {
       try {
         ret = processFrame(packet, frameNumber);
+        frameNumber = ret;
       } catch (const std::runtime_error& e) {
         std::cerr << "Processing frame failed: " << e.what() << std::endl;
         failed = true;
+        av_packet_unref(packet);
         break;
       }
     }
-    frameNumber = ret;
     av_packet_unref(packet);
   }
 
   if (!failed) {
-    AVPacket* packet = av_packet_clone(base_packet);
     // Flush decode buffer
     // See for more information:
     //
@@ -437,8 +441,7 @@ bool hashVideoFile(
       std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
       failed = true;
     }
-
-    av_packet_unref(base_packet);
+    av_packet_unref(packet);
   }
 
   std::vector<std::thread> consumer_threads;
@@ -455,7 +458,7 @@ bool hashVideoFile(
     thread.join();
   }
 
-  av_packet_free(&base_packet);
+  av_packet_free(&packet);
   sws_freeContext(swsContext);
   avcodec_free_context(&codecContext);
   avformat_close_input(&formatContext);
@@ -463,6 +466,7 @@ bool hashVideoFile(
   if (failed) {
     return false;
   }
+  std::cout << "Hashed " << frameNumber << std::endl;
 
   pdqHashes.assign(pdqHashes1.begin(), pdqHashes1.end());
   return true;
