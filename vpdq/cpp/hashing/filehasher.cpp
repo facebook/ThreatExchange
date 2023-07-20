@@ -3,10 +3,10 @@
 // ================================================================
 
 #include <math.h>
-#include <stdio.h>
 #include <algorithm>
 #include <cassert>
 #include <condition_variable>
+#include <cstdio>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -35,6 +35,40 @@ namespace facebook {
 namespace vpdq {
 namespace hashing {
 
+/* @brief Writes an AVFrame to a file
+ *
+ * Useful for debugging.
+ * Not used by any other functions.
+ *
+ * This can viewed using ffplay directly:
+ * ffplay -f rawvideo -pixel_format rgb24 \
+ * -video_size <WIDTH>x<HEIGHT> <filename>
+ *
+ * @param frame
+ * @param filename
+ * @return void
+ */
+static void saveFrameToFile(AVFrame* frame, const char* filename) {
+  if (!frame) {
+    throw std::invalid_argument("Cannot save frame to file. Frame is null.");
+  }
+
+  std::ofstream outfile(filename, std::ios::out | std::ios::binary);
+  if (!outfile) {
+    throw std::runtime_error(
+        "Cannot save frame to file " + std::string(filename));
+  }
+
+  for (int y = 0; y < frame->height; y++) {
+    outfile.write(
+        reinterpret_cast<const char*>(frame->data[0] + y * frame->linesize[0]),
+        frame->width * 3);
+  }
+  std::cout << "Saved frame to file " << filename << " with dimensions "
+            << frame->width << "x" << frame->height << std::endl;
+  outfile.close();
+}
+
 class vpdqHasher {
  public:
   struct FatFrame {
@@ -52,6 +86,7 @@ class vpdqHasher {
   int num_consumers = std::thread::hardware_concurrency();
   AVCodecContext* codecContext;
   SwsContext* swsContext;
+  AVFormatContext* formatContext;
   int width;
   int height;
   double frameRate;
@@ -219,42 +254,12 @@ class vpdqHasher {
       avcodec_free_context(&codecContext);
     if (swsContext != nullptr)
       sws_freeContext(swsContext);
+    if (formatContext != nullptr) {
+      avformat_close_input(&formatContext);
+    }
   }
 };
 
-/* @brief Writes an AVFrame to a file
- *
- * Useful for debugging.
- * Not used by any other functions.
- *
- * This can viewed using ffplay directly:
- * ffplay -f rawvideo -pixel_format rgb24 \
- * -video_size <WIDTH>x<HEIGHT> <filename>
- *
- * @param frame
- * @param filename
- * @return void
- */
-static void saveFrameToFile(AVFrame* frame, const char* filename) {
-  if (!frame) {
-    throw std::invalid_argument("Cannot save frame to file. Frame is null.");
-  }
-
-  std::ofstream outfile(filename, std::ios::out | std::ios::binary);
-  if (!outfile) {
-    throw std::runtime_error(
-        "Cannot save frame to file " + std::string(filename));
-  }
-
-  for (int y = 0; y < frame->height; y++) {
-    outfile.write(
-        reinterpret_cast<const char*>(frame->data[0] + y * frame->linesize[0]),
-        frame->width * 3);
-  }
-  std::cout << "Saved frame to file " << filename << " with dimensions "
-            << frame->width << "x" << frame->height << std::endl;
-  outfile.close();
-}
 // Get pdq hashes for selected frames every secondsPerHash
 bool hashVideoFile(
     const std::string& inputVideoFileName,
@@ -281,24 +286,27 @@ bool hashVideoFile(
 
   av_log_set_level(AV_LOG_DEBUG);
   // Open the input file
-  AVFormatContext* formatContext = nullptr;
+  hasher.formatContext = nullptr;
   if (avformat_open_input(
-          &formatContext, inputVideoFileName.c_str(), nullptr, nullptr) != 0) {
+          &hasher.formatContext,
+          inputVideoFileName.c_str(),
+          nullptr,
+          nullptr) != 0) {
     std::cerr << "Cannot open the video" << std::endl;
     return false;
   }
 
   // Retrieve stream information
-  if (avformat_find_stream_info(formatContext, nullptr) < 0) {
+  if (avformat_find_stream_info(hasher.formatContext, nullptr) < 0) {
     std::cerr << "Cannot find stream info" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
   // Find the first video stream
   int videoStreamIndex = -1;
-  for (unsigned int i = 0; i < formatContext->nb_streams; ++i) {
-    if (formatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+  for (unsigned int i = 0; i < hasher.formatContext->nb_streams; ++i) {
+    if (hasher.formatContext->streams[i]->codecpar->codec_type ==
+        AVMEDIA_TYPE_VIDEO) {
       videoStreamIndex = i;
       break;
     }
@@ -306,13 +314,12 @@ bool hashVideoFile(
 
   if (videoStreamIndex == -1) {
     std::cerr << "No video stream found" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
   // Get the video codec parameters
   AVCodecParameters* codecParameters =
-      formatContext->streams[videoStreamIndex]->codecpar;
+      hasher.formatContext->streams[videoStreamIndex]->codecpar;
 
   // Get the width and height
   // If downsampleWidth or downsampleHeight is 0,
@@ -328,7 +335,6 @@ bool hashVideoFile(
 
   if (hasher.width == 0 || hasher.height == 0) {
     std::cerr << "Width or height equals 0" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
@@ -336,7 +342,6 @@ bool hashVideoFile(
   const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
   if (!codec) {
     std::cerr << "Codec decoder not found" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
@@ -344,7 +349,6 @@ bool hashVideoFile(
   hasher.codecContext = avcodec_alloc_context3(codec);
   if (avcodec_parameters_to_context(hasher.codecContext, codecParameters) < 0) {
     std::cerr << "Cannot copy codec parameters to context" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
@@ -363,25 +367,23 @@ bool hashVideoFile(
   // Open the codec context
   if (avcodec_open2(hasher.codecContext, codec, nullptr) < 0) {
     std::cerr << "Cannot open codec context" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
   // Get the framerate
   AVRational avframeRate =
-      formatContext->streams[videoStreamIndex]->avg_frame_rate;
+      hasher.formatContext->streams[videoStreamIndex]->avg_frame_rate;
 
   // if avg_frame_rate is 0, fall back to r_frame_rate which is the
   // lowest framerate with which all timestamps can be represented accurately
   if (avframeRate.num == 0 || avframeRate.den == 0) {
-    avframeRate = formatContext->streams[videoStreamIndex]->r_frame_rate;
+    avframeRate = hasher.formatContext->streams[videoStreamIndex]->r_frame_rate;
   }
 
   hasher.frameRate = static_cast<double>(avframeRate.num) /
       static_cast<double>(avframeRate.den);
   if (hasher.frameRate == 0) {
     std::cerr << "Framerate is zero" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
@@ -403,14 +405,12 @@ bool hashVideoFile(
 
   if (hasher.swsContext == nullptr) {
     std::cerr << "Cannot create sws context" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
   AVPacket* packet = av_packet_alloc();
   if (packet == nullptr) {
     std::cerr << "Cannot allocate packet" << std::endl;
-    avformat_close_input(&formatContext);
     return false;
   }
 
@@ -425,7 +425,7 @@ bool hashVideoFile(
   int ret = 0;
   int frameNumber = 0;
   bool failed = false;
-  while (av_read_frame(formatContext, packet) == 0) {
+  while (av_read_frame(hasher.formatContext, packet) == 0) {
     // Check if the packet belongs to the video stream
     if (packet->stream_index == videoStreamIndex) {
       try {
@@ -463,7 +463,6 @@ bool hashVideoFile(
   }
 
   av_packet_free(&packet);
-  avformat_close_input(&formatContext);
 
   if (failed) {
     return false;
