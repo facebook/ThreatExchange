@@ -78,7 +78,7 @@ static int processFrame(
   // Send the packet to the decoder
   int ret = avcodec_send_packet(codecContext, packet) < 0;
   if (ret < 0) {
-    fprintf(stderr, "Error: Cannot send packet to decoder\n");
+    std::cerr << "Cannot send packet to decoder" << std::endl;
     return -1;
   }
 
@@ -88,7 +88,7 @@ static int processFrame(
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
       break;
     } else if (ret < 0) {
-      fprintf(stderr, "Error: Cannot receive frame from decoder\n");
+      std::cerr << "Cannot receive frame from decoder" << std::endl;
       return -1;
     }
 
@@ -107,10 +107,10 @@ static int processFrame(
       pdq::hashing::Hash256 pdqHash;
       bool ret = phasher->hashFrame(targetFrame->data[0], pdqHash, quality);
       if (!ret) {
-        fprintf(
-            stderr,
-            "%d: failed to hash frame buffer. Frame width or height smaller than the minimum hashable dimension.\n",
-            frameNumber);
+        std::cerr
+            << "Frame: " << frameNumber
+            << " Failed to hash frame buffer. Frame width or height smaller than the minimum hashable dimension"
+            << std::endl;
         return -1;
       }
 
@@ -124,7 +124,7 @@ static int processFrame(
            quality,
            static_cast<double>(frameNumber) / frameRate});
       if (verbose) {
-        printf("PDQHash: %s\n", pdqHash.format().c_str());
+        cout << "PDQHash: " << pdqHash.format() << std::endl;
       }
     }
     frameNumber += 1;
@@ -144,13 +144,13 @@ bool hashVideoFile(
   AVFormatContext* formatContext = nullptr;
   if (avformat_open_input(
           &formatContext, inputVideoFileName.c_str(), nullptr, nullptr) != 0) {
-    fprintf(stderr, "Error: Cannot open the video\n");
+    std::cerr << "Cannot open the video" << std::endl;
     return false;
   }
 
   // Retrieve stream information
   if (avformat_find_stream_info(formatContext, nullptr) < 0) {
-    fprintf(stderr, "Error: Cannot find stream info\n");
+    std::cerr << "Cannot find stream info" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -165,7 +165,7 @@ bool hashVideoFile(
   }
 
   if (videoStreamIndex == -1) {
-    fprintf(stderr, "Error: No video stream found\n");
+    std::cerr << "No video stream found" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -187,7 +187,7 @@ bool hashVideoFile(
   }
 
   if (width == 0 || height == 0) {
-    fprintf(stderr, "Error: Width or height equals 0\n");
+    std::cerr << "Width or height equals 0" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -195,7 +195,7 @@ bool hashVideoFile(
   std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
       vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(height, width);
   if (phasher == nullptr) {
-    fprintf(stderr, "Error: Phasher allocation failed\n");
+    std::cerr << "phasher allocation failed" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -203,7 +203,7 @@ bool hashVideoFile(
   // Find the video decoder
   const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
   if (!codec) {
-    fprintf(stderr, "Error: Codec decoder not found\n");
+    std::cerr << "Codec decoder not found" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -211,7 +211,7 @@ bool hashVideoFile(
   // Create the codec context
   AVCodecContext* codecContext = avcodec_alloc_context3(codec);
   if (avcodec_parameters_to_context(codecContext, codecParameters) < 0) {
-    fprintf(stderr, "Error: Failed to copy codec parameters to context\n");
+    std::cerr << "Cannot copy codec parameters to context" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -229,7 +229,7 @@ bool hashVideoFile(
 
   // Open the codec context
   if (avcodec_open2(codecContext, codec, nullptr) < 0) {
-    fprintf(stderr, "Error: Failed to open codec\n");
+    std::cerr << "Cannot open codec context" << std::endl;
     avcodec_free_context(&codecContext);
     avformat_close_input(&formatContext);
     return false;
@@ -248,7 +248,7 @@ bool hashVideoFile(
   double frameRate = static_cast<double>(avframeRate.num) /
       static_cast<double>(avframeRate.den);
   if (frameRate == 0) {
-    fprintf(stderr, "Error: Framerate is zero.\n");
+    std::cerr << "Framerate is zero" << std::endl;
     avcodec_free_context(&codecContext);
     avformat_close_input(&formatContext);
     return false;
@@ -285,7 +285,7 @@ bool hashVideoFile(
           height,
           pixelFormat,
           1) < 0) {
-    fprintf(stderr, "Error: Failed to allocate target frame\n");
+    std::cerr << "Cannot allocate target frame" << std::endl;
     av_frame_free(&targetFrame);
     av_frame_free(&frame);
     avcodec_free_context(&codecContext);
@@ -306,7 +306,7 @@ bool hashVideoFile(
       nullptr);
 
   if (swsContext == nullptr) {
-    fprintf(stderr, "Error: Failed to create sws context\n");
+    std::cerr << "Cannot create sws context" << std::endl;
     av_freep(targetFrame->data);
     av_frame_free(&targetFrame);
     av_frame_free(&frame);
@@ -317,7 +317,7 @@ bool hashVideoFile(
 
   AVPacket* packet = av_packet_alloc();
   if (packet == nullptr) {
-    fprintf(stderr, "Error: Failed to allocate packet\n");
+    std::cerr << "Cannot allocate packet" << std::endl;
     sws_freeContext(swsContext);
     av_freep(targetFrame->data);
     av_frame_free(&targetFrame);
@@ -355,7 +355,7 @@ bool hashVideoFile(
           frameMod);
 
       if (ret == -1) {
-        fprintf(stderr, "Error: Cannot process frame\n");
+        std::cerr << "Error: Cannot process frame" << std::endl;
         failed = true;
         av_packet_unref(packet);
         break;
@@ -387,7 +387,7 @@ bool hashVideoFile(
 
     if (ret == -1) {
       failed = true;
-      fprintf(stderr, "Error: Cannot process frame\n");
+      std::cerr << "Error: Cannot process frame" << std::endl;
     }
 
     av_packet_unref(packet);
