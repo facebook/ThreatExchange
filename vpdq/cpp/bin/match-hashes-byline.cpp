@@ -43,13 +43,13 @@ int main(int argc, char** argv) {
 
   vector<facebook::vpdq::hashing::vpdqFeature> video1Hashes;
   vector<facebook::vpdq::hashing::vpdqFeature> video2Hashes;
-  bool ret = facebook::vpdq::io::loadHashesFromFileOrDie(
-      argv[argi], video1Hashes, argv[0]);
+  bool ret =
+      facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi], video1Hashes);
   if (!ret) {
     return -1;
   }
-  ret = facebook::vpdq::io::loadHashesFromFileOrDie(
-      argv[argi + 1], video2Hashes, argv[0]);
+  ret =
+      facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi + 1], video2Hashes);
   if (!ret) {
     return -1;
   }

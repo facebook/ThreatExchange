@@ -45,13 +45,11 @@ int main(int argc, char** argv) {
   qualityTolerance = atoi(argv[argi + 3]);
   vector<facebook::vpdq::hashing::vpdqFeature> qHashes;
   vector<facebook::vpdq::hashing::vpdqFeature> tHashes;
-  bool ret =
-      facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi], qHashes, argv[0]);
+  bool ret = facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi], qHashes);
   if (!ret) {
     return -1;
   }
-  ret = facebook::vpdq::io::loadHashesFromFileOrDie(
-      argv[argi + 1], tHashes, argv[0]);
+  ret = facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi + 1], tHashes);
   if (!ret) {
     return -1;
   }

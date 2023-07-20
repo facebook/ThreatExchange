@@ -2,14 +2,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
-
-using namespace std;
 
 static void usage(char* argv0, int rc) {
   FILE* fp = (rc == 0) ? stdout : stderr;
@@ -72,14 +71,14 @@ std::string stripExtension(const std::string& filename) {
 int main(int argc, char** argv) {
   int argi = 1;
   bool verbose = false;
-  string inputVideoFileName = "";
-  string outputHashFileName = "";
-  string outputDirectory = "";
+  std::string inputVideoFileName = "";
+  std::string outputHashFileName = "";
+  std::string outputDirectory = "";
   double secondsPerHash = 0;
   int downsampleFrameDimension = 0;
 
   while ((argi < argc) && argv[argi][0] == '-') {
-    string flag(argv[argi++]);
+    std::string flag(argv[argi++]);
     if (flag == "-v" || flag == "--verbose") {
       verbose = true;
       continue;
@@ -88,14 +87,14 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      inputVideoFileName = string(argv[argi++]);
+      inputVideoFileName = std::string(argv[argi++]);
       continue;
     }
     if (flag == "-o" || flag == "--output-hash-file-name") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      outputHashFileName = string(argv[argi++]);
+      outputHashFileName = std::string(argv[argi++]);
       continue;
     }
     if (flag == "-f" || flag == "--ffmpeg-path") {
@@ -109,21 +108,21 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      secondsPerHash = atof(argv[argi++]);
+      secondsPerHash = std::atof(argv[argi++]);
       continue;
     }
     if (flag == "-d" || flag == "--output-directory") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      outputDirectory = string(argv[argi++]);
+      outputDirectory = std::string(argv[argi++]);
       continue;
     }
     if (flag == "-s" || flag == "--downsample-frame-dimension") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      downsampleFrameDimension = atoi(argv[argi++]);
+      downsampleFrameDimension = std::atoi(argv[argi++]);
       continue;
     }
     usage(argv[0], 1);
@@ -177,7 +176,6 @@ int main(int argc, char** argv) {
         inputVideoFileName.c_str());
     return 1;
   }
-  facebook::vpdq::io::outputVPDQFeatureToFile(
-      outputHashFileName, pdqHashes, argv[0]);
+  facebook::vpdq::io::outputVPDQFeatureToFile(outputHashFileName, pdqHashes);
   return 0;
 }
