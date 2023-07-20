@@ -22,16 +22,6 @@ bool outputVPDQFeatureToFile(
     const string& outputHashFileName,
     vector<hashing::vpdqFeature>& pdqHashes,
     const char* programName);
-bool readVideoStreamInfo(
-    const string& inputVideoFileName,
-    int& width,
-    int& height,
-    double& framesPerSec,
-    const char* programName);
-bool readVideoDuration(
-    const string& inputVideoFileName,
-    double& durationInSec,
-    const char* programName);
 } // namespace io
 } // namespace vpdq
 } // namespace facebook

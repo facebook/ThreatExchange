@@ -7,7 +7,10 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <sstream>
+#include <string>
+
 #include <vpdq/cpp/hashing/bufferhasher.h>
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
@@ -60,9 +63,9 @@ static int processFrame(
     AVFrame* targetFrame,
     SwsContext* swsContext,
     AVCodecContext* codecContext,
-    unique_ptr<vpdq::hashing::AbstractFrameBufferHasher>& phasher,
+    std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher>& phasher,
     vector<hashing::vpdqFeature>& pdqHashes,
-    double framesPerSec,
+    double frameRate,
     bool verbose,
     int frameNumber,
     int frameMod) {
@@ -96,7 +99,8 @@ static int processFrame(
       // Call pdqHasher to hash the frame
       int quality;
       pdq::hashing::Hash256 pdqHash;
-      if (!phasher->hashFrame(targetFrame->data[0], pdqHash, quality)) {
+      bool ret = phasher->hashFrame(targetFrame->data[0], pdqHash, quality);
+      if (!ret) {
         fprintf(
             stderr,
             "%d: failed to hash frame buffer. Frame width or height smaller than the minimum hashable dimension.\n",
@@ -109,7 +113,10 @@ static int processFrame(
 
       // Append vpdq feature to pdqHashes vector
       pdqHashes.push_back(
-          {pdqHash, frameNumber, quality, (double)frameNumber / framesPerSec});
+          {pdqHash,
+           frameNumber,
+           quality,
+           static_cast<double>(frameNumber) / frameRate});
       if (verbose) {
         printf("PDQHash: %s\n", pdqHash.format().c_str());
       }
@@ -121,22 +128,12 @@ static int processFrame(
 
 // Get pdq hashes for selected frames every secondsPerHash
 bool hashVideoFile(
-    const string& inputVideoFileName,
-    vector<hashing::vpdqFeature>& pdqHashes,
-    const string& ffmpegPath,
+    const std::string& inputVideoFileName,
+    std::vector<hashing::vpdqFeature>& pdqHashes,
     bool verbose,
     const double secondsPerHash,
-    const int width,
-    const int height,
-    const double framesPerSec,
-    const char* argv0) {
-  std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
-      vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(height, width);
-  if (phasher == nullptr) {
-    fprintf(stderr, "Error: Phasher is null\n");
-    return false;
-  }
-
+    const int downsampleWidth,
+    const int downsampleHeight) {
   // Open the input file
   AVFormatContext* formatContext = nullptr;
   if (avformat_open_input(
@@ -171,6 +168,32 @@ bool hashVideoFile(
   AVCodecParameters* codecParameters =
       formatContext->streams[videoStreamIndex]->codecpar;
 
+  // Get the width and height
+  // If downsampleWidth or downsampleHeight is 0,
+  // then use the video's original dimensions
+  int width = downsampleWidth;
+  int height = downsampleHeight;
+  if (width == 0) {
+    width = codecParameters->width;
+  }
+  if (height == 0) {
+    height = codecParameters->height;
+  }
+
+  if (width == 0 || height == 0) {
+    fprintf(stderr, "Error: Width or height equals 0\n");
+    avformat_close_input(&formatContext);
+    return false;
+  }
+
+  std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
+      vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(height, width);
+  if (phasher == nullptr) {
+    fprintf(stderr, "Error: Phasher allocation failed\n");
+    avformat_close_input(&formatContext);
+    return false;
+  }
+
   // Find the video decoder
   const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
   if (!codec) {
@@ -201,6 +224,25 @@ bool hashVideoFile(
   // Open the codec context
   if (avcodec_open2(codecContext, codec, nullptr) < 0) {
     fprintf(stderr, "Error: Failed to open codec\n");
+    avcodec_free_context(&codecContext);
+    avformat_close_input(&formatContext);
+    return false;
+  }
+
+  // Get the framerate
+  AVRational avframeRate =
+      formatContext->streams[videoStreamIndex]->avg_frame_rate;
+
+  // if avg_frame_rate is 0, fall back to r_frame_rate which is the
+  // lowest framerate with which all timestamps can be represented accurately
+  if (avframeRate.num == 0 || avframeRate.den == 0) {
+    avframeRate = formatContext->streams[videoStreamIndex]->r_frame_rate;
+  }
+
+  double frameRate = static_cast<double>(avframeRate.num) /
+      static_cast<double>(avframeRate.den);
+  if (frameRate == 0) {
+    fprintf(stderr, "Error: Framerate is zero.\n");
     avcodec_free_context(&codecContext);
     avformat_close_input(&formatContext);
     return false;
@@ -279,11 +321,10 @@ bool hashVideoFile(
     return false;
   }
 
-  int frameMod = secondsPerHash * framesPerSec;
+  int frameMod = secondsPerHash * frameRate;
   if (frameMod == 0) {
-    // Avoid truncate to zero on corner-case with secondsPerHash = 1
-    // and framesPerSec < 1.
-
+    // Avoid truncate to zero on corner-case where
+    // secondsPerHash = 1 and frameRate < 1.
     frameMod = 1;
   }
 
@@ -302,7 +343,7 @@ bool hashVideoFile(
           codecContext,
           phasher,
           pdqHashes,
-          framesPerSec,
+          frameRate,
           verbose,
           frameNumber,
           frameMod);
@@ -333,7 +374,7 @@ bool hashVideoFile(
         codecContext,
         phasher,
         pdqHashes,
-        framesPerSec,
+        frameRate,
         verbose,
         frameNumber,
         frameMod);

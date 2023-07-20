@@ -18,27 +18,20 @@ namespace hashing {
  *
  * @param inputVideoFileName Input video's name
  * @param pdqHashes Vector which stores hashes
- * @param ffmpegPath Ffmpeg's path
  * @param verbose If produce detailed output for diagnostic purposes
  * @param secondsPerHash The time period of picking frames in vpdq
- * @param width Specified width of the input video
- * @param height Specified height of the input video
- * @param framesPerSec Frames per second of the input video
- * @param downsampleFrameDimension The down-scale dimensions for vpdq
- * @param programName The name of executable program which invokes the function
+ * @param downsampleWidth Width of the input video. 0 means no downsample
+ * @param downsampleHeight Height of the input video. 0 means no downsample
  *
  * @return If successfully hash the video
  */
 bool hashVideoFile(
     const std::string& inputVideoFileName,
-    vector<hashing::vpdqFeature>& pdqHashes,
-    const std::string& ffmpegPath,
+    std::vector<hashing::vpdqFeature>& pdqHashes,
     bool verbose,
     const double secondsPerHash,
-    const int width,
-    const int height,
-    const double framesPerSec,
-    const char* programName);
+    const int downsampleWidth,
+    const int downsampleHeight);
 
 } // namespace hashing
 } // namespace vpdq

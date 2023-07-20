@@ -21,7 +21,6 @@ static void usage(char* argv0, int rc) {
       fp,
       "-r|--seconds-per-hash ...:Must be a non-negative float. If it is 0, will generate every frame's hash\n");
   fprintf(fp, "Options:\n");
-  fprintf(fp, "-f|--ffmpeg-path: Specific path to ffmpeg you want to use\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
   fprintf(
       fp,
@@ -73,7 +72,6 @@ std::string stripExtension(const std::string& filename) {
 int main(int argc, char** argv) {
   int argi = 1;
   bool verbose = false;
-  string ffmpegPath = "ffmpeg";
   string inputVideoFileName = "";
   string outputHashFileName = "";
   string outputDirectory = "";
@@ -104,7 +102,7 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      ffmpegPath = string(argv[argi++]);
+      // does nothing anymore
       continue;
     }
     if (flag == "-r" || flag == "--seconds-per-hash") {
@@ -162,37 +160,15 @@ int main(int argc, char** argv) {
   }
 
   // Hash the video and store the hashes and correspoding info
-  double framesPerSec = 0;
-  int videoWidth = 0;
-  int videoHeight = 0;
-  bool rc = facebook::vpdq::io::readVideoStreamInfo(
-      inputVideoFileName, videoWidth, videoHeight, framesPerSec, argv[0]);
-  if (!rc) {
-    fprintf(
-        stderr,
-        "%s: failed to read video stream information\"%s\".\n",
-        argv[0],
-        inputVideoFileName.c_str());
-    return 1;
-  }
   std::vector<facebook::vpdq::hashing::vpdqFeature> pdqHashes;
-  int width = downsampleFrameDimension;
-  int height = downsampleFrameDimension;
-  if (downsampleFrameDimension == 0) {
-    width = videoWidth;
-    height = videoHeight;
-  }
 
-  rc = facebook::vpdq::hashing::hashVideoFile(
+  bool rc = facebook::vpdq::hashing::hashVideoFile(
       inputVideoFileName,
       pdqHashes,
-      ffmpegPath,
       verbose,
       secondsPerHash,
-      width,
-      height,
-      framesPerSec,
-      argv[0]);
+      downsampleFrameDimension,
+      downsampleFrameDimension);
   if (!rc) {
     fprintf(
         stderr,
