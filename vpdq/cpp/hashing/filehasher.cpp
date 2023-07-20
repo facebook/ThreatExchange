@@ -224,7 +224,7 @@ class vpdqHasher {
   std::queue<FatFrame> frame_queue;
 
   std::mutex pdqHashes_mutex;
-  std::vector<hashing::vpdqFeature> pdqHashes;
+  std::vector<hashing::vpdqFeature>& pdqHashes;
 
   std::mutex done_mutex;
   bool done_hashing = false;
@@ -237,7 +237,10 @@ class vpdqHasher {
 
   bool verbose = false;
 
-  vpdqHasher(std::unique_ptr<AVVideo> video) : video(std::move(video)) {
+  vpdqHasher(
+      std::unique_ptr<AVVideo> video,
+      std::vector<hashing::vpdqFeature>& pdqHashes)
+      : pdqHashes(pdqHashes), video(std::move(video)) {
     // Create consumer threads
     for (decltype(num_consumers) i = 0; i < num_consumers; ++i) {
       consumer_threads.push_back(
@@ -436,7 +439,7 @@ bool hashVideoFile(
     return false;
   }
 
-  vpdqHasher hasher(std::move(video));
+  vpdqHasher hasher(std::move(video), pdqHashes);
   hasher.verbose = verbose;
 
   hasher.frameMod = secondsPerHash * hasher.video->frameRate;
@@ -500,8 +503,6 @@ bool hashVideoFile(
         return a.frameNumber < b.frameNumber;
       });
 
-  // Copy the hashes to the input vector
-  pdqHashes.assign(hasher.pdqHashes.begin(), hasher.pdqHashes.end());
   if (static_cast<std::vector<vpdqFeature>::size_type>(frameNumber) !=
       pdqHashes.size()) {
     throw std::runtime_error(
