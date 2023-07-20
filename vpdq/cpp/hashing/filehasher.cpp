@@ -35,6 +35,9 @@ namespace facebook {
 namespace vpdq {
 namespace hashing {
 
+// Pixel format for the image passed to PDQ
+constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
+
 /* @brief Writes an AVFrame to a file
  *
  * Useful for debugging.
@@ -69,6 +72,113 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
   outfile.close();
 }
 
+class AVVideo {
+ public:
+  AVCodecContext* codecContext = nullptr;
+  SwsContext* swsContext = nullptr;
+  AVFormatContext* formatContext = nullptr;
+  int videoStreamIndex = -1;
+  int width;
+  int height;
+  double frameRate;
+
+  AVVideo(const std::string filename) {
+    // Open the input file
+    if (avformat_open_input(
+            &formatContext, filename.c_str(), nullptr, nullptr) != 0) {
+      throw std::runtime_error("Cannot open video");
+    }
+
+    // Retrieve stream information
+    if (avformat_find_stream_info(formatContext, nullptr) < 0) {
+      avformat_close_input(&formatContext);
+      throw std::runtime_error("Cannot find video stream info");
+    }
+
+    // Find the first video stream
+    for (unsigned int i = 0; i < formatContext->nb_streams; ++i) {
+      if (formatContext->streams[i]->codecpar->codec_type ==
+          AVMEDIA_TYPE_VIDEO) {
+        videoStreamIndex = i;
+        break;
+      }
+    }
+
+    if (videoStreamIndex == -1) {
+      avformat_close_input(&formatContext);
+      throw std::runtime_error("No video stream found");
+    }
+
+    // Get the video codec parameters
+    AVCodecParameters* codecParameters =
+        formatContext->streams[videoStreamIndex]->codecpar;
+
+    width = codecParameters->width;
+    height = codecParameters->height;
+    if (width == 0 || height == 0) {
+      avformat_close_input(&formatContext);
+      throw std::runtime_error("Width or height equals 0");
+    }
+
+    // Find the video decoder
+    const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
+    if (!codec) {
+      avformat_close_input(&formatContext);
+      throw std::runtime_error("Video codec id not found");
+    }
+
+    // Create the codec context
+    codecContext = avcodec_alloc_context3(codec);
+    if (avcodec_parameters_to_context(codecContext, codecParameters) < 0) {
+      avformat_close_input(&formatContext);
+      throw std::runtime_error("Cannot copy codec parameters to context");
+    }
+
+    // Determine the number of threads to use and multithreading type
+    codecContext->thread_count = 0;
+
+    if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
+      codecContext->thread_type = FF_THREAD_FRAME;
+    } else if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
+      codecContext->thread_type = FF_THREAD_SLICE;
+    } else {
+      codecContext->thread_count = 1;
+    }
+
+    // Open the codec context
+    if (avcodec_open2(codecContext, codec, nullptr) < 0) {
+      avformat_close_input(&formatContext);
+      throw std::runtime_error("Cannot open video codec context");
+    }
+
+    // Get the framerate
+    AVRational avframeRate =
+        formatContext->streams[videoStreamIndex]->avg_frame_rate;
+
+    // if avg_frame_rate is 0, fall back to r_frame_rate which is the
+    // lowest framerate with which all timestamps can be represented accurately
+    if (avframeRate.num == 0 || avframeRate.den == 0) {
+      avframeRate = formatContext->streams[videoStreamIndex]->r_frame_rate;
+    }
+
+    frameRate = static_cast<double>(avframeRate.num) /
+        static_cast<double>(avframeRate.den);
+    if (frameRate == 0) {
+      avformat_close_input(&formatContext);
+      throw std::runtime_error("Video framerate is zero");
+    }
+  }
+  ~AVVideo() {
+    if (codecContext != nullptr)
+      avcodec_free_context(&codecContext);
+    if (swsContext != nullptr)
+      sws_freeContext(swsContext);
+    if (formatContext != nullptr) {
+      avformat_close_input(&formatContext);
+    }
+  }
+};
+
 class vpdqHasher {
  public:
   struct FatFrame {
@@ -84,13 +194,12 @@ class vpdqHasher {
   std::mutex done_mutex;
   bool done_hashing = false;
   int num_consumers = std::thread::hardware_concurrency();
-  AVCodecContext* codecContext;
-  SwsContext* swsContext;
-  AVFormatContext* formatContext;
-  int width;
-  int height;
-  double frameRate;
+
   int frameMod;
+
+  std::unique_ptr<AVVideo> video;
+
+  vpdqHasher(std::unique_ptr<AVVideo> video) : video(std::move(video)) {}
 
   // Decode and add vpdqFeature to the hashes vector
   // Returns the number of frames processed (this is can be more than 1!)
@@ -98,10 +207,10 @@ class vpdqHasher {
     AVFrame* frame = av_frame_alloc();
     assert(frame != nullptr);
     // TODO: check for frame good alloc
-    AVFrame* targetFrame = createFrame(width, height);
+    AVFrame* targetFrame = createFrame(video->width, video->height);
     assert(targetFrame != nullptr);
     // Send the packet to the decoder
-    int ret = avcodec_send_packet(codecContext, packet) < 0;
+    int ret = avcodec_send_packet(video->codecContext, packet) < 0;
     // std::cout << codecContext->frame_num << std::endl;
     if (ret < 0) {
       throw std::runtime_error("Cannot send packet to decoder");
@@ -109,7 +218,7 @@ class vpdqHasher {
 
     // Receive the decoded frame
     while (ret >= 0) {
-      ret = avcodec_receive_frame(codecContext, frame);
+      ret = avcodec_receive_frame(video->codecContext, frame);
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
         break;
       } else if (ret < 0) {
@@ -119,16 +228,16 @@ class vpdqHasher {
       if (frameNumber % frameMod == 0) {
         // Resize the frame and convert to RGB24
         sws_scale(
-            swsContext,
+            video->swsContext,
             frame->data,
             frame->linesize,
             0,
-            codecContext->height,
+            video->codecContext->height,
             targetFrame->data,
             targetFrame->linesize);
 
         std::unique_lock<std::mutex> lock(queue_mutex);
-        AVFrame* newTargetFrame = createFrame(width, height);
+        AVFrame* newTargetFrame = createFrame(video->width, video->height);
         av_frame_copy(newTargetFrame, targetFrame);
         FatFrame fatFrame = {newTargetFrame, frameNumber};
 
@@ -145,9 +254,6 @@ class vpdqHasher {
   }
 
   AVFrame* createFrame(int width, int height) {
-    // Pixel format for the image passed to PDQ
-    constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
-
     // Create a frame for resizing and converting the decoded frame to RGB24
     AVFrame* targetFrame = av_frame_alloc();
     if (targetFrame == nullptr) {
@@ -205,7 +311,7 @@ class vpdqHasher {
         pdqHash,
         frameNumber,
         quality,
-        static_cast<double>(frameNumber) / frameRate};
+        static_cast<double>(frameNumber) / video->frameRate};
     pdqHashes.push_back(feature);
     if (verbose) {
       std::cout << "PDQHash: " << pdqHash.format() << std::endl;
@@ -248,16 +354,6 @@ class vpdqHasher {
       thread.join();
     }
   }
-
-  ~vpdqHasher() {
-    if (codecContext != nullptr)
-      avcodec_free_context(&codecContext);
-    if (swsContext != nullptr)
-      sws_freeContext(swsContext);
-    if (formatContext != nullptr) {
-      avformat_close_input(&formatContext);
-    }
-  }
 };
 
 // Get pdq hashes for selected frames every secondsPerHash
@@ -268,7 +364,16 @@ bool hashVideoFile(
     const double secondsPerHash,
     const int downsampleWidth,
     const int downsampleHeight) {
-  vpdqHasher hasher;
+  auto video = std::make_unique<AVVideo>(inputVideoFileName);
+
+  // If downsampleWidth or downsampleHeight is 0,
+  // then use the video's original dimensions
+  if (downsampleWidth > 0) {
+    video->width = downsampleWidth;
+  }
+  if (downsampleHeight > 0) {
+    video->height = downsampleHeight;
+  }
 
   // These are lavu_log_constants from "libavutil/log.h"
   // It can be helpful for debugging to
@@ -284,125 +389,20 @@ bool hashVideoFile(
     av_log_set_level(AV_LOG_FATAL);
   }
 
-  // Open the input file
-  hasher.formatContext = nullptr;
-  if (avformat_open_input(
-          &hasher.formatContext,
-          inputVideoFileName.c_str(),
-          nullptr,
-          nullptr) != 0) {
-    std::cerr << "Cannot open the video" << std::endl;
-    return false;
-  }
-
-  // Retrieve stream information
-  if (avformat_find_stream_info(hasher.formatContext, nullptr) < 0) {
-    std::cerr << "Cannot find stream info" << std::endl;
-    return false;
-  }
-
-  // Find the first video stream
-  int videoStreamIndex = -1;
-  for (unsigned int i = 0; i < hasher.formatContext->nb_streams; ++i) {
-    if (hasher.formatContext->streams[i]->codecpar->codec_type ==
-        AVMEDIA_TYPE_VIDEO) {
-      videoStreamIndex = i;
-      break;
-    }
-  }
-
-  if (videoStreamIndex == -1) {
-    std::cerr << "No video stream found" << std::endl;
-    return false;
-  }
-
-  // Get the video codec parameters
-  AVCodecParameters* codecParameters =
-      hasher.formatContext->streams[videoStreamIndex]->codecpar;
-
-  // Get the width and height
-  // If downsampleWidth or downsampleHeight is 0,
-  // then use the video's original dimensions
-  hasher.width = downsampleWidth;
-  hasher.height = downsampleHeight;
-  if (hasher.width == 0) {
-    hasher.width = codecParameters->width;
-  }
-  if (hasher.height == 0) {
-    hasher.height = codecParameters->height;
-  }
-
-  if (hasher.width == 0 || hasher.height == 0) {
-    std::cerr << "Width or height equals 0" << std::endl;
-    return false;
-  }
-
-  // Find the video decoder
-  const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
-  if (!codec) {
-    std::cerr << "Codec decoder not found" << std::endl;
-    return false;
-  }
-
-  // Create the codec context
-  hasher.codecContext = avcodec_alloc_context3(codec);
-  if (avcodec_parameters_to_context(hasher.codecContext, codecParameters) < 0) {
-    std::cerr << "Cannot copy codec parameters to context" << std::endl;
-    return false;
-  }
-
-  // Determine the number of threads to use and multithreading type
-  // TODO: MOVE TO CONSTRUCTOR
-  hasher.codecContext->thread_count = 0;
-
-  if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
-    hasher.codecContext->thread_type = FF_THREAD_FRAME;
-  } else if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
-    hasher.codecContext->thread_type = FF_THREAD_SLICE;
-  } else {
-    hasher.codecContext->thread_count = 1;
-  }
-
-  // Open the codec context
-  if (avcodec_open2(hasher.codecContext, codec, nullptr) < 0) {
-    std::cerr << "Cannot open codec context" << std::endl;
-    return false;
-  }
-
-  // Get the framerate
-  AVRational avframeRate =
-      hasher.formatContext->streams[videoStreamIndex]->avg_frame_rate;
-
-  // if avg_frame_rate is 0, fall back to r_frame_rate which is the
-  // lowest framerate with which all timestamps can be represented accurately
-  if (avframeRate.num == 0 || avframeRate.den == 0) {
-    avframeRate = hasher.formatContext->streams[videoStreamIndex]->r_frame_rate;
-  }
-
-  hasher.frameRate = static_cast<double>(avframeRate.num) /
-      static_cast<double>(avframeRate.den);
-  if (hasher.frameRate == 0) {
-    std::cerr << "Framerate is zero" << std::endl;
-    return false;
-  }
-
-  // Pixel format for the image passed to PDQ
-  constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
-
   // Create the image rescaler context
-  hasher.swsContext = sws_getContext(
-      hasher.codecContext->width,
-      hasher.codecContext->height,
-      hasher.codecContext->pix_fmt,
-      hasher.width,
-      hasher.height,
+  video->swsContext = sws_getContext(
+      video->codecContext->width,
+      video->codecContext->height,
+      video->codecContext->pix_fmt,
+      video->width,
+      video->height,
       pixelFormat,
       SWS_LANCZOS,
       nullptr,
       nullptr,
       nullptr);
 
-  if (hasher.swsContext == nullptr) {
+  if (video->swsContext == nullptr) {
     std::cerr << "Cannot create sws context" << std::endl;
     return false;
   }
@@ -413,7 +413,9 @@ bool hashVideoFile(
     return false;
   }
 
-  hasher.frameMod = secondsPerHash * hasher.frameRate;
+  vpdqHasher hasher(std::move(video));
+
+  hasher.frameMod = secondsPerHash * hasher.video->frameRate;
   if (hasher.frameMod == 0) {
     // Avoid truncate to zero on corner-case where
     // secondsPerHash = 1 and frameRate < 1.
@@ -424,9 +426,9 @@ bool hashVideoFile(
   int ret = 0;
   int frameNumber = 0;
   bool failed = false;
-  while (av_read_frame(hasher.formatContext, packet) == 0) {
+  while (av_read_frame(hasher.video->formatContext, packet) == 0) {
     // Check if the packet belongs to the video stream
-    if (packet->stream_index == videoStreamIndex) {
+    if (packet->stream_index == hasher.video->videoStreamIndex) {
       try {
         ret = hasher.processFrame(packet, frameNumber);
         frameNumber = ret;
@@ -467,12 +469,15 @@ bool hashVideoFile(
     return false;
   }
 
+  // Sort out of order frames by frameNumber
   std::sort(
       hasher.pdqHashes.begin(),
       hasher.pdqHashes.end(),
       [](const vpdqFeature& a, const vpdqFeature& b) {
         return a.frameNumber < b.frameNumber;
       });
+
+  // Copy the hashes to the input vector
   pdqHashes.assign(hasher.pdqHashes.begin(), hasher.pdqHashes.end());
   if (static_cast<size_t>(frameNumber) != pdqHashes.size()) {
     throw std::runtime_error(
