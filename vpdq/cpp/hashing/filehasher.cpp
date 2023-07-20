@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <string>
 
 #include <vpdq/cpp/hashing/bufferhasher.h>
@@ -42,17 +41,24 @@ extern "C" {
  * @return void
  */
 static void saveFrameToFile(AVFrame* frame, const char* filename) {
-  FILE* output = fopen(filename, "wb");
-  for (int y = 0; y < frame->height; y++) {
-    fwrite(
-        frame->data[0] + y * frame->linesize[0], 1, frame->width * 3, output);
+  if (!frame) {
+    throw std::invalid_argument("Cannot save frame to file. Frame is null.");
   }
-  printf(
-      "Saved frame to file %s with dimensions %dx%d\n",
-      filename,
-      frame->width,
-      frame->height);
-  fclose(output);
+
+  std::ofstream outfile(filename, std::ios::out | std::ios::binary);
+  if (!outfile) {
+    throw std::runtime_error(
+        "Cannot save frame to file " + std::string(filename));
+  }
+
+  for (int y = 0; y < frame->height; y++) {
+    outfile.write(
+        reinterpret_cast<const char*>(frame->data[0] + y * frame->linesize[0]),
+        frame->width * 3);
+  }
+  std::cout << "Saved frame to file " << filename << " with dimensions "
+            << frame->width << "x" << frame->height << std::endl;
+  outfile.close();
 }
 
 // Decode and add vpdqFeature to the hashes vector
@@ -108,8 +114,8 @@ static int processFrame(
         return -1;
       }
 
-      //  Write frame to file here for debugging:
-      //  saveFrameToFile(targetFrame, "frame.rgb");
+      // Write frame to file here for debugging:
+      // saveFrameToFile(targetFrame, "frame.rgb");
 
       // Append vpdq feature to pdqHashes vector
       pdqHashes.push_back(
