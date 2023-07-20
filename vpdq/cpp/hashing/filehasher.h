@@ -28,10 +28,10 @@ namespace hashing {
 bool hashVideoFile(
     const std::string& inputVideoFileName,
     std::vector<hashing::vpdqFeature>& pdqHashes,
-    bool verbose,
-    const double secondsPerHash,
-    const int downsampleWidth,
-    const int downsampleHeight);
+    bool verbose = false,
+    const double secondsPerHash = 1,
+    const int downsampleWidth = 0,
+    const int downsampleHeight = 0);
 
 } // namespace hashing
 } // namespace vpdq
