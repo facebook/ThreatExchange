@@ -251,6 +251,10 @@ bool hashVideoFile(
     const double secondsPerHash,
     const int downsampleWidth,
     const int downsampleHeight) {
+  // Reset global variables
+  // THIS IS TEMPORARY. DO NOT USE GLOBAL VARIABLES.
+  pdqHashes1.clear();
+
   // These are lavu_log_constants from "libavutil/log.h"
   // It can be helpful for debugging to
   // set this to AV_LOG_DEBUG or AV_LOG_VERBOSE
@@ -448,18 +452,21 @@ bool hashVideoFile(
     av_packet_unref(packet);
   }
 
-  std::vector<std::thread> consumer_threads;
-  for (int i = 0; i < num_consumers; ++i) {
-    consumer_threads.push_back(std::thread(consumer));
-  }
+  if (!failed) {
+    // Hash the frames
+    std::vector<std::thread> consumer_threads;
+    for (int i = 0; i < num_consumers; ++i) {
+      consumer_threads.push_back(std::thread(consumer));
+    }
 
-  std::unique_lock<std::mutex> lock(queue_mutex);
-  std::cout << "Finished decoding frames" << std::endl;
-  done = true;
-  lock.unlock();
-  queue_condition.notify_all();
-  for (auto& thread : consumer_threads) {
-    thread.join();
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    // std::cout << "Finished decoding frames" << std::endl;
+    done = true;
+    lock.unlock();
+    queue_condition.notify_all();
+    for (auto& thread : consumer_threads) {
+      thread.join();
+    }
   }
 
   av_packet_free(&packet);
@@ -470,7 +477,6 @@ bool hashVideoFile(
   if (failed) {
     return false;
   }
-  std::cout << "Hashed " << frameNumber << std::endl;
 
   std::sort(
       pdqHashes1.begin(),
@@ -479,6 +485,13 @@ bool hashVideoFile(
         return a.frameNumber < b.frameNumber;
       });
   pdqHashes.assign(pdqHashes1.begin(), pdqHashes1.end());
+  std::cout << "Hashed " << pdqHashes1.size() << " frameNumber " << frameNumber
+            << std::endl;
+  if (static_cast<size_t>(frameNumber) != pdqHashes.size()) {
+    throw std::runtime_error(
+        "pdqhashes is different than frameNumber: " +
+        std::to_string(frameNumber) + " " + std::to_string(pdqHashes1.size()));
+  }
   return true;
 }
 
