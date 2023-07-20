@@ -167,13 +167,13 @@ static int processFrame(
           codecContext->height,
           targetFrame->data,
           targetFrame->linesize);
+
       std::unique_lock<std::mutex> lock(queue_mutex);
       FatFrame fatFrame = {targetFrame, frameNumber};
 
       frame_queue.push(fatFrame);
       lock.unlock();
       queue_condition.notify_one();
-      frameNumber++;
     }
     frameNumber += 1;
   }
@@ -182,6 +182,8 @@ static int processFrame(
 }
 
 void hasher(bool verbose, AVFrame* frame, int frameNumber) {
+  assert(frame != nullptr);
+  assert(frame->height != 0 && frame->width != 0);
   int quality;
   pdq::hashing::Hash256 pdqHash;
 
@@ -206,7 +208,7 @@ void hasher(bool verbose, AVFrame* frame, int frameNumber) {
   // saveFrameToFile(frame, "frame.rgb");
 
   // Append vpdq feature to pdqHashes vector
-  std::unique_lock<std::mutex> lock(pdqHashes_mutex);
+  std::lock_guard<std::mutex> lock(pdqHashes_mutex);
   pdqHashes1.push_back(
       {pdqHash,
        frameNumber,
@@ -215,7 +217,6 @@ void hasher(bool verbose, AVFrame* frame, int frameNumber) {
   if (verbose) {
     std::cout << "PDQHash: " << pdqHash.format() << std::endl;
   }
-  lock.unlock();
 }
 
 void consumer() {
@@ -230,10 +231,6 @@ void consumer() {
     AVFrame* frame = fatFrame.frame;
     int frameNumber = fatFrame.frameNumber;
     hasher(false, frame, frameNumber);
-    // processFrame(packetInfo.packet, packetInfo.verbose,
-    // packetInfo.frameNumber);
-    // av_packet_unref(packetInfo.packet);
-    // av_packet_free(&(packetInfo.packet));
     av_freep(frame->data);
     av_frame_free(&frame);
   }
@@ -414,42 +411,51 @@ bool hashVideoFile(
   }
 
   // Read frames in a loop and process them
+  int ret;
   int frameNumber = 0;
   bool failed = false;
   while (av_read_frame(formatContext, base_packet) == 0) {
     AVPacket* packet = av_packet_clone(base_packet);
-    int ret;
     // Check if the packet belongs to the video stream
     if (packet->stream_index == videoStreamIndex) {
-      ret = processFrame(packet, frameNumber);
+      try {
+        ret = processFrame(packet, frameNumber);
+      } catch (const std::runtime_error& e) {
+        std::cerr << "Processing frame failed: " << e.what() << std::endl;
+        failed = true;
+        break;
+      }
     }
     frameNumber = ret;
+    av_packet_unref(packet);
+  }
+
+  if (!failed) {
+    AVPacket* packet = av_packet_clone(base_packet);
+    // Flush decode buffer
+    // See for more information:
+    //
+    // https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
+
+    try {
+      ret = processFrame(packet, frameNumber);
+    } catch (const std::runtime_error& e) {
+      std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
+      failed = true;
+    }
+
     av_packet_unref(base_packet);
   }
+
   std::unique_lock<std::mutex> lock(queue_mutex);
+  std::cout << "Finished decoding frames" << std::endl;
   done = true;
   lock.unlock();
   queue_condition.notify_all();
   for (auto& thread : consumer_threads) {
     thread.join();
   }
-  /*
-    if (!failed) {
-      // Flush decode buffer
-      // See for more information:
-      //
-    https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
 
-      try {
-        ret = processFrame(packet, verbose, frameNumber);
-      } catch (const std::runtime_error& e) {
-        std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
-        failed = true;
-      }
-
-      av_packet_unref(packet);
-    }
-  */
   av_packet_free(&base_packet);
   sws_freeContext(swsContext);
   avcodec_free_context(&codecContext);
