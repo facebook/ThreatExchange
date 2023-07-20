@@ -72,6 +72,30 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
   outfile.close();
 }
 
+static AVFrame* createFrame(int width, int height) {
+  // Create a frame for resizing and converting the decoded frame to RGB24
+  AVFrame* targetFrame = av_frame_alloc();
+  if (targetFrame == nullptr) {
+    throw std::runtime_error("Cannot allocate target frame");
+  }
+
+  targetFrame->format = pixelFormat;
+  targetFrame->width = width;
+  targetFrame->height = height;
+
+  if (av_image_alloc(
+          targetFrame->data,
+          targetFrame->linesize,
+          width,
+          height,
+          pixelFormat,
+          1) < 0) {
+    av_frame_free(&targetFrame);
+    throw std::runtime_error("Cannot fill target frame image");
+  }
+  return targetFrame;
+}
+
 class AVVideo {
  public:
   AVCodecContext* codecContext = nullptr;
@@ -187,17 +211,23 @@ class vpdqHasher {
   };
 
   std::condition_variable queue_condition;
+
   std::mutex queue_mutex;
   std::queue<FatFrame> frame_queue;
+
   std::mutex pdqHashes_mutex;
   std::vector<hashing::vpdqFeature> pdqHashes;
+
   std::mutex done_mutex;
   bool done_hashing = false;
+
+  std::vector<std::thread> consumer_threads;
   int num_consumers = std::thread::hardware_concurrency();
 
+  std::unique_ptr<AVVideo> video;
   int frameMod;
 
-  std::unique_ptr<AVVideo> video;
+  bool verbose = false;
 
   vpdqHasher(std::unique_ptr<AVVideo> video) : video(std::move(video)) {}
 
@@ -207,8 +237,13 @@ class vpdqHasher {
     AVFrame* frame = av_frame_alloc();
     assert(frame != nullptr);
     // TODO: check for frame good alloc
-    AVFrame* targetFrame = createFrame(video->width, video->height);
-    assert(targetFrame != nullptr);
+    AVFrame* targetFrame;
+    try {
+      targetFrame = createFrame(video->width, video->height);
+    } catch (const std::runtime_error& e) {
+      std::cerr << e.what() << std::endl;
+      throw;
+    }
     // Send the packet to the decoder
     int ret = avcodec_send_packet(video->codecContext, packet) < 0;
     // std::cout << codecContext->frame_num << std::endl;
@@ -253,33 +288,7 @@ class vpdqHasher {
     return frameNumber;
   }
 
-  AVFrame* createFrame(int width, int height) {
-    // Create a frame for resizing and converting the decoded frame to RGB24
-    AVFrame* targetFrame = av_frame_alloc();
-    if (targetFrame == nullptr) {
-      std::cerr << "Cannot allocate target frame" << std::endl;
-      return nullptr;
-    }
-
-    targetFrame->format = pixelFormat;
-    targetFrame->width = width;
-    targetFrame->height = height;
-
-    if (av_image_alloc(
-            targetFrame->data,
-            targetFrame->linesize,
-            width,
-            height,
-            pixelFormat,
-            1) < 0) {
-      std::cerr << "Cannot fill target frame image" << std::endl;
-      av_frame_free(&targetFrame);
-      return nullptr;
-    }
-    return targetFrame;
-  }
-
-  void hasher(bool verbose, AVFrame* frame, int frameNumber) {
+  void hasher(AVFrame* frame, int frameNumber) {
     assert(frame != nullptr);
     assert(frame->height != 0 && frame->width != 0);
     int quality;
@@ -330,7 +339,7 @@ class vpdqHasher {
       lock.unlock();
       AVFrame* frame = fatFrame.frame;
       int frameNumber = fatFrame.frameNumber;
-      hasher(false, frame, frameNumber);
+      hasher(frame, frameNumber);
       av_freep(frame->data);
       if (frame != nullptr)
         av_frame_free(&frame);
@@ -339,7 +348,6 @@ class vpdqHasher {
 
   void start_hashing() {
     // Hash the frames
-    std::vector<std::thread> consumer_threads;
     for (int i = 0; i < num_consumers; ++i) {
       consumer_threads.push_back(
           std::thread(std::bind(&vpdqHasher::consumer, this)));
@@ -414,6 +422,7 @@ bool hashVideoFile(
   }
 
   vpdqHasher hasher(std::move(video));
+  hasher.verbose = verbose;
 
   hasher.frameMod = secondsPerHash * hasher.video->frameRate;
   if (hasher.frameMod == 0) {
