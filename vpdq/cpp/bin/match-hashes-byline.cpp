@@ -2,7 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <cstdlib>
 #include <cstring>
+
 #include <pdq/cpp/io/hashio.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
@@ -43,15 +45,15 @@ int main(int argc, char** argv) {
 
   vector<facebook::vpdq::hashing::vpdqFeature> video1Hashes;
   vector<facebook::vpdq::hashing::vpdqFeature> video2Hashes;
-  bool ret = facebook::vpdq::io::loadHashesFromFileOrDie(
-      argv[argi], video1Hashes, argv[0]);
+  bool ret =
+      facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi], video1Hashes);
   if (!ret) {
-    return -1;
+    return EXIT_FAILURE;
   }
-  ret = facebook::vpdq::io::loadHashesFromFileOrDie(
-      argv[argi + 1], video2Hashes, argv[0]);
+  ret =
+      facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi + 1], video2Hashes);
   if (!ret) {
-    return -1;
+    return EXIT_FAILURE;
   }
 
   distanceTolerance = atoi(argv[argi + 2]);
@@ -63,7 +65,7 @@ int main(int argc, char** argv) {
         "VideoHashes1 size %lu doesn't match with VideoHashes2 size %lu\n",
         video1Hashes.size(),
         video2Hashes.size());
-    return 1;
+    return EXIT_FAILURE;
   }
   size_t count = 0;
   size_t total_hashed_compared = 0;
@@ -104,5 +106,5 @@ int main(int argc, char** argv) {
   }
   printf(
       "%3f Percentage  matches\n", (float)count * 100 / total_hashed_compared);
-  return 0;
+  return EXIT_SUCCESS;
 }

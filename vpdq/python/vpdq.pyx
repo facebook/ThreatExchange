@@ -38,39 +38,12 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
     bool hashVideoFile(
         string input_video_filename,
         vector[vpdqFeature]& pdqHashes,
-        string ffmpeg_path,
         bool verbose,
         double seconds_per_hash,
         int width,
         int height,
-        double frames_per_sec,
-        const char* argv0
     )
 
-cdef extern from "vpdq/cpp/io/vpdqio.h" namespace "facebook::vpdq::io":
-    bool readVideoStreamInfo(
-        const string& inputVideoFileName,
-        int& width,
-        int& height,
-        double& framesPerSec,
-        const char* programName
-    )
-
-def read_video_stream_info(
-    inputVideoFileName: str,
-    programName: str
-):
-    cdef int width
-    cdef int height
-    cdef double framesPerSec
-    rt = readVideoStreamInfo(
-        inputVideoFileName.encode('utf-8'),
-        width,
-        height,
-        framesPerSec,
-        programName.encode("utf-8")
-    )
-    return width, height, framesPerSec
 
 @dataclass
 class VpdqFeature:
@@ -125,12 +98,12 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256") -> int:
 
 def computeHash(
     input_video_filename: t.Union[str, Path],
-    ffmpeg_path: str = "ffmpeg",
+    ffmpeg_path: t.Union[str, None] = None,
     seconds_per_hash: double = 1,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
-):
+) -> t.List[VpdqFeature]:
     """Compute vpdq hash
 
     Args:
@@ -154,27 +127,14 @@ def computeHash(
         raise ValueError("Downsample_height must be non-negative")
     cdef vector[vpdqFeature] vpdq_hash;
     
-    width, height, frames_per_sec = read_video_stream_info(
-        str_path,
-        "vpdqPY",
-    )
-
-    if downsample_width > 0:
-        width = downsample_width
-    
-    if downsample_height > 0:
-        height = downsample_height
 
     rt = hashVideoFile(
         str_path.encode("utf-8"),
         vpdq_hash,
-        ffmpeg_path.encode("utf-8"),
         verbose,
         seconds_per_hash,
-        width,
-        height,
-        frames_per_sec,
-        "vpdqPY",
+        downsample_width,
+        downsample_height,
     )
 
     if not rt:

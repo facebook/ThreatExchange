@@ -2,14 +2,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
-
-using namespace std;
 
 static void usage(char* argv0, int rc) {
   FILE* fp = (rc == 0) ? stdout : stderr;
@@ -21,7 +20,6 @@ static void usage(char* argv0, int rc) {
       fp,
       "-r|--seconds-per-hash ...:Must be a non-negative float. If it is 0, will generate every frame's hash\n");
   fprintf(fp, "Options:\n");
-  fprintf(fp, "-f|--ffmpeg-path: Specific path to ffmpeg you want to use\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
   fprintf(
       fp,
@@ -73,15 +71,14 @@ std::string stripExtension(const std::string& filename) {
 int main(int argc, char** argv) {
   int argi = 1;
   bool verbose = false;
-  string ffmpegPath = "ffmpeg";
-  string inputVideoFileName = "";
-  string outputHashFileName = "";
-  string outputDirectory = "";
+  std::string inputVideoFileName = "";
+  std::string outputHashFileName = "";
+  std::string outputDirectory = "";
   double secondsPerHash = 0;
   int downsampleFrameDimension = 0;
 
   while ((argi < argc) && argv[argi][0] == '-') {
-    string flag(argv[argi++]);
+    std::string flag(argv[argi++]);
     if (flag == "-v" || flag == "--verbose") {
       verbose = true;
       continue;
@@ -90,42 +87,42 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      inputVideoFileName = string(argv[argi++]);
+      inputVideoFileName = std::string(argv[argi++]);
       continue;
     }
     if (flag == "-o" || flag == "--output-hash-file-name") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      outputHashFileName = string(argv[argi++]);
+      outputHashFileName = std::string(argv[argi++]);
       continue;
     }
     if (flag == "-f" || flag == "--ffmpeg-path") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      ffmpegPath = string(argv[argi++]);
+      // does nothing anymore
       continue;
     }
     if (flag == "-r" || flag == "--seconds-per-hash") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      secondsPerHash = atof(argv[argi++]);
+      secondsPerHash = std::atof(argv[argi++]);
       continue;
     }
     if (flag == "-d" || flag == "--output-directory") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      outputDirectory = string(argv[argi++]);
+      outputDirectory = std::string(argv[argi++]);
       continue;
     }
     if (flag == "-s" || flag == "--downsample-frame-dimension") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      downsampleFrameDimension = atoi(argv[argi++]);
+      downsampleFrameDimension = std::atoi(argv[argi++]);
       continue;
     }
     usage(argv[0], 1);
@@ -161,47 +158,24 @@ int main(int argc, char** argv) {
     outputHashFileName = outputDirectory + "/" + b + ".txt";
   }
 
-  // Hash the video and store the hashes and correspoding info
-  double framesPerSec = 0;
-  int videoWidth = 0;
-  int videoHeight = 0;
-  bool rc = facebook::vpdq::io::readVideoStreamInfo(
-      inputVideoFileName, videoWidth, videoHeight, framesPerSec, argv[0]);
-  if (!rc) {
-    fprintf(
-        stderr,
-        "%s: failed to read video stream information\"%s\".\n",
-        argv[0],
-        inputVideoFileName.c_str());
-    return 1;
-  }
+  // Hash the video and store the features in pdqHashes
   std::vector<facebook::vpdq::hashing::vpdqFeature> pdqHashes;
-  int width = downsampleFrameDimension;
-  int height = downsampleFrameDimension;
-  if (downsampleFrameDimension == 0) {
-    width = videoWidth;
-    height = videoHeight;
-  }
 
-  rc = facebook::vpdq::hashing::hashVideoFile(
+  bool rc = facebook::vpdq::hashing::hashVideoFile(
       inputVideoFileName,
       pdqHashes,
-      ffmpegPath,
       verbose,
       secondsPerHash,
-      width,
-      height,
-      framesPerSec,
-      argv[0]);
+      downsampleFrameDimension,
+      downsampleFrameDimension);
   if (!rc) {
     fprintf(
         stderr,
         "%s: failed to hash \"%s\".\n",
         argv[0],
         inputVideoFileName.c_str());
-    return 1;
+    return EXIT_FAILURE;
   }
-  facebook::vpdq::io::outputVPDQFeatureToFile(
-      outputHashFileName, pdqHashes, argv[0]);
-  return 0;
+  facebook::vpdq::io::outputVPDQFeatureToFile(outputHashFileName, pdqHashes);
+  return EXIT_SUCCESS;
 }

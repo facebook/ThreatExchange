@@ -7,7 +7,9 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
+#include <memory>
+#include <string>
+
 #include <vpdq/cpp/hashing/bufferhasher.h>
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
@@ -21,6 +23,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/frame.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/log.h>
 #include <libavutil/mem.h>
 #include <libswscale/swscale.h>
 }
@@ -39,38 +42,44 @@ extern "C" {
  * @return void
  */
 static void saveFrameToFile(AVFrame* frame, const char* filename) {
-  FILE* output = fopen(filename, "wb");
-  for (int y = 0; y < frame->height; y++) {
-    fwrite(
-        frame->data[0] + y * frame->linesize[0], 1, frame->width * 3, output);
+  if (!frame) {
+    throw std::invalid_argument("Cannot save frame to file. Frame is null.");
   }
-  printf(
-      "Saved frame to file %s with dimensions %dx%d\n",
-      filename,
-      frame->width,
-      frame->height);
-  fclose(output);
+
+  std::ofstream outfile(filename, std::ios::out | std::ios::binary);
+  if (!outfile) {
+    throw std::runtime_error(
+        "Cannot save frame to file " + std::string(filename));
+  }
+
+  for (int y = 0; y < frame->height; y++) {
+    outfile.write(
+        reinterpret_cast<const char*>(frame->data[0] + y * frame->linesize[0]),
+        frame->width * 3);
+  }
+  std::cout << "Saved frame to file " << filename << " with dimensions "
+            << frame->width << "x" << frame->height << std::endl;
+  outfile.close();
 }
 
 // Decode and add vpdqFeature to the hashes vector
-// Returns the number of frames processed or -1 if failure
+// Returns the number of frames processed
 static int processFrame(
     AVPacket* packet,
     AVFrame* frame,
     AVFrame* targetFrame,
     SwsContext* swsContext,
     AVCodecContext* codecContext,
-    unique_ptr<vpdq::hashing::AbstractFrameBufferHasher>& phasher,
+    std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher>& phasher,
     vector<hashing::vpdqFeature>& pdqHashes,
-    double framesPerSec,
+    double frameRate,
     bool verbose,
     int frameNumber,
     int frameMod) {
   // Send the packet to the decoder
   int ret = avcodec_send_packet(codecContext, packet) < 0;
   if (ret < 0) {
-    fprintf(stderr, "Error: Cannot send packet to decoder\n");
-    return -1;
+    throw std::runtime_error("Cannot send packet to decoder");
   }
 
   // Receive the decoded frame
@@ -79,8 +88,7 @@ static int processFrame(
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
       break;
     } else if (ret < 0) {
-      fprintf(stderr, "Error: Cannot receive frame from decoder\n");
-      return -1;
+      throw std::runtime_error("Cannot receive frame from decoder");
     }
 
     if (frameNumber % frameMod == 0) {
@@ -96,22 +104,26 @@ static int processFrame(
       // Call pdqHasher to hash the frame
       int quality;
       pdq::hashing::Hash256 pdqHash;
-      if (!phasher->hashFrame(targetFrame->data[0], pdqHash, quality)) {
-        fprintf(
-            stderr,
-            "%d: failed to hash frame buffer. Frame width or height smaller than the minimum hashable dimension.\n",
-            frameNumber);
-        return -1;
+      bool ret = phasher->hashFrame(targetFrame->data[0], pdqHash, quality);
+      if (!ret) {
+        throw std::runtime_error(
+            "Failed to hash frame buffer." + std::string("Frame: ") +
+            std::to_string(frameNumber) +
+            std::string(
+                " Frame width or height smaller than the minimum hashable dimension"));
       }
 
-      //  Write frame to file here for debugging:
-      //  saveFrameToFile(targetFrame, "frame.rgb");
+      // Write frame to file here for debugging:
+      // saveFrameToFile(targetFrame, "frame.rgb");
 
       // Append vpdq feature to pdqHashes vector
       pdqHashes.push_back(
-          {pdqHash, frameNumber, quality, (double)frameNumber / framesPerSec});
+          {pdqHash,
+           frameNumber,
+           quality,
+           static_cast<double>(frameNumber) / frameRate});
       if (verbose) {
-        printf("PDQHash: %s\n", pdqHash.format().c_str());
+        std::cout << "PDQHash: " << pdqHash.format() << std::endl;
       }
     }
     frameNumber += 1;
@@ -121,33 +133,37 @@ static int processFrame(
 
 // Get pdq hashes for selected frames every secondsPerHash
 bool hashVideoFile(
-    const string& inputVideoFileName,
-    vector<hashing::vpdqFeature>& pdqHashes,
-    const string& ffmpegPath,
+    const std::string& inputVideoFileName,
+    std::vector<hashing::vpdqFeature>& pdqHashes,
     bool verbose,
     const double secondsPerHash,
-    const int width,
-    const int height,
-    const double framesPerSec,
-    const char* argv0) {
-  std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
-      vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(height, width);
-  if (phasher == nullptr) {
-    fprintf(stderr, "Error: Phasher is null\n");
-    return false;
+    const int downsampleWidth,
+    const int downsampleHeight) {
+  // These are lavu_log_constants from "libavutil/log.h"
+  // It can be helpful for debugging to
+  // set this to AV_LOG_DEBUG or AV_LOG_VERBOSE
+  //
+  // Default is AV_LOG_INFO, but that sometimes prints ugly
+  // random messages like "[libdav1d @ 0x5576493b62c0] libdav1d 1.2.1"
+  if (verbose) {
+    // "Something somehow does not look correct."
+    av_log_set_level(AV_LOG_WARNING);
+  } else {
+    // "Something went wrong and recovery is not possible."
+    av_log_set_level(AV_LOG_FATAL);
   }
 
   // Open the input file
   AVFormatContext* formatContext = nullptr;
   if (avformat_open_input(
           &formatContext, inputVideoFileName.c_str(), nullptr, nullptr) != 0) {
-    fprintf(stderr, "Error: Cannot open the video\n");
+    std::cerr << "Cannot open the video" << std::endl;
     return false;
   }
 
   // Retrieve stream information
   if (avformat_find_stream_info(formatContext, nullptr) < 0) {
-    fprintf(stderr, "Error: Cannot find stream info\n");
+    std::cerr << "Cannot find stream info" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -162,7 +178,7 @@ bool hashVideoFile(
   }
 
   if (videoStreamIndex == -1) {
-    fprintf(stderr, "Error: No video stream found\n");
+    std::cerr << "No video stream found" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -171,10 +187,36 @@ bool hashVideoFile(
   AVCodecParameters* codecParameters =
       formatContext->streams[videoStreamIndex]->codecpar;
 
+  // Get the width and height
+  // If downsampleWidth or downsampleHeight is 0,
+  // then use the video's original dimensions
+  int width = downsampleWidth;
+  int height = downsampleHeight;
+  if (width == 0) {
+    width = codecParameters->width;
+  }
+  if (height == 0) {
+    height = codecParameters->height;
+  }
+
+  if (width == 0 || height == 0) {
+    std::cerr << "Width or height equals 0" << std::endl;
+    avformat_close_input(&formatContext);
+    return false;
+  }
+
+  std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
+      vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(height, width);
+  if (phasher == nullptr) {
+    std::cerr << "phasher allocation failed" << std::endl;
+    avformat_close_input(&formatContext);
+    return false;
+  }
+
   // Find the video decoder
   const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
   if (!codec) {
-    fprintf(stderr, "Error: Codec decoder not found\n");
+    std::cerr << "Codec decoder not found" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -182,7 +224,7 @@ bool hashVideoFile(
   // Create the codec context
   AVCodecContext* codecContext = avcodec_alloc_context3(codec);
   if (avcodec_parameters_to_context(codecContext, codecParameters) < 0) {
-    fprintf(stderr, "Error: Failed to copy codec parameters to context\n");
+    std::cerr << "Cannot copy codec parameters to context" << std::endl;
     avformat_close_input(&formatContext);
     return false;
   }
@@ -200,7 +242,26 @@ bool hashVideoFile(
 
   // Open the codec context
   if (avcodec_open2(codecContext, codec, nullptr) < 0) {
-    fprintf(stderr, "Error: Failed to open codec\n");
+    std::cerr << "Cannot open codec context" << std::endl;
+    avcodec_free_context(&codecContext);
+    avformat_close_input(&formatContext);
+    return false;
+  }
+
+  // Get the framerate
+  AVRational avframeRate =
+      formatContext->streams[videoStreamIndex]->avg_frame_rate;
+
+  // if avg_frame_rate is 0, fall back to r_frame_rate which is the
+  // lowest framerate with which all timestamps can be represented accurately
+  if (avframeRate.num == 0 || avframeRate.den == 0) {
+    avframeRate = formatContext->streams[videoStreamIndex]->r_frame_rate;
+  }
+
+  double frameRate = static_cast<double>(avframeRate.num) /
+      static_cast<double>(avframeRate.den);
+  if (frameRate == 0) {
+    std::cerr << "Framerate is zero" << std::endl;
     avcodec_free_context(&codecContext);
     avformat_close_input(&formatContext);
     return false;
@@ -237,7 +298,7 @@ bool hashVideoFile(
           height,
           pixelFormat,
           1) < 0) {
-    fprintf(stderr, "Error: Failed to allocate target frame\n");
+    std::cerr << "Cannot allocate target frame" << std::endl;
     av_frame_free(&targetFrame);
     av_frame_free(&frame);
     avcodec_free_context(&codecContext);
@@ -258,7 +319,7 @@ bool hashVideoFile(
       nullptr);
 
   if (swsContext == nullptr) {
-    fprintf(stderr, "Error: Failed to create sws context\n");
+    std::cerr << "Cannot create sws context" << std::endl;
     av_freep(targetFrame->data);
     av_frame_free(&targetFrame);
     av_frame_free(&frame);
@@ -269,7 +330,7 @@ bool hashVideoFile(
 
   AVPacket* packet = av_packet_alloc();
   if (packet == nullptr) {
-    fprintf(stderr, "Error: Failed to allocate packet\n");
+    std::cerr << "Cannot allocate packet" << std::endl;
     sws_freeContext(swsContext);
     av_freep(targetFrame->data);
     av_frame_free(&targetFrame);
@@ -279,11 +340,10 @@ bool hashVideoFile(
     return false;
   }
 
-  int frameMod = secondsPerHash * framesPerSec;
+  int frameMod = secondsPerHash * frameRate;
   if (frameMod == 0) {
-    // Avoid truncate to zero on corner-case with secondsPerHash = 1
-    // and framesPerSec < 1.
-
+    // Avoid truncate to zero on corner-case where
+    // secondsPerHash = 1 and frameRate < 1.
     frameMod = 1;
   }
 
@@ -294,21 +354,21 @@ bool hashVideoFile(
   while (av_read_frame(formatContext, packet) == 0) {
     // Check if the packet belongs to the video stream
     if (packet->stream_index == videoStreamIndex) {
-      ret = processFrame(
-          packet,
-          frame,
-          targetFrame,
-          swsContext,
-          codecContext,
-          phasher,
-          pdqHashes,
-          framesPerSec,
-          verbose,
-          frameNumber,
-          frameMod);
-
-      if (ret == -1) {
-        fprintf(stderr, "Error: Cannot process frame\n");
+      try {
+        ret = processFrame(
+            packet,
+            frame,
+            targetFrame,
+            swsContext,
+            codecContext,
+            phasher,
+            pdqHashes,
+            frameRate,
+            verbose,
+            frameNumber,
+            frameMod);
+      } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
         failed = true;
         av_packet_unref(packet);
         break;
@@ -325,22 +385,22 @@ bool hashVideoFile(
     // See for more information:
     // https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
 
-    ret = processFrame(
-        packet,
-        frame,
-        targetFrame,
-        swsContext,
-        codecContext,
-        phasher,
-        pdqHashes,
-        framesPerSec,
-        verbose,
-        frameNumber,
-        frameMod);
-
-    if (ret == -1) {
+    try {
+      ret = processFrame(
+          packet,
+          frame,
+          targetFrame,
+          swsContext,
+          codecContext,
+          phasher,
+          pdqHashes,
+          frameRate,
+          verbose,
+          frameNumber,
+          frameMod);
+    } catch (const std::runtime_error& e) {
+      std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
       failed = true;
-      fprintf(stderr, "Error: Cannot process frame\n");
     }
 
     av_packet_unref(packet);

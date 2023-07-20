@@ -2,7 +2,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <stdio.h>
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -10,6 +9,7 @@ extern "C" {
 #include <libavutil/mem.h>
 }
 
+#include <cstdio>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -22,7 +22,6 @@ extern "C" {
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
 
-using namespace std;
 using namespace facebook::pdq::hashing;
 using namespace facebook::pdq::io;
 
@@ -35,166 +34,67 @@ const int MILLISEC_IN_SEC = 1000000;
 
 bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
-    vector<hashing::vpdqFeature>& pdqHashes,
-    const char* programName) {
+    std::vector<hashing::vpdqFeature>& pdqHashes) {
   std::ifstream inputfp(inputHashFileName);
-  string str;
-  if (!inputfp.is_open()) {
-    fprintf(
-        stderr,
-        "%s: could not open \"%s\".\n",
-        programName,
-        inputHashFileName.c_str());
+  if (!inputfp) {
+    std::cerr << "Could not open input file " << inputHashFileName << std::endl;
     return false;
   }
 
-  while (getline(inputfp, str)) {
-    vector<string> frameValues;
-    stringstream ss(str);
+  std::string str;
+  while (std::getline(inputfp, str)) {
+    std::vector<std::string> frameValues;
+    std::stringstream ss(str);
 
     while (ss.good()) {
-      string substr;
-      getline(ss, substr, ',');
+      std::string substr;
+      std::getline(ss, substr, ',');
       frameValues.push_back(substr);
     }
 
     if (frameValues.size() != 4) {
-      fprintf(
-          stderr,
-          "%s: Wrong format of Hash\"%s\".\n",
-          programName,
-          str.c_str());
+      std::cerr << "Wrong format of hash: " << str << std::endl;
       return false;
     }
     pdqHashes.push_back(
         {pdq::hashing::Hash256::fromStringOrDie(frameValues[2]),
-         atoi(frameValues[0].c_str()),
-         atoi(frameValues[1].c_str()),
-         atof(frameValues[3].c_str())});
+         std::atoi(frameValues[0].c_str()),
+         std::atoi(frameValues[1].c_str()),
+         std::atof(frameValues[3].c_str())});
   }
   if (pdqHashes.size() == 0) {
-    fprintf(
-        stderr,
-        "%s: Empty hash file \"%s\".\n",
-        programName,
-        inputHashFileName.c_str());
+    std::cerr << "Empty hash file " << inputHashFileName << std::endl;
     return false;
   }
   return true;
 }
 
 bool outputVPDQFeatureToFile(
-    const string& outputHashFileName,
-    vector<hashing::vpdqFeature>& pdqHashes,
-    const char* programName) {
-  ofstream outputfp;
-  outputfp.open(outputHashFileName.c_str());
-  if (!outputfp.is_open()) {
-    fprintf(
-        stderr,
-        "%s: could not open \"%s\".\n",
-        programName,
-        outputHashFileName.c_str());
+    const std::string& outputHashFileName,
+    const std::vector<hashing::vpdqFeature>& pdqHashes) {
+  std::ofstream outfile(outputHashFileName);
+  if (!outfile) {
+    std::cerr << "Could not open output file " << outputHashFileName
+              << std::endl;
     return false;
   }
-  // write to output file
-  for (auto s : pdqHashes) {
-    outputfp << s.frameNumber;
-    outputfp << ",";
-    outputfp << s.quality;
-    outputfp << ",";
-    outputfp << s.pdqHash.format().c_str();
-    outputfp << ",";
-    outputfp << setprecision(TIMESTAMP_OUTPUT_PRECISION) << fixed
-             << s.timeStamp;
-    outputfp << "\n";
+
+  // Write feature to output file
+  for (const auto& s : pdqHashes) {
+    outfile << s.frameNumber;
+    outfile << ",";
+    outfile << s.quality;
+    outfile << ",";
+    outfile << s.pdqHash.format().c_str();
+    outfile << ",";
+    outfile << std::setprecision(TIMESTAMP_OUTPUT_PRECISION) << std::fixed
+            << s.timeStamp;
+    outfile << "\n";
   }
-  // close outputfile
-  outputfp.close();
+  outfile.close();
   return true;
 }
 
-bool readVideoStreamInfo(
-    const string& inputVideoFileName,
-    int& width,
-    int& height,
-    double& framesPerSec,
-    const char* programName) {
-  AVFormatContext* pFormatCtx = avformat_alloc_context();
-  int rc =
-      avformat_open_input(&pFormatCtx, inputVideoFileName.c_str(), NULL, NULL);
-  if (rc != 0) {
-    fprintf(
-        stderr,
-        "%s: could not open video \"%s\".\n",
-        programName,
-        inputVideoFileName.c_str());
-    return false;
-  }
-  AVCodecContext* pCodecCtx;
-  int videoStream = -1;
-  rc = avformat_find_stream_info(pFormatCtx, NULL);
-  if (rc < 0) {
-    fprintf(
-        stderr,
-        "%s: could not find video stream info \"%s\".\n",
-        programName,
-        inputVideoFileName.c_str());
-    avformat_close_input(&pFormatCtx);
-    return false;
-  }
-  for (int i = 0; i < pFormatCtx->nb_streams; i++) {
-    if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-        videoStream < 0) {
-      videoStream = i;
-    }
-  }
-  if (videoStream == -1) {
-    fprintf(
-        stderr,
-        "%s: could not find video stream \"%s\".\n",
-        programName,
-        inputVideoFileName.c_str());
-    avformat_close_input(&pFormatCtx);
-    return false;
-  }
-  AVCodecParameters* videoParameter =
-      pFormatCtx->streams[videoStream]->codecpar;
-  height = videoParameter->height;
-  width = videoParameter->width;
-  AVRational fr = pFormatCtx->streams[videoStream]->avg_frame_rate;
-
-  // if avg_frame_rate is 0, fall back to r_frame_rate which is the
-  // lowest framerate with which all timestamps can be represented accurately
-  if (fr.num == 0 || fr.den == 0) {
-    fr = pFormatCtx->streams[videoStream]->r_frame_rate;
-  }
-
-  framesPerSec = (double)fr.num / (double)fr.den;
-  avformat_close_input(&pFormatCtx);
-  return true;
-}
-
-// readVideoDuration is not used in calculating VPDQ for now
-bool readVideoDuration(
-    const string& inputVideoFileName,
-    double& durationInSec,
-    const char* programName) {
-  AVFormatContext* pFormatCtx = avformat_alloc_context();
-  int rc =
-      avformat_open_input(&pFormatCtx, inputVideoFileName.c_str(), NULL, NULL);
-  if (rc != 0) {
-    fprintf(
-        stderr,
-        "%s: could not open video \"%s\".\n",
-        programName,
-        inputVideoFileName.c_str());
-    return false;
-  }
-  durationInSec = (double)pFormatCtx->duration / MILLISEC_IN_SEC;
-  avformat_close_input(&pFormatCtx);
-  return true;
-}
 } // namespace io
 } // namespace vpdq
 } // namespace facebook
