@@ -221,15 +221,21 @@ class vpdqHasher {
   std::mutex done_mutex;
   bool done_hashing = false;
 
-  std::vector<std::thread> consumer_threads;
   unsigned int num_consumers = std::thread::hardware_concurrency();
+  std::vector<std::thread> consumer_threads;
 
   std::unique_ptr<AVVideo> video;
   int frameMod;
 
   bool verbose = false;
 
-  vpdqHasher(std::unique_ptr<AVVideo> video) : video(std::move(video)) {}
+  vpdqHasher(std::unique_ptr<AVVideo> video) : video(std::move(video)) {
+    // Create consumer threads
+    for (decltype(num_consumers) i = 0; i < num_consumers; ++i) {
+      consumer_threads.push_back(
+          std::thread(std::bind(&vpdqHasher::consumer, this)));
+    }
+  }
 
   // Decode and add vpdqFeature to the hashes vector
   // Returns the number of frames processed (this is can be more than 1!)
@@ -342,30 +348,15 @@ class vpdqHasher {
     }
   }
 
-  void start() {
-    auto total_frames = frame_queue.size();
-    if (verbose) {
-      std::cout << "Started hashing " << total_frames << " frames."
-                << std::endl;
-    }
-
-    // Hash the frames
-    for (decltype(num_consumers) i = 0; i < num_consumers; ++i) {
-      consumer_threads.push_back(
-          std::thread(std::bind(&vpdqHasher::consumer, this)));
-    }
-
+  // This signals to the threads that no more
+  // frames will be hashed and they can exit
+  void finish() {
     std::unique_lock<std::mutex> lock(queue_mutex);
     done_hashing = true;
     lock.unlock();
     queue_condition.notify_all();
     for (auto& thread : consumer_threads) {
       thread.join();
-    }
-
-    if (verbose) {
-      std::cout << "Finished hashing " << total_frames << " frames."
-                << std::endl;
     }
   }
 };
@@ -480,8 +471,8 @@ bool hashVideoFile(
     return false;
   }
 
-  // Hash the frames
-  hasher.start();
+  // Signal to the threads that no more frames will be added to the queue
+  hasher.finish();
 
   // Sort out of order frames by frameNumber
   std::sort(
