@@ -222,7 +222,7 @@ class vpdqHasher {
   bool done_hashing = false;
 
   std::vector<std::thread> consumer_threads;
-  int num_consumers = std::thread::hardware_concurrency();
+  unsigned int num_consumers = std::thread::hardware_concurrency();
 
   std::unique_ptr<AVVideo> video;
   int frameMod;
@@ -346,7 +346,7 @@ class vpdqHasher {
     }
   }
 
-  void start_hashing() {
+  void start() {
     auto total_frames = frame_queue.size();
     if (verbose) {
       std::cout << "Started hashing " << total_frames << " frames."
@@ -354,7 +354,7 @@ class vpdqHasher {
     }
 
     // Hash the frames
-    for (int i = 0; i < num_consumers; ++i) {
+    for (decltype(num_consumers) i = 0; i < num_consumers; ++i) {
       consumer_threads.push_back(
           std::thread(std::bind(&vpdqHasher::consumer, this)));
     }
@@ -478,15 +478,14 @@ bool hashVideoFile(
     av_packet_unref(packet);
   }
 
-  if (!failed) {
-    hasher.start_hashing();
-  }
-
   av_packet_free(&packet);
 
   if (failed) {
     return false;
   }
+
+  // Hash the frames
+  hasher.start();
 
   // Sort out of order frames by frameNumber
   std::sort(
