@@ -23,6 +23,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/frame.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/log.h>
 #include <libavutil/mem.h>
 #include <libswscale/swscale.h>
 }
@@ -138,6 +139,20 @@ bool hashVideoFile(
     const double secondsPerHash,
     const int downsampleWidth,
     const int downsampleHeight) {
+  // These are lavu_log_constants from "libavutil/log.h"
+  // It can be helpful for debugging to
+  // set this to AV_LOG_DEBUG or AV_LOG_VERBOSE
+  //
+  // Default is AV_LOG_INFO, but that sometimes prints ugly
+  // random messages like "[libdav1d @ 0x5576493b62c0] libdav1d 1.2.1"
+  if (verbose) {
+    // "Something somehow does not look correct."
+    av_log_set_level(AV_LOG_WARNING);
+  } else {
+    // "Something went wrong and recovery is not possible."
+    av_log_set_level(AV_LOG_FATAL);
+  }
+
   // Open the input file
   AVFormatContext* formatContext = nullptr;
   if (avformat_open_input(
