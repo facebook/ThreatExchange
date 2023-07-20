@@ -20,8 +20,10 @@ namespace hashing {
  * @param pdqHashes Vector which stores hashes
  * @param verbose If produce detailed output for diagnostic purposes
  * @param secondsPerHash The time period of picking frames in vpdq
- * @param downsampleWidth Width of the input video. 0 means no downsample
- * @param downsampleHeight Height of the input video. 0 means no downsample
+ * @param downsampleWidth Width to downsample to before hashing. 0 means no
+ * downsample
+ * @param downsampleHeight Height to downsample to before hashing. 0 means no
+ * downsample
  *
  * @return If successfully hash the video
  */
