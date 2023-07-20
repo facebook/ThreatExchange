@@ -82,7 +82,7 @@ class vpdqHasher {
   std::mutex pdqHashes_mutex;
   std::vector<hashing::vpdqFeature> pdqHashes;
   std::mutex done_mutex;
-  bool done = false;
+  bool done_hashing = false;
   int num_consumers = std::thread::hardware_concurrency();
   AVCodecContext* codecContext;
   SwsContext* swsContext;
@@ -216,8 +216,8 @@ class vpdqHasher {
     while (true) {
       std::unique_lock<std::mutex> lock(queue_mutex);
       queue_condition.wait(
-          lock, [this] { return !frame_queue.empty() || done; });
-      if (frame_queue.empty() && done)
+          lock, [this] { return !frame_queue.empty() || done_hashing; });
+      if (frame_queue.empty() && done_hashing)
         break;
       FatFrame fatFrame = frame_queue.front();
       frame_queue.pop();
@@ -241,7 +241,7 @@ class vpdqHasher {
 
     std::unique_lock<std::mutex> lock(queue_mutex);
     // std::cout << "Finished decoding frames" << std::endl;
-    done = true;
+    done_hashing = true;
     lock.unlock();
     queue_condition.notify_all();
     for (auto& thread : consumer_threads) {
@@ -284,7 +284,6 @@ bool hashVideoFile(
     av_log_set_level(AV_LOG_FATAL);
   }
 
-  av_log_set_level(AV_LOG_DEBUG);
   // Open the input file
   hasher.formatContext = nullptr;
   if (avformat_open_input(
@@ -475,8 +474,6 @@ bool hashVideoFile(
         return a.frameNumber < b.frameNumber;
       });
   pdqHashes.assign(hasher.pdqHashes.begin(), hasher.pdqHashes.end());
-  std::cout << "Hashed " << hasher.pdqHashes.size() << " frameNumber "
-            << frameNumber << std::endl;
   if (static_cast<size_t>(frameNumber) != pdqHashes.size()) {
     throw std::runtime_error(
         "pdqhashes is different than frameNumber: " +
