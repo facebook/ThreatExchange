@@ -62,7 +62,7 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
 }
 
 // Decode and add vpdqFeature to the hashes vector
-// Returns the number of frames processed or -1 if failure
+// Returns the number of frames processed
 static int processFrame(
     AVPacket* packet,
     AVFrame* frame,
@@ -78,8 +78,7 @@ static int processFrame(
   // Send the packet to the decoder
   int ret = avcodec_send_packet(codecContext, packet) < 0;
   if (ret < 0) {
-    std::cerr << "Cannot send packet to decoder" << std::endl;
-    return -1;
+    throw std::runtime_error("Cannot send packet to decoder");
   }
 
   // Receive the decoded frame
@@ -88,8 +87,7 @@ static int processFrame(
     if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
       break;
     } else if (ret < 0) {
-      std::cerr << "Cannot receive frame from decoder" << std::endl;
-      return -1;
+      throw std::runtime_error("Cannot receive frame from decoder");
     }
 
     if (frameNumber % frameMod == 0) {
@@ -107,11 +105,11 @@ static int processFrame(
       pdq::hashing::Hash256 pdqHash;
       bool ret = phasher->hashFrame(targetFrame->data[0], pdqHash, quality);
       if (!ret) {
-        std::cerr
-            << "Frame: " << frameNumber
-            << " Failed to hash frame buffer. Frame width or height smaller than the minimum hashable dimension"
-            << std::endl;
-        return -1;
+        throw std::runtime_error(
+            "Failed to hash frame buffer." + std::string("Frame: ") +
+            std::to_string(frameNumber) +
+            std::string(
+                " Frame width or height smaller than the minimum hashable dimension"));
       }
 
       // Write frame to file here for debugging:
@@ -124,7 +122,7 @@ static int processFrame(
            quality,
            static_cast<double>(frameNumber) / frameRate});
       if (verbose) {
-        cout << "PDQHash: " << pdqHash.format() << std::endl;
+        std::cout << "PDQHash: " << pdqHash.format() << std::endl;
       }
     }
     frameNumber += 1;
@@ -341,21 +339,21 @@ bool hashVideoFile(
   while (av_read_frame(formatContext, packet) == 0) {
     // Check if the packet belongs to the video stream
     if (packet->stream_index == videoStreamIndex) {
-      ret = processFrame(
-          packet,
-          frame,
-          targetFrame,
-          swsContext,
-          codecContext,
-          phasher,
-          pdqHashes,
-          frameRate,
-          verbose,
-          frameNumber,
-          frameMod);
-
-      if (ret == -1) {
-        std::cerr << "Error: Cannot process frame" << std::endl;
+      try {
+        ret = processFrame(
+            packet,
+            frame,
+            targetFrame,
+            swsContext,
+            codecContext,
+            phasher,
+            pdqHashes,
+            frameRate,
+            verbose,
+            frameNumber,
+            frameMod);
+      } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
         failed = true;
         av_packet_unref(packet);
         break;
@@ -372,22 +370,22 @@ bool hashVideoFile(
     // See for more information:
     // https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
 
-    ret = processFrame(
-        packet,
-        frame,
-        targetFrame,
-        swsContext,
-        codecContext,
-        phasher,
-        pdqHashes,
-        frameRate,
-        verbose,
-        frameNumber,
-        frameMod);
-
-    if (ret == -1) {
+    try {
+      ret = processFrame(
+          packet,
+          frame,
+          targetFrame,
+          swsContext,
+          codecContext,
+          phasher,
+          pdqHashes,
+          frameRate,
+          verbose,
+          frameNumber,
+          frameMod);
+    } catch (const std::runtime_error& e) {
+      std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
       failed = true;
-      std::cerr << "Error: Cannot process frame" << std::endl;
     }
 
     av_packet_unref(packet);
