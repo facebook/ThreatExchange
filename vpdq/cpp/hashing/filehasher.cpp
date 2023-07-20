@@ -143,7 +143,7 @@ static int processFrame(
   assert(targetFrame != nullptr);
   // Send the packet to the decoder
   int ret = avcodec_send_packet(codecContext, packet) < 0;
-  std::cout << codecContext->frame_num << std::endl;
+  // std::cout << codecContext->frame_num << std::endl;
   if (ret < 0) {
     throw std::runtime_error("Cannot send packet to decoder");
   }
