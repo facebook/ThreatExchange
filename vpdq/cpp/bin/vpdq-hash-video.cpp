@@ -174,8 +174,8 @@ int main(int argc, char** argv) {
         "%s: failed to hash \"%s\".\n",
         argv[0],
         inputVideoFileName.c_str());
-    return 1;
+    return EXIT_FAILURE;
   }
   facebook::vpdq::io::outputVPDQFeatureToFile(outputHashFileName, pdqHashes);
-  return 0;
+  return EXIT_SUCCESS;
 }

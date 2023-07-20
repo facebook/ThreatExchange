@@ -2,7 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <cstdlib>
 #include <cstring>
+
 #include <pdq/cpp/io/hashio.h>
 #include <vpdq/cpp/hashing/matchTwoHash.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
@@ -47,11 +49,11 @@ int main(int argc, char** argv) {
   vector<facebook::vpdq::hashing::vpdqFeature> tHashes;
   bool ret = facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi], qHashes);
   if (!ret) {
-    return -1;
+    return EXIT_FAILURE;
   }
   ret = facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi + 1], tHashes);
   if (!ret) {
-    return -1;
+    return EXIT_FAILURE;
   }
   double qMatch = 0;
   double tMatch = 0;
@@ -64,10 +66,10 @@ int main(int argc, char** argv) {
       tMatch,
       verbose);
   if (!ret) {
-    return -1;
+    return EXIT_FAILURE;
   }
   // Print float with 2 decimal places
   printf("%0.2f Percentage Query Video match\n", qMatch);
   printf("%0.2f Percentage Target Video match\n", tMatch);
-  return 0;
+  return EXIT_SUCCESS;
 }
