@@ -22,7 +22,6 @@ extern "C" {
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
 
-using namespace std;
 using namespace facebook::pdq::hashing;
 using namespace facebook::pdq::io;
 
