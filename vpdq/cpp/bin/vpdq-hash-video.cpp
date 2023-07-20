@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
     outputHashFileName = outputDirectory + "/" + b + ".txt";
   }
 
-  // Hash the video and store the hashes and correspoding info
+  // Hash the video and store the features in pdqHashes
   std::vector<facebook::vpdq::hashing::vpdqFeature> pdqHashes;
 
   bool rc = facebook::vpdq::hashing::hashVideoFile(
