@@ -76,7 +76,7 @@ static AVFrame* createFrame(int width, int height) {
   // Create a frame for resizing and converting the decoded frame to RGB24
   AVFrame* targetFrame = av_frame_alloc();
   if (targetFrame == nullptr) {
-    throw std::runtime_error("Cannot allocate target frame");
+    throw std::bad_alloc();
   }
 
   targetFrame->format = pixelFormat;
@@ -91,7 +91,7 @@ static AVFrame* createFrame(int width, int height) {
           pixelFormat,
           1) < 0) {
     av_frame_free(&targetFrame);
-    throw std::runtime_error("Cannot fill target frame image");
+    throw std::bad_alloc();
   }
   return targetFrame;
 }
@@ -153,7 +153,12 @@ class AVVideo {
 
     // Create the codec context
     codecContext = avcodec_alloc_context3(codec);
+    if (codecContext == nullptr) {
+      avformat_close_input(&formatContext);
+      throw std::bad_alloc();
+    }
     if (avcodec_parameters_to_context(codecContext, codecParameters) < 0) {
+      avcodec_free_context(&codecContext);
       avformat_close_input(&formatContext);
       throw std::runtime_error("Cannot copy codec parameters to context");
     }
@@ -171,6 +176,7 @@ class AVVideo {
 
     // Open the codec context
     if (avcodec_open2(codecContext, codec, nullptr) < 0) {
+      avcodec_free_context(&codecContext);
       avformat_close_input(&formatContext);
       throw std::runtime_error("Cannot open video codec context");
     }
@@ -188,10 +194,12 @@ class AVVideo {
     frameRate = static_cast<double>(avframeRate.num) /
         static_cast<double>(avframeRate.den);
     if (frameRate == 0) {
+      avcodec_free_context(&codecContext);
       avformat_close_input(&formatContext);
       throw std::runtime_error("Video framerate is zero");
     }
   }
+
   ~AVVideo() {
     if (codecContext != nullptr)
       avcodec_free_context(&codecContext);
@@ -241,6 +249,9 @@ class vpdqHasher {
   // Returns the number of frames processed (this is can be more than 1!)
   int processFrame(AVPacket* packet, int frameNumber) {
     AVFrame* frame = av_frame_alloc();
+    if (frame == nullptr) {
+      throw std::bad_alloc();
+    }
     assert(frame != nullptr);
     // TODO: check for frame good alloc
     AVFrame* targetFrame;
@@ -369,17 +380,6 @@ bool hashVideoFile(
     const double secondsPerHash,
     const int downsampleWidth,
     const int downsampleHeight) {
-  auto video = std::make_unique<AVVideo>(inputVideoFileName);
-
-  // If downsampleWidth or downsampleHeight is 0,
-  // then use the video's original dimensions
-  if (downsampleWidth > 0) {
-    video->width = downsampleWidth;
-  }
-  if (downsampleHeight > 0) {
-    video->height = downsampleHeight;
-  }
-
   // These are lavu_log_constants from "libavutil/log.h"
   // It can be helpful for debugging to
   // set this to AV_LOG_DEBUG or AV_LOG_VERBOSE
@@ -392,6 +392,24 @@ bool hashVideoFile(
   } else {
     // "Something went wrong and recovery is not possible."
     av_log_set_level(AV_LOG_FATAL);
+  }
+
+  std::unique_ptr<AVVideo> video = nullptr;
+  try {
+    video = std::make_unique<AVVideo>(inputVideoFileName);
+  } catch (const std::runtime_error& e) {
+    std::cerr << "Error while attempting to read video file: " << e.what()
+              << std::endl;
+    return false;
+  }
+
+  // If downsampleWidth or downsampleHeight is 0,
+  // then use the video's original dimensions
+  if (downsampleWidth > 0) {
+    video->width = downsampleWidth;
+  }
+  if (downsampleHeight > 0) {
+    video->height = downsampleHeight;
   }
 
   // Create the image rescaler context
@@ -484,7 +502,8 @@ bool hashVideoFile(
 
   // Copy the hashes to the input vector
   pdqHashes.assign(hasher.pdqHashes.begin(), hasher.pdqHashes.end());
-  if (static_cast<size_t>(frameNumber) != pdqHashes.size()) {
+  if (static_cast<std::vector<vpdqFeature>::size_type>(frameNumber) !=
+      pdqHashes.size()) {
     throw std::runtime_error(
         "pdqhashes is different than frameNumber: " +
         std::to_string(frameNumber) + " " + std::to_string(pdqHashes.size()));
