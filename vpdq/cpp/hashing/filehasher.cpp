@@ -404,12 +404,6 @@ bool hashVideoFile(
     frameMod = 1;
   }
 
-  std::vector<std::thread> consumer_threads;
-  for (int i = 0; i < 4; ++i) {
-    // for (int i = 0; i < num_consumers; ++i) {
-    consumer_threads.push_back(std::thread(consumer));
-  }
-
   // Read frames in a loop and process them
   int ret;
   int frameNumber = 0;
@@ -445,6 +439,11 @@ bool hashVideoFile(
     }
 
     av_packet_unref(base_packet);
+  }
+
+  std::vector<std::thread> consumer_threads;
+  for (int i = 0; i < num_consumers; ++i) {
+    consumer_threads.push_back(std::thread(consumer));
   }
 
   std::unique_lock<std::mutex> lock(queue_mutex);
