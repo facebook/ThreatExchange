@@ -72,28 +72,23 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
   outfile.close();
 }
 
-static AVFrame* createFrame(int width, int height) {
+static AVFrame* createTargetFrame(int width, int height) {
   // Create a frame for resizing and converting the decoded frame to RGB24
-  AVFrame* targetFrame = av_frame_alloc();
-  if (targetFrame == nullptr) {
+  AVFrame* frame = av_frame_alloc();
+  if (frame == nullptr) {
     throw std::bad_alloc();
   }
 
-  targetFrame->format = pixelFormat;
-  targetFrame->width = width;
-  targetFrame->height = height;
+  frame->format = pixelFormat;
+  frame->width = width;
+  frame->height = height;
 
   if (av_image_alloc(
-          targetFrame->data,
-          targetFrame->linesize,
-          width,
-          height,
-          pixelFormat,
-          1) < 0) {
-    av_frame_free(&targetFrame);
+          frame->data, frame->linesize, width, height, pixelFormat, 1) < 0) {
+    av_frame_free(&frame);
     throw std::bad_alloc();
   }
-  return targetFrame;
+  return frame;
 }
 
 class AVVideo {
@@ -235,6 +230,8 @@ class vpdqHasher {
   std::unique_ptr<AVVideo> video;
   int frameMod;
 
+  AVFrame* frame;
+
   bool verbose = false;
 
   vpdqHasher(
@@ -246,20 +243,18 @@ class vpdqHasher {
       consumer_threads.push_back(
           std::thread(std::bind(&vpdqHasher::consumer, this)));
     }
+    frame = av_frame_alloc();
+    if (frame == nullptr) {
+      throw std::bad_alloc();
+    }
   }
 
   // Decode and add vpdqFeature to the hashes vector
   // Returns the number of frames processed (this is can be more than 1!)
   int processFrame(AVPacket* packet, int frameNumber) {
-    AVFrame* frame = av_frame_alloc();
-    if (frame == nullptr) {
-      throw std::bad_alloc();
-    }
-    assert(frame != nullptr);
-    // TODO: check for frame good alloc
     AVFrame* targetFrame;
     try {
-      targetFrame = createFrame(video->width, video->height);
+      targetFrame = createTargetFrame(video->width, video->height);
     } catch (const std::runtime_error& e) {
       std::cerr << e.what() << std::endl;
       throw;
@@ -292,7 +287,8 @@ class vpdqHasher {
             targetFrame->linesize);
 
         std::unique_lock<std::mutex> lock(queue_mutex);
-        AVFrame* newTargetFrame = createFrame(video->width, video->height);
+        AVFrame* newTargetFrame =
+            createTargetFrame(video->width, video->height);
         av_frame_copy(newTargetFrame, targetFrame);
         FatFrame fatFrame = {newTargetFrame, frameNumber};
 
@@ -302,22 +298,22 @@ class vpdqHasher {
       }
       frameNumber += 1;
     }
-    av_frame_free(&frame);
     av_freep(&targetFrame->data[0]);
-    av_frame_free(&targetFrame);
+    if (targetFrame != nullptr) {
+      av_frame_free(&targetFrame);
+    }
     return frameNumber;
   }
 
   void hasher(AVFrame* frame, int frameNumber) {
-    assert(frame != nullptr);
     assert(frame->height != 0 && frame->width != 0);
-    int quality;
-    pdq::hashing::Hash256 pdqHash;
 
     std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
         vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(
             frame->height, frame->width);
 
+    int quality;
+    pdq::hashing::Hash256 pdqHash;
     bool ret = phasher->hashFrame(frame->data[0], pdqHash, quality);
     if (!ret) {
       throw std::runtime_error(
@@ -354,8 +350,7 @@ class vpdqHasher {
       frame_queue.pop();
       lock.unlock();
       AVFrame* frame = fatFrame.frame;
-      int frameNumber = fatFrame.frameNumber;
-      hasher(frame, frameNumber);
+      hasher(frame, fatFrame.frameNumber);
       av_freep(frame->data);
       if (frame != nullptr)
         av_frame_free(&frame);
@@ -371,6 +366,12 @@ class vpdqHasher {
     queue_condition.notify_all();
     for (auto& thread : consumer_threads) {
       thread.join();
+    }
+  }
+
+  ~vpdqHasher() {
+    if (frame != nullptr) {
+      av_frame_free(&frame);
     }
   }
 };
@@ -503,6 +504,8 @@ bool hashVideoFile(
         return a.frameNumber < b.frameNumber;
       });
 
+  // Sanity check to make sure that the number of frames
+  // in the video is the same as the number of frames in the hashes vector
   if (static_cast<std::vector<vpdqFeature>::size_type>(frameNumber) !=
       pdqHashes.size()) {
     throw std::runtime_error(
