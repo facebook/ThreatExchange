@@ -7,12 +7,14 @@ on:
       - main
     paths:
       - "vpdq/python/**"
+      - "vpdq/cpp/**"
       - ".github/workflows/vpdq-ci-python.yaml"
   pull_request:
     branches:
       - main
     paths:
       - "vpdq/python/**"
+      - "vpdq/cpp/**"
       - ".github/workflows/vpdq-ci-python.yaml"
 
 defaults:
@@ -44,4 +46,4 @@ jobs:
           python3 vpdq-release.py -i
       - name: Test with pytest
         run: |
-          py.test
+          python -m pytest
