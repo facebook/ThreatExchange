@@ -95,7 +95,7 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
 static AVFramePtr createTargetFrame(int width, int height) {
   // Create a frame for resizing and converting the decoded frame to RGB24
   AVFramePtr frame(av_frame_alloc());
-  if (frame == nullptr) {
+  if (frame.get() == nullptr) {
     throw std::bad_alloc();
   }
 
