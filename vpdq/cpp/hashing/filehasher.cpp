@@ -3,6 +3,7 @@
 // ================================================================
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <cmath>
 #include <condition_variable>
@@ -236,8 +237,7 @@ class vpdqHasher {
   std::mutex pdqHashes_mutex;
   std::vector<hashing::vpdqFeature>& pdqHashes;
 
-  std::mutex done_mutex;
-  bool done_hashing = false;
+  std::atomic<bool> done_hashing{false};
 
   unsigned int num_consumers = std::thread::hardware_concurrency();
   std::vector<std::thread> consumer_threads;
