@@ -464,7 +464,6 @@ bool hashVideoFile(
       } catch (const std::runtime_error& e) {
         std::cerr << "Processing frame failed: " << e.what() << std::endl;
         failed = true;
-        av_packet_unref(packet);
         break;
       }
     }
@@ -479,13 +478,11 @@ bool hashVideoFile(
 
     try {
       ret = hasher.processFrame(packet, frameNumber);
+      frameNumber = ret;
     } catch (const std::runtime_error& e) {
       std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
       failed = true;
-      av_packet_unref(packet);
     }
-    frameNumber = ret;
-    av_packet_unref(packet);
   }
 
   av_packet_free(&packet);
