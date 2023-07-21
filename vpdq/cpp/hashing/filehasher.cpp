@@ -241,7 +241,7 @@ class vpdqHasher {
  public:
   struct FatFrame {
     AVFramePtr frame;
-    int frameNumber;
+    int64_t frameNumber;
   };
 
   std::condition_variable queue_condition;
@@ -296,7 +296,7 @@ class vpdqHasher {
   // Decode and add vpdqFeature to the hashes vector
   // Increments the passed frame number
   // Returns back the processed packet
-  AVPacketPtr processPacket(AVPacketPtr packet, int& frameNumber) {
+  AVPacketPtr processPacket(AVPacketPtr packet) {
     if (packet->stream_index != video->videoStreamIndex) {
       // This must be called to free the packet buffer filled by av_read_frame
       av_packet_unref(packet.get());
@@ -318,7 +318,7 @@ class vpdqHasher {
         throw std::runtime_error("Cannot receive frame from decoder");
       }
 
-      if (frameNumber % frameMod == 0) {
+      if (get_frame_number() % frameMod == 0) {
         AVFramePtr targetFrame;
         try {
           targetFrame = createTargetFrame(video->width, video->height);
@@ -336,9 +336,7 @@ class vpdqHasher {
             targetFrame->data,
             targetFrame->linesize);
 
-        FatFrame fatFrame{
-            std::move(targetFrame),
-            static_cast<int>(video->codecContext->frame_num - 1)};
+        FatFrame fatFrame{std::move(targetFrame), get_frame_number()};
         // Use the queue if multithreaded
         if (multithread) {
           std::lock_guard<std::mutex> lock(queue_mutex);
@@ -348,7 +346,6 @@ class vpdqHasher {
           hasher(std::move(fatFrame));
         }
       }
-      frameNumber += 1;
     }
 
     // This must be called to free the packet buffer filled by av_read_frame
@@ -384,7 +381,7 @@ class vpdqHasher {
     // Append vpdq feature to pdqHashes vector
     vpdqFeature feature = {
         pdqHash,
-        fatFrame.frameNumber,
+        static_cast<int>(fatFrame.frameNumber),
         quality,
         static_cast<double>(fatFrame.frameNumber) / video->frameRate};
     std::lock_guard<std::mutex> lock(pdqHashes_mutex);
@@ -403,6 +400,10 @@ class vpdqHasher {
       lock.unlock();
       hasher(std::move(fatFrame));
     }
+  }
+
+  inline int64_t get_frame_number() {
+    return video->codecContext->frame_number - 1;
   }
 
   // This signals to the threads that no more
@@ -497,12 +498,11 @@ bool hashVideoFile(
   }
 
   // Read frames in a loop and process them
-  int frameNumber = 0;
   bool failed = false;
   while (av_read_frame(hasher.video->formatContext, packet.get()) == 0) {
     // Check if the packet belongs to the video stream
     try {
-      packet = hasher.processPacket(std::move(packet), frameNumber);
+      packet = hasher.processPacket(std::move(packet));
     } catch (const std::runtime_error& e) {
       std::cerr << "Processing frame failed: " << e.what() << std::endl;
       failed = true;
@@ -516,7 +516,7 @@ bool hashVideoFile(
     // https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
 
     try {
-      hasher.processPacket(std::move(packet), frameNumber);
+      hasher.processPacket(std::move(packet));
     } catch (const std::runtime_error& e) {
       std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
       failed = true;
@@ -542,11 +542,12 @@ bool hashVideoFile(
 
   // Sanity check to make sure that the number of frames
   // in the video is the same as the number of frames in the hashes vector
-  if (static_cast<std::vector<vpdqFeature>::size_type>(frameNumber) !=
-      pdqHashes.size()) {
+  if (static_cast<std::vector<vpdqFeature>::size_type>(
+          hasher.get_frame_number() + 1) != pdqHashes.size()) {
     throw std::runtime_error(
         "pdqhashes is different than frameNumber: " +
-        std::to_string(frameNumber) + " " + std::to_string(pdqHashes.size()));
+        std::to_string(hasher.get_frame_number()) + " " +
+        std::to_string(pdqHashes.size()));
   }
   return true;
 }
