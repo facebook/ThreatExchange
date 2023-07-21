@@ -282,7 +282,7 @@ class vpdqHasher {
     // Create consumer hasher threads if multithreading
     if (multithread) {
       for (decltype(thread_count) i = 0; i < thread_count; ++i) {
-        consumer_threads.push_back(
+        consumer_threads.emplace_back(
             std::thread(std::bind(&vpdqHasher::consumer, this)));
       }
     }
@@ -379,13 +379,12 @@ class vpdqHasher {
     // saveFrameToFile(frame, "frame.rgb");
 
     // Append vpdq feature to pdqHashes vector
-    vpdqFeature feature = {
+    std::lock_guard<std::mutex> lock(pdqHashes_mutex);
+    pdqHashes.emplace_back(vpdqFeature{
         pdqHash,
         static_cast<int>(fatFrame.frameNumber),
         quality,
-        static_cast<double>(fatFrame.frameNumber) / video->frameRate};
-    std::lock_guard<std::mutex> lock(pdqHashes_mutex);
-    pdqHashes.push_back(feature);
+        static_cast<double>(fatFrame.frameNumber) / video->frameRate});
   }
 
   void consumer() {
