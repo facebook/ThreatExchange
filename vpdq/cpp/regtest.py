@@ -9,6 +9,7 @@ from shutil import copyfile
 import glob
 import platform
 from typing import Union
+import csv
 
 DIR = Path(__file__).parent
 VPDQ_DIR = DIR.parent
@@ -217,6 +218,22 @@ def main():
                 print(e.cmd)
                 print(str(e.stderr, "utf-8"))
                 sys.exit(1)
+
+        # Test that all the features are in frame order
+        for outputFileStr in glob.iglob(
+            f"{tempOutputHashFolder}/**/*.txt", recursive=True
+        ):
+            outputFile = Path(outputFileStr)
+            with open(outputFile, "r") as f:
+                features = csv.reader(f)
+                oldFrameNumber = -1
+                for feature in features:
+                    frameNumber = int(feature[0])
+                    assert frameNumber >= 0
+                    assert frameNumber > oldFrameNumber
+                    assert (oldFrameNumber + 1) == frameNumber
+                    oldFrameNumber = frameNumber
+        print("All features are in frame order.")
 
 
 if __name__ == "__main__":
