@@ -38,6 +38,22 @@ namespace hashing {
 // Pixel format for the image passed to PDQ
 constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
 
+// Smart pointer wrapper for AVFrame*
+struct AVFrameDeleter {
+  void operator()(AVFrame* ptr) const {
+    if (ptr) {
+      if (ptr->data[0]) {
+        // Free memory allocated by image_alloc
+        // See createTargetFrame()
+        av_freep(&ptr->data[0]);
+      }
+      av_frame_free(&ptr);
+    }
+  }
+};
+
+using AVFramePtr = std::unique_ptr<AVFrame, AVFrameDeleter>;
+
 /* @brief Writes an AVFrame to a file
  *
  * Useful for debugging.
@@ -72,9 +88,9 @@ static void saveFrameToFile(AVFrame* frame, const char* filename) {
   outfile.close();
 }
 
-static AVFrame* createTargetFrame(int width, int height) {
+static AVFramePtr createTargetFrame(int width, int height) {
   // Create a frame for resizing and converting the decoded frame to RGB24
-  AVFrame* frame = av_frame_alloc();
+  AVFramePtr frame(av_frame_alloc());
   if (frame == nullptr) {
     throw std::bad_alloc();
   }
@@ -85,7 +101,6 @@ static AVFrame* createTargetFrame(int width, int height) {
 
   if (av_image_alloc(
           frame->data, frame->linesize, width, height, pixelFormat, 1) < 0) {
-    av_frame_free(&frame);
     throw std::bad_alloc();
   }
   return frame;
@@ -209,7 +224,7 @@ class AVVideo {
 class vpdqHasher {
  public:
   struct FatFrame {
-    AVFrame* frame;
+    AVFramePtr frame;
     int frameNumber;
   };
 
@@ -230,7 +245,7 @@ class vpdqHasher {
   std::unique_ptr<AVVideo> video;
   int frameMod;
 
-  AVFrame* frame;
+  AVFramePtr decodeFrame;
 
   bool verbose = false;
 
@@ -243,8 +258,8 @@ class vpdqHasher {
       consumer_threads.push_back(
           std::thread(std::bind(&vpdqHasher::consumer, this)));
     }
-    frame = av_frame_alloc();
-    if (frame == nullptr) {
+    decodeFrame = AVFramePtr(av_frame_alloc());
+    if (decodeFrame.get() == nullptr) {
       throw std::bad_alloc();
     }
   }
@@ -252,7 +267,7 @@ class vpdqHasher {
   // Decode and add vpdqFeature to the hashes vector
   // Returns the number of frames processed (this is can be more than 1!)
   int processFrame(AVPacket* packet, int frameNumber) {
-    AVFrame* targetFrame;
+    AVFramePtr targetFrame;
     try {
       targetFrame = createTargetFrame(video->width, video->height);
     } catch (const std::runtime_error& e) {
@@ -261,14 +276,13 @@ class vpdqHasher {
     }
     // Send the packet to the decoder
     int ret = avcodec_send_packet(video->codecContext, packet) < 0;
-    // std::cout << codecContext->frame_num << std::endl;
     if (ret < 0) {
       throw std::runtime_error("Cannot send packet to decoder");
     }
 
     // Receive the decoded frame
     while (ret >= 0) {
-      ret = avcodec_receive_frame(video->codecContext, frame);
+      ret = avcodec_receive_frame(video->codecContext, decodeFrame.get());
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
         break;
       } else if (ret < 0) {
@@ -279,46 +293,42 @@ class vpdqHasher {
         // Resize the frame and convert to RGB24
         sws_scale(
             video->swsContext,
-            frame->data,
-            frame->linesize,
+            decodeFrame->data,
+            decodeFrame->linesize,
             0,
             video->codecContext->height,
             targetFrame->data,
             targetFrame->linesize);
 
         std::unique_lock<std::mutex> lock(queue_mutex);
-        AVFrame* newTargetFrame =
+        AVFramePtr newTargetFrame =
             createTargetFrame(video->width, video->height);
-        av_frame_copy(newTargetFrame, targetFrame);
-        FatFrame fatFrame = {newTargetFrame, frameNumber};
+        av_frame_copy(newTargetFrame.get(), targetFrame.get());
+        FatFrame fatFrame{std::move(newTargetFrame), frameNumber};
 
-        frame_queue.push(fatFrame);
+        frame_queue.push(std::move(fatFrame));
         lock.unlock();
         queue_condition.notify_one();
       }
       frameNumber += 1;
     }
-    av_freep(&targetFrame->data[0]);
-    if (targetFrame != nullptr) {
-      av_frame_free(&targetFrame);
-    }
     return frameNumber;
   }
 
-  void hasher(AVFrame* frame, int frameNumber) {
-    assert(frame->height != 0 && frame->width != 0);
+  void hasher(const FatFrame fatFrame) {
+    assert(fatFrame.frame->height != 0 && fatFrame.frame->width != 0);
 
     std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
         vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(
-            frame->height, frame->width);
+            fatFrame.frame->height, fatFrame.frame->width);
 
     int quality;
     pdq::hashing::Hash256 pdqHash;
-    bool ret = phasher->hashFrame(frame->data[0], pdqHash, quality);
+    bool ret = phasher->hashFrame(fatFrame.frame->data[0], pdqHash, quality);
     if (!ret) {
       throw std::runtime_error(
           "Failed to hash frame buffer." + std::string("Frame: ") +
-          std::to_string(frameNumber) +
+          std::to_string(fatFrame.frameNumber) +
           std::string(
               " Frame width or height smaller than the minimum hashable dimension"));
     }
@@ -330,9 +340,9 @@ class vpdqHasher {
     std::lock_guard<std::mutex> lock(pdqHashes_mutex);
     vpdqFeature feature = {
         pdqHash,
-        frameNumber,
+        fatFrame.frameNumber,
         quality,
-        static_cast<double>(frameNumber) / video->frameRate};
+        static_cast<double>(fatFrame.frameNumber) / video->frameRate};
     pdqHashes.push_back(feature);
     if (verbose) {
       std::cout << "PDQHash: " << pdqHash.format() << std::endl;
@@ -346,14 +356,10 @@ class vpdqHasher {
           lock, [this] { return !frame_queue.empty() || done_hashing; });
       if (frame_queue.empty() && done_hashing)
         break;
-      FatFrame fatFrame = frame_queue.front();
+      FatFrame fatFrame(std::move(frame_queue.front()));
       frame_queue.pop();
       lock.unlock();
-      AVFrame* frame = fatFrame.frame;
-      hasher(frame, fatFrame.frameNumber);
-      av_freep(frame->data);
-      if (frame != nullptr)
-        av_frame_free(&frame);
+      hasher(std::move(fatFrame));
     }
   }
 
@@ -366,12 +372,6 @@ class vpdqHasher {
     queue_condition.notify_all();
     for (auto& thread : consumer_threads) {
       thread.join();
-    }
-  }
-
-  ~vpdqHasher() {
-    if (frame != nullptr) {
-      av_frame_free(&frame);
     }
   }
 };
