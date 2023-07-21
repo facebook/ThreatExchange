@@ -233,21 +233,18 @@ class vpdqHasher {
   };
 
   std::condition_variable queue_condition;
-
   std::mutex queue_mutex;
-  std::queue<FatFrame> frame_queue;
+  std::queue<FatFrame> hash_queue;
+  std::atomic<bool> done_hashing{false};
 
   std::mutex pdqHashes_mutex;
   std::vector<hashing::vpdqFeature>& pdqHashes;
-
-  std::atomic<bool> done_hashing{false};
 
   unsigned int num_consumers = std::thread::hardware_concurrency();
   std::vector<std::thread> consumer_threads;
 
   std::unique_ptr<AVVideo> video;
   int frameMod;
-
   AVFramePtr decodeFrame;
 
   bool verbose = false;
@@ -309,7 +306,7 @@ class vpdqHasher {
         av_frame_copy(newTargetFrame.get(), targetFrame.get());
         FatFrame fatFrame{std::move(newTargetFrame), frameNumber};
 
-        frame_queue.push(std::move(fatFrame));
+        hash_queue.push(std::move(fatFrame));
         lock.unlock();
         queue_condition.notify_one();
       }
@@ -357,11 +354,11 @@ class vpdqHasher {
     while (true) {
       std::unique_lock<std::mutex> lock(queue_mutex);
       queue_condition.wait(
-          lock, [this] { return !frame_queue.empty() || done_hashing; });
-      if (frame_queue.empty() && done_hashing)
+          lock, [this] { return !hash_queue.empty() || done_hashing; });
+      if (hash_queue.empty() && done_hashing)
         break;
-      FatFrame fatFrame(std::move(frame_queue.front()));
-      frame_queue.pop();
+      FatFrame fatFrame(std::move(hash_queue.front()));
+      hash_queue.pop();
       lock.unlock();
       hasher(std::move(fatFrame));
     }
