@@ -334,6 +334,7 @@ class vpdqHasher {
     }
 
     // Write frame to file here for debugging:
+    // This is not thread safe. Use one thread when writing to file
     // saveFrameToFile(frame, "frame.rgb");
 
     // Append vpdq feature to pdqHashes vector
