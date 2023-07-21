@@ -234,6 +234,24 @@ class AVVideo {
       throw std::runtime_error("Video framerate is zero");
     }
   }
+
+  void createSwsContext() {
+    swsContext = SwsContextPtr(sws_getContext(
+        codecContext->width,
+        codecContext->height,
+        codecContext->pix_fmt,
+        width,
+        height,
+        PIXEL_FORMAT,
+        DOWNSAMPLE_METHOD,
+        nullptr,
+        nullptr,
+        nullptr));
+
+    if (swsContext.get() == nullptr) {
+      throw std::runtime_error("Cannot create sws context");
+    }
+  }
 };
 
 class vpdqHasher {
@@ -458,21 +476,12 @@ bool hashVideoFile(
     video->height = downsampleHeight;
   }
 
-  // Create the image rescaler context
-  video->swsContext = SwsContextPtr(sws_getContext(
-      video->codecContext->width,
-      video->codecContext->height,
-      video->codecContext->pix_fmt,
-      video->width,
-      video->height,
-      PIXEL_FORMAT,
-      DOWNSAMPLE_METHOD,
-      nullptr,
-      nullptr,
-      nullptr));
-
-  if (video->swsContext.get() == nullptr) {
-    std::cerr << "Cannot create sws context" << std::endl;
+  // Create image rescaler context
+  try {
+    video->createSwsContext();
+  } catch (const std::runtime_error& e) {
+    std::cerr << "Error while attempting to create sws context: " << e.what()
+              << std::endl;
     return false;
   }
 
