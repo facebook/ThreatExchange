@@ -300,11 +300,9 @@ class vpdqHasher {
             targetFrame->data,
             targetFrame->linesize);
 
-        std::unique_lock<std::mutex> lock(queue_mutex);
+        std::lock_guard<std::mutex> lock(queue_mutex);
         FatFrame fatFrame{std::move(targetFrame), frameNumber};
-
         hash_queue.push(std::move(fatFrame));
-        lock.unlock();
         queue_condition.notify_one();
       }
       frameNumber += 1;
@@ -329,22 +327,22 @@ class vpdqHasher {
           std::string(
               " Frame width or height smaller than the minimum hashable dimension"));
     }
+    if (verbose) {
+      std::cout << "PDQHash: " << pdqHash.format() << std::endl;
+    }
 
     // Write frame to file here for debugging:
     // This is not thread safe. Use one thread when writing to file
     // saveFrameToFile(frame, "frame.rgb");
 
     // Append vpdq feature to pdqHashes vector
-    std::lock_guard<std::mutex> lock(pdqHashes_mutex);
     vpdqFeature feature = {
         pdqHash,
         fatFrame.frameNumber,
         quality,
         static_cast<double>(fatFrame.frameNumber) / video->frameRate};
+    std::lock_guard<std::mutex> lock(pdqHashes_mutex);
     pdqHashes.push_back(feature);
-    if (verbose) {
-      std::cout << "PDQHash: " << pdqHash.format() << std::endl;
-    }
   }
 
   void consumer() {
