@@ -490,12 +490,12 @@ bool hashVideoFile(
 
   av_packet_free(&packet);
 
+  // Signal to the threads that no more frames will be added to the queue
+  hasher.finish();
+
   if (failed) {
     return false;
   }
-
-  // Signal to the threads that no more frames will be added to the queue
-  hasher.finish();
 
   // Sort out of order frames by frameNumber
   std::sort(
