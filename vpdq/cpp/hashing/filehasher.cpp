@@ -58,6 +58,18 @@ struct AVFrameDeleter {
 
 using AVFramePtr = std::unique_ptr<AVFrame, AVFrameDeleter>;
 
+// Smart pointer wrapper for packet
+struct AVPacketDeleter {
+  void operator()(AVPacket* ptr) const {
+    if (ptr) {
+      av_packet_unref(ptr);
+      av_packet_free(&ptr);
+    }
+  }
+};
+
+using AVPacketPtr = std::unique_ptr<AVPacket, AVPacketDeleter>;
+
 /* @brief Writes an AVFrame to a file
  *
  * Useful for debugging.
@@ -282,10 +294,17 @@ class vpdqHasher {
   }
 
   // Decode and add vpdqFeature to the hashes vector
-  // Returns the number of frames processed (this is can be more than 1!)
-  int processFrame(AVPacket* packet, int frameNumber) {
+  // Increments the passed frame number
+  // Returns back the processed packet
+  AVPacketPtr processPacket(AVPacketPtr packet, int& frameNumber) {
+    if (packet->stream_index != video->videoStreamIndex) {
+      // This must be called to free the packet buffer filled by av_read_frame
+      av_packet_unref(packet.get());
+      return packet;
+    }
+
     // Send the packet to the decoder
-    int ret = avcodec_send_packet(video->codecContext, packet) < 0;
+    int ret = avcodec_send_packet(video->codecContext, packet.get()) < 0;
     if (ret < 0) {
       throw std::runtime_error("Cannot send packet to decoder");
     }
@@ -329,7 +348,10 @@ class vpdqHasher {
       }
       frameNumber += 1;
     }
-    return frameNumber;
+
+    // This must be called to free the packet buffer filled by av_read_frame
+    av_packet_unref(packet.get());
+    return packet;
   }
 
   void hasher(const FatFrame fatFrame) {
@@ -453,12 +475,6 @@ bool hashVideoFile(
     return false;
   }
 
-  AVPacket* packet = av_packet_alloc();
-  if (packet == nullptr) {
-    std::cerr << "Cannot allocate packet" << std::endl;
-    return false;
-  }
-
   vpdqHasher hasher(std::move(video), pdqHashes, thread_count);
   hasher.verbose = verbose;
 
@@ -469,41 +485,41 @@ bool hashVideoFile(
     hasher.frameMod = 1;
   }
 
+  // Create packet used to read frames
+  // The packet is moved into processPacket() in order
+  // to reuse the same packet for each frame to avoid allocs
+  AVPacketPtr packet(av_packet_alloc());
+  if (packet.get() == nullptr) {
+    std::cerr << "Cannot allocate packet" << std::endl;
+    return false;
+  }
+
   // Read frames in a loop and process them
-  int ret = 0;
   int frameNumber = 0;
   bool failed = false;
-  while (av_read_frame(hasher.video->formatContext, packet) == 0) {
+  while (av_read_frame(hasher.video->formatContext, packet.get()) == 0) {
     // Check if the packet belongs to the video stream
-    if (packet->stream_index == hasher.video->videoStreamIndex) {
-      try {
-        ret = hasher.processFrame(packet, frameNumber);
-        frameNumber = ret;
-      } catch (const std::runtime_error& e) {
-        std::cerr << "Processing frame failed: " << e.what() << std::endl;
-        failed = true;
-        break;
-      }
+    try {
+      packet = hasher.processPacket(std::move(packet), frameNumber);
+    } catch (const std::runtime_error& e) {
+      std::cerr << "Processing frame failed: " << e.what() << std::endl;
+      failed = true;
+      break;
     }
-    av_packet_unref(packet);
   }
 
   if (!failed) {
     // Flush decode buffer
     // See for more information:
-    //
     // https://github.com/FFmpeg/FFmpeg/blob/6a9d3f46c7fc661b86192e922ab932495d27f953/doc/examples/decode_video.c#L182
 
     try {
-      ret = hasher.processFrame(packet, frameNumber);
-      frameNumber = ret;
+      hasher.processPacket(std::move(packet), frameNumber);
     } catch (const std::runtime_error& e) {
       std::cerr << "Flushing frame buffer failed: " << e.what() << std::endl;
       failed = true;
     }
   }
-
-  av_packet_free(&packet);
 
   if (thread_count != 1) {
     // Signal to the threads that no more frames will be added to the queue
