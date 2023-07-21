@@ -56,8 +56,6 @@ struct AVFrameDeleter {
   }
 };
 
-using AVFramePtr = std::unique_ptr<AVFrame, AVFrameDeleter>;
-
 // Smart pointer wrapper for packet
 struct AVPacketDeleter {
   void operator()(AVPacket* ptr) const {
@@ -68,7 +66,14 @@ struct AVPacketDeleter {
   }
 };
 
+// Smart pointer wrapper for SwsContext
+struct SwsContextDeleter {
+  void operator()(SwsContext* ptr) const { sws_freeContext(ptr); }
+};
+
+using AVFramePtr = std::unique_ptr<AVFrame, AVFrameDeleter>;
 using AVPacketPtr = std::unique_ptr<AVPacket, AVPacketDeleter>;
+using SwsContextPtr = std::unique_ptr<SwsContext, SwsContextDeleter>;
 
 /* @brief Writes an AVFrame to a file
  *
@@ -124,9 +129,21 @@ static AVFramePtr createTargetFrame(int width, int height) {
 
 class AVVideo {
  public:
-  AVCodecContext* codecContext = nullptr;
-  SwsContext* swsContext = nullptr;
-  AVFormatContext* formatContext = nullptr;
+  struct AVFormatContextDeleter {
+    void operator()(AVFormatContext* ptr) const { avformat_close_input(&ptr); }
+  };
+  struct AVCodecContextDeleter {
+    void operator()(AVCodecContext* ptr) const { avcodec_free_context(&ptr); }
+  };
+
+  using AVFormatContextPtr =
+      std::unique_ptr<AVFormatContext, AVFormatContextDeleter>;
+  using AVCodecContextPtr =
+      std::unique_ptr<AVCodecContext, AVCodecContextDeleter>;
+
+  AVCodecContextPtr codecContext;
+  AVFormatContextPtr formatContext;
+  SwsContextPtr swsContext;
   int videoStreamIndex = -1;
   int width;
   int height;
@@ -134,14 +151,15 @@ class AVVideo {
 
   AVVideo(const std::string filename) {
     // Open the input file
+    AVFormatContext* formatContextRawPtr = nullptr;
     if (avformat_open_input(
-            &formatContext, filename.c_str(), nullptr, nullptr) != 0) {
+            &formatContextRawPtr, filename.c_str(), nullptr, nullptr) != 0) {
       throw std::runtime_error("Cannot open video");
     }
+    formatContext = AVFormatContextPtr(formatContextRawPtr);
 
     // Retrieve stream information
-    if (avformat_find_stream_info(formatContext, nullptr) < 0) {
-      avformat_close_input(&formatContext);
+    if (avformat_find_stream_info(formatContext.get(), nullptr) < 0) {
       throw std::runtime_error("Cannot find video stream info");
     }
 
@@ -155,7 +173,6 @@ class AVVideo {
     }
 
     if (videoStreamIndex == -1) {
-      avformat_close_input(&formatContext);
       throw std::runtime_error("No video stream found");
     }
 
@@ -166,26 +183,22 @@ class AVVideo {
     width = codecParameters->width;
     height = codecParameters->height;
     if (width == 0 || height == 0) {
-      avformat_close_input(&formatContext);
       throw std::runtime_error("Width or height equals 0");
     }
 
     // Find the video decoder
     const AVCodec* codec = avcodec_find_decoder(codecParameters->codec_id);
     if (!codec) {
-      avformat_close_input(&formatContext);
       throw std::runtime_error("Video codec id not found");
     }
 
     // Create the codec context
-    codecContext = avcodec_alloc_context3(codec);
-    if (codecContext == nullptr) {
-      avformat_close_input(&formatContext);
+    codecContext = AVCodecContextPtr(avcodec_alloc_context3(codec));
+    if (codecContext.get() == nullptr) {
       throw std::bad_alloc();
     }
-    if (avcodec_parameters_to_context(codecContext, codecParameters) < 0) {
-      avcodec_free_context(&codecContext);
-      avformat_close_input(&formatContext);
+    if (avcodec_parameters_to_context(codecContext.get(), codecParameters) <
+        0) {
       throw std::runtime_error("Cannot copy codec parameters to context");
     }
 
@@ -201,9 +214,7 @@ class AVVideo {
     }
 
     // Open the codec context
-    if (avcodec_open2(codecContext, codec, nullptr) < 0) {
-      avcodec_free_context(&codecContext);
-      avformat_close_input(&formatContext);
+    if (avcodec_open2(codecContext.get(), codec, nullptr) < 0) {
       throw std::runtime_error("Cannot open video codec context");
     }
 
@@ -220,19 +231,7 @@ class AVVideo {
     frameRate = static_cast<double>(avframeRate.num) /
         static_cast<double>(avframeRate.den);
     if (frameRate == 0) {
-      avcodec_free_context(&codecContext);
-      avformat_close_input(&formatContext);
       throw std::runtime_error("Video framerate is zero");
-    }
-  }
-
-  ~AVVideo() {
-    if (codecContext != nullptr)
-      avcodec_free_context(&codecContext);
-    if (swsContext != nullptr)
-      sws_freeContext(swsContext);
-    if (formatContext != nullptr) {
-      avformat_close_input(&formatContext);
     }
   }
 };
@@ -304,14 +303,14 @@ class vpdqHasher {
     }
 
     // Send the packet to the decoder
-    int ret = avcodec_send_packet(video->codecContext, packet.get()) < 0;
+    int ret = avcodec_send_packet(video->codecContext.get(), packet.get()) < 0;
     if (ret < 0) {
       throw std::runtime_error("Cannot send packet to decoder");
     }
 
     // Receive the decoded frame
     while (ret >= 0) {
-      ret = avcodec_receive_frame(video->codecContext, decodeFrame.get());
+      ret = avcodec_receive_frame(video->codecContext.get(), decodeFrame.get());
       if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
         break;
       } else if (ret < 0) {
@@ -328,7 +327,7 @@ class vpdqHasher {
         }
         // Resize the frame and convert to RGB24
         sws_scale(
-            video->swsContext,
+            video->swsContext.get(),
             decodeFrame->data,
             decodeFrame->linesize,
             0,
@@ -460,7 +459,7 @@ bool hashVideoFile(
   }
 
   // Create the image rescaler context
-  video->swsContext = sws_getContext(
+  video->swsContext = SwsContextPtr(sws_getContext(
       video->codecContext->width,
       video->codecContext->height,
       video->codecContext->pix_fmt,
@@ -470,16 +469,16 @@ bool hashVideoFile(
       DOWNSAMPLE_METHOD,
       nullptr,
       nullptr,
-      nullptr);
+      nullptr));
 
-  if (video->swsContext == nullptr) {
+  if (video->swsContext.get() == nullptr) {
     std::cerr << "Cannot create sws context" << std::endl;
     return false;
   }
 
+  // Create frame hasher
   vpdqHasher hasher(std::move(video), pdqHashes, thread_count);
   hasher.verbose = verbose;
-
   hasher.frameMod = secondsPerHash * hasher.video->frameRate;
   if (hasher.frameMod == 0) {
     // Avoid truncate to zero on corner-case where
@@ -498,7 +497,8 @@ bool hashVideoFile(
 
   // Read frames in a loop and process them
   bool failed = false;
-  while (av_read_frame(hasher.video->formatContext, packet.get()) == 0) {
+  while (av_read_frame((hasher.video->formatContext).get(), packet.get()) ==
+         0) {
     // Check if the packet belongs to the video stream
     try {
       packet = hasher.processPacket(std::move(packet));
