@@ -2,9 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <math.h>
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <condition_variable>
 #include <cstdio>
 #include <fstream>
@@ -398,7 +398,7 @@ bool hashVideoFile(
     av_log_set_level(AV_LOG_FATAL);
   }
 
-  std::unique_ptr<AVVideo> video = nullptr;
+  std::unique_ptr<AVVideo> video;
   try {
     video = std::make_unique<AVVideo>(inputVideoFileName);
   } catch (const std::runtime_error& e) {
