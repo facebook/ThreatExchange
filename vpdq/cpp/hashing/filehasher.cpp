@@ -37,7 +37,10 @@ namespace vpdq {
 namespace hashing {
 
 // Pixel format for the image passed to PDQ
-constexpr AVPixelFormat pixelFormat = AV_PIX_FMT_RGB24;
+constexpr AVPixelFormat PIXEL_FORMAT = AV_PIX_FMT_RGB24;
+
+// Downsample method for the image passed to PDQ
+constexpr int DOWNSAMPLE_METHOD = SWS_AREA;
 
 // Smart pointer wrapper for AVFrame*
 struct AVFrameDeleter {
@@ -96,12 +99,12 @@ static AVFramePtr createTargetFrame(int width, int height) {
     throw std::bad_alloc();
   }
 
-  frame->format = pixelFormat;
+  frame->format = PIXEL_FORMAT;
   frame->width = width;
   frame->height = height;
 
   if (av_image_alloc(
-          frame->data, frame->linesize, width, height, pixelFormat, 1) < 0) {
+          frame->data, frame->linesize, width, height, PIXEL_FORMAT, 1) < 0) {
     throw std::bad_alloc();
   }
   return frame;
@@ -424,8 +427,8 @@ bool hashVideoFile(
       video->codecContext->pix_fmt,
       video->width,
       video->height,
-      pixelFormat,
-      SWS_LANCZOS,
+      PIXEL_FORMAT,
+      DOWNSAMPLE_METHOD,
       nullptr,
       nullptr,
       nullptr);
