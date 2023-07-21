@@ -267,13 +267,6 @@ class vpdqHasher {
   // Decode and add vpdqFeature to the hashes vector
   // Returns the number of frames processed (this is can be more than 1!)
   int processFrame(AVPacket* packet, int frameNumber) {
-    AVFramePtr targetFrame;
-    try {
-      targetFrame = createTargetFrame(video->width, video->height);
-    } catch (const std::runtime_error& e) {
-      std::cerr << e.what() << std::endl;
-      throw;
-    }
     // Send the packet to the decoder
     int ret = avcodec_send_packet(video->codecContext, packet) < 0;
     if (ret < 0) {
@@ -290,6 +283,13 @@ class vpdqHasher {
       }
 
       if (frameNumber % frameMod == 0) {
+        AVFramePtr targetFrame;
+        try {
+          targetFrame = createTargetFrame(video->width, video->height);
+        } catch (const std::runtime_error& e) {
+          std::cerr << e.what() << std::endl;
+          throw;
+        }
         // Resize the frame and convert to RGB24
         sws_scale(
             video->swsContext,
@@ -301,10 +301,7 @@ class vpdqHasher {
             targetFrame->linesize);
 
         std::unique_lock<std::mutex> lock(queue_mutex);
-        AVFramePtr newTargetFrame =
-            createTargetFrame(video->width, video->height);
-        av_frame_copy(newTargetFrame.get(), targetFrame.get());
-        FatFrame fatFrame{std::move(newTargetFrame), frameNumber};
+        FatFrame fatFrame{std::move(targetFrame), frameNumber};
 
         hash_queue.push(std::move(fatFrame));
         lock.unlock();
