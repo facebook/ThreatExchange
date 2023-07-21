@@ -336,7 +336,9 @@ class vpdqHasher {
             targetFrame->data,
             targetFrame->linesize);
 
-        FatFrame fatFrame{std::move(targetFrame), frameNumber};
+        FatFrame fatFrame{
+            std::move(targetFrame),
+            static_cast<int>(video->codecContext->frame_num - 1)};
         // Use the queue if multithreaded
         if (multithread) {
           std::lock_guard<std::mutex> lock(queue_mutex);
