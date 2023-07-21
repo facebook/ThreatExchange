@@ -2,6 +2,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <string>
+#include <vector>
+
 #include <pdq/cpp/common/pdqhashtypes.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 
@@ -24,6 +27,7 @@ namespace hashing {
  * downsample
  * @param downsampleHeight Height to downsample to before hashing. 0 means no
  * downsample
+ * @param num_threads Number of threads to use for hashing. 0 is auto.
  *
  * @return If successfully hash the video
  */
@@ -33,7 +37,8 @@ bool hashVideoFile(
     bool verbose = false,
     const double secondsPerHash = 1,
     const int downsampleWidth = 0,
-    const int downsampleHeight = 0);
+    const int downsampleHeight = 0,
+    const unsigned int num_threads = 0);
 
 } // namespace hashing
 } // namespace vpdq

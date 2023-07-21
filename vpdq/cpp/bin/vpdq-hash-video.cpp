@@ -76,6 +76,7 @@ int main(int argc, char** argv) {
   std::string outputDirectory = "";
   double secondsPerHash = 0;
   int downsampleFrameDimension = 0;
+  unsigned int thread_count = 0;
 
   while ((argi < argc) && argv[argi][0] == '-') {
     std::string flag(argv[argi++]);
@@ -125,6 +126,13 @@ int main(int argc, char** argv) {
       downsampleFrameDimension = std::atoi(argv[argi++]);
       continue;
     }
+    if (flag == "-t" || flag == "--thread-count") {
+      if ((argc - argi) < 1) {
+        usage(argv[0], 1);
+      }
+      thread_count = std::atoi(argv[argi++]);
+      continue;
+    }
     usage(argv[0], 1);
   }
 
@@ -167,7 +175,8 @@ int main(int argc, char** argv) {
       verbose,
       secondsPerHash,
       downsampleFrameDimension,
-      downsampleFrameDimension);
+      downsampleFrameDimension,
+      thread_count);
   if (!rc) {
     fprintf(
         stderr,

@@ -42,6 +42,7 @@ cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hash
         double seconds_per_hash,
         int width,
         int height,
+        unsigned int thread_count,
     )
 
 
@@ -103,6 +104,7 @@ def computeHash(
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
+    thread_count: int = 0,
 ) -> t.List[VpdqFeature]:
     """Compute vpdq hash
 
@@ -113,6 +115,7 @@ def computeHash(
         seconds_per_hash: The frequence(per second) a hash is generated from the video. If it is 0, will generate every frame's hash
         downsample_width: Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
         downsample_height: Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
+        thread_count: Number of threads for hashing. If it is 0, will use choose automatically
     Returns:
         list of vpdq_feature: VPDQ hash from the video
     """
@@ -125,6 +128,8 @@ def computeHash(
         raise ValueError("Downsample_width must be non-negative")
     if downsample_height < 0:
         raise ValueError("Downsample_height must be non-negative")
+    if thread_count < 0:
+        raise ValueError("Thread_count must be non-negative")
     cdef vector[vpdqFeature] vpdq_hash;
     
 
@@ -135,6 +140,7 @@ def computeHash(
         seconds_per_hash,
         downsample_width,
         downsample_height,
+        thread_count,
     )
 
     if not rt:

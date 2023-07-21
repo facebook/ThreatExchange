@@ -240,7 +240,8 @@ class vpdqHasher {
   std::mutex pdqHashes_mutex;
   std::vector<hashing::vpdqFeature>& pdqHashes;
 
-  unsigned int num_consumers = std::thread::hardware_concurrency();
+  bool multithread = true;
+  unsigned int thread_count;
   std::vector<std::thread> consumer_threads;
 
   std::unique_ptr<AVVideo> video;
@@ -251,13 +252,29 @@ class vpdqHasher {
 
   vpdqHasher(
       std::unique_ptr<AVVideo> video,
-      std::vector<hashing::vpdqFeature>& pdqHashes)
+      std::vector<hashing::vpdqFeature>& pdqHashes,
+      unsigned int thread_count = 0)
       : pdqHashes(pdqHashes), video(std::move(video)) {
-    // Create consumer threads
-    for (decltype(num_consumers) i = 0; i < num_consumers; ++i) {
-      consumer_threads.push_back(
-          std::thread(std::bind(&vpdqHasher::consumer, this)));
+    // Set thread count if specified
+    // thread_count = 1 means disable multithreading
+    if (thread_count == 1) {
+      multithread = false;
+    } else if (thread_count == 0) {
+      thread_count = std::thread::hardware_concurrency();
+      multithread = true;
+    } else {
+      thread_count = thread_count;
+      multithread = true;
     }
+
+    // Create consumer hasher threads if multithreading
+    if (multithread) {
+      for (decltype(thread_count) i = 0; i < thread_count; ++i) {
+        consumer_threads.push_back(
+            std::thread(std::bind(&vpdqHasher::consumer, this)));
+      }
+    }
+
     decodeFrame = AVFramePtr(av_frame_alloc());
     if (decodeFrame.get() == nullptr) {
       throw std::bad_alloc();
@@ -300,10 +317,15 @@ class vpdqHasher {
             targetFrame->data,
             targetFrame->linesize);
 
-        std::lock_guard<std::mutex> lock(queue_mutex);
         FatFrame fatFrame{std::move(targetFrame), frameNumber};
-        hash_queue.push(std::move(fatFrame));
-        queue_condition.notify_one();
+        // Use the queue if multithreaded
+        if (multithread) {
+          std::lock_guard<std::mutex> lock(queue_mutex);
+          hash_queue.push(std::move(fatFrame));
+          queue_condition.notify_one();
+        } else {
+          hasher(std::move(fatFrame));
+        }
       }
       frameNumber += 1;
     }
@@ -379,7 +401,8 @@ bool hashVideoFile(
     bool verbose,
     const double secondsPerHash,
     const int downsampleWidth,
-    const int downsampleHeight) {
+    const int downsampleHeight,
+    const unsigned int thread_count) {
   // These are lavu_log_constants from "libavutil/log.h"
   // It can be helpful for debugging to
   // set this to AV_LOG_DEBUG or AV_LOG_VERBOSE
@@ -436,7 +459,7 @@ bool hashVideoFile(
     return false;
   }
 
-  vpdqHasher hasher(std::move(video), pdqHashes);
+  vpdqHasher hasher(std::move(video), pdqHashes, thread_count);
   hasher.verbose = verbose;
 
   hasher.frameMod = secondsPerHash * hasher.video->frameRate;
@@ -482,8 +505,10 @@ bool hashVideoFile(
 
   av_packet_free(&packet);
 
-  // Signal to the threads that no more frames will be added to the queue
-  hasher.finish();
+  if (thread_count != 1) {
+    // Signal to the threads that no more frames will be added to the queue
+    hasher.finish();
+  }
 
   if (failed) {
     return false;
