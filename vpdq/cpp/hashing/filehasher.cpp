@@ -506,8 +506,7 @@ bool hashVideoFile(
 
   // Read frames in a loop and process them
   bool failed = false;
-  while (av_read_frame((hasher.video->formatContext).get(), packet.get()) ==
-         0) {
+  while (av_read_frame(hasher.video->formatContext.get(), packet.get()) == 0) {
     // Check if the packet belongs to the video stream
     try {
       packet = hasher.processPacket(std::move(packet));
