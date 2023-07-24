@@ -267,7 +267,6 @@ class vpdqHasher {
   std::mutex pdqHashes_mutex;
   std::vector<hashing::vpdqFeature>& pdqHashes;
 
-  bool multithread = true;
   unsigned int thread_count;
   std::vector<std::thread> consumer_threads;
 
@@ -284,18 +283,14 @@ class vpdqHasher {
       : pdqHashes(pdqHashes), video(std::move(video)) {
     // Set thread count if specified
     // thread_count = 1 means disable multithreading
-    if (thread_count == 1) {
-      multithread = false;
-    } else if (thread_count == 0) {
+    if (thread_count == 0) {
       thread_count = std::thread::hardware_concurrency();
-      multithread = true;
     } else {
       thread_count = thread_count;
-      multithread = true;
     }
 
     // Create consumer hasher threads if multithreading
-    if (multithread) {
+    if (thread_count != 1) {
       for (decltype(thread_count) i = 0; i < thread_count; ++i) {
         consumer_threads.emplace_back(
             std::thread(std::bind(&vpdqHasher::consumer, this)));
@@ -353,7 +348,7 @@ class vpdqHasher {
 
         FatFrame fatFrame{std::move(targetFrame), get_frame_number()};
         // Use the queue if multithreaded
-        if (multithread) {
+        if (thread_count == 1) {
           std::lock_guard<std::mutex> lock(queue_mutex);
           hash_queue.push(std::move(fatFrame));
           queue_condition.notify_one();
