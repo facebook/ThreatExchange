@@ -291,6 +291,7 @@ class vpdqHasher {
 
     // Create consumer hasher threads if multithreading
     if (thread_count != 1) {
+      consumer_threads.reserve(thread_count);
       for (decltype(thread_count) i = 0; i < thread_count; ++i) {
         consumer_threads.emplace_back(
             std::thread(std::bind(&vpdqHasher::consumer, this)));
