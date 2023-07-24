@@ -27,15 +27,31 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.8"
-      - name: make
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y make cmake ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
-          mkdir -p cpp/build
-          cd cpp/build
-          cmake ..
-          make
-      - name: regression test
+
+      - name: Make with address,leak,undefined sanitizer
         run: |
-          mkdir -p cpp/output-hashes
-          python cpp/regtest.py -d ${GITHUB_WORKSPACE}/vpdq/cpp/output-hashes -i ${GITHUB_WORKSPACE}/tmk/sample-videos
+          rm -rf cpp/build
+          mkdir cpp/build
+          cd cpp/build
+          cmake .. -DCMAKE_CXX_FLAGS="-O2 -fPIC -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations -fsanitize=address,leak,undefined" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread,undefined"
+          make
+
+      - name: Test with address,leak,undefined sanitizer
+        run: |
+          python cpp/regtest.py -i ${GITHUB_WORKSPACE}/tmk/sample-videos
+
+      - name: Make with thread,undefined sanitizer
+        run: |
+          rm -rf cpp/build
+          mkdir cpp/build
+          cd cpp/build
+          cmake .. -DCMAKE_CXX_FLAGS="-O2 -fPIC -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations -fsanitize=thread,undefined" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,leak,undefined"
+          make
+
+      - name: Test with thread,undefined sanitizer
+        run: |
+          python cpp/regtest.py -i ${GITHUB_WORKSPACE}/tmk/sample-videos

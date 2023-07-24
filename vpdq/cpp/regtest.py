@@ -9,6 +9,7 @@ from shutil import copyfile
 import glob
 import platform
 from typing import Union
+import csv
 
 DIR = Path(__file__).parent
 VPDQ_DIR = DIR.parent
@@ -127,96 +128,125 @@ def main():
     qualityTolerance = str(args.qualityTolerance)
     verbose = args.verbose
 
-    with TemporaryDirectory() as tempOutputHashFolder:
-        tempOutputHashFolder = Path(tempOutputHashFolder)
+    # Run the hashing and matching tests for single and multithreaded
+    for thread_count in range(0, 2):
+        print(f"Threads: {thread_count}")
+        with TemporaryDirectory() as tempOutputHashFolder:
+            tempOutputHashFolder = Path(tempOutputHashFolder)
 
-        # Create output directory if it does not exist and it is specified
-        if outputHashFolder is not None:
-            if not outputHashFolder.exists():
-                print(f"Creating output directory at {outputHashFolder}")
-                outputHashFolder.mkdir(parents=True)
-            print(f"Writing output hash files to directory: {outputHashFolder}")
-        else:
-            print(f"Writing output to temp directory: {tempOutputHashFolder}")
-        # TODO: Add more general options for other video extensions.
-        for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
-            file = Path(fileStr)
-
-            # Create output hash file in a tempdir
-            outputHashFile = tempOutputHashFolder / f"{file.stem}.txt"
-            outputHashFile.touch(exist_ok=False)
-
-            print(f"\nHashing file {file.name}")
-            command = [
-                hashVideoExecutable,
-                "-r",
-                secondsPerHash,
-                "-d",
-                tempOutputHashFolder,
-                "-s",
-                downsampleFrameDimension,
-                "-i",
-                file,
-            ]
-
-            if verbose:
-                # Print all PDQHashes e.g.
-                # PDQHash: ebcc8b06b0666ea34cf9b85972a983a4f94668af05fc9d52aa9662f975499514
-                # selectframe 563
-                command.insert(1, "-v")
-
-            try:
-                hash_proc = subprocess.run(
-                    command,
-                    check=True,
-                    capture_output=True,
-                    shell=(OS == "Windows"),
-                )
-                print(str(hash_proc.stdout, "utf-8"))
-            except subprocess.CalledProcessError as e:
-                print(" ".join([str(i) for i in e.cmd]))
-                print(str(e.stderr, "utf-8"))
-                sys.exit(1)
-
-            # Copy hash files to output directory if it is specified
-            # This will overwrite existing files with the same
-            # name as outputHashFile in the directory
+            # Create output directory if it does not exist and it is specified
             if outputHashFolder is not None:
-                copyfile(outputHashFile, Path(outputHashFolder / outputHashFile.name))
-        for outputFileStr in glob.iglob(
-            f"{tempOutputHashFolder}/**/*.txt", recursive=True
-        ):
-            outputFile = Path(outputFileStr)
-            sampleFile = Path(SAMPLE_HASHES_DIR / outputFile.name)
-            print(
-                f"\nMatching Video {sampleFile.name} from hash file {outputFile.name}"
-            )
-            command = [
-                matchHashesExecutable,
-                sampleFile,
-                outputFile,
-                distanceTolerance,
-                qualityTolerance,
-            ]
+                if not outputHashFolder.exists():
+                    print(f"Creating output directory at {outputHashFolder}")
+                    outputHashFolder.mkdir(parents=True)
+                print(f"Writing output hash files to directory: {outputHashFolder}")
+            else:
+                print(f"Writing output to temp directory: {tempOutputHashFolder}")
+            # TODO: Add more general options for other video extensions.
+            for fileStr in glob.iglob(f"{inputVideoFolder}/**/*.mp4", recursive=True):
+                file = Path(fileStr)
 
-            if verbose:
-                # Print all PDQHashes and if they match e.g.
-                # Line 201 Hash1: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e
-                # Hash2: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e match
-                command.insert(1, "-v")
+                # Create output hash file in a tempdir
+                outputHashFile = tempOutputHashFolder / f"{file.stem}.txt"
+                outputHashFile.touch(exist_ok=False)
 
-            try:
-                match_proc = subprocess.run(
-                    command,
-                    check=True,
-                    capture_output=True,
-                    shell=(OS == "Windows"),
+                print(f"\nHashing file {file.name}")
+                command = [
+                    hashVideoExecutable,
+                    "-r",
+                    secondsPerHash,
+                    "-d",
+                    tempOutputHashFolder,
+                    "-s",
+                    downsampleFrameDimension,
+                    "-i",
+                    file,
+                    "-t",
+                    str(thread_count),
+                ]
+
+                if verbose:
+                    # Print all PDQHashes e.g.
+                    # PDQHash: ebcc8b06b0666ea34cf9b85972a983a4f94668af05fc9d52aa9662f975499514
+                    # selectframe 563
+                    command.insert(1, "-v")
+
+                try:
+                    hash_proc = subprocess.run(
+                        command,
+                        check=True,
+                        capture_output=True,
+                        shell=(OS == "Windows"),
+                    )
+                    print(str(hash_proc.stdout, "utf-8"))
+                except subprocess.CalledProcessError as e:
+                    print(" ".join([str(i) for i in e.cmd]))
+                    print(str(e.stderr, "utf-8"))
+                    sys.exit(1)
+
+                # Copy hash files to output directory if it is specified
+                # This will overwrite existing files with the same
+                # name as outputHashFile in the directory
+                if outputHashFolder is not None:
+                    copyfile(
+                        outputHashFile,
+                        Path(
+                            outputHashFolder
+                            / f"{outputHashFile.stem}-{thread_count}thread.txt"
+                        ),
+                    )
+
+            for outputFileStr in glob.iglob(
+                f"{tempOutputHashFolder}/**/*.txt", recursive=True
+            ):
+                outputFile = Path(outputFileStr)
+                sampleFile = Path(SAMPLE_HASHES_DIR / outputFile.name)
+                print(
+                    f"\nMatching Video {sampleFile.name} from hash file {outputFile.name}"
                 )
-                print(str(match_proc.stdout, "utf-8"))
-            except subprocess.CalledProcessError as e:
-                print(e.cmd)
-                print(str(e.stderr, "utf-8"))
-                sys.exit(1)
+                command = [
+                    matchHashesExecutable,
+                    sampleFile,
+                    outputFile,
+                    distanceTolerance,
+                    qualityTolerance,
+                ]
+
+                if verbose:
+                    # Print all PDQHashes and if they match e.g.
+                    # Line 201 Hash1: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e
+                    # Hash2: da4b380330b725b4a5f08ff03d0f6949da4fd2d3e7c8e4930fa7b80662a17c4e match
+                    command.insert(1, "-v")
+
+                try:
+                    match_proc = subprocess.run(
+                        command,
+                        check=True,
+                        capture_output=True,
+                        shell=(OS == "Windows"),
+                    )
+                    print(str(match_proc.stdout, "utf-8"))
+                except subprocess.CalledProcessError as e:
+                    print(e.cmd)
+                    print(str(e.stderr, "utf-8"))
+                    sys.exit(1)
+
+            # Test that all the features are in frame order
+            for outputFileStr in glob.iglob(
+                f"{tempOutputHashFolder}/**/*.txt", recursive=True
+            ):
+                outputFile = Path(outputFileStr)
+                with open(outputFile, "r") as f:
+                    features = csv.reader(f)
+                    oldFrameNumber = -1
+                    for feature in features:
+                        frameNumber = int(feature[0])
+                        assert frameNumber >= 0
+                        assert frameNumber > oldFrameNumber
+                        assert (oldFrameNumber + 1) == frameNumber
+                        oldFrameNumber = frameNumber
+            print("All features are in frame order.")
+            print("\n--------------------------------------\n")
 
 
 if __name__ == "__main__":

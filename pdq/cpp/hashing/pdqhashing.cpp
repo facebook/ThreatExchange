@@ -2,6 +2,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#include <mutex>
+
 #include <pdq/cpp/downscaling/downscaling.h>
 #include <pdq/cpp/hashing/pdqhashing.h>
 #include <pdq/cpp/hashing/torben.h>
@@ -531,9 +533,10 @@ void pdqBuffer16x16ToBits(float dctOutput16x16[16][16], Hash256* hashptr) {
 // * Storage is row-major
 // * Element i,j at row i column j is at offset i*16+j.
 static float* fill_dct_matrix_64_cached() {
-  static bool initialized = false;
+  static std::once_flag initialized;
   static float buffer[16 * 64];
-  if (!initialized) {
+
+  std::call_once(initialized, []() {
     const float matrix_scale_factor = std::sqrt(2.0 / 64.0);
     for (int i = 0; i < 16; i++) {
       for (int j = 0; j < 64; j++) {
@@ -541,8 +544,7 @@ static float* fill_dct_matrix_64_cached() {
             cos((M_PI / 2 / 64.0) * (i + 1) * (2 * j + 1));
       }
     }
-    initialized = false;
-  }
+  });
   return &buffer[0];
 }
 
