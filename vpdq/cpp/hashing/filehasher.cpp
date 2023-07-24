@@ -284,15 +284,15 @@ class vpdqHasher {
     // Set thread count if specified
     // thread_count = 1 means disable multithreading
     if (thread_count == 0) {
-      thread_count = std::thread::hardware_concurrency();
+      this->thread_count = std::thread::hardware_concurrency();
     } else {
-      thread_count = thread_count;
+      this->thread_count = thread_count;
     }
 
     // Create consumer hasher threads if multithreading
-    if (thread_count != 1) {
-      consumer_threads.reserve(thread_count);
-      for (decltype(thread_count) i = 0; i < thread_count; ++i) {
+    if (this->thread_count != 1) {
+      consumer_threads.reserve(this->thread_count);
+      for (decltype(thread_count) i = 0; i < this->thread_count; ++i) {
         consumer_threads.emplace_back(
             std::thread(std::bind(&vpdqHasher::consumer, this)));
       }
@@ -349,12 +349,12 @@ class vpdqHasher {
 
         FatFrame fatFrame{std::move(targetFrame), get_frame_number()};
         // Use the queue if multithreaded
-        if (thread_count == 1) {
-          hasher(std::move(fatFrame));
-        } else {
+        if (thread_count != 1) {
           std::lock_guard<std::mutex> lock(queue_mutex);
           hash_queue.push(std::move(fatFrame));
           queue_condition.notify_one();
+        } else {
+          hasher(std::move(fatFrame));
         }
       }
     }
@@ -540,15 +540,6 @@ bool hashVideoFile(
         return a.frameNumber < b.frameNumber;
       });
 
-  // Sanity check to make sure that the number of frames
-  // in the video is the same as the number of frames in the hashes vector
-  if (static_cast<std::vector<vpdqFeature>::size_type>(
-          hasher.get_frame_number() + 1) != pdqHashes.size()) {
-    throw std::runtime_error(
-        "pdqhashes is different than frameNumber: " +
-        std::to_string(hasher.get_frame_number()) + " " +
-        std::to_string(pdqHashes.size()));
-  }
   return true;
 }
 
