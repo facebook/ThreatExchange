@@ -366,9 +366,8 @@ class vpdqHasher {
   void hasher(const FatFrame fatFrame) {
     assert(fatFrame.frame->height != 0 && fatFrame.frame->width != 0);
 
-    std::unique_ptr<vpdq::hashing::AbstractFrameBufferHasher> phasher =
-        vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(
-            fatFrame.frame->height, fatFrame.frame->width);
+    auto phasher = vpdq::hashing::FrameBufferHasherFactory::createFrameHasher(
+        fatFrame.frame->height, fatFrame.frame->width);
 
     int quality;
     pdq::hashing::Hash256 pdqHash;
