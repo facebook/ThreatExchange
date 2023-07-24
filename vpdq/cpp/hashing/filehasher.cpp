@@ -350,11 +350,11 @@ class vpdqHasher {
         FatFrame fatFrame{std::move(targetFrame), get_frame_number()};
         // Use the queue if multithreaded
         if (thread_count == 1) {
+          hasher(std::move(fatFrame));
+        } else {
           std::lock_guard<std::mutex> lock(queue_mutex);
           hash_queue.push(std::move(fatFrame));
           queue_condition.notify_one();
-        } else {
-          hasher(std::move(fatFrame));
         }
       }
     }
