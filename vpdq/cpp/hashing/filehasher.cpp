@@ -262,7 +262,7 @@ class vpdqHasher {
   std::condition_variable queue_condition;
   std::mutex queue_mutex;
   std::queue<FatFrame> hash_queue;
-  std::atomic<bool> done_hashing{false};
+  bool done_hashing = false;
 
   std::mutex pdqHashes_mutex;
   std::vector<hashing::vpdqFeature>& pdqHashes;
