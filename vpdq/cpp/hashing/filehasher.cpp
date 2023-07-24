@@ -205,9 +205,7 @@ class AVVideo {
     // Determine the number of threads to use and multithreading type
     codecContext->thread_count = 0;
 
-    if (codec->capabilities & AV_CODEC_CAP_FRAME_THREADS) {
-      codecContext->thread_type = FF_THREAD_FRAME;
-    } else if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
+    if (codec->capabilities & AV_CODEC_CAP_SLICE_THREADS) {
       codecContext->thread_type = FF_THREAD_SLICE;
     } else {
       codecContext->thread_count = 1;
