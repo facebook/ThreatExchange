@@ -1,6 +1,5 @@
 [build-system]
-# hmm? 
-requires = ["setuptools"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]

@@ -31,8 +31,9 @@
     }
   },
   "remoteUser": "vscode",
-  "postCreateCommand": "pip install --editable .[dev]",
+  "postCreateCommand": "pip install --editable .",
   "mounts": [
     "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume"
-  ]
+  ],
+  "postAttachCommand": "flask --app OpenMediaMatch run --debug"
 }
