@@ -67,3 +67,7 @@ def hello_world():
 ```
 
 Retry the `curl localhost:5000/hello`, you should now see your greeting message come back instead of the 404 error.
+
+## Self-managed Python dev environment
+
+If you're a seasoned Python developer and have your dev environment set up just-so, you should have no problem hacking on Open Media Match, as the project is laid out in standard Python Package format.
