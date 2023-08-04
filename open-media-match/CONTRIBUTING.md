@@ -41,10 +41,9 @@ The [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers
 ### Get started
 
  * Clone this Git repository locally. You can do this through the CLI or through the "Clone Git Repository..." shortcut on the VS Code welcome screen.
- * Open the `open-media-match` project in the dev container:
-   * Cmd-Shift-P, "Dev Containers: Open Folder in Container..."
-   * Select the `open-media-match` directory containing this `CONTRIBUTING.md` file within the local Git repo (not the repo root).
-   * Wait for the container to build
+ * Open the `open-media-match` folder in VSCode
+ * VSCode should ask you if you want to reopen the folder in a Dev Container. Select "Reopen in Container".
+ * Wait for the container to build
 
 The VSCode window should now be replaced with a new one with `open-media-match` as the project root.
 
