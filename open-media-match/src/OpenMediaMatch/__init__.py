@@ -3,6 +3,7 @@
 import os
 import flask
 
+from . import hashing
 
 def create_app():
     """
@@ -17,8 +18,7 @@ def create_app():
         Sanity check endpoint showing a basic status page
         TODO: in development mode, this could show some useful additional info
         """
-        app.config.get('PRODUCTION')
-        return flask.render_template('index.html.j2')
+        return flask.render_template('index.html.j2', production=app.config.get('PRODUCTION'))
 
     @app.route('/status')
     def status():
@@ -27,15 +27,6 @@ def create_app():
         """
         return 'I-AM-ALIVE\n'
 
-    @app.route('/hash/image')
-    def hash_image():
-        """
-        Hash an image
-        """
-        image_url = flask.request.args.get('url')
-        if image_url is None:
-            flask.abort(400)
-
-        return f"If this was implemented you'd be seeing the PDQ hash of the image at {image_url} here"
+    app.register_blueprint(hashing.bp)
 
     return app
