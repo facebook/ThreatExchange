@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import os
 import flask
 
 
@@ -7,7 +8,8 @@ def create_app():
     """
     Create and configure the Flask app
     """
-    app = flask.Flask(__name__, instance_relative_config=True)
+    app = flask.Flask(__name__)
+    app.config.from_envvar('OMM_CONFIG')
 
     @app.route("/")
     def ping():
