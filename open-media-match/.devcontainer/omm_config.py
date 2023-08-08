@@ -1,4 +1,5 @@
 # Database configuration
+PRODUCTION = False
 DBUSER = 'media_match'
 DBPASS = 'hunter2'
 DBHOST = 'db'
