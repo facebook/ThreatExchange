@@ -3,7 +3,7 @@
 import os
 import flask
 
-from . import hashing
+from .blueprints import hashing, matching, curation
 
 def create_app():
     """
@@ -11,7 +11,7 @@ def create_app():
     """
     app = flask.Flask(__name__)
     app.config.from_envvar('OMM_CONFIG')
-
+    
     @app.route('/')
     def index():
         """
@@ -27,6 +27,16 @@ def create_app():
         """
         return 'I-AM-ALIVE\n'
 
-    app.register_blueprint(hashing.bp)
+    # Register Flask blueprints for whichever server roles are enabled...
+    # URL prefixing facilitates easy Layer 7 routing :) 
+    if app.config.get('ROLE_HASHER', False):
+        app.register_blueprint(hashing.bp, url_prefix='/h')
+
+    if app.config.get('ROLE_MATCHER', False):
+        app.register_blueprint(matching.bp, url_prefix='/m')
+
+    if app.config.get('ROLE_MATCHER', False):
+        app.register_blueprint(curation.bp, url_prefix='/c')
+
 
     return app
