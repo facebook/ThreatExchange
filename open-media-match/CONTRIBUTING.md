@@ -49,7 +49,7 @@ The VSCode window should now be replaced with a new one with `open-media-match` 
 
 You should also see a Terminal panel within VSCode containing `Serving Flask app 'OpenMediaMatch'` and some other startup/initialization messages from Flask. This shows that the Flask server is up and running.
 
-Open a second terminal panel. This will give you a Bash prompt. From here you can "ping" the Flask server with cURL to test its liveness. Try `curl localhost:5000`. You should receive the `I-AM-ALIVE` response back.
+Open a second terminal panel. This will give you a Bash prompt. From here you can "ping" the Flask server with cURL to test its liveness. Try `curl localhost:5000/status`. You should receive the `I-AM-ALIVE` response back.
 
 ### Hello World
 
