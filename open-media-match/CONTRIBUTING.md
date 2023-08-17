@@ -40,7 +40,8 @@ The [Dev Containers](https://code.visualstudio.com/docs/devcontainers/containers
 
 ### Get started
 
- * Clone this Git repository locally. You can do this through the CLI or through the "Clone Git Repository..." shortcut on the VS Code welcome screen.
+ * Clone this Git repository locally. If you are a non-Windows OS, you can do this through the CLI or through the "Clone Git Repository..." shortcut on the VS Code welcome screen.
+   * [Windows] You'll have to do a trick to get the correct line endings for your devcontainer on checkout. The instructions for that can be found in the [hasher-matcher-actioner README](../hasher-matcher-actioner/CONTRIBUTING.md#vs-code-devcontainers--automated-development-environment).
  * Open the `open-media-match` folder in VSCode
  * VSCode should ask you if you want to reopen the folder in a Dev Container. Select "Reopen in Container".
  * Wait for the container to build
