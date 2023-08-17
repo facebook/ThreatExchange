@@ -10,7 +10,7 @@ PDQ is a photo hashing algorithm that can turn photos into 256 bit signatures wh
 
 TMK+PDQF (or TMK for short) is a video hashing algorithm that can turn videos into 256KB signatures which can be used to match other videos.
 
-## [Coming Soon] Video PDQ (vPDQ) Video Hashing and Similarity Matching
+## Video PDQ (vPDQ) Video Hashing and Similarity Matching
 
 Video PDQ (or vPDQ for short) is a simple video hashing algorithm that determines two videos are matching based on the amount of shared similar frames. It can easily be applied for other image algorithms, and not just PDQ.
 
