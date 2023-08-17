@@ -245,9 +245,13 @@ Matching File chair-22-with-small-logo-bar.txt
 ```
 
 ## vPDQ Python Binding
-A Cython binding is available to the CPP library. All of the dependencies from the CPP implementation are required to build the binding.
+A Cython binding is available to the CPP library for linux and Mac users. All of the dependencies from the CPP implementation are required to build the binding.
 
-See README.md in `python/` for more information.
+See [README.md in `python/`](./python/README.md) for more information.
+
+```sh
+pip install vpdq
+```
 
 
 ## FAISS
