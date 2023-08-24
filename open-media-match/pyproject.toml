@@ -19,6 +19,15 @@ dependencies = [
     "flask",
 ]
 
+[project.optional-dependencies]
+all = [
+    "mypy",
+    "black",
+    "pytest"
+]
+
+test = [ "pytest" ]
+
 [project.urls]
 "Homepage" = "https://github.com/facebook/ThreatExchange/"
 "Bug Tracker" = "https://github.com/facebook/ThreatExchange/issues"
