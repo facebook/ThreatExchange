@@ -5,7 +5,8 @@ bp = Blueprint("matching", __name__)
 
 # TODO: everything :D
 
-@bp.route('/lookup')
+
+@bp.route("/lookup")
 def lookup():
     """
     Look up a hash in the similarity index
@@ -16,9 +17,10 @@ def lookup():
     Output:
      * List of matching content items
     """
-    abort(501) # Unimplemented
- 
-@bp.route('/index/status')
+    abort(501)  # Unimplemented
+
+
+@bp.route("/index/status")
 def index_status():
     """
     Input:
@@ -26,4 +28,4 @@ def index_status():
     Output:
      * Time of last index build
     """
-    abort(501) # Unimplemented
+    abort(501)  # Unimplemented
