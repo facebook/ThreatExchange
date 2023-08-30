@@ -28,6 +28,12 @@ all = [
 
 test = [ "pytest" ]
 
+[tool.mypy]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_optional = true
+
 [project.urls]
 "Homepage" = "https://github.com/facebook/ThreatExchange/"
 "Bug Tracker" = "https://github.com/facebook/ThreatExchange/issues"
