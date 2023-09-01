@@ -7,6 +7,7 @@ The default store for accessing persistent data on OMM.
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage import mocked
 
+
 class DefaultOMMStore(mocked.MockedUnifiedStore, interface.IUnifiedStore):
     """
     The default store for accessing persistent data on OMM.
@@ -16,10 +17,10 @@ class DefaultOMMStore(mocked.MockedUnifiedStore, interface.IUnifiedStore):
 
     In implementation, don't refer to DefaultOMMStore directly, but
     instead to the interfaces to allow future authors more ease in
-    extending. 
+    extending.
 
     Data is stored in a combination of:
       * Static config set by deployment (e.g. installed SignalTypes)
       * PostGres-backed tables (e.g. info downloaded from external APIs)
-      * Blobstore (e.g. built indices) 
+      * Blobstore (e.g. built indices)
     """
