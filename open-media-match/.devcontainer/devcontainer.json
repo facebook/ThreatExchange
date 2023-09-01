@@ -50,5 +50,5 @@
   "mounts": [
     "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume"
   ],
-  "postAttachCommand": "OMM_CONFIG=/workspace/.devcontainer/omm_config.py flask --app OpenMediaMatch run --debug"
+  "postAttachCommand": "/workspace/.devcontainer/startup.sh"
 }
