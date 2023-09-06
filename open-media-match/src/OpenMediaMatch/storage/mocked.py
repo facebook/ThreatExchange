@@ -23,13 +23,10 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             c.get_name(): interface.ContentTypeConfig(True, c)
             for c in (PhotoContent, VideoContent)
         }
-   
+
     def get_exchange_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
-        return {
-            e.get_name(): e
-            for e in (StaticSampleSignalExchangeAPI,)
-        }
-   
+        return {e.get_name(): e for e in (StaticSampleSignalExchangeAPI,)}
+
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         return {
             s.get_name(): interface.SignalTypeConfig(True, s)

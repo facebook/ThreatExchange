@@ -24,11 +24,13 @@ from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
 )
 
+
 @dataclass
 class ContentTypeConfig:
     """
     Holder for ContentType configuration.
     """
+
     # Content types that are not enabled should not be used in hashing/matching
     enabled: bool
     signal_type: ContentType
@@ -49,6 +51,7 @@ class SignalTypeConfig:
     """
     Holder for SignalType configuration
     """
+
     # Signal types that are not enabled should not be used in hashing/matching
     enabled: bool
     signal_type: SignalType
@@ -56,6 +59,7 @@ class SignalTypeConfig:
 
 class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
     """Interface for accessing SignalType configuration"""
+
     @abc.abstractmethod
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         """
@@ -65,25 +69,27 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
 
 class ISignalExchangeConfigStore(metaclass=abc.ABCMeta):
     """Interface for accessing SignalExchange configuration"""
+
     @abc.abstractmethod
     def get_exchange_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
         """
         Return all installed SignalExchange types.
         """
 
+
 # TODO - index, collaborations, banks, OMM-specific
+
 
 class IUnifiedStore(
     IContentTypeConfigStore,
     ISignalTypeConfigStore,
     ISignalExchangeConfigStore,
-    metaclass=abc.ABCMeta
+    metaclass=abc.ABCMeta,
 ):
     """
     All the store classes combined into one interfaces.
-    
+
     This is probably the most common way to use this, especially early on
     in development - the option to pass them more narrowly is helpful
     mostly for typing.
     """
-    
