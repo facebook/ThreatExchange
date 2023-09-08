@@ -1,6 +1,5 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import os
 import flask
 import flask_migrate
 import flask_sqlalchemy

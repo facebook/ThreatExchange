@@ -33,7 +33,7 @@ class ContentTypeConfig:
 
     # Content types that are not enabled should not be used in hashing/matching
     enabled: bool
-    signal_type: ContentType
+    content_type: ContentType
 
 
 class IContentTypeConfigStore(metaclass=abc.ABCMeta):
@@ -62,9 +62,27 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
-        """
-        Return all installed signal types.
-        """
+        """Return all installed signal types."""
+
+    @t.final
+    def get_enabled_signal_types(self) -> t.Mapping[str, SignalType]:
+        """Helper shortcut for getting only enabled SignalTypes"""
+        return {
+            k: v.signal_type
+            for k, v in self.get_signal_type_configs().items()
+            if v.enabled
+        }
+
+    @t.final
+    def get_enabled_signal_types_for_content_type(
+        self, content_type: ContentType
+    ) -> t.Mapping[str, SignalType]:
+        """Helper shortcut for getting enabled types for a piece of content"""
+        return {
+            k: v.signal_type
+            for k, v in self.get_signal_type_configs().items()
+            if v.enabled and content_type in v.signal_type.get_content_types()
+        }
 
 
 class ISignalExchangeConfigStore(metaclass=abc.ABCMeta):
