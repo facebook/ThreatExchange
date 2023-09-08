@@ -72,4 +72,5 @@ setup(
             "tx = threatexchange.cli.main:main",
         ],
     },
+    package_data={"threatexchange": ["py.typed"]},
 )
