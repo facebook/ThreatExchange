@@ -55,7 +55,7 @@ def hash_media():
 
 def _parse_request_content_type() -> ContentType:
     storage = app_resources.get_storage()
-    arg = request.args.get("content_type", None)
+    arg = request.args.get("content_type", "")
     content_type_config = storage.get_content_type_configs().get(arg)
     if content_type_config is None:
         abort(400, f"no such content_type: '{arg}'")
@@ -77,7 +77,7 @@ def _parse_request_signal_type(content_type: ContentType) -> t.Mapping[str, Sign
 
     ret = {}
     for st_name in signal_type_args.split(","):
-        st_name = st_name.trim()
+        st_name = st_name.strip()
         if not st_name:
             continue
         if st_name not in signal_types:
