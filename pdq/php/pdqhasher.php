@@ -378,7 +378,7 @@ class PDQHasher {
       for ($j = 0; $j < 63; $j++) {
         $u = $buffer_64x64[$i][$j];
         $v = $buffer_64x64[$i][$j+1];
-        $$d = (int)((($u - $v) * 100) / 255);
+        $d = (int)((($u - $v) * 100) / 255);
         $int_gradient_sum += (int)abs($d);
       }
     }
