@@ -20,13 +20,17 @@ dependencies = [
     "flask_sqlalchemy",
     "flask_migrate",
     "psycopg2",
+    "threatexchange",
 ]
 
 [project.optional-dependencies]
 all = [
     "mypy",
     "black",
-    "pytest"
+    "pytest",
+    "types-Flask-Migrate",
+    "types-requests",
+
 ]
 
 test = [ "pytest" ]

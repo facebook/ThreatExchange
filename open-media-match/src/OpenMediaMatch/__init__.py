@@ -1,6 +1,8 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import os
+import sys
+
 import flask
 import flask_migrate
 import flask_sqlalchemy
@@ -16,7 +18,14 @@ def create_app():
     Create and configure the Flask app
     """
     app = flask.Flask(__name__)
-    app.config.from_envvar("OMM_CONFIG")
+    if "OMM_CONFIG" in os.environ:
+        app.config.from_envvar("OMM_CONFIG")
+    elif sys.argv[0].endswith("/flask"):  # Default for flask CLI
+        # The devcontainer settings. If you are using the CLI outside
+        # the devcontainer and getting an error, just override the env
+        app.config.from_pyfile("/workspace/.devcontainer/omm_config.py")
+    else:
+        raise RuntimeError("No flask config given - try populating OMM_CONFIG env")
     app.config.update(
         SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
