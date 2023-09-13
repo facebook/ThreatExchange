@@ -13,6 +13,8 @@ from flask import abort, request, current_app
 import requests
 
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
+from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.signal_base import FileHasher, SignalType
 
 from OpenMediaMatch import app_resources
@@ -24,18 +26,20 @@ bp = Blueprint("hashing", __name__)
 def hash_media():
     """
     Fetch content and return its hash.
-    TODO: implement
     """
-
-    content_type = _parse_request_content_type()
-    signal_types = _parse_request_signal_type(content_type)
-
     media_url = request.args.get("url", None)
     if media_url is None:
         abort(400, "url is required")
 
     download_resp = requests.get(media_url, allow_redirects=True, timeout=30 * 1000)
     download_resp.raise_for_status()
+
+    url_content_type = download_resp.headers["content-type"]
+
+    current_app.logger.debug("%s is type %s", media_url, url_content_type)
+
+    content_type = _parse_request_content_type(url_content_type)
+    signal_types = _parse_request_signal_type(content_type)
 
     ret = {}
 
@@ -53,9 +57,21 @@ def hash_media():
     return ret
 
 
-def _parse_request_content_type() -> ContentType:
-    storage = app_resources.get_storage()
+def _parse_request_content_type(url_content_type: str) -> ContentType:
     arg = request.args.get("content_type", "")
+    if not arg:
+        if url_content_type.lower().startswith("image"):
+            arg = PhotoContent.get_name()
+        elif url_content_type.lower().startswith("video"):
+            arg = VideoContent.get_name()
+        else:
+            abort(
+                400,
+                f"unsupported url ContentType: '{url_content_type}', "
+                "if you know the expected type, provide it with content_type",
+            )
+
+    storage = app_resources.get_storage()
     content_type_config = storage.get_content_type_configs().get(arg)
     if content_type_config is None:
         abort(400, f"no such content_type: '{arg}'")
