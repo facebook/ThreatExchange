@@ -7,9 +7,7 @@ import flask
 import flask_migrate
 import flask_sqlalchemy
 
-from .blueprints import hashing, matching, curation
-
-database = flask_sqlalchemy.SQLAlchemy()
+db = flask_sqlalchemy.SQLAlchemy()
 migrate = flask_migrate.Migrate()
 
 
@@ -30,8 +28,10 @@ def create_app():
         SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
-    database.init_app(app)
-    migrate.init_app(app, database)
+    app.db = db
+
+    db.init_app(app)
+    migrate.init_app(app, db)
 
     @app.route("/")
     def index():
@@ -52,13 +52,17 @@ def create_app():
 
     # Register Flask blueprints for whichever server roles are enabled...
     # URL prefixing facilitates easy Layer 7 routing :)
+    # Linters complain about imports off the top level, but this is needed
+    # to prevent circular imports
+    from .blueprints import hashing, matching, curation
+
     if app.config.get("ROLE_HASHER", False):
         app.register_blueprint(hashing.bp, url_prefix="/h")
 
     if app.config.get("ROLE_MATCHER", False):
         app.register_blueprint(matching.bp, url_prefix="/m")
 
-    if app.config.get("ROLE_MATCHER", False):
+    if app.config.get("ROLE_CURATOR", False):
         app.register_blueprint(curation.bp, url_prefix="/c")
 
     from . import models
@@ -68,7 +72,7 @@ def create_app():
         # TODO: This is a placeholder for where some useful seed data can be loaded;
         # particularly important for development
         bank = models.Bank(name="bad_stuff", enabled=True)
-        database.session.add(bank)
-        database.session.commit()
+        db.session.add(bank)
+        db.session.commit()
 
     return app
