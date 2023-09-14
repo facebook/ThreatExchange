@@ -13,7 +13,8 @@
         "ms-python.mypy-type-checker",
         "mtxr.sqltools",
         "mtxr.sqltools-driver-pg",
-        "tamasfe.even-better-toml"
+        "tamasfe.even-better-toml",
+        "humao.rest-client"
       ],
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",

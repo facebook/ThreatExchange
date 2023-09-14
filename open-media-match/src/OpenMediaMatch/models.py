@@ -1,16 +1,19 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from OpenMediaMatch import database as db
+from dataclasses import dataclass
+from OpenMediaMatch import db
 
 
-class Bank(db.Model):  # type: ignore[name-defined]  # mypy not smart enough
+@dataclass
+class Bank(db.Model):
     __tablename__ = "banks"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(255), nullable=False)
-    enabled = db.Column(db.Boolean, nullable=False)
+    id: int = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name: str = db.Column(db.String(255), nullable=False)
+    enabled: bool = db.Column(db.Boolean, nullable=False)
 
 
-class Hash(db.Model):  # type: ignore[name-defined]  # mypy not smart enough
+@dataclass
+class Hash(db.Model):
     __tablename__ = "hashes"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     enabled = db.Column(db.Boolean, nullable=False)
