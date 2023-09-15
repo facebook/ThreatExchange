@@ -20,6 +20,7 @@ dependencies = [
     "flask_sqlalchemy",
     "flask_migrate",
     "psycopg2",
+    "requests",
     "threatexchange",
 ]
 
@@ -30,7 +31,6 @@ all = [
     "pytest",
     "types-Flask-Migrate",
     "types-requests",
-
 ]
 
 test = [ "pytest" ]
