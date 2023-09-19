@@ -20,6 +20,7 @@ from dataclasses import dataclass
 import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
 )
@@ -33,7 +34,7 @@ class ContentTypeConfig:
 
     # Content types that are not enabled should not be used in hashing/matching
     enabled: bool
-    content_type: ContentType
+    content_type: t.Type[ContentType]
 
 
 class IContentTypeConfigStore(metaclass=abc.ABCMeta):
@@ -54,7 +55,7 @@ class SignalTypeConfig:
 
     # Signal types that are not enabled should not be used in hashing/matching
     enabled: bool
-    signal_type: SignalType
+    signal_type: t.Type[SignalType]
 
 
 class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
@@ -65,7 +66,7 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
         """Return all installed signal types."""
 
     @t.final
-    def get_enabled_signal_types(self) -> t.Mapping[str, SignalType]:
+    def get_enabled_signal_types(self) -> t.Mapping[str, t.Type[SignalType]]:
         """Helper shortcut for getting only enabled SignalTypes"""
         return {
             k: v.signal_type
@@ -75,7 +76,7 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
 
     @t.final
     def get_enabled_signal_types_for_content_type(
-        self, content_type: ContentType
+        self, content_type: t.Type[ContentType]
     ) -> t.Mapping[str, SignalType]:
         """Helper shortcut for getting enabled types for a piece of content"""
         return {
@@ -95,6 +96,32 @@ class ISignalExchangeConfigStore(metaclass=abc.ABCMeta):
         """
 
 
+class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
+    """
+    Interface for accessing index objects.
+
+    In the SignalType interfaces, SignalTypeIndex is a large object that
+    contains all the information needed to match content known to the system.
+
+    This means that the index size is ultimately limited by available memory.
+    Extensions of OMM looking to solve this scaling problem may need to redesign
+    the bank -> indexing -> index flow, shard the index, or other tricks.
+
+    This approach provides a simple backup approach that will work with any
+    properly implemented SignalType.
+    """
+
+    @abc.abstractmethod
+    def get_signal_type_index(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[SignalTypeIndex[int]]:
+        """
+        Return the built index for this SignalType.
+
+        For OMM, the indexed values are BankedIDs
+        """
+
+
 # TODO - index, collaborations, banks, OMM-specific
 
 
@@ -102,6 +129,7 @@ class IUnifiedStore(
     IContentTypeConfigStore,
     ISignalTypeConfigStore,
     ISignalExchangeConfigStore,
+    ISignalTypeIndexStore,
     metaclass=abc.ABCMeta,
 ):
     """

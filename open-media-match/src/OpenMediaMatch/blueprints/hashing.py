@@ -29,7 +29,7 @@ def hash_media():
     """
     media_url = request.args.get("url", None)
     if media_url is None:
-        abort(400, "url is required")
+        return {"message": "url is required"}, 400
 
     download_resp = requests.get(media_url, allow_redirects=True, timeout=30 * 1000)
     download_resp.raise_for_status()
@@ -74,10 +74,10 @@ def _parse_request_content_type(url_content_type: str) -> ContentType:
     storage = app_resources.get_storage()
     content_type_config = storage.get_content_type_configs().get(arg)
     if content_type_config is None:
-        abort(400, f"no such content_type: '{arg}'")
+        return {"message": f"no such content_type: '{arg}'"}, 400
 
     if not content_type_config.enabled:
-        abort(400, f"content_type {arg} is disabled")
+        return {"message": f"content_type {arg} is disabled"}, 400
 
     return content_type_config.content_type
 

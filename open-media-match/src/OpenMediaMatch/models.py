@@ -13,8 +13,9 @@ class Bank(db.Model):
 
 
 @dataclass
-class Hash(db.Model):
+class Hash(db.Model):  # Should this be Signal?
     __tablename__ = "hashes"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     enabled = db.Column(db.Boolean, nullable=False)
     value = db.Column(db.LargeBinary, nullable=False)
+    # We may need a pointer back to the 3rd party ID to do SEEN writebacks
