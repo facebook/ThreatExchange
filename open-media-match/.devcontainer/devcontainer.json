@@ -3,7 +3,10 @@
   "dockerComposeFile": "docker-compose.yaml",
   "service": "app",
   "workspaceFolder": "/workspace",
-  "forwardPorts": [8080, 5432],
+  "forwardPorts": [
+    8080,
+    5432
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -42,7 +45,8 @@
   "remoteUser": "vscode",
   "postCreateCommand": "pip install --editable .[all]",
   "mounts": [
-    "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume"
+    "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE},target=/host-home-folder,type=bind,consistency=cached"
   ],
   "postAttachCommand": "/workspace/.devcontainer/startup.sh"
 }
