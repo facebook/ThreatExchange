@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from OpenMediaMatch import create_app
+from OpenMediaMatch.app import create_app
 
 
 @pytest.fixture()

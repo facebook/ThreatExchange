@@ -30,10 +30,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         return {e.get_name(): e for e in (StaticSampleSignalExchangeAPI,)}
 
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
-        return {
-            s.get_name(): interface.SignalTypeConfig(True, s)
-            for s in (PdqSignal, VideoMD5Signal)
-        }
+        # Needed to bamboozle mypy into working
+        s_types: t.Sequence[t.Type[SignalType]] = (PdqSignal, VideoMD5Signal)
+        return {s.get_name(): interface.SignalTypeConfig(True, s) for s in s_types}
 
     def get_signal_type_index(
         self, signal_type: type[SignalType]
