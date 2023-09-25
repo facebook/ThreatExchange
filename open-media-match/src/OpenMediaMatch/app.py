@@ -1,12 +1,22 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import logging
 import os
 import sys
+import warnings
 
 import flask
+from flask.logging import default_handler
 import flask_migrate
 
+# Import pdq first with its hash order warning squelched, it's before our time
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from threatexchange.signal_type.pdq import signal as _
+
 from OpenMediaMatch import database
+from OpenMediaMatch.background_tasks import build_index, fetcher
+from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import hashing, matching, curation
 
 
@@ -15,6 +25,7 @@ def create_app():
     Create and configure the Flask app
     """
     app = flask.Flask(__name__)
+
     migrate = flask_migrate.Migrate()
 
     if "OMM_CONFIG" in os.environ:
@@ -66,10 +77,37 @@ def create_app():
 
     @app.cli.command("seed")
     def seed_data():
+        """Insert plausible-looking data into the database layer"""
         # TODO: This is a placeholder for where some useful seed data can be loaded;
         # particularly important for development
         bank = database.Bank(name="bad_stuff", enabled=True)
         database.db.session.add(bank)
         database.db.session.commit()
+
+    @app.cli.command("fetch")
+    def fetch():
+        """Run the 'background task' to fetch from 3p data and sync to local banks"""
+        storage = get_storage()
+        task_logger = logging.getLogger(fetcher.__name__)
+        task_logger.addHandler(default_handler)
+        task_logger.setLevel(logging.NOTSET)
+        logging.getLogger().setLevel(logging.NOTSET)
+        fetcher.fetch_all(
+            storage,
+            {
+                st.signal_type.get_name(): st.signal_type
+                for st in storage.get_signal_type_configs().values()
+            },
+        )
+
+    @app.cli.command("build_indices")
+    def build_indices():
+        """Run the 'background task' to rebuild indices from bank contents"""
+        storage = get_storage()
+        task_logger = logging.getLogger(build_index.__name__)
+        task_logger.addHandler(default_handler)
+        task_logger.setLevel(logging.NOTSET)
+        logging.getLogger().setLevel(logging.NOTSET)
+        build_index.build_all_indices(storage, None, storage)
 
     return app
