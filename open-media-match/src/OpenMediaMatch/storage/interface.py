@@ -77,7 +77,7 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
     @t.final
     def get_enabled_signal_types_for_content_type(
         self, content_type: t.Type[ContentType]
-    ) -> t.Mapping[str, SignalType]:
+    ) -> t.Mapping[str, t.Type[SignalType]]:
         """Helper shortcut for getting enabled types for a piece of content"""
         return {
             k: v.signal_type

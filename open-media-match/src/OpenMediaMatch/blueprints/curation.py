@@ -1,9 +1,8 @@
 from flask import Blueprint
-from flask import abort, request, current_app, jsonify
+from flask import request, current_app, jsonify
 
-from OpenMediaMatch import models
+from OpenMediaMatch import database
 
-import json
 
 bp = Blueprint("curation", __name__)
 
@@ -11,7 +10,7 @@ bp = Blueprint("curation", __name__)
 @bp.route("/banks", methods=["GET"])
 def banks_index():
     banks = (
-        current_app.db.session.execute(current_app.db.select(models.Bank))
+        database.db.session.execute(current_app.db.select(database.Bank))
         .scalars()
         .all()
     )
@@ -20,7 +19,7 @@ def banks_index():
 
 @bp.route("/bank/<int:bank_id>", methods=["GET"])
 def bank_show_by_id(bank_id: int):
-    bank = models.Bank.query.get(bank_id)
+    bank = database.Bank.query.get(bank_id)
     if not bank:
         return jsonify({"message": "bank not found"}), 404
     return jsonify(bank)
@@ -29,8 +28,8 @@ def bank_show_by_id(bank_id: int):
 @bp.route("/bank/<bank_name>", methods=["GET"])
 def bank_show_by_name(bank_name: str):
     bank = (
-        current_app.db.session.execute(
-            current_app.db.select(models.Bank).where(models.Bank.name == bank_name)
+        database.db.session.execute(
+            database.db.select(database.Bank).where(database.Bank.name == bank_name)
         )
         .scalars()
         .all()
@@ -43,16 +42,16 @@ def bank_create():
     data = request.get_json()
     if not "name" in data:
         return jsonify({"message": "Field `name` is required"}), 400
-    bank = models.Bank(name=data["name"], enabled=bool(data.get("enabled", True)))
-    current_app.db.session.add(bank)
-    current_app.db.session.commit()
+    bank = database.Bank(name=data["name"], enabled=bool(data.get("enabled", True)))
+    database.db.session.add(bank)
+    database.db.session.commit()
     return jsonify({"message": "Created successfully"}), 201
 
 
 @bp.route("/bank/<int:bank_id>", methods=["PUT"])
 def bank_update(bank_id: int):
     data = request.get_json()
-    bank = models.Bank.query.get(bank_id)
+    bank = database.Bank.query.get(bank_id)
     if not bank:
         return jsonify({"message": "bank not found"}), 404
 
@@ -61,15 +60,15 @@ def bank_update(bank_id: int):
     if "enabled" in data:
         bank.enabled = bool(data["enabled"])
 
-    current_app.db.session.commit()
+    database.db.session.commit()
     return jsonify(bank)
 
 
 @bp.route("/bank/<int:bank_id>", methods=["DELETE"])
 def bank_delete(bank_id: int):
-    bank = models.Bank.query.get(bank_id)
+    bank = database.Bank.query.get(bank_id)
     if not bank:
         return jsonify({"message": "bank not found"}), 404
-    current_app.db.session.delete(bank)
-    current_app.db.session.commit()
+    database.db.session.delete(bank)
+    database.db.session.commit()
     return jsonify({"message": f"Bank {bank.name} ({bank.id}) deleted"})

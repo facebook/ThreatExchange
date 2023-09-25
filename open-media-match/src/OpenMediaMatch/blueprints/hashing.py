@@ -17,12 +17,14 @@ from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.signal_base import FileHasher, SignalType
 
-from OpenMediaMatch import app_resources
+from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.utils import abort_to_json
 
 bp = Blueprint("hashing", __name__)
 
 
 @bp.route("/hash")
+@abort_to_json
 def hash_media():
     """
     Fetch content and return its hash.
@@ -57,7 +59,7 @@ def hash_media():
     return ret
 
 
-def _parse_request_content_type(url_content_type: str) -> ContentType:
+def _parse_request_content_type(url_content_type: str) -> t.Type[ContentType]:
     arg = request.args.get("content_type", "")
     if not arg:
         if url_content_type.lower().startswith("image"):
@@ -71,20 +73,20 @@ def _parse_request_content_type(url_content_type: str) -> ContentType:
                 "if you know the expected type, provide it with content_type",
             )
 
-    storage = app_resources.get_storage()
-    content_type_config = storage.get_content_type_configs().get(arg)
+    content_type_config = get_storage().get_content_type_configs().get(arg)
     if content_type_config is None:
-        return {"message": f"no such content_type: '{arg}'"}, 400
+        abort(400, f"no such content_type: '{arg}'")
 
     if not content_type_config.enabled:
-        return {"message": f"content_type {arg} is disabled"}, 400
+        abort(400, f"content_type {arg} is disabled")
 
     return content_type_config.content_type
 
 
-def _parse_request_signal_type(content_type: ContentType) -> t.Mapping[str, SignalType]:
-    storage = app_resources.get_storage()
-    signal_types = storage.get_enabled_signal_types_for_content_type(content_type)
+def _parse_request_signal_type(
+    content_type: t.Type[ContentType],
+) -> t.Mapping[str, t.Type[SignalType]]:
+    signal_types = get_storage().get_enabled_signal_types_for_content_type(content_type)
     if not signal_types:
         abort(500, "No signal types configured!")
     signal_type_args = request.args.get("types", None)

@@ -7,11 +7,11 @@ Endpoints for matching content and hashes.
 from flask import Blueprint
 from flask import abort
 
-from OpenMediaMatch.app_resources import (
+from OpenMediaMatch.utils import (
     abort_to_json,
     require_request_param,
-    get_storage,
 )
+from OpenMediaMatch.persistence import get_storage
 
 bp = Blueprint("matching", __name__)
 

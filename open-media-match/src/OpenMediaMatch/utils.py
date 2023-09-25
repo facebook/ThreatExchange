@@ -13,22 +13,7 @@ import typing as t
 from flask import g, abort, request
 from werkzeug.exceptions import HTTPException
 
-from OpenMediaMatch.storage.interface import IUnifiedStore
-from OpenMediaMatch.storage.default import DefaultOMMStore
-
 T = t.TypeVar("T", bound=t.Callable[..., t.Any])
-
-
-def get_storage() -> IUnifiedStore:
-    """
-    Get the storage object, which is just a wrapper around the real storage.
-    """
-    if "storage" not in g:
-        # dougneal, you'll need to eventually add constructor arguments
-        # for this to pass in the postgres/database object. We're just
-        # hiding flask bits from pytx bits
-        g.storage = DefaultOMMStore()
-    return g.storage
 
 
 def abort_to_json(fn: T) -> T:
