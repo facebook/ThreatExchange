@@ -21,6 +21,10 @@ import typing as t
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.index import SignalTypeIndex
+from threatexchange.exchanges.fetch_state import (
+    FetchCheckpointBase,
+    CollaborationConfigBase,
+)
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
 )
@@ -122,7 +126,53 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         """
 
 
-# TODO - index, collaborations, banks, OMM-specific
+class ICollaborationStore(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
+        """
+        Get all collaboration configs.
+
+        Collaboration configs control the syncing of data from external
+        sources to banks of labeled content locally.
+        """
+
+    @abc.abstractmethod
+    def get_collab_fetch_checkpoint(
+        self, collab: CollaborationConfigBase
+    ) -> t.Optional[FetchCheckpointBase]:
+        """
+        Get the last saved checkpoint for the fetch of this collaboration.
+
+        If there is no previous fetch, returns None, indicating the fetch
+        should start from the beginning.
+        """
+
+    @abc.abstractmethod
+    def commit_collab_fetch_data(
+        self,
+        collab: CollaborationConfigBase,
+        dat: t.Dict[str, t.Any],
+        checkpoint: FetchCheckpointBase,
+    ):
+        """
+        Commit a sequentially fetched set of data from a fetch().
+
+        Advances the checkpoint if it's different than the previous one.
+        """
+
+    @abc.abstractmethod
+    def get_collab_data(
+        self,
+        collab_name: str,
+        key: str,
+        checkpoint: FetchCheckpointBase,
+    ) -> t.Any:
+        """
+        Get API-specific collaboration data by key.
+        """
+
+
+# TODO - banks
 
 
 class IUnifiedStore(
@@ -130,6 +180,7 @@ class IUnifiedStore(
     ISignalTypeConfigStore,
     ISignalExchangeConfigStore,
     ISignalTypeIndexStore,
+    ICollaborationStore,
     metaclass=abc.ABCMeta,
 ):
     """

@@ -10,6 +10,10 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.exchanges.fetch_state import (
+    FetchCheckpointBase,
+    CollaborationConfigBase,
+)
 
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.interface import SignalTypeConfig
@@ -34,6 +38,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         s_types: t.Sequence[t.Type[SignalType]] = (PdqSignal, VideoMD5Signal)
         return {s.get_name(): interface.SignalTypeConfig(True, s) for s in s_types}
 
+    # Index
     def get_signal_type_index(
         self, signal_type: type[SignalType]
     ) -> t.Optional[SignalTypeIndex[int]]:
@@ -43,3 +48,36 @@ class MockedUnifiedStore(interface.IUnifiedStore):
                 set(signal_type.get_examples()), start=1
             )
         )
+
+    # Collabs
+    def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
+        cfg_cls = StaticSampleSignalExchangeAPI.get_config_cls()
+        return {
+            c.name: c
+            for c in (
+                cfg_cls(
+                    "c-TEST", api=StaticSampleSignalExchangeAPI.get_name(), enabled=True
+                ),
+            )
+        }
+
+    def get_collab_fetch_checkpoint(
+        self, collab: CollaborationConfigBase
+    ) -> t.Optional[FetchCheckpointBase]:
+        return None
+
+    def commit_collab_fetch_data(
+        self,
+        collab: CollaborationConfigBase,
+        dat: t.Dict[str, t.Any],
+        checkpoint: FetchCheckpointBase,
+    ):
+        pass
+
+    def get_collab_data(
+        self,
+        collab_name: str,
+        key: str,
+        checkpoint: FetchCheckpointBase,
+    ) -> t.Any:
+        return None
