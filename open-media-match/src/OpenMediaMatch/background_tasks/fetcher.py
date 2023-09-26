@@ -1,9 +1,12 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import typing as t
+import logging
 
 from OpenMediaMatch.storage.interface import ICollaborationStore, SignalType
 from threatexchange.exchanges.fetch_state import CollaborationConfigBase
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_all(
@@ -13,6 +16,7 @@ def fetch_all(
     """
     For all collaborations registered with OMM, fetch()
     """
+    logger.info("Running the %s background task", fetch_all.__name__)
     collabs = collab_store.get_collaborations()
     for c in collabs.values():
         fetch(collab_store, enabled_signal_types, c)
