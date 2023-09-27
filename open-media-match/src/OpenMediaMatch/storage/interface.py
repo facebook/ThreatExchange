@@ -18,6 +18,8 @@ static configuration and postgres.
 import abc
 from dataclasses import dataclass
 import typing as t
+import time
+
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.index import SignalTypeIndex
@@ -128,7 +130,7 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
 
 class ICollaborationStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
+    def get_collaborations(self) -> t.Mapping[str, CollaborationConfigBase]:
         """
         Get all collaboration configs.
 
@@ -153,7 +155,7 @@ class ICollaborationStore(metaclass=abc.ABCMeta):
         collab: CollaborationConfigBase,
         dat: t.Dict[str, t.Any],
         checkpoint: FetchCheckpointBase,
-    ):
+    ) -> None:
         """
         Commit a sequentially fetched set of data from a fetch().
 
@@ -172,7 +174,140 @@ class ICollaborationStore(metaclass=abc.ABCMeta):
         """
 
 
-# TODO - banks
+@dataclass
+class BankConfig:
+    # UPPER_WITH_UNDER syntax
+    name: str
+    # 0.0-1.0 - what percentage of contents should be
+    # considered a match? Seeded by target content
+    matching_enabled_ratio: float
+
+    @property
+    def enabled(self) -> bool:
+        return self.matching_enabled_ratio > 0.0
+
+
+@dataclass
+class BankContentConfig:
+    """
+    Represents all the signals (hashes) for one piece of content.
+
+    When signals come from external sources, or the original content
+    has been lost
+    """
+
+    # This is what is indexed in the indice and directly returned by
+    # lookup
+    id: int
+    # Disable matching for just one seed content
+    # Has some magic values as well:
+    #   0 - disabled
+    #   1 - enabled
+    disable_until_ts: int
+    # If this content is originally from a collaboration, includes
+    # the name of the collaboration as well as the keys for use with
+    # ICollaborationStore.get_collab_data
+    collab_metadata: t.Mapping[str, t.Sequence[str]]
+    original_media_uri: t.Optional[str]
+
+    @property
+    def enabled(self) -> bool:
+        if self.disable_until_ts == 0:
+            return False
+        if self.disable_until_ts == 1:
+            return True
+        return self.disable_until_ts <= time.time()
+
+
+class IBankStore(metaclass=abc.ABCMeta):
+    """
+     Interface for maintaining collections of labeled content (aka banks).
+
+     The lifecycle of content is
+
+          Content
+             |
+           (Hash)
+             |
+             v
+          Signals
+             |
+        (Add to Bank)
+             |
+             v
+    +-> id: BankContent
+    |        |
+    |   (Build Index)
+    |        |
+    |        v
+    +--<-- Index <-- Query
+    """
+
+    @abc.abstractmethod
+    def get_banks(self) -> t.Mapping[str, BankConfig]:
+        """Return all bank configs"""
+
+    def get_bank(self, name: str) -> t.Optional[BankConfig]:
+        """Return one bank config"""
+        return self.get_banks().get(name)
+
+    @abc.abstractmethod
+    def bank_update(self, bank: BankConfig, create: bool = False) -> None:
+        """
+        Update a bank config in the backing store.
+
+        If create is false, will throw an exception if not already existing.
+        If create is true, will throw an exception if it already exists
+        """
+
+    @abc.abstractmethod
+    def bank_delete(self, name: str) -> None:
+        """
+        Delete a bank entirely.
+
+        If no such bank exists, no exception is thrown.
+        """
+
+    # Bank content
+    @abc.abstractmethod
+    def bank_content_get(self, id: int) -> BankContentConfig:
+        """Get the content config for a bank"""
+
+    @abc.abstractmethod
+    def bank_content_update(self, val: BankContentConfig) -> None:
+        """Update the content config for a bank"""
+
+    @abc.abstractmethod
+    def bank_add_content(
+        self,
+        bank_name: str,
+        content_signals: t.Dict[t.Type[SignalType], str],
+        config: t.Optional[BankContentConfig] = None,
+    ) -> int:
+        """
+        Add content (Photo, Video, etc) to a bank, where it can match content.
+
+        Indexing is not instant, there may be a delay before it match APIs can hit it.
+        """
+
+    @abc.abstractmethod
+    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
+        """Remove content from bank by id"""
+
+    @abc.abstractmethod
+    def bank_content_get_banks(self) -> t.Set[str]:
+        """Return the bank names this content is in"""
+
+    @abc.abstractmethod
+    def bank_yield_content(
+        self, signal_type: t.Optional[t.Type[SignalType]] = None
+    ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
+        """
+        Yield the entire content of the bank in batches.
+
+        If a signal type is provided, will yield signals of that type if
+        they are available for that content.
+        """
 
 
 class IUnifiedStore(
