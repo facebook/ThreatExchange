@@ -20,7 +20,13 @@ class CLIPSignal(
     """
 
     INDICATOR_TYPE: str = "HASH_CLIP"
-    CLIP_DISTANCE_THRESHOLD: float = 0.01  # TODO: Adjust as necessary, make configurable
+
+    # TODO: Adjust as necessary, make configurable
+    # Note that the embeddings must match the model used to generate the hashes.
+    # This metadata must be included in the database.
+    CLIP_DISTANCE_THRESHOLD: float = 0.01
+    OPEN_CLIP_MODEL_NAME: str = "xlm-roberta-base-ViT-B-32"
+    OPEN_CLIP_PRETRAINED: str = "laion5b_s13b_b90k"
 
 
     @classmethod
@@ -29,10 +35,14 @@ class CLIPSignal(
         Generate a CLIP hash from a bytes object.
         """
         # TODO: Implement this
+        # These bytes will need to be converted to an image
+        # and then processed by the CLIP model.
         pass
 
 
     @classmethod
     def compare_hash(cls, hash1: str, hash2: str, threshold: CLIP_DISTANCE_THRESHOLD) -> signal_base.SignalComparisonResult:
         # TODO: Implement this
+        # This should compare the hashes using some similarity function.
+        # Cosine similarity on the normalized embeddings is a good start.
         pass

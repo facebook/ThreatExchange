@@ -1,13 +1,17 @@
-def cosine_distance(vector_a: List[float], vector_b: List[float]) -> float:
+from typing import List
+
+import numpy as np
+from scipy import spatial
+
+def cosine_distance(vector_a: np.ndarray, vector_b: np.ndarray) -> float:
     """
     Returns the cosine distance of two vectors.
 
     Args:
-        vector_a: A vector of floats
-        vector_b: A vector of floats
+        vector_a (np.ndarray): A vector of floats
+        vector_b (np.ndarray): A vector of floats
     
     Returns:
-        A float representing the cosine distance of the two vectors.
+        (float) The cosine distance of the two vectors.
     """
-    # TODO: Implement this
-    pass
+    return spatial.distance.cosine(vector_a, vector_b)
