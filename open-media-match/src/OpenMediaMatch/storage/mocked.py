@@ -24,6 +24,14 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     Provides plausible default values for all store interfaces.
     """
 
+    banks: t.Dict[str, interface.BankConfig]
+
+    def __init__(self) -> None:
+        self.banks = {
+            b.name: b
+            for b in (interface.BankConfig("TEST_BANK", matching_enabled_ratio=1.0),)
+        }
+
     def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
         return {
             c.get_name(): interface.ContentTypeConfig(True, c)
@@ -81,3 +89,39 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         checkpoint: FetchCheckpointBase,
     ) -> t.Any:
         return None
+
+    def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
+        return dict(self.banks)
+
+    def bank_update(self, bank: interface.BankConfig, create: bool = False) -> None:
+        self.banks[bank.name] = bank
+
+    def bank_delete(self, name: str) -> None:
+        self.banks.pop(name, None)
+
+    def bank_content_get(self, id: int) -> interface.BankContentConfig:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_content_update(self, val: interface.BankContentConfig) -> None:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_add_content(
+        self,
+        bank_name: str,
+        content_signals: t.Dict[t.Type[SignalType], str],
+        config: t.Optional[interface.BankContentConfig] = None,
+    ) -> int:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_yield_content(
+        self, signal_type: t.Optional[t.Type[SignalType]] = None
+    ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
+        # TODO
+        raise Exception("Not implemented")
