@@ -196,6 +196,9 @@ class BankContentConfig:
     has been lost
     """
 
+    ENABLED: t.ClassVar[int] = 1
+    DISABLED: t.ClassVar[int] = 0
+
     # This is what is indexed in the indice and directly returned by
     # lookup
     id: int
@@ -295,10 +298,6 @@ class IBankStore(metaclass=abc.ABCMeta):
         """Remove content from bank by id"""
 
     @abc.abstractmethod
-    def bank_content_get_banks(self) -> t.Set[str]:
-        """Return the bank names this content is in"""
-
-    @abc.abstractmethod
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
@@ -316,6 +315,7 @@ class IUnifiedStore(
     ISignalExchangeConfigStore,
     ISignalTypeIndexStore,
     ICollaborationStore,
+    IBankStore,
     metaclass=abc.ABCMeta,
 ):
     """

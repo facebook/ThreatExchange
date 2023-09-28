@@ -9,20 +9,13 @@ bp = Blueprint("curation", __name__)
 
 @bp.route("/banks", methods=["GET"])
 def banks_index():
-    banks = (
-        database.db.session.execute(current_app.db.select(database.Bank))
+    banks = [
+        b.as_storage_iface_cls()
+        for b in database.db.session.execute(database.db.select(database.Bank))
         .scalars()
         .all()
-    )
+    ]
     return jsonify(banks)
-
-
-@bp.route("/bank/<int:bank_id>", methods=["GET"])
-def bank_show_by_id(bank_id: int):
-    bank = database.Bank.query.get(bank_id)
-    if not bank:
-        return jsonify({"message": "bank not found"}), 404
-    return jsonify(bank)
 
 
 @bp.route("/bank/<bank_name>", methods=["GET"])
