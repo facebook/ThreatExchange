@@ -104,7 +104,7 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
     def as_storage_iface_cls(
         self, exchange_types: t.Dict[str, TSignalExchangeAPICls]
     ) -> CollaborationConfigBase:
-        exchange_cls = exchange_types.get(self.api_cls, None)
+        exchange_cls = exchange_types.get(self.api_cls)
         if exchange_cls is None:
             # If this is None, it means we either serialized it wrong, or
             # we changed which exchanges were valid between storing and
