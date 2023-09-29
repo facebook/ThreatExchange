@@ -79,3 +79,23 @@ If you're a seasoned Python developer and have your dev environment set up just-
 Be aware that this might break stuff that assumes the database is clean or empty. Yes, this needs improving.
 
 To persist the database, edit `.devcontainer/docker-compose.yaml` and uncomment the lines indicated. Then, rebuild the devcontainer.
+
+## Make a change to the database schema?
+
+The source of truth for the database schema is `src/OpenMediaMatch/database.py`. The database is managed by SQLAlchemy. Make your schema changes here. You will find the following reference material handy:
+
+[SQLAlchemy Type Hierarchy](https://docs.sqlalchemy.org/en/20/core/type_basics.html)
+
+Now migrate the database using the Flask CLI:
+
+```
+$ flask db migrate
+```
+
+This will generate a migration file in `src/OpenMediaMatch/migrations/versions`, which you can apply to the local database like so:
+
+```
+$ flask db upgrade
+```
+
+Note that `flask` CLI commands need to be run from within the `src/OpenMediaMatch` folder.
