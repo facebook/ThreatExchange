@@ -2,7 +2,7 @@
 PRODUCTION = False
 DBUSER = "media_match"
 DBPASS = "hunter2"
-DBHOST = "db"
+DBHOST = "localhost"
 DBNAME = "media_match"
 DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 

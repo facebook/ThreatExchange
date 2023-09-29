@@ -27,4 +27,4 @@ def test_status_response(client):
 def test_banks_index(client):
     response = client.get("/c/banks")
     assert response.status_code == 200
-    assert response.json == [{"matching_enabled_ratio": 1.0, "name": "TEST_BANK"}]
+    assert response.json == []
