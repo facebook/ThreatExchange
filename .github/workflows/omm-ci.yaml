@@ -59,8 +59,8 @@ jobs:
         image: postgres
         # Provide the env variables
         env:
-          POSTGRES_DB: db
           POSTGRES_HOST: localhost
+          POSTGRES_DB: db
           POSTGRES_USER: media_match
           POSTGRES_PASSWORD: hunter2
         ports:
@@ -73,10 +73,13 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v2
-      - name: Build docker image
-        run: docker build -t local .
-      - name: Test with pytest on docker image
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
         run: |
-          docker run local sh -c "python -m pip install --upgrade pip ;
-            pip install -e '.[test]' ;
-            py.test"
+          python -m pip install --upgrade pip
+          python3 -m pip install -e .[all]
+      - name: Check python types
+        run: |
+          python -m py.test src/OpenMediaMatch
