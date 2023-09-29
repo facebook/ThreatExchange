@@ -1,7 +1,7 @@
 from flask import Blueprint
-from flask import request, jsonify
+from flask import request, jsonify, abort
 
-from OpenMediaMatch import database
+from OpenMediaMatch import database, persistence, utils
 
 
 bp = Blueprint("curation", __name__)
@@ -9,24 +9,18 @@ bp = Blueprint("curation", __name__)
 
 @bp.route("/banks", methods=["GET"])
 def banks_index():
-    banks = [
-        b.as_storage_iface_cls()
-        for b in database.db.session.execute(database.db.select(database.Bank))
-        .scalars()
-        .all()
-    ]
-    return jsonify(banks)
+    storage = persistence.get_storage()
+    return list(storage.get_banks().values())
 
 
 @bp.route("/bank/<bank_name>", methods=["GET"])
+@utils.abort_to_json
 def bank_show_by_name(bank_name: str):
-    bank = (
-        database.db.session.execute(
-            database.db.select(database.Bank).where(database.Bank.name == bank_name)
-        )
-        .scalars()
-        .all()
-    )
+    storage = persistence.get_storage()
+
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        utils.abort(404, f"bank '{bank_name}' not found")
     return jsonify(bank)
 
 

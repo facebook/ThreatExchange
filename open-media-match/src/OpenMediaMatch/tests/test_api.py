@@ -1,6 +1,3 @@
-import os
-import pytest
-
 from OpenMediaMatch.tests.utils import app, client
 
 
