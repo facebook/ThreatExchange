@@ -82,4 +82,4 @@ jobs:
           python3 -m pip install -e .[all]
       - name: Check python types
         run: |
-          python -m py.test src/OpenMediaMatch
+          py.test src/OpenMediaMatch
