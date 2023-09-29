@@ -71,3 +71,11 @@ Retry the `curl localhost:5000/hello`, you should now see your greeting message 
 ## Self-managed Python dev environment
 
 If you're a seasoned Python developer and have your dev environment set up just-so, you should have no problem hacking on Open Media Match, as the project is laid out in standard Python Package format.
+
+# How do I ...
+
+## Persist the local development database?
+
+Be aware that this might break stuff that assumes the database is clean or empty. Yes, this needs improving.
+
+To persist the database, edit `.devcontainer/docker-compose.yaml` and uncomment the lines indicated. Then, rebuild the devcontainer.

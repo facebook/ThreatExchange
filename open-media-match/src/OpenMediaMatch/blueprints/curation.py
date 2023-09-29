@@ -1,5 +1,5 @@
 from flask import Blueprint
-from flask import request, current_app, jsonify
+from flask import request, jsonify
 
 from OpenMediaMatch import database
 
@@ -9,9 +9,14 @@ bp = Blueprint("curation", __name__)
 
 @bp.route("/banks", methods=["GET"])
 def banks_index():
+<<<<<<< HEAD
     banks = [
         b.as_storage_iface_cls()
         for b in database.db.session.execute(database.db.select(database.Bank))
+=======
+    banks = (
+        database.db.session.execute(database.db.select(database.Bank))
+>>>>>>> 8a02299 ([omm] Database fixes)
         .scalars()
         .all()
     ]
