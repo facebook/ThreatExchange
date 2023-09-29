@@ -1,21 +1,7 @@
 import os
 import pytest
-import json
 
-from OpenMediaMatch.app import create_app
-
-
-@pytest.fixture()
-def app():
-    os.environ.setdefault("OMM_CONFIG", "tests/omm_config.py")
-    app = create_app()
-
-    yield app
-
-
-@pytest.fixture()
-def client(app):
-    return app.test_client()
+from OpenMediaMatch.tests.utils import app, client
 
 
 def test_status_response(client):

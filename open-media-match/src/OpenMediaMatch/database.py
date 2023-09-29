@@ -11,11 +11,18 @@ references which are meant to be reaped at some future time.
 
 import typing as t
 
-from dataclasses import dataclass
 from OpenMediaMatch.storage.interface import BankConfig, BankContentConfig
 
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.exchanges.signal_exchange_api import (
+    TSignalExchangeAPICls,
+    SignalExchangeAPI,
+    TCollabConfig,
+)
+from threatexchange.utils import dataclass_json
+
 import flask_sqlalchemy
-from sqlalchemy import String, Text, ForeignKey
+from sqlalchemy import String, Text, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 
 
@@ -69,3 +76,56 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
     content_id: Mapped[int] = mapped_column(ForeignKey("bank_content.id"))
     signal_type: Mapped[str]
     signal_val: Mapped[str] = mapped_column(Text)
+
+
+class CollaborationConfig(db.Model):  # type: ignore[name-defined]
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # These three fields are also in typed_config, but exposing them
+    # allows for selecting them from the database layer
+    name: Mapped[str] = mapped_column(String(255), unique=True)
+    api_cls: Mapped[str] = mapped_column(String(255))
+    fetching_enabled: Mapped[bool] = mapped_column(default=True)
+    # Someday, we want writeback columns
+    # report_seen: Mapped[bool] = mapped_column(default=True)
+    # report_true_positive = mapped_column(default=True)
+    # report_false_positive = mapped_column(default=True)
+
+    # This is the dacite-serialized version of the typed
+    # CollaborationConfig.
+    typed_config: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
+
+    def set_typed_config(self, cfg: CollaborationConfigBase) -> t.Self:
+        self.name = cfg.name
+        self.fetching_enabled = cfg.enabled
+        self.api_cls = cfg.api
+        self.typed_config = dataclass_json.dataclass_dump_dict(cfg)
+        return self
+
+    def as_storage_iface_cls(
+        self, exchange_types: t.Dict[str, TSignalExchangeAPICls]
+    ) -> CollaborationConfigBase:
+        exchange_cls = exchange_types.get(self.api_cls)
+        if exchange_cls is None:
+            # If this is None, it means we either serialized it wrong, or
+            # we changed which exchanges were valid between storing and
+            # fetching.
+            # We could throw an exception here, but maybe instead we just
+            # return it stripped and let the application figure out what to do
+            # with an invalid API cls.
+            return CollaborationConfigBase(
+                name=self.name, api=self.api_cls, enabled=self.fetching_enabled
+            )
+        return self.as_storage_iface_cls_typed(exchange_cls)
+
+    def as_storage_iface_cls_typed(
+        self,
+        exchange_cls: t.Type[
+            SignalExchangeAPI[TCollabConfig, t.Any, t.Any, t.Any, t.Any]
+        ],
+    ) -> TCollabConfig:
+        cls = exchange_cls.get_config_cls()
+        # This looks like it should be typed correctly, but too complicated
+        # mypy
+        return dataclass_json.dataclass_load_dict(
+            self.typed_config, cls
+        )  # type: ignore[return-value]
