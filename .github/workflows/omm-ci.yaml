@@ -60,6 +60,7 @@ jobs:
         # Provide the env variables
         env:
           POSTGRES_DB: db
+          POSTGRES_HOST: localhost
           POSTGRES_USER: media_match
           POSTGRES_PASSWORD: hunter2
         # networks:
