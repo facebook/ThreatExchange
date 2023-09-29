@@ -23,13 +23,17 @@ class Base(DeclarativeBase):
     pass
 
 
+import sqlalchemy.types as dbtypes
+from sqlalchemy.orm import Mapped
+
 # Initializing this at import time seems to be the only correct
 # way to do this
 db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
 
 
+@dataclass
 class Bank(db.Model):  # type: ignore[name-defined]
-    __tablename__ = "bank"
+    __tablename__ = "banks"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True)
@@ -43,6 +47,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
         return BankConfig(self.name, self.enabled_ratio)
 
 
+@dataclass
 class BankContent(db.Model):  # type: ignore[name-defined]
     __tablename__ = "bank_content"
 
@@ -64,8 +69,36 @@ class BankContent(db.Model):  # type: ignore[name-defined]
         )
 
 
+@dataclass
 class ContentSignal(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
     content_id: Mapped[int] = mapped_column(ForeignKey("bank_content.id"))
     signal_type: Mapped[str]
     signal_val: Mapped[str] = mapped_column(Text)
+    id: Mapped[int] = db.Column(dbtypes.Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = db.Column(dbtypes.String(255), nullable=False)
+    enabled: Mapped[bool] = db.Column(dbtypes.Boolean, nullable=False)
+
+
+@dataclass
+class Hash(db.Model):  # type: ignore[name-defined]  # Should this be Signal?
+    __tablename__ = "hashes"
+    id = db.Column(dbtypes.Integer, primary_key=True, autoincrement=True)
+    enabled = db.Column(dbtypes.Boolean, nullable=False)
+    value = db.Column(dbtypes.LargeBinary, nullable=False)
+    # We may need a pointer back to the 3rd party ID to do SEEN writebacks
+
+
+@dataclass
+class Exchange(db.Model):
+    __tablename__ = "exchanges"
+    id = db.Column(dbtypes.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(dbtypes.String(255), nullable=False, unique=True)
+    # This might be better as an enum, but right now I don't know what 
+    # the valid enum values would be, so leaving it as string
+    type = db.Column(dbtypes.String(255), nullable=False)
+    fetching_enabled = db.Column(dbtypes.Boolean, nullable=False, default=True)
+    seen_enabled = db.Column(dbtypes.Boolean, nullable=False, default=True)
+    report_true_positive = db.Column(dbtypes.Boolean, nullable=False, default=True)
+    report_false_positive = db.Column(dbtypes.Boolean, nullable=False, default=True)
+    additional_config = db.Column(dbtypes.JSON, nullable=False)

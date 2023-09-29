@@ -28,3 +28,11 @@ def test_banks_index(client):
     response = client.get("/c/banks")
     assert response.status_code == 200
     assert response.json == []
+
+
+def test_exchange_create(client):
+    response = client.post("/c/exchanges", json={
+        "name": "TEST",
+        "type": "TEST",
+    })
+    assert response.status_code == 201
