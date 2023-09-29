@@ -63,8 +63,8 @@ jobs:
           POSTGRES_HOST: localhost
           POSTGRES_USER: media_match
           POSTGRES_PASSWORD: hunter2
-        # networks:
-        #   - internal_network
+        ports:
+          - 5432:5432
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
