@@ -14,10 +14,16 @@ from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
 )
 
+from sqlalchemy import select
+from OpenMediaMatch import database
 
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.mocked import MockedUnifiedStore
-from OpenMediaMatch.storage.interface import SignalTypeConfig
+from OpenMediaMatch.storage.interface import (
+    SignalTypeConfig,
+    BankConfig,
+    BankContentConfig,
+)
 
 
 class DefaultOMMStore(interface.IUnifiedStore):
@@ -81,3 +87,52 @@ class DefaultOMMStore(interface.IUnifiedStore):
         checkpoint: FetchCheckpointBase,
     ) -> t.Any:
         return MockedUnifiedStore().get_collab_data(collab_name, key, checkpoint)
+
+    def get_banks(self) -> t.Mapping[str, BankConfig]:
+        return {
+            b.name: b.as_storage_iface_cls()
+            for b in database.db.session.execute(select(database.Bank)).scalars().all()
+        }
+
+    def get_bank(self, name: str) -> t.Optional[BankConfig]:
+        """Override for more efficient lookup"""
+        bank = database.db.session.execute(
+            select(database.Bank).where(database.Bank.name == name)
+        ).scalar_one_or_none()
+
+        return None if bank is None else bank.as_storage_iface_cls()
+
+    def bank_update(self, bank: BankConfig, create: bool = False) -> None:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_delete(self, name: str) -> None:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_content_get(self, id: int) -> BankContentConfig:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_content_update(self, val: BankContentConfig) -> None:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_add_content(
+        self,
+        bank_name: str,
+        content_signals: t.Dict[t.Type[SignalType], str],
+        config: t.Optional[BankContentConfig] = None,
+    ) -> int:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
+        # TODO
+        raise Exception("Not implemented")
+
+    def bank_yield_content(
+        self, signal_type: t.Optional[t.Type[SignalType]] = None
+    ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
+        # TODO
+        raise Exception("Not implemented")

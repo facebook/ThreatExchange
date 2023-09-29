@@ -75,12 +75,45 @@ def create_app():
     if app.config.get("ROLE_CURATOR", False):
         app.register_blueprint(curation.bp, url_prefix="/c")
 
+    @app.cli.command("create_tables")
+    def create_tables():
+        """Create all the tables based on the database module"""
+        with app.app_context():
+            database.db.create_all()
+
+    @app.cli.command("table_stats")
+    def table_stats():
+        """Simple stats about the database"""
+        with app.app_context():
+            print("Banks:", database.Bank.query.count())
+            print("Contents:", database.BankContent.query.count())
+            print("Signals/Hashes:", database.ContentSignal.query.count())
+
+    @app.cli.command("reset_all_tables")
+    def reset_tables():
+        """Clears all the tables and recreates them"""
+        with app.app_context():
+            database.db.drop_all()
+            database.db.create_all()
+
     @app.cli.command("seed")
     def seed_data():
         """Insert plausible-looking data into the database layer"""
-        # TODO: This is a placeholder for where some useful seed data can be loaded;
-        # particularly important for development
-        bank = database.Bank(name="bad_stuff", enabled=True)
+        from threatexchange.signal_type.pdq.signal import PdqSignal
+
+        bank = database.Bank(
+            name="TEST_BANK",
+            content=[
+                database.BankContent(
+                    signals=[
+                        database.ContentSignal(
+                            signal_type=PdqSignal.get_name(),
+                            signal_val=PdqSignal.get_examples()[0],
+                        )
+                    ]
+                )
+            ],
+        )
         database.db.session.add(bank)
         database.db.session.commit()
 
