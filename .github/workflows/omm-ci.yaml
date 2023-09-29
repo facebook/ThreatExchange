@@ -81,8 +81,10 @@ jobs:
           python -m pip install --upgrade pip
           python3 -m pip install -e .[all]
       - name: Create tables
-        run: | 
-          flask --app src/OpenMediaMatch/app.py create_tables
-      - name: Check python types
-        run: |
-          py.test src/OpenMediaMatch
+        run: flask --app src/OpenMediaMatch/app.py create_tables
+        env:
+          OMM_CONFIG: .devcontainer/omm_config.py
+      - name: Run tests
+        run: py.test src/OpenMediaMatch
+        env:
+          OMM_CONFIG: .devcontainer/omm_config.py
