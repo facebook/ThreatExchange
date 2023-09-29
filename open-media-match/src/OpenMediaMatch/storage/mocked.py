@@ -93,7 +93,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
         return dict(self.banks)
 
-    def bank_update(self, bank: interface.BankConfig, create: bool = False) -> None:
+    def bank_update(self, bank: interface.BankConfig, *, create: bool = False) -> None:
         self.banks[bank.name] = bank
 
     def bank_delete(self, name: str) -> None:

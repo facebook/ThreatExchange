@@ -13,10 +13,11 @@ import typing as t
 from flask import g, abort, request
 from werkzeug.exceptions import HTTPException
 
-T = t.TypeVar("T", bound=t.Callable[..., t.Any])
+TArg = t.TypeVar("TArg", bool, int, float)
+TFn = t.TypeVar("TFn", bound=t.Callable[..., t.Any])
 
 
-def abort_to_json(fn: T) -> T:
+def abort_to_json(fn: TFn) -> TFn:
     """
     Wrap json endpoints to turn abort("message", code) to json
 
@@ -42,7 +43,7 @@ def abort_to_json(fn: T) -> T:
         except HTTPException as e:
             return {"message": e.description}, e.code
 
-    return t.cast(T, wrapper)
+    return t.cast(TFn, wrapper)
 
 
 def require_request_param(name: str) -> str:
@@ -55,3 +56,32 @@ def require_request_param(name: str) -> str:
     if ret is None:
         abort(400, f"{name} is required")
     return ret
+
+
+def require_json_param(name: str) -> str:
+    """
+    Wrapper around a required POST json parameter.
+
+    aborts with 400 if it's missing.
+    """
+    val = request.get_json().get(name)
+    if val is None:
+        abort(400, f"{name} is required")
+    return val
+
+
+def str_to_bool(s: str) -> bool:
+    if s.lower() in ("true", "1"):
+        return True
+    if s.lower() in ("false", "0"):
+        return False
+    abort(400, "invalid boolean parameter - prefer true/false")
+
+
+def str_to_type(s: str, t: t.Type[TArg]) -> TArg:
+    if t == bool:
+        return str_to_bool(s)
+    try:
+        return t(s)
+    except ValueError:
+        abort(400, f"Invalid {t.__name__}: '{s}'")

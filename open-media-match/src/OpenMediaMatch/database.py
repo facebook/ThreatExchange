@@ -49,6 +49,10 @@ class Bank(db.Model):  # type: ignore[name-defined]
     def as_storage_iface_cls(self) -> BankConfig:
         return BankConfig(self.name, self.enabled_ratio)
 
+    @classmethod
+    def from_storage_iface_cls(cls, cfg: BankConfig) -> t.Self:
+        return cls(name=cfg.name, enabled_ratio=cfg.matching_enabled_ratio)
+
 
 class BankContent(db.Model):  # type: ignore[name-defined]
     __tablename__ = "bank_content"

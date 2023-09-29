@@ -2,6 +2,7 @@ from flask import Blueprint
 from flask import request, jsonify, abort
 
 from OpenMediaMatch import database, persistence, utils
+from OpenMediaMatch.storage.interface import BankConfig
 
 
 bp = Blueprint("curation", __name__)
@@ -20,19 +21,24 @@ def bank_show_by_name(bank_name: str):
 
     bank = storage.get_bank(bank_name)
     if not bank:
-        utils.abort(404, f"bank '{bank_name}' not found")
+        abort(404, f"bank '{bank_name}' not found")
     return jsonify(bank)
 
 
 @bp.route("/banks", methods=["POST"])
+@utils.abort_to_json
 def bank_create():
+    name = utils.require_json_param("name")
     data = request.get_json()
-    if not "name" in data:
-        return jsonify({"message": "Field `name` is required"}), 400
-    bank = database.Bank(name=data["name"], enabled=bool(data.get("enabled", True)))
-    database.db.session.add(bank)
-    database.db.session.commit()
-    return jsonify({"message": "Created successfully"}), 201
+    enabled_ratio = 1.0
+    if "enabled_ratio" in data:
+        enabled_ratio = utils.str_to_type(data["enabled_ratio"], float)
+    elif "enabled" in data:
+        enabled_ratio = 1.0 if utils.str_to_bool(data["enabled"]) else 0.0
+
+    bank = BankConfig(name=name, matching_enabled_ratio=enabled_ratio)
+    persistence.get_storage().bank_update(bank, create=True)
+    return jsonify(bank), 201
 
 
 @bp.route("/bank/<int:bank_id>", methods=["PUT"])
