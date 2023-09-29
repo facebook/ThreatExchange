@@ -16,12 +16,14 @@ services:
   db:
     image: postgres:latest
     restart: unless-stopped
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+    ## Uncomment below lines for persistent database
+    # volumes:
+    #   - postgres-data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: media_match
       POSTGRES_USER: media_match
       POSTGRES_PASSWORD: hunter2
 
-volumes:
-  postgres-data:
+## Uncomment below lines for persistent database
+# volumes:
+#   postgres-data:
