@@ -59,9 +59,11 @@ jobs:
         image: postgres
         # Provide the env variables
         env:
-          POSTGRES_DB: media_match
+          POSTGRES_DB: db
           POSTGRES_USER: media_match
           POSTGRES_PASSWORD: hunter2
+        # networks:
+        #   - internal_network
         # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
