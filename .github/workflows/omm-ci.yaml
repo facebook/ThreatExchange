@@ -60,7 +60,7 @@ jobs:
         # Provide the env variables
         env:
           POSTGRES_HOST: localhost
-          POSTGRES_DB: db
+          POSTGRES_DB: media_match
           POSTGRES_USER: media_match
           POSTGRES_PASSWORD: hunter2
         ports:
@@ -82,4 +82,5 @@ jobs:
           python3 -m pip install -e .[all]
       - name: Check python types
         run: |
+          flask --app src/OpenMediaMatch/app.py create_tables
           py.test src/OpenMediaMatch
