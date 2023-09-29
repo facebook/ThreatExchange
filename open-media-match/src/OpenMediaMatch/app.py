@@ -20,7 +20,7 @@ from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import hashing, matching, curation
 
 
-def create_app():
+def create_app() -> flask.Flask:
     """
     Create and configure the Flask app
     """

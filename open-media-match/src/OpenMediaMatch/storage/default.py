@@ -14,7 +14,7 @@ from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
 )
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from OpenMediaMatch import database
 
 from OpenMediaMatch.storage import interface
@@ -102,9 +102,17 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         return None if bank is None else bank.as_storage_iface_cls()
 
-    def bank_update(self, bank: BankConfig, create: bool = False) -> None:
-        # TODO
-        raise Exception("Not implemented")
+    def bank_update(self, bank: BankConfig, *, create: bool = False) -> None:
+        if create:
+            database.db.session.add(database.Bank.from_storage_iface_cls(bank))
+        else:
+            database.db.session.execute(
+                update(database.Bank)
+                .where(database.Bank.name == bank.name)
+                .values(enabled_ratio=bank.matching_enabled_ratio)
+            )
+
+        database.db.session.commit()
 
     def bank_delete(self, name: str) -> None:
         # TODO

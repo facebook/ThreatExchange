@@ -1,12 +1,16 @@
 import os
 import pytest
+import typing as t
+
+from flask import Flask
+from flask.testing import FlaskClient
 
 from OpenMediaMatch.app import create_app
 from OpenMediaMatch import database
 
 
 @pytest.fixture()
-def app():
+def app() -> t.Iterator[Flask]:
     os.environ.setdefault("OMM_CONFIG", "tests/omm_config.py")
     app = create_app()
 
@@ -20,5 +24,5 @@ def app():
 
 
 @pytest.fixture()
-def client(app):
+def client(app) -> FlaskClient:
     return app.test_client()
