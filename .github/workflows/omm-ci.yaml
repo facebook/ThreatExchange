@@ -59,7 +59,6 @@ jobs:
         image: postgres
         # Provide the env variables
         env:
-          POSTGRES_HOST: localhost
           POSTGRES_DB: media_match_test
           POSTGRES_USER: media_match
           POSTGRES_PASSWORD: hunter2
@@ -77,6 +76,6 @@ jobs:
         run: docker build -t local .
       - name: Test with pytest on docker image
         run: |
-          docker run local sh -c "python -m pip install --upgrade pip ;
+          docker run --network="host" local sh -c "python -m pip install --upgrade pip ;
             pip install -e '.[test]' ;
             py.test"
