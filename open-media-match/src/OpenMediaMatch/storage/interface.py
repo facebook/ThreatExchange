@@ -255,7 +255,7 @@ class IBankStore(metaclass=abc.ABCMeta):
         return self.get_banks().get(name)
 
     @abc.abstractmethod
-    def bank_update(self, bank: BankConfig, create: bool = False) -> None:
+    def bank_update(self, bank: BankConfig, *, create: bool = False) -> None:
         """
         Update a bank config in the backing store.
 
