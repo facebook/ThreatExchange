@@ -19,7 +19,6 @@ from OpenMediaMatch.background_tasks import build_index, fetcher
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import hashing, matching, curation
 
-
 def create_app():
     """
     Create and configure the Flask app
