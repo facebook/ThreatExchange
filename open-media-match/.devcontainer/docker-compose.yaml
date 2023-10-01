@@ -16,13 +16,14 @@ services:
   db:
     image: postgres:latest
     restart: unless-stopped
+    volumes:
+        - ./pg-scripts/init-multiple-pg-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-pg-dbs.sh
     ## Uncomment below lines for persistent database
-    # volumes:
     #   - postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: media_match
       POSTGRES_USER: media_match
       POSTGRES_PASSWORD: hunter2
+      POSTGRES_MULTIPLE_DATABASES: media_match,media_match_test
 
 ## Uncomment below lines for persistent database
 # volumes:

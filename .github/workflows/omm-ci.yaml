@@ -59,8 +59,7 @@ jobs:
         image: postgres
         # Provide the env variables
         env:
-          POSTGRES_HOST: localhost
-          POSTGRES_DB: media_match
+          POSTGRES_DB: media_match_test
           POSTGRES_USER: media_match
           POSTGRES_PASSWORD: hunter2
         ports:
@@ -73,18 +72,10 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
+      - name: Build docker image
+        run: docker build -t local .
+      - name: Test with pytest on docker image
         run: |
-          python -m pip install --upgrade pip
-          python3 -m pip install -e .[all]
-      - name: Create tables
-        run: flask --app src/OpenMediaMatch/app.py create_tables
-        env:
-          OMM_CONFIG: ../../.devcontainer/omm_config.py
-      - name: Run tests
-        run: py.test src/OpenMediaMatch
-        env:
-          OMM_CONFIG: ../../.devcontainer/omm_config.py
+          docker run --network="host" local sh -c "python -m pip install --upgrade pip ;
+            pip install -e '.[test]' ;
+            py.test"
