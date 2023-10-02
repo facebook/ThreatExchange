@@ -96,9 +96,9 @@ def bank_add_by_url(bank_name: str):
         abort(404, f"bank '{bank_name}' not found")
 
     return {
-        'id': 1234,
-        'signals': {
+        "id": 1234,
+        "signals": {
             PdqSignal.get_name(): PdqSignal.get_examples()[0],
         },
-        'message': 'TODO: this is a fake implementation!'
+        "message": "TODO: this is a fake implementation!",
     }
