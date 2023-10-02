@@ -9,6 +9,7 @@ slower than just slinging sql on the tables, so you may see direct
 references which are meant to be reaped at some future time.
 """
 
+import io
 import typing as t
 
 from OpenMediaMatch.storage.interface import BankConfig, BankContentConfig
@@ -19,10 +20,11 @@ from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     TCollabConfig,
 )
+from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
 import flask_sqlalchemy
-from sqlalchemy import String, Text, ForeignKey, JSON
+from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 
 
@@ -133,3 +135,27 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
         return dataclass_json.dataclass_load_dict(
             self.typed_config, cls
         )  # type: ignore[return-value]
+
+
+class SignalIndex(db.Model):  # type: ignore[name-defined]
+    """
+    Table for storing the large indices
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    signal_type: Mapped[str]
+    serialized_index: Mapped[bytes] = mapped_column(LargeBinary)
+
+    def serialize_index(self, index: SignalTypeIndex[int]) -> t.Self:
+        buffer = io.BytesIO()
+        index.serialize(buffer)
+        self.serialized_index = buffer.getvalue()
+        return self
+
+    def deserialize_index(self) -> SignalTypeIndex[int]:
+        # If we were being fully proper, we would get the SignalType
+        # class and use that index to compare them. However, every existing
+        # index as of 10/2/2023 is using pickle, which will produce the right
+        # class no matter which interface we call it on.
+        # I'm sorry future debugger finding this comment.
+        return SignalTypeIndex.deserialize(io.BytesIO(self.serialized_index))

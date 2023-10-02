@@ -15,12 +15,13 @@ def app() -> t.Iterator[Flask]:
     app = create_app()
 
     with app.app_context():
-        # I'm sorry future person, I don't know how to keep the
-        # test database clean without affecting the the prod instance
+        # If we want to try and re-use the database between tests,
+        # there's a way to push a context that will undo all commits.
+        # For now, drop and recreate is a fast way to do it.
         database.db.drop_all()
         database.db.create_all()
 
-    yield app
+        yield app
 
 
 @pytest.fixture()
