@@ -138,6 +138,10 @@ class ICollaborationStore(metaclass=abc.ABCMeta):
         sources to banks of labeled content locally.
         """
 
+    def get_collaboration(self, name: str) -> t.Optional[CollaborationConfigBase]:
+        """Get one collaboration config, if it exists"""
+        return self.get_collaborations().get(name)
+
     @abc.abstractmethod
     def get_collab_fetch_checkpoint(
         self, collab: CollaborationConfigBase

@@ -1,3 +1,5 @@
+import re
+
 from flask import Blueprint
 from flask import request, jsonify, abort
 
@@ -8,6 +10,8 @@ from OpenMediaMatch.storage.interface import BankConfig
 
 
 bp = Blueprint("curation", __name__)
+
+# Banking
 
 
 @bp.route("/banks", methods=["GET"])
@@ -102,3 +106,149 @@ def bank_add_by_url(bank_name: str):
         },
         "message": "TODO: this is a fake implementation!",
     }
+
+
+def _get_collab(name: str):
+    storage = persistence.get_storage()
+    collab = storage.get_collaboration(name)
+    if collab is None:
+        abort(404, f"Exchange '{name}' not found")
+    return collab
+
+
+# Fetching/Exchanges (aka collaborations)
+@bp.route("/exchanges", methods=["POST"])
+@utils.abort_to_json
+def exchange_create():
+    """
+    Creates an exchange configuration
+    Inputs:
+     * Configuration name in CAPS_AND_UNDERSCORE (must not be the same as an existing bank name)
+     * Exchange type
+     * Exchange-specific arguments (depends on SignalExchangeAPI)
+    """
+    data = request.get_json()
+    name = utils.require_json_param("name")
+
+    if not re.match("^[A-Z_]+$", name):
+        abort(400, "Field `name` must match /^[A-Z_]$/")
+
+    if "type" not in data:
+        abort(400, "Field `type` is required")
+
+    if not isinstance(data.get("additional_config", {}), dict):
+        abort(400, "Field `additional_config` must be object")
+
+    exchange = database.Exchange(
+        name=name,
+        type=data.get("type"),
+        fetching_enabled=bool(data.get("fetching_enabled", True)),
+        seen_enabled=bool(data.get("seen_enabled", True)),
+        report_true_positive=bool(data.get("report_true_positive", True)),
+        report_false_positive=bool(data.get("report_false_positive", True)),
+        additional_config=data.get("additional_config", {}),
+    )
+    database.db.session.add(exchange)
+    database.db.session.commit()
+    return jsonify({"message": "Created successfully"}), 201
+
+
+@bp.route("/exchanges", methods=["GET"])
+def exchanges_index():
+    """
+    List all exchange configurations
+
+    Returns: List of all exchange configuration names
+
+    [
+        "FAKE_EXCHANGE_1",
+        "FAKE_EXCHANGE_2"
+    ]
+    """
+    storage = persistence.get_storage()
+    return [name for name in storage.get_collaborations()]
+
+
+@bp.route("/exchange/<string:exchange_name>", methods=["GET"])
+@utils.abort_to_json
+def exchange_show_by_name(exchange_name: str):
+    """
+    Gets a single exchange configuration by name
+    Inputs:
+      * Exchange configuration name
+    Returns:
+      * JSON serialization of configuration, includes exchange-specific metadata
+
+    {
+      'name': 'FAKE_EXCHANGE',
+      'api': 'fb_threatexchange',
+      'enabled': 1,
+      ...
+    }
+    """
+    return _get_collab(exchange_name)
+
+
+@bp.route("/exchange/<string:exchange_name>/status")
+@utils.abort_to_json
+def exchange_get_fetch_status(exchange_name: str):
+    """
+    Inputs:
+      * Configuration name
+    Return:
+      * Time of last fetch kicked off in unix time (or 0 if unset)
+      * Time of checkpoint in unix time (or 0 if unset)
+      * Whether the last run resulted in an error
+
+    {
+        last_fetch_time: 1692397383,
+        checkpoint_time: 169239700,
+        success: 1
+    }
+    """
+    collab = _get_collab(exchange_name)
+    abort(501, "Not yet implemented")
+
+
+@bp.route("/exchange/<string:exchange_name>", methods=["PUT"])
+@utils.abort_to_json
+def exchange_update(exchange_name: str):
+    """
+    Edit exchange configuration
+    Inputs:
+      * Configuration name
+      * JSON serialization of configuration elements to update
+
+    Returns:
+      * JSON serialization of configuration, includes exchange-specific metadata
+
+    {
+      'name': 'FAKE_EXCHANGE',
+      'api': 'fb_threatexchange',
+      'enabled': 1,
+      ...
+    }
+    """
+    collab = _get_collab(exchange_name)
+    abort(501, "Not yet implemented")
+
+
+@bp.route("/exchange/<string:exchange_name>", methods=["DELETE"])
+@utils.abort_to_json
+def exchange_delete(exchange_name: str):
+    """
+    Delete exchange configuration
+    Inputs:
+     * Configuration name
+     * (optional) whether to also delete the associated bank (defaults to true)
+
+    Returns:
+    {
+      "message": "success",
+    }
+    """
+    storage = persistence.get_storage()
+    collab = storage.get_collaboration(exchange_name)
+    if collab is None:
+        return {"message": "success"}
+    abort(501, "Not yet implemented")
