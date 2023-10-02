@@ -76,6 +76,8 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     bank_id: Mapped[int] = mapped_column(ForeignKey("bank.id"))
     bank: Mapped[Bank] = relationship(back_populates="content")
 
+    # Should we store the content type as well?
+
     disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
     original_content_uri: Mapped[t.Optional[str]]
 
@@ -91,9 +93,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
 
 class ContentSignal(db.Model):  # type: ignore[name-defined]
-    id: Mapped[int] = mapped_column(primary_key=True)
-    content_id: Mapped[int] = mapped_column(ForeignKey("bank_content.id"))
-    signal_type: Mapped[str]
+    content_id: Mapped[int] = mapped_column(
+        ForeignKey("bank_content.id"), primary_key=True
+    )
+    signal_type: Mapped[str] = mapped_column(primary_key=True)
     signal_val: Mapped[str] = mapped_column(Text)
 
 
