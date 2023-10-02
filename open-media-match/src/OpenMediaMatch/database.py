@@ -11,6 +11,7 @@ references which are meant to be reaped at some future time.
 
 import io
 import typing as t
+import re
 
 from OpenMediaMatch.storage.interface import BankConfig, BankContentConfig
 
@@ -25,7 +26,13 @@ from threatexchange.utils import dataclass_json
 
 import flask_sqlalchemy
 from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    DeclarativeBase,
+    relationship,
+    validates,
+)
 
 
 class Base(DeclarativeBase):
@@ -54,6 +61,12 @@ class Bank(db.Model):  # type: ignore[name-defined]
     @classmethod
     def from_storage_iface_cls(cls, cfg: BankConfig) -> t.Self:
         return cls(name=cfg.name, enabled_ratio=cfg.matching_enabled_ratio)
+
+    @validates("name")
+    def validate_name(self, _key: str, name: str) -> str:
+        if not re.fullmatch("[A-Z_]+", name):
+            raise ValueError("Bank names must be UPPER_WITH_UNDERSCORE")
+        return name
 
 
 class BankContent(db.Model):  # type: ignore[name-defined]
@@ -135,6 +148,12 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
         return dataclass_json.dataclass_load_dict(
             self.typed_config, cls
         )  # type: ignore[return-value]
+
+    @validates("name")
+    def validate_name(self, _key: str, name: str) -> str:
+        if not re.fullmatch("[A-Z_]+", name):
+            raise ValueError("Collaboration names must be UPPER_WITH_UNDERSCORE")
+        return name
 
 
 class SignalIndex(db.Model):  # type: ignore[name-defined]

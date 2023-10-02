@@ -29,13 +29,13 @@ def test_store_collab_config(app: Flask):
     exchange_apis = {ex.get_name(): ex for ex in all_exchange_apis}
 
     typed_config_default = CollaborationConfigBase(
-        name="Basic",
+        name="BASIC",
         api=StaticSampleSignalExchangeAPI.get_name(),
         enabled=True,
     )
     extended_cls = FBThreatExchangeSignalExchangeAPI.get_config_cls()
     typed_config_extended = extended_cls(
-        name="Extended",
+        name="EXTENDED",
         privacy_group=1234567,
         enabled=True,
     )
