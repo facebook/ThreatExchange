@@ -203,7 +203,7 @@ def exchange_get_fetch_status(exchange_name: str):
     {
         last_fetch_time: 1692397383,
         checkpoint_time: 169239700,
-        success: 1
+        success: true
     }
     """
     collab = _get_collab(exchange_name)
@@ -225,7 +225,7 @@ def exchange_update(exchange_name: str):
     {
       'name': 'FAKE_EXCHANGE',
       'api': 'fb_threatexchange',
-      'enabled': 1,
+      'enabled': true,
       ...
     }
     """
@@ -252,3 +252,81 @@ def exchange_delete(exchange_name: str):
     if collab is None:
         return {"message": "success"}
     abort(501, "Not yet implemented")
+
+
+# Signal Types
+@bp.route("/signal_type", methods=["GET"])
+def get_all_signal_types():
+    """
+    Lists all the signal type configs
+
+    Returns: A list of all SignalType configs
+    [
+      {
+        "enabled": true,
+        "name": "pdq"
+      },
+      {
+        "enabled": true,
+        "name": "video_md5"
+      }
+    ]
+    """
+    return [
+        {"name": c.signal_type.get_name(), "enabled": c.enabled}
+        for c in persistence.get_storage().get_signal_type_configs().values()
+    ]
+
+
+@bp.route("/signal_type/<signal_type_name>", methods=["PUT"])
+@utils.abort_to_json
+def update_signal_type_config(signal_type_name: str):
+    """
+    Update mutable fields of the signal type config
+
+    Returns: The new value for the signal type config
+    {
+        "name": "pdq"
+        "enabled": true,
+    }
+    """
+    abort(501, "unimplemented")
+
+
+# Content Types
+@bp.route("/content_type", methods=["GET"])
+def get_all_content_types():
+    """
+    Lists all the signal type configs
+
+    Returns: A list of all SignalType configs
+    [
+        {
+            "enabled": true,
+            "name": "photo"
+        },
+        {
+            "enabled": true,
+            "name": "video"
+        }
+    ]
+    """
+    return [
+        {"name": c.content_type.get_name(), "enabled": c.enabled}
+        for c in persistence.get_storage().get_content_type_configs().values()
+    ]
+
+
+@bp.route("/signal_type/<signal_type_name>", methods=["PUT"])
+@utils.abort_to_json
+def update_content_type_config(signal_type_name: str):
+    """
+    Update mutable fields of the content type config
+
+    Returns: The new value for the signal type config
+    {
+        "name": "pdq"
+        "enabled": true,
+    }
+    """
+    abort(501, "unimplemented")
