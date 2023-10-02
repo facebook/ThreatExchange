@@ -1,6 +1,6 @@
 import typing as t
 from flask import Flask
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from OpenMediaMatch.tests.utils import app
 
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
@@ -10,11 +10,13 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 )
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from OpenMediaMatch import database
 
 
-def test_store_collab_config(app: Flask):
+def test_store_collab_config(app: Flask) -> None:
     existing = (
         database.db.session.execute(select(database.CollaborationConfig))
         .scalars()
@@ -61,7 +63,7 @@ def test_store_collab_config(app: Flask):
         assert config == by_name.get(config.name)
 
 
-def test_store_index(app: Flask):
+def test_store_index(app: Flask) -> None:
     # We use Trivial index here because it's possible to compare the contents
     # In theory, if it works for this one, it works for any of them
     content = [("a", 1), ("a", 2), ("b", 3), ("c", 4)]
@@ -81,3 +83,37 @@ def test_store_index(app: Flask):
 
     assert index.__class__ == deserialized_index.__class__
     assert index.state == deserialized_index.state
+
+
+def test_store_content(app: Flask) -> None:
+    db = database.db
+    sesh = db.session
+
+    bank = database.Bank(name="TEST_STORE_CONTENT")
+    sesh.add(bank)
+    content = database.BankContent(bank=bank)
+    sesh.add(content)
+    sesh.flush()
+    hash1 = database.ContentSignal(
+        content_id=content.id,
+        signal_type=PdqSignal.get_name(),
+        signal_val=PdqSignal.get_examples()[0],
+    )
+    sesh.add(hash1)
+    hash2 = database.ContentSignal(
+        content_id=content.id,
+        signal_type=VideoMD5Signal.get_name(),
+        signal_val=VideoMD5Signal.get_examples()[0],
+    )
+    sesh.add(hash2)
+    sesh.commit()
+
+    hash1_val = sesh.execute(
+        select(database.ContentSignal).where(
+            and_(
+                database.ContentSignal.content_id == content.id,
+                database.ContentSignal.signal_type == PdqSignal.get_name(),
+            )
+        )
+    ).scalar_one()
+    assert PdqSignal.get_examples()[0] == hash1_val.signal_val
