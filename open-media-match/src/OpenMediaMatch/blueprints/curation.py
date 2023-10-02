@@ -1,6 +1,8 @@
 from flask import Blueprint
 from flask import request, jsonify, abort
 
+from threatexchange.signal_type.pdq.signal import PdqSignal
+
 from OpenMediaMatch import database, persistence, utils
 from OpenMediaMatch.storage.interface import BankConfig
 
@@ -43,6 +45,7 @@ def bank_create():
 
 @bp.route("/bank/<int:bank_id>", methods=["PUT"])
 def bank_update(bank_id: int):
+    # TODO - rewrite using persistence.get_storage()
     data = request.get_json()
     bank = database.Bank.query.get(bank_id)
     if not bank:
@@ -59,9 +62,43 @@ def bank_update(bank_id: int):
 
 @bp.route("/bank/<int:bank_id>", methods=["DELETE"])
 def bank_delete(bank_id: int):
+    # TODO - rewrite using persistence.get_storage()
     bank = database.Bank.query.get(bank_id)
     if not bank:
         return jsonify({"message": "bank not found"}), 404
     database.db.session.delete(bank)
     database.db.session.commit()
     return jsonify({"message": f"Bank {bank.name} ({bank.id}) deleted"})
+
+
+@bp.route("/bank/<bank_name>/content", methods=["POST"])
+@utils.abort_to_json
+def bank_add_by_url(bank_name: str):
+    """
+    Add content to a bank by providing a URI to the content.
+    @see OpenMediaMatch.blueprints.hashing hash_media()
+
+    Returns: the signatures created and id
+
+    {
+      'id': 1234,
+      'signals': {
+         'pdq': 'facefacefacefacefacefaceface',
+         'vmd5': 'ecafecafecafecafecafecafecaf'
+         ...
+      }
+    }
+    """
+    # TODO
+    storage = persistence.get_storage()
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        abort(404, f"bank '{bank_name}' not found")
+
+    return {
+        "id": 1234,
+        "signals": {
+            PdqSignal.get_name(): PdqSignal.get_examples()[0],
+        },
+        "message": "TODO: this is a fake implementation!",
+    }
