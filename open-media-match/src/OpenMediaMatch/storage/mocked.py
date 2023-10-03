@@ -57,6 +57,11 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             )
         )
 
+    def store_signal_type_index(
+        self, signal_type: t.Type[SignalType], index: SignalTypeIndex
+    ) -> None:
+        raise Exception("Not implemented")
+
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
         cfg_cls = StaticSampleSignalExchangeAPI.get_config_cls()

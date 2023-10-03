@@ -62,6 +62,12 @@ class DefaultOMMStore(interface.IUnifiedStore):
         # TODO
         return MockedUnifiedStore().get_signal_type_index(signal_type)
 
+    def store_signal_type_index(
+        self, signal_type: t.Type[SignalType], index: SignalTypeIndex
+    ) -> None:
+        # TODO
+        raise Exception("Not implemented")
+
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
         # TODO
