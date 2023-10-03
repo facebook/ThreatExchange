@@ -35,7 +35,9 @@ def test_banks_create(client: FlaskClient):
     )
     assert post_response.status_code == 201
     assert post_response.json == {
-        "matching_enabled_ratio": 1.0, "name": "MY_TEST_BANK_01"}
+        "matching_enabled_ratio": 1.0,
+        "name": "MY_TEST_BANK_01",
+    }
 
     # Should now be visible on index
     response = client.get("/c/banks")
