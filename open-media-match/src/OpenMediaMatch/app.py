@@ -54,6 +54,10 @@ def create_app() -> flask.Flask:
             "index.html.j2", production=app.config.get("PRODUCTION")
         )
 
+    @app.route("/hello")
+    def hello_world():
+        return "Hello, world!\n"
+    
     @app.route("/status")
     def status():
         """
@@ -100,20 +104,21 @@ def create_app() -> flask.Flask:
     def seed_data():
         """Insert plausible-looking data into the database layer"""
         from threatexchange.signal_type.pdq.signal import PdqSignal
-
+        bankName = "TEST_BANK"
+        contentList = []
+        for example in PdqSignal.get_examples(): 
+            contentList.append(database.BankContent(
+                        signals=[database.ContentSignal(
+                                signal_type=PdqSignal.get_name(),
+                                signal_val=example,
+                            )
+                        ]
+                    ))
         bank = database.Bank(
-            name="TEST_BANK",
-            content=[
-                database.BankContent(
-                    signals=[
-                        database.ContentSignal(
-                            signal_type=PdqSignal.get_name(),
-                            signal_val=PdqSignal.get_examples()[0],
-                        )
-                    ]
-                )
-            ],
-        )
+                name=bankName,
+                content=contentList,
+            )
+        
         database.db.session.add(bank)
         database.db.session.commit()
 
@@ -142,5 +147,6 @@ def create_app() -> flask.Flask:
         task_logger.setLevel(logging.NOTSET)
         logging.getLogger().setLevel(logging.NOTSET)
         build_index.build_all_indices(storage, None, storage)
+
 
     return app
