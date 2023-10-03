@@ -23,7 +23,7 @@ from OpenMediaMatch.utils import abort_to_json
 bp = Blueprint("hashing", __name__)
 
 
-@bp.route("/hash")
+@bp.route("/hash", methods=["GET"])
 @abort_to_json
 def hash_media():
     """
@@ -57,6 +57,15 @@ def hash_media():
             if issubclass(st, FileHasher):
                 ret[st.get_name()] = st.hash_from_file(path)
     return ret
+
+
+@bp.route("/hash", methods=["POST"])
+@abort_to_json
+def hash_media_post():
+    """
+    Calculate the hash for the provided image file.
+    """
+    abort(501, "Not yet implemented.")
 
 
 def _parse_request_content_type(url_content_type: str) -> t.Type[ContentType]:
