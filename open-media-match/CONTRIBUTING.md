@@ -58,7 +58,7 @@ As an exercise, let's add a quick "hello world" API endpoint:
 
 In your Bash terminal, run `curl localhost:5000/hello`. You should get a 404 error indicating that the `/hello` endpoint doesn't exist.
 
-Let's add the endpoint. In `src/OpenMediaMatch/__init__.py`, add a route to the Flask app like so:
+Let's add the endpoint. In `src/OpenMediaMatch/app.py`, add a route to the Flask app like so:
 
 ```python
 @app.route("/hello")
