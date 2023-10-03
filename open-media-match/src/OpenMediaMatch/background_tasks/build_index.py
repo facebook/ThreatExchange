@@ -8,6 +8,7 @@ from threatexchange.signal_type.signal_base import SignalType
 from OpenMediaMatch.storage.interface import (
     ISignalTypeIndexStore,
     ISignalTypeConfigStore,
+    IBankStore,
 )
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def build_all_indices(
     signal_type_cfgs: ISignalTypeConfigStore,
-    bank_store: None,  # TODO
+    bank_store: IBankStore,
     index_store: ISignalTypeIndexStore,
 ) -> None:
     """
@@ -33,10 +34,15 @@ def build_all_indices(
 
 def build_index(
     for_signal_type: t.Type[SignalType],
-    bank_store: None,  # TODO
+    bank_store: IBankStore,
     index_store: ISignalTypeIndexStore,
 ) -> None:
     """
     Build one index from scratch with the current bank contents and persist it.
     """
+    logger.info("Building index for %s", for_signal_type.get_name())
     # TODO
+
+    for batch in bank_store.bank_yield_content(for_signal_type):
+        for signal, bc_id in batch:
+            logging.debug("TODO remove me - %d: %s", bc_id, signal)

@@ -141,6 +141,6 @@ def create_app() -> flask.Flask:
         task_logger.addHandler(default_handler)
         task_logger.setLevel(logging.NOTSET)
         logging.getLogger().setLevel(logging.NOTSET)
-        build_index.build_all_indices(storage, None, storage)
+        build_index.build_all_indices(storage, storage, storage)
 
     return app

@@ -164,4 +164,4 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self, signal_type: t.Optional[t.Type[SignalType]] = None
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
         # TODO
-        raise Exception("Not implemented")
+        return MockedUnifiedStore().bank_yield_content(signal_type)
