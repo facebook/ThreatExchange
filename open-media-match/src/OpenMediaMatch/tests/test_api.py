@@ -1,5 +1,5 @@
 from flask.testing import FlaskClient
-from OpenMediaMatch.tests.utils import app, client
+from OpenMediaMatch.tests.utils import app, client, create_bank
 
 
 def test_status_response(client: FlaskClient):
@@ -29,14 +29,19 @@ def test_banks_create(client: FlaskClient):
 
 
 def test_banks_add_hash(client: FlaskClient):
-    post_response = client.post(
-        "/c/banks",
-        json={"name": "MY_TEST_BANK"},
-    )
-    assert post_response.status_code == 201
-    assert post_response.json == {"matching_enabled_ratio": 1.0, "name": "MY_TEST_BANK"}
+    bank_name = "NEW_BANK"
+    create_bank(client, bank_name)
 
-    # Should now be visible on index
-    response = client.get("/c/banks")
-    assert response.status_code == 200
-    assert response.json == [post_response.json]
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+
+    post_response = client.post(
+        "/c/bank/{}/content?url={}&content_type=photo".format(bank_name, image_url)
+    )
+
+    assert post_response.status_code == 200
+    assert post_response.json == {
+        "id": 1,
+        "signals": {
+            "pdq": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
+        },
+    }
