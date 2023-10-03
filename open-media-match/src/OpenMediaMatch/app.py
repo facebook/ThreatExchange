@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 import warnings
-from OpenMediaMatch.blueprints.curation import get_all_signal_types
+from OpenMediaMatch.blueprints.curation import banks_index, get_all_signal_types
 from OpenMediaMatch.blueprints.curation import get_all_content_types
 
 import flask
@@ -59,6 +59,14 @@ def create_app() -> flask.Flask:
             production=app.config.get("PRODUCTION"),
             signal=signaltypes,
             content=contenttypes,
+        )
+
+    @app.route("/banks")
+    def get_bank_names():
+        banks = banks_index()
+        return flask.render_template(
+            "bank.html.j2",
+            bankList=banks,
         )
 
     @app.route("/status")
