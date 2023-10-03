@@ -52,6 +52,13 @@ def test_banks_update(client: FlaskClient):
     )
     assert post_response.status_code == 201
 
+    # check name validation
+    post_response = client.put(
+        "/c/bank/MY_TEST_BANK",
+        json={"name": "1_invalid_name"},
+    )
+    assert post_response.status_code == 400
+
     post_response = client.put(
         "/c/bank/MY_TEST_BANK",
         json={"name": "MY_TEST_BANK_RENAMED"},

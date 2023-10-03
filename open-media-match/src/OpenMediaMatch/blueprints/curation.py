@@ -63,12 +63,12 @@ def bank_update(bank_name: str):
     if bank is None:
         abort(404, "Bank not found")
 
-    if "name" in data:
-        bank.name = data["name"]
-    if "enabled" in data:
-        bank.enabled = bool(data["enabled"])
-
     try:
+        if "name" in data:
+            bank.name = data["name"]
+        if "enabled" in data:
+            bank.enabled = bool(data["enabled"])
+
         database.db.session.commit()
     except ValueError as e:
         abort(400, *e.args)
