@@ -20,14 +20,14 @@ def test_banks_create(client: FlaskClient):
         "/c/banks",
         json={"name": "01_TEST_BANK"},
     )
-    assert post_response.status_code == 500
+    assert post_response.status_code == 400
 
     # Cannot contain lowercase letters
     post_response = client.post(
         "/c/banks",
         json={"name": "my_test_bank"},
     )
-    assert post_response.status_code == 500
+    assert post_response.status_code == 400
 
     post_response = client.post(
         "/c/banks",
