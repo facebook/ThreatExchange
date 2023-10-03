@@ -161,7 +161,33 @@ class DefaultOMMStore(interface.IUnifiedStore):
         raise Exception("Not implemented")
 
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None
+        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
-        # TODO
-        return MockedUnifiedStore().bank_yield_content(signal_type)
+        # Start the initial offset at 0
+        offset = 0
+        while True:
+            # Query the ContentSignal table
+            query = database.db.session.query(database.ContentSignal)
+
+            # Conditionally apply the filter if signal_type is provided
+            if signal_type is not None:
+                query = query.filter(
+                    database.ContentSignal.signal_type == signal_type.get_name()
+                )
+
+            # Batch the query by offset to avoid loading all results at ones overloading the DB.
+            query = query.offset(offset).limit(batch_size).yield_per(batch_size)
+
+            # Execute the query and fetch the batch of results
+            results = query.all()
+
+            # If there are no more results, break the loop
+            if not results:
+                break
+
+            # Increment the offset for the next batch
+            offset += batch_size
+
+            # Yield the results as tuples (signal_val, content_id)
+            for content_signal in results:
+                yield [(content_signal.signal_val, content_signal.content_id)]
