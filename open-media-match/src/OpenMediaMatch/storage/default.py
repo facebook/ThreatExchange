@@ -164,30 +164,24 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
         # Start the initial offset at 0
-        offset = 0
-        while True:
-            # Query the ContentSignal table
-            query = database.db.session.query(database.ContentSignal)
+        query = select(database.ContentSignal).execution_options(
+            stream_results=True, max_row_buffer=batch_size
+        )
 
-            # Conditionally apply the filter if signal_type is provided
-            if signal_type is not None:
-                query = query.filter(
-                    database.ContentSignal.signal_type == signal_type.get_name()
-                )
+        # Conditionally apply the filter if signal_type is provided
+        if signal_type is not None:
+            query = query.filter(
+                database.ContentSignal.signal_type == signal_type.get_name()
+            )
 
-            # Batch the query by offset to avoid loading all results at ones overloading the DB.
-            query = query.offset(offset).limit(batch_size).yield_per(batch_size)
+        # Batch the query by offset to avoid loading all results at ones overloading the DB.
+        result = database.db.session.execute(query).yield_per(batch_size)
 
-            # Execute the query and fetch the batch of results
-            results = query.all()
-
+        for partition in result.partitions():
             # If there are no more results, break the loop
-            if not results:
+            if not partition:
                 break
 
-            # Increment the offset for the next batch
-            offset += batch_size
-
             # Yield the results as tuples (signal_val, content_id)
-            for content_signal in results:
-                yield [(content_signal.signal_val, content_signal.content_id)]
+            for content_signal in partition:
+                yield [(content_signal[0].signal_val, content_signal[0].content_id)]
