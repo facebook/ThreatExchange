@@ -15,7 +15,7 @@ import requests
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
-from threatexchange.signal_type.signal_base import FileHasher, SignalType
+from threatexchange.signal_type.signal_base import FileHasher, BytesHasher, SignalType
 
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.utils import abort_to_json
@@ -63,9 +63,40 @@ def hash_media():
 @abort_to_json
 def hash_media_post():
     """
-    Calculate the hash for the provided image file.
+    Calculate the hash for the provided file.
     """
-    abort(501, "Not yet implemented.")
+    if not request.files:
+        return {"message": "Missing multipart/form-data file upload"}, 400
+
+    # Let's just accept a single file per request.
+    if len(request.files) > 1:
+        return {"message": "Only one file allowed per request"}, 400
+
+    ret = {}
+
+    # Each file in a multipart/form-data body has a name as well as a filename:
+    # Content-Disposition: form-data; name="field1"; filename="example.txt"
+    # We will require that the field name is one of the supported content types.
+    for field_name in request.files.keys():
+        # The file key must be one of the supported content types.
+        content_type = _lookup_content_type(field_name)
+        signal_types = _parse_request_signal_type(content_type)
+
+        if len(request.files.getlist(field_name)) > 1:
+            return {"message": "Only one file allowed per request"}, 400
+
+        for file in request.files.getlist(field_name):
+            current_app.logger.debug(
+                "Processing upload of type %s, filename=%s, mimetype=%s",
+                field_name,
+                file.filename,
+                file.mimetype,
+            )
+            for st in signal_types.values():
+                if issubclass(st, BytesHasher):
+                    ret[st.get_name()] = st.hash_from_bytes(file.stream.read())
+
+    return ret
 
 
 def _parse_request_content_type(url_content_type: str) -> t.Type[ContentType]:
@@ -79,9 +110,13 @@ def _parse_request_content_type(url_content_type: str) -> t.Type[ContentType]:
             abort(
                 400,
                 f"unsupported url ContentType: '{url_content_type}', "
-                "if you know the expected type, provide it with content_type",
+                "if you know the expected type, provide it with the content_type query param",
             )
 
+    return _lookup_content_type(arg)
+
+
+def _lookup_content_type(arg: str) -> t.Type[ContentType]:
     content_type_config = get_storage().get_content_type_configs().get(arg)
     if content_type_config is None:
         abort(400, f"no such content_type: '{arg}'")
