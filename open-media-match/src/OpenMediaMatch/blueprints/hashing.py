@@ -63,7 +63,7 @@ def hash_media():
 @abort_to_json
 def hash_media_post():
     """
-    Calculate the hash for the provided file(s).
+    Calculate the hash for the provided file.
     """
     if not request.files:
         return {"message": "Missing multipart/form-data file upload"}, 400
