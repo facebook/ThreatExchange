@@ -10,36 +10,16 @@
         {% if not production %}
         <p>Running in development mode</p>
         {% endif %}
-        <h3> Enabled Content Types </h3>
+        <h3> Content Types </h3>
         {% for c in content %}
             <tr>
-            {% if c['enabled'] %}
-                <td>{{c['name']}} <br> </td>
-            {% endif %}
+                <td> <li> {{c['name']}}: {% if c['enabled'] %} Enabled {% else %} Disabled {% endif %} </li> </td>
             </tr>
         {% endfor %}
-        <h3> Enabled Signal Types </h3>
+        <h3> Signal Types </h3>
         {% for s in signal %}
             <tr>
-            {% if s['enabled'] %}
-                <td>{{s['name']}} <br> </td>
-            {% endif %}
-            </tr>
-        {% endfor %}
-        <h3> Disabled Content Types </h3>
-        {% for c in content %}
-            <tr>
-            {% if not c['enabled'] %}
-                <td>{{c['name']}} <br> </td>
-            {% endif %}
-            </tr>
-        {% endfor %}
-        <h3> Disabled Signal Types </h3>
-        {% for s in signal %}
-            <tr>
-            {% if not s['enabled'] %}
-                <td>{{s['name']}} <br> </td>
-            {% endif %}
+                <td> <li> {{s['name']}}: {% if s['enabled'] %} Enabled {% else %} Disabled {% endif %} </li> </td>
             </tr>
         {% endfor %}
     </body>

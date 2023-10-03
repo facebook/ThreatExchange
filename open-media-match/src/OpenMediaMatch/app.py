@@ -4,8 +4,8 @@ import logging
 import os
 import sys
 import warnings
-from src.OpenMediaMatch.blueprints.curation import get_all_signal_types
-from src.OpenMediaMatch.blueprints.curation import get_all_content_types
+from OpenMediaMatch.blueprints.curation import get_all_signal_types
+from OpenMediaMatch.blueprints.curation import get_all_content_types
 
 import flask
 from flask.logging import default_handler
@@ -55,7 +55,10 @@ def create_app() -> flask.Flask:
         signaltypes = get_all_signal_types()
         contenttypes = get_all_content_types()
         return flask.render_template(
-            "index.html.j2", production=app.config.get("PRODUCTION"), signal=signaltypes, content=contenttypes
+            "index.html.j2",
+            production=app.config.get("PRODUCTION"),
+            signal=signaltypes,
+            content=contenttypes,
         )
 
     @app.route("/status")
