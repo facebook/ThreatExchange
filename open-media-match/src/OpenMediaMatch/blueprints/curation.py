@@ -3,6 +3,8 @@ import re
 from flask import Blueprint
 from flask import request, jsonify, abort
 
+from sqlalchemy.exc import IntegrityError
+
 from threatexchange.signal_type.pdq.signal import PdqSignal
 
 from OpenMediaMatch import database, persistence, utils
@@ -44,25 +46,33 @@ def bank_create():
         enabled_ratio = 1.0 if utils.str_to_bool(data["enabled"]) else 0.0
 
     bank = BankConfig(name=name, matching_enabled_ratio=enabled_ratio)
-    persistence.get_storage().bank_update(bank, create=True)
+    try:
+        persistence.get_storage().bank_update(bank, create=True)
+    except ValueError as e:
+        abort(400, *e.args)
+    except IntegrityError:
+        abort(403, "Bank already exists")
     return jsonify(bank), 201
 
 
-@bp.route("/bank/<int:bank_id>", methods=["PUT"])
-def bank_update(bank_id: int):
+@bp.route("/bank/<bank_name>", methods=["PUT"])
+def bank_update(bank_name: str):
     # TODO - rewrite using persistence.get_storage()
     data = request.get_json()
-    bank = database.Bank.query.get(bank_id)
-    if not bank:
-        return jsonify({"message": "bank not found"}), 404
+    bank = database.Bank.query.filter_by(name=bank_name).one_or_none()
+    if bank is None:
+        abort(404, "Bank not found")
 
-    if "name" in data:
-        bank.name = data["name"]
-    if "enabled" in data:
-        bank.enabled = bool(data["enabled"])
+    try:
+        if "name" in data:
+            bank.name = data["name"]
+        if "enabled" in data:
+            bank.enabled = bool(data["enabled"])
 
-    database.db.session.commit()
-    return jsonify(bank)
+        database.db.session.commit()
+    except ValueError as e:
+        abort(400, *e.args)
+    return jsonify(bank.as_storage_iface_cls())
 
 
 @bp.route("/bank/<int:bank_id>", methods=["DELETE"])
