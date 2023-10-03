@@ -45,6 +45,21 @@ def test_banks_create(client: FlaskClient):
     assert response.json == [post_response.json]
 
 
+def test_banks_update(client: FlaskClient):
+    post_response = client.post(
+        "/c/banks",
+        json={"name": "MY_TEST_BANK"},
+    )
+    assert post_response.status_code == 201
+
+    post_response = client.put(
+        "/c/bank/MY_TEST_BANK",
+        json={"name": "MY_TEST_BANK_RENAMED"},
+    )
+    assert post_response.status_code == 200
+    assert post_response.get_json()["name"] == "MY_TEST_BANK_RENAMED"
+
+
 def test_banks_add_hash(client: FlaskClient):
     bank_name = "NEW_BANK"
     create_bank(client, bank_name)
