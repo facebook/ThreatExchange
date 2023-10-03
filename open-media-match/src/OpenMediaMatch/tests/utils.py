@@ -27,3 +27,12 @@ def app() -> t.Iterator[Flask]:
 @pytest.fixture()
 def client(app) -> FlaskClient:
     return app.test_client()
+
+
+def create_bank(client: FlaskClient, bank_name: str):
+    post_response = client.post(
+        "/c/banks",
+        json={"name": bank_name},
+    )
+    assert post_response.status_code == 201
+    assert post_response.json == {"matching_enabled_ratio": 1.0, "name": bank_name}

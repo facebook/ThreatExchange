@@ -95,12 +95,17 @@ class DefaultOMMStore(interface.IUnifiedStore):
         }
 
     def get_bank(self, name: str) -> t.Optional[BankConfig]:
-        """Override for more efficient lookup"""
+        """Override for more efficient lookup."""
         bank = database.db.session.execute(
             select(database.Bank).where(database.Bank.name == name)
         ).scalar_one_or_none()
 
         return None if bank is None else bank.as_storage_iface_cls()
+
+    def _get_bank(self, name: str) -> t.Optional[database.Bank]:
+        return database.db.session.execute(
+            select(database.Bank).where(database.Bank.name == name)
+        ).scalar_one_or_none()
 
     def bank_update(self, bank: BankConfig, *, create: bool = False) -> None:
         if create:
@@ -132,8 +137,24 @@ class DefaultOMMStore(interface.IUnifiedStore):
         content_signals: t.Dict[t.Type[SignalType], str],
         config: t.Optional[BankContentConfig] = None,
     ) -> int:
-        # TODO
-        raise Exception("Not implemented")
+        # Add content to the bank provided.
+        # Returns the ID of the content added.
+        sesh = database.db.session
+
+        bank = self._get_bank(bank_name)
+        content = database.BankContent(bank=bank)
+        sesh.add(content)
+        sesh.flush()
+        for content_signal, value in content_signals.items():
+            hash = database.ContentSignal(
+                content_id=content.id,
+                signal_type=content_signal.get_name(),
+                signal_val=value,
+            )
+            sesh.add(hash)
+
+        sesh.commit()
+        return content.id
 
     def bank_remove_content(self, bank_name: str, content_id: int) -> None:
         # TODO
@@ -143,4 +164,4 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self, signal_type: t.Optional[t.Type[SignalType]] = None
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
         # TODO
-        raise Exception("Not implemented")
+        return MockedUnifiedStore().bank_yield_content(signal_type)
