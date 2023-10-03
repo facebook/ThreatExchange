@@ -64,7 +64,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
 
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
-        if not re.fullmatch("[A-Z_]+", name):
+        if not re.fullmatch("[A-Z_][A-Z0-9_]*", name):
             raise ValueError("Bank names must be UPPER_WITH_UNDERSCORE")
         return name
 
