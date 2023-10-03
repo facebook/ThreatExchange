@@ -57,6 +57,11 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             )
         )
 
+    def store_signal_type_index(
+        self, signal_type: t.Type[SignalType], index: SignalTypeIndex
+    ) -> None:
+        raise Exception("Not implemented")
+
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
         cfg_cls = StaticSampleSignalExchangeAPI.get_config_cls()
@@ -121,7 +126,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         raise Exception("Not implemented")
 
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None
+        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
         if signal_type == PdqSignal:
             for fake_id, signal in enumerate(PdqSignal.get_examples()):

@@ -41,8 +41,11 @@ def build_index(
     Build one index from scratch with the current bank contents and persist it.
     """
     logger.info("Building index for %s", for_signal_type.get_name())
-    # TODO
-
+    index_cls = for_signal_type.get_index_cls()
+    list = []
     for batch in bank_store.bank_yield_content(for_signal_type):
         for signal, bc_id in batch:
-            logging.debug("TODO remove me - %d: %s", bc_id, signal)
+            if signal:
+                tuple = (signal, bc_id)
+                list.append(tuple)
+    index_store.store_signal_type_index(for_signal_type, index_cls.build(list))
