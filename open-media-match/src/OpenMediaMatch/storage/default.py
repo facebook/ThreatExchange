@@ -6,6 +6,8 @@ The default store for accessing persistent data on OMM.
 
 import typing as t
 
+from importlib import import_module
+
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
@@ -13,6 +15,9 @@ from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
 )
+
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from sqlalchemy import select, update
 from OpenMediaMatch import database
@@ -24,6 +29,8 @@ from OpenMediaMatch.storage.interface import (
     BankConfig,
     BankContentConfig,
 )
+
+from flask import current_app
 
 
 class DefaultOMMStore(interface.IUnifiedStore):
@@ -43,6 +50,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
       * Blobstore (e.g. built indices)
     """
 
+    def __init__(self) -> None:
+        self.signal_types: list[t.Type[SignalType]] = [PdqSignal, VideoMD5Signal]
+        signal_types = current_app.config.get("SIGNAL_TYPES")
+        if signal_types is not None:
+            self.signal_types = signal_types
+        assert len(self.signal_types) == len(
+            set([s.get_name() for s in self.signal_types])
+        ), "All signal must have unique names"
+
     def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
         # TODO
         return MockedUnifiedStore().get_content_type_configs()
@@ -52,8 +68,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return MockedUnifiedStore().get_exchange_type_configs()
 
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
-        # TODO
-        return MockedUnifiedStore().get_signal_type_configs()
+        return {
+            s.get_name(): interface.SignalTypeConfig(True, s) for s in self.signal_types
+        }
 
     # Index
     def get_signal_type_index(
