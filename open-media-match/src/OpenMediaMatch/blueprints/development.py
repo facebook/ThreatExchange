@@ -13,6 +13,7 @@ from OpenMediaMatch.utils import abort_to_json, require_request_param
 
 bp = Blueprint("development", __name__)
 
+
 @bp.route("/query")
 @abort_to_json
 def query_media():
@@ -29,15 +30,17 @@ def query_media():
     """
     signal_type_to_signal_map = hash_media()
     if not isinstance(signal_type_to_signal_map, dict):
-        # We really should not get here, since if something went wrong, it should 
+        # We really should not get here, since if something went wrong, it should
         if isinstance(signal_type_to_signal_map, tuple):
             return signal_type_to_signal_map
         abort(500, "Something went wrong while hashing the provided media.")
 
-
     # Check if signal_type is an option in the map of hashes
     signal_type_name = require_request_param("signal_type")
     if signal_type_name not in signal_type_to_signal_map:
-        abort(400, f"Requested signal type '{signal_type_name}' is not supported for the provided media.")
-    
+        abort(
+            400,
+            f"Requested signal type '{signal_type_name}' is not supported for the provided media.",
+        )
+
     return lookup_signal(signal_type_to_signal_map[signal_type_name], signal_type_name)

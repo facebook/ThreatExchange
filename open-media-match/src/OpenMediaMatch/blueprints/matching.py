@@ -34,6 +34,7 @@ def lookup():
     signal_type_name = require_request_param("signal_type")
     return lookup_signal(signal, signal_type_name)
 
+
 def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     storage = get_storage()
     signal_type = validate_and_transform_signal_type(signal_type_name, storage)
@@ -48,7 +49,10 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
         abort(503, "index not yet ready")
     return {"matches": [m.metadata for m in index.query(signal)]}
 
-def validate_and_transform_signal_type(signal_type_name: str, storage: IUnifiedStore) -> type[SignalType]:
+
+def validate_and_transform_signal_type(
+    signal_type_name: str, storage: IUnifiedStore
+) -> type[SignalType]:
     """
     Accepts a signal type name and returns the corresponding signal type class,
     validating that the signal type exists and is enabled for the provided storage.
@@ -59,6 +63,7 @@ def validate_and_transform_signal_type(signal_type_name: str, storage: IUnifiedS
     if not signal_type_config.enabled:
         abort(400, f"SignalType '{signal_type_name}' is not enabled")
     return signal_type_config.signal_type
+
 
 @bp.route("/index/status")
 def index_status():

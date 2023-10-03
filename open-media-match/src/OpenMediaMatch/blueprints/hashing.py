@@ -31,7 +31,7 @@ def hash_media():
 
     Input:
         * url - path to the media to hash. Supports image or video.
-        
+
     Output:
         * Mapping of signal types to hash values. Signal types are derived from the content type of the provided URL
     """
