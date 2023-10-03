@@ -73,8 +73,12 @@ def create_app() -> flask.Flask:
     # Linters complain about imports off the top level, but this is needed
     # to prevent circular imports
 
-    if not os.environ.get("PRODUCTION", False) and app.config.get("ROLE_HASHER", False) and app.config.get("ROLE_MATCHER", False):
-        app.register_blueprint(development.bp)
+    if (
+        not os.environ.get("PRODUCTION", False)
+        and app.config.get("ROLE_HASHER", False)
+        and app.config.get("ROLE_MATCHER", False)
+    ):
+        app.register_blueprint(development.bp, url_prefix="/dev")
 
     if app.config.get("ROLE_HASHER", False):
         app.register_blueprint(hashing.bp, url_prefix="/h")

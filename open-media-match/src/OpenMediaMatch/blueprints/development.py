@@ -4,6 +4,8 @@
 Development only routes for easily testing functionality end-to-end, all running on a single host.
 """
 
+from functools import reduce
+import itertools
 from flask import Blueprint, abort, redirect, request, url_for
 
 from OpenMediaMatch.blueprints.hashing import hash_media
@@ -36,11 +38,23 @@ def query_media():
         abort(500, "Something went wrong while hashing the provided media.")
 
     # Check if signal_type is an option in the map of hashes
-    signal_type_name = require_request_param("signal_type")
-    if signal_type_name not in signal_type_to_signal_map:
-        abort(
-            400,
-            f"Requested signal type '{signal_type_name}' is not supported for the provided media.",
+    signal_type_name = request.args.get("signal_type")
+    if signal_type_name is not None:
+        if signal_type_name not in signal_type_to_signal_map:
+            abort(
+                400,
+                f"Requested signal type '{signal_type_name}' is not supported for the provided media.",
+            )
+        return lookup_signal(
+            signal_type_to_signal_map[signal_type_name], signal_type_name
         )
-
-    return lookup_signal(signal_type_to_signal_map[signal_type_name], signal_type_name)
+    return {
+        "matches": list(
+            itertools.chain(
+                *map(
+                    lambda x: lookup_signal(x[1], x[0])["matches"],
+                    signal_type_to_signal_map.items(),
+                ),
+            )
+        )
+    }

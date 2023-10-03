@@ -37,7 +37,7 @@ def lookup():
 
 def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     storage = get_storage()
-    signal_type = validate_and_transform_signal_type(signal_type_name, storage)
+    signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
 
     try:
         signal = signal_type.validate_signal_str(signal)
@@ -50,7 +50,7 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     return {"matches": [m.metadata for m in index.query(signal)]}
 
 
-def validate_and_transform_signal_type(
+def _validate_and_transform_signal_type(
     signal_type_name: str, storage: IUnifiedStore
 ) -> type[SignalType]:
     """
