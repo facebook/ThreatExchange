@@ -55,10 +55,6 @@ def create_app() -> flask.Flask:
             "index.html.j2", production=app.config.get("PRODUCTION")
         )
 
-    @app.route("/hello")
-    def hello_world():
-        return "Hello, world!\n"
-
     @app.route("/status")
     def status():
         """
