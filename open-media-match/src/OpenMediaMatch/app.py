@@ -68,6 +68,17 @@ def create_app() -> flask.Flask:
         """
         return "I-AM-ALIVE\n"
 
+    @app.route("/site-map")
+    def site_map():
+        # Use a set to avoid duplicates (e.g. same path, multiple methods)
+        routes = set()
+        for rule in app.url_map.iter_rules():
+            routes.add(rule.rule)
+        # Convert set to a list so we can sort it.
+        routes = list(routes)
+        routes.sort()
+        return routes
+
     # Register Flask blueprints for whichever server roles are enabled...
     # URL prefixing facilitates easy Layer 7 routing :)
     # Linters complain about imports off the top level, but this is needed
