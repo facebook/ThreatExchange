@@ -18,6 +18,7 @@ bp = Blueprint("curation", __name__)
 
 
 @bp.route("/banks", methods=["GET"])
+@utils.abort_to_json
 def banks_index():
     storage = persistence.get_storage()
     return list(storage.get_banks().values())
@@ -56,6 +57,7 @@ def bank_create():
 
 
 @bp.route("/bank/<bank_name>", methods=["PUT"])
+@utils.abort_to_json
 def bank_update(bank_name: str):
     # TODO - rewrite using persistence.get_storage()
     data = request.get_json()
@@ -75,12 +77,13 @@ def bank_update(bank_name: str):
     return jsonify(bank.as_storage_iface_cls())
 
 
-@bp.route("/bank/<int:bank_id>", methods=["DELETE"])
-def bank_delete(bank_id: int):
+@bp.route("/bank/<bank_name>", methods=["DELETE"])
+@utils.abort_to_json
+def bank_delete(bank_name: str):
     # TODO - rewrite using persistence.get_storage()
-    bank = database.Bank.query.get(bank_id)
+    bank = database.Bank.query.filter_by(name=bank_name).one_or_none()
     if not bank:
-        return jsonify({"message": "bank not found"}), 404
+        return {"message": "Done"}, 200
     database.db.session.delete(bank)
     database.db.session.commit()
     return jsonify({"message": f"Bank {bank.name} ({bank.id}) deleted"})

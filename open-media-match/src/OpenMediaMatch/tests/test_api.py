@@ -67,6 +67,26 @@ def test_banks_update(client: FlaskClient):
     assert post_response.get_json()["name"] == "MY_TEST_BANK_RENAMED"
 
 
+def test_banks_delete(client: FlaskClient):
+    post_response = client.post(
+        "/c/banks",
+        json={"name": "MY_TEST_BANK"},
+    )
+    assert post_response.status_code == 201
+
+    # check name validation
+    post_response = client.delete(
+        "/c/bank/MY_TEST_BANK",
+    )
+    assert post_response.status_code == 200
+
+    # deleting non existing bank should succeed
+    post_response = client.delete(
+        "/c/bank/MY_TEST_BANK",
+    )
+    assert post_response.status_code == 200
+
+
 def test_banks_add_hash(client: FlaskClient):
     bank_name = "NEW_BANK"
     create_bank(client, bank_name)
