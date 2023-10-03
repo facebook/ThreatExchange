@@ -95,7 +95,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         }
 
     def get_bank(self, name: str) -> t.Optional[BankConfig]:
-        """Override for more efficient lookup"""
+        """Override for more efficient lookup."""
         bank = database.db.session.execute(
             select(database.Bank).where(database.Bank.name == name)
         ).scalar_one_or_none()
