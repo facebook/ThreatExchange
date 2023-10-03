@@ -83,7 +83,7 @@ def bank_delete(bank_name: str):
     # TODO - rewrite using persistence.get_storage()
     bank = database.Bank.query.filter_by(name=bank_name).one_or_none()
     if not bank:
-        abort(404, "Bank not found")
+        return {"message": "Done"}, 200
     database.db.session.delete(bank)
     database.db.session.commit()
     return jsonify({"message": f"Bank {bank.name} ({bank.id}) deleted"})
