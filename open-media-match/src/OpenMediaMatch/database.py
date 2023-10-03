@@ -64,7 +64,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
 
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
-        if not re.fullmatch("[A-Z_]+", name):
+        if not re.fullmatch("[A-Z_][A-Z0-9_]*+", name):
             raise ValueError("Bank names must be UPPER_WITH_UNDERSCORE")
         return name
 
@@ -78,10 +78,12 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
     # Should we store the content type as well?
 
-    disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
+    disable_until_ts: Mapped[int] = mapped_column(
+        default=BankContentConfig.ENABLED)
     original_content_uri: Mapped[t.Optional[str]]
 
-    signals: Mapped[t.List["ContentSignal"]] = relationship(cascade="all, delete")
+    signals: Mapped[t.List["ContentSignal"]
+                    ] = relationship(cascade="all, delete")
 
     def as_storage_iface_cls(self) -> BankContentConfig:
         return BankContentConfig(
@@ -155,7 +157,8 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
         if not re.fullmatch("[A-Z_]+", name):
-            raise ValueError("Collaboration names must be UPPER_WITH_UNDERSCORE")
+            raise ValueError(
+                "Collaboration names must be UPPER_WITH_UNDERSCORE")
         return name
 
 
