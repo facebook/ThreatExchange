@@ -7,6 +7,7 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 
 from OpenMediaMatch import database, persistence, utils
 from OpenMediaMatch.storage.interface import BankConfig
+from OpenMediaMatch.blueprints.hashing import hash_media
 
 
 bp = Blueprint("curation", __name__)
@@ -93,19 +94,24 @@ def bank_add_by_url(bank_name: str):
       }
     }
     """
-    # TODO
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
 
-    return {
-        "id": 1234,
-        "signals": {
-            PdqSignal.get_name(): PdqSignal.get_examples()[0],
+    hashes = hash_media()
+
+    signal_type_configs = storage.get_signal_type_configs()
+
+    content_id = storage.bank_add_content(
+        bank.name,
+        {
+            signal_type_configs[name].signal_type: signal_value
+            for name, signal_value in hashes.items()
         },
-        "message": "TODO: this is a fake implementation!",
-    }
+    )
+
+    return {"id": content_id, "signals": hashes}
 
 
 def _get_collab(name: str):
