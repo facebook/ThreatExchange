@@ -101,19 +101,24 @@ def create_app() -> flask.Flask:
         """Insert plausible-looking data into the database layer"""
         from threatexchange.signal_type.pdq.signal import PdqSignal
 
-        bank = database.Bank(
-            name="TEST_BANK",
-            content=[
+        bankName = "TEST_BANK"
+        contentList = []
+        for example in PdqSignal.get_examples():
+            contentList.append(
                 database.BankContent(
                     signals=[
                         database.ContentSignal(
                             signal_type=PdqSignal.get_name(),
-                            signal_val=PdqSignal.get_examples()[0],
+                            signal_val=example,
                         )
                     ]
                 )
-            ],
+            )
+        bank = database.Bank(
+            name=bankName,
+            content=contentList,
         )
+
         database.db.session.add(bank)
         database.db.session.commit()
 
