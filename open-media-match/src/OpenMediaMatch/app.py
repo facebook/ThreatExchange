@@ -19,7 +19,7 @@ with warnings.catch_warnings():
 from OpenMediaMatch import database
 from OpenMediaMatch.background_tasks import build_index, fetcher
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.blueprints import hashing, matching, curation
+from OpenMediaMatch.blueprints import development, hashing, matching, curation
 
 
 def create_app() -> flask.Flask:
@@ -83,6 +83,13 @@ def create_app() -> flask.Flask:
     # URL prefixing facilitates easy Layer 7 routing :)
     # Linters complain about imports off the top level, but this is needed
     # to prevent circular imports
+
+    if (
+        not os.environ.get("PRODUCTION", False)
+        and app.config.get("ROLE_HASHER", False)
+        and app.config.get("ROLE_MATCHER", False)
+    ):
+        app.register_blueprint(development.bp, url_prefix="/dev")
 
     if app.config.get("ROLE_HASHER", False):
         app.register_blueprint(hashing.bp, url_prefix="/h")
