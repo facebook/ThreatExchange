@@ -127,6 +127,14 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         For OMM, the indexed values are BankedIDs
         """
 
+    @abc.abstractmethod
+    def store_signal_type_index(
+        self, signal_type: t.Type[SignalType], index: SignalTypeIndex
+    ) -> None:
+        """
+        Persists the signal type index, potentially replacing a previous version.
+        """
+
 
 class ICollaborationStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
