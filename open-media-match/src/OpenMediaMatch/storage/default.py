@@ -163,7 +163,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
-        # Start the initial offset at 0
+        # Query for all ContentSignals and stream results with the proper batch size
         query = select(database.ContentSignal).execution_options(
             stream_results=True, max_row_buffer=batch_size
         )
@@ -174,7 +174,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 database.ContentSignal.signal_type == signal_type.get_name()
             )
 
-        # Batch the query by offset to avoid loading all results at ones overloading the DB.
+        # Execute the query and stream results with the proper yield batch size
         result = database.db.session.execute(query).yield_per(batch_size)
 
         for partition in result.partitions():

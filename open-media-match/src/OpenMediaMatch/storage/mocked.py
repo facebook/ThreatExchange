@@ -121,7 +121,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         raise Exception("Not implemented")
 
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None
+        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
     ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
         if signal_type == PdqSignal:
             for fake_id, signal in enumerate(PdqSignal.get_examples()):
