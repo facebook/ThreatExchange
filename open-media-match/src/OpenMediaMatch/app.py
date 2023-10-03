@@ -35,7 +35,8 @@ def create_app() -> flask.Flask:
         # the devcontainer and getting an error, just override the env
         app.config.from_pyfile("/workspace/.devcontainer/omm_config.py")
     else:
-        raise RuntimeError("No flask config given - try populating OMM_CONFIG env")
+        raise RuntimeError(
+            "No flask config given - try populating OMM_CONFIG env")
     app.config.update(
         SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
@@ -57,7 +58,7 @@ def create_app() -> flask.Flask:
     @app.route("/hello")
     def hello_world():
         return "Hello, world!\n"
-    
+
     @app.route("/status")
     def status():
         """
@@ -106,19 +107,19 @@ def create_app() -> flask.Flask:
         from threatexchange.signal_type.pdq.signal import PdqSignal
         bankName = "TEST_BANK"
         contentList = []
-        for example in PdqSignal.get_examples(): 
+        for example in PdqSignal.get_examples():
             contentList.append(database.BankContent(
-                        signals=[database.ContentSignal(
-                                signal_type=PdqSignal.get_name(),
-                                signal_val=example,
-                            )
-                        ]
-                    ))
+                signals=[database.ContentSignal(
+                    signal_type=PdqSignal.get_name(),
+                    signal_val=example,
+                )
+                ]
+            ))
         bank = database.Bank(
-                name=bankName,
-                content=contentList,
-            )
-        
+            name=bankName,
+            content=contentList,
+        )
+
         database.db.session.add(bank)
         database.db.session.commit()
 
@@ -147,6 +148,5 @@ def create_app() -> flask.Flask:
         task_logger.setLevel(logging.NOTSET)
         logging.getLogger().setLevel(logging.NOTSET)
         build_index.build_all_indices(storage, None, storage)
-
 
     return app
