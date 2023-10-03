@@ -54,19 +54,13 @@ def create_app() -> flask.Flask:
         """
         signaltypes = get_all_signal_types()
         contenttypes = get_all_content_types()
+        banks = banks_index()
         return flask.render_template(
             "index.html.j2",
             production=app.config.get("PRODUCTION"),
             signal=signaltypes,
             content=contenttypes,
-        )
-
-    @app.route("/banks")
-    def get_bank_names():
-        banks = banks_index()
-        return flask.render_template(
-            "bank.html.j2",
-            bankList=banks,
+                        bankList=banks,
         )
 
     @app.route("/status")
