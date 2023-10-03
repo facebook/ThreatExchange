@@ -63,7 +63,6 @@ def create_app() -> flask.Flask:
             bankList=banks,
         )
 
-
     @app.route("/status")
     def status():
         """
