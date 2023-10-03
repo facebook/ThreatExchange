@@ -60,8 +60,9 @@ def create_app() -> flask.Flask:
             production=app.config.get("PRODUCTION"),
             signal=signaltypes,
             content=contenttypes,
-                        bankList=banks,
+            bankList=banks,
         )
+
 
     @app.route("/status")
     def status():
