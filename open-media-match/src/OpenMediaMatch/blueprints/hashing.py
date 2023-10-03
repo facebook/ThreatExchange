@@ -28,10 +28,16 @@ bp = Blueprint("hashing", __name__)
 def hash_media():
     """
     Fetch content and return its hash.
+
+    Input:
+        * url - path to the media to hash. Supports image or video.
+
+    Output:
+        * Mapping of signal types to hash values. Signal types are derived from the content type of the provided URL
     """
     media_url = request.args.get("url", None)
     if media_url is None:
-        return {"message": "url is required"}, 400
+        abort(400, "url is required")
 
     download_resp = requests.get(media_url, allow_redirects=True, timeout=30 * 1000)
     download_resp.raise_for_status()
