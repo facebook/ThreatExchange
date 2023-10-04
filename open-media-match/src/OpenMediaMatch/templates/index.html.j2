@@ -42,15 +42,24 @@
 
         <!-- Add Content to Bank -->
         <h3> Add Content to Bank: </h3>
-        <form action = "/ui/addcontent" method = "post" enctype="multipart/form-data">  
+        <form id="add_content_to_bank">  
             <input type="file" name="file" /> Banks
-            <select id="bank" name="bank">
+            <select id="bank_name" name="bank_name">
                 {% for b in bankList %}
                     <option value="{{b['name']}}">{{b['name']}}</option>
                 {% endfor %}
             </select>
+            <select name="content_type">
+                {% for c in content %}
+                    {% if c['enabled'] %} 
+                    <option value="{{c['name']}}">{{c['name']}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
             <input type = "submit" value="Submit" style="margin-left: 34px;">  
         </form>  
+
+        <div id="content_result"></div>
 
         <!-- Rebuild Index -->
         <form action = "/ui/rebuild_index" method = "post" enctype="multipart/form-data">  
@@ -59,7 +68,7 @@
         
 
         <!-- Match File in Banks -->
-        <h1>Match File</h1>
+        <h3>Match File</h3>
         <form id="match_file">  
             <input type="file" name="file" />  Content Type (*required) 
             <select id="content-type" name="media">
@@ -75,7 +84,10 @@
 
         <script>
         const match_form = document.getElementById("match_file");
-        const matches = document.getElementById("matches")
+        const matches = document.getElementById("matches");
+
+        const add_content_to_bank_form = document.getElementById("add_content_to_bank");
+        const content_result = document.getElementById("content_result");
 
         match_form.addEventListener("submit", (event) => {
             event.preventDefault();
@@ -102,30 +114,66 @@
             // Render matched banks
             const banksList = result.banks.map(bank => `<li>${bank}</li>`).join('');
             const banksHTML = `
-                <h3>Matched Banks</h3>
+                <h4>Matched Banks</h4>
                 <ul>${banksList}</ul>
             `;
 
-            // Render hashes table
-            const hashesTableHTML = `
-                <h3>Hash Values:</h3>
-                <table>
-                    <tr>
-                        <th>Key</th>
-                        <th>Value</th>
-                    </tr>
-                    ${Object.entries(result.hashes).map(([key, value]) => `
-                        <tr>
-                            <td>${key}</td>
-                            <td>${value}</td>
-                        </tr>
-                    `).join('')}
-                </table>
-            `;
+            const hashesTableHTML = renderHashTable(result.hashes);
 
             // Append both the banks and hashes sections to the "matches" element
             matches.innerHTML = banksHTML + hashesTableHTML;
         }
+
+        add_content_to_bank_form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            formData.append(event.target.content_type.value, event.target.file.files[0]);
+            formData.delete("file");
+
+            fetch(`/c/bank/${event.target.bank_name.value}/content`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response from the server here
+                renderAddBankResult(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        })
+
+        const renderAddBankResult = (result) => {
+            const hashHeader = `
+                <h4>Added Hashes:</h4>
+                <p>Content ID: ${result.id}</p>
+            `;
+
+            // Render hashes table
+            const hashesTableHTML = renderHashTable(result.signals);
+
+            // render on HTML
+            content_result.innerHTML = hashHeader + hashesTableHTML;
+        }
+
+        const renderHashTable = (hashes) => {
+            return `
+                    <h3>Hash Values:</h3>
+                    <table>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                        ${Object.entries(hashes).map(([key, value]) => `
+                            <tr>
+                                <td>${key}</td>
+                                <td>${value}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                `;
+            }
 
         </script>
     </body>
