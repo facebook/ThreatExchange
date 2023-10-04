@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from OpenMediaMatch import database, persistence, utils
 from OpenMediaMatch.storage.interface import BankConfig
-from OpenMediaMatch.blueprints.hashing import hash_media
+from OpenMediaMatch.blueprints import hashing
 
 
 bp = Blueprint("curation", __name__)
@@ -89,10 +89,12 @@ def bank_delete(bank_name: str):
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
 @utils.abort_to_json
-def bank_add_by_url(bank_name: str):
+def bank_add_file(bank_name: str):
     """
-    Add content to a bank by providing a URI to the content.
+    Add content to a bank by providing a URI to the content (via the `url`
+    query parameter), or uploading a file (via multipart/form-data).
     @see OpenMediaMatch.blueprints.hashing hash_media()
+    @see OpenMediaMatch.blueprints.hashing hash_media_post()
 
     Returns: the signatures created and id
 
@@ -110,7 +112,14 @@ def bank_add_by_url(bank_name: str):
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
 
-    hashes = hash_media()
+    # Url was passed as a query param?
+    if request.args.get("url", None):
+        hashes = hashing.hash_media()
+    # File uploaded via multipart/form-data?
+    elif request.files:
+        hashes = hashing.hash_media_post()
+    else:
+        abort(400, "Neither `url` query param nor multipart file upload was received")
 
     signal_type_configs = storage.get_signal_type_configs()
 

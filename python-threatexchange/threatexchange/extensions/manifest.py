@@ -48,4 +48,25 @@ class ThreatExchangeExtensionManifest:
 
         if not isinstance(manifest, cls):
             raise ValueError(f"TX_MANIFEST is not a {cls.__name__}!")
+
         return manifest
+
+    @classmethod
+    def bootstrap(cls) -> None:
+        """
+        Bootstrap the manifest for the extension to properly execute.
+        By default, do nothing.
+
+        [Example]
+            `tx_extension_clip` - loads CLIP models when the extension is added via CLI
+        """
+        return
+
+    @classmethod
+    def verify(cls) -> None:
+        """
+        Verify that the extension is properly setup.
+        In overrides, raise Exceptions if the extension has an invalid setup.
+        By default, do nothing.
+        """
+        return
