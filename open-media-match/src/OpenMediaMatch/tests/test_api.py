@@ -1,9 +1,8 @@
 from flask.testing import FlaskClient
 from flask import Flask
-from sqlalchemy import select, and_
-import typing as t
-from threatexchange.signal_type.pdq.signal import PdqSignal
+
 from sqlalchemy import select
+
 from OpenMediaMatch.tests.utils import (
     app,
     client,
@@ -145,14 +144,14 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
 
     # Test against first image
     post_response = client.get(
-        "/m/lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url])
+        "/m/raw_lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url])
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [1]}
 
     # Test against second image
     post_response = client.get(
-        "/m/lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url_2])
+        "/m/raw_lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url_2])
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [2]}
