@@ -415,6 +415,8 @@ What ContentTypes and SignalTypes are supported are configured on deployment.
 ### Matching
 
 What SignalTypes, and what similarity settings to use (e.g. PDQ distance) are configured on deployment.
+Additional SignalTypes can be made available by overriding the `SIGNAL_TYPES` variable in the config.
+Check branch `https://github.com/benoit-yubo/ThreatExchange/tree/clip_extension_test` for an example with CLIP signal type.
 
 * Lookup
     * Input
