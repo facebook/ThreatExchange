@@ -1,5 +1,13 @@
 from flask.testing import FlaskClient
-from OpenMediaMatch.tests.utils import app, client, create_bank
+from flask import Flask
+from sqlalchemy import select, and_
+import typing as t
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from sqlalchemy import select
+from OpenMediaMatch.tests.utils import app, client, create_bank, add_hash_to_bank
+from OpenMediaMatch.background_tasks.build_index import build_all_indices
+from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch import database
 
 
 def test_status_response(client: FlaskClient):
@@ -104,3 +112,45 @@ def test_banks_add_hash(client: FlaskClient):
             "pdq": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
         },
     }
+
+
+def test_banks_add_hash_index(app: Flask, client: FlaskClient):
+    bank_name = "NEW_BANK"
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    create_bank(client, bank_name)
+    add_hash_to_bank(client, bank_name, image_url)
+
+    db = database.db
+    sesh = db.session
+    hash1_val = sesh.execute(
+        select(database.ContentSignal).where(
+            and_(
+                database.ContentSignal.content_id == 1,
+                database.ContentSignal.signal_type == PdqSignal.get_name(),
+            )
+        )
+    ).scalar_one()
+
+    db_record = database.db.session.execute(
+        select(database.SignalIndex).where(
+            database.SignalIndex.signal_type == "pdq"
+        )
+    ).scalar_one_or_none()
+
+    assert db_record is None
+
+    assert "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22" == hash1_val.signal_val
+    storage = get_storage()
+    build_all_indices(storage, storage, storage)
+    
+    post_response = client.get(
+        "/m/lookup?signal_type=pdq&signal=f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
+    )
+    assert post_response.status_code == 200
+    assert post_response.json == {
+        "matches": [
+            1
+        ]
+    }
+    
+

@@ -36,3 +36,16 @@ def create_bank(client: FlaskClient, bank_name: str):
     )
     assert post_response.status_code == 201
     assert post_response.json == {"matching_enabled_ratio": 1.0, "name": bank_name}
+
+def add_hash_to_bank(client: FlaskClient, bank_name: str, image_url: str):
+    post_response = client.post(
+        "/c/bank/{}/content?url={}&content_type=photo".format(bank_name, image_url)
+    )
+
+    assert post_response.status_code == 200
+    assert post_response.json == {
+        "id": 1,
+        "signals": {
+            "pdq": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
+        },
+    }

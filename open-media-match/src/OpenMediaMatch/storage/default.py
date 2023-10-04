@@ -8,7 +8,7 @@ import typing as t
 
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.signal_type.index import SignalTypeIndex
-from threatexchange.signal_type.signal_base import SignalType, TrivialSignalTypeIndex
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
@@ -84,7 +84,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 ).serialize_index(index)
             )
 
-        database.db.session.commit()\
+        database.db.session.commit()
 
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
