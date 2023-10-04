@@ -9,6 +9,8 @@ import hashlib
 import pathlib
 import re
 import typing as t
+import random
+import string
 
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.video import VideoContent
@@ -67,6 +69,18 @@ class VideoMD5Signal(
         bytes_hash = hashlib.md5()
         bytes_hash.update(bytes_)
         return bytes_hash.hexdigest()
+
+    @classmethod
+    def generate_random_hash(cls) -> str:
+        # Generate a random string of characters
+        random_string = "".join(
+            random.choice(string.ascii_letters + string.digits) for _ in range(16)
+        )
+
+        # Hash the random string using MD5
+        md5_hash = hashlib.md5(random_string.encode()).hexdigest()
+
+        return md5_hash
 
     @staticmethod
     def get_examples() -> t.List[str]:
