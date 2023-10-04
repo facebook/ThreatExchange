@@ -66,7 +66,7 @@ class SignalTypeConfig:
     @property
     def enabled(self) -> bool:
         # TODO do a coin flip here, but also refactor this to do seeding
-        return True
+        return self.enabled_ratio >= 0.0
 
 
 class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
