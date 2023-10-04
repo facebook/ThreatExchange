@@ -74,7 +74,7 @@ def hash_media_post():
     if not request.files:
         return {"message": "Missing multipart/form-data file upload"}, 400
 
-    # Let's just accept a single file per request.
+    # Let's just accept a single file per request. This keeps it consistent with the GET method.
     if len(request.files) > 1:
         return {"message": "Only one file allowed per request"}, 400
 
