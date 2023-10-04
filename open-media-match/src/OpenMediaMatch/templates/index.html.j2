@@ -16,10 +16,10 @@
                 <td> <li> {{c['name']}}: {% if c['enabled'] %} Enabled {% else %} Disabled {% endif %} </li> </td>
             </tr>
         {% endfor %}
-        <h3> Signal Types </h3>
+        <h3> Signal Types and Enabled Ratios</h3>
         {% for s in signal %}
             <tr>
-                <td> <li> {{s['name']}}: {% if s['enabled'] %} Enabled {% else %} Disabled {% endif %} </li> </td>
+                <td> <li> {{s['name']}}: {{s['enabled_ratio']}} </li> </td>
             </tr>
         {% endfor %}
         <h3> Bank Names </h3>
