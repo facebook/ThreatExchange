@@ -39,3 +39,31 @@ def upload():
         content=contenttypes,
         bankList=banks,
     )
+
+
+@bp.route("/addbank", methods=["POST"])
+def addbank():
+    signaltypes = curation.get_all_signal_types()
+    contenttypes = curation.get_all_content_types()
+    banks = curation.banks_index()
+    return flask.render_template(
+        "index.html.j2",
+        fileresult=True,
+        signal=signaltypes,
+        content=contenttypes,
+        bankList=banks,
+    )
+
+
+@bp.route("/addcontent", methods=["POST"])
+def addcontent():
+    signaltypes = curation.get_all_signal_types()
+    contenttypes = curation.get_all_content_types()
+    banks = curation.banks_index()
+    return flask.render_template(
+        "index.html.j2",
+        fileresult=True,
+        signal=signaltypes,
+        content=contenttypes,
+        bankList=banks,
+    )

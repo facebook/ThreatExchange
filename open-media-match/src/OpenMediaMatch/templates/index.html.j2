@@ -31,16 +31,21 @@
 
         <!-- Create Bank -->
         <h3> Create Bank: </h3>
-        <form>
-            <input />
-        </form>
-
+        <form action = "/ui/addbank" method = "post">
+        <label for="bank"></label> <input type="text" id="bank" name="bank" placeholder="Bank"> <input type="submit" value="Submit"> </form>
 
         <!-- Add Content to Bank -->
         <h3> Add Content to Bank: </h3>
-        <form>
-            <input />
-        </form>
+        <form action = "/ui/addcontent" method = "post" enctype="multipart/form-data">  
+            <input type="file" name="file" /> Banks
+            <select id="bank" name="bank">
+                {% for b in bankList %}
+                    <option value="{{b['name']}}">{{b['name']}}</option>
+                {% endfor %}
+            </select>
+            <input type = "submit" value="Submit" style="margin-left: 34px;">  
+        </form>  
+        
 
         <!-- Match File in Banks -->
         <h1>Match File</h1>
