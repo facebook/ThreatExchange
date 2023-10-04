@@ -129,21 +129,24 @@ def create_app() -> flask.Flask:
     @app.cli.command("seed")
     def seed_data():
         """Insert plausible-looking data into the database layer"""
-        from threatexchange.signal_type.pdq.signal import PdqSignal
 
         bankName = "TEST_BANK"
+        storage = get_storage()
+
+        signals = storage.get_enabled_signal_types()
         contentList = []
-        for example in PdqSignal.get_examples():
-            contentList.append(
-                database.BankContent(
-                    signals=[
-                        database.ContentSignal(
-                            signal_type=PdqSignal.get_name(),
-                            signal_val=example,
-                        )
-                    ]
+        for _, signal in enumerate(signals.values()):
+            for example in signal.get_examples():
+                contentList.append(
+                    database.BankContent(
+                        signals=[
+                            database.ContentSignal(
+                                signal_type=signal.get_name(),
+                                signal_val=example,
+                            )
+                        ]
+                    )
                 )
-            )
         bank = database.Bank(
             name=bankName,
             content=contentList,

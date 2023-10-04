@@ -1,5 +1,6 @@
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from tx_extension_clip.signal import CLIPSignal
 
 # Database configuration
 PRODUCTION = False
@@ -13,4 +14,4 @@ ROLE_HASHER = True
 ROLE_MATCHER = True
 ROLE_CURATOR = True
 
-SIGNAL_TYPES = [PdqSignal, VideoMD5Signal]
+SIGNAL_TYPES = [PdqSignal, VideoMD5Signal, CLIPSignal]

@@ -31,6 +31,7 @@ all = [
     "pytest",
     "types-Flask-Migrate",
     "types-requests",
+    "tx-extension-clip"
 ]
 
 test = [ "pytest" ]
