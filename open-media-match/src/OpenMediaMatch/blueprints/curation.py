@@ -21,14 +21,6 @@ def banks_index():
     storage = persistence.get_storage()
     return list(storage.get_banks().values())
 
-@bp.route("/banks_with_content_count", methods=["GET"])
-@utils.abort_to_json
-def banks_with_content_count():
-    storage = persistence.get_storage()
-    print(storage.get_banks_with_content_count())
-    return storage.get_banks_with_content_count()
-
-
 @bp.route("/bank/<bank_name>", methods=["GET"])
 @utils.abort_to_json
 def bank_show_by_name(bank_name: str):

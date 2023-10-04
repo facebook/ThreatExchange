@@ -106,8 +106,16 @@ def lookup():
     )
     return enabled_banks
 
+@bp.route("/index/status")
+def index_status():
+    """
+    Input:
+     * Signal type (hash type)
+    Output:
+     * Time of last index build
+    """
 
 @bp.route("/index/<index_type_name>/status")
-def index_status(index_type_name):
+def index_status(index_type_name: str):
     storage = persistence.get_storage()
     return { "timestamp": storage.get_last_signal_build_timestamp(index_type_name) }
