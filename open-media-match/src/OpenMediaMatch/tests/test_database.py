@@ -85,6 +85,38 @@ def test_store_index(app: Flask) -> None:
     assert index.state == deserialized_index.state
 
 
+def test_store_index_updated_at(app: Flask) -> None:
+    db_record = database.db.session.execute(
+        select(database.SignalIndex).where(database.SignalIndex.signal_type == "test")
+    ).one_or_none()
+    content = [("a", 1), ("a", 2), ("b", 3), ("c", 4)]
+    index = TrivialSignalTypeIndex.build(content)
+
+    database.db.session.add(
+        database.SignalIndex(signal_type="test").serialize_index(index)
+    )
+    database.db.session.commit()
+    db_record = database.db.session.execute(
+        select(database.SignalIndex).where(database.SignalIndex.signal_type == "test")
+    ).scalar_one()
+    initial_time = db_record.updated_at
+
+    content = [("a", 1), ("a", 2), ("b", 3), ("c", 4), ("d", 5)]
+    index = TrivialSignalTypeIndex.build(content)
+
+    # Update index to trigger time change
+    db_record.serialize_index(index)
+    db_record = database.db.session.execute(
+        select(database.SignalIndex).where(database.SignalIndex.signal_type == "test")
+    ).scalar_one()
+
+    deserialized_index = t.cast(TrivialSignalTypeIndex, db_record.deserialize_index())
+
+    assert index.__class__ == deserialized_index.__class__
+    assert index.state == deserialized_index.state
+    assert initial_time != db_record.updated_at
+
+
 def test_store_content(app: Flask) -> None:
     db = database.db
     sesh = db.session

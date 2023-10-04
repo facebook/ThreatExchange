@@ -104,7 +104,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def bank_delete(self, name: str) -> None:
         self.banks.pop(name, None)
 
-    def bank_content_get(self, id: int) -> interface.BankContentConfig:
+    def bank_content_get(
+        self, id: t.Iterable[int]
+    ) -> t.Sequence[interface.BankContentConfig]:
         # TODO
         raise Exception("Not implemented")
 

@@ -43,7 +43,8 @@ def query_media():
         if signal_type_name not in signal_type_to_signal_map:
             abort(
                 400,
-                f"Requested signal type '{signal_type_name}' is not supported for the provided media.",
+                f"Requested signal type '{signal_type_name}' is not supported for the provided "
+                "media.",
             )
         return lookup_signal(
             signal_type_to_signal_map[signal_type_name], signal_type_name

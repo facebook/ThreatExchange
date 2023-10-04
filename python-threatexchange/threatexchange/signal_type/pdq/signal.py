@@ -6,6 +6,7 @@ Wrapper around the Photo PDQ signal type.
 
 import typing as t
 import re
+import random
 
 from threatexchange.signal_type.pdq.pdq_hasher import pdq_from_bytes
 from threatexchange.content_type.content_base import ContentType
@@ -78,6 +79,12 @@ class PdqSignal(
         if quality < cls.QUALITY_THRESHOLD:
             return ""
         return pdq_hash
+
+    @classmethod
+    def generate_random_hash(cls) -> str:
+        # Generate a random hexadecimal string of length 64
+        random_hash = "".join(random.choice("0123456789abcdef") for _ in range(64))
+        return random_hash
 
     @staticmethod
     def get_examples() -> t.List[str]:
