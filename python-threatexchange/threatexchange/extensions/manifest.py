@@ -49,16 +49,6 @@ class ThreatExchangeExtensionManifest:
         if not isinstance(manifest, cls):
             raise ValueError(f"TX_MANIFEST is not a {cls.__name__}!")
 
-        try:
-            manifest.bootstrap()
-        except Exception as exc:
-            raise ValueError(f'Manifest failed to bootstrap: {module_name}') from exc
-
-        try:
-            manifest.verify()
-        except Exception as exc:
-            raise ValueError(f'Manifest failed verification: {module_name}') from exc
-
         return manifest
 
     @classmethod
