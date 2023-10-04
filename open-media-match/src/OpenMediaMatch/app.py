@@ -115,6 +115,7 @@ def create_app() -> flask.Flask:
             print("Banks:", database.Bank.query.count())
             print("Contents:", database.BankContent.query.count())
             print("Signals/Hashes:", database.ContentSignal.query.count())
+            print("Signals/Index:", database.SignalIndex.query.count())
 
     @app.cli.command("reset_all_tables")
     def reset_tables():

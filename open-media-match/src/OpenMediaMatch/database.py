@@ -12,6 +12,7 @@ references which are meant to be reaped at some future time.
 import io
 import typing as t
 import re
+import datetime
 
 from OpenMediaMatch.storage.interface import BankConfig, BankContentConfig
 
@@ -33,6 +34,8 @@ from sqlalchemy.orm import (
     relationship,
     validates,
 )
+from sqlalchemy.types import DateTime
+from sqlalchemy.sql import func
 
 
 class Base(DeclarativeBase):
@@ -167,6 +170,9 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
     signal_type: Mapped[str]
     serialized_index: Mapped[bytes] = mapped_column(LargeBinary)
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
+    )
 
     def serialize_index(self, index: SignalTypeIndex[int]) -> t.Self:
         buffer = io.BytesIO()

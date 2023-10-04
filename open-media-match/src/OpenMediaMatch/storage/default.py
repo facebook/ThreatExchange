@@ -59,14 +59,32 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def get_signal_type_index(
         self, signal_type: type[SignalType]
     ) -> t.Optional[SignalTypeIndex[int]]:
-        # TODO
-        return MockedUnifiedStore().get_signal_type_index(signal_type)
+        db_record = database.db.session.execute(
+            select(database.SignalIndex).where(
+                database.SignalIndex.signal_type == signal_type.get_name()
+            )
+        ).scalar_one_or_none()
+
+        return db_record.deserialize_index() if db_record is not None else None
 
     def store_signal_type_index(
         self, signal_type: t.Type[SignalType], index: SignalTypeIndex
     ) -> None:
-        # TODO
-        raise Exception("Not implemented")
+        db_record = database.db.session.execute(
+            select(database.SignalIndex).where(
+                database.SignalIndex.signal_type == signal_type.get_name()
+            )
+        ).scalar_one_or_none()
+        if db_record is not None:
+            db_record.serialize_index(index)
+        else:
+            database.db.session.add(
+                database.SignalIndex(
+                    signal_type=signal_type.get_name()
+                ).serialize_index(index)
+            )
+
+        database.db.session.commit()
 
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
