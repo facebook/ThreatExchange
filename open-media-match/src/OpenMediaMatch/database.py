@@ -171,9 +171,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
     signal_type: Mapped[str]
     serialized_index: Mapped[bytes] = mapped_column(LargeBinary)
     updated_at: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), 
-        server_default=func.now(),
-        onupdate=db.func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
     )
 
     def serialize_index(self, index: SignalTypeIndex[int]) -> t.Self:

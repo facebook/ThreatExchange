@@ -13,6 +13,7 @@ IMAGE_URL_TO_PDQ = {
     "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/c.png?raw=true": "e64cc9d91c623882f8d1f1d9a398e78c9f199b3bd83924f2b7e11e0bf861b064",
 }
 
+
 @pytest.fixture()
 def app() -> t.Iterator[Flask]:
     os.environ.setdefault("OMM_CONFIG", "tests/omm_config.py")
@@ -41,7 +42,10 @@ def create_bank(client: FlaskClient, bank_name: str):
     assert post_response.status_code == 201
     assert post_response.json == {"matching_enabled_ratio": 1.0, "name": bank_name}
 
-def add_hash_to_bank(client: FlaskClient, bank_name: str, image_url: str, content_id: int = 1):
+
+def add_hash_to_bank(
+    client: FlaskClient, bank_name: str, image_url: str, content_id: int = 1
+):
     post_response = client.post(
         "/c/bank/{}/content?url={}&content_type=photo".format(bank_name, image_url)
     )
