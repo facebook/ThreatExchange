@@ -60,7 +60,7 @@ setup(
         "urllib3==1.26.17",  # For allow_methods
         "python-dateutil==2.8.2",
         "dacite==1.7.0",  # 0.18.0 broken our tests due to faulty caching
-        "Pillow==9.4.0",  # pdq
+        "Pillow==10.0.1",  # pdq
         "pdqhash==0.2.3",  # pdq
         "faiss-cpu==1.7.3",  # faiss
         "numpy==1.24.2",  # faiss
