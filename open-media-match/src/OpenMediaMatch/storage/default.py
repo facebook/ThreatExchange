@@ -6,8 +6,6 @@ The default store for accessing persistent data on OMM.
 
 import typing as t
 
-from importlib import import_module
-
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
