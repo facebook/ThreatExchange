@@ -31,8 +31,11 @@
 
         <!-- Create Bank -->
         <h3> Create Bank: </h3>
-        <form action = "/ui/addbank" method = "post">
-        <label for="bank"></label> <input type="text" id="bank" name="bank" placeholder="Bank"> <input type="submit" value="Submit"> </form>
+        <form action = "/ui/create_bank" method = "post" enctype="multipart/form-data">
+            <input name="bank_name" />
+            <input type = "submit" value="Submit" style="margin-left: 34px;">  
+        </form>
+
 
         <!-- Add Content to Bank -->
         <h3> Add Content to Bank: </h3>

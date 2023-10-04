@@ -54,11 +54,11 @@ def create_app() -> flask.Flask:
     database.db.init_app(app)
     migrate.init_app(app, database.db)
 
+    # TODO - move me into ui blueprints
     @app.route("/")
-    def index():
+    def home():
         """
         Sanity check endpoint showing a basic status page
-        TODO: in development mode, this could show some useful additional info
         """
         signaltypes = curation.get_all_signal_types()
         contenttypes = curation.get_all_content_types()

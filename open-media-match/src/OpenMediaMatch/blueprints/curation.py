@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+import typing as t
 
 from flask import Blueprint
 from flask import request, jsonify, abort
@@ -44,7 +44,10 @@ def bank_create():
         enabled_ratio = utils.str_to_type(data["enabled_ratio"], float)
     elif "enabled" in data:
         enabled_ratio = 1.0 if utils.str_to_bool(data["enabled"]) else 0.0
+    return jsonify(bank_create_impl(name, enabled_ratio)), 201
 
+
+def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> BankConfig:
     bank = BankConfig(name=name, matching_enabled_ratio=enabled_ratio)
     try:
         persistence.get_storage().bank_update(bank, create=True)
@@ -52,7 +55,7 @@ def bank_create():
         abort(400, *e.args)
     except IntegrityError:
         abort(403, "Bank already exists")
-    return jsonify(bank), 201
+    return bank
 
 
 @bp.route("/bank/<bank_name>", methods=["PUT"])
@@ -62,7 +65,7 @@ def bank_update(bank_name: str):
     storage = persistence.get_storage()
     data = request.get_json()
     bank = storage.get_bank(bank_name)
-    rename_from: Optional[str] = None
+    rename_from: t.Optional[str] = None
     if bank is None:
         abort(404, "Bank not found")
 
