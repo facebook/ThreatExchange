@@ -12,24 +12,17 @@ with warnings.catch_warnings():
 import logging
 import os
 import warnings
-from OpenMediaMatch.blueprints.curation import banks_index, get_all_signal_types
-from OpenMediaMatch.blueprints.curation import get_all_content_types
-from OpenMediaMatch.blueprints.matching import lookup_signal
-from OpenMediaMatch.blueprints.hashing import _parse_request_signal_type
-from OpenMediaMatch.blueprints.hashing import _parse_request_content_type
 
-import requests
 import sys
 
 import flask
 from flask.logging import default_handler
-from flask import request
 import flask_migrate
 
 from OpenMediaMatch import database
 from OpenMediaMatch.background_tasks import build_index, fetcher
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.blueprints import development, hashing, matching, curation
+from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 
 
 def create_app() -> flask.Flask:
@@ -81,36 +74,6 @@ def create_app() -> flask.Flask:
         """
         return "I-AM-ALIVE\n"
 
-    @app.route("/", methods=["POST"])
-    def upload():
-        signaltypes = get_all_signal_types()
-        contenttypes = get_all_content_types()
-        banks = banks_index()
-        if request.method == "POST":
-            # content type from dropdown form
-            contenttype = request.form.get("media")
-            f = request.files["file"]
-            f.save(f.filename)
-            files = {
-                contenttype: open(f.filename, "rb"),
-            }
-            # returns a dictionary of {'signaltype' : 'hash'}
-            r = requests.post("http://localhost:5000/h/hash", files=files)
-            rjson = r.json()
-            for key, value in rjson.items():
-                matches = lookup_signal(value, key)
-                matcheslist = matches["matches"]
-            os.remove(f.filename)
-            return flask.render_template(
-                "index.html.j2",
-                name=f.filename,
-                matches=matcheslist,
-                fileresult=True,
-                signal=signaltypes,
-                content=contenttypes,
-                bankList=banks,
-            )
-
     @app.route("/site-map")
     def site_map():
         # Use a set to avoid duplicates (e.g. same path, multiple methods)
@@ -133,6 +96,7 @@ def create_app() -> flask.Flask:
         and app.config.get("ROLE_MATCHER", False)
     ):
         app.register_blueprint(development.bp, url_prefix="/dev")
+        app.register_blueprint(ui.bp, url_prefix="/ui")
 
     if app.config.get("ROLE_HASHER", False):
         app.register_blueprint(hashing.bp, url_prefix="/h")
