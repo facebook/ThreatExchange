@@ -29,11 +29,8 @@ def upload():
     signal = hash[signal_type]
 
     banks = matching.lookup(signal, signal_type)
-    
-    return {
-        "hashes": hash,
-        "banks": banks
-    }
+
+    return {"hashes": hash, "banks": banks}
 
 
 @bp.route("/addbank", methods=["POST"])
