@@ -27,6 +27,7 @@ from OpenMediaMatch.storage.interface import BankConfig
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
+
 def create_app() -> flask.Flask:
     """
     Create and configure the Flask app
