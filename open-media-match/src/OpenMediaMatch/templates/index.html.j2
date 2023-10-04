@@ -52,9 +52,9 @@
 
         <!-- Match File in Banks -->
         <h1>Match File</h1>
-        <form action = "/ui/query" method = "post" enctype="multipart/form-data">  
+        <form id="match_file">  
             <input type="file" name="file" />  Content Type (*required) 
-            <select id="media" name="media">
+            <select id="content-type" name="media">
                 {% for c in content %}
                     {% if c['enabled'] %} 
                     <option value="{{c['name']}}">{{c['name']}}</option>
@@ -63,13 +63,62 @@
             </select>
             <input type = "submit" value="Submit" style="margin-left: 34px;">  
         </form>  
-        {% if fileresult %}
-            <h2>File uploaded successfully: </h2>
-            <p>File Name: {{name}}</p>
-            {% if matches %}
-                <h3> Matches Found: {{matches}} </h3>
-            {% else %} <h3> No Matches Found <h3>
-            {% endif %}
-        {% endif %}
+        <div id="matches"></div>
+
+        <script>
+        const match_form = document.getElementById("match_file");
+        const matches = document.getElementById("matches")
+
+        match_form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const formData = new FormData();
+
+            // Append the selected file and content type to the FormData
+            formData.append(event.target.media.value, event.target.file.files[0]);
+
+            fetch('/ui/query', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response from the server here
+                renderMatchResult(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        })
+
+        const renderMatchResult = (result) => {
+            // Render matched banks
+            const banksList = result.banks.map(bank => `<li>${bank}</li>`).join('');
+            const banksHTML = `
+                <h3>Matched Banks</h3>
+                <ul>${banksList}</ul>
+            `;
+
+            // Render hashes table
+            const hashesTableHTML = `
+                <h3>Hash Values:</h3>
+                <table>
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                    </tr>
+                    ${Object.entries(result.hashes).map(([key, value]) => `
+                        <tr>
+                            <td>${key}</td>
+                            <td>${value}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+
+            // Append both the banks and hashes sections to the "matches" element
+            matches.innerHTML = banksHTML + hashesTableHTML;
+        }
+
+        </script>
     </body>
 </html>
