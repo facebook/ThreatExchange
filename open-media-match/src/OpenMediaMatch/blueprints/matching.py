@@ -9,6 +9,7 @@ import random
 from flask import Blueprint
 from flask import abort, current_app, request
 from threatexchange.signal_type.signal_base import SignalType
+from OpenMediaMatch import persistence
 from OpenMediaMatch.storage.interface import ISignalTypeConfigStore
 
 from OpenMediaMatch.utils import (
@@ -106,12 +107,7 @@ def lookup():
     return enabled_banks
 
 
-@bp.route("/index/status")
-def index_status():
-    """
-    Input:
-     * Signal type (hash type)
-    Output:
-     * Time of last index build
-    """
-    abort(501)  # Unimplemented
+@bp.route("/index/<index_type_name>/status")
+def index_status(index_type_name):
+    storage = persistence.get_storage()
+    return { "timestamp": storage.get_last_signal_build_timestamp(index_type_name) }

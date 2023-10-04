@@ -17,7 +17,7 @@ from threatexchange.exchanges.fetch_state import (
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-from sqlalchemy import select, update
+from sqlalchemy import Row, select, update, func
 from OpenMediaMatch import database
 
 from OpenMediaMatch.storage import interface
@@ -103,6 +103,17 @@ class DefaultOMMStore(interface.IUnifiedStore):
             )
 
         database.db.session.commit()
+
+    def get_last_signal_build_timestamp (
+        self, signal_type: t.Type[str]
+    ) -> t.Optional[int]:
+        data_time =  database.db.session.execute(
+            select(database.SignalIndex.updated_at).where(
+                database.SignalIndex.signal_type==signal_type)).scalar_one_or_none()
+        if data_time:
+            return int(round(data_time.timestamp()))
+        else:
+            return None
 
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:

@@ -135,6 +135,14 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         Persists the signal type index, potentially replacing a previous version.
         """
 
+    @abc.abstractmethod
+    def get_last_signal_build_timestamp (
+        self, signal_type: t.Type[str]
+    ) -> t.Optional[int]:
+        """
+        Returns timestamp for last index build if it exists
+        """
+
 
 class ICollaborationStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod

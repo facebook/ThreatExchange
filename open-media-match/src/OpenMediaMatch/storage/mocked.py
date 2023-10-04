@@ -62,6 +62,11 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     ) -> None:
         raise Exception("Not implemented")
 
+    def get_last_signal_build_timestamp (
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[int]:
+        raise Exception("Not implemented")
+
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
         cfg_cls = StaticSampleSignalExchangeAPI.get_config_cls()
