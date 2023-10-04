@@ -21,6 +21,7 @@ def banks_index():
     storage = persistence.get_storage()
     return list(storage.get_banks().values())
 
+
 @bp.route("/bank/<bank_name>", methods=["GET"])
 @utils.abort_to_json
 def bank_show_by_name(bank_name: str):

@@ -106,6 +106,7 @@ def lookup():
     )
     return enabled_banks
 
+
 @bp.route("/index/status")
 def index_status():
     """
@@ -116,7 +117,8 @@ def index_status():
     """
     abort(501)  # Unimplemented
 
+
 @bp.route("/index/<index_type_name>/status")
 def index_status_by_type(index_type_name: str):
     storage = persistence.get_storage()
-    return { "timestamp": storage.get_last_signal_build_timestamp(index_type_name) }
+    return {"timestamp": storage.get_last_signal_build_timestamp(index_type_name)}
