@@ -166,9 +166,10 @@ def create_app() -> flask.Flask:
         from threatexchange.signal_type.pdq.signal import PdqSignal
         from threatexchange.signal_type.md5 import VideoMD5Signal
         from OpenMediaMatch.storage.interface import BankConfig
+
         # read from env for how many hashes to add\
         banks_to_add = int(os.environ.get("OMM_SEED_BANKS", 100))
-        hashes_to_add = int(os.environ.get("OMM_SEED_HASHES", 100000))
+        hashes_to_add = int(os.environ.get("OMM_SEED_HASHES", 10000))
         storage = get_storage()
 
         for i in range(banks_to_add):
@@ -177,17 +178,12 @@ def create_app() -> flask.Flask:
             storage.bank_update(bank, create=True)
 
             # Add hashes
-            for _ in range(hashes_to_add//banks_to_add):
+            for _ in range(hashes_to_add // banks_to_add):
                 # grab randomly either PDQ or MD5 signal
                 signal_type = random.choice([PdqSignal, VideoMD5Signal])
                 random_hash = signal_type.generate_random_hash()
 
-                storage.bank_add_content(
-                    bank.name,
-                    {
-                        signal_type: random_hash
-                    }
-                )
+                storage.bank_add_content(bank.name, {signal_type: random_hash})
 
             print("Finished adding hashes to {}".format(bank.name))
 
