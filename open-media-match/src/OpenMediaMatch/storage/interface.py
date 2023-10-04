@@ -137,7 +137,7 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_last_signal_build_timestamp (
-        self, signal_type: t.Type[str]
+        self, signal_type: str
     ) -> t.Optional[int]:
         """
         Returns timestamp for last index build if it exists

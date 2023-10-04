@@ -105,7 +105,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         database.db.session.commit()
 
     def get_last_signal_build_timestamp (
-        self, signal_type: t.Type[str]
+        self, signal_type: str
     ) -> t.Optional[int]:
         data_time =  database.db.session.execute(
             select(database.SignalIndex.updated_at).where(
