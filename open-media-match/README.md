@@ -415,7 +415,17 @@ What ContentTypes and SignalTypes are supported are configured on deployment.
 ### Matching
 
 What SignalTypes, and what similarity settings to use (e.g. PDQ distance) are configured on deployment.
-Additional SignalTypes can be made available by overriding the `SIGNAL_TYPES` variable in the config.
+
+Additional SignalTypes can be made available by setting the `SIGNAL_TYPES` variable in the config.
+Here is an example with CLIP signal type, after installing it with `pip install tx-extension-clip`:
+
+```
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
+from tx_extension_clip.signal import CLIPSignal
+
+SIGNAL_TYPES = [PdqSignal, VideoMD5Signal, CLIPSignal]
+```
 Check branch `https://github.com/benoit-yubo/ThreatExchange/tree/clip_extension_test` for an example with CLIP signal type.
 
 * Lookup
