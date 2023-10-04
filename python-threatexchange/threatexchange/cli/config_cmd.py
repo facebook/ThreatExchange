@@ -412,6 +412,15 @@ class ConfigExtensionsCommand(command_base.Command):
             return
 
         manifest = self.get_manifest(self.module)
+        try:
+            manifest.bootstrap()
+        except Exception as exc:
+            raise ValueError(f"Manifest failed to bootstrap: {self.module}") from exc
+
+        try:
+            manifest.verify()
+        except Exception as exc:
+            raise ValueError(f"Manifest failed verification: {self.module}") from exc
 
         # Validate our new setups by pretending to create a new mapping with the new classes
         content_and_settings = interface_validation.SignalTypeMapping(
