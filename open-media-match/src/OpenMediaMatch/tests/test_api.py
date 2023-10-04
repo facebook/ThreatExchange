@@ -4,7 +4,7 @@ from sqlalchemy import select, and_
 import typing as t
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from sqlalchemy import select
-from OpenMediaMatch.tests.utils import app, client, create_bank, add_hash_to_bank
+from OpenMediaMatch.tests.utils import app, client, create_bank, add_hash_to_bank, IMAGE_URL_TO_PDQ
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch import database
@@ -116,20 +116,15 @@ def test_banks_add_hash(client: FlaskClient):
 
 def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     bank_name = "NEW_BANK"
+    bank_name_2 = "NEW_BANK_2"
     image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
-    create_bank(client, bank_name)
-    add_hash_to_bank(client, bank_name, image_url)
+    image_url_2 = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/c.png?raw=true"
 
-    db = database.db
-    sesh = db.session
-    hash1_val = sesh.execute(
-        select(database.ContentSignal).where(
-            and_(
-                database.ContentSignal.content_id == 1,
-                database.ContentSignal.signal_type == PdqSignal.get_name(),
-            )
-        )
-    ).scalar_one()
+    # Make two banks and add images to each bank
+    create_bank(client, bank_name)
+    add_hash_to_bank(client, bank_name, image_url, 1)
+    create_bank(client, bank_name_2)
+    add_hash_to_bank(client, bank_name, image_url_2, 2)
 
     db_record = database.db.session.execute(
         select(database.SignalIndex).where(
@@ -137,19 +132,32 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
         )
     ).scalar_one_or_none()
 
+    # ensure index is empty to start with
     assert db_record is None
 
-    assert "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22" == hash1_val.signal_val
+    # Build index
     storage = get_storage()
     build_all_indices(storage, storage, storage)
     
+    # Test against first image
     post_response = client.get(
-        "/m/lookup?signal_type=pdq&signal=f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
+        "/m/lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url])
     )
     assert post_response.status_code == 200
     assert post_response.json == {
         "matches": [
             1
+        ]
+    }
+    
+    # Test against second image
+    post_response = client.get(
+        "/m/lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url_2])
+    )
+    assert post_response.status_code == 200
+    assert post_response.json == {
+        "matches": [
+            2
         ]
     }
     
