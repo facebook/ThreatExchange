@@ -54,6 +54,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self.signal_types: list[t.Type[SignalType]] = [PdqSignal, VideoMD5Signal]
         signal_types = current_app.config.get("SIGNAL_TYPES")
         if signal_types is not None:
+            assert isinstance(signal_types, list)
+            for element in signal_types:
+                assert issubclass(element, SignalType)
             self.signal_types = signal_types
         assert len(self.signal_types) == len(
             set([s.get_name() for s in self.signal_types])
