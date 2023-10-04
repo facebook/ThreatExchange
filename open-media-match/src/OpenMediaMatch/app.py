@@ -12,6 +12,7 @@ with warnings.catch_warnings():
 import logging
 import os
 import sys
+import random
 
 import flask
 from flask.logging import default_handler
@@ -151,6 +152,44 @@ def create_app() -> flask.Flask:
 
         database.db.session.add(bank)
         database.db.session.commit()
+
+    @app.cli.command("seed_enourmous")
+    def seed_enourmous():
+        """
+        Seed the database with a large number of banks and hashes
+        run command with:
+        export OMM_SEED_BANKS=100
+        export OMM_SEED_HASHES=10000
+        or OMM_SEED_BANKS=100 OMM_SEED_HASHES=10000 flask seed_enourmous
+        It will generate n banks and put n/m hashes on each bank
+        """
+        from threatexchange.signal_type.pdq.signal import PdqSignal
+        from threatexchange.signal_type.md5 import VideoMD5Signal
+        from OpenMediaMatch.storage.interface import BankConfig
+        # read from env for how many hashes to add\
+        banks_to_add = int(os.environ.get("OMM_SEED_BANKS", 100))
+        hashes_to_add = int(os.environ.get("OMM_SEED_HASHES", 100000))
+        storage = get_storage()
+
+        for i in range(banks_to_add):
+            # create bank
+            bank = BankConfig(name=f"TEST_BANK_{i}", matching_enabled_ratio=1.0)
+            storage.bank_update(bank, create=True)
+
+            # Add hashes
+            for _ in range(hashes_to_add//banks_to_add):
+                # grab randomly either PDQ or MD5 signal
+                signal_type = random.choice([PdqSignal, VideoMD5Signal])
+                random_hash = signal_type.generate_random_hash()
+
+                storage.bank_add_content(
+                    bank.name,
+                    {
+                        signal_type: random_hash
+                    }
+                )
+
+            print("Finished adding hashes to {}".format(bank.name))
 
     @app.cli.command("fetch")
     def fetch():
