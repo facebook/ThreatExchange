@@ -71,6 +71,13 @@ def hash_media_post():
     """
     Calculate the hash for the provided file.
     """
+    return hash_media_post_impl()
+
+
+def hash_media_post_impl() -> dict[str, str]:
+    """
+    hash_media_post() but without abort_to_json
+    """
     if not request.files:
         return abort(400, "Missing multipart/form-data file upload")
 

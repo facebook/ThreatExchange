@@ -23,28 +23,15 @@ def ui_create_bank():
 
 @bp.route("/query", methods=["POST"])
 def upload():
-    hash = hashing.hash_media_post()
-    # The hash function returns an object with a single key (the signal_type) and value (the signal)
-    signal_type = list(hash.keys())[0]
-    signal = hash[signal_type]
+    signals = hashing.hash_media_post_impl()
 
-    banks = matching.lookup(signal, signal_type)
+    banks = {
+        b
+        for st_name, signal in signals.items()
+        for b in matching.lookup(signal, st_name)
+    }
 
-    return {"hashes": hash, "banks": banks}
-
-
-@bp.route("/addbank", methods=["POST"])
-def addbank():
-    signaltypes = curation.get_all_signal_types()
-    contenttypes = curation.get_all_content_types()
-    banks = curation.banks_index()
-    return flask.render_template(
-        "index.html.j2",
-        fileresult=True,
-        signal=signaltypes,
-        content=contenttypes,
-        bankList=banks,
-    )
+    return {"hashes": signals, "banks": sorted(banks)}
 
 
 @bp.route("/addcontent", methods=["POST"])
