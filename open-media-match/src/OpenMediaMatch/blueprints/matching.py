@@ -91,9 +91,9 @@ def lookup_get():
         signal = hash[signal_type]
     else:
         signal = require_request_param("signal")
-        signal_type_name = require_request_param("signal_type")
+        signal_type = require_request_param("signal_type")
 
-    return lookup(signal, signal_type_name)
+    return lookup(signal, signal_type)
 
 
 @bp.route("/lookup", methods=["POST"])
