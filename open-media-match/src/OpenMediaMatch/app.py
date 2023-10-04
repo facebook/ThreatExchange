@@ -3,7 +3,7 @@
 import logging
 import os
 import warnings
-from OpenMediaMatch.blueprints.curation import get_all_signal_types
+from OpenMediaMatch.blueprints.curation import banks_index, get_all_signal_types
 from OpenMediaMatch.blueprints.curation import get_all_content_types
 from OpenMediaMatch.blueprints.hashing import hash_media
 import requests
@@ -21,7 +21,7 @@ with warnings.catch_warnings():
 from OpenMediaMatch import database
 from OpenMediaMatch.background_tasks import build_index, fetcher
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.blueprints import hashing, matching, curation
+from OpenMediaMatch.blueprints import development, hashing, matching, curation
 
 
 def create_app() -> flask.Flask:
@@ -56,11 +56,13 @@ def create_app() -> flask.Flask:
         """
         signaltypes = get_all_signal_types()
         contenttypes = get_all_content_types()
+        banks = banks_index()
         return flask.render_template(
             "index.html.j2",
             production=app.config.get("PRODUCTION"),
             signal=signaltypes,
             content=contenttypes,
+            bankList=banks,
         )
 
     @app.route("/status")
@@ -102,6 +104,13 @@ def create_app() -> flask.Flask:
     # URL prefixing facilitates easy Layer 7 routing :)
     # Linters complain about imports off the top level, but this is needed
     # to prevent circular imports
+
+    if (
+        not os.environ.get("PRODUCTION", False)
+        and app.config.get("ROLE_HASHER", False)
+        and app.config.get("ROLE_MATCHER", False)
+    ):
+        app.register_blueprint(development.bp, url_prefix="/dev")
 
     if app.config.get("ROLE_HASHER", False):
         app.register_blueprint(hashing.bp, url_prefix="/h")

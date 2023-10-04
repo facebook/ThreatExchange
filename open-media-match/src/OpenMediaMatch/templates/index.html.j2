@@ -22,5 +22,11 @@
                 <td> <li> {{s['name']}}: {% if s['enabled'] %} Enabled {% else %} Disabled {% endif %} </li> </td>
             </tr>
         {% endfor %}
+        <h3> Bank Names </h3>
+        {% for b in bankList %}
+            <tr>
+                <td> <li> {{b['name']}} </li> </td>
+            </tr>
+        {% endfor %}
     </body>
 </html>
