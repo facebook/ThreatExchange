@@ -9,6 +9,7 @@ import random
 from flask import Blueprint
 from flask import abort, current_app, request
 from threatexchange.signal_type.signal_base import SignalType
+from OpenMediaMatch import persistence
 from OpenMediaMatch.storage.interface import ISignalTypeConfigStore
 from OpenMediaMatch.blueprints import hashing
 
@@ -151,3 +152,14 @@ def index_status():
      * Time of last index build
     """
     abort(501)  # Unimplemented
+
+
+@bp.route("/index/<index_type_name>/status")
+@abort_to_json
+def index_status_by_type(index_type_name: str):
+    storage = persistence.get_storage()
+    timestamp = storage.get_last_signal_build_timestamp(index_type_name)
+    if timestamp:
+        return {"timestamp": timestamp}
+    else:
+        abort(404)  # Index Type Not Found

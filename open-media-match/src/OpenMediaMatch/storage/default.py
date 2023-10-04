@@ -145,6 +145,17 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         database.db.session.commit()
 
+    def get_last_signal_build_timestamp(self, signal_type: str) -> t.Optional[int]:
+        data_time = database.db.session.execute(
+            select(database.SignalIndex.updated_at).where(
+                database.SignalIndex.signal_type == signal_type
+            )
+        ).scalar_one_or_none()
+        if data_time:
+            return int(round(data_time.timestamp()))
+        else:
+            return None
+
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
         # TODO
