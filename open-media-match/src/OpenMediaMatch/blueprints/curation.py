@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from flask import Blueprint
 from flask import request, jsonify, abort
@@ -61,16 +62,18 @@ def bank_update(bank_name: str):
     storage = persistence.get_storage()
     data = request.get_json()
     bank = storage.get_bank(bank_name)
+    rename_from: Optional[str] = None
     if bank is None:
         abort(404, "Bank not found")
 
     try:
         if "name" in data:
+            rename_from = bank.name
             bank.name = data["name"]
         if "enabled" in data:
             bank.matching_enabled_ratio = 1 if bool(data["enabled"]) else 0
 
-        storage.bank_update(bank, name=bank_name)
+        storage.bank_update(bank, rename_from=rename_from)
     except ValueError as e:
         abort(400, *e.args)
     return jsonify(bank)
@@ -81,7 +84,7 @@ def bank_update(bank_name: str):
 def bank_delete(bank_name: str):
     storage = persistence.get_storage()
     storage.bank_delete(bank_name)
-    return jsonify({"message": "Done"})
+    return {"message": "Done"}
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])

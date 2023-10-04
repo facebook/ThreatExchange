@@ -103,13 +103,12 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         bank: interface.BankConfig,
         *,
         create: bool = False,
-        name: t.Optional[str] = None,
+        rename_from: t.Optional[str] = None,
     ) -> None:
         if create:
             self.banks[bank.name] = bank
         else:
-            assert name is not None
-            self.banks[name] = bank
+            self.banks[rename_from if rename_from is not None else bank.name] = bank
 
     def bank_delete(self, name: str) -> None:
         self.banks.pop(name, None)

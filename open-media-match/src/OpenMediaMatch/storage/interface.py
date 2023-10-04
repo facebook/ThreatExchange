@@ -270,7 +270,11 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def bank_update(
-        self, bank: BankConfig, *, create: bool = False, name: t.Optional[str] = None
+        self,
+        bank: BankConfig,
+        *,
+        create: bool = False,
+        rename_from: t.Optional[str] = None,
     ) -> None:
         """
         Update a bank config in the backing store.

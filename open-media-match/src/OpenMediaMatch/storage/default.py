@@ -150,14 +150,20 @@ class DefaultOMMStore(interface.IUnifiedStore):
         ).scalar_one_or_none()
 
     def bank_update(
-        self, bank: BankConfig, *, create: bool = False, name: t.Optional[str] = None
+        self,
+        bank: BankConfig,
+        *,
+        create: bool = False,
+        rename_from: t.Optional[str] = None,
     ) -> None:
         if create:
             database.db.session.add(database.Bank.from_storage_iface_cls(bank))
         else:
-            previous = database.Bank.query.filter_by(name=name).one_or_404()
+            previous = database.Bank.query.filter_by(
+                name=rename_from if rename_from is not None else bank.name
+            ).one_or_404()
             previous.name = bank.name
-            previous.enabled_ratio = 1 if bank.enabled else 0
+            previous.enabled_ratio = bank.matching_enabled_ratio
 
         database.db.session.commit()
 
