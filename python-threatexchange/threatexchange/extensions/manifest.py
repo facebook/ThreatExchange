@@ -55,9 +55,9 @@ class ThreatExchangeExtensionManifest:
             raise ValueError(f'Manifest failed to bootstrap: {module_name}') from exc
 
         try:
-            manifest.validate()
+            manifest.verify()
         except Exception as exc:
-            raise ValueError(f'Manifest failed validation: {module_name}') from exc
+            raise ValueError(f'Manifest failed verification: {module_name}') from exc
 
         return manifest
 
@@ -73,9 +73,9 @@ class ThreatExchangeExtensionManifest:
         return
 
     @classmethod
-    def validate(cls) -> None:
+    def verify(cls) -> None:
         """
-        Validate that the extension is properly setup.
+        Verify that the extension is properly setup.
         In overrides, raise Exceptions if the extension has an invalid setup.
         By default, do nothing.
         """
