@@ -2,13 +2,15 @@
 
 import logging
 import os
-import sys
 import warnings
 from OpenMediaMatch.blueprints.curation import get_all_signal_types
 from OpenMediaMatch.blueprints.curation import get_all_content_types
+from OpenMediaMatch.blueprints.hashing import hash_media
+import requests
 
 import flask
 from flask.logging import default_handler
+from flask import request
 import flask_migrate
 
 # Import pdq first with its hash order warning squelched, it's before our time
@@ -67,6 +69,23 @@ def create_app() -> flask.Flask:
         Liveness/readiness check endpoint for your favourite Layer 7 load balancer
         """
         return "I-AM-ALIVE\n"
+    
+    @app.route("/query")
+    def query():
+        return flask.render_template(
+            "query.html.j2",
+            production=app.config.get("PRODUCTION")
+        )
+
+    @app.route('/query', methods = ['POST'])  
+    def upload():  
+        if request.method == 'POST':  
+            f = request.files['file']
+            f.save(f.filename)
+            files = {'photo': open(f.filename, 'rb'),}
+            r = requests.post('http://localhost:5000/h/hash', files=files)
+            print(r.json())
+            return flask.render_template("Acknowledgement.html", name = f.filename) 
 
     @app.route("/site-map")
     def site_map():
