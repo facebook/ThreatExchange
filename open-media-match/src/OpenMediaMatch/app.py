@@ -20,9 +20,12 @@ import flask_migrate
 
 from OpenMediaMatch import database
 from OpenMediaMatch.background_tasks import build_index, fetcher
-from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation
+from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.storage.interface import BankConfig
 
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 def create_app() -> flask.Flask:
     """
@@ -163,10 +166,6 @@ def create_app() -> flask.Flask:
         or OMM_SEED_BANKS=100 OMM_SEED_HASHES=10000 flask seed_enourmous
         It will generate n banks and put n/m hashes on each bank
         """
-        from threatexchange.signal_type.pdq.signal import PdqSignal
-        from threatexchange.signal_type.md5 import VideoMD5Signal
-        from OpenMediaMatch.storage.interface import BankConfig
-
         # read from env for how many hashes to add\
         banks_to_add = int(os.environ.get("OMM_SEED_BANKS", 100))
         hashes_to_add = int(os.environ.get("OMM_SEED_HASHES", 10000))
@@ -185,7 +184,7 @@ def create_app() -> flask.Flask:
 
                 storage.bank_add_content(bank.name, {signal_type: random_hash})
 
-            print("Finished adding hashes to {}".format(bank.name))
+            print("Finished adding hashes to", bank.name)
 
     @app.cli.command("fetch")
     def fetch():
