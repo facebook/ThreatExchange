@@ -11,6 +11,8 @@ with warnings.catch_warnings():
 
 import logging
 import os
+import warnings
+
 import sys
 import random
 
@@ -20,8 +22,8 @@ import flask_migrate
 
 from OpenMediaMatch import database
 from OpenMediaMatch.background_tasks import build_index, fetcher
-from OpenMediaMatch.blueprints import development, hashing, matching, curation
 from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.storage.interface import BankConfig
 
 from threatexchange.signal_type.pdq.signal import PdqSignal
@@ -99,6 +101,7 @@ def create_app() -> flask.Flask:
         and app.config.get("ROLE_MATCHER", False)
     ):
         app.register_blueprint(development.bp, url_prefix="/dev")
+        app.register_blueprint(ui.bp, url_prefix="/ui")
 
     if app.config.get("ROLE_HASHER", False):
         app.register_blueprint(hashing.bp, url_prefix="/h")

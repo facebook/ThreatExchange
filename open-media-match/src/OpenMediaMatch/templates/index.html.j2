@@ -28,5 +28,25 @@
                 <td> <li> {{b['name']}} </li> </td>
             </tr>
         {% endfor %}
+        <h1>File Upload </h1>
+        <form action = "/ui/query" method = "post" enctype="multipart/form-data">  
+            <input type="file" name="file" />  Content Type (*required) 
+            <select id="media" name="media">
+                {% for c in content %}
+                    {% if c['enabled'] %} 
+                    <option value="{{c['name']}}">{{c['name']}}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            <input type = "submit" value="Submit" style="margin-left: 34px;">  
+        </form>  
+        {% if fileresult %}
+            <h2>File uploaded successfully: </h2>
+            <p>File Name: {{name}}</p>
+            {% if matches %}
+                <h3> Matches Found: {{matches}} </h3>
+            {% else %} <h3> No Matches Found <h3>
+            {% endif %}
+        {% endif %}
     </body>
 </html>
