@@ -56,17 +56,3 @@ def factory_reset():
     db.drop_all()
     db.create_all()
     return redirect("/")
-
-
-@bp.route("/addcontent", methods=["POST"])
-def addcontent():
-    signaltypes = curation.get_all_signal_types()
-    contenttypes = curation.get_all_content_types()
-    banks = curation.banks_index()
-    return flask.render_template(
-        "index.html.j2",
-        fileresult=True,
-        signal=signaltypes,
-        content=contenttypes,
-        bankList=banks,
-    )
