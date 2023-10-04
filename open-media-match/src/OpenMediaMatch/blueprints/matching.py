@@ -121,4 +121,8 @@ def index_status():
 @bp.route("/index/<index_type_name>/status")
 def index_status_by_type(index_type_name: str):
     storage = persistence.get_storage()
-    return {"timestamp": storage.get_last_signal_build_timestamp(index_type_name)}
+    timestamp = storage.get_last_signal_build_timestamp(index_type_name)
+    if timestamp:
+        return {"timestamp": timestamp}
+    else:
+        abort(404)  # Index Type Not Found

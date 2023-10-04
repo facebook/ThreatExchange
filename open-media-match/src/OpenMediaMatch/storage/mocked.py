@@ -63,7 +63,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         raise Exception("Not implemented")
 
     def get_last_signal_build_timestamp(
-        self, signal_type: t.Type[SignalType]
+        self, signal_type: str
     ) -> t.Optional[int]:
         raise Exception("Not implemented")
 
