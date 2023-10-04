@@ -55,7 +55,7 @@ def addbank():
     )
 
 
-@bp.route("/addconent", methods=["POST"])
+@bp.route("/addcontent", methods=["POST"])
 def addcontent():
     signaltypes = curation.get_all_signal_types()
     contenttypes = curation.get_all_content_types()
