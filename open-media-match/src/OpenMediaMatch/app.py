@@ -87,13 +87,14 @@ def create_app() -> flask.Flask:
         contenttypes = get_all_content_types()
         banks = banks_index()
         if request.method == "POST":
+            # content type from dropdown form
             contenttype = request.form.get("media")
             f = request.files["file"]
             f.save(f.filename)
             files = {
                 contenttype: open(f.filename, "rb"),
             }
-            # this returns a dictionary of {'signaltype' : 'hash'}
+            # returns a dictionary of {'signaltype' : 'hash'}
             r = requests.post("http://localhost:5000/h/hash", files=files)
             rjson = r.json()
             for key, value in rjson.items():
