@@ -10,6 +10,7 @@ from flask import Blueprint
 from flask import abort, current_app, request
 from threatexchange.signal_type.signal_base import SignalType
 from OpenMediaMatch.storage.interface import ISignalTypeConfigStore
+from OpenMediaMatch.blueprints import hashing
 
 from OpenMediaMatch.utils import (
     abort_to_json,
@@ -67,11 +68,13 @@ def _validate_and_transform_signal_type(
     return signal_type_config.signal_type
 
 
-@bp.route("/lookup")
+@bp.route("/lookup", methods=["GET"])
 @abort_to_json
-def lookup():
+def lookup_get():
     """
-    Look up a hash in the similarity index
+    Look up a hash in the similarity index. The hash can either be specified via
+    `signal_type` and `signal` query params, or a file url can be provided in the
+    `url` query param.
     Input:
      * Signal type (hash type)
      * Signal value (the hash)
@@ -79,10 +82,44 @@ def lookup():
     Output:
      * List of matching banks
     """
-    signal = require_request_param("signal")
-    signal_type_name = require_request_param("signal_type")
-    raw_results = lookup_signal(signal, signal_type_name)
+    # Url was passed as a query param?
+    if request.args.get("url", None):
+        hash = hashing.hash_media()
+        # The hash_media function returns an object with a single key
+        # (the signal_type) and value (the signal)
+        signal_type = list(hash.keys())[0]
+        signal = hash[signal_type]
+    else:
+        signal = require_request_param("signal")
+        signal_type = require_request_param("signal_type")
 
+    return lookup(signal, signal_type)
+
+
+@bp.route("/lookup", methods=["POST"])
+@abort_to_json
+def lookup_post():
+    """
+    Look up the hash for the uploaded file in the similarity index.
+    @see OpenMediaMatch.blueprints.hashing hash_media_post()
+
+    Input:
+     * Uploaded file.
+     * Optional seed (content id) for consistent coinflip
+    Output:
+     * List of matching banks
+    """
+    hash = hashing.hash_media_post()
+
+    # The hash function returns an object with a single key (the signal_type) and value (the signal)
+    signal_type = list(hash.keys())[0]
+    signal = hash[signal_type]
+
+    return lookup(signal, signal_type)
+
+
+def lookup(signal, signal_type_name):
+    raw_results = lookup_signal(signal, signal_type_name)
     storage = get_storage()
     contents = storage.bank_content_get(
         {cid for l in raw_results.values() for cid in l}
@@ -99,7 +136,6 @@ def lookup():
     enabled_banks = [
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
     ]
-
     current_app.logger.debug(
         "lookup matches %d banks (%d enabked)", len(banks), len(enabled_banks)
     )
