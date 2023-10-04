@@ -72,6 +72,8 @@ def bank_update(bank_name: str):
             bank.name = data["name"]
         if "enabled" in data:
             bank.matching_enabled_ratio = 1 if bool(data["enabled"]) else 0
+        if "enabled_ratio" in data:
+            bank.matching_enabled_ratio = data["enabled_ratio"]
 
         storage.bank_update(bank, rename_from=rename_from)
     except ValueError as e:
