@@ -118,7 +118,6 @@ def _parse_request_content_type(url_content_type: str) -> t.Type[ContentType]:
                 f"unsupported url ContentType: '{url_content_type}', "
                 "if you know the expected type, provide it with the content_type query param",
             )
-
     return _lookup_content_type(arg)
 
 
