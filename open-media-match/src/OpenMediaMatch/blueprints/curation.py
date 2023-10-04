@@ -5,8 +5,6 @@ from flask import request, jsonify, abort
 
 from sqlalchemy.exc import IntegrityError
 
-from threatexchange.signal_type.pdq.signal import PdqSignal
-
 from OpenMediaMatch import database, persistence, utils
 from OpenMediaMatch.storage.interface import BankConfig
 from OpenMediaMatch.blueprints.hashing import hash_media
