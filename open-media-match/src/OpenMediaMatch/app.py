@@ -1,20 +1,21 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+# NO IMPORTS ABOVE ME
+# Import pdq first with its hash order warning squelched, it's before our time
+import warnings
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from threatexchange.signal_type.pdq import signal as _
+## Resume regularly scheduled imports
+
 import logging
 import os
 import sys
-import warnings
-from OpenMediaMatch.blueprints.curation import banks_index, get_all_signal_types
-from OpenMediaMatch.blueprints.curation import get_all_content_types
 
 import flask
 from flask.logging import default_handler
 import flask_migrate
-
-# Import pdq first with its hash order warning squelched, it's before our time
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    from threatexchange.signal_type.pdq import signal as _
 
 from OpenMediaMatch import database
 from OpenMediaMatch.background_tasks import build_index, fetcher
@@ -52,9 +53,10 @@ def create_app() -> flask.Flask:
         Sanity check endpoint showing a basic status page
         TODO: in development mode, this could show some useful additional info
         """
-        signaltypes = get_all_signal_types()
-        contenttypes = get_all_content_types()
-        banks = banks_index()
+        signaltypes = curation.get_all_signal_types()
+        contenttypes = curation.get_all_content_types()
+        banks = curation.banks_index()
+
         return flask.render_template(
             "index.html.j2",
             production=app.config.get("PRODUCTION"),

@@ -92,6 +92,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
             disable_until_ts=self.disable_until_ts,
             collab_metadata={},
             original_media_uri=None,
+            bank=self.bank.as_storage_iface_cls(),
         )
 
 
