@@ -9,6 +9,9 @@
         <p>Open Media Match is up and running.</p>
         {% if not production %}
         <p>Running in development mode</p>
+        <form action = "/ui/factory_reset" method = "post" enctype="multipart/form-data">  
+            <input type = "submit" value="Factory Reset" style="margin-top: 8px;">  
+        </form>    
         {% endif %}
         <h3> Content Types </h3>
         {% for c in content %}
@@ -48,6 +51,11 @@
             </select>
             <input type = "submit" value="Submit" style="margin-left: 34px;">  
         </form>  
+
+        <!-- Rebuild Index -->
+        <form action = "/ui/rebuild_index" method = "post" enctype="multipart/form-data">  
+            <input type = "submit" value="Rebuild Indices" style="margin-top: 16px;">  
+        </form>
         
 
         <!-- Match File in Banks -->

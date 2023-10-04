@@ -7,8 +7,6 @@ Development only routes for easily testing functionality end-to-end, all running
 import itertools
 from flask import Blueprint, abort, request
 
-from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.background_tasks import build_index
 from OpenMediaMatch.blueprints.hashing import hash_media
 from OpenMediaMatch.blueprints.matching import lookup_signal
 from OpenMediaMatch.utils import abort_to_json
@@ -60,20 +58,3 @@ def query_media():
             )
         )
     }
-
-
-@bp.route("/rebuild_index", methods=["POST"])
-@abort_to_json
-def rebuild_index():
-    data = request.json
-    storage = get_storage()
-    if "signal_type" in data:
-        st_name = data["signal_type"]
-        st = storage.get_signal_type_configs().get(st_name)
-        if st is None:
-            abort(404, f"No such signal type '{st_name}'")
-        if not st.enabled:
-            abort(400, f"Signal type {st_name} is disabled")
-        build_index.build_index(st.signal_type)
-        return {}
-    build_index.build_all_indices(storage, storage, storage)
