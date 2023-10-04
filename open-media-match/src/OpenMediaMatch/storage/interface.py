@@ -225,6 +225,8 @@ class BankContentConfig:
     collab_metadata: t.Mapping[str, t.Sequence[str]]
     original_media_uri: t.Optional[str]
 
+    bank: BankConfig
+
     @property
     def enabled(self) -> bool:
         if self.disable_until_ts == 0:
@@ -285,7 +287,7 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     # Bank content
     @abc.abstractmethod
-    def bank_content_get(self, id: int) -> BankContentConfig:
+    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
         """Get the content config for a bank"""
 
     @abc.abstractmethod

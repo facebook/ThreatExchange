@@ -8,6 +8,11 @@ from flask.testing import FlaskClient
 from OpenMediaMatch.app import create_app
 from OpenMediaMatch import database
 
+IMAGE_URL_TO_PDQ = {
+    "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",
+    "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/c.png?raw=true": "e64cc9d91c623882f8d1f1d9a398e78c9f199b3bd83924f2b7e11e0bf861b064",
+}
+
 
 @pytest.fixture()
 def app() -> t.Iterator[Flask]:
@@ -36,3 +41,19 @@ def create_bank(client: FlaskClient, bank_name: str):
     )
     assert post_response.status_code == 201
     assert post_response.json == {"matching_enabled_ratio": 1.0, "name": bank_name}
+
+
+def add_hash_to_bank(
+    client: FlaskClient, bank_name: str, image_url: str, content_id: int = 1
+):
+    post_response = client.post(
+        "/c/bank/{}/content?url={}&content_type=photo".format(bank_name, image_url)
+    )
+
+    assert post_response.status_code == 200
+    assert post_response.json == {
+        "id": content_id,
+        "signals": {
+            "pdq": IMAGE_URL_TO_PDQ[image_url],
+        },
+    }
