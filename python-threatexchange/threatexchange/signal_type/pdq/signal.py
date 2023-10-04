@@ -81,7 +81,7 @@ class PdqSignal(
         return pdq_hash
 
     @classmethod
-    def generate_random_hash() -> str:
+    def generate_random_hash(cls) -> str:
         # Generate a random hexadecimal string of length 64
         random_hash = "".join(random.choice("0123456789abcdef") for _ in range(64))
         return random_hash

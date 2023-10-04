@@ -71,7 +71,7 @@ class VideoMD5Signal(
         return bytes_hash.hexdigest()
 
     @classmethod
-    def generate_random_hash() -> str:
+    def generate_random_hash(cls) -> str:
         # Generate a random string of characters
         random_string = "".join(
             random.choice(string.ascii_letters + string.digits) for _ in range(16)
