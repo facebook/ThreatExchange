@@ -28,7 +28,22 @@
                 <td> <li> {{b['name']}} </li> </td>
             </tr>
         {% endfor %}
-        <h1>File Upload </h1>
+
+        <!-- Create Bank -->
+        <h3> Create Bank: </h3>
+        <form>
+            <input />
+        </form>
+
+
+        <!-- Add Content to Bank -->
+        <h3> Add Content to Bank: </h3>
+        <form>
+            <input />
+        </form>
+
+        <!-- Match File in Banks -->
+        <h1>Match File</h1>
         <form action = "/ui/query" method = "post" enctype="multipart/form-data">  
             <input type="file" name="file" />  Content Type (*required) 
             <select id="media" name="media">
