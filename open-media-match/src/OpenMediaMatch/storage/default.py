@@ -165,9 +165,13 @@ class DefaultOMMStore(interface.IUnifiedStore):
         # TODO
         raise Exception("Not implemented")
 
-    def bank_content_get(self, id: int) -> BankContentConfig:
-        # TODO
-        raise Exception("Not implemented")
+    def bank_content_get(self, ids: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
+        return [
+            b.as_storage_iface_cls()
+            for b in database.db.session.query(database.BankContent)
+            .filter(database.BankContent.id.in_(ids))
+            .all()
+        ]
 
     def bank_content_update(self, val: BankContentConfig) -> None:
         # TODO
