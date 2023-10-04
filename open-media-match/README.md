@@ -426,7 +426,7 @@ from tx_extension_clip.signal import CLIPSignal
 
 SIGNAL_TYPES = [PdqSignal, VideoMD5Signal, CLIPSignal]
 ```
-Check branch `https://github.com/benoit-yubo/ThreatExchange/tree/clip_extension_test` for an example with CLIP signal type.
+
 
 * Lookup
     * Input
