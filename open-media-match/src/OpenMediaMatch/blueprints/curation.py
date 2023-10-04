@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from flask import Blueprint
 from flask import request, jsonify, abort
@@ -58,33 +59,34 @@ def bank_create():
 @utils.abort_to_json
 def bank_update(bank_name: str):
     # TODO - rewrite using persistence.get_storage()
+    storage = persistence.get_storage()
     data = request.get_json()
-    bank = database.Bank.query.filter_by(name=bank_name).one_or_none()
+    bank = storage.get_bank(bank_name)
+    rename_from: Optional[str] = None
     if bank is None:
         abort(404, "Bank not found")
 
     try:
         if "name" in data:
+            rename_from = bank.name
             bank.name = data["name"]
         if "enabled" in data:
-            bank.enabled = bool(data["enabled"])
+            bank.matching_enabled_ratio = 1 if bool(data["enabled"]) else 0
+        if "enabled_ratio" in data:
+            bank.matching_enabled_ratio = data["enabled_ratio"]
 
-        database.db.session.commit()
+        storage.bank_update(bank, rename_from=rename_from)
     except ValueError as e:
         abort(400, *e.args)
-    return jsonify(bank.as_storage_iface_cls())
+    return jsonify(bank)
 
 
 @bp.route("/bank/<bank_name>", methods=["DELETE"])
 @utils.abort_to_json
 def bank_delete(bank_name: str):
-    # TODO - rewrite using persistence.get_storage()
-    bank = database.Bank.query.filter_by(name=bank_name).one_or_none()
-    if not bank:
-        return {"message": "Done"}, 200
-    database.db.session.delete(bank)
-    database.db.session.commit()
-    return jsonify({"message": f"Bank {bank.name} ({bank.id}) deleted"})
+    storage = persistence.get_storage()
+    storage.bank_delete(bank_name)
+    return {"message": "Done"}
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
