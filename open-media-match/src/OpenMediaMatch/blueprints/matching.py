@@ -114,6 +114,7 @@ def index_status():
     Output:
      * Time of last index build
     """
+    abort(501)  # Unimplemented
 
 @bp.route("/index/<index_type_name>/status")
 def index_status_by_type(index_type_name: str):
