@@ -196,5 +196,5 @@ class SignalTypeOverride(db.Model):  # type: ignore[name-defined]
     """
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     enabled_ratio: Mapped[float] = mapped_column(default=1.0)
