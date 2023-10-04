@@ -9,6 +9,7 @@ import random
 from flask import Blueprint
 from flask import abort, current_app, request
 from threatexchange.signal_type.signal_base import SignalType
+from OpenMediaMatch import persistence
 from OpenMediaMatch.storage.interface import ISignalTypeConfigStore
 from OpenMediaMatch.blueprints import hashing
 
@@ -76,24 +77,31 @@ def lookup_get():
     `signal_type` and `signal` query params, or a file url can be provided in the
     `url` query param.
     Input:
+     Either:
+     * File URL (`url`)
+     * Optional content type (`content_type`)
+     Or:
      * Signal type (hash type)
      * Signal value (the hash)
+
+     Also (applies to both cases):
      * Optional seed (content id) for consistent coinflip
     Output:
      * List of matching banks
     """
     # Url was passed as a query param?
     if request.args.get("url", None):
-        hash = hashing.hash_media()
-        # The hash_media function returns an object with a single key
-        # (the signal_type) and value (the signal)
-        signal_type = list(hash.keys())[0]
-        signal = hash[signal_type]
+        hashes = hashing.hash_media()
+        resp = {}
+        for signal_type in hashes.keys():
+            signal = hashes[signal_type]
+            resp[signal_type] = lookup(signal, signal_type)
     else:
         signal = require_request_param("signal")
         signal_type = require_request_param("signal_type")
+        resp = lookup(signal, signal_type)
 
-    return lookup(signal, signal_type)
+    return resp
 
 
 @bp.route("/lookup", methods=["POST"])
@@ -109,13 +117,14 @@ def lookup_post():
     Output:
      * List of matching banks
     """
-    hash = hashing.hash_media_post()
+    hashes = hashing.hash_media_post()
 
-    # The hash function returns an object with a single key (the signal_type) and value (the signal)
-    signal_type = list(hash.keys())[0]
-    signal = hash[signal_type]
+    resp = {}
+    for signal_type in hashes.keys():
+        signal = hashes[signal_type]
+        resp[signal_type] = lookup(signal, signal_type)
 
-    return lookup(signal, signal_type)
+    return resp
 
 
 def lookup(signal, signal_type_name):
@@ -137,7 +146,7 @@ def lookup(signal, signal_type_name):
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
     ]
     current_app.logger.debug(
-        "lookup matches %d banks (%d enabked)", len(banks), len(enabled_banks)
+        "lookup matches %d banks (%d enabled)", len(banks), len(enabled_banks)
     )
     return enabled_banks
 
@@ -151,3 +160,14 @@ def index_status():
      * Time of last index build
     """
     abort(501)  # Unimplemented
+
+
+@bp.route("/index/<index_type_name>/status")
+@abort_to_json
+def index_status_by_type(index_type_name: str):
+    storage = persistence.get_storage()
+    timestamp = storage.get_last_signal_build_timestamp(index_type_name)
+    if timestamp:
+        return {"timestamp": timestamp}
+    else:
+        abort(404)  # Index Type Not Found

@@ -160,6 +160,12 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         Persists the signal type index, potentially replacing a previous version.
         """
 
+    @abc.abstractmethod
+    def get_last_signal_build_timestamp(self, signal_type: str) -> t.Optional[int]:
+        """
+        Returns timestamp for last index build if it exists
+        """
+
 
 class ICollaborationStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
@@ -294,12 +300,19 @@ class IBankStore(metaclass=abc.ABCMeta):
         return self.get_banks().get(name)
 
     @abc.abstractmethod
-    def bank_update(self, bank: BankConfig, *, create: bool = False) -> None:
+    def bank_update(
+        self,
+        bank: BankConfig,
+        *,
+        create: bool = False,
+        rename_from: t.Optional[str] = None,
+    ) -> None:
         """
         Update a bank config in the backing store.
 
         If create is false, will throw an exception if not already existing.
         If create is true, will throw an exception if it already exists
+        If create is false and you're updating the name, rename_from must be provided
         """
 
     @abc.abstractmethod

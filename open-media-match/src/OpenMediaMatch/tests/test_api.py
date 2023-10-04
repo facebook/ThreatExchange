@@ -72,12 +72,37 @@ def test_banks_update(client: FlaskClient):
     )
     assert post_response.status_code == 400
 
+    # check update with rename
     post_response = client.put(
         "/c/bank/MY_TEST_BANK",
         json={"name": "MY_TEST_BANK_RENAMED"},
     )
     assert post_response.status_code == 200
     assert post_response.get_json()["name"] == "MY_TEST_BANK_RENAMED"
+
+    # check update without rename
+    post_response = client.put(
+        "/c/bank/MY_TEST_BANK_RENAMED",
+        json={"enabled": False},
+    )
+    assert post_response.status_code == 200
+    assert post_response.get_json()["matching_enabled_ratio"] == 0
+
+    # check update without ratio
+    post_response = client.put(
+        "/c/bank/MY_TEST_BANK_RENAMED",
+        json={"enabled_ratio": 0.5},
+    )
+    assert post_response.status_code == 200
+    assert post_response.get_json()["matching_enabled_ratio"] == 0.5
+
+    # Final test to make sure we only have one bank with proper name and disabled
+
+    get_response = client.get("/c/banks")
+    assert get_response.status_code == 200
+    json = get_response.get_json()
+    assert len(json) == 1
+    assert json[0] == {"name": "MY_TEST_BANK_RENAMED", "matching_enabled_ratio": 0.5}
 
 
 def test_banks_delete(client: FlaskClient):
