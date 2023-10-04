@@ -72,11 +72,11 @@ def hash_media_post():
     Calculate the hash for the provided file.
     """
     if not request.files:
-        return {"message": "Missing multipart/form-data file upload"}, 400
+        return abort(400, "Missing multipart/form-data file upload")
 
     # Let's just accept a single file per request. This keeps it consistent with the GET method.
     if len(request.files) > 1:
-        return {"message": "Only one file allowed per request"}, 400
+        abort(400, "Only one file allowed per request")
 
     ret = {}
 
@@ -89,7 +89,7 @@ def hash_media_post():
         signal_types = _parse_request_signal_type(content_type)
 
         if len(request.files.getlist(field_name)) > 1:
-            return {"message": "Only one file allowed per request"}, 400
+            abort(400, "Only one file allowed per request")
 
         for file in request.files.getlist(field_name):
             current_app.logger.debug(
@@ -98,9 +98,10 @@ def hash_media_post():
                 file.filename,
                 file.mimetype,
             )
+            bytes = file.stream.read()
             for st in signal_types.values():
                 if issubclass(st, BytesHasher):
-                    ret[st.get_name()] = st.hash_from_bytes(file.stream.read())
+                    ret[st.get_name()] = st.hash_from_bytes(bytes)
 
     return ret
 
