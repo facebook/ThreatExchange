@@ -4,6 +4,7 @@
 The default store for accessing persistent data on OMM.
 """
 
+import random
 import typing as t
 
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
@@ -69,9 +70,49 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return MockedUnifiedStore().get_exchange_type_configs()
 
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
+        # If a signal is installed, then it is enabled by default. But it may be disabled by an
+        # override in the database.
+        signal_type_overrides = self._query_signal_type_overrides()
+        get_enabled_ratio = (
+            lambda s: signal_type_overrides[s.get_name()]
+            if s.get_name() in signal_type_overrides
+            else 1.0
+        )
         return {
-            s.get_name(): interface.SignalTypeConfig(True, s) for s in self.signal_types
+            s.get_name(): interface.SignalTypeConfig(
+                # Note - we do this logic here because this function is re-executed each request
+                get_enabled_ratio(s),
+                s,
+            )
+            for s in self.signal_types
         }
+
+    def _create_or_update_signal_type_override(
+        self, signal_type: str, enabled_ratio: float
+    ) -> None:
+        """Create or update database entry for a signal type, setting a new value."""
+        db_record = database.db.session.execute(
+            select(database.SignalTypeOverride).where(
+                database.SignalTypeOverride.name == signal_type
+            )
+        ).scalar_one_or_none()
+        if db_record is not None:
+            db_record.enabled_ratio = enabled_ratio
+        else:
+            database.db.session.add(
+                database.SignalTypeOverride(
+                    name=signal_type, enabled_ratio=enabled_ratio
+                )
+            )
+
+        database.db.session.commit()
+
+    @staticmethod
+    def _query_signal_type_overrides() -> dict[str, float]:
+        db_records = database.db.session.execute(
+            select(database.SignalTypeOverride)
+        ).all()
+        return {record.name: record.enabled_ratio for record, in db_records}
 
     # Index
     def get_signal_type_index(

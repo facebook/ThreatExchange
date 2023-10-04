@@ -60,8 +60,13 @@ class SignalTypeConfig:
     """
 
     # Signal types that are not enabled should not be used in hashing/matching
-    enabled: bool
+    enabled_ratio: float
     signal_type: t.Type[SignalType]
+
+    @property
+    def enabled(self) -> bool:
+        # TODO do a coin flip here, but also refactor this to do seeding
+        return True
 
 
 class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
@@ -70,6 +75,26 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         """Return all installed signal types."""
+
+    @abc.abstractmethod
+    def _create_or_update_signal_type_override(
+        self, signal_type: str, enabled_ratio: float
+    ) -> None:
+        """Create or update database entry for a signal type, setting a new value."""
+
+    @t.final
+    def create_or_update_signal_type_override(
+        self, signal_type: str, enabled_ratio: float
+    ) -> None:
+        """Update enabled ratio of an installed signal type."""
+        installed_signal_types = self.get_signal_type_configs()
+        if signal_type not in installed_signal_types:
+            raise ValueError(f"Unknown signal type {signal_type}")
+        if not (0.0 <= enabled_ratio <= 1.0):
+            raise ValueError(
+                f"Invalid enabled ratio {enabled_ratio}. Must be in the range 0.0-1.0 inclusive."
+            )
+        self._create_or_update_signal_type_override(signal_type, enabled_ratio)
 
     @t.final
     def get_enabled_signal_types(self) -> t.Mapping[str, t.Type[SignalType]]:

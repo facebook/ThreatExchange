@@ -188,3 +188,14 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         # class no matter which interface we call it on.
         # I'm sorry future debugger finding this comment.
         return SignalTypeIndex.deserialize(io.BytesIO(self.serialized_index))
+
+
+class SignalTypeOverride(db.Model):  # type: ignore[name-defined]
+    """
+    Stores signal types and whether they are enabled or disabled.
+    By default, any type not in this database is
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    enabled_ratio: Mapped[float] = mapped_column(default=1.0)

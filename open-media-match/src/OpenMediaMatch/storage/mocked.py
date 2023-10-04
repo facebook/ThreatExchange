@@ -44,7 +44,13 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         # Needed to bamboozle mypy into working
         s_types: t.Sequence[t.Type[SignalType]] = (PdqSignal, VideoMD5Signal)
-        return {s.get_name(): interface.SignalTypeConfig(True, s) for s in s_types}
+        return {s.get_name(): interface.SignalTypeConfig(1.0, s) for s in s_types}
+
+    def _create_or_update_signal_type_override(
+        self, signal_type: str, enabled_ratio: float
+    ) -> None:
+        """Create or update database entry for a signal type, setting a new value."""
+        raise Exception("Not implemented")
 
     # Index
     def get_signal_type_index(

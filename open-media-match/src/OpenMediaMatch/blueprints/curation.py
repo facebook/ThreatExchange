@@ -289,17 +289,17 @@ def get_all_signal_types():
     Returns: A list of all SignalType configs
     [
       {
-        "enabled": true,
+        "enabled_ratio": 1.0,
         "name": "pdq"
       },
       {
-        "enabled": true,
+        "enabled_ratio": 0.0,
         "name": "video_md5"
       }
     ]
     """
     return [
-        {"name": c.signal_type.get_name(), "enabled": c.enabled}
+        {"name": c.signal_type.get_name(), "enabled_ratio": c.enabled_ratio}
         for c in persistence.get_storage().get_signal_type_configs().values()
     ]
 
@@ -313,10 +313,14 @@ def update_signal_type_config(signal_type_name: str):
     Returns: The new value for the signal type config
     {
         "name": "pdq"
-        "enabled": true,
+        "enabled_ratio": 1.0,
     }
     """
-    abort(501, "unimplemented")
+    enabled_ratio = utils.str_to_type(utils.require_json_param("enabled_ratio"), float)
+    persistence.get_storage().create_or_update_signal_type_override(
+        signal_type_name, enabled_ratio
+    )
+    return jsonify({"name": signal_type_name, "enabled_ratio": enabled_ratio}), 204
 
 
 # Content Types
