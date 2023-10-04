@@ -108,7 +108,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         if create:
             self.banks[bank.name] = bank
         else:
-            self.banks[rename_from if rename_from is not None else bank.name] = bank
+            if rename_from is not None:
+                self.banks.pop(rename_from)
+            self.banks[bank.name] = bank
 
     def bank_delete(self, name: str) -> None:
         self.banks.pop(name, None)

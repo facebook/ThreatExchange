@@ -281,7 +281,7 @@ class IBankStore(metaclass=abc.ABCMeta):
 
         If create is false, will throw an exception if not already existing.
         If create is true, will throw an exception if it already exists
-        If create is false, name has to be provided
+        If create is false and you're updating the name, rename_from must be provided
         """
 
     @abc.abstractmethod
