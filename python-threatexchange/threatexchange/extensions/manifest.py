@@ -50,17 +50,33 @@ class ThreatExchangeExtensionManifest:
             raise ValueError(f"TX_MANIFEST is not a {cls.__name__}!")
 
         try:
-            manifest.entrypoint()
+            manifest.bootstrap()
         except Exception as exc:
-            raise ValueError(f'Manifest failed to init via entrypoint: {module_name}') from exc
+            raise ValueError(f'Manifest failed to bootstrap: {module_name}') from exc
+
+        try:
+            manifest.validate()
+        except Exception as exc:
+            raise ValueError(f'Manifest failed validation: {module_name}') from exc
 
         return manifest
 
     @classmethod
-    def entrypoint(cls):
+    def bootstrap(cls) -> None:
         """
-        Entrypoint bootstraps the manifest for the extension to properly execute.
-        By default, do nothing for extensions.
+        Bootstrap the manifest for the extension to properly execute.
+        By default, do nothing.
+
+        [Example]
+            `tx_extension_clip` - loads CLIP models when the extension is added via CLI
         """
         return
 
+    @classmethod
+    def validate(cls) -> None:
+        """
+        Validate that the extension is properly setup.
+        In overrides, raise Exceptions if the extension has an invalid setup.
+        By default, do nothing.
+        """
+        return
