@@ -60,9 +60,13 @@ class SignalTypeConfig:
     """
 
     # Signal types that are not enabled should not be used in hashing/matching
-    enabled: bool
     enabled_ratio: float
     signal_type: t.Type[SignalType]
+
+    @property
+    def enabled(self) -> bool:
+        # TODO do a coin flip here, but also refactor this to do seeding
+        return True
 
 
 class ISignalTypeConfigStore(metaclass=abc.ABCMeta):

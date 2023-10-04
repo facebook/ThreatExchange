@@ -81,7 +81,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return {
             s.get_name(): interface.SignalTypeConfig(
                 # Note - we do this logic here because this function is re-executed each request
-                random.random() < get_enabled_ratio(s),
                 get_enabled_ratio(s),
                 s,
             )

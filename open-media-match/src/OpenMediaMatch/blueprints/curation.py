@@ -311,7 +311,7 @@ def update_signal_type_config(signal_type_name: str):
     persistence.get_storage().create_or_update_signal_type_override(
         signal_type_name, enabled_ratio
     )
-    return jsonify({"message": "Signal type updated successfully"}), 204
+    return jsonify({"name": signal_type_name, "enabled_ratio": enabled_ratio}), 204
 
 
 # Content Types
