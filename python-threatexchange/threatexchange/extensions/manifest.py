@@ -48,4 +48,19 @@ class ThreatExchangeExtensionManifest:
 
         if not isinstance(manifest, cls):
             raise ValueError(f"TX_MANIFEST is not a {cls.__name__}!")
+
+        try:
+            manifest.entrypoint()
+        except Exception as exc:
+            raise ValueError(f'Manifest failed to init via entrypoint: {module_name}') from exc
+
         return manifest
+
+    @classmethod
+    def entrypoint(cls):
+        """
+        Entrypoint bootstraps the manifest for the extension to properly execute.
+        By default, do nothing for extensions.
+        """
+        return
+
