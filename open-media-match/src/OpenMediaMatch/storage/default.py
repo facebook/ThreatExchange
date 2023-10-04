@@ -17,7 +17,7 @@ from threatexchange.exchanges.fetch_state import (
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-from sqlalchemy import Row, select, update, func
+from sqlalchemy import select, update
 from OpenMediaMatch import database
 
 from OpenMediaMatch.storage import interface
