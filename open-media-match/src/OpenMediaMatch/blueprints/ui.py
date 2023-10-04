@@ -8,7 +8,8 @@ from flask import request
 from OpenMediaMatch.blueprints import matching, curation
 
 bp = Blueprint("ui", __name__)
-    
+
+
 @bp.route("/query", methods=["POST"])
 def upload():
     signaltypes = curation.get_all_signal_types()
@@ -22,7 +23,7 @@ def upload():
         contenttype: open(f.filename, "rb"),
     }
     # returns a dictionary of {'signaltype' : 'hash'}
-    
+
     r = requests.post("http://localhost:5000/h/hash", files=files)
     rjson = r.json()
     for key, value in rjson.items():
