@@ -1,7 +1,3 @@
-from OpenMediaMatch.background_tasks import build_index
-from OpenMediaMatch.persistence import get_storage
-import flask
-
 from flask import Blueprint, abort
 from flask import request, redirect
 
