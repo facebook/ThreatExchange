@@ -122,7 +122,7 @@ def bank_add_file(bank_name: str):
         hashes = hashing.hash_media()
     # File uploaded via multipart/form-data?
     elif request.files:
-        hashes = hashing.hash_media_post()
+        hashes = hashing.hash_media_post_impl()
     else:
         abort(400, "Neither `url` query param nor multipart file upload was received")
 

@@ -1,5 +1,3 @@
-import flask
-
 from flask import Blueprint, abort
 from flask import request, redirect
 
