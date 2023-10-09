@@ -35,6 +35,8 @@ all = [
 
 test = [ "pytest" ]
 
+prod = [ "gunicorn" ]
+
 [tool.mypy]
 warn_unused_configs = true
 warn_redundant_casts = true
