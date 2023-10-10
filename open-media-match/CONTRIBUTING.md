@@ -74,6 +74,54 @@ If you're a seasoned Python developer and have your dev environment set up just-
 
 # How do I ...
 
+## Run tests?
+```bash
+cd /workspace/src/OpenMediaMatch
+py.test
+```
+
+## Run formatting?
+```bash
+cd /workspace/src/OpenMediaMatch
+black
+```
+Although you can remove the need for this by setting the "black" extension as your default formatter for python, and then setting vscode to format on save, both of which you can do in the preferences.
+
+## Run typechecking?
+```bash
+cd /workspace
+mypy src/OpenMediaMatch
+```
+If you don't run it in this directory, mypyp won't be able to find its settings folder and you'll get different results than the CI.
+
+## Recover from mysterious errors during sever startup?
+If you had a syntax error in your code when you opened vscode, the automatic flask run that is created for you may fail. You can easily manually run it!
+
+Create a new terminal window, and then run:
+```bash
+cd /workspace
+.devcontainer/startup.sh
+```
+This is the same command that automatic window runs. Keep fixing errors until it successfully starts.
+
+
+### It's worse than that!
+When you create your devcontainer, data inside is persisted. However, if dependencies to the devcontainer are changed, or a bad database migration appears, you may end up in a strange state that cannot be recovered from. To reset fresh, you will want to rebuild your devcontainer, which you can do from within vscode.
+
+From the menu, go to "View" > "Command Pallet", and in the window that appears, complete to "Devcontainers: Rebuild container".
+
+This will shutdown your container and rebuild it from scratch. 
+
+## Reset my database?
+If your database has gotten into a funky state, in /workspace/src/OpenMediaMatch, run
+```bash
+flask reset_all_tables
+```
+to clear it out entirely. If you need some test data (a bank with some hashes), also check out
+```bash
+flask seed
+```
+
 ## Persist the local development database?
 
 Be aware that this might break stuff that assumes the database is clean or empty. Yes, this needs improving.
@@ -88,14 +136,14 @@ The source of truth for the database schema is `src/OpenMediaMatch/database.py`.
 
 Now migrate the database using the Flask CLI:
 
-```
-$ flask db migrate
+```bash
+flask db migrate
 ```
 
 This will generate a migration file in `src/OpenMediaMatch/migrations/versions`, which you can apply to the local database like so:
 
-```
-$ flask db upgrade
+```bash
+flask db upgrade
 ```
 
 Note that `flask` CLI commands need to be run from within the `src/OpenMediaMatch` folder.
