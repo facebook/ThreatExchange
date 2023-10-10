@@ -22,6 +22,7 @@ dependencies = [
     "psycopg2",
     "requests",
     "threatexchange",
+    "flask_apscheduler",
 ]
 
 [project.optional-dependencies]
@@ -31,7 +32,8 @@ all = [
     "pytest",
     "types-Flask-Migrate",
     "types-requests",
-    "gunicorn"
+    "gunicorn",
+    "flask_apscheduler"
 ]
 
 test = [ "pytest" ]
@@ -43,6 +45,10 @@ warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 strict_optional = true
+
+[[tool.mypy.overrides]]
+module = "flask_apscheduler.*,importlib_metadata.*"
+ignore_missing_imports = true
 
 [project.urls]
 "Homepage" = "https://github.com/facebook/ThreatExchange/"
