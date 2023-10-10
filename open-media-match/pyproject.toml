@@ -46,6 +46,10 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 strict_optional = true
 
+[[tool.mypy.overrides]]
+module = "flask_apscheduler.*,importlib_metadata.*"
+ignore_missing_imports = true
+
 [project.urls]
 "Homepage" = "https://github.com/facebook/ThreatExchange/"
 "Bug Tracker" = "https://github.com/facebook/ThreatExchange/issues"
