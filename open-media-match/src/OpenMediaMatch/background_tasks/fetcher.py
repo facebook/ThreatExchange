@@ -3,15 +3,26 @@
 import typing as t
 import logging
 
-from OpenMediaMatch.storage.interface import ICollaborationStore, SignalType
+from flask import current_app
+
 from threatexchange.exchanges.fetch_state import CollaborationConfigBase
+
+from OpenMediaMatch.background_tasks.development import get_apscheduler
+from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.storage.interface import ICollaborationStore, SignalType
 
 logger = logging.getLogger(__name__)
 
 
+def apscheduler_fetch_all() -> None:
+    with get_apscheduler().app.app_context():
+        storage = get_storage()
+        fetch_all(storage, storage.get_enabled_signal_types())
+
+
 def fetch_all(
     collab_store: ICollaborationStore,
-    enabled_signal_types: t.Dict[str, t.Type[SignalType]],
+    enabled_signal_types: t.Mapping[str, t.Type[SignalType]],
 ) -> None:
     """
     For all collaborations registered with OMM, fetch()
@@ -20,11 +31,12 @@ def fetch_all(
     collabs = collab_store.get_collaborations()
     for c in collabs.values():
         fetch(collab_store, enabled_signal_types, c)
+    logger.info("Completed %s background task", fetch_all.__name__)
 
 
 def fetch(
     config: ICollaborationStore,
-    enabled_signal_types: t.Dict[str, t.Type[SignalType]],
+    enabled_signal_types: t.Mapping[str, t.Type[SignalType]],
     collab: CollaborationConfigBase,
 ):
     """

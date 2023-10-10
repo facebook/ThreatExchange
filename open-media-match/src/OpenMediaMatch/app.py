@@ -11,8 +11,7 @@ with warnings.catch_warnings():
 
 import logging
 import os
-import warnings
-
+import datetime
 import sys
 import random
 
@@ -21,7 +20,11 @@ from flask.logging import default_handler
 import flask_migrate
 
 from OpenMediaMatch import database
-from OpenMediaMatch.background_tasks import build_index, fetcher
+from OpenMediaMatch.background_tasks import (
+    build_index,
+    fetcher,
+    development as dev_apscheduler,
+)
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.storage.interface import BankConfig
@@ -30,10 +33,32 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
+def _is_debug_mode():
+    """Does it look like the app is being run in debug mode?"""
+    debug = os.environ.get("FLASK_DEBUG")
+    if not debug:
+        return os.environ.get("FLASK_ENV") == "development"
+    return debug.lower() not in ("0", "false", "no")
+
+
+def _is_dbg_werkzeug_reloaded_process():
+    """If in debug mode, are we in the reloaded process?"""
+    if not _is_debug_mode():
+        return False
+    return os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+
+
+def _setup_task_logging(app_logger: logging.Logger):
+    """Clownily replace module loggers with our own"""
+    fetcher.logger = app_logger.getChild("Fetcher")
+    build_index.logger = app_logger.getChild("Indexer")
+
+
 def create_app() -> flask.Flask:
     """
     Create and configure the Flask app
     """
+
     app = flask.Flask(__name__)
 
     migrate = flask_migrate.Migrate()
@@ -54,6 +79,10 @@ def create_app() -> flask.Flask:
     database.db.init_app(app)
     migrate.init_app(app, database.db)
 
+    _setup_task_logging(app.logger)
+
+    is_production = app.config.get("PRODUCTION", True)
+
     # TODO - move me into ui blueprints
     @app.route("/")
     def home():
@@ -66,7 +95,7 @@ def create_app() -> flask.Flask:
 
         return flask.render_template(
             "index.html.j2",
-            production=app.config.get("PRODUCTION"),
+            production=is_production,
             signal=signaltypes,
             content=contenttypes,
             bankList=banks,
@@ -96,7 +125,7 @@ def create_app() -> flask.Flask:
     # to prevent circular imports
 
     if (
-        not os.environ.get("PRODUCTION", False)
+        not is_production
         and app.config.get("ROLE_HASHER", False)
         and app.config.get("ROLE_MATCHER", False)
     ):
@@ -194,10 +223,6 @@ def create_app() -> flask.Flask:
     def fetch():
         """Run the 'background task' to fetch from 3p data and sync to local banks"""
         storage = get_storage()
-        task_logger = logging.getLogger(fetcher.__name__)
-        task_logger.addHandler(default_handler)
-        task_logger.setLevel(logging.NOTSET)
-        logging.getLogger().setLevel(logging.NOTSET)
         fetcher.fetch_all(
             storage,
             {
@@ -210,10 +235,33 @@ def create_app() -> flask.Flask:
     def build_indices():
         """Run the 'background task' to rebuild indices from bank contents"""
         storage = get_storage()
-        task_logger = logging.getLogger(build_index.__name__)
-        task_logger.addHandler(default_handler)
-        task_logger.setLevel(logging.NOTSET)
-        logging.getLogger().setLevel(logging.NOTSET)
         build_index.build_all_indices(storage, storage, storage)
+
+    with app.app_context():
+        # We only want to run apscheduler in debug mode
+        # and only in the "outer" reloader process
+        if _is_dbg_werkzeug_reloaded_process():
+            app.logger.critical(
+                "DEVELOPMENT: Started background tasks with apscheduler."
+            )
+
+            now = datetime.datetime.now()
+            scheduler = dev_apscheduler.get_apscheduler()
+            scheduler.init_app(app)
+            scheduler.add_job(
+                "Fetcher",
+                fetcher.apscheduler_fetch_all,
+                trigger="interval",
+                seconds=60 * 4,
+                start_date=now + datetime.timedelta(seconds=30),
+            )
+            scheduler.add_job(
+                "Indexer",
+                build_index.apscheduler_build_all_indices,
+                trigger="interval",
+                seconds=60,
+                start_date=now + datetime.timedelta(seconds=15),
+            )
+            scheduler.start()
 
     return app
