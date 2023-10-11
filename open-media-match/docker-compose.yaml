@@ -1,0 +1,34 @@
+version: "3"
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      OMM_CONFIG: /build/omm_config.py
+    networks:
+      - backend
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+        - ./.devcontainer/pg-scripts/init-multiple-pg-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-pg-dbs.sh
+        - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: media_match
+      POSTGRES_PASSWORD: hunter2
+      POSTGRES_MULTIPLE_DATABASES: media_match,media_match_test
+    networks:
+      - backend
+
+volumes:
+  postgres-data:
+
+networks:
+  backend:
+    driver: bridge
