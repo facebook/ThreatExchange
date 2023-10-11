@@ -113,12 +113,14 @@ From the menu, go to "View" > "Command Pallet", and in the window that appears, 
 This will shutdown your container and rebuild it from scratch. 
 
 ## Reset my database?
-If your database has gotten into a funky state, in /workspace/src/OpenMediaMatch, run
+If your database has gotten into a funky state, run
 ```bash
+cd /workspace/src/OpenMediaMatch
 flask reset_all_tables
 ```
 to clear it out entirely. If you need some test data (a bank with some hashes), also check out
 ```bash
+cd /workspace/src/OpenMediaMatch
 flask seed
 ```
 
