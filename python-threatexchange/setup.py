@@ -64,6 +64,7 @@ setup(
         "pdqhash==0.2.3",  # pdq
         "faiss-cpu==1.7.3",  # faiss
         "numpy==1.24.2",  # faiss
+        "typing-extensions",
     ],
     extras_require=extras_require,
     entry_points={

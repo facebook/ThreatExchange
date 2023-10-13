@@ -22,6 +22,7 @@ At scale, the flow for matching looks something like:
 from dataclasses import dataclass
 import pickle
 import typing as t
+from typing_extensions import Protocol
 
 
 T = t.TypeVar("T")
@@ -29,7 +30,7 @@ S_Co = t.TypeVar("S_Co", covariant=True, bound="SignalSimilarityInfo")
 CT = t.TypeVar("CT", bound="Comparable")
 
 
-class Comparable(t.Protocol):
+class Comparable(Protocol):
     """Helper for annotating comparable types."""
 
     def __lt__(self: CT, other: CT) -> bool:

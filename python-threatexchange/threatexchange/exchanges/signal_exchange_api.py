@@ -8,6 +8,7 @@ The SignalExchangeAPI talks to external APIs to read/write signals
 
 from abc import ABC, abstractmethod
 import typing as t
+from typing_extensions import final
 
 from threatexchange import common
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
@@ -176,7 +177,7 @@ class SignalExchangeAPI(
         return new
 
     @classmethod
-    @t.final
+    @final
     def naive_fetch_merge(
         cls,
         old: t.Dict[
