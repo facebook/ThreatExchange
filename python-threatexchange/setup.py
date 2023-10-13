@@ -60,10 +60,10 @@ setup(
         "urllib3==1.26.17",  # For allow_methods
         "python-dateutil==2.8.2",
         "dacite==1.7.0",  # 0.18.0 broken our tests due to faulty caching
-        "Pillow==10.0.1",  # pdq
+        "Pillow~=9.4.0",  # pdq
         "pdqhash==0.2.3",  # pdq
         "faiss-cpu==1.7.3",  # faiss
-        "numpy==1.24.2",  # faiss
+        "numpy~=1.21.2",  # faiss
         "typing-extensions==4.7.0",
     ],
     extras_require=extras_require,
