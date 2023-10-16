@@ -22,7 +22,7 @@ services:
     environment:
       POSTGRES_USER: media_match
       POSTGRES_PASSWORD: hunter2
-      POSTGRES_MULTIPLE_DATABASES: media_match,media_match_test
+      POSTGRES_MULTIPLE_DATABASES: media_match
     networks:
       - backend
 
