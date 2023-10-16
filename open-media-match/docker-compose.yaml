@@ -1,5 +1,10 @@
 version: "3"
 
+x-postgres-variables: &postgres-variables
+  POSTGRES_USER: media_match
+  # TODO: Use a secret instead.
+  POSTGRES_PASSWORD: hunter2
+
 services:
   app:
     build: .
@@ -7,6 +12,7 @@ services:
     ports:
       - 8080:8080
     environment:
+      <<: *postgres-variables
       OMM_CONFIG: /build/omm_config.py
     networks:
       - backend
@@ -20,8 +26,7 @@ services:
         - ./.devcontainer/pg-scripts/init-multiple-pg-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-pg-dbs.sh
         - postgres-data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: media_match
-      POSTGRES_PASSWORD: hunter2
+      <<: *postgres-variables
       POSTGRES_MULTIPLE_DATABASES: media_match
     networks:
       - backend
