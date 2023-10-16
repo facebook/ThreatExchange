@@ -3,8 +3,6 @@ FROM python:3.11-bullseye
 WORKDIR /build
 COPY pyproject.toml ./
 
-# Because this Dockerfile is used by some github CI, you have to install
-# the test and development dependencies too...
 RUN pip install .[prod]
 COPY ./src /build
 
