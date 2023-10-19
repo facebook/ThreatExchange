@@ -4,6 +4,8 @@ x-postgres-variables: &postgres-variables
   POSTGRES_USER: media_match
   # TODO: Use a secret instead.
   POSTGRES_PASSWORD: hunter2
+  POSTGRESS_HOST: db
+  POSTGRESS_DBNAME: media_match
 
 services:
   app:
