@@ -146,41 +146,41 @@ libtmk.a: $(LIBOBJ)
 
 # ================================================================
 tmk-hash-video: ./bin/tmk-hash-video.cpp $(LIBHDR) libtmk.a
-	$(CC) bin/tmk-hash-video.cpp -o tmk-hash-video -L. -ltmk
+	$(CC) bin/tmk-hash-video.cpp -o tmk-hash-video -L. -ltmk -ld_classic
 
 # ----------------------------------------------------------------
 vstr2feat: ./bin/vstr2feat.cpp $(LIBHDR) libtmk.a
-	$(CC) bin/vstr2feat.cpp -o vstr2feat -L. -ltmk
+	$(CC) bin/vstr2feat.cpp -o vstr2feat -L. -ltmk -ld_classic
 feat2tmk: ./bin/feat2tmk.cpp $(LIBHDR) libtmk.a
-	$(CC) bin/feat2tmk.cpp -o feat2tmk -L. -ltmk
+	$(CC) bin/feat2tmk.cpp -o feat2tmk -L. -ltmk -ld_classic
 featdump: ./bin/featdump.cpp $(LIBHDR) libtmk.a
-	$(CC) bin/featdump.cpp -o featdump -L. -ltmk
+	$(CC) bin/featdump.cpp -o featdump -L. -ltmk -ld_classic
 tmkdump: ./bin/tmkdump.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) bin/tmkdump.cpp -o tmkdump -L. -ltmk
+	$(CC_IF_WIN) bin/tmkdump.cpp -o tmkdump -L. -ltmk -ld_classic
 
 # ----------------------------------------------------------------
 tmk-compare-two-tmks: ./bin/tmk-compare-two-tmks.cpp $(LIBHDR) libtmk.a
-	$(CC) bin/tmk-compare-two-tmks.cpp -o tmk-compare-two-tmks -L. -ltmk
+	$(CC) bin/tmk-compare-two-tmks.cpp -o tmk-compare-two-tmks -L. -ltmk -ld_classic
 tmk-show-pair-offsets: ./bin/tmk-show-pair-offsets.cpp $(LIBHDR) libtmk.a
-	$(CC) bin/tmk-show-pair-offsets.cpp -o tmk-show-pair-offsets -L. -ltmk
+	$(CC) bin/tmk-show-pair-offsets.cpp -o tmk-show-pair-offsets -L. -ltmk -ld_classic
 
 # ----------------------------------------------------------------
 tmk-clusterize: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) bin/tmk-clusterize.cpp -o tmk-clusterize -L. -ltmk
+	$(CC_IF_WIN) bin/tmk-clusterize.cpp -o tmk-clusterize -L. -ltmk -ld_classic
 tmk-query: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) bin/tmk-query.cpp -o tmk-query -L. -ltmk
+	$(CC_IF_WIN) bin/tmk-query.cpp -o tmk-query -L. -ltmk -ld_classic
 tmk-two-level-score: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) bin/tmk-two-level-score.cpp -o tmk-two-level-score -L. -ltmk
+	$(CC_IF_WIN) bin/tmk-two-level-score.cpp -o tmk-two-level-score -L. -ltmk -ld_classic
 
 # ----------------------------------------------------------------
 tmk-clusterize-parallel: ./bin/tmk-clusterize.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-clusterize.cpp -o tmk-clusterize-parallel -L. -ltmk $(OMP_LIB)
+	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-clusterize.cpp -o tmk-clusterize-parallel -L. -ltmk $(OMP_LIB) -ld_classic
 tmk-query-with-faiss: ./bin/tmk-query-with-faiss.cpp $(LIBHDR) libtmk.a
 	$(CC_IF_WIN) -Xpreprocessor -fopenmp -I/usr/local/include/faiss bin/tmk-query-with-faiss.cpp -o tmk-query-with-faiss -L. -L/usr/local/lib -ltmk -lfaiss $(OMP_LIB) -Wl,-rpath,/usr/local/lib
 tmk-query-parallel: ./bin/tmk-query.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-query.cpp -o tmk-query-parallel -L. -ltmk $(OMP_LIB)
+	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-query.cpp -o tmk-query-parallel -L. -ltmk $(OMP_LIB) -ld_classic
 tmk-two-level-score-parallel: ./bin/tmk-two-level-score.cpp $(LIBHDR) libtmk.a
-	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-two-level-score.cpp -o tmk-two-level-score-parallel -L. -ltmk $(OMP_LIB)
+	$(CC_IF_WIN) -Xpreprocessor -fopenmp bin/tmk-two-level-score.cpp -o tmk-two-level-score-parallel -L. -ltmk $(OMP_LIB) -ld_classic
 
 format:
 	find . -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
