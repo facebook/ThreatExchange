@@ -7,5 +7,5 @@
 ## MacOS on Apple M1
 
 * Currently the builtin Apple clang g++ does not work for building this implementation.
-  * Installing gcc and updating the `Makefile`s CXX to use that version of g++ instead is recommend.
-  * Because of a known issue with C++ compiler and XCode versioning, you might have to update the `SDKROOT` env variable to match the correct XCode SDK version: `export SDKROOT=`xcrun --show-sdk-path`.
+  * Installing gcc and updating the `Makefile`'s CXX to use that version of g++ instead is recommended.
+  * Because of a known issue with C++ compiler and XCode versioning, you might have to update the `SDKROOT` env variable to match the correct XCode SDK version: ``` export SDKROOT=`xcrun --show-sdk-path` ```.
