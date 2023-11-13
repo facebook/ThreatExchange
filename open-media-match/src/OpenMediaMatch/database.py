@@ -27,7 +27,7 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
 import flask_sqlalchemy
-from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary, Enum
+from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary, Index
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -80,10 +80,6 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     bank_id: Mapped[int] = mapped_column(ForeignKey("bank.id"))
     bank: Mapped[Bank] = relationship(back_populates="content")
 
-    create_time: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-
     # Should we store the content type as well?
 
     disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
@@ -108,6 +104,16 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
     signal_type: Mapped[str] = mapped_column(primary_key=True)
     signal_val: Mapped[str] = mapped_column(Text)
 
+    create_time: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    __table_args__ = (
+        Index(
+            "incremental_index_build_idx", "signal_type", "create_time", "content_id"
+        ),
+    )
+
 
 class CollaborationConfig(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -117,9 +123,9 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
     api_cls: Mapped[str] = mapped_column(String(255))
     fetching_enabled: Mapped[bool] = mapped_column(default=True)
     # Someday, we want writeback columns
-    # report_seen: Mapped[bool] = mapped_column(default=True)
-    # report_true_positive = mapped_column(default=True)
-    # report_false_positive = mapped_column(default=True)
+    # report_seen: Mapped[bool] = mapped_column(default=False)
+    # report_true_positive = mapped_column(default=False)
+    # report_false_positive = mapped_column(default=False)
 
     # This is the dacite-serialized version of the typed
     # CollaborationConfig.
