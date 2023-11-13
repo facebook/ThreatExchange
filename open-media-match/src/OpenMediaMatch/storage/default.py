@@ -4,7 +4,7 @@
 The default store for accessing persistent data on OMM.
 """
 
-import random
+import time
 import typing as t
 
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
@@ -139,7 +139,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         else:
             database.db.session.add(
                 database.SignalIndex(
-                    signal_type=signal_type.get_name()
+                    signal_type=signal_type.get_name(),
+                    # TODO - use real time checkpoint
+                    updated_to_ts=int(time.time()),
                 ).serialize_index(index)
             )
 
