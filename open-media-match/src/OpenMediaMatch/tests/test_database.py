@@ -71,7 +71,9 @@ def test_store_index(app: Flask) -> None:
     assert index.state == {"a": [1, 2], "b": [3], "c": [4]}
 
     database.db.session.add(
-        database.SignalIndex(signal_type="test").serialize_index(index)
+        database.SignalIndex(signal_type="test", updated_to_ts=12345).serialize_index(
+            index
+        )
     )
     database.db.session.commit()
     database.db.session.query()
@@ -93,7 +95,9 @@ def test_store_index_updated_at(app: Flask) -> None:
     index = TrivialSignalTypeIndex.build(content)
 
     database.db.session.add(
-        database.SignalIndex(signal_type="test").serialize_index(index)
+        database.SignalIndex(signal_type="test", updated_to_ts=1234).serialize_index(
+            index
+        )
     )
     database.db.session.commit()
     db_record = database.db.session.execute(
