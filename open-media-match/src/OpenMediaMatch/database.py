@@ -9,6 +9,7 @@ slower than just slinging sql on the tables, so you may see direct
 references which are meant to be reaped at some future time.
 """
 
+import enum
 import io
 import typing as t
 import re
@@ -26,7 +27,7 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
 import flask_sqlalchemy
-from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary
+from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary, Enum
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -78,6 +79,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
     bank_id: Mapped[int] = mapped_column(ForeignKey("bank.id"))
     bank: Mapped[Bank] = relationship(back_populates="content")
+
+    create_time: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     # Should we store the content type as well?
 
@@ -171,6 +176,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
     signal_type: Mapped[str]
     serialized_index: Mapped[bytes] = mapped_column(LargeBinary)
+    updated_to_ts: Mapped[int]
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
     )
@@ -188,6 +194,36 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         # class no matter which interface we call it on.
         # I'm sorry future debugger finding this comment.
         return SignalTypeIndex.deserialize(io.BytesIO(self.serialized_index))
+
+
+class TaskStatus(enum.IntEnum):
+    WAITING = 0
+    RUNNING = 1
+    SUCCEEDED = 2
+    FAILED = 3
+    LOST = 4
+
+
+class BackgroundTask(db.Model):  # type: ignore[name-defined]
+    """
+    State tracker for background tasks.
+
+    This is probably duplicate with any real task solution we
+    would use in production, but let's start here.
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    update_time: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
+    )
+    owner: Mapped[t.Optional[str]] = mapped_column(String(255), default=None)
+    current_status: Mapped[TaskStatus] = mapped_column(
+        String(255), default=TaskStatus.WAITING
+    )
+    next_run_ts: Mapped[int] = mapped_column(default=0)
+    last_run_ts: Mapped[int] = mapped_column(default=0)
+    last_run_status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.WAITING)
 
 
 class SignalTypeOverride(db.Model):  # type: ignore[name-defined]
