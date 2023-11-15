@@ -3,8 +3,6 @@
 import logging
 import typing as t
 
-from flask import Flask
-
 from threatexchange.signal_type.signal_base import SignalType
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
@@ -51,6 +49,12 @@ def build_index(
     """
     Build one index from scratch with the current bank contents and persist it.
     """
+    # First check to see if new signals have appeared since the last build
+    idx_checkpoint = index_store.get_last_index_build_checkpoint(for_signal_type)
+    bank_checkpoint = bank_store.get_current_index_build_checkpoint(for_signal_type)
+    if idx_checkpoint is not None and idx_checkpoint == bank_checkpoint:
+        logger.info("%s index up to date, no build needed", for_signal_type.get_name())
+        return
     logger.info("Building index for %s", for_signal_type.get_name())
     index_cls = for_signal_type.get_index_cls()
     signal_list = []
@@ -59,7 +63,8 @@ def build_index(
             if signal:
                 tuple = (signal, bc_id)
                 signal_list.append(tuple)
+    built_index = index_cls.build(signal_list)
     logger.info(
         "Indexed %d signals for %s", len(signal_list), for_signal_type.get_name()
     )
-    index_store.store_signal_type_index(for_signal_type, index_cls.build(signal_list))
+    index_store.store_signal_type_index(for_signal_type, built_index, len(signal_list))
