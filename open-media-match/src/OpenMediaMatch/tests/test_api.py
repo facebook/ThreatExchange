@@ -132,10 +132,10 @@ def test_banks_add_hash(client: FlaskClient):
     image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
 
     post_response = client.post(
-        "/c/bank/{}/content?url={}&content_type=photo".format(bank_name, image_url)
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
 
-    assert post_response.status_code == 200
+    assert post_response.status_code == 200, str(post_response.get_json())
     assert post_response.json == {
         "id": 1,
         "signals": {
@@ -169,14 +169,14 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
 
     # Test against first image
     post_response = client.get(
-        "/m/raw_lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url])
+        f"/m/raw_lookup?signal_type=pdq&signal={IMAGE_URL_TO_PDQ[image_url]}"
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [1]}
 
     # Test against second image
     post_response = client.get(
-        "/m/raw_lookup?signal_type=pdq&signal={}".format(IMAGE_URL_TO_PDQ[image_url_2])
+        f"/m/raw_lookup?signal_type=pdq&signal={IMAGE_URL_TO_PDQ[image_url_2]}"
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [2]}

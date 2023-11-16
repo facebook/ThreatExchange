@@ -25,7 +25,7 @@ bp = Blueprint("hashing", __name__)
 
 @bp.route("/hash", methods=["GET"])
 @abort_to_json
-def hash_media():
+def hash_media() -> dict[str, str]:
     """
     Fetch content and return its hash.
 
@@ -49,7 +49,7 @@ def hash_media():
     content_type = _parse_request_content_type(url_content_type)
     signal_types = _parse_request_signal_type(content_type)
 
-    ret = {}
+    ret: dict[str, str] = {}
 
     # For images, we may need to copy the file suffix (.png, jpeg, etc) for it to work
     with tempfile.NamedTemporaryFile("wb") as tmp:

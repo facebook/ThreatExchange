@@ -150,6 +150,7 @@ class SignalTypeIndexBuildCheckpoint:
 
     @classmethod
     def get_empty(cls):
+        """Represents a checkpoint for an empty index / no hashes."""
         return cls(last_item_timestamp=-1, last_item_id=-1, total_hash_count=0)
 
 

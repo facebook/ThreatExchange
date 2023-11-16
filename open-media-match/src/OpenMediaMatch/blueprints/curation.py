@@ -3,8 +3,8 @@ import typing as t
 
 from flask import Blueprint
 from flask import request, jsonify, abort
-
 from sqlalchemy.exc import IntegrityError
+from threatexchange.signal_type.signal_base import SignalType
 
 from OpenMediaMatch import database, persistence, utils
 from OpenMediaMatch.storage.interface import BankConfig
@@ -125,18 +125,52 @@ def bank_add_file(bank_name: str):
         hashes = hashing.hash_media_post_impl()
     else:
         abort(400, "Neither `url` query param nor multipart file upload was received")
+    return _bank_add_signals(bank, hashes)
 
-    signal_type_configs = storage.get_signal_type_configs()
 
+def _bank_add_signals(
+    bank: BankConfig, signal_type_to_signal_str: dict[str, str]
+) -> dict[str, t.Any]:
+    if not signal_type_to_signal_str:
+        abort(400, "No signals given")
+
+    storage = persistence.get_storage()
+
+    signals: dict[type[SignalType], str] = {}
+    signal_type_cfgs = storage.get_signal_type_configs()
+    for name, val in signal_type_to_signal_str.items():
+        st = signal_type_cfgs.get(name)
+        if st is None:
+            abort(400, f"No such signal type {name}")
+        try:
+            signals[st.signal_type] = st.signal_type.validate_signal_str(val)
+        except Exception as e:
+            abort(400, f"Invalid {name} signal: {str(e)}")
     content_id = storage.bank_add_content(
         bank.name,
-        {
-            signal_type_configs[name].signal_type: signal_value
-            for name, signal_value in hashes.items()
-        },
+        signals,
     )
 
-    return {"id": content_id, "signals": hashes}
+    return {
+        "id": content_id,
+        "signals": {st.get_name(): val for st, val in signals.items()},
+    }
+
+
+@bp.route("/bank/<bank_name>/signal", methods=["POST"])
+@utils.abort_to_json
+def bank_add_as_signals(bank_name: str):
+    """
+    Add a signal/hash directly to the bank.
+
+    Most of the time you want to add by file, since you'll be able
+    able to process the file in all of the techniques you have available.
+    """
+    storage = persistence.get_storage()
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        abort(404, f"bank '{bank_name}' not found")
+    return _bank_add_signals(bank, t.cast(dict[str, str], request.json))
 
 
 def _get_collab(name: str):

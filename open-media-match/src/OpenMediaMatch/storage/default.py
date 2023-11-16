@@ -136,12 +136,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
         ).scalar_one_or_none()
         if db_record is not None:
             db_record.serialize_index(index)
+            #  TODO - pass in real checkpoint
+            db_record.signal_count = signal_count
         else:
             database.db.session.add(
                 database.SignalIndex(
                     signal_type=signal_type.get_name(),
                     # TODO - use real time checkpoint
-                    updated_to_ts=int(time.time()),
+                    updated_to_ts=-1,
+                    updated_to_id=-1,
                     signal_count=signal_count,
                 ).serialize_index(index)
             )
@@ -151,15 +154,22 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def get_last_index_build_checkpoint(
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
-        updated_to = database.db.session.execute(
-            select(database.SignalIndex.updated_to_ts).where(
-                database.SignalIndex.signal_type == signal_type.get_name()
-            )
-        ).scalar_one_or_none()
-        if updated_to is None:
-            return interface.SignalTypeIndexBuildCheckpoint.get_empty()
-        # TODO
-        return None
+        row = database.db.session.execute(
+            select(
+                database.SignalIndex.updated_to_ts,
+                database.SignalIndex.updated_to_id,
+                database.SignalIndex.signal_count,
+            ).where(database.SignalIndex.signal_type == signal_type.get_name())
+        ).one_or_none()
+
+        if row is None:
+            return None
+        updated_to_ts, updated_to_id, total_count = row._tuple()
+        return interface.SignalTypeIndexBuildCheckpoint(
+            last_item_timestamp=updated_to_ts,
+            last_item_id=updated_to_id,
+            total_hash_count=total_count,
+        )
 
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:

@@ -152,17 +152,50 @@ def lookup(signal, signal_type_name):
 
 
 @bp.route("/index/status")
+@abort_to_json
 def index_status():
     """
-    Input:
-     * Signal type (hash type)
-    Output:
-     * Time of last index build
+    Get the status of matching indices.
+
+    You can limit to just a single type with the signal_type parameter.
+
+    Example Output:
+    {
+        "pdq": {
+            "built_to": -1,
+            "present": false,
+            "size": 0
+        },
+        "video_md5": {
+            "built_to": 1700146048,
+            "present": true,
+            "size": 591
+        }
+    }
     """
-    abort(501)  # Unimplemented
+    storage = get_storage()
+    signal_types = storage.get_signal_type_configs()
 
+    limit_to_type = request.args.get("signal_type")
+    if limit_to_type is not None:
+        if limit_to_type not in signal_types:
+            abort(400, f"No such signal type '{limit_to_type}'")
+        signal_types = {limit_to_type: signal_types[limit_to_type]}
 
-@bp.route("/index/<signal_type_name>/status")
-@abort_to_json
-def index_status_by_type(signal_type_name: str):
-    abort(501)  # Not yet implemented
+    status_by_name = {}
+    for name, st in signal_types.items():
+        checkpoint = storage.get_last_index_build_checkpoint(st.signal_type)
+
+        status = {
+            "present": False,
+            "built_to": -1,
+            "size": 0,
+        }
+        if checkpoint is not None:
+            status = {
+                "present": True,
+                "built_to": checkpoint.last_item_timestamp,
+                "size": checkpoint.total_hash_count,
+            }
+        status_by_name[name] = status
+    return status_by_name

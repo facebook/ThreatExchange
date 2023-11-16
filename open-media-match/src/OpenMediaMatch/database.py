@@ -180,9 +180,10 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
     """
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    signal_type: Mapped[str]
+    signal_type: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     serialized_index: Mapped[bytes] = mapped_column(LargeBinary)
     signal_count: Mapped[int]
+    updated_to_id: Mapped[int]
     updated_to_ts: Mapped[int]
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
