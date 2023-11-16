@@ -72,7 +72,10 @@ def test_store_index(app: Flask) -> None:
 
     database.db.session.add(
         database.SignalIndex(
-            signal_type="test", updated_to_ts=12345, signal_count=len(content)
+            signal_type="test",
+            updated_to_ts=12345,
+            updated_to_id=5678,
+            signal_count=len(content),
         ).serialize_index(index)
     )
     database.db.session.commit()
@@ -96,7 +99,10 @@ def test_store_index_updated_at(app: Flask) -> None:
 
     database.db.session.add(
         database.SignalIndex(
-            signal_type="test", updated_to_ts=1234, signal_count=len(content)
+            signal_type="test",
+            updated_to_ts=1234,
+            updated_to_id=5678,
+            signal_count=len(content),
         ).serialize_index(index)
     )
     database.db.session.commit()
