@@ -64,7 +64,10 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         )
 
     def store_signal_type_index(
-        self, signal_type: t.Type[SignalType], index: SignalTypeIndex, signal_count: int
+        self,
+        signal_type: t.Type[SignalType],
+        index: SignalTypeIndex,
+        checkpoint: interface.SignalTypeIndexBuildCheckpoint,
     ) -> None:
         raise Exception("Not implemented")
 
@@ -149,18 +152,27 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         # TODO
         raise Exception("Not implemented")
 
-    def get_current_index_build_checkpoint(
+    def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
         return None
 
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
-    ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
-        if signal_type == PdqSignal:
+    ) -> t.Iterator[interface.BankContentIterationItem]:
+        if signal_type in (None, PdqSignal):
             for fake_id, signal in enumerate(PdqSignal.get_examples()):
-                yield [(signal, fake_id)]
-        elif signal_type == VideoMD5Signal:
-            for fake_id, signal in enumerate(PdqSignal.get_examples()):
-                yield [(signal, fake_id)]
-        return
+                yield interface.BankContentIterationItem(
+                    signal_type_name=PdqSignal.get_name(),
+                    signal_val=signal,
+                    bank_content_timestamp=1,
+                    bank_content_id=fake_id,
+                )
+        elif signal_type in (None, VideoMD5Signal):
+            for fake_id, signal in enumerate(VideoMD5Signal.get_examples()):
+                yield interface.BankContentIterationItem(
+                    signal_type_name=VideoMD5Signal.get_name(),
+                    signal_val=signal,
+                    bank_content_timestamp=1,
+                    bank_content_id=1000 + fake_id,
+                )

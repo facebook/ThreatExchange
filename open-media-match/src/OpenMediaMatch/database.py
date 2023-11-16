@@ -15,7 +15,12 @@ import typing as t
 import re
 import datetime
 
-from OpenMediaMatch.storage.interface import BankConfig, BankContentConfig
+from OpenMediaMatch.storage.interface import (
+    BankConfig,
+    BankContentConfig,
+    SignalTypeIndexBuildCheckpoint,
+    BankContentIterationItem,
+)
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.signal_exchange_api import (
@@ -27,7 +32,7 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
 import flask_sqlalchemy
-from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary, Index
+from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary, Index, BigInteger
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -114,6 +119,14 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
         ),
     )
 
+    def as_iteration_item(self) -> BankContentIterationItem:
+        return BankContentIterationItem(
+            signal_type_name=self.signal_type,
+            signal_val=self.signal_val,
+            bank_content_id=self.content_id,
+            bank_content_timestamp=int(self.create_time.timestamp()),
+        )
+
 
 class CollaborationConfig(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -184,7 +197,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
     serialized_index: Mapped[bytes] = mapped_column(LargeBinary)
     signal_count: Mapped[int]
     updated_to_id: Mapped[int]
-    updated_to_ts: Mapped[int]
+    updated_to_ts: Mapped[int] = mapped_column(BigInteger)
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
     )
@@ -202,6 +215,19 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         # class no matter which interface we call it on.
         # I'm sorry future debugger finding this comment.
         return SignalTypeIndex.deserialize(io.BytesIO(self.serialized_index))
+
+    def update_checkpoint(self, checkpoint: SignalTypeIndexBuildCheckpoint) -> t.Self:
+        self.updated_to_id = checkpoint.last_item_id
+        self.updated_to_ts = checkpoint.last_item_timestamp
+        self.signal_count = checkpoint.total_hash_count
+        return self
+
+    def as_checkpoint(self) -> SignalTypeIndexBuildCheckpoint:
+        return SignalTypeIndexBuildCheckpoint(
+            last_item_id=self.updated_to_id,
+            last_item_timestamp=self.updated_to_ts,
+            total_hash_count=self.signal_count,
+        )
 
 
 class TaskStatus(enum.IntEnum):

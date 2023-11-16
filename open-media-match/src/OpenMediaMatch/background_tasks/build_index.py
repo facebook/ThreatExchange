@@ -11,6 +11,7 @@ from OpenMediaMatch.storage.interface import (
     ISignalTypeIndexStore,
     ISignalTypeConfigStore,
     IBankStore,
+    SignalTypeIndexBuildCheckpoint,
 )
 
 logger = logging.getLogger(__name__)
@@ -51,20 +52,26 @@ def build_index(
     """
     # First check to see if new signals have appeared since the last build
     idx_checkpoint = index_store.get_last_index_build_checkpoint(for_signal_type)
-    bank_checkpoint = bank_store.get_current_index_build_checkpoint(for_signal_type)
+    bank_checkpoint = bank_store.get_current_index_build_target(for_signal_type)
     if idx_checkpoint is not None and idx_checkpoint == bank_checkpoint:
         logger.info("%s index up to date, no build needed", for_signal_type.get_name())
         return
     logger.info("Building index for %s", for_signal_type.get_name())
     index_cls = for_signal_type.get_index_cls()
     signal_list = []
-    for batch in bank_store.bank_yield_content(for_signal_type):
-        for signal, bc_id in batch:
-            if signal:
-                tuple = (signal, bc_id)
-                signal_list.append(tuple)
+    last_cs = None
+    for last_cs in bank_store.bank_yield_content(for_signal_type):
+        tuple = (last_cs.signal_val, last_cs.bank_content_id)
+        signal_list.append(tuple)
     built_index = index_cls.build(signal_list)
+    checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
+    if last_cs is not None:
+        checkpoint = SignalTypeIndexBuildCheckpoint(
+            last_item_timestamp=last_cs.bank_content_timestamp,
+            last_item_id=last_cs.bank_content_id,
+            total_hash_count=len(signal_list),
+        )
     logger.info(
         "Indexed %d signals for %s", len(signal_list), for_signal_type.get_name()
     )
-    index_store.store_signal_type_index(for_signal_type, built_index, len(signal_list))
+    index_store.store_signal_type_index(for_signal_type, built_index, checkpoint)

@@ -181,7 +181,10 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def store_signal_type_index(
-        self, signal_type: t.Type[SignalType], index: SignalTypeIndex, signal_count: int
+        self,
+        signal_type: t.Type[SignalType],
+        index: SignalTypeIndex,
+        checkpoint: SignalTypeIndexBuildCheckpoint,
     ) -> None:
         """
         Persists the signal type index, potentially replacing a previous version.
@@ -296,6 +299,18 @@ class BankContentConfig:
         return self.disable_until_ts <= time.time()
 
 
+@dataclass
+class BankContentIterationItem:
+    """
+    An item streamed from the datastore for building the index.
+    """
+
+    signal_type_name: str
+    signal_val: str
+    bank_content_id: int
+    bank_content_timestamp: int
+
+
 class IBankStore(metaclass=abc.ABCMeta):
     """
      Interface for maintaining collections of labeled content (aka banks).
@@ -379,7 +394,7 @@ class IBankStore(metaclass=abc.ABCMeta):
         """Remove content from bank by id"""
 
     @abc.abstractmethod
-    def get_current_index_build_checkpoint(
+    def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[SignalTypeIndexBuildCheckpoint]:
         """Get information about the total bank size for skipping an index build"""
@@ -387,7 +402,7 @@ class IBankStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
-    ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
+    ) -> t.Iterator[BankContentIterationItem]:
         """
         Yield the entire content of the bank in batches.
 
