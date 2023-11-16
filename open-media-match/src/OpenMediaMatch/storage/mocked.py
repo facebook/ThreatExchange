@@ -64,12 +64,14 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         )
 
     def store_signal_type_index(
-        self, signal_type: t.Type[SignalType], index: SignalTypeIndex
+        self, signal_type: t.Type[SignalType], index: SignalTypeIndex, signal_count: int
     ) -> None:
         raise Exception("Not implemented")
 
-    def get_last_signal_build_timestamp(self, signal_type: str) -> t.Optional[int]:
-        raise Exception("Not implemented")
+    def get_last_index_build_checkpoint(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
+        return None
 
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
@@ -146,6 +148,11 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def bank_remove_content(self, bank_name: str, content_id: int) -> None:
         # TODO
         raise Exception("Not implemented")
+
+    def get_current_index_build_checkpoint(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
+        return None
 
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100

@@ -162,12 +162,7 @@ def index_status():
     abort(501)  # Unimplemented
 
 
-@bp.route("/index/<index_type_name>/status")
+@bp.route("/index/<signal_type_name>/status")
 @abort_to_json
-def index_status_by_type(index_type_name: str):
-    storage = persistence.get_storage()
-    timestamp = storage.get_last_signal_build_timestamp(index_type_name)
-    if timestamp:
-        return {"timestamp": timestamp}
-    else:
-        abort(404)  # Index Type Not Found
+def index_status_by_type(signal_type_name: str):
+    abort(501)  # Not yet implemented

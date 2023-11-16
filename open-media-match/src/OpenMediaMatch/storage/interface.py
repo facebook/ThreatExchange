@@ -127,6 +127,32 @@ class ISignalExchangeConfigStore(metaclass=abc.ABCMeta):
         """
 
 
+@dataclass
+class SignalTypeIndexBuildCheckpoint:
+    """
+    A point at which the index has been built up to.
+
+    This feature allows the index to skip a build when nothing has changed,
+    which is mostly useful for debugging. Once you have enough ongoing
+    changes to the db, the value of eliding builds goes down, and
+    a naive implementation could not even store this.
+
+    The key check is the DB's last added hash id, and the total hash count
+    """
+
+    # When the most recent item in the bank was added
+    # allows for optional fast incremental build for additions
+    last_item_timestamp: int
+    # What was the id of the last added id to the DB on build
+    last_item_id: int
+    # What is the total hash db size (to account for removals)
+    total_hash_count: int
+
+    @classmethod
+    def get_empty(cls):
+        return cls(last_item_timestamp=-1, last_item_id=-1, total_hash_count=0)
+
+
 class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
     """
     Interface for accessing index objects.
@@ -154,14 +180,16 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def store_signal_type_index(
-        self, signal_type: t.Type[SignalType], index: SignalTypeIndex
+        self, signal_type: t.Type[SignalType], index: SignalTypeIndex, signal_count: int
     ) -> None:
         """
         Persists the signal type index, potentially replacing a previous version.
         """
 
     @abc.abstractmethod
-    def get_last_signal_build_timestamp(self, signal_type: str) -> t.Optional[int]:
+    def get_last_index_build_checkpoint(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[SignalTypeIndexBuildCheckpoint]:
         """
         Returns timestamp for last index build if it exists
         """
@@ -348,6 +376,12 @@ class IBankStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def bank_remove_content(self, bank_name: str, content_id: int) -> None:
         """Remove content from bank by id"""
+
+    @abc.abstractmethod
+    def get_current_index_build_checkpoint(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[SignalTypeIndexBuildCheckpoint]:
+        """Get information about the total bank size for skipping an index build"""
 
     @abc.abstractmethod
     def bank_yield_content(

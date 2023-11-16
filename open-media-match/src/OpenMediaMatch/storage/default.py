@@ -18,7 +18,7 @@ from threatexchange.exchanges.fetch_state import (
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func, Select
 from OpenMediaMatch import database
 
 from OpenMediaMatch.storage import interface
@@ -127,7 +127,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return db_record.deserialize_index() if db_record is not None else None
 
     def store_signal_type_index(
-        self, signal_type: t.Type[SignalType], index: SignalTypeIndex
+        self, signal_type: t.Type[SignalType], index: SignalTypeIndex, signal_count: int
     ) -> None:
         db_record = database.db.session.execute(
             select(database.SignalIndex).where(
@@ -142,21 +142,24 @@ class DefaultOMMStore(interface.IUnifiedStore):
                     signal_type=signal_type.get_name(),
                     # TODO - use real time checkpoint
                     updated_to_ts=int(time.time()),
+                    signal_count=signal_count,
                 ).serialize_index(index)
             )
 
         database.db.session.commit()
 
-    def get_last_signal_build_timestamp(self, signal_type: str) -> t.Optional[int]:
-        data_time = database.db.session.execute(
-            select(database.SignalIndex.updated_at).where(
-                database.SignalIndex.signal_type == signal_type
+    def get_last_index_build_checkpoint(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
+        updated_to = database.db.session.execute(
+            select(database.SignalIndex.updated_to_ts).where(
+                database.SignalIndex.signal_type == signal_type.get_name()
             )
         ).scalar_one_or_none()
-        if data_time:
-            return int(round(data_time.timestamp()))
-        else:
-            return None
+        if updated_to is None:
+            return interface.SignalTypeIndexBuildCheckpoint.get_empty()
+        # TODO
+        return None
 
     # Collabs
     def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
@@ -267,6 +270,21 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def bank_remove_content(self, bank_name: str, content_id: int) -> None:
         # TODO
         raise Exception("Not implemented")
+
+    def get_current_index_build_checkpoint(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
+        query = database.db.session.query(database.ContentSignal).where(
+            database.ContentSignal.signal_type == signal_type.get_name()
+        )
+        statement = t.cast(Select[database.ContentSignal], query.statement)
+        count = query.session.execute(
+            statement.with_only_columns(func.count()).order_by(None)
+        ).scalar()
+
+        if count == 0:
+            return interface.SignalTypeIndexBuildCheckpoint.get_empty()
+        return None  # TODO
 
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
