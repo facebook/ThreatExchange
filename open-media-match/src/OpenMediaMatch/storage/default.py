@@ -4,9 +4,15 @@
 The default store for accessing persistent data on OMM.
 """
 
-import time
 import typing as t
 
+from sqlalchemy import select, delete, func, desc, Select
+from sqlalchemy.sql.expression import ClauseElement, Executable
+from sqlalchemy.ext.compiler import compiles
+
+
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
@@ -15,12 +21,7 @@ from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
 )
 
-from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.signal_type.md5 import VideoMD5Signal
-
-from sqlalchemy import select, delete, func, Select
 from OpenMediaMatch import database
-
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.mocked import MockedUnifiedStore
 from OpenMediaMatch.storage.interface import (
@@ -127,28 +128,22 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return db_record.deserialize_index() if db_record is not None else None
 
     def store_signal_type_index(
-        self, signal_type: t.Type[SignalType], index: SignalTypeIndex, signal_count: int
+        self,
+        signal_type: t.Type[SignalType],
+        index: SignalTypeIndex,
+        checkpoint: interface.SignalTypeIndexBuildCheckpoint,
     ) -> None:
         db_record = database.db.session.execute(
             select(database.SignalIndex).where(
                 database.SignalIndex.signal_type == signal_type.get_name()
             )
         ).scalar_one_or_none()
-        if db_record is not None:
-            db_record.serialize_index(index)
-            #  TODO - pass in real checkpoint
-            db_record.signal_count = signal_count
-        else:
-            database.db.session.add(
-                database.SignalIndex(
-                    signal_type=signal_type.get_name(),
-                    # TODO - use real time checkpoint
-                    updated_to_ts=-1,
-                    updated_to_id=-1,
-                    signal_count=signal_count,
-                ).serialize_index(index)
+        if db_record is None:
+            db_record = database.SignalIndex(
+                signal_type=signal_type.get_name(),
             )
-
+            database.db.session.add(db_record)
+        db_record.serialize_index(index).update_checkpoint(checkpoint)
         database.db.session.commit()
 
     def get_last_index_build_checkpoint(
@@ -281,7 +276,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         # TODO
         raise Exception("Not implemented")
 
-    def get_current_index_build_checkpoint(
+    def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
         query = database.db.session.query(database.ContentSignal).where(
@@ -292,16 +287,41 @@ class DefaultOMMStore(interface.IUnifiedStore):
             statement.with_only_columns(func.count()).order_by(None)
         ).scalar()
 
-        if count == 0:
+        if not count:
             return interface.SignalTypeIndexBuildCheckpoint.get_empty()
-        return None  # TODO
+
+        # Count non-zero, so get where we are in the order
+        row = database.db.session.execute(
+            select(
+                database.ContentSignal.create_time, database.ContentSignal.content_id
+            )
+            .where(database.ContentSignal.signal_type == signal_type.get_name())
+            .order_by(
+                database.ContentSignal.create_time.desc(),
+                database.ContentSignal.content_id.desc(),
+            )
+            .limit(1)
+        ).one()
+        create_datetime, content_id = row._tuple()
+
+        return interface.SignalTypeIndexBuildCheckpoint(
+            last_item_id=content_id,
+            last_item_timestamp=int(create_datetime.timestamp()),
+            total_hash_count=count,
+        )
 
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
-    ) -> t.Iterator[t.Sequence[t.Tuple[t.Optional[str], int]]]:
+    ) -> t.Iterator[interface.BankContentIterationItem]:
         # Query for all ContentSignals and stream results with the proper batch size
-        query = select(database.ContentSignal).execution_options(
-            stream_results=True, max_row_buffer=batch_size
+        query = (
+            select(database.ContentSignal)
+            .order_by(
+                database.ContentSignal.signal_type,
+                database.ContentSignal.create_time,
+                database.ContentSignal.content_id,
+            )
+            .execution_options(stream_results=True, max_row_buffer=batch_size)
         )
 
         # Conditionally apply the filter if signal_type is provided
@@ -319,5 +339,43 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 break
 
             # Yield the results as tuples (signal_val, content_id)
-            for content_signal in partition:
-                yield [(content_signal[0].signal_val, content_signal[0].content_id)]
+            for row in partition:
+                yield row._tuple()[0].as_iteration_item()
+
+
+def explain(q, analyze: bool = False):
+    """
+    Debugging tool to help test query optimization.
+
+    How to use:
+
+    q = select(database.Blah).where(...).order_by(...)...
+    print(explain(q))
+
+    """
+    return database.db.session.execute(_explain(q, analyze)).fetchall()
+
+
+class _explain(Executable, ClauseElement):
+    """
+    Debugging tool to help test query optimization.
+
+    How to use:
+
+    q = select(database.Blah).where(...).order_by(...)...
+    print(database.db.session.execute(_explain(q)).fetchall())
+    """
+
+    def __init__(self, stmt, analyze: bool = False):
+        self.statement = stmt
+        self.analyze = analyze
+
+
+@compiles(_explain, "postgresql")
+def _pg_explain(element: _explain, compiler, **kw):
+    text = "EXPLAIN "
+    if element.analyze:
+        text += "ANALYZE "
+    text += compiler.process(element.statement, **kw)
+
+    return text

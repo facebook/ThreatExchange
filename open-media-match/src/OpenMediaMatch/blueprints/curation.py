@@ -362,6 +362,36 @@ def update_signal_type_config(signal_type_name: str):
     return jsonify({"name": signal_type_name, "enabled_ratio": enabled_ratio}), 204
 
 
+@bp.route("/signal_type/<signal_type_name>/stats", methods=["GET"])
+@utils.abort_to_json
+def signal_type_current_index_target(signal_type_name: str):
+    """
+    Get the equivalent of the index checkpoint for this signal type.
+
+    Example return: The new value for the signal type config
+    {
+        "name": "pdq"
+        "enabled_ratio": 1.0,
+    }
+    """
+    storage = persistence.get_storage()
+    signal_type_cfg = storage.get_signal_type_configs().get(signal_type_name)
+    if signal_type_cfg is None:
+        abort(400, f"No such signal type {signal_type_name}")
+
+    checkpoint = storage.get_current_index_build_target(
+        signal_type_cfg.signal_type,
+    )
+    if checkpoint is None:
+        abort(503, "Not implemented for storage backend")
+    return {
+        "name": signal_type_name,
+        "last_updated": checkpoint.last_item_timestamp,
+        "last_id": checkpoint.last_item_id,
+        "size": checkpoint.total_hash_count,
+    }
+
+
 # Content Types
 @bp.route("/content_type", methods=["GET"])
 def get_all_content_types():
