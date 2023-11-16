@@ -18,7 +18,7 @@ from threatexchange.exchanges.fetch_state import (
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-from sqlalchemy import select, delete, func
+from sqlalchemy import select, delete, func, Select
 from OpenMediaMatch import database
 
 from OpenMediaMatch.storage import interface
@@ -277,8 +277,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         query = database.db.session.query(database.ContentSignal).where(
             database.ContentSignal.signal_type == signal_type.get_name()
         )
+        statement = t.cast(Select[database.ContentSignal], query.statement)
         count = query.session.execute(
-            query.statement.with_only_columns(func.count()).order_by(None)
+            statement.with_only_columns(func.count()).order_by(None)
         ).scalar()
 
         if count == 0:
