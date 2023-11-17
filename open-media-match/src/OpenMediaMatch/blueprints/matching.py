@@ -8,22 +8,20 @@ import random
 
 from flask import Blueprint
 from flask import abort, current_app, request
+from werkzeug.exceptions import HTTPException
+
 from threatexchange.signal_type.signal_base import SignalType
-from OpenMediaMatch import persistence
+
 from OpenMediaMatch.storage.interface import ISignalTypeConfigStore
 from OpenMediaMatch.blueprints import hashing
-
-from OpenMediaMatch.utils import (
-    abort_to_json,
-    require_request_param,
-)
+from OpenMediaMatch.utils import require_request_param, api_error_handler
 from OpenMediaMatch.persistence import get_storage
 
 bp = Blueprint("matching", __name__)
+bp.register_error_handler(HTTPException, api_error_handler)
 
 
 @bp.route("/raw_lookup")
-@abort_to_json
 def raw_lookup():
     """
     Look up a hash in the similarity index
@@ -70,7 +68,6 @@ def _validate_and_transform_signal_type(
 
 
 @bp.route("/lookup", methods=["GET"])
-@abort_to_json
 def lookup_get():
     """
     Look up a hash in the similarity index. The hash can either be specified via
@@ -105,7 +102,6 @@ def lookup_get():
 
 
 @bp.route("/lookup", methods=["POST"])
-@abort_to_json
 def lookup_post():
     """
     Look up the hash for the uploaded file in the similarity index.
@@ -152,7 +148,6 @@ def lookup(signal, signal_type_name):
 
 
 @bp.route("/index/status")
-@abort_to_json
 def index_status():
     """
     Get the status of matching indices.

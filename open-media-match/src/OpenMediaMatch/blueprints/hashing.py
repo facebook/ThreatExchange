@@ -7,10 +7,11 @@ Endpoints for hashing content
 from pathlib import Path
 import tempfile
 import typing as t
+import requests
 
 from flask import Blueprint
 from flask import abort, request, current_app
-import requests
+from werkzeug.exceptions import HTTPException
 
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
@@ -18,13 +19,13 @@ from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.signal_base import FileHasher, BytesHasher, SignalType
 
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.utils import abort_to_json
+from OpenMediaMatch import utils
 
 bp = Blueprint("hashing", __name__)
+bp.register_error_handler(HTTPException, utils.api_error_handler)
 
 
 @bp.route("/hash", methods=["GET"])
-@abort_to_json
 def hash_media() -> dict[str, str]:
     """
     Fetch content and return its hash.
@@ -66,7 +67,6 @@ def hash_media() -> dict[str, str]:
 
 
 @bp.route("/hash", methods=["POST"])
-@abort_to_json
 def hash_media_post():
     """
     Calculate the hash for the provided file.
@@ -75,9 +75,7 @@ def hash_media_post():
 
 
 def hash_media_post_impl() -> dict[str, str]:
-    """
-    hash_media_post() but without abort_to_json
-    """
+    """ """
     if not request.files:
         return abort(400, "Missing multipart/form-data file upload")
 

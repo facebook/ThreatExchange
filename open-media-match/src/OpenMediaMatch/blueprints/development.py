@@ -6,17 +6,18 @@ Development only routes for easily testing functionality end-to-end, all running
 
 import itertools
 from flask import Blueprint, abort, request
+from werkzeug.exceptions import HTTPException
 
 from OpenMediaMatch.blueprints.hashing import hash_media
 from OpenMediaMatch.blueprints.matching import lookup_signal
-from OpenMediaMatch.utils import abort_to_json
+from OpenMediaMatch.utils import api_error_handler
 
 
 bp = Blueprint("development", __name__)
+bp.register_error_handler(HTTPException, api_error_handler)
 
 
 @bp.route("/query")
-@abort_to_json
 def query_media():
     """
     Hash the input media and then match against all banked content.

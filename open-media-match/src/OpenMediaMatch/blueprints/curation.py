@@ -5,6 +5,7 @@ from flask import Blueprint
 from flask import request, jsonify, abort
 from sqlalchemy.exc import IntegrityError
 from threatexchange.signal_type.signal_base import SignalType
+from werkzeug.exceptions import HTTPException
 
 from OpenMediaMatch import database, persistence, utils
 from OpenMediaMatch.storage.interface import BankConfig, SignalTypeIndexBuildCheckpoint
@@ -12,19 +13,18 @@ from OpenMediaMatch.blueprints import hashing
 
 
 bp = Blueprint("curation", __name__)
+bp.register_error_handler(HTTPException, utils.api_error_handler)
 
 # Banking
 
 
 @bp.route("/banks", methods=["GET"])
-@utils.abort_to_json
 def banks_index():
     storage = persistence.get_storage()
     return list(storage.get_banks().values())
 
 
 @bp.route("/bank/<bank_name>", methods=["GET"])
-@utils.abort_to_json
 def bank_show_by_name(bank_name: str):
     storage = persistence.get_storage()
 
@@ -35,7 +35,6 @@ def bank_show_by_name(bank_name: str):
 
 
 @bp.route("/banks", methods=["POST"])
-@utils.abort_to_json
 def bank_create():
     name = utils.require_json_param("name")
     data = request.get_json()
@@ -59,7 +58,6 @@ def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> BankConfig:
 
 
 @bp.route("/bank/<bank_name>", methods=["PUT"])
-@utils.abort_to_json
 def bank_update(bank_name: str):
     # TODO - rewrite using persistence.get_storage()
     storage = persistence.get_storage()
@@ -85,7 +83,6 @@ def bank_update(bank_name: str):
 
 
 @bp.route("/bank/<bank_name>", methods=["DELETE"])
-@utils.abort_to_json
 def bank_delete(bank_name: str):
     storage = persistence.get_storage()
     storage.bank_delete(bank_name)
@@ -93,7 +90,6 @@ def bank_delete(bank_name: str):
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
-@utils.abort_to_json
 def bank_add_file(bank_name: str):
     """
     Add content to a bank by providing a URI to the content (via the `url`
@@ -158,7 +154,6 @@ def _bank_add_signals(
 
 
 @bp.route("/bank/<bank_name>/signal", methods=["POST"])
-@utils.abort_to_json
 def bank_add_as_signals(bank_name: str):
     """
     Add a signal/hash directly to the bank.
@@ -183,7 +178,6 @@ def _get_collab(name: str):
 
 # Fetching/Exchanges (aka collaborations)
 @bp.route("/exchanges", methods=["POST"])
-@utils.abort_to_json
 def exchange_create():
     """
     Creates an exchange configuration
@@ -235,7 +229,6 @@ def exchanges_index():
 
 
 @bp.route("/exchange/<string:exchange_name>", methods=["GET"])
-@utils.abort_to_json
 def exchange_show_by_name(exchange_name: str):
     """
     Gets a single exchange configuration by name
@@ -255,7 +248,6 @@ def exchange_show_by_name(exchange_name: str):
 
 
 @bp.route("/exchange/<string:exchange_name>/status")
-@utils.abort_to_json
 def exchange_get_fetch_status(exchange_name: str):
     """
     Inputs:
@@ -276,7 +268,6 @@ def exchange_get_fetch_status(exchange_name: str):
 
 
 @bp.route("/exchange/<string:exchange_name>", methods=["PUT"])
-@utils.abort_to_json
 def exchange_update(exchange_name: str):
     """
     Edit exchange configuration
@@ -299,7 +290,6 @@ def exchange_update(exchange_name: str):
 
 
 @bp.route("/exchange/<string:exchange_name>", methods=["DELETE"])
-@utils.abort_to_json
 def exchange_delete(exchange_name: str):
     """
     Delete exchange configuration
@@ -344,7 +334,6 @@ def get_all_signal_types():
 
 
 @bp.route("/signal_type/<signal_type_name>", methods=["PUT"])
-@utils.abort_to_json
 def update_signal_type_config(signal_type_name: str):
     """
     Update mutable fields of the signal type config
@@ -363,7 +352,6 @@ def update_signal_type_config(signal_type_name: str):
 
 
 @bp.route("/signal_type/index", methods=["GET"])
-@utils.abort_to_json
 def signal_type_index_status() -> dict[str, dict[str, t.Any]]:
     """
     Get the index status for signal types.
@@ -393,6 +381,8 @@ def signal_type_index_status() -> dict[str, dict[str, t.Any]]:
         tar = storage.get_current_index_build_target(
             config.signal_type,
         )
+        if tar is None:
+            tar = SignalTypeIndexBuildCheckpoint.get_empty()
         if last is None:
             last = SignalTypeIndexBuildCheckpoint.get_empty()
         ret[name] = {
@@ -430,7 +420,6 @@ def get_all_content_types():
 
 
 @bp.route("/signal_type/<signal_type_name>", methods=["PUT"])
-@utils.abort_to_json
 def update_content_type_config(signal_type_name: str):
     """
     Update mutable fields of the content type config

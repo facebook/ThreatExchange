@@ -7,43 +7,21 @@ I can't tell if these should just be in app.py, so I'm sticking it here for now,
 since one advantage of putting these in functions is we can type the output.
 """
 
-import functools
 import typing as t
 
-from flask import g, abort, request
+from flask import abort, request
 from werkzeug.exceptions import HTTPException
 
 TArg = t.TypeVar("TArg", bool, int, float)
-TFn = t.TypeVar("TFn", bound=t.Callable[..., t.Any])
 
 
-def abort_to_json(fn: TFn) -> TFn:
+def api_error_handler(e: HTTPException) -> t.Tuple[dict[str, str], int]:
     """
-    Wrap json endpoints to turn abort("message", code) to json
-
-    @bp.route("/function")
-
-    def function():
-      if thing:
-        abort(400, "thing missin")
-
-    will return
-        HTTP/1.1 400 BAD_REQUEST
-        Content-Type: application/json
-
-        {
-            "message": "thing missin"
-        }
+    An error handler to attach to API blueprints to make them turn to json.
     """
-
-    @functools.wraps(fn)
-    def wrapper(*args, **kwds):
-        try:
-            return fn(*args, **kwds)
-        except HTTPException as e:
-            return {"message": e.description}, e.code
-
-    return t.cast(TFn, wrapper)
+    return {
+        "message": e.description or f"Unknown error {e}"
+    }, 500 if e.code is None else e.code
 
 
 def require_request_param(name: str) -> str:
