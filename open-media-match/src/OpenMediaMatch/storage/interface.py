@@ -195,7 +195,7 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[SignalTypeIndexBuildCheckpoint]:
         """
-        Returns timestamp for last index build if it exists
+        Returns chekpoint for last index build if it exists
         """
 
 

@@ -48,12 +48,6 @@
                 // Handle the response from the server here
                 renderAddBankResult(data);
             })
-            .then(() => {
-                return fetch('/ui/rebuild_index', {
-                    method: 'POST',
-                    body: new FormData()
-                })
-            })
             .catch(error => {
                 console.error('Error:', error);
             });
