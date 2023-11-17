@@ -1,4 +1,4 @@
-from flask import Blueprint, abort
+from flask import Blueprint, abort, render_template, current_app
 from flask import request, redirect
 
 from OpenMediaMatch.blueprints import matching, curation, hashing
@@ -7,6 +7,40 @@ from OpenMediaMatch.background_tasks import build_index
 from OpenMediaMatch.database import db
 
 bp = Blueprint("ui", __name__)
+
+
+@bp.route("/")
+def home():
+    """
+    Sanity check endpoint showing a basic status page
+    """
+    signaltypes = curation.get_all_signal_types()
+    contenttypes = curation.get_all_content_types()
+    banks = curation.banks_index()
+    is_production = current_app.config.get("PRODUCTION", True)
+
+    return render_template(
+        "index.html.j2",
+        production=is_production,
+        signal=signaltypes,
+        content=contenttypes,
+        bankList=banks,
+    )
+
+
+@bp.route("/bootstrap")
+def test():
+    signaltypes = curation.get_all_signal_types()
+    contenttypes = curation.get_all_content_types()
+    banks = curation.banks_index()
+    is_production = current_app.config.get("PRODUCTION", True)
+    return render_template(
+        "bootstrap.html.j2",
+        production=is_production,
+        signal=signaltypes,
+        content=contenttypes,
+        bankList=banks,
+    )
 
 
 @bp.route("/create_bank", methods=["POST"])
