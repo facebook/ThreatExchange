@@ -14,11 +14,25 @@ def home():
     """
     Sanity check endpoint showing a basic status page
     """
+    index = curation.signal_type_index_status()
+    for name, dat in index.items():
+        progress = 100
+        progress_label = "Up to date"
+        if dat["index_out_of_date"]:
+            a = dat["index_size"]
+            b = dat["db_size"]
+            pct = min(a, b) * 100 / max(1, a, b)
+            progress = int(min(90, pct))
+            progress_label = f"{min(a, b)}/{max(a, b)} ({pct:.2f}%)"
+        index[name]["progress_pct"] = progress
+        index[name]["progress_label"] = progress_label
+        index[name]["progress_style"] = "bg-success" if progress == 100 else ""
     template_vars = {
         "signal": curation.get_all_signal_types(),
         "content": curation.get_all_content_types(),
         "bankList": curation.banks_index(),
         "production": current_app.config.get("PRODUCTION", True),
+        "index": index,
     }
     return render_template("bootstrap.html.j2", **template_vars)
 

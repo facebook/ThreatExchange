@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from threatexchange.signal_type.signal_base import SignalType
 
 from OpenMediaMatch import database, persistence, utils
-from OpenMediaMatch.storage.interface import BankConfig
+from OpenMediaMatch.storage.interface import BankConfig, SignalTypeIndexBuildCheckpoint
 from OpenMediaMatch.blueprints import hashing
 
 
@@ -362,34 +362,47 @@ def update_signal_type_config(signal_type_name: str):
     return jsonify({"name": signal_type_name, "enabled_ratio": enabled_ratio}), 204
 
 
-@bp.route("/signal_type/<signal_type_name>/stats", methods=["GET"])
+@bp.route("/signal_type/index", methods=["GET"])
 @utils.abort_to_json
-def signal_type_current_index_target(signal_type_name: str):
+def signal_type_index_status() -> dict[str, dict[str, t.Any]]:
     """
-    Get the equivalent of the index checkpoint for this signal type.
+    Get the index status for signal types.
 
     Example return: The new value for the signal type config
     {
-        "name": "pdq"
-        "enabled_ratio": 1.0,
+        "db_size": 153,
+        "index_size": 150,
+        "index_out_of_date": true,
+        "newest_db_item": 1700236661,
+        "index_built_to": 1700236641,
     }
     """
     storage = persistence.get_storage()
-    signal_type_cfg = storage.get_signal_type_configs().get(signal_type_name)
-    if signal_type_cfg is None:
-        abort(400, f"No such signal type {signal_type_name}")
+    signal_types = storage.get_signal_type_configs()
+    signal_type = request.args.get("signal_type")
+    if signal_type is not None:
+        if signal_type not in signal_types:
+            abort(400, f"No such signal type '{signal_type}'")
+        signal_types = {signal_type: signal_types[signal_type]}
 
-    checkpoint = storage.get_current_index_build_target(
-        signal_type_cfg.signal_type,
-    )
-    if checkpoint is None:
-        abort(503, "Not implemented for storage backend")
-    return {
-        "name": signal_type_name,
-        "last_updated": checkpoint.last_item_timestamp,
-        "last_id": checkpoint.last_item_id,
-        "size": checkpoint.total_hash_count,
-    }
+    ret = {}
+    for name, config in signal_types.items():
+        last = storage.get_last_index_build_checkpoint(
+            config.signal_type,
+        )
+        tar = storage.get_current_index_build_target(
+            config.signal_type,
+        )
+        if last is None:
+            last = SignalTypeIndexBuildCheckpoint.get_empty()
+        ret[name] = {
+            "db_size": tar.total_hash_count,
+            "index_size": last.total_hash_count,
+            "index_out_of_date": last != tar,
+            "newest_db_item": tar.last_item_timestamp,
+            "index_built_to": last.last_item_timestamp,
+        }
+    return ret
 
 
 # Content Types
