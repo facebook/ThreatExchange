@@ -83,23 +83,10 @@ def create_app() -> flask.Flask:
 
     is_production = app.config.get("PRODUCTION", True)
 
-    # TODO - move me into ui blueprints
     @app.route("/")
     def home():
-        """
-        Sanity check endpoint showing a basic status page
-        """
-        signaltypes = curation.get_all_signal_types()
-        contenttypes = curation.get_all_content_types()
-        banks = curation.banks_index()
-
-        return flask.render_template(
-            "index.html.j2",
-            production=is_production,
-            signal=signaltypes,
-            content=contenttypes,
-            bankList=banks,
-        )
+        dst = "status" if is_production else "ui"
+        return flask.redirect(f"/{dst}")
 
     @app.route("/status")
     def status():
