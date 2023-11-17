@@ -1,17 +1,20 @@
-<h3>Index Status</h3>
+<h3>Exchange Status</h3>
 <table class="table">
     <thead>
         <tr>
-            <th scope="col">Signal Type</th>
-            <th scope="col">Size</th>
-            <th scope="col">Build Progress</th>
+            <th scope="col">API Connection</th>
+            <th scope="col">Bank Name</th>
+            <th scope="col">Total Fetched</th>
+            <th scope="col">Fetch Progress</th>
+            <th scope="col">Last Fetch Status</th>
         </tr>
     </thead>
     <tbody id="index_table_body">
-        {% for name, dat in index.items() %}
+        {% for name, dat in collabs.items() %}
         <tr>
             <th scope="row">{{name}}</th>
-            <td>{{dat['index_size']}}</td>
+            <td scope="row">{{dat['bank']}}</td>
+            <td scope="row">?</td>
             <td class="align-middle">
                 <div class="progress">
                     <div class="progress-bar {{dat['progress_style']}}" role="progressbar"
@@ -20,6 +23,7 @@
                         {{dat['progress_label']}}</div>
                 </div>
             </td>
+            <td scope="row">?</td>
         </tr>
         {% endfor %}
     </tbody>

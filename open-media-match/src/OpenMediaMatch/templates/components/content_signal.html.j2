@@ -1,11 +1,11 @@
 <div class="row row-cols-1 row-cols-md-2 mb-3 text-center">
     <div class="col">
-        <div class="card mb-4 rounded-3 shadow-sm">
+        <div class="card rounded-3 shadow-sm">
             <div class="card-header py-3">
                 <h4 class="my-0 fw-normal">Signal Types</h4>
             </div>
             <div class="card-body">
-                <ul class="list-unstyled mt-3 mb-4">
+                <ul class="list-unstyled mt-3">
                     {% for s in signal %}
                     <li> {{s['name']}}: {{s['enabled_ratio'] * 100}}% Enabled </li>
                     {% endfor %}
@@ -14,12 +14,12 @@
         </div>
     </div>
     <div class="col">
-        <div class="card mb-4 rounded-3 shadow-sm">
+        <div class="card rounded-3 shadow-sm">
             <div class="card-header py-3">
                 <h4 class="my-0 fw-normal">Content Types</h4>
             </div>
             <div class="card-body">
-                <ul class="list-unstyled mt-3 mb-4">
+                <ul class="list-unstyled mt-3">
                     {% for c in content %}
                     <li> {{c['name']}}: {% if c['enabled'] %} Enabled {% else %} Disabled {% endif %} </li>
                     {% endfor %}

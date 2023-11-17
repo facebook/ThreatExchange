@@ -23,9 +23,11 @@
 
     <div class="container my-3">
         {% include 'components/content_signal.html.j2' %}
-        <hr />
     </div>
 
+    <div class="container my-4">
+        <hr />
+    </div>
 
     <div class="container my-3">
         {% include 'components/banks_grid.html.j2' %}
@@ -35,14 +37,25 @@
         {% include 'components/add_to_bank_form.html.j2' %}
     </div>
 
-
-    <!-- Match File in Banks -->
     <div class="container my-3">
         {% include 'components/match_form.html.j2' %}
     </div>
 
+    <div class="container my-4">
+        <hr />
+    </div>
+
     <div class="container my-3">
         {% include 'components/index_status.html.j2' %}
+
+    </div>
+
+    <div class="container my-4">
+        <hr />
+    </div>
+
+    <div class="container my-3">
+        {% include 'components/exchange_status.html.j2' %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
