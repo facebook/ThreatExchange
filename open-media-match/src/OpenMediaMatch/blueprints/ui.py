@@ -14,33 +14,13 @@ def home():
     """
     Sanity check endpoint showing a basic status page
     """
-    signaltypes = curation.get_all_signal_types()
-    contenttypes = curation.get_all_content_types()
-    banks = curation.banks_index()
-    is_production = current_app.config.get("PRODUCTION", True)
-
-    return render_template(
-        "index.html.j2",
-        production=is_production,
-        signal=signaltypes,
-        content=contenttypes,
-        bankList=banks,
-    )
-
-
-@bp.route("/bootstrap")
-def test():
-    signaltypes = curation.get_all_signal_types()
-    contenttypes = curation.get_all_content_types()
-    banks = curation.banks_index()
-    is_production = current_app.config.get("PRODUCTION", True)
-    return render_template(
-        "bootstrap.html.j2",
-        production=is_production,
-        signal=signaltypes,
-        content=contenttypes,
-        bankList=banks,
-    )
+    template_vars = {
+        "signal": curation.get_all_signal_types(),
+        "content": curation.get_all_content_types(),
+        "bankList": curation.banks_index(),
+        "production": current_app.config.get("PRODUCTION", True),
+    }
+    return render_template("bootstrap.html.j2", **template_vars)
 
 
 @bp.route("/create_bank", methods=["POST"])
@@ -49,7 +29,6 @@ def ui_create_bank():
     bank_name = request.form.get("bank_name")
     if bank_name is None:
         abort(400, "Bank name is required")
-
     curation.bank_create_impl(bank_name)
     return redirect("/")
 
