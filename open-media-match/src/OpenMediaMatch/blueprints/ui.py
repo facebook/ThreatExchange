@@ -1,3 +1,7 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import typing as t
+
 from flask import Blueprint, abort, render_template, current_app
 from flask import request, redirect
 
@@ -9,11 +13,7 @@ from OpenMediaMatch.database import db
 bp = Blueprint("ui", __name__)
 
 
-@bp.route("/")
-def home():
-    """
-    Sanity check endpoint showing a basic status page
-    """
+def _index_info() -> dict[str, dict[str, t.Any]]:
     index = curation.signal_type_index_status()
     for name, dat in index.items():
         progress = 100
@@ -27,12 +27,35 @@ def home():
         index[name]["progress_pct"] = progress
         index[name]["progress_label"] = progress_label
         index[name]["progress_style"] = "bg-success" if progress == 100 else ""
+    return index
+
+
+def _collab_info() -> dict[str, dict[str, t.Any]]:
+    collabs = curation.exchange_list()
+    return {
+        name: {
+            "bank": name.removeprefix("c-"),
+            "progress_style": "",
+            "progress_pct": 0,
+            "progress_label": "Not yet implemented",
+        }
+        for name in collabs
+    }
+
+
+@bp.route("/")
+def home():
+    """
+    Sanity check endpoint showing a basic status page
+    """
+
     template_vars = {
         "signal": curation.get_all_signal_types(),
         "content": curation.get_all_content_types(),
         "bankList": curation.banks_index(),
         "production": current_app.config.get("PRODUCTION", True),
-        "index": index,
+        "index": _index_info(),
+        "collabs": _collab_info(),
     }
     return render_template("bootstrap.html.j2", **template_vars)
 
@@ -44,7 +67,7 @@ def ui_create_bank():
     if bank_name is None:
         abort(400, "Bank name is required")
     curation.bank_create_impl(bank_name)
-    return redirect("/")
+    return redirect("./")
 
 
 @bp.route("/query", methods=["POST"])
@@ -73,11 +96,11 @@ def rebuild_index():
         build_index.build_index(st.signal_type)
         return {}
     build_index.build_all_indices(storage, storage, storage)
-    return redirect("/")
+    return redirect("./")
 
 
 @bp.route("/factory_reset", methods=["POST"])
 def factory_reset():
     db.drop_all()
     db.create_all()
-    return redirect("/")
+    return redirect("./")

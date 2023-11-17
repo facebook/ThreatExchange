@@ -213,7 +213,7 @@ def exchange_create():
 
 
 @bp.route("/exchanges", methods=["GET"])
-def exchanges_index():
+def exchange_list():
     """
     List all exchange configurations
 
