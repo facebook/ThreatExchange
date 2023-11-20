@@ -189,7 +189,7 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
 
 class SignalIndex(db.Model):  # type: ignore[name-defined]
     """
-    Table for storing the large indices and their build status.    
+    Table for storing the large indices and their build status.
     """
 
     id: Mapped[int] = mapped_column(primary_key=True)
