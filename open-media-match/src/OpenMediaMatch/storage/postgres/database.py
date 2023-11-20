@@ -189,7 +189,7 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
 
 class SignalIndex(db.Model):  # type: ignore[name-defined]
     """
-    Table for storing the large indices
+    Table for storing the large indices and their build status.
     """
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -230,40 +230,11 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         )
 
 
-class TaskStatus(enum.IntEnum):
-    WAITING = 0
-    RUNNING = 1
-    SUCCEEDED = 2
-    FAILED = 3
-    LOST = 4
-
-
-class BackgroundTask(db.Model):  # type: ignore[name-defined]
-    """
-    State tracker for background tasks.
-
-    This is probably duplicate with any real task solution we
-    would use in production, but let's start here.
-    """
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    update_time: Mapped[datetime.datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
-    )
-    owner: Mapped[t.Optional[str]] = mapped_column(String(255), default=None)
-    current_status: Mapped[TaskStatus] = mapped_column(
-        String(255), default=TaskStatus.WAITING
-    )
-    next_run_ts: Mapped[int] = mapped_column(default=0)
-    last_run_ts: Mapped[int] = mapped_column(default=0)
-    last_run_status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.WAITING)
-
-
 class SignalTypeOverride(db.Model):  # type: ignore[name-defined]
     """
     Stores signal types and whether they are enabled or disabled.
-    By default, any type not in this database is
+
+    By default, any type not in this database is disabled.
     """
 
     id: Mapped[int] = mapped_column(primary_key=True)
