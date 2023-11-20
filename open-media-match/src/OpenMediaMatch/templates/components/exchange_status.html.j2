@@ -1,9 +1,10 @@
 <h3>Exchange Status</h3>
+{% include 'components/create_exchange_modal.html.j2' %}
 <table class="table">
     <thead>
         <tr>
-            <th scope="col">API Connection</th>
             <th scope="col">Bank Name</th>
+            <th scope="col">API</th>
             <th scope="col">Total Fetched</th>
             <th scope="col">Fetch Progress</th>
             <th scope="col">Last Fetch Status</th>
@@ -12,8 +13,8 @@
     <tbody id="index_table_body">
         {% for name, dat in collabs.items() %}
         <tr>
-            <th scope="row">{{name}}</th>
-            <td scope="row">{{dat['bank']}}</td>
+            <th scope="row">{{dat['bank']}}</th>
+            <td scope="row">{{dat['api']}}</td>
             <td scope="row">?</td>
             <td class="align-middle">
                 <div class="progress">

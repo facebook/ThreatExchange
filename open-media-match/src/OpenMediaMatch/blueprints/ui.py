@@ -8,7 +8,7 @@ from flask import request, redirect
 from OpenMediaMatch.blueprints import matching, curation, hashing
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.background_tasks import build_index
-from OpenMediaMatch.database import db
+from OpenMediaMatch.storage.postgres.database import db
 
 bp = Blueprint("ui", __name__)
 
@@ -31,15 +31,16 @@ def _index_info() -> dict[str, dict[str, t.Any]]:
 
 
 def _collab_info() -> dict[str, dict[str, t.Any]]:
-    collabs = curation.exchange_list()
+    collabs = get_storage().get_collaborations()
     return {
         name: {
+            "api": cfg.api,
             "bank": name.removeprefix("c-"),
             "progress_style": "",
             "progress_pct": 0,
             "progress_label": "Not yet implemented",
         }
-        for name in collabs
+        for name, cfg in collabs.items()
     }
 
 

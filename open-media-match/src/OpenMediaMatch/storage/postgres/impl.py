@@ -6,10 +6,11 @@ The default store for accessing persistent data on OMM.
 
 import typing as t
 
-from sqlalchemy import select, delete, func, desc, Select
+import flask
+import flask_migrate
+from sqlalchemy import select, delete, func, Select
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
-
 
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
@@ -21,7 +22,7 @@ from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
 )
 
-from OpenMediaMatch import database
+from OpenMediaMatch.storage.postgres import database
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.mocked import MockedUnifiedStore
 from OpenMediaMatch.storage.interface import (
@@ -50,17 +51,24 @@ class DefaultOMMStore(interface.IUnifiedStore):
       * Blobstore (e.g. built indices)
     """
 
-    def __init__(self) -> None:
-        self.signal_types: list[t.Type[SignalType]] = [PdqSignal, VideoMD5Signal]
-        signal_types = current_app.config.get("SIGNAL_TYPES")
+    signal_types: list[t.Type[SignalType]]
+
+    def __init__(self, signal_types: list[t.Type[SignalType]]) -> None:
+        self.signal_types = signal_types
         if signal_types is not None:
             assert isinstance(signal_types, list)
             for element in signal_types:
                 assert issubclass(element, SignalType)
             self.signal_types = signal_types
         assert len(self.signal_types) == len(
-            set([s.get_name() for s in self.signal_types])
+            {s.get_name() for s in self.signal_types}
         ), "All signal must have unique names"
+
+    def is_ready(self) -> bool:
+        """
+        Whether we have finished pre-loading indices.
+        """
+        return True
 
     def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
         # TODO
@@ -341,6 +349,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
             # Yield the results as tuples (signal_val, content_id)
             for row in partition:
                 yield row._tuple()[0].as_iteration_item()
+
+    @classmethod
+    def init_flask(cls, app: flask.Flask) -> t.Self:
+        migrate = flask_migrate.Migrate()
+        database.db.init_app(app)
+        migrate.init_app(app, database.db)
+
+        signal_types = app.config.get("SIGNAL_TYPES", [PdqSignal, VideoMD5Signal])
+        return cls(signal_types)
 
 
 def explain(q, analyze: bool = False):

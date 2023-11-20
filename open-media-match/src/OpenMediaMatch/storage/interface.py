@@ -20,6 +20,8 @@ from dataclasses import dataclass
 import typing as t
 import time
 
+import flask
+
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.index import SignalTypeIndex
@@ -427,3 +429,24 @@ class IUnifiedStore(
     in development - the option to pass them more narrowly is helpful
     mostly for typing.
     """
+
+    @classmethod
+    def init_flask(cls, app: flask.Flask) -> t.Self:
+        """
+        Make any flask-specific initialization for this storage implementation
+
+        This serves as the normal constructor when used with OMM, which allows
+        you to write __init__ how is most useful to your implementation for
+        testing.
+        """
+        return cls()
+
+    @abc.abstractmethod
+    def is_ready(self) -> bool:
+        """
+        Whether this instead is ready to serve requests.
+
+        This may not be the right place for this in the long term,
+        but being able to recieving matching traffic is an important,
+        but possibly slow, step.
+        """

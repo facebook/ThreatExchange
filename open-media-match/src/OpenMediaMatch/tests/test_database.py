@@ -13,7 +13,7 @@ from threatexchange.signal_type.signal_base import TrivialSignalTypeIndex
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-from OpenMediaMatch import database
+from OpenMediaMatch.storage.postgres import database
 
 
 def test_store_collab_config(app: Flask) -> None:

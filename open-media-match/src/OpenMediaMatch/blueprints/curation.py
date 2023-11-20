@@ -7,9 +7,10 @@ from sqlalchemy.exc import IntegrityError
 from threatexchange.signal_type.signal_base import SignalType
 from werkzeug.exceptions import HTTPException
 
-from OpenMediaMatch import database, persistence, utils
+from OpenMediaMatch import persistence, utils
 from OpenMediaMatch.storage.interface import BankConfig, SignalTypeIndexBuildCheckpoint
 from OpenMediaMatch.blueprints import hashing
+from OpenMediaMatch.storage.postgres import database
 
 
 bp = Blueprint("curation", __name__)

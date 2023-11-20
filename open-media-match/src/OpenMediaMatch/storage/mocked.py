@@ -32,6 +32,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             for b in (interface.BankConfig("TEST_BANK", matching_enabled_ratio=1.0),)
         }
 
+    def is_ready(self) -> bool:
+        return True
+
     def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
         return {
             c.get_name(): interface.ContentTypeConfig(True, c)

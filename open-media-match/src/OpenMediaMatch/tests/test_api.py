@@ -12,7 +12,7 @@ from OpenMediaMatch.tests.utils import (
 )
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch import database
+from OpenMediaMatch.storage.postgres import database
 
 
 def test_status_response(client: FlaskClient):
