@@ -143,7 +143,6 @@ def create_app() -> flask.Flask:
         storage = get_storage()
         storage.bank_update(BankConfig(name=bank_name, matching_enabled_ratio=1.0))
 
-        st: t.Type[SignalType]
         for st in (PdqSignal, VideoMD5Signal):
             for example in st.get_examples():
                 storage.bank_add_content(bank_name, {st.get_name(): example})
@@ -151,12 +150,14 @@ def create_app() -> flask.Flask:
     @app.cli.command("seed_enourmous")
     @click.option("-b", "--banks", default=100, show_default=True)
     @click.option("-s", "--seeds", default=10000, show_default=True)
-    def seed_enourmous(banks: int, seeds: int):
+    def seed_enourmous(banks: int, seeds: int) -> None:
         """
         Seed the database with a large number of banks and hashes
         It will generate n banks and put n/m hashes on each bank
         """
         storage = get_storage()
+
+        types: list[t.Type[SignalType]] = [PdqSignal, VideoMD5Signal]
 
         for i in range(banks):
             # create bank
@@ -166,8 +167,8 @@ def create_app() -> flask.Flask:
             # Add hashes
             for _ in range(seeds // banks):
                 # grab randomly either PDQ or MD5 signal
-                signal_type = random.choice([PdqSignal, VideoMD5Signal])
-                random_hash = signal_type.generate_random_hash()
+                signal_type = random.choice(types)
+                random_hash = signal_type.generate_random_hash()  # type: ignore[attr-defined]
 
                 storage.bank_add_content(bank.name, {signal_type: random_hash})
 
