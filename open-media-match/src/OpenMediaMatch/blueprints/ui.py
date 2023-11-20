@@ -53,6 +53,7 @@ def home():
     template_vars = {
         "signal": curation.get_all_signal_types(),
         "content": curation.get_all_content_types(),
+        "exchangeApiList": curation.exchange_api_list(),
         "bankList": curation.banks_index(),
         "production": current_app.config.get("PRODUCTION", True),
         "index": _index_info(),

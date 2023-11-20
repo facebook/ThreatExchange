@@ -4,34 +4,62 @@
 </button>
 
 <!-- Modal -->
-<div class="modal fade" id="createExchange" tabindex="-1" aria-labelledby="createExchangeLabel" aria-hidden="true">
+<div class="modal fade" id="createExchange" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <form id="exchange_create_form">
-            <div class="modal-content">
+        <div class="modal-content">
+            <form id="exchange_create_form">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5" id="createExchangeLabel">Create Exchange</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label for="exchange_create_form_api" class="form-label">API</label>
-                            <input type="text" class="form-control" id="exchange_create_form_api">
-                        </div>
-                        <div class="col-12">
-                            <label for="exchange_create_form_bank" class="form-label">New bank name</label>
-                            <input type="text" class="form-control" id="exchange_create_form_bank"
-                                placeholder="BANK_NAME">
-                        </div>
+                    <div class="mb-3">
+                        <label for="exchange_create_form_api" class="form-label">API</label>
+                        <select class="form-select" name="type" id="exchange_create_form_api">
+                            {% for api in exchangeApiList %}
+                            <option>{{api}}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-
+                    <div class="mb-3">
+                        <label for="exchange_create_form_bank" class="form-label">New bank name</label>
+                        <input type="text" class="form-control" name="name" id="exchange_create_form_bank"
+                            placeholder="BANK_NAME">
+                    </div>
+                    <div class="mb-3">
+                        <label for="exchange_create_form_json" class="form-label">Type-specific JSON</label>
+                        <textarea type="text" class="form-control" name="api_json" id="exchange_create_form_json"
+                            placeholder="{}"></textarea>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Create exchange</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
+<script>
+    document.getElementById("exchange_create_form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const data = new FormData(event.target);
+        const as_object = Object.fromEntries(data.entries());
+
+        fetch(`/c/exchanges`, {
+            method: 'POST',
+            body: JSON.stringify(as_object),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+        })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload()
+                } else {
+                    alert("Exchange create failed! " + response.statusText)
+                }
+            });
+    })
+</script>
