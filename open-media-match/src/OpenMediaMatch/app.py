@@ -16,6 +16,7 @@ import sys
 import random
 import typing as t
 
+import click
 import flask
 
 from OpenMediaMatch.storage.interface import IUnifiedStore
@@ -142,36 +143,32 @@ def create_app() -> flask.Flask:
         storage = get_storage()
         storage.bank_update(BankConfig(name=bank_name, matching_enabled_ratio=1.0))
 
-        st: t.Type[SignalType]
         for st in (PdqSignal, VideoMD5Signal):
             for example in st.get_examples():
                 storage.bank_add_content(bank_name, {st.get_name(): example})
 
     @app.cli.command("seed_enourmous")
-    def seed_enourmous():
+    @click.option("-b", "--banks", default=100, show_default=True)
+    @click.option("-s", "--seeds", default=10000, show_default=True)
+    def seed_enourmous(banks: int, seeds: int) -> None:
         """
         Seed the database with a large number of banks and hashes
-        run command with:
-        export OMM_SEED_BANKS=100
-        export OMM_SEED_HASHES=10000
-        or OMM_SEED_BANKS=100 OMM_SEED_HASHES=10000 flask seed_enourmous
         It will generate n banks and put n/m hashes on each bank
         """
-        # read from env for how many hashes to add\
-        banks_to_add = int(os.environ.get("OMM_SEED_BANKS", 100))
-        hashes_to_add = int(os.environ.get("OMM_SEED_HASHES", 10000))
         storage = get_storage()
 
-        for i in range(banks_to_add):
+        types: list[t.Type[SignalType]] = [PdqSignal, VideoMD5Signal]
+
+        for i in range(banks):
             # create bank
-            bank = BankConfig(name=f"TEST_BANK_{i}", matching_enabled_ratio=1.0)
+            bank = BankConfig(name=f"SEED_BANK_{i}", matching_enabled_ratio=1.0)
             storage.bank_update(bank, create=True)
 
             # Add hashes
-            for _ in range(hashes_to_add // banks_to_add):
+            for _ in range(seeds // banks):
                 # grab randomly either PDQ or MD5 signal
-                signal_type = random.choice([PdqSignal, VideoMD5Signal])
-                random_hash = signal_type.generate_random_hash()
+                signal_type = random.choice(types)
+                random_hash = signal_type.generate_random_hash()  # type: ignore[attr-defined]
 
                 storage.bank_add_content(bank.name, {signal_type: random_hash})
 
