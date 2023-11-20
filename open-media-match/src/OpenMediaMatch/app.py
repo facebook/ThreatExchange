@@ -14,12 +14,12 @@ import os
 import datetime
 import sys
 import random
+import typing as t
 
 import flask
-from flask.logging import default_handler
-import flask_migrate
 
-from OpenMediaMatch import database
+from OpenMediaMatch.storage.interface import IUnifiedStore
+from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 from OpenMediaMatch.background_tasks import (
     build_index,
     fetcher,
@@ -29,6 +29,7 @@ from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.storage.interface import BankConfig
 
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
@@ -61,8 +62,6 @@ def create_app() -> flask.Flask:
 
     app = flask.Flask(__name__)
 
-    migrate = flask_migrate.Migrate()
-
     if "OMM_CONFIG" in os.environ:
         app.config.from_envvar("OMM_CONFIG")
     elif sys.argv[0].endswith("/flask"):  # Default for flask CLI
@@ -75,9 +74,11 @@ def create_app() -> flask.Flask:
         SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
-
-    database.db.init_app(app)
-    migrate.init_app(app, database.db)
+    # Probably better to move this into a more normal looking default config
+    storage_cls = t.cast(
+        t.Type[IUnifiedStore], app.config.get("storage_cls", DefaultOMMStore)
+    )
+    app.config["storage_instance"] = storage_cls.init_flask(app)
 
     _setup_task_logging(app.logger)
 
@@ -93,7 +94,10 @@ def create_app() -> flask.Flask:
         """
         Liveness/readiness check endpoint for your favourite Layer 7 load balancer
         """
-        return "I-AM-ALIVE\n"
+        storage = get_storage()
+        if not storage.is_ready():
+            return "NOT-READY", 503
+        return "I-AM-ALIVE\n", 200
 
     @app.route("/site-map")
     def site_map():
@@ -128,53 +132,20 @@ def create_app() -> flask.Flask:
     if app.config.get("ROLE_CURATOR", False):
         app.register_blueprint(curation.bp, url_prefix="/c")
 
-    @app.cli.command("create_tables")
-    def create_tables():
-        """Create all the tables based on the database module"""
-        with app.app_context():
-            database.db.create_all()
-
-    @app.cli.command("table_stats")
-    def table_stats():
-        """Simple stats about the database"""
-        with app.app_context():
-            print("Banks:", database.Bank.query.count())
-            print("Contents:", database.BankContent.query.count())
-            print("Signals/Hashes:", database.ContentSignal.query.count())
-            print("Signals/Index:", database.SignalIndex.query.count())
-
-    @app.cli.command("reset_all_tables")
-    def reset_tables():
-        """Clears all the tables and recreates them"""
-        with app.app_context():
-            database.db.drop_all()
-            database.db.create_all()
-
     @app.cli.command("seed")
     def seed_data():
         """Insert plausible-looking data into the database layer"""
         from threatexchange.signal_type.pdq.signal import PdqSignal
 
-        bankName = "TEST_BANK"
-        contentList = []
-        for example in PdqSignal.get_examples():
-            contentList.append(
-                database.BankContent(
-                    signals=[
-                        database.ContentSignal(
-                            signal_type=PdqSignal.get_name(),
-                            signal_val=example,
-                        )
-                    ]
-                )
-            )
-        bank = database.Bank(
-            name=bankName,
-            content=contentList,
-        )
+        bank_name = "SEED_BANK"
 
-        database.db.session.add(bank)
-        database.db.session.commit()
+        storage = get_storage()
+        storage.bank_update(BankConfig(name=bank_name, matching_enabled_ratio=1.0))
+
+        st: t.Type[SignalType]
+        for st in (PdqSignal, VideoMD5Signal):
+            for example in st.get_examples():
+                storage.bank_add_content(bank_name, {st.get_name(): example})
 
     @app.cli.command("seed_enourmous")
     def seed_enourmous():

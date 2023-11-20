@@ -1,0 +1,37 @@
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#createExchange">
+    Create Exchange
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="createExchange" tabindex="-1" aria-labelledby="createExchangeLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="exchange_create_form">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="createExchangeLabel">Create Exchange</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label for="exchange_create_form_api" class="form-label">API</label>
+                            <input type="text" class="form-control" id="exchange_create_form_api">
+                        </div>
+                        <div class="col-12">
+                            <label for="exchange_create_form_bank" class="form-label">New bank name</label>
+                            <input type="text" class="form-control" id="exchange_create_form_bank"
+                                placeholder="BANK_NAME">
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Create exchange</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
