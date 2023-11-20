@@ -53,6 +53,10 @@ class Base(DeclarativeBase):
 db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
 
 
+def _bank_name_ok(name: str) -> bool:
+    return bool(re.fullmatch("[A-Z_][A-Z0-9_]*", name))
+
+
 class Bank(db.Model):  # type: ignore[name-defined]
     __tablename__ = "bank"
 
@@ -73,7 +77,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
 
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
-        if not re.fullmatch("[A-Z_][A-Z0-9_]*", name):
+        if not _bank_name_ok(name):
             raise ValueError("Bank names must be UPPER_WITH_UNDERSCORE")
         return name
 
@@ -182,9 +186,9 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
 
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
-        if not re.fullmatch("[A-Z_]+", name):
-            raise ValueError("Collaboration names must be UPPER_WITH_UNDERSCORE")
-        return name
+        if _bank_name_ok(name):
+            return name
+        raise ValueError("Collaboration names must be UPPER_WITH_UNDERSCORE")
 
 
 class SignalIndex(db.Model):  # type: ignore[name-defined]

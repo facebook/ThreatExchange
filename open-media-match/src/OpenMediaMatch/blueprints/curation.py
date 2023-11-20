@@ -178,6 +178,12 @@ def _get_collab(name: str):
 
 
 # Fetching/Exchanges (aka collaborations)
+@bp.route("/exchanges/apis", methods=["GET"])
+def exchange_api_list() -> list[str]:
+    exchange_apis = persistence.get_storage().get_exchange_type_configs()
+    return list(exchange_apis)
+
+
 @bp.route("/exchanges", methods=["POST"])
 def exchange_create():
     """
@@ -190,7 +196,7 @@ def exchange_create():
     data = request.get_json()
     name = utils.require_json_param("name")
 
-    if not re.match("^[A-Z_]+$", name):
+    if not re.match("^[A-Z0-9_]+$", name):
         abort(400, "Field `name` must match /^[A-Z_]$/")
 
     if "type" not in data:
@@ -199,14 +205,10 @@ def exchange_create():
     if not isinstance(data.get("additional_config", {}), dict):
         abort(400, "Field `additional_config` must be object")
 
-    exchange = database.Exchange(
+    exchange = database.CollaborationConfig(
         name=name,
-        type=data.get("type"),
-        fetching_enabled=bool(data.get("fetching_enabled", True)),
-        seen_enabled=bool(data.get("seen_enabled", True)),
-        report_true_positive=bool(data.get("report_true_positive", True)),
-        report_false_positive=bool(data.get("report_false_positive", True)),
-        additional_config=data.get("additional_config", {}),
+        api_cls=data.get("type"),
+        typed_config=data.get("additional_config", {}),
     )
     database.db.session.add(exchange)
     database.db.session.commit()
