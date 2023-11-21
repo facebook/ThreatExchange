@@ -9,7 +9,7 @@ from threatexchange.exchanges.fetch_state import CollaborationConfigBase
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.storage.interface import ICollaborationStore, SignalType
+from OpenMediaMatch.storage.interface import ISignalExchangeStore, SignalType
 
 logger = logging.getLogger(__name__)
 
@@ -21,21 +21,21 @@ def apscheduler_fetch_all() -> None:
 
 
 def fetch_all(
-    collab_store: ICollaborationStore,
+    collab_store: ISignalExchangeStore,
     enabled_signal_types: t.Mapping[str, t.Type[SignalType]],
 ) -> None:
     """
     For all collaborations registered with OMM, fetch()
     """
     logger.info("Running the %s background task", fetch_all.__name__)
-    collabs = collab_store.get_collaborations()
+    collabs = collab_store.exchanges_get()
     for c in collabs.values():
         fetch(collab_store, enabled_signal_types, c)
     logger.info("Completed %s background task", fetch_all.__name__)
 
 
 def fetch(
-    config: ICollaborationStore,
+    config: ISignalExchangeStore,
     enabled_signal_types: t.Mapping[str, t.Type[SignalType]],
     collab: CollaborationConfigBase,
 ):

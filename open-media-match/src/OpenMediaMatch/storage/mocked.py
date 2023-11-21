@@ -41,9 +41,6 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             for c in (PhotoContent, VideoContent)
         }
 
-    def get_exchange_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
-        return {e.get_name(): e for e in (StaticSampleSignalExchangeAPI,)}
-
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         # Needed to bamboozle mypy into working
         s_types: t.Sequence[t.Type[SignalType]] = (PdqSignal, VideoMD5Signal)
@@ -79,8 +76,19 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
         return None
 
-    # Collabs
-    def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
+    # Exchanges
+    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
+        return {e.get_name(): e for e in (StaticSampleSignalExchangeAPI,)}
+
+    def exchange_update(
+        self, cfg: CollaborationConfigBase, *, create: bool = False
+    ) -> None:
+        raise Exception("Not implemented")
+
+    def exchange_delete(self, name: str) -> None:
+        raise Exception("Not implemented")
+
+    def exchanges_get(self) -> t.Dict[str, CollaborationConfigBase]:
         cfg_cls = StaticSampleSignalExchangeAPI.get_config_cls()
         return {
             c.name: c
@@ -91,12 +99,12 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             )
         }
 
-    def get_collab_fetch_checkpoint(
+    def exchange_get_fetch_checkpoint(
         self, collab: CollaborationConfigBase
     ) -> t.Optional[FetchCheckpointBase]:
         return None
 
-    def commit_collab_fetch_data(
+    def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
         dat: t.Dict[str, t.Any],
@@ -104,7 +112,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     ):
         pass
 
-    def get_collab_data(
+    def exchange_get_data(
         self,
         collab_name: str,
         key: str,

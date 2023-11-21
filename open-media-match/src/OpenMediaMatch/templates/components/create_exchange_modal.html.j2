@@ -24,7 +24,7 @@
                     <div class="mb-3">
                         <label for="exchange_create_form_bank" class="form-label">New bank name</label>
                         <input type="text" class="form-control" name="name" id="exchange_create_form_bank"
-                            placeholder="BANK_NAME">
+                            placeholder="BANK_NAME" required>
                     </div>
                     <div class="mb-3">
                         <label for="exchange_create_form_json" class="form-label">Type-specific JSON</label>
@@ -58,7 +58,8 @@
                 if (response.ok) {
                     window.location.reload()
                 } else {
-                    alert("Exchange create failed! " + response.statusText)
+                    json = await response.json()
+                    alert("Exchange create failed! " + response.statusText + " : " + json)
                 }
             });
     })
