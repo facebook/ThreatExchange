@@ -197,7 +197,7 @@ def exchange_create():
     data = request.get_json()
     bank = utils.require_json_param("bank")
     api_json = data.get("api_json", {})
-    api_type_name = data.get("type")
+    api_type_name = data.get("api")
 
     if not re.match("^[A-Z0-9_]+$", bank):
         abort(400, "Field `bank` must match /^[A-Z0-9_]$/")
@@ -216,13 +216,11 @@ def exchange_create():
 
     # Rehydrate our dict with the expected fields
     api_json["name"] = bank
-    api_json["enabled"] = True
+    api_json.setdefault("enabled", True)
     api_json["api"] = api_type_name
 
     try:
-        cfg = dataclass_json.dataclass_load_dict(
-            api_json, api_type.get_config_cls()
-        )  # type: ignore[return-value]
+        cfg = dataclass_json.dataclass_load_dict(api_json, api_type.get_config_cls())
     except Exception:
         abort(
             400,

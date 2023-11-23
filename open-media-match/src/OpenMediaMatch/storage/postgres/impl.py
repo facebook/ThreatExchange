@@ -183,7 +183,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         else:
             exchange = database.db.session.execute(
                 select(database.CollaborationConfig)
-            ).one()
+            ).scalar_one()
         exchange.set_typed_config(cfg)
         database.db.session.add(exchange)
         database.db.session.commit()
