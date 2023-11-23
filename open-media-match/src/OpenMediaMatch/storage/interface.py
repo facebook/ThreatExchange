@@ -119,16 +119,6 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
         }
 
 
-class ISignalExchangeConfigStore(metaclass=abc.ABCMeta):
-    """Interface for accessing SignalExchange configuration"""
-
-    @abc.abstractmethod
-    def get_exchange_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
-        """
-        Return all installed SignalExchange types.
-        """
-
-
 @dataclass
 class SignalTypeIndexBuildCheckpoint:
     """
@@ -201,9 +191,36 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         """
 
 
-class ICollaborationStore(metaclass=abc.ABCMeta):
+class ISignalExchangeStore(metaclass=abc.ABCMeta):
+    """Interface for accessing SignalExchange configuration"""
+
     @abc.abstractmethod
-    def get_collaborations(self) -> t.Mapping[str, CollaborationConfigBase]:
+    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
+        """
+        Return all installed SignalExchange types.
+        """
+
+    @abc.abstractmethod
+    def exchange_update(
+        self, cfg: CollaborationConfigBase, *, create: bool = False
+    ) -> None:
+        """
+        Create or update a collaboration/exchange.
+
+        If create is false, if the name doesn't .
+        If create is true, if the name already exists it will throw
+        """
+
+    @abc.abstractmethod
+    def exchange_delete(self, name: str) -> None:
+        """
+        Delete collaboration/exchange.
+
+        No exception is thrown if a config with that name doesn't exist
+        """
+
+    @abc.abstractmethod
+    def exchanges_get(self) -> t.Mapping[str, CollaborationConfigBase]:
         """
         Get all collaboration configs.
 
@@ -211,12 +228,12 @@ class ICollaborationStore(metaclass=abc.ABCMeta):
         sources to banks of labeled content locally.
         """
 
-    def get_collaboration(self, name: str) -> t.Optional[CollaborationConfigBase]:
+    def exchange_get(self, name: str) -> t.Optional[CollaborationConfigBase]:
         """Get one collaboration config, if it exists"""
-        return self.get_collaborations().get(name)
+        return self.exchanges_get().get(name)
 
     @abc.abstractmethod
-    def get_collab_fetch_checkpoint(
+    def exchange_get_fetch_checkpoint(
         self, collab: CollaborationConfigBase
     ) -> t.Optional[FetchCheckpointBase]:
         """
@@ -227,7 +244,7 @@ class ICollaborationStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def commit_collab_fetch_data(
+    def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
         dat: t.Dict[str, t.Any],
@@ -240,7 +257,7 @@ class ICollaborationStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def get_collab_data(
+    def exchange_get_data(
         self,
         collab_name: str,
         key: str,
@@ -416,9 +433,8 @@ class IBankStore(metaclass=abc.ABCMeta):
 class IUnifiedStore(
     IContentTypeConfigStore,
     ISignalTypeConfigStore,
-    ISignalExchangeConfigStore,
+    ISignalExchangeStore,
     ISignalTypeIndexStore,
-    ICollaborationStore,
     IBankStore,
     metaclass=abc.ABCMeta,
 ):

@@ -15,7 +15,8 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="exchange_create_form_api" class="form-label">API</label>
-                        <select class="form-select" name="type" id="exchange_create_form_api">
+                        <select class="form-select" name="api" id="exchange_create_form_api" required>
+                            <option selected disabled value="">Select API</option>
                             {% for api in exchangeApiList %}
                             <option>{{api}}</option>
                             {% endfor %}
@@ -23,8 +24,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="exchange_create_form_bank" class="form-label">New bank name</label>
-                        <input type="text" class="form-control" name="name" id="exchange_create_form_bank"
-                            placeholder="BANK_NAME">
+                        <input type="text" class="form-control" name="bank" id="exchange_create_form_bank"
+                            placeholder="BANK_NAME" required>
                     </div>
                     <div class="mb-3">
                         <label for="exchange_create_form_json" class="form-label">Type-specific JSON</label>
@@ -41,10 +42,15 @@
     </div>
 </div>
 <script>
-    document.getElementById("exchange_create_form").addEventListener("submit", (event) => {
+    document.getElementById("exchange_create_form").addEventListener("submit", async event => {
         event.preventDefault();
         const data = new FormData(event.target);
         const as_object = Object.fromEntries(data.entries());
+        const reload = window.location
+        if (!data.get("api_json")) {
+            as_object["api_json"] = {}
+        }
+        console.log(JSON.stringify(as_object, null, 2));
 
         fetch(`/c/exchanges`, {
             method: 'POST',
@@ -54,11 +60,12 @@
                 'Content-Type': 'application/json'
             },
         })
-            .then(response => {
+            .then(async response => {
                 if (response.ok) {
-                    window.location.reload()
+                    window.location.reload();
                 } else {
-                    alert("Exchange create failed! " + response.statusText)
+                    json = await response.json()
+                    alert("Exchange create failed! " + response.statusText + " : " + (json['message'] ?? '<no message>)'))
                 }
             });
     })

@@ -22,7 +22,7 @@ from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
 )
 
-from OpenMediaMatch.storage.postgres import database
+from OpenMediaMatch.storage.postgres import database, flask_utils
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.mocked import MockedUnifiedStore
 from OpenMediaMatch.storage.interface import (
@@ -74,9 +74,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         # TODO
         return MockedUnifiedStore().get_content_type_configs()
 
-    def get_exchange_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
+    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
         # TODO
-        return MockedUnifiedStore().get_exchange_type_configs()
+        return MockedUnifiedStore().exchange_get_type_configs()
 
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         # If a signal is installed, then it is enabled by default. But it may be disabled by an
@@ -175,30 +175,56 @@ class DefaultOMMStore(interface.IUnifiedStore):
         )
 
     # Collabs
-    def get_collaborations(self) -> t.Dict[str, CollaborationConfigBase]:
-        # TODO
-        return MockedUnifiedStore().get_collaborations()
+    def exchange_update(
+        self, cfg: CollaborationConfigBase, *, create: bool = False
+    ) -> None:
+        if create:
+            exchange = database.CollaborationConfig()
+        else:
+            exchange = database.db.session.execute(
+                select(database.CollaborationConfig)
+            ).scalar_one()
+        exchange.set_typed_config(cfg)
+        database.db.session.add(exchange)
+        database.db.session.commit()
 
-    def get_collab_fetch_checkpoint(
+    def exchange_delete(self, name: str) -> None:
+        database.db.session.execute(
+            delete(database.CollaborationConfig).where(
+                database.CollaborationConfig.name == name
+            )
+        )
+        database.db.session.commit()
+
+    def exchanges_get(self) -> t.Dict[str, CollaborationConfigBase]:
+        types = self.exchange_get_type_configs()
+
+        results = database.db.session.execute(
+            select(database.CollaborationConfig)
+        ).scalars()
+
+        return {cfg.name: cfg.as_storage_iface_cls(types) for cfg in results}
+
+    def exchange_get_fetch_checkpoint(
         self, collab: CollaborationConfigBase
     ) -> t.Optional[FetchCheckpointBase]:
-        return MockedUnifiedStore().get_collab_fetch_checkpoint(collab)
+        return MockedUnifiedStore().exchange_get_fetch_checkpoint(collab)
 
-    def commit_collab_fetch_data(
+    def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
         dat: t.Dict[str, t.Any],
         checkpoint: FetchCheckpointBase,
     ) -> None:
-        MockedUnifiedStore().commit_collab_fetch_data(collab, dat, checkpoint)
+        MockedUnifiedStore().exchange_commit_fetch(collab, dat, checkpoint)
 
-    def get_collab_data(
+    def exchange_get_data(
         self,
         collab_name: str,
         key: str,
         checkpoint: FetchCheckpointBase,
     ) -> t.Any:
-        return MockedUnifiedStore().get_collab_data(collab_name, key, checkpoint)
+        return MockedUnifiedStore().exchange_get_data(collab_name, key, checkpoint)
 
     def get_banks(self) -> t.Mapping[str, BankConfig]:
         return {
@@ -355,6 +381,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         migrate = flask_migrate.Migrate()
         database.db.init_app(app)
         migrate.init_app(app, database.db)
+
+        flask_utils.add_cli_commands(app)
 
         signal_types = app.config.get("SIGNAL_TYPES", [PdqSignal, VideoMD5Signal])
         return cls(signal_types)

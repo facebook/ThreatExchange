@@ -156,7 +156,7 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
         return self
 
     def as_storage_iface_cls(
-        self, exchange_types: t.Dict[str, TSignalExchangeAPICls]
+        self, exchange_types: t.Mapping[str, TSignalExchangeAPICls]
     ) -> CollaborationConfigBase:
         exchange_cls = exchange_types.get(self.api_cls)
         if exchange_cls is None:

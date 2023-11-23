@@ -1,4 +1,4 @@
-<div class="row row-cols-1 row-cols-md-2 mb-3 text-center">
+<div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
     <div class="col">
         <div class="card rounded-3 shadow-sm">
             <div class="card-header py-3">
@@ -22,6 +22,20 @@
                 <ul class="list-unstyled mt-3">
                     {% for c in content %}
                     <li> {{c['name']}}: {% if c['enabled'] %} Enabled {% else %} Disabled {% endif %} </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card rounded-3 shadow-sm">
+            <div class="card-header py-3">
+                <h4 class="my-0 fw-normal">Exchange Types</h4>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mt-3">
+                    {% for name in exchangeApiList %}
+                    <li> {{name}} </li>
                     {% endfor %}
                 </ul>
             </div>

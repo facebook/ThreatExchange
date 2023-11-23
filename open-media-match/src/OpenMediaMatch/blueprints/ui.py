@@ -31,7 +31,7 @@ def _index_info() -> dict[str, dict[str, t.Any]]:
 
 
 def _collab_info() -> dict[str, dict[str, t.Any]]:
-    collabs = get_storage().get_collaborations()
+    collabs = get_storage().exchanges_get()
     return {
         name: {
             "api": cfg.api,

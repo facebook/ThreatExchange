@@ -4,6 +4,7 @@ import typing as t
 from flask import Blueprint
 from flask import request, jsonify, abort
 from sqlalchemy.exc import IntegrityError
+from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.signal_base import SignalType
 from werkzeug.exceptions import HTTPException
 
@@ -171,7 +172,7 @@ def bank_add_as_signals(bank_name: str):
 
 def _get_collab(name: str):
     storage = persistence.get_storage()
-    collab = storage.get_collaboration(name)
+    collab = storage.exchange_get(name)
     if collab is None:
         abort(404, f"Exchange '{name}' not found")
     return collab
@@ -180,7 +181,7 @@ def _get_collab(name: str):
 # Fetching/Exchanges (aka collaborations)
 @bp.route("/exchanges/apis", methods=["GET"])
 def exchange_api_list() -> list[str]:
-    exchange_apis = persistence.get_storage().get_exchange_type_configs()
+    exchange_apis = persistence.get_storage().exchange_get_type_configs()
     return list(exchange_apis)
 
 
@@ -194,25 +195,41 @@ def exchange_create():
      * Exchange-specific arguments (depends on SignalExchangeAPI)
     """
     data = request.get_json()
-    name = utils.require_json_param("name")
+    bank = utils.require_json_param("bank")
+    api_json = data.get("api_json", {})
+    api_type_name = data.get("api")
 
-    if not re.match("^[A-Z0-9_]+$", name):
-        abort(400, "Field `name` must match /^[A-Z_]$/")
+    if not re.match("^[A-Z0-9_]+$", bank):
+        abort(400, "Field `bank` must match /^[A-Z0-9_]$/")
 
-    if "type" not in data:
-        abort(400, "Field `type` is required")
+    if not isinstance(api_json, dict):
+        abort(400, "Field `api_json` must be object")
 
-    if not isinstance(data.get("additional_config", {}), dict):
-        abort(400, "Field `additional_config` must be object")
+    storage = persistence.get_storage()
+    api_types = storage.exchange_get_type_configs()
 
-    exchange = database.CollaborationConfig(
-        name=name,
-        api_cls=data.get("type"),
-        typed_config=data.get("additional_config", {}),
-    )
-    database.db.session.add(exchange)
-    database.db.session.commit()
-    return jsonify({"message": "Created successfully"}), 201
+    if api_type_name is None:
+        abort(400, "Field `api_type` is required")
+    if api_type_name not in api_types:
+        abort(400, f"No such exchange type '{api_type_name}'")
+    api_type = api_types[api_type_name]
+
+    # Rehydrate our dict with the expected fields
+    api_json["name"] = bank
+    api_json.setdefault("enabled", True)
+    api_json["api"] = api_type_name
+
+    try:
+        cfg = dataclass_json.dataclass_load_dict(api_json, api_type.get_config_cls())
+    except Exception:
+        abort(
+            400,
+            "Failed to parse `api_json` - did you provide all the fields needed for your api cls?",
+        )
+
+    storage.exchange_update(cfg, create=True)
+
+    return {"message": "Created successfully"}, 201
 
 
 @bp.route("/exchanges", methods=["GET"])
@@ -228,7 +245,7 @@ def exchange_list():
     ]
     """
     storage = persistence.get_storage()
-    return [name for name in storage.get_collaborations()]
+    return [name for name in storage.exchanges_get()]
 
 
 @bp.route("/exchange/<string:exchange_name>", methods=["GET"])
@@ -306,7 +323,7 @@ def exchange_delete(exchange_name: str):
     }
     """
     storage = persistence.get_storage()
-    collab = storage.get_collaboration(exchange_name)
+    collab = storage.exchange_get(exchange_name)
     if collab is None:
         return {"message": "success"}
     abort(501, "Not yet implemented")
