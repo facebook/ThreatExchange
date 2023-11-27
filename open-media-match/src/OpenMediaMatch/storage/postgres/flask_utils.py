@@ -25,5 +25,6 @@ def add_cli_commands(app: flask.Flask) -> None:
     def reset_tables():
         """Clears all the tables and recreates them"""
         with app.app_context():
+            # drop_all not smart enough to drop in the right order
             database.db.drop_all()
             database.db.create_all()

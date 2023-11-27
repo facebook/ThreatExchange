@@ -9,7 +9,6 @@ slower than just slinging sql on the tables, so you may see direct
 references which are meant to be reaped at some future time.
 """
 
-import enum
 import io
 import typing as t
 import re
@@ -28,11 +27,20 @@ from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     TCollabConfig,
 )
+from threatexchange.exchanges.fetch_state import FetchCheckpointBase
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
 import flask_sqlalchemy
-from sqlalchemy import String, Text, ForeignKey, JSON, LargeBinary, Index, BigInteger
+from sqlalchemy import (
+    String,
+    Text,
+    ForeignKey,
+    JSON,
+    LargeBinary,
+    Index,
+    BigInteger,
+)
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -148,6 +156,14 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
     # CollaborationConfig.
     typed_config: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
 
+    fetch_status: Mapped[t.Optional["ExchangeFetchStatus"]] = relationship(
+        "ExchangeFetchStatus",
+        back_populates="collab",
+        cascade="all, delete",
+        passive_deletes=True,
+        uselist=False,
+    )
+
     def set_typed_config(self, cfg: CollaborationConfigBase) -> t.Self:
         self.name = cfg.name
         self.fetching_enabled = cfg.enabled
@@ -184,11 +200,46 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
             self.typed_config, cls
         )  # type: ignore[return-value]
 
+    def as_checkpoint(
+        self, exchange_types: t.Mapping[str, TSignalExchangeAPICls]
+    ) -> t.Optional[FetchCheckpointBase]:
+        fetch_status = self.fetch_status
+        if fetch_status is None:
+            return None
+        checkpoint_json = fetch_status.checkpoint_json
+        if checkpoint_json is None:
+            return None
+        api_cls = exchange_types.get(self.name)
+        if api_cls is None:
+            return None
+
+        return dataclass_json.dataclass_load_dict(
+            checkpoint_json, api_cls.get_checkpoint_cls()
+        )
+
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
         if _bank_name_ok(name):
             return name
         raise ValueError("Collaboration names must be UPPER_WITH_UNDERSCORE")
+
+
+class ExchangeFetchStatus(db.Model):  # type: ignore[name-defined]
+    collab_id: Mapped[int] = mapped_column(
+        ForeignKey(CollaborationConfig.id, ondelete="CASCADE"), primary_key=True
+    )
+    collab: Mapped["CollaborationConfig"] = relationship(
+        "CollaborationConfig",
+        back_populates="fetch_status",
+        uselist=False,
+        single_parent=True,
+    )
+
+    running_fetch_start_ts: Mapped[t.Optional[int]] = mapped_column(BigInteger)
+    # I tried to make this an enum, but postgres enums malfunction with drop_all()
+    last_fetch_succeeded: Mapped[t.Optional[bool]]
+    last_fetch_complete_ts: Mapped[int] = mapped_column(BigInteger)
+    checkpoint_json: Mapped[t.Optional[t.Dict[str, t.Any]]] = mapped_column(JSON)
 
 
 class SignalIndex(db.Model):  # type: ignore[name-defined]

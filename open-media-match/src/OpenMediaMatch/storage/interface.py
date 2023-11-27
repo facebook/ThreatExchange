@@ -30,6 +30,7 @@ from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
 )
 from threatexchange.exchanges.signal_exchange_api import (
+    TSignalExchangeAPI,
     TSignalExchangeAPICls,
 )
 
@@ -201,6 +202,12 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
+        """
+        Returns an initialized and authenticated client for an API.
+        """
+
+    @abc.abstractmethod
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
     ) -> None:
@@ -247,13 +254,23 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
+        old_checkpoint: t.Optional[FetchCheckpointBase],
+        # The merged data from sequential fetches of the API
         dat: t.Dict[str, t.Any],
+        # The last checkpoint recieved by the API
         checkpoint: FetchCheckpointBase,
+        # If the API has reported that all data has been fetched
+        up_to_date: bool,
     ) -> None:
         """
         Commit a sequentially fetched set of data from a fetch().
 
-        Advances the checkpoint if it's different than the previous one.
+        The old checkpoint can be used in two ways:
+            1. As a very weak attempt to prevent stomping old data in the
+               case of two process trying to commit at the same time.
+            2. If is_stale() is true, the storage can attempt to do something
+               smarter than dropping all data and reloading, which can prevent
+               the index from "flapping" if all the data is the same.
         """
 
     @abc.abstractmethod
