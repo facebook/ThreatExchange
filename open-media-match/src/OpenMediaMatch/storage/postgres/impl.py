@@ -12,6 +12,7 @@ from sqlalchemy import select, delete, func, Select
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
 
+from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
@@ -205,10 +206,20 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         return {cfg.name: cfg.as_storage_iface_cls(types) for cfg in results}
 
+    def _exchange_get_cfg(self, name: str) -> t.Optional[database.CollaborationConfig]:
+        return database.db.session.execute(
+            select(database.CollaborationConfig).where(
+                database.CollaborationConfig.name == name
+            )
+        ).scalar_one_or_none()
+
     def exchange_get_fetch_checkpoint(
         self, collab: CollaborationConfigBase
     ) -> t.Optional[FetchCheckpointBase]:
-        return MockedUnifiedStore().exchange_get_fetch_checkpoint(collab)
+        collab_config = self._exchange_get_cfg(collab.name)
+        if collab_config is None:
+            return None
+        return collab_config.as_checkpoint(self.exchange_get_type_configs())
 
     def exchange_commit_fetch(
         self,
