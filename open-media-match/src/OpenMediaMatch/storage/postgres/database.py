@@ -27,6 +27,7 @@ from threatexchange.exchanges.signal_exchange_api import (
     SignalExchangeAPI,
     TCollabConfig,
 )
+from threatexchange.exchanges.fetch_state import FetchCheckpointBase
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
@@ -201,7 +202,7 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
 
     def as_checkpoint(
         self, exchange_types: t.Mapping[str, TSignalExchangeAPICls]
-    ) -> t.Optional[CollaborationConfigBase]:
+    ) -> t.Optional[FetchCheckpointBase]:
         fetch_status = self.fetch_status
         if fetch_status is None:
             return None

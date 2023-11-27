@@ -177,18 +177,17 @@ def create_app() -> flask.Flask:
     @app.cli.command("fetch")
     def fetch():
         """Run the 'background task' to fetch from 3p data and sync to local banks"""
+        app.logger.setLevel(logging.DEBUG)
         storage = get_storage()
         fetcher.fetch_all(
             storage,
-            {
-                st.signal_type.get_name(): st.signal_type
-                for st in storage.get_signal_type_configs().values()
-            },
+            storage.get_signal_type_configs(),
         )
 
     @app.cli.command("build_indices")
     def build_indices():
         """Run the 'background task' to rebuild indices from bank contents"""
+        app.logger.setLevel(logging.DEBUG)
         storage = get_storage()
         build_index.build_all_indices(storage, storage, storage)
 

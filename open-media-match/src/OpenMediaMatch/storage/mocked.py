@@ -4,7 +4,10 @@ import typing as t
 
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
-from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
+from threatexchange.exchanges.signal_exchange_api import (
+    TSignalExchangeAPICls,
+    TSignalExchangeAPI,
+)
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.pdq.signal import PdqSignal
@@ -80,6 +83,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
         return {e.get_name(): e for e in (StaticSampleSignalExchangeAPI,)}
 
+    def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
+        return self.exchange_get_type_configs()[api_cls_name]()
+
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
     ) -> None:
@@ -107,8 +113,10 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
+        old_checkpoint: t.Optional[FetchCheckpointBase],
         dat: t.Dict[str, t.Any],
         checkpoint: FetchCheckpointBase,
+        up_to_date: bool,
     ):
         pass
 

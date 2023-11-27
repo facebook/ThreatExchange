@@ -12,10 +12,12 @@ from sqlalchemy import select, delete, func, Select
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
 
-from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
-from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
+from threatexchange.exchanges.signal_exchange_api import (
+    TSignalExchangeAPICls,
+    TSignalExchangeAPI,
+)
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.exchanges.fetch_state import (
@@ -78,6 +80,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
         # TODO
         return MockedUnifiedStore().exchange_get_type_configs()
+
+    def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
+        # TODO
+        return MockedUnifiedStore().exchange_get_api_instance(api_cls_name)
 
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         # If a signal is installed, then it is enabled by default. But it may be disabled by an
@@ -224,10 +230,14 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
+        old_checkpoint: t.Optional[FetchCheckpointBase],
         dat: t.Dict[str, t.Any],
         checkpoint: FetchCheckpointBase,
+        up_to_date: bool,
     ) -> None:
-        MockedUnifiedStore().exchange_commit_fetch(collab, dat, checkpoint)
+        MockedUnifiedStore().exchange_commit_fetch(
+            collab, old_checkpoint, dat, checkpoint, up_to_date
+        )
 
     def exchange_get_data(
         self,
