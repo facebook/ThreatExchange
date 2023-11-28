@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import time
 import typing as t
 
 from flask import Blueprint, abort, render_template, current_app
@@ -31,17 +32,50 @@ def _index_info() -> dict[str, dict[str, t.Any]]:
 
 
 def _collab_info() -> dict[str, dict[str, t.Any]]:
-    collabs = get_storage().exchanges_get()
-    return {
-        name: {
+    storage = get_storage()
+    collabs = storage.exchanges_get()
+    ret = {}
+    for name, cfg in collabs.items():
+        # serial db fetch, yay!
+        fetch_status = storage.exchange_get_fetch_status(name)
+        progress = 50
+        if fetch_status.last_fetch_complete_ts is None:
+            progress = 0
+        elif fetch_status.up_to_date:
+            progress = 100
+        # TODO add some idea of progress to the checkpoint class
+
+        progress_style = "bg-success" if progress == 100 else "bg-info"
+        if fetch_status.last_fetch_succeeded is False:
+            progress_style = "bg-danger"
+
+        last_run_time = fetch_status.last_fetch_complete_ts
+        if fetch_status.running_fetch_start_ts is not None:
+            progress_style += " progress-bar-striped progress-bar-animated"
+            last_run_time = fetch_status.running_fetch_start_ts
+
+        last_run_text = "Never"
+        if last_run_time is not None:
+            diff = max(int(time.time() - last_run_time), 0)
+            last_run_text = "Ages"
+            if diff < 3600:
+                last_run_text = ""
+                if diff > 60:
+                    last_run_text = f"{diff // 60}m"
+                    diff %= 60
+                if not last_run_text or diff > 0:
+                    last_run_text += f" {diff}s"
+                last_run_text += " ago"
+
+        ret[name] = {
             "api": cfg.api,
             "bank": name.removeprefix("c-"),
-            "progress_style": "",
-            "progress_pct": 0,
-            "progress_label": "Not yet implemented",
+            "count": fetch_status.fetched_items,
+            "progress_style": progress_style,
+            "progress_pct": progress,
+            "last_run_text": last_run_text,
         }
-        for name, cfg in collabs.items()
-    }
+    return ret
 
 
 @bp.route("/")

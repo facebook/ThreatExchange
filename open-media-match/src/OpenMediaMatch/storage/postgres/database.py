@@ -17,6 +17,7 @@ import datetime
 from OpenMediaMatch.storage.interface import (
     BankConfig,
     BankContentConfig,
+    FetchStatus,
     SignalTypeIndexBuildCheckpoint,
     BankContentIterationItem,
 )
@@ -39,6 +40,7 @@ from sqlalchemy import (
     JSON,
     LargeBinary,
     Index,
+    UniqueConstraint,
     BigInteger,
 )
 from sqlalchemy.orm import (
@@ -206,16 +208,18 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
         fetch_status = self.fetch_status
         if fetch_status is None:
             return None
-        checkpoint_json = fetch_status.checkpoint_json
-        if checkpoint_json is None:
-            return None
         api_cls = exchange_types.get(self.name)
         if api_cls is None:
             return None
+        return fetch_status.as_checkpoint(api_cls)
 
-        return dataclass_json.dataclass_load_dict(
-            checkpoint_json, api_cls.get_checkpoint_cls()
-        )
+    def status_as_storage_iface_cls(
+        self, exchange_types: t.Mapping[str, TSignalExchangeAPICls]
+    ) -> FetchStatus:
+        fetch_status = self.fetch_status
+        if fetch_status is None:
+            return FetchStatus.get_default()
+        return fetch_status.as_storage_iface_cls()
 
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
@@ -238,8 +242,60 @@ class ExchangeFetchStatus(db.Model):  # type: ignore[name-defined]
     running_fetch_start_ts: Mapped[t.Optional[int]] = mapped_column(BigInteger)
     # I tried to make this an enum, but postgres enums malfunction with drop_all()
     last_fetch_succeeded: Mapped[t.Optional[bool]]
-    last_fetch_complete_ts: Mapped[int] = mapped_column(BigInteger)
+    last_fetch_complete_ts: Mapped[t.Optional[int]] = mapped_column(BigInteger)
+
+    is_up_to_date: Mapped[bool] = mapped_column(default=False)
+
+    # Storing the ts separately means we can check the timestamp without deserializing
+    # the checkpoint
+    checkpoint_ts: Mapped[t.Optional[int]] = mapped_column(BigInteger)
     checkpoint_json: Mapped[t.Optional[t.Dict[str, t.Any]]] = mapped_column(JSON)
+
+    def as_checkpoint(
+        self, api_cls: t.Optional[TSignalExchangeAPICls]
+    ) -> t.Optional[FetchCheckpointBase]:
+        if api_cls is None:
+            return None
+        checkpoint_json = self.checkpoint_json
+        if checkpoint_json is None:
+            return None
+        return dataclass_json.dataclass_load_dict(
+            checkpoint_json, api_cls.get_checkpoint_cls()
+        )
+
+    def set_checkpoint(self, checkpoint: FetchCheckpointBase) -> None:
+        self.checkpoint_json = dataclass_json.dataclass_dump_dict(checkpoint)
+        self.checkpoint_ts = checkpoint.get_progress_timestamp()
+
+    def as_storage_iface_cls(self) -> FetchStatus:
+        return FetchStatus(
+            checkpoint_ts=self.checkpoint_ts,
+            running_fetch_start_ts=self.running_fetch_start_ts,
+            last_fetch_complete_ts=self.last_fetch_complete_ts,
+            last_fetch_succeeded=self.last_fetch_succeeded,
+            up_to_date=self.is_up_to_date,
+            fetched_items=0,
+        )
+
+
+class ExchangeData(db.Model):  # type: ignore[name-defined]
+    id: Mapped[int] = mapped_column(primary_key=True)
+    collab_id: Mapped[int] = mapped_column(
+        ForeignKey(CollaborationConfig.id, ondelete="CASCADE"), index=True
+    )
+
+    fetch_id: Mapped[str] = mapped_column(String(255))
+    fetch_data: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
+
+    # TODO - seen/TP/FP status
+
+    collab: Mapped["CollaborationConfig"] = relationship(
+        "CollaborationConfig",
+        uselist=False,
+        single_parent=True,
+    )
+
+    __table_args__ = (UniqueConstraint("collab_id", "fetch_id"),)
 
 
 class SignalIndex(db.Model):  # type: ignore[name-defined]

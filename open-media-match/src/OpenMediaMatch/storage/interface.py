@@ -192,6 +192,34 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         """
 
 
+@dataclass(kw_only=True)
+class FetchStatus:
+    checkpoint_ts: t.Optional[int]
+
+    running_fetch_start_ts: t.Optional[int]
+
+    last_fetch_complete_ts: t.Optional[int]
+    last_fetch_succeeded: t.Optional[bool]
+    up_to_date: bool
+
+    fetched_items: int
+
+    @property
+    def fetch_in_progress(self) -> bool:
+        return self.running_fetch_start_ts is not None
+
+    @classmethod
+    def get_default(cls) -> t.Self:
+        return cls(
+            checkpoint_ts=None,
+            running_fetch_start_ts=None,
+            last_fetch_complete_ts=None,
+            last_fetch_succeeded=None,
+            up_to_date=False,
+            fetched_items=0,
+        )
+
+
 class ISignalExchangeStore(metaclass=abc.ABCMeta):
     """Interface for accessing SignalExchange configuration"""
 
@@ -240,14 +268,19 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         return self.exchanges_get().get(name)
 
     @abc.abstractmethod
+    def exchange_get_fetch_status(self, name: str) -> FetchStatus:
+        """
+        Get the last fetch status.
+        """
+
+    @abc.abstractmethod
     def exchange_get_fetch_checkpoint(
-        self, collab: CollaborationConfigBase
+        self, name: str
     ) -> t.Optional[FetchCheckpointBase]:
         """
-        Get the last saved checkpoint for the fetch of this collaboration.
+        Get the last fetch checkpoint.
 
-        If there is no previous fetch, returns None, indicating the fetch
-        should start from the beginning.
+        If there is no previous fetch, returns None.
         """
 
     @abc.abstractmethod

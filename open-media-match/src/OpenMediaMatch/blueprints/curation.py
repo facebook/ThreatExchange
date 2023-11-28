@@ -264,7 +264,7 @@ def exchange_show_by_name(exchange_name: str):
       ...
     }
     """
-    return _get_collab(exchange_name)
+    return jsonify(_get_collab(exchange_name))
 
 
 @bp.route("/exchange/<string:exchange_name>/status")
@@ -283,8 +283,11 @@ def exchange_get_fetch_status(exchange_name: str):
         success: true
     }
     """
-    collab = _get_collab(exchange_name)
-    abort(501, "Not yet implemented")
+    return jsonify(
+        persistence.get_storage().exchange_get_fetch_status(
+            _get_collab(exchange_name).name
+        )
+    )
 
 
 @bp.route("/exchange/<string:exchange_name>", methods=["PUT"])
