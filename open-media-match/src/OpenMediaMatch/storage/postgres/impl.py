@@ -234,7 +234,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         count = query.session.execute(
             statement.with_only_columns(func.count()).order_by(None)
         ).scalar()
-        ret.fetched_items = count
+        ret.fetched_items = count or 0
         return ret
 
     def exchange_get_fetch_checkpoint(
