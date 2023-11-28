@@ -3,7 +3,7 @@
 """
 The default store for accessing persistent data on OMM.
 """
-
+import time
 import typing as t
 
 import flask
@@ -12,6 +12,7 @@ from sqlalchemy import select, delete, func, Select
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
 
+from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.exchanges.signal_exchange_api import (
@@ -30,7 +31,6 @@ from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.mocked import MockedUnifiedStore
 from OpenMediaMatch.storage.interface import (
     SignalTypeConfig,
-    BankConfig,
     BankContentConfig,
 )
 
@@ -219,25 +219,84 @@ class DefaultOMMStore(interface.IUnifiedStore):
             )
         ).scalar_one_or_none()
 
+    def exchange_get_fetch_status(self, name: str) -> interface.FetchStatus:
+        collab_config = self._exchange_get_cfg(name)
+        assert collab_config is not None, "Config was deleted?"
+        status = collab_config.fetch_status
+        if status is None:
+            return interface.FetchStatus.get_default()
+        ret = status.as_storage_iface_cls()
+
+        query = database.db.session.query(database.ExchangeData).where(
+            database.ExchangeData.collab_id == collab_config.id
+        )
+        statement = t.cast(Select[database.ExchangeData], query.statement)
+        count = query.session.execute(
+            statement.with_only_columns(func.count()).order_by(None)
+        ).scalar()
+        ret.fetched_items = count or 0
+        return ret
+
     def exchange_get_fetch_checkpoint(
-        self, collab: CollaborationConfigBase
+        self, name: str
     ) -> t.Optional[FetchCheckpointBase]:
-        collab_config = self._exchange_get_cfg(collab.name)
-        if collab_config is None:
-            return None
+        collab_config = self._exchange_get_cfg(name)
+        assert collab_config is not None, "Config was deleted?"
         return collab_config.as_checkpoint(self.exchange_get_type_configs())
 
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
         old_checkpoint: t.Optional[FetchCheckpointBase],
-        dat: t.Dict[str, t.Any],
+        dat: t.Dict[t.Any, t.Any],
         checkpoint: FetchCheckpointBase,
         up_to_date: bool,
     ) -> None:
-        MockedUnifiedStore().exchange_commit_fetch(
-            collab, old_checkpoint, dat, checkpoint, up_to_date
-        )
+        cfg = self._exchange_get_cfg(collab.name)
+        assert cfg is not None, "Config was deleted?"
+        fetch_status = cfg.fetch_status
+        existing_checkpoint = cfg.as_checkpoint(self.exchange_get_type_configs())
+        assert (
+            existing_checkpoint == old_checkpoint
+        ), "Old checkpoint doesn't match, race condition?"
+
+        sesh = database.db.session
+
+        normalized_dat = {str(k): v for k, v in dat.items()}
+
+        existing_record_list = sesh.execute(
+            select(database.ExchangeData)
+            .where(database.ExchangeData.collab_id == cfg.id)
+            .where(database.ExchangeData.fetch_id.in_(list(normalized_dat.keys())))
+        ).scalars()
+
+        existing_records = {e.fetch_id: e for e in existing_record_list}
+
+        for k, val in normalized_dat.items():
+            if val is None:
+                sesh.execute(
+                    delete(database.ExchangeData)
+                    .where(database.ExchangeData.collab_id == cfg.id)
+                    .where(database.ExchangeData.fetch_id == k)
+                )
+            else:
+                record = existing_records.get(k)
+                if record is None:
+                    record = database.ExchangeData()
+                    record.collab_id = cfg.id
+                    record.fetch_id = k
+                    sesh.add(record)
+                record.fetch_data = dataclass_json.dataclass_dump_dict(val)
+
+        if fetch_status is None:
+            fetch_status = database.ExchangeFetchStatus()
+            fetch_status.collab = cfg
+            sesh.add(fetch_status)
+        fetch_status.set_checkpoint(checkpoint)
+        fetch_status.last_fetch_succeeded = True
+        fetch_status.is_up_to_date = up_to_date
+        fetch_status.last_fetch_complete_ts = int(time.time())
+        sesh.commit()
 
     def exchange_get_data(
         self,
@@ -247,13 +306,13 @@ class DefaultOMMStore(interface.IUnifiedStore):
     ) -> t.Any:
         return MockedUnifiedStore().exchange_get_data(collab_name, key, checkpoint)
 
-    def get_banks(self) -> t.Mapping[str, BankConfig]:
+    def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
         return {
             b.name: b.as_storage_iface_cls()
             for b in database.db.session.execute(select(database.Bank)).scalars().all()
         }
 
-    def get_bank(self, name: str) -> t.Optional[BankConfig]:
+    def get_bank(self, name: str) -> t.Optional[interface.BankConfig]:
         """Override for more efficient lookup."""
         bank = database.db.session.execute(
             select(database.Bank).where(database.Bank.name == name)
@@ -268,7 +327,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_update(
         self,
-        bank: BankConfig,
+        bank: interface.BankConfig,
         *,
         create: bool = False,
         rename_from: t.Optional[str] = None,

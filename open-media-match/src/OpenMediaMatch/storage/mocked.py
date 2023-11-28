@@ -105,8 +105,11 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             )
         }
 
+    def exchange_get_fetch_status(self, name: str) -> interface.FetchStatus:
+        return interface.FetchStatus.get_default()
+
     def exchange_get_fetch_checkpoint(
-        self, collab: CollaborationConfigBase
+        self, name: str
     ) -> t.Optional[FetchCheckpointBase]:
         return None
 

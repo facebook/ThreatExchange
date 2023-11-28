@@ -72,7 +72,7 @@ def fetch(
         return
     api_client = collab_store.exchange_get_api_instance(api_cls.get_name())
 
-    starting_checkpoint = collab_store.exchange_get_fetch_checkpoint(collab)
+    starting_checkpoint = collab_store.exchange_get_fetch_checkpoint(collab.name)
     checkpoint = starting_checkpoint
 
     if starting_checkpoint is None:

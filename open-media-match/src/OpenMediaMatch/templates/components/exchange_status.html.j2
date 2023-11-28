@@ -15,7 +15,7 @@
         <tr>
             <th scope="row">{{dat['bank']}}</th>
             <td scope="row">{{dat['api']}}</td>
-            <td scope="row">?</td>
+            <td scope="row">{{dat['count']}}</td>
             <td class="align-middle">
                 <div class="progress">
                     <div class="progress-bar {{dat['progress_style']}}" role="progressbar"
@@ -24,7 +24,7 @@
                         {{dat['progress_label']}}</div>
                 </div>
             </td>
-            <td scope="row">?</td>
+            <td scope="row">{{dat['last_run_text']}}</td>
         </tr>
         {% endfor %}
     </tbody>
