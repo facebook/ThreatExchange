@@ -113,6 +113,14 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     ) -> t.Optional[FetchCheckpointBase]:
         return None
 
+    def exchange_start_fetch(self, collab_name: str) -> None:
+        return
+
+    def exchange_complete_fetch(
+        self, collab_name: str, *, is_up_to_date: bool, exception: bool
+    ) -> None:
+        return None
+
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
@@ -127,8 +135,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         self,
         collab_name: str,
         key: str,
-        checkpoint: FetchCheckpointBase,
-    ) -> t.Any:
+    ) -> t.Optional[dict[str, t.Any]]:
         return None
 
     def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
