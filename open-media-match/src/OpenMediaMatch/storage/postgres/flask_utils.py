@@ -20,6 +20,8 @@ def add_cli_commands(app: flask.Flask) -> None:
             print("Contents:", database.BankContent.query.count())
             print("Signals/Hashes:", database.ContentSignal.query.count())
             print("Signals/Index:", database.SignalIndex.query.count())
+            print("Exchanges:", database.CollaborationConfig.query.count())
+            print("ExchangeData:", database.ExchangeData.query.count())
 
     @app.cli.command("reset_all_tables")
     def reset_tables():

@@ -284,6 +284,18 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def exchange_start_fetch(self, collab_name: str) -> None:
+        """Record the start of a fetch attempt for this collab"""
+
+    @abc.abstractmethod
+    def exchange_complete_fetch(
+        self, collab_name: str, *, is_up_to_date: bool, exception: bool
+    ) -> None:
+        """
+        Record that the fetch has completed, as well as how the fetch went.
+        """
+
+    @abc.abstractmethod
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
@@ -292,8 +304,6 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         dat: t.Dict[str, t.Any],
         # The last checkpoint recieved by the API
         checkpoint: FetchCheckpointBase,
-        # If the API has reported that all data has been fetched
-        up_to_date: bool,
     ) -> None:
         """
         Commit a sequentially fetched set of data from a fetch().
@@ -311,8 +321,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         self,
         collab_name: str,
         key: str,
-        checkpoint: FetchCheckpointBase,
-    ) -> t.Any:
+    ) -> t.Optional[dict[str, t.Any]]:
         """
         Get API-specific collaboration data by key.
         """

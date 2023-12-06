@@ -38,16 +38,20 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
     for name, cfg in collabs.items():
         # serial db fetch, yay!
         fetch_status = storage.exchange_get_fetch_status(name)
+        progress_label = ""
         progress = 50
         if fetch_status.last_fetch_complete_ts is None:
             progress = 0
         elif fetch_status.up_to_date:
+            progress_label = "Up to date!"
             progress = 100
         # TODO add some idea of progress to the checkpoint class
 
         progress_style = "bg-success" if progress == 100 else "bg-info"
         if fetch_status.last_fetch_succeeded is False:
             progress_style = "bg-danger"
+            progress_label = "Error on fetch!"
+            progress = min(90, progress)
 
         last_run_time = fetch_status.last_fetch_complete_ts
         if fetch_status.running_fetch_start_ts is not None:
@@ -73,6 +77,7 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
             "count": fetch_status.fetched_items,
             "progress_style": progress_style,
             "progress_pct": progress,
+            "progress_label": progress_label,
             "last_run_text": last_run_text,
         }
     return ret

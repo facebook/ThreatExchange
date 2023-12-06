@@ -71,11 +71,15 @@ class Bank(db.Model):  # type: ignore[name-defined]
     __tablename__ = "bank"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     enabled_ratio: Mapped[float] = mapped_column(default=1.0)
 
     content: Mapped[t.List["BankContent"]] = relationship(
         back_populates="bank", cascade="all, delete"
+    )
+
+    import_from_exchange: Mapped[t.Optional["CollaborationConfig"]] = relationship(
+        back_populates="import_bank", cascade="all, delete"
     )
 
     def as_storage_iface_cls(self) -> BankConfig:
@@ -96,7 +100,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     __tablename__ = "bank_content"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    bank_id: Mapped[int] = mapped_column(ForeignKey("bank.id"))
+    bank_id: Mapped[int] = mapped_column(ForeignKey("bank.id"), index=True)
     bank: Mapped[Bank] = relationship(back_populates="content")
 
     # Should we store the content type as well?
@@ -104,7 +108,9 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
     original_content_uri: Mapped[t.Optional[str]]
 
-    signals: Mapped[t.List["ContentSignal"]] = relationship(cascade="all, delete")
+    signals: Mapped[t.List["ContentSignal"]] = relationship(
+        back_populates="content", cascade="all, delete"
+    )
 
     def as_storage_iface_cls(self) -> BankContentConfig:
         return BankContentConfig(
@@ -118,8 +124,12 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
 class ContentSignal(db.Model):  # type: ignore[name-defined]
     content_id: Mapped[int] = mapped_column(
-        ForeignKey("bank_content.id"), primary_key=True
+        ForeignKey(BankContent.id, ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
     )
+    content: Mapped[BankContent] = relationship(back_populates="signals")
+
     signal_type: Mapped[str] = mapped_column(primary_key=True)
     signal_val: Mapped[str] = mapped_column(Text)
 
@@ -142,11 +152,14 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
         )
 
 
+# TODO: Rename to Exchange
 class CollaborationConfig(db.Model):  # type: ignore[name-defined]
+    __tablename__ = "exchange"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     # These three fields are also in typed_config, but exposing them
     # allows for selecting them from the database layer
-    name: Mapped[str] = mapped_column(String(255), unique=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     api_cls: Mapped[str] = mapped_column(String(255))
     fetching_enabled: Mapped[bool] = mapped_column(default=True)
     # Someday, we want writeback columns
@@ -163,8 +176,10 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
         back_populates="collab",
         cascade="all, delete",
         passive_deletes=True,
-        uselist=False,
     )
+
+    import_bank_id: Mapped[int] = mapped_column(ForeignKey(Bank.id), unique=True)
+    import_bank: Mapped[Bank] = relationship("Bank", cascade="all, delete")
 
     def set_typed_config(self, cfg: CollaborationConfigBase) -> t.Self:
         self.name = cfg.name
@@ -284,16 +299,22 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
         ForeignKey(CollaborationConfig.id, ondelete="CASCADE"), index=True
     )
 
-    fetch_id: Mapped[str] = mapped_column(String(255))
+    fetch_id: Mapped[str] = mapped_column(Text)
     fetch_data: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
 
-    # TODO - seen/TP/FP status
-
-    collab: Mapped["CollaborationConfig"] = relationship(
-        "CollaborationConfig",
-        uselist=False,
-        single_parent=True,
+    bank_content_id: Mapped[t.Optional[int]] = mapped_column(
+        ForeignKey(BankContent.id), unique=True, index=True
     )
+    bank_content: Mapped[t.Optional[BankContent]] = relationship(
+        cascade="all, delete", passive_deletes=True
+    )
+
+    # Whether this has been matched by this instance of OMM
+    matched: Mapped[bool] = mapped_column(default=False)
+    # null = not verified; true = positive class; false = negative class
+    verification_result: Mapped[t.Optional[bool]] = mapped_column(default=False)
+
+    collab: Mapped["CollaborationConfig"] = relationship()
 
     __table_args__ = (UniqueConstraint("collab_id", "fetch_id"),)
 

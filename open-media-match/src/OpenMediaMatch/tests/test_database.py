@@ -43,10 +43,14 @@ def test_store_collab_config(app: Flask) -> None:
     )
 
     database.db.session.add(
-        database.CollaborationConfig().set_typed_config(typed_config_default)
+        database.CollaborationConfig(
+            import_bank=database.Bank(name="BASIC_BANK")
+        ).set_typed_config(typed_config_default)
     )
     database.db.session.add(
-        database.CollaborationConfig().set_typed_config(typed_config_extended)
+        database.CollaborationConfig(
+            import_bank=database.Bank(name="EXTENDED_BANK")
+        ).set_typed_config(typed_config_extended)
     )
     database.db.session.commit()
 

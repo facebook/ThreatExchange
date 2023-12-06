@@ -50,7 +50,6 @@
         if (!data.get("api_json")) {
             as_object["api_json"] = {}
         }
-        console.log(JSON.stringify(as_object, null, 2));
 
         fetch(`/c/exchanges`, {
             method: 'POST',

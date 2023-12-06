@@ -94,7 +94,9 @@ def fetch(
     last_db_commit = fetch_start
     pending_merge: t.Optional[FetchDeltaTyped] = None
     up_to_date = False
+    exception = False
 
+    collab_store.exchange_start_fetch(collab.name)
     try:
         it = api_client.fetch_iter(signal_types, checkpoint)
         delta: FetchDeltaTyped
@@ -120,9 +122,6 @@ def fetch(
                     )
             checkpoint = next_checkpoint  # Only used for the rewind check
 
-            if _hit_single_config_limit(fetch_start):
-                log("Hit limit for one config fetch")
-                return
             if _should_commit(pending_merge, last_db_commit):
                 log("Committing progress...")
                 collab_store.exchange_commit_fetch(
@@ -130,33 +129,32 @@ def fetch(
                     starting_checkpoint,
                     pending_merge.updates,
                     pending_merge.checkpoint,
-                    up_to_date=False,
                 )
-                last_db_commit = time.time()
                 starting_checkpoint = pending_merge.checkpoint
                 pending_merge = None
-        up_to_date = True
-        log("Fetched all data! Up to date!")
-    except Exception:
-        log("failed to fetch!", level=logger.exception)
-        return
-    finally:
-        if up_to_date is True or pending_merge is not None:
-            updates = {}
-            commit_checkpoint = starting_checkpoint
-            if pending_merge is not None:
-                updates = pending_merge.updates
-                commit_checkpoint = pending_merge.checkpoint
-            else:
-                assert commit_checkpoint is not None, "for typing"
+                last_db_commit = time.time()
+            if _hit_single_config_limit(fetch_start):
+                log("Hit limit for one config fetch")
+                return
+
+        if pending_merge is not None:
             log("Committing progress...")
             collab_store.exchange_commit_fetch(
                 collab,
                 starting_checkpoint,
-                updates,
-                commit_checkpoint,
-                up_to_date=up_to_date,
+                pending_merge.updates,
+                pending_merge.checkpoint,
             )
+        up_to_date = True
+        log("Fetched all data! Up to date!")
+    except Exception:
+        log("failed to fetch!", level=logger.exception)
+        exception = True
+        return
+    finally:
+        collab_store.exchange_complete_fetch(
+            collab.name, is_up_to_date=up_to_date, exception=exception
+        )
 
 
 def _merge_delta(

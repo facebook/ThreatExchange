@@ -24,6 +24,7 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
+    FetchedSignalMetadata,
 )
 
 from OpenMediaMatch.storage.postgres import database, flask_utils
@@ -33,8 +34,6 @@ from OpenMediaMatch.storage.interface import (
     SignalTypeConfig,
     BankContentConfig,
 )
-
-from flask import current_app
 
 
 class DefaultOMMStore(interface.IUnifiedStore):
@@ -186,10 +185,13 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self, cfg: CollaborationConfigBase, *, create: bool = False
     ) -> None:
         if create:
-            exchange = database.CollaborationConfig()
+            bank = database.Bank(name=cfg.name)
+            exchange = database.CollaborationConfig(import_bank=bank)
         else:
             exchange = database.db.session.execute(
-                select(database.CollaborationConfig)
+                select(database.CollaborationConfig).where(
+                    database.CollaborationConfig.name == cfg.name
+                )
             ).scalar_one()
         exchange.set_typed_config(cfg)
         database.db.session.add(exchange)
@@ -244,13 +246,41 @@ class DefaultOMMStore(interface.IUnifiedStore):
         assert collab_config is not None, "Config was deleted?"
         return collab_config.as_checkpoint(self.exchange_get_type_configs())
 
+    def exchange_start_fetch(self, collab_name: str) -> None:
+        cfg = self._exchange_get_cfg(collab_name)
+        assert cfg is not None, "Config was deleted?"
+        fetch_status = cfg.fetch_status
+        if fetch_status is None:
+            fetch_status = database.ExchangeFetchStatus()
+            fetch_status.collab = cfg
+            database.db.session.add(fetch_status)
+        fetch_status.running_fetch_start_ts = int(time.time())
+        database.db.session.commit()
+
+    def exchange_complete_fetch(
+        self, collab_name: str, *, is_up_to_date: bool, exception: bool
+    ) -> None:
+        if exception is True:
+            database.db.session.rollback()
+        cfg = self._exchange_get_cfg(collab_name)
+        assert cfg is not None, "Config was deleted?"
+        fetch_status = cfg.fetch_status
+        if fetch_status is None:
+            fetch_status = database.ExchangeFetchStatus()
+            fetch_status.collab = cfg
+            database.db.session.add(fetch_status)
+        fetch_status.running_fetch_start_ts = None
+        fetch_status.last_fetch_complete_ts = int(time.time())
+        fetch_status.last_fetch_succeeded = not exception
+        fetch_status.is_up_to_date = is_up_to_date
+        database.db.session.commit()
+
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
         old_checkpoint: t.Optional[FetchCheckpointBase],
         dat: t.Dict[t.Any, t.Any],
         checkpoint: FetchCheckpointBase,
-        up_to_date: bool,
     ) -> None:
         cfg = self._exchange_get_cfg(collab.name)
         assert cfg is not None, "Config was deleted?"
@@ -260,51 +290,120 @@ class DefaultOMMStore(interface.IUnifiedStore):
             existing_checkpoint == old_checkpoint
         ), "Old checkpoint doesn't match, race condition?"
 
+        api_cls = self.exchange_get_type_configs().get(collab.api)
+        assert api_cls is not None, "Invalid API cls?"
+        collab_config = cfg.as_storage_iface_cls_typed(api_cls)
+
         sesh = database.db.session
 
-        normalized_dat = {str(k): v for k, v in dat.items()}
-
-        existing_record_list = sesh.execute(
-            select(database.ExchangeData)
-            .where(database.ExchangeData.collab_id == cfg.id)
-            .where(database.ExchangeData.fetch_id.in_(list(normalized_dat.keys())))
-        ).scalars()
-
-        existing_records = {e.fetch_id: e for e in existing_record_list}
-
-        for k, val in normalized_dat.items():
+        for k, val in dat.items():
+            # More sequential fetches - trying to use in_ doesn't seem to work
+            record = sesh.execute(
+                select(database.ExchangeData)
+                .where(database.ExchangeData.collab_id == cfg.id)
+                .where(database.ExchangeData.fetch_id == str(k))
+            ).scalar_one_or_none()
             if val is None:
-                sesh.execute(
-                    delete(database.ExchangeData)
-                    .where(database.ExchangeData.collab_id == cfg.id)
-                    .where(database.ExchangeData.fetch_id == k)
-                )
-            else:
-                record = existing_records.get(k)
-                if record is None:
-                    record = database.ExchangeData()
-                    record.collab_id = cfg.id
-                    record.fetch_id = k
-                    sesh.add(record)
-                record.fetch_data = dataclass_json.dataclass_dump_dict(val)
+                if record is not None:
+                    sesh.execute(delete(record))
+                continue
+            if record is None:
+                record = database.ExchangeData()
+                record.collab_id = cfg.id
+                record.fetch_id = str(k)
+                sesh.add(record)
+            record.fetch_data = dataclass_json.dataclass_dump_dict(val)
+            sesh.flush()
+            self._sync_exchange_data_to_bank(
+                cfg.import_bank_id, collab_config, record, api_cls, k, val
+            )
 
         if fetch_status is None:
             fetch_status = database.ExchangeFetchStatus()
             fetch_status.collab = cfg
             sesh.add(fetch_status)
+
         fetch_status.set_checkpoint(checkpoint)
-        fetch_status.last_fetch_succeeded = True
-        fetch_status.is_up_to_date = up_to_date
-        fetch_status.last_fetch_complete_ts = int(time.time())
         sesh.commit()
+
+    def _sync_exchange_data_to_bank(
+        self,
+        bank_id: int,
+        cfg: CollaborationConfigBase,
+        record: database.ExchangeData,
+        api_cls: TSignalExchangeAPICls,
+        fetch_key: t.Any,
+        fetch_value: t.Any,
+    ) -> None:
+        if record.verification_result is False:
+            # We marked this as not valuable, so don't sync it to the bank
+            return
+        all_signal_types = self.get_signal_type_configs()
+        as_signal_types = api_cls.naive_convert_to_signal_type(
+            [stc.signal_type for stc in all_signal_types.values()],
+            cfg,
+            {fetch_key: fetch_value},
+        )
+
+        sesh = database.db.session
+        bank_content = record.bank_content
+        if not as_signal_types:
+            # there's no usable signals, so don't create an empty record
+            if bank_content is not None:
+                sesh.delete(bank_content)
+                sesh.flush()
+            return
+
+        if bank_content is None:
+            bank_content = database.BankContent(bank_id=bank_id)
+            record.bank_content = bank_content
+            sesh.add(bank_content)
+
+        existing = {
+            (signal.signal_type, signal.signal_val): signal
+            for signal in bank_content.signals
+        }
+
+        # Additions / modifications
+        for signal_type, signal_to_metadata in as_signal_types.items():
+            for signal_value in signal_to_metadata:
+                # TODO - check the metadata for signals for opinions we own
+                #        that have false-positive on them.
+                k = (signal_type.get_name(), signal_value)
+                if k in existing:
+                    # If we need to sync the record, here's where we do it
+                    # Remove from existing list for removal check later
+                    del existing[k]
+                else:
+                    content_signal = database.ContentSignal(
+                        content=bank_content,
+                        signal_type=signal_type.get_name(),
+                        signal_val=signal_value,
+                    )
+                    sesh.add(content_signal)
+
+        # Removals
+        # At this point, we've popped all the ones that are still in the record
+        # Any left are ones that have been removed from the API copy
+        for to_delete in existing.values():
+            database.db.session.delete(to_delete)
+        sesh.flush()
 
     def exchange_get_data(
         self,
         collab_name: str,
         key: str,
-        checkpoint: FetchCheckpointBase,
-    ) -> t.Any:
-        return MockedUnifiedStore().exchange_get_data(collab_name, key, checkpoint)
+    ) -> t.Optional[dict[str, t.Any]]:
+        cfg = self._exchange_get_cfg(collab_name)
+        assert cfg is not None, "Config was deleted?"
+        res = database.db.session.execute(
+            select(database.ExchangeData)
+            .where(database.ExchangeData.collab_id == cfg.id)
+            .where(database.ExchangeData.fetch_id == key)
+        ).scalar_one_or_none()
+        if res is None:
+            return None
+        return res.fetch_data
 
     def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
         return {
@@ -374,10 +473,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         bank = self._get_bank(bank_name)
         content = database.BankContent(bank=bank)
         sesh.add(content)
-        sesh.flush()
         for content_signal, value in content_signals.items():
             hash = database.ContentSignal(
-                content_id=content.id,
+                content=content,
                 signal_type=content_signal.get_name(),
                 signal_val=value,
             )
