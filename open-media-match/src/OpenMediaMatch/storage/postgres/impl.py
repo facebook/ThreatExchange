@@ -291,8 +291,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         ), "Old checkpoint doesn't match, race condition?"
 
         api_cls = self.exchange_get_type_configs().get(collab.api)
-        collab_config = cfg.as_storage_iface_cls_typed(api_cls)
         assert api_cls is not None, "Invalid API cls?"
+        collab_config = cfg.as_storage_iface_cls_typed(api_cls)
 
         sesh = database.db.session
 
@@ -304,7 +304,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 .where(database.ExchangeData.fetch_id == str(k))
             ).scalar_one_or_none()
             if val is None:
-                if record is None:
+                if record is not None:
                     sesh.execute(delete(record))
                 continue
             if record is None:
@@ -359,25 +359,34 @@ class DefaultOMMStore(interface.IUnifiedStore):
             record.bank_content = bank_content
             sesh.add(bank_content)
 
-        existing = set()
-        # Removals
-        for signal in bank_content.signals:
-            existing.add((signal.signal_type, signal.signal_val))
-            if signal.signal_val not in as_signal_types.get(signal.signal_type, {}):
-                database.db.session.delete(signal)
+        existing = {
+            (signal.signal_type, signal.signal_val): signal
+            for signal in bank_content.signals
+        }
 
-        # Additions
+        # Additions / modifications
         for signal_type, signal_to_metadata in as_signal_types.items():
             for signal_value in signal_to_metadata:
                 # TODO - check the metadata for signals for opinions we own
                 #        that have false-positive on them.
-                if (signal_type.get_name(), signal_value) not in existing:
+                k = (signal_type.get_name(), signal_value)
+                if k in existing:
+                    # If we need to sync the record, here's where we do it
+                    # Remove from existing list for removal check later
+                    del existing[k]
+                else:
                     content_signal = database.ContentSignal(
                         content=bank_content,
                         signal_type=signal_type.get_name(),
                         signal_val=signal_value,
                     )
                     sesh.add(content_signal)
+
+        # Removals
+        # At this point, we've popped all the ones that are still in the record
+        # Any left are ones that have been removed from the API copy
+        for to_delete in existing.values():
+            database.db.session.delete(to_delete)
         sesh.flush()
 
     def exchange_get_data(
@@ -466,7 +475,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         sesh.add(content)
         for content_signal, value in content_signals.items():
             hash = database.ContentSignal(
-                content_id=content.id,
+                content=content,
                 signal_type=content_signal.get_name(),
                 signal_val=value,
             )

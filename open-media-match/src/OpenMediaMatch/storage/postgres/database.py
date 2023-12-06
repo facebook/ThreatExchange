@@ -126,6 +126,7 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
     content_id: Mapped[int] = mapped_column(
         ForeignKey(BankContent.id, ondelete="CASCADE"),
         primary_key=True,
+        nullable=False,
     )
     content: Mapped[BankContent] = relationship(back_populates="signals")
 
@@ -152,7 +153,7 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
 
 
 # TODO: Rename to Exchange
-class CollaborationConfig(db.Model):  # type: ignore[name-defined].
+class CollaborationConfig(db.Model):  # type: ignore[name-defined]
     __tablename__ = "exchange"
 
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -127,7 +127,6 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         old_checkpoint: t.Optional[FetchCheckpointBase],
         dat: t.Dict[str, t.Any],
         checkpoint: FetchCheckpointBase,
-        up_to_date: bool,
     ):
         pass
 

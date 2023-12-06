@@ -130,9 +130,9 @@ def fetch(
                     pending_merge.updates,
                     pending_merge.checkpoint,
                 )
+                starting_checkpoint = pending_merge.checkpoint
                 pending_merge = None
                 last_db_commit = time.time()
-                starting_checkpoint = pending_merge.checkpoint
             if _hit_single_config_limit(fetch_start):
                 log("Hit limit for one config fetch")
                 return
