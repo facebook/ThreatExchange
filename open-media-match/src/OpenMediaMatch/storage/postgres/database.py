@@ -223,7 +223,7 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
         fetch_status = self.fetch_status
         if fetch_status is None:
             return None
-        api_cls = exchange_types.get(self.name)
+        api_cls = exchange_types.get(self.api_cls)
         if api_cls is None:
             return None
         return fetch_status.as_checkpoint(api_cls)
@@ -300,7 +300,8 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
     )
 
     fetch_id: Mapped[str] = mapped_column(Text)
-    fetch_data: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
+    pickled_original_fetch_data: Mapped[t.Optional[bytes]] = mapped_column(LargeBinary)
+    fetched_metadata_summary: Mapped[t.List[t.Any]] = mapped_column(JSON, default=list)
 
     bank_content_id: Mapped[t.Optional[int]] = mapped_column(
         ForeignKey(BankContent.id), unique=True, index=True
@@ -312,7 +313,7 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
     # Whether this has been matched by this instance of OMM
     matched: Mapped[bool] = mapped_column(default=False)
     # null = not verified; true = positive class; false = negative class
-    verification_result: Mapped[t.Optional[bool]] = mapped_column(default=False)
+    verification_result: Mapped[t.Optional[bool]] = mapped_column(default=None)
 
     collab: Mapped["CollaborationConfig"] = relationship()
 

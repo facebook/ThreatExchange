@@ -3,6 +3,7 @@
 """
 The default store for accessing persistent data on OMM.
 """
+import pickle
 import time
 import typing as t
 
@@ -25,6 +26,7 @@ from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
     FetchedSignalMetadata,
+    AggregateSignalOpinion,
 )
 
 from OpenMediaMatch.storage.postgres import database, flask_utils
@@ -297,7 +299,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         sesh = database.db.session
 
         for k, val in dat.items():
-            # More sequential fetches - trying to use in_ doesn't seem to work
+            # More sequential fetches - trying to use in_() doesn't seem to work
             record = sesh.execute(
                 select(database.ExchangeData)
                 .where(database.ExchangeData.collab_id == cfg.id)
@@ -311,8 +313,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 record = database.ExchangeData()
                 record.collab_id = cfg.id
                 record.fetch_id = str(k)
-                sesh.add(record)
-            record.fetch_data = dataclass_json.dataclass_dump_dict(val)
+            sesh.add(record)
+            record.pickled_original_fetch_data = pickle.dumps(val)
             sesh.flush()
             self._sync_exchange_data_to_bank(
                 cfg.import_bank_id, collab_config, record, api_cls, k, val
@@ -321,9 +323,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if fetch_status is None:
             fetch_status = database.ExchangeFetchStatus()
             fetch_status.collab = cfg
-            sesh.add(fetch_status)
-
         fetch_status.set_checkpoint(checkpoint)
+
+        sesh.add(fetch_status)
         sesh.commit()
 
     def _sync_exchange_data_to_bank(
@@ -335,19 +337,25 @@ class DefaultOMMStore(interface.IUnifiedStore):
         fetch_key: t.Any,
         fetch_value: t.Any,
     ) -> None:
-        if record.verification_result is False:
-            # We marked this as not valuable, so don't sync it to the bank
-            return
         all_signal_types = self.get_signal_type_configs()
         as_signal_types = api_cls.naive_convert_to_signal_type(
             [stc.signal_type for stc in all_signal_types.values()],
             cfg,
             {fetch_key: fetch_value},
         )
+        # Merge all the metadata together for one aggregated opinion for this record
+        # This might not be fully correct for all
+        all_signal_opinions = [
+            opinion
+            for signal_metadata in as_signal_types.values()
+            for metadata in signal_metadata.values()
+            for opinion in metadata.get_as_opinions()
+        ]
+        arregated = AggregateSignalOpinion.from_opinions(all_signal_opinions)
 
         sesh = database.db.session
         bank_content = record.bank_content
-        if not as_signal_types:
+        if not as_signal_types or record.verification_result is False:
             # there's no usable signals, so don't create an empty record
             if bank_content is not None:
                 sesh.delete(bank_content)
@@ -359,7 +367,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             record.bank_content = bank_content
             sesh.add(bank_content)
 
-        existing = {
+        unseen_signals_in_db_for_fetch_key = {
             (signal.signal_type, signal.signal_val): signal
             for signal in bank_content.signals
         }
@@ -370,10 +378,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 # TODO - check the metadata for signals for opinions we own
                 #        that have false-positive on them.
                 k = (signal_type.get_name(), signal_value)
-                if k in existing:
+                if k in unseen_signals_in_db_for_fetch_key:
                     # If we need to sync the record, here's where we do it
-                    # Remove from existing list for removal check later
-                    del existing[k]
+                    # Remove from the list of signals
+                    del unseen_signals_in_db_for_fetch_key[k]
                 else:
                     content_signal = database.ContentSignal(
                         content=bank_content,
@@ -385,7 +393,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         # Removals
         # At this point, we've popped all the ones that are still in the record
         # Any left are ones that have been removed from the API copy
-        for to_delete in existing.values():
+        for to_delete in unseen_signals_in_db_for_fetch_key.values():
             database.db.session.delete(to_delete)
         sesh.flush()
 

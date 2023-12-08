@@ -9,6 +9,7 @@ import time
 from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
     FetchDeltaTyped,
+    NoCheckpointing,
 )
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
@@ -66,7 +67,8 @@ def fetch(
     api_cls = collab_store.exchange_get_type_configs().get(collab.api)
     if api_cls is None:
         log(
-            "No such SignalExchangeAPI '%s' - maybe it was deleted? You might have serious misconfiguration",
+            "No such SignalExchangeAPI '%s' - maybe it was deleted?"
+            " You might have serious misconfiguration",
             level=logger.critical,
         )
         return
@@ -79,6 +81,17 @@ def fetch(
         log("No checkpoint, should be the first fetch.")
     else:
         if starting_checkpoint.is_stale():
+            # This is a little jankey, but the stale behavior is actually fairly complex,
+            # and we want to avoid triggering on trivial fetching
+            if isinstance(starting_checkpoint, NoCheckpointing):
+                log(
+                    "Is a NoCheckpointing class, which hopefully is a test type, "
+                    "and we have a checkpoint. Considering complete"
+                )
+                collab_store.exchange_complete_fetch(
+                    collab.name, is_up_to_date=True, exception=False
+                )
+                return
             log("Checkpoint has become stale! Will refetch from scratch")
             checkpoint = None
         else:
