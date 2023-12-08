@@ -49,8 +49,24 @@ def fetch(
     signal_type_cfgs: t.Mapping[str, SignalTypeConfig],
     collab: CollaborationConfigBase,
 ):
+    """Wrapper for exception recording"""
+    try:
+        collab_store.exchange_start_fetch(collab.name)
+        _fetch(collab_store, signal_type_cfgs, collab)
+    except Exception:
+        logger.exception("%s[%s] Failed to fetch!", collab.name, collab.api)
+        collab_store.exchange_complete_fetch(
+            collab.name, is_up_to_date=False, exception=True
+        )
+
+
+def _fetch(
+    collab_store: ISignalExchangeStore,
+    signal_type_cfgs: t.Mapping[str, SignalTypeConfig],
+    collab: CollaborationConfigBase,
+):
     """
-    Fetch data from
+    Fetch data for a single collab.
 
     1. Attempt to authenticate with that collaboration's API
        using stored credentials.
@@ -65,14 +81,11 @@ def fetch(
     log("Fetching signals for %s from %s", collab.name, collab.api)
 
     api_cls = collab_store.exchange_get_type_configs().get(collab.api)
-    if api_cls is None:
-        log(
-            "No such SignalExchangeAPI '%s' - maybe it was deleted?"
-            " You might have serious misconfiguration",
-            level=logger.critical,
-        )
-        return
-    api_client = collab_store.exchange_get_api_instance(api_cls.get_name())
+    assert (
+        api_cls is not None
+    ), f"No such SignalExchangeAPI '{collab.api}' - maybe it was deleted?"
+
+    api_client = api_cls.for_collab(collab)
 
     starting_checkpoint = collab_store.exchange_get_fetch_checkpoint(collab.name)
     checkpoint = starting_checkpoint
@@ -105,52 +118,33 @@ def fetch(
 
     fetch_start = time.time()
     last_db_commit = fetch_start
-    pending_merge: t.Optional[FetchDeltaTyped] = None
     up_to_date = False
-    exception = False
+    pending_merge: t.Optional[FetchDeltaTyped] = None
 
-    collab_store.exchange_start_fetch(collab.name)
-    try:
-        it = api_client.fetch_iter(signal_types, checkpoint)
-        delta: FetchDeltaTyped
-        for delta in it:
-            assert delta.checkpoint is not None  # Infinite loop protection
-            progress_time = delta.checkpoint.get_progress_timestamp()
-            log(
-                "fetch_iter() with %d new records%s",
-                len(delta.updates),
-                ("" if progress_time is None else f" @ {_timeformat(progress_time)}"),
-                level=logger.debug,
-            )
-            pending_merge = _merge_delta(pending_merge, delta)
-            next_checkpoint = delta.checkpoint
+    delta: FetchDeltaTyped
+    for delta in api_client.fetch_iter(signal_types, checkpoint):
+        assert delta.checkpoint is not None  # Infinite loop protection
+        progress_time = delta.checkpoint.get_progress_timestamp()
+        log(
+            "fetch_iter() with %d new records%s",
+            len(delta.updates),
+            ("" if progress_time is None else f" @ {_timeformat(progress_time)}"),
+            level=logger.debug,
+        )
+        pending_merge = _merge_delta(pending_merge, delta)
+        next_checkpoint = delta.checkpoint
 
-            if checkpoint is not None:
-                prev_time = checkpoint.get_progress_timestamp()
-                if prev_time is not None and progress_time is not None:
-                    assert prev_time <= progress_time, (
-                        "checkpoint time rewound? ",
-                        "This can indicate a serious ",
-                        "problem with the API and checkpointing",
-                    )
-            checkpoint = next_checkpoint  # Only used for the rewind check
-
-            if _should_commit(pending_merge, last_db_commit):
-                log("Committing progress...")
-                collab_store.exchange_commit_fetch(
-                    collab,
-                    starting_checkpoint,
-                    pending_merge.updates,
-                    pending_merge.checkpoint,
+        if checkpoint is not None:
+            prev_time = checkpoint.get_progress_timestamp()
+            if prev_time is not None and progress_time is not None:
+                assert prev_time <= progress_time, (
+                    "checkpoint time rewound? ",
+                    "This can indicate a serious ",
+                    "problem with the API and checkpointing",
                 )
-                starting_checkpoint = pending_merge.checkpoint
-                pending_merge = None
-                last_db_commit = time.time()
-            if _hit_single_config_limit(fetch_start):
-                log("Hit limit for one config fetch")
-                return
+        checkpoint = next_checkpoint  # Only used for the rewind check
 
-        if pending_merge is not None:
+        if _should_commit(pending_merge, last_db_commit):
             log("Committing progress...")
             collab_store.exchange_commit_fetch(
                 collab,
@@ -158,16 +152,28 @@ def fetch(
                 pending_merge.updates,
                 pending_merge.checkpoint,
             )
+            starting_checkpoint = pending_merge.checkpoint
+            pending_merge = None
+            last_db_commit = time.time()
+        if _hit_single_config_limit(fetch_start):
+            log("Hit limit for one config fetch")
+            break
+    else:
         up_to_date = True
         log("Fetched all data! Up to date!")
-    except Exception:
-        log("failed to fetch!", level=logger.exception)
-        exception = True
-        return
-    finally:
-        collab_store.exchange_complete_fetch(
-            collab.name, is_up_to_date=up_to_date, exception=exception
+
+    if pending_merge is not None:
+        log("Committing progress...")
+        collab_store.exchange_commit_fetch(
+            collab,
+            starting_checkpoint,
+            pending_merge.updates,
+            pending_merge.checkpoint,
         )
+
+    collab_store.exchange_complete_fetch(
+        collab.name, is_up_to_date=up_to_date, exception=False
+    )
 
 
 def _merge_delta(

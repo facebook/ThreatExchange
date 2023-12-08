@@ -18,7 +18,7 @@ from OpenMediaMatch.storage.postgres import database
 def test_status_response(client: FlaskClient):
     response = client.get("/status")
     assert response.status_code == 200
-    assert response.data == b"I-AM-ALIVE\n"
+    assert response.data == b"I-AM-ALIVE"
 
 
 def test_banks_empty_index(client: FlaskClient):

@@ -75,11 +75,15 @@ def create_app() -> flask.Flask:
         SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
-    # Probably better to move this into a more normal looking default config
-    storage_cls = t.cast(
-        t.Type[IUnifiedStore], app.config.get("storage_cls", DefaultOMMStore)
-    )
-    app.config["storage_instance"] = storage_cls.init_flask(app)
+
+    if "STORAGE_IFACE_INSTANCE" not in app.config:
+        app.logger.warning("No storage class provided, using the default")
+        app.config["STORAGE_IFACE_INSTANCE"] = DefaultOMMStore()
+    storage = app.config["STORAGE_IFACE_INSTANCE"]
+    assert isinstance(
+        storage, IUnifiedStore
+    ), "STORAGE_IFACE_INSTANCE is not an instance of IUnifiedStore"
+    storage.init_flask(app)
 
     _setup_task_logging(app.logger)
 
@@ -98,7 +102,7 @@ def create_app() -> flask.Flask:
         storage = get_storage()
         if not storage.is_ready():
             return "NOT-READY", 503
-        return "I-AM-ALIVE\n", 200
+        return "I-AM-ALIVE", 200
 
     @app.route("/site-map")
     def site_map():
@@ -195,27 +199,32 @@ def create_app() -> flask.Flask:
         # We only want to run apscheduler in debug mode
         # and only in the "outer" reloader process
         if _is_dbg_werkzeug_reloaded_process():
-            app.logger.critical(
-                "DEVELOPMENT: Started background tasks with apscheduler."
-            )
-
             now = datetime.datetime.now()
             scheduler = dev_apscheduler.get_apscheduler()
             scheduler.init_app(app)
-            scheduler.add_job(
-                "Fetcher",
-                fetcher.apscheduler_fetch_all,
-                trigger="interval",
-                seconds=60 * 4,
-                start_date=now + datetime.timedelta(seconds=30),
-            )
-            scheduler.add_job(
-                "Indexer",
-                build_index.apscheduler_build_all_indices,
-                trigger="interval",
-                seconds=60,
-                start_date=now + datetime.timedelta(seconds=15),
-            )
+            tasks = []
+            if app.config.get("TASK_FETCHER", False):
+                tasks.append("Fetcher")
+                scheduler.add_job(
+                    "Fetcher",
+                    fetcher.apscheduler_fetch_all,
+                    trigger="interval",
+                    seconds=60 * 4,
+                    start_date=now + datetime.timedelta(seconds=30),
+                )
+            if app.config.get("TASK_INDEXER", False):
+                tasks.append("Indexer")
+                scheduler.add_job(
+                    "Indexer",
+                    build_index.apscheduler_build_all_indices,
+                    trigger="interval",
+                    seconds=60,
+                    start_date=now + datetime.timedelta(seconds=15),
+                )
+            if tasks:
+                app.logger.critical(
+                    "DEVELOPMENT: Started %s with apscheduler.", ", ".join(tasks)
+                )
             scheduler.start()
 
     return app
