@@ -118,6 +118,7 @@ def _fetch(
 
     fetch_start = time.time()
     last_db_commit = fetch_start
+    up_to_date = False
     pending_merge: t.Optional[FetchDeltaTyped] = None
 
     delta: FetchDeltaTyped
@@ -157,19 +158,22 @@ def _fetch(
         if _hit_single_config_limit(fetch_start):
             log("Hit limit for one config fetch")
             break
-
-        if pending_merge is not None:
-            log("Committing progress...")
-            collab_store.exchange_commit_fetch(
-                collab,
-                starting_checkpoint,
-                pending_merge.updates,
-                pending_merge.checkpoint,
-            )
+    else:
+        up_to_date = True
         log("Fetched all data! Up to date!")
-        collab_store.exchange_complete_fetch(
-            collab.name, is_up_to_date=True, exception=False
+
+    if pending_merge is not None:
+        log("Committing progress...")
+        collab_store.exchange_commit_fetch(
+            collab,
+            starting_checkpoint,
+            pending_merge.updates,
+            pending_merge.checkpoint,
         )
+
+    collab_store.exchange_complete_fetch(
+        collab.name, is_up_to_date=up_to_date, exception=False
+    )
 
 
 def _merge_delta(
