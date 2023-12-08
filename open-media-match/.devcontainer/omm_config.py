@@ -1,8 +1,15 @@
+# This is the configuration that is used by default for the developer instance
+# which runs in the dev container by default. Every config field is present
+# to make it easier to copy this
+
+from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.content_type.photo import PhotoContent
+from threatexchange.content_type.video import VideoContent
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 
 # Database configuration
-PRODUCTION = False
 DBUSER = "media_match"
 DBPASS = "hunter2"
 DBHOST = "localhost"
@@ -10,13 +17,17 @@ DBNAME = "media_match"
 DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 
 # Role configuration
+PRODUCTION = False
 ROLE_HASHER = True
 ROLE_MATCHER = True
 ROLE_CURATOR = True
-
-# Installed signal types
-SIGNAL_TYPES = [PdqSignal, VideoMD5Signal]
-
-
 # APScheduler (background threads for development)
-SCHEDULER_API_ENABLED = True
+TASK_FETCHER = True
+TASK_INDEXER = True
+
+# Core functionality configuration
+STORAGE_IFACE_INSTANCE = DefaultOMMStore(
+    signal_types=[PdqSignal, VideoMD5Signal],
+    content_types=[PhotoContent, VideoContent],
+    exchange_types=[StaticSampleSignalExchangeAPI],
+)

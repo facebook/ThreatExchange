@@ -230,12 +230,6 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
-        """
-        Returns an initialized and authenticated client for an API.
-        """
-
-    @abc.abstractmethod
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
     ) -> None:
@@ -505,8 +499,7 @@ class IUnifiedStore(
     mostly for typing.
     """
 
-    @classmethod
-    def init_flask(cls, app: flask.Flask) -> t.Self:
+    def init_flask(cls, app: flask.Flask) -> None:
         """
         Make any flask-specific initialization for this storage implementation
 
@@ -514,7 +507,7 @@ class IUnifiedStore(
         you to write __init__ how is most useful to your implementation for
         testing.
         """
-        return cls()
+        return
 
     @abc.abstractmethod
     def is_ready(self) -> bool:

@@ -27,4 +27,4 @@ def get_storage() -> IUnifiedStore:
 
     Holdover from earlier development, maybe remove someday.
     """
-    return t.cast(IUnifiedStore, current_app.config["storage_instance"])
+    return t.cast(IUnifiedStore, current_app.config["STORAGE_IFACE_INSTANCE"])

@@ -13,15 +13,18 @@ from sqlalchemy import select, delete, func, Select
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
 
-from threatexchange.utils import dataclass_json
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.content_type.photo import PhotoContent
+from threatexchange.content_type.video import VideoContent
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
     TSignalExchangeAPI,
 )
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.content_type.content_base import ContentType
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
@@ -55,53 +58,62 @@ class DefaultOMMStore(interface.IUnifiedStore):
       * Blobstore (e.g. built indices)
     """
 
-    signal_types: list[t.Type[SignalType]]
+    signal_types: t.Mapping[str, t.Type[SignalType]]
+    content_types: t.Mapping[str, t.Type[ContentType]]
+    exchange_types: t.Mapping[str, TSignalExchangeAPICls]
 
-    def __init__(self, signal_types: list[t.Type[SignalType]]) -> None:
-        self.signal_types = signal_types
-        if signal_types is not None:
-            assert isinstance(signal_types, list)
-            for element in signal_types:
-                assert issubclass(element, SignalType)
-            self.signal_types = signal_types
+    def __init__(
+        self,
+        *,
+        signal_types: t.Sequence[t.Type[SignalType]] | None = None,
+        content_types: t.Sequence[t.Type[ContentType]] | None = None,
+        exchange_types: t.Sequence[TSignalExchangeAPICls] | None = None,
+    ) -> None:
+        if signal_types is None:
+            signal_types = [PdqSignal, VideoMD5Signal]
+        if content_types is None:
+            content_types = [PhotoContent, VideoContent]
+        if exchange_types is None:
+            exchange_types = [StaticSampleSignalExchangeAPI]
+
+        self.signal_types = {st.get_name(): st for st in signal_types}
+        self.content_types = {ct.get_name(): ct for ct in content_types}
+        self.exchange_types = {et.get_name(): et for et in exchange_types}
         assert len(self.signal_types) == len(
-            {s.get_name() for s in self.signal_types}
-        ), "All signal must have unique names"
+            signal_types
+        ), "All signal types must have unique names"
+        assert len(self.content_types) == len(
+            content_types
+        ), "All content types must have unique names"
+        assert len(self.exchange_types) == len(
+            exchange_types
+        ), "All exchange types must have unique names"
 
     def is_ready(self) -> bool:
         """
         Whether we have finished pre-loading indices.
         """
-        return True
+        return True  # TODO
 
     def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
-        # TODO
-        return MockedUnifiedStore().get_content_type_configs()
+        return {
+            name: interface.ContentTypeConfig(True, ct)
+            for name, ct in self.content_types.items()
+        }
 
     def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
-        # TODO
-        return MockedUnifiedStore().exchange_get_type_configs()
-
-    def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
-        # TODO
-        return MockedUnifiedStore().exchange_get_api_instance(api_cls_name)
+        return self.exchange_types
 
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         # If a signal is installed, then it is enabled by default. But it may be disabled by an
         # override in the database.
         signal_type_overrides = self._query_signal_type_overrides()
-        get_enabled_ratio = (
-            lambda s: signal_type_overrides[s.get_name()]
-            if s.get_name() in signal_type_overrides
-            else 1.0
-        )
         return {
-            s.get_name(): interface.SignalTypeConfig(
-                # Note - we do this logic here because this function is re-executed each request
-                get_enabled_ratio(s),
-                s,
+            name: interface.SignalTypeConfig(
+                signal_type_overrides.get(name, 1.0),
+                st,
             )
-            for s in self.signal_types
+            for name, st in self.signal_types.items()
         }
 
     def _create_or_update_signal_type_override(
@@ -562,16 +574,11 @@ class DefaultOMMStore(interface.IUnifiedStore):
             for row in partition:
                 yield row._tuple()[0].as_iteration_item()
 
-    @classmethod
-    def init_flask(cls, app: flask.Flask) -> t.Self:
+    def init_flask(self, app: flask.Flask) -> None:
         migrate = flask_migrate.Migrate()
         database.db.init_app(app)
         migrate.init_app(app, database.db)
-
         flask_utils.add_cli_commands(app)
-
-        signal_types = app.config.get("SIGNAL_TYPES", [PdqSignal, VideoMD5Signal])
-        return cls(signal_types)
 
 
 def explain(q, analyze: bool = False):
