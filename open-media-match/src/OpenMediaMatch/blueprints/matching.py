@@ -14,7 +14,7 @@ from threatexchange.signal_type.signal_base import SignalType
 
 from OpenMediaMatch.storage.interface import ISignalTypeConfigStore
 from OpenMediaMatch.blueprints import hashing
-from OpenMediaMatch.utils import require_request_param, api_error_handler
+from OpenMediaMatch.utils.flask_utils import require_request_param, api_error_handler
 from OpenMediaMatch.persistence import get_storage
 
 bp = Blueprint("matching", __name__)

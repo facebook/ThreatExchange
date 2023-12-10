@@ -8,14 +8,14 @@ from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.signal_base import SignalType
 from werkzeug.exceptions import HTTPException
 
-from OpenMediaMatch import persistence, utils
+from OpenMediaMatch import persistence
+from OpenMediaMatch.utils import flask_utils
 from OpenMediaMatch.storage.interface import BankConfig, SignalTypeIndexBuildCheckpoint
 from OpenMediaMatch.blueprints import hashing
-from OpenMediaMatch.storage.postgres import database
 
 
 bp = Blueprint("curation", __name__)
-bp.register_error_handler(HTTPException, utils.api_error_handler)
+bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
 # Banking
 
@@ -38,13 +38,13 @@ def bank_show_by_name(bank_name: str):
 
 @bp.route("/banks", methods=["POST"])
 def bank_create():
-    name = utils.require_json_param("name")
+    name = flask_utils.require_json_param("name")
     data = request.get_json()
     enabled_ratio = 1.0
     if "enabled_ratio" in data:
-        enabled_ratio = utils.str_to_type(data["enabled_ratio"], float)
+        enabled_ratio = flask_utils.str_to_type(data["enabled_ratio"], float)
     elif "enabled" in data:
-        enabled_ratio = 1.0 if utils.str_to_bool(data["enabled"]) else 0.0
+        enabled_ratio = 1.0 if flask_utils.str_to_bool(data["enabled"]) else 0.0
     return jsonify(bank_create_impl(name, enabled_ratio)), 201
 
 
@@ -195,7 +195,7 @@ def exchange_create():
      * Exchange-specific arguments (depends on SignalExchangeAPI)
     """
     data = request.get_json()
-    bank = utils.require_json_param("bank")
+    bank = flask_utils.require_json_param("bank")
     api_json = data.get("api_json", {})
     api_type_name = data.get("api")
 
@@ -367,7 +367,9 @@ def update_signal_type_config(signal_type_name: str):
         "enabled_ratio": 1.0,
     }
     """
-    enabled_ratio = utils.str_to_type(utils.require_json_param("enabled_ratio"), float)
+    enabled_ratio = flask_utils.str_to_type(
+        flask_utils.require_json_param("enabled_ratio"), float
+    )
     persistence.get_storage().create_or_update_signal_type_override(
         signal_type_name, enabled_ratio
     )
