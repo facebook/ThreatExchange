@@ -19,10 +19,10 @@ from threatexchange.content_type.video import VideoContent
 from threatexchange.signal_type.signal_base import FileHasher, BytesHasher, SignalType
 
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch import utils
+from OpenMediaMatch.utils import flask_utils
 
 bp = Blueprint("hashing", __name__)
-bp.register_error_handler(HTTPException, utils.api_error_handler)
+bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
 
 @bp.route("/hash", methods=["GET"])

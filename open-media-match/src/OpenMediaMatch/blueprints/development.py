@@ -10,7 +10,7 @@ from werkzeug.exceptions import HTTPException
 
 from OpenMediaMatch.blueprints.hashing import hash_media
 from OpenMediaMatch.blueprints.matching import lookup_signal
-from OpenMediaMatch.utils import api_error_handler
+from OpenMediaMatch.utils.flask_utils import api_error_handler
 
 
 bp = Blueprint("development", __name__)

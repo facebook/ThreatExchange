@@ -28,13 +28,11 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
-    FetchedSignalMetadata,
     AggregateSignalOpinion,
 )
 
 from OpenMediaMatch.storage.postgres import database, flask_utils
 from OpenMediaMatch.storage import interface
-from OpenMediaMatch.storage.mocked import MockedUnifiedStore
 from OpenMediaMatch.storage.interface import (
     SignalTypeConfig,
     BankContentConfig,
