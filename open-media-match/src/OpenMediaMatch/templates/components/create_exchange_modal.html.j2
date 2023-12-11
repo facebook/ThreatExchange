@@ -49,6 +49,8 @@
         const reload = window.location
         if (!data.get("api_json")) {
             as_object["api_json"] = {}
+        } else {
+            as_object["api_json"] = JSON.parse(data.get("api_json"))
         }
 
         fetch(`/c/exchanges`, {
