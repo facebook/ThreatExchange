@@ -3,6 +3,7 @@
 # to make it easier to copy this
 
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
+from OpenMediaMatch.utils.fetch_benchmarking import InfiniteRandomExchange
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.content_type.photo import PhotoContent
@@ -29,5 +30,5 @@ TASK_INDEXER = True
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     signal_types=[PdqSignal, VideoMD5Signal],
     content_types=[PhotoContent, VideoContent],
-    exchange_types=[StaticSampleSignalExchangeAPI],
+    exchange_types=[StaticSampleSignalExchangeAPI, InfiniteRandomExchange],
 )

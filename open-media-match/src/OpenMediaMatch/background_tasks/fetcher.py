@@ -18,7 +18,7 @@ from OpenMediaMatch.storage.interface import ISignalExchangeStore, SignalTypeCon
 
 logger = logging.getLogger(__name__)
 
-COMMIT_TO_DB_MAX_SIZE = 10000
+COMMIT_TO_DB_MAX_SIZE = 5000
 COMMIT_TO_DB_MAX_SEC = 60
 
 ONE_FETCH_MAX_SEC = 60 * 4
