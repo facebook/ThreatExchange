@@ -29,8 +29,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="exchange_create_form_json" class="form-label">Type-specific JSON</label>
-                        <textarea type="text" class="form-control" name="api_json" id="exchange_create_form_json"
-                            placeholder="{}"></textarea>
+                        <textarea type="text" class="form-control" name="api_json" id="exchange_create_form_json" rows=5
+                            placeholder="{}" onblur="validatePrettyFormJSON(this)"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -42,6 +42,19 @@
     </div>
 </div>
 <script>
+    function validatePrettyFormJSON(elem) {
+        try {
+            const obj = JSON.parse(elem.value || "{}");
+            const pretty = JSON.stringify(obj, undefined, 4);
+            elem.value = pretty;
+            elem.classList.remove("is-invalid");
+            elem.classList.add("is-valid");
+        } catch (e) {
+            elem.classList.remove("is-valid");
+            elem.classList.add("is-invalid");
+        }
+    }
+
     document.getElementById("exchange_create_form").addEventListener("submit", async event => {
         event.preventDefault();
         const data = new FormData(event.target);
