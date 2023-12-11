@@ -59,7 +59,7 @@ setup(
         "requests==2.31.0",
         "urllib3==1.26.18",  # For allow_methods
         "python-dateutil==2.8.2",
-        "dacite==1.7.0",  # 0.18.0 broken our tests due to faulty caching
+        "dacite==1.7.0",  # 0.18.0 broke our tests due to faulty caching
         "Pillow==10.0.1",  # pdq
         "pdqhash==0.2.3",  # pdq
         "faiss-cpu==1.7.3",  # faiss

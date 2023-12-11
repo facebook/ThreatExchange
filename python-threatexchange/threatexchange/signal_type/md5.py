@@ -72,7 +72,7 @@ class VideoMD5Signal(
         return bytes_hash.hexdigest()
 
     @classmethod
-    def generate_random_hash(cls) -> str:
+    def get_random_signal(cls) -> str:
         return f"{random.randrange(16**32):032x}"
 
     @staticmethod
