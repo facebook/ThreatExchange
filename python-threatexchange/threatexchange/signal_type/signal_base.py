@@ -298,13 +298,3 @@ class CanGenerateRandomSignal(metaclass=abc.ABCMeta):
         This is meant to help with loadtesting, though it's okay if this
         implementation may return duplicates.
         """
-
-    @classmethod
-    def get_random_signals(cls, count: int) -> t.Iterable[str]:
-        """
-        Generate count random valid signals for this SignalType.
-
-        Helps for loadtesting that might require generating thousands or even
-        millions of signals.
-        """
-        return (cls.get_random_signal() for _ in range(count))

@@ -84,7 +84,7 @@ class PdqSignal(
     @classmethod
     def get_random_signal(cls) -> str:
         # Generate a random hexadecimal string of length 64
-        return "".join(random.choice("0123456789abcdef") for _ in range(64))
+        return f"{random.randrange(16**64):064x}"
 
     @staticmethod
     def get_examples() -> t.List[str]:

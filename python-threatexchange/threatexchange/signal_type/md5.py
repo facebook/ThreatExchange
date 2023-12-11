@@ -24,6 +24,7 @@ class VideoMD5Signal(
     signal_base.SimpleSignalType,
     signal_base.BytesHasher,
     HasFbThreatExchangeIndicatorType,
+    signal_base.CanGenerateRandomSignal,
 ):
     """
     Simple signal type for Video MD5s.
@@ -72,15 +73,7 @@ class VideoMD5Signal(
 
     @classmethod
     def generate_random_hash(cls) -> str:
-        # Generate a random string of characters
-        random_string = "".join(
-            random.choice(string.ascii_letters + string.digits) for _ in range(16)
-        )
-
-        # Hash the random string using MD5
-        md5_hash = hashlib.md5(random_string.encode()).hexdigest()
-
-        return md5_hash
+        return f"{random.randrange(16**32):032x}"
 
     @staticmethod
     def get_examples() -> t.List[str]:
