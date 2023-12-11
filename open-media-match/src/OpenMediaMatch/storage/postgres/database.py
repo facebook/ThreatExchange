@@ -12,6 +12,7 @@ references which are meant to be reaped at some future time.
 import io
 import typing as t
 import re
+import json
 import datetime
 
 from OpenMediaMatch.storage.interface import (
@@ -185,7 +186,10 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
         self.name = cfg.name
         self.fetching_enabled = cfg.enabled
         self.api_cls = cfg.api
-        self.typed_config = dataclass_json.dataclass_dump_dict(cfg)
+        # This foolishness is because dataclass_dump handles more types
+        # than sqlalchemy JSON is willing to, so we "cast" to simple json
+        as_json_str = dataclass_json.dataclass_dumps(cfg)
+        self.typed_config = json.loads(as_json_str)
         return self
 
     def as_storage_iface_cls(

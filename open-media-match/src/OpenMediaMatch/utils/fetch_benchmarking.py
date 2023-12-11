@@ -7,7 +7,7 @@ In the long term, these are generic enough that should probably live in
 python-threatexchange, but for short-term needs we're just working on them 
 here.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections import defaultdict
 import time
 import typing as t
@@ -35,6 +35,8 @@ class InfiniteRandomExchangeCollabConfig(CollaborationConfigBase):
     total_item_limit: int = 1000000
     # Simulate IO time
     sleep_per_iter: float = 0.0
+    # Only these signal_types
+    only_signal_types: t.Set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -112,6 +114,12 @@ class InfiniteRandomExchange(
             for st in supported_signal_types
             if issubclass(st, CanGenerateRandomSignal)
         ]
+        if self.config.only_signal_types:
+            supported_sts = [
+                st
+                for st in supported_sts
+                if st.get_name() in self.config.only_signal_types
+            ]
         total_fetched = 0 if checkpoint is None else checkpoint.total_fetched
         inf = float("inf")
         limit = inf
