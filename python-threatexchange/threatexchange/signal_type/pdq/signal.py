@@ -23,6 +23,7 @@ class PdqSignal(
     signal_base.SimpleSignalType,
     signal_base.BytesHasher,
     HasFbThreatExchangeIndicatorType,
+    signal_base.CanGenerateRandomSignal,
 ):
     """
     PDQ is an open source photo similarity algorithm.
@@ -81,10 +82,9 @@ class PdqSignal(
         return pdq_hash
 
     @classmethod
-    def generate_random_hash(cls) -> str:
+    def get_random_signal(cls) -> str:
         # Generate a random hexadecimal string of length 64
-        random_hash = "".join(random.choice("0123456789abcdef") for _ in range(64))
-        return random_hash
+        return f"{random.randrange(16**64):064x}"
 
     @staticmethod
     def get_examples() -> t.List[str]:

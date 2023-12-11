@@ -6,6 +6,7 @@ Core abstractions for signal types.
 
 import abc
 import pathlib
+import random
 import typing as t
 
 from threatexchange import common
@@ -279,3 +280,21 @@ class TrivialLinearSearchMatchIndex(index.SignalTypeIndex[index.T]):
 
     def add(self, signal_str: str, entry: index.T) -> None:
         self.state.append((signal_str, entry))
+
+
+class CanGenerateRandomSignal(metaclass=abc.ABCMeta):
+    """
+    A mixin for SignalTypes that can generate plausible fake data on demand.
+    """
+
+    @classmethod
+    @abc.abstractmethod
+    def get_random_signal(cls) -> str:
+        """
+        Generate a random valid signal for this SignalType.
+
+        Optionally take a random for seeding purposes.
+
+        This is meant to help with loadtesting, though it's okay if this
+        implementation may return duplicates.
+        """
