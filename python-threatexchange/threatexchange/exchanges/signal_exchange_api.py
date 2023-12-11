@@ -197,7 +197,7 @@ class SignalExchangeAPI(
         for k, v in new.items():
             new_v = cls.fetch_value_merge(old.get(k), v)
             if new_v is None:
-                old.pop(k, None)  # type: ignore
+                old.pop(k, None)
             else:
                 old[k] = new_v
 
