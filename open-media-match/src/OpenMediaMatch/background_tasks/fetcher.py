@@ -15,6 +15,7 @@ from threatexchange.exchanges.fetch_state import (
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.storage.interface import ISignalExchangeStore, SignalTypeConfig
+from OpenMediaMatch.utils.time_utils import duration_to_human_str
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +39,15 @@ def fetch_all(
     For all collaborations registered with OMM, fetch()
     """
     logger.info("Running the %s background task", fetch_all.__name__)
+    start = time.time()
     collabs = collab_store.exchanges_get()
     for c in collabs.values():
         fetch(collab_store, signal_type_cfgs, c)
-    logger.info("Completed %s background task", fetch_all.__name__)
+    logger.info(
+        "Completed %s background task - %s",
+        fetch_all.__name__,
+        duration_to_human_str(int(time.time() - start)),
+    )
 
 
 def fetch(
@@ -50,6 +56,7 @@ def fetch(
     collab: CollaborationConfigBase,
 ):
     """Wrapper for exception recording"""
+    start = time.time()
     try:
         collab_store.exchange_start_fetch(collab.name)
         _fetch(collab_store, signal_type_cfgs, collab)
@@ -57,6 +64,13 @@ def fetch(
         logger.exception("%s[%s] Failed to fetch!", collab.name, collab.api)
         collab_store.exchange_complete_fetch(
             collab.name, is_up_to_date=False, exception=True
+        )
+    finally:
+        logger.info(
+            "%s[%s] Completed - ",
+            collab.name,
+            collab.api,
+            duration_to_human_str(int(time.time() - start)),
         )
 
 

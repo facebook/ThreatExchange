@@ -10,6 +10,7 @@ from OpenMediaMatch.blueprints import matching, curation, hashing
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.background_tasks import build_index
 from OpenMediaMatch.storage.postgres.database import db
+from OpenMediaMatch.utils.time_utils import duration_to_human_str
 
 bp = Blueprint("ui", __name__)
 
@@ -61,15 +62,8 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
         last_run_text = "Never"
         if last_run_time is not None:
             diff = max(int(time.time() - last_run_time), 0)
-            last_run_text = "Ages"
-            if diff < 3600:
-                last_run_text = ""
-                if diff > 60:
-                    last_run_text = f"{diff // 60}m"
-                    diff %= 60
-                if not last_run_text or diff > 0:
-                    last_run_text += f" {diff}s"
-                last_run_text += " ago"
+            last_run_text = duration_to_human_str(diff, terse=True)
+            last_run_text += " ago"
 
         ret[name] = {
             "api": cfg.api,

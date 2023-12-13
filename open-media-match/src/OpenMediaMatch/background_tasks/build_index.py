@@ -1,6 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import logging
+import time
 import typing as t
 
 from threatexchange.signal_type.signal_base import SignalType
@@ -13,6 +14,7 @@ from OpenMediaMatch.storage.interface import (
     IBankStore,
     SignalTypeIndexBuildCheckpoint,
 )
+from OpenMediaMatch.utils.time_utils import duration_to_human_str
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +35,17 @@ def build_all_indices(
 
     Any additional indices (for disabled SignalTypes) are deleted.
     """
+    start = time.time()
     logger.info("Running the %s background task", build_all_indices.__name__)
     enabled = signal_type_cfgs.get_enabled_signal_types()
     for st in enabled.values():
         build_index(st, bank_store, index_store)
 
-    logger.info("Completed %s background task", build_all_indices.__name__)
+    logger.info(
+        "Completed %s background task - %s",
+        build_all_indices.__name__,
+        duration_to_human_str(int(time.time() - start)),
+    )
     # TODO cleanup disabled / deleted signal types
 
 
@@ -50,6 +57,7 @@ def build_index(
     """
     Build one index from scratch with the current bank contents and persist it.
     """
+    start = time.time()
     # First check to see if new signals have appeared since the last build
     idx_checkpoint = index_store.get_last_index_build_checkpoint(for_signal_type)
     bank_checkpoint = bank_store.get_current_index_build_target(for_signal_type)
@@ -72,6 +80,9 @@ def build_index(
             total_hash_count=len(signal_list),
         )
     logger.info(
-        "Indexed %d signals for %s", len(signal_list), for_signal_type.get_name()
+        "Indexed %d signals for %s - %s",
+        len(signal_list),
+        for_signal_type.get_name(),
+        duration_to_human_str(int(time.time() - start)),
     )
     index_store.store_signal_type_index(for_signal_type, built_index, checkpoint)
