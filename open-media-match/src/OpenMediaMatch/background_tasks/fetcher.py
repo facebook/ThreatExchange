@@ -67,7 +67,7 @@ def fetch(
         )
     finally:
         logger.info(
-            "%s[%s] Completed - ",
+            "%s[%s] Completed - %s",
             collab.name,
             collab.api,
             duration_to_human_str(int(time.time() - start)),
