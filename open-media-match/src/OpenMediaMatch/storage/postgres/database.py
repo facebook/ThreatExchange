@@ -101,8 +101,17 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     __tablename__ = "bank_content"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    bank_id: Mapped[int] = mapped_column(ForeignKey("bank.id"), index=True)
+    bank_id: Mapped[int] = mapped_column(ForeignKey(Bank.id), index=True)
     bank: Mapped[Bank] = relationship(back_populates="content")
+
+    imported_from_id: Mapped[t.Optional[int]] = mapped_column(
+        ForeignKey("exchange_data.id", ondelete="CASCADE"),
+        default=None,
+    )
+    imported_from: Mapped[t.Optional["ExchangeData"]] = relationship(
+        back_populates="bank_content",
+        foreign_keys=[imported_from_id],
+    )
 
     # Should we store the content type as well?
 
@@ -252,7 +261,6 @@ class ExchangeFetchStatus(db.Model):  # type: ignore[name-defined]
         ForeignKey(CollaborationConfig.id, ondelete="CASCADE"), primary_key=True
     )
     collab: Mapped["CollaborationConfig"] = relationship(
-        "CollaborationConfig",
         back_populates="fetch_status",
         uselist=False,
         single_parent=True,
@@ -298,6 +306,8 @@ class ExchangeFetchStatus(db.Model):  # type: ignore[name-defined]
 
 
 class ExchangeData(db.Model):  # type: ignore[name-defined]
+    __tablename__ = "exchange_data"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     collab_id: Mapped[int] = mapped_column(
         ForeignKey(CollaborationConfig.id, ondelete="CASCADE"), index=True
@@ -307,11 +317,11 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
     pickled_original_fetch_data: Mapped[t.Optional[bytes]] = mapped_column(LargeBinary)
     fetched_metadata_summary: Mapped[t.List[t.Any]] = mapped_column(JSON, default=list)
 
-    bank_content_id: Mapped[t.Optional[int]] = mapped_column(
-        ForeignKey(BankContent.id), unique=True, index=True
-    )
     bank_content: Mapped[t.Optional[BankContent]] = relationship(
-        cascade="all, delete", passive_deletes=True
+        back_populates="imported_from",
+        cascade="all, delete",
+        passive_deletes=True,
+        uselist=False,
     )
 
     # Whether this has been matched by this instance of OMM

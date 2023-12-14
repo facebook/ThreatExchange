@@ -1,6 +1,10 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import click
 import flask
+from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy.schema import DropConstraint, DropTable, MetaData, Table
+
 
 from OpenMediaMatch.storage.postgres import database
 
@@ -24,9 +28,54 @@ def add_cli_commands(app: flask.Flask) -> None:
             print("ExchangeData:", database.ExchangeData.query.count())
 
     @app.cli.command("reset_all_tables")
-    def reset_tables():
+    @click.option("-n", "--nocreate", is_flag=True, help="Do drop only")
+    @click.option(
+        "-D", "--dropharder", is_flag=True, help="For when drop_all has failed us"
+    )
+    def reset_tables(nocreate: bool, dropharder: bool) -> None:
         """Clears all the tables and recreates them"""
         with app.app_context():
-            # drop_all not smart enough to drop in the right order
-            database.db.drop_all()
-            database.db.create_all()
+            # drop_all occasionally not strong enough enough
+            if dropharder:
+                _drop_harder()
+            else:
+                database.db.drop_all()
+            if not nocreate:
+                database.db.create_all()
+
+
+def _drop_harder():
+    """
+    Source: https://github.com/pallets-eco/flask-sqlalchemy/issues/722
+    """
+
+    con = database.db.engine.connect()
+    trans = con.begin()
+    inspector = Inspector.from_engine(database.db.engine)
+
+    # We need to re-create a minimal metadata with only the required things to
+    # successfully emit drop constraints and tables commands for postgres (based
+    # on the actual schema of the running instance)
+    meta = MetaData()
+    tables = []
+    all_fkeys = []
+
+    for table_name in inspector.get_table_names():
+        fkeys = []
+
+        for fkey in inspector.get_foreign_keys(table_name):
+            if not fkey["name"]:
+                continue
+
+            fkeys.append(database.db.ForeignKeyConstraint((), (), name=fkey["name"]))
+
+        tables.append(Table(table_name, meta, *fkeys))
+        all_fkeys.extend(fkeys)
+
+    for fkey in all_fkeys:
+        con.execute(DropConstraint(fkey))
+
+    for table in tables:
+        con.execute(DropTable(table))
+
+    trans.commit()
