@@ -78,6 +78,9 @@ def _fetch(
     log = lambda msg, *args, level=logger.info: level(
         "%s[%s] " + msg, collab.name, collab.api, *args
     )
+    if not collab.enabled:
+        log("Skipping - disabled")
+        return
     log("Fetching signals for %s from %s", collab.name, collab.api)
 
     api_cls = collab_store.exchange_get_type_configs().get(collab.api)
