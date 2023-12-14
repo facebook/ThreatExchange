@@ -23,6 +23,7 @@ dependencies = [
     "requests",
     "threatexchange",
     "flask_apscheduler",
+    "python-dateutil",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +33,7 @@ all = [
     "pytest",
     "types-Flask-Migrate",
     "types-requests",
+    "types-python-dateutil",
     "gunicorn",
     "flask_apscheduler"
 ]
