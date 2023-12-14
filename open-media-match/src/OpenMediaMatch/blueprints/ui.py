@@ -59,6 +59,9 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
             progress_style += " progress-bar-striped progress-bar-animated"
             last_run_time = fetch_status.running_fetch_start_ts
 
+        if not cfg.enabled:
+            progress_style = "bg-secondary"
+
         last_run_text = "Never"
         if last_run_time is not None:
             diff = max(int(time.time() - last_run_time), 0)
@@ -68,6 +71,7 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
         ret[name] = {
             "api": cfg.api,
             "bank": name.removeprefix("c-"),
+            "enabled": cfg.enabled,
             "count": fetch_status.fetched_items,
             "progress_style": progress_style,
             "progress_pct": progress,
@@ -116,22 +120,6 @@ def upload():
     }
 
     return {"hashes": signals, "banks": sorted(banks)}
-
-
-@bp.route("/rebuild_index", methods=["POST"])
-def rebuild_index():
-    st_name = request.form.get("signal_type")
-    storage = get_storage()
-    if st_name is not None:
-        st = storage.get_signal_type_configs().get(st_name)
-        if st is None:
-            abort(404, f"No such signal type '{st_name}'")
-        if not st.enabled:
-            abort(400, f"Signal type {st_name} is disabled")
-        build_index.build_index(st.signal_type)
-        return {}
-    build_index.build_all_indices(storage, storage, storage)
-    return redirect("./")
 
 
 @bp.route("/factory_reset", methods=["POST"])

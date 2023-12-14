@@ -13,7 +13,16 @@
     <tbody id="index_table_body">
         {% for name, dat in collabs.items() %}
         <tr>
-            <th scope="row">{{dat['bank']}}</th>
+            <th scope="row">
+                <div class="hstack gap-3">
+                    <div>{{dat['bank']}}</div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch"
+                            onchange="onExchangeEnabledToggle('{{dat['bank']}}', this)" {%if dat['enabled']
+                            %}checked{%endif%}>
+                    </div>
+                </div>
+            </th>
             <td scope="row">{{dat['api']}}</td>
             <td scope="row">{{dat['count']}}</td>
             <td class="align-middle">
@@ -30,3 +39,23 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+    function onExchangeEnabledToggle(name, elem) {
+        fetch(`/c/exchange/` + name, {
+            method: 'PUT',
+            body: JSON.stringify({ 'enabled': elem.checked }),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+        }).then(async (response) => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                json = await response.json();
+                alert("Failed to enable/disable!");
+            }
+        });
+    }
+</script>

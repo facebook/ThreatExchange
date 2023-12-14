@@ -1,8 +1,7 @@
 import re
 import typing as t
 
-from flask import Blueprint
-from flask import request, jsonify, abort
+from flask import Blueprint, Response, request, jsonify, abort
 from sqlalchemy.exc import IntegrityError
 from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.signal_base import SignalType
@@ -264,7 +263,13 @@ def exchange_show_by_name(exchange_name: str):
       ...
     }
     """
-    return jsonify(_get_collab(exchange_name))
+    # Workaround for serializing enums and sets. The smarter way would be to
+    # override the root level json serializer, but that's a future project
+    return Response(
+        response=dataclass_json.dataclass_dumps(_get_collab(exchange_name)),
+        status=200,
+        mimetype="application/json",
+    )
 
 
 @bp.route("/exchange/<string:exchange_name>/status")
@@ -294,9 +299,12 @@ def exchange_get_fetch_status(exchange_name: str):
 def exchange_update(exchange_name: str):
     """
     Edit exchange configuration
+
     Inputs:
       * Configuration name
-      * JSON serialization of configuration elements to update
+      * enabled: bool
+
+      At some point in the future may support more fields
 
     Returns:
       * JSON serialization of configuration, includes exchange-specific metadata
@@ -309,7 +317,14 @@ def exchange_update(exchange_name: str):
     }
     """
     collab = _get_collab(exchange_name)
-    abort(501, "Not yet implemented")
+    data = request.get_json()
+    collab.enabled = data.get("enabled", collab.enabled)
+    persistence.get_storage().exchange_update(collab, create=False)
+    return Response(
+        response=dataclass_json.dataclass_dump_dict(collab),
+        status=200,
+        mimetype="application/json",
+    )
 
 
 @bp.route("/exchange/<string:exchange_name>", methods=["DELETE"])
