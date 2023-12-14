@@ -58,6 +58,9 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
             progress_style += " progress-bar-striped progress-bar-animated"
             last_run_time = fetch_status.running_fetch_start_ts
 
+        if not cfg.enabled:
+            progress_style = "bg-secondary"
+
         last_run_text = "Never"
         if last_run_time is not None:
             diff = max(int(time.time() - last_run_time), 0)
