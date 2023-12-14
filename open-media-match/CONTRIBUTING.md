@@ -94,6 +94,15 @@ mypy src/OpenMediaMatch
 ```
 If you don't run it in this directory, mypyp won't be able to find its settings folder and you'll get different results than the CI.
 
+## Save Keystrokes on Common commands
+Add these to your ~/.bashrc file and then reload with `. ~/.bashrc`
+```bash
+alias b='(cd /workspace/src/OpenMediaMatch && black)'
+alias my='(cd /workspace && mypy src/OpenMediaMatch)'
+alias t='(cd /workspace/src/OpenMediaMatch && py.test)'
+alias myt='my && t'
+```
+
 ## Recover from mysterious errors during sever startup?
 If you had a syntax error in your code when you opened vscode, the automatic flask run that is created for you may fail. You can easily manually run it!
 
