@@ -317,7 +317,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             ).scalar_one_or_none()
             if val is None:
                 if record is not None:
-                    sesh.execute(delete(record))
+                    sesh.delete(record)
                 continue
             if record is None:
                 record = database.ExchangeData()
