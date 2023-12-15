@@ -10,6 +10,7 @@ import typing as t
 import flask
 import flask_migrate
 from sqlalchemy import select, delete, func, Select
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
 
@@ -308,13 +309,29 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         sesh = database.db.session
 
-        for k, val in dat.items():
-            # More sequential fetches - trying to use in_() doesn't seem to work
-            record = sesh.execute(
+        # To optimize what is essentially a bulk insert, we break this up into three
+        # passes:
+        # 1. Select all the existing records with the given keys, already joined
+        # 2.
+        # 3.
+        existing_records = {
+            record.fetch_id: record
+            for record in sesh.execute(
                 select(database.ExchangeData)
                 .where(database.ExchangeData.collab_id == cfg.id)
-                .where(database.ExchangeData.fetch_id == str(k))
-            ).scalar_one_or_none()
+                .where(database.ExchangeData.fetch_id.in_([str(k) for k in dat]))
+                .options(
+                    joinedload(database.ExchangeData.bank_content).joinedload(
+                        database.BankContent.signals
+                    )
+                )
+            )
+            .unique()
+            .scalars()
+        }
+
+        for k, val in dat.items():
+            record = existing_records.get(str(k))
             if val is None:
                 if record is not None:
                     sesh.delete(record)
@@ -325,7 +342,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 record.fetch_id = str(k)
             sesh.add(record)
             record.pickled_original_fetch_data = pickle.dumps(val)
-            sesh.flush()
             self._sync_exchange_data_to_bank(
                 cfg.import_bank_id, collab_config, record, api_cls, k, val
             )
@@ -354,7 +370,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
             {fetch_key: fetch_value},
         )
         # Merge all the metadata together for one aggregated opinion for this record
-        # This might not be fully correct for all
+        # This might not be fully correct for all types because the constraints on
+        # SignalExchangeAPI aren't strong enough as of 12/2023
         all_signal_opinions = [
             opinion
             for signal_metadata in as_signal_types.values()
@@ -369,13 +386,11 @@ class DefaultOMMStore(interface.IUnifiedStore):
             # there's no usable signals, so don't create an empty record
             if bank_content is not None:
                 sesh.delete(bank_content)
-                sesh.flush()
             return
 
         if bank_content is None:
             bank_content = database.BankContent(bank_id=bank_id)
             record.bank_content = bank_content
-            sesh.add(bank_content)
 
         unseen_signals_in_db_for_fetch_key = {
             (signal.signal_type, signal.signal_val): signal
@@ -393,19 +408,18 @@ class DefaultOMMStore(interface.IUnifiedStore):
                     # Remove from the list of signals
                     del unseen_signals_in_db_for_fetch_key[k]
                 else:
-                    content_signal = database.ContentSignal(
-                        content=bank_content,
-                        signal_type=signal_type.get_name(),
-                        signal_val=signal_value,
+                    bank_content.signals.append(
+                        database.ContentSignal(
+                            signal_type=signal_type.get_name(),
+                            signal_val=signal_value,
+                        )
                     )
-                    sesh.add(content_signal)
 
         # Removals
         # At this point, we've popped all the ones that are still in the record
         # Any left are ones that have been removed from the API copy
         for to_delete in unseen_signals_in_db_for_fetch_key.values():
-            database.db.session.delete(to_delete)
-        sesh.flush()
+            sesh.delete(to_delete)
 
     def exchange_get_data(
         self,
