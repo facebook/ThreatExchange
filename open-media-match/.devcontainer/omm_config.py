@@ -24,7 +24,7 @@ ROLE_HASHER = True
 ROLE_MATCHER = True
 ROLE_CURATOR = True
 # APScheduler (background threads for development)
-# TASK_FETCHER = True
+TASK_FETCHER = True
 TASK_INDEXER = True
 
 # Core functionality configuration
@@ -35,4 +35,4 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
 )
 
 # Debugging stuff
-SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO
+# SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO

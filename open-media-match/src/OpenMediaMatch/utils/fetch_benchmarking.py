@@ -16,7 +16,6 @@ from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     FetchedSignalMetadata,
     FetchDelta,
-    SignalOpinion,
 )
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
