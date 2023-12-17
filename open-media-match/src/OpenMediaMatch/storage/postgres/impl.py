@@ -3,13 +3,15 @@
 """
 The default store for accessing persistent data on OMM.
 """
+from dataclasses import dataclass, field
 import pickle
 import time
 import typing as t
 
 import flask
 import flask_migrate
-from sqlalchemy import select, delete, func, Select
+from sqlalchemy import select, delete, func, Select, insert, update
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
 
@@ -28,7 +30,7 @@ from threatexchange.content_type.content_base import ContentType
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
-    AggregateSignalOpinion,
+    FetchedSignalMetadata,
 )
 
 from OpenMediaMatch.storage.postgres import database, flask_utils
@@ -308,104 +310,107 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         sesh = database.db.session
 
-        for k, val in dat.items():
-            # More sequential fetches - trying to use in_() doesn't seem to work
-            record = sesh.execute(
+        # To optimize what is essentially a bulk insert,
+        # we break this up into four passes:
+        # 1. Select all the existing records with the given keys, already joined
+        # 2. Partition the existing ExportData records into creates, updates, and deletes - execute those
+        # 3. Create any missing bankable content
+        # 4. Partition the signal updates into creates and deletes - execute those
+        # Commit
+
+        # Pass 1 - select the full state already in the database
+        existing_xds = {
+            record.fetch_id: record
+            for record in sesh.execute(
                 select(database.ExchangeData)
                 .where(database.ExchangeData.collab_id == cfg.id)
-                .where(database.ExchangeData.fetch_id == str(k))
-            ).scalar_one_or_none()
+                .where(database.ExchangeData.fetch_id.in_([str(k) for k in dat]))
+                .options(
+                    joinedload(database.ExchangeData.bank_content).joinedload(
+                        database.BankContent.signals
+                    )
+                )
+            )
+            .unique()
+            .scalars()
+        }
+
+        xd_to_create: list[t.Tuple[dict[str, t.Any], _BulkDbOpExchangeDataHelper]] = []
+        xd_to_update = []
+        xd_to_delete = []
+        op_helpers = {}
+
+        signal_types = list(self.signal_types.values())
+
+        # Pass 1 - Collect bulk create/update/dete the ExchageData
+        for raw_k, val in dat.items():
+            k = str(raw_k)
+            xd = existing_xds.get(k)
             if val is None:
-                if record is not None:
-                    sesh.delete(record)
+                if xd is not None:
+                    xd_to_delete.append(xd.id)
                 continue
-            if record is None:
-                record = database.ExchangeData()
-                record.collab_id = cfg.id
-                record.fetch_id = str(k)
-            sesh.add(record)
-            record.pickled_original_fetch_data = pickle.dumps(val)
-            sesh.flush()
-            self._sync_exchange_data_to_bank(
-                cfg.import_bank_id, collab_config, record, api_cls, k, val
+            pickled_original_data = pickle.dumps(val)
+            as_signal_types = api_cls.naive_convert_to_signal_type(
+                signal_types, cfg, {raw_k: val}
             )
 
+            if xd is None:
+                xd_to_create.append(
+                    (
+                        {
+                            "collab_id": cfg.id,
+                            "fetch_id": k,
+                            "pickled_original_fetch_data": pickled_original_data,
+                        },
+                        _BulkDbOpExchangeDataHelper.from_creation(as_signal_types),
+                    )
+                )
+            else:
+                op_helpers[
+                    xd.id
+                ] = _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
+                    xd, as_signal_types
+                )
+                if pickled_original_data != xd.pickled_original_fetch_data:
+                    xd_to_update.append(
+                        {
+                            "id": xd.id,
+                            "pickled_original_fetch_data": pickled_original_data,
+                        }
+                    )
+
+        if xd_to_create:
+            created_ids = sesh.scalars(
+                insert(database.ExchangeData).returning(
+                    database.ExchangeData.id, sort_by_parameter_order=True
+                ),
+                [t[0] for t in xd_to_create],
+            ).all()
+
+            assert len(created_ids) == len(xd_to_create)
+            for id, (_, op_helper) in zip(created_ids, xd_to_create):
+                op_helper.exchange_data_id = id
+                op_helpers[id] = op_helper
+
+        if xd_to_update:
+            sesh.execute(update(database.ExchangeData), xd_to_update)
+        if xd_to_delete:
+            sesh.execute(
+                delete(database.ExchangeData).where(
+                    database.ExchangeData.id.in_(xd_to_delete)
+                )
+            )
+        sesh.flush()
+        _sync_bankable_content(op_helpers, cfg.import_bank_id)
+        _sync_content_signal(op_helpers)
+
         if fetch_status is None:
-            fetch_status = database.ExchangeFetchStatus()
-            fetch_status.collab = cfg
+            fetch_status = database.ExchangeFetchStatus(collab=cfg)
         fetch_status.set_checkpoint(checkpoint)
 
         sesh.add(fetch_status)
         sesh.commit()
-
-    def _sync_exchange_data_to_bank(
-        self,
-        bank_id: int,
-        cfg: CollaborationConfigBase,
-        record: database.ExchangeData,
-        api_cls: TSignalExchangeAPICls,
-        fetch_key: t.Any,
-        fetch_value: t.Any,
-    ) -> None:
-        all_signal_types = self.get_signal_type_configs()
-        as_signal_types = api_cls.naive_convert_to_signal_type(
-            [stc.signal_type for stc in all_signal_types.values()],
-            cfg,
-            {fetch_key: fetch_value},
-        )
-        # Merge all the metadata together for one aggregated opinion for this record
-        # This might not be fully correct for all
-        all_signal_opinions = [
-            opinion
-            for signal_metadata in as_signal_types.values()
-            for metadata in signal_metadata.values()
-            for opinion in metadata.get_as_opinions()
-        ]
-        arregated = AggregateSignalOpinion.from_opinions(all_signal_opinions)
-
-        sesh = database.db.session
-        bank_content = record.bank_content
-        if not as_signal_types or record.verification_result is False:
-            # there's no usable signals, so don't create an empty record
-            if bank_content is not None:
-                sesh.delete(bank_content)
-                sesh.flush()
-            return
-
-        if bank_content is None:
-            bank_content = database.BankContent(bank_id=bank_id)
-            record.bank_content = bank_content
-            sesh.add(bank_content)
-
-        unseen_signals_in_db_for_fetch_key = {
-            (signal.signal_type, signal.signal_val): signal
-            for signal in bank_content.signals
-        }
-
-        # Additions / modifications
-        for signal_type, signal_to_metadata in as_signal_types.items():
-            for signal_value in signal_to_metadata:
-                # TODO - check the metadata for signals for opinions we own
-                #        that have false-positive on them.
-                k = (signal_type.get_name(), signal_value)
-                if k in unseen_signals_in_db_for_fetch_key:
-                    # If we need to sync the record, here's where we do it
-                    # Remove from the list of signals
-                    del unseen_signals_in_db_for_fetch_key[k]
-                else:
-                    content_signal = database.ContentSignal(
-                        content=bank_content,
-                        signal_type=signal_type.get_name(),
-                        signal_val=signal_value,
-                    )
-                    sesh.add(content_signal)
-
-        # Removals
-        # At this point, we've popped all the ones that are still in the record
-        # Any left are ones that have been removed from the API copy
-        for to_delete in unseen_signals_in_db_for_fetch_key.values():
-            database.db.session.delete(to_delete)
-        sesh.flush()
 
     def exchange_get_data(
         self,
@@ -503,8 +508,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return content.id
 
     def bank_remove_content(self, bank_name: str, content_id: int) -> None:
-        # TODO
-        raise Exception("Not implemented")
+        database.db.session.execute(
+            delete(database.BankContent).where(database.BankContent.id == content_id)
+        )
+        database.db.session.commit()
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
@@ -577,6 +584,125 @@ class DefaultOMMStore(interface.IUnifiedStore):
         database.db.init_app(app)
         migrate.init_app(app, database.db)
         flask_utils.add_cli_commands(app)
+
+
+def _sync_bankable_content(
+    # ops is modified during the course of the function
+    ops: dict[int, "_BulkDbOpExchangeDataHelper"],
+    bank_id: int,
+) -> None:
+    """
+    Middle pass: sync the expected state of bankable content
+    """
+    sesh = database.db.session
+    bc_id_to_delete = []
+    for xd_id in list(ops):
+        op = ops[xd_id]
+        if op.update_as_signals:
+            continue
+        # We don't need the ops that have no signals - we'll delete them
+        # at this step.
+        del ops[xd_id]
+        if op.bank_content_id is not None:
+            bc_id_to_delete.append(op.bank_content_id)
+    if bc_id_to_delete:
+        sesh.execute(delete(database.BankContent), {"id": id for id in bc_id_to_delete})
+    to_create = [op for op in ops.values() if op.bank_content_id is None]
+    if not to_create:
+        return
+    created_ids = sesh.scalars(
+        insert(database.BankContent).returning(
+            database.BankContent.id, sort_by_parameter_order=True
+        ),
+        [
+            {"bank_id": bank_id, "imported_from_id": op.exchange_data_id}
+            for op in to_create
+        ],
+    )
+    for id, op in zip(created_ids, to_create):
+        op.bank_content_id = id
+    sesh.flush()
+
+
+def _sync_content_signal(
+    ops: dict[int, "_BulkDbOpExchangeDataHelper"],
+) -> None:
+    """
+    Final pass: insert/delete content_signal
+    """
+    sesh = database.db.session
+    to_add: list[dict[str, t.Any]] = []
+    to_delete: list[database.ContentSignal] = []
+    for op in ops.values():
+        unseen_signals_in_db_for_fetch_key = {
+            (signal.signal_type, signal.signal_val): signal
+            for signal in op.existing_signals
+        }
+
+        # Additions / modifications
+        for signal_type, signal_to_metadata in op.update_as_signals.items():
+            for signal_value in signal_to_metadata:
+                # TODO - check the metadata for signals for opinions we own
+                #        that have false-positive on them.
+                k = (signal_type.get_name(), signal_value)
+                if k in unseen_signals_in_db_for_fetch_key:
+                    # If we need to sync the record, here's where we do it
+                    # Remove from the list of signals
+                    del unseen_signals_in_db_for_fetch_key[k]
+                else:
+                    to_add.append(
+                        {
+                            "content_id": op.bank_content_id,
+                            "signal_type": signal_type.get_name(),
+                            "signal_val": signal_value,
+                        }
+                    )
+        # Removals
+        # At this point, we've popped all the ones that are still in the record
+        # Any left are ones that have been removed from the API copy
+        for cs in unseen_signals_in_db_for_fetch_key.values():
+            to_delete.append(cs)
+
+    # Noo! No bulk delete at the moment, sequential it is
+    for cs in to_delete:
+        sesh.delete(cs)
+    if to_add:
+        sesh.execute(insert(database.ContentSignal), to_add)
+
+
+@dataclass
+class _BulkDbOpExchangeDataHelper:
+    """
+    Tracking data for the complex exchange_commit_fetch function
+    """
+
+    exchange_data_id: int | None
+    bank_content_id: int | None
+    existing_signals: list[database.ContentSignal]
+    update_as_signals: dict[type[SignalType], dict[str, FetchedSignalMetadata]]
+
+    @classmethod
+    def from_existing_exchange_data(
+        cls,
+        exchange_data: database.ExchangeData,
+        update_as_signals: dict[type[SignalType], dict[str, FetchedSignalMetadata]],
+    ) -> t.Self:
+        bc = exchange_data.bank_content
+        existing_signals = []
+        if bc is not None:
+            existing_signals = bc.signals
+        return cls(
+            exchange_data.id,
+            None if bc is None else bc.id,
+            existing_signals,
+            update_as_signals,
+        )
+
+    @classmethod
+    def from_creation(
+        cls, update_as_signals: dict[type[SignalType], dict[str, FetchedSignalMetadata]]
+    ) -> t.Self:
+        return cls(None, None, [], update_as_signals)
 
 
 def explain(q, analyze: bool = False):

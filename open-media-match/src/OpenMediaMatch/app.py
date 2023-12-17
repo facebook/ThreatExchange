@@ -18,6 +18,11 @@ import typing as t
 
 import click
 import flask
+from flask.logging import default_handler
+
+from threatexchange.signal_type.signal_base import SignalType, CanGenerateRandomSignal
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from OpenMediaMatch.storage.interface import IUnifiedStore
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
@@ -29,10 +34,6 @@ from OpenMediaMatch.background_tasks import (
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.storage.interface import BankConfig
-
-from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
 def _is_debug_mode():
@@ -61,6 +62,10 @@ def create_app() -> flask.Flask:
     Create and configure the Flask app
     """
 
+    # We like the flask logging format, so lets have it everywhere
+    root = logging.getLogger()
+    if not root.handlers:
+        root.addHandler(default_handler)
     app = flask.Flask(__name__)
 
     if "OMM_CONFIG" in os.environ:
@@ -75,6 +80,10 @@ def create_app() -> flask.Flask:
         SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
+
+    engine_logging = app.config.get("SQLALCHEMY_ENGINE_LOG_LEVEL")
+    if engine_logging is not None:
+        logging.getLogger("sqlalchemy.engine").setLevel(engine_logging)
 
     if "STORAGE_IFACE_INSTANCE" not in app.config:
         app.logger.warning("No storage class provided, using the default")
@@ -151,7 +160,7 @@ def create_app() -> flask.Flask:
             for example in st.get_examples():
                 storage.bank_add_content(bank_name, {st.get_name(): example})
 
-    @app.cli.command("seed_enourmous")
+    @app.cli.command("big-seed")
     @click.option("-b", "--banks", default=100, show_default=True)
     @click.option("-s", "--seeds", default=10000, show_default=True)
     def seed_enourmous(banks: int, seeds: int) -> None:
@@ -161,7 +170,7 @@ def create_app() -> flask.Flask:
         """
         storage = get_storage()
 
-        types: list[t.Type[SignalType]] = [PdqSignal, VideoMD5Signal]
+        types: list[t.Type[CanGenerateRandomSignal]] = [PdqSignal, VideoMD5Signal]
 
         for i in range(banks):
             # create bank
@@ -172,9 +181,11 @@ def create_app() -> flask.Flask:
             for _ in range(seeds // banks):
                 # grab randomly either PDQ or MD5 signal
                 signal_type = random.choice(types)
-                random_hash = signal_type.generate_random_hash()  # type: ignore[attr-defined]
+                random_hash = signal_type.get_random_signal()
 
-                storage.bank_add_content(bank.name, {signal_type: random_hash})
+                storage.bank_add_content(
+                    bank.name, {t.cast(t.Type[SignalType], signal_type): random_hash}
+                )
 
             print("Finished adding hashes to", bank.name)
 

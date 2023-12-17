@@ -23,19 +23,21 @@ def duration_to_human_str(sec: int, *, terse: bool = False) -> str:
 
     parts: list[str] = []
 
-    for label, val in [
+    durations = [
         (" months", delta.months),
         (" days", delta.days),
         (" hours", delta.hours),
         (" minutes", delta.minutes),
         (" seconds", delta.seconds),
-    ]:
+    ]
+
+    for i, (label, val) in enumerate(durations):
         if terse:
             label = label[1]
         elif val == 1:
             label = label[:-1]
         final = bool(parts)
-        if val > 0:
+        if val > 0 or (i == len(durations) - 1 and not final):
             parts.append(f"{val}{label}")
         if final:
             break

@@ -1,6 +1,7 @@
 # This is the configuration that is used by default for the developer instance
 # which runs in the dev container by default. Every config field is present
 # to make it easier to copy this
+import logging
 
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 from OpenMediaMatch.utils.fetch_benchmarking import InfiniteRandomExchange
@@ -32,3 +33,6 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     content_types=[PhotoContent, VideoContent],
     exchange_types=[StaticSampleSignalExchangeAPI, InfiniteRandomExchange],
 )
+
+# Debugging stuff
+# SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO

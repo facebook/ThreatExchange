@@ -7,7 +7,7 @@ In the long term, these are generic enough that should probably live in
 python-threatexchange, but for short-term needs we're just working on them 
 here.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from collections import defaultdict
 import time
 import typing as t
@@ -16,7 +16,6 @@ from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     FetchedSignalMetadata,
     FetchDelta,
-    SignalOpinion,
 )
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
@@ -33,6 +32,8 @@ class InfiniteRandomExchangeCollabConfig(CollaborationConfigBase):
     # How many items to return before no more records are returned
     # A limit of -1 means unlimited
     total_item_limit: int = 1000000
+    updates_per_fetch_iter: int = 0
+    deletes_per_fetch_iter: int = 0
     # Simulate IO time
     sleep_per_iter: float = 0.0
     # Only these signal_types
@@ -41,7 +42,40 @@ class InfiniteRandomExchangeCollabConfig(CollaborationConfigBase):
 
 @dataclass
 class InfiniteRandomExchangeCheckpoint(FetchCheckpointBase):
-    total_fetched: int
+    next_id: int = 0
+    # Updates are on even ids starting with 0
+    update_count: int = 0
+    # Deletes are on odd ids starting with 1
+    delete_count: int = 0
+
+    def get_creates(
+        self, signal_types: t.Sequence[t.Type[SignalType]], count: int
+    ) -> dict[int, t.Tuple[str, str] | None]:
+        ret = {
+            i: _get_signal(i, signal_types)
+            for i in range(self.next_id, self.next_id + count)
+        }
+        self.next_id += count
+        return ret
+
+    def get_updates(
+        self, signal_types: t.Sequence[t.Type[SignalType]], count: int
+    ) -> dict[int, t.Tuple[str, str] | None]:
+        ret: dict[int, t.Tuple[str, str] | None] = {
+            i * 2: _get_signal(i * 2 + 1, signal_types)
+            for i in range(self.update_count, self.update_count + count)
+        }
+        self.update_count += count
+        return ret
+
+    def get_deletes(
+        self, signal_types: t.Sequence[t.Type[SignalType]], count: int
+    ) -> dict[int, None]:
+        ret = {
+            i * 2 + 1: None for i in range(self.delete_count, self.delete_count + count)
+        }
+        self.delete_count += count
+        return ret
 
 
 class InfiniteRandomExchange(
@@ -120,26 +154,36 @@ class InfiniteRandomExchange(
                 for st in supported_sts
                 if st.get_name() in self.config.only_signal_types
             ]
-        total_fetched = 0 if checkpoint is None else checkpoint.total_fetched
+        next_checkpoint = replace(checkpoint or InfiniteRandomExchangeCheckpoint())
         inf = float("inf")
         limit = inf
         if self.config.new_items_per_fetch != -1:
-            limit = total_fetched + self.config.new_items_per_fetch
+            limit = next_checkpoint.next_id + self.config.new_items_per_fetch
         if self.config.total_item_limit != -1:
             limit = min(limit, self.config.total_item_limit)
-        while total_fetched < limit:
-            new_tot = total_fetched + self.config.new_items_per_fetch_iter
+        while next_checkpoint.next_id < limit:
+            count = self.config.new_items_per_fetch_iter
             if limit < inf:
-                new_tot = min(new_tot, int(limit))
-            ret = {
-                i: _get_signal(i, supported_sts) for i in range(total_fetched, new_tot)
-            }
+                count = min(int(limit) - next_checkpoint.next_id, count)
+            ret = next_checkpoint.get_creates(supported_signal_types, count)
+            if self.config.updates_per_fetch_iter:
+                ret.update(
+                    next_checkpoint.get_updates(
+                        supported_signal_types, self.config.updates_per_fetch_iter
+                    )
+                )
+            if self.config.deletes_per_fetch_iter:
+                ret.update(
+                    next_checkpoint.get_deletes(
+                        supported_signal_types, self.config.deletes_per_fetch_iter
+                    )
+                )
             if self.config.sleep_per_iter > 0:
                 time.sleep(self.config.sleep_per_iter)
             yield FetchDelta(
-                ret, InfiniteRandomExchangeCheckpoint(total_fetched=new_tot)
+                ret,
+                replace(next_checkpoint),
             )
-            total_fetched = new_tot
 
 
 def _get_signal(
