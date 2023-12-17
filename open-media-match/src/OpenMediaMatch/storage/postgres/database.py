@@ -107,6 +107,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     imported_from_id: Mapped[t.Optional[int]] = mapped_column(
         ForeignKey("exchange_data.id", ondelete="CASCADE"),
         default=None,
+        unique=True,
     )
     imported_from: Mapped[t.Optional["ExchangeData"]] = relationship(
         back_populates="bank_content",

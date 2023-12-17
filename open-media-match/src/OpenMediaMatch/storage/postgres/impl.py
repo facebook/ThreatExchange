@@ -387,6 +387,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 ),
                 [t[0] for t in xd_to_create],
             ).all()
+
             assert len(created_ids) == len(xd_to_create)
             for id, (_, op_helper) in zip(created_ids, xd_to_create):
                 op_helper.exchange_data_id = id
@@ -597,8 +598,10 @@ def _sync_bankable_content(
     bc_id_to_delete = []
     for xd_id in list(ops):
         op = ops[xd_id]
-        if op.existing_signals:
+        if op.update_as_signals:
             continue
+        # We don't need the ops that have no signals - we'll delete them
+        # at this step.
         del ops[xd_id]
         if op.bank_content_id is not None:
             bc_id_to_delete.append(op.bank_content_id)
@@ -611,7 +614,10 @@ def _sync_bankable_content(
         insert(database.BankContent).returning(
             database.BankContent.id, sort_by_parameter_order=True
         ),
-        [{"bank_id": bank_id} for _ in range(len(to_create))],
+        [
+            {"bank_id": bank_id, "imported_from_id": op.exchange_data_id}
+            for op in to_create
+        ],
     )
     for id, op in zip(created_ids, to_create):
         op.bank_content_id = id
@@ -660,7 +666,8 @@ def _sync_content_signal(
     # Noo! No bulk delete at the moment, sequential it is
     for cs in to_delete:
         sesh.delete(cs)
-    sesh.execute(insert(database.ContentSignal), to_add)
+    if to_add:
+        sesh.execute(insert(database.ContentSignal), to_add)
 
 
 @dataclass

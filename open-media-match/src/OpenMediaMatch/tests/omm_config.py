@@ -1,3 +1,5 @@
+import logging
+
 # Database configuration
 PRODUCTION = False
 DBUSER = "media_match"
@@ -12,3 +14,6 @@ ROLE_CURATOR = True
 
 TASK_FETCHER = False
 TASK_INDEXER = False
+
+# This can help debug tests on the database
+# SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO
