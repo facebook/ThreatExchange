@@ -352,7 +352,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 continue
             pickled_original_data = pickle.dumps(val)
             as_signal_types = api_cls.naive_convert_to_signal_type(
-                signal_types, cfg, {raw_k: val}
+                signal_types, collab_config, {raw_k: val}
             )
 
             if xd is None:
