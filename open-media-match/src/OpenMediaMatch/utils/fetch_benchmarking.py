@@ -24,6 +24,18 @@ from threatexchange.signal_type.signal_base import SignalType, CanGenerateRandom
 
 @dataclass
 class InfiniteRandomExchangeCollabConfig(CollaborationConfigBase):
+    """
+    Settings for the random signal generator API.
+
+    Here are some useful ones for testing OMM (to paste in the UI):
+
+    Fetch a small amount of items per fetch, which exercises delete/create
+      {"new_items_per_fetch": 20, "updates_per_fetch_iter": 1, "deletes_per_fetch_iter": 1}
+
+    PDQ loadtest (10M):
+      {"total_item_limit": 10000000, "only_signal_types": ["pdq"]}
+    """
+
     # How many items to return per fetch_iter()
     new_items_per_fetch_iter: int = 500
     # How many items to return before claiming no more records
@@ -52,7 +64,7 @@ class InfiniteRandomExchangeCheckpoint(FetchCheckpointBase):
         self, signal_types: t.Sequence[t.Type[SignalType]], count: int
     ) -> dict[int, t.Tuple[str, str] | None]:
         ret = {
-            i: _get_signal(i, signal_types)
+            i: self._get_signal(i, signal_types)
             for i in range(self.next_id, self.next_id + count)
         }
         self.next_id += count
@@ -62,20 +74,40 @@ class InfiniteRandomExchangeCheckpoint(FetchCheckpointBase):
         self, signal_types: t.Sequence[t.Type[SignalType]], count: int
     ) -> dict[int, t.Tuple[str, str] | None]:
         ret: dict[int, t.Tuple[str, str] | None] = {
-            i * 2: _get_signal(i * 2 + 1, signal_types)
+            i * 2: self._get_signal(i * 2, signal_types, is_update=True)
             for i in range(self.update_count, self.update_count + count)
         }
         self.update_count += count
         return ret
 
-    def get_deletes(
-        self, signal_types: t.Sequence[t.Type[SignalType]], count: int
-    ) -> dict[int, None]:
+    def get_deletes(self, count: int) -> dict[int, None]:
         ret = {
             i * 2 + 1: None for i in range(self.delete_count, self.delete_count + count)
         }
         self.delete_count += count
         return ret
+
+    def get_expected_signal(
+        self, idx: int, supported: t.Sequence[t.Type[SignalType]]
+    ) -> t.Type[SignalType] | None:
+        """Which signal do we expect to have in this position after updating?"""
+        if not supported:
+            return None
+        if idx % 2 == 0 and idx < self.update_count * 2:
+            idx += 1
+        if idx % 2 == 1 and idx < self.delete_count * 2:
+            return None
+        return supported[idx % len(supported)]
+
+    @staticmethod
+    def _get_signal(
+        idx: int, supported: t.Sequence[t.Type[SignalType]], *, is_update: bool = False
+    ) -> t.Tuple[str, str] | None:
+        if not supported:
+            return "", ""
+        idx += int(is_update)
+        st = supported[idx % len(supported)]
+        return st.get_name(), t.cast(CanGenerateRandomSignal, st).get_random_signal()
 
 
 class InfiniteRandomExchange(
@@ -122,6 +154,10 @@ class InfiniteRandomExchange(
         collab: InfiniteRandomExchangeCollabConfig,
         fetched: t.Mapping[int, t.Tuple[str, str]],
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, FetchedSignalMetadata]]:
+        if collab.only_signal_types:
+            signal_types = [
+                st for st in signal_types if st.get_name() in collab.only_signal_types
+            ]
         st_mapping = {st.get_name(): st for st in signal_types}
         by_name: dict[str, dict[str, FetchedSignalMetadata]] = defaultdict(dict)
         for st_name, st_val in fetched.values():
@@ -143,17 +179,18 @@ class InfiniteRandomExchange(
     ) -> t.Iterator[
         FetchDelta[int, t.Tuple[str, str], InfiniteRandomExchangeCheckpoint]
     ]:
-        supported_sts = [
+        if self.config.only_signal_types:
+            supported_signal_types = [
+                st
+                for st in supported_signal_types
+                if st.get_name() in self.config.only_signal_types
+            ]
+        supported_signal_types = [
             st
             for st in supported_signal_types
             if issubclass(st, CanGenerateRandomSignal)
         ]
-        if self.config.only_signal_types:
-            supported_sts = [
-                st
-                for st in supported_sts
-                if st.get_name() in self.config.only_signal_types
-            ]
+
         next_checkpoint = replace(checkpoint or InfiniteRandomExchangeCheckpoint())
         inf = float("inf")
         limit = inf
@@ -174,9 +211,7 @@ class InfiniteRandomExchange(
                 )
             if self.config.deletes_per_fetch_iter:
                 ret.update(
-                    next_checkpoint.get_deletes(
-                        supported_signal_types, self.config.deletes_per_fetch_iter
-                    )
+                    next_checkpoint.get_deletes(self.config.deletes_per_fetch_iter)
                 )
             if self.config.sleep_per_iter > 0:
                 time.sleep(self.config.sleep_per_iter)
@@ -184,12 +219,3 @@ class InfiniteRandomExchange(
                 ret,
                 replace(next_checkpoint),
             )
-
-
-def _get_signal(
-    idx: int, supported: t.Sequence[t.Type[SignalType]]
-) -> t.Tuple[str, str] | None:
-    if not supported:
-        return "", ""
-    st = supported[idx % len(supported)]
-    return st.get_name(), t.cast(CanGenerateRandomSignal, st).get_random_signal()
