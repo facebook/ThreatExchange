@@ -6,7 +6,9 @@ from flask import Flask
 from flask.testing import FlaskClient
 
 from OpenMediaMatch.app import create_app
+from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.storage.postgres import database
+from sqlalchemy import text
 
 IMAGE_URL_TO_PDQ = {
     "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",
@@ -23,8 +25,15 @@ def app() -> t.Iterator[Flask]:
         # If we want to try and re-use the database between tests,
         # there's a way to push a context that will undo all commits.
         # For now, drop and recreate is a fast way to do it.
-        database.db.drop_all()
-        database.db.create_all()
+        reset_tables()
+
+        # Sanity check
+        assert (
+            database.db.session.execute(
+                text("SELECT count(1) FROM pg_largeobject_metadata;")
+            ).scalar_one()
+            == 0
+        ), "Leaking large objects!"
 
         yield app
 
