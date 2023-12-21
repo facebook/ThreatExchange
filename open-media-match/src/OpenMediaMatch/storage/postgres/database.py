@@ -9,19 +9,39 @@ slower than just slinging sql on the tables, so you may see direct
 references which are meant to be reaped at some future time.
 """
 
-import io
-import typing as t
-import re
-import json
 import datetime
+import io
+import json
+import re
+import logging
+import tempfile
+import time
+import typing as t
+import os
 
-from OpenMediaMatch.storage.interface import (
-    BankConfig,
-    BankContentConfig,
-    FetchStatus,
-    SignalTypeIndexBuildCheckpoint,
-    BankContentIterationItem,
+from flask import current_app
+import flask_sqlalchemy
+from sqlalchemy import (
+    String,
+    Text,
+    ForeignKey,
+    JSON,
+    LargeBinary,
+    Index,
+    UniqueConstraint,
+    BigInteger,
+    event,
 )
+from sqlalchemy.dialects.postgresql import OID
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    DeclarativeBase,
+    relationship,
+    validates,
+)
+from sqlalchemy.types import DateTime
+from sqlalchemy.sql import func
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.signal_exchange_api import (
@@ -33,26 +53,14 @@ from threatexchange.exchanges.fetch_state import FetchCheckpointBase
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
-import flask_sqlalchemy
-from sqlalchemy import (
-    String,
-    Text,
-    ForeignKey,
-    JSON,
-    LargeBinary,
-    Index,
-    UniqueConstraint,
-    BigInteger,
+from OpenMediaMatch.utils.time_utils import duration_to_human_str
+from OpenMediaMatch.storage.interface import (
+    BankConfig,
+    BankContentConfig,
+    FetchStatus,
+    SignalTypeIndexBuildCheckpoint,
+    BankContentIterationItem,
 )
-from sqlalchemy.orm import (
-    Mapped,
-    mapped_column,
-    DeclarativeBase,
-    relationship,
-    validates,
-)
-from sqlalchemy.types import DateTime
-from sqlalchemy.sql import func
 
 
 class Base(DeclarativeBase):
@@ -342,7 +350,6 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
 
     id: Mapped[int] = mapped_column(primary_key=True)
     signal_type: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    serialized_index: Mapped[bytes] = mapped_column(LargeBinary)
     signal_count: Mapped[int]
     updated_to_id: Mapped[int]
     updated_to_ts: Mapped[int] = mapped_column(BigInteger)
@@ -350,25 +357,88 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         DateTime(timezone=True), server_default=func.now(), onupdate=db.func.now()
     )
 
-    def serialize_index(self, index: SignalTypeIndex[int]) -> t.Self:
-        buffer = io.BytesIO()
-        index.serialize(buffer)
-        self.serialized_index = buffer.getvalue()
+    serialized_index_large_object_oid: Mapped[int | None] = mapped_column(OID)
+
+    def commit_signal_index(
+        self, index: SignalTypeIndex[int], checkpoint: SignalTypeIndexBuildCheckpoint
+    ) -> t.Self:
+        self.updated_to_id = checkpoint.last_item_id
+        self.updated_to_ts = checkpoint.last_item_timestamp
+        self.signal_count = checkpoint.total_hash_count
+
+        serialize_start_time = time.time()
+        with tempfile.NamedTemporaryFile("wb", delete=False) as tmpfile:
+            self._log("serializing index to tmpfile %s", tmpfile.name)
+            index.serialize(t.cast(t.BinaryIO, tmpfile.file))
+            size = tmpfile.tell()
+        self._log(
+            "finished writing to tmpfile, %d signals %d bytes - %s",
+            self.signal_count,
+            size,
+            duration_to_human_str(int(time.time() - serialize_start_time)),
+        )
+
+        store_start_time = time.time()
+        # Deep dark magic - direct access postgres large object API
+        raw_conn = db.engine.raw_connection()
+        l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)  # type: ignore[attr-defined]
+        self._log(
+            "imported tmpfile as lobject oid %d - %s",
+            l_obj.oid,
+            duration_to_human_str(int(time.time() - store_start_time)),
+        )
+        if self.serialized_index_large_object_oid is not None:
+            old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
+            self._log("deallocating old lobject %d", old_obj.oid)
+            old_obj.unlink()
+
+        self.serialized_index_large_object_oid = l_obj.oid
+        db.session.add(self)
+        raw_conn.commit()
+
+        try:
+            os.unlink(tmpfile.name)
+        except Exception:
+            self._log(
+                "failed to clean up tmpfile %s!", tmpfile.name, level=logging.ERROR
+            )
+        self._log("cleaned up tmpfile")
+
         return self
 
-    def deserialize_index(self) -> SignalTypeIndex[int]:
+    def load_signal_index(self) -> SignalTypeIndex[int]:
+        oid = self.serialized_index_large_object_oid
+        assert oid is not None
         # If we were being fully proper, we would get the SignalType
         # class and use that index to compare them. However, every existing
         # index as of 10/2/2023 is using pickle, which will produce the right
         # class no matter which interface we call it on.
         # I'm sorry future debugger finding this comment.
-        return SignalTypeIndex.deserialize(io.BytesIO(self.serialized_index))
+        load_start_time = time.time()
+        raw_conn = db.engine.raw_connection()
+        l_obj = raw_conn.lobject(oid, "rb")  # type: ignore[attr-defined]
 
-    def update_checkpoint(self, checkpoint: SignalTypeIndexBuildCheckpoint) -> t.Self:
-        self.updated_to_id = checkpoint.last_item_id
-        self.updated_to_ts = checkpoint.last_item_timestamp
-        self.signal_count = checkpoint.total_hash_count
-        return self
+        with tempfile.NamedTemporaryFile("rb") as tmpfile:
+            self._log("importing lobject oid %d to tmpfile %s", l_obj.oid, tmpfile.name)
+            l_obj.export(tmpfile.name)
+            tmpfile.seek(0, io.SEEK_END)
+            self._log(
+                "loaded %d bytes to tmpfile - %s",
+                tmpfile.tell(),
+                duration_to_human_str(int(time.time() - load_start_time)),
+            )
+            tmpfile.seek(0)
+
+            deserialize_start = time.time()
+            index = t.cast(
+                SignalTypeIndex[int],
+                SignalTypeIndex.deserialize(t.cast(t.BinaryIO, tmpfile.file)),
+            )
+            self._log(
+                "deserialized - %s",
+                duration_to_human_str(int(time.time() - deserialize_start)),
+            )
+        return index
 
     def as_checkpoint(self) -> SignalTypeIndexBuildCheckpoint:
         return SignalTypeIndexBuildCheckpoint(
@@ -376,6 +446,20 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
             last_item_timestamp=self.updated_to_ts,
             total_hash_count=self.signal_count,
         )
+
+    def _log(self, msg: str, *args: t.Any, level: int = logging.DEBUG) -> None:
+        current_app.logger.log(level, f"Index[%s] {msg}", self.signal_type, *args)
+
+
+@event.listens_for(SignalIndex, "after_delete")
+def _remove_large_object_after_delete(_, connection, signal_index: SignalIndex) -> None:
+    """
+    Hopefully we don't need to rely on this, but attempt to prevent orphaned large objects.
+    """
+    raw_connection = connection.connection
+    l_obj = raw_connection.lobject(signal_index.serialized_index_large_object_oid, "n")
+    l_obj.unlink()
+    raw_connection.commit()
 
 
 class SignalTypeOverride(db.Model):  # type: ignore[name-defined]

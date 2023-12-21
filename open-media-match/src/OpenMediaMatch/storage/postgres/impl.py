@@ -153,7 +153,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             )
         ).scalar_one_or_none()
 
-        return db_record.deserialize_index() if db_record is not None else None
+        return db_record.load_signal_index() if db_record is not None else None
 
     def store_signal_type_index(
         self,
@@ -171,7 +171,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 signal_type=signal_type.get_name(),
             )
             database.db.session.add(db_record)
-        db_record.serialize_index(index).update_checkpoint(checkpoint)
+        db_record.commit_signal_index(index, checkpoint)
         database.db.session.commit()
 
     def get_last_index_build_checkpoint(

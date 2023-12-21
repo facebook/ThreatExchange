@@ -1,7 +1,6 @@
 import typing as t
 from flask import Flask
 from sqlalchemy import select, and_
-from OpenMediaMatch.tests.utils import app
 
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
@@ -14,6 +13,8 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from OpenMediaMatch.storage.postgres import database
+from OpenMediaMatch.storage import interface
+from OpenMediaMatch.tests.utils import app
 
 
 def test_store_collab_config(app: Flask) -> None:
@@ -80,7 +81,9 @@ def test_store_index(app: Flask) -> None:
             updated_to_ts=12345,
             updated_to_id=5678,
             signal_count=len(content),
-        ).serialize_index(index)
+        ).commit_signal_index(
+            index, interface.SignalTypeIndexBuildCheckpoint.get_empty()
+        )
     )
     database.db.session.commit()
     database.db.session.query()
@@ -88,7 +91,7 @@ def test_store_index(app: Flask) -> None:
         select(database.SignalIndex).where(database.SignalIndex.signal_type == "test")
     ).scalar_one()
 
-    deserialized_index = t.cast(TrivialSignalTypeIndex, db_record.deserialize_index())
+    deserialized_index = t.cast(TrivialSignalTypeIndex, db_record.load_signal_index())
 
     assert index.__class__ == deserialized_index.__class__
     assert index.state == deserialized_index.state
@@ -107,7 +110,9 @@ def test_store_index_updated_at(app: Flask) -> None:
             updated_to_ts=1234,
             updated_to_id=5678,
             signal_count=len(content),
-        ).serialize_index(index)
+        ).commit_signal_index(
+            index, interface.SignalTypeIndexBuildCheckpoint.get_empty()
+        )
     )
     database.db.session.commit()
     db_record = database.db.session.execute(
@@ -119,12 +124,14 @@ def test_store_index_updated_at(app: Flask) -> None:
     index = TrivialSignalTypeIndex.build(content)
 
     # Update index to trigger time change
-    db_record.serialize_index(index)
+    db_record.commit_signal_index(
+        index, interface.SignalTypeIndexBuildCheckpoint.get_empty()
+    )
     db_record = database.db.session.execute(
         select(database.SignalIndex).where(database.SignalIndex.signal_type == "test")
     ).scalar_one()
 
-    deserialized_index = t.cast(TrivialSignalTypeIndex, db_record.deserialize_index())
+    deserialized_index = t.cast(TrivialSignalTypeIndex, db_record.load_signal_index())
 
     assert index.__class__ == deserialized_index.__class__
     assert index.state == deserialized_index.state
