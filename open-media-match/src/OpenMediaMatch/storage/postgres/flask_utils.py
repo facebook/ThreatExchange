@@ -55,6 +55,7 @@ def reset_tables(*, nocreate: bool = False, dropharder: bool = False) -> None:
     database.db.session.execute(
         text("SELECT lo_unlink(l.oid) FROM pg_largeobject_metadata l;")
     )
+    database.db.session.commit()
     if not nocreate:
         database.db.create_all()
 
