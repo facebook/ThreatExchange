@@ -8,7 +8,7 @@ from flask import request, redirect
 
 from OpenMediaMatch.blueprints import matching, curation, hashing
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.background_tasks import build_index
+from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.storage.postgres.database import db
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 
@@ -111,8 +111,10 @@ def ui_create_bank():
 
 @bp.route("/query", methods=["POST"])
 def upload():
+    current_app.logger.debug("[query] hashing input")
     signals = hashing.hash_media_post_impl()
 
+    current_app.logger.debug("[query] performing lookup")
     banks = {
         b
         for st_name, signal in signals.items()
@@ -124,6 +126,5 @@ def upload():
 
 @bp.route("/factory_reset", methods=["POST"])
 def factory_reset():
-    db.drop_all()
-    db.create_all()
+    reset_tables()
     return redirect("./")

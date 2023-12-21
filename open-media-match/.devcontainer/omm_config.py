@@ -24,8 +24,8 @@ ROLE_HASHER = True
 ROLE_MATCHER = True
 ROLE_CURATOR = True
 # APScheduler (background threads for development)
-TASK_FETCHER = True
-TASK_INDEXER = True
+TASK_FETCHER = False
+TASK_INDEXER = False
 
 # Core functionality configuration
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(

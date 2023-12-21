@@ -64,7 +64,11 @@ def build_index(
     if idx_checkpoint is not None and idx_checkpoint == bank_checkpoint:
         logger.info("%s index up to date, no build needed", for_signal_type.get_name())
         return
-    logger.info("Building index for %s", for_signal_type.get_name())
+    logger.info(
+        "Building index for %s (%d signals)",
+        for_signal_type.get_name(),
+        0 if bank_checkpoint is None else bank_checkpoint.total_hash_count,
+    )
     index_cls = for_signal_type.get_index_cls()
     signal_list = []
     last_cs = None

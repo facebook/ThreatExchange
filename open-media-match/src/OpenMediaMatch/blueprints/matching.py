@@ -46,10 +46,15 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     except Exception as e:
         abort(400, f"invalid signal type: {e}")
 
+    current_app.logger.debug("[lookup_signal] loading index")
     index = storage.get_signal_type_index(signal_type)
+
     if not index:
         abort(503, "index not yet ready")
-    return {"matches": [m.metadata for m in index.query(signal)]}
+    current_app.logger.debug("[lookup_signal] querying index")
+    results = index.query(signal)
+    current_app.logger.debug("[lookup_signal] query complete")
+    return {"matches": [m.metadata for m in results]}
 
 
 def _validate_and_transform_signal_type(
@@ -124,8 +129,10 @@ def lookup_post():
 
 
 def lookup(signal, signal_type_name):
+    current_app.logger.debug("performing lookup")
     raw_results = lookup_signal(signal, signal_type_name)
     storage = get_storage()
+    current_app.logger.debug("getting bank content")
     contents = storage.bank_content_get(
         {cid for l in raw_results.values() for cid in l}
     )
