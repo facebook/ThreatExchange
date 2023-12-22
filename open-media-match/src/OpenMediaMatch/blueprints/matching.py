@@ -35,6 +35,10 @@ class _SignalIndexInMemoryCache:
     last_check_ts: float
 
     @property
+    def is_ready(self):
+        return self.last_check_ts > 0
+
+    @property
     def is_stale(self):
         """
         If we are overdue on refresh by too long, consider it stale.
@@ -106,11 +110,11 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     except Exception as e:
         abort(400, f"invalid signal type: {e}")
 
-    current_app.logger.debug("[lookup_signal] loading index")
-    index = storage.get_signal_type_index(signal_type)
+    cache = _INDEX_CACHE.get(signal_type.get_name())
 
-    if not index:
+    if cache is None or not cache.is_ready:
         abort(503, "index not yet ready")
+    index = cache.index
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
     current_app.logger.debug("[lookup_signal] query complete")
@@ -265,6 +269,7 @@ def index_status():
 
 def initiate_index_cache(scheduler: APScheduler | None) -> None:
     global _INDEX_CACHE
+    assert not _INDEX_CACHE, "Aready initialized?"
     storage = get_storage()
     _INDEX_CACHE = {
         st.signal_type.get_name(): _SignalIndexInMemoryCache.get_initial(st.signal_type)
