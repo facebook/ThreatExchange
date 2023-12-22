@@ -164,12 +164,13 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_signal_type_index(
-        self, signal_type: t.Type[SignalType]
+        self,
+        signal_type: t.Type[SignalType],
     ) -> t.Optional[SignalTypeIndex[int]]:
         """
         Return the built index for this SignalType.
 
-        For OMM, the indexed values are BankedIDs
+        For OMM, the indexed values are the ids of BankedContent
         """
 
     @abc.abstractmethod
@@ -468,7 +469,7 @@ class IBankStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
-    ) -> t.Optional[SignalTypeIndexBuildCheckpoint]:
+    ) -> SignalTypeIndexBuildCheckpoint:
         """Get information about the total bank size for skipping an index build"""
 
     @abc.abstractmethod
@@ -508,13 +509,3 @@ class IUnifiedStore(
         testing.
         """
         return
-
-    @abc.abstractmethod
-    def is_ready(self) -> bool:
-        """
-        Whether this instead is ready to serve requests.
-
-        This may not be the right place for this in the long term,
-        but being able to recieving matching traffic is an important,
-        but possibly slow, step.
-        """

@@ -4,21 +4,86 @@
 Endpoints for matching content and hashes.
 """
 
+from dataclasses import dataclass
+import datetime
 import random
+import typing as t
+import time
 
-from flask import Blueprint
-from flask import abort, current_app, request
+from flask import Blueprint, Flask, abort, current_app, request
+from flask_apscheduler import APScheduler
 from werkzeug.exceptions import HTTPException
 
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.signal_type.index import SignalTypeIndex
 
-from OpenMediaMatch.storage.interface import ISignalTypeConfigStore
+from OpenMediaMatch.background_tasks.development import get_apscheduler
+from OpenMediaMatch.storage import interface
 from OpenMediaMatch.blueprints import hashing
 from OpenMediaMatch.utils.flask_utils import require_request_param, api_error_handler
 from OpenMediaMatch.persistence import get_storage
 
 bp = Blueprint("matching", __name__)
 bp.register_error_handler(HTTPException, api_error_handler)
+
+
+@dataclass
+class _SignalIndexInMemoryCache:
+    signal_type: t.Type[SignalType]
+    index: SignalTypeIndex[int]
+    checkpoint: interface.SignalTypeIndexBuildCheckpoint
+    last_check_ts: float
+
+    @property
+    def is_ready(self):
+        return self.last_check_ts > 0
+
+    @property
+    def is_stale(self):
+        """
+        If we are overdue on refresh by too long, consider it stale.
+        """
+        return time.time() - self.last_check_ts > 65
+
+    @classmethod
+    def get_initial(cls, signal_type: t.Type[SignalType]) -> t.Self:
+        return cls(
+            signal_type,
+            signal_type.get_index_cls().build([]),
+            interface.SignalTypeIndexBuildCheckpoint.get_empty(),
+            0,
+        )
+
+    def reload_if_needed(self, store: interface.IUnifiedStore) -> None:
+        now = time.time()
+        # There's a race condition here, but it's unclear if we should solve it
+        curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
+        if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
+            new_index = store.get_signal_type_index(self.signal_type)
+            assert new_index is not None
+            self.index = new_index
+            self.checkpoint = curr_checkpoint
+        self.last_check_ts = now
+
+    def periodic_task(self) -> None:
+        app: Flask = get_apscheduler().app
+        with app.app_context():
+            storage = get_storage()
+            prev_time = self.checkpoint.last_item_timestamp
+            self.reload_if_needed(storage)
+            now_time = self.checkpoint.last_item_timestamp
+            if prev_time == now_time:
+                return  # No reload
+            app.logger.info(
+                "CachedIndex[%s] Updated %d -> %d",
+                self.signal_type.get_name(),
+                prev_time,
+                now_time,
+            )
+
+
+# This is a type alias, the actual cache is stored on app
+IndexCache = t.Mapping[str, _SignalIndexInMemoryCache]
 
 
 @bp.route("/raw_lookup")
@@ -46,10 +111,9 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     except Exception as e:
         abort(400, f"invalid signal type: {e}")
 
-    current_app.logger.debug("[lookup_signal] loading index")
-    index = storage.get_signal_type_index(signal_type)
+    index = _get_index(signal_type)
 
-    if not index:
+    if index is None:
         abort(503, "index not yet ready")
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
@@ -58,7 +122,7 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
 
 
 def _validate_and_transform_signal_type(
-    signal_type_name: str, storage: ISignalTypeConfigStore
+    signal_type_name: str, storage: interface.ISignalTypeConfigStore
 ) -> type[SignalType]:
     """
     Accepts a signal type name and returns the corresponding signal type class,
@@ -201,3 +265,44 @@ def index_status():
             }
         status_by_name[name] = status
     return status_by_name
+
+
+def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
+    assert not hasattr(app, "signal_type_index_cache"), "Aready initialized?"
+    storage = get_storage()
+    cache = {
+        st.signal_type.get_name(): _SignalIndexInMemoryCache.get_initial(st.signal_type)
+        for st in storage.get_signal_type_configs().values()
+    }
+    if scheduler is not None:
+        for name, entry in cache.items():
+            scheduler.add_job(
+                f"Match Index Refresh[{name}]",
+                entry.periodic_task,
+                trigger="interval",
+                seconds=30,
+                start_date=datetime.datetime.now() - datetime.timedelta(seconds=29),
+            )
+        scheduler.app.logger.info(
+            "Added Matcher refresh tasks: %s",
+            [f"CachedIndex[{n}]" for n in cache],
+        )
+    app.signal_type_index_cache = cache  # type: ignore[attr-defined]
+
+
+def _get_index_cache() -> IndexCache:
+    return t.cast(IndexCache, getattr(current_app, "signal_type_index_cache", {}))
+
+
+def index_cache_is_stale() -> bool:
+    return any(idx.is_stale for idx in _get_index_cache().values())
+
+
+def _get_index(signal_type: t.Type[SignalType]) -> SignalTypeIndex[int] | None:
+    entry = _get_index_cache().get(signal_type.get_name())
+    if entry is None:
+        current_app.logger.debug("[lookup_signal] no cache, loading index")
+        return get_storage().get_signal_type_index(signal_type)
+    if entry.is_ready:
+        return entry.index
+    return None

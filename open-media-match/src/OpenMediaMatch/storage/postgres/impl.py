@@ -4,12 +4,15 @@
 The default store for accessing persistent data on OMM.
 """
 from dataclasses import dataclass, field
+import datetime
 import pickle
 import time
 import typing as t
 
 import flask
+from flask_apscheduler import APScheduler
 import flask_migrate
+
 from sqlalchemy import select, delete, func, Select, insert, update
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import ClauseElement, Executable
@@ -33,12 +36,8 @@ from threatexchange.exchanges.fetch_state import (
     FetchedSignalMetadata,
 )
 
-from OpenMediaMatch.storage.postgres import database, flask_utils
 from OpenMediaMatch.storage import interface
-from OpenMediaMatch.storage.interface import (
-    SignalTypeConfig,
-    BankContentConfig,
-)
+from OpenMediaMatch.storage.postgres import database, flask_utils
 
 
 class DefaultOMMStore(interface.IUnifiedStore):
@@ -89,12 +88,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
             exchange_types
         ), "All exchange types must have unique names"
 
-    def is_ready(self) -> bool:
-        """
-        Whether we have finished pre-loading indices.
-        """
-        return True  # TODO
-
     def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
         return {
             name: interface.ContentTypeConfig(True, ct)
@@ -104,7 +97,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
         return self.exchange_types
 
-    def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
+    def get_signal_type_configs(self) -> t.Mapping[str, interface.SignalTypeConfig]:
         # If a signal is installed, then it is enabled by default. But it may be disabled by an
         # override in the database.
         signal_type_overrides = self._query_signal_type_overrides()
@@ -471,7 +464,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         )
         database.db.session.commit()
 
-    def bank_content_get(self, ids: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
+    def bank_content_get(
+        self, ids: t.Iterable[int]
+    ) -> t.Sequence[interface.BankContentConfig]:
         return [
             b.as_storage_iface_cls()
             for b in database.db.session.query(database.BankContent)
@@ -479,7 +474,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             .all()
         ]
 
-    def bank_content_update(self, val: BankContentConfig) -> None:
+    def bank_content_update(self, val: interface.BankContentConfig) -> None:
         # TODO
         raise Exception("Not implemented")
 
@@ -487,7 +482,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self,
         bank_name: str,
         content_signals: t.Dict[t.Type[SignalType], str],
-        config: t.Optional[BankContentConfig] = None,
+        config: t.Optional[interface.BankContentConfig] = None,
     ) -> int:
         # Add content to the bank provided.
         # Returns the ID of the content added.
@@ -515,7 +510,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
-    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
+    ) -> interface.SignalTypeIndexBuildCheckpoint:
         query = database.db.session.query(database.ContentSignal).where(
             database.ContentSignal.signal_type == signal_type.get_name()
         )

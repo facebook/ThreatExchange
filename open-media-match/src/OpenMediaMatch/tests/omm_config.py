@@ -14,6 +14,7 @@ ROLE_CURATOR = True
 
 TASK_FETCHER = False
 TASK_INDEXER = False
+TASK_INDEX_CACHE = False
 
 # This can help debug tests on the database
 # SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO

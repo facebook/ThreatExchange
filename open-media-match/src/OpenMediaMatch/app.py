@@ -19,6 +19,7 @@ import typing as t
 import click
 import flask
 from flask.logging import default_handler
+from flask_apscheduler import APScheduler
 
 from threatexchange.signal_type.signal_base import SignalType, CanGenerateRandomSignal
 from threatexchange.signal_type.pdq.signal import PdqSignal
@@ -44,10 +45,8 @@ def _is_debug_mode():
     return debug.lower() not in ("0", "false", "no")
 
 
-def _is_dbg_werkzeug_reloaded_process():
+def _is_werkzeug_reloaded_process():
     """If in debug mode, are we in the reloaded process?"""
-    if not _is_debug_mode():
-        return False
     return os.environ.get("WERKZEUG_RUN_MAIN") == "true"
 
 
@@ -92,11 +91,64 @@ def create_app() -> flask.Flask:
     assert isinstance(
         storage, IUnifiedStore
     ), "STORAGE_IFACE_INSTANCE is not an instance of IUnifiedStore"
-    storage.init_flask(app)
 
     _setup_task_logging(app.logger)
 
-    is_production = app.config.get("PRODUCTION", True)
+    scheduler: APScheduler | None = None
+
+    with app.app_context():
+        # We only run apscheduler in the "outer" reloader process, else we'll
+        # have multiple executions of the the scheduler in debug mode
+        if _is_werkzeug_reloaded_process():
+            now = datetime.datetime.now()
+            scheduler = dev_apscheduler.get_apscheduler()
+            scheduler.init_app(app)
+            tasks = []
+            if app.config.get("TASK_FETCHER", False):
+                tasks.append("Fetcher")
+                scheduler.add_job(
+                    "Fetcher",
+                    fetcher.apscheduler_fetch_all,
+                    trigger="interval",
+                    seconds=60 * 4,
+                    start_date=now + datetime.timedelta(seconds=30),
+                )
+            if app.config.get("TASK_INDEXER", False):
+                tasks.append("Indexer")
+                scheduler.add_job(
+                    "Indexer",
+                    build_index.apscheduler_build_all_indices,
+                    trigger="interval",
+                    seconds=60,
+                    start_date=now + datetime.timedelta(seconds=15),
+                )
+            app.logger.info("Started Apscheduler, initial tasks: %s", tasks)
+            scheduler.start()
+
+        storage.init_flask(app)
+
+        is_production = app.config.get("PRODUCTION", True)
+        # Register Flask blueprints for whichever server roles are enabled...
+        # URL prefixing facilitates easy Layer 7 routing :)
+
+        if (
+            not is_production
+            and app.config.get("ROLE_HASHER", False)
+            and app.config.get("ROLE_MATCHER", False)
+        ):
+            app.register_blueprint(development.bp, url_prefix="/dev")
+            app.register_blueprint(ui.bp, url_prefix="/ui")
+
+        if app.config.get("ROLE_HASHER", False):
+            app.register_blueprint(hashing.bp, url_prefix="/h")
+
+        if app.config.get("ROLE_MATCHER", False):
+            app.register_blueprint(matching.bp, url_prefix="/m")
+            if app.config.get("TASK_INDEX_CACHE", False):
+                matching.initiate_index_cache(app, scheduler)
+
+        if app.config.get("ROLE_CURATOR", False):
+            app.register_blueprint(curation.bp, url_prefix="/c")
 
     @app.route("/")
     def home():
@@ -108,9 +160,9 @@ def create_app() -> flask.Flask:
         """
         Liveness/readiness check endpoint for your favourite Layer 7 load balancer
         """
-        storage = get_storage()
-        if not storage.is_ready():
-            return "NOT-READY", 503
+        if app.config.get("ROLE_MATCHER", False):
+            if matching.index_cache_is_stale():
+                return f"INDEX-STALE", 503
         return "I-AM-ALIVE", 200
 
     @app.route("/site-map")
@@ -123,28 +175,6 @@ def create_app() -> flask.Flask:
         routes = list(routes)
         routes.sort()
         return routes
-
-    # Register Flask blueprints for whichever server roles are enabled...
-    # URL prefixing facilitates easy Layer 7 routing :)
-    # Linters complain about imports off the top level, but this is needed
-    # to prevent circular imports
-
-    if (
-        not is_production
-        and app.config.get("ROLE_HASHER", False)
-        and app.config.get("ROLE_MATCHER", False)
-    ):
-        app.register_blueprint(development.bp, url_prefix="/dev")
-        app.register_blueprint(ui.bp, url_prefix="/ui")
-
-    if app.config.get("ROLE_HASHER", False):
-        app.register_blueprint(hashing.bp, url_prefix="/h")
-
-    if app.config.get("ROLE_MATCHER", False):
-        app.register_blueprint(matching.bp, url_prefix="/m")
-
-    if app.config.get("ROLE_CURATOR", False):
-        app.register_blueprint(curation.bp, url_prefix="/c")
 
     @app.cli.command("seed")
     def seed_data():
@@ -205,37 +235,5 @@ def create_app() -> flask.Flask:
         app.logger.setLevel(logging.DEBUG)
         storage = get_storage()
         build_index.build_all_indices(storage, storage, storage)
-
-    with app.app_context():
-        # We only want to run apscheduler in debug mode
-        # and only in the "outer" reloader process
-        if _is_dbg_werkzeug_reloaded_process():
-            now = datetime.datetime.now()
-            scheduler = dev_apscheduler.get_apscheduler()
-            scheduler.init_app(app)
-            tasks = []
-            if app.config.get("TASK_FETCHER", False):
-                tasks.append("Fetcher")
-                scheduler.add_job(
-                    "Fetcher",
-                    fetcher.apscheduler_fetch_all,
-                    trigger="interval",
-                    seconds=60 * 4,
-                    start_date=now + datetime.timedelta(seconds=30),
-                )
-            if app.config.get("TASK_INDEXER", False):
-                tasks.append("Indexer")
-                scheduler.add_job(
-                    "Indexer",
-                    build_index.apscheduler_build_all_indices,
-                    trigger="interval",
-                    seconds=60,
-                    start_date=now + datetime.timedelta(seconds=15),
-                )
-            if tasks:
-                app.logger.critical(
-                    "DEVELOPMENT: Started %s with apscheduler.", ", ".join(tasks)
-                )
-            scheduler.start()
 
     return app
