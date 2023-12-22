@@ -182,8 +182,8 @@ class MockedUnifiedStore(interface.IUnifiedStore):
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
-    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
-        return None
+    ) -> interface.SignalTypeIndexBuildCheckpoint:
+        return interface.SignalTypeIndexBuildCheckpoint.get_empty()
 
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100

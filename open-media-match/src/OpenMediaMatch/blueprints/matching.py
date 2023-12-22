@@ -82,7 +82,8 @@ class _SignalIndexInMemoryCache:
             )
 
 
-_INDEX_CACHE: dict[str, _SignalIndexInMemoryCache] = {}
+# This is a type alias, the actual cache is stored on app
+IndexCache = t.Mapping[str, _SignalIndexInMemoryCache]
 
 
 @bp.route("/raw_lookup")
@@ -110,11 +111,10 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     except Exception as e:
         abort(400, f"invalid signal type: {e}")
 
-    cache = _INDEX_CACHE.get(signal_type.get_name())
+    index = _get_index(signal_type)
 
-    if cache is None or not cache.is_ready:
+    if index is None:
         abort(503, "index not yet ready")
-    index = cache.index
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
     current_app.logger.debug("[lookup_signal] query complete")
@@ -267,24 +267,42 @@ def index_status():
     return status_by_name
 
 
-def initiate_index_cache(scheduler: APScheduler | None) -> None:
-    global _INDEX_CACHE
-    assert not _INDEX_CACHE, "Aready initialized?"
+def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
+    assert not hasattr(app, "signal_type_index_cache"), "Aready initialized?"
     storage = get_storage()
-    _INDEX_CACHE = {
+    cache = {
         st.signal_type.get_name(): _SignalIndexInMemoryCache.get_initial(st.signal_type)
         for st in storage.get_signal_type_configs().values()
     }
     if scheduler is not None:
-        for name, cache in _INDEX_CACHE.items():
+        for name, entry in cache.items():
             scheduler.add_job(
                 f"Match Index Refresh[{name}]",
-                cache.periodic_task,
+                entry.periodic_task,
                 trigger="interval",
                 seconds=30,
                 start_date=datetime.datetime.now() - datetime.timedelta(seconds=29),
             )
         scheduler.app.logger.info(
             "Added Matcher refresh tasks: %s",
-            [f"CachedIndex[{n}]" for n in _INDEX_CACHE],
+            [f"CachedIndex[{n}]" for n in cache],
         )
+    app.signal_type_index_cache = cache  # type: ignore[attr-defined]
+
+
+def _get_index_cache() -> IndexCache:
+    return t.cast(IndexCache, getattr(current_app, "signal_type_index_cache", {}))
+
+
+def index_cache_is_stale() -> bool:
+    return any(idx.is_stale for idx in _get_index_cache().values())
+
+
+def _get_index(signal_type: t.Type[SignalType]) -> SignalTypeIndex[int] | None:
+    entry = _get_index_cache().get(signal_type.get_name())
+    if entry is None:
+        current_app.logger.debug("[lookup_signal] no cache, loading index")
+        return get_storage().get_signal_type_index(signal_type)
+    if entry.is_ready:
+        return entry.index
+    return None

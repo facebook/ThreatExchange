@@ -144,7 +144,8 @@ def create_app() -> flask.Flask:
 
         if app.config.get("ROLE_MATCHER", False):
             app.register_blueprint(matching.bp, url_prefix="/m")
-            matching.initiate_index_cache(scheduler)
+            if app.config.get("TASK_INDEX_CACHE", False):
+                matching.initiate_index_cache(app, scheduler)
 
         if app.config.get("ROLE_CURATOR", False):
             app.register_blueprint(curation.bp, url_prefix="/c")
@@ -160,7 +161,7 @@ def create_app() -> flask.Flask:
         Liveness/readiness check endpoint for your favourite Layer 7 load balancer
         """
         if app.config.get("ROLE_MATCHER", False):
-            if any(idx.is_stale for idx in matching._INDEX_CACHE.values()):
+            if matching.index_cache_is_stale():
                 return f"INDEX-STALE", 503
         return "I-AM-ALIVE", 200
 
