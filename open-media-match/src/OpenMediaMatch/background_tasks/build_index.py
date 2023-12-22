@@ -61,7 +61,7 @@ def build_index(
     # First check to see if new signals have appeared since the last build
     idx_checkpoint = index_store.get_last_index_build_checkpoint(for_signal_type)
     bank_checkpoint = bank_store.get_current_index_build_target(for_signal_type)
-    if idx_checkpoint is not None and idx_checkpoint == bank_checkpoint:
+    if idx_checkpoint == bank_checkpoint:
         logger.info("%s index up to date, no build needed", for_signal_type.get_name())
         return
     logger.info(

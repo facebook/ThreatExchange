@@ -57,7 +57,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
 
     # Index
     def get_signal_type_index(
-        self, signal_type: type[SignalType]
+        self, signal_type: t.Type[SignalType]
     ) -> t.Optional[SignalTypeIndex[int]]:
         return signal_type.get_index_cls().build(
             (example_signal, fake_id)
