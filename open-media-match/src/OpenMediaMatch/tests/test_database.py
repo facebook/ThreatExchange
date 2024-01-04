@@ -19,9 +19,7 @@ from OpenMediaMatch.tests.utils import app
 
 def test_store_collab_config(app: Flask) -> None:
     existing = (
-        database.db.session.execute(select(database.CollaborationConfig))
-        .scalars()
-        .all()
+        database.db.session.execute(select(database.ExchangeConfig)).scalars().all()
     )
     assert existing == []
 
@@ -44,21 +42,19 @@ def test_store_collab_config(app: Flask) -> None:
     )
 
     database.db.session.add(
-        database.CollaborationConfig(
+        database.ExchangeConfig(
             import_bank=database.Bank(name="BASIC_BANK")
         ).set_typed_config(typed_config_default)
     )
     database.db.session.add(
-        database.CollaborationConfig(
+        database.ExchangeConfig(
             import_bank=database.Bank(name="EXTENDED_BANK")
         ).set_typed_config(typed_config_extended)
     )
     database.db.session.commit()
 
     from_db = (
-        database.db.session.execute(select(database.CollaborationConfig))
-        .scalars()
-        .all()
+        database.db.session.execute(select(database.ExchangeConfig)).scalars().all()
     )
 
     assert len(from_db) == 2

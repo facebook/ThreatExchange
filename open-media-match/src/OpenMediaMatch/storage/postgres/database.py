@@ -87,7 +87,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
         back_populates="bank", cascade="all, delete"
     )
 
-    import_from_exchange: Mapped[t.Optional["CollaborationConfig"]] = relationship(
+    import_from_exchange: Mapped[t.Optional["ExchangeConfig"]] = relationship(
         back_populates="import_bank", cascade="all, delete"
     )
 
@@ -172,7 +172,7 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
 
 
 # TODO: Rename to Exchange
-class CollaborationConfig(db.Model):  # type: ignore[name-defined]
+class ExchangeConfig(db.Model):  # type: ignore[name-defined]
     __tablename__ = "exchange"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -267,9 +267,9 @@ class CollaborationConfig(db.Model):  # type: ignore[name-defined]
 
 class ExchangeFetchStatus(db.Model):  # type: ignore[name-defined]
     collab_id: Mapped[int] = mapped_column(
-        ForeignKey(CollaborationConfig.id, ondelete="CASCADE"), primary_key=True
+        ForeignKey(ExchangeConfig.id, ondelete="CASCADE"), primary_key=True
     )
-    collab: Mapped["CollaborationConfig"] = relationship(
+    collab: Mapped["ExchangeConfig"] = relationship(
         back_populates="fetch_status",
         uselist=False,
         single_parent=True,
@@ -319,7 +319,7 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
 
     id: Mapped[int] = mapped_column(primary_key=True)
     collab_id: Mapped[int] = mapped_column(
-        ForeignKey(CollaborationConfig.id, ondelete="CASCADE"), index=True
+        ForeignKey(ExchangeConfig.id, ondelete="CASCADE"), index=True
     )
 
     fetch_id: Mapped[str] = mapped_column(Text)
@@ -338,7 +338,7 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
     # null = not verified; true = positive class; false = negative class
     verification_result: Mapped[t.Optional[bool]] = mapped_column(default=None)
 
-    collab: Mapped["CollaborationConfig"] = relationship()
+    collab: Mapped["ExchangeConfig"] = relationship()
 
     __table_args__ = (UniqueConstraint("collab_id", "fetch_id"),)
 

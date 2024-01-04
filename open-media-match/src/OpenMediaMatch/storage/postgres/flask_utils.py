@@ -31,7 +31,7 @@ def add_cli_commands(app: flask.Flask) -> None:
                     text("SELECT count(1) FROM pg_largeobject_metadata;")
                 ).scalar_one(),
             )
-            print("Exchanges:", database.CollaborationConfig.query.count())
+            print("Exchanges:", database.ExchangeConfig.query.count())
             print("ExchangeData:", database.ExchangeData.query.count())
 
     @app.cli.command("reset_all_tables")
