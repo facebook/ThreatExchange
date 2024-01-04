@@ -193,11 +193,11 @@ class DefaultOMMStore(interface.IUnifiedStore):
     ) -> None:
         if create:
             bank = database.Bank(name=cfg.name)
-            exchange = database.CollaborationConfig(import_bank=bank)
+            exchange = database.ExchangeConfig(import_bank=bank)
         else:
             exchange = database.db.session.execute(
-                select(database.CollaborationConfig).where(
-                    database.CollaborationConfig.name == cfg.name
+                select(database.ExchangeConfig).where(
+                    database.ExchangeConfig.name == cfg.name
                 )
             ).scalar_one()
         exchange.set_typed_config(cfg)
@@ -206,26 +206,20 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def exchange_delete(self, name: str) -> None:
         database.db.session.execute(
-            delete(database.CollaborationConfig).where(
-                database.CollaborationConfig.name == name
-            )
+            delete(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
         )
         database.db.session.commit()
 
     def exchanges_get(self) -> t.Dict[str, CollaborationConfigBase]:
         types = self.exchange_get_type_configs()
 
-        results = database.db.session.execute(
-            select(database.CollaborationConfig)
-        ).scalars()
+        results = database.db.session.execute(select(database.ExchangeConfig)).scalars()
 
         return {cfg.name: cfg.as_storage_iface_cls(types) for cfg in results}
 
-    def _exchange_get_cfg(self, name: str) -> t.Optional[database.CollaborationConfig]:
+    def _exchange_get_cfg(self, name: str) -> t.Optional[database.ExchangeConfig]:
         return database.db.session.execute(
-            select(database.CollaborationConfig).where(
-                database.CollaborationConfig.name == name
-            )
+            select(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
         ).scalar_one_or_none()
 
     def exchange_get_fetch_status(self, name: str) -> interface.FetchStatus:
