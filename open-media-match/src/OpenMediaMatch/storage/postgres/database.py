@@ -171,7 +171,6 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
         )
 
 
-# TODO: Rename to Exchange
 class ExchangeConfig(db.Model):  # type: ignore[name-defined]
     __tablename__ = "exchange"
 
