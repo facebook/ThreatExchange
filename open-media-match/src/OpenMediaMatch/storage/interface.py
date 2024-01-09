@@ -28,6 +28,8 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
+    FetchedSignalMetadata,
+    TUpdateRecordKey,
 )
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPI,
@@ -315,10 +317,13 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
     def exchange_get_data(
         self,
         collab_name: str,
-        key: str,
-    ) -> t.Optional[dict[str, t.Any]]:
+        key: TUpdateRecordKey,
+    ) -> FetchedSignalMetadata:
         """
         Get API-specific collaboration data by key.
+
+        This is only stored if the configuration for the exchange enables it,
+        otherwise an exception should be thrown.
         """
 
 

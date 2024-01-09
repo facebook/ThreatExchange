@@ -87,8 +87,14 @@ class Bank(db.Model):  # type: ignore[name-defined]
         back_populates="bank", cascade="all, delete"
     )
 
+    import_from_exchange_id: Mapped[t.Optional[int]] = mapped_column(
+        ForeignKey("exchange.id", ondelete="CASCADE"),
+        default=None,
+        unique=True,
+    )
     import_from_exchange: Mapped[t.Optional["ExchangeConfig"]] = relationship(
-        back_populates="import_bank", cascade="all, delete"
+        foreign_keys=[import_from_exchange_id],
+        single_parent=True,
     )
 
     def as_storage_iface_cls(self) -> BankConfig:
@@ -109,7 +115,9 @@ class BankContent(db.Model):  # type: ignore[name-defined]
     __tablename__ = "bank_content"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    bank_id: Mapped[int] = mapped_column(ForeignKey(Bank.id), index=True)
+    bank_id: Mapped[int] = mapped_column(
+        ForeignKey(Bank.id, ondelete="CASCADE"), index=True
+    )
     bank: Mapped[Bank] = relationship(back_populates="content")
 
     imported_from_id: Mapped[t.Optional[int]] = mapped_column(
@@ -179,7 +187,9 @@ class ExchangeConfig(db.Model):  # type: ignore[name-defined]
     # allows for selecting them from the database layer
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     api_cls: Mapped[str] = mapped_column(String(255))
+    retain_api_data: Mapped[bool] = mapped_column(default=False)
     fetching_enabled: Mapped[bool] = mapped_column(default=True)
+    retain_data_with_unknown_signal_types: Mapped[bool] = mapped_column(default=False)
     # Someday, we want writeback columns
     # report_seen: Mapped[bool] = mapped_column(default=False)
     # report_true_positive = mapped_column(default=False)
@@ -196,8 +206,12 @@ class ExchangeConfig(db.Model):  # type: ignore[name-defined]
         passive_deletes=True,
     )
 
-    import_bank_id: Mapped[int] = mapped_column(ForeignKey(Bank.id), unique=True)
-    import_bank: Mapped[Bank] = relationship("Bank", cascade="all, delete")
+    import_bank: Mapped[Bank] = relationship(
+        "Bank",
+        cascade="all, delete",
+        back_populates="import_from_exchange",
+        uselist=False,
+    )
 
     def set_typed_config(self, cfg: CollaborationConfigBase) -> t.Self:
         self.name = cfg.name
@@ -322,7 +336,11 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
     )
 
     fetch_id: Mapped[str] = mapped_column(Text)
-    pickled_original_fetch_data: Mapped[t.Optional[bytes]] = mapped_column(LargeBinary)
+    # Making this optional allows us to store only the summary in the future,
+    # but might be a premature optimization
+    pickled_fetch_signal_metadata: Mapped[t.Optional[bytes]] = mapped_column(
+        LargeBinary
+    )
     fetched_metadata_summary: Mapped[t.List[t.Any]] = mapped_column(JSON, default=list)
 
     bank_content: Mapped[t.Optional[BankContent]] = relationship(

@@ -5,17 +5,21 @@ import typing as t
 
 import pytest
 from flask import Flask
+from sqlalchemy import select
 
 from OpenMediaMatch.tests.utils import app
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.background_tasks import fetcher, build_index
 
 from threatexchange.exchanges import fetch_state
+from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
+from OpenMediaMatch.storage.postgres import database
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 
 
@@ -35,11 +39,25 @@ def storage(app: Flask) -> t.Iterator[DefaultOMMStore]:
     yield storage_instance
 
 
-def make_collab(storage: DefaultOMMStore) -> CollaborationConfigBase:
-    cfg = CollaborationConfigBase(
-        name="SAMPLE", api=StaticSampleSignalExchangeAPI.get_name(), enabled=True
-    )
+def make_collab(
+    storage: DefaultOMMStore,
+    *,
+    api: TSignalExchangeAPICls = StaticSampleSignalExchangeAPI,
+    retain_data_with_unknown_signal_types: bool = False,
+) -> CollaborationConfigBase:
+    cfg = CollaborationConfigBase(name="SAMPLE", api=api.get_name(), enabled=True)
     storage.exchange_update(cfg, create=True)
+    if retain_data_with_unknown_signal_types:
+        sesh = database.db.session
+        exchange = sesh.execute(
+            select(database.ExchangeConfig).where(
+                database.ExchangeConfig.name == cfg.name
+            )
+        ).scalar_one()
+        exchange.retain_data_with_unknown_signal_types = True
+        sesh.add(exchange)
+        sesh.commit()
+
     return cfg
 
 
@@ -163,3 +181,65 @@ def test_sequential_fetch_updates(storage: DefaultOMMStore) -> None:
     md5_index_status = storage.get_last_index_build_checkpoint(VideoMD5Signal)
     assert md5_index_status is not None
     assert md5_index_status.total_hash_count == maker.count
+
+
+class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
+    """Returns all the sample data, but can't convert to any types"""
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "sample_unknown"
+
+    @classmethod
+    def naive_convert_to_signal_type(
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
+        fetched: t.Mapping[
+            t.Tuple[str, str], t.Optional[fetch_state.TFetchedSignalMetadata]
+        ],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, fetch_state.TFetchedSignalMetadata]]:
+        return {}
+
+
+def test_exchange_get_data(storage: DefaultOMMStore):
+    cfg = make_collab(storage)
+    fetch(storage)
+    patched_signal_types = dict(storage.exchange_types)
+    patched_signal_types[
+        _UnknownSampleExchangeAPI.get_name()
+    ] = _UnknownSampleExchangeAPI
+    storage.exchange_types = patched_signal_types
+
+    signal_types = list(storage.get_enabled_signal_types().values())
+
+    # Storing original data not exposed by default
+    for delta in StaticSampleSignalExchangeAPI().fetch_iter(signal_types, None):
+        example_key, example_metadata = next(iter(delta.updates.items()))
+        break
+
+    with pytest.raises(KeyError):
+        storage.exchange_get_data("No such collab", example_key)
+
+    with pytest.raises(KeyError):
+        storage.exchange_get_data(cfg.name, "no such key")
+
+    val = storage.exchange_get_data(cfg.name, example_key)
+    assert val == example_metadata
+
+    storage.exchange_delete(cfg.name)
+    # pretend like we don't know what any signal types are
+    cfg = make_collab(storage, api=_UnknownSampleExchangeAPI)
+    fetch(storage)
+
+    # We don't store the unknown signal type
+    with pytest.raises(KeyError):
+        storage.exchange_get_data(cfg.name, example_key)
+
+    # Unless we specifically configure to do so
+    storage.exchange_delete(cfg.name)
+    cfg = make_collab(storage, retain_data_with_unknown_signal_types=True)
+    fetch(storage)
+
+    val = storage.exchange_get_data(cfg.name, example_key)
+    assert val == example_metadata
