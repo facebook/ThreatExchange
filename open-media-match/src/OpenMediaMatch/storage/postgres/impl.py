@@ -3,14 +3,12 @@
 """
 The default store for accessing persistent data on OMM.
 """
-from dataclasses import dataclass, field
-import datetime
+from dataclasses import dataclass
 import pickle
 import time
 import typing as t
 
 import flask
-from flask_apscheduler import APScheduler
 import flask_migrate
 
 from sqlalchemy import select, delete, func, Select, insert, update
