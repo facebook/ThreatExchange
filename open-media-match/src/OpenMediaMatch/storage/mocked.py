@@ -16,6 +16,8 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
+    FetchedSignalMetadata,
+    TUpdateRecordKey,
 )
 
 from OpenMediaMatch.storage import interface
@@ -133,9 +135,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def exchange_get_data(
         self,
         collab_name: str,
-        key: str,
-    ) -> t.Optional[dict[str, t.Any]]:
-        return None
+        key: TUpdateRecordKey,
+    ) -> FetchedSignalMetadata:
+        raise Exception("Not implemented")
 
     def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
         return dict(self.banks)

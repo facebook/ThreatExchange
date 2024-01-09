@@ -34,6 +34,7 @@ from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
     FetchedSignalMetadata,
+    TUpdateRecordKey,
 )
 
 from OpenMediaMatch.storage import interface
@@ -333,14 +334,22 @@ class DefaultOMMStore(interface.IUnifiedStore):
         for raw_k, val in dat.items():
             k = str(raw_k)
             xd = existing_xds.get(k)
+            as_signal_types = {}
+            if val is not None:
+                as_signal_types = api_cls.naive_convert_to_signal_type(
+                    signal_types, collab_config, {raw_k: val}
+                )
+                # If we can't use any of the data in the record, treat it as a
+                # delete to save space, unless we are specifically configured to
+                # retain it
+                if not as_signal_types and not cfg.retain_unknown_signal_types:
+                    val = None
             if val is None:
                 if xd is not None:
                     xd_to_delete.append(xd.id)
                 continue
-            pickled_original_data = pickle.dumps(val)
-            as_signal_types = api_cls.naive_convert_to_signal_type(
-                signal_types, collab_config, {raw_k: val}
-            )
+
+            pickled_fetch_signal_metadata = pickle.dumps(val)
 
             if xd is None:
                 xd_to_create.append(
@@ -348,7 +357,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                         {
                             "collab_id": cfg.id,
                             "fetch_id": k,
-                            "pickled_original_fetch_data": pickled_original_data,
+                            "pickled_fetch_signal_metadata": pickled_fetch_signal_metadata,
                         },
                         _BulkDbOpExchangeDataHelper.from_creation(as_signal_types),
                     )
@@ -359,11 +368,11 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 ] = _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
                     xd, as_signal_types
                 )
-                if pickled_original_data != xd.pickled_original_fetch_data:
+                if pickled_fetch_signal_metadata != xd.pickled_fetch_signal_metadata:
                     xd_to_update.append(
                         {
                             "id": xd.id,
-                            "pickled_original_fetch_data": pickled_original_data,
+                            "pickled_fetch_signal_metadata": pickled_fetch_signal_metadata,
                         }
                     )
 
@@ -389,7 +398,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 )
             )
         sesh.flush()
-        _sync_bankable_content(op_helpers, cfg.import_bank_id)
+        _sync_bankable_content(op_helpers, cfg.import_bank.id)
         _sync_content_signal(op_helpers)
 
         if fetch_status is None:
@@ -402,18 +411,22 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def exchange_get_data(
         self,
         collab_name: str,
-        key: str,
-    ) -> t.Optional[dict[str, t.Any]]:
+        key: TUpdateRecordKey,
+    ) -> FetchedSignalMetadata:
         cfg = self._exchange_get_cfg(collab_name)
-        assert cfg is not None, "Config was deleted?"
+        if cfg is None:
+            raise KeyError(f"No such config '{collab_name}'")
+
         res = database.db.session.execute(
             select(database.ExchangeData)
             .where(database.ExchangeData.collab_id == cfg.id)
-            .where(database.ExchangeData.fetch_id == key)
+            .where(database.ExchangeData.fetch_id == str(key))
         ).scalar_one_or_none()
         if res is None:
-            return None
-        return res.fetch_data
+            raise KeyError("No exchange data with name and key")
+        dat = res.pickled_fetch_signal_metadata
+        assert dat is not None
+        return pickle.loads(dat)
 
     def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
         return {
