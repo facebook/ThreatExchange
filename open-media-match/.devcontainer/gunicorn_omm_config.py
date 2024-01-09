@@ -1,7 +1,11 @@
-"""
-A 
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 
-This is meant to demonstrate the differences between the development
+"""
+A production - looking OMM config.
+
+
+This is meant to demonstrate the differences between the development and
+prod versions
 """
 
 from threatexchange.signal_type.pdq.signal import PdqSignal
