@@ -1,58 +1,121 @@
-# Contributing
+# Overview
+
+vPDQ has a CPP implementation and a Python binding that is created with Cython.
+
+Note: Python scripts are used for testing the CPP implementation, but they do not require the Python binding to be installed. They are located in the [cpp](./cpp) folder.
+
+
+## Contributing
 Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions develop locally and open PRs
+
+---
+
+# CPP Development
+
 ### Code Style
-vPDQ uses [black](https://pypi.org/project/black/) for consistent formatting across
-the projects Python source files and clang-format for formatting CPP source files. 
-After installing black and clang-format locally, you can automatically format all the vPDQ files by running the following command from the repository root.
 
-```shell
-black ./vpdq/
-find vpdq/ -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
+clang-format is used for formatting CPP source files.
+
+Format with clang-format:
+```sh
+find cpp/vpdq -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
 ```
 
-### Installing Locally
-vPDQ has two parts of codes: CPP implementation and python-binding library.
-To use vPDQ, ffmpeg is required(https://www.ffmpeg.org/download.html)
+### Building
 
-To cmake CPP binary files:
-```
-cd vpdq/cpp/
+To build libvpdq and the CLI executables:
+
+In the root vpdq folder:
+```sh
+cd cpp/
 mkdir -p build
 cd build
 cmake ..
 make
 ```
-To locally install python-binding library:
-```
-cd vpdq
-python vpdq-release.py -i
+
+The output executables and `libvpdq.a` should now be in the cpp/build directory.
+
+### Tests
+
+Run the CPP regression test
+```sh
+python vpdq/cpp/regtest.py
 ```
 
-### Running Tests(depends on "Installing Locally")
+---
 
-To run the CPP regression test
-```
-cd vpdq/cpp/
-python regtest.py
+# Python Bindings Development
+
+### Code Style
+
+[black](https://pypi.org/project/black/) is used for formatting Python.
+
+Install black:
+```sh
+python -m pip install black
 ```
 
-To run the python-binding library test
-```
-cd vpdq
-py.test
+Format all files in `vpdq/`:
+
+```sh
+python -m black ./
 ```
 
-## Build local distribution
-To create local distribution:
-```
-cd vpdq
-python vpdq-release.py -r
-```
-The local distribution files are located at vpdq/dist/
+### Dependencies
+All dependencies from the CPP implementation are required to build the binding. See [README](../README.md) for more information.
 
-## Releasing Changes
-Releases of the python-binding library are managed by a [GitHub action](../.github/workflows/vpdq-release.yaml),
-triggered by changes to [version.txt](./version.txt). To create a new release to
-[PyPI](https://pypi.org/project/vpdq/), update [version.txt](./version.txt)
-to the new release name in a PR. Once the PR is approved and merges, the CI process
-will publish the new version to PyPI, shortly after a test publish to Test PyPI.
+Ubuntu may require `python3-dev` to compile the bindings and `pkg-config` packages to compile vpdq.
+
+Creating a [venv](https://docs.python.org/3/library/venv.html) is optional, but recommended during development. See [setuptools documentation](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) for more information.
+
+
+### Install
+
+In `vpdq/`:
+```sh
+python install --editable .
+```
+
+You should now be able to run `python -c "import vpdq"` without error.
+
+See [setuptools documentation](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) for more information.
+
+### Tests
+
+The tests use sample videos from `ThreatExchange/tmk/sample-videos`
+
+Run the tests:
+```sh
+python -m pip install pytest
+python -m pytest
+```
+
+### Distributing
+
+[build](https://github.com/pypa/build) is used for building, packaging, and distributing the Python bindings.
+
+In `vpdq/`:
+
+Install dependencies:
+```sh
+python -m pip install -r packaging-requirements.txt
+```
+
+Build package:
+```sh
+python -m build --sdist 
+```
+
+Build wheel:
+```sh
+python -m build --wheel
+```
+
+The package/wheel should now be in `dist/`.
+
+### Publishing
+
+Releases of the python-binding library are managed by a [GitHub action](../.github/workflows/vpdq-release.yaml), triggered by changes to [version.txt](./version.txt).
+
+To create a new release to [PyPI](https://pypi.org/project/vpdq/), update [version.txt](./version.txt) to the new release name in a PR. Once the PR is approved and merges, the CI process will publish the new version to PyPI, shortly after a test publish to Test PyPI.

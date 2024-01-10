@@ -2,14 +2,14 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
+#ifndef FILEHASHER_H
+#define FILEHASHER_H
+
 #include <string>
 #include <vector>
 
 #include <pdq/cpp/common/pdqhashtypes.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
-
-#ifndef FILEHASHER_H
-#define FILEHASHER_H
 
 namespace facebook {
 namespace vpdq {

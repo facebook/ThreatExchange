@@ -31,7 +31,7 @@ cdef extern from "vpdq/cpp/hashing/vpdqHashType.h" namespace "facebook::vpdq::ha
         Hash256 pdqHash;
         int frameNumber;
         int quality;
-        float timeStamp;
+        double timeStamp;
 
 
 cdef extern from "vpdq/cpp/hashing/filehasher.h" namespace "facebook::vpdq::hashing":
@@ -52,10 +52,10 @@ class VpdqFeature:
     frame_number: int
     hash: Hash256
     hex: str
-    timestamp: double
+    timestamp: float
 
     def __init__(
-        self, quality: int, frame_number: int, hash: "Hash256", timestamp: double
+        self, quality: int, frame_number: int, hash: Hash256, timestamp: float
     ):
         self.quality = quality
         self.frame_number = frame_number
@@ -63,12 +63,12 @@ class VpdqFeature:
         self.hex = hash_to_hex(hash)
         self.timestamp = timestamp
 
-    def hamming_distance(self, that: "vpdq_feature"):
+    def hamming_distance(self, that: VpdqFeature):
         return hammingDistance(self.hash, that.hash)
 
 
-def hash_to_hex(hash_value: "Hash256") -> str:
-    """Convect from pdq hash to hex str
+def hash_to_hex(hash_value: Hash256) -> str:
+    """Convert from pdq hash to hex str
 
     Args:
         hash_value
@@ -83,7 +83,7 @@ def str_to_hash(str_hash: str):
     return fromStringOrDie(str(str_hash).encode("utf-8"))
 
 
-def hamming_distance(hash1: "Hash256", hash2: "Hash256") -> int:
+def hamming_distance(hash1: Hash256, hash2: Hash256) -> int:
     """
     Return the hamming distance between two pdq hashes
 
@@ -100,7 +100,7 @@ def hamming_distance(hash1: "Hash256", hash2: "Hash256") -> int:
 def computeHash(
     input_video_filename: t.Union[str, Path],
     ffmpeg_path: t.Union[str, None] = None,
-    seconds_per_hash: double = 1,
+    seconds_per_hash: float = 1.0,
     verbose: bool = False,
     downsample_width: int = 0,
     downsample_height: int = 0,
@@ -113,8 +113,8 @@ def computeHash(
         ffmpeg_path: ffmpeg path (this is not used anymore)
         verbose: If verbose, will print detailed information
         seconds_per_hash: The frequence(per second) a hash is generated from the video. If it is 0, will generate every frame's hash
-        downsample_width: Width to downsample the video to before hashing frames.. If it is 0, will use the original width of the video to hash
-        downsample_height: Height to downsample the video to before hashing frames.. If it is 0, will use the original height of the video to hash
+        downsample_width: Width to downsample the video to before hashing frames. If it is 0, will use the original width of the video to hash
+        downsample_height: Height to downsample the video to before hashing frames. If it is 0, will use the original height of the video to hash
         thread_count: Number of threads for hashing. If it is 0, will use choose automatically
     Returns:
         list of vpdq_feature: VPDQ hash from the video

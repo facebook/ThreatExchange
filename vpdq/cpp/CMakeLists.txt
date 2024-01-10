@@ -15,78 +15,84 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
 
 set(CMAKE_CXX_STANDARD 14)
 
+set (PDQSOURCES
+    pdq/cpp/common/pdqhashtypes.cpp
+    pdq/cpp/hashing/pdqhashing.cpp
+    pdq/cpp/common/pdqhamming.cpp
+    pdq/cpp/io/hashio.cpp
+    pdq/cpp/downscaling/downscaling.cpp
+    pdq/cpp/hashing/torben.cpp
+)
+
+set (PDQHEADERS
+    pdq/cpp/common/pdqhashtypes.h
+    pdq/cpp/common/pdqbasetypes.h
+    pdq/cpp/common/pdqhamming.h
+    pdq/cpp/hashing/pdqhashing.h
+    pdq/cpp/io/hashio.h
+    pdq/cpp/downscaling/downscaling.h
+    pdq/cpp/hashing/torben.h
+)
+
 set(SOURCES
-    ../../pdq/cpp/common/pdqhashtypes.cpp
-    ../../pdq/cpp/hashing/pdqhashing.cpp
-    ../../pdq/cpp/common/pdqhamming.cpp
-    ../../pdq/cpp/io/hashio.cpp
-    ../../pdq/cpp/downscaling/downscaling.cpp
-    ../../pdq/cpp/hashing/torben.cpp
-    ./hashing/filehasher.cpp
-    ./hashing/bufferhasher.cpp
-    ./hashing/matchTwoHash.cpp
-    ./io/vpdqio.cpp
+    vpdq/cpp/hashing/bufferhasher.cpp
+    vpdq/cpp/hashing/filehasher.cpp
+    vpdq/cpp/hashing/matchTwoHash.cpp
+    vpdq/cpp/io/vpdqio.cpp
 )
 
 SET(HEADERS
-    ../../pdq/cpp/common/pdqbasetypes.h
-    ../../pdq/cpp/common/pdqhashtypes.h
-    ../../pdq/cpp/common/pdqhamming.h
-    ../../pdq/cpp/hashing/pdqhashing.h
-    ../../pdq/cpp/io/hashio.h
-    ../../pdq/cpp/downscaling/downscaling.h
-    ../../pdq/cpp/hashing/torben.h
-    ./hashing/filehasher.h
-    ./hashing/vpdqHashType.h
-    ./hashing/bufferhasher.h
-    ./hashing/matchTwoHash.h
-    ./io/vpdqio.h
+    vpdq/cpp/hashing/bufferhasher.h
+    vpdq/cpp/hashing/filehasher.h
+    vpdq/cpp/hashing/vpdqHashType.h
+    vpdq/cpp/hashing/matchTwoHash.h
+    vpdq/cpp/io/vpdqio.h
 )
 
-# TODO: Add more specific directories
-include_directories (
-    ../..
-)
+include_directories( vpdq/cpp/bin vpdq/cpp/hashing vpdq/cpp/io ${CMAKE_SOURCE_DIR} )
 
-add_library(vpdqlib
+add_library(vpdq
     ${SOURCES}
     ${HEADERS}
+    ${PDQSOURCES}
+    ${PDQHEADERS}
 )
 
+target_include_directories(vpdq PRIVATE ${CMAKE_SOURCE_DIR})
+
 add_executable(match-hashes-byline
-    bin/match-hashes-byline.cpp
+    vpdq/cpp/bin/match-hashes-byline.cpp
 )
 
 add_executable(match-hashes-brute
-    bin/match-hashes-brute.cpp
+    vpdq/cpp/bin/match-hashes-brute.cpp
 )
 
 add_executable(vpdq-hash-video
-    bin/vpdq-hash-video.cpp
+    vpdq/cpp/bin/vpdq-hash-video.cpp
 )
 
 
-target_link_libraries(vpdqlib
+target_link_libraries(vpdq
     PkgConfig::LIBAV
 )
 
 target_link_libraries(match-hashes-byline
-    vpdqlib
+    vpdq
     PkgConfig::LIBAV
 )
 
 target_link_libraries(match-hashes-brute
-    vpdqlib
+    vpdq
     PkgConfig::LIBAV
 )
 
 target_link_libraries(vpdq-hash-video
-    vpdqlib
+    vpdq
     PkgConfig::LIBAV
 )
 
-# Pass the include and libav* library directories to setup.py for Python binding
-set_target_properties(vpdqlib
-    PROPERTIES
-    ENVIRONMENT "LIBRARY_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,IMPORTED_LOCATION>;INCLUDE_DIRS=$<TARGET_PROPERTY:PkgConfig::LIBAV,INTERFACE_INCLUDE_DIRECTORIES>"
-)
+# Write the library dirs to a new-line delimited file for Cython to be able to locate LIBAV files
+string(REPLACE ";" "\n" LIBRARY_DIRS "${LIBAV_STATIC_LIBRARY_DIRS}")
+set(LIBRARY_DIRS_FILE "libraries-dirs.txt")
+file(WRITE ${LIBRARY_DIRS_FILE} "${LIBRARY_DIRS}")

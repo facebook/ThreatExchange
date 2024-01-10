@@ -2,8 +2,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#ifndef BUFFERHASHERS_H
-#define BUFFERHASHERS_H
+#ifndef BUFFERHASHER_H
+#define BUFFERHASHER_H
 
 #include <memory>
 #include <string>
@@ -92,4 +92,4 @@ class FrameBufferHasherFactory {
 } // namespace vpdq
 } // namespace facebook
 
-#endif // BUFFERHASHERS_H
+#endif // BUFFERHASHER_H
