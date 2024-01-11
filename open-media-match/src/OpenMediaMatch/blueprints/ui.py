@@ -8,6 +8,7 @@ from flask import request, redirect
 
 from OpenMediaMatch.blueprints import matching, curation, hashing
 from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.utils import dev_utils
 from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.storage.postgres.database import db
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
@@ -122,6 +123,18 @@ def upload():
     }
 
     return {"hashes": signals, "banks": sorted(banks)}
+
+
+@bp.route("/seed_sample", methods=["POST"])
+def seed_sample():
+    dev_utils.seed_sample()
+    return redirect("./")
+
+
+@bp.route("/seed_banks", methods=["POST"])
+def seed_banks():
+    dev_utils.seed_banks_random()
+    return redirect("./")
 
 
 @bp.route("/factory_reset", methods=["POST"])
