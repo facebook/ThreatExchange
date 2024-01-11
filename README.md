@@ -18,6 +18,8 @@ Video PDQ (or vPDQ for short) is a simple video hashing algorithm that determine
 
 HMA is a ready-to-deploy content moderation project for AWS, containing many submodules. It allows you to maintain lists of known content to scan for, which you can either curate yourself or connect to other hash exchange programs to share and recieve lists.  More can be found [at the wiki](https://github.com/facebook/ThreatExchange/wiki).
 
+A second version of this project, called "[Open Media Match](https://github.com/facebook/ThreatExchange/tree/main/open-media-match)" is under construction, which uses a cloud-agnostic docker-based deployment.
+
 ## python-threatexchange
 
 A python Library/CLI tool available on pypi under `threatexchange` which provides implementations for content scanning and signal exchange. It provides reference implementations in python for downloading hashes from Meta's ThreatExchange API, scanning images with PDQ, and others. It can also be easily extended to work with other hash exchanges and other techniques, not all of which are written by the maintainers of this repository.
