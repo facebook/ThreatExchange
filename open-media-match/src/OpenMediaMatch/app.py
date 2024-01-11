@@ -35,6 +35,7 @@ from OpenMediaMatch.background_tasks import (
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.storage.interface import BankConfig
+from OpenMediaMatch.utils import dev_utils
 
 
 def _is_debug_mode():
@@ -177,18 +178,9 @@ def create_app() -> flask.Flask:
         return routes
 
     @app.cli.command("seed")
-    def seed_data():
-        """Insert plausible-looking data into the database layer"""
-        from threatexchange.signal_type.pdq.signal import PdqSignal
-
-        bank_name = "SEED_BANK"
-
-        storage = get_storage()
-        storage.bank_update(BankConfig(name=bank_name, matching_enabled_ratio=1.0))
-
-        for st in (PdqSignal, VideoMD5Signal):
-            for example in st.get_examples():
-                storage.bank_add_content(bank_name, {st.get_name(): example})
+    def seed_data() -> None:
+        """Add sample data API connection"""
+        dev_utils.seed_sample()
 
     @app.cli.command("big-seed")
     @click.option("-b", "--banks", default=100, show_default=True)
@@ -198,26 +190,7 @@ def create_app() -> flask.Flask:
         Seed the database with a large number of banks and hashes
         It will generate n banks and put n/m hashes on each bank
         """
-        storage = get_storage()
-
-        types: list[t.Type[CanGenerateRandomSignal]] = [PdqSignal, VideoMD5Signal]
-
-        for i in range(banks):
-            # create bank
-            bank = BankConfig(name=f"SEED_BANK_{i}", matching_enabled_ratio=1.0)
-            storage.bank_update(bank, create=True)
-
-            # Add hashes
-            for _ in range(seeds // banks):
-                # grab randomly either PDQ or MD5 signal
-                signal_type = random.choice(types)
-                random_hash = signal_type.get_random_signal()
-
-                storage.bank_add_content(
-                    bank.name, {t.cast(t.Type[SignalType], signal_type): random_hash}
-                )
-
-            print("Finished adding hashes to", bank.name)
+        dev_utils.seed_banks_random(banks, seeds)
 
     @app.cli.command("fetch")
     def fetch():
