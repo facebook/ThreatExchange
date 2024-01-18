@@ -7,11 +7,11 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name="vpdq"
-authors=[{name="Facebook", email="threatexchange@fb.com"}]
-description="Python bindings for Facebook VPDQ hash"
+name = "vpdq"
+authors = [{name = "Meta", email = "threatexchange@meta.com"}]
+description = "Python bindings for Facebook VPDQ hash"
 requires-python = ">= 3.8"
-readme={file = "python/README.md", content-type = "text/markdown"}
+readme = {file = "python/README.md", content-type = "text/markdown"}
 license = {file = "LICENSE.txt"}
 dynamic = ["version", "scripts", "entry-points"]
 
