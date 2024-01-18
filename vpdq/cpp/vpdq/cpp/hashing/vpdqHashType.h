@@ -2,10 +2,10 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <pdq/cpp/common/pdqhashtypes.h>
-
 #ifndef VPDQHASHTYPE_H
 #define VPDQHASHTYPE_H
+
+#include <pdq/cpp/common/pdqhashtypes.h>
 
 using namespace std;
 

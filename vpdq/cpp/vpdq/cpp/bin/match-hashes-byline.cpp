@@ -4,6 +4,8 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
 
 #include <pdq/cpp/io/hashio.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
@@ -60,11 +62,9 @@ int main(int argc, char** argv) {
   qualityTolerance = atoi(argv[argi + 3]);
 
   if (video1Hashes.size() != video2Hashes.size()) {
-    fprintf(
-        stderr,
-        "VideoHashes1 size %lu doesn't match with VideoHashes2 size %lu\n",
-        video1Hashes.size(),
-        video2Hashes.size());
+    std::cerr << "VideoHashes1 size " << video1Hashes.size()
+              << " doesn't match with VideoHashes2 size " << video2Hashes.size()
+              << std::endl;
     return EXIT_FAILURE;
   }
   size_t count = 0;
@@ -73,13 +73,12 @@ int main(int argc, char** argv) {
     if (video1Hashes[i].quality < qualityTolerance ||
         video2Hashes[i].quality < qualityTolerance) {
       if (verbose) {
-        printf(
-            "Skipping Line %zu Hash1: %s Hash2: %s, because of low quality Hash1: %d Hash2: %d \n",
-            i,
-            video1Hashes[i].pdqHash.format().c_str(),
-            video2Hashes[i].pdqHash.format().c_str(),
-            video1Hashes[i].quality,
-            video2Hashes[i].quality);
+        std::cout << "Skipping Line " << i
+                  << " Hash1: " << video1Hashes[i].pdqHash.format()
+                  << " Hash2: " << video2Hashes[i].pdqHash.format()
+                  << ", because of low quality Hash1: "
+                  << video1Hashes[i].quality
+                  << " Hash2: " << video2Hashes[i].quality << std::endl;
       }
       continue;
     }
@@ -88,23 +87,24 @@ int main(int argc, char** argv) {
         distanceTolerance) {
       count++;
       if (verbose) {
-        printf(
-            "Line %zu Hash1: %s Hash2: %s match \n",
-            i,
-            video1Hashes[i].pdqHash.format().c_str(),
-            video2Hashes[i].pdqHash.format().c_str());
+        std::cout << "Line " << i
+                  << " Hash1: " << video1Hashes[i].pdqHash.format()
+                  << " Hash2: " << video2Hashes[i].pdqHash.format() << " match"
+                  << std::endl;
       }
     } else {
       if (verbose) {
-        printf(
-            "NO MATCH: Line %zu Hash1: %s Hash2: %s\n",
-            i,
-            video1Hashes[i].pdqHash.format().c_str(),
-            video2Hashes[i].pdqHash.format().c_str());
+        std::cout << "NO MATCH: Line " << i
+                  << " Hash1: " << video1Hashes[i].pdqHash.format()
+                  << " Hash2: " << video2Hashes[i].pdqHash.format()
+                  << std::endl;
       }
     }
   }
-  printf(
-      "%3f Percentage  matches\n", (float)count * 100 / total_hashed_compared);
+
+  auto const percentage =
+      static_cast<float>(count) * 100 / total_hashed_compared;
+  std::cout << std::fixed << std::setprecision(3) << percentage
+            << " Percentage matches" << std::endl;
   return EXIT_SUCCESS;
 }

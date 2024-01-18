@@ -2,10 +2,11 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <vpdq/cpp/hashing/vpdqHashType.h>
-
 #ifndef MATCHTWOHASH_H
 #define MATCHTWOHASH_H
+
+#include <vector>
+#include <vpdq/cpp/hashing/vpdqHashType.h>
 
 namespace facebook {
 namespace vpdq {
