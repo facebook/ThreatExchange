@@ -28,7 +28,7 @@ ROLE_CURATOR = True
 # APScheduler (background threads for development)
 TASK_FETCHER = True
 TASK_INDEXER = True
-TASK_INDEX_CACHE = True
+TASK_INDEX_CACHE = False  # Needs a fix to allow initial startup
 
 # Core functionality configuration
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(
