@@ -25,6 +25,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r packaging-requirements.txt
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev pkg-config cmake ffmpeg libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
 
       - name: Package
         run: |
