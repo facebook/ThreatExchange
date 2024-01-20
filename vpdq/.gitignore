@@ -8,6 +8,9 @@
 *.swp
 *.swo
 
+build/
+cpp/libraries-dirs.txt
 cpp/test
 cpp/build
 output-hashes/*
+python/vpdq.cpp

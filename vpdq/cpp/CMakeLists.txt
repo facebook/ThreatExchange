@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 
-set(CMAKE_CXX_FLAGS "-O2 -fPIC -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations")
+set(CMAKE_CXX_FLAGS "-O2 -fPIC -pthread -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations")
+
 project(VPDQ)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
