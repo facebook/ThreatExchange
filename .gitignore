@@ -19,3 +19,4 @@ pdq/java/bazel-testlogs/
 .vscode/
 *.d.ts
 .idea/
+venv/
