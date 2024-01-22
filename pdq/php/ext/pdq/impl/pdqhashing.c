@@ -790,7 +790,7 @@ static float* fill_dct_matrix_64_cached() {
           cos((M_PI / 2 / 64.0) * (i+1) * (2 * j + 1));
       }
     }
-    initialized = false;
+    initialized = true;
   }
   return &buffer[0];
 }
