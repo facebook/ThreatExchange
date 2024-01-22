@@ -2,8 +2,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <mutex>
-
 #include <pdq/cpp/downscaling/downscaling.h>
 #include <pdq/cpp/hashing/pdqhashing.h>
 #include <pdq/cpp/hashing/torben.h>
@@ -17,6 +15,7 @@
 #define _USE_MATH_DEFINES
 #endif
 
+#include <array>
 #include <cassert>
 #include <chrono>
 #include <cmath>
@@ -26,6 +25,37 @@ using namespace std;
 namespace facebook {
 namespace pdq {
 namespace hashing {
+
+namespace {
+
+// ----------------------------------------------------------------
+// Christoph Zauner 'Implementation and Benchmarking of Perceptual
+// Image Hash Functions' 2010
+//
+// See comments on dct64To16. Input is (0..63)x(0..63); output is
+// (1..16)x(1..16) with the latter indexed as (0..15)x(0..15).
+//
+// * numRows is 16.
+// * numCols is 64.
+// * Storage is row-major
+// * Element i,j at row i column j is at offset i*16+j.
+auto const dct_matrix_64 = [] {
+  const size_t num_rows = 16;
+  const size_t num_cols = 64;
+  const float matrix_scale_factor = std::sqrt(2.0 / double{num_cols});
+
+  std::array<float, (num_rows * num_cols)> dct_matrix;
+  for (size_t i = 0; i < num_rows; i++) {
+    for (size_t j = 0; j < num_cols; j++) {
+      dct_matrix[i * num_cols + j] = matrix_scale_factor *
+          std::cos((M_PI / 2.0 / double{num_cols}) * (i + 1) * (2 * j + 1));
+    }
+  }
+
+  return dct_matrix;
+}();
+
+} // namespace
 
 //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // From Wikipedia: standard RGB to luminance (the 'Y' in 'YUV').
@@ -40,11 +70,6 @@ const int MIN_HASHABLE_DIM = 5;
 //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Tent filter.
 const int PDQ_NUM_JAROSZ_XY_PASSES = 2;
-
-//  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Christoph Zauner 'Implementation and Benchmarking of Perceptual
-// Image Hash Functions' 2010
-static float* fill_dct_matrix_64_cached();
 
 // ----------------------------------------------------------------
 void fillFloatLumaFromRGB(
@@ -333,7 +358,7 @@ void dct64To16(float A[64][64], float T[16][64], float B[16][16]) {
   // * numCols is 64.
   // * Storage is row-major
   // * Element i,j at row i column j is at offset i*16+j.
-  float* D = fill_dct_matrix_64_cached();
+  const auto& D = dct_matrix_64;
 
   // B = D A Dt
   // B = (D A) Dt
@@ -341,7 +366,7 @@ void dct64To16(float A[64][64], float T[16][64], float B[16][16]) {
 
   for (int i = 0; i < 16; i++) {
     for (int j = 0; j < 64; j++) {
-      float* pd = &D[i * 64]; // ith row
+      const auto pd = &D[i * 64]; // ith row
       float* pa = &A[0][j];
       float sumk = 0.0;
 
@@ -371,7 +396,7 @@ void dct64To16(float A[64][64], float T[16][64], float B[16][16]) {
   for (int i = 0; i < 16; i++) {
     for (int j = 0; j < 16; j++) {
       float sumk = 0.0;
-      float* pd = &D[j * 64]; // jth row
+      const auto pd = &D[j * 64]; // jth row
       float* pt = &T[i][0];
       for (int k = 0; k < 64;) {
         sumk += pt[k] * pd[k];
@@ -522,30 +547,6 @@ void pdqBuffer16x16ToBits(float dctOutput16x16[16][16], Hash256* hashptr) {
       }
     }
   }
-}
-
-// ----------------------------------------------------------------
-// See comments on dct64To16. Input is (0..63)x(0..63); output is
-// (1..16)x(1..16) with the latter indexed as (0..15)x(0..15).
-//
-// * numRows is 16.
-// * numCols is 64.
-// * Storage is row-major
-// * Element i,j at row i column j is at offset i*16+j.
-static float* fill_dct_matrix_64_cached() {
-  static std::once_flag initialized;
-  static float buffer[16 * 64];
-
-  std::call_once(initialized, []() {
-    const float matrix_scale_factor = std::sqrt(2.0 / 64.0);
-    for (int i = 0; i < 16; i++) {
-      for (int j = 0; j < 64; j++) {
-        buffer[i * 64 + j] = matrix_scale_factor *
-            cos((M_PI / 2 / 64.0) * (i + 1) * (2 * j + 1));
-      }
-    }
-  });
-  return &buffer[0];
 }
 
 } // namespace hashing
