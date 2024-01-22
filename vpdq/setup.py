@@ -35,6 +35,7 @@ libav_libraries: List[str]= [
     "avutil",
 ]
 libraries: List[str] = libav_libraries
+extra_link_args: List[str] = ["-lpthread"]
 
 
 def make_clean() -> None:
@@ -93,6 +94,7 @@ EXTENSIONS = [
         extra_objects=[str(LIBVPDQ_PATH)],
         library_dirs=lib_dirs,
         include_dirs=include_dirs,
+        extra_link_args=extra_link_args,
     )
 ]
 
