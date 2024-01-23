@@ -1,7 +1,16 @@
 cmake_minimum_required(VERSION 3.17)
 
+project(VPDQ CXX)
+
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "-O2 -fPIC -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations")
-project(VPDQ)
+
+# Enable threads
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+# Find libav* FFmpeg libraries
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavdevice
@@ -13,7 +22,6 @@ pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
     libavutil
 )
 
-set(CMAKE_CXX_STANDARD 14)
 
 set (PDQSOURCES
     pdq/cpp/common/pdqhashtypes.cpp
@@ -75,21 +83,25 @@ add_executable(vpdq-hash-video
 
 target_link_libraries(vpdq
     PkgConfig::LIBAV
+    Threads::Threads
 )
 
 target_link_libraries(match-hashes-byline
     vpdq
     PkgConfig::LIBAV
+    Threads::Threads
 )
 
 target_link_libraries(match-hashes-brute
     vpdq
     PkgConfig::LIBAV
+    Threads::Threads
 )
 
 target_link_libraries(vpdq-hash-video
     vpdq
     PkgConfig::LIBAV
+    Threads::Threads
 )
 
 # Write the library dirs to a new-line delimited file for Cython to be able to locate LIBAV files
