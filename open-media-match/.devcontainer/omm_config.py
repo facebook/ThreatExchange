@@ -12,6 +12,9 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.fb_threatexchange_api import (
+    FBThreatExchangeSignalExchangeAPI,
+)
 
 # Database configuration
 DBUSER = "media_match"
@@ -34,7 +37,11 @@ TASK_INDEX_CACHE = False  # Needs a fix to allow initial startup
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     signal_types=[PdqSignal, VideoMD5Signal],
     content_types=[PhotoContent, VideoContent],
-    exchange_types=[StaticSampleSignalExchangeAPI, InfiniteRandomExchange],
+    exchange_types=[
+        StaticSampleSignalExchangeAPI,
+        InfiniteRandomExchange,
+        FBThreatExchangeSignalExchangeAPI,
+    ],
 )
 
 # Debugging stuff

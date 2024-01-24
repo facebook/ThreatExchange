@@ -31,6 +31,7 @@ from threatexchange.exchanges.fetch_state import (
     FetchedSignalMetadata,
     TUpdateRecordKey,
 )
+from threatexchange.exchanges.auth import CredentialHelper
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPI,
     TSignalExchangeAPICls,
@@ -195,6 +196,16 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         """
 
 
+@dataclass
+class SignalExchangeAPIConfig:
+    """
+    Holder for SignalExchangeAPIConfig configuration.
+    """
+
+    exchange_cls: TSignalExchangeAPICls
+    credentials: t.Optional[CredentialHelper] = None
+
+
 @dataclass(kw_only=True)
 class FetchStatus:
     checkpoint_ts: t.Optional[int]
@@ -227,9 +238,28 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
     """Interface for accessing SignalExchange configuration"""
 
     @abc.abstractmethod
-    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
+    def exchange_type_get_configs(self) -> t.Mapping[str, SignalExchangeAPIConfig]:
         """
         Return all installed SignalExchange types.
+        """
+
+    @abc.abstractmethod
+    def exchange_type_update(
+        self, cfg: SignalExchangeAPIConfig, *, create: bool = False
+    ) -> None:
+        """
+        Create or update the config for exchange API.
+
+        If create is false, if the name doesn't exist it will throw
+        If create is true, if the name already exists it will throw
+        """
+
+    @abc.abstractmethod
+    def exchange_type_delete(self, name: str) -> None:
+        """
+        Delete collaboration/exchange.
+
+        No exception is thrown if a config with that name doesn't exist
         """
 
     @abc.abstractmethod
@@ -239,7 +269,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         """
         Create or update a collaboration/exchange.
 
-        If create is false, if the name doesn't .
+        If create is false, if the name doesn't exist it will throw
         If create is true, if the name already exists it will throw
         """
 

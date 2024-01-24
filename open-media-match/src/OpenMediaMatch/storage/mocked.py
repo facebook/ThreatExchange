@@ -82,11 +82,21 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         return None
 
     # Exchanges
-    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
-        return {e.get_name(): e for e in (StaticSampleSignalExchangeAPI,)}
+    def exchange_type_get_configs(
+        self,
+    ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
+        return {
+            e.get_name(): interface.SignalExchangeAPIConfig(e)
+            for e in (StaticSampleSignalExchangeAPI,)
+        }
+
+    def exchange_type_update(
+        self, cfg: interface.SignalExchangeAPIConfig, *, create: bool = False
+    ) -> None:
+        raise Exception("Not implemented")
 
     def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
-        return self.exchange_get_type_configs()[api_cls_name]()
+        return self.exchange_type_get_configs()[api_cls_name].exchange_cls()
 
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False

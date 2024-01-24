@@ -489,3 +489,19 @@ class SignalTypeOverride(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     enabled_ratio: Mapped[float] = mapped_column(default=1.0)
+
+
+class ExchangeAPIConfig(db.Model):  # type: ignore[name-defined]
+    """
+    Store any per-API config we might need.
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    api: Mapped[str] = mapped_column(unique=True)
+    # If the credentials can't be produced at docker build time, here's a
+    # backup location to store them. You'll have to modify the OMM code to
+    # use them how your API expects if it's not one of the natively supported
+    # Exchange types.
+    # This should correspond to threatexchange.exchanges.authCredentialHelper
+    # object
+    defaul_credentials_json: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
