@@ -44,6 +44,7 @@ from sqlalchemy.types import DateTime
 from sqlalchemy.sql import func
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
     SignalExchangeAPI,
@@ -60,6 +61,7 @@ from OpenMediaMatch.storage.interface import (
     FetchStatus,
     SignalTypeIndexBuildCheckpoint,
     BankContentIterationItem,
+    SignalExchangeAPIConfig,
 )
 
 
@@ -497,11 +499,29 @@ class ExchangeAPIConfig(db.Model):  # type: ignore[name-defined]
     """
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    api: Mapped[str] = mapped_column(unique=True)
+    api: Mapped[str] = mapped_column(unique=True, index=True)
     # If the credentials can't be produced at docker build time, here's a
     # backup location to store them. You'll have to modify the OMM code to
     # use them how your API expects if it's not one of the natively supported
     # Exchange types.
     # This should correspond to threatexchange.exchanges.authCredentialHelper
     # object
-    defaul_credentials_json: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
+    default_credentials_json: Mapped[t.Dict[str, t.Any]] = mapped_column(
+        JSON, default=None
+    )
+
+    def serialize_credentials(self, creds: auth.CredentialHelper | None) -> None:
+        if creds is None:
+            self.defaul_credentials_json = {}
+        else:
+            self.defaul_credentials_json = dataclass_json.dataclass_dump_dict(creds)
+
+    def as_storage_iface_cls(
+        self, api_cls: TSignalExchangeAPICls
+    ) -> SignalExchangeAPIConfig:
+        creds = None
+        if self.defaul_credentials_json:
+            creds = dataclass_json.dataclass_load_dict(
+                self.defaul_credentials_json, auth.CredentialHelper
+            )
+        return SignalExchangeAPIConfig(api_cls, creds)

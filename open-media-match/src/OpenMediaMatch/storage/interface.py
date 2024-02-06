@@ -244,22 +244,9 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def exchange_type_update(
-        self, cfg: SignalExchangeAPIConfig, *, create: bool = False
-    ) -> None:
+    def exchange_type_update(self, cfg: SignalExchangeAPIConfig) -> None:
         """
-        Create or update the config for exchange API.
-
-        If create is false, if the name doesn't exist it will throw
-        If create is true, if the name already exists it will throw
-        """
-
-    @abc.abstractmethod
-    def exchange_type_delete(self, name: str) -> None:
-        """
-        Delete collaboration/exchange.
-
-        No exception is thrown if a config with that name doesn't exist
+        Update the config for an installed exchange API.
         """
 
     @abc.abstractmethod

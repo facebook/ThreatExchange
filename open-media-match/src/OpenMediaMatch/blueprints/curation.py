@@ -184,7 +184,7 @@ def exchange_api_list() -> list[str]:
     return list(exchange_apis)
 
 
-@bp.route("/exchanges/api/<string:api_name", methods=["GET", "POST", "PUT"])
+@bp.route("/exchanges/api/<string:api_name>", methods=["GET", "POST", "PUT"])
 def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
     api = persistence.get_storage().exchange_type_get_configs().get(api_name)
     if api is None:
@@ -194,12 +194,6 @@ def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
     elif request.method == "PUT":
         pass
     return {"has_custom_credentials": api.credentials is not None}
-
-
-@bp.route("/exchanges/api/<string:api_name", methods=["DELETE"])
-def exchange_api_config_delete(api_name: str) -> dict[str, t.Any]:
-    persistence.get_storage().exchange_type_delete(api_name)
-    return {"success": True}
 
 
 @bp.route("/exchanges", methods=["POST"])

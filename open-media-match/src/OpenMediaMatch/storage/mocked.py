@@ -90,9 +90,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             for e in (StaticSampleSignalExchangeAPI,)
         }
 
-    def exchange_type_update(
-        self, cfg: interface.SignalExchangeAPIConfig, *, create: bool = False
-    ) -> None:
+    def exchange_type_update(self, cfg: interface.SignalExchangeAPIConfig) -> None:
         raise Exception("Not implemented")
 
     def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:

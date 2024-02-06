@@ -93,8 +93,36 @@ class DefaultOMMStore(interface.IUnifiedStore):
             for name, ct in self.content_types.items()
         }
 
-    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
-        return self.exchange_types
+    def exchange_type_get_configs(
+        self,
+    ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
+        explicit_settings = {
+            s.api: s
+            for s in database.db.session.execute(
+                select(database.ExchangeAPIConfig)
+            ).scalars()
+        }
+
+        ret = {}
+        for name, api_cls in self.exchange_types.items():
+            if name in explicit_settings:
+                ret[name] = explicit_settings[name].as_storage_iface_cls(api_cls)
+            else:
+                ret[name] = interface.SignalExchangeAPIConfig(api_cls)
+        return ret
+
+    def exchange_type_update(self, cfg: interface.SignalExchangeAPIConfig) -> None:
+        sesh = database.db.session
+        config = sesh.execute(
+            select(database.ExchangeAPIConfig).where(
+                database.ExchangeAPIConfig.api == cfg.exchange_cls.get_name()
+            )
+        ).scalar_one_or_none()
+        if config is None:  # Create
+            config = database.ExchangeAPIConfig(api=cfg.exchange_cls.get_name())
+        config.serialize_credentials(cfg.credentials)
+        sesh.add(config)
+        sesh.commit()
 
     def get_signal_type_configs(self) -> t.Mapping[str, interface.SignalTypeConfig]:
         # If a signal is installed, then it is enabled by default. But it may be disabled by an
