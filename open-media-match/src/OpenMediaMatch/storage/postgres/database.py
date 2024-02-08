@@ -512,16 +512,16 @@ class ExchangeAPIConfig(db.Model):  # type: ignore[name-defined]
 
     def serialize_credentials(self, creds: auth.CredentialHelper | None) -> None:
         if creds is None:
-            self.defaul_credentials_json = {}
+            self.default_credentials_json = {}
         else:
-            self.defaul_credentials_json = dataclass_json.dataclass_dump_dict(creds)
+            self.default_credentials_json = dataclass_json.dataclass_dump_dict(creds)
 
     def as_storage_iface_cls(
         self, api_cls: TSignalExchangeAPICls
     ) -> SignalExchangeAPIConfig:
         creds = None
-        if self.defaul_credentials_json:
+        if self.default_credentials_json:
             creds = dataclass_json.dataclass_load_dict(
-                self.defaul_credentials_json, auth.CredentialHelper
+                self.default_credentials_json, auth.CredentialHelper
             )
         return SignalExchangeAPIConfig(api_cls, creds)

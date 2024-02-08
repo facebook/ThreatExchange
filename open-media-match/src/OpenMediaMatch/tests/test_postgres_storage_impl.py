@@ -40,7 +40,7 @@ def storage(app: Flask) -> t.Iterator[DefaultOMMStore]:
     }
     assert (
         StaticSampleSignalExchangeAPI.get_name()
-        in storage_instance.exchange_get_type_configs()
+        in storage_instance.exchange_apis_get_installed()
     )
     yield storage_instance
 
@@ -222,7 +222,6 @@ def test_exchange_type_confg(storage: DefaultOMMStore):
                 t.cast(TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI),
                 fb_auth,
             ),
-            create=True,
         )
 
     new_exchange_types = dict(storage.exchange_types)
@@ -235,7 +234,7 @@ def test_exchange_type_confg(storage: DefaultOMMStore):
     # Sanity, no db record yet
     api_confg = storage.exchange_type_get_configs().get(api_name)
     assert api_confg is not None
-    assert api_confg.exchange_cls is FBThreatExchangeSignalExchangeAPI
+    assert api_confg.api_cls is FBThreatExchangeSignalExchangeAPI
     assert api_confg.credentials is None
 
     # Can't set credentials for something that doesn't take it
@@ -245,7 +244,6 @@ def test_exchange_type_confg(storage: DefaultOMMStore):
                 t.cast(TSignalExchangeAPICls, StaticSampleSignalExchangeAPI),
                 auth.CredentialHelper(),
             ),
-            create=True,
         )
 
     storage.exchange_type_update(
@@ -253,7 +251,6 @@ def test_exchange_type_confg(storage: DefaultOMMStore):
             t.cast(TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI),
             fb_auth,
         ),
-        create=True,
     )
 
 

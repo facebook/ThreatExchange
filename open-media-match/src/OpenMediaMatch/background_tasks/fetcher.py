@@ -97,7 +97,7 @@ def _fetch(
         return
     log("Fetching signals for %s from %s", collab.name, collab.api)
 
-    api_cls = collab_store.exchange_get_type_configs().get(collab.api)
+    api_cls = collab_store.exchange_apis_get_installed().get(collab.api)
     assert (
         api_cls is not None
     ), f"No such SignalExchangeAPI '{collab.api}' - maybe it was deleted?"

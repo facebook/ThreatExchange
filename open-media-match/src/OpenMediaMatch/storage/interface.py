@@ -202,7 +202,7 @@ class SignalExchangeAPIConfig:
     Holder for SignalExchangeAPIConfig configuration.
     """
 
-    exchange_cls: TSignalExchangeAPICls
+    api_cls: TSignalExchangeAPICls
     credentials: t.Optional[CredentialHelper] = None
 
 
@@ -237,14 +237,20 @@ class FetchStatus:
 class ISignalExchangeStore(metaclass=abc.ABCMeta):
     """Interface for accessing SignalExchange configuration"""
 
-    @abc.abstractmethod
-    def exchange_type_get_configs(self) -> t.Mapping[str, SignalExchangeAPIConfig]:
+    def exchange_apis_get_installed(self) -> t.Mapping[str, TSignalExchangeAPICls]:
         """
         Return all installed SignalExchange types.
         """
+        return {k: v.api_cls for k, v in self.exchange_apis_get_configs().items()}
 
     @abc.abstractmethod
-    def exchange_type_update(self, cfg: SignalExchangeAPIConfig) -> None:
+    def exchange_apis_get_configs(self) -> t.Mapping[str, SignalExchangeAPIConfig]:
+        """
+        Returns the configuration for all installed exchange types
+        """
+
+    @abc.abstractmethod
+    def exchange_api_config_update(self, cfg: SignalExchangeAPIConfig) -> None:
         """
         Update the config for an installed exchange API.
         """

@@ -93,7 +93,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             for name, ct in self.content_types.items()
         }
 
-    def exchange_type_get_configs(
+    def exchange_apis_get_configs(
         self,
     ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
         explicit_settings = {
@@ -111,15 +111,17 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 ret[name] = interface.SignalExchangeAPIConfig(api_cls)
         return ret
 
-    def exchange_type_update(self, cfg: interface.SignalExchangeAPIConfig) -> None:
+    def exchange_api_config_update(
+        self, cfg: interface.SignalExchangeAPIConfig
+    ) -> None:
         sesh = database.db.session
         config = sesh.execute(
             select(database.ExchangeAPIConfig).where(
-                database.ExchangeAPIConfig.api == cfg.exchange_cls.get_name()
+                database.ExchangeAPIConfig.api == cfg.api_cls.get_name()
             )
         ).scalar_one_or_none()
-        if config is None:  # Create
-            config = database.ExchangeAPIConfig(api=cfg.exchange_cls.get_name())
+        if config is None:
+            config = database.ExchangeAPIConfig(api=cfg.api_cls.get_name())
         config.serialize_credentials(cfg.credentials)
         sesh.add(config)
         sesh.commit()
@@ -238,11 +240,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
         database.db.session.commit()
 
     def exchanges_get(self) -> t.Dict[str, CollaborationConfigBase]:
-        types = self.exchange_get_type_configs()
-
         results = database.db.session.execute(select(database.ExchangeConfig)).scalars()
-
-        return {cfg.name: cfg.as_storage_iface_cls(types) for cfg in results}
+        return {
+            cfg.name: cfg.as_storage_iface_cls(self.exchange_types) for cfg in results
+        }
 
     def _exchange_get_cfg(self, name: str) -> t.Optional[database.ExchangeConfig]:
         return database.db.session.execute(
@@ -272,7 +273,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     ) -> t.Optional[FetchCheckpointBase]:
         collab_config = self._exchange_get_cfg(name)
         assert collab_config is not None, "Config was deleted?"
-        return collab_config.as_checkpoint(self.exchange_get_type_configs())
+        return collab_config.as_checkpoint(self.exchange_apis_get_installed())
 
     def exchange_start_fetch(self, collab_name: str) -> None:
         cfg = self._exchange_get_cfg(collab_name)
@@ -313,12 +314,12 @@ class DefaultOMMStore(interface.IUnifiedStore):
         cfg = self._exchange_get_cfg(collab.name)
         assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
-        existing_checkpoint = cfg.as_checkpoint(self.exchange_get_type_configs())
+        existing_checkpoint = cfg.as_checkpoint(self.exchange_apis_get_installed())
         assert (
             existing_checkpoint == old_checkpoint
         ), "Old checkpoint doesn't match, race condition?"
 
-        api_cls = self.exchange_get_type_configs().get(collab.api)
+        api_cls = self.exchange_apis_get_installed().get(collab.api)
         assert api_cls is not None, "Invalid API cls?"
         collab_config = cfg.as_storage_iface_cls_typed(api_cls)
 

@@ -94,7 +94,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         raise Exception("Not implemented")
 
     def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
-        return self.exchange_type_get_configs()[api_cls_name].exchange_cls()
+        return self.exchange_type_get_configs()[api_cls_name].api_cls()
 
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False

@@ -13,7 +13,6 @@ import logging
 import os
 import datetime
 import sys
-import random
 import typing as t
 
 import click
@@ -21,11 +20,10 @@ import flask
 from flask.logging import default_handler
 from flask_apscheduler import APScheduler
 
-from threatexchange.signal_type.signal_base import SignalType, CanGenerateRandomSignal
-from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.exchanges import auth
+from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 
-from OpenMediaMatch.storage.interface import IUnifiedStore
+from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 from OpenMediaMatch.background_tasks import (
     build_index,
@@ -34,7 +32,6 @@ from OpenMediaMatch.background_tasks import (
 )
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
-from OpenMediaMatch.storage.interface import BankConfig
 from OpenMediaMatch.utils import dev_utils
 
 
@@ -90,7 +87,7 @@ def create_app() -> flask.Flask:
         app.config["STORAGE_IFACE_INSTANCE"] = DefaultOMMStore()
     storage = app.config["STORAGE_IFACE_INSTANCE"]
     assert isinstance(
-        storage, IUnifiedStore
+        storage, interface.IUnifiedStore
     ), "STORAGE_IFACE_INSTANCE is not an instance of IUnifiedStore"
 
     _setup_task_logging(app.logger)
@@ -209,4 +206,59 @@ def create_app() -> flask.Flask:
         storage = get_storage()
         build_index.build_all_indices(storage, storage, storage)
 
+    @app.cli.command("auth")
+    @click.argument("api_name", callback=_get_api_cfg)
+    @click.option(
+        "--from-str",
+        help="attempt to use the private _from_str method to auth",
+    )
+    @click.option("--unset", is_flag=True, help="clear credentials")
+    def set_credentials(
+        api_name: interface.SignalExchangeAPIConfig, from_str: str | None, unset: bool
+    ) -> None:
+        """
+        Persist credentials for apis.
+
+        Using the lookup mechanisms built into threatexchange.exchange.auth
+        attempt to find credentials in the local environment.
+
+        The easiest way is usually via an environment variable.
+
+        Example, for fb_threatexchange:
+
+          TX_ACCESS_TOKEN='12345678|facefaceface' flask auth
+        """
+        api_cfg = api_name  # Can't rename arguments, so we rename variable :/
+        storage = get_storage()
+        api_cls = api_cfg.api_cls
+        cred_cls: auth.CredentialHelper = api_cls.get_credential_cls()  # type: ignore
+
+        if unset:
+            api_cfg.credentials = None
+        else:
+            if from_str is not None:
+                creds = cred_cls._from_str(from_str)
+                if creds is None or not creds._are_valid():
+                    raise click.UsageError("Invalid 'from-str'")
+            else:
+                try:
+                    creds = cred_cls.get(api_cls)
+                except auth.SignalExchangeAPIMissingAuthException as e:
+                    raise click.UsageError(e.pretty_str())
+                except auth.SignalExchangeAPIInvalidAuthException as e:
+                    raise click.UsageError(e.message)
+            api_cfg.credentials = creds
+        storage.exchange_api_config_update(api_cfg)
+
     return app
+
+
+def _get_api_cfg(ctx: click.Context, param: click.Parameter, value: str):
+    storage = get_storage()
+    config = storage.exchange_apis_get_configs().get(value)
+    if config is None:
+        raise click.BadParameter("No such api")
+    api_cls = config.api_cls
+    if not issubclass(api_cls, auth.SignalExchangeWithAuth):
+        raise click.BadParameter("api doesn't take authentification")
+    return config
