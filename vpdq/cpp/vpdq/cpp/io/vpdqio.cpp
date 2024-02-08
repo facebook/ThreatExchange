@@ -30,7 +30,6 @@ namespace vpdq {
 namespace io {
 
 const int TIMESTAMP_OUTPUT_PRECISION = 3;
-const int MILLISEC_IN_SEC = 1000000;
 
 bool loadHashesFromFileOrDie(
     const string& inputHashFileName,
