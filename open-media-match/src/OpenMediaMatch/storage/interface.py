@@ -22,9 +22,11 @@ import time
 
 import flask
 
+from threatexchange.utils import dataclass_json
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.index import SignalTypeIndex
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
@@ -195,6 +197,29 @@ class ISignalTypeIndexStore(metaclass=abc.ABCMeta):
         """
 
 
+@dataclass
+class SignalExchangeAPIConfig:
+    """
+    Holder for SignalExchangeAPIConfig configuration.
+    """
+
+    api_cls: TSignalExchangeAPICls
+    credentials: t.Optional[auth.CredentialHelper] = None
+
+    @property
+    def supports_auth(self):
+        """Whether this API takes credentials for authentification"""
+        return issubclass(self.api_cls, auth.SignalExchangeWithAuth)
+
+    def set_credentials_from_json_dict(self, d: dict[str, t.Any]) -> None:
+        if not self.supports_auth:
+            raise ValueError(f"{self.api_cls.get_name()} does not support credentials")
+        cred_cls = t.cast(
+            auth.SignalExchangeWithAuth, self.api_cls
+        ).get_credential_cls()
+        self.credentials = dataclass_json.dataclass_load_dict(d, cred_cls)
+
+
 @dataclass(kw_only=True)
 class FetchStatus:
     checkpoint_ts: t.Optional[int]
@@ -226,10 +251,22 @@ class FetchStatus:
 class ISignalExchangeStore(metaclass=abc.ABCMeta):
     """Interface for accessing SignalExchange configuration"""
 
-    @abc.abstractmethod
-    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
+    def exchange_apis_get_installed(self) -> t.Mapping[str, TSignalExchangeAPICls]:
         """
         Return all installed SignalExchange types.
+        """
+        return {k: v.api_cls for k, v in self.exchange_apis_get_configs().items()}
+
+    @abc.abstractmethod
+    def exchange_apis_get_configs(self) -> t.Mapping[str, SignalExchangeAPIConfig]:
+        """
+        Returns the configuration for all installed exchange types
+        """
+
+    @abc.abstractmethod
+    def exchange_api_config_update(self, cfg: SignalExchangeAPIConfig) -> None:
+        """
+        Update the config for an installed exchange API.
         """
 
     @abc.abstractmethod
@@ -239,7 +276,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         """
         Create or update a collaboration/exchange.
 
-        If create is false, if the name doesn't .
+        If create is false, if the name doesn't exist it will throw
         If create is true, if the name already exists it will throw
         """
 

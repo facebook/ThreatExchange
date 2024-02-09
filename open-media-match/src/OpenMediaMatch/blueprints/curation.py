@@ -3,9 +3,11 @@ import typing as t
 
 from flask import Blueprint, Response, request, jsonify, abort
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import HTTPException
+
 from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.signal_base import SignalType
-from werkzeug.exceptions import HTTPException
+from threatexchange.exchanges import auth
 
 from OpenMediaMatch import persistence
 from OpenMediaMatch.utils import flask_utils
@@ -180,8 +182,36 @@ def _get_collab(name: str):
 # Fetching/Exchanges (aka collaborations)
 @bp.route("/exchanges/apis", methods=["GET"])
 def exchange_api_list() -> list[str]:
-    exchange_apis = persistence.get_storage().exchange_get_type_configs()
+    exchange_apis = persistence.get_storage().exchange_apis_get_configs()
     return list(exchange_apis)
+
+
+@bp.route("/exchanges/api/<string:api_name>", methods=["GET", "POST"])
+def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
+    storage = persistence.get_storage()
+    api_cfg = storage.exchange_apis_get_configs().get(api_name)
+    if api_cfg is None:
+        abort(400, f"no such Exchange API '{api_name}'")
+
+    if request.method == "POST":
+        raw_json = request.json
+        if not isinstance(raw_json, dict):
+            abort(400, "this endpoint expects a json object payload")
+        cred_json = raw_json.get("credential_json")
+        if cred_json is not None:
+            if not cred_json:
+                api_cfg.credentials = None
+            else:
+                api_cfg.set_credentials_from_json_dict(cred_json)
+
+        storage.exchange_api_config_update(api_cfg)
+
+    return {
+        "supports_authentification": issubclass(
+            api_cfg.api_cls, auth.SignalExchangeWithAuth
+        ),
+        "has_set_authentification": api_cfg.credentials is not None,
+    }
 
 
 @bp.route("/exchanges", methods=["POST"])
@@ -205,7 +235,7 @@ def exchange_create():
         abort(400, "Field `api_json` must be object")
 
     storage = persistence.get_storage()
-    api_types = storage.exchange_get_type_configs()
+    api_types = storage.exchange_apis_get_installed()
 
     if api_type_name is None:
         abort(400, "Field `api_type` is required")

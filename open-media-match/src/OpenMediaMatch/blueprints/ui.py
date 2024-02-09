@@ -33,6 +33,23 @@ def _index_info() -> dict[str, dict[str, t.Any]]:
     return index
 
 
+def _api_cls_info() -> dict[str, dict[str, t.Any]]:
+    return {
+        name: {
+            "auth_note": (
+                ""
+                if not cfg.supports_auth
+                else (
+                    "(may need auth)"
+                    if cfg.credentials is None
+                    else "(has credentials)"
+                )
+            )
+        }
+        for name, cfg in get_storage().exchange_apis_get_configs().items()
+    }
+
+
 def _collab_info() -> dict[str, dict[str, t.Any]]:
     storage = get_storage()
     collabs = storage.exchanges_get()
@@ -91,7 +108,7 @@ def home():
     template_vars = {
         "signal": curation.get_all_signal_types(),
         "content": curation.get_all_content_types(),
-        "exchangeApiList": curation.exchange_api_list(),
+        "exchange_apis": _api_cls_info(),
         "bankList": curation.banks_index(),
         "production": current_app.config.get("PRODUCTION", True),
         "index": _index_info(),

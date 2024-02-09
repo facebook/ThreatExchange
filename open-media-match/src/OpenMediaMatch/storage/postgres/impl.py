@@ -21,6 +21,7 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
     TSignalExchangeAPI,
@@ -93,8 +94,51 @@ class DefaultOMMStore(interface.IUnifiedStore):
             for name, ct in self.content_types.items()
         }
 
-    def exchange_get_type_configs(self) -> t.Mapping[str, TSignalExchangeAPICls]:
-        return self.exchange_types
+    def exchange_apis_get_configs(
+        self,
+    ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
+        explicit_settings = {
+            s.api: s
+            for s in database.db.session.execute(
+                select(database.ExchangeAPIConfig)
+            ).scalars()
+        }
+
+        ret = {}
+        for name, api_cls in self.exchange_types.items():
+            if name in explicit_settings:
+                ret[name] = explicit_settings[name].as_storage_iface_cls(api_cls)
+            else:
+                ret[name] = interface.SignalExchangeAPIConfig(api_cls)
+        return ret
+
+    def exchange_api_config_update(
+        self, cfg: interface.SignalExchangeAPIConfig
+    ) -> None:
+        api_cls = cfg.api_cls
+        if cfg.credentials is not None:
+            if not issubclass(api_cls, auth.SignalExchangeWithAuth):
+                raise ValueError(
+                    f"Tried to set credentials for {api_cls.get_name()},"
+                    " but it doesn't take them"
+                )
+            if not isinstance(cfg.credentials, api_cls.get_credential_cls()):
+                raise ValueError(
+                    "Use the wrong credential class"
+                    f" {cfg.credentials.__class__.__name__} for"
+                    f" {api_cls.get_name()}"
+                )
+        sesh = database.db.session
+        config = sesh.execute(
+            select(database.ExchangeAPIConfig).where(
+                database.ExchangeAPIConfig.api == api_cls.get_name()
+            )
+        ).scalar_one_or_none()
+        if config is None:
+            config = database.ExchangeAPIConfig(api=api_cls.get_name())
+        config.serialize_credentials(cfg.credentials)
+        sesh.add(config)
+        sesh.commit()
 
     def get_signal_type_configs(self) -> t.Mapping[str, interface.SignalTypeConfig]:
         # If a signal is installed, then it is enabled by default. But it may be disabled by an
@@ -210,11 +254,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
         database.db.session.commit()
 
     def exchanges_get(self) -> t.Dict[str, CollaborationConfigBase]:
-        types = self.exchange_get_type_configs()
-
         results = database.db.session.execute(select(database.ExchangeConfig)).scalars()
-
-        return {cfg.name: cfg.as_storage_iface_cls(types) for cfg in results}
+        return {
+            cfg.name: cfg.as_storage_iface_cls(self.exchange_types) for cfg in results
+        }
 
     def _exchange_get_cfg(self, name: str) -> t.Optional[database.ExchangeConfig]:
         return database.db.session.execute(
@@ -244,7 +287,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     ) -> t.Optional[FetchCheckpointBase]:
         collab_config = self._exchange_get_cfg(name)
         assert collab_config is not None, "Config was deleted?"
-        return collab_config.as_checkpoint(self.exchange_get_type_configs())
+        return collab_config.as_checkpoint(self.exchange_apis_get_installed())
 
     def exchange_start_fetch(self, collab_name: str) -> None:
         cfg = self._exchange_get_cfg(collab_name)
@@ -285,12 +328,12 @@ class DefaultOMMStore(interface.IUnifiedStore):
         cfg = self._exchange_get_cfg(collab.name)
         assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
-        existing_checkpoint = cfg.as_checkpoint(self.exchange_get_type_configs())
+        existing_checkpoint = cfg.as_checkpoint(self.exchange_apis_get_installed())
         assert (
             existing_checkpoint == old_checkpoint
         ), "Old checkpoint doesn't match, race condition?"
 
-        api_cls = self.exchange_get_type_configs().get(collab.api)
+        api_cls = self.exchange_apis_get_installed().get(collab.api)
         assert api_cls is not None, "Invalid API cls?"
         collab_config = cfg.as_storage_iface_cls_typed(api_cls)
 
@@ -361,10 +404,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
                     )
                 )
             else:
-                op_helpers[
-                    xd.id
-                ] = _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
-                    xd, as_signal_types
+                op_helpers[xd.id] = (
+                    _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
+                        xd, as_signal_types
+                    )
                 )
                 if pickled_fetch_signal_metadata != xd.pickled_fetch_signal_metadata:
                     xd_to_update.append(

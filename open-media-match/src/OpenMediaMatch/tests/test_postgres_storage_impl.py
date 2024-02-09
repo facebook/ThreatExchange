@@ -12,13 +12,19 @@ from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.background_tasks import fetcher, build_index
 
 from threatexchange.exchanges import fetch_state
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.fb_threatexchange_api import (
+    FBThreatExchangeSignalExchangeAPI,
+    FBThreatExchangeCredentials,
+)
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
+from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.postgres import database
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 
@@ -34,7 +40,7 @@ def storage(app: Flask) -> t.Iterator[DefaultOMMStore]:
     }
     assert (
         StaticSampleSignalExchangeAPI.get_name()
-        in storage_instance.exchange_get_type_configs()
+        in storage_instance.exchange_apis_get_installed()
     )
     yield storage_instance
 
@@ -202,13 +208,59 @@ class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
         return {}
 
 
+def test_exchange_type_confg(storage: DefaultOMMStore):
+    # Configs should always exist for all configured types
+    existing = storage.exchange_apis_get_configs()
+    assert set(existing) == set(storage.exchange_apis_get_installed())
+
+    fb_auth = FBThreatExchangeCredentials(f"{0:08}|{0:020}")
+
+    # Can't set a config type that doesn't exist
+    with pytest.raises(Exception):
+        storage.exchange_api_config_update(
+            interface.SignalExchangeAPIConfig(
+                t.cast(TSignalExchangeAPICls, _UnknownSampleExchangeAPI),
+                fb_auth,
+            ),
+        )
+
+    new_exchange_types = dict(storage.exchange_types)
+    api_name = FBThreatExchangeSignalExchangeAPI.get_name()
+    new_exchange_types[api_name] = t.cast(
+        TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI
+    )
+    storage.exchange_types = new_exchange_types
+
+    # Sanity, no db record yet
+    api_config = storage.exchange_apis_get_configs().get(api_name)
+    assert api_config is not None
+    assert api_config.api_cls is FBThreatExchangeSignalExchangeAPI
+    assert api_config.credentials is None
+
+    # Can't set credentials for something that doesn't take it
+    with pytest.raises(Exception):
+        storage.exchange_api_config_update(
+            interface.SignalExchangeAPIConfig(
+                t.cast(TSignalExchangeAPICls, StaticSampleSignalExchangeAPI),
+                auth.CredentialHelper(),
+            ),
+        )
+
+    val_to_set = interface.SignalExchangeAPIConfig(
+        t.cast(TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI),
+        fb_auth,
+    )
+    storage.exchange_api_config_update(val_to_set)
+    assert val_to_set == storage.exchange_apis_get_configs().get(api_name)
+
+
 def test_exchange_get_data(storage: DefaultOMMStore):
     cfg = make_collab(storage)
     fetch(storage)
     patched_signal_types = dict(storage.exchange_types)
-    patched_signal_types[
-        _UnknownSampleExchangeAPI.get_name()
-    ] = _UnknownSampleExchangeAPI
+    patched_signal_types[_UnknownSampleExchangeAPI.get_name()] = (
+        _UnknownSampleExchangeAPI
+    )
     storage.exchange_types = patched_signal_types
 
     signal_types = list(storage.get_enabled_signal_types().values())
