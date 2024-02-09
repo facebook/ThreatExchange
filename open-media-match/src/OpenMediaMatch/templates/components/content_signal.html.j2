@@ -35,7 +35,7 @@
             <div class="card-body">
                 <ul class="list-unstyled mt-3">
                     {% for name, c in exchange_apis.items() %}
-                    <li> {{ name }} {% if c['has_auth'] %} (authed) {% endif %}</li>
+                    <li> {{ name }} {{ c['auth_note'] }}</li>
                     {% endfor %}
                 </ul>
             </div>

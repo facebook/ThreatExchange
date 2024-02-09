@@ -35,7 +35,11 @@ def _index_info() -> dict[str, dict[str, t.Any]]:
 
 def _api_cls_info() -> dict[str, dict[str, t.Any]]:
     return {
-        name: {"has_auth": cfg.credentials is not None}
+        name: {
+            "auth_note": ""
+            if not cfg.supports_auth
+            else ("(may need auth)" if cfg.credentials is None else "(has credentials)")
+        }
         for name, cfg in get_storage().exchange_apis_get_configs().items()
     }
 
