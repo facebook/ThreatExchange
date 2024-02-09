@@ -3,9 +3,11 @@ import typing as t
 
 from flask import Blueprint, Response, request, jsonify, abort
 from sqlalchemy.exc import IntegrityError
+from werkzeug.exceptions import HTTPException
+
 from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.signal_base import SignalType
-from werkzeug.exceptions import HTTPException
+from threatexchange.exchanges import auth
 
 from OpenMediaMatch import persistence
 from OpenMediaMatch.utils import flask_utils
@@ -184,16 +186,30 @@ def exchange_api_list() -> list[str]:
     return list(exchange_apis)
 
 
-@bp.route("/exchanges/api/<string:api_name>", methods=["GET", "POST", "PUT"])
+@bp.route("/exchanges/api/<string:api_name>", methods=["GET", "POST"])
 def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
-    api = persistence.get_storage().exchange_apis_get_configs().get(api_name)
-    if api is None:
+    storage = persistence.get_storage()
+    api_cfg = storage.exchange_apis_get_configs().get(api_name)
+    if api_cfg is None:
         abort(400, f"no such Exchange API '{api_name}'")
     if request.method == "POST":
-        pass
-    elif request.method == "PUT":
-        pass
-    return {"has_custom_credentials": api.credentials is not None}
+        raw_json = request.json
+        if not isinstance(raw_json, dict):
+            abort(400, "this endpoint expects a json object payload")
+        cred_json = raw_json.get("credentials")
+        if cred_json is not None:
+            if not cred_json:
+                api_cfg.credentials = None
+            else:
+                api_cfg.set_credentials_from_json_dict(cred_json)
+        storage.exchange_api_config_update(api_cfg)
+
+    return {
+        "supports_authentification": issubclass(
+            api_cfg.api_cls, auth.SignalExchangeWithAuth
+        ),
+        "has_set_authentification": api_cfg.credentials is not None,
+    }
 
 
 @bp.route("/exchanges", methods=["POST"])

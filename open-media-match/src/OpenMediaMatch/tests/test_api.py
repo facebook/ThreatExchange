@@ -1,7 +1,15 @@
+import typing as t
+
 from flask.testing import FlaskClient
 from flask import Flask
 
-from sqlalchemy import select
+from threatexchange.exchanges.impl.fb_threatexchange_api import (
+    FBThreatExchangeSignalExchangeAPI,
+    FBThreatExchangeCredentials,
+)
+from threatexchange.utils import dataclass_json
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.signal_type.pdq.signal import PdqSignal
 
 from OpenMediaMatch.tests.utils import (
     app,
@@ -156,15 +164,11 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     create_bank(client, bank_name_2)
     add_hash_to_bank(client, bank_name, image_url_2, 2)
 
-    db_record = database.db.session.execute(
-        select(database.SignalIndex).where(database.SignalIndex.signal_type == "pdq")
-    ).scalar_one_or_none()
-
+    storage = get_storage()
     # ensure index is empty to start with
-    assert db_record is None
+    assert storage.get_signal_type_index(PdqSignal) is None
 
     # Build index
-    storage = get_storage()
     build_all_indices(storage, storage, storage)
 
     # Test against first image
@@ -180,3 +184,65 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [2]}
+
+
+def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
+    storage = get_storage()
+    sample_name = StaticSampleSignalExchangeAPI.get_name()
+    tx_name = FBThreatExchangeSignalExchangeAPI.get_name()
+    # Monkeypatch installed types
+    storage.exchange_types = {  # type:ignore
+        api_cls.get_name(): api_cls  # type:ignore
+        for api_cls in (
+            FBThreatExchangeSignalExchangeAPI,
+            StaticSampleSignalExchangeAPI,
+        )
+    }
+    resp = client.get("/c/exchanges/apis")
+    assert resp.status_code == 200
+    assert set(t.cast(list, resp.json)) == {sample_name, tx_name}
+
+    resp = client.get(f"/c/exchanges/api/{sample_name}")
+    assert resp.status_code == 200
+    assert resp.json == {
+        "supports_authentification": False,
+        "has_set_authentification": False,
+    }
+
+    resp = client.get(f"/c/exchanges/api/{tx_name}")
+    assert resp.status_code == 200
+    assert resp.json == {
+        "supports_authentification": True,
+        "has_set_authentification": False,
+    }
+
+    creds = FBThreatExchangeCredentials("12345789|000000000000")
+
+    resp = client.post(
+        f"/c/exchanges/api/{tx_name}",
+        json={"credential_json": dataclass_json.dataclass_dump_dict(creds)},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json == {
+        "supports_authentification": True,
+        "has_set_authentification": True,
+    }
+
+    resp = client.get(f"/c/exchanges/api/{tx_name}")
+    assert resp.status_code == 200
+    assert resp.json == {
+        "supports_authentification": True,
+        "has_set_authentification": True,
+    }
+
+    # Unset
+    resp = client.post(
+        f"/c/exchanges/api/{tx_name}",
+        json={"credential_json": {}},
+    )
+    assert resp.status_code == 200
+    assert resp.json == {
+        "supports_authentification": True,
+        "has_set_authentification": False,
+    }

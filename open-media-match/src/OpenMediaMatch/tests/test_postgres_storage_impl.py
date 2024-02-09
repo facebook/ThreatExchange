@@ -210,16 +210,16 @@ class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
 
 def test_exchange_type_confg(storage: DefaultOMMStore):
     # Configs should always exist for all configured types
-    existing = storage.exchange_type_get_configs()
-    assert set(existing) == set(storage.exchange_types)
+    existing = storage.exchange_apis_get_configs()
+    assert set(existing) == set(storage.exchange_apis_get_installed())
 
     fb_auth = FBThreatExchangeCredentials(f"{0:08}|{0:020}")
 
     # Can't set a config type that doesn't exist
     with pytest.raises(Exception):
-        storage.exchange_type_update(
+        storage.exchange_api_config_update(
             interface.SignalExchangeAPIConfig(
-                t.cast(TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI),
+                t.cast(TSignalExchangeAPICls, _UnknownSampleExchangeAPI),
                 fb_auth,
             ),
         )
@@ -232,26 +232,26 @@ def test_exchange_type_confg(storage: DefaultOMMStore):
     storage.exchange_types = new_exchange_types
 
     # Sanity, no db record yet
-    api_confg = storage.exchange_type_get_configs().get(api_name)
-    assert api_confg is not None
-    assert api_confg.api_cls is FBThreatExchangeSignalExchangeAPI
-    assert api_confg.credentials is None
+    api_config = storage.exchange_apis_get_configs().get(api_name)
+    assert api_config is not None
+    assert api_config.api_cls is FBThreatExchangeSignalExchangeAPI
+    assert api_config.credentials is None
 
     # Can't set credentials for something that doesn't take it
     with pytest.raises(Exception):
-        storage.exchange_type_update(
+        storage.exchange_api_config_update(
             interface.SignalExchangeAPIConfig(
                 t.cast(TSignalExchangeAPICls, StaticSampleSignalExchangeAPI),
                 auth.CredentialHelper(),
             ),
         )
 
-    storage.exchange_type_update(
-        interface.SignalExchangeAPIConfig(
-            t.cast(TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI),
-            fb_auth,
-        ),
+    val_to_set = interface.SignalExchangeAPIConfig(
+        t.cast(TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI),
+        fb_auth,
     )
+    storage.exchange_api_config_update(val_to_set)
+    assert val_to_set == storage.exchange_apis_get_configs().get(api_name)
 
 
 def test_exchange_get_data(storage: DefaultOMMStore):

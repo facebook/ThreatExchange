@@ -22,16 +22,17 @@ import time
 
 import flask
 
+from threatexchange.utils import dataclass_json
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.index import SignalTypeIndex
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
     FetchedSignalMetadata,
     TUpdateRecordKey,
 )
-from threatexchange.exchanges.auth import CredentialHelper
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPI,
     TSignalExchangeAPICls,
@@ -203,7 +204,20 @@ class SignalExchangeAPIConfig:
     """
 
     api_cls: TSignalExchangeAPICls
-    credentials: t.Optional[CredentialHelper] = None
+    credentials: t.Optional[auth.CredentialHelper] = None
+
+    @property
+    def supports_auth(self):
+        """Whether this API takes credentials for authentification"""
+        return issubclass(self.api_cls, auth.SignalExchangeWithAuth)
+
+    def set_credentials_from_json_dict(self, d: dict[str, t.Any]) -> None:
+        if not self.supports_auth:
+            raise ValueError(f"{self.api_cls.get_name()} does not support credentials")
+        cred_cls = t.cast(
+            auth.SignalExchangeWithAuth, self.api_cls
+        ).get_credential_cls()
+        self.credentials = dataclass_json.dataclass_load_dict(d, cred_cls)
 
 
 @dataclass(kw_only=True)

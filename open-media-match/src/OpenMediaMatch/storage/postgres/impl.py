@@ -21,6 +21,7 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
     TSignalExchangeAPI,
@@ -114,14 +115,27 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def exchange_api_config_update(
         self, cfg: interface.SignalExchangeAPIConfig
     ) -> None:
+        api_cls = cfg.api_cls
+        if cfg.credentials is not None:
+            if not issubclass(api_cls, auth.SignalExchangeWithAuth):
+                raise ValueError(
+                    f"Tried to set credentials for {api_cls.get_name()},"
+                    " but it doesn't take them"
+                )
+            if not isinstance(cfg.credentials, api_cls.get_credential_cls()):
+                raise ValueError(
+                    "Use the wrong credential class"
+                    f" {cfg.credentials.__class__.__name__} for"
+                    f" {api_cls.get_name()}"
+                )
         sesh = database.db.session
         config = sesh.execute(
             select(database.ExchangeAPIConfig).where(
-                database.ExchangeAPIConfig.api == cfg.api_cls.get_name()
+                database.ExchangeAPIConfig.api == api_cls.get_name()
             )
         ).scalar_one_or_none()
         if config is None:
-            config = database.ExchangeAPIConfig(api=cfg.api_cls.get_name())
+            config = database.ExchangeAPIConfig(api=api_cls.get_name())
         config.serialize_credentials(cfg.credentials)
         sesh.add(config)
         sesh.commit()

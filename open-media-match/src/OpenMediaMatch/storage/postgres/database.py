@@ -520,8 +520,9 @@ class ExchangeAPIConfig(db.Model):  # type: ignore[name-defined]
         self, api_cls: TSignalExchangeAPICls
     ) -> SignalExchangeAPIConfig:
         creds = None
-        if self.default_credentials_json:
-            creds = dataclass_json.dataclass_load_dict(
-                self.default_credentials_json, auth.CredentialHelper
-            )
+        if issubclass(api_cls, auth.SignalExchangeWithAuth):
+            if self.default_credentials_json:
+                creds = dataclass_json.dataclass_load_dict(
+                    self.default_credentials_json, api_cls.get_credential_cls()
+                )
         return SignalExchangeAPIConfig(api_cls, creds)
