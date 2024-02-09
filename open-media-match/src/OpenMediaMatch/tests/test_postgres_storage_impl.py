@@ -258,9 +258,9 @@ def test_exchange_get_data(storage: DefaultOMMStore):
     cfg = make_collab(storage)
     fetch(storage)
     patched_signal_types = dict(storage.exchange_types)
-    patched_signal_types[
-        _UnknownSampleExchangeAPI.get_name()
-    ] = _UnknownSampleExchangeAPI
+    patched_signal_types[_UnknownSampleExchangeAPI.get_name()] = (
+        _UnknownSampleExchangeAPI
+    )
     storage.exchange_types = patched_signal_types
 
     signal_types = list(storage.get_enabled_signal_types().values())

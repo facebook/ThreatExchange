@@ -19,9 +19,9 @@ def api_error_handler(e: HTTPException) -> t.Tuple[dict[str, str], int]:
     """
     An error handler to attach to API blueprints to make them turn to json.
     """
-    return {
-        "message": e.description or f"Unknown error {e}"
-    }, 500 if e.code is None else e.code
+    return {"message": e.description or f"Unknown error {e}"}, (
+        500 if e.code is None else e.code
+    )
 
 
 def require_request_param(name: str) -> str:
