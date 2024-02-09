@@ -192,16 +192,18 @@ def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
     api_cfg = storage.exchange_apis_get_configs().get(api_name)
     if api_cfg is None:
         abort(400, f"no such Exchange API '{api_name}'")
+
     if request.method == "POST":
         raw_json = request.json
         if not isinstance(raw_json, dict):
             abort(400, "this endpoint expects a json object payload")
-        cred_json = raw_json.get("credentials")
+        cred_json = raw_json.get("credential_json")
         if cred_json is not None:
             if not cred_json:
                 api_cfg.credentials = None
             else:
                 api_cfg.set_credentials_from_json_dict(cred_json)
+
         storage.exchange_api_config_update(api_cfg)
 
     return {
