@@ -33,13 +33,13 @@ def _index_info() -> dict[str, dict[str, t.Any]]:
 def _api_cls_info() -> dict[str, dict[str, t.Any]]:
     return {
         name: {
-            "auth_note": (
+            "auth_div": (
                 ""
                 if not cfg.supports_auth
                 else (
-                    "(may need auth)"
+                    '<div title="May need credentials">🔒</div>'
                     if cfg.credentials is None
-                    else "(has credentials)"
+                    else '<div title="has credentials">🔑</div>'
                 )
             )
         }

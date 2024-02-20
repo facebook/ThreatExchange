@@ -21,7 +21,8 @@
             <div class="card-body">
                 <ul class="list-unstyled mt-3">
                     {% for c in content %}
-                    <li> {{ c['name'] }}: {% if c['enabled'] %} Enabled {% else %} Disabled {% endif %} </li>
+                    <li title="Test"> {{ c['name'] }}: {% if c['enabled'] %} Enabled {% else %} Disabled {% endif %}
+                    </li>
                     {% endfor %}
                 </ul>
             </div>
@@ -35,7 +36,7 @@
             <div class="card-body">
                 <ul class="list-unstyled mt-3">
                     {% for name, c in exchange_apis.items() %}
-                    <li> {{ name }} {{ c['auth_note'] }}</li>
+                    <li> {{ name }} {{ c['auth_div'] }}</li>
                     {% endfor %}
                 </ul>
             </div>
