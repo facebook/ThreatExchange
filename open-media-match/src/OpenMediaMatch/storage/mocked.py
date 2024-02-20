@@ -93,9 +93,6 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def exchange_type_update(self, cfg: interface.SignalExchangeAPIConfig) -> None:
         raise Exception("Not implemented")
 
-    def exchange_get_api_instance(self, api_cls_name: str) -> TSignalExchangeAPI:
-        return self.exchange_type_get_configs()[api_cls_name].api_cls()
-
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
     ) -> None:
@@ -114,6 +111,13 @@ class MockedUnifiedStore(interface.IUnifiedStore):
                 ),
             )
         }
+
+    def exchange_get_client(
+        self, collab_config: CollaborationConfigBase
+    ) -> TSignalExchangeAPI:
+        return self.exchange_type_get_configs()[collab_config.name].api_cls.for_collab(
+            collab_config
+        )
 
     def exchange_get_fetch_status(self, name: str) -> interface.FetchStatus:
         return interface.FetchStatus.get_default()
