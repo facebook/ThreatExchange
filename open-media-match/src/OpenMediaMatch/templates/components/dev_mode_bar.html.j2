@@ -3,13 +3,16 @@
         <div class="d-flex flex-row align-items-center">
             <div class="me-2">Running server in development mode!</div>
             <div class="hstack gap-2">
-                <form action="/ui/seed_sample" method="post">
-                    <button type="submit" class="btn btn-primary">Seed Sample API</button>
+                <form action="/dev/setup_sample_example" method="post">
+                    <button type="submit" class="btn btn-primary">Setup Sample API</button>
                 </form>
-                <form action="/ui/seed_banks" method="post">
+                <form action="/dev/seed_banks" method="post">
                     <button type="submit" class="btn btn-primary">Seed Banks</button>
                 </form>
-                <form action="/ui/factory_reset" method="post">
+                <form action="/dev/setup_tx_example" method="post">
+                    <button type="submit" class="btn btn-primary">Setup Tx API</button>
+                </form>
+                <form action="/dev/factory_reset" method="post">
                     <button type="submit" class="btn btn-outline-danger">Factory Reset</button>
                 </form>
             </div>

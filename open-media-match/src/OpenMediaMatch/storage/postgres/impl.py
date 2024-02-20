@@ -264,6 +264,20 @@ class DefaultOMMStore(interface.IUnifiedStore):
             select(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
         ).scalar_one_or_none()
 
+    def exchange_get_client(
+        self, collab_config: CollaborationConfigBase
+    ) -> TSignalExchangeAPI:
+        cfg = self.exchange_apis_get_configs().get(collab_config.api)
+        assert cfg is not None, f"No such exchange API {collab_config.api}"
+
+        creds = cfg.credentials
+        if creds is None:
+            return cfg.api_cls.for_collab(collab_config)
+
+        # Why did I make this interface so dumb?
+        with creds.set_default(creds, "db"):
+            return cfg.api_cls.for_collab(collab_config)
+
     def exchange_get_fetch_status(self, name: str) -> interface.FetchStatus:
         collab_config = self._exchange_get_cfg(name)
         assert collab_config is not None, "Config was deleted?"
@@ -383,7 +397,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 # If we can't use any of the data in the record, treat it as a
                 # delete to save space, unless we are specifically configured to
                 # retain it
-                if not as_signal_types and not cfg.retain_unknown_signal_types:
+                if not as_signal_types:
                     val = None
             if val is None:
                 if xd is not None:

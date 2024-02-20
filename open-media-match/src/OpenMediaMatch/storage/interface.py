@@ -318,6 +318,12 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
+    def exchange_get_client(
+        self, collab_config: CollaborationConfigBase
+    ) -> TSignalExchangeAPI:
+        """Return an auth'd and initialized client for a collab"""
+
+    @abc.abstractmethod
     def exchange_start_fetch(self, collab_name: str) -> None:
         """Record the start of a fetch attempt for this collab"""
 

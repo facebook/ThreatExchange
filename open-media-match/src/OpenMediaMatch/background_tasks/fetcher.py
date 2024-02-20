@@ -97,12 +97,7 @@ def _fetch(
         return
     log("Fetching signals for %s from %s", collab.name, collab.api)
 
-    api_cls = collab_store.exchange_apis_get_installed().get(collab.api)
-    assert (
-        api_cls is not None
-    ), f"No such SignalExchangeAPI '{collab.api}' - maybe it was deleted?"
-
-    api_client = api_cls.for_collab(collab)
+    api_client = collab_store.exchange_get_client(collab)
 
     starting_checkpoint = collab_store.exchange_get_fetch_checkpoint(collab.name)
     checkpoint = starting_checkpoint
