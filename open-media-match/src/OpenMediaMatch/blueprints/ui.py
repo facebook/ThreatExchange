@@ -33,15 +33,20 @@ def _index_info() -> dict[str, dict[str, t.Any]]:
 def _api_cls_info() -> dict[str, dict[str, t.Any]]:
     return {
         name: {
-            "auth_div": (
+            "auth_icon": (
+                ""
+                if not cfg.supports_auth
+                else ("🔒" if cfg.credentials is None else "🔑")
+            ),
+            "auth_title": (
                 ""
                 if not cfg.supports_auth
                 else (
-                    '<div title="May need credentials">🔒</div>'
+                    'title="May need credentials"'
                     if cfg.credentials is None
-                    else '<div title="has credentials">🔑</div>'
+                    else 'title="Has credentials"'
                 )
-            )
+            ),
         }
         for name, cfg in get_storage().exchange_apis_get_configs().items()
     }

@@ -10,14 +10,14 @@
     <tbody id="index_table_body">
         {% for name, dat in index.items() %}
         <tr>
-            <th scope="row">{{name}}</th>
-            <td>{{dat['index_size']}}</td>
+            <th scope="row">{{ name }}</th>
+            <td>{{ dat['index_size'] }}</td>
             <td class="align-middle">
                 <div class="progress">
-                    <div class="progress-bar {{dat['progress_style']}}" role="progressbar"
-                        style="width: {{dat['progress_pct']}}%;" aria-valuenow="{{dat['progress_pct']}}"
+                    <div class="progress-bar {{ dat['progress_style'] }}" role="progressbar"
+                        style="width: {{ dat['progress_pct'] }}%;" aria-valuenow="{{ dat['progress_pct'] }}"
                         aria-valuemin="0" aria-valuemax="100">
-                        {{dat['progress_label']}}</div>
+                        {{ dat['progress_label'] }}</div>
                 </div>
             </td>
         </tr>

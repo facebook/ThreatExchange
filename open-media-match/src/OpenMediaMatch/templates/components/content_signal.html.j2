@@ -36,7 +36,7 @@
             <div class="card-body">
                 <ul class="list-unstyled mt-3">
                     {% for name, c in exchange_apis.items() %}
-                    <li> {{ name }} {{ c['auth_div'] }}</li>
+                    <li {{ c['auth_title'] }}>{{ c['auth_icon'] }} {{ name }}</li>
                     {% endfor %}
                 </ul>
             </div>
