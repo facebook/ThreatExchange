@@ -12,6 +12,8 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
+from threatexchange.exchanges.impl.stop_ncii_api import StopNCIISignalExchangeAPI
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
@@ -41,6 +43,8 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
         StaticSampleSignalExchangeAPI,
         InfiniteRandomExchange,
         FBThreatExchangeSignalExchangeAPI,
+        NCMECSignalExchangeAPI,
+        StopNCIISignalExchangeAPI,
     ],
 )
 
