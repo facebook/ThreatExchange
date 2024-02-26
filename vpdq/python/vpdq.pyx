@@ -2,6 +2,7 @@
 # cython: language_level=3
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 import typing as t
+import json
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -65,6 +66,35 @@ class VpdqFeature:
 
     def hamming_distance(self, that: VpdqFeature):
         return hammingDistance(self.hash, that.hash)
+    
+    def to_dict(self) -> dict:
+        """Serialize VpdqFeature instance to a dictionary."""
+        return {
+            'quality': self.quality,
+            'frame_number': self.frame_number,
+            'hash': hash_to_hex(self.hash),
+            'timestamp': self.timestamp,
+        }
+
+    def serialize(self) -> str:
+        """Serialize VpdqFeature instance to a JSON-formatted string."""
+        return json.dumps(self.to_dict())
+
+    @classmethod
+    def from_dict(cls, data: dict) -> VpdqFeature:
+        """Create VpdqFeature instance from a dictionary."""
+        return cls(
+            quality=data['quality'],
+            frame_number=data['frame_number'],
+            hash=str_to_hash(data['hash']),
+            timestamp=data['timestamp'],
+        )
+
+    @classmethod
+    def deserialize(cls, serialized: str) -> VpdqFeature:
+        """Create VpdqFeature instance from a JSON-formatted string."""
+        data = json.loads(serialized)
+        return cls.from_dict(data)
 
 
 def hash_to_hex(hash_value: Hash256) -> str:

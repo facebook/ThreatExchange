@@ -7,6 +7,7 @@ import glob
 import re
 from typing import Union, Sequence, NamedTuple
 from collections import namedtuple
+import json
 
 DIR = Path(__file__).parent
 VPDQ_DIR = DIR.parent.parent
@@ -163,3 +164,41 @@ def test_compare_hashes():
                 if h1.quality >= QUALITY_TOLERANCE and h2.quality >= QUALITY_TOLERANCE:
                     assert h1.hamming_distance(h2) < DISTANCE_TOLERANCE
                     assert h1.frame_number == h2.frame_number
+
+
+def test_to_dict_serialize_from_dict_deserialize():
+    # Get a list of all sample files
+    test_files = get_test_file_paths()
+
+    for test_file in test_files:
+        sample_file = Path(HASH_FOLDER) / f"{test_file.stem}.txt"
+        assert sample_file.is_file()
+
+        for sample_instance in test_util.read_file_to_hash(sample_file):
+            # Test the to_dict method
+            serialized_dict = sample_instance.to_dict()
+            assert serialized_dict == {
+                "quality": sample_instance.quality,
+                "frame_number": sample_instance.frame_number,
+                "hash": vpdq.hash_to_hex(sample_instance.hash),
+                "timestamp": sample_instance.timestamp,
+            }
+
+            # Test the serialize method
+            serialized_str = sample_instance.serialize()
+            expected_json = json.dumps(serialized_dict)
+            assert serialized_str == expected_json
+
+            # Test the from_dict method
+            deserialized_instance = vpdq.VpdqFeature.from_dict(serialized_dict)
+            assert deserialized_instance.quality == sample_instance.quality
+            assert deserialized_instance.frame_number == sample_instance.frame_number
+            assert deserialized_instance.hash == sample_instance.hash
+            assert deserialized_instance.timestamp == sample_instance.timestamp
+
+            # Test the deserialize method
+            deserialized_from_json = vpdq.VpdqFeature.deserialize(expected_json)
+            assert deserialized_from_json.quality == sample_instance.quality
+            assert deserialized_from_json.frame_number == sample_instance.frame_number
+            assert deserialized_from_json.hash == sample_instance.hash
+            assert deserialized_from_json.timestamp == sample_instance.timestamp
