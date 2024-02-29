@@ -50,7 +50,6 @@ class ConfigCollabListCommand(command_base.Command):
 
 
 class ConfigCollabPrintCommand(command_base.Command):
-
     """
     Print a collab config to screen.
 

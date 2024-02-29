@@ -153,16 +153,16 @@ class FBThreatExchangeIndicatorRecord(state.FetchedSignalMetadata):
                 for owner in reaction["value"].split(","):
                     owner_id = int(owner)
                     if rxn == "HELPFUL":
-                        implicit_opinions[
-                            owner_id
-                        ] = state.SignalOpinionCategory.POSITIVE_CLASS
+                        implicit_opinions[owner_id] = (
+                            state.SignalOpinionCategory.POSITIVE_CLASS
+                        )
                     elif (
                         rxn == "DISAGREE_WITH_TAGS"
                         and owner_id not in implicit_opinions
                     ):
-                        implicit_opinions[
-                            owner_id
-                        ] = state.SignalOpinionCategory.NEGATIVE_CLASS
+                        implicit_opinions[owner_id] = (
+                            state.SignalOpinionCategory.NEGATIVE_CLASS
+                        )
 
         for owner_id, category in implicit_opinions.items():
             if owner_id in explicit_opinions:

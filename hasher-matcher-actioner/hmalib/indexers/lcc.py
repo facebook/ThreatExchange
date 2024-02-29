@@ -26,19 +26,20 @@ class LCCIndexer:
     def get_recent_index(cls, storage_path, signal_type) -> PDQIndex:
         """Get the most recent index."""
         directory = os.path.join(storage_path, signal_type)
-        latest_directory = max(pathlib.Path(directory).glob("*/"), key=os.path.getmtime)
+        latest_directory = max(pathlib.Path(
+            directory).glob("*/"), key=os.path.getmtime)
 
         with open(latest_directory, "rb") as f:
             return pickle.load(f)
 
     @classmethod
-    def build_index_from_last_24h(cls, signal_type, storage_path, bucket_width) -> None:
+    def build_index_from_last_24h(cls, signal_type, storage_path, bucket_width) -> PDQIndex:
         """Create an index"""
         with metrics.timer(metrics.names.lcc.get_data):
             d = timedelta(days=1)
 
             # Make 3 different metric.timers
-            # get_Recrods, record_list, and .build
+            # get_records, record_list, and .build
             past_day_content = TimeBucketizer.get_records(
                 (datetime.now() - d),
                 datetime.now(),
