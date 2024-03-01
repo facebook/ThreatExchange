@@ -3,7 +3,24 @@
 *Note: HMA has just completed a rewrite! It is now an entirely new architecture. You can [read our motivations below](#hma-10-aws-hma---hma-20-open-media-match). If you need the HMA 1.0 code (Terraform, AWS, node), it lives forever with a copy of its wiki at [HMA_1.0_archive](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner)*
 
 # Project Introduction
+[Meta's newsroom post about HMA](https://about.fb.com/news/2022/12/meta-launches-new-content-moderation-tool/).
 
+"Hasher-Matcher-Actioner" or HMA, is a reference implementation for a key Trust and Safety content moderation capability: copy detection. Copy detection refers to the ability to identify identical or similar items to ones that you've previously identified. One popular technology used in copy detection is "hashing" technology, which allows previously seen content to be turned into anonymous digital fingerprints called "hashes". Different platforms could then share these hashes to help other platforms improve their ability to detect similar content. There are many Trust & Safety programs that allow platforms to work together to detect harmful and illegal content, such as the [National Center for Missing and Exploited Children (NCMEC) Hash Sharing Program](https://report.cybertip.org/hashsharing/v2/documentation/), the [Global Internet Forum to Counter Terrorism's Hash-Sharing Database](https://gifct.org/hsdb/), [StopNCII.org](https://stopncii.org/) and, Meta's [ThreatExchange](https://developers.facebook.com/docs/threat-exchange/) to name a few. 
+
+To participate in a program, platforms need to have capabilities related to the hashing techniques used by the program, the ability to ingestion of third party hashes, and then to match their content against those hashes. Hasher-Matcher-Actioner provides all the technical pieces you need.
+
+The name "hasher, matcher, actioner" refers to the technical process by which new content is evaluated against collections of known content (called "Banks" in HMA):
+1. First content is **hashed** into intermediate representations ("Hashes" or "Signals")
+2. Then it is **matched** against an index of known content
+3. If it matches, some **action** is taken as a result, such as logging the content or enqueuing it for human review.
+
+## Configurability
+There is no one-size-fits all solution to make platforms safe, and even in the narrow scope of hashing and matching technology, there are many possible solutions. HMA is designed to be highly configurable, such that new algorithms, hash exchanges, or other capabilities could be integrated later. If you want to use a custom or proprietary hashing algorithm with HMA, you simple need to follow the interfaces defined in [python-threatexchange ](../python-threatexchange) to add new capabilities. 
+
+## Using HMA for your platform
+HMA can be used as a library, or in any deployment setup that can use docker. It uses a simple REST API to make it as simple as possible to include in your existing environment. You'll need an engineer familiar with your platform's architecture to figure out the best way to deploy it in your ecosystem. At it's simplest, HMA can be run on a single machine, which is enough for evaluation purposes. At scale, HMA is designed with horizontal scalability in mind, and you can increase throughput by increasing the number of instances.
+
+If you are interested in using HMA for your platform, but find it's missing something for your usecase, [this issue](https://github.com/facebook/ThreatExchange/issues/1440) is currently the best place to make requests!
 
 # Architecture
 
