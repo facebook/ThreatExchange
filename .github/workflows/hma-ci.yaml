@@ -1,23 +1,23 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-name: Open Media Match CI
+name: Hasher Matcher Actioner CI
 on:
   push:
     branches:
       - main
     paths:
-      - "open-media-match/**"
-      - ".github/workflows/omm-ci.yaml"
+      - "hasher-matcher-actioner/**"
+      - ".github/workflows/hma-ci.yaml"
   pull_request:
     branches:
       - main
     paths:
-      - "open-media-match/**"
-      - ".github/workflows/omm-ci.yaml"
+      - "hasher-matcher-actioner/**"
+      - ".github/workflows/hma-ci.yaml"
 
 defaults:
   run:
-    working-directory: open-media-match
+    working-directory: hasher-matcher-actioner
 
 jobs:
   lint-check:

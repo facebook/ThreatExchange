@@ -1,83 +1,52 @@
-// For format details, see https://aka.ms/devcontainer.json.
 {
-  "build": {
-    "dockerfile": "Dockerfile",
-    "args": {
-      // MacOS and Linux use ${localEnv:USER}, Windows uses ${localEnv:USERNAME}
-      "unixname": "${localEnv:USER}${localEnv:USERNAME}"
-    }
-  },
-  // MacOS and Linux use ${env:USER}, Windows uses ${env:USERNAME}
-  "remoteUser": "${localEnv:USER}${localEnv:USERNAME}",
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
-    // MacOS and Linux use ${localEnv:HOME}, Windows uses ${localEnv:USERPROFILE}
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.aws,target=/var/run/aws-config,type=bind,consistency=cached",
-    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.hma-cmdhist,target=/commandhistory,type=bind"
+  "name": "open-media-match",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [
+    8080,
+    5432
   ],
-  "name": "hma-devserver",
-  // Set *default* container specific settings.json values on container create.
-  "settings": {
-    "terminal.integrated.profiles.linux": {
-      "bash": {
-        "path": "/bin/bash",
-        "args": [
-          "-l"
-        ]
-      },
-      "zsh": {
-        "path": "/bin/zsh",
-        "args": [
-          "-l"
-        ]
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.black-formatter",
+        "ms-python.mypy-type-checker",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "tamasfe.even-better-toml",
+        "humao.rest-client"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "sqltools.connections": [
+          {
+            "name": "Container database",
+            "driver": "PostgreSQL",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "database": "media_match",
+            "username": "media_match",
+            "password": "hunter2"
+          }
+        ],
+        "files.exclude": {
+          "**/*.egg-info": true,
+          "**/__pycache__": true
+        },
+        "mypy-type-checker.path": ["/usr/local/py-utils/bin/mypy"],
+        "black-formatter.path": ["/usr/local/py-utils/bin/black"]
       }
-    },
-    "editor.formatOnSave": true,
-    "python.formatting.blackPath": "black",
-    "python.formatting.provider": "black",
-    "python.testing.pytestArgs": [
-      "."
-    ],
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "python.analysis.extraPaths": [
-      // Unless we do this, pylance is not able to resolve imports
-      "~/.local/lib/python3.9/site-packages"
-    ],
-    "[javascriptreact]": {
-      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
-    },
-    "[typescriptreact]": {
-      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
-    },
-    "[typescript]": {
-      "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
     }
   },
-  // Add the IDs of extensions you want installed when the container is created.
-  "extensions": [
-    "ms-python.python",
-    "rvest.vs-code-prettier-eslint",
-    "ms-azuretools.vscode-docker",
-    "hashicorp.terraform",
-    "eamodio.gitlens",
-    "stkb.rewrap"
+  "remoteUser": "vscode",
+  "postCreateCommand": "pip install --editable .[all]",
+  "mounts": [
+    "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE},target=/host-home-folder,type=bind,consistency=cached"
   ],
-  // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "sh .devcontainer/post-create",
-  // Use 'portsAttributes' to set default properties for specific forwarded ports.
-  "portsAttributes": {
-    "3000": {
-      "label": "Hello Remote World",
-      "onAutoForward": "notify"
-    }
-  },
-  "remoteEnv": {
-    "IN_DEVCONTAINER": "true"
-  },
-  "overrideCommand": true,
-  "features": {
-    "docker-in-docker": "latest"
-  }
+  "postAttachCommand": "/workspace/.devcontainer/startup.sh"
 }
