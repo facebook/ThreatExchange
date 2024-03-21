@@ -97,7 +97,7 @@ def create_app() -> flask.Flask:
     with app.app_context():
         # We only run apscheduler in the "outer" reloader process, else we'll
         # have multiple executions of the the scheduler in debug mode
-        if _is_werkzeug_reloaded_process():
+        if not _is_debug_mode() or _is_werkzeug_reloaded_process():
             now = datetime.datetime.now()
             scheduler = dev_apscheduler.get_apscheduler()
             scheduler.init_app(app)
