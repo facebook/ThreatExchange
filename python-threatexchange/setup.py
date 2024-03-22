@@ -64,6 +64,7 @@ setup(
         "pdqhash",  # pdq
         "faiss-cpu",  # faiss
         "numpy",  # faiss
+        "packaging",  # fix ModuleNotFoundError: No module named 'packaging' in faiss/loader.py when running docker container
     ],
     extras_require=extras_require,
     entry_points={
