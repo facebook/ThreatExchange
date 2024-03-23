@@ -24,10 +24,13 @@ jobs:
     name: Lint and Type-Check python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install vpdq dependencies
+        run: |
+          sudo apt-get install -y python3-dev pkg-config cmake ffmpeg libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -44,9 +47,9 @@ jobs:
       matrix:
         python-version: ['3.8', '3.9', '3.11']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install ffmpeg
@@ -54,6 +57,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install ffmpeg
+      - name: Install vpdq dependencies
+        run: |
+          sudo apt-get install -y python3-dev pkg-config cmake ffmpeg libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
