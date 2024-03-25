@@ -10,4 +10,4 @@ COPY ./src /build
 COPY omm_config.py ./
 
 EXPOSE 8080
-CMD ["gunicorn"  , "--bind", "0.0.0.0:8080", "OpenMediaMatch.app:create_app()"]
+CMD ["gunicorn"  , "--bind", "0.0.0.0:8080", "OpenMediaMatch.app:create_app()", "--preload"]
