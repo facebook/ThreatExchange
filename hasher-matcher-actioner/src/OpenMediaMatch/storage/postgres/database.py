@@ -248,11 +248,7 @@ class ExchangeConfig(db.Model):  # type: ignore[name-defined]
         ],
     ) -> TCollabConfig:
         cls = exchange_cls.get_config_cls()
-        # This looks like it should be typed correctly, but too complicated
-        # mypy
-        return dataclass_json.dataclass_load_dict(
-            self.typed_config, cls
-        )  # type: ignore[return-value]
+        return dataclass_json.dataclass_load_dict(self.typed_config, cls)
 
     def as_checkpoint(
         self, exchange_types: t.Mapping[str, TSignalExchangeAPICls]
