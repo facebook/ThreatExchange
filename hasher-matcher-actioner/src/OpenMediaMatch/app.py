@@ -78,6 +78,8 @@ def create_app() -> flask.Flask:
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
 
+    running_migrations = os.getenv("MIGRATION_COMMAND") == "1"
+
     engine_logging = app.config.get("SQLALCHEMY_ENGINE_LOG_LEVEL")
     if engine_logging is not None:
         logging.getLogger("sqlalchemy.engine").setLevel(engine_logging)
@@ -97,7 +99,7 @@ def create_app() -> flask.Flask:
     with app.app_context():
         # We only run apscheduler in the "outer" reloader process, else we'll
         # have multiple executions of the the scheduler in debug mode
-        if _is_werkzeug_reloaded_process():
+        if _is_werkzeug_reloaded_process() and not running_migrations:
             now = datetime.datetime.now()
             scheduler = dev_apscheduler.get_apscheduler()
             scheduler.init_app(app)
@@ -142,7 +144,7 @@ def create_app() -> flask.Flask:
 
         if app.config.get("ROLE_MATCHER", False):
             app.register_blueprint(matching.bp, url_prefix="/m")
-            if app.config.get("TASK_INDEX_CACHE", False):
+            if app.config.get("TASK_INDEX_CACHE", False) and not running_migrations:
                 matching.initiate_index_cache(app, scheduler)
 
         if app.config.get("ROLE_CURATOR", False):
