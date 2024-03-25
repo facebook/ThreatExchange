@@ -15,6 +15,7 @@ import datetime
 import sys
 import typing as t
 
+from apscheduler.schedulers.base import STATE_STOPPED
 import click
 import flask
 from flask.logging import default_handler
@@ -97,9 +98,9 @@ def create_app() -> flask.Flask:
     with app.app_context():
         # We only run apscheduler in the "outer" reloader process, else we'll
         # have multiple executions of the the scheduler in debug mode
-        if not _is_debug_mode() or _is_werkzeug_reloaded_process():
+        scheduler = dev_apscheduler.get_apscheduler()
+        if scheduler.state == STATE_STOPPED:
             now = datetime.datetime.now()
-            scheduler = dev_apscheduler.get_apscheduler()
             scheduler.init_app(app)
             tasks = []
             if app.config.get("TASK_FETCHER", False):
