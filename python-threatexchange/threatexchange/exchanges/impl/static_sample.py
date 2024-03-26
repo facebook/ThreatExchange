@@ -69,9 +69,9 @@ class StaticSampleSignalExchangeAPI(
         for stype in supported_signal_types:
             sample_signals.extend(_signals(stype))
 
-        updates: t.Dict[
-            t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]
-        ] = dict(sample_signals)
+        updates: t.Dict[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]] = (
+            dict(sample_signals)
+        )
 
         yield _TypedDelta(
             updates,

@@ -63,9 +63,9 @@ class CliState(collab_config.CollaborationConfigStoreBase):
 
         self._name_to_ctype = {ft.get_name(): ft.get_config_cls() for ft in fetch_types}
 
-        self._cache: t.Optional[
-            t.Dict[str, collab_config.CollaborationConfigBase]
-        ] = None
+        self._cache: t.Optional[t.Dict[str, collab_config.CollaborationConfigBase]] = (
+            None
+        )
 
         self._init_folders_if_needed()
 
@@ -169,9 +169,7 @@ class _SignalExchangeAccessor:
     def get_all(self) -> t.ValuesView[TSignalExchangeAPICls]:
         return self._parent._mapping.exchange.api_by_name.values()
 
-    def get_instance_for_collab(
-        self, collab: TCollabConfig
-    ) -> SignalExchangeAPI[
+    def get_instance_for_collab(self, collab: TCollabConfig) -> SignalExchangeAPI[
         TCollabConfig,
         fetch_state.FetchCheckpointBase,
         fetch_state.FetchedSignalMetadata,
