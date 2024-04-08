@@ -1,9 +1,16 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+"""
+A production-ish OMM config, for the curator role.
+
+The curator role only gets internal traffic, and so you can probably
+get away with a single instance for a long time. 
+"""
+
 import os
-from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.signal_type.md5 import VideoMD5Signal
+
 
 # Database configuration
-PRODUCTION = True
 DBUSER = os.environ.get("POSTGRES_USER", "media_match")
 DBPASS = os.environ.get("POSTGRES_PASSWORD", "hunter2")
 DBHOST = os.environ.get("POSTGRESS_HOST", "db")
@@ -11,9 +18,5 @@ DBNAME = os.environ.get("POSTGRESS_DBNAME", "media_match")
 DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 
 # Role configuration
-ROLE_HASHER = True
-ROLE_MATCHER = True
+PRODUCTION = True
 ROLE_CURATOR = True
-
-# Installed SignalTypes
-SIGNAL_TYPES = [PdqSignal, VideoMD5Signal]

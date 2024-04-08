@@ -1,8 +1,13 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-# This is the configuration that is used by default for the developer instance
-# which runs in the dev container by default. Every config field is present
-# to make it easier to copy this
+"""
+A development version of an omm_config, with every field visible and commented.
+
+This is the configuration that is used by default for the developer instance
+which runs in the dev container by default. Every config field is present
+to make it easier to copy the file as a template for others.
+"""
+
 import logging
 
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
@@ -41,9 +46,9 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     content_types=[PhotoContent, VideoContent],
     exchange_types=[
         StaticSampleSignalExchangeAPI,
-        InfiniteRandomExchange,
-        FBThreatExchangeSignalExchangeAPI,
-        NCMECSignalExchangeAPI,
+        InfiniteRandomExchange,  # type: ignore
+        FBThreatExchangeSignalExchangeAPI,  # type: ignore
+        NCMECSignalExchangeAPI,  # type: ignore
         StopNCIISignalExchangeAPI,
     ],
 )

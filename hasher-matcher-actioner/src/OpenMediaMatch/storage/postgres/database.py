@@ -248,7 +248,9 @@ class ExchangeConfig(db.Model):  # type: ignore[name-defined]
         ],
     ) -> TCollabConfig:
         cls = exchange_cls.get_config_cls()
-        return dataclass_json.dataclass_load_dict(self.typed_config, cls)
+        ret = dataclass_json.dataclass_load_dict(self.typed_config, cls)
+        # Sigh, 'Incompatible return value type (got "TCollabConfig", expected "TCollabConfig")'
+        return t.cast(TCollabConfig, ret)
 
     def as_checkpoint(
         self, exchange_types: t.Mapping[str, TSignalExchangeAPICls]
