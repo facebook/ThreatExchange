@@ -74,7 +74,10 @@ def create_app() -> flask.Flask:
             "/workspace/reference_omm_configs/development_omm_config.py"
         )
     else:
-        raise RuntimeError("No flask config given - try populating OMM_CONFIG env")
+        raise RuntimeError("No omm_config given - try populating OMM_CONFIG env")
+    # Override fields with environment variables
+    app.config.from_prefixed_env("OMM")
+
     app.config.update(
         SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
