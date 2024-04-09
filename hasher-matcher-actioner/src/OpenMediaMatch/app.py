@@ -70,7 +70,9 @@ def create_app() -> flask.Flask:
     elif sys.argv[0].endswith("/flask"):  # Default for flask CLI
         # The devcontainer settings. If you are using the CLI outside
         # the devcontainer and getting an error, just override the env
-        app.config.from_pyfile("/workspace/.devcontainer/omm_config.py")
+        app.config.from_pyfile(
+            "/workspace/reference_omm_configs/development_omm_config.py"
+        )
     else:
         raise RuntimeError("No flask config given - try populating OMM_CONFIG env")
     app.config.update(

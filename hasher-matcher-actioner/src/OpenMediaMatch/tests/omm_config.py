@@ -1,4 +1,10 @@
-import logging
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+"""
+An omm_config for the unittests
+
+Disables the scheduling functionality that unittests poorly, enables all roles
+"""
 
 # Database configuration
 PRODUCTION = False
