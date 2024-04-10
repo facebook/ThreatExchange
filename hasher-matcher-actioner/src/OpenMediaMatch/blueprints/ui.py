@@ -104,19 +104,46 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
 @bp.route("/")
 def home():
     """
-    Sanity check endpoint showing a basic status page
+    UI Landing page
     """
 
     template_vars = {
         "signal": curation.get_all_signal_types(),
         "content": curation.get_all_content_types(),
         "exchange_apis": _api_cls_info(),
-        "bankList": curation.banks_index(),
         "production": current_app.config.get("PRODUCTION", True),
         "index": _index_info(),
         "collabs": _collab_info(),
     }
-    return render_template("bootstrap.html.j2", **template_vars)
+    return render_template("bootstrap.html.j2", page="home", **template_vars)
+
+
+@bp.route("/banks")
+def banks():
+    """
+    Bank management page
+    """
+    return render_template(
+        "bootstrap.html.j2", page="banks", bankList=curation.banks_index()
+    )
+
+
+@bp.route("/exchanges")
+def exchanges():
+    """
+    Exchange management page
+    """
+    return render_template(
+        "bootstrap.html.j2", page="exchanges", collabs=_collab_info()
+    )
+
+
+@bp.route("/match")
+def match_dbg():
+    """
+    Bank management page
+    """
+    return render_template("bootstrap.html.j2", page="match_dbg")
 
 
 @bp.route("/create_bank", methods=["POST"])
