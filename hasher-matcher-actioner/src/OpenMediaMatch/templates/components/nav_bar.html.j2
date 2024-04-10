@@ -1,0 +1,27 @@
+<nav class="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('.home') }}">Open Media Match</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link {% if page == 'home' %}active{% endif %}" href="{{ url_for('.home') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if page == 'banks' %}active{% endif %}"
+                        href="{{ url_for('.banks') }}">Banks</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if page == 'exchanges' %}active{% endif %}"
+                        href="{{ url_for('.exchanges') }}">Exchanges</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if page == 'match_dbg' %}active{% endif %}"
+                        href="{{ url_for('.match_dbg') }}">Matching Debugger</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

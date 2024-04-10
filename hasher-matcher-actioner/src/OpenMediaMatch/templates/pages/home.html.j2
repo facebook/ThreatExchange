@@ -1,0 +1,26 @@
+{% if not production %}
+{% include "components/dev_mode_bar.html.j2" %}
+{% endif %}
+
+<div class="container my-3">
+    {% include "components/content_signal.html.j2" %}
+</div>
+
+<div class="container my-4">
+    <hr />
+</div>
+
+<div class="container my-3">
+    {% include "components/index_status.html.j2" %}
+</div>
+
+<div class="container my-4">
+    <hr />
+</div>
+
+<div class="container my-3">
+    <h3>Exchange Status</h3>
+    {% include "components/exchange_status.html.j2" %}
+</div>
+
+<script src="{{ url_for('static', filename='js/autoreload.js') }}"></script>
