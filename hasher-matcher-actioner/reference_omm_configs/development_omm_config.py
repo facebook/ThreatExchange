@@ -26,7 +26,7 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 # Database configuration
 DBUSER = "media_match"
 DBPASS = "hunter2"
-DBHOST = "localhost"
+DBHOST = "db"
 DBNAME = "media_match"
 DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 

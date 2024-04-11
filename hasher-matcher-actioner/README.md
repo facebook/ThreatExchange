@@ -1,26 +1,40 @@
 # Hasher Matcher Actioner (HMA)
 
-*Note: HMA has just completed a rewrite! It is now an entirely new architecture. You can [read our motivations below](#hma-10-aws-hma---hma-20-open-media-match). If you need the HMA 1.0 code (Terraform, AWS, node), it lives forever with a copy of its wiki at [HMA_1.0_archive](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner)*
+_Note: HMA has just completed a rewrite! It is now an entirely new architecture. You can [read our motivations below](#hma-10-aws-hma---hma-20-open-media-match). If you need the HMA 1.0 code (Terraform, AWS, node), it lives forever with a copy of its wiki at [HMA_1.0_archive](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner)_
 
 # Project Introduction
+
 [Meta's newsroom post about HMA](https://about.fb.com/news/2022/12/meta-launches-new-content-moderation-tool/).
 
-"Hasher-Matcher-Actioner" or HMA, is a reference implementation for a key Trust and Safety content moderation capability: copy detection. Copy detection refers to the ability to identify identical or similar items to ones that you've previously identified. One popular technology used in copy detection is "hashing" technology, which allows previously seen content to be turned into anonymous digital fingerprints called "hashes". Different platforms could then share these hashes to help other platforms improve their ability to detect similar content. There are many Trust & Safety programs that allow platforms to work together to detect harmful and illegal content, such as the [National Center for Missing and Exploited Children (NCMEC) Hash Sharing Program](https://report.cybertip.org/hashsharing/v2/documentation/), the [Global Internet Forum to Counter Terrorism's Hash-Sharing Database](https://gifct.org/hsdb/), [StopNCII.org](https://stopncii.org/) and, Meta's [ThreatExchange](https://developers.facebook.com/docs/threat-exchange/) to name a few. 
+"Hasher-Matcher-Actioner" or HMA, is a reference implementation for a key Trust and Safety content moderation capability: copy detection. Copy detection refers to the ability to identify identical or similar items to ones that you've previously identified. One popular technology used in copy detection is "hashing" technology, which allows previously seen content to be turned into anonymous digital fingerprints called "hashes". Different platforms could then share these hashes to help other platforms improve their ability to detect similar content. There are many Trust & Safety programs that allow platforms to work together to detect harmful and illegal content, such as the [National Center for Missing and Exploited Children (NCMEC) Hash Sharing Program](https://report.cybertip.org/hashsharing/v2/documentation/), the [Global Internet Forum to Counter Terrorism's Hash-Sharing Database](https://gifct.org/hsdb/), [StopNCII.org](https://stopncii.org/) and, Meta's [ThreatExchange](https://developers.facebook.com/docs/threat-exchange/) to name a few.
 
 To participate in a program, platforms need to have capabilities related to the hashing techniques used by the program, the ability to ingestion of third party hashes, and then to match their content against those hashes. Hasher-Matcher-Actioner provides all the technical pieces you need.
 
 The name "hasher, matcher, actioner" refers to the technical process by which new content is evaluated against collections of known content (called "Banks" in HMA):
+
 1. First content is **hashed** into intermediate representations ("Hashes" or "Signals")
 2. Then it is **matched** against an index of known content
 3. If it matches, some **action** is taken as a result, such as logging the content or enqueuing it for human review.
 
 ## Configurability
-There is no one-size-fits all solution to make platforms safe, and even in the narrow scope of hashing and matching technology, there are many possible solutions. HMA is designed to be highly configurable, such that new algorithms, hash exchanges, or other capabilities could be integrated later. If you want to use a custom or proprietary hashing algorithm with HMA, you simple need to follow the interfaces defined in [python-threatexchange ](../python-threatexchange) to add new capabilities. 
+
+There is no one-size-fits all solution to make platforms safe, and even in the narrow scope of hashing and matching technology, there are many possible solutions. HMA is designed to be highly configurable, such that new algorithms, hash exchanges, or other capabilities could be integrated later. If you want to use a custom or proprietary hashing algorithm with HMA, you simple need to follow the interfaces defined in [python-threatexchange ](../python-threatexchange) to add new capabilities.
 
 ## Using HMA for your platform
+
 HMA can be used as a library, or in any deployment setup that can use docker. It uses a simple REST API to make it as simple as possible to include in your existing environment. You'll need an engineer familiar with your platform's architecture to figure out the best way to deploy it in your ecosystem. At it's simplest, HMA can be run on a single machine, which is enough for evaluation purposes. At scale, HMA is designed with horizontal scalability in mind, and you can increase throughput by increasing the number of instances.
 
 If you are interested in using HMA for your platform, but find it's missing something for your usecase, [this issue](https://github.com/facebook/ThreatExchange/issues/1440) is currently the best place to make requests!
+
+## Demo instance
+
+HMA can be easily run locally for demo purposes. While Docker is running on your machine. access the directory `hasher-matcher-actioner` and run the command:
+
+```bash
+$ docker compose up
+```
+
+This will spin up both a postgresql db as well as an instance of the app running all the configurations ready for testing.
 
 # Architecture
 
@@ -31,11 +45,12 @@ If you are interested in using HMA for your platform, but find it's missing some
 #### `python-threatexchange`
 
 The core functionality is a Python package, evolved from the existing python-threatexchange package (`py-tx`). This package contains a Python library which implements all of the core functionality:
-* Computation of image hashes using PDQ
-* Compute hashes/signatures using other algorithms (e.g. MD5 for video)
-* Management and curation of a local database of hashed content
-* Exchange of hash lists (with third parties (NCMEC, GIFCT, StopNCII, ThreatExchange, others)
-* Similarity search of candidate content hashes to known content
+
+- Computation of image hashes using PDQ
+- Compute hashes/signatures using other algorithms (e.g. MD5 for video)
+- Management and curation of a local database of hashed content
+- Exchange of hash lists (with third parties (NCMEC, GIFCT, StopNCII, ThreatExchange, others)
+- Similarity search of candidate content hashes to known content
 
 This library could be consumed purely as a component in a hypothetical in-house media matching system, but what is more likely is that it will be deployed as a service using the included REST API, built upon Flask, and managed via the included CLI.
 
@@ -55,14 +70,14 @@ For convenience and simplicity, we also distribute the API service as a Docker c
 
 The only dependency is the database, for which we use Postgres.
 
-Depending on your deployment scenario (read on), you will most likely also need a reverse proxy, Layer 7  router, or application load balancer (depending on your preferred terminology) to handle TLS termination, authentication and authorization, request routing, and maybe even caching. For example:
-* Nginx
-* Træfik
-* Kubernetes ingress controller
-* Apache HTTPD
-* Amazon Application Load Balancer
-* Azure Application Gateway
+Depending on your deployment scenario (read on), you will most likely also need a reverse proxy, Layer 7 router, or application load balancer (depending on your preferred terminology) to handle TLS termination, authentication and authorization, request routing, and maybe even caching. For example:
 
+- Nginx
+- Træfik
+- Kubernetes ingress controller
+- Apache HTTPD
+- Amazon Application Load Balancer
+- Azure Application Gateway
 
 If you're operating at the scale where this becomes necessary, you will more than likely already have your own preferred solution here.
 
@@ -73,9 +88,10 @@ If you're operating at the scale where this becomes necessary, you will more tha
 ![Single instance deployment](diagrams/deployment-strategy-single-instance.svg)
 
 It's entirely possible to run everything on one machine. This has the advantage of being the easiest to set up and configure and is appropriate for:
-* Evaluation, local development and testing
-* Production environments with low traffic levels, low time-sensitivity, or otherwise relaxed availability constraints (i.e. you can tolerate the service being down for a short time)
-* Keeping costs and complexity to a minimum
+
+- Evaluation, local development and testing
+- Production environments with low traffic levels, low time-sensitivity, or otherwise relaxed availability constraints (i.e. you can tolerate the service being down for a short time)
+- Keeping costs and complexity to a minimum
 
 A single-instance Postgres can be run as a sidecar container next to the API server container, in the host OS, or on another machine.
 
@@ -112,10 +128,11 @@ Their inputs are the hashes of candidate images (most likely having just had the
 #### Curators
 
 The curators handle all functions related to editing the contents of the database such as:
-* Importing hash lists from the ThreatExchange
-* Adding newly-identified violating content
-* Editing the metadata of known content
-* Removing, disabling or tombstoning content to be excluded from matching
+
+- Importing hash lists from the ThreatExchange
+- Adding newly-identified violating content
+- Editing the metadata of known content
+- Removing, disabling or tombstoning content to be excluded from matching
 
 A split-role deployment pattern allows each role to be scaled independently. We expect that sites will differ in how they scale depending on their traffic patterns, database sizes, update frequency, throughput, uptime and latency requirements.
 
@@ -152,19 +169,21 @@ In HMA, the hash lists are populated by the Curator, and the FAISS indices are p
 At match time, the index returns the matching vectors and their associated content IDs. These IDs are then used to pull the full set of content metadata from the database which will inform the client system as to what exactly the candidate photo matched against.
 
 It should also be possible to split the index from the matcher, and substitute FAISS with other Vector Database technologies if you are looking to use HMA as a library or are customizing it further. Some example databases that will likely work:
-* Pinecone
-* Milvus
-* Pgvector
-* Vertex AI
+
+- Pinecone
+- Milvus
+- Pgvector
+- Vertex AI
 
 ### Data exchange: python-threatexchange
 
 Under the hood, HMA builds on the core interfaces of python-ThreatExchange. The key ones being:
-* **SignalExchangeAPI**: Frameworks for connecting to external sources of trust & safety information and translating them to a common compatibility layer
-* **SignalType**: A technique using serialized information (signals, hashes, embeddings, etc) to flag or match content
-* **ContentType**: How to map which signals are relevant to content on your platform
 
-HMA will allow you to add more instances of these interfaces (which allows customizing its behavior to your platform, say for example by creating custom ContentType to cover your complex objects like posts, comments, or live streams), but it will fall back to a naive implementation that might not scale. You may need to customize much more of its internals to get the same functional guarantees provided by PDQ and MD5. 
+- **SignalExchangeAPI**: Frameworks for connecting to external sources of trust & safety information and translating them to a common compatibility layer
+- **SignalType**: A technique using serialized information (signals, hashes, embeddings, etc) to flag or match content
+- **ContentType**: How to map which signals are relevant to content on your platform
+
+HMA will allow you to add more instances of these interfaces (which allows customizing its behavior to your platform, say for example by creating custom ContentType to cover your complex objects like posts, comments, or live streams), but it will fall back to a naive implementation that might not scale. You may need to customize much more of its internals to get the same functional guarantees provided by PDQ and MD5.
 
 ## API
 
@@ -174,134 +193,133 @@ As HMA is not planning to provide a production UI, the API is the key point of i
 
 Which exchanges (SignalExchangeAPI) are supported by the instance of HMA are configured on deployment. During runtime, configs for fetching from new sources can be created and edited.
 
-
-* Create Exchange Configuration
-    * Inputs:
-        * Configuration name in `CAPS_AND_UNDERSCORE` (must not be the same as an existing bank name)
-        * Exchange type
-        * Exchange-specific arguments (depends on SignalExchangeAPI)
-* List all configs
-    * Output:
-        * List of all config names
-* Get Exchange Configuration
-    * Inputs:
-        * Configuration name
-    * Output: JSON serialization of configuration
-        * Includes exchange type
-* Get Exchange Fetch Status
-    * Inputs
-        * Configuration name
-    * Outputs
-        * Time of last fetch in unix time
-        * Time of checkpoint in unix time
-        * Whether the last run resulted in an error
-* Get Exchange-specific Metadata
-    * Input:
-        * Configuration name
-        * Exchange-specific ID
-    * Output
-        * JSON serialization of metadata specific to Exchange
-* Edit Runtime Configuration properties
-    * Inputs:
-        * Configuration name
-        * Optional Bool enable/disable fetching
-        * Optional Bool enable SEEN status
-        * Optional Bool enable True Positive / False Positive reporting
-* Delete Exchange Configuration 
-    * Inputs
-        * Configuration name
-        * Optional - whether to also delete the bank (defaults to true)
-* [TBD] Submit content directly to exchange
-    * Inputs
-        * SignalType
-        * `string` Signal value
-        * Status (`positive_class`, `negative_class`, `investigation_seed`)
-        * List of tags
+- Create Exchange Configuration
+  - Inputs:
+    - Configuration name in `CAPS_AND_UNDERSCORE` (must not be the same as an existing bank name)
+    - Exchange type
+    - Exchange-specific arguments (depends on SignalExchangeAPI)
+- List all configs
+  - Output:
+    - List of all config names
+- Get Exchange Configuration
+  - Inputs:
+    - Configuration name
+  - Output: JSON serialization of configuration
+    - Includes exchange type
+- Get Exchange Fetch Status
+  - Inputs
+    - Configuration name
+  - Outputs
+    - Time of last fetch in unix time
+    - Time of checkpoint in unix time
+    - Whether the last run resulted in an error
+- Get Exchange-specific Metadata
+  - Input:
+    - Configuration name
+    - Exchange-specific ID
+  - Output
+    - JSON serialization of metadata specific to Exchange
+- Edit Runtime Configuration properties
+  - Inputs:
+    - Configuration name
+    - Optional Bool enable/disable fetching
+    - Optional Bool enable SEEN status
+    - Optional Bool enable True Positive / False Positive reporting
+- Delete Exchange Configuration
+  - Inputs
+    - Configuration name
+    - Optional - whether to also delete the bank (defaults to true)
+- [TBD] Submit content directly to exchange
+  - Inputs
+    - SignalType
+    - `string` Signal value
+    - Status (`positive_class`, `negative_class`, `investigation_seed`)
+    - List of tags
 
 ### Banking / Hash Lists
 
-What algorithms are used, and what similarity settings to use (e.g. PDQ distance) are configured on deployment. 
+What algorithms are used, and what similarity settings to use (e.g. PDQ distance) are configured on deployment.
 
-* Create Bank / Hash List
-    * Inputs
-        * Bank/List name in `CAPS_AND_UNDERSCORE` (must not be the same as an existing bank name)
-* Edit Runtime Configuration properties
-    * Inputs
-        * Bank/List name
-        * Optional `bool` enable/disable matching
-        * Optional `list<string>` bank labels
-    * Get Bank/List Configuration properties
-        * Inputs
-            * Bank/List name
-        * Outputs:
-            * JSON serialization of bank properties
-                * Includes if it is connected to an Exchange
-* Get Bank/List Metadata 
-    * Inputs
-        * Bank/List name
-    * Outputs
-        * Number of items in the bank/list
-        * Number of signals in the bank broken down by type
-* Get Bank/List Contents (ordered by modification time)
-    * Inputs
-        * Bank/List name
-        * Page size
-        * Optional pagination token
-    * Outputs
-        * A list of bank contents. A bank item includes
-            * Bank Content ID
-            * List of signals. A signal includes
-                * Signal type (string)
-                * Signal value (string)
-        * A pagination token for getting the next page of data
-* Add content to Bank/hash list
-    * Inputs
-        * Bank Name
-        * One of the following:
-            * Bank content ID 
-            * Signal type, value
-            * Content type, bytes
-        * Optional platform-specific content ID
-        * Optional `list<string>` of review labels
-    * Output:
-        * Bank content ID
-* Remove/Disable content from bank/hash list (exchange-backed banks will retain a disabled record)
-    * Inputs
-        * Bank content ID
-* Get Bank Content
-    * Inputs
-        * Bank content ID
-    * Outputs
-        * Bank Name
-        * Bank labels
-        * List of Exchange-specific IDs
-* Delete Bank (will error if attached to an Exchange - must be deleted at the exchange level)
-    * Inputs
-        * Bank name
+- Create Bank / Hash List
+  - Inputs
+    - Bank/List name in `CAPS_AND_UNDERSCORE` (must not be the same as an existing bank name)
+- Edit Runtime Configuration properties
+  - Inputs
+    - Bank/List name
+    - Optional `bool` enable/disable matching
+    - Optional `list<string>` bank labels
+  - Get Bank/List Configuration properties
+    - Inputs
+      - Bank/List name
+    - Outputs:
+      - JSON serialization of bank properties
+        - Includes if it is connected to an Exchange
+- Get Bank/List Metadata
+  - Inputs
+    - Bank/List name
+  - Outputs
+    - Number of items in the bank/list
+    - Number of signals in the bank broken down by type
+- Get Bank/List Contents (ordered by modification time)
+  - Inputs
+    - Bank/List name
+    - Page size
+    - Optional pagination token
+  - Outputs
+    - A list of bank contents. A bank item includes
+      - Bank Content ID
+      - List of signals. A signal includes
+        - Signal type (string)
+        - Signal value (string)
+    - A pagination token for getting the next page of data
+- Add content to Bank/hash list
+  - Inputs
+    - Bank Name
+    - One of the following:
+      - Bank content ID
+      - Signal type, value
+      - Content type, bytes
+    - Optional platform-specific content ID
+    - Optional `list<string>` of review labels
+  - Output:
+    - Bank content ID
+- Remove/Disable content from bank/hash list (exchange-backed banks will retain a disabled record)
+  - Inputs
+    - Bank content ID
+- Get Bank Content
+  - Inputs
+    - Bank content ID
+  - Outputs
+    - Bank Name
+    - Bank labels
+    - List of Exchange-specific IDs
+- Delete Bank (will error if attached to an Exchange - must be deleted at the exchange level)
+  - Inputs
+    - Bank name
 
 ### Hashing
 
-What ContentTypes and SignalTypes are supported are configured on deployment. 
+What ContentTypes and SignalTypes are supported are configured on deployment.
 
-* Hash Content
-    * Input
-        * Content type (`string`)
-        * `byte[]`
-        * Optional `list<string>` list of SignalTypes to use
-        * Optional file extension hint (needed sometimes for photos/videos for underlying libraries)
-    * Output
-        * List of signals. Signals include
-            * Signal type
-            * Signal value (`string`)
-* [TBD] Hash+Match (may be slow / require long polling)
-    * Inputs
-        * Content type (`string`)
-        * `byte[]`
-        * Optional `list<string>` of SignalTypes to use
-        * Optional `list<string>` of Bank/List names to restrict search to
-        * Optional file extension hint (needed sometimes for photos/videos for underlying libraries)
-    * Outputs
-        * List of Bank content IDs
+- Hash Content
+  - Input
+    - Content type (`string`)
+    - `byte[]`
+    - Optional `list<string>` list of SignalTypes to use
+    - Optional file extension hint (needed sometimes for photos/videos for underlying libraries)
+  - Output
+    - List of signals. Signals include
+      - Signal type
+      - Signal value (`string`)
+- [TBD] Hash+Match (may be slow / require long polling)
+  - Inputs
+    - Content type (`string`)
+    - `byte[]`
+    - Optional `list<string>` of SignalTypes to use
+    - Optional `list<string>` of Bank/List names to restrict search to
+    - Optional file extension hint (needed sometimes for photos/videos for underlying libraries)
+  - Outputs
+    - List of Bank content IDs
 
 ### Matching
 
@@ -318,34 +336,33 @@ from tx_extension_clip.signal import CLIPSignal
 SIGNAL_TYPES = [PdqSignal, VideoMD5Signal, CLIPSignal]
 ```
 
-
-* Lookup
-    * Input
-        * Signal type
-        * Signal value (`string`)
-        * Optional `list<string>` of Bank/List names to restrict search to
-    * Output
-        * List of Bank content ID
-* Index Status
-    * Input
-        * SignalType (`string`)
-    * Output
-        * Time of last index build
+- Lookup
+  - Input
+    - Signal type
+    - Signal value (`string`)
+    - Optional `list<string>` of Bank/List names to restrict search to
+  - Output
+    - List of Bank content ID
+- Index Status
+  - Input
+    - SignalType (`string`)
+  - Output
+    - Time of last index build
 
 ### Recording Review Results
 
-* Record review led to discovery of harm - will communicate with exchanges if the exchange is configured to do so
-    * Input
-        * `list<string>` of Bank Content IDs
-        * Optional `list<string>` of labels - if the label doesn’t match a bank labels it will change or prevent which information is recorded back to the exchange
-*  Record review did not lead to the discovery of harm
-    * Input
-        * `list<string>` of Bank Content IDs
-        * Optional `list<string>` of labels - if the label doesn’t match a bank labels it will change or prevent which information is recorded back to the exchange
+- Record review led to discovery of harm - will communicate with exchanges if the exchange is configured to do so
+  - Input
+    - `list<string>` of Bank Content IDs
+    - Optional `list<string>` of labels - if the label doesn’t match a bank labels it will change or prevent which information is recorded back to the exchange
+- Record review did not lead to the discovery of harm
+  - Input
+    - `list<string>` of Bank Content IDs
+    - Optional `list<string>` of labels - if the label doesn’t match a bank labels it will change or prevent which information is recorded back to the exchange
 
 # HMA 1.0 (AWS HMA) -> HMA 2.0 (Open Media Match):
-In March of 2024, [we archived](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner) the original version of HMA, and replaced it with a full rewrite, which is what you'll find here. Below you can find our reasoning for doing so.
 
+In March of 2024, [we archived](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner) the original version of HMA, and replaced it with a full rewrite, which is what you'll find here. Below you can find our reasoning for doing so.
 
 ## Predecessor project: Hasher-Matcher-Actioner 1.0
 
@@ -355,15 +372,14 @@ With Open Media Match (HMA 2.0), we propose to build a new, entirely open source
 
 ## Compare and contrast to HMA
 
-| HMA 1.0 (AWS Deployed) | HMA 2.0 (Docker image only) |
-| -------------------------------------- | ---------------- |
-| Heavy AWS dependencies: VPC, DynamoDB, Lambda, API Gateway, ... | OSS dependencies only |
-| Opinionated: only supported by included Terraform scripts | Runs in any Docker based infra |
-| Service capabilities provided by AWS Lambda | Service capabilities provided by composable and repackageable components |
-| AWS only, needs its own S3 buckets and DynamoDB tables | Integrates anywhere Docker can be used, or under self-managed Python/Flask |
-| Includes a GUI and API | API only |
-| Scales automatically | Doesn't auto-scale but can be auto-scaled |
-
+| HMA 1.0 (AWS Deployed)                                          | HMA 2.0 (Docker image only)                                                |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Heavy AWS dependencies: VPC, DynamoDB, Lambda, API Gateway, ... | OSS dependencies only                                                      |
+| Opinionated: only supported by included Terraform scripts       | Runs in any Docker based infra                                             |
+| Service capabilities provided by AWS Lambda                     | Service capabilities provided by composable and repackageable components   |
+| AWS only, needs its own S3 buckets and DynamoDB tables          | Integrates anywhere Docker can be used, or under self-managed Python/Flask |
+| Includes a GUI and API                                          | API only                                                                   |
+| Scales automatically                                            | Doesn't auto-scale but can be auto-scaled                                  |
 
 ## Motivations
 
@@ -375,7 +391,7 @@ With HMA 2.0, we will specifically focus on this evaluation step, potentially al
 
 ### Reduce barriers to adoption
 
-The ThreatExchange team originally chose the AWS dependency as part of scaling targets (4,000 QPS hash lookups), for an initial industry partner that could use AWS. 
+The ThreatExchange team originally chose the AWS dependency as part of scaling targets (4,000 QPS hash lookups), for an initial industry partner that could use AWS.
 
 Since release, while some industry and NGO partners have been able to deploy and use AWS HMA, other industry partners have given feedback that the hard AWS dependency is not reconcilable with their business and technical constraints on what third-party software they can run, and where they can run it.
 
@@ -389,7 +405,7 @@ Hasher-Matcher-Actioner includes a GUI tool for interacting with the matching se
 
 Python-ThreatExchange was envisioned as a compatibility layer for trust and safety teams, academics, and open source contributors to make sharing improvements easier. However, to deploy and use these systems are either too tightly bound with HMA (AWS) or the CLI, and so make selective and compositional use of the library difficult. The design of HMA 2.0 will aim to standardize the core HMA steps (Fetching, Storing, Indexing, Hashing, Matching, Recording review results) in a way that makes them easier to partially adopt.
 
-See [#1247](https://github.com/facebook/ThreatExchange/issues/1247) for more detail. 
+See [#1247](https://github.com/facebook/ThreatExchange/issues/1247) for more detail.
 
 ## Goals and non-goals
 
@@ -397,66 +413,68 @@ See [#1247](https://github.com/facebook/ThreatExchange/issues/1247) for more det
 
 #### Deployment & Use
 
-* No dependencies on any specific cloud provider (it should be possible to deploy in AWS, Google Cloud, on-prem, etc)
-* Should have a single-box (including developer laptop) deployment for testing and development.
-* The primary means of interacting should be API-based, to focus on integration to existing partner platform stacks
-* Support an unnamed proposed human review tool being pitched by an industry partner.
-* Have a minimum of third-party dependencies to simplify long-term maintenance.
+- No dependencies on any specific cloud provider (it should be possible to deploy in AWS, Google Cloud, on-prem, etc)
+- Should have a single-box (including developer laptop) deployment for testing and development.
+- The primary means of interacting should be API-based, to focus on integration to existing partner platform stacks
+- Support an unnamed proposed human review tool being pitched by an industry partner.
+- Have a minimum of third-party dependencies to simplify long-term maintenance.
 
 #### Support the “Evaluation Step” for Platforms Onboarding to Signal Sharing Programs
 
 Should contain enough functionality to do the “evaluation step” for joining new cross-industry programs. This means:
-* Single instance/machine deployment
-* With smallest possible configuration, can independently contact the external API, download all data, and prepare indices.
-* Clear way to tell if an instance has completely downloaded and prepared all data for matching.
-* Handle modest test traffic from the single instance 
-    * On the scale of all human reviews: 1-10 qps
-    * On the scale to reliably detect 1-per-million harms within 1 week of sampled production traffic (~4.6M samples over 1 week => 0.13 qps)
-* Produce a logfile or simple-to-pass-to-manual-review output at the end of that week
+
+- Single instance/machine deployment
+- With smallest possible configuration, can independently contact the external API, download all data, and prepare indices.
+- Clear way to tell if an instance has completely downloaded and prepared all data for matching.
+- Handle modest test traffic from the single instance
+  - On the scale of all human reviews: 1-10 qps
+  - On the scale to reliably detect 1-per-million harms within 1 week of sampled production traffic (~4.6M samples over 1 week => 0.13 qps)
+- Produce a logfile or simple-to-pass-to-manual-review output at the end of that week
 
 #### Key Features
 
-* Supports all core interfaces of python-ThreatExchange: SignalType, ContentType, SignalExchangeAPI
-* End-to-end lifecycle support for cross-industry programs
-* Full implementation for a limited number of SignalTypes and ContentTypes
-  * Image + PDQ
-  * Video + MD5
-  * Naive Hashing + Naive SignalType index build & match to support testing new SignalTypes, though potentially with a very inefficient implementation.
-* Quick disable/enable for matching on single Signals and hash lists
-* Simple API for forming hash lists and recording review results
+- Supports all core interfaces of python-ThreatExchange: SignalType, ContentType, SignalExchangeAPI
+- End-to-end lifecycle support for cross-industry programs
+- Full implementation for a limited number of SignalTypes and ContentTypes
+  - Image + PDQ
+  - Video + MD5
+  - Naive Hashing + Naive SignalType index build & match to support testing new SignalTypes, though potentially with a very inefficient implementation.
+- Quick disable/enable for matching on single Signals and hash lists
+- Simple API for forming hash lists and recording review results
 
 #### Functional Requirements
 
-* Single box instance
-    * Be able to fetch, store, index at least 10M PDQ hashes
-        * Use less than 8GB memory at peak
-        * Use less than 100GB disk
-        * No GPU requirement
-    * On to-be-defined target hardware:
-        * Handle >1 qps image lookups (hashing + matching)
-        * Handle >1 qps video hash lookups (matching)
-    * Multi-instance deployment, with horizontal scaling:
-        * 1000 qps image hash + match should be possible
-        * 100M PDQ hash index should be possible
-        * <1d latency on fetching & indexing signals from external sources
-        * <10 minute latency on being able to match newly-added hashes
-        * <10 minute latency on being able to stop matching disabled hashes
-        * <10¢ / 1000 images scanned (<$100 / 1M images) - no more than 10x more expensive than AWS HMA
+- Single box instance
+  - Be able to fetch, store, index at least 10M PDQ hashes
+    - Use less than 8GB memory at peak
+    - Use less than 100GB disk
+    - No GPU requirement
+  - On to-be-defined target hardware:
+    - Handle >1 qps image lookups (hashing + matching)
+    - Handle >1 qps video hash lookups (matching)
+  - Multi-instance deployment, with horizontal scaling:
+    - 1000 qps image hash + match should be possible
+    - 100M PDQ hash index should be possible
+    - <1d latency on fetching & indexing signals from external sources
+    - <10 minute latency on being able to match newly-added hashes
+    - <10 minute latency on being able to stop matching disabled hashes
+    - <10¢ / 1000 images scanned (<$100 / 1M images) - no more than 10x more expensive than AWS HMA
 
 ### Stretch Goals
 
 #### Live Content Clustering
 
 An HMA 2.0 instance that is being used to scan live traffic on a platform has all of the data needed to automatically generate clusters of content, and allow measurement of viral content. Storage costs for such as system scale with the number of hours or days supported. This could quickly unlock valuable capabilities for a platform:
-* Grouping human review by similar content
-* Automated flagging of high-virality content for review
-* Review prioritization based on instances on platform
-* Network discovery tooling
-* Deduping jobs in a review queue
+
+- Grouping human review by similar content
+- Automated flagging of high-virality content for review
+- Review prioritization based on instances on platform
+- Network discovery tooling
+- Deduping jobs in a review queue
 
 #### Retroaction (aka Live Traffic Replay)
 
-Similar to Live Content Clustering, it’s common that content might already have been uploaded to a platform before it might be manually flagged and reviewed. Your platform may want to be able to match content *after* it has already been uploaded. HMA 2.0 has all the interfaces needed to implement this natively. 
+Similar to Live Content Clustering, it’s common that content might already have been uploaded to a platform before it might be manually flagged and reviewed. Your platform may want to be able to match content _after_ it has already been uploaded. HMA 2.0 has all the interfaces needed to implement this natively.
 
 ### Non-goals
 
@@ -466,7 +484,7 @@ Adding in a user interface would require taking on significant additional depend
 
 #### Actioning Interface / Combining Classification Signals
 
-HMA (AWS) provided a way to rewrite “Action Rules” that trigger after content has been classified by HMA during a match. This allows combining multiple classification signals or triggering multi-step verification. However, we are holding off on any interface for HMA 2.0 for now. 
+HMA (AWS) provided a way to rewrite “Action Rules” that trigger after content has been classified by HMA during a match. This allows combining multiple classification signals or triggering multi-step verification. However, we are holding off on any interface for HMA 2.0 for now.
 
 #### Complex Video Lookup (e.g. vPDQ)
 
@@ -478,8 +496,9 @@ If you are at the scale where you need greater than 1000qps of lookups, or high 
 
 # Contributors
 
-* [David Callies](https://github.com/Dcallies)
-* [Sam Freeman](https://github.com/Sam-Freeman)
-* [Nikolay Gospodinov](https://github.com/NikolayOG)
-* [Doug Neal](https://github.com/dougneal)
-* And many more!
+- [David Callies](https://github.com/Dcallies)
+- [Sam Freeman](https://github.com/Sam-Freeman)
+- [Nikolay Gospodinov](https://github.com/NikolayOG)
+- [Doug Neal](https://github.com/dougneal)
+- [Juan Mrad](https://github.com/juanmrad)
+- And many more!
