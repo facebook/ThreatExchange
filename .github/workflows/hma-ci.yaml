@@ -77,5 +77,5 @@ jobs:
       - name: Test with pytest on docker image
         run: |
           docker run --network="host" local sh -c "python -m pip install --upgrade pip ;
-            pip install -e '.[test]' ;
-            py.test"
+            pip install pytest ;
+            pytest"
