@@ -78,4 +78,4 @@ jobs:
         run: |
           docker run --network="host" local sh -c "python -m pip install --upgrade pip ;
             pip install -e '.[test]' ;
-            py.test"
+            pytest"

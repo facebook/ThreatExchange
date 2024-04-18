@@ -48,6 +48,9 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 strict_optional = true
 
+[tool.setuptools]
+py-modules = []
+
 [[tool.mypy.overrides]]
 module = "flask_apscheduler.*,importlib_metadata.*"
 ignore_missing_imports = true
