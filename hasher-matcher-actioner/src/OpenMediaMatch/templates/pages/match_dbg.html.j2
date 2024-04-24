@@ -5,13 +5,17 @@
     </div>
     <div class="row justify-content-center gx-5">
         <div class="col-6">
+            {% with upload_id="match_dbg_left" %}
             {% include "components/match_dbg_upload.html.j2" %}
+            {% endwith %}
         </div>
         <div class="col-6">
+            {% with upload_id="match_dbg_right" %}
             {% include "components/match_dbg_upload.html.j2" %}
+            {% endwith %}
         </div>
     </div>
-    <div class="container my-2">
+    <div class="container my-2" hidden> {# TODO: implement the rest #}
         <div class="row justify-content-center">
             <div class="col-4">
                 <div class="card p-4">
