@@ -6,10 +6,12 @@ OMM.match_dbg = {
     onFileChange: (id) => {
         const form = document.getElementById(id + "-file-upload");
         const container = document.getElementById(id + "-img");
+        const dest_div = document.getElementById(id + "-signals");
 
         if (!('files' in form) || form.files.length !== 1) {
             return;
         }
+        dest_div.replaceChildren([]);
         const formData = new FormData();
         const file = form.files[0];
         formData.append("photo", file);
@@ -19,7 +21,7 @@ OMM.match_dbg = {
             const imgUrl = reader.result;
             const img = new Image();
             img.src = imgUrl;
-            img.style = "max-width: 256px; max-height: 256px;"
+            img.style = "max-width: 180px; max-height: 180px;"
             container.replaceChildren(img);
         };
         reader.readAsDataURL(file);
@@ -58,14 +60,4 @@ OMM.match_dbg = {
         navigator.clipboard.writeText(hash_text)
         src.toolti
     },
-    displayImgFile: (id) => {
-        const form = document.getElementById('file-form');
-        const input = document.getElementById('file-input');
-        const container = document.getElementById('image-container');
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-
-        });
-    }
 };
