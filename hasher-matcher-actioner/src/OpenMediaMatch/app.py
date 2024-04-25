@@ -83,6 +83,10 @@ def create_app() -> flask.Flask:
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
     )
 
+    logging_config = app.config.get("FLASK_LOGGING_CONFIG")
+    if logging_config:
+        logging.config.dictConfig(logging_config)
+
     running_migrations = os.getenv("MIGRATION_COMMAND") == "1"
 
     engine_logging = app.config.get("SQLALCHEMY_ENGINE_LOG_LEVEL")

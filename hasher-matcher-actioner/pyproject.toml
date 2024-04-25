@@ -24,6 +24,7 @@ dependencies = [
     "threatexchange",
     "flask_apscheduler",
     "python-dateutil",
+    "python-json-logger",
 ]
 
 [project.optional-dependencies]
