@@ -1,5 +1,6 @@
 from pythonjsonlogger import jsonlogger
 
+
 class CustomJsonFormatter(jsonlogger.JsonFormatter):
     """
     Outputs logs in a JSON format.
