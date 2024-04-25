@@ -1,6 +1,6 @@
 <div class="card text-dark bg-light box-shadow h-md-250 h-100 mx-auto">
     <div class="row align-items-center m-2">
-        <div class="col">
+        <div class="col" id="{{ upload_id }}-img">
             <svg class="bd-placeholder-img card-img-top" width="180" height="180" xmlns="http://www.w3.org/2000/svg"
                 role="img" preserveAspectRatio="xMidYMid slice" focusable="false">
                 <title>Placeholder</title>
@@ -10,15 +10,11 @@
             </svg>
         </div>
         <div class="col align-items-center">
-            <input class="form-control" type="file">
+            <input class="form-control" type="file" onchange="OMM.match_dbg.onFileChange('{{ upload_id }}')"
+                id="{{ upload_id }}-file-upload">
         </div>
     </div>
 
-    <div class="card-body d-flex flex-column align-items-mid">
-        <h4>Signal Types</h4>
-        <ul>
-            <li>PDQ: 12354</li>
-            <li>MD5: 12354</li>
-        </ul>
+    <div class="card-body d-flex flex-column align-items-mid" id="{{ upload_id }}-signals">
     </div>
 </div>

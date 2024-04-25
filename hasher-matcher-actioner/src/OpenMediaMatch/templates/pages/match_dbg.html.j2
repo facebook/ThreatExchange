@@ -5,18 +5,30 @@
     </div>
     <div class="row justify-content-center gx-5">
         <div class="col-6">
+            {% with upload_id="match_dbg_left" %}
             {% include "components/match_dbg_upload.html.j2" %}
+            {% endwith %}
         </div>
         <div class="col-6">
+            {% with upload_id="match_dbg_right" %}
             {% include "components/match_dbg_upload.html.j2" %}
+            {% endwith %}
         </div>
     </div>
-    <div class="container my-2 text-center">
-        <h4>Match Results:</h4>
-        <ul>
-            <li>Verdict: Match</li>
-            <li>PDQ: 31</li>
-            <li>md5: 0</li>
-        </ul>
+    <div class="container my-2" hidden> {# TODO: implement the rest #}
+        <div class="row justify-content-center">
+            <div class="col-4">
+                <div class="card p-4">
+                    <h4 class="card-title text-center">Match Results</h4>
+                    <ul>
+                        <li>Verdict: Match</li>
+                        <li>PDQ: 31</li>
+                        <li>md5: 0</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script src="{{ url_for('static', filename='js/match_dbg.js') }}"></script>
