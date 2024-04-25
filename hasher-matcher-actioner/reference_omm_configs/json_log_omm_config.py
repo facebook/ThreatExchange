@@ -3,9 +3,9 @@
 """
 A development version of an omm_config, with every field visible and commented.
 
-This is the configuration that is used by default for the developer instance
-which runs in the dev container by default. Every config field is present
-to make it easier to copy the file as a template for others.
+This configuration is identical to development_omm_config.py, except that it
+enables json log formatting.
+
 """
 
 import logging
