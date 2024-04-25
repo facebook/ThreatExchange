@@ -55,26 +55,25 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     ],
 )
 
-FLASK_LOGGING_CONFIG = dictConfig({
-    'version': 1,
-    'formatters': {
-        'default': {
-            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+FLASK_LOGGING_CONFIG = dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "default": {
+                "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+            },
+            "json": {"()": "OpenMediaMatch.utils.formatters.CustomJsonFormatter"},
         },
-        'json': {
-            "()": "OpenMediaMatch.utils.formatters.CustomJsonFormatter"
-        }
-    },
-    'handlers': {'wsgi': {
-        'class': 'logging.StreamHandler',
-        'stream': 'ext://flask.logging.wsgi_errors_stream',
-        'formatter': 'json'
-    }},
-    'root': {
-        'level': 'INFO',
-        'handlers': ['wsgi']
+        "handlers": {
+            "wsgi": {
+                "class": "logging.StreamHandler",
+                "stream": "ext://flask.logging.wsgi_errors_stream",
+                "formatter": "json",
+            }
+        },
+        "root": {"level": "INFO", "handlers": ["wsgi"]},
     }
-})
+)
 
 # Debugging stuff
 # SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO
