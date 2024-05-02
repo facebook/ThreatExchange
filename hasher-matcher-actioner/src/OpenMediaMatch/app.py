@@ -48,6 +48,10 @@ def _is_werkzeug_reloaded_process():
     return os.environ.get("WERKZEUG_RUN_MAIN") == "true"
 
 
+def _is_gunicorn():
+    return "gunicorn" in os.environ.get("SERVER_SOFTWARE", "")
+
+
 def _setup_task_logging(app_logger: logging.Logger):
     """Clownily replace module loggers with our own"""
     fetcher.logger = app_logger.getChild("Fetcher")
@@ -106,9 +110,18 @@ def create_app() -> flask.Flask:
     scheduler: APScheduler | None = None
 
     with app.app_context():
+        # For Werkzeug/debug deployments:
         # We only run apscheduler in the "outer" reloader process, else we'll
         # have multiple executions of the the scheduler in debug mode
-        if _is_werkzeug_reloaded_process() and not running_migrations:
+        #
+        # For Gunicorn/production deployments:
+        # There is currently no check for multiple schedulers running.
+        # DO NOT RUN multiple workers with TASK_FETCHER=True or TASK_INDEXER=True -
+        # running multiple instances of these tasks may cause database conflicts
+        # or other undesireable behavior
+        if (
+            _is_werkzeug_reloaded_process() or _is_gunicorn()
+        ) and not running_migrations:
             now = datetime.datetime.now()
             scheduler = dev_apscheduler.get_apscheduler()
             scheduler.init_app(app)
