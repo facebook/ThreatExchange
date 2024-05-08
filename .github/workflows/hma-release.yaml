@@ -3,7 +3,7 @@
 name: Publish HMA docker image
 
 on:
-  pull_request:
+  push:
     branches:
       - main
     paths:
