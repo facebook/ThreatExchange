@@ -15,11 +15,37 @@ on:
       - "hasher-matcher-actioner/**"
       - ".github/workflows/hma-ci.yaml"
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 defaults:
   run:
     working-directory: hasher-matcher-actioner
 
 jobs:
+  build-and-push:
+    name: Build and Publish Hasher Matcher Actioner Docker Image to registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Read version
+        id: version
+        run: echo "VERSION=$(cat hasher-matcher-actioner/version.txt)" >> $GITHUB_ENV
+
+      - name: test environment
+        run: |
+        echo $VERSION
+        echo ${{ env.IMAGE_NAME }}
+        echo "ghcr.io/${{ github.repository }}/hma:${{ env.VERSION }}"
+
   lint-check:
     name: Lint python
     runs-on: ubuntu-latest
