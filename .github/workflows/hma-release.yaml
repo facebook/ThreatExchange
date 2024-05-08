@@ -56,4 +56,5 @@ jobs:
           provenance: false
           context: hasher-matcher-actioner
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:pr-${{ env.VERSION }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:${{ env.VERSION }}
