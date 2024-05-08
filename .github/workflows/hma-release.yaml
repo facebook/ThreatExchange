@@ -53,6 +53,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
+          multiPlatform: true
+          platform: linux/amd64,linux/arm64,linux/arm32
           context: hasher-matcher-actioner
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:latest
