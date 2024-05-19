@@ -16,20 +16,19 @@ namespace vpdq {
 namespace hashing {
 
 /**
- * Get frames from the video
- * Then get pdq hashes for selected frames every secondPerHash
+ * @brief Hashes the video file using the vpdq hashing algorithm.
  *
- * @param inputVideoFileName Input video's name
- * @param pdqHashes Vector which stores hashes
- * @param verbose If produce detailed output for diagnostic purposes
- * @param secondsPerHash The time period of picking frames in vpdq
+ * @param inputVideoFileName Input video path.
+ * @param pdqHashes Resulting vector that will contain the vpdq hash.
+ * @param verbose Output details for diagnostic purposes.
+ * @param secondsPerHash The interval for frame hashing.
  * @param downsampleWidth Width to downsample to before hashing. 0 means no
- * downsample
+ *                        downsample
  * @param downsampleHeight Height to downsample to before hashing. 0 means no
- * downsample
+ *                         downsample
  * @param num_threads Number of threads to use for hashing. 0 is auto.
  *
- * @return If successfully hash the video
+ * @return Video hashed successfully.
  */
 bool hashVideoFile(
     const std::string& inputVideoFileName,

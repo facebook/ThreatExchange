@@ -45,6 +45,9 @@ set (PDQHEADERS
 set(SOURCES
     vpdq/cpp/hashing/bufferhasher.cpp
     vpdq/cpp/hashing/filehasher.cpp
+    vpdq/cpp/hashing/ffmpegutils.cpp
+    vpdq/cpp/hashing/ffmpegwrapper.cpp
+    vpdq/cpp/hashing/hasher.cpp
     vpdq/cpp/hashing/matchTwoHash.cpp
     vpdq/cpp/io/vpdqio.cpp
 )
@@ -52,6 +55,9 @@ set(SOURCES
 SET(HEADERS
     vpdq/cpp/hashing/bufferhasher.h
     vpdq/cpp/hashing/filehasher.h
+    vpdq/cpp/hashing/ffmpegutils.h
+    vpdq/cpp/hashing/ffmpegwrapper.h
+    vpdq/cpp/hashing/hasher.h
     vpdq/cpp/hashing/vpdqHashType.h
     vpdq/cpp/hashing/matchTwoHash.h
     vpdq/cpp/io/vpdqio.h
