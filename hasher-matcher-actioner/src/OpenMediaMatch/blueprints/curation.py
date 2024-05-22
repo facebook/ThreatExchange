@@ -11,7 +11,7 @@ from threatexchange.exchanges import auth
 
 from OpenMediaMatch import persistence
 from OpenMediaMatch.utils import flask_utils
-from OpenMediaMatch.storage.interface import BankConfig, SignalTypeIndexBuildCheckpoint
+import OpenMediaMatch.storage.interface as iface
 from OpenMediaMatch.blueprints import hashing
 
 
@@ -55,8 +55,8 @@ def bank_create():
     return jsonify(bank_create_impl(name, enabled_ratio)), 201
 
 
-def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> BankConfig:
-    bank = BankConfig(name=name, matching_enabled_ratio=enabled_ratio)
+def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.BankConfig:
+    bank = iface.BankConfig(name=name, matching_enabled_ratio=enabled_ratio)
     try:
         persistence.get_storage().bank_update(bank, create=True)
     except ValueError as e:
@@ -98,13 +98,24 @@ def bank_delete(bank_name: str):
 
 
 def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
-    if "metadata" not in request.json:
+    if not request.is_json:
+        print("Not json")
+        return None
+    j = request.json
+    print("json: %s" % j)
+    if not isinstance(j, dict):
+        print("Not dict")
+        return None
+    metadata = j.get("metadata")
+    if metadata is None:
+        print("Not meta")
         return None
     # Validate
-    metadata = request.json["metadta"]
-    if metadata is not dict:
+    if not isinstance(metadata, dict):
         abort(400, "metadata should be a json object")
-    expected_keys = ["content_id", "content_uri", "json"]
+    expected_keys = BankedContentMetadata.__optional_keys__.union(
+        BankedContentMetadata.__required_keys__
+    )
     unexpected = set(metadata).difference(expected_keys)
     if unexpected:
         abort(
@@ -156,7 +167,7 @@ def bank_add_file(bank_name: str):
     metadata = _validate_bank_add_metadata()
 
     # Url was passed as a query param?
-    if request.json.get("url", None):
+    if request.args.get("url", None):
         hashes = hashing.hash_media()
     # File uploaded via multipart/form-data?
     elif request.files:
@@ -167,9 +178,9 @@ def bank_add_file(bank_name: str):
 
 
 def _bank_add_signals(
-    bank: BankConfig,
+    bank: iface.BankConfig,
     signal_type_to_signal_str: dict[str, str],
-    metadata: t.Optional[dict[str, str]],
+    metadata: t.Optional[BankedContentMetadata],
 ) -> dict[str, t.Any]:
     if not signal_type_to_signal_str:
         abort(400, "No signals given")
@@ -186,10 +197,12 @@ def _bank_add_signals(
             signals[st.signal_type] = st.signal_type.validate_signal_str(val)
         except Exception as e:
             abort(400, f"Invalid {name} signal: {str(e)}")
-    content_id = storage.bank_add_content(
-        bank.name,
-        signals,
+
+    content_config = iface.BankContentConfig(
+        id=0, disable_until_ts=0, collab_metadata={}, original_media_uri=None, bank=bank
     )
+
+    content_id = storage.bank_add_content(bank.name, signals, content_config)
 
     return {
         "id": content_id,
@@ -209,7 +222,7 @@ def bank_add_as_signals(bank_name: str):
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    return _bank_add_signals(bank, t.cast(dict[str, str], request.json))
+    return _bank_add_signals(bank, t.cast(dict[str, str], request.json), None)
 
 
 def _get_collab(name: str):
@@ -493,9 +506,9 @@ def signal_type_index_status() -> dict[str, dict[str, t.Any]]:
             config.signal_type,
         )
         if tar is None:
-            tar = SignalTypeIndexBuildCheckpoint.get_empty()
+            tar = iface.SignalTypeIndexBuildCheckpoint.get_empty()
         if last is None:
-            last = SignalTypeIndexBuildCheckpoint.get_empty()
+            last = iface.SignalTypeIndexBuildCheckpoint.get_empty()
         ret[name] = {
             "db_size": tar.total_hash_count,
             "index_size": last.total_hash_count,

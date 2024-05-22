@@ -152,6 +152,26 @@ def test_banks_add_hash(client: FlaskClient):
     }
 
 
+def test_banks_add_metadata(client: FlaskClient):
+    bank_name = "NEW_BANK"
+    create_bank(client, bank_name)
+
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    post_request = f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
+
+    post_response = client.post(
+        post_request, json={"metadata": {"invalid_metadata": 5}}
+    )
+    assert post_response.status_code == 400, str(post_response.get_json())
+
+    post_response = client.post(
+        post_request,
+        json={"metadata": {"content_id": "1197433091", "json": {"asdf": {}}}},
+    )
+
+    assert post_response.status_code == 200, str(post_response.get_json())
+
+
 def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     bank_name = "NEW_BANK"
     bank_name_2 = "NEW_BANK_2"
