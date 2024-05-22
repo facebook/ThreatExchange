@@ -15,6 +15,12 @@ from OpenMediaMatch.storage.interface import BankConfig, SignalTypeIndexBuildChe
 from OpenMediaMatch.blueprints import hashing
 
 
+class BankedContentMetadata(t.TypedDict):
+    content_id: t.NotRequired[str]
+    content_uri: t.NotRequired[str]
+    json: t.NotRequired[dict[t.Any, t.Any]]
+
+
 bp = Blueprint("curation", __name__)
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
@@ -62,7 +68,6 @@ def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> BankConfig:
 
 @bp.route("/bank/<bank_name>", methods=["PUT"])
 def bank_update(bank_name: str):
-    # TODO - rewrite using persistence.get_storage()
     storage = persistence.get_storage()
     data = request.get_json()
     bank = storage.get_bank(bank_name)
@@ -92,13 +97,45 @@ def bank_delete(bank_name: str):
     return {"message": "Done"}
 
 
+def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
+    if "metadata" not in request.json:
+        return None
+    # Validate
+    metadata = request.json["metadta"]
+    if metadata is not dict:
+        abort(400, "metadata should be a json object")
+    expected_keys = ["content_id", "content_uri", "json"]
+    unexpected = set(metadata).difference(expected_keys)
+    if unexpected:
+        abort(
+            400, f"metadata contains unexpected keys: {' ,'.join(sorted(unexpected))}"
+        )
+    return t.cast(BankedContentMetadata, metadata)
+
+
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
 def bank_add_file(bank_name: str):
     """
     Add content to a bank by providing a URI to the content (via the `url`
     query parameter), or uploading a file (via multipart/form-data).
+
     @see OpenMediaMatch.blueprints.hashing hash_media()
     @see OpenMediaMatch.blueprints.hashing hash_media_post()
+
+    Inputs:
+     * The content to be banked, in one of these formats:
+        1. URI via the `url` query parameter
+        2. form-data with the proper MIME type set
+     * Optional metadata about the file in the `metadata` query param as a
+       json object. All keys are optional:
+       {
+        content_id:  as a string, assumed (but not enforced) to be unique
+        content_uri: as a URI. This WILL NOT be automatically populated from
+                     the `url` parameter without being populated, and is
+                     intended to be used for the
+        json:        as a json object, can be anything you plan to need in
+                     the long term
+       }
 
     Returns: the signatures created and id
 
@@ -116,19 +153,23 @@ def bank_add_file(bank_name: str):
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
 
+    metadata = _validate_bank_add_metadata()
+
     # Url was passed as a query param?
-    if request.args.get("url", None):
+    if request.json.get("url", None):
         hashes = hashing.hash_media()
     # File uploaded via multipart/form-data?
     elif request.files:
         hashes = hashing.hash_media_post_impl()
     else:
-        abort(400, "Neither `url` query param nor multipart file upload was received")
-    return _bank_add_signals(bank, hashes)
+        abort(400, "Neither `url` nor multipart file upload was received")
+    return _bank_add_signals(bank, hashes, metadata)
 
 
 def _bank_add_signals(
-    bank: BankConfig, signal_type_to_signal_str: dict[str, str]
+    bank: BankConfig,
+    signal_type_to_signal_str: dict[str, str],
+    metadata: t.Optional[dict[str, str]],
 ) -> dict[str, t.Any]:
     if not signal_type_to_signal_str:
         abort(400, "No signals given")
