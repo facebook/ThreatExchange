@@ -6,7 +6,7 @@ Development only routes for easily testing functionality end-to-end, all running
 
 import itertools
 from flask import Blueprint, abort, request
-from flask import redirect
+from flask import redirect, url_for
 from werkzeug.exceptions import HTTPException
 
 from OpenMediaMatch.blueprints.hashing import hash_media
@@ -77,7 +77,7 @@ def query_media():
 @bp.route("/setup_sample_example", methods=["POST"])
 def seed_sample():
     dev_utils.seed_sample()
-    return redirect("./")
+    return redirect(url_for("ui.home"))
 
 
 @bp.route("/setup_tx_example", methods=["POST"])
@@ -89,16 +89,16 @@ def setup_tx_example():
         ),
         create=True,
     )
-    return redirect("./")
+    return redirect(url_for("ui.home"))
 
 
 @bp.route("/seed_banks", methods=["POST"])
 def seed_banks():
     dev_utils.seed_banks_random()
-    return redirect("./")
+    return redirect(url_for("ui.home"))
 
 
 @bp.route("/factory_reset", methods=["POST"])
 def factory_reset():
     reset_tables()
-    return redirect("./")
+    return redirect(url_for("ui.home"))
