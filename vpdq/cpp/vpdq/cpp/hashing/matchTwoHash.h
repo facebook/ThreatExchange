@@ -28,8 +28,8 @@ namespace hashing {
  * @return If successfully hash the video
  */
 bool matchTwoHashBrute(
-    std::vector<vpdq::hashing::vpdqFeature> qHashes,
-    std::vector<vpdq::hashing::vpdqFeature> tHashes,
+    const std::vector<vpdq::hashing::vpdqFeature>& qHashes,
+    const std::vector<vpdq::hashing::vpdqFeature>& tHashes,
     const int distanceTolerance,
     const int qualityTolerance,
     double& qMatch,
