@@ -552,6 +552,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         bank = self._get_bank(bank_name)
         content = database.BankContent(bank=bank)
+        if config is not None:
+            content.original_content_uri = config.original_media_uri
         sesh.add(content)
         for content_signal, value in content_signals.items():
             hash = database.ContentSignal(
