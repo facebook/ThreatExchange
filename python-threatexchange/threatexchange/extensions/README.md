@@ -30,7 +30,7 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | Signal | threatexchange.extensions.vpdq | vpdq | vPDQ video hashing
 | Signal | [tx-extension-clip](https://pypi.org/project/tx-extension-clip/) | clip | [CLIP](https://github.com/openai/CLIP) image embedding with a preloaded model
 | Signal | TBD | tmk_pdqf | The planned name for TMK+PDQF video hashing 
-| Signal | N/A | photodna | Reserved to prevent confusion with PhotoDNA
+| Signal | [threatexchange_photodna](https://github.com/TechnologyCoalitionOrg/) | photodna | Microsoft PhotoDNA hashing (PhotoDNA license required, see [Microsoft](https://www.microsoft.com/en-us/PhotoDNA/Contact-Us) or the [Tech Coalition](https://www.technologycoalition.org/contact)).
 | Content | threatexchange | text | Text files and strings
 | Content | threatexchange | photo | Photo formats
 | Content | threatexchange | video | Video formats
