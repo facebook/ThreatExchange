@@ -20,11 +20,57 @@ The name "hasher, matcher, actioner" refers to the technical process by which ne
 
 There is no one-size-fits all solution to make platforms safe, and even in the narrow scope of hashing and matching technology, there are many possible solutions. HMA is designed to be highly configurable, such that new algorithms, hash exchanges, or other capabilities could be integrated later. If you want to use a custom or proprietary hashing algorithm with HMA, you simple need to follow the interfaces defined in [python-threatexchange ](../python-threatexchange) to add new capabilities.
 
+You can find an example on expanding the base image to include the Clip tx extension [here](https://github.com/juanmrad/HMA-CLIP-demo)
+
 ## Using HMA for your platform
 
 HMA can be used as a library, or in any deployment setup that can use docker. It uses a simple REST API to make it as simple as possible to include in your existing environment. You'll need an engineer familiar with your platform's architecture to figure out the best way to deploy it in your ecosystem. At it's simplest, HMA can be run on a single machine, which is enough for evaluation purposes. At scale, HMA is designed with horizontal scalability in mind, and you can increase throughput by increasing the number of instances.
 
 If you are interested in using HMA for your platform, but find it's missing something for your usecase, [this issue](https://github.com/facebook/ThreatExchange/issues/1440) is currently the best place to make requests!
+
+### Docker
+
+#### How to use this image
+
+The HMA Docker image requires a PostgreSQL database to store information. Below is how you can set up and use the HMA image effectively in different environments:
+
+#### Pre-requisites
+
+- A running PostgreSQL database.
+- A configuration file that specifies settings for different roles for each instance running (Hasher, Matcher, Curator) or a configuration file for a single instance for all three roles.
+
+#### Using Docker Compose
+
+You can see a complete example using Docker Compose in the provided [docker-compose.yaml](./docker-compose.yaml) file. This example includes both the application and database services, illustrating how they can be orchestrated together.
+
+#### Configuration File
+
+HMA requires a configuration file passed as an environment variable, `OMM_CONFIG`, which specifies various operational parameters. An [example configuration file](./reference_omm_configs/development_omm_config.py) can be found in the repository for you to customize according to your needs.
+
+#### Running the Application in Development
+
+To run HMA in a development environment using Docker, use the following command:
+
+```bash
+$ docker run -e OMM_CONFIG='/build/reference_omm_configs/development_omm_config.py' -p 5000:5000 ghcr.io/facebook/threatexchange/hma flask --app OpenMediaMatch.app run --host=0.0.0.0
+```
+
+This command sets the necessary environment variable and exposes the app on port 5000 of your host machine, making the API accessible locally.
+
+#### Running the Application in Production
+
+For production environments, it is recommended to use a more robust server like Gunicorn instead of Flask's built-in server. Also, ensure that only a single instance of the curator role is active at any time to manage the indexing and download of hash bank data effectively.
+
+Here is an example command to run the application with Gunicorn:
+
+```
+$ docker run -e OMM_CONFIG='/build/reference_omm_configs/production_omm_config.py' -p 5000:5000 ghcr.io/facebook/threatexchange/hma gunicorn --bind 0.0.0.0:5000 "OpenMediaMatch.app:create_app()"
+```
+
+#### Notes:
+
+- Adjust the port configurations and environment variables according to your specific deployment requirements.
+- It is crucial to handle the database credentials and other sensitive data securely, preferably using secrets management tools or services.
 
 ## Demo instance
 
