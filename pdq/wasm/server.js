@@ -22,6 +22,12 @@ http.createServer(function(request, response) {
  
   var uri = url.parse(request.url).pathname, 
       filename = path.join(process.cwd(), uri);
+
+  if (path.normalize(decodeURI(uri)) !== decodeURI(uri)) {
+      response.statusCode = 403;
+	  response.end();
+	  return;
+  }
   
   fs.exists(filename, function(exists) {
     if(!exists) {
