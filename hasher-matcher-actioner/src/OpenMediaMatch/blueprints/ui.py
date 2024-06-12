@@ -123,9 +123,11 @@ def banks():
     """
     Bank management page
     """
-    return render_template(
-        "bootstrap.html.j2", page="banks", bankList=curation.banks_index()
-    )
+    template_vars = {
+        "bankList": curation.banks_index(),
+        "content": curation.get_all_content_types(),
+    }
+    return render_template("bootstrap.html.j2", page="banks", **template_vars)
 
 
 @bp.route("/exchanges")

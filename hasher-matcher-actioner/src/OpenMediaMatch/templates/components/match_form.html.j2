@@ -6,10 +6,11 @@
         </div>
         <div class="col">
             <select class="form-select" name="media" id="content-type" required>
+                <option selected disabled value="">Select content type</option>
                 {% for c in content %}
-                {% if c['enabled'] %}
-                <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
-                {% endif %}
+                    {% if c['enabled'] %}
+                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                    {% endif %}
                 {% endfor %}
             </select>
         </div>
