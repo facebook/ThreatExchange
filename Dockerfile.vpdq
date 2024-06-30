@@ -1,0 +1,19 @@
+# Dockerfile for development of vpdq. 
+
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    python-is-python3 \
+    git \
+    build-essential \
+    make cmake pkg-config \
+    clang-format \
+    ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /ThreatExchange
+WORKDIR /ThreatExchange
