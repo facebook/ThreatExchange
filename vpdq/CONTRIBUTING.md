@@ -4,6 +4,7 @@ vPDQ has a CPP implementation and a Python binding that is created with Cython.
 
 Note: Python scripts are used for testing the CPP implementation, but they do not require the Python binding to be installed. They are located in the [cpp](./cpp) folder.
 
+See the CPP section in the [README](./README.md#cpp-implementation) for how to setup a development environmnet.
 
 ## Contributing
 Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions develop locally and open PRs
@@ -63,7 +64,8 @@ python -m black ./
 ```
 
 ### Dependencies
-All dependencies from the CPP implementation are required to build the binding. See [README](../README.md) for more information.
+
+All dependencies from the CPP implementation are required to build the binding. See [README](./README.md#cpp-implementation) for more information.
 
 Ubuntu may require `python3-dev` to compile the bindings and `pkg-config` packages to compile vpdq.
 
