@@ -30,28 +30,34 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y make cmake ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
+          sudo apt-get install -y make cmake pkg-config ffmpeg libavdevice-dev libavfilter-dev libavformat-dev libavcodec-dev libswresample-dev libswscale-dev libavutil-dev
 
-      - name: Make with address,leak,undefined sanitizer
+      - name: Make with no sanitizers
         run: |
           rm -rf cpp/build
-          mkdir cpp/build
-          cd cpp/build
-          cmake .. -DCMAKE_CXX_FLAGS="-O2 -fPIC -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations -fsanitize=address,leak,undefined" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread,undefined"
-          make
+          cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build cpp/build -j
 
-      - name: Test with address,leak,undefined sanitizer
+      - name: Test with no sanitizers
         run: |
           python cpp/regtest.py -i ${GITHUB_WORKSPACE}/tmk/sample-videos
 
-      - name: Make with thread,undefined sanitizer
+      - name: Make with address sanitizer
         run: |
           rm -rf cpp/build
-          mkdir cpp/build
-          cd cpp/build
-          cmake .. -DCMAKE_CXX_FLAGS="-O2 -fPIC -Wall -Wextra -Werror -Wno-unused-function -Wno-deprecated-declarations -fsanitize=thread,undefined" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,leak,undefined"
-          make
+          cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Asan
+          cmake --build cpp/build -j
 
-      - name: Test with thread,undefined sanitizer
+      - name: Test with address sanitizer
+        run: |
+          python cpp/regtest.py -i ${GITHUB_WORKSPACE}/tmk/sample-videos
+
+      - name: Make with thread sanitizer
+        run: |
+          rm -rf cpp/build
+          cmake -S cpp -B cpp/build -DCMAKE_BUILD_TYPE=Tsan
+          cmake --build cpp/build -j
+
+      - name: Test with thread sanitizer
         run: |
           python cpp/regtest.py -i ${GITHUB_WORKSPACE}/tmk/sample-videos

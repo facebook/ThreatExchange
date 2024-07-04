@@ -20,12 +20,13 @@ CPP_DIR = DIR / "cpp"
 CPP_BUILD_DIR = CPP_DIR / "build"
 CYTHON_CPP_PATH = DIR / "python/vpdq.cpp"
 CYTHON_PYX_PATH = DIR / "python/vpdq.pyx"
-LIBVPDQ_PATH = CPP_BUILD_DIR / "libvpdq.a"
+LIBVPDQ_PATH = CPP_BUILD_DIR / "vpdq/libvpdqlib.a"
+LIBPDQ_PATH = CPP_BUILD_DIR / "pdq/libpdqlib.a"
 LIBRARIES_DIRS_PATH = CPP_DIR / "libraries-dirs.txt"
 
-lib_dirs: List[str] = []
+lib_dirs: List[str] = [str(LIBPDQ_PATH.parent)]
 include_dirs: List[str] = [str(CPP_DIR)]
-libav_libraries: List[str]= [
+libav_libraries: List[str] = [
     "avdevice",
     "avfilter",
     "avformat",
@@ -34,8 +35,9 @@ libav_libraries: List[str]= [
     "swscale",
     "avutil",
 ]
-libraries: List[str] = libav_libraries
-extra_link_args: List[str] = ["-lpthread"]
+# Order may matter for libraries, not sure. Link order generally goes left to right.
+libraries: List[str] = ["pdqlib"] + libav_libraries + ["pthread"]
+extra_objects: List[str] = [str(LIBVPDQ_PATH), str(LIBPDQ_PATH)]
 
 
 def make_clean() -> None:
@@ -59,24 +61,34 @@ class build_ext(build_ext):
             logger.info("Creating CPP build directory...")
             Path.mkdir(CPP_BUILD_DIR, exist_ok=True)
 
-            logger.info("Running CMake...")
+            logger.info("Generating CMake project...")
             cmake_proc = subprocess.run(
-                ["cmake", f"{CPP_DIR}"],
-                cwd=CPP_BUILD_DIR,
+                [
+                    "cmake",
+                    "-S",
+                    ".",
+                    "-B",
+                    CPP_BUILD_DIR,
+                    "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+                ],
+                cwd=CPP_DIR,
                 check=True,
                 capture_output=True,
             )
             logger.info(str(cmake_proc.stdout, "utf-8"))
 
-            logger.info("Compiling libvpdq with Make...")
+            logger.info("Compiling vpdqlib and pdqlib...")
             make_proc = subprocess.run(
-                ["make"], cwd=CPP_BUILD_DIR, check=True, capture_output=True
+                ["cmake", "--build", "build"],
+                cwd=CPP_DIR,
+                check=True,
+                capture_output=True,
             )
             logger.info(str(make_proc.stdout, "utf-8"))
 
             # Add the directories of required libraries that are found from CMake to lib_dirs
             with open(LIBRARIES_DIRS_PATH, "r") as file:
-                lib_dirs = [line.strip() for line in file]
+                lib_dirs.extend(list(set([line.strip() for line in file])))
 
         except subprocess.CalledProcessError as e:
             logger.critical(str(e.stderr, "utf-8"))
@@ -91,10 +103,10 @@ EXTENSIONS = [
         sources=[str(CYTHON_PYX_PATH)],
         language="c++",
         libraries=libraries,
-        extra_objects=[str(LIBVPDQ_PATH)],
+        extra_objects=extra_objects,
         library_dirs=lib_dirs,
         include_dirs=include_dirs,
-        extra_link_args=extra_link_args,
+        extra_link_args=[],
     )
 ]
 
