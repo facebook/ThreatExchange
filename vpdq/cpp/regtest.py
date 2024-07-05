@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import os
 import subprocess
 import sys
 import argparse
@@ -14,7 +15,7 @@ import csv
 DIR = Path(__file__).parent
 VPDQ_DIR = DIR.parent
 SAMPLE_HASHES_DIR = VPDQ_DIR / "sample-hashes"
-EXEC_DIR = VPDQ_DIR / "cpp/build"
+EXEC_DIR = VPDQ_DIR / "cpp/build/apps"
 
 
 def get_os() -> str:
@@ -130,7 +131,11 @@ def main():
 
     # Run the hashing and matching tests for single and multithreaded
     for thread_count in range(0, 2):
-        print(f"Threads: {thread_count}")
+        if thread_count == 0:
+            num_cpu_cores = os.cpu_count()
+            print(f"Number of hashing threads: auto. Probably {num_cpu_cores} threads.")
+        else:
+            print(f"Number of hashing threads: {thread_count}")
         with TemporaryDirectory() as tempOutputHashFolder:
             tempOutputHashFolder = Path(tempOutputHashFolder)
 

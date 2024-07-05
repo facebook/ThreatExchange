@@ -158,8 +158,8 @@ Once you are in the container proceed to [**Building**](#building).
 - FFmpeg and libav* libraries
 
 > **Note for macos:**
-> 
->  Currently, the built-in Apple clang g++ does not work for building this implementation. Installing GCC and updating the [`CMake`](./cpp/CMakeLists.txt) CXX to use that version of g++ as a workaround is recommended.
+>
+> Currently, the built-in Apple clang g++ does not work for building this implementation. Installing GCC and updating the [`CMake`](./cpp/CMakeLists.txt) CXX to use that version of g++ as a workaround is recommended.
 
 ### Install FFmpeg
 
@@ -207,21 +207,37 @@ All dependencies should now be installed. Proceed to [**Building**](#building).
 
 ## Building
 
+Build using the usual CMake commands:
+
 ```sh
 # vpdq/cpp
-mkdir build
-cd build
-cmake ..
-make
+# Generate CMake project
+cmake -S . -B build
+# Build
+cmake --build build -j
 ```
 
-This will build both the library and 3 CLI executables:
+> **Note:** The CMake files will respect your `-DCMAKE_BUILD_TYPE` option.
+>
+> For example, to build with optimizations pass `-DCMAKE_BUILD_TYPE=Release` to the generator command (the first one above).
+>
+> To build with optimizations and debug info, pass `-DCMAKE_BUILD_TYPE=RelWithDebInfo`.
+>
+> There is also a custom `Asan` and `Tsan` build type to compile with address/thread sanitizers (Linux only).
+>
+> See [CMAKE_BUILD_TYPE documentation](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html) for more information.
+
+This will build both the library and 3 CLI programs:
 
 - vpdq-hash-video
 - match-hashes-byline
 - match-hashes-brute
 
-Run the executables with `-h` or see below for usage information.
+The CLI programs will be found in `build/apps`.
+
+The vpdq library will be located at `build/vpdq/libvpdqlib.a`.
+
+Run the CLI programs with `-h` to see their usage information.
 
 ## Usage
 
@@ -230,8 +246,6 @@ Some Python scripts are used for testing the C++ implementation, but they do not
 This demo shows how to use `vpdq_match.py` to compare one target hash with all the queried hashes in the `sample-hashes`.
 
 The target hash must be generated with vpdq-hash-video before running.
-
-
 
 ### Brute-force matching
 

@@ -1,21 +1,18 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from numpy import hamming
 import vpdq
 import subprocess
 import os
-import sys
 import argparse
 from pathlib import Path
-from contextlib import contextmanager, nullcontext
-from enum import Enum
+from contextlib import contextmanager
 import time
 
 VPDQ_MATCH_DIST = 31
 DIR = Path(__file__).parents[2]
 VIDEOS = DIR / "tmk/sample-videos"
-OUTPUT = "hashes"
-CPP_EXEC = Path(__file__).parents[1] / "cpp/build/vpdq-hash-video"
+OUTPUT = Path(__file__).parent / "hashes"
+CPP_EXEC = Path(__file__).parents[1] / "cpp/build/apps/vpdq-hash-video"
 
 
 @contextmanager
@@ -31,12 +28,6 @@ def timer(context: str, print_on_enter: bool = False):
 
 def get_argparse() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "-f",
-        "--ffmpegPath",
-        help="Specific path to ffmpeg you want to use",
-        default="ffmpeg",
-    )
     ap.add_argument(
         "-r",
         "--secondsPerHash",
@@ -56,13 +47,12 @@ def get_argparse() -> argparse.ArgumentParser:
 
 
 def run_benchmark(
-    ffmpegPath: str,
     secondsPerHash: int,
     downsampleFrameDimension: int,
 ):
     with timer("Python hashing time") as pt:
         python_features = run_python(
-            ffmpegPath, secondsPerHash, downsampleFrameDimension
+            secondsPerHash, downsampleFrameDimension
         )
     feature_size = 0
     feature_size = sum(len(feature) for feature in python_features)
@@ -74,7 +64,7 @@ def run_benchmark(
         f"{1000*python_time /  feature_size:.4f}ms",
     )
     with timer("CPP hashing time") as ct:
-        run_cpp(ffmpegPath, secondsPerHash, downsampleFrameDimension)
+        run_cpp(secondsPerHash, downsampleFrameDimension)
     cpp_time = ct()
     print(
         "  Total hash:",
@@ -87,7 +77,7 @@ def run_benchmark(
             "Calculate deviations in downsampled hashes, since hash resolution is non-native"
         )
         with timer("Original resolution Python hashing time"):
-            original_features = run_python(ffmpegPath, secondsPerHash, 0)
+            original_features = run_python(secondsPerHash, 0)
         total_dist = 0
         mis_match = 0
         for original_hash, downsample_hash in zip(original_features, python_features):
@@ -103,7 +93,6 @@ def run_benchmark(
 
 
 def run_python(
-    ffmpegPath: str,
     secondsPerHash: int,
     downsampleFrameDimension: int,
 ):
@@ -113,7 +102,6 @@ def run_python(
             hash_list.append(
                 vpdq.computeHash(
                     str(VIDEOS / file),
-                    ffmpeg_path=ffmpegPath,
                     seconds_per_hash=secondsPerHash,
                     downsample_width=downsampleFrameDimension,
                     downsample_height=downsampleFrameDimension,
@@ -123,17 +111,15 @@ def run_python(
 
 
 def run_cpp(
-    ffmpegPath: str,
     secondsPerHash: int,
     downsampleFrameDimension: int,
 ):
+    Path.mkdir(OUTPUT, exist_ok=True)
     for file in os.listdir(VIDEOS):
         if file.endswith(".mp4"):
             subprocess.check_call(
                 [
                     str(CPP_EXEC),
-                    "-f",
-                    str(ffmpegPath),
                     "-r",
                     str(secondsPerHash),
                     "-d",

@@ -24,18 +24,7 @@ find cpp/vpdq -iname '*.h' -o -iname '*.cpp' | xargs clang-format -i
 
 ### Building
 
-To build libvpdq and the CLI executables:
-
-In the root vpdq folder:
-```sh
-cd cpp/
-mkdir -p build
-cd build
-cmake ..
-make
-```
-
-The output executables and `libvpdq.a` should now be in the cpp/build directory.
+See [CPP Development in README](./README.md#building) for build instructions.
 
 ### Tests
 
