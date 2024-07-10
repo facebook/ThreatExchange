@@ -59,6 +59,7 @@ setup(
         "requests",
         "urllib3",  # For allow_methods
         "python-dateutil",
+        "types-python-dateutil",
         "dacite",
         "Pillow",  # pdq
         "pdqhash",  # pdq
