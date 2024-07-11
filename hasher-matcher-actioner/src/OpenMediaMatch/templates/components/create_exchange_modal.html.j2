@@ -17,8 +17,8 @@
                         <label for="exchange_create_form_api" class="form-label">API</label>
                         <select class="form-select" name="api" id="exchange_create_form_api" required>
                             <option selected disabled value="">Select API</option>
-                            {% for api in exchangeApiList %}
-                            <option>{{api}}</option>
+                            {% for name, c in exchange_apis.items() %}
+                                <option>{{name}}</option>
                             {% endfor %}
                         </select>
                     </div>
