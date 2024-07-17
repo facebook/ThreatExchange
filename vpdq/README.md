@@ -157,10 +157,6 @@ Once you are in the container proceed to [**Building**](#building).
 - make
 - FFmpeg and libav* libraries
 
-> **Note for macos:**
->
-> Currently, the built-in Apple clang g++ does not work for building this implementation. Installing GCC and updating the [`CMake`](./cpp/CMakeLists.txt) CXX to use that version of g++ as a workaround is recommended.
-
 ### Install FFmpeg
 
 [FFmpeg](https://ffmpeg.org/) and its [libav* libraries](https://trac.ffmpeg.org/wiki/Using%20libav*) must be installed before building.

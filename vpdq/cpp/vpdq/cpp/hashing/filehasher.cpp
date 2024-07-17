@@ -3,6 +3,7 @@
 // ================================================================
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <memory>
@@ -137,8 +138,14 @@ class FFmpegHasher {
         // no error. we're good.
       }
 
-      // Get the current frame number from the video codec context
-      auto const frameNumber = m_video->codecContext->frame_number - 1;
+// AVCodecContext::frame_number was deprecated in FFmpeg 6.0
+// in favor of AVCodecContext::frame_num
+#if LIBAVCODEC_VERSION_MAJOR >= 60
+      const auto codecFrameNumber = m_video->codecContext->frame_num;
+#else
+      const auto codecFrameNumber = m_video->codecContext->frame_number;
+#endif
+      const int64_t frameNumber{int64_t{codecFrameNumber} - 1};
 
       if (frameNumber % m_frameMod == 0) {
         AVFramePtr targetFrame{};
