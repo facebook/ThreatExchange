@@ -6,7 +6,6 @@ set(VPDQSOURCES
     cpp/hashing/filehasher.cpp
     cpp/hashing/ffmpegutils.cpp
     cpp/hashing/ffmpegwrapper.cpp
-    cpp/hashing/hasher.cpp
     cpp/hashing/matchTwoHash.cpp
     cpp/io/vpdqio.cpp
 )
