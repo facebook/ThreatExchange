@@ -20,7 +20,7 @@ class Hash256Test(unittest.TestCase):
 
     def test_correct_hex_format(self) -> None:
         hash = Hash256.fromHexString(self.SAMPLE_HASH)
-        self.assertNotEquals(hash, None)
+        self.assertNotEqual(hash, None)
 
     def test_clone(self) -> None:
         hash = Hash256.fromHexString(self.SAMPLE_HASH)
