@@ -21,7 +21,6 @@
 #include <vector>
 
 #include <vpdq/cpp/hashing/bufferhasher.h>
-#include <vpdq/cpp/hashing/ffmpegwrapper.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 
 namespace facebook {
@@ -83,6 +82,12 @@ class VpdqHasher {
    **/
   void push_back(TFrame&& frame);
 
+  /** @brief Stop and join all hashing threads.
+   *
+   * @note Not thread safe.
+   **/
+  void stop_hashing();
+
   /** @brief Block until all frames are finished hashing and get the final
    *         result.
    *
@@ -97,6 +102,8 @@ class VpdqHasher {
   VpdqHasher& operator=(VpdqHasher const&) = delete;
   VpdqHasher(VpdqHasher&&) = delete;
   VpdqHasher& operator=(VpdqHasher&&) = delete;
+
+  ~VpdqHasher() { stop_hashing(); }
 
  private:
   /** @brief True if hashing is multithreaded, false if singlethreaded.
@@ -210,10 +217,14 @@ void VpdqHasher<TFrame>::push_back(TFrame&& frame) {
 }
 
 template <typename TFrame>
-std::vector<vpdqFeature> VpdqHasher<TFrame>::finish() {
+void VpdqHasher<TFrame>::stop_hashing() {
   if (m_multithreaded) {
     {
       std::lock_guard<std::mutex> lock(m_queue_mutex);
+      if (m_done_hashing) {
+        return;
+      }
+
       m_done_hashing = true;
     }
 
@@ -222,6 +233,11 @@ std::vector<vpdqFeature> VpdqHasher<TFrame>::finish() {
       thread.join();
     }
   }
+}
+
+template <typename TFrame>
+std::vector<vpdqFeature> VpdqHasher<TFrame>::finish() {
+  this->stop_hashing();
 
   // Sort out of order frames by frame number
   std::sort(
@@ -258,10 +274,6 @@ void VpdqHasher<TFrame>::consumer() {
     hasher(frame);
   }
 }
-
-// Explicit template instantiation for all frame types.
-template class VpdqHasher<GenericFrame>;
-template class VpdqHasher<ffmpeg::FFmpegFrame>;
 
 } // namespace hashing
 } // namespace vpdq
