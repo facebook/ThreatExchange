@@ -135,9 +135,11 @@ def exchanges():
     """
     Exchange management page
     """
-    return render_template(
-        "bootstrap.html.j2", page="exchanges", collabs=_collab_info()
-    )
+    template_vars = {
+        "exchange_apis": _api_cls_info(),
+        "collabs": _collab_info(),
+    }
+    return render_template("bootstrap.html.j2", page="exchanges", **template_vars)
 
 
 @bp.route("/match")
