@@ -15,9 +15,6 @@ from requests.packages.urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.fb_threatexchange.api import TimeoutHTTPAdapter
 
 
-logger = logging.basicConfig(level=logging.INFO)
-
-
 class TATIdeology(Enum):
   islamist = "islamist"
   far_right = "far-right"
@@ -122,21 +119,21 @@ class TATHashListAPI:
     """
 
     if not isinstance(username, str) or not isinstance(password, str):
-      # logger.error("Username or password not valid")
+      logging.error("Username or password not valid")
       return None
 
-    # logger.info("Authenticating with TCAP: %s", username)
+    logging.info("Authenticating with TCAP: %s", username)
 
 
     try:
       auth_response = self._post(
-        TATEndpoint.authenticate.value  , 
+        TATEndpoint.authenticate.value, 
         data={"username": username, "password": password, "resend": False}
       )
       return auth_response.get("token")
     
     except Exception as e:
-      # logger.error("Error authenticating with TCAP: %s", e)
+      logging.error("Error authenticating with TCAP: %s", e)
       return None
 
 
@@ -150,7 +147,7 @@ class TATHashListAPI:
       token = self.authenticate(self.username, self.password)
 
       if token is not None:
-        # logger.info("Fetching hash list")
+        logging.info("Fetching hash list")
         response = self._get(
           f"{TATEndpoint.hash_list.value}/{ideology}",
           auth_token=token
@@ -159,7 +156,7 @@ class TATHashListAPI:
         return response
     
       else:
-        # logger.error("Error getting hash list: %s", e)
+        logging.error("Error getting hash list: %s", e)
         raise Exception("Unable authenticating with TCAP")
 
     except requests.exceptions.HTTPError as http_err:
@@ -167,7 +164,7 @@ class TATHashListAPI:
       
       
     except Exception as e:
-      # logger.error("Error getting hash list: %s", e)
+      logging.error("Error getting hash list: %s", e)
       return {"error": str(e)}
     
 
