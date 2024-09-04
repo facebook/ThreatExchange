@@ -6,10 +6,10 @@ from threatexchange.exchanges.clients.techagainstterrorism.api import (
    TATHashListAPI
 )
 
-def mock_get_hash_list(ideology: TATIdeology = TATIdeology._all.value) -> TATHashListResponse:
+def mock_get_hash_list(ideology: str = TATIdeology._all.value) -> t.Union[TATHashListResponse, dict[str, str]]:
     
     if ideology not in TATIdeology._value2member_map_:
-        return {'http_error': f'400 Client Error: Bad Request for url: https://test/api/hash-list/{ideology}'}
+        return {'error': f'400 Client Error: Bad Request for url: https://test/api/hash-list/{ideology}'}
 
     return TATHashListResponse(
       file_url=f"https://hash-list.s3.com/19700101_{ideology}_hashes.json",
@@ -82,4 +82,4 @@ def test_get_default_hash_list(api: TATHashListAPI) -> None:
 
 def test_incorrect_ideology_hash_list(api: TATHashListAPI) -> None:
     response = api.get_hash_list("invalid_ideology")
-    assert response == {'http_error': '400 Client Error: Bad Request for url: https://test/api/hash-list/invalid_ideology'}
+    assert response == {'error': '400 Client Error: Bad Request for url: https://test/api/hash-list/invalid_ideology'}

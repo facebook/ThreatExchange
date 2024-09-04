@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 import logging
-import typing as t
+from typing import Any, ClassVar, Optional
 from contextlib import contextmanager
 import requests
 from requests.packages.urllib3.util.retry import Retry
@@ -22,17 +22,21 @@ class TATIdeology(Enum):
 
 
 @dataclass
+class TATAPIErrorResponse:
+  error: str
+
+@dataclass
 class TATHashListResponse:
-  file_url: t.AnyStr
-  file_name: t.AnyStr
+  file_url: str
+  file_name: str
   created_on: datetime
   total_hashes: int
   ideology: TATIdeology
 
 @dataclass
 class TATUser:
-  user: t.Any
-  token: t.AnyStr
+  user: Any
+  token: str
 
 class TATEndpoint(Enum):
   authenticate = "token-auth/tcap/"
@@ -51,19 +55,19 @@ class TATHashListAPI:
   The list is refreshed daily.
   """
 
-  BASE_URL: t.ClassVar[t.AnyStr] = "https://beta.terrorismanalytics.org/"
+  BASE_URL: ClassVar[str] = "https://beta.terrorismanalytics.org/"
 
   def __init__(
       self, 
-      username: t.AnyStr,
-      password: t.AnyStr
+      username: str,
+      password: str
     ) -> None:
     self.username = username
     self.password = password
 
 
   @contextmanager
-  def _get_session(self, auth_token: t.Optional[t.AnyStr] = None):
+  def _get_session(self, auth_token: Optional[str] = None):
     session = requests.Session()
     session.mount(
       self.BASE_URL,
@@ -87,33 +91,33 @@ class TATHashListAPI:
       session.close()
 
 
-  def _get(self, endpoint: TATEndpoint, auth_token: t.Optional[t.AnyStr] = None) -> t.Any:
+  def _get(self, endpoint: TATEndpoint, auth_token: Optional[str] = None) -> Any:
     """
         Perform an HTTP GET request, and return the JSON response payload.
 
         Same timeouts and retry strategy as `_get_session` above.
     """
     with self._get_session(auth_token) as session:
-      url = self.BASE_URL + endpoint
+      url = self.BASE_URL + endpoint.value
       response = session.get(url=url)
       response.raise_for_status()
       return response.json()
 
 
-  def _post(self, endpoint: TATEndpoint, data=None) -> t.Any:
+  def _post(self, endpoint: TATEndpoint, data=None) -> Any:
     """
         Perform an HTTP POST request, and return the JSON response payload.
 
         Same timeouts and retry strategy as `_get_session` above.
     """
     with self._get_session() as session:
-      url = self.BASE_URL + endpoint
+      url = self.BASE_URL + endpoint.value
       response = session.post(url=url, data=data)
       response.raise_for_status()
       return response.json()
 
 
-  def authenticate(self, username: t.AnyStr, password: t.AnyStr) -> t.AnyStr | None:
+  def authenticate(self, username: str, password: str) -> str | None:
     """
     Authenticate with TCAP services and obtain a JWT token
     """
@@ -127,7 +131,7 @@ class TATHashListAPI:
 
     try:
       auth_response = self._post(
-        TATEndpoint.authenticate.value, 
+        TATEndpoint.authenticate, 
         data={"username": username, "password": password, "resend": False}
       )
       return auth_response.get("token")
@@ -138,7 +142,7 @@ class TATHashListAPI:
 
 
 
-  def get_hash_list(self, ideology: TATIdeology = TATIdeology._all.value) -> TATHashListResponse | None:
+  def get_hash_list(self, ideology: TATIdeology = TATIdeology._all) -> TATHashListResponse | TATAPIErrorResponse:
     """
     Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata: TATHashListResponse
     """
@@ -149,23 +153,23 @@ class TATHashListAPI:
       if token is not None:
         logging.info("Fetching hash list")
         response = self._get(
-          f"{TATEndpoint.hash_list.value}/{ideology}",
+          TATEndpoint.hash_list,
           auth_token=token
         )
         
-        return response
+        return TATHashListResponse(**response)
     
       else:
         logging.error("Error getting hash list: %s", e)
         raise Exception("Unable authenticating with TCAP")
 
     except requests.exceptions.HTTPError as http_err:
-        return {"http_error": str(http_err)}
+        return TATAPIErrorResponse(error=str(http_err))
       
       
     except Exception as e:
       logging.error("Error getting hash list: %s", e)
-      return {"error": str(e)}
+      return TATAPIErrorResponse(error=str(e))
     
 
 
