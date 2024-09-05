@@ -13,6 +13,7 @@ from requests.packages.urllib3.util.retry import Retry
 
 # Maybe move to a common library someday
 from threatexchange.exchanges.clients.fb_threatexchange.api import TimeoutHTTPAdapter
+import requests
 
 
 class TATIdeology(Enum):
@@ -146,7 +147,7 @@ class TATHashListAPI:
         try:
             token = self.authenticate(self.username, self.password)
 
-            endpoint = TATEndpoint.hash_list.value + ideology
+            endpoint = f"{TATEndpoint.hash_list.value}/{ideology}"
 
             print("ENDPOINT", endpoint)
 
