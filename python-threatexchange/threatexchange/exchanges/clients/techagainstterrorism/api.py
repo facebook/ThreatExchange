@@ -59,6 +59,9 @@ class TATHashListAPI:
     This API delivers a JSON file containing a comprehensive list of all hashed terrorist content within the TAT system.
 
     The list is refreshed daily.
+
+    For more information on our collection process please visit: https://terrorismanalytics.org/about/how-it-works
+    Our Hash List documentation: https://terrorismanalytics.org/docs/hash-list-v1
     """
 
     BASE_URL: t.ClassVar[str] = "https://beta.terrorismanalytics.org/"
