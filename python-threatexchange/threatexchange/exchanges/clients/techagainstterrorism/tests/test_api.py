@@ -11,7 +11,7 @@ from threatexchange.exchanges.clients.techagainstterrorism.api import (
 
 def mock_get_hash_list(
     ideology: str = TATIdeology._all.value,
-) -> t.Union[TATHashListResponse, dict[str, str]]:
+) -> t.Union[TATHashListResponse, t.Dict[str, str]]:
 
     if ideology not in TATIdeology._value2member_map_:
         return {
@@ -27,14 +27,14 @@ def mock_get_hash_list(
     )
 
 
-def mock_authenticate() -> str | None:
+def mock_get_auth_token() -> str:
     return "mock_token"
 
 
 @pytest.fixture
 def api(monkeypatch) -> TATHashListAPI:
     api_instance = TATHashListAPI(username="valid_user", password="valid_pass")
-    monkeypatch.setattr(api_instance, "authenticate", mock_authenticate)
+    monkeypatch.setattr(api_instance, "get_auth_token", mock_get_auth_token)
     monkeypatch.setattr(api_instance, "get_hash_list", mock_get_hash_list)
     return api_instance
 

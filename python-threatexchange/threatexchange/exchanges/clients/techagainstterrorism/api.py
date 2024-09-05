@@ -5,15 +5,13 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+import requests
 import logging
 import typing as t
 from contextlib import contextmanager
 import requests
 from requests.packages.urllib3.util.retry import Retry
-
-# Maybe move to a common library someday
-from threatexchange.exchanges.clients.fb_threatexchange.api import TimeoutHTTPAdapter
-import requests
+from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
 
 class TATIdeology(Enum):
@@ -33,14 +31,12 @@ class TATHashListResponse:
     file_name: str
     created_on: datetime
     total_hashes: int
-    ideology: t.Union[
-        TATIdeology._all.value, TATIdeology.far_right.value, TATIdeology.islamist.value
-    ]
+    ideology: str
 
 
 @dataclass
 class TATUser:
-    user: t.Any
+    user: t.Dict[str, t.Any]
     token: str
 
 
@@ -61,7 +57,7 @@ class TATHashListAPI:
     The list is refreshed daily.
 
     For more information on our collection process please visit: https://terrorismanalytics.org/about/how-it-works
-    Our Hash List documentation: https://terrorismanalytics.org/docs/hash-list-v1
+    For our Hash List documentation: https://terrorismanalytics.org/docs/hash-list-v1
     """
 
     BASE_URL: t.ClassVar[str] = "https://beta.terrorismanalytics.org/"
@@ -118,7 +114,7 @@ class TATHashListAPI:
             response.raise_for_status()
             return response.json()
 
-    def authenticate(self, username: str, password: str) -> t.Optional[str]:
+    def get_auth_token(self, username: str, password: str) -> t.Optional[str]:
         """
         Authenticate with TCAP services and obtain a JWT token
         """
@@ -129,44 +125,29 @@ class TATHashListAPI:
 
         logging.info("Authenticating with TCAP: %s", username)
 
-        try:
-            auth_response = self._post(
-                TATEndpoint.authenticate,
-                data={"username": username, "password": password, "resend": False},
-            )
-            return auth_response.get("token")
+        auth_response = self._post(
+            TATEndpoint.authenticate,
+            data={"username": username, "password": password, "resend": False},
+        )
+        return auth_response.get("token")
 
-        except Exception as e:
-            logging.error("Error authenticating with TCAP: %s", e)
-            return None
 
-    def get_hash_list(
-        self, ideology: str = TATIdeology._all.value
-    ) -> t.Union[TATHashListResponse, TATAPIErrorResponse]:
+    def get_hash_list(self, ideology: str = TATIdeology._all.value) -> TATHashListResponse:
         """
         Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata: TATHashListResponse
         """
 
         try:
-            token = self.authenticate(self.username, self.password)
-
+            token = self.get_auth_token(self.username, self.password)
             endpoint = f"{TATEndpoint.hash_list.value}/{ideology}"
 
-            print("ENDPOINT", endpoint)
+            logging.info("Fetching hash list")
+            response = self._get(endpoint, auth_token=token)
 
-            if token is not None:
-                logging.info("Fetching hash list")
-                response = self._get(endpoint, auth_token=token)
+            return TATHashListResponse(**response)
 
-                return TATHashListResponse(**response)
+        except Exception as exception:
+            logging.error("Failed to get hash list: %s", exception)
+            raise Exception("Failed to fetch Hash List: %s", exception)
 
-            else:
-                logging.error("Authentication failed")
-                raise Exception("Unable authenticating with TCAP")
 
-        except requests.exceptions.HTTPError as http_err:
-            return TATAPIErrorResponse(error=str(http_err))
-
-        except Exception as e:
-            logging.error("Error getting hash list: %s", e)
-            return TATAPIErrorResponse(error=str(e))
