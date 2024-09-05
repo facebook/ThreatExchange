@@ -131,8 +131,9 @@ class TATHashListAPI:
         )
         return auth_response.get("token")
 
-
-    def get_hash_list(self, ideology: str = TATIdeology._all.value) -> TATHashListResponse:
+    def get_hash_list(
+        self, ideology: str = TATIdeology._all.value
+    ) -> TATHashListResponse:
         """
         Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata: TATHashListResponse
         """
@@ -149,5 +150,3 @@ class TATHashListAPI:
         except Exception as exception:
             logging.error("Failed to get hash list: %s", exception)
             raise Exception("Failed to fetch Hash List: %s", exception)
-
-
