@@ -9,15 +9,12 @@ TODO: Slim down to only what we need
 import copy
 import json
 import typing as t
-import os
-import pathlib
 import re
 
 import urllib.parse
 import urllib.error
 
 import requests
-from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 

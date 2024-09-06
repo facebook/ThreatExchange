@@ -149,4 +149,4 @@ class TATHashListAPI:
 
         except Exception as exception:
             logging.error("Failed to get hash list: %s", exception)
-            raise Exception("Failed to fetch Hash List: %s", exception)
+            raise

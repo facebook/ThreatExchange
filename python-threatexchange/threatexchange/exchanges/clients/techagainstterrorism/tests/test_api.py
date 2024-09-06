@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import typing as t
 import pytest
 from datetime import datetime
