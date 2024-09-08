@@ -9,16 +9,14 @@ TODO: Slim down to only what we need
 import copy
 import json
 import typing as t
-import os
-import pathlib
 import re
 
 import urllib.parse
 import urllib.error
 
 import requests
-from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
 
 from .api_representations import ThreatPrivacyGroup
@@ -27,22 +25,6 @@ from .api_representations import ThreatPrivacyGroup
 def is_valid_app_token(token: str) -> bool:
     """Returns true if the string looks like a valid token"""
     return bool(re.match("[0-9]{8,}(?:%7C|\\|)[a-zA-Z0-9_\\-]{20,}", token))
-
-
-class TimeoutHTTPAdapter(HTTPAdapter):
-    """
-    Plug into requests to get a well-behaved session that does not wait for eternity.
-    H/T: https://findwork.dev/blog/advanced-usage-python-requests-timeouts-retries-hooks/#setting-default-timeouts
-    """
-
-    def __init__(self, *args, timeout=5, **kwargs):
-        self.timeout = timeout
-        super().__init__(*args, **kwargs)
-
-    def send(self, request, *, timeout=None, **kwargs):
-        if timeout is None:
-            timeout = self.timeout
-        return super().send(request, timeout=timeout, **kwargs)
 
 
 class _CursoredResponse:
