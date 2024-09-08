@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-import enum
+from enum import Enum
 import requests
 import logging
 import typing as t
@@ -14,7 +14,7 @@ from requests.packages.urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
 
-class TATIdeology(enum.Enum):
+class TATIdeology(Enum):
     islamist = "islamist"
     far_right = "far-right"
     _all = "all"
@@ -35,30 +35,12 @@ class TATHashListResponse:
 
 
 @dataclass
-class TATHashRecord:
-    id: int
-    hash_digest: str
-    algorithim: str
-    ideology: str
-    file_type: str
-
-
-@enum.unique
-class TATSignalType(enum.Enum):
-    """What the serialized hash represents"""
-
-    Unknown = "Unknown"
-    PDQ = "ImagePDQ"
-    MD5 = "VideoMD5"
-
-
-@dataclass
 class TATUser:
     user: t.Dict[str, t.Any]
     token: str
 
 
-class TATEndpoint(enum.Enum):
+class TATEndpoint(Enum):
     authenticate = "token-auth/tcap/"
     hash_list = "api/hash-list"
 

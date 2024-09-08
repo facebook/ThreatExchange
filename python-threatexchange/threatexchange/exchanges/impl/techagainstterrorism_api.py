@@ -16,7 +16,6 @@ from threatexchange.exchanges.collab_config import (
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
-<<<<<<< HEAD
 from threatexchange.signal_type.url import URLSignal
 from threatexchange.signal_type.raw_text import RawTextSignal
 
@@ -58,8 +57,6 @@ class TATSignalMetadata(state.FetchedSignalMetadata):
     """
 
     pass
-=======
->>>>>>> e2dcfcaf (impl working correctly)
 
 _API_NAME: str = "tat"
 _TypedDelta = state.FetchDelta[
