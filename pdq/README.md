@@ -1,4 +1,5 @@
 # PDQ reference implementation
+<img src="./pdq_blue_transparent.png" width="256">
 
 ## Description
 
