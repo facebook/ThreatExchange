@@ -4,6 +4,9 @@
 
 
 from functools import lru_cache
+import json
+import tempfile
+import requests
 import time
 import typing as t
 from dataclasses import dataclass, field
@@ -55,6 +58,11 @@ class TATCheckpoint(
 
 
 @dataclass
+class TATSignalMetadata(state.FetchedSignalMetadata):
+   """ Not sure what should live here """
+   pass
+
+@dataclass
 class TATCredentials(auth.CredentialHelper):
   ENV_VARIABLE: t.ClassVar[str] = "TX_TAT_CREDENTIALS"
   FILE_NAME: t.ClassVar[str] = "~/.tx_tat_credentials"
@@ -73,7 +81,11 @@ class TATCredentials(auth.CredentialHelper):
 
 class TATSignalExchangeAPI(
   auth.SignalExchangeWithAuth[CollaborationConfigBase, TATCredentials],
-  signal_exchange_api.SignalExchangeAPIWithSimpleUpdates[TATCheckpoint, CollaborationConfigBase],
+  signal_exchange_api.SignalExchangeAPIWithSimpleUpdates[
+     CollaborationConfigBase,
+     TATCheckpoint, 
+     TATSignalMetadata
+    ],
 ):
   
   def __init__(self, username, password) -> None:
@@ -89,6 +101,10 @@ class TATSignalExchangeAPI(
   def get_checkpoint_cls() -> t.Type[TATCheckpoint]:
       return TATCheckpoint
   
+  @staticmethod
+  def get_record_cls() -> type[TATSignalMetadata]:
+     return TATSignalMetadata
+
   @classmethod
   def for_collab(
       cls,
@@ -114,7 +130,51 @@ class TATSignalExchangeAPI(
         self,
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
         checkpoint: t.Optional[TATCheckpoint],
-  ) -> t.Iterator[state.FetchDelta[ t.Tuple[str, str], TATCheckpoint]]:
+  ) -> t.Iterator[state.FetchDelta[
+          t.Tuple[str, str], 
+          TATSignalMetadata,
+          TATCheckpoint
+        ]
+     ]:
+
+     """
+      The TAT Hash List returns a pre-signed URL to a JSON file containing a list of hashes. 
+      As well as some metadata about the hash list and information about the hashes themselves including the requested ideology.
+
+     1. Fetch the hash list from the TAT API
+      
+     2. Download the JSON file from the presigned URL
+     
+     3. Read the JSON file and load into memory
+
+     4. Yield the delta mapping
+     """
+
      client = self.get_client()
-     return None
-  
+     result = client.get_hash_list()
+
+     # Download the JSON file from the presigned URL
+     response = requests.get(result.file_url)
+     response.raise_for_status()
+
+     with tempfile.NamedTemporaryFile(delete=True) as f:
+        f.write(response.content)
+        f.close()
+
+        # Read the JSON file and load into memory
+        with open(f.name, "r") as file:
+          data = json.load(file)
+
+          translated = (_get_delta_mapping(entry) for entry in data)
+          yield state.FetchDelta(
+              dict(t for t in translated if t[0][0]),
+              checkpoint=TATCheckpoint.from_tat_fetch(result)
+            )
+
+
+def _get_delta_mapping(
+    record: api.TATHashRecord,
+) -> t.Tuple[t.Tuple[str, str], t.Optional[TATSignalMetadata]]:
+
+    metadata = None # Unsure at this time 
+    return ((str(record.id), record.hash_digest), metadata)
