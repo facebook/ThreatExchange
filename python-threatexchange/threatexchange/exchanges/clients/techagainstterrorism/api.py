@@ -33,6 +33,7 @@ class TATHashListResponse:
     total_hashes: int
     ideology: str
 
+
 @dataclass
 class TATHashRecord:
     id: int
