@@ -13,6 +13,7 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
+
 class TATIdeology(Enum):
     islamist = "islamist"
     far_right = "far-right"
@@ -99,11 +100,11 @@ class TATHashListAPI:
             session.close()
 
     def _get(
-        self, 
-        endpoint: t.Optional[str] = None, 
-        auth_token: t.Optional[str] = None, 
-        full_url: t.Optional[str] = None
-        ) -> t.Any:
+        self,
+        endpoint: t.Optional[str] = None,
+        auth_token: t.Optional[str] = None,
+        full_url: t.Optional[str] = None,
+    ) -> t.Any:
         """
         Perform an HTTP GET request, and return the JSON response payload.
 
