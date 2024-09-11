@@ -13,7 +13,6 @@ import requests
 from requests.packages.urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
-
 class TATIdeology(Enum):
     islamist = "islamist"
     far_right = "far-right"
@@ -99,14 +98,20 @@ class TATHashListAPI:
         finally:
             session.close()
 
-    def _get(self, endpoint: str, auth_token: t.Optional[str] = None) -> t.Any:
+    def _get(
+        self, 
+        endpoint: t.Optional[str] = None, 
+        auth_token: t.Optional[str] = None, 
+        full_url: t.Optional[str] = None
+        ) -> t.Any:
         """
         Perform an HTTP GET request, and return the JSON response payload.
 
         Same timeouts and retry strategy as `_get_session` above.
         """
+
         with self._get_session(auth_token) as session:
-            url = self.BASE_URL + endpoint
+            url = full_url if full_url else self.BASE_URL + (endpoint or "")
             response = session.get(url=url)
             response.raise_for_status()
             return response.json()
@@ -142,9 +147,9 @@ class TATHashListAPI:
 
     def get_hash_list(
         self, ideology: str = TATIdeology._all.value
-    ) -> TATHashListResponse:
+    ) -> t.List[TATHashRecord]:
         """
-        Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata: TATHashListResponse
+        Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata
         """
 
         try:
@@ -152,9 +157,14 @@ class TATHashListAPI:
             endpoint = f"{TATEndpoint.hash_list.value}/{ideology}"
 
             logging.info("Fetching hash list")
+
+            # Get the hash list request response
             response = self._get(endpoint, auth_token=token)
 
-            return TATHashListResponse(**response)
+            # Use the pre-signed url from the response to download the hash list values
+            hash_list = self._get(full_url=response["file_url"])
+
+            return hash_list
 
         except Exception as exception:
             logging.error("Failed to get hash list: %s", exception)

@@ -36,15 +36,19 @@ class TATCheckpoint(state.FetchCheckpointBase):
 
     The Hash List is updated nightly and new hashes are appended to the list.
 
-    For more information on our collection process please visit: https://terrorismanalytics.org/about/how-it-works
-    For our Hash List documentation: https://terrorismanalytics.org/docs/hash-list-v1
+    For more information on our collection process please visit: 
+    - https://terrorismanalytics.org/about/how-it-works
+
+    For our Hash List documentation: 
+    - https://terrorismanalytics.org/docs/hash-list-v1
     """
 
     last_fetch_time: int
 
     def is_stale(self) -> bool:
         """
-        Consider stale after 24 hours of not fetching
+        Given out hash list API does not support incremental fetching, 
+        the fetch will always be stale.
         """
         return time.time() - self.last_fetch_time > 3600 * 24
 
@@ -55,7 +59,9 @@ class TATCheckpoint(state.FetchCheckpointBase):
 
 @dataclass
 class TATSignalMetadata(state.FetchedSignalMetadata):
-    """Not sure what should live here"""
+    """ 
+    Our current Hash List API does not support tags and is a broadcast API only.
+    """
 
     pass
 
@@ -126,16 +132,7 @@ class TATSignalExchangeAPI(
         state.FetchDelta[t.Tuple[str, str], TATSignalMetadata, TATCheckpoint]
     ]:
         """
-         The TAT Hash List returns a pre-signed URL to a JSON file containing a list of hashes.
-         As well as some metadata about the hash list and information about the hashes themselves including the requested ideology.
-
-        1. Fetch the hash list from the TAT API
-
-        2. Download the JSON file from the presigned URL
-
-        3. Read the JSON file and load into memory
-
-        4. Yield the delta mapping
+         The TAT Hash List returns a JSON file containing all hashes in our system.
         """
 
         client = self.get_client()
