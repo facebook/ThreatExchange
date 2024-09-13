@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+import enum
 import requests
 import logging
 import typing as t
@@ -14,7 +14,7 @@ from requests.packages.urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
 
-class TATIdeology(Enum):
+class TATIdeology(enum.Enum):
     islamist = "islamist"
     far_right = "far-right"
     _all = "all"
@@ -42,6 +42,13 @@ class TATHashRecord:
     ideology: str
     file_type: str
 
+@enum.unique
+class TATSignalType(enum.Enum):
+    """What the serialized hash represents"""
+
+    Unknown = "Unknown"
+    PDQ = "ImagePDQ"
+    MD5 = "VideoMD5"
 
 @dataclass
 class TATUser:
@@ -49,7 +56,7 @@ class TATUser:
     token: str
 
 
-class TATEndpoint(Enum):
+class TATEndpoint(enum.Enum):
     authenticate = "token-auth/tcap/"
     hash_list = "api/hash-list"
 
@@ -136,7 +143,7 @@ class TATHashListAPI:
 
         if not isinstance(username, str) or not isinstance(password, str):
             logging.error("Username or password not valid")
-            return None
+            raise ValueError("Username or password not valid")
 
         logging.info("Authenticating with TCAP: %s", username)
 
@@ -148,7 +155,7 @@ class TATHashListAPI:
 
     def get_hash_list(
         self, ideology: str = TATIdeology._all.value
-    ) -> t.List[TATHashRecord]:
+    ) -> t.List[t.Dict[str, str]]:
         """
         Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata
         """
@@ -157,7 +164,7 @@ class TATHashListAPI:
             token = self.get_auth_token(self.username, self.password)
             endpoint = f"{TATEndpoint.hash_list.value}/{ideology}"
 
-            logging.info("Fetching hash list")
+            logging.info("Fetching TAT hash list")
 
             # Get the hash list request response
             response = self._get(endpoint, auth_token=token)

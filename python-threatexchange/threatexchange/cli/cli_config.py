@@ -42,6 +42,7 @@ class CLiConfig:
 
     fb_threatexchange_api_token: t.Optional[str] = None
     ncmec_credentials: t.Optional[t.Tuple[str, str]] = None
+    tat_credentials: t.Optional[t.Tuple[str, str]] = None
     stop_ncii_keys: t.Optional[StopNCIICredentials] = None
     extensions: t.Set[str] = field(default_factory=set)
     # Every item needs a default for backwards compatibility
