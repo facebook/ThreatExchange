@@ -16,47 +16,6 @@ from threatexchange.exchanges.collab_config import (
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
-from threatexchange.signal_type.url import URLSignal
-from threatexchange.signal_type.raw_text import RawTextSignal
-
-
-@dataclass
-class TATCheckpoint(state.FetchCheckpointBase):
-    """
-    Tech Against Terrorism Hash List revolves around fetching
-    a JSON file which contains a list of hashes. The pre-signed URL
-    for the JSON file is returned from the API response.
-
-    The Hash List is updated nightly and new hashes are appended to the list.
-
-    For more information on our collection process please visit: 
-    - https://terrorismanalytics.org/about/how-it-works
-
-    For our Hash List documentation: 
-    - https://terrorismanalytics.org/docs/hash-list-v1
-    """
-
-    last_fetch_time: int
-
-    def is_stale(self) -> bool:
-        """
-        Given out hash list API does not support incremental fetching, 
-        the fetch will always be stale.
-        """
-        return time.time() - self.last_fetch_time > 3600 * 24
-
-    @classmethod
-    def from_tat_fetch(cls, response: api.TATHashListResponse) -> "TATCheckpoint":
-        return cls(int(response.created_on.timestamp()))
-
-
-@dataclass
-class TATSignalMetadata(state.FetchedSignalMetadata):
-    """ 
-    Our current Hash List API does not support tags and is a broadcast API only.
-    """
-
-    pass
 
 _API_NAME: str = "tat"
 _TypedDelta = state.FetchDelta[
@@ -68,8 +27,8 @@ _TypedDelta = state.FetchDelta[
 
 @dataclass
 class TATCredentials(auth.CredentialHelper):
-    ENV_VARIABLE: t.ClassVar[str] = "TX_TAT_CREDENTIALS"
-    FILE_NAME: t.ClassVar[str] = "~/.tx_tat_credentials"
+    ENV_VARIABLE: t.ClassVar[str] = "PYTX_TAT_CREDENTIALS"
+    FILE_NAME: t.ClassVar[str] = "~/.pytx_tat_credentials"
 
     username: str
     password: str
