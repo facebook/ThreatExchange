@@ -42,6 +42,7 @@ class TATHashRecord:
     ideology: str
     file_type: str
 
+
 @enum.unique
 class TATSignalType(enum.Enum):
     """What the serialized hash represents"""
@@ -49,6 +50,7 @@ class TATSignalType(enum.Enum):
     Unknown = "Unknown"
     PDQ = "ImagePDQ"
     MD5 = "VideoMD5"
+
 
 @dataclass
 class TATUser:

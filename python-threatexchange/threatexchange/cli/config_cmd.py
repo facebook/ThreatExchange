@@ -692,7 +692,11 @@ class ConfigTATAPICommand(command_base.Command):
 class ConfigAPICommand(command_base.CommandWithSubcommands):
     """Configure and view available SignalExchangeAPIs"""
 
-    _SUBCOMMANDS = [ConfigThreatExchangeAPICommand, ConfigNCMECAPICommand, ConfigTATAPICommand]
+    _SUBCOMMANDS = [
+        ConfigThreatExchangeAPICommand,
+        ConfigNCMECAPICommand,
+        ConfigTATAPICommand,
+    ]
 
     @classmethod
     def get_name(cls) -> str:

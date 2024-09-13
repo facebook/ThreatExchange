@@ -62,7 +62,7 @@ from threatexchange.exchanges.impl.ncmec_api import (
 )
 from threatexchange.exchanges.impl.techagainstterrorism_api import (
     TATCredentials,
-    TATSignalExchangeAPI
+    TATSignalExchangeAPI,
 )
 
 from threatexchange.content_type import photo, video, text, url
@@ -173,7 +173,7 @@ def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
 
     if config.fb_threatexchange_api_token:
         te_creds = FBThreatExchangeCredentials(config.fb_threatexchange_api_token)
-        
+
     if config.ncmec_credentials:
         ncmec_creds = NCMECCredentials(*config.ncmec_credentials)
 
@@ -188,7 +188,7 @@ def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
         stop_ncii_creds, cfg_cmd(StopNCIISignalExchangeAPI, "<TBD>")  # TODO
     ), TATCredentials.set_default(
         tat_creds, cfg_cmd(TATSignalExchangeAPI, "--user --pass")
-    ) :
+    ):
         try:
             yield
         except SignalExchangeAPIInvalidAuthException as ia:
@@ -254,7 +254,7 @@ def _get_settings(
         StopNCIISignalExchangeAPI,
         NCMECSignalExchangeAPI,
         FBThreatExchangeSignalExchangeAPI,
-        TATSignalExchangeAPI
+        TATSignalExchangeAPI,
     ]
     apis = interface_validation.SignalExchangeAPIMapping(
         base_apis + extensions.api_types
