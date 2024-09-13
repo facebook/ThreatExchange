@@ -12,7 +12,6 @@ from threatexchange.exchanges import signal_exchange_api
 from threatexchange.exchanges import auth
 from threatexchange.exchanges.collab_config import (
     CollaborationConfigWithDefaults,
-    CollaborationConfigWithDefaults,
 )
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
