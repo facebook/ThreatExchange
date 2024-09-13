@@ -106,11 +106,11 @@ class TATSignalExchangeAPI(
         return state.NoCheckpointing
 
     @staticmethod
-    def get_record_cls() -> type[state.FetchedSignalMetadata]:
+    def get_record_cls() -> t.Type[state.FetchedSignalMetadata]:
         return state.FetchedSignalMetadata
 
     @staticmethod
-    def get_credential_cls() -> type[TATCredentials]:
+    def get_credential_cls() -> t.Type[TATCredentials]:
         return TATCredentials
 
     @classmethod
