@@ -119,3 +119,5 @@ $ threatexchange config extensions remove threatexchangecontributions.myproject
 # Oh no I broke everything and am filled with sadness and regret!
 $ rm ~/.threatexchange  # factory reset
 ```
+
+There is also a helper for testing new implementations of SignalType in `/threatexchange/signal_type/tests/signal_type_test_helper.py`. We strongly recommend you use this test to prove your SignalType implementation works as expected.
