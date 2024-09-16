@@ -107,10 +107,10 @@ class TATSignalExchangeAPI(
 def _is_compatible_signal_type(record: t.Dict[str, str]) -> bool:
     compatible_video_types = ["mov", "m4v", "mp4", "webm"]
 
-    if record["algorithm"] == "MD5":
+    if record["algorithim"] == "MD5":
         return record["file_type"] in compatible_video_types
 
-    return record["algorithm"] == "PDQ"
+    return record["algorithim"] == "PDQ"
 
 
 def _type_mapping() -> t.Dict[str, str]:

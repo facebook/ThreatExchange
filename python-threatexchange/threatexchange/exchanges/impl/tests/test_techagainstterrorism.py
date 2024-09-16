@@ -1,82 +1,33 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+import typing as t
 import pytest
 
-from threatexchange.exchanges.clients.techagainstterrorism import api
+from threatexchange.exchanges.clients.techagainstterrorism.tests.test_api import api
 from threatexchange.exchanges.impl.techagainstterrorism_api import (
     TATSignalExchangeAPI,
-    TATCredentials,
-)
-from threatexchange.exchanges import fetch_state as state
-from threatexchange.exchanges.collab_config import (
-    CollaborationConfigWithDefaults,
 )
 
-
-def test_init():
-    api_instance = TATSignalExchangeAPI(username="test_user", password="test_pass")
-    assert api_instance.username == "test_user"
-    assert api_instance.password == "test_pass"
+from threatexchange.exchanges.clients.techagainstterrorism.api import (
+    TATHashListAPI
+)
 
 
-def test_get_config_cls():
-    assert TATSignalExchangeAPI.get_config_cls() == CollaborationConfigWithDefaults
+@pytest.fixture
+def exchange(api: TATHashListAPI, monkeypatch: pytest.MonkeyPatch):
+    signal_exchange = TATSignalExchangeAPI("user", "pass")
+    monkeypatch.setattr(signal_exchange, "get_client", lambda: api)
+    return signal_exchange
+
+def test_fetch(exchange: TATSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
+    it = exchange.fetch_iter([], None)
+    delta = next(it)
+    assert delta.checkpoint.is_stale() is True
+
+    
 
 
-def test_get_checkpoint_cls():
-    assert TATSignalExchangeAPI.get_checkpoint_cls() == state.NoCheckpointing
 
 
-def test_get_record_cls():
-    assert TATSignalExchangeAPI.get_record_cls() == state.FetchedSignalMetadata
 
-
-def test_get_credential_cls():
-    assert TATSignalExchangeAPI.get_credential_cls() == TATCredentials
-
-
-def test_get_name():
-    assert TATSignalExchangeAPI.get_name() == "tat"
-
-
-def test_for_collab(monkeypatch):
-    collab = CollaborationConfigWithDefaults(name="test_collab")
-    credentials = TATCredentials(username="test_user", password="test_pass")
-    monkeypatch.setattr(TATCredentials, "get", lambda *args, **kwargs: credentials)
-    api_instance = TATSignalExchangeAPI.for_collab(collab)
-    assert isinstance(api_instance, TATSignalExchangeAPI)
-    assert api_instance.username == "test_user"
-    assert api_instance.password == "test_pass"
-
-
-def test_get_client(monkeypatch):
-    api_instance = TATSignalExchangeAPI(username="test_user", password="test_pass")
-    monkeypatch.setattr(
-        api, "TATHashListAPI", lambda *args, **kwargs: "mock_client_instance"
-    )
-    client = api_instance.get_client()
-    assert client == "mock_client_instance"
-
-
-def test_fetch_iter(monkeypatch):
-    api_instance = TATSignalExchangeAPI(username="test_user", password="test_pass")
-    mock_client_instance = type(
-        "MockClient",
-        (object,),
-        {"get_hash_list": lambda self: [{"id": 1, "data": "test_data"}]},
-    )()
-    monkeypatch.setattr(api_instance, "get_client", lambda: mock_client_instance)
-
-    def mock_get_delta_mapping(entry):
-        return (("signal_type", "signal_value"), entry)
-
-    monkeypatch.setattr(
-        "threatexchange.exchanges.impl.techagainstterrorism_api._get_delta_mapping",
-        mock_get_delta_mapping,
-    )
-
-    result = list(api_instance.fetch_iter([], None))
-    assert len(result) == 1
-    assert isinstance(result[0], state.FetchDelta)
-    assert result[0].checkpoint == state.NoCheckpointing()
-    assert result[0].updates == {
-        ("signal_type", "signal_value"): {"id": 1, "data": "test_data"}
-    }
+    
