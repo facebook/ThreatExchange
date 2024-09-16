@@ -33,12 +33,8 @@ def test_get_credential_cls():
     assert TATSignalExchangeAPI.get_credential_cls() == TATCredentials
 
 
-def test_get_name(monkeypatch):
-    monkeypatch.setattr(
-        "threatexchange.exchanges.impl.techagainstterrorism_api._API_NAME",
-        "test_api_name",
-    )
-    assert TATSignalExchangeAPI.get_name() == "test_api_name"
+def test_get_name():
+    assert TATSignalExchangeAPI.get_name() == "tat"
 
 
 def test_for_collab(monkeypatch):

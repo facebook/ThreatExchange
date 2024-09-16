@@ -17,7 +17,6 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-_API_NAME: str = "tat"
 _TypedDelta = state.FetchDelta[
     t.Tuple[str, str],
     state.FetchedSignalMetadata,
@@ -74,7 +73,7 @@ class TATSignalExchangeAPI(
 
     @classmethod
     def get_name(cls) -> str:
-        return _API_NAME
+        return "tat"
 
     @classmethod
     def for_collab(
