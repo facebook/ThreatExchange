@@ -675,10 +675,7 @@ class ConfigTATAPICommand(command_base.Command):
             help="set the username and password to access the Tech Against Terrorism API",
         )
 
-    def __init__(
-        self,
-        credentials: t.Tuple[str, str]
-    ) -> None:
+    def __init__(self, credentials: t.Tuple[str, str]) -> None:
         self.credentials = (credentials[0], credentials[1]) if credentials else None
 
     def execute(self, settings: CLISettings) -> None:
