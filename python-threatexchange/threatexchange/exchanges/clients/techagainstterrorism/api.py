@@ -101,10 +101,11 @@ class TATHashListAPI:
 
         Same timeouts and retry strategy as `_get_session` above.
         """
+        if not full_url:
+            full_url = self.BASE_URL + (endpoint or "")
 
         with self._get_session(auth_token) as session:
-            url = full_url if full_url else self.BASE_URL + (endpoint or "")
-            response = session.get(url=url)
+            response = session.get(url=full_url)
             response.raise_for_status()
             return response.json()
 
