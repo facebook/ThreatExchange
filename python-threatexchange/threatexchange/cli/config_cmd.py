@@ -671,14 +671,13 @@ class ConfigTATAPICommand(command_base.Command):
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
         ap.add_argument(
             "--credentials",
-            metavar="STR",
             nargs=2,
             help="set the username and password to access the Tech Against Terrorism API",
         )
 
     def __init__(
         self,
-        credentials: t.List[str],
+        credentials: t.Tuple[str, str]
     ) -> None:
         self.credentials = (credentials[0], credentials[1]) if credentials else None
 
