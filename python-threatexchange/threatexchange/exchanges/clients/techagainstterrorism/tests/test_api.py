@@ -15,20 +15,20 @@ def mock_get_hash_list(
 
     return [
         {
-            "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "hash_digest": "12345abcdez",
+            "algorithm": "MD5",
             "ideology": ideology,
-            "file_type": "jpg",
+            "file_type": "mov",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "MD5",
             "ideology": ideology,
-            "file_type": "jpg",
+            "file_type": "m4v",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "PDQ",
             "ideology": ideology,
             "file_type": "jpg",
         },
@@ -52,20 +52,20 @@ def test_get_islamist_hash_list(api: TATHashListAPI) -> None:
 
     assert response == [
         {
-            "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "hash_digest": "12345abcdez",
+            "algorithm": "MD5",
             "ideology": "islamist",
-            "file_type": "jpg",
+            "file_type": "mov",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "MD5",
             "ideology": "islamist",
-            "file_type": "jpg",
+            "file_type": "m4v",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "PDQ",
             "ideology": "islamist",
             "file_type": "jpg",
         },
@@ -77,20 +77,20 @@ def test_get_far_right_hash_list(api: TATHashListAPI) -> None:
 
     assert response == [
         {
-            "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "hash_digest": "12345abcdez",
+            "algorithm": "MD5",
             "ideology": "far-right",
-            "file_type": "jpg",
+            "file_type": "mov",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "MD5",
             "ideology": "far-right",
-            "file_type": "jpg",
+            "file_type": "m4v",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "PDQ",
             "ideology": "far-right",
             "file_type": "jpg",
         },
@@ -102,20 +102,20 @@ def test_get_all_hash_list(api: TATHashListAPI) -> None:
 
     assert response == [
         {
-            "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "hash_digest": "12345abcdez",
+            "algorithm": "MD5",
             "ideology": "all",
-            "file_type": "jpg",
+            "file_type": "mov",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "MD5",
             "ideology": "all",
-            "file_type": "jpg",
+            "file_type": "m4v",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "PDQ",
             "ideology": "all",
             "file_type": "jpg",
         },
@@ -127,20 +127,20 @@ def test_get_default_hash_list(api: TATHashListAPI) -> None:
 
     assert response == [
         {
-            "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "hash_digest": "12345abcdez",
+            "algorithm": "MD5",
             "ideology": "all",
-            "file_type": "jpg",
+            "file_type": "mov",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "MD5",
             "ideology": "all",
-            "file_type": "jpg",
+            "file_type": "m4v",
         },
         {
             "hash_digest": "12345abcde",
-            "algorithim": "MD5",
+            "algorithm": "PDQ",
             "ideology": "all",
             "file_type": "jpg",
         },
