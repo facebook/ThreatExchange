@@ -126,10 +126,6 @@ class TATHashListAPI:
         Authenticate with TCAP services and obtain a JWT token
         """
 
-        if not isinstance(username, str) or not isinstance(password, str):
-            logging.error("Username or password not valid")
-            raise ValueError("Username or password not valid")
-
         logging.info("Authenticating with TCAP: %s", username)
 
         auth_response = self._post(
