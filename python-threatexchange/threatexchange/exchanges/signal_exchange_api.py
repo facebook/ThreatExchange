@@ -340,7 +340,7 @@ class SignalExchangeAPIWithSimpleUpdates(
                 logging.warning(
                     "Invalid fingerprint (%s): %s",
                     s_type.get_name(),
-                    signal_str,
+                    signal_str if len(signal_str) < 100 else signal_str[:100] + "...",
                 )
                 continue
             inner = ret.get(s_type)

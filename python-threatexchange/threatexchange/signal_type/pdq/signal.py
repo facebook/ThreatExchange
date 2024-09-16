@@ -110,5 +110,5 @@ class PdqSignal(
             # Github octocat - https://github.com/logos
             "62c9789627838f69f23cf98c29e37836d61c87c31c59587c4b49a783f496725c",
             # https://github.com/facebook/ThreatExchange/issues/1609 - bad entry
-            "00000000000000000000000000000000",
+            # "00000000000000000000000000000000",
         ]
