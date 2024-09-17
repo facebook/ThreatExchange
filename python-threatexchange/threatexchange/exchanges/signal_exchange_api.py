@@ -6,6 +6,8 @@ The SignalExchangeAPI talks to external APIs to read/write signals
 @see SignalExchangeAPI
 """
 
+import logging
+
 from abc import ABC, abstractmethod
 import typing as t
 
@@ -331,6 +333,15 @@ class SignalExchangeAPIWithSimpleUpdates(
         for (type_str, signal_str), metadata in fetched.items():
             s_type = type_by_name.get(type_str)
             if s_type is None or metadata is None:
+                continue
+            try:
+                s_type.validate_signal_str(signal_str)
+            except ValueError:
+                logging.warning(
+                    "Invalid fingerprint (%s): %s",
+                    s_type.get_name(),
+                    signal_str if len(signal_str) < 100 else signal_str[:100] + "...",
+                )
                 continue
             inner = ret.get(s_type)
             if inner is None:
