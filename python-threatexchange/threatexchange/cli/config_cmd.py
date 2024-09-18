@@ -28,6 +28,7 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.exchanges.impl.ncmec_api import NCMECSignalExchangeAPI
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.techagainstterrorism_api import TATSignalExchangeAPI
 from threatexchange.utils import dataclass_json
 
 
@@ -659,10 +660,39 @@ class ConfigNCMECAPICommand(command_base.Command):
             settings.set_persistent_config(config)
 
 
+class ConfigTATAPICommand(command_base.Command):
+    """Configure Tech Against Terrorism hash list api integration"""
+
+    @classmethod
+    def get_name(cls) -> str:
+        return TATSignalExchangeAPI.get_name()
+
+    @classmethod
+    def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
+        ap.add_argument(
+            "--credentials",
+            nargs=2,
+            help="set the username and password to access the Tech Against Terrorism API",
+        )
+
+    def __init__(self, credentials: t.Tuple[str, str]) -> None:
+        self.credentials = (credentials[0], credentials[1]) if credentials else None
+
+    def execute(self, settings: CLISettings) -> None:
+        if self.credentials is not None:
+            config = settings.get_persistent_config()
+            config.tat_credentials = self.credentials
+            settings.set_persistent_config(config)
+
+
 class ConfigAPICommand(command_base.CommandWithSubcommands):
     """Configure and view available SignalExchangeAPIs"""
 
-    _SUBCOMMANDS = [ConfigThreatExchangeAPICommand, ConfigNCMECAPICommand]
+    _SUBCOMMANDS = [
+        ConfigThreatExchangeAPICommand,
+        ConfigNCMECAPICommand,
+        ConfigTATAPICommand,
+    ]
 
     @classmethod
     def get_name(cls) -> str:

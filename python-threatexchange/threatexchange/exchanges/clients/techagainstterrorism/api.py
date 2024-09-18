@@ -90,15 +90,22 @@ class TATHashListAPI:
         finally:
             session.close()
 
-    def _get(self, endpoint: str, auth_token: t.Optional[str] = None) -> t.Any:
+    def _get(
+        self,
+        endpoint: t.Optional[str] = None,
+        auth_token: t.Optional[str] = None,
+        full_url: t.Optional[str] = None,
+    ) -> t.Any:
         """
         Perform an HTTP GET request, and return the JSON response payload.
 
         Same timeouts and retry strategy as `_get_session` above.
         """
+        if not full_url:
+            full_url = self.BASE_URL + (endpoint or "")
+
         with self._get_session(auth_token) as session:
-            url = self.BASE_URL + endpoint
-            response = session.get(url=url)
+            response = session.get(url=full_url)
             response.raise_for_status()
             return response.json()
 
@@ -119,10 +126,6 @@ class TATHashListAPI:
         Authenticate with TCAP services and obtain a JWT token
         """
 
-        if not isinstance(username, str) or not isinstance(password, str):
-            logging.error("Username or password not valid")
-            return None
-
         logging.info("Authenticating with TCAP: %s", username)
 
         auth_response = self._post(
@@ -133,19 +136,24 @@ class TATHashListAPI:
 
     def get_hash_list(
         self, ideology: str = TATIdeology._all.value
-    ) -> TATHashListResponse:
+    ) -> t.List[t.Dict[str, str]]:
         """
-        Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata: TATHashListResponse
+        Get the Hash List JSON file presigned URL ( 5 Minute expiry ) and metadata
         """
 
         try:
             token = self.get_auth_token(self.username, self.password)
             endpoint = f"{TATEndpoint.hash_list.value}/{ideology}"
 
-            logging.info("Fetching hash list")
+            logging.info("Fetching TAT hash list")
+
+            # Get the hash list request response
             response = self._get(endpoint, auth_token=token)
 
-            return TATHashListResponse(**response)
+            # Use the pre-signed url from the response to download the hash list values
+            hash_list = self._get(full_url=response["file_url"])
+
+            return hash_list
 
         except Exception as exception:
             logging.error("Failed to get hash list: %s", exception)

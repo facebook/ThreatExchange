@@ -60,6 +60,10 @@ from threatexchange.exchanges.impl.ncmec_api import (
     NCMECCredentials,
     NCMECSignalExchangeAPI,
 )
+from threatexchange.exchanges.impl.techagainstterrorism_api import (
+    TATCredentials,
+    TATSignalExchangeAPI,
+)
 
 from threatexchange.content_type import photo, video, text, url
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
@@ -161,6 +165,7 @@ def execute_command(settings: CLISettings, namespace) -> None:
 def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
     te_creds = None
     ncmec_creds = None
+    tat_creds = None
     stop_ncii_creds = config.stop_ncii_keys
 
     def cfg_cmd(src_api: t.Type[SignalExchangeAPI], flags: str) -> str:
@@ -168,8 +173,12 @@ def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
 
     if config.fb_threatexchange_api_token:
         te_creds = FBThreatExchangeCredentials(config.fb_threatexchange_api_token)
+
     if config.ncmec_credentials:
         ncmec_creds = NCMECCredentials(*config.ncmec_credentials)
+
+    if config.tat_credentials:
+        tat_creds = TATCredentials(*config.tat_credentials)
 
     with FBThreatExchangeCredentials.set_default(
         te_creds, cfg_cmd(FBThreatExchangeSignalExchangeAPI, "--api-token")
@@ -177,6 +186,8 @@ def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
         ncmec_creds, cfg_cmd(NCMECSignalExchangeAPI, "--user --pass")
     ), StopNCIICredentials.set_default(
         stop_ncii_creds, cfg_cmd(StopNCIISignalExchangeAPI, "<TBD>")  # TODO
+    ), TATCredentials.set_default(
+        tat_creds, cfg_cmd(TATSignalExchangeAPI, "--user --pass")
     ):
         try:
             yield
@@ -243,6 +254,7 @@ def _get_settings(
         StopNCIISignalExchangeAPI,
         NCMECSignalExchangeAPI,
         FBThreatExchangeSignalExchangeAPI,
+        TATSignalExchangeAPI,
     ]
     apis = interface_validation.SignalExchangeAPIMapping(
         base_apis + extensions.api_types
