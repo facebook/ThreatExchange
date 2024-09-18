@@ -19,7 +19,7 @@ import html
 import urllib.parse
 
 import requests
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
 
@@ -27,6 +27,7 @@ _DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%SZ"
 _DEFAULT_ELE = ET.Element("")
 
 T = t.TypeVar("T")
+FEEDBACK = t.List[t.Dict[str, str]]
 
 
 def nullthrows(v: t.Optional[T]) -> T:
@@ -131,6 +132,7 @@ class NCMECEntryUpdate:
     deleted: bool
     classification: t.Optional[str]
     fingerprints: t.Dict[str, str]
+    feedback: t.Optional[FEEDBACK]
 
     @classmethod
     def from_xml(cls, xml: _XMLWrapper) -> "NCMECEntryUpdate":
@@ -148,6 +150,18 @@ class NCMECEntryUpdate:
             fingerprints={
                 x.tag: x.text for x in xml.maybe("fingerprints") if x.has_text
             },
+            feedback=[
+                {
+                    "type": x.tag,  # "affirmativeFeedback" or "negativeFeedback"
+                    "members": x.maybe(
+                        "members"  # "timestamp", "member.id", "member.name"
+                    ),
+                    "reasons": x.maybe(
+                        "reasons"
+                    ),  # "reason" with "guid", "name", "type" | "members"
+                }
+                for x in xml.maybe("feedback")
+            ],
         )
 
 
@@ -213,6 +227,23 @@ class GetEntriesResponse:
             if info is None
             else info.max - info.start + len(self.updates)
         )
+
+
+# TODO: check http code until we have update response shape, we also might not care about it
+@dataclass
+class UpdateEntryResponse:
+    updates: t.List[NCMECEntryUpdate]
+
+    @classmethod
+    def from_xml(cls, xml: _XMLWrapper, fallback_max_time: int) -> "GetEntriesResponse":
+        updates: t.List[NCMECEntryUpdate] = []
+
+        for content_xml in (xml.maybe("images"), xml.maybe("videos")):
+            if not content_xml or not len(content_xml):
+                continue
+            updates.extend(NCMECEntryUpdate.from_xml(c) for c in content_xml)
+
+        return cls(updates)
 
 
 @unique
@@ -400,6 +431,14 @@ class NCMECHashAPI:
             next_ = result.next
             has_more = bool(next_)
             yield result
+
+    # TODO: split into 2, submit upvote and downvote
+    def submit_feedback(self, entry_id: str, is_good: bool) -> GetEntriesResponse:
+        # TODO
+        # 1. Prepare the XML payload
+        # 2. Send the POST request using _post
+        # 3. Parse the response using GetEntriesResponse.from_xml
+        return
 
 
 def _date_format(timestamp: int) -> str:
