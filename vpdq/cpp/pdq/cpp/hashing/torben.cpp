@@ -1,13 +1,15 @@
 // ================================================================
-// The following code is public domain.
-// Algorithm by Torben Mogensen, implementation by N. Devillard.
-// This code in public domain.
+// Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
 namespace facebook {
 namespace pdq {
 namespace hashing {
 
+/**
+ * The following code is public domain.
+ * Algorithm by Torben Mogensen, implementation by N. Devillard.
+ */
 float torben(float m[], int n) {
   int i, less, greater, equal;
   float min, max, guess, maxltguess, mingtguess;

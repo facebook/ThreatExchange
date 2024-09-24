@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 """${message}
 
 Revision ID: ${up_revision}

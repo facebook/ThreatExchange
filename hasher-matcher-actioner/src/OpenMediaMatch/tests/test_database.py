@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import typing as t
 from flask import Flask
 from sqlalchemy import select, and_
