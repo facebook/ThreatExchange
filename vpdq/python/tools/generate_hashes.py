@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import vpdq  # type: ignore
 from pathlib import Path
 from typing import Union, Sequence

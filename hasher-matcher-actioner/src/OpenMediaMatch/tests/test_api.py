@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import typing as t
 
 from flask.testing import FlaskClient
