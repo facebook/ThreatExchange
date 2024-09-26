@@ -7,6 +7,7 @@ import requests
 from threatexchange.exchanges.clients.ncmec.hash_api import (
     NCMECEntryType,
     NCMECEntryUpdate,
+    NCMECFeedbackType,
     NCMECHashAPI,
     NCMECEnvironment,
 )
@@ -185,7 +186,10 @@ def test_feedback_entries(monkeypatch):
     )
     monkeypatch.setattr(api, "_get_session", lambda: session)
 
-    result = api.submit_feedback("image1", True)
+    result = api.submit_feedback("image1", NCMECFeedbackType.md5, True)
+    result = api.submit_feedback(
+        "image1", NCMECFeedbackType.md5, False, "01234567-abcd-0123-4567-012345678900"
+    )
 
     assert len(result.updates) == 1
     update = result.updates[0]

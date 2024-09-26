@@ -27,7 +27,6 @@ _DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%SZ"
 _DEFAULT_ELE = ET.Element("")
 
 T = t.TypeVar("T")
-FEEDBACK = t.List[t.Dict[str, str]]
 
 
 def nullthrows(v: t.Optional[T]) -> T:
@@ -124,6 +123,19 @@ class NCMECEntryType(Enum):
     video = "video"
 
 
+@unique
+class NCMECFeedbackType(Enum):
+    md5 = "MD5"
+    sha1 = "SHA1"
+    pdna = "PDNA"
+    pdq = "PDQ"
+    netclean = "NETCLEAN"
+    Videntifier = "VIDENTIFIER"
+    tmk_pdqf = "TMK_PDQF"
+    ssvh_pdna = "SSVH_PDNA"
+    ssvh_safer_hash = "SSVH_SAFER_HASH"
+
+
 @dataclass
 class NCMECEntryUpdate:
     id: str
@@ -132,7 +144,7 @@ class NCMECEntryUpdate:
     deleted: bool
     classification: t.Optional[str]
     fingerprints: t.Dict[str, str]
-    feedback: t.Optional[FEEDBACK]
+    feedback: t.List[t.Dict[str, str]]
 
     @classmethod
     def from_xml(cls, xml: _XMLWrapper) -> "NCMECEntryUpdate":
@@ -297,10 +309,11 @@ class NCMECHashAPI:
         self.username = username
         self.password = password
         self._base_url = environment.value
+        self.member_id = None
 
     def _get_session(self) -> requests.Session:
         """
-        Custom requests sesson
+        Custom requests session
 
         Ideally, should be used within a context manager:
         ```
@@ -369,6 +382,7 @@ class NCMECHashAPI:
         """Query the status endpoint, which tells you who you are."""
         response = self._get(NCMECEndpoint.status)
         member = _XMLWrapper(response)["member"]
+        self.member_id = member.int("id")
         return StatusResult(member.int("id"), member.text)
 
     def members(self) -> t.List[StatusResult]:
@@ -433,9 +447,30 @@ class NCMECHashAPI:
             yield result
 
     # TODO: split into 2, submit upvote and downvote
-    def submit_feedback(self, entry_id: str, is_good: bool) -> GetEntriesResponse:
+    def submit_feedback(
+        self,
+        entry_id: str,
+        feedback_type: NCMECFeedbackType,
+        affirmative: bool,
+        reason_id: str = None,
+    ) -> GetEntriesResponse:
+        if not affirmative and not reason_id:
+            raise ValueError("Negative feedback must have a reason_id")
+
+        # need member_id to submit feedback
+        if not self.member_id:
+            self.status()
+
         # TODO
         # 1. Prepare the XML payload
+        root = ET.Element("feedbackSubmission")
+        root.set("xmlns", "https://hashsharing.ncmec.org/hashsharing/v2")
+        vote = ET.SubElement(root, "affirmative" if affirmative else "negative")
+        if not affirmative:
+            reasons = ET.SubElement(vote, "reasonIds")
+            guid = ET.SubElement(reasons, "guid")
+            guid.text = reason_id
+        # ET.dump(root)
         # 2. Send the POST request using _post
         # 3. Parse the response using GetEntriesResponse.from_xml
         return

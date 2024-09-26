@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 STATUS_XML = """
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <status xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
