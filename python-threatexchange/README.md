@@ -16,6 +16,14 @@ If you don't have `pip`, learn how to install it [here](https://pip.pypa.io/en/s
 $ python3 -m pip install threatexchange --upgrade
 ```
 
+### Docker File
+
+A Dockerfile is provided which allows you to run the CLI with minimal dependencies.
+
+```
+$ docker build --tag threatexchange .
+```
+
 # Introduction
 
 Trust and safety is a generally hard problem. An issue that makes the problem harder is that most platforms attempt to keep their platforms safe on their own, despite bad actors and viral content spreading from platform to platform. This results not only in duplicate effort in building out technical capability to detect harmful content, but also duplicate effort in preventing the spread of known harmful content, since each platform is fighting potentially the same copies of content on their own.
