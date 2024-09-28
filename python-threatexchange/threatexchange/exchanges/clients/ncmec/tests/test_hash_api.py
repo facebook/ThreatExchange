@@ -20,6 +20,7 @@ from threatexchange.exchanges.clients.ncmec.tests.data import (
     NEXT_UNESCAPED,
     NEXT_UNESCAPED2,
     NEXT_UNESCAPED3,
+    STATUS_XML,
     UPDATE_FEEDBACK_RESULT_XML,
 )
 
@@ -177,10 +178,25 @@ def test_large_fingerprint_entries(monkeypatch):
 
 
 def test_feedback_entries(monkeypatch):
-    api = NCMECHashAPI("fake_user", "fake_pass", NCMECEnvironment.test_Industry)
+    api = NCMECHashAPI(
+        "fake_user",
+        "fake_pass",
+        NCMECEnvironment.test_Industry,
+        "123",
+        {
+            NCMECFeedbackType.md5.value: [
+                {
+                    "guid": "01234567-abcd-0123-4567-012345678900",
+                    "name": "Example Reason 1",
+                    "type": "Sha1",
+                }
+            ]
+        },
+    )
     session = Mock(
-        strict_spec=["post", "__enter__", "__exit__"],
-        post=set_api_return(UPDATE_FEEDBACK_RESULT_XML),
+        strict_spec=["get", "put", "__enter__", "__exit__"],
+        get=set_api_return(STATUS_XML),
+        put=set_api_return(UPDATE_FEEDBACK_RESULT_XML),
         __enter__=lambda _: session,
         __exit__=lambda *args: None,
     )

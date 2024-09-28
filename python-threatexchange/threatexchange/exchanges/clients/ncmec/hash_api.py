@@ -241,7 +241,7 @@ class GetEntriesResponse:
         )
 
 
-# TODO: check http code until we have update response shape, we also might not care about it
+# TODO: once we know the shape of response, finish this class
 @dataclass
 class UpdateEntryResponse:
     updates: t.List[NCMECEntryUpdate]
@@ -258,11 +258,30 @@ class UpdateEntryResponse:
         return cls(updates)
 
 
+@dataclass
+class GetFeedbackReasonsResponse:
+    reasons: t.List[t.Dict[str, str]]
+
+    @classmethod
+    def from_xml(cls, xml: _XMLWrapper) -> "GetFeedbackReasonsResponse":
+        reasons = []
+        for reason in xml.maybe("availableFeedbackReasons"):
+            reasons.append(
+                {
+                    "guid": reason.str("guid"),
+                    "name": reason.str("name"),
+                    "type": reason.str("type"),
+                }
+            )
+        return cls(reasons)
+
+
 @unique
 class NCMECEndpoint(Enum):
     status = "status"
     entries = "entries"
     members = "members"
+    feedback = "feedback"
 
 
 class NCMECEnvironment(Enum):
@@ -304,12 +323,15 @@ class NCMECHashAPI:
         username: str,
         password: str,
         environment: NCMECEnvironment,
+        member_id: t.Optional[str] = None,
+        reasons_map: t.Dict[str, t.List[t.Dict[str, str]]] = None,
     ) -> None:
         assert is_valid_user_pass(username, password)
         self.username = username
         self.password = password
         self._base_url = environment.value
-        self.member_id = None
+        self.member_id = member_id
+        self.reasons_map = reasons_map or {}
 
     def _get_session(self) -> requests.Session:
         """
@@ -339,7 +361,9 @@ class NCMECHashAPI:
         )
         return session
 
-    def _get(self, endpoint: NCMECEndpoint, *, next_: str = "", **params) -> ET.Element:
+    def _get(
+        self, endpoint: NCMECEndpoint, *, path: str = "", next_: str = "", **params
+    ) -> ET.Element:
         """
         Perform an HTTP GET request, and return the XML response payload.
 
@@ -347,6 +371,8 @@ class NCMECHashAPI:
         """
 
         url = "/".join((self._base_url, self.VERSION, endpoint.value))
+        if path:
+            url = "/".join((url, path))
         if next_:
             url = self._base_url + next_
             params = {}
@@ -372,9 +398,41 @@ class NCMECHashAPI:
         No timeout or retry strategy.
         """
 
-        url = "/".join((self._base_url, endpoint.value))
+        url = "/".join((self._base_url, self.VERSION, endpoint.value))
         with self._get_session() as session:
             response = session.post(url, data=data)
+            response.raise_for_status()
+            return response
+
+    def _put(
+        self,
+        endpoint: NCMECEndpoint,
+        *,
+        member_id: str = None,
+        entry_id: str = None,
+        feedback_type: NCMECFeedbackType = None,
+        data=None,
+    ) -> t.Any:
+        """
+        Perform an HTTP PUT request, and return the XML response payload.
+
+        No timeout or retry strategy.
+        """
+
+        url = "/".join((self._base_url, self.VERSION, endpoint.value))
+        if feedback_type:
+            url = "/".join(
+                (
+                    self._base_url,
+                    endpoint.value,
+                    member_id,
+                    entry_id,
+                    feedback_type.value,
+                    NCMECEndpoint.feedback.value,
+                )
+            )
+        with self._get_session() as session:
+            response = session.put(url, data=data)
             response.raise_for_status()
             return response
 
@@ -382,7 +440,7 @@ class NCMECHashAPI:
         """Query the status endpoint, which tells you who you are."""
         response = self._get(NCMECEndpoint.status)
         member = _XMLWrapper(response)["member"]
-        self.member_id = member.int("id")
+        self.member_id = member.str("id")
         return StatusResult(member.int("id"), member.text)
 
     def members(self) -> t.List[StatusResult]:
@@ -392,6 +450,16 @@ class NCMECHashAPI:
             StatusResult(member.int("id"), member.text)
             for member in _XMLWrapper(response)
         ]
+
+    def feedback_reasons(self) -> GetFeedbackReasonsResponse:
+        for feedbackType in NCMECFeedbackType:
+            resp = self._get(
+                NCMECEndpoint.feedback, path=f"{feedbackType.value}/reasons"
+            )
+            reasons = GetFeedbackReasonsResponse.from_xml(_XMLWrapper(resp)).reasons
+            self.reasons_map[feedbackType] = reasons
+
+        return
 
     def get_entries(
         self,
@@ -446,7 +514,6 @@ class NCMECHashAPI:
             has_more = bool(next_)
             yield result
 
-    # TODO: split into 2, submit upvote and downvote
     def submit_feedback(
         self,
         entry_id: str,
@@ -461,19 +528,40 @@ class NCMECHashAPI:
         if not self.member_id:
             self.status()
 
-        # TODO
-        # 1. Prepare the XML payload
+        # need valid reasons to submit feedback
+        if not self.reasons_map:
+            self.feedback_reasons()
+
+        # Prepare the XML payload
         root = ET.Element("feedbackSubmission")
         root.set("xmlns", "https://hashsharing.ncmec.org/hashsharing/v2")
         vote = ET.SubElement(root, "affirmative" if affirmative else "negative")
+
+        valid_reason_ids = [
+            reason["guid"] for reason in self.reasons_map[feedback_type.value]
+        ]
         if not affirmative:
+            if reason_id not in valid_reason_ids:
+                print(
+                    "must choose from the following reasons: ",
+                    self.reasons_map[feedback_type.value],
+                )
+                raise ValueError("Invalid reason_id")
             reasons = ET.SubElement(vote, "reasonIds")
             guid = ET.SubElement(reasons, "guid")
             guid.text = reason_id
         # ET.dump(root)
-        # 2. Send the POST request using _post
-        # 3. Parse the response using GetEntriesResponse.from_xml
-        return
+
+        resp = self._put(
+            NCMECEndpoint.entries,
+            member_id=self.member_id,
+            entry_id=entry_id,
+            feedback_type=feedback_type,
+            data=ET.tostring(root),
+        )
+
+        # TODO: parse response here once we know the shape using UpdateEntryResponse
+        return resp
 
 
 def _date_format(timestamp: int) -> str:

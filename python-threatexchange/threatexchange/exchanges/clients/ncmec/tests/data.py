@@ -176,6 +176,22 @@ ENTRIES_LARGE_FINGERPRINTS = """
 </queryResult>
 """.strip()
 
+STATUS_XML = """
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<status xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
+    <ipAddress>1.1.1.1</ipAddress>
+    <username>test_user</username>
+    <member id="1">test member</member>
+</status>
+""".strip()
+
+FEEDBACK_REASONS_XML = """
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<availableFeedbackReasons xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
+    <reason guid="01234567-abcd-0123-4567-012345678900" name="Example Reason 1" type="Sha1"/>
+</availableFeedbackReasons>
+""".strip()
+
 AFFIRMATIVE_FEEDBACK_XML = """
 <?xml version="1.0" encoding="UTF-8"?>
 <feedbackSubmission xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
