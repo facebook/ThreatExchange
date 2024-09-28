@@ -144,7 +144,7 @@ class NCMECEntryUpdate:
     deleted: bool
     classification: t.Optional[str]
     fingerprints: t.Dict[str, str]
-    feedback: t.List[t.Dict[str, str]]
+    feedback: t.List[t.Dict[str, t.Any]]
 
     @classmethod
     def from_xml(cls, xml: _XMLWrapper) -> "NCMECEntryUpdate":
@@ -247,7 +247,9 @@ class UpdateEntryResponse:
     updates: t.List[NCMECEntryUpdate]
 
     @classmethod
-    def from_xml(cls, xml: _XMLWrapper, fallback_max_time: int) -> "GetEntriesResponse":
+    def from_xml(
+        cls, xml: _XMLWrapper, fallback_max_time: int
+    ) -> "UpdateEntryResponse":
         updates: t.List[NCMECEntryUpdate] = []
 
         for content_xml in (xml.maybe("images"), xml.maybe("videos")):
@@ -324,7 +326,7 @@ class NCMECHashAPI:
         password: str,
         environment: NCMECEnvironment,
         member_id: t.Optional[str] = None,
-        reasons_map: t.Dict[str, t.List[t.Dict[str, str]]] = None,
+        reasons_map: t.Dict[str, t.List[t.Dict[str, str]]] = {},
     ) -> None:
         assert is_valid_user_pass(username, password)
         self.username = username
@@ -408,9 +410,9 @@ class NCMECHashAPI:
         self,
         endpoint: NCMECEndpoint,
         *,
-        member_id: str = None,
-        entry_id: str = None,
-        feedback_type: NCMECFeedbackType = None,
+        member_id: t.Optional[str] = None,
+        entry_id: t.Optional[str] = None,
+        feedback_type: t.Optional[NCMECFeedbackType] = None,
         data=None,
     ) -> t.Any:
         """
@@ -420,7 +422,7 @@ class NCMECHashAPI:
         """
 
         url = "/".join((self._base_url, self.VERSION, endpoint.value))
-        if feedback_type:
+        if feedback_type and member_id and entry_id:
             url = "/".join(
                 (
                     self._base_url,
@@ -456,10 +458,10 @@ class NCMECHashAPI:
             resp = self._get(
                 NCMECEndpoint.feedback, path=f"{feedbackType.value}/reasons"
             )
-            reasons = GetFeedbackReasonsResponse.from_xml(_XMLWrapper(resp)).reasons
-            self.reasons_map[feedbackType] = reasons
+            reasonsResp = GetFeedbackReasonsResponse.from_xml(_XMLWrapper(resp))
+            self.reasons_map[feedbackType.value] = reasonsResp.reasons
 
-        return
+        return reasonsResp
 
     def get_entries(
         self,
@@ -519,7 +521,7 @@ class NCMECHashAPI:
         entry_id: str,
         feedback_type: NCMECFeedbackType,
         affirmative: bool,
-        reason_id: str = None,
+        reason_id: t.Optional[str] = None,
     ) -> GetEntriesResponse:
         if not affirmative and not reason_id:
             raise ValueError("Negative feedback must have a reason_id")

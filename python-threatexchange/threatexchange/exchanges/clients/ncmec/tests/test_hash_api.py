@@ -182,8 +182,8 @@ def test_feedback_entries(monkeypatch):
         "fake_user",
         "fake_pass",
         NCMECEnvironment.test_Industry,
-        "123",
-        {
+        member_id="123",
+        reasons_map={
             NCMECFeedbackType.md5.value: [
                 {
                     "guid": "01234567-abcd-0123-4567-012345678900",
@@ -194,8 +194,7 @@ def test_feedback_entries(monkeypatch):
         },
     )
     session = Mock(
-        strict_spec=["get", "put", "__enter__", "__exit__"],
-        get=set_api_return(STATUS_XML),
+        strict_spec=["put", "__enter__", "__exit__"],
         put=set_api_return(UPDATE_FEEDBACK_RESULT_XML),
         __enter__=lambda _: session,
         __exit__=lambda *args: None,
