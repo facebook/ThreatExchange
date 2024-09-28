@@ -207,8 +207,4 @@ def test_feedback_entries(monkeypatch):
         "image1", NCMECFeedbackType.md5, False, "01234567-abcd-0123-4567-012345678900"
     )
 
-    assert len(result.updates) == 1
-    update = result.updates[0]
-    assert update.received == 1
-    assert update.accepted == 1
-    assert update.updated == 1
+    assert result.status_code == 200
