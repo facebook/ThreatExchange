@@ -17,8 +17,8 @@ Example
         str,
         MyUpdateRecordValue,
     ],
-    ExchangeWithSeen[MyCollabConfig],
-    ExchangeWithFeedback[MyCollabConfig],
+    ExchangeWithSeen[MyCollabConfig, MyUpdateRecordValue],
+    ExchangeWithFeedback[MyCollabConfig, MyUpdateRecordValue],
     ExchangeWithUpload[MyCollabConfig],
     ):
       pass
@@ -39,9 +39,12 @@ from threatexchange.exchanges.collab_config import CollaborationConfigBase
 
 
 TCollabConfig = t.TypeVar("TCollabConfig", bound=CollaborationConfigBase)
+TFetchedSignalMetadata = t.TypeVar(
+    "TFetchedSignalMetadata", bound=fetch_state.FetchedSignalMetadata
+)
 
 
-class ExchangeWithMatchedOnPlatform(t.Generic[TCollabConfig,]):
+class ExchangeWithMatchedOnPlatform(t.Generic[TCollabConfig, TFetchedSignalMetadata]):
     """
     Mixin for an exchange that supports recording
     """
@@ -50,7 +53,7 @@ class ExchangeWithMatchedOnPlatform(t.Generic[TCollabConfig,]):
         self,
         # The collaboration we should share the event to
         collab: TCollabConfig,
-        matched_record: fetch_state.TFetchedSignalMetadata,
+        matched_record: TFetchedSignalMetadata,
     ) -> None:
         """
         Report that you matched this signal to content on your platform.
@@ -63,9 +66,7 @@ class ExchangeWithMatchedOnPlatform(t.Generic[TCollabConfig,]):
         raise NotImplementedError
 
 
-class ExchangeWithReviewFeedback(
-    t.Generic[TCollabConfig, fetch_state.TFetchedSignalMetadata]
-):
+class ExchangeWithReviewFeedback(t.Generic[TCollabConfig, TFetchedSignalMetadata]):
     """
     Mixin for exchanges that supports recording the results of a manual review
     """
@@ -75,7 +76,7 @@ class ExchangeWithReviewFeedback(
         # The collaboration we should share the event to
         collab: TCollabConfig,
         # asdf
-        reviewed_record: fetch_state.TFetchedSignalMetadata,
+        reviewed_record: TFetchedSignalMetadata,
         # Whether the review of matched content corresponded to material the
         # exchange aims to find. Usually this corresponds to harmful content
         review_result: t.Literal[
