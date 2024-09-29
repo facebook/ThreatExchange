@@ -53,6 +53,7 @@ class ExchangeWithMatchedOnPlatform(t.Generic[TCollabConfig, TFetchedSignalMetad
         self,
         # The collaboration we should share the event to
         collab: TCollabConfig,
+        # The API record we matched
         matched_record: TFetchedSignalMetadata,
     ) -> None:
         """
@@ -75,7 +76,7 @@ class ExchangeWithReviewFeedback(t.Generic[TCollabConfig, TFetchedSignalMetadata
         self,
         # The collaboration we should share the event to
         collab: TCollabConfig,
-        # asdf
+        # The API record that we're sharing feedback on
         reviewed_record: TFetchedSignalMetadata,
         # Whether the review of matched content corresponded to material the
         # exchange aims to find. Usually this corresponds to harmful content
