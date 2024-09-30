@@ -39,17 +39,17 @@ ENTRIES_XML = """
             </fingerprints>
             <feedback lastUpdateTimestamp="2023-06-01T12:48:14Z">
                 <affirmativeFeedback type="Md5" lastUpdateTimestamp="2023-06-01T12:48:14Z">
-                <members timestamp="2023-06-01T12:48:14Z">
-                    <member id="42">Example Member</member>
-                </members>
-                </affirmativeFeedback>
-                <negativeFeedback type="Sha1" lastUpdateTimestamp="2023-05-31T19:41:51Z">
-                <reasons>
-                    <reason guid="01234567-abcd-0123-4567-012345678900" name="Example Reason 1" type="Sha1"/>
                     <members timestamp="2023-06-01T12:48:14Z">
                         <member id="42">Example Member</member>
                     </members>
-                </reasons>
+                </affirmativeFeedback>
+                <negativeFeedback type="Sha1" lastUpdateTimestamp="2023-05-31T19:41:51Z">
+                    <reasons>
+                        <reason guid="01234567-abcd-0123-4567-012345678900" name="Example Reason 1" type="Sha1"/>
+                        <members timestamp="2023-06-01T12:48:14Z">
+                            <member id="42">Example Member</member>
+                        </members>
+                    </reasons>
                 </negativeFeedback>
             </feedback>
         </image>

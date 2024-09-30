@@ -130,7 +130,7 @@ class NCMECFeedbackType(Enum):
     pdna = "PDNA"
     pdq = "PDQ"
     netclean = "NETCLEAN"
-    Videntifier = "VIDENTIFIER"
+    videntifier = "VIDENTIFIER"
     tmk_pdqf = "TMK_PDQF"
     ssvh_pdna = "SSVH_PDNA"
     ssvh_safer_hash = "SSVH_SAFER_HASH"
@@ -162,18 +162,36 @@ class NCMECEntryUpdate:
             fingerprints={
                 x.tag: x.text for x in xml.maybe("fingerprints") if x.has_text
             },
-            feedback=[
-                {
-                    "type": x.tag,  # "affirmativeFeedback" or "negativeFeedback"
-                    "members": x.maybe(
-                        "members"  # "timestamp", "member.id", "member.name"
-                    ),
-                    "reasons": x.maybe(
-                        "reasons"
-                    ),  # "reason" with "guid", "name", "type" | "members"
-                }
-                for x in xml.maybe("feedback")
-            ],
+            feedback=(
+                [
+                    {
+                        "sentiment": x.tag,  # "affirmativeFeedback" or "negativeFeedback"
+                        "type": x.str("type"),
+                        "latest_feedback_time": x.str("lastUpdateTimestamp"),
+                        "members": [
+                            {"id": m.str("id"), "name": m.text}
+                            for m in x.maybe("members")
+                            if m.has_text
+                        ],
+                        "reasons": [
+                            {
+                                "guid": r.maybe("reason").str("guid"),
+                                "name": r.maybe("reason").str("name"),
+                                "type": r.maybe("reason").str("type"),
+                                "members": [
+                                    {"id": m.str("id"), "name": m.text}
+                                    for m in x.maybe("members")
+                                ],
+                            }
+                            for r in x.maybe("reasons")
+                            if r.maybe("reason")
+                        ],
+                    }
+                    for x in xml.maybe("feedback")
+                ]
+                if xml.maybe("feedback").has_text
+                else []
+            ),
         )
 
 
@@ -454,6 +472,7 @@ class NCMECHashAPI:
         ]
 
     def feedback_reasons(self) -> GetFeedbackReasonsResponse:
+        """Get the possible negative feedback reasons for each feedback type"""
         for feedbackType in NCMECFeedbackType:
             resp = self._get(
                 NCMECEndpoint.feedback, path=f"{feedbackType.value}/reasons"
@@ -530,8 +549,8 @@ class NCMECHashAPI:
         if not self.member_id:
             self.status()
 
-        # need valid reasons to submit feedback
-        if not self.reasons_map:
+        # need valid reasons to submit negative feedback
+        if not affirmative and not self.reasons_map:
             self.feedback_reasons()
 
         # Prepare the XML payload
@@ -539,10 +558,10 @@ class NCMECHashAPI:
         root.set("xmlns", "https://hashsharing.ncmec.org/hashsharing/v2")
         vote = ET.SubElement(root, "affirmative" if affirmative else "negative")
 
-        valid_reason_ids = [
-            reason["guid"] for reason in self.reasons_map[feedback_type.value]
-        ]
         if not affirmative:
+            valid_reason_ids = [
+                reason["guid"] for reason in self.reasons_map[feedback_type.value]
+            ]
             if reason_id not in valid_reason_ids:
                 print(
                     "must choose from the following reasons: ",
