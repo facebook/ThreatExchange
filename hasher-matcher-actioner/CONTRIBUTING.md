@@ -13,6 +13,33 @@ Open Media Match is written in Python, uses [Flask](https://flask.palletsproject
 
 Please see CONTRIBUTING in the repo root for more general guidelines on how to contribute by developing locally and submitting pull requests on GitHub.
 
+# Releasing a New Version
+
+To release a new version of the Open Media Match image, follow these steps:
+
+1. **Update the version.txt file**
+
+The version number is stored in the `version.txt` file located at the project subfolder. Modify this file to reflect the new version number (e.g., `v1.1.0`).
+
+```bash
+echo "v1.1.0" > version.txt
+```
+
+2. **Merge to main**
+Once the `version.txt` file is updated, and merged to main a new build will be triggered automatically via the CI/CD pipeline. This will create a new Docker image with the updated version and be pushed to the registry.
+
+3. **Verify the Build and Release**
+Monitor the build process to ensure everything runs smoothly. Once the build completes, the new Docker image will be tagged with the updated version and pushed to the registry.
+
+4. **Test the New Image**
+After the new image is successfully built and tagged, it can be tested locally by using the tagged image or deployed to your environment. This process may vary depending on your deployment setup (e.g., Kubernetes, Docker Swarm, etc.).
+
+**Notes:**
+- Do the version increase on its own PR to separate version releases from code changes.
+- Ensure any expected changes in the codebase are included in the release, and all tests are passing before modifying the `version.txt` file.
+- For breaking changes, consider incrementing the major version number (e.g., `v2.0.0`).
+
+
 # Developer onboarding and environment setup
 
 There are a few different ways you can set up a development instance of Open Media Match and get to work.
