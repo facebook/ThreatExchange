@@ -511,7 +511,7 @@ class IBankStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
+    def bank_remove_content(self, bank_name: str, content_id: int) -> int:
         """Remove content from bank by id"""
 
     @abc.abstractmethod

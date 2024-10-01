@@ -153,6 +153,7 @@ def test_banks_add_hash(client: FlaskClient):
         },
     }
 
+
 def test_banks_delete_hash(client: FlaskClient):
     bank_name = "NEW_BANK"
     image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
@@ -160,11 +161,17 @@ def test_banks_delete_hash(client: FlaskClient):
     create_bank(client, bank_name)
     add_hash_to_bank(client, bank_name, image_url, 1)
 
-    post_response = client.delete(
-        f"/c/bank/{bank_name}/content/1"
-    )
+    post_response = client.delete(f"/c/bank/{bank_name}/content/1")
 
     assert post_response.status_code == 200
+    assert post_response.json == {"deleted": 1}
+
+    # Test against image
+    post_response = client.get(
+        f"/m/raw_lookup?signal_type=pdq&signal={IMAGE_URL_TO_PDQ[image_url]}"
+    )
+    assert post_response.status_code == 200
+    assert post_response.json == {"matches": []}
 
 
 def test_banks_add_metadata(client: FlaskClient):

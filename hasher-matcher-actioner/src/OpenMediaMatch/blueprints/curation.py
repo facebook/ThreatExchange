@@ -222,8 +222,9 @@ def bank_delete_content(bank_name: str, content_id: int):
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
 
-    storage.bank_remove_content(bank.name, content_id)
-    return {"message": "Done"}
+    count = storage.bank_remove_content(bank.name, content_id)
+    return {"deleted": count}
+
 
 @bp.route("/bank/<bank_name>/signal", methods=["POST"])
 def bank_add_as_signals(bank_name: str):
