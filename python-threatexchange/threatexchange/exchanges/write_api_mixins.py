@@ -44,17 +44,24 @@ TFetchedSignalMetadata = t.TypeVar(
 )
 
 
-class ExchangeWithMatchedOnPlatform(t.Generic[TCollabConfig, TFetchedSignalMetadata]):
+class ExchangeWithMatchedOnPlatform(
+    t.Generic[TCollabConfig, fetch_state.TUpdateRecordKey]
+):
     """
-    Mixin for an exchange that supports recording
+    Mixin for an exchange that supports recording you have successfully made a match
+
+    This can be useful for automatically cerifying that your matching pipeline is
+    functioning, or to allow insights on platform spread.
     """
 
     def submit_matched(
         self,
         # The collaboration we should share the event to
         collab: TCollabConfig,
-        # The API record we matched
-        matched_record: TFetchedSignalMetadata,
+        # The API record that we matched, corresponding to the key
+        # from the original API. This seems to be unifying across all existing APIs
+        # though some can reconstruct the feedback target from the signal or the metadata
+        matched_record_key: fetch_state.TUpdateRecordKey,
     ) -> None:
         """
         Report that you matched this signal to content on your platform.
@@ -67,17 +74,24 @@ class ExchangeWithMatchedOnPlatform(t.Generic[TCollabConfig, TFetchedSignalMetad
         raise NotImplementedError
 
 
-class ExchangeWithReviewFeedback(t.Generic[TCollabConfig, TFetchedSignalMetadata]):
+class ExchangeWithReviewFeedback(
+    t.Generic[TCollabConfig, fetch_state.TUpdateRecordKey]
+):
     """
-    Mixin for exchanges that supports recording the results of a manual review
+    Mixin for exchanges that supports recording the results of a manual review.
+
+    This can help other platforms stack rank potential matches for review to
+    prioritize the ones that seem to work well accross multiple platforms.
     """
 
     def submit_review_feedback(
         self,
         # The collaboration we should share the event to
         collab: TCollabConfig,
-        # The API record that we're sharing feedback on
-        reviewed_record: TFetchedSignalMetadata,
+        # The API record that we're sharing feedback on, corresponding to the key
+        # from the original API. This seems to be unifying across all existing APIs
+        # though some can reconstruct the feedback target from the signal or the metadata
+        matched_record_key: fetch_state.TUpdateRecordKey,
         # Whether the review of matched content corresponded to material the
         # exchange aims to find. Usually this corresponds to harmful content
         review_result: t.Literal[
