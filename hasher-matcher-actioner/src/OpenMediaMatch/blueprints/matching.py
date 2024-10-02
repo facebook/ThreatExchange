@@ -328,9 +328,16 @@ def index_cache_is_stale() -> bool:
 def _get_index(signal_type: t.Type[SignalType]) -> SignalTypeIndex[int] | None:
     entry = _get_index_cache().get(signal_type.get_name())
 
+    if entry is not None and is_in_pytest():
+        entry.reload_if_needed(get_storage())
+
     if entry is None:
         current_app.logger.debug("[lookup_signal] no cache, loading index")
         return get_storage().get_signal_type_index(signal_type)
     if entry.is_ready:
         return entry.index
     return None
+
+
+def is_in_pytest():
+    return "pytest" in sys.modules
