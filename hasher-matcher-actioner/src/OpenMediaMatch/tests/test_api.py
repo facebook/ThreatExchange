@@ -2,6 +2,7 @@
 
 import typing as t
 
+from OpenMediaMatch.blueprints.matching import IndexCache, _get_index_cache
 from flask.testing import FlaskClient
 from flask import Flask
 
@@ -192,6 +193,8 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
 
     # Build index
     build_all_indices(storage, storage, storage)
+    cache = _get_index_cache().get("pdq")
+    cache.reload_if_needed(get_storage())
 
     # Test against first image
     post_response = client.get(
