@@ -43,10 +43,10 @@
     }
   },
   "remoteUser": "vscode",
-  "postCreateCommand": "pip install --editable .[all]",
   "mounts": [
     "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume",
     "source=${localEnv:HOME}${localEnv:USERPROFILE},target=/host-home-folder,type=bind,consistency=cached"
   ],
+  "postCreateCommand": "/workspace/.devcontainer/postcreate.sh",
   "postAttachCommand": "/workspace/.devcontainer/startup.sh"
 }
