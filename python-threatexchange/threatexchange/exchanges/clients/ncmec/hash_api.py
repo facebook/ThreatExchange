@@ -9,6 +9,7 @@ https://report.cybertip.org/hashsharing/v2/documentation.pdf
 
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum, unique
 import logging
@@ -113,18 +114,41 @@ class _XMLWrapper:
 
 @dataclass
 class StatusResult:
+    """
+    Represents a NCMEC member.
+
+    While it does correspond to the /status endpoint, we should probably
+    rename it at this point.
+    """
+
     esp_id: int
     esp_name: str
+
+    @classmethod
+    def from_xml(cls, xml: _XMLWrapper) -> t.Self:
+        return cls(esp_id=xml.int("id"), esp_name=xml.text)
 
 
 @unique
 class NCMECEntryType(Enum):
+    """Type of entry, as marked by xml"""
+
     image = "image"
     video = "video"
 
 
 @unique
-class NCMECFeedbackType(Enum):
+class FingerprintType(Enum):
+    """
+    The list of supported fingerprints, as of 10/2024.
+
+    This also corresponds to the feedback types for the upvote/downvote API
+
+    We are currently not parsing these in the returned entry to prevent
+    compatibility issues if NCMEC were to add more fingerprint types, and
+    returning them as simple strings.
+    """
+
     md5 = "MD5"
     sha1 = "SHA1"
     pdna = "PDNA"
@@ -137,14 +161,66 @@ class NCMECFeedbackType(Enum):
 
 
 @dataclass
+class Feedback:
+    """Feedback on a single fingerprint in an entry"""
+
+    # True = upvote | False = downvote
+    sentiment: bool
+    # The member giving the feedback
+    member: StatusResult
+    # For upvotes, the reason text
+    reason = ""
+
+    @classmethod
+    def get_from_entry_feedback(cls, entry: _XMLWrapper) -> t.Dict[str, t.List[t.Self]]:
+        feedbacks = entry.maybe("feedback")
+        if not feedbacks:
+            return []
+        ret: t.Dict[str, t.List[Feedback]] = {}
+
+        for sentimentTag in feedbacks:
+            feedbacks = ret.setdefault(sentimentTag.str("type"), [])
+            if sentimentTag.tag == "affirmativeFeedback":
+                # Iterate over members
+                for m in sentimentTag.maybe("members"):
+                    feedbacks.append(cls(StatusResult.from_xml(m), True))
+            elif sentimentTag.tag == "negativeFeedback":
+                # Iterate over reasons
+                for r in sentimentTag.maybe("reasons"):
+                    print(str(r))
+                    assert r.tag == "reason"
+                    reason_name = r.str("name")
+                    for m in r.maybe("members"):
+                        feedbacks.append(
+                            cls(False, StatusResult.from_xml(m), reason_name)
+                        )
+            else:
+                logging.warning(
+                    "[ncmec] Ignoring unknown sentiment '%s'", sentimentTag.tag
+                )
+                continue
+        return ret
+
+
+@dataclass
 class NCMECEntryUpdate:
+    # The entry id
     id: str
+    # The esp_id for the uploader
     member_id: int
+    # The entry or content type (e.g. image/video)
     entry_type: NCMECEntryType
+    # Whether or not this is a tombstone for a deleted entry
     deleted: bool
+    # The string classification of the entry
     classification: t.Optional[str]
+    # The hashes/fingerprints for this entry, Dict[type, value]. This is
+    # roughly equivalent to SignalType.get_name(): signal_value, but NCMEC
+    # chooses different names for these
     fingerprints: t.Dict[str, str]
-    feedback: t.List[t.Dict[str, t.Any]]
+    # The feedback (upvote/downvote) that other ESPs have given for this entry
+    # Keyed the same way as fingerprints
+    feedback: t.Dict[str, Feedback]
 
     @classmethod
     def from_xml(cls, xml: _XMLWrapper) -> "NCMECEntryUpdate":
@@ -162,36 +238,7 @@ class NCMECEntryUpdate:
             fingerprints={
                 x.tag: x.text for x in xml.maybe("fingerprints") if x.has_text
             },
-            feedback=(
-                [
-                    {
-                        "sentiment": x.tag,  # "affirmativeFeedback" or "negativeFeedback"
-                        "type": x.str("type"),
-                        "latest_feedback_time": x.str("lastUpdateTimestamp"),
-                        "members": [
-                            {"id": m.str("id"), "name": m.text}
-                            for m in x.maybe("members")
-                            if m.has_text
-                        ],
-                        "reasons": [
-                            {
-                                "guid": r.maybe("reason").str("guid"),
-                                "name": r.maybe("reason").str("name"),
-                                "type": r.maybe("reason").str("type"),
-                                "members": [
-                                    {"id": m.str("id"), "name": m.text}
-                                    for m in x.maybe("members")
-                                ],
-                            }
-                            for r in x.maybe("reasons")
-                            if r.maybe("reason")
-                        ],
-                    }
-                    for x in xml.maybe("feedback")
-                ]
-                if xml.maybe("feedback").has_text
-                else []
-            ),
+            feedback=Feedback.get_from_entry_feedback(xml),
         )
 
 
@@ -278,24 +325,6 @@ class UpdateEntryResponse:
         return cls(updates)
 
 
-@dataclass
-class GetFeedbackReasonsResponse:
-    reasons: t.List[t.Dict[str, str]]
-
-    @classmethod
-    def from_xml(cls, xml: _XMLWrapper) -> "GetFeedbackReasonsResponse":
-        reasons = []
-        for reason in xml.maybe("availableFeedbackReasons"):
-            reasons.append(
-                {
-                    "guid": reason.str("guid"),
-                    "name": reason.str("name"),
-                    "type": reason.str("type"),
-                }
-            )
-        return cls(reasons)
-
-
 @unique
 class NCMECEndpoint(Enum):
     status = "status"
@@ -343,15 +372,14 @@ class NCMECHashAPI:
         username: str,
         password: str,
         environment: NCMECEnvironment,
-        member_id: t.Optional[str] = None,
-        reasons_map: t.Dict[str, t.List[t.Dict[str, str]]] = {},
     ) -> None:
         assert is_valid_user_pass(username, password)
         self.username = username
         self.password = password
         self._base_url = environment.value
-        self.member_id = member_id
-        self.reasons_map = reasons_map or {}
+        self._my_esp: t.Optional[StatusResult] = None
+        # type -> name -> guid
+        self._feedback_reason_map: t.Dict[FingerprintType, t.Dict[str, str]] = {}
 
     def _get_session(self) -> requests.Session:
         """
@@ -428,9 +456,9 @@ class NCMECHashAPI:
         self,
         endpoint: NCMECEndpoint,
         *,
-        member_id: t.Optional[str] = None,
+        member_id: t.Optional[int] = None,
         entry_id: t.Optional[str] = None,
-        feedback_type: t.Optional[NCMECFeedbackType] = None,
+        feedback_type: t.Optional[FingerprintType] = None,
         data=None,
     ) -> t.Any:
         """
@@ -445,7 +473,7 @@ class NCMECHashAPI:
                 (
                     self._base_url,
                     endpoint.value,
-                    member_id,
+                    str(member_id),
                     entry_id,
                     feedback_type.value,
                     NCMECEndpoint.feedback.value,
@@ -459,28 +487,28 @@ class NCMECHashAPI:
     def status(self) -> StatusResult:
         """Query the status endpoint, which tells you who you are."""
         response = self._get(NCMECEndpoint.status)
-        member = _XMLWrapper(response)["member"]
-        self.member_id = member.str("id")
-        return StatusResult(member.int("id"), member.text)
+        ret = StatusResult.from_xml(_XMLWrapper(response)["member"])
+        self._my_esp = deepcopy(ret)
+        return ret
 
     def members(self) -> t.List[StatusResult]:
         """Query the members endpoint, which gives you a list of esps"""
         response = self._get(NCMECEndpoint.members)
-        return [
-            StatusResult(member.int("id"), member.text)
-            for member in _XMLWrapper(response)
-        ]
+        return [StatusResult.from_xml(member) for member in _XMLWrapper(response)]
 
-    def feedback_reasons(self) -> GetFeedbackReasonsResponse:
+    def feedback_reasons(self, fingerprint_type: FingerprintType) -> t.Dict[str, str]:
         """Get the possible negative feedback reasons for each feedback type"""
-        for feedbackType in NCMECFeedbackType:
-            resp = self._get(
-                NCMECEndpoint.feedback, path=f"{feedbackType.value}/reasons"
-            )
-            reasonsResp = GetFeedbackReasonsResponse.from_xml(_XMLWrapper(resp))
-            self.reasons_map[feedbackType.value] = reasonsResp.reasons
-
-        return reasonsResp
+        ret = {}
+        # Could parallelize this
+        xml = _XMLWrapper(
+            self._get(NCMECEndpoint.feedback, path=f"{fingerprint_type.value}/reasons")
+        )
+        ret = {
+            reason.str("guid"): reason.str("name")
+            for reason in xml["availableFeedbackReasons"]
+        }
+        self._feedback_reason_map[fingerprint_type] = deepcopy(ret)
+        return ret
 
     def get_entries(
         self,
@@ -538,20 +566,15 @@ class NCMECHashAPI:
     def submit_feedback(
         self,
         entry_id: str,
-        feedback_type: NCMECFeedbackType,
+        fingerprint_type: FingerprintType,
         affirmative: bool,
-        reason_id: t.Optional[str] = None,
-    ) -> GetEntriesResponse:
-        if not affirmative and not reason_id:
-            raise ValueError("Negative feedback must have a reason_id")
+        negative_reason_guid: t.Optional[str] = None,
+    ) -> None:
 
         # need member_id to submit feedback
-        if not self.member_id:
-            self.status()
-
-        # need valid reasons to submit negative feedback
-        if not affirmative and not self.reasons_map:
-            self.feedback_reasons()
+        my_esp = self._my_esp
+        if not self._my_esp:
+            my_esp = self.status()
 
         # Prepare the XML payload
         root = ET.Element("feedbackSubmission")
@@ -559,30 +582,34 @@ class NCMECHashAPI:
         vote = ET.SubElement(root, "affirmative" if affirmative else "negative")
 
         if not affirmative:
-            valid_reason_ids = [
-                reason["guid"] for reason in self.reasons_map[feedback_type.value]
-            ]
-            if reason_id not in valid_reason_ids:
-                print(
-                    "must choose from the following reasons: ",
-                    self.reasons_map[feedback_type.value],
+            if not negative_reason_guid:
+                # We need a reason ID, but there may be only one choice
+                # so we can just use that one
+                if fingerprint_type not in self._feedback_reason_map:
+                    self.feedback_reasons(fingerprint_type)
+                feedback_options = self._feedback_reason_map[fingerprint_type]
+                if not feedback_options:
+                    raise Exception(
+                        "No feedback options for this type? Try reaching out to NCMEC"
+                    )
+                if len(feedback_options) == 1:
+                    # Only one choice
+                    negative_reason_guid = next(feedback_options.keys())
+            if not negative_reason_guid:
+                raise Exception(
+                    f"Need to pick a feedback reason. Options: {feedback_options}"
                 )
-                raise ValueError("Invalid reason_id")
             reasons = ET.SubElement(vote, "reasonIds")
             guid = ET.SubElement(reasons, "guid")
-            guid.text = reason_id
-        # ET.dump(root)
+            guid.text = negative_reason_guid
 
-        resp = self._put(
+        self._put(
             NCMECEndpoint.entries,
-            member_id=self.member_id,
+            member_id=my_esp.esp_id,
             entry_id=entry_id,
-            feedback_type=feedback_type,
+            feedback_type=fingerprint_type,
             data=ET.tostring(root),
         )
-
-        # TODO: parse response here once we know the shape using UpdateEntryResponse
-        return resp
 
 
 def _date_format(timestamp: int) -> str:

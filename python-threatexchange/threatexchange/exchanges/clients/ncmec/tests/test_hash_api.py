@@ -7,9 +7,10 @@ import requests
 from threatexchange.exchanges.clients.ncmec.hash_api import (
     NCMECEntryType,
     NCMECEntryUpdate,
-    NCMECFeedbackType,
+    FingerprintType,
     NCMECHashAPI,
     NCMECEnvironment,
+    StatusResult,
 )
 from threatexchange.exchanges.clients.ncmec.tests.data import (
     ENTRIES_LARGE_FINGERPRINTS,
@@ -29,10 +30,12 @@ def mock_get_impl(url: str, **params):
     content = ENTRIES_XML
     if url.endswith(NEXT_UNESCAPED):
         content = ENTRIES_XML2
-    if url.endswith(NEXT_UNESCAPED2):
+    elif url.endswith(NEXT_UNESCAPED2):
         content = ENTRIES_XML3
-    if url.endswith(NEXT_UNESCAPED3):
+    elif url.endswith(NEXT_UNESCAPED3):
         content = ENTRIES_XML4
+    elif url.endswith("/status"):
+        content = STATUS_XML
     # Void your warantee by messing with requests state
     resp = requests.Response()
     resp._content = content.encode()
@@ -68,6 +71,7 @@ def api(monkeypatch: pytest.MonkeyPatch):
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],
         get=mock_get_impl,
+        _put=Mock(),
         __enter__=lambda _: session,
         __exit__=lambda *args: None,
     )
@@ -126,6 +130,14 @@ def assert_fifth_entry(entry: NCMECEntryUpdate) -> None:
     }
 
 
+def test_mocked_status(api: NCMECHashAPI):
+    assert api._my_esp is None
+    result = api.status()
+    assert result.esp_id == 1
+    assert result.esp_name == "test member"
+    assert result == api._my_esp
+
+
 def test_mocked_get_hashes(api: NCMECHashAPI):
     result = api.get_entries()
 
@@ -177,33 +189,13 @@ def test_large_fingerprint_entries(monkeypatch):
     assert result.next == ""
 
 
-def test_feedback_entries(monkeypatch):
-    api = NCMECHashAPI(
-        "fake_user",
-        "fake_pass",
-        NCMECEnvironment.test_Industry,
-        member_id="123",
-        reasons_map={
-            NCMECFeedbackType.md5.value: [
-                {
-                    "guid": "01234567-abcd-0123-4567-012345678900",
-                    "name": "Example Reason 1",
-                    "type": "Sha1",
-                }
-            ]
-        },
-    )
-    session = Mock(
-        strict_spec=["put", "__enter__", "__exit__"],
-        put=set_api_return(UPDATE_FEEDBACK_RESULT_XML),
-        __enter__=lambda _: session,
-        __exit__=lambda *args: None,
-    )
-    monkeypatch.setattr(api, "_get_session", lambda: session)
+def test_feedback_entries(api: NCMECHashAPI):
+    # We'll mock that we've already read our own ESP
 
-    result = api.submit_feedback("image1", NCMECFeedbackType.md5, True)
-    result = api.submit_feedback(
-        "image1", NCMECFeedbackType.md5, False, "01234567-abcd-0123-4567-012345678900"
+    api.submit_feedback("image1", FingerprintType.md5, True)
+    api.submit_feedback(
+        "image1",
+        FingerprintType.md5,
+        False,
+        "01234567-abcd-0123-4567-012345678900",
     )
-
-    assert result.status_code == 200
