@@ -567,10 +567,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return content.id
 
     def bank_remove_content(self, bank_name: str, content_id: int) -> int:
+        # TODO: throw an exception if deleting imported content
         result = database.db.session.execute(
-            delete(database.BankContent)
-            .where(database.BankContent.id == content_id)
-            .where(database.BankContent.imported_from_id.is_(None))
+            delete(database.BankContent).where(database.BankContent.id == content_id)
         )
         database.db.session.commit()
         return result.rowcount
