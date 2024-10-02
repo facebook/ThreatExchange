@@ -95,14 +95,14 @@ def raw_lookup():
      * Signal value (the hash)
      * Optional list of banks to restrict search to
     Output:
-     * List of matching content items
+     * List of matching with content_id and distance values
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
     return lookup_signal(signal, signal_type_name)
 
 
-def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
+def lookup_signal(signal: str, signal_type_name: str) -> dict[str, dict[str, str]]:
     storage = get_storage()
     signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
 
@@ -118,7 +118,15 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
     current_app.logger.debug("[lookup_signal] query complete")
-    return {"matches": [m.metadata for m in results]}
+    return {
+        "matches": [
+            {
+                "content_id": m.metadata,
+                "distance": m.similarity_info.pretty_str(),
+            }
+            for m in results
+        ]
+    }
 
 
 def _validate_and_transform_signal_type(
