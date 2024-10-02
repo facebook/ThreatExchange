@@ -485,39 +485,39 @@ class ThreatExchangeAPI:
         self, descriptor_id, *, showURLs=False, dryRun=False
     ):
         """
-        Does a POST to the reactions API indicating that this descriptor's hash was 
+        Does a POST to the reactions API indicating that this descriptor's hash was
         matched.
 
         See: https://developers.facebook.com/docs/threat-exchange/reference/reacting
         """
         return self.react_to_threat_descriptor(
-            descriptor_id, "SAW_THIS_TOO", showURLs=showURLs, dryRun=dryRun 
+            descriptor_id, "SAW_THIS_TOO", showURLs=showURLs, dryRun=dryRun
         )
 
     def react_upvote_threat_descriptor(
         self, descriptor_id, *, showURLs=False, dryRun=False
     ):
         """
-        Does a POST to the reactions API indicating that this descriptor's hash is 
+        Does a POST to the reactions API indicating that this descriptor's hash is
         helpful for discovering harmful content
 
         See: https://developers.facebook.com/docs/threat-exchange/reference/reacting
         """
         return self.react_to_threat_descriptor(
-            descriptor_id, "HELPFUL", showURLs=showURLs, dryRun=dryRun 
+            descriptor_id, "HELPFUL", showURLs=showURLs, dryRun=dryRun
         )
 
     def react_downvote_threat_descriptor(
         self, descriptor_id, *, showURLs=False, dryRun=False
     ):
         """
-        Does a POST to the reactions API indicating that this descriptor's hash is 
+        Does a POST to the reactions API indicating that this descriptor's hash is
         NOT helpful for discovering harmful content
 
         See: https://developers.facebook.com/docs/threat-exchange/reference/reacting
         """
         return self.react_to_threat_descriptor(
-            descriptor_id, "NOT_HELPFUL", showURLs=showURLs, dryRun=dryRun 
+            descriptor_id, "NOT_HELPFUL", showURLs=showURLs, dryRun=dryRun
         )
 
     def upload_threat_descriptor(self, postParams, showURLs, dryRun):

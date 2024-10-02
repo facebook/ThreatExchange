@@ -1,9 +1,9 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from unittest.mock import Mock
-import typing as t
 import pytest
 import requests
+import typing as t
 
 from threatexchange.exchanges.clients.fb_threatexchange.api import (
     ThreatExchangeAPI,
@@ -15,9 +15,7 @@ POST_SUCCESS = """
     }
 """
 
-POST_SUCCESS_JSON = {
-        "succcess": True
-}
+POST_SUCCESS_JSON = {"succcess": True}
 
 
 def mock_post_impl(url: str, data: str, **params):
@@ -29,8 +27,10 @@ def mock_post_impl(url: str, data: str, **params):
     resp.content  # Set the rest of Request's internal state
     return resp
 
+
 def test_matched_upvote_downvote(monkeypatch: pytest.MonkeyPatch):
     api = ThreatExchangeAPI("fake api token")
+    session = None
     session = Mock(
         strict_spec=["post", "__enter__", "__exit__"],
         post=mock_post_impl,
@@ -44,7 +44,7 @@ def test_matched_upvote_downvote(monkeypatch: pytest.MonkeyPatch):
     assert result[2] == POST_SUCCESS_JSON
     assert result[0] is None
     assert result[1] is None
-    
+
     result = api.react_upvote_threat_descriptor(1234, showURLs=False, dryRun=False)
 
     assert result[2] == POST_SUCCESS_JSON
