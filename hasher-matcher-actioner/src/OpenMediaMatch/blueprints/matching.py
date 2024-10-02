@@ -17,6 +17,7 @@ from werkzeug.exceptions import HTTPException
 
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.index import SignalTypeIndex
+from threatexchange.signal_type.index import IndexMatch
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.storage import interface
@@ -96,14 +97,19 @@ def raw_lookup():
      * Signal value (the hash)
      * Optional list of banks to restrict search to
     Output:
-     * List of matching with content_id and distance values
+     * List of matching with content_id and, if included, distance values
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
-    return lookup_signal(signal, signal_type_name)
+    include_distance = bool(request.args.get("include_distance", False)) == True
+    lookup_signal_func = (
+        lookup_signal_with_distance if include_distance else lookup_signal
+    )
+
+    return lookup_signal_func(signal, signal_type_name)
 
 
-def lookup_signal(signal: str, signal_type_name: str) -> dict[str, dict[str, str]]:
+def query_index(signal: str, signal_type_name: str) -> IndexMatch:
     storage = get_storage()
     signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
 
@@ -119,6 +125,18 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, dict[str, str
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
     current_app.logger.debug("[lookup_signal] query complete")
+    return results
+
+
+def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
+    results = query_index(signal, signal_type_name)
+    return {"matches": [m.metadata for m in results]}
+
+
+def lookup_signal_with_distance(
+    signal: str, signal_type_name: str
+) -> dict[str, dict[str, str]]:
+    results = query_index(signal, signal_type_name)
     return {
         "matches": [
             {
@@ -319,6 +337,7 @@ def _get_index(signal_type: t.Type[SignalType]) -> SignalTypeIndex[int] | None:
     if entry.is_ready:
         return entry.index
     return None
+
 
 def is_in_pytest():
     return "pytest" in sys.modules
