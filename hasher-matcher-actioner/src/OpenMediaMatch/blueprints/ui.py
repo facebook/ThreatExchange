@@ -107,6 +107,11 @@ def home():
     UI Landing page
     """
 
+    # Check if SEED_BANK_0 and SEED_BANK_1 exist yet
+    bank_list = curation.banks_index()
+    contains_seed_bank_0 = any(bank.name == "SEED_BANK_0" for bank in bank_list)
+    contains_seed_bank_1 = any(bank.name == "SEED_BANK_1" for bank in bank_list)
+
     template_vars = {
         "signal": curation.get_all_signal_types(),
         "content": curation.get_all_content_types(),
@@ -114,6 +119,7 @@ def home():
         "production": current_app.config.get("PRODUCTION", True),
         "index": _index_info(),
         "collabs": _collab_info(),
+        "is_banks_seeded": contains_seed_bank_0 and contains_seed_bank_1,
     }
     return render_template("bootstrap.html.j2", page="home", **template_vars)
 
