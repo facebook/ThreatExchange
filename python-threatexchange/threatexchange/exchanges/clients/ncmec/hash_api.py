@@ -125,7 +125,7 @@ class StatusResult:
     esp_name: str
 
     @classmethod
-    def from_xml(cls, xml: _XMLWrapper) -> t.Self:
+    def from_xml(cls, xml: _XMLWrapper) -> "StatusResult":
         return cls(esp_id=xml.int("id"), esp_name=xml.text)
 
 
@@ -169,28 +169,44 @@ class Feedback:
     # The member giving the feedback
     member: StatusResult
     # For upvotes, the reason text
-    reason = ""
+    reason: str = ""
 
     @classmethod
-    def get_from_entry_feedback(cls, entry: _XMLWrapper) -> t.Dict[str, t.List[t.Self]]:
-        feedbacks = entry.maybe("feedback")
-        if not feedbacks:
-            return []
+    def get_from_entry_feedback(
+        cls, entry: _XMLWrapper
+    ) -> t.Dict[str, list["Feedback"]]:
+        feedbacks_xml = entry.maybe("feedback")
+        if not feedbacks_xml:
+            return {}
         ret: t.Dict[str, t.List[Feedback]] = {}
 
-        for sentimentTag in feedbacks:
+        for sentimentTag in feedbacks_xml:
             feedbacks = ret.setdefault(sentimentTag.str("type"), [])
             if sentimentTag.tag == "affirmativeFeedback":
                 # Iterate over members
                 for m in sentimentTag.maybe("members"):
-                    feedbacks.append(cls(StatusResult.from_xml(m), True))
+                    feedbacks.append(cls(True, StatusResult.from_xml(m)))
             elif sentimentTag.tag == "negativeFeedback":
-                # Iterate over reasons
-                for r in sentimentTag.maybe("reasons"):
-                    print(str(r))
-                    assert r.tag == "reason"
-                    reason_name = r.str("name")
-                    for m in r.maybe("members"):
+                # It's impossible to tell from the public documentation how
+                # to parse this correctly because it's ambigous how it's
+                # formatted.
+                reason_block = list(sentimentTag.maybe("reasons"))
+                for i in range(0, len(reason_block), 2):
+                    if i + 1 >= len(reason_block):
+                        logging.warning("[ncmec] reason block has odd number of blocks")
+                        continue
+                    reason = reason_block[i]
+                    members = reason_block[i + 1]
+                    if reason.tag != "reason" or members.tag != "members":
+                        logging.warning(
+                            "[ncmec] reason block malformed: reason:%s remembers:%s",
+                            reason.tag,
+                            members.tag,
+                        )
+                        continue
+
+                    reason_name = reason.str("name")
+                    for m in members:
                         feedbacks.append(
                             cls(False, StatusResult.from_xml(m), reason_name)
                         )
@@ -220,7 +236,7 @@ class NCMECEntryUpdate:
     fingerprints: t.Dict[str, str]
     # The feedback (upvote/downvote) that other ESPs have given for this entry
     # Keyed the same way as fingerprints
-    feedback: t.Dict[str, Feedback]
+    feedback: t.Dict[str, list[Feedback]]
 
     @classmethod
     def from_xml(cls, xml: _XMLWrapper) -> "NCMECEntryUpdate":
@@ -573,7 +589,7 @@ class NCMECHashAPI:
 
         # need member_id to submit feedback
         my_esp = self._my_esp
-        if not self._my_esp:
+        if my_esp is None:
             my_esp = self.status()
 
         # Prepare the XML payload
@@ -594,7 +610,7 @@ class NCMECHashAPI:
                     )
                 if len(feedback_options) == 1:
                     # Only one choice
-                    negative_reason_guid = next(feedback_options.keys())
+                    negative_reason_guid = next(iter(feedback_options.keys()))
             if not negative_reason_guid:
                 raise Exception(
                     f"Need to pick a feedback reason. Options: {feedback_options}"
