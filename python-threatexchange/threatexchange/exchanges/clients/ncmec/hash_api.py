@@ -160,12 +160,19 @@ class FingerprintType(Enum):
     ssvh_safer_hash = "SSVH_SAFER_HASH"
 
 
+@unique
+class FeedbackType(Enum):
+    """Upvote/downvote for feedback type"""
+
+    upvote = "upvote"
+    downvote = "downvote"
+
+
 @dataclass
 class Feedback:
     """Feedback on a single fingerprint in an entry"""
 
-    # True = upvote | False = downvote
-    sentiment: bool
+    feedback_type: FeedbackType
     # The member giving the feedback
     member: StatusResult
     # For upvotes, the reason text
@@ -185,7 +192,7 @@ class Feedback:
             if sentimentTag.tag == "affirmativeFeedback":
                 # Iterate over members
                 for m in sentimentTag.maybe("members"):
-                    feedbacks.append(cls(True, StatusResult.from_xml(m)))
+                    feedbacks.append(cls(FeedbackType.upvote, StatusResult.from_xml(m)))
             elif sentimentTag.tag == "negativeFeedback":
                 # It's impossible to tell from the public documentation how
                 # to parse this correctly because it's ambigous how it's
@@ -208,7 +215,11 @@ class Feedback:
                     reason_name = reason.str("name")
                     for m in members:
                         feedbacks.append(
-                            cls(False, StatusResult.from_xml(m), reason_name)
+                            cls(
+                                FeedbackType.downvote,
+                                StatusResult.from_xml(m),
+                                reason_name,
+                            )
                         )
             else:
                 logging.warning(
@@ -472,10 +483,8 @@ class NCMECHashAPI:
         self,
         endpoint: NCMECEndpoint,
         *,
-        member_id: t.Optional[int] = None,
-        entry_id: t.Optional[str] = None,
-        feedback_type: t.Optional[FingerprintType] = None,
-        data=None,
+        path: str = None,
+        data: str = None,
     ) -> t.Any:
         """
         Perform an HTTP PUT request, and return the XML response payload.
@@ -484,19 +493,14 @@ class NCMECHashAPI:
         """
 
         url = "/".join((self._base_url, self.VERSION, endpoint.value))
-        if feedback_type and member_id and entry_id:
-            url = "/".join(
-                (
-                    self._base_url,
-                    endpoint.value,
-                    str(member_id),
-                    entry_id,
-                    feedback_type.value,
-                    NCMECEndpoint.feedback.value,
-                )
-            )
+        if path:
+            url = "/".join((url, path))
         with self._get_session() as session:
-            response = session.put(url, data=data)
+            response = session.put(
+                url,
+                headers={"Content-Type": "application/xml; charset=utf-8"},
+                data=data,
+            )
             response.raise_for_status()
             return response
 
@@ -581,19 +585,30 @@ class NCMECHashAPI:
             has_more = bool(next_)
             yield result
 
+    def submit_upvote(
+        self,
+        esp_id: int,
+        entry_id: str,
+        fingerprint_type: FingerprintType,
+    ) -> None:
+        root = ET.Element("feedbackSubmission")
+        root.set("xmlns", "https://hashsharing.ncmec.org/hashsharing/v2")
+        ET.SubElement(root, "affirmative")
+
+        self._put(
+            NCMECEndpoint.entries,
+            path=f"{esp_id}/{entry_id}/{fingerprint_type.value}/feedback",
+            data=ET.tostring(root),
+        )
+
     def submit_feedback(
         self,
+        esp_id: int,
         entry_id: str,
         fingerprint_type: FingerprintType,
         affirmative: bool,
         negative_reason_guid: t.Optional[str] = None,
     ) -> None:
-
-        # need member_id to submit feedback
-        my_esp = self._my_esp
-        if my_esp is None:
-            my_esp = self.status()
-
         # Prepare the XML payload
         root = ET.Element("feedbackSubmission")
         root.set("xmlns", "https://hashsharing.ncmec.org/hashsharing/v2")
@@ -623,9 +638,7 @@ class NCMECHashAPI:
 
         self._put(
             NCMECEndpoint.entries,
-            member_id=my_esp.esp_id,
-            entry_id=entry_id,
-            feedback_type=fingerprint_type,
+            path=f"{esp_id}/{entry_id}/{fingerprint_type.value}/feedback",
             data=ET.tostring(root),
         )
 
