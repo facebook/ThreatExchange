@@ -7,6 +7,7 @@ Endpoints for matching content and hashes.
 from dataclasses import dataclass
 import datetime
 import random
+import sys
 import typing as t
 import time
 
@@ -15,16 +16,29 @@ from flask_apscheduler import APScheduler
 from werkzeug.exceptions import HTTPException
 
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.signal_type.index import SignalTypeIndex
+from threatexchange.signal_type.index import (
+    IndexMatchUntyped,
+    SignalSimilarityInfo,
+    SignalTypeIndex,
+)
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.blueprints import hashing
-from OpenMediaMatch.utils.flask_utils import require_request_param, api_error_handler
+from OpenMediaMatch.utils.flask_utils import (
+    api_error_handler,
+    require_request_param,
+    str_to_bool,
+)
 from OpenMediaMatch.persistence import get_storage
 
 bp = Blueprint("matching", __name__)
 bp.register_error_handler(HTTPException, api_error_handler)
+
+
+class MatchWithDistance(t.TypedDict):
+    content_id: int
+    distance: str
 
 
 @dataclass
@@ -94,15 +108,23 @@ def raw_lookup():
      * Signal type (hash type)
      * Signal value (the hash)
      * Optional list of banks to restrict search to
+     * Optional include_distance (bool) wether or not to return distance values on match
     Output:
-     * List of matching content items
+     * List of matching with content_id and, if included, distance values
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
-    return lookup_signal(signal, signal_type_name)
+    include_distance = str_to_bool(request.args.get("include_distance", "false"))
+    lookup_signal_func = (
+        lookup_signal_with_distance if include_distance else lookup_signal
+    )
+
+    return {"matches": lookup_signal_func(signal, signal_type_name)}
 
 
-def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
+def query_index(
+    signal: str, signal_type_name: str
+) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
     storage = get_storage()
     signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
 
@@ -118,7 +140,25 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
     current_app.logger.debug("[lookup_signal] query complete")
-    return {"matches": [m.metadata for m in results]}
+    return results
+
+
+def lookup_signal(signal: str, signal_type_name: str) -> list[int]:
+    results = query_index(signal, signal_type_name)
+    return [m.metadata for m in results]
+
+
+def lookup_signal_with_distance(
+    signal: str, signal_type_name: str
+) -> list[MatchWithDistance]:
+    results = query_index(signal, signal_type_name)
+    return [
+        {
+            "content_id": m.metadata,
+            "distance": m.similarity_info.pretty_str(),
+        }
+        for m in results
+    ]
 
 
 def _validate_and_transform_signal_type(
@@ -300,6 +340,7 @@ def index_cache_is_stale() -> bool:
 
 def _get_index(signal_type: t.Type[SignalType]) -> SignalTypeIndex[int] | None:
     entry = _get_index_cache().get(signal_type.get_name())
+
     if entry is None:
         current_app.logger.debug("[lookup_signal] no cache, loading index")
         return get_storage().get_signal_type_index(signal_type)

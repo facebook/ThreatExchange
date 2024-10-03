@@ -10,7 +10,10 @@ from flask import redirect, url_for
 from werkzeug.exceptions import HTTPException
 
 from OpenMediaMatch.blueprints.hashing import hash_media
-from OpenMediaMatch.blueprints.matching import lookup_signal
+from OpenMediaMatch.blueprints.matching import (
+    lookup_signal,
+    lookup_signal_with_distance,
+)
 from OpenMediaMatch.utils.flask_utils import api_error_handler
 
 from OpenMediaMatch.utils import dev_utils
@@ -50,6 +53,11 @@ def query_media():
             return signal_type_to_signal_map
         abort(500, "Something went wrong while hashing the provided media.")
 
+    include_distance = bool(request.args.get("include_distance", False)) == True
+    lookup_signal_func = (
+        lookup_signal_with_distance if include_distance else lookup_signal
+    )
+
     # Check if signal_type is an option in the map of hashes
     signal_type_name = request.args.get("signal_type")
     if signal_type_name is not None:
@@ -59,14 +67,14 @@ def query_media():
                 f"Requested signal type '{signal_type_name}' is not supported for the provided "
                 "media.",
             )
-        return lookup_signal(
+        return lookup_signal_func(
             signal_type_to_signal_map[signal_type_name], signal_type_name
         )
     return {
         "matches": list(
             itertools.chain(
                 *map(
-                    lambda x: lookup_signal(x[1], x[0])["matches"],
+                    lambda x: lookup_signal_func(x[1], x[0])["matches"],
                     signal_type_to_signal_map.items(),
                 ),
             )
