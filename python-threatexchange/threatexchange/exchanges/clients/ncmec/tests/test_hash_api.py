@@ -1,186 +1,41 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from unittest.mock import Mock
-import urllib.parse
 import typing as t
 import pytest
 import requests
 from threatexchange.exchanges.clients.ncmec.hash_api import (
     NCMECEntryType,
     NCMECEntryUpdate,
+    FingerprintType,
     NCMECHashAPI,
     NCMECEnvironment,
+    StatusResult,
 )
-
-STATUS_XML = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
-<status xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
-    <ipAddress>127.0.0.1</ipAddress>
-    <username>testington</username>
-    <member id="1">Sir Testington</member>
-</status>
-""".strip()
-
-NEXT_UNESCAPED = (
-    "/v2/entries?from=2017-10-20T00%3A00%3A00.000Z"
-    "&to=2017-10-30T00%3A00%3A00.000Z&start=2001&size=1000&max=3000"
+from threatexchange.exchanges.clients.ncmec.tests.data import (
+    ENTRIES_LARGE_FINGERPRINTS,
+    ENTRIES_XML,
+    ENTRIES_XML2,
+    ENTRIES_XML3,
+    ENTRIES_XML4,
+    NEXT_UNESCAPED,
+    NEXT_UNESCAPED2,
+    NEXT_UNESCAPED3,
+    STATUS_XML,
+    UPDATE_FEEDBACK_RESULT_XML,
 )
-
-NEXT_UNESCAPED2 = (
-    "/v2/entries?from=2017-10-20T00%3A00%3A00.000Z"
-    "&to=2017-10-30T00%3A00%3A00.000Z&start=3001&size=1000&max=4000"
-)
-NEXT_UNESCAPED3 = (
-    "/v2/entries?from=2017-10-20T00%3A00%3A00.000Z"
-    "&to=2017-10-30T00%3A00%3A00.000Z&start=4001&size=1000&max=5000"
-)
-
-ENTRIES_XML = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
-    <images count="2" maxTimestamp="2017-10-24T15:10:00Z">
-        <image>
-            <member id="42">Example Member</member>
-            <timestamp>2017-10-24T15:00:00Z</timestamp>
-            <id>image1</id>
-            <classification>A1</classification>
-            <fingerprints>
-                <md5>a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1</md5>
-                <sha1>a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1</sha1>
-                <pdna>a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1...</pdna>
-            </fingerprints>
-        </image>
-        <deletedImage>
-            <member id="43">Example Member2</member>
-            <id>image4</id>
-            <timestamp>2017-10-24T15:10:00Z</timestamp>
-        </deletedImage>
-    </images>
-    <videos count="2" maxTimestamp="2017-10-24T15:20:00Z">
-        <video>
-            <member id="42">Example Member</member>
-            <timestamp>2017-10-24T15:00:00Z</timestamp>
-            <id>video1</id>
-            <fingerprints>
-                <md5>b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1</md5>
-                <sha1>b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1</sha1>
-            </fingerprints>
-        </video>
-        <deletedVideo>
-            <member id="42">Example Member</member>
-            <id>video4</id>
-            <timestamp>2017-10-24T15:20:00Z</timestamp>
-        </deletedVideo>
-    </videos>
-    <paging>
-        <next>/v2/entries?from=2017-10-20T00%3A00%3A00.000Z&amp;to=2017-10-30T00%3A00%3A00.000Z&amp;start=2001&amp;size=1000&amp;max=3000</next>
-    </paging>
-</queryResult>
-""".strip()
-
-
-ENTRIES_XML2 = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
-    <images count="1" maxTimestamp="2019-10-24T15:10:00Z">
-        <image>
-            <member id="42">Example Member</member>
-            <timestamp>2019-10-24T15:00:00Z</timestamp>
-            <id>image10</id>
-            <classification>A1</classification>
-            <fingerprints>
-                <md5>b1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1</md5>
-                <sha1>b1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1</sha1>
-                <pdna>b1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1...</pdna>
-            </fingerprints>
-        </image>
-    </images>
-    <paging>
-        <next>/v2/entries?from=2017-10-20T00%3A00%3A00.000Z&amp;to=2017-10-30T00%3A00%3A00.000Z&amp;start=3001&amp;size=1000&amp;max=4000</next>
-    </paging>
-</queryResult>
-""".strip()
-
-# This example isn't in the documentation, but shows how updates work
-ENTRIES_XML3 = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
-    <videos count="2" maxTimestamp="2019-11-25T15:10:00Z">
-        <video>
-            <member id="101">TX Example</member>
-            <timestamp>2019-11-25T15:10:00Z</timestamp>
-            <id>willupdate</id>
-            <classification>A1</classification>
-            <fingerprints>
-                <md5>facefacefacefacefacefacefaceface</md5>
-            </fingerprints>
-        </video>
-        <video>
-            <member id="101">TX Example</member>
-            <timestamp>2019-11-24T15:10:00Z</timestamp>
-            <id>willdelete</id>
-            <classification>A1</classification>
-            <fingerprints>
-                <md5>bacebacebacebacebacebacebacebace</md5>
-            </fingerprints>
-        </video>
-    </videos>
-    <paging>
-        <next>/v2/entries?from=2017-10-20T00%3A00%3A00.000Z&amp;to=2017-10-30T00%3A00%3A00.000Z&amp;start=4001&amp;size=1000&amp;max=5000</next>
-    </paging>
-</queryResult>
-""".strip()
-
-ENTRIES_XML4 = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
-    <videos count="2" maxTimestamp="2019-11-24T15:10:00Z">
-        <video>
-            <member id="101">TX Example</member>
-            <timestamp>2019-11-24T15:10:00Z</timestamp>
-            <id>willupdate</id>
-            <classification>A2</classification>
-            <fingerprints>
-                <md5>facefacefacefacefacefacefaceface</md5>
-            </fingerprints>
-        </video>
-        <deletedVideo>
-            <member id="101">TX Example</member>
-            <timestamp>2019-11-25T15:10:00Z</timestamp>
-            <id>willdelete</id>
-        </deletedVideo>
-    </videos>
-</queryResult>
-""".strip()
-
-ENTRIES_LARGE_FINGERPRINTS = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
-    <videos count="1" maxTimestamp="2019-11-24T15:10:00Z">
-        <video>
-            <member id="101">TX Example</member>
-            <timestamp>2019-11-24T15:10:00Z</timestamp>
-            <id>largetags</id>
-            <classification>A2</classification>
-            <fingerprints>
-                <md5>facefacefacefacefacefacefaceface</md5>
-                <tmk-pdqf rel="self" href="/v2/entries/1/fingerprints/TMK_PDQF"/>
-				<videntifier rel="self" href="/v2/entries/1/fingerprints/VIDENTIFIER"/>
-            </fingerprints>
-        </video>
-    </videos>
-</queryResult>
-""".strip()
 
 
 def mock_get_impl(url: str, **params):
     content = ENTRIES_XML
     if url.endswith(NEXT_UNESCAPED):
         content = ENTRIES_XML2
-    if url.endswith(NEXT_UNESCAPED2):
+    elif url.endswith(NEXT_UNESCAPED2):
         content = ENTRIES_XML3
-    if url.endswith(NEXT_UNESCAPED3):
+    elif url.endswith(NEXT_UNESCAPED3):
         content = ENTRIES_XML4
+    elif url.endswith("/status"):
+        content = STATUS_XML
     # Void your warantee by messing with requests state
     resp = requests.Response()
     resp._content = content.encode()
@@ -216,6 +71,7 @@ def api(monkeypatch: pytest.MonkeyPatch):
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],
         get=mock_get_impl,
+        _put=Mock(),
         __enter__=lambda _: session,
         __exit__=lambda *args: None,
     )
@@ -274,6 +130,14 @@ def assert_fifth_entry(entry: NCMECEntryUpdate) -> None:
     }
 
 
+def test_mocked_status(api: NCMECHashAPI):
+    assert api._my_esp is None
+    result = api.status()
+    assert result.esp_id == 1
+    assert result.esp_name == "test member"
+    assert result == api._my_esp
+
+
 def test_mocked_get_hashes(api: NCMECHashAPI):
     result = api.get_entries()
 
@@ -323,3 +187,15 @@ def test_large_fingerprint_entries(monkeypatch):
     assert len(update.fingerprints) == 1
     assert update.fingerprints == {"md5": "facefacefacefacefacefacefaceface"}
     assert result.next == ""
+
+
+def test_feedback_entries(api: NCMECHashAPI):
+    # We'll mock that we've already read our own ESP
+
+    api.submit_feedback("image1", FingerprintType.md5, True)
+    api.submit_feedback(
+        "image1",
+        FingerprintType.md5,
+        False,
+        "01234567-abcd-0123-4567-012345678900",
+    )
