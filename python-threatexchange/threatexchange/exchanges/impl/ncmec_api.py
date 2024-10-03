@@ -11,8 +11,9 @@ import logging
 import time
 import typing as t
 from dataclasses import dataclass, field
-
+from typing import Self
 from threatexchange.exchanges.clients.ncmec import hash_api as api
+from typing import Self
 
 from threatexchange.exchanges import auth, fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
@@ -44,7 +45,7 @@ class NCMECCheckpoint(
         return self.get_entries_max_ts
 
     @classmethod
-    def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
+    def from_ncmec_fetch(self, cls, response: api.GetEntriesResponse) -> Self:
         return cls(response.max_timestamp)
 
     def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
@@ -136,7 +137,7 @@ class NCMECCredentials(auth.CredentialHelper):
     password: str
 
     @classmethod
-    def _from_str(cls, s: str) -> "NCMECCredentials":
+    def _from_str(cls, s: str) -> Self:
         user, _, passw = s.strip().partition(":")
         return cls(user, passw)
 
@@ -183,7 +184,7 @@ class NCMECSignalExchangeAPI(
         cls,
         collab: NCMECCollabConfig,
         credentials: t.Optional["NCMECCredentials"] = None,
-    ) -> "NCMECSignalExchangeAPI":
+    ) -> Self:
         credentials = credentials or NCMECCredentials.get(cls)
         return cls(collab, credentials.user, credentials.password)
 
