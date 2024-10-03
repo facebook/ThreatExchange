@@ -16,17 +16,21 @@ from flask_apscheduler import APScheduler
 from werkzeug.exceptions import HTTPException
 
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.signal_type.index import SignalTypeIndex
-from threatexchange.signal_type.index import IndexMatch
+from threatexchange.signal_type.index import IndexMatchUntyped, SignalSimilarityInfo, SignalTypeIndex
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.blueprints import hashing
-from OpenMediaMatch.utils.flask_utils import require_request_param, api_error_handler
+from OpenMediaMatch.utils.flask_utils import api_error_handler, require_request_param, str_to_bool
 from OpenMediaMatch.persistence import get_storage
 
 bp = Blueprint("matching", __name__)
 bp.register_error_handler(HTTPException, api_error_handler)
+
+
+class MatchWithDistance(t.TypedDict):
+    content_id: int
+    distance: str
 
 
 @dataclass
@@ -59,7 +63,8 @@ class _SignalIndexInMemoryCache:
     def reload_if_needed(self, store: interface.IUnifiedStore) -> None:
         now = time.time()
         # There's a race condition here, but it's unclear if we should solve it
-        curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
+        curr_checkpoint = store.get_last_index_build_checkpoint(
+            self.signal_type)
         if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
             new_index = store.get_signal_type_index(self.signal_type)
             assert new_index is not None
@@ -96,22 +101,25 @@ def raw_lookup():
      * Signal type (hash type)
      * Signal value (the hash)
      * Optional list of banks to restrict search to
+     * Optional include_distance (bool) wether or not to return distance values on match
     Output:
      * List of matching with content_id and, if included, distance values
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
-    include_distance = bool(request.args.get("include_distance", False)) == True
+    include_distance = str_to_bool(
+        request.args.get("include_distance", "false"))
     lookup_signal_func = (
         lookup_signal_with_distance if include_distance else lookup_signal
     )
 
-    return lookup_signal_func(signal, signal_type_name)
+    return {"matches": lookup_signal_func(signal, signal_type_name)}
 
 
-def query_index(signal: str, signal_type_name: str) -> IndexMatch:
+def query_index(signal: str, signal_type_name: str) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
     storage = get_storage()
-    signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
+    signal_type = _validate_and_transform_signal_type(
+        signal_type_name, storage)
 
     try:
         signal = signal_type.validate_signal_str(signal)
@@ -128,24 +136,22 @@ def query_index(signal: str, signal_type_name: str) -> IndexMatch:
     return results
 
 
-def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
+def lookup_signal(signal: str, signal_type_name: str) -> list[int]:
     results = query_index(signal, signal_type_name)
-    return {"matches": [m.metadata for m in results]}
+    return [m.metadata for m in results]
 
 
 def lookup_signal_with_distance(
     signal: str, signal_type_name: str
-) -> dict[str, dict[str, str]]:
+) -> list[MatchWithDistance]:
     results = query_index(signal, signal_type_name)
-    return {
-        "matches": [
-            {
-                "content_id": m.metadata,
-                "distance": m.similarity_info.pretty_str(),
-            }
-            for m in results
-        ]
-    }
+    return [
+        {
+            "content_id": m.metadata,
+            "distance": m.similarity_info.pretty_str(),
+        }
+        for m in results
+    ]
 
 
 def _validate_and_transform_signal_type(
@@ -229,7 +235,8 @@ def lookup(signal, signal_type_name):
     )
     enabled = [c for c in contents if c.enabled]
     current_app.logger.debug(
-        "lookup matches %d content ids (%d enabled)", len(contents), len(enabled)
+        "lookup matches %d content ids (%d enabled)", len(
+            contents), len(enabled)
     )
     if not enabled:
         return []
@@ -328,16 +335,9 @@ def index_cache_is_stale() -> bool:
 def _get_index(signal_type: t.Type[SignalType]) -> SignalTypeIndex[int] | None:
     entry = _get_index_cache().get(signal_type.get_name())
 
-    if entry is not None and is_in_pytest():
-        entry.reload_if_needed(get_storage())
-
     if entry is None:
         current_app.logger.debug("[lookup_signal] no cache, loading index")
         return get_storage().get_signal_type_index(signal_type)
     if entry.is_ready:
         return entry.index
     return None
-
-
-def is_in_pytest():
-    return "pytest" in sys.modules
