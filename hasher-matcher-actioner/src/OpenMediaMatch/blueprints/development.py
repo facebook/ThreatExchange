@@ -14,17 +14,14 @@ from OpenMediaMatch.blueprints.matching import (
     lookup_signal,
     lookup_signal_with_distance,
 )
-from OpenMediaMatch.utils.flask_utils import api_error_handler
+from OpenMediaMatch.utils.flask_utils import api_error_handler, str_to_bool
 
 from OpenMediaMatch.utils import dev_utils
 from OpenMediaMatch import persistence
 from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 
 
-from threatexchange.exchanges.fetch_state import CollaborationConfigBase
-from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
-    FBThreatExchangeSignalExchangeAPI,
     FBThreatExchangeCollabConfig,
 )
 
