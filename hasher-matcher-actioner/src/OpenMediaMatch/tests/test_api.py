@@ -281,3 +281,31 @@ def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
         "supports_authentification": True,
         "has_set_authentification": False,
     }
+
+
+def test_compare_hashes(app: Flask, client: FlaskClient):
+    specimen1 = "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+    specimen2 = "facd8bcb2a49bcebdec1985228d5ae84bcd006c187c598c720c2b087b3fdb318"
+    # Happy path
+    resp = client.post("/m/compare", json={"pdq": [specimen1, specimen2]})
+    assert resp.json == {"pdq": [True, {"distance": 9}]}
+
+    # Malformed input
+    bad_inputs = [
+        # Not a dict
+        ["banana"],
+        # Dict, but values are not lists
+        {"pdq": "banana"},
+        # List of comparison hashes is empty
+        {"pdq": []},
+        # Hashes are invalid
+        {"pdq": ["banana", "banana"]},
+        # Too many hashes (must be exactly 2)
+        {"pdq": [specimen1, specimen2, specimen1]},
+    ]
+    for bad_input in bad_inputs:
+        resp = client.post(
+            "/m/compare",
+            json=bad_input,
+        )
+        assert resp.status_code == 400
