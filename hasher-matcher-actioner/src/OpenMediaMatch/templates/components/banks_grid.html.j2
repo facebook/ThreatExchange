@@ -10,18 +10,31 @@
     </form>
 </div>
 <div class="row row-cols-1 row-cols-md-4 g-4">
-    {% for b in bankList %}
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-info">
-                <h5 class="my-0 fw-normal">{{b['name']}}</h4>
-            </div>
-            <div class="card-body">
-                <p class="card-text">We'll add stats here later.</p>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Bank Name</th>
+                <th scope="col">Matching Enabled Ratio</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for bank in bankList %}
+            <tr>
+                <th scope="row">{{ loop.index }}</th>
+                <td>{{ bank['name'] }}</td>
+                <td>{{ bank['matching_enabled_ratio'] }}</td>
+                <td>
+                    {% with bank_title=bank['name'] %}
+                        {% include 'components/add_to_bank_form.html.j2' with context %}
+                    {% endwith %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        
+    </table>
 </div>
 <script>
     document.getElementById('create_bank_bank_name').addEventListener('blur', function() {
@@ -67,4 +80,83 @@
             });
     })
 
+    const banksData = [
+        {% for bank in bankList %}
+        {
+            name: "{{ bank.name|e }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    banksData.forEach(function(bank) {
+        const bankTitle=bank.name;
+        const add_content_modal = document.getElementById(bankTitle);
+        const add_content_to_bank_form = document.getElementById("add_content_to_bank_" + bankTitle);
+        const content_result = document.getElementById("hash_result_" + bankTitle);
+
+        add_content_to_bank_form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            formData.append(event.target.content_type.value, event.target.file.files[0]);
+            formData.delete("file");
+
+            fetch(`/c/bank/${bankTitle}/content`, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response from the server here
+                    renderAddBankResult(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        })
+
+
+
+        // reset hash innerHTML
+        add_content_modal.addEventListener('hidden.bs.modal', function () {
+            content_result.innerHTML = ""
+        });
+
+        const renderAddBankResult = (result) => {
+        const hashHeader = `
+                    <h4>Added Hashes:</h4>
+                    <p>Content ID: ${result.id}</p>
+                `;
+
+            // Render hashes table
+            const hashesTableHTML = renderHashTable(result.signals);
+
+            // render on HTML
+            content_result.innerHTML = hashHeader + hashesTableHTML;
+        }
+
+        const renderHashTable = (hashes) => {
+            return `
+                        <h3>Hash Values:</h3>
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(hashes).map(([key, value]) => `
+                                    <tr>
+                                        <td>${key}</td>
+                                        <td>${value}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                           
+                        </table>
+                    `;
+        }
+
+  });
+    
 </script>
