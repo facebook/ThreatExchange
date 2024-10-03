@@ -3,6 +3,8 @@
 var OMM = OMM || {};
 
 OMM.match_dbg = {
+    resultsById: {},
+
     onFileChange: (id) => {
         const form = document.getElementById(id + "-file-upload");
         const container = document.getElementById(id + "-img");
@@ -21,7 +23,7 @@ OMM.match_dbg = {
             const imgUrl = reader.result;
             const img = new Image();
             img.src = imgUrl;
-            img.style = "max-width: 180px; max-height: 180px;"
+            img.style = "max-width: 100%;"
             container.replaceChildren(img);
         };
         reader.readAsDataURL(file);
@@ -34,10 +36,17 @@ OMM.match_dbg = {
             .then(data => {
                 // Handle the response from the server here
                 OMM.match_dbg.renderHashResult(id, data);
+                OMM.match_dbg.resultsById[id] = data;
+
+                if (Object.keys(OMM.match_dbg.resultsById).length === 2) {
+                    OMM.match_dbg.fetchDistance(...Object.values(OMM.match_dbg.resultsById));
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
             });
+        
+        
     },
     renderHashResult: (id, result) => {
         const dest_div = document.getElementById(id + "-signals");
@@ -60,4 +69,40 @@ OMM.match_dbg = {
         navigator.clipboard.writeText(hash_text)
         src.toolti
     },
+
+    fetchDistance: (results1, results2) => {
+        const body = Object.keys(results1)
+            .filter(key => key in results2)
+            .reduce((obj,key) =>({
+                ...obj,
+                [key]: [results1[key], results2[key]]
+            }), {})
+
+        fetch('/m/compare', {
+            method: 'POST',
+            body: JSON.stringify(body),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                const resultsListContainer = document.getElementById("match-dbg-distance-results");
+                const resultsListEntries = Object.entries(data).map(([algoName, [isMatch, details]]) => {
+                    return `<tr>
+                        <td>${algoName}</td>
+                        <td>${isMatch ? "✅ Yes" : "❌ No"}</td>
+                        <td>${details.distance}</td>
+                    </tr>`
+                }).join('');
+
+                resultsListContainer.innerHTML = resultsListEntries;
+
+                document.getElementById("match-dbg-distance-container").removeAttribute("hidden");
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        
+    }
 };
