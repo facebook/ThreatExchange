@@ -71,7 +71,8 @@ class _SignalIndexInMemoryCache:
     def reload_if_needed(self, store: interface.IUnifiedStore) -> None:
         now = time.time()
         # There's a race condition here, but it's unclear if we should solve it
-        curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
+        curr_checkpoint = store.get_last_index_build_checkpoint(
+            self.signal_type)
         if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
             new_index = store.get_signal_type_index(self.signal_type)
             assert new_index is not None
@@ -114,7 +115,8 @@ def raw_lookup():
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
-    include_distance = str_to_bool(request.args.get("include_distance", "false"))
+    include_distance = str_to_bool(
+        request.args.get("include_distance", "false"))
     lookup_signal_func = (
         lookup_signal_with_distance if include_distance else lookup_signal
     )
@@ -126,7 +128,8 @@ def query_index(
     signal: str, signal_type_name: str
 ) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
     storage = get_storage()
-    signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
+    signal_type = _validate_and_transform_signal_type(
+        signal_type_name, storage)
 
     try:
         signal = signal_type.validate_signal_str(signal)
@@ -237,12 +240,14 @@ def lookup(signal, signal_type_name):
     raw_results = lookup_signal(signal, signal_type_name)
     storage = get_storage()
     current_app.logger.debug("getting bank content")
+    current_app.logger.debug(raw_results)
     contents = storage.bank_content_get(
-        {cid for l in raw_results.values() for cid in l}
+        raw_results
     )
     enabled = [c for c in contents if c.enabled]
     current_app.logger.debug(
-        "lookup matches %d content ids (%d enabled)", len(contents), len(enabled)
+        "lookup matches %d content ids (%d enabled)", len(
+            contents), len(enabled)
     )
     if not enabled:
         return []

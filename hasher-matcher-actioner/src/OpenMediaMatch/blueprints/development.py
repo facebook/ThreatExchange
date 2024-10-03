@@ -53,7 +53,7 @@ def query_media():
             return signal_type_to_signal_map
         abort(500, "Something went wrong while hashing the provided media.")
 
-    include_distance = bool(request.args.get("include_distance", False)) == True
+    include_distance = str_to_bool(request.args.get("include_distance", "false"))
     lookup_signal_func = (
         lookup_signal_with_distance if include_distance else lookup_signal
     )
