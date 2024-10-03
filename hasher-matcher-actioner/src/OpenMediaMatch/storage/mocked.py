@@ -190,7 +190,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         # TODO
         raise Exception("Not implemented")
 
-    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
+    def bank_remove_content(self, bank_name: str, content_id: int) -> int:
         # TODO
         raise Exception("Not implemented")
 

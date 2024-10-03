@@ -566,11 +566,13 @@ class DefaultOMMStore(interface.IUnifiedStore):
         sesh.commit()
         return content.id
 
-    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
-        database.db.session.execute(
+    def bank_remove_content(self, bank_name: str, content_id: int) -> int:
+        # TODO: throw an exception if deleting imported content
+        result = database.db.session.execute(
             delete(database.BankContent).where(database.BankContent.id == content_id)
         )
         database.db.session.commit()
+        return result.rowcount
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]

@@ -212,6 +212,20 @@ def _bank_add_signals(
     }
 
 
+@bp.route("/bank/<bank_name>/content/<content_id>", methods=["DELETE"])
+def bank_delete_content(bank_name: str, content_id: int):
+    """
+    Remove a signal from a bank.
+    """
+    storage = persistence.get_storage()
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        abort(404, f"bank '{bank_name}' not found")
+
+    count = storage.bank_remove_content(bank.name, content_id)
+    return {"deleted": count}
+
+
 @bp.route("/bank/<bank_name>/signal", methods=["POST"])
 def bank_add_as_signals(bank_name: str):
     """
