@@ -237,9 +237,8 @@ def lookup(signal, signal_type_name):
     raw_results = lookup_signal(signal, signal_type_name)
     storage = get_storage()
     current_app.logger.debug("getting bank content")
-    contents = storage.bank_content_get(
-        {cid for l in raw_results.values() for cid in l}
-    )
+    current_app.logger.debug(raw_results)
+    contents = storage.bank_content_get(raw_results)
     enabled = [c for c in contents if c.enabled]
     current_app.logger.debug(
         "lookup matches %d content ids (%d enabled)", len(contents), len(enabled)
