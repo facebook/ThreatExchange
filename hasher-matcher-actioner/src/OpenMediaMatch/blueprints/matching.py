@@ -306,6 +306,53 @@ def index_status():
     return status_by_name
 
 
+@bp.route("/compare", methods=["POST"])
+def compare():
+    """
+    Compare pairs of hashes and get the match distance between them.
+    Example input:
+    {
+        "pdq": ["facd8b...", "facd8b..."],
+        "not_pdq": ["bdec19...","bdec19..."]
+    }
+    Example output
+    {
+        "pdq": [
+            true,
+            {
+                "distance": 9
+            }
+        ],
+        "not_pdq": 20
+            true,
+            {
+                "distance": 341
+            }
+        }
+    }
+    """
+    request_data = request.get_json()
+    if type(request_data) != dict:
+        abort(400, "Request input was not a dict")
+    storage = get_storage()
+    results = {}
+    for signal_type_str in request_data.keys():
+        hashes_to_compare = request_data.get(signal_type_str)
+        if type(hashes_to_compare) != list:
+            abort(400, f"Comparison hashes for {signal_type_str} was not a list")
+        if hashes_to_compare.__len__() != 2:
+            abort(400, f"Comparison hash list lenght must be exactly 2")
+        signal_type = _validate_and_transform_signal_type(signal_type_str, storage)
+        try:
+            left = signal_type.validate_signal_str(hashes_to_compare[0])
+            right = signal_type.validate_signal_str(hashes_to_compare[1])
+            comparison = signal_type.compare_hash(left, right)
+            results[signal_type_str] = comparison
+        except Exception as e:
+            abort(400, f"Invalid {signal_type_str} hash: {e}")
+    return results
+
+
 def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
     assert not hasattr(app, "signal_type_index_cache"), "Aready initialized?"
     storage = get_storage()
