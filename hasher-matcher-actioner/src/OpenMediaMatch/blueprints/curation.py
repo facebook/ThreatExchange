@@ -285,7 +285,7 @@ def exchange_create():
     api_type_name = data.get("api")
 
     if not re.match("^[A-Z0-9_]+$", bank):
-        abort(400, "Field `bank` must match /^[A-Z0-9_]$/")
+        abort(400, "Field `bank` must match /^[A-Z0-9_]+$/")
 
     if not isinstance(api_json, dict):
         abort(400, "Field `api_json` must be object")

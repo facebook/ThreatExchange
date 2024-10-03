@@ -1,11 +1,12 @@
 {# Copyright (c) Meta Platforms, Inc. and affiliates. #}
 <h3> Banks </h3>
 <div class="w-50 my-1">
-    <form action="/ui/create_bank" method="post" enctype="multipart/form-data">
+    <form action="/ui/create_bank" method="post" enctype="multipart/form-data" id="banks_grid_form">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="bank_name" placeholder="Name" required>
-            <button type="submit" class="btn btn-outline-success">Create New Bank</button>
+            <input type="text" class="form-control" name="bank_name" placeholder="Name" id="create_bank_bank_name" required>
+            <button type="submit" class="btn btn-outline-success" id="create_bank_submit">Create New Bank</button>
         </div>
+        <span id="bank-name-error" class="text-danger"></span>
     </form>
 </div>
 <div class="row row-cols-1 row-cols-md-4 g-4">
@@ -22,3 +23,48 @@
     </div>
     {% endfor %}
 </div>
+<script>
+    document.getElementById('create_bank_bank_name').addEventListener('blur', function() {
+        const bankNameField = this;
+        // auto uppercase and trim input
+        bankNameField.value = bankNameField.value.trim().toUpperCase();
+        const submitButton = document.getElementById('create_bank_submit');
+        submitButton.disabled = true;
+        const errorSpan = document.getElementById('bank-name-error');
+        errorSpan.textContent = ''; // Clear previous error message
+        const regex = /^[A-Z0-9_]+$/;
+
+        // Validate the input
+        if (!regex.test(bankNameField.value)) {
+            errorSpan.textContent = 'Bank name must be all uppercase and snake cased';
+            bankNameField.classList.remove("is-valid");
+            bankNameField.classList.add("is-invalid");
+        } else {
+            submitButton.disabled = false;
+            bankNameField.classList.remove("is-invalid");
+            bankNameField.classList.add("is-valid");
+        }
+    });
+
+    document.getElementById("banks_grid_form").addEventListener("submit", async event => {
+        event.preventDefault();
+
+        fetch(`/c/banks`, {
+            method: 'POST',
+            body: JSON.stringify({name: document.getElementById('create_bank_bank_name').value}),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+        })
+            .then(async response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    json = await response.json()
+                    alert("Create Bank failed! " + response.statusText + " : " + (json['message'] ?? '<no message>)'))
+                }
+            });
+    })
+
+</script>
