@@ -39,7 +39,7 @@ bp.register_error_handler(HTTPException, api_error_handler)
 class MatchWithDistance(t.TypedDict):
     content_id: int
     distance: str
-
+    banks: list[str]
 
 @dataclass
 class _SignalIndexInMemoryCache:
@@ -151,11 +151,13 @@ def lookup_signal(signal: str, signal_type_name: str) -> list[int]:
 def lookup_signal_with_distance(
     signal: str, signal_type_name: str
 ) -> list[MatchWithDistance]:
+    banks = lookup(signal, signal_type_name)
     results = query_index(signal, signal_type_name)
     return [
         {
             "content_id": m.metadata,
             "distance": m.similarity_info.pretty_str(),
+            "banks": banks,
         }
         for m in results
     ]
