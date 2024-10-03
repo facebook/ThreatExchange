@@ -63,7 +63,7 @@ class _CursoredResponse:
 
 
 class ThreatExchangeAPI:
-    _TE_BASE_URL = "https://graph.facebook.com/v9.0"
+    _TE_BASE_URL = "https://graph.facebook.com/v21.0"
 
     # This is just a keystroke-saver / error-avoider for passing around
     # post-parameter field names.
