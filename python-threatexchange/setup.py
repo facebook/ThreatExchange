@@ -43,7 +43,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Facebook",
-    author_email="threatexchange@fb.com",
+    author_email="threatexchange@meta.com",
     license="BSD",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
