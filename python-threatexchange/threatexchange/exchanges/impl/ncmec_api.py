@@ -13,7 +13,6 @@ import typing as t
 from dataclasses import dataclass, field
 from typing import Self
 from threatexchange.exchanges.clients.ncmec import hash_api as api
-from typing import Self
 
 from threatexchange.exchanges import auth, fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
