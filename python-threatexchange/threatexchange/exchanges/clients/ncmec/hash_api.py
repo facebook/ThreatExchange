@@ -236,7 +236,7 @@ class NCMECEntryUpdate:
     fingerprints: t.Dict[str, str]
     # The feedback (upvote/downvote) that other ESPs have given for this entry
     # Keyed the same way as fingerprints
-    feedback: t.Dict[str, list[Feedback]]
+    feedback: t.Dict[str, t.List[Feedback]]
 
     @classmethod
     def from_xml(cls, xml: _XMLWrapper) -> "NCMECEntryUpdate":
@@ -513,9 +513,11 @@ class NCMECHashAPI:
         return [StatusResult.from_xml(member) for member in _XMLWrapper(response)]
 
     def feedback_reasons(self, fingerprint_type: FingerprintType) -> t.Dict[str, str]:
-        """Get the possible negative feedback reasons for each feedback type"""
-        ret = {}
-        # Could parallelize this
+        """
+        Get the possible negative feedback reasons for this type
+
+        According to NCMEC documentation, the GUIDs
+        """
         xml = _XMLWrapper(
             self._get(NCMECEndpoint.feedback, path=f"{fingerprint_type.value}/reasons")
         )
