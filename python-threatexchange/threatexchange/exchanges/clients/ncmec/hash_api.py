@@ -174,7 +174,7 @@ class Feedback:
     @classmethod
     def get_from_entry_feedback(
         cls, entry: _XMLWrapper
-    ) -> t.Dict[str, list["Feedback"]]:
+    ) -> t.Dict[str, t.List["Feedback"]]:
         feedbacks_xml = entry.maybe("feedback")
         if not feedbacks_xml:
             return {}
