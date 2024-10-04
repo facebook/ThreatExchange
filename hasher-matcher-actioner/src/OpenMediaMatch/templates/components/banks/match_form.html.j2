@@ -1,0 +1,102 @@
+{# Copyright (c) Meta Platforms, Inc. and affiliates. #}
+<div class="card">
+    <div class="card-header">Find Content in Banks</div>
+    <form id="match_file" class="card-body">
+        <div class="row">
+            <div class="col">
+                <input class="form-control" type="file" name="file" required />
+            </div>
+            <div class="col">
+                <select class="form-select" name="media" id="content-type" required>
+                    <option selected disabled value="">Select content type</option>
+                    {% for c in content %}
+                        {% if c['enabled'] %}
+                            <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <button type="submit" class="btn btn-primary">Find</button>
+            </div>
+            <div class="col">
+                <!-- for spacing -->
+            </div>
+        </div>
+    </form>
+    <div id="matches">
+        <!-- Added to by javascript -->
+    </div>
+</div>
+
+<script>
+    const match_form = document.getElementById("match_file");
+    const matches = document.getElementById("matches");
+    let banks = [];
+    match_form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData();
+
+        // Append the selected file and content type to the FormData
+        formData.append(event.target.media.value, event.target.file.files[0]);
+
+        fetch('/ui/query', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response from the server here
+                banks = data.banks;
+                renderMatchResult(data);
+                highlightMatchedResults(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    })
+
+    
+    const clearMatches = () => {
+        matches.innerHTML = "";
+        banks.forEach((bankName) => {
+            document.getElementById(`bank_item_${bankName}`).classList.remove("bg-light");
+        })
+    }
+    
+    const renderMatchResult = (result) => {
+        // Render matched banks
+        const banksList = result.banks.map(bank => `<li>${bank}</li>`).join('');
+        const content = `
+                <div class="card-body">
+                    <h5>Matched Banks</h5>
+                    <ul>${banksList}</ul>
+                    <h5>Hash Values:</h5>
+                    <table class="table table-hover" style="max-height: 100px;">
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                        ${Object.entries(result.hashes).map(([key, value]) => `
+                            <tr>
+                                <td>${key}</td>
+                                <td style="overflow: scroll; max-width: 200px; white-space: no-wrap;">${value}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                    <button type="button" class="btn btn-secondary" onclick="clearMatches()">Clear</button>
+                </div>
+        `
+        // Append both the banks and hashes sections to the "matches" element
+        matches.innerHTML = content;
+    }
+
+    const highlightMatchedResults = (result) => {
+        // Render matched banks
+        result.banks.forEach((bankName) => {
+            document.getElementById(`bank_item_${bankName}`).classList.add("bg-light");
+        })
+    }
+    
+    
+</script>

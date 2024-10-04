@@ -1,0 +1,69 @@
+{# Copyright (c) Meta Platforms, Inc. and affiliates. #}
+<button type="submit" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#create_new_bank_modal">Create New Bank</button>
+
+<!-- Modal -->
+<div class="modal fade" id="create_new_bank_modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="width: 60%; max-width: none;">
+        <div class="modal-content modal-xl" style="padding: 20px">
+            <form action="/ui/create_bank" method="post" enctype="multipart/form-data" id="banks_grid_form">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Create New Bank</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> 
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" name="bank_name" placeholder="Name" id="create_bank_bank_name" required>
+                    </div>
+                    <span id="bank-name-error" class="text-danger"></span>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success" id="create_bank_submit">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    document.getElementById('create_bank_bank_name').addEventListener('blur', function() {
+        const bankNameField = this;
+        // auto uppercase and trim input
+        bankNameField.value = bankNameField.value.trim().toUpperCase();
+        const submitButton = document.getElementById('create_bank_submit');
+        submitButton.disabled = true;
+        const errorSpan = document.getElementById('bank-name-error');
+        errorSpan.textContent = ''; // Clear previous error message
+        const regex = /^[A-Z0-9_]+$/;
+
+        // Validate the input
+        if (!regex.test(bankNameField.value)) {
+            errorSpan.textContent = 'Bank name must be all uppercase and snake cased';
+            bankNameField.classList.remove("is-valid");
+            bankNameField.classList.add("is-invalid");
+        } else {
+            submitButton.disabled = false;
+            bankNameField.classList.remove("is-invalid");
+            bankNameField.classList.add("is-valid");
+        }
+    });
+
+    document.getElementById("banks_grid_form").addEventListener("submit", async event => {
+        event.preventDefault();
+
+        fetch(`/c/banks`, {
+            method: 'POST',
+            body: JSON.stringify({name: document.getElementById('create_bank_bank_name').value}),
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+        })
+            .then(async response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    json = await response.json()
+                    alert("Create Bank failed! " + response.statusText + " : " + (json['message'] ?? '<no message>)'))
+                }
+            });
+    })
+</script>
