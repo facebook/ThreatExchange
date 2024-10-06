@@ -121,6 +121,10 @@ E.g. for a hasher-matcher-actioner PR that adds a new /compare API endpoint, the
 Make sure to include a summary of changes (especially the "why" or problem you are solving if it's new functionality and not described in an issue).
 Make sure to link the issue if it's for an issue!
 
+#### Draft Reviews and RFC
+If you are not sure about a potential change, and want to get feedback on a review, you can still submit a PR as a draft PR, or clearly label the PR with "[RFC]" (request for comment). 
+Reviewers will know not to merge your changes but may still send you an Accept if they would merge it without changes (or use "Request Changes" to indicate the same thing, just that they want you to convert from draft).
+
 ### Continuous Integration
 If you are a new contributor, the continuous integration (CI) won't run until it's triggered by a maintainer of the repo. 
 If there is CI failure, we usually won't merge the change!
@@ -150,6 +154,13 @@ Here are some things to expect from review:
     2. `ignorable:` This comment is explicitly not blocking, and may just be a thought. You may be inspired to change code, reading it, but it's not expected.
     3. `nit:` This may be a stylistic preference or minor efficiency in the code that does not affect the correctness. Implicitly `ignorable:`, though if you like yours better, consider commenting why!
     4. `alt/code golf:` The reviewer is providing an alternative implementation that might be shorter or have a stylistic difference. Implicitly `ignorable:`
+
+#### Resolving Conversations
+Standard practice is to let the commentor who created a comment thread, or another reviewer "resolve conversations" after you’ve responded to or addressed the issue. Reviewers may un-resolve conversations they think still need discussion. 
+
+#### Clearing Reviews After Response
+Sometimes Github will still show "Changes Requested" even if you have responded to all changes (or interactions with conversation resolution). Please [dismiss reviews with changes requested](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/dismissing-a-pull-request-review) that are stuck in "Requested Changes" once you think you have addressed everything.
+
   
 ### Merging
 Once your code is accepted, we usually merge it right away! If you don't want us to do this, please note it in the summary. You can always do followups as another PR!
