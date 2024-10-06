@@ -1,0 +1,121 @@
+{# Copyright (c) Meta Platforms, Inc. and affiliates. #}
+<h1>Banks</h1>
+<p class="text-secondary">Banks are like folders. You can do the following on this page:</p>
+<ul class="text-secondary">
+    <li>Create new banks</li>
+    <li>Add content: Add content to each bank</li>
+    <li>Search by content: Find banks that contain a certain piece of content</li>
+</ul>
+{% include 'components/banks/actions_bar.html.j2' %}
+
+<div class="row row-cols-1 row-cols-md-4 g-4">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Bank Name</th>
+                <th scope="col">Matching Enabled Ratio</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for bank in bankList %}
+            <tr id="bank_item_{{bank['name']}}">
+                <th scope="row" style="background-color: transparent;">{{ loop.index }}</th>
+                <td style="background-color: transparent;">{{ bank['name'] }}</td>
+                <td style="background-color: transparent;">{{ bank['matching_enabled_ratio'] }}</td>
+                <td style="background-color: transparent;">
+                    {% with bank_title=bank['name'] %}
+                        {% include 'components/banks/add_to_bank_form.html.j2' %}
+                    {% endwith %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        
+    </table>
+</div>
+<script>
+    const banksData = [
+        {% for bank in bankList %}
+        {
+            name: "{{ bank.name|e }}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    banksData.forEach(function(bank) {
+        const bankTitle=bank.name;
+        const addContentModal = document.getElementById(bankTitle);
+        const addContentToBankForm = document.getElementById("add_content_to_bank_" + bankTitle);
+        const formContent = addContentToBankForm.innerHTML;
+        addContentToBankForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            formData.append(event.target.content_type.value, event.target.file.files[0]);
+            formData.delete("file");
+
+            fetch(`/c/bank/${bankTitle}/content`, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Handle the response from the server here
+                    renderAddBankResult(data);
+
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        })
+
+
+
+        // reset modal innerHTML
+        addContentModal.addEventListener('hidden.bs.modal', function () {
+            addContentToBankForm.innerHTML = formContent;
+        });
+
+        const renderAddBankResult = (result) => {
+            // Render hashes table
+            const hashTable = HashTable(result);
+
+            // render on HTML
+            addContentToBankForm.innerHTML =  hashTable;
+        }
+
+        const HashTable = (result) => {
+            return `
+                        <div class="modal-header">
+                            <h3 class="text-success">Success!</h3>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> 
+                        </div>
+                        <div class="modal-body">
+                            <h4>Added Hashes:</h4>
+                            <p>Content ID: ${result.id}</p>
+                            <h4>Hash Values:</h4>
+                            <table class="table table-hover" =>
+                                <thead>
+                                    <tr>
+                                        <th>Key</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${Object.entries(result.signals).map(([key, value]) => `
+                                        <tr>
+                                            <td>${key}</td>
+                                            <td style="overflow: scroll; max-width: 200px; white-space: no-wrap;">${value}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            
+                            </table>
+                        </div>
+                    `;
+        }
+
+  });
+    
+</script>

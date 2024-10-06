@@ -1,27 +1,27 @@
 {# Copyright (c) Meta Platforms, Inc. and affiliates. #}
-<h3> Banks </h3>
-<div class="w-50 my-1">
-    <form action="/ui/create_bank" method="post" enctype="multipart/form-data" id="banks_grid_form">
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" name="bank_name" placeholder="Name" id="create_bank_bank_name" required>
-            <button type="submit" class="btn btn-outline-success" id="create_bank_submit">Create New Bank</button>
-        </div>
-        <span id="bank-name-error" class="text-danger"></span>
-    </form>
-</div>
-<div class="row row-cols-1 row-cols-md-4 g-4">
-    {% for b in bankList %}
-    <div class="col">
-        <div class="card">
-            <div class="card-header bg-info">
-                <h5 class="my-0 fw-normal">{{b['name']}}</h4>
-            </div>
-            <div class="card-body">
-                <p class="card-text">We'll add stats here later.</p>
-            </div>
+<button type="submit" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#create_new_bank_modal">Create New Bank</button>
+
+<!-- Modal -->
+<div class="modal fade" id="create_new_bank_modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="width: 60%; max-width: none;">
+        <div class="modal-content modal-xl" style="padding: 20px">
+            <form action="/ui/create_bank" method="post" enctype="multipart/form-data" id="banks_grid_form">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Create New Bank</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> 
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" name="bank_name" placeholder="Name" id="create_bank_bank_name" required>
+                    </div>
+                    <span id="bank-name-error" class="text-danger"></span>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success" id="create_bank_submit">Create</button>
+                </div>
+            </form>
         </div>
     </div>
-    {% endfor %}
 </div>
 <script>
     document.getElementById('create_bank_bank_name').addEventListener('blur', function() {
@@ -66,5 +66,4 @@
                 }
             });
     })
-
 </script>
