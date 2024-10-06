@@ -120,7 +120,10 @@ $ make push
 We will only rarely add new extensions, which require additional dependencies, and are not enabled by default. We encourage authors to write and own their own extensions! Feel free to create PR's to add your own extensions to the list of known ones in the README.
 
 # Writing Pull Requests
-Thank you for considering writing improvements to the library! We accept pull requests! Developers on the project tend to use fork repos, rather than development branches. A good writeup of this flow [lives here](https://gist.github.com/Chaser324/ce0505fbed06b947d962).
+Thank you for considering writing improvements to the library! We accept pull requests! 
+Please see the detailed instructions in the root-level [CONTRIBUTING](../CONTRIBUTING.md) on making PRs.
+
+The following are additional considerations or pytx-specific notes:
 
 ## Before Submitting a PR
 Make sure to run all the local tests and linters. They should complete quickly:
@@ -131,30 +134,3 @@ $ black .
 $ python -m mypy threatexchange
 $ py.test
 ```
-
-## Draft Reviews and RFC
-If you are not sure about a potential change, and want to get feedback on a review, you can still submit a PR as a draft PR, or clearly label the PR with "[RFC]" (request for comment). Reviewers will know not to merge your changes but may still send you an Accept if they would merge it without changes (or use "Request Changes" to indicate the same thing, just that they want you to convert from draft).
-
-## Github Actions & Lints
-All GitHub action failures are actionable, and reviewers will not merge your code until they are all green. You can get a review even if a lint is failing but expect a "Request Changes" even if everything else looks perfect.
-
-## During the Review
-Feel free to request specific reviewers, but any member of the threatexchange team may review your PR. You only need one "approval" even if multiple people have commented or reviewed your changes. 
-
-Depending on the reviewer, you may also see some annotations in the comments:
-* blocking: This indicates that there is a change that the reviewer would not accept the PR without further discussion. This may not mean that there is anything wrong with your code, just that the reviewer is uncertain (you will sometimes see 'blocking question:' used similarly.
-* nit: This may be a stylistic preference or minor efficiency in the code that does not affect the correctness. Most reviewers will still accept code if you feel strongly about the current form (though it can help to explain why you think it is better).
-* ignorable: This comment is explicitly not blocking.
-* alt/code golf: The reviewer is providing an alternative implementation that might be shorter or have a stylistic difference. These are always ignorable if you prefer the way you wrote it originally.
-
-## Resolving Conversations
-Standard practice is to let the commentor who created a comment thread, or another reviewer "resolve conversations" after you’ve responded to or addressed the issue. Reviewers may un-resolve conversations they think still need discussion. 
-
-## Clearing Reviews After Response
-Sometimes Github will still show "Changes Requested" even if you have responded to all changes (or interactions with conversation resolution). Please [dismiss reviews with changes requested](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/dismissing-a-pull-request-review) that are stuck in "Requested Changes" once you think you have addressed everything.
-
-## Acceptance & Merging
-For general members of the public, your reviewer will merge your change as soon as they believe it is good enough, even though they may have outstanding nits/comments on your PR that you may want to respond to. You can do a follow-up PR to do cleanup, or if you prefer to respond to every comment, you can leave your PR in "draft" and only convert it once you have it in the exact state you want.
-
-### Authors with merge access
-For threatexchange members with merge ability, we general allow the author to respond to any final comments, make final tweaks, and merge on their own once the PR is accepted. This includes a degree of trust that you aren't adding something that the author would probably want further discussion on. With great power there must also come great responsibility!
