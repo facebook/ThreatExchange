@@ -92,6 +92,12 @@ def hello_world():
     return "Hello, world!\n"
 ```
 
+If your server is running, stop it by pressing Ctrl+C. Then, start the server and rebuild the image to pick up the changes:
+
+```bash
+docker compose up --build
+```
+
 Retry the `curl localhost:5000/hello`, you should now see your greeting message come back instead of the 404 error.
 
 ## Self-managed Python dev environment
