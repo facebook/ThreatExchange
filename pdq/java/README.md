@@ -107,6 +107,6 @@ a5f05ba8a4896a17c106a3da5aaaab07b61b5b42f8fc07fc83c3d0740bfcb0fa,100,reg_test/in
 
 ## Contact
 
-threatexchange@fb.com
+threatexchange@meta.com
 
 2018-01-21

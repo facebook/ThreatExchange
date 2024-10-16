@@ -16,7 +16,7 @@ lot.
 
 # Contact
 
-threatexchange@fb.com
+threatexchange@meta.com
 
 # Compiling the code
 
@@ -154,7 +154,7 @@ $ te-tag-query-java ids-to-details 1791017857689049 | jq .
   "last_updated": "2020-07-02T21:08:31+0000",
   "td_confidence": "100",
   "td_owner_id": "494491891138576",
-  "td_owner_email": "threatexchange@fb.com",
+  "td_owner_email": "threatexchange@meta.com",
   "td_owner_name": "Media Hash Sharing RF Test",
   "td_visibility": "HAS_PRIVACY_GROUP",
   "td_review_status": "REVIEWED_AUTOMATICALLY",

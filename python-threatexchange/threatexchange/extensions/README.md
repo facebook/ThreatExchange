@@ -15,7 +15,7 @@ A number of extensions that require additional libraries to be installed, but ar
 You can create your own extensions easily, and we encourage you to do so!
 
 ## A Note on Name Collisions
-ContentType, SignalType, and SignalExchangeAPI all require a unique string name to enable the various lookups. There will be a challenge for extension writers to choose short, human-friendly names that have not already been used by others. As long as a runtime does not have two types with the same short name, it will still work properly. To aid with finding a free name, we'll try and keep a list of extensions here with their names. Feel free to reach out to threatexchange@fb.com to get your extension listed here.
+ContentType, SignalType, and SignalExchangeAPI all require a unique string name to enable the various lookups. There will be a challenge for extension writers to choose short, human-friendly names that have not already been used by others. As long as a runtime does not have two types with the same short name, it will still work properly. To aid with finding a free name, we'll try and keep a list of extensions here with their names. Feel free to reach out to threatexchange@meta.com to get your extension listed here.
 
 | Type | Package Name | Name | Note |
 | ------------- | ------------- | ------------- | ------------- |

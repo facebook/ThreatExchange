@@ -38,4 +38,4 @@ Before evaluating the results on your own to choose the thresholds that work for
 
 ## Contact
 
-threatexchange@fb.com
+threatexchange@meta.com

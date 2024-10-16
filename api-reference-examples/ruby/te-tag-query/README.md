@@ -20,7 +20,7 @@ lot.
 
 # Contact
 
-threatexchange@fb.com
+threatexchange@meta.com
 
 # Files
 
@@ -165,7 +165,7 @@ $ te-tag-query-ruby ids-to-details 3046896738736542 | jq .
   "confidence": 100,
   "owner": {
     "id": "494491891138576",
-    "email": "threatexchange@fb.com",
+    "email": "threatexchange@meta.com",
     "name": "Media Hash Sharing RF Test"
   },
   "privacy_type": "HAS_PRIVACY_GROUP",
