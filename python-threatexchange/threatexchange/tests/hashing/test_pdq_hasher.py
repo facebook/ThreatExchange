@@ -52,12 +52,6 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
     def setUp(self):
         """Set up test images."""
         self.test_files = {
-            # Base 64 
-            # "base64": {
-            #     "path": "",
-            #     "expected_pdq": RANDOM_IMAGE_PDQ,
-            #     "expected_quality": 100
-            # },
             # Grayscale with alpha channel
             "la": {
                 "path": "threatexchange/tests/hashing/resources/LA.png",
@@ -78,8 +72,8 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
             }
         }
 
-    def test_pdq_from_file(self):
-        """Writes a few bytes to a file and runs the pdq hasher on it."""
+    def test_pdq_from_file_different_formats(self):
+        """Test PDQ hash computation from files of different formats."""
         for format_name, test_data in self.test_files.items():
             with self.subTest(format=format_name):
                 file_path = pathlib.Path(test_data["path"])
@@ -88,8 +82,8 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
                     assert pdq_hash == test_data["expected_pdq"]
                     assert pdq_quality == test_data["expected_quality"]
 
-    def test_pdq_from_bytes(self):
-        """Runs the pdq hasher directly on bytes"""
+    def test_pdq_from_bytes_different_formats(self):
+        """Test PDQ hash computation from bytes of different formats."""
         for format_name, test_data in self.test_files.items():
             with self.subTest(format=format_name):
                 file_path = pathlib.Path(test_data["path"])
@@ -99,3 +93,18 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
                         pdq_hash, pdq_quality = pdq_hasher.pdq_from_bytes(bytes_data)
                         assert pdq_hash == test_data["expected_pdq"]
                         assert pdq_quality == test_data["expected_quality"]
+
+    def test_pdq_from_file(self):
+        """Writes a few bytes to a file and runs the pdq hasher on it."""
+        with tempfile.NamedTemporaryFile("w+b") as f:
+            f.write(base64.b64decode(RANDOM_IMAGE_BASE64))
+            f.flush()
+
+            pdq_hash = pdq_hasher.pdq_from_file(pathlib.Path(f.name))[0]
+            assert pdq_hash == RANDOM_IMAGE_PDQ
+
+    def test_pdq_from_bytes(self):
+        """Runs the pdq hasher directly on bytes"""
+        bytes_ = base64.b64decode(RANDOM_IMAGE_BASE64)
+        pdq_hash = pdq_hasher.pdq_from_bytes(bytes_)[0]
+        assert pdq_hash == RANDOM_IMAGE_PDQ
