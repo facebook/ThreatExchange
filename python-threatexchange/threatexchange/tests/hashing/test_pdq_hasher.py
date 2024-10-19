@@ -56,20 +56,20 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
             "la": {
                 "path": "threatexchange/tests/hashing/resources/LA.png",
                 "expected_pdq": "5dbc6c369dc4476538bcf307e61d80994c5ed0a5790efaf999bc499ad3b02421",
-                "expected_quality": 100
+                "expected_quality": 100,
             },
             # 16-bit grayscale
             "i16": {
                 "path": "threatexchange/tests/hashing/resources/I16.png",
                 "expected_pdq": "66cc33199933cce69933333966cccccc99934c33cc66b31967994ce69936b319",
-                "expected_quality": 100
+                "expected_quality": 100,
             },
             # Standard RGB test
             "rgb": {
                 "path": "threatexchange/tests/hashing/resources/rgb.jpeg",
                 "expected_pdq": "de252b0998c9d23c6b3aa69bd9c624719f194ecd632d3ccbc2763f1e70c8c834",
-                "expected_quality": 100
-            }
+                "expected_quality": 100,
+            },
         }
 
     def test_pdq_from_file_different_formats(self):
@@ -88,7 +88,7 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
             with self.subTest(format=format_name):
                 file_path = pathlib.Path(test_data["path"])
                 if file_path.exists():
-                    with open(file_path, 'rb') as f:
+                    with open(file_path, "rb") as f:
                         bytes_data = f.read()
                         pdq_hash, pdq_quality = pdq_hasher.pdq_from_bytes(bytes_data)
                         assert pdq_hash == test_data["expected_pdq"]
