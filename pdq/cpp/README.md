@@ -15,4 +15,4 @@ Please see [../README.md](https://github.com/facebook/ThreatExchange/blob/main/p
 
 # Contact
 
-threatexchange@fb.com
+threatexchange@meta.com

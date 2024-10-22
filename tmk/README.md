@@ -342,4 +342,4 @@ that for this sample dataset we aren't 'missing' any matches this way.
 
 # Contact
 
-threatexchange@fb.com
+threatexchange@meta.com
