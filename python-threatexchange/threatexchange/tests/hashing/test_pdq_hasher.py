@@ -49,6 +49,51 @@ RANDOM_IMAGE_PDQ = "ad64cd9875e131a177b1f2a0d6b38ae1de9ea80421e4c51dde1b0363deba
 
 
 class PDQHasherModuleUnitTest(unittest.TestCase):
+    def setUp(self):
+        """Set up test images."""
+        self.test_files = {
+            # Grayscale with alpha channel
+            "la": {
+                "path": "threatexchange/tests/hashing/resources/LA.png",
+                "expected_pdq": "accb6d39648035f8125c8ce6ba65007de7b54c67a2d93ef7b8f33b0611306715",
+                "expected_quality": 100,
+            },
+            # 16-bit grayscale
+            "i16": {
+                "path": "threatexchange/tests/hashing/resources/I16.png",
+                "expected_pdq": "de2ef0e99ecdfc1d248a0eb055f023d1d61e79c3920cbb55d561c02accab1763",
+                "expected_quality": 36,
+            },
+            # Standard RGB test
+            "rgb": {
+                "path": "threatexchange/tests/hashing/resources/rgb.jpeg",
+                "expected_pdq": "fb4eed46cb8a6c78819ca06b756c541f7b07ef6d02c82fccd00f862166272cda",
+                "expected_quality": 100,
+            },
+        }
+
+    def test_pdq_from_file_different_formats(self):
+        """Test PDQ hash computation from files of different formats."""
+        for format_name, test_data in self.test_files.items():
+            with self.subTest(format=format_name):
+                file_path = pathlib.Path(test_data["path"])
+                if file_path.exists():
+                    pdq_hash, pdq_quality = pdq_hasher.pdq_from_file(file_path)
+                    assert pdq_hash == test_data["expected_pdq"]
+                    assert pdq_quality == test_data["expected_quality"]
+
+    def test_pdq_from_bytes_different_formats(self):
+        """Test PDQ hash computation from bytes of different formats."""
+        for format_name, test_data in self.test_files.items():
+            with self.subTest(format=format_name):
+                file_path = pathlib.Path(test_data["path"])
+                if file_path.exists():
+                    with open(file_path, "rb") as f:
+                        bytes_data = f.read()
+                        pdq_hash, pdq_quality = pdq_hasher.pdq_from_bytes(bytes_data)
+                        assert pdq_hash == test_data["expected_pdq"]
+                        assert pdq_quality == test_data["expected_quality"]
+
     def test_pdq_from_file(self):
         """Writes a few bytes to a file and runs the pdq hasher on it."""
         with tempfile.NamedTemporaryFile("w+b") as f:
@@ -63,11 +108,3 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
         bytes_ = base64.b64decode(RANDOM_IMAGE_BASE64)
         pdq_hash = pdq_hasher.pdq_from_bytes(bytes_)[0]
         assert pdq_hash == RANDOM_IMAGE_PDQ
-
-    def test_pdq_from_file_la_png(self):
-        file_path = pathlib.Path("threatexchange/tests/hashing/resources/LA.png")
-        expected_pdq_output = (
-            "5dbc6c369dc4476538bcf307e61d80994c5ed0a5790efaf999bc499ad3b02421",
-            100,
-        )
-        assert pdq_hasher.pdq_from_file(file_path) == expected_pdq_output
