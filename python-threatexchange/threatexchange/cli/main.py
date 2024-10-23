@@ -329,6 +329,7 @@ def inner_main(
 def main():
     """The main called by pip"""
     _setup_logging(os.getenv("TX_VERBOSE", "0"), initial=True)
+
     try:
         inner_main()
     except base.CommandError as ce:
