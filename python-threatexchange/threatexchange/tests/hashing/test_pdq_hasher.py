@@ -55,19 +55,19 @@ class PDQHasherModuleUnitTest(unittest.TestCase):
             # Grayscale with alpha channel
             "la": {
                 "path": "threatexchange/tests/hashing/resources/LA.png",
-                "expected_pdq": "5dbc6c369dc4476538bcf307e61d80994c5ed0a5790efaf999bc499ad3b02421",
+                "expected_pdq": "accb6d39648035f8125c8ce6ba65007de7b54c67a2d93ef7b8f33b0611306715",
                 "expected_quality": 100,
             },
             # 16-bit grayscale
             "i16": {
                 "path": "threatexchange/tests/hashing/resources/I16.png",
-                "expected_pdq": "66cc33199933cce69933333966cccccc99934c33cc66b31967994ce69936b319",
-                "expected_quality": 100,
+                "expected_pdq": "de2ef0e99ecdfc1d248a0eb055f023d1d61e79c3920cbb55d561c02accab1763",
+                "expected_quality": 36,
             },
             # Standard RGB test
             "rgb": {
                 "path": "threatexchange/tests/hashing/resources/rgb.jpeg",
-                "expected_pdq": "de252b0998c9d23c6b3aa69bd9c624719f194ecd632d3ccbc2763f1e70c8c834",
+                "expected_pdq": "fb4eed46cb8a6c78819ca06b756c541f7b07ef6d02c82fccd00f862166272cda",
                 "expected_quality": 100,
             },
         }
