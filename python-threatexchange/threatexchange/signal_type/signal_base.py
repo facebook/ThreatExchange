@@ -16,7 +16,7 @@ from threatexchange.signal_type.pdq.pdq_hash_rotations import RotationType
 class SignalComparisonResult(t.NamedTuple):
     match: bool
     distance: index.SignalSimilarityInfo
-    rotation_type: RotationType
+    rotation_type: RotationType = RotationType.ORIGINAL
 
     @classmethod
     def from_bool_only(cls, matches: bool) -> "SignalComparisonResult":
@@ -35,7 +35,7 @@ class SignalComparisonResult(t.NamedTuple):
 
     @classmethod
     def from_simple_dist(
-        cls, dist: index.CT, threshold: index.CT, rotation_type: RotationType
+        cls, dist: index.CT, threshold: index.CT, rotation_type: RotationType = RotationType.ORIGINAL
     ) -> "SignalComparisonResult":
         """For SignalTypes with simple distance"""
         return cls(
@@ -46,12 +46,13 @@ class SignalComparisonResult(t.NamedTuple):
 
     @classmethod
     def from_dist(
-        cls, dist: index.SignalSimilarityInfo, threshold: index.SignalSimilarityInfo
+        cls, dist: index.SignalSimilarityInfo, threshold: index.SignalSimilarityInfo, rotation_type: RotationType = RotationType.ORIGINAL
     ) -> "SignalComparisonResult":
         """For SignalTypes w"""
         return cls(
             dist <= threshold,
             dist,
+            rotation_type
         )
 
 
