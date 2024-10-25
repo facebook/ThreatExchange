@@ -11,11 +11,12 @@ import typing as t
 from threatexchange import common
 from threatexchange.content_type import content_base
 from threatexchange.signal_type import index
-
+from threatexchange.signal_type.pdq.pdq_hash_rotations import RotationType
 
 class SignalComparisonResult(t.NamedTuple):
     match: bool
     distance: index.SignalSimilarityInfo
+    rotation_type: RotationType
 
     @classmethod
     def from_bool_only(cls, matches: bool) -> "SignalComparisonResult":
@@ -34,12 +35,13 @@ class SignalComparisonResult(t.NamedTuple):
 
     @classmethod
     def from_simple_dist(
-        cls, dist: index.CT, threshold: index.CT
+        cls, dist: index.CT, threshold: index.CT, rotation_type: RotationType
     ) -> "SignalComparisonResult":
         """For SignalTypes with simple distance"""
         return cls(
             dist <= threshold,
             index.SignalSimilarityInfoWithSingleDistance[index.CT](dist),
+            rotation_type
         )
 
     @classmethod
