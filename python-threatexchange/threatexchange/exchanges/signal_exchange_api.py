@@ -309,8 +309,8 @@ class SignalExchangeAPIWithSimpleUpdates(
         state.TFetchCheckpoint,
         state.TFetchedSignalMetadata,
         t.Tuple[str, str],
-        t.Any,
-    ]
+        state.TFetchedSignalMetadata,
+    ],
 ):
     """
     An API that conveniently maps directly into the form needed by index.
