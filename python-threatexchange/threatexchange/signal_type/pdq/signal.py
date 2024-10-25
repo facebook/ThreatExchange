@@ -68,7 +68,14 @@ class PdqSignal(
         hash1: str,
         hash2: str,
         pdq_dist_threshold: int = PDQ_CONFIDENT_MATCH_THRESHOLD,
+        try_rotation: bool = False
     ) -> signal_base.SignalComparisonResult:
+        if not try_rotation:
+            dist = simple_distance(hash1, hash2)
+            return signal_base.SignalComparisonResult.from_simple_dist(
+                dist, pdq_dist_threshold, RotationType.ORIGINAL
+            )
+
         rotator = PDQHashRotations()
         rotations = rotator._try_all_rotation(hash2)
 
