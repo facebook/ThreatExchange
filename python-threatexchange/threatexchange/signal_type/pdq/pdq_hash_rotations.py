@@ -35,7 +35,7 @@ class PDQHashRotations:
         result = np.zeros((16, 16))
         for i in range(16):
             for j in range(16):
-                result[i][j] = -matrix[i, j] if j & 1 else matrix[i, j]
+                result[j,i] = matrix[i, j] if j & 1 else -matrix[i, j]
         return result
 
     @classmethod
@@ -43,7 +43,7 @@ class PDQHashRotations:
         result = np.zeros((16, 16))
         for i in range(16):
             for j in range(16):
-                result[i][j] = -matrix[i, j] if (i + j) & 1 else matrix[i, j]
+                result[i,j] = -matrix[i, j] if (i + j) & 1 else matrix[i, j]
         return result
     
     @classmethod
@@ -51,7 +51,7 @@ class PDQHashRotations:
         result = np.zeros((16, 16))
         for i in range(16):
             for j in range(16):
-                result[j, i] = -matrix[i, j] if i & 1 else matrix[i, j]
+                result[j,i] = matrix[i, j] if i & 1 else -matrix[i, j]
         return result
 
     @classmethod
@@ -59,7 +59,7 @@ class PDQHashRotations:
         result = np.zeros((16, 16))
         for i in range(16):
             for j in range(16):
-                result[i, j] = -matrix[i, j] if i & 1 else matrix[i, j]
+                result[i, j] = matrix[i, j] if i & 1 else -matrix[i, j]
         return result
     
     @classmethod
@@ -67,7 +67,7 @@ class PDQHashRotations:
         result = np.zeros((16, 16))
         for i in range(16):
             for j in range(16):
-                result[i, j] = -matrix[i, j] if j & 1 else matrix[i, j]
+                result[i, j] = matrix[i, j] if j & 1 else -matrix[i, j]
         return result
 
     @classmethod
