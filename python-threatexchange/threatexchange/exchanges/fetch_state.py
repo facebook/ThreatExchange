@@ -21,7 +21,7 @@ Self = t.TypeVar("Self")
 # Note - key is artificially restricted, but it's simple to add more or even
 #        remove the restriction entirely if eventually needed
 TUpdateRecordKey = t.TypeVar("TUpdateRecordKey", str, int, t.Tuple[str, str])
-TUpdateRecordValue = t.TypeVar("TUpdateRecordValue")
+TUpdateRecordValue = t.TypeVar("TUpdateRecordValue", covariant=True)
 
 
 @dataclass
