@@ -189,7 +189,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
             )
         ).scalar_one_or_none()
 
-        return db_record.load_signal_index() if db_record is not None else None
+        if db_record is None or not db_record.index_lobj_exists():
+            return None
+        return db_record.load_signal_index()
 
     def store_signal_type_index(
         self,
@@ -213,22 +215,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def get_last_index_build_checkpoint(
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
-        row = database.db.session.execute(
-            select(
-                database.SignalIndex.updated_to_ts,
-                database.SignalIndex.updated_to_id,
-                database.SignalIndex.signal_count,
-            ).where(database.SignalIndex.signal_type == signal_type.get_name())
-        ).one_or_none()
+        db_record = database.db.session.execute(
+            select(database.SignalIndex).where(
+                database.SignalIndex.signal_type == signal_type.get_name()
+            )
+        ).scalar_one_or_none()
 
-        if row is None:
+        if db_record is None or not db_record.index_lobj_exists():
             return None
-        updated_to_ts, updated_to_id, total_count = row._tuple()
-        return interface.SignalTypeIndexBuildCheckpoint(
-            last_item_timestamp=updated_to_ts,
-            last_item_id=updated_to_id,
-            total_hash_count=total_count,
-        )
+        return db_record.as_checkpoint()
 
     # Collabs
     def exchange_update(
