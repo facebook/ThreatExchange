@@ -34,17 +34,19 @@ class ContentType:
         """
         return []
 
+
 class RotationType(StrEnum):
     """
     Enum for 8 simple rotations of an image.
-    Used to store all generated rotations of an image, 
+    Used to store all generated rotations of an image,
     whose algorithms don't have a native way to generate rotations during hashing.
     """
-    ORIGINAL = auto() # No rotation; the object is in its original orientation
-    ROTATE90 = auto() # Rotates the object 90 degrees 
-    ROTATE180 = auto() # Rotates the object 180 degrees (half-turn)
-    ROTATE270 = auto() # Rotates the object 270 degrees 
-    FLIPX = auto() # Flip the object horizontally along the X-axis 
-    FLIPY = auto() # Flip the object horizontally along the Y-axis 
-    FLIPPLUS1 = auto() # Diagonal flip along the line y = x
-    FLIPMINUS1 = auto() # Diagonal flip along the line y = -x
+
+    ORIGINAL = auto()  # No rotation; the object is in its original orientation
+    ROTATE90 = auto()  # Rotates the object 90 degrees
+    ROTATE180 = auto()  # Rotates the object 180 degrees (half-turn)
+    ROTATE270 = auto()  # Rotates the object 270 degrees
+    FLIPX = auto()  # Flip the object horizontally along the X-axis
+    FLIPY = auto()  # Flip the object horizontally along the Y-axis
+    FLIPPLUS1 = auto()  # Diagonal flip along the line y = x
+    FLIPMINUS1 = auto()  # Diagonal flip along the line y = -x
