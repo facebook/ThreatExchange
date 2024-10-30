@@ -9,7 +9,7 @@ import argparse
 import logging
 import pathlib
 import typing as t
-
+import io
 
 from threatexchange import common
 from threatexchange.cli.fetch_cmd import FetchCommand
@@ -21,6 +21,7 @@ from threatexchange.cli.exceptions import CommandError
 from threatexchange.signal_type.signal_base import BytesHasher, SignalType
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
 
 from threatexchange.signal_type.signal_base import MatchesStr, TextHasher, FileHasher
 from threatexchange.cli import command_base
@@ -50,6 +51,10 @@ class MatchCommand(command_base.Command):
     # Inline
     $ threatexchange match text -- This is my cool text
     ```
+
+    # Additional options: 
+    --rotation: For photo content, generate and match all 8 simple rotations 
+                (0°, 90°, 180°, 270°, flip X, flip Y, flip diagonal +1, flip diagonal -1)
 
     # Output
     The output of this command is in the following format:
@@ -126,6 +131,12 @@ class MatchCommand(command_base.Command):
             action="store_true",
             help="show all matches, not just one per collaboration",
         )
+        ap.add_argument(
+            "--rotations", 
+            "-R", 
+            action="store_true",
+            help="for photos, generate and match all 8 simple rotations"
+        )
 
     def __init__(
         self,
@@ -136,6 +147,7 @@ class MatchCommand(command_base.Command):
         show_false_positives: bool,
         hide_disputed: bool,
         all: bool,
+        rotations: bool = True
     ) -> None:
         self.content_type = content_type
         self.only_signal = only_signal
@@ -144,12 +156,19 @@ class MatchCommand(command_base.Command):
         self.hide_disputed = hide_disputed
         self.files = files
         self.all = all
+        self.rotations = rotations
 
         if only_signal and content_type not in only_signal.get_content_types():
             raise CommandError(
                 f"{only_signal.get_name()} does not "
                 f"apply to {content_type.get_name()}",
                 2,
+            )
+        
+        if self.rotations and not issubclass(content_type, PhotoContent):
+            raise CommandError(
+                "--rotations flag is only available for Photo content type", 
+                2
             )
 
     def execute(self, settings: CLISettings) -> None:
@@ -198,7 +217,7 @@ class MatchCommand(command_base.Command):
                 if self.as_hashes:
                     results = _match_hashes(path, s_type, index)
                 else:
-                    results = _match_file(path, s_type, index)
+                    results = _match_file(path, s_type, index, rotations=self.rotations)
 
                 for r in results:
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
@@ -206,23 +225,54 @@ class MatchCommand(command_base.Command):
                         if not self.all and collab in seen:
                             continue
                         seen.add(collab)
+
+                        # Add rotation information if possible 
+                        rotation_info = ""
+                        if hasattr(r.similarity_info, "rotation"):
+                            rotation_info = f" [{r.similarity_info.rotation.name}]"
+
                         # Supposed to be without whitespace, but let's make sure
                         distance_str = "".join(r.similarity_info.pretty_str().split())
                         print(
                             s_type.get_name(),
-                            distance_str,
+                            distance_str + rotation_info,
                             f"({collab})",
                             fetched_data,
                         )
 
 
 def _match_file(
-    path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
+    path: pathlib.Path, 
+    s_type: t.Type[SignalType], 
+    index: SignalTypeIndex,
+    rotations: bool = False
 ) -> t.Sequence[IndexMatch]:
     if issubclass(s_type, MatchesStr):
         return index.query(path.read_text())
     assert issubclass(s_type, FileHasher)
-    return index.query(s_type.hash_from_file(path))
+
+    if not rotations or s_type != PhotoContent:
+        return index.query(s_type.hash_from_file(path))
+    
+    # Handle rotations for photos
+    with open(path, "rb") as f:
+        image_data = f.read()
+    
+    rotations = PhotoContent.all_simple_rotations(image_data)
+    all_matches = []
+
+    for rotation_type, rotated_bytes in rotations.items():
+        # Create a temporary BytesIO object to simulate a file 
+        temp_buffer = io.BytesIO(rotated_bytes)
+        matches = index.query(s_type.hash_from_file(temp_buffer))
+
+        # Add rotation information if any matches were found 
+        for match in matches: 
+            match.similarity_info.rotation = rotation_type
+        
+        all_matches.extend(matches)
+
+    return all_matches
 
 
 def _match_hashes(
