@@ -24,7 +24,7 @@ class PhotoContent(ContentType):
     @classmethod
     def rotate_image(cls, image_data: bytes, angle: float) -> bytes: 
         """
-        Rotate an image by a given angle 
+        Rotate an image by a given angle.
         """
         with Image.open(io.BytesIO(image_data)) as img: 
             rotated_img = img.rotate(angle, expand=True)
@@ -77,9 +77,13 @@ class PhotoContent(ContentType):
                 return buffer.getvalue()
     
     @classmethod
-    def try_all_rotations(cls, image_data: bytes): 
+    def all_simple_rotations(cls, image_data: bytes): 
         """
-        Try all possible rotations to the image
+        Generate the 8 naive rotations of an image.
+
+        This can be helpful for testing.
+        And for image algorithms that don't have a native way to generate rotations during hashing, 
+        this can be a way to brute force rotations. 
         """
         rotations = {
             RotationType.ORIGINAL: image_data, 
