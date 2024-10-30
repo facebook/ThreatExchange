@@ -74,7 +74,15 @@ class _SignalIndexInMemoryCache:
         curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
         if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
             new_index = store.get_signal_type_index(self.signal_type)
-            assert new_index is not None
+            if new_index is None:
+                app: Flask = get_apscheduler().app
+                app.logger.error(
+                    "CachedIndex[%s] index checkpoint(%r)"
+                    + " says new index available but unable to get it",
+                    self.signal_type.get_name(),
+                    curr_checkpoint,
+                )
+                return
             self.index = new_index
             self.checkpoint = curr_checkpoint
         self.last_check_ts = now

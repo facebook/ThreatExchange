@@ -21,6 +21,7 @@ import os
 
 from flask import current_app
 import flask_sqlalchemy
+import psycopg2
 from sqlalchemy import (
     String,
     Text,
@@ -31,6 +32,7 @@ from sqlalchemy import (
     UniqueConstraint,
     BigInteger,
     event,
+    text,
 )
 from sqlalchemy.dialects.postgresql import OID
 from sqlalchemy.orm import (
@@ -42,6 +44,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.types import DateTime
 from sqlalchemy.sql import func
+
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges import auth
@@ -374,6 +377,23 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
 
     serialized_index_large_object_oid: Mapped[int | None] = mapped_column(OID)
 
+    def index_lobj_exists(self) -> bool:
+        """
+        Return true if the index lobj exists and load_signal_index should work.
+
+        In normal operation, this should always return true. However,
+        we've observed in github.com/facebook/ThreatExchange/issues/1673
+        that some partial failure is possible. This can be used to
+        detect that condition.
+        """
+        count = db.session.execute(
+            text(
+                "SELECT count(1) FROM pg_largeobject_metadata "
+                + f"WHERE oid = {self.serialized_index_large_object_oid};"
+            )
+        ).scalar_one()
+        return count == 1
+
     def commit_signal_index(
         self, index: SignalTypeIndex[int], checkpoint: SignalTypeIndexBuildCheckpoint
     ) -> t.Self:
@@ -403,9 +423,16 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
             duration_to_human_str(int(time.time() - store_start_time)),
         )
         if self.serialized_index_large_object_oid is not None:
-            old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
-            self._log("deallocating old lobject %d", old_obj.oid)
-            old_obj.unlink()
+            if self.index_lobj_exists():
+                old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
+                self._log("deallocating old lobject %d", old_obj.oid)
+                old_obj.unlink()
+            else:
+                self._log(
+                    "old lobject %d doesn't exist? "
+                    + "This might be a previous partial failure",
+                    self.serialized_index_large_object_oid,
+                )
 
         self.serialized_index_large_object_oid = l_obj.oid
         db.session.add(self)
