@@ -9,18 +9,22 @@ import argparse
 import logging
 import pathlib
 import typing as t
-import io
+import tempfile
 
 from threatexchange import common
 from threatexchange.cli.fetch_cmd import FetchCommand
 from threatexchange.cli.helpers import FlexFilesInputAction
 from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
 
-from threatexchange.signal_type.index import IndexMatch, SignalTypeIndex
+from threatexchange.signal_type.index import (
+    IndexMatch,
+    SignalTypeIndex,
+    IndexMatchWithRotation,
+)
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.signal_type.signal_base import BytesHasher, SignalType
 from threatexchange.cli.cli_config import CLISettings
-from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.content_base import ContentType, RotationType
 from threatexchange.content_type.photo import PhotoContent
 
 from threatexchange.signal_type.signal_base import MatchesStr, TextHasher, FileHasher
@@ -51,10 +55,6 @@ class MatchCommand(command_base.Command):
     # Inline
     $ threatexchange match text -- This is my cool text
     ```
-
-    # Additional options: 
-    --rotation: For photo content, generate and match all 8 simple rotations 
-                (0°, 90°, 180°, 270°, flip X, flip Y, flip diagonal +1, flip diagonal -1)
 
     # Output
     The output of this command is in the following format:
@@ -132,10 +132,10 @@ class MatchCommand(command_base.Command):
             help="show all matches, not just one per collaboration",
         )
         ap.add_argument(
-            "--rotations", 
-            "-R", 
+            "--rotations",
+            "-R",
             action="store_true",
-            help="for photos, generate and match all 8 simple rotations"
+            help="for photos, generate and match all 8 simple rotations",
         )
 
     def __init__(
@@ -147,7 +147,7 @@ class MatchCommand(command_base.Command):
         show_false_positives: bool,
         hide_disputed: bool,
         all: bool,
-        rotations: bool = True
+        rotations: bool = False,
     ) -> None:
         self.content_type = content_type
         self.only_signal = only_signal
@@ -164,11 +164,10 @@ class MatchCommand(command_base.Command):
                 f"apply to {content_type.get_name()}",
                 2,
             )
-        
+
         if self.rotations and not issubclass(content_type, PhotoContent):
             raise CommandError(
-                "--rotations flag is only available for Photo content type", 
-                2
+                "--rotations flag is only available for Photo content type", 2
             )
 
     def execute(self, settings: CLISettings) -> None:
@@ -215,24 +214,35 @@ class MatchCommand(command_base.Command):
             for s_type, index in indices:
                 seen = set()  # TODO - maybe take the highest certainty?
                 if self.as_hashes:
-                    results = _match_hashes(path, s_type, index)
+                    results_from_hashes = _match_hashes(path, s_type, index)
+                    results: t.Sequence[IndexMatchWithRotation] = [
+                        IndexMatchWithRotation(match=match)
+                        for match in results_from_hashes
+                    ]
                 else:
                     results = _match_file(path, s_type, index, rotations=self.rotations)
 
                 for r in results:
-                    metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = r.metadata
+                    if isinstance(r, IndexMatchWithRotation):
+                        metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = (
+                            r.match.metadata
+                        )
+                        rotation_info = f" [{r.rotation_type.name}]"
+                        # Supposed to be without whitespace, but let's make sure
+                        distance_str = "".join(
+                            r.match.similarity_info.pretty_str().split()
+                        )
+
+                    elif isinstance(r, IndexMatch):
+                        metadatas = r.metadata
+                        rotation_info = ""
+                        distance_str = "".join(r.similarity_info.pretty_str().split())
+
                     for collab, fetched_data in metadatas:
                         if not self.all and collab in seen:
                             continue
                         seen.add(collab)
 
-                        # Add rotation information if possible 
-                        rotation_info = ""
-                        if hasattr(r.similarity_info, "rotation"):
-                            rotation_info = f" [{r.similarity_info.rotation.name}]"
-
-                        # Supposed to be without whitespace, but let's make sure
-                        distance_str = "".join(r.similarity_info.pretty_str().split())
                         print(
                             s_type.get_name(),
                             distance_str + rotation_info,
@@ -242,35 +252,46 @@ class MatchCommand(command_base.Command):
 
 
 def _match_file(
-    path: pathlib.Path, 
-    s_type: t.Type[SignalType], 
+    path: pathlib.Path,
+    s_type: t.Type[SignalType],
     index: SignalTypeIndex,
-    rotations: bool = False
-) -> t.Sequence[IndexMatch]:
+    rotations: bool = False,
+) -> t.Sequence[IndexMatchWithRotation]:
     if issubclass(s_type, MatchesStr):
-        return index.query(path.read_text())
+        matches = index.query(path.read_text())
+        return [IndexMatchWithRotation(match=match) for match in matches]
+
     assert issubclass(s_type, FileHasher)
 
     if not rotations or s_type != PhotoContent:
-        return index.query(s_type.hash_from_file(path))
-    
+        matches = index.query(s_type.hash_from_file(path))
+        return [IndexMatchWithRotation(match=match) for match in matches]
+
     # Handle rotations for photos
     with open(path, "rb") as f:
         image_data = f.read()
-    
-    rotations = PhotoContent.all_simple_rotations(image_data)
+
+    rotated_images: t.Dict[RotationType, bytes] = PhotoContent.all_simple_rotations(
+        image_data
+    )
     all_matches = []
 
-    for rotation_type, rotated_bytes in rotations.items():
-        # Create a temporary BytesIO object to simulate a file 
-        temp_buffer = io.BytesIO(rotated_bytes)
-        matches = index.query(s_type.hash_from_file(temp_buffer))
+    for rotation_type, rotated_bytes in rotated_images.items():
+        # Create a temporary file to hold the image bytes
+        with tempfile.NamedTemporaryFile() as temp_file:
+            temp_file.write(rotated_bytes)
+            temp_file_path = pathlib.Path(temp_file.name)
+            matches = index.query(s_type.hash_from_file(temp_file_path))
+            temp_file_path.unlink()  # Clean up the temporary file
 
-        # Add rotation information if any matches were found 
-        for match in matches: 
-            match.similarity_info.rotation = rotation_type
-        
-        all_matches.extend(matches)
+        # Add rotation information if any matches were found
+        matches_with_rotations = []
+        for match in matches:
+            matches_with_rotations.append(
+                IndexMatchWithRotation(match=match, rotation_type=rotation_type)
+            )
+
+        all_matches.extend(matches_with_rotations)
 
     return all_matches
 

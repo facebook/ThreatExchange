@@ -23,6 +23,7 @@ from dataclasses import dataclass
 import pickle
 import typing as t
 
+from threatexchange.content_type.content_base import RotationType
 
 T = t.TypeVar("T")
 S_Co = t.TypeVar("S_Co", covariant=True, bound="SignalSimilarityInfo")
@@ -137,6 +138,12 @@ class IndexMatchUntyped(t.Generic[S_Co, T]):
 
 
 IndexMatch = IndexMatchUntyped[SignalSimilarityInfo, T]
+
+
+@dataclass
+class IndexMatchWithRotation(t.Generic[T]):
+    match: IndexMatchUntyped[SignalSimilarityInfo, T]
+    rotation_type: RotationType = RotationType.ORIGINAL
 
 
 Self = t.TypeVar("Self", bound="SignalTypeIndex")

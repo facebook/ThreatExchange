@@ -6,6 +6,7 @@ Wrapper around the video content type.
 """
 from PIL import Image
 import io
+import typing as t
 
 from .content_base import ContentType, RotationType
 
@@ -82,7 +83,7 @@ class PhotoContent(ContentType):
                 return buffer.getvalue()
 
     @classmethod
-    def all_simple_rotations(cls, image_data: bytes):
+    def all_simple_rotations(cls, image_data: bytes) -> t.Dict[RotationType, bytes]:
         """
         Generate the 8 naive rotations of an image.
 
