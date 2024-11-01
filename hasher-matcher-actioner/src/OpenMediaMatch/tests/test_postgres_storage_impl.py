@@ -189,6 +189,51 @@ def test_sequential_fetch_updates(storage: DefaultOMMStore) -> None:
     assert md5_index_status.total_hash_count == maker.count
 
 
+def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
+    """
+    SignalTypeIndex is stored in the postgres large object interface.
+
+    As part of swapping over to the new index, we need to unlink the old
+    interface, but there is a race here because unlinking may not happen
+    in a transaction. See github.com/facebook/ThreatExchange/issues/1673
+    """
+    bank_cfg = interface.BankConfig("TEST", matching_enabled_ratio=1.0)
+    storage.bank_update(bank_cfg, create=True)
+    storage.bank_add_content(
+        bank_cfg.name, {VideoMD5Signal: VideoMD5Signal.get_examples()[0]}
+    )
+
+    def build_and_assert_ok():
+        build(storage)
+        index_status = storage.get_last_index_build_checkpoint(VideoMD5Signal)
+        assert index_status.total_hash_count == 1
+        index = storage.get_signal_type_index(VideoMD5Signal)
+        assert index is not None
+
+    build_and_assert_ok()
+
+    # Now we'll fake that the large object borked
+    index_record = database.db.session.execute(
+        select(database.SignalIndex).where(
+            database.SignalIndex.signal_type == VideoMD5Signal.get_name()
+        )
+    ).scalar_one()
+    assert index_record.index_lobj_exists() is True
+    raw_conn = database.db.engine.raw_connection()
+    old_obj = raw_conn.lobject(index_record.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
+    old_obj.unlink()
+    raw_conn.commit()
+
+    # Now we should have a dangling record
+    index_status = storage.get_last_index_build_checkpoint(VideoMD5Signal)
+    assert index_status is None
+    index = storage.get_signal_type_index(VideoMD5Signal)
+    assert index is None
+
+    # We should be able to recover by rebuilding
+    build_and_assert_ok()
+
+
 class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
     """Returns all the sample data, but can't convert to any types"""
 
