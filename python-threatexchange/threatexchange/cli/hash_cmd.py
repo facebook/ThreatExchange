@@ -113,12 +113,12 @@ class HashCommand(command_base.Command):
                     f"does not apply to {self.content_type.get_name()}"
                 )
 
-            if self.rotations and not issubclass(self.content_type, PhotoContent):
-                raise CommandError(
-                    "--rotations flag is only available for Photo content type", 2
-                )
-
             hashers = [self.signal_type]  # type: ignore  # can't detect intersection types
+
+        if self.rotations and not issubclass(self.content_type, PhotoContent):
+            raise CommandError(
+                "--rotations flag is only available for Photo content type", 2
+            )
 
         if self.rotations and issubclass(self.content_type, PhotoContent):
             for file in self.files:
