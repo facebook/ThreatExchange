@@ -34,6 +34,7 @@ all = [
     "pytest",
     "types-Flask-Migrate",
     "types-requests",
+    "types-psycopg2",
     "types-python-dateutil",
     "gunicorn",
     "flask_apscheduler"
