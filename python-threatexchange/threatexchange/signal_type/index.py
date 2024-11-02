@@ -140,12 +140,6 @@ class IndexMatchUntyped(t.Generic[S_Co, T]):
 IndexMatch = IndexMatchUntyped[SignalSimilarityInfo, T]
 
 
-@dataclass
-class IndexMatchWithRotation(t.Generic[T]):
-    match: IndexMatchUntyped[SignalSimilarityInfo, T]
-    rotation_type: RotationType = RotationType.ORIGINAL
-
-
 Self = t.TypeVar("Self", bound="SignalTypeIndex")
 
 

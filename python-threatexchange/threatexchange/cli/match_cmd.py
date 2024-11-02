@@ -5,6 +5,7 @@
 Match command for parsing simple data sources against the dataset.
 """
 
+from dataclasses import dataclass, field
 import argparse
 import logging
 import pathlib
@@ -19,7 +20,9 @@ from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
 from threatexchange.signal_type.index import (
     IndexMatch,
     SignalTypeIndex,
-    IndexMatchWithRotation,
+    IndexMatchUntyped,
+    SignalSimilarityInfo,
+    T,
 )
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.signal_type.signal_base import BytesHasher, SignalType
@@ -32,6 +35,21 @@ from threatexchange.cli import command_base
 
 
 TMatcher = t.Callable[[pathlib.Path], t.List[IndexMatch]]
+
+
+@dataclass
+class _IndexMatchWithRotation(t.Generic[T]):
+    match: IndexMatchUntyped[SignalSimilarityInfo, T]
+    rotation_type: t.Optional[RotationType] = field(default=None)
+
+    def __str__(self):
+        # Supposed to be without whitespace, but let's make sure
+        distance_str = "".join(self.match.similarity_info.pretty_str().split())
+        if self.rotation_type is None:
+            return distance_str
+        else:
+            rotation_info = f" [{self.rotation_type.name}]"
+            return distance_str + rotation_info
 
 
 class MatchCommand(command_base.Command):
@@ -214,29 +232,17 @@ class MatchCommand(command_base.Command):
             for s_type, index in indices:
                 seen = set()  # TODO - maybe take the highest certainty?
                 if self.as_hashes:
-                    results_from_hashes = _match_hashes(path, s_type, index)
-                    results: t.Sequence[IndexMatchWithRotation] = [
-                        IndexMatchWithRotation(match=match)
-                        for match in results_from_hashes
-                    ]
+                    results: t.Sequence[_IndexMatchWithRotation] = _match_hashes(
+                        path, s_type, index
+                    )
                 else:
                     results = _match_file(path, s_type, index, rotations=self.rotations)
 
                 for r in results:
-                    if isinstance(r, IndexMatchWithRotation):
-                        metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = (
-                            r.match.metadata
-                        )
-                        rotation_info = f" [{r.rotation_type.name}]"
-                        # Supposed to be without whitespace, but let's make sure
-                        distance_str = "".join(
-                            r.match.similarity_info.pretty_str().split()
-                        )
-
-                    elif isinstance(r, IndexMatch):
-                        metadatas = r.metadata
-                        rotation_info = ""
-                        distance_str = "".join(r.similarity_info.pretty_str().split())
+                    metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = (
+                        r.match.metadata
+                    )
+                    distance_str = r.__str__()
 
                     for collab, fetched_data in metadatas:
                         if not self.all and collab in seen:
@@ -245,7 +251,7 @@ class MatchCommand(command_base.Command):
 
                         print(
                             s_type.get_name(),
-                            distance_str + rotation_info,
+                            distance_str,
                             f"({collab})",
                             fetched_data,
                         )
@@ -256,16 +262,16 @@ def _match_file(
     s_type: t.Type[SignalType],
     index: SignalTypeIndex,
     rotations: bool = False,
-) -> t.Sequence[IndexMatchWithRotation]:
+) -> t.Sequence[_IndexMatchWithRotation]:
     if issubclass(s_type, MatchesStr):
         matches = index.query(path.read_text())
-        return [IndexMatchWithRotation(match=match) for match in matches]
+        return [_IndexMatchWithRotation(match=match) for match in matches]
 
     assert issubclass(s_type, FileHasher)
 
     if not rotations or s_type != PhotoContent:
         matches = index.query(s_type.hash_from_file(path))
-        return [IndexMatchWithRotation(match=match) for match in matches]
+        return [_IndexMatchWithRotation(match=match) for match in matches]
 
     # Handle rotations for photos
     with open(path, "rb") as f:
@@ -288,7 +294,7 @@ def _match_file(
         matches_with_rotations = []
         for match in matches:
             matches_with_rotations.append(
-                IndexMatchWithRotation(match=match, rotation_type=rotation_type)
+                _IndexMatchWithRotation(match=match, rotation_type=rotation_type)
             )
 
         all_matches.extend(matches_with_rotations)
@@ -298,8 +304,8 @@ def _match_file(
 
 def _match_hashes(
     path: pathlib.Path, s_type: t.Type[SignalType], index: SignalTypeIndex
-) -> t.Sequence[IndexMatch]:
-    ret: t.List[IndexMatch] = []
+) -> t.Sequence[_IndexMatchWithRotation]:
+    ret: t.List[_IndexMatchWithRotation] = []
     for hash in path.read_text().splitlines():
         hash = hash.strip()
         if not hash:
@@ -315,5 +321,6 @@ def _match_hashes(
                 f"{hash_repr} from {path} is not a valid hash for {s_type.get_name()}",
                 2,
             )
-        ret.extend(index.query(hash))
+        matches = index.query(hash)
+        ret.extend([_IndexMatchWithRotation(match=match) for match in matches])
     return ret
