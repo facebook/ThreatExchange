@@ -82,6 +82,7 @@ class HashCommand(command_base.Command):
         ap.add_argument(
             "--rotations",
             "--R",
+            action="store_true",
             help="for photos, generate all 8 simple rotations",
         )
 
@@ -132,7 +133,6 @@ class HashCommand(command_base.Command):
                                 hash_str = hasher.hash_from_file(temp_file_path)
                                 if hash_str:
                                     print(hasher.get_name(), hash_str)
-                            temp_file_path.unlink()  # Clean up the temporary file
 
         else:
             for file in self.files:
