@@ -19,6 +19,7 @@ from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type.signal_base import FileHasher, SignalType
 from threatexchange.cli import command_base
 from threatexchange.cli.helpers import FlexFilesInputAction
+from threatexchange.signal_type.pdq.signal import PdqSignal
 
 
 class HashCommand(command_base.Command):
@@ -80,6 +81,26 @@ class HashCommand(command_base.Command):
         )
 
         ap.add_argument(
+            "--preprocess",
+            choices=["unletterbox"],
+            help="Apply preprocessing steps to the image before hashing.",
+        )
+
+        ap.add_argument(
+            "--black-threshold",
+            type=int,
+            default=40,
+            help="Set the black threshold for unletterboxing. Default is 40.",
+        )
+
+        ap.add_argument(
+            "--save-output",
+            type=bool,
+            default=False,
+            help="If true, save the processed image as a new file.",
+        )
+
+        ap.add_argument(
             "--rotations",
             "--R",
             action="store_true",
@@ -92,10 +113,15 @@ class HashCommand(command_base.Command):
         signal_type: t.Optional[t.Type[SignalType]],
         files: t.List[pathlib.Path],
         rotations: bool = False,
+        preprocess: t.Optional[str] = None,
+        black_threshold: int = 40,
+        save_output: bool = False,
     ) -> None:
         self.content_type = content_type
         self.signal_type = signal_type
-
+        self.preprocess = preprocess
+        self.black_threshold = black_threshold
+        self.save_output = save_output
         self.files = files
 
         self.rotations = rotations
@@ -118,7 +144,17 @@ class HashCommand(command_base.Command):
         if not self.rotations:
             for file in self.files:
                 for hasher in hashers:
-                    hash_str = hasher.hash_from_file(file)
+                    if isinstance(hasher, PdqSignal) and (
+                        self.content_type.get_name() == "photo"
+                        and self.preprocess == "unletterbox"
+                    ):
+                        hash_str = PdqSignal.hash_from_bytes(
+                            PhotoContent.unletterbox(
+                                file, self.save_output, self.black_threshold
+                            )
+                        )
+                    else:
+                        hash_str = hasher.hash_from_file(file)
                     if hash_str:
                         print(hasher.get_name(), hash_str)
             return
@@ -130,7 +166,15 @@ class HashCommand(command_base.Command):
 
         for file in self.files:
             with open(file, "rb") as f:
-                image_bytes = f.read()
+                if (
+                    self.content_type.get_name() == "photo"
+                    and self.preprocess == "unletterbox"
+                ):
+                    image_bytes = PhotoContent.unletterbox(
+                        file, self.save_output, self.black_threshold
+                    )
+                else:
+                    image_bytes = f.read()
                 rotated_images = PhotoContent.all_simple_rotations(image_bytes)
                 for rotation_type, rotated_bytes in rotated_images.items():
                     with tempfile.NamedTemporaryFile() as temp_file:  # Create a temporary file to hold the byte data
