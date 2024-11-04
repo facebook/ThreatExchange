@@ -483,8 +483,8 @@ class NCMECHashAPI:
         self,
         endpoint: NCMECEndpoint,
         *,
-        path: str = None,
-        data: str = None,
+        path: t.Optional[str] = None,
+        data: t.Optional[bytes] = None,
     ) -> t.Any:
         """
         Perform an HTTP PUT request, and return the XML response payload.
@@ -606,15 +606,20 @@ class NCMECHashAPI:
         esp_id: int,
         entry_id: str,
         fingerprint_type: FingerprintType,
-        affirmative: bool,
+        feedback_type: FeedbackType,
         negative_reason_guid: t.Optional[str] = None,
     ) -> None:
         # Prepare the XML payload
         root = ET.Element("feedbackSubmission")
         root.set("xmlns", "https://hashsharing.ncmec.org/hashsharing/v2")
-        vote = ET.SubElement(root, "affirmative" if affirmative else "negative")
+        vote = ET.SubElement(
+            root,
+            {FeedbackType.upvote: "affirmative", FeedbackType.downvote: "negative"}[
+                feedback_type
+            ],
+        )
 
-        if not affirmative:
+        if feedback_type == FeedbackType.downvote:
             if not negative_reason_guid:
                 # We need a reason ID, but there may be only one choice
                 # so we can just use that one
