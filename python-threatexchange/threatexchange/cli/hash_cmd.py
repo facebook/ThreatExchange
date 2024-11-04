@@ -132,11 +132,11 @@ class HashCommand(command_base.Command):
             with open(file, "rb") as f:
                 image_bytes = f.read()
                 rotated_images = PhotoContent.all_simple_rotations(image_bytes)
-                for _, rotated_bytes in rotated_images.items():
+                for rotation_type, rotated_bytes in rotated_images.items():
                     with tempfile.NamedTemporaryFile() as temp_file:  # Create a temporary file to hold the byte data
                         temp_file.write(rotated_bytes)
                         temp_file_path = pathlib.Path(temp_file.name)
                         for hasher in hashers:
                             hash_str = hasher.hash_from_file(temp_file_path)
                             if hash_str:
-                                print(hasher.get_name(), hash_str)
+                                print(rotation_type.name, hasher.get_name(), hash_str)
