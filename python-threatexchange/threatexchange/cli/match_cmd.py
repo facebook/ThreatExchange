@@ -47,9 +47,7 @@ class _IndexMatchWithRotation(t.Generic[T]):
         distance_str = "".join(self.match.similarity_info.pretty_str().split())
         if self.rotation_type is None:
             return distance_str
-        else:
-            rotation_info = f" [{self.rotation_type.name}]"
-            return distance_str + rotation_info
+        return f"{distance_str} [{self.rotation_type.name}]"
 
 
 class MatchCommand(command_base.Command):
@@ -242,7 +240,7 @@ class MatchCommand(command_base.Command):
                     metadatas: t.List[t.Tuple[str, FetchedSignalMetadata]] = (
                         r.match.metadata
                     )
-                    distance_str = r.__str__()
+                    distance_str = str(r)
 
                     for collab, fetched_data in metadatas:
                         if not self.all and collab in seen:
