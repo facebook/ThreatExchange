@@ -75,3 +75,33 @@ def test_mixed(hash_cli: ThreatExchangeCLIE2eHelper, tmp_path: pathlib.Path):
 def test_missing(hash_cli: ThreatExchangeCLIE2eHelper):
     hash_cli.assert_cli_usage_error(())
     hash_cli.assert_cli_usage_error(("photo",))
+
+
+def test_rotations_with_non_photo_content(
+    hash_cli: ThreatExchangeCLIE2eHelper, tmp_file: pathlib.Path
+):
+    """Test that rotation flag raises error with non-photo content"""
+    for content_type in ["url", "text", "video"]:
+        hash_cli.assert_cli_usage_error(
+            ("--rotations", content_type, str(tmp_file)),
+            msg_regex="--rotations flag is only available for Photo content type",
+        )
+
+
+def test_rotations_with_photo_content(hash_cli: ThreatExchangeCLIE2eHelper):
+    """Test that photo rotations are properly processed"""
+    test_file = pathlib.Path("threatexchange/tests/hashing/resources/LA.png")
+
+    hash_cli.assert_cli_output(
+        ("--rotations", "photo", str(test_file)),
+        [
+            "pdq accb6d39648035f8125c8ce6ba65007de7b54c67a2d93ef7b8f33b0611306715",
+            "pdq 1f70cbbc77edc5f9524faa1b18f3b76cd0a04a833e20f645d229d0acc8499c56",
+            "pdq 31ddf2513558de0ae56e4a8c8930cadde2ee084df3aed0a75fa512ea0e41e197",
+            "pdq c79931968e880f4b97196df4d5ea0fb489b99e2c10af0dceacf572809b815ea5",
+            "pdq aaca8605440c4a6735dbbf59b947df92e7bf161807e9cd88baf04579523098ab",
+            "pdq 559f78de2530abbdc663b131ed78f10072c4bb13f3acd6017d0e69150e413e5a",
+            "pdq 86a860c1f2bd1a1ec65cf4d10ab55087b4b89f7857da59bbd9200fd5845cc3f9",
+            "pdq 5bb15db9e8a1f03c174a380a55aeaa2985bde9c60abce301bde48df918b5c15b",
+        ],
+    )

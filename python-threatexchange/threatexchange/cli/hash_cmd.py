@@ -115,28 +115,28 @@ class HashCommand(command_base.Command):
 
             hashers = [self.signal_type]  # type: ignore  # can't detect intersection types
 
-        if self.rotations and not issubclass(self.content_type, PhotoContent):
-            raise CommandError(
-                "--rotations flag is only available for Photo content type", 2
-            )
-
-        if self.rotations and issubclass(self.content_type, PhotoContent):
-            for file in self.files:
-                with open(file, "rb") as f:
-                    image_bytes = f.read()
-                    rotated_images = PhotoContent.all_simple_rotations(image_bytes)
-                    for _, rotated_bytes in rotated_images.items():
-                        with tempfile.NamedTemporaryFile() as temp_file:  # Create a temporary file to hold the byte data
-                            temp_file.write(rotated_bytes)
-                            temp_file_path = pathlib.Path(temp_file.name)
-                            for hasher in hashers:
-                                hash_str = hasher.hash_from_file(temp_file_path)
-                                if hash_str:
-                                    print(hasher.get_name(), hash_str)
-
-        else:
+        if not self.rotations:
             for file in self.files:
                 for hasher in hashers:
                     hash_str = hasher.hash_from_file(file)
                     if hash_str:
                         print(hasher.get_name(), hash_str)
+            return
+
+        if not issubclass(self.content_type, PhotoContent):
+            raise CommandError(
+                "--rotations flag is only available for Photo content type", 2
+            )
+
+        for file in self.files:
+            with open(file, "rb") as f:
+                image_bytes = f.read()
+                rotated_images = PhotoContent.all_simple_rotations(image_bytes)
+                for _, rotated_bytes in rotated_images.items():
+                    with tempfile.NamedTemporaryFile() as temp_file:  # Create a temporary file to hold the byte data
+                        temp_file.write(rotated_bytes)
+                        temp_file_path = pathlib.Path(temp_file.name)
+                        for hasher in hashers:
+                            hash_str = hasher.hash_from_file(temp_file_path)
+                            if hash_str:
+                                print(hasher.get_name(), hash_str)
