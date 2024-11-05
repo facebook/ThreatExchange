@@ -10,7 +10,7 @@ from threatexchange.exchanges.clients.ncmec.hash_api import (
     FingerprintType,
     NCMECHashAPI,
     NCMECEnvironment,
-    StatusResult,
+    FeedbackType,
 )
 from threatexchange.exchanges.clients.ncmec.tests.data import (
     ENTRIES_LARGE_FINGERPRINTS,
@@ -22,7 +22,6 @@ from threatexchange.exchanges.clients.ncmec.tests.data import (
     NEXT_UNESCAPED2,
     NEXT_UNESCAPED3,
     STATUS_XML,
-    UPDATE_FEEDBACK_RESULT_XML,
 )
 
 
@@ -192,10 +191,11 @@ def test_large_fingerprint_entries(monkeypatch):
 def test_feedback_entries(api: NCMECHashAPI):
     # We'll mock that we've already read our own ESP
 
-    api.submit_feedback("image1", FingerprintType.md5, True)
+    api.submit_feedback(1, "image1", FingerprintType.md5, FeedbackType.upvote)
     api.submit_feedback(
+        1,
         "image1",
         FingerprintType.md5,
-        False,
+        FeedbackType.downvote,
         "01234567-abcd-0123-4567-012345678900",
     )

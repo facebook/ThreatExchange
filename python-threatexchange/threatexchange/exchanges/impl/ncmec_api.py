@@ -45,6 +45,7 @@ class NCMECCheckpoint(
 
     @classmethod
     def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
+        """Synthesizes a checkpoint from the API response"""
         return cls(response.max_timestamp)
 
     def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
