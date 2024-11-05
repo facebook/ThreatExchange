@@ -8,10 +8,13 @@ Hash command to convert content into signatures.
 import argparse
 import pathlib
 import typing as t
+import tempfile
+
 from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
 
 from threatexchange.signal_type.signal_base import FileHasher, SignalType
 from threatexchange.cli import command_base
@@ -76,16 +79,26 @@ class HashCommand(command_base.Command):
             help="only generate these signal types",
         )
 
+        ap.add_argument(
+            "--rotations",
+            "--R",
+            action="store_true",
+            help="for photos, generate all 8 simple rotations",
+        )
+
     def __init__(
         self,
         content_type: t.Type[ContentType],
         signal_type: t.Optional[t.Type[SignalType]],
         files: t.List[pathlib.Path],
+        rotations: bool = False,
     ) -> None:
         self.content_type = content_type
         self.signal_type = signal_type
 
         self.files = files
+
+        self.rotations = rotations
 
     def execute(self, settings: CLISettings) -> None:
         hashers = [
@@ -99,10 +112,31 @@ class HashCommand(command_base.Command):
                     f"{self.signal_type.get_name()} "
                     f"does not apply to {self.content_type.get_name()}"
                 )
+
             hashers = [self.signal_type]  # type: ignore  # can't detect intersection types
 
+        if not self.rotations:
+            for file in self.files:
+                for hasher in hashers:
+                    hash_str = hasher.hash_from_file(file)
+                    if hash_str:
+                        print(hasher.get_name(), hash_str)
+            return
+
+        if not issubclass(self.content_type, PhotoContent):
+            raise CommandError(
+                "--rotations flag is only available for Photo content type", 2
+            )
+
         for file in self.files:
-            for hasher in hashers:
-                hash_str = hasher.hash_from_file(file)
-                if hash_str:
-                    print(hasher.get_name(), hash_str)
+            with open(file, "rb") as f:
+                image_bytes = f.read()
+                rotated_images = PhotoContent.all_simple_rotations(image_bytes)
+                for rotation_type, rotated_bytes in rotated_images.items():
+                    with tempfile.NamedTemporaryFile() as temp_file:  # Create a temporary file to hold the byte data
+                        temp_file.write(rotated_bytes)
+                        temp_file_path = pathlib.Path(temp_file.name)
+                        for hasher in hashers:
+                            hash_str = hasher.hash_from_file(temp_file_path)
+                            if hash_str:
+                                print(rotation_type.name, hasher.get_name(), hash_str)
