@@ -47,7 +47,7 @@ class _IndexMatchWithRotation(t.Generic[T]):
         distance_str = "".join(self.match.similarity_info.pretty_str().split())
         if self.rotation_type is None:
             return distance_str
-        return f"{distance_str} [{self.rotation_type.name}]"
+        return f"{self.rotation_type.name} {distance_str}"
 
 
 class MatchCommand(command_base.Command):
@@ -267,7 +267,7 @@ def _match_file(
 
     assert issubclass(s_type, FileHasher)
 
-    if not rotations or s_type != PhotoContent:
+    if not rotations:
         matches = index.query(s_type.hash_from_file(path))
         return [_IndexMatchWithRotation(match=match) for match in matches]
 
@@ -286,7 +286,6 @@ def _match_file(
             temp_file.write(rotated_bytes)
             temp_file_path = pathlib.Path(temp_file.name)
             matches = index.query(s_type.hash_from_file(temp_file_path))
-            temp_file_path.unlink()  # Clean up the temporary file
 
         # Add rotation information if any matches were found
         matches_with_rotations = []
