@@ -10,7 +10,7 @@ This records all the valid signal types for a piece of content.
 from enum import Enum, auto
 import typing as t
 
-from threatexchange import common
+import common
 
 
 class ContentType:
@@ -21,8 +21,8 @@ class ContentType:
 
     @classmethod
     def extract_additional_content(
-        cls, content_arg: str
-    ) -> t.List[t.Tuple[t.Type["ContentType"], str]]:
+        cls, content_in_file: Path, available_content: t.Sequence[t.Type["ContentType"]]
+    ) -> t.Dict[t.Type["ContentType"], t.List[Path]]:
         """
         Post-process/download content to find additional components
 
@@ -32,7 +32,7 @@ class ContentType:
         * Photo => run OCR and extract text
         * Video => break out photo thumbnail, close caption text, audio
         """
-        return []
+        return {}
 
 
 class RotationType(Enum):
