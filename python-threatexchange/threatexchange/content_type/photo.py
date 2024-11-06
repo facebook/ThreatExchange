@@ -5,6 +5,7 @@
 Wrapper around the video content type.
 """
 from PIL import Image
+from pathlib import Path
 import io
 import os
 
@@ -102,15 +103,7 @@ class PhotoContent(ContentType):
             RotationType.FLIPMINUS1: cls.flip_minus1(image_data),
         }
         return rotations
-    
-    @classmethod
-    def load_grayscale_image(cls, image_data: bytes) -> Image.Image:
-        """
-        Load image from bytes and convert it to grayscale.
-        """
-        with Image.open(io.BytesIO(image_data)) as img:
-            return img.convert("L")
-          
+              
     @classmethod
     def detect_top_border(cls, grayscale_img: Image.Image, black_threshold: int = 10) -> int:
         """
@@ -174,9 +167,9 @@ class PhotoContent(ContentType):
                 continue
             return width - x - 1
         return width
-      
+    
     @classmethod
-    def unletterbox(cls, image_data: bytes, black_threshold: int = 40) -> bytes:
+    def unletterbox(cls, file_path: str, save_output: bool = False, black_threshold: int = 40) -> bytes:
         """
         Remove black letterbox borders from the sides and top of the image.
         
@@ -184,54 +177,33 @@ class PhotoContent(ContentType):
         are all completly blacked out. 
         
         Then removing the edges to give back a cleaned image bytes.
-        """
-        grayscale_img = cls.load_grayscale_image(image_data)
         
-        top = cls.detect_top_border(grayscale_img, black_threshold)
-        bottom = cls.detect_bottom_border(grayscale_img, black_threshold)
-        left = cls.detect_left_border(grayscale_img, black_threshold)
-        right = cls.detect_right_border(grayscale_img, black_threshold)
+        Return the new hash of the cleaned image with an option to create a new output file as well
+        """
+        # Open the original image
+        with Image.open(file_path) as img:
+            grayscale_img = img.convert("L")
 
-        width, height = grayscale_img.size
-        # creates the new size of the image based off the updated rows
-        cropped_size = (left, top, width - right, height - bottom)
-      
-        with Image.open(io.BytesIO(image_data)) as img:
-            cropped_img = img.crop(cropped_size)
+            top = cls.detect_top_border(grayscale_img, black_threshold)
+            bottom = cls.detect_bottom_border(grayscale_img, black_threshold)
+            left = cls.detect_left_border(grayscale_img, black_threshold)
+            right = cls.detect_right_border(grayscale_img, black_threshold)
+
+            width, height = grayscale_img.size
+            cropped_box = (left, top, width - right, height - bottom)
+
+            cropped_img = img.crop(cropped_box)
+
+            # Optionally save the unletterboxed image to a new file in the same directory
+            if save_output:
+                base = Path(file_path).stem
+                ext = Path(file_path).suffix
+                output_path = Path(file_path).parent / f"{base}_unletterboxed{ext}"
+                cropped_img.save(output_path)
+                print(f"Unletterboxed image saved to: {output_path}")
+
+            # Convert the cropped image to bytes for hashing
             with io.BytesIO() as buffer:
                 cropped_img.save(buffer, format=img.format)
-                return buffer.getvalue()
-    
-    @classmethod
-    def unletterboxfile(cls, image_data: bytes, original_path: str, black_threshold: int = 40) -> str:
-        """
-        Remove black letterbox borders from an image, save the cropped image with a modified name,
-        and return the path to the new file.
-
-        Converts the image to grescale then remove the columns and rows that 
-        are all completly blacked out. 
-        
-        Then removing the edges to give back a cleaned image.
-        """
-        grayscale_img = cls.load_grayscale_image(image_data)
-        
-        # Detect borders
-        top = cls.detect_top_border(grayscale_img, black_threshold)
-        bottom = cls.detect_bottom_border(grayscale_img, black_threshold)
-        left = cls.detect_left_border(grayscale_img, black_threshold)
-        right = cls.detect_right_border(grayscale_img, black_threshold)
-        
-        width, height = grayscale_img.size
-        # creates the new size of the image based off the updated rows
-        cropped_size = (left, top, width - right, height - bottom)
-        
-        with Image.open(io.BytesIO(image_data)) as img:
-            cropped_img = img.crop(cropped_size)
-
-            base, ext = os.path.splitext(original_path)
-            new_filename = f"{base}_unletterboxed{ext}"
-
-            # Save the cropped image to the new file
-            cropped_img.save(new_filename, format=img.format)
-        
-        return new_filename
+                cropped_image_data = buffer.getvalue()
+                return cropped_image_data

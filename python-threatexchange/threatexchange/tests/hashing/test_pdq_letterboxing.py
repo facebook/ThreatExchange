@@ -30,11 +30,8 @@ class TestUnletterboxFunction(unittest.TestCase):
         self.assertNotEqual(letterbox_hash, clean_hash, "Letterbox image unexpectedly matches the clean image")
 
     def test_unletterbox_image(self):
-        with self.letterbox_path.open("rb") as f:
-            letterbox_data = f.read()
-        
         # Generate PDQ hash for the unletterboxed image
-        unletterboxed_hash = PdqSignal.hash_from_bytes(PhotoContent.unletterbox(letterbox_data))
+        unletterboxed_hash = PdqSignal.hash_from_bytes(PhotoContent.unletterbox(self.letterbox_path))
 
         # Read the clean image data and generate PDQ hash
         with self.clean_path.open("rb") as f:
@@ -44,16 +41,9 @@ class TestUnletterboxFunction(unittest.TestCase):
         self.assertEqual(unletterboxed_hash, clean_hash, "Unletterboxed image does not match the clean image")
     
     def test_unletterboxfile_creates_matching_image(self):
-        with self.letterbox_path.open("rb") as f:
-            letterbox_data = f.read()
-        generated_file_path = PhotoContent.unletterboxfile(letterbox_data, str(self.letterbox_path))
-
-        self.assertEqual(generated_file_path, str(self.output_path))
-
-        # Generate PDQ hash for the file created by unletterboxfile
-        with self.output_path.open("rb") as f:
-            generated_data = f.read()
-        generated_hash = PdqSignal.hash_from_bytes(generated_data)
+        # Created generated hash and also create new output file
+        generated_hash = PdqSignal.hash_from_bytes(PhotoContent.unletterbox(self.letterbox_path,True))
+        self.assertTrue(self.output_path.exists(), "The unletterboxed output file was not created.")
 
         # Generate PDQ hash for the clean image
         with self.clean_path.open("rb") as f:
