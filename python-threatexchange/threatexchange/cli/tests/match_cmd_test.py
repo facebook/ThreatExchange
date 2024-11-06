@@ -52,10 +52,6 @@ class MatchCommandTest(ThreatExchangeCLIE2eTest):
             __file__ + "../../../../../../pdq/data/bridge-mods/aaa-orig.jpg"
         ).resolve()
 
-        hash_cmd = ThreatExchangeCLIE2eHelper()
-        hash_cmd.COMMON_CALL_ARGS = ("hash",)
-        hash_cmd._state_dir = pathlib.Path()
-
         rotated_images = PhotoContent.all_simple_rotations(test_file.read_bytes())
 
         for rotation, image in rotated_images.items():
