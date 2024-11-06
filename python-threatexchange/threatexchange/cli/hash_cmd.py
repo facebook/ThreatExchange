@@ -12,10 +12,12 @@ from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.content_type.photo import PhotoContent
 
 from threatexchange.signal_type.signal_base import FileHasher, SignalType
 from threatexchange.cli import command_base
 from threatexchange.cli.helpers import FlexFilesInputAction
+
 
 
 class HashCommand(command_base.Command):
@@ -50,6 +52,7 @@ class HashCommand(command_base.Command):
         signal_choices = sorted(
             s.get_name() for s in signal_types if issubclass(s, FileHasher)
         )
+        print(signal_choices)
         ap.add_argument(
             "content_type",
             **common.argparse_choices_pre_type_kwargs(
@@ -75,15 +78,23 @@ class HashCommand(command_base.Command):
             ),
             help="only generate these signal types",
         )
+        
+        ap.add_argument(
+            "--preprocess",
+            choices=["unletterbox"],
+            help="apply preprocessing steps to the image before hashing",
+        )
 
     def __init__(
         self,
         content_type: t.Type[ContentType],
         signal_type: t.Optional[t.Type[SignalType]],
         files: t.List[pathlib.Path],
+        preprocess: t.Optional[str] = None,
     ) -> None:
         self.content_type = content_type
         self.signal_type = signal_type
+        self.preprocess = preprocess
 
         self.files = files
 
@@ -102,7 +113,20 @@ class HashCommand(command_base.Command):
             hashers = [self.signal_type]  # type: ignore  # can't detect intersection types
 
         for file in self.files:
+            # unletterbox_file = None
+            unletterbox_bytes = None
+            if self.content_type.get_name() == "photo" and self.preprocess == "unletterbox":
+                with open(file, "rb") as f:
+                    file_data = f.read()
+                    unletterbox_bytes = PhotoContent.unletterbox(file_data)
+                    # unletterbox_file = pathlib.Path(PhotoContent.unletterboxfile(file_data, file))
+                    
             for hasher in hashers:
-                hash_str = hasher.hash_from_file(file)
+                # if unletterbox_file:
+                #     hash_str = hasher.hash_from_file(unletterbox_file)
+                if unletterbox_bytes:
+                    hash_str = hasher.hash_from_bytes(unletterbox_bytes)
+                else:
+                    hash_str = hasher.hash_from_file(file)
                 if hash_str:
                     print(hasher.get_name(), hash_str)

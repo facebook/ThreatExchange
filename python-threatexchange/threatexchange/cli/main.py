@@ -141,7 +141,6 @@ def get_argparse(settings: CLISettings) -> argparse.ArgumentParser:
     )
     for command in get_subcommands():
         command.add_command_to_subparser(settings, subparsers)
-
     return ap
 
 

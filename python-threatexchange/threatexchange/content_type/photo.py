@@ -6,6 +6,7 @@ Wrapper around the video content type.
 """
 from PIL import Image
 import io
+import os
 
 from .content_base import ContentType, RotationType
 
@@ -103,7 +104,7 @@ class PhotoContent(ContentType):
         return rotations
     
     @classmethod
-    def load_grayscale_image(image_data: bytes) -> Image.Image:
+    def load_grayscale_image(cls, image_data: bytes) -> Image.Image:
         """
         Load image from bytes and convert it to grayscale.
         """
@@ -111,7 +112,7 @@ class PhotoContent(ContentType):
             return img.convert("L")
           
     @classmethod
-    def detect_top_border(grayscale_img: Image.Image, black_threshold: int = 10) -> int:
+    def detect_top_border(cls, grayscale_img: Image.Image, black_threshold: int = 10) -> int:
         """
         Detect the top black border by counting rows with only black pixels.
         Uses a defualt black threshold of 10 so that only rows with pixel brightness 
@@ -127,7 +128,7 @@ class PhotoContent(ContentType):
         return height
       
     @classmethod
-    def detect_bottom_border(grayscale_img: Image.Image, black_threshold: int = 10) -> int:
+    def detect_bottom_border(cls, grayscale_img: Image.Image, black_threshold: int = 10) -> int:
         """
         Detect the bottom black border by counting rows with only black pixels from the bottom up.
         Uses a defualt black threshold of 10 so that only rows with pixel brightness 
@@ -143,7 +144,7 @@ class PhotoContent(ContentType):
         return height
     
     @classmethod
-    def detect_left_border(grayscale_img: Image.Image, black_threshold: int = 10) -> int:
+    def detect_left_border(cls, grayscale_img: Image.Image, black_threshold: int = 10) -> int:
         """
         Detect the left black border by counting columns with only black pixels.
         Uses a defualt black threshold of 10 so that only colums with pixel brightness 
@@ -159,7 +160,7 @@ class PhotoContent(ContentType):
         return width
     
     @classmethod  
-    def detect_right_border(grayscale_img: Image.Image, black_threshold: int = 10) -> int:
+    def detect_right_border(cls, grayscale_img: Image.Image, black_threshold: int = 10) -> int:
         """
         Detect the right black border by counting columns with only black pixels from the right.
         Uses a defualt black threshold of 10 so that only colums with pixel brightness 
@@ -175,16 +176,16 @@ class PhotoContent(ContentType):
         return width
       
     @classmethod
-    def unletterbox(cls, image_data: bytes, black_threshold: int = 10) -> bytes:
+    def unletterbox(cls, image_data: bytes, black_threshold: int = 40) -> bytes:
         """
         Remove black letterbox borders from the sides and top of the image.
         
         Converts the image to grescale then remove the columns and rows that 
         are all completly blacked out. 
         
-        Then removing the edges to give back a cleaned image.
+        Then removing the edges to give back a cleaned image bytes.
         """
-        grayscale_img = cls.load_image(image_data)
+        grayscale_img = cls.load_grayscale_image(image_data)
         
         top = cls.detect_top_border(grayscale_img, black_threshold)
         bottom = cls.detect_bottom_border(grayscale_img, black_threshold)
@@ -200,3 +201,37 @@ class PhotoContent(ContentType):
             with io.BytesIO() as buffer:
                 cropped_img.save(buffer, format=img.format)
                 return buffer.getvalue()
+    
+    @classmethod
+    def unletterboxfile(cls, image_data: bytes, original_path: str, black_threshold: int = 40) -> str:
+        """
+        Remove black letterbox borders from an image, save the cropped image with a modified name,
+        and return the path to the new file.
+
+        Converts the image to grescale then remove the columns and rows that 
+        are all completly blacked out. 
+        
+        Then removing the edges to give back a cleaned image.
+        """
+        grayscale_img = cls.load_grayscale_image(image_data)
+        
+        # Detect borders
+        top = cls.detect_top_border(grayscale_img, black_threshold)
+        bottom = cls.detect_bottom_border(grayscale_img, black_threshold)
+        left = cls.detect_left_border(grayscale_img, black_threshold)
+        right = cls.detect_right_border(grayscale_img, black_threshold)
+        
+        width, height = grayscale_img.size
+        # creates the new size of the image based off the updated rows
+        cropped_size = (left, top, width - right, height - bottom)
+        
+        with Image.open(io.BytesIO(image_data)) as img:
+            cropped_img = img.crop(cropped_size)
+
+            base, ext = os.path.splitext(original_path)
+            new_filename = f"{base}_unletterboxed{ext}"
+
+            # Save the cropped image to the new file
+            cropped_img.save(new_filename, format=img.format)
+        
+        return new_filename
