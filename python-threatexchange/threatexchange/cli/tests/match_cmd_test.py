@@ -2,7 +2,11 @@
 
 import pathlib
 import tempfile
-from threatexchange.cli.tests.e2e_test_helper import ThreatExchangeCLIE2eHelper, ThreatExchangeCLIE2eTest
+import os
+from threatexchange.cli.tests.e2e_test_helper import (
+    ThreatExchangeCLIE2eHelper,
+    ThreatExchangeCLIE2eTest,
+)
 from threatexchange.content_type.content_base import RotationType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type.md5 import VideoMD5Signal
@@ -44,23 +48,26 @@ class MatchCommandTest(ThreatExchangeCLIE2eTest):
                 )
 
     def test_photo_hash_with_rotations(self):
-        test_file = pathlib.Path("threatexchange/tests/hashing/resources/rgb.jpeg")
+        test_file = pathlib.Path(
+            __file__ + "../../../../../../pdq/data/bridge-mods/aaa-orig.jpg"
+        ).resolve()
 
         hash_cmd = ThreatExchangeCLIE2eHelper()
         hash_cmd.COMMON_CALL_ARGS = ("hash",)
         hash_cmd._state_dir = pathlib.Path()
 
-        hash = hash_cmd.cli_call("photo", str(test_file))
-        assert hash == "pdq fb4eed46cb8a6c78819ca06b756c541f7b07ef6d02c82fccd00f862166272cda\n"
+        rotated_images = PhotoContent.all_simple_rotations(test_file.read_bytes())
 
-        # rotated_images = PhotoContent.all_simple_rotations(test_file.read_bytes())
+        for rotation, image in rotated_images.items():
+            with tempfile.NamedTemporaryFile() as tmp_file:
+                tmp_file.write(image)
 
-        # img = rotated_images[RotationType.ROTATE90] #try with 1 rotated image first
+                if rotation == RotationType.ROTATE270:
+                    rotation = RotationType.ROTATE90
+                elif rotation == RotationType.ROTATE90:
+                    rotation = RotationType.ROTATE270
 
-        # with tempfile.NamedTemporaryFile() as tmp_file:
-        #     img = rotated_images[RotationType.ROTATE90]
-        #     tmp_file.write(img)
-        #     self.assert_cli_output(
-        #         ("--rotations", "photo", "--", tmp_file.name),
-        #         "video_md5 - (Sample Signals) INVESTIGATION_SEED",
-        #     )
+                self.assert_cli_output(
+                    ("--rotations", "photo", tmp_file.name),
+                    f"pdq {rotation.name} 16 (Sample Signals) INVESTIGATION_SEED",
+                )
