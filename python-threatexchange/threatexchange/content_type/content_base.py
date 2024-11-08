@@ -21,8 +21,8 @@ class ContentType:
 
     @classmethod
     def extract_additional_content(
-        cls, content_in_file: Path, available_content: t.Sequence[t.Type["ContentType"]]
-    ) -> t.Dict[t.Type["ContentType"], t.List[Path]]:
+        cls, content_arg: str
+    ) -> t.List[t.Tuple[t.Type["ContentType"], str]]:
         """
         Post-process/download content to find additional components
 
