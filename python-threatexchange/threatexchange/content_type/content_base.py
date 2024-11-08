@@ -10,8 +10,7 @@ This records all the valid signal types for a piece of content.
 from enum import Enum, auto
 import typing as t
 
-import common
-
+from threatexchange import common
 
 class ContentType:
     @classmethod
@@ -32,7 +31,7 @@ class ContentType:
         * Photo => run OCR and extract text
         * Video => break out photo thumbnail, close caption text, audio
         """
-        return {}
+        return []
 
 
 class RotationType(Enum):
