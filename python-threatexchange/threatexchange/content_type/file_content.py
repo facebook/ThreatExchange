@@ -4,10 +4,11 @@ from photo import PhotoContent
 from video import VideoContent
 from PIL import Image
 
+
 class FileContent(ContentType):
     """
-    ContentType representing a generic file. 
-    
+    ContentType representing a generic file.
+
     Determines if a file is a photo or video based on file extension.
     """
 
@@ -19,7 +20,7 @@ class FileContent(ContentType):
         """
         Determines content type based on file extension.
         """
-        file_extension = file_name.lower().rsplit('.', 1)[-1]
+        file_extension = file_name.lower().rsplit(".", 1)[-1]
         file_extension = f".{file_extension}"
 
         if file_extension in cls.VALID_PHOTO_EXTENSIONS:
