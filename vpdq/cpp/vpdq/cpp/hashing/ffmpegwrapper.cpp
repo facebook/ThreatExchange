@@ -131,7 +131,7 @@ FFmpegFrame::FFmpegFrame(AVFramePtr frame, uint64_t frameNumber)
 
 uint64_t FFmpegFrame::get_frame_number() const {
   return m_frameNumber;
-};
+}
 
 unsigned char* FFmpegFrame::get_buffer_ptr() {
   return m_frame->data[0];
