@@ -12,6 +12,7 @@ import typing as t
 
 from threatexchange import common
 
+
 class ContentType:
     @classmethod
     def get_name(cls) -> str:
