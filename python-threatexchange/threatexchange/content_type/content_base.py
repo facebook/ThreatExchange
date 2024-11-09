@@ -7,7 +7,7 @@ Abstraction for different content types.
 This records all the valid signal types for a piece of content.
 """
 
-from enum import Enum, auto
+from enum import Enum
 import typing as t
 
 from threatexchange import common
