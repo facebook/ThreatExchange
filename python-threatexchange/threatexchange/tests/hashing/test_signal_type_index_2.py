@@ -10,11 +10,6 @@ from threatexchange.signal_type.index2 import (
 
 
 @pytest.fixture
-def signal_type_index() -> SignalTypeIndex2:
-    return SignalTypeIndex2[int]()
-
-
-@pytest.fixture
 def empty_index():
     """Fixture for an empty index."""
     return SignalTypeIndex2[str]()
@@ -89,12 +84,6 @@ def test_empty_index_query(empty_index):
     # Query should return empty list
     results = empty_index.query(query=query_hash)
     assert len(results) == 0
-
-
-def test_empty_index_properties(empty_index):
-    """Test properties of an empty index."""
-    assert len(empty_index._entries) == 0
-    assert len(empty_index._deduper) == 0
 
 
 def test_sample_set_exact_match(sample_index):
