@@ -6,10 +6,6 @@ import numpy as np
 from threatexchange.signal_type.index import (
     IndexMatchUntyped,
     SignalSimilarityInfoWithIntDistance,
-    SignalTypeIndex,
-    T as IndexT,
-    SignalSimilarityInfo,
-    IndexMatch,
 )
 
 T = t.TypeVar("T")
@@ -100,7 +96,7 @@ class _PDQHashIndex:
 
 Self = t.TypeVar("Self", bound="SignalTypeIndex2")
 
-PDQIndexMatch = IndexMatchUntyped[SignalSimilarityInfoWithIntDistance, IndexT]
+PDQIndexMatch = IndexMatchUntyped[SignalSimilarityInfoWithIntDistance, T]
 
 
 class SignalTypeIndex2(t.Generic[T]):
