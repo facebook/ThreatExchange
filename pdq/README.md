@@ -36,6 +36,12 @@ Before evaluating the results on your own to choose the thresholds that work for
 * **Distance Threshold to consider two hashes to be similar/matching**: <=31
 * **Quality Threshold where we recommend discarding hashes**: <=49
 
+## Note on Dihedral PDQ Hashes
+
+The PDQ hashing algorithm is easily capable of producing eight "dihedral" hashes (one for each 90 degree rotation and one for each flip across a horizontal, vertical or diagonal axis). However, PDQ does not guarantee exact rotational invariance. Small variations can occur in the hash values for each rotation due to how PDQ processes the image’s grid alignment in its DCT (Discrete Cosine Transform) phase.
+
+For example, two rotated versions of an image can have a slightly different set of eight dihedral hashes. Selecting a "minimal" hash from these transformations (e.g., lexicographically) may yield inconsistent results because of these minor bit differences. For each image, if we select the minimal hash, there’s no guarantee that the same hash will be selected across different rotations. These inconsistencies arise when small bit variations lead to a different hash being identified as "minimal" for each rotation. For a clearer example, check this issue: ([https://github.com/facebook/ThreatExchange/issues/1676#issuecomment-2466331532](https://github.com/facebook/ThreatExchange/issues/1676#issuecomment-2466331532)).
+
 ## Contact
 
 threatexchange@meta.com

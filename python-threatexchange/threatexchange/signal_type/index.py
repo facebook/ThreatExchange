@@ -23,7 +23,6 @@ from dataclasses import dataclass
 import pickle
 import typing as t
 
-
 T = t.TypeVar("T")
 S_Co = t.TypeVar("S_Co", covariant=True, bound="SignalSimilarityInfo")
 CT = t.TypeVar("CT", bound="Comparable")

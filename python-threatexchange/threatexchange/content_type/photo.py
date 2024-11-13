@@ -7,7 +7,7 @@ Wrapper around the video content type.
 from PIL import Image
 from pathlib import Path
 import io
-import os
+import typing as t
 
 from .content_base import ContentType, RotationType
 from threatexchange.content_type.preprocess import unletterboxing
@@ -85,7 +85,7 @@ class PhotoContent(ContentType):
                 return buffer.getvalue()
 
     @classmethod
-    def all_simple_rotations(cls, image_data: bytes):
+    def all_simple_rotations(cls, image_data: bytes) -> t.Dict[RotationType, bytes]:
         """
         Generate the 8 naive rotations of an image.
 
