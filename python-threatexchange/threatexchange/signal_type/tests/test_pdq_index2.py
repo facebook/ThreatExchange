@@ -15,7 +15,9 @@ SAMPLE_HASHES = [
 
 
 def test_pdq_index():
-    common_hashes = [PdqSignal.get_random_signal() for _ in range(100)] # Make sure they have at least 100 similar hashes
+    common_hashes = [
+        PdqSignal.get_random_signal() for _ in range(100)
+    ]  # Make sure they have at least 100 similar hashes
     base_hashes = common_hashes + [PdqSignal.get_random_signal() for _ in range(1000)]
     query_hashes = common_hashes + [PdqSignal.get_random_signal() for _ in range(10000)]
 
