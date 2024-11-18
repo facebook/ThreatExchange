@@ -18,6 +18,8 @@ from threatexchange.exchanges.impl.fb_threatexchange_signal import (
 )
 from threatexchange.signal_type.pdq.pdq_index import PDQIndex
 
+PDQ_CONFIDENT_MATCH_THRESHOLD = 31
+
 
 class PdqSignal(
     signal_base.SimpleSignalType,
@@ -43,7 +45,7 @@ class PdqSignal(
 
     # This may need to be updated (TODO make more configurable)
     # Hashes of distance less than or equal to this threshold are considered a 'match'
-    PDQ_CONFIDENT_MATCH_THRESHOLD = 31
+    PDQ_CONFIDENT_MATCH_THRESHOLD = PDQ_CONFIDENT_MATCH_THRESHOLD
     # Images with less than quality 50 are too unreliable to match on
     QUALITY_THRESHOLD = 50
 
