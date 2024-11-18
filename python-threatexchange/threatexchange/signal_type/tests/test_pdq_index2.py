@@ -1,9 +1,8 @@
-import pytest
-import io
-import faiss
-from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2, _PDQFaissIndex
-from threatexchange.signal_type.pdq.signal import PDQ_CONFIDENT_MATCH_THRESHOLD
-from threatexchange.signal_type.pdq.pdq_utils import BITS_IN_PDQ
+from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2
+from threatexchange.signal_type.pdq.signal import PdqSignal
+import typing as t
+import numpy as np
+from threatexchange.signal_type.pdq.pdq_utils import convert_pdq_strings_to_ndarray
 
 SAMPLE_HASH = "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
 
@@ -13,6 +12,45 @@ SAMPLE_HASHES = [
     "0" * 64,
     "a" * 64,
 ]
+
+
+def test_pdq_index():
+    common_hashes = [PdqSignal.get_random_signal() for _ in range(100)] # Make sure they have at least 100 similar hashes
+    base_hashes = common_hashes + [PdqSignal.get_random_signal() for _ in range(1000)]
+    query_hashes = common_hashes + [PdqSignal.get_random_signal() for _ in range(10000)]
+
+    def brute_force_match(
+        base: t.List[str], query: str, threshold: int = 32
+    ) -> t.Set[int]:
+        matches = set()
+        query_arr = convert_pdq_strings_to_ndarray([query])[0]
+
+        for i, base_hash in enumerate(base):
+            base_arr = convert_pdq_strings_to_ndarray([base_hash])[0]
+            distance = np.count_nonzero(query_arr != base_arr)
+            if distance <= threshold:
+                matches.add(i)
+        return matches
+
+    brute_force_matches = {
+        query_hash: brute_force_match(base_hashes, query_hash)
+        for query_hash in query_hashes
+    }
+
+    index = PDQIndex2()
+    for i, base_hash in enumerate(base_hashes):
+        index.add(base_hash, i)
+
+    for query_hash in query_hashes:
+        expected_indices = brute_force_matches[query_hash]
+        index_results = index.query(query_hash)
+
+        result_indices = {result.metadata for result in index_results}
+
+        assert result_indices == expected_indices, (
+            f"Mismatch for hash {query_hash}: "
+            f"Expected {expected_indices}, Got {result_indices}"
+        )
 
 
 def test_empty_index_query():
