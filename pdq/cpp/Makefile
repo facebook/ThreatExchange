@@ -46,6 +46,7 @@ LIBSRCS=\
 MAINS=\
  pdq-photo-hasher \
  test-mih \
+ benchmark-mih \
  clusterize256 \
  snowball-clusterize256 \
  clusterize256x \
@@ -111,6 +112,8 @@ pdq-downsample-demo: bin/pdq-downsample-demo.cpp $(LIBSRCS) $(LIBHDRS)
 
 test-mih: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/test-mih.cpp $(LIBSRCS) -o test-mih $(LFLAGS)
+benchmark-mih: bin/benchmark-mih.cpp $(LIBSRCS) $(LIBHDRS)
+	$(CCOPT) bin/benchmark-mih.cpp $(LIBSRCS) -o benchmark-mih $(LFLAGS)
 test-mihg: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) bin/test-mih.cpp $(LIBSRCS) -o test-mihg $(LFLAGS)
 clusterize256: bin/clusterize256.cpp $(LIBSRCS) $(LIBHDRS)
