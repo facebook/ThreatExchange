@@ -6,6 +6,7 @@ import typing as t
 
 BITS_IN_PDQ = 256
 PDQ_HEX_STR_LEN = int(BITS_IN_PDQ / 4)
+PDQ_CONFIDENT_MATCH_THRESHOLD = 31
 
 
 def simple_distance_binary(bin_a: str, bin_b: str) -> int:

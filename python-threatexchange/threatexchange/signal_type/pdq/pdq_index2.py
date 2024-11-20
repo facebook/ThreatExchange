@@ -1,8 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 """
-Implementation of SignalTypeIndex abstraction for PDQ by wrapping
-hashing.pdq_faiss_matcher.
+Implementation of SignalTypeIndex abstraction for PDQ
 """
 
 import typing as t
@@ -16,9 +15,9 @@ from threatexchange.signal_type.index import (
     SignalTypeIndex,
     T as IndexT,
 )
-from threatexchange.signal_type.pdq.signal import PDQ_CONFIDENT_MATCH_THRESHOLD
 from threatexchange.signal_type.pdq.pdq_utils import (
     BITS_IN_PDQ,
+    PDQ_CONFIDENT_MATCH_THRESHOLD,
     convert_pdq_strings_to_ndarray,
 )
 
@@ -28,6 +27,10 @@ PDQIndexMatch = IndexMatchUntyped[SignalSimilarityInfoWithIntDistance, IndexT]
 class PDQIndex2(SignalTypeIndex[IndexT]):
     """
     Indexing and querying PDQ signals using Faiss for approximate nearest neighbor search.
+
+    This is a redo of the existing PDQ index,
+    designed to be simpler and fix hard-to-squash bugs in the existing implementation.
+    Purpose of this class: to replace the original index in pytx 2.0
     """
 
     def __init__(
@@ -42,7 +45,7 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
 
         if index is None:
             index = faiss.IndexFlatL2(BITS_IN_PDQ)
-        self.index = _PDQFaissIndex(index)
+        self._index = _PDQFaissIndex(index)
 
         # Matches hash to Faiss index
         self._deduper: t.Dict[str, int] = {}
@@ -56,10 +59,10 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
 
     def query(self, hash: str) -> t.Sequence[PDQIndexMatch[IndexT]]:
         """
-        Look up entries against the index, up to the max supported distance.
+        Look up entries against the index, up to the threshold.
         """
         results: t.List[PDQIndexMatch[IndexT]] = []
-        matches_list: t.List[t.Tuple[int, int]] = self.index.search(
+        matches_list: t.List[t.Tuple[int, int]] = self._index.search(
             queries=[hash], threshold=self.threshold
         )
 
@@ -82,7 +85,7 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
         for h, i in entries:
             existing_faiss_id = self._deduper.get(h)
             if existing_faiss_id is None:
-                self.index.add([h])
+                self._index.add([h])
                 self._idx_to_entries.append([i])
                 next_id = len(self._deduper)  # Because faiss index starts from 0 up
                 self._deduper[h] = next_id
@@ -107,7 +110,7 @@ class _PDQFaissIndex:
         self.faiss_index.add(vectors)
 
     def search(
-        self, queries: t.Sequence[str], threshold: int = PDQ_CONFIDENT_MATCH_THRESHOLD
+        self, queries: t.Sequence[str], threshold: int
     ) -> t.List[t.Tuple[int, int]]:
         """
         Search the FAISS index for matches to the given PDQ queries.

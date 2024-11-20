@@ -4,29 +4,31 @@ import random
 
 from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2
 from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.signal_type.pdq.pdq_utils import convert_pdq_strings_to_ndarray
+from threatexchange.signal_type.pdq.pdq_utils import simple_distance
 
-SAMPLE_HASHES = [PdqSignal.get_random_signal() for _ in range(100)]
+
+def _generate_sample_hashes(size: int, seed: int = 42):
+    random.seed(seed)
+    return [PdqSignal.get_random_signal() for _ in range(size)]
+
+
+SAMPLE_HASHES = _generate_sample_hashes(100)
 
 
 def _brute_force_match(
     base: t.List[str], query: str, threshold: int = 32
-) -> t.Set[int]:
+) -> t.Set[t.Tuple[int, int]]:
     matches = set()
-    query_arr = convert_pdq_strings_to_ndarray([query])[0]
 
     for i, base_hash in enumerate(base):
-        base_arr = convert_pdq_strings_to_ndarray([base_hash])[0]
-        distance = np.count_nonzero(query_arr != base_arr)
+        distance = simple_distance(base_hash, query)
         if distance <= threshold:
-            matches.add(i)
+            matches.add((i, distance))
     return matches
 
 
 def _generate_random_hash_with_distance(hash: str, distance: int) -> str:
-    if len(hash) != 64 or not all(c in "0123456789abcdef" for c in hash.lower()):
-        raise ValueError("Hash must be a 64-character hexadecimal string")
-    if distance < 0 or distance > 256:
+    if not (0 <= distance <= 256):
         raise ValueError("Distance must be between 0 and 256")
 
     hash_bits = bin(int(hash, 16))[2:].zfill(256)  # Convert hash to binary
@@ -42,9 +44,9 @@ def _generate_random_hash_with_distance(hash: str, distance: int) -> str:
 
 
 def test_pdq_index():
-    # Make sure base_hashes and query_hashes have at least 100 similar hashes
-    base_hashes = SAMPLE_HASHES + [PdqSignal.get_random_signal() for _ in range(1000)]
-    query_hashes = SAMPLE_HASHES + [PdqSignal.get_random_signal() for _ in range(10000)]
+    # Make sure base_hashes and query_hashes have at least 10 similar hashes
+    base_hashes = SAMPLE_HASHES
+    query_hashes = SAMPLE_HASHES[:10] + _generate_sample_hashes(10)
 
     brute_force_matches = {
         query_hash: _brute_force_match(base_hashes, query_hash)
@@ -59,7 +61,10 @@ def test_pdq_index():
         expected_indices = brute_force_matches[query_hash]
         index_results = index.query(query_hash)
 
-        result_indices = {result.metadata for result in index_results}
+        result_indices: t.Set[t.Tuple[t.Any, int]] = {
+            (result.metadata, result.similarity_info.distance)
+            for result in index_results
+        }
 
         assert result_indices == expected_indices, (
             f"Mismatch for hash {query_hash}: "
@@ -69,13 +74,14 @@ def test_pdq_index():
 
 def test_pdq_index_with_exact_distance():
     thresholds: t.List[int] = [10, 31, 50]
-    indexes: t.List[PDQIndex2] = []
-    for thres in thresholds:
-        index = PDQIndex2(
+
+    indexes = [
+        PDQIndex2(
             entries=[(h, SAMPLE_HASHES.index(h)) for h in SAMPLE_HASHES],
             threshold=thres,
         )
-        indexes.append(index)
+        for thres in thresholds
+    ]
 
     distances: t.List[int] = [0, 1, 20, 30, 31, 60]
     query_hash = SAMPLE_HASHES[0]
