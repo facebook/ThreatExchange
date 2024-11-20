@@ -6,6 +6,7 @@ import typing as t
 
 BITS_IN_PDQ = 256
 PDQ_HEX_STR_LEN = int(BITS_IN_PDQ / 4)
+# Hashes of distance less than or equal to this threshold are considered a 'match'
 PDQ_CONFIDENT_MATCH_THRESHOLD = 31
 
 
@@ -55,15 +56,14 @@ def pdq_match(pdq_hex_a: str, pdq_hex_b: str, threshold: int) -> bool:
     return distance <= threshold
 
 
-def convert_pdq_strings_to_ndarray(pdq_strings: t.Sequence[str]) -> np.ndarray:
+def convert_pdq_strings_to_ndarray(pdq_strings: t.Iterable[str]) -> np.ndarray:
     """
     Convert multiple PDQ hash strings to a numpy array.
     """
-    if not all(len(pdq_str) == PDQ_HEX_STR_LEN for pdq_str in pdq_strings):
-        raise ValueError("All PDQ hash strings must be 64 hex characters long")
-
     binary_arrays = []
     for pdq_str in pdq_strings:
+        if len(pdq_str) != PDQ_HEX_STR_LEN:
+            raise ValueError("PDQ hash string must be 64 hex characters long")
         hash_bytes = bytes.fromhex(pdq_str)
         binary_array = np.unpackbits(np.frombuffer(hash_bytes, dtype=np.uint8))
         binary_arrays.append(binary_array)

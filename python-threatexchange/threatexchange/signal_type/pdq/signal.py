@@ -45,8 +45,6 @@ class PdqSignal(
     INDICATOR_TYPE = "HASH_PDQ"
 
     # This may need to be updated (TODO make more configurable)
-    # Hashes of distance less than or equal to this threshold are considered a 'match'
-    PDQ_CONFIDENT_MATCH_THRESHOLD = PDQ_CONFIDENT_MATCH_THRESHOLD
     # Images with less than quality 50 are too unreliable to match on
     QUALITY_THRESHOLD = 50
 
