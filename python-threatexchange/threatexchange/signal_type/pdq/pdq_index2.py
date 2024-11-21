@@ -71,7 +71,7 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
             # Create match objects for each entry
             results.extend(
                 PDQIndexMatch(
-                    SignalSimilarityInfoWithIntDistance(distance=int(distance)),
+                    SignalSimilarityInfoWithIntDistance(distance=distance),
                     entry,
                 )
                 for entry in entries
