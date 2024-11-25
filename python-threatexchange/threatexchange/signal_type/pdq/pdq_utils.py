@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import numpy as np
+import typing as t
+
 BITS_IN_PDQ = 256
 PDQ_HEX_STR_LEN = int(BITS_IN_PDQ / 4)
+# Hashes of distance less than or equal to this threshold are considered a 'match'
+PDQ_CONFIDENT_MATCH_THRESHOLD = 31
 
 
 def simple_distance_binary(bin_a: str, bin_b: str) -> int:
@@ -49,3 +54,18 @@ def pdq_match(pdq_hex_a: str, pdq_hex_b: str, threshold: int) -> bool:
     """
     distance = simple_distance(pdq_hex_a, pdq_hex_b)
     return distance <= threshold
+
+
+def convert_pdq_strings_to_ndarray(pdq_strings: t.Iterable[str]) -> np.ndarray:
+    """
+    Convert multiple PDQ hash strings to a numpy array.
+    """
+    binary_arrays = []
+    for pdq_str in pdq_strings:
+        if len(pdq_str) != PDQ_HEX_STR_LEN:
+            raise ValueError("PDQ hash string must be 64 hex characters long")
+        hash_bytes = bytes.fromhex(pdq_str)
+        binary_array = np.unpackbits(np.frombuffer(hash_bytes, dtype=np.uint8))
+        binary_arrays.append(binary_array)
+
+    return np.array(binary_arrays, dtype=np.uint8)
