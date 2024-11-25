@@ -1,12 +1,14 @@
+#!/usr/bin/env python
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 from PIL import Image
 
 
-def is_pixel_black(pixel, threshold):
+def is_pixel_black(pixel: tuple, black_threshold: int):
     """
     Check if each color channel in the pixel is below the threshold
     """
     r, g, b = pixel
-    return r < threshold and g < threshold and b < threshold
+    return r <= black_threshold and g <= black_threshold and b <= black_threshold
 
 
 def detect_top_border(image: Image.Image, black_threshold: int = 0) -> int:

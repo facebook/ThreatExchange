@@ -106,20 +106,22 @@ class PhotoContent(ContentType):
         return rotations
 
     @classmethod
-    def unletterbox(cls, file_path: str, black_threshold: int = 0) -> bytes:
+    def unletterbox(cls, file_path: Path, black_threshold: int = 0) -> bytes:
         """
         Remove black letterbox borders from the sides and top of the image based on the specified black_threshold.
         Returns the cleaned image as raw bytes.
         """
-        with Image.open(file_path) as image:
-            top = unletterboxing.detect_top_border(image, black_threshold)
-            bottom = unletterboxing.detect_bottom_border(image, black_threshold)
-            left = unletterboxing.detect_left_border(image, black_threshold)
-            right = unletterboxing.detect_right_border(image, black_threshold)
+        with file_path.open("rb") as file:
+            with Image.open(file) as image:
+                img = image.convert("RGB")
+                top = unletterboxing.detect_top_border(img, black_threshold)
+                bottom = unletterboxing.detect_bottom_border(img, black_threshold)
+                left = unletterboxing.detect_left_border(img, black_threshold)
+                right = unletterboxing.detect_right_border(img, black_threshold)
 
-            width, height = image.size
-            cropped_img = image.crop((left, top, width - right, height - bottom))
+                width, height = image.size
+                cropped_img = image.crop((left, top, width - right, height - bottom))
 
-            with io.BytesIO() as buffer:
-                cropped_img.save(buffer, format=image.format)
-                return buffer.getvalue()
+                with io.BytesIO() as buffer:
+                    cropped_img.save(buffer, format=image.format)
+                    return buffer.getvalue()

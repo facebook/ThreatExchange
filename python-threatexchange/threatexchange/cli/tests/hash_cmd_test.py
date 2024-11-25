@@ -90,7 +90,10 @@ def test_rotations_with_non_photo_content(
 
 def test_rotations_with_photo_content(hash_cli: ThreatExchangeCLIE2eHelper):
     """Test that photo rotations are properly processed"""
-    test_file = pathlib.Path("threatexchange/tests/hashing/resources/LA.png")
+    resources_dir = (
+        pathlib.Path(__file__).parent.parent.parent / "tests/hashing/resources"
+    )
+    test_file = resources_dir / "LA.png"
 
     hash_cli.assert_cli_output(
         ("--photo-preprocess=rotations", "photo", str(test_file)),
@@ -120,10 +123,11 @@ def test_unletterbox_with_non_photo_content(
 
 def test_unletterbox_with_photo_content(hash_cli: ThreatExchangeCLIE2eHelper):
     """Test that photo unletterboxing is properly processed"""
-    test_file = pathlib.Path(
-        "threatexchange/tests/hashing/resources/letterboxed_sample-b.jpg"
+    resources_dir = (
+        pathlib.Path(__file__).parent.parent.parent / "tests/hashing/resources"
     )
-    clean_file = pathlib.Path("threatexchange/tests/hashing/resources/sample-b.jpg")
+    test_file = resources_dir / "letterboxed_sample-b.jpg"
+    clean_file = resources_dir / "sample-b.jpg"
 
     hash_cli.assert_cli_output(
         ("photo", str(clean_file)),
@@ -132,11 +136,11 @@ def test_unletterbox_with_photo_content(hash_cli: ThreatExchangeCLIE2eHelper):
         ],
     )
 
-    """Test that photo unletterboxing is chnaged based off of allowed threshold"""
+    """Test that photo unletterboxing is changed based on allowed threshold"""
     hash_cli.assert_cli_output(
         ("--photo-preprocess=unletterbox", "photo", str(test_file)),
         [
-            "pdq 58f870cce0f4e84d8e378a32028f63f4b36e26f597621e1d33e6b39c4a9c9b22",
+            "pdq d8f871cce0f4e84d8a370a32028f63f4b36e27d597621e1d33e6b39c4a9c9b22",
         ],
     )
 
