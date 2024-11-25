@@ -10,7 +10,6 @@ import pathlib
 import typing as t
 import tempfile
 from pathlib import Path
-from PIL import Image
 
 from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
@@ -152,7 +151,9 @@ class HashCommand(command_base.Command):
                         print(hasher.get_name(), hash_str)
             return
 
-        def pre_processed_files() -> t.Iterator[t.Tuple[Path, bytes, t.Union[None, RotationType], str]]:
+        def pre_processed_files() -> (
+            t.Iterator[t.Tuple[Path, bytes, t.Union[None, RotationType], str]]
+        ):
             """
             Generator that yields preprocessed files and their metadata.
             Each item is a tuple of (file path, processed bytes, rotation name, image format).
@@ -171,37 +172,29 @@ class HashCommand(command_base.Command):
                     for rotation_type, processed_bytes in rotations.items():
                         yield file, processed_bytes, rotation_type, image_format
 
-        # Process each preprocessed file
         for (
             file,
             processed_bytes,
             rotation_type,
             image_format,
         ) in pre_processed_files():
-            output_extension = (
-                f".{image_format.lower()}" if image_format else ".png"
-            )
-            # Use a temporary file with the correct extension
+            output_extension = f".{image_format.lower()}" if image_format else ".png"
             with tempfile.NamedTemporaryFile(
                 delete=not self.save_preprocess, suffix=output_extension
             ) as temp_file:
                 temp_file.write(processed_bytes)
-                temp_file.flush()  # Ensure all data is written
                 temp_file_path = Path(temp_file.name)
                 for hasher in hashers:
                     hash_str = hasher.hash_from_file(temp_file_path)
                     if hash_str:
                         prefix = rotation_type.name if rotation_type else ""
                         print(f"{prefix} {hasher.get_name()} {hash_str}")
-                # Save output by renaming the temp file if needed
                 if self.save_preprocess:
                     suffix = (
                         f"_{rotation_type.name}" if rotation_type else "_unletterboxed"
                     )
-                    output_path = file.with_stem(
-                        f"{file.stem}{suffix}"
-                    ).with_suffix(output_extension)
-                    temp_file_path.rename(
-                        output_path
-                    )  # Move temp file to desired location
+                    output_path = file.with_stem(f"{file.stem}{suffix}").with_suffix(
+                        output_extension
+                    )
+                    temp_file_path.rename(output_path)
                     print(f"Processed image saved to: {output_path}")
