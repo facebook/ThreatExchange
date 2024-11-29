@@ -140,11 +140,11 @@ static void do_test(char* argv0, int argc, char** argv) {
 
   facebook::pdq::index::MIH256<std::string> mih;
 
-  t1 = std::chrono::system_clock::now();
+  t1 = std::chrono::steady_clock::now();
   for (const auto& it : haystack) {
     mih.insert(it.first, it.second);
   }
-  t2 = std::chrono::system_clock::now();
+  t2 = std::chrono::steady_clock::now();
   elapsed_seconds_outer = t2 - t1;
   seconds = elapsed_seconds_outer.count();
   printf("\n");
@@ -172,12 +172,12 @@ static void do_test(char* argv0, int argc, char** argv) {
   matches.clear();
   num_matches = 0;
 
-  t1 = std::chrono::system_clock::now();
+  t1 = std::chrono::steady_clock::now();
   for (const auto& it : needles) {
     mih.bruteForceQueryAll(it.first, maxDistance, matches);
   }
   num_matches = matches.size();
-  t2 = std::chrono::system_clock::now();
+  t2 = std::chrono::steady_clock::now();
   elapsed_seconds_outer = t2 - t1;
   seconds = elapsed_seconds_outer.count();
 
@@ -195,12 +195,12 @@ static void do_test(char* argv0, int argc, char** argv) {
   matches.clear();
   num_matches = 0;
 
-  t1 = std::chrono::system_clock::now();
+  t1 = std::chrono::steady_clock::now();
   for (const auto& it : needles) {
     mih.queryAll(it.first, maxDistance, matches);
   }
   num_matches = matches.size();
-  t2 = std::chrono::system_clock::now();
+  t2 = std::chrono::steady_clock::now();
   elapsed_seconds_outer = t2 - t1;
   seconds = elapsed_seconds_outer.count();
 

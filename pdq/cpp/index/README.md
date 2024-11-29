@@ -33,15 +33,15 @@ BRUTE-FORCE QUERY:
 NEEDLE COUNT:               1000
 HAYSTACK COUNT:             11000
 TOTAL MATCH COUNT:          1000
-SECONDS:                    0.311571
-SECONDS PER MATCH:          0.000312
+SECONDS:                    0.308996
+SECONDS PER MATCH:          0.000309
 
 MIH QUERY:
 NEEDLE COUNT:               1000
 HAYSTACK COUNT:             11000
 TOTAL MATCH COUNT:          1000
-SECONDS:                    0.237358
-SECONDS PER MATCH:          0.000237
+SECONDS:                    0.222451
+SECONDS PER MATCH:          0.000222
 
 
 $ ./benchmark-mih --distance 48
@@ -49,15 +49,15 @@ BRUTE-FORCE QUERY:
 NEEDLE COUNT:               1000
 HAYSTACK COUNT:             11000
 TOTAL MATCH COUNT:          1000
-SECONDS:                    0.310662
-SECONDS PER MATCH:          0.000311
+SECONDS:                    0.309157
+SECONDS PER MATCH:          0.000309
 
 MIH QUERY:
 NEEDLE COUNT:               1000
 HAYSTACK COUNT:             11000
 TOTAL MATCH COUNT:          1000
-SECONDS:                    1.196939
-SECONDS PER MATCH:          0.001197
+SECONDS:                    1.106560
+SECONDS PER MATCH:          0.001107
 
 
 $ ./benchmark-mih --haystack-size 100000 --needles-size 5000
@@ -65,13 +65,13 @@ BRUTE-FORCE QUERY:
 NEEDLE COUNT:               5000
 HAYSTACK COUNT:             105000
 TOTAL MATCH COUNT:          5000
-SECONDS:                    14.809405
-SECONDS PER MATCH:          0.002962
+SECONDS:                    14.732608
+SECONDS PER MATCH:          0.002947
 
 MIH QUERY:
 NEEDLE COUNT:               5000
 HAYSTACK COUNT:             105000
 TOTAL MATCH COUNT:          5000
-SECONDS:                    5.878446
-SECONDS PER MATCH:          0.001176
+SECONDS:                    5.529916
+SECONDS PER MATCH:          0.001106
 ```
