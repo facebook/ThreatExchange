@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import typing as t
 from threatexchange.content_type.content_base import ContentType
 
+
 @dataclass
 class ContentTypeConfig:
     """
