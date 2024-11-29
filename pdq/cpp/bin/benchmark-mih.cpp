@@ -127,7 +127,7 @@ static void do_test(char* argv0, int argc, char** argv) {
   std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> matches;
   int num_matches = 0;
 
-  std::chrono::time_point<std::chrono::system_clock> t1, t2;
+  std::chrono::time_point<std::chrono::steady_clock> t1, t2;
   std::chrono::duration<double> elapsed_seconds_outer;
   double seconds;
 
