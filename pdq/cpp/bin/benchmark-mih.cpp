@@ -8,10 +8,10 @@
 #include <pdq/cpp/index/mih.h>
 #include <pdq/cpp/io/hashio.h>
 
-#include <chrono>
-#include <set>
-#include <random>
 #include <algorithm>
+#include <chrono>
+#include <random>
+#include <set>
 
 // ================================================================
 // Static function declarations
@@ -22,7 +22,7 @@ static void do_test(char* argv0, int argc, char** argv);
 static facebook::pdq::hashing::Hash256 generateRandomHash(std::mt19937& gen) {
   facebook::pdq::hashing::Hash256 hash;
   std::uniform_int_distribution<uint16_t> dist(0, UINT16_MAX);
-  
+
   for (int i = 0; i < facebook::pdq::hashing::HASH256_NUM_WORDS; i++) {
     hash.w[i] = dist(gen);
   }
@@ -31,12 +31,12 @@ static facebook::pdq::hashing::Hash256 generateRandomHash(std::mt19937& gen) {
 
 // Add noise to hash by flipping random bits
 static facebook::pdq::hashing::Hash256 addNoise(
-  const facebook::pdq::hashing::Hash256& original,
-  int numBitsToFlip,
-  std::mt19937& gen) {
-  
+    const facebook::pdq::hashing::Hash256& original,
+    int numBitsToFlip,
+    std::mt19937& gen) {
   facebook::pdq::hashing::Hash256 noisy = original;
-  std::uniform_int_distribution<int> wordDist(0, facebook::pdq::hashing::HASH256_NUM_WORDS - 1);
+  std::uniform_int_distribution<int> wordDist(
+      0, facebook::pdq::hashing::HASH256_NUM_WORDS - 1);
   std::uniform_int_distribution<int> bitDist(0, 15); // Each word is 16 bits
   for (int i = 0; i < numBitsToFlip; i++) {
     int wordIndex = wordDist(gen);
@@ -49,7 +49,7 @@ static facebook::pdq::hashing::Hash256 addNoise(
 
 // ----------------------------------------------------------------
 int main(int argc, char** argv) {
-  if (argc>1 && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))) {
+  if (argc > 1 && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))) {
     usage(argv[0], 0);
   } else {
     do_test(argv[0], argc - 1, argv + 1);
@@ -65,9 +65,13 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "  -v                    Verbose output\n");
   fprintf(fp, "  --no-timings          Disable timing output\n");
   fprintf(fp, "  --seed N              Random seed (default: 41)\n");
-  fprintf(fp, "  --haystack-size N     Number of hashes in haystack (default: 10000)\n");
-  fprintf(fp, "  --needles-size N      Number of needle hashes (default: 1000)\n");
-  fprintf(fp, "  --distance N          Maximum Hamming distance (default: 32)\n");
+  fprintf(
+      fp,
+      "  --haystack-size N     Number of hashes in haystack (default: 10000)\n");
+  fprintf(
+      fp, "  --needles-size N      Number of needle hashes (default: 1000)\n");
+  fprintf(
+      fp, "  --distance N          Maximum Hamming distance (default: 32)\n");
   exit(rc);
 }
 
@@ -85,11 +89,14 @@ static void do_test(char* argv0, int argc, char** argv) {
     if (arg == "-v") {
       verbose = true;
     } else if (arg == "--seed") {
-      if (i + 1 < argc) seed = std::stoi(argv[++i]);
+      if (i + 1 < argc)
+        seed = std::stoi(argv[++i]);
     } else if (arg == "--haystack-size") {
-      if (i + 1 < argc) haystackSize = std::stoi(argv[++i]);
+      if (i + 1 < argc)
+        haystackSize = std::stoi(argv[++i]);
     } else if (arg == "--needles-size") {
-      if (i + 1 < argc) needlesSize = std::stoi(argv[++i]);
+      if (i + 1 < argc)
+        needlesSize = std::stoi(argv[++i]);
     } else if (arg == "--distance") {
       maxDistance = std::stoi(argv[++i]);
     } else {
@@ -100,7 +107,7 @@ static void do_test(char* argv0, int argc, char** argv) {
 
   // Initialize random number generator
   std::mt19937 gen(seed);
-  
+
   // Generate random hashes for needles
   std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> needles;
   for (size_t i = 0; i < needlesSize; i++) {
@@ -179,7 +186,9 @@ static void do_test(char* argv0, int argc, char** argv) {
   printf("HAYSTACK COUNT:             %d\n", (int)mih.size());
   printf("TOTAL MATCH COUNT:          %d\n", (int)num_matches);
   printf("SECONDS:                    %.6lf\n", seconds);
-  printf("SECONDS PER MATCH:          %.6lf\n", num_matches > 0 ? seconds / num_matches : 0);
+  printf(
+      "SECONDS PER MATCH:          %.6lf\n",
+      num_matches > 0 ? seconds / num_matches : 0);
   printf("\n");
 
   // Do indexed searches
@@ -200,6 +209,8 @@ static void do_test(char* argv0, int argc, char** argv) {
   printf("HAYSTACK COUNT:             %d\n", (int)mih.size());
   printf("TOTAL MATCH COUNT:          %d\n", (int)num_matches);
   printf("SECONDS:                    %.6lf\n", seconds);
-  printf("SECONDS PER MATCH:          %.6lf\n", num_matches > 0 ? seconds / num_matches : 0);
+  printf(
+      "SECONDS PER MATCH:          %.6lf\n",
+      num_matches > 0 ? seconds / num_matches : 0);
   printf("\n");
 }
