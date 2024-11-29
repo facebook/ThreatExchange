@@ -19,14 +19,26 @@ static void usage(char* argv0, int rc);
 static void query(char* argv0, int argc, char** argv);
 
 // Function declarations for each query method
-static void queryLinear(const int maxDistance, const bool verbose,
-  const unsigned int seed, const size_t indexSize, const size_t querySize,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& queries,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& index);
-static void queryMIH(const int maxDistance, const bool verbose,
-  const unsigned int seed, const size_t indexSize, const size_t querySize,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& queries,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& index);
+static void queryLinear(
+    const int maxDistance,
+    const bool verbose,
+    const unsigned int seed,
+    const size_t indexSize,
+    const size_t querySize,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        queries,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        index);
+static void queryMIH(
+    const int maxDistance,
+    const bool verbose,
+    const unsigned int seed,
+    const size_t indexSize,
+    const size_t querySize,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        queries,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        index);
 
 // Helper declarations
 static facebook::pdq::hashing::Hash256 generateRandomHash(std::mt19937& gen);
@@ -53,9 +65,15 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "  -v               Verbose output\n");
   fprintf(fp, "  --seed N         Random seed (default: 41)\n");
   fprintf(fp, "  -q N             Number of queries to run (default: 1000)\n");
-  fprintf(fp, "  -b N             Number of PDQ hashes to query against (default: 10000)\n");
-  fprintf(fp, "  -d N             Maximum Hamming distance for matches (default: 31)\n");
-  fprintf(fp, "  -m               Method for querying (default: linear), Available: linear, mih\n");
+  fprintf(
+      fp,
+      "  -b N             Number of PDQ hashes to query against (default: 10000)\n");
+  fprintf(
+      fp,
+      "  -d N             Maximum Hamming distance for matches (default: 31)\n");
+  fprintf(
+      fp,
+      "  -m               Method for querying (default: linear), Available: linear, mih\n");
   exit(rc);
 }
 
@@ -98,8 +116,7 @@ static void query(char* argv0, int argc, char** argv) {
       if (i + 1 < argc) {
         seed = std::stoi(argv[++i]);
       } else {
-        fprintf(stderr,
-                "Error: Missing argument for --seed\n");
+        fprintf(stderr, "Error: Missing argument for --seed\n");
         usage(argv0, 1);
         return;
       }
@@ -167,7 +184,8 @@ static void query(char* argv0, int argc, char** argv) {
   }
 
   if (method == "linear") {
-    queryLinear(maxDistance, verbose, seed, indexSize, querySize, queries, index);
+    queryLinear(
+        maxDistance, verbose, seed, indexSize, querySize, queries, index);
   } else if (method == "mih") {
     queryMIH(maxDistance, verbose, seed, indexSize, querySize, queries, index);
   }
@@ -177,11 +195,16 @@ static void query(char* argv0, int argc, char** argv) {
 //// Query methods ////
 ///////////////////////
 
-static void queryLinear(const int maxDistance, const bool verbose,
-  const unsigned int seed, const size_t indexSize, const size_t querySize,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& queries,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& index) {
-
+static void queryLinear(
+    const int maxDistance,
+    const bool verbose,
+    const unsigned int seed,
+    const size_t indexSize,
+    const size_t querySize,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        queries,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        index) {
   // Do linear searches
   std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> matches;
 
@@ -205,16 +228,22 @@ static void queryLinear(const int maxDistance, const bool verbose,
   printf("INDEX COUNT:             %d\n", (int)index.size());
   printf("TOTAL MATCH COUNT:       %d\n", (int)matches.size());
   printf("TOTAL QUERY SECONDS:     %.6lf\n", seconds);
-  printf("SECONDS PER QUERY:       %.6lf\n",
+  printf(
+      "SECONDS PER QUERY:       %.6lf\n",
       querySize > 0 ? seconds / querySize : 0);
   printf("\n");
 }
 
-static void queryMIH(const int maxDistance, const bool verbose, 
-  const unsigned int seed, const size_t indexSize, const size_t querySize,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& queries,
-  const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>& index) {
-
+static void queryMIH(
+    const int maxDistance,
+    const bool verbose,
+    const unsigned int seed,
+    const size_t indexSize,
+    const size_t querySize,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        queries,
+    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
+        index) {
   // Build the MIH
   std::chrono::time_point<std::chrono::steady_clock> t1, t2;
   std::chrono::duration<double> elapsedSeconds;
@@ -254,7 +283,8 @@ static void queryMIH(const int maxDistance, const bool verbose,
   printf("INDEX COUNT:             %d\n", (int)mih.size());
   printf("TOTAL MATCH COUNT:       %d\n", (int)matches.size());
   printf("TOTAL QUERY SECONDS:     %.6lf\n", seconds);
-  printf("SECONDS PER QUERY:       %.6lf\n",
+  printf(
+      "SECONDS PER QUERY:       %.6lf\n",
       querySize > 0 ? seconds / querySize : 0);
   printf("\n");
 }
