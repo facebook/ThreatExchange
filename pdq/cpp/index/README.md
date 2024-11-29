@@ -7,21 +7,21 @@ Haystack count is all hashes stored in the index
 ## Instructions
 ```
 cd pdq/cpp
-make bin/benchmark-mih.cpp
-./benchmark-mih
+make bin/benchmark-query
+./benchmark-query
 ```
 
 Help command:
 ```
-$ ./benchmark-mih -h
-Usage: ./benchmark-mih [options]
+$ ./benchmark-query -h
+Usage: ./benchmark-query [options]
 Options:
-  -v                    Verbose output
-  --no-timings          Disable timing output
-  --seed N              Random seed (default: 41)
-  --haystack-size N     Number of hashes in haystack (default: 10000)
-  --needles-size N      Number of needle hashes (default: 1000)
-  --distance N          Maximum Hamming distance (default: 32)
+  -v               Verbose output
+  --seed N         Random seed (default: 41)
+  -q N             Number of queries to run (default: 1000)
+  -b N             Number of PDQ hashes to query against (default: 10000)
+  -d N             Maximum Hamming distance for matches (default: 31)
+  -m               Method for querying (default: linear), Available: linear, mih
 ```
 
 ## Results
