@@ -28,50 +28,55 @@ Options:
 Ran on Ubuntu 24.04.1 LTS, Intel Core i7-14700KF with 20 cores, 28 threads, 64GB RAM
 
 ```
-$ ./benchmark-mih
-BRUTE-FORCE QUERY:
-NEEDLE COUNT:               1000
-HAYSTACK COUNT:             11000
-TOTAL MATCH COUNT:          1000
-SECONDS:                    0.308996
-SECONDS PER MATCH:          0.000309
+$ ./benchmark-query -m linear
+METHOD: Linear query
+QUERY COUNT:             1000
+INDEX COUNT:             10000
+TOTAL MATCH COUNT:       1000
+TOTAL QUERY SECONDS:     0.258911
+SECONDS PER QUERY:       0.000259
 
-MIH QUERY:
-NEEDLE COUNT:               1000
-HAYSTACK COUNT:             11000
-TOTAL MATCH COUNT:          1000
-SECONDS:                    0.222451
-SECONDS PER MATCH:          0.000222
+$ ./benchmark-query -m mih
+METHOD: Mutually-indexed hashing query
+INDEX BUILD SECONDS:     0.053034
+QUERY COUNT:             1000
+INDEX COUNT:             10000
+TOTAL MATCH COUNT:       1000
+TOTAL QUERY SECONDS:     0.030150
+SECONDS PER QUERY:       0.000030
 
+/benchmark-query -m linear -d 63
+METHOD: Linear query
+QUERY COUNT:             1000
+INDEX COUNT:             10000
+TOTAL MATCH COUNT:       1000
+TOTAL QUERY SECONDS:     0.262353
+SECONDS PER QUERY:       0.000262
 
-$ ./benchmark-mih --distance 48
-BRUTE-FORCE QUERY:
-NEEDLE COUNT:               1000
-HAYSTACK COUNT:             11000
-TOTAL MATCH COUNT:          1000
-SECONDS:                    0.309157
-SECONDS PER MATCH:          0.000309
+$ ./benchmark-query -m mih -d 63
+METHOD: Mutually-indexed hashing query
+INDEX BUILD SECONDS:     0.039096
+QUERY COUNT:             1000
+INDEX COUNT:             10000
+TOTAL MATCH COUNT:       1000
+TOTAL QUERY SECONDS:     0.902643
+SECONDS PER QUERY:       0.000903
 
-MIH QUERY:
-NEEDLE COUNT:               1000
-HAYSTACK COUNT:             11000
-TOTAL MATCH COUNT:          1000
-SECONDS:                    1.106560
-SECONDS PER MATCH:          0.001107
+$ ./benchmark-query -m linear -b 50000 -q 5000
+METHOD: Linear query
+QUERY COUNT:             5000
+INDEX COUNT:             50000
+TOTAL MATCH COUNT:       5000
+TOTAL QUERY SECONDS:     6.085275
+SECONDS PER QUERY:       0.001217
 
+$ ./benchmark-query -m mih -b 50000 -q 5000
+METHOD: Mutually-indexed hashing query
+INDEX BUILD SECONDS:     0.244458
+QUERY COUNT:             5000
+INDEX COUNT:             50000
+TOTAL MATCH COUNT:       5000
+TOTAL QUERY SECONDS:     0.501590
+SECONDS PER QUERY:       0.000100
 
-$ ./benchmark-mih --haystack-size 100000 --needles-size 5000
-BRUTE-FORCE QUERY:
-NEEDLE COUNT:               5000
-HAYSTACK COUNT:             105000
-TOTAL MATCH COUNT:          5000
-SECONDS:                    14.732608
-SECONDS PER MATCH:          0.002947
-
-MIH QUERY:
-NEEDLE COUNT:               5000
-HAYSTACK COUNT:             105000
-TOTAL MATCH COUNT:          5000
-SECONDS:                    5.529916
-SECONDS PER MATCH:          0.001106
 ```

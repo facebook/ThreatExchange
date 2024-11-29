@@ -79,7 +79,6 @@ static void query(char* argv0, int argc, char** argv) {
         return;
       }
     } else if (arg == "-b") {
-    } else if (arg == "-b") {
       if (i + 1 < argc) {
         indexSize = std::stoi(argv[++i]);
       } else {
