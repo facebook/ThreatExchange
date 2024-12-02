@@ -5,10 +5,12 @@
 Wrapper around the video content type.
 """
 from PIL import Image
+from pathlib import Path
 import io
 import typing as t
 
 from .content_base import ContentType, RotationType
+from threatexchange.content_type.preprocess import unletterboxing
 
 
 class PhotoContent(ContentType):
@@ -102,3 +104,24 @@ class PhotoContent(ContentType):
             RotationType.FLIPMINUS1: cls.flip_minus1(image_data),
         }
         return rotations
+
+    @classmethod
+    def unletterbox(cls, file_path: Path, black_threshold: int = 0) -> bytes:
+        """
+        Remove black letterbox borders from the sides and top of the image based on the specified black_threshold.
+        Returns the cleaned image as raw bytes.
+        """
+        with file_path.open("rb") as file:
+            with Image.open(file) as image:
+                img = image.convert("RGB")
+                top = unletterboxing.detect_top_border(img, black_threshold)
+                bottom = unletterboxing.detect_bottom_border(img, black_threshold)
+                left = unletterboxing.detect_left_border(img, black_threshold)
+                right = unletterboxing.detect_right_border(img, black_threshold)
+
+                width, height = image.size
+                cropped_img = image.crop((left, top, width - right, height - bottom))
+
+                with io.BytesIO() as buffer:
+                    cropped_img.save(buffer, format=image.format)
+                    return buffer.getvalue()
