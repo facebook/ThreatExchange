@@ -1,7 +1,3 @@
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -310,14 +306,14 @@ static facebook::pdq::hashing::Hash256 addNoise(
     int numBitsToFlip,
     std::mt19937& gen) {
   facebook::pdq::hashing::Hash256 noisy = original;
-  std::uniform_int_distribution<int> wordDist(
-      0, facebook::pdq::hashing::HASH256_NUM_WORDS - 1);
-  std::uniform_int_distribution<int> bitDist(0, 15); // Each word is 16 bits
+  std::vector<int> bitIndices(256);
+  for (int i = 0; i < 256; i++) bitIndices[i] = i;
+  std::shuffle(bitIndices.begin(), bitIndices.end(), gen);
   for (int i = 0; i < numBitsToFlip; i++) {
-    int wordIndex = wordDist(gen);
-    int bitIndex = bitDist(gen);
-    // Flip bit with xor
-    noisy.w[wordIndex] ^= (1 << bitIndex);
+    int bitIndex = bitIndices[i];
+    int wordIndex = bitIndex / 16;
+    int position = bitIndex % 16;
+    noisy.w[wordIndex] ^= (1 << position);
   }
   return noisy;
 }
