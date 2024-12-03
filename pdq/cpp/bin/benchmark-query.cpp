@@ -184,6 +184,10 @@ static void query(char* argv0, int argc, char** argv) {
         maxDistance, verbose, seed, indexSize, querySize, queries, index);
   } else if (method == "mih") {
     queryMIH(maxDistance, verbose, seed, indexSize, querySize, queries, index);
+  } else {
+    fprintf(stderr, "Unknown method: %s\n", method.c_str());
+    usage(argv0, 1);
+    return;
   }
 }
 

@@ -6,6 +6,7 @@
 #include <pdq/cpp/hashing/pdqhashing.h>
 #include <pdq/cpp/hashing/torben.h>
 
+#include <iostream>
 #include <math.h>
 #include <stdlib.h>
 #include <chrono>
@@ -89,7 +90,9 @@ bool pdqHash256FromFile(
   }
   CImg<uint8_t> input;
   try {
+    std::cout << "loading " << filename << std::endl;
     input.load(filename);
+    std::cout << "finished loading " << filename << std::endl;
   } catch (const CImgIOException& ex) {
     return false;
   }
