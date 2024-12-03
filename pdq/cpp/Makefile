@@ -48,7 +48,6 @@ LIBSRCS=\
 MAINS=\
  pdq-photo-hasher \
  test-mih \
- benchmark-query \
  clusterize256 \
  snowball-clusterize256 \
  clusterize256x \
@@ -57,7 +56,9 @@ MAINS=\
  pdq-downsample-demo \
  test-bits \
  hamming-tabulate \
- test-hamming
+ test-hamming \
+ benchmark-query \
+ benchmark-photo-hasher
 
 WASMMAINS=pdq-photo-hasher
 
@@ -114,8 +115,6 @@ pdq-downsample-demo: bin/pdq-downsample-demo.cpp $(LIBSRCS) $(LIBHDRS)
 
 test-mih: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/test-mih.cpp $(LIBSRCS) -o test-mih $(LFLAGS)
-benchmark-query: bin/benchmark-query.cpp $(LIBSRCS) $(LIBHDRS)
-	$(CCOPT) bin/benchmark-query.cpp $(LIBSRCS) -o benchmark-query $(LFLAGS)
 test-mihg: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) bin/test-mih.cpp $(LIBSRCS) -o test-mihg $(LFLAGS)
 clusterize256: bin/clusterize256.cpp $(LIBSRCS) $(LIBHDRS)
@@ -130,6 +129,11 @@ clusterize256x-prof: bin/clusterize256x.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) -pg bin/clusterize256x.cpp $(LIBSRCS) -o clusterize256x-prof $(LFLAGS) -lpthread
 mih-query: bin/mih-query.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/mih-query.cpp $(LIBSRCS) -o mih-query $(LFLAGS)
+
+benchmark-query: bin/benchmark-query.cpp $(LIBSRCS) $(LIBHDRS)
+	$(CCOPT) bin/benchmark-query.cpp $(LIBSRCS) -o benchmark-query $(LFLAGS)
+benchmark-photo-hasher: bin/benchmark-photo-hasher.cpp $(LIBSRCS) $(LIBHDRS)
+	$(CCOPT) bin/benchmark-photo-hasher.cpp $(LIBSRCS) -o benchmark-photo-hasher $(LFLAGS)
 
 # Profile version. Usage:
 # * make pdq-photo-hasher-prof
