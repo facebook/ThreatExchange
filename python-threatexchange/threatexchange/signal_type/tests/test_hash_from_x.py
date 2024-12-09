@@ -30,7 +30,9 @@ def test_signal_names_unique(signal_type):
     """
     name = signal_type.get_name()
     seen = set()  # Using a set to automatically manage unique entries
-    assert name not in seen, f"Two signal types share the same name: {signal_type!r} and {seen}"
+    assert (
+        name not in seen
+    ), f"Two signal types share the same name: {signal_type!r} and {seen}"
     seen.add(name)
 
 
@@ -42,9 +44,13 @@ def test_signal_types_have_content(signal_type):
     assert signal_type.get_content_types(), f"{signal_type!r} has no content types"
 
 
-@pytest.mark.parametrize("signal_type", [s for s in SIGNAL_TYPES_TO_TEST if isinstance(s, TextHasher)])
+@pytest.mark.parametrize(
+    "signal_type", [s for s in SIGNAL_TYPES_TO_TEST if isinstance(s, TextHasher)]
+)
 def test_str_hashers_have_impl(signal_type):
     """
     Check that each TextHasher has an implementation that produces output.
     """
-    assert signal_type.hash_from_str("test string"), f"{signal_type!r} produced no output from hasher"
+    assert signal_type.hash_from_str(
+        "test string"
+    ), f"{signal_type!r} produced no output from hasher"

@@ -9,6 +9,7 @@ TEST_FILE = pathlib.Path(__file__).parent.parent.parent.parent.joinpath(
     "data", "sample-b.jpg"
 )
 
+
 @pytest.fixture
 def file_content():
     """

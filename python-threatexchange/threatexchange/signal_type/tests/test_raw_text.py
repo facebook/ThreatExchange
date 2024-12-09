@@ -49,4 +49,6 @@ class TestRawTextSignal(MatchesStrAutoTest):
     def test_matches_str(self, matches_str_cases):
         for case in matches_str_cases:
             input_str, match_str, expected_match, threshold = case
-            assert self.TYPE.matches_str(input_str, match_str, threshold) == expected_match
+            assert (
+                self.TYPE.matches_str(input_str, match_str, threshold) == expected_match
+            )
