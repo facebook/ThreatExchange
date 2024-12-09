@@ -16,10 +16,10 @@ import urllib.error
 
 import requests
 from urllib3.util.retry import Retry
-from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
 
 from .api_representations import ThreatPrivacyGroup
+from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
 
 def is_valid_app_token(token: str) -> bool:
