@@ -3,7 +3,6 @@
 """Simple implementation for the Tech Against Terrorism Hash List REST API"""
 
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 import requests
 import logging
@@ -69,7 +68,7 @@ class TATHashListAPI:
     For our Hash List documentation: https://terrorismanalytics.org/docs/hash-list-v1
     """
 
-    BASE_URL: t.ClassVar[str] = "https://beta.terrorismanalytics.org/"
+    BASE_URL: t.ClassVar[str] = "https://dev.terrorismanalytics.org/"
 
     def __init__(self, username: str, password: str) -> None:
         self.username = username
@@ -101,7 +100,7 @@ class TATHashListAPI:
 
     def _get(
         self,
-        endpoint: t.Optional[str] = None,
+        full_url: t.Optional[str] = None,
         auth_token: t.Optional[str] = None,
         **params,
     ) -> t.Any:
@@ -110,7 +109,6 @@ class TATHashListAPI:
 
         Same timeouts and retry strategy as `_get_session` above.
         """
-        full_url = self.BASE_URL + (endpoint or "")
 
         with self._get_session(auth_token) as session:
             response = session.get(url=full_url, params=params)
@@ -144,6 +142,7 @@ class TATHashListAPI:
 
     def fetch_hashes(
         self,
+        next_page: t.Optional[str] = None,
         order: str = "asc",
         after: str = "",
     ) -> TATHashListResponse:
@@ -159,18 +158,27 @@ class TATHashListAPI:
         try:
             token = self.get_auth_token(self.username, self.password)
             endpoint = f"{TATEndpoint.hash_list.value}"
+            url = f"{self.BASE_URL}{endpoint}?{next_page}"
 
             logging.info("Fetching TAT hash list")
 
-            results = self._get(endpoint, auth_token=token, **params)
+            results = self._get(full_url=url, auth_token=token, **params)
 
-            return results
+            return TATHashListResponse(
+                count=results["count"],
+                next=results["next"],
+                previous=results["previous"],
+                checkpoint=results["checkpoint"],
+                results=[TATHashListEntry(**entry) for entry in results["results"]],
+            )
 
         except Exception as exception:
             logging.error("Failed to get hash list: %s", exception)
             raise
 
-    def fetch_hashes_iter(self, next_page: str) -> t.Iterator[TATHashListResponse]:
+    def fetch_hashes_iter(
+        self, checkpoint: str = ""
+    ) -> t.Iterator[TATHashListResponse]:
         """
         A wrapper to continously fetch the hash list in a paginated manner.
         Each page has 3 elements we're interested in here:
@@ -183,11 +191,13 @@ class TATHashListAPI:
         """
 
         has_more = True
-        next_page = next_page
+        next_page = None
 
         while has_more:
-            response = self.fetch_hashes(after=next_page)
-            next_page = response["checkpoint"]
-            has_more = bool(response["next"])
+            response = self.fetch_hashes(next_page=next_page, after=checkpoint)
+            has_more = bool(response.next)
+
+            if has_more:
+                next_page = response.next
 
             yield response

@@ -10,7 +10,7 @@ from threatexchange.exchanges.clients.techagainstterrorism.api import (
 )
 
 
-def mock_fetch_hashes(after: str) -> t.Optional[t.List[t.Dict[str, str]]]:
+def mock_fetch_hashes(after: str) -> t.Optional[t.Dict[str, t.Any]]:
     return {
         "count": 100,
         "next": "http://dev.terrorismanalytics.org/hash-list/v2/all?limit=1000&offset=1000&order=asc",

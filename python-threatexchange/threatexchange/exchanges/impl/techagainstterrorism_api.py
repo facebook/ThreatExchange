@@ -14,6 +14,7 @@ from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaul
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+import logging
 
 
 @dataclass
@@ -22,8 +23,8 @@ class TATCheckpoint(state.FetchCheckpointBase):
 
     @classmethod
     def from_tat_fetch(cls, response: api.TATHashListResponse) -> "TATCheckpoint":
-        print("CHECKPOINT:", response["checkpoint"])
-        return cls(response["checkpoint"])
+        logging.info(f"CHECKPOINT:{response.checkpoint}")
+        return cls(response.checkpoint)
 
 
 _TypedDelta = state.FetchDelta[
@@ -104,8 +105,17 @@ class TATSignalExchangeAPI(
 
         client = self.get_client()
 
-        for result in client.fetch_hashes_iter(checkpoint.checkpoint):
-            translated = (_get_delta_mapping(r) for r in result["results"])
+        start_time = ""
+
+        if checkpoint is not None:
+            start_time = checkpoint.checkpoint
+
+        for result in client.fetch_hashes_iter(start_time):
+
+            if result.next is None:
+                return
+
+            translated = (_get_delta_mapping(r) for r in result.results)
             yield state.FetchDelta(
                 dict(t for t in translated if t[0][0]),
                 TATCheckpoint.from_tat_fetch(result),
@@ -123,7 +133,7 @@ def _get_delta_mapping(
     record: api.TATHashListEntry,
 ) -> t.Tuple[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]]:
 
-    type_str = _type_mapping().get(record["algorithm"])
+    type_str = _type_mapping().get(record.algorithm)
     metadata = state.FetchedSignalMetadata()
 
-    return ((type_str, record["hash_digest"]), metadata)
+    return ((type_str, record.hash_digest), metadata)
