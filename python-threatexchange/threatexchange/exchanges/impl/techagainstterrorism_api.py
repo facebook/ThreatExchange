@@ -131,9 +131,9 @@ def _type_mapping() -> t.Dict[str, str]:
 
 def _get_delta_mapping(
     record: api.TATHashListEntry,
-) -> t.Tuple[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]]:
+) -> t.Tuple[t.Tuple[str, str], state.FetchedSignalMetadata]:
 
-    type_str = _type_mapping().get(record.algorithm)
+    type_str = _type_mapping().get(record.algorithm, "")
     metadata = state.FetchedSignalMetadata()
 
     return ((type_str, record.hash_digest), metadata)
