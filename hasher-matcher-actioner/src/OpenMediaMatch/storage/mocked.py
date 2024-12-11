@@ -20,7 +20,6 @@ from threatexchange.exchanges.fetch_state import (
     TUpdateRecordKey,
 )
 
-from threatexchange.cli.storage import interfaces
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.interface import SignalTypeConfig
 
@@ -41,9 +40,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def is_ready(self) -> bool:
         return True
 
-    def get_content_type_configs(self) -> t.Mapping[str, interfaces.ContentTypeConfig]:
+    def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
         return {
-            c.get_name(): interfaces.ContentTypeConfig(True, c)
+            c.get_name(): interface.ContentTypeConfig(True, c)
             for c in (PhotoContent, VideoContent)
         }
 
