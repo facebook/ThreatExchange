@@ -122,6 +122,16 @@ class TATSignalExchangeAPI(
             )
 
 
+def _is_compatible_signal_type(record: api.TATHashListEntry) -> bool:
+    compatible_video_types = ["mov", "m4v", "mp4", "webm"]
+    algorithm = record.algorithm
+
+    if algorithm == "MD5":
+        return record.file_type in compatible_video_types
+
+    return algorithm == "PDQ"
+
+
 def _type_mapping() -> t.Dict[str, str]:
     return {
         "PDQ": PdqSignal.get_name(),
@@ -132,6 +142,9 @@ def _type_mapping() -> t.Dict[str, str]:
 def _get_delta_mapping(
     record: api.TATHashListEntry,
 ) -> t.Tuple[t.Tuple[str, str], state.FetchedSignalMetadata]:
+
+    if not _is_compatible_signal_type(record):
+        return (("", ""), state.FetchedSignalMetadata())
 
     type_str = _type_mapping().get(record.algorithm, "")
     metadata = state.FetchedSignalMetadata()
