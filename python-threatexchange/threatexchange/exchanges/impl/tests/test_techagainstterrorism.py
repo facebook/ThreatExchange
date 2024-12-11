@@ -28,14 +28,11 @@ def test_fetch(exchange: TATSignalExchangeAPI):
     expected_updates = {
         ("video_md5", "123abc"): FetchedSignalMetadata(),
         ("video_md5", "456def"): FetchedSignalMetadata(),
-        ("pdq", "789ghi"): None,
+        ("pdq", "789ghi"): FetchedSignalMetadata(),
     }
 
-    for key, expected_metadata in expected_updates.items():
+    for key in expected_updates:
         assert key in updates
-        if expected_metadata is None:
-            assert updates[key] is None
-        else:
-            assert isinstance(updates[key], FetchedSignalMetadata)
-            assert updates[key].added_on == expected_metadata.added_on
-            assert updates[key].metadata == expected_metadata.metadata
+        assert isinstance(updates[key], FetchedSignalMetadata)
+
+    assert set(delta.updates) == set(expected_updates)

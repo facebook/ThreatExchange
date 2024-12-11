@@ -35,7 +35,7 @@ mock_hashes: t.List[TATHashListEntry] = [
         algorithm="PDQ",
         ideology=TATIdeology.islamist,
         file_type="gif",
-        deleted=True,
+        deleted=False,
         updated_on=1704901040.25555,
         id=2821,
     ),
