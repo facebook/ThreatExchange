@@ -26,9 +26,7 @@ class TATCheckpoint(state.FetchCheckpointBase):
 
 
 _TypedDelta = state.FetchDelta[
-    t.Tuple[str, str],
-    state.FetchedSignalMetadata,
-    TATCheckpoint
+    t.Tuple[str, str], state.FetchedSignalMetadata, TATCheckpoint
 ]
 
 
