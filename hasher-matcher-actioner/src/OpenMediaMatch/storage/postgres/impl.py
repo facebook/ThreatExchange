@@ -36,6 +36,7 @@ from threatexchange.exchanges.fetch_state import (
     TUpdateRecordKey,
 )
 
+from threatexchange.cli.storage import interfaces
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.postgres import database, flask_utils
 
@@ -88,9 +89,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
             exchange_types
         ), "All exchange types must have unique names"
 
-    def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
+    def get_content_type_configs(self) -> t.Mapping[str, interfaces.ContentTypeConfig]:
         return {
-            name: interface.ContentTypeConfig(True, ct)
+            name: interfaces.ContentTypeConfig(True, ct)
             for name, ct in self.content_types.items()
         }
 
