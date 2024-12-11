@@ -21,9 +21,13 @@ import logging
 class TATCheckpoint(state.FetchCheckpointBase):
     checkpoint: str
 
+    def get_progress_timestamp(self) -> t.Optional[int]:
+        if self.checkpoint:
+            return int(float(self.checkpoint.partition(",")[0]))
+        return None
+
     @classmethod
     def from_tat_fetch(cls, response: api.TATHashListResponse) -> "TATCheckpoint":
-        logging.info(f"CHECKPOINT:{response.checkpoint}")
         return cls(response.checkpoint)
 
 
@@ -112,13 +116,13 @@ class TATSignalExchangeAPI(
 
         for result in client.fetch_hashes_iter(start_time):
 
-            if result.next is None:
-                return
+            if result.checkpoint:
+                checkpoint = TATCheckpoint(result.checkpoint)
 
             translated = (_get_delta_mapping(r) for r in result.results)
             yield state.FetchDelta(
                 dict(t for t in translated if t[0][0]),
-                TATCheckpoint.from_tat_fetch(result),
+                checkpoint,
             )
 
 
@@ -149,4 +153,4 @@ def _get_delta_mapping(
     type_str = _type_mapping().get(record.algorithm, "")
     metadata = state.FetchedSignalMetadata()
 
-    return ((type_str, record.hash_digest), metadata)
+    return ((type_str, record.hash_digest), None if record.deleted else metadata)
