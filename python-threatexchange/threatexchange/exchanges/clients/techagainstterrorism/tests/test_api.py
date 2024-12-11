@@ -7,7 +7,7 @@ from threatexchange.exchanges.clients.techagainstterrorism.api import (
     TATHashListAPI,
     TATHashListResponse,
     TATHashListEntry,
-    TATIdeology
+    TATIdeology,
 )
 
 
@@ -19,7 +19,7 @@ mock_hashes: t.List[TATHashListEntry] = [
         file_type="png",
         deleted=False,
         updated_on=1704901040.222779,
-        id=2819
+        id=2819,
     ),
     TATHashListEntry(
         hash_digest="456def",
@@ -28,7 +28,7 @@ mock_hashes: t.List[TATHashListEntry] = [
         file_type="jpg",
         deleted=False,
         updated_on=1704901040.24492,
-        id=2820
+        id=2820,
     ),
     TATHashListEntry(
         hash_digest="789ghi",
@@ -37,9 +37,10 @@ mock_hashes: t.List[TATHashListEntry] = [
         file_type="gif",
         deleted=True,
         updated_on=1704901040.25555,
-        id=2821
+        id=2821,
     ),
 ]
+
 
 def mock_fetch_hashes(after: t.Optional[str]) -> TATHashListResponse:
 
@@ -51,9 +52,11 @@ def mock_fetch_hashes(after: t.Optional[str]) -> TATHashListResponse:
         results=mock_hashes,
     )
 
+
 def mock_fetch_hashes_iter(checkpoint: str) -> t.Iterator[TATHashListResponse]:
     for i in range(2):
         yield mock_fetch_hashes(checkpoint)
+
 
 def mock_get_auth_token() -> str:
     return "mock_token"
@@ -79,7 +82,6 @@ def test_fetch_hashes(api: TATHashListAPI) -> None:
         checkpoint="1724856487.709035,10594",
         results=mock_hashes,
     )
-
 
 
 def test_fetch_hashes_iter(api: TATHashListAPI) -> None:
