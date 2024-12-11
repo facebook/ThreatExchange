@@ -28,7 +28,7 @@ def test_fetch(exchange: TATSignalExchangeAPI):
     expected_updates = {
         ("video_md5", "123abc"): FetchedSignalMetadata(),
         ("video_md5", "456def"): FetchedSignalMetadata(),
-        ("pdq", "789ghi"): None,
+        None: FetchedSignalMetadata(),
     }
 
     for key in expected_updates:
