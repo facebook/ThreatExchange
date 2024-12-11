@@ -1,11 +1,5 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-
-"""SignalExchangeAPI implementation for Tech Against Terrorism Hash List API"""
-
-
 import typing as t
 from dataclasses import dataclass
-
 from threatexchange.exchanges.clients.techagainstterrorism import api
 from threatexchange.exchanges import fetch_state as state
 from threatexchange.exchanges import signal_exchange_api
@@ -34,7 +28,7 @@ class TATCheckpoint(state.FetchCheckpointBase):
 _TypedDelta = state.FetchDelta[
     t.Tuple[str, str],
     state.FetchedSignalMetadata,
-    TATCheckpoint,
+    TATCheckpoint
 ]
 
 
@@ -64,7 +58,7 @@ class TATSignalExchangeAPI(
     ],
 ):
 
-    def __init__(self, username, password) -> None:
+    def __init__(self, username: str, password: str) -> None:
         super().__init__()
         self.username = username
         self.password = password
@@ -118,6 +112,8 @@ class TATSignalExchangeAPI(
 
             if result.checkpoint:
                 checkpoint = TATCheckpoint(result.checkpoint)
+            else:
+                checkpoint = TATCheckpoint("")
 
             translated = (_get_delta_mapping(r) for r in result.results)
             yield state.FetchDelta(
@@ -145,7 +141,7 @@ def _type_mapping() -> t.Dict[str, str]:
 
 def _get_delta_mapping(
     record: api.TATHashListEntry,
-) -> t.Tuple[t.Tuple[str, str], state.FetchedSignalMetadata]:
+) -> t.Tuple[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]]:
 
     if not _is_compatible_signal_type(record):
         return (("", ""), state.FetchedSignalMetadata())
