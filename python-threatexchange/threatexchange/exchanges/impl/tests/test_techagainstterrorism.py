@@ -21,17 +21,14 @@ def test_fetch(exchange: TATSignalExchangeAPI):
     it = exchange.fetch_iter([], None)
     delta = next(it)
 
-    # asserting the checkpoint is always stale
-    assert delta.checkpoint.is_stale() is True
-
     updates = delta.updates
 
     assert len(updates) == 3
 
     expected_updates = {
-        ("video_md5", "12345abcdez"): FetchedSignalMetadata(),
-        ("video_md5", "12345abcde"): FetchedSignalMetadata(),
-        ("pdq", "12345abcde"): FetchedSignalMetadata(),
+        ("video_md5", "123abc"): FetchedSignalMetadata(),
+        ("video_md5", "456def"): FetchedSignalMetadata(),
+        ("pdq", "789ghi"): FetchedSignalMetadata(),
     }
 
     for key in expected_updates:
