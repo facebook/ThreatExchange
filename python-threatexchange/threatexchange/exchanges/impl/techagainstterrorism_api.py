@@ -92,11 +92,7 @@ class TATSignalExchangeAPI(
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
         checkpoint: t.Optional[TATCheckpoint],
     ) -> t.Iterator[
-        state.FetchDelta[
-            t.Tuple[str, str],
-            state.FetchedSignalMetadata,
-            TATCheckpoint
-        ]
+        state.FetchDelta[t.Tuple[str, str], state.FetchedSignalMetadata, TATCheckpoint]
     ]:
 
         client = self.get_client()
@@ -109,9 +105,9 @@ class TATSignalExchangeAPI(
         for result in client.fetch_hashes_iter(_checkpoint):
 
             translated = (_get_delta_mapping(r) for r in result.results)
-            yield state.FetchDelta( 
+            yield state.FetchDelta(
                 dict(t for t in translated if t[0][0]),
-                TATCheckpoint(result.checkpoint) if result.checkpoint else checkpoint, # type: ignore[arg-type]
+                TATCheckpoint(result.checkpoint) if result.checkpoint else checkpoint,  # type: ignore[arg-type]
             )
 
 
