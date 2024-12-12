@@ -8,7 +8,6 @@ from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaul
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
-import logging
 
 
 @dataclass
@@ -23,11 +22,6 @@ class TATCheckpoint(state.FetchCheckpointBase):
     @classmethod
     def from_tat_fetch(cls, response: api.TATHashListResponse) -> "TATCheckpoint":
         return cls(response.checkpoint)
-
-
-_TypedDelta = state.FetchDelta[
-    t.Tuple[str, str], state.FetchedSignalMetadata, TATCheckpoint
-]
 
 
 @dataclass
@@ -97,26 +91,27 @@ class TATSignalExchangeAPI(
         self,
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
         checkpoint: t.Optional[TATCheckpoint],
-    ) -> t.Iterator[_TypedDelta]:
+    ) -> t.Iterator[
+        state.FetchDelta[
+            t.Tuple[str, str],
+            state.FetchedSignalMetadata,
+            TATCheckpoint
+        ]
+    ]:
 
         client = self.get_client()
 
-        start_time = ""
+        _checkpoint = ""
 
         if checkpoint is not None:
-            start_time = checkpoint.checkpoint
+            _checkpoint = checkpoint.checkpoint
 
-        for result in client.fetch_hashes_iter(start_time):
-
-            if result.checkpoint:
-                checkpoint = TATCheckpoint(result.checkpoint)
-            else:
-                checkpoint = TATCheckpoint("")
+        for result in client.fetch_hashes_iter(_checkpoint):
 
             translated = (_get_delta_mapping(r) for r in result.results)
-            yield state.FetchDelta(
+            yield state.FetchDelta( 
                 dict(t for t in translated if t[0][0]),
-                checkpoint,
+                TATCheckpoint(result.checkpoint) if result.checkpoint else checkpoint, # type: ignore[arg-type]
             )
 
 
@@ -142,7 +137,7 @@ def _get_delta_mapping(
 ) -> t.Tuple[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]]:
 
     if not _is_compatible_signal_type(record):
-        return (("", ""), state.FetchedSignalMetadata())
+        return (("", ""), None)
 
     type_str = _type_mapping().get(record.algorithm, "")
     metadata = state.FetchedSignalMetadata()
