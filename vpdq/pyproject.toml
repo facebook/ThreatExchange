@@ -1,11 +1,6 @@
 [build-system]
-requires = [
-    "setuptools >= 61.0",
-    "wheel",
-    "cython",
-    "cmake",
-]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core", "cython"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "vpdq"
@@ -16,11 +11,13 @@ readme = {file = "python/README.md", content-type = "text/markdown"}
 license = {file = "LICENSE.txt"}
 dynamic = ["version", "scripts", "entry-points"]
 
-[tool.setuptools]
-include-package-data = true
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "version.txt"
 
-[tool.setuptools.packages.find]
-where = ["python"]  # list of folders that contain the packages (["."] by default)
-include = ["vpdq.pyx"]  # package names should match these glob patterns (["*"] by default)
-exclude = []  # exclude packages matching these glob patterns (empty by default)
-namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+# Regex explanation:
+# ^ matches the start of the line.
+# ?P<value> is the named capture group with the name value. scikit is expecting this.
+# \S+ matches any non-whitespace characters, assuming the version is a single token.
+# $ ensures the match ends at the end of the line.
+regex = "^(?P<value>\\S+)$" 
