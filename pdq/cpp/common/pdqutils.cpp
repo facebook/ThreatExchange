@@ -2,6 +2,22 @@
 #include <vector>
 #include <pdq/cpp/common/pdqutils.h>
 #include <algorithm>
+#include <iostream>
+#include <chrono>
+#include <string>
+
+Timer::Timer(const std::string& context, bool printOnEnter)
+    : context_(context), printOnEnter_(printOnEnter), startTime_(std::chrono::steady_clock::now()) {
+  if (printOnEnter_) {
+    std::cout << context_ << "..." << std::endl;
+  }
+}
+
+double Timer::elapsed() const {
+  auto now = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed = now - startTime_;
+  return elapsed.count();
+}
 
 namespace facebook {
 namespace pdq {

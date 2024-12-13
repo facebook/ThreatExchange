@@ -4,6 +4,18 @@
 #include <pdq/cpp/common/pdqhashtypes.h>
 #include <random>
 #include <vector>
+#include <chrono>
+
+class Timer {
+public:
+  Timer(const std::string& context, bool printOnEnter = false);
+  double elapsed() const;
+
+private:
+  std::string context_;
+  bool printOnEnter_;
+  std::chrono::time_point<std::chrono::steady_clock> startTime_;
+};
 
 namespace facebook {
 namespace pdq {
@@ -17,9 +29,7 @@ namespace hashing {
       const Hash256& original,
       int numBitsToFlip,
       std::mt19937& gen);
-
 } // namespace hashing
 } // namespace pdq
 } // namespace facebook
-
 #endif

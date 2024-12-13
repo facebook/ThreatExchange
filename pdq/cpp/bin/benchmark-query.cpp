@@ -6,7 +6,6 @@
 #include <pdq/cpp/common/pdqutils.h>
 
 #include <algorithm>
-#include <chrono>
 #include <random>
 #include <set>
 
@@ -202,10 +201,7 @@ static void queryLinear(
   // Do linear searches
   std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> matches;
 
-  std::chrono::time_point<std::chrono::steady_clock> t1, t2;
-  std::chrono::duration<double> elapsedSeconds;
-
-  t1 = std::chrono::steady_clock::now();
+  Timer queryTimer("Linear query", verbose);
   for (const auto& it : queries) {
     for (const auto& it2 : index) {
       if (it.first.hammingDistance(it2.first) <= maxDistance) {
@@ -213,9 +209,7 @@ static void queryLinear(
       }
     }
   }
-  t2 = std::chrono::steady_clock::now();
-  elapsedSeconds = t2 - t1;
-  double seconds = elapsedSeconds.count();
+  double seconds = queryTimer.elapsed();
 
   printf("METHOD: Linear query\n"); // TODO: dont make people rewrite this a buncha times
   printf("QUERY COUNT:             %d\n", (int)queries.size());
@@ -228,7 +222,7 @@ static void queryLinear(
   printf("\n");
 }
 
-static void queryMIH( // TOOD: pull timing out of func / query? pull index out somehow?
+static void queryMIH(
     const int maxDistance,
     const bool verbose,
     const unsigned int seed,
@@ -239,19 +233,14 @@ static void queryMIH( // TOOD: pull timing out of func / query? pull index out s
     const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
         index) {
   // Build the MIH
-  std::chrono::time_point<std::chrono::steady_clock> t1, t2;
-  std::chrono::duration<double> elapsedSeconds;
-  double indexTimeSeconds;
-
   facebook::pdq::index::MIH256<std::string> mih;
 
-  t1 = std::chrono::steady_clock::now();
+  Timer indexTimer("Building MIH", verbose);
   for (const auto& it : index) {
     mih.insert(it.first, it.second);
   }
-  t2 = std::chrono::steady_clock::now();
-  elapsedSeconds = t2 - t1;
-  indexTimeSeconds = elapsedSeconds.count();
+  double indexTimeSeconds = indexTimer.elapsed();
+
   printf("\n");
   if (verbose) {
     printf("\n");
@@ -263,13 +252,11 @@ static void queryMIH( // TOOD: pull timing out of func / query? pull index out s
   std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> matches;
   matches.clear();
 
-  t1 = std::chrono::steady_clock::now();
+  Timer queryTimer("MIH query", verbose);
   for (const auto& it : queries) {
     mih.queryAll(it.first, maxDistance, matches);
   }
-  t2 = std::chrono::steady_clock::now();
-  elapsedSeconds = t2 - t1;
-  double seconds = elapsedSeconds.count();
+  double seconds = queryTimer.elapsed();
 
   printf("METHOD: Mutually-indexed hashing query\n");
   printf("INDEX BUILD SECONDS:     %.6lf\n", indexTimeSeconds);
