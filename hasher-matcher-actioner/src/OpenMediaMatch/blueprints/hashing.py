@@ -53,16 +53,17 @@ def hash_media() -> dict[str, str]:
     ret: dict[str, str] = {}
 
     # For images, we may need to copy the file suffix (.png, jpeg, etc) for it to work
-    with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
+    with tempfile.NamedTemporaryFile("wb") as tmp:
         current_app.logger.debug("Writing to %s", tmp.name)
         tmp.write(download_resp.content)
-    path = Path(tmp.name)
-    for st in signal_types.values():
-        # At this point, every BytesHasher is a FileHasher, but we could
-        # explicitly pull those out to avoiding storing any copies of
-        # data locally, even temporarily
-        if issubclass(st, FileHasher):
-            ret[st.get_name()] = st.hash_from_file(path)
+        tmp.flush()  # this ensures that bytes from PNGs are written
+        path = Path(tmp.name)
+        for st in signal_types.values():
+            # At this point, every BytesHasher is a FileHasher, but we could
+            # explicitly pull those out to avoiding storing any copies of
+            # data locally, even temporarily
+            if issubclass(st, FileHasher):
+                ret[st.get_name()] = st.hash_from_file(path)
     return ret
 
 
