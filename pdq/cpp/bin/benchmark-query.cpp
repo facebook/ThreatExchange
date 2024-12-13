@@ -10,12 +10,22 @@
 #include <set>
 
 // ================================================================
+
+// Benchmark result structure
+struct BenchmarkResult {
+  std::string method;
+  int queryCount;
+  int indexCount;
+  int totalMatchCount;
+  double totalQuerySeconds;
+};
+
 // Static function declarations
 static void usage(char* argv0, int rc);
 static void query(char* argv0, int argc, char** argv);
 
 // Function declarations for each query method
-static void queryLinear(
+static BenchmarkResult queryLinear(
     const int maxDistance,
     const bool verbose,
     const unsigned int seed,
@@ -25,7 +35,7 @@ static void queryLinear(
         queries,
     const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
         index);
-static void queryMIH(
+static BenchmarkResult queryMIH(
     const int maxDistance,
     const bool verbose,
     const unsigned int seed,
@@ -172,23 +182,34 @@ static void query(char* argv0, int argc, char** argv) {
     printf("\n");
   }
 
+  BenchmarkResult result;
   if (method == "linear") {
-    queryLinear(
+    result = queryLinear(
         maxDistance, verbose, seed, indexSize, querySize, queries, index);
   } else if (method == "mih") {
-    queryMIH(maxDistance, verbose, seed, indexSize, querySize, queries, index);
+    result = queryMIH(maxDistance, verbose, seed, indexSize, querySize, queries, index);
   } else {
     fprintf(stderr, "Unknown method: %s\n", method.c_str());
     usage(argv0, 1);
     return;
   }
+
+  printf("METHOD: %s\n", result.method.c_str());
+  printf("QUERY COUNT:             %d\n", result.queryCount);
+  printf("INDEX COUNT:             %d\n", result.indexCount);
+  printf("TOTAL MATCH COUNT:       %d\n", result.totalMatchCount);
+  printf("TOTAL QUERY SECONDS:     %.6lf\n", result.totalQuerySeconds);
+  double queriesPerSecond =
+      result.totalQuerySeconds > 0 ? result.queryCount / result.totalQuerySeconds : 0;
+  printf("QUERIES PER SECOND:     %.2lf\n", queriesPerSecond);
+  printf("\n");
 }
 
 ///////////////////////
 //// Query methods ////
 ///////////////////////
 
-static void queryLinear(
+static BenchmarkResult queryLinear(
     const int maxDistance,
     const bool verbose,
     const unsigned int seed,
@@ -211,18 +232,16 @@ static void queryLinear(
   }
   double seconds = queryTimer.elapsed();
 
-  printf("METHOD: Linear query\n"); // TODO: dont make people rewrite this a buncha times
-  printf("QUERY COUNT:             %d\n", (int)queries.size());
-  printf("INDEX COUNT:             %d\n", (int)index.size());
-  printf("TOTAL MATCH COUNT:       %d\n", (int)matches.size());
-  printf("TOTAL QUERY SECONDS:     %.6lf\n", seconds);
-  printf(
-      "SECONDS PER QUERY:       %.6lf\n",
-      querySize > 0 ? seconds / querySize : 0);
-  printf("\n");
+  return {
+    "linear query",
+    static_cast<int>(queries.size()),
+    static_cast<int>(index.size()),
+    static_cast<int>(matches.size()),
+    seconds,
+  };
 }
 
-static void queryMIH(
+static BenchmarkResult queryMIH(
     const int maxDistance,
     const bool verbose,
     const unsigned int seed,
@@ -235,11 +254,9 @@ static void queryMIH(
   // Build the MIH
   facebook::pdq::index::MIH256<std::string> mih;
 
-  Timer indexTimer("Building MIH", verbose);
   for (const auto& it : index) {
     mih.insert(it.first, it.second);
   }
-  double indexTimeSeconds = indexTimer.elapsed();
 
   printf("\n");
   if (verbose) {
@@ -258,14 +275,11 @@ static void queryMIH(
   }
   double seconds = queryTimer.elapsed();
 
-  printf("METHOD: Mutually-indexed hashing query\n");
-  printf("INDEX BUILD SECONDS:     %.6lf\n", indexTimeSeconds);
-  printf("QUERY COUNT:             %d\n", (int)queries.size());
-  printf("INDEX COUNT:             %d\n", (int)mih.size());
-  printf("TOTAL MATCH COUNT:       %d\n", (int)matches.size());
-  printf("TOTAL QUERY SECONDS:     %.6lf\n", seconds);
-  printf(
-      "SECONDS PER QUERY:       %.6lf\n",
-      querySize > 0 ? seconds / querySize : 0);
-  printf("\n");
+  return {
+    "mutually-indexed hashing query",
+    static_cast<int>(queries.size()),
+    static_cast<int>(mih.size()),
+    static_cast<int>(matches.size()),
+    seconds,
+  };
 }
