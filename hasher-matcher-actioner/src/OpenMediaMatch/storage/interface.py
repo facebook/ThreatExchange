@@ -22,7 +22,7 @@ import time
 
 import flask
 
-from threatexchange.cli.storage.interfaces import IContentTypeConfigStore
+from threatexchange.storage.interfaces import IContentTypeConfigStore
 from threatexchange.utils import dataclass_json
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
