@@ -1,13 +1,15 @@
+#include <algorithm>
+#include <chrono>
+#include <iostream>
 #include <random>
+#include <string>
 #include <vector>
 #include <pdq/cpp/common/pdqutils.h>
-#include <algorithm>
-#include <iostream>
-#include <chrono>
-#include <string>
 
 Timer::Timer(const std::string& context, bool printOnEnter)
-    : context_(context), printOnEnter_(printOnEnter), startTime_(std::chrono::steady_clock::now()) {
+    : context_(context),
+      printOnEnter_(printOnEnter),
+      startTime_(std::chrono::steady_clock::now()) {
   if (printOnEnter_) {
     std::cout << context_ << "..." << std::endl;
   }
@@ -36,12 +38,11 @@ Hash256 generateRandomHash(std::mt19937& gen) {
 
 // Add noise to hash by flipping random bits
 Hash256 addNoise(
-    const Hash256& original,
-    int numBitsToFlip,
-    std::mt19937& gen) {
+    const Hash256& original, int numBitsToFlip, std::mt19937& gen) {
   Hash256 noisy = original;
   std::vector<int> bitIndices(256);
-  for (int i = 0; i < 256; i++) bitIndices[i] = i;
+  for (int i = 0; i < 256; i++)
+    bitIndices[i] = i;
   std::shuffle(bitIndices.begin(), bitIndices.end(), gen);
   for (int i = 0; i < numBitsToFlip; i++) {
     int bitIndex = bitIndices[i];

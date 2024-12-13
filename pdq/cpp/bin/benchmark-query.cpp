@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pdq/cpp/common/pdqutils.h>
 #include <pdq/cpp/index/mih.h>
 #include <pdq/cpp/io/hashio.h>
-#include <pdq/cpp/common/pdqutils.h>
 
 #include <algorithm>
 #include <random>
@@ -163,7 +163,8 @@ static void query(char* argv0, int argc, char** argv) {
   std::uniform_int_distribution<int> noiseDist(1, maxDistance);
   for (const auto& query : queries) {
     int bitsToFlip = noiseDist(gen);
-    auto noisyHash = facebook::pdq::hashing::addNoise(query.first, bitsToFlip, gen);
+    auto noisyHash =
+        facebook::pdq::hashing::addNoise(query.first, bitsToFlip, gen);
     index.push_back({noisyHash, "index_noisy_" + query.second});
   }
   std::shuffle(index.begin(), index.end(), gen);
@@ -187,7 +188,8 @@ static void query(char* argv0, int argc, char** argv) {
     result = queryLinear(
         maxDistance, verbose, seed, indexSize, querySize, queries, index);
   } else if (method == "mih") {
-    result = queryMIH(maxDistance, verbose, seed, indexSize, querySize, queries, index);
+    result = queryMIH(
+        maxDistance, verbose, seed, indexSize, querySize, queries, index);
   } else {
     fprintf(stderr, "Unknown method: %s\n", method.c_str());
     usage(argv0, 1);
@@ -199,8 +201,9 @@ static void query(char* argv0, int argc, char** argv) {
   printf("INDEX COUNT:             %d\n", result.indexCount);
   printf("TOTAL MATCH COUNT:       %d\n", result.totalMatchCount);
   printf("TOTAL QUERY SECONDS:     %.6lf\n", result.totalQuerySeconds);
-  double queriesPerSecond =
-      result.totalQuerySeconds > 0 ? result.queryCount / result.totalQuerySeconds : 0;
+  double queriesPerSecond = result.totalQuerySeconds > 0
+      ? result.queryCount / result.totalQuerySeconds
+      : 0;
   printf("QUERIES PER SECOND:     %.2lf\n", queriesPerSecond);
   printf("\n");
 }
@@ -233,11 +236,11 @@ static BenchmarkResult queryLinear(
   double seconds = queryTimer.elapsed();
 
   return {
-    "linear query",
-    static_cast<int>(queries.size()),
-    static_cast<int>(index.size()),
-    static_cast<int>(matches.size()),
-    seconds,
+      "linear query",
+      static_cast<int>(queries.size()),
+      static_cast<int>(index.size()),
+      static_cast<int>(matches.size()),
+      seconds,
   };
 }
 
@@ -276,10 +279,10 @@ static BenchmarkResult queryMIH(
   double seconds = queryTimer.elapsed();
 
   return {
-    "mutually-indexed hashing query",
-    static_cast<int>(queries.size()),
-    static_cast<int>(mih.size()),
-    static_cast<int>(matches.size()),
-    seconds,
+      "mutually-indexed hashing query",
+      static_cast<int>(queries.size()),
+      static_cast<int>(mih.size()),
+      static_cast<int>(matches.size()),
+      seconds,
   };
 }
