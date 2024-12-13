@@ -32,7 +32,8 @@ LIBHDRS=\
  io/pdqio.h \
  index/mih.h \
  hashing/torben.h \
- ./CImg.h
+ ./CImg.h \
+ common/pdqutils.h
 
 LIBSRCS=\
  common/pdqhashtypes.cpp \
@@ -41,7 +42,8 @@ LIBSRCS=\
  hashing/pdqhashing.cpp \
  downscaling/downscaling.cpp \
  io/pdqio.cpp \
- hashing/torben.cpp
+ hashing/torben.cpp \
+ common/pdqutils.cpp
 
 MAINS=\
  pdq-photo-hasher \

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <pdq/cpp/index/mih.h>
 #include <pdq/cpp/io/hashio.h>
+#include <pdq/cpp/common/pdqutils.h>
 
 #include <algorithm>
 #include <chrono>
@@ -35,13 +36,6 @@ static void queryMIH(
         queries,
     const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
         index);
-
-// Helper declarations
-static facebook::pdq::hashing::Hash256 generateRandomHash(std::mt19937& gen);
-static facebook::pdq::hashing::Hash256 addNoise(
-    const facebook::pdq::hashing::Hash256& original,
-    int numBitsToFlip,
-    std::mt19937& gen);
 
 // ----------------------------------------------------------------
 int main(int argc, char** argv) {
@@ -145,14 +139,14 @@ static void query(char* argv0, int argc, char** argv) {
   // Generate random hashes for queries
   std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> queries;
   for (size_t i = 0; i < querySize; i++) {
-    auto hash = generateRandomHash(gen);
+    auto hash = facebook::pdq::hashing::generateRandomHash(gen);
     queries.push_back({hash, "query_" + std::to_string(i)});
   }
 
   // Generate random hashes for index
   std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> index;
   for (size_t i = 0; i < indexSize - querySize; i++) {
-    auto hash = generateRandomHash(gen);
+    auto hash = facebook::pdq::hashing::generateRandomHash(gen);
     index.push_back({hash, "index_" + std::to_string(i)});
   }
 
@@ -160,7 +154,7 @@ static void query(char* argv0, int argc, char** argv) {
   std::uniform_int_distribution<int> noiseDist(1, maxDistance);
   for (const auto& query : queries) {
     int bitsToFlip = noiseDist(gen);
-    auto noisyHash = addNoise(query.first, bitsToFlip, gen);
+    auto noisyHash = facebook::pdq::hashing::addNoise(query.first, bitsToFlip, gen);
     index.push_back({noisyHash, "index_noisy_" + query.second});
   }
   std::shuffle(index.begin(), index.end(), gen);
@@ -184,10 +178,6 @@ static void query(char* argv0, int argc, char** argv) {
         maxDistance, verbose, seed, indexSize, querySize, queries, index);
   } else if (method == "mih") {
     queryMIH(maxDistance, verbose, seed, indexSize, querySize, queries, index);
-  } else {
-    fprintf(stderr, "Unknown method: %s\n", method.c_str());
-    usage(argv0, 1);
-    return;
   }
 }
 
@@ -223,7 +213,7 @@ static void queryLinear(
   elapsedSeconds = t2 - t1;
   double seconds = elapsedSeconds.count();
 
-  printf("METHOD: Linear query\n");
+  printf("METHOD: Linear query\n"); // TODO: dont make people rewrite this a buncha times
   printf("QUERY COUNT:             %d\n", (int)queries.size());
   printf("INDEX COUNT:             %d\n", (int)index.size());
   printf("TOTAL MATCH COUNT:       %d\n", (int)matches.size());
@@ -234,7 +224,7 @@ static void queryLinear(
   printf("\n");
 }
 
-static void queryMIH(
+static void queryMIH( // TOOD: pull timing out of func / query? pull index out somehow?
     const int maxDistance,
     const bool verbose,
     const unsigned int seed,
@@ -287,37 +277,4 @@ static void queryMIH(
       "SECONDS PER QUERY:       %.6lf\n",
       querySize > 0 ? seconds / querySize : 0);
   printf("\n");
-}
-
-//////////////////////////
-//// Helper Functions ////
-//////////////////////////
-
-// Generate random hash
-static facebook::pdq::hashing::Hash256 generateRandomHash(std::mt19937& gen) {
-  facebook::pdq::hashing::Hash256 hash;
-  std::uniform_int_distribution<uint16_t> dist(0, UINT16_MAX);
-
-  for (int i = 0; i < facebook::pdq::hashing::HASH256_NUM_WORDS; i++) {
-    hash.w[i] = dist(gen);
-  }
-  return hash;
-}
-
-// Add noise to hash by flipping random bits
-static facebook::pdq::hashing::Hash256 addNoise(
-    const facebook::pdq::hashing::Hash256& original,
-    int numBitsToFlip,
-    std::mt19937& gen) {
-  facebook::pdq::hashing::Hash256 noisy = original;
-  std::vector<int> bitIndices(256);
-  for (int i = 0; i < 256; i++) bitIndices[i] = i;
-  std::shuffle(bitIndices.begin(), bitIndices.end(), gen);
-  for (int i = 0; i < numBitsToFlip; i++) {
-    int bitIndex = bitIndices[i];
-    int wordIndex = bitIndex / 16;
-    int position = bitIndex % 16;
-    noisy.w[wordIndex] ^= (1 << position);
-  }
-  return noisy;
 }
