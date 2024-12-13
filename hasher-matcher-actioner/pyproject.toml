@@ -21,7 +21,7 @@ dependencies = [
     "flask_migrate",
     "psycopg2",
     "requests",
-    "threatexchange",
+    "threatexchange>=1.2.2",
     "flask_apscheduler",
     "python-dateutil",
     "python-json-logger",

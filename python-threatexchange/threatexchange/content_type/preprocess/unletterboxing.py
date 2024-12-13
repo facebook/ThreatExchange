@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Copyright (c) Meta Platforms, Inc. and affiliates.
+
 from PIL import Image
 
 
