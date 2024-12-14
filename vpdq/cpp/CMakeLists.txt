@@ -91,9 +91,3 @@ add_subdirectory(vpdq)
 # CLI programs
 # TODO: Make this a custom command/option. This isn't necessary to just build the library.
 add_subdirectory(apps)
-
-# Write the libav* library dirs to a new-line delimited file for Cython to be able to locate LIBAV files
-# TODO: Make this a custom command or something. This isn't necessary on every run.
-string(REPLACE ";" "\n" LIBRARY_DIRS "${LIBAV_STATIC_LIBRARY_DIRS}")
-set(LIBRARY_DIRS_FILE "libraries-dirs.txt")
-file(WRITE ${LIBRARY_DIRS_FILE} "${LIBRARY_DIRS}")

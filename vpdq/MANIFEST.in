@@ -5,6 +5,5 @@ include README.md
 
 graft cpp
 prune cpp/build
-exclude cpp/libraries-dirs.txt
 
 graft python

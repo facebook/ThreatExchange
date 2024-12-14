@@ -1,3 +1,2 @@
-setuptools >= 61.0
-wheel
+scikit-build-core >= 0.10
 cython
