@@ -21,3 +21,7 @@ input = "version.txt"
 # \S+ matches any non-whitespace characters, assuming the version is a single token.
 # $ ensures the match ends at the end of the line.
 regex = "^(?P<value>\\S+)$" 
+
+[tool.scikit-build]
+minimum-version = "0.10"
+cmake.build-type = "RelWithDebInfo"
