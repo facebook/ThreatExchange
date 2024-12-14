@@ -20,3 +20,4 @@ pdq/java/bazel-testlogs/
 *.d.ts
 .idea/
 venv/
+.venv/
