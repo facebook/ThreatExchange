@@ -20,15 +20,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
-      - name: Install packaging dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r packaging-requirements.txt
+          python-version: "3.11"
       - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-dev pkg-config cmake ffmpeg libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
+
+      - name: Install packaging dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r packaging-requirements.txt
+          python -m pip list
 
       - name: Package
         run: |
@@ -37,7 +39,8 @@ jobs:
       - name: Ensure packaged build runs
         run: |
           python -m pip install dist/vpdq*.tar.gz
-          python -c "import vpdq"
+          python -m pip list
+          python -c "import vpdq; print(dir(vpdq))"
 
       - name: Publish distribution to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
