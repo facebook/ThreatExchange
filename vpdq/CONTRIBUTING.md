@@ -100,7 +100,7 @@ python -m build --sdist
 
 The package should now be in `dist/`.
 
-> **Note** Wheels are not currently distributed. But, in the future building wheels with manylinux and packaging the dynamically
+> **Note:** Wheels are not currently distributed. But, in the future building wheels with manylinux and packaging the dynamically
 > linked libav* libraries may be useful to end users to skip the build and dependency process. 
 
 ### Publishing
