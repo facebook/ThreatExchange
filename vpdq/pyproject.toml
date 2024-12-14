@@ -9,7 +9,7 @@ description = "Python bindings for Facebook VPDQ hash"
 requires-python = ">= 3.8"
 readme = {file = "python/README.md", content-type = "text/markdown"}
 license = {file = "LICENSE.txt"}
-dynamic = ["version", "scripts", "entry-points"]
+dynamic = ["version"]
 
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
@@ -25,3 +25,9 @@ regex = "^(?P<value>\\S+)$"
 [tool.scikit-build]
 minimum-version = "0.10"
 cmake.build-type = "RelWithDebInfo"
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "clang-format",
+]
