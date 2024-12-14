@@ -93,17 +93,15 @@ Install dependencies:
 python -m pip install -r packaging-requirements.txt
 ```
 
-Build package:
+Build source distribution package:
 ```sh
 python -m build --sdist 
 ```
 
-Build wheel:
-```sh
-python -m build --wheel
-```
+The package should now be in `dist/`.
 
-The package/wheel should now be in `dist/`.
+> **Note** Wheels are not currently distributed. But, in the future building wheels with manylinux and packaging the dynamically
+> linked libav* libraries may be useful to end users to skip the build and dependency process. 
 
 ### Publishing
 
