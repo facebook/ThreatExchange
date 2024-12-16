@@ -155,3 +155,59 @@ def test_unletterbox_with_photo_content(hash_cli: ThreatExchangeCLIE2eHelper):
             "pdq f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",
         ],
     )
+
+
+def test_file_content(hash_cli: ThreatExchangeCLIE2eHelper):
+    """
+    Test that FileContent correctly maps to PhotoContent or VideoContent
+    and raises errors for unsupported file types.
+    """
+    resources_dir = (
+        pathlib.Path(__file__).parent.parent.parent / "tests/hashing/resources"
+    )
+
+    photo_file = resources_dir / "sample-b.jpg"
+    video_file = resources_dir / "sample-video.mp4"
+    static_gif = resources_dir / "static.gif"
+    animated_gif = resources_dir / "animated.gif"
+    unsupported_file = resources_dir / "unsupported.txt"
+
+    # Test that FileContent maps to PhotoContent for a photo file
+    hash_cli.assert_cli_output(
+        ("file", str(photo_file)),
+        [
+            "File: sample-b.jpg, Resolved ContentType: photo",
+        ],
+    )
+
+    # Test that FileContent maps to VideoContent for a video file
+    hash_cli.assert_cli_output(
+        ("file", str(video_file)),
+        [
+            "File: sample-video.mp4, Resolved ContentType: video",
+        ],
+    )
+
+    # Test that FileContent maps to PhotoContent for a non-animated GIF
+    hash_cli.assert_cli_output(
+        ("file", str(static_gif)),
+        [
+            "File: static.gif, Resolved ContentType: photo",
+        ],
+    )
+
+    # Test that FileContent maps to VideoContent for an animated GIF
+    hash_cli.assert_cli_output(
+        ("file", str(animated_gif)),
+        [
+            "File: animated.gif, Resolved ContentType: video",
+        ],
+    )
+
+    # Test that FileContent raises an error for unsupported file types
+    hash_cli.assert_cli_output(
+        ("file", str(unsupported_file)),
+        [
+            "Error: Unsupported file type: .txt",
+        ],
+    )

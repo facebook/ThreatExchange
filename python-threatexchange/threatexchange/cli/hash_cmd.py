@@ -16,6 +16,7 @@ from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli.exceptions import CommandError
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
+from threatexchange.content_type.file import FileContent
 from threatexchange.content_type.content_base import RotationType
 
 from threatexchange.signal_type.signal_base import FileHasher, SignalType
@@ -127,8 +128,29 @@ class HashCommand(command_base.Command):
             raise CommandError(
                 "--photo-preprocess flag is only available for Photo content type", 2
             )
+        # Initial apporach on usage in hash_cmd
+        # if issubclass(self.content_type, FileContent):
+        #     try:
+        #         # Use the first file to determine content type
+        #         self.content_type = FileContent.map_to_content_type(files[0].name)
+        #     except ValueError as e:
+        #         raise CommandError.user(f"Error: {e}")
+        # else:
+        #     self.content_type = content_type
 
     def execute(self, settings: CLISettings) -> None:
+        # For test verification
+        if issubclass(self.content_type, FileContent):
+            for file in self.files:
+                try:
+                    actual_content_type = FileContent.map_to_content_type(file)
+                    print(
+                        f"File: {file.name}, Resolved ContentType: {actual_content_type.get_name()}"
+                    )
+                except ValueError as e:
+                    print(f"Error: {e}")
+            return
+
         hashers = [
             s
             for s in settings.get_signal_types_for_content(self.content_type)
