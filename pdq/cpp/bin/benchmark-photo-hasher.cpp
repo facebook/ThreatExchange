@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pdq/cpp/io/pdqio.h>
 #include <pdq/cpp/io/hashio.h>
+#include <pdq/cpp/io/pdqio.h>
 
 #include <chrono>
 
@@ -33,9 +33,15 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "Usage: %s [options] folder_path\n", argv0);
   fprintf(fp, "Options:\n");
   fprintf(fp, "  -v               Verbose output\n");
-  fprintf(fp, "  -n N             Total number of hashes to generate, can be more or less than the number of images in the folder\n");
-  fprintf(fp, "                           (default: 0, meaning generate one hash for each image in the folder)\n");
-  fprintf(fp, "  --dihedral       Compute dihedral versions of the hashes (default: false)\n");
+  fprintf(
+      fp,
+      "  -n N             Total number of hashes to generate, can be more or less than the number of images in the folder\n");
+  fprintf(
+      fp,
+      "                           (default: 0, meaning generate one hash for each image in the folder)\n");
+  fprintf(
+      fp,
+      "  --dihedral       Compute dihedral versions of the hashes (default: false)\n");
   exit(rc);
 }
 
@@ -96,13 +102,12 @@ static void hash(char* argv0, int argc, char** argv) {
         float hashSeconds;
         const char* filename = filePath.c_str();
         bool success = facebook::pdq::hashing::pdqHash256FromFile(
-          filename,
-          hash,
-          quality,
-          imageHeightTimesWidth,
-          readSeconds,
-          hashSeconds
-        );
+            filename,
+            hash,
+            quality,
+            imageHeightTimesWidth,
+            readSeconds,
+            hashSeconds);
         if (!success) {
           numErrors++;
           fprintf(stderr, "Error reading file: %s\n", filename);
@@ -121,14 +126,16 @@ static void hash(char* argv0, int argc, char** argv) {
         totalReadSeconds += readSeconds;
         totalHashSeconds += hashSeconds;
         numSuccesses++;
-        if (numSuccesses == numHashes) break;
+        if (numSuccesses == numHashes)
+          break;
       }
     }
     if (numSuccesses == 0) {
       fprintf(stderr, "No images found in folder: %s\n", folderPath.c_str());
       return;
     }
-    if (numHashes == 0 || numSuccesses == numHashes) break;
+    if (numHashes == 0 || numSuccesses == numHashes)
+      break;
     closedir(dir);
     dir = opendir(folderPath.c_str());
   }
@@ -136,12 +143,14 @@ static void hash(char* argv0, int argc, char** argv) {
   printf("PHOTO COUNT:               %d\n", (int)hashes.size());
   printf("ERROR COUNT:               %d\n", numErrors);
   printf("TIME SPENT HASHING PHOTOS (SECONDS):     %.6lf\n", totalHashSeconds);
-  double photosHashedPerSecond = totalHashSeconds > 0 ? numSuccesses / totalHashSeconds : 0;
+  double photosHashedPerSecond =
+      totalHashSeconds > 0 ? numSuccesses / totalHashSeconds : 0;
   printf("PHOTOS HASHED PER SECOND:   %.6lf\n", photosHashedPerSecond);
 
-  printf("TIME SPENT READING PHOTOS (SECONDS):        %.6lf\n", totalReadSeconds);
-  double photosReadPerSecond = totalReadSeconds > 0 ? numSuccesses / totalReadSeconds : 0;
+  printf(
+      "TIME SPENT READING PHOTOS (SECONDS):        %.6lf\n", totalReadSeconds);
+  double photosReadPerSecond =
+      totalReadSeconds > 0 ? numSuccesses / totalReadSeconds : 0;
   printf("PHOTOS READ PER SECOND:     %.6lf\n", photosReadPerSecond);
   printf("\n");
-
 }
