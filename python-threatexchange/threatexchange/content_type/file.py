@@ -21,7 +21,7 @@ class FileContent(ContentType):
     def map_to_content_type(cls, file_path: Path) -> ContentType:
         """
         Map the file to a specific content type based on its extension by taking in file path
-        
+
         Returns the ContentType subclass or rasises error if the file type is unsupported.
         """
         extension = file_path.suffix.lower()
