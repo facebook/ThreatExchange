@@ -50,8 +50,13 @@ def _convert_image_to_correct_array_dimension(image: Image.Image) -> np.ndarray:
     """
     Handle possible image format conversion or
     """
-    if image.mode == "LA" or image.mode == "I;16":
+    if (
+        image.mode == "LA"
+        or image.mode == "I;16"
+        or (image.format == "GIF" and not getattr(image, "is_animated", False))
+    ):
         # LA images (luminance with alpha) return 3 dimensional ndarray
+        # For GIF converts the first frame of a static GIF to RGB
         # which is incompatible with pdqhash
         image = image.convert("RGB")
 
