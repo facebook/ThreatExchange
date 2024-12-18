@@ -4,10 +4,13 @@ import io
 import pathlib
 import tempfile
 import pytest
+from PIL import Image, ImageSequence
 from threatexchange.cli.tests.e2e_test_helper import (
     ThreatExchangeCLIE2eHelper,
     te_cli,
 )
+from threatexchange.content_type.file import FileContent
+from threatexchange.signal_type.pdq.pdq_hasher import pdq_from_bytes
 
 
 @pytest.fixture
@@ -165,49 +168,110 @@ def test_file_content(hash_cli: ThreatExchangeCLIE2eHelper):
     resources_dir = (
         pathlib.Path(__file__).parent.parent.parent / "tests/hashing/resources"
     )
+    # Paths for existing test images
+    photo_jpg = resources_dir / "sample-b.jpg"
+    photo_png = resources_dir / "LA.png"  # Replace with correct PNG file
+    photo_jpeg_rgb = resources_dir / "rgb.jpeg"
 
-    photo_file = resources_dir / "sample-b.jpg"
-    video_file = resources_dir / "sample-video.mp4"
-    static_gif = resources_dir / "static.gif"
-    animated_gif = resources_dir / "animated.gif"
-    unsupported_file = resources_dir / "unsupported.txt"
-
-    # Test that FileContent maps to PhotoContent for a photo file
+    # JPEG Test Case
     hash_cli.assert_cli_output(
-        ("file", str(photo_file)),
+        ("file", str(photo_jpg)),
         [
-            "File: sample-b.jpg, Resolved ContentType: photo",
+            "pdq f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",
         ],
     )
 
-    # Test that FileContent maps to VideoContent for a video file
+    # PNG Test Case
     hash_cli.assert_cli_output(
-        ("file", str(video_file)),
+        ("file", str(photo_png)),
         [
-            "File: sample-video.mp4, Resolved ContentType: video",
+            "pdq accb6d39648035f8125c8ce6ba65007de7b54c67a2d93ef7b8f33b0611306715",
         ],
     )
 
-    # Test that FileContent maps to PhotoContent for a non-animated GIF
+    # JPEG with RGB Profile Test Case
     hash_cli.assert_cli_output(
-        ("file", str(static_gif)),
+        ("file", str(photo_jpeg_rgb)),
         [
-            "File: static.gif, Resolved ContentType: photo",
+            "pdq fb4eed46cb8a6c78819ca06b756c541f7b07ef6d02c82fccd00f862166272cda",
         ],
     )
 
-    # Test that FileContent maps to VideoContent for an animated GIF
-    hash_cli.assert_cli_output(
-        ("file", str(animated_gif)),
-        [
-            "File: animated.gif, Resolved ContentType: video",
-        ],
-    )
+    # Create and test a temporary empty MP4 file (Video)
+    with tempfile.NamedTemporaryFile(suffix=".mp4") as tmp_video_file:
+        hash_cli.assert_cli_output(
+            ("file", tmp_video_file.name),
+            [
+                "video_md5 d41d8cd98f00b204e9800998ecf8427e",
+            ],
+        )
 
-    # Test that FileContent raises an error for unsupported file types
-    hash_cli.assert_cli_output(
-        ("file", str(unsupported_file)),
-        [
-            "Error: Unsupported file type: .txt",
-        ],
-    )
+    # Create and test a temporary empty AVI file (Video)
+    with tempfile.NamedTemporaryFile(suffix=".avi") as tmp_avi_file:
+        hash_cli.assert_cli_output(
+            ("file", tmp_avi_file.name),
+            [
+                "video_md5 d41d8cd98f00b204e9800998ecf8427e",
+            ],
+        )
+
+    # Create and test a temporary empty MOV file (Video)
+    with tempfile.NamedTemporaryFile(suffix=".mov") as tmp_mov_file:
+        hash_cli.assert_cli_output(
+            ("file", tmp_mov_file.name),
+            [
+                "video_md5 d41d8cd98f00b204e9800998ecf8427e",
+            ],
+        )
+
+    # Create and test a temporary static GIF file (1x1 pixel)
+    with tempfile.NamedTemporaryFile(suffix=".gif") as tmp_static_gif:
+        # Create a 100x100 multi-colored image
+        static_img = Image.new("RGB", (100, 100))
+        pixels = static_img.load()
+
+        # Fill the image with colors to improve quality
+        if pixels:
+            for i in range(100):
+                for j in range(100):
+                    pixels[i, j] = ((i * 5) % 256, (j * 5) % 256, ((i + j) * 5) % 256)
+
+        # Save the image as a static GIF
+        static_img.save(tmp_static_gif.name, format="GIF")
+        hash_cli.assert_cli_output(
+            ("file", tmp_static_gif.name),
+            [
+                "pdq dd908cc83bea8ddd781ad2cc37b4a2ddf780152a327ad32d777875120a67b112",
+            ],
+        )
+
+    # Create and test a temporary animated GIF file (2 frames)
+    with tempfile.NamedTemporaryFile(suffix=".gif") as tmp_animated_gif:
+        animated_frames = [
+            Image.new("RGB", (1, 1), color=(255, 0, 0)),  # Red frame
+            Image.new("RGB", (1, 1), color=(0, 255, 0)),  # Green frame
+        ]
+        animated_frames[0].save(
+            tmp_animated_gif.name,
+            format="GIF",
+            save_all=True,
+            append_images=animated_frames[1:],
+            duration=200,  # Frame duration
+            loop=0,
+        )
+        hash_cli.assert_cli_output(
+            ("file", tmp_animated_gif.name),
+            [
+                "video_md5 ec82a2d0d4d99a623ec2a939accc7de5",
+            ],
+        )
+
+    # Create and test a temporary unsupported .txt file
+    with tempfile.NamedTemporaryFile(suffix=".txt") as tmp_unsupported_file:
+        tmp_unsupported_file.write(b"This is a test file.")  # Write dummy text
+        tmp_unsupported_file.flush()
+        # Assert that the CLI raises a CommandError for unsupported file type
+        hash_cli.assert_cli_usage_error(
+            ("file", tmp_unsupported_file.name),
+            msg_regex="Unsupported file type: .txt",
+        )
