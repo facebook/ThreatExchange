@@ -49,9 +49,9 @@ static void hash(char* argv0, int argc, char** argv) {
   std::string folderPath;
   int numHashes = 0;
   bool verbose = false;
-  bool dihedral = false; // TODO:
+  bool dihedral = false;
 
-  // Parse command line arguments // TODO:
+  // Parse command line arguments
   for (int i = 0; i < argc; i++) {
     std::string arg = argv[i];
     if (arg == "-v") {
@@ -77,9 +77,6 @@ static void hash(char* argv0, int argc, char** argv) {
       return;
     }
   }
-  if (dihedral) { // TODO: remove
-    printf("Dihedral hashes will be computed and printed.\n");
-  }
 
   // Generate hashes
   std::vector<facebook::pdq::hashing::Hash256> hashes;
@@ -101,13 +98,34 @@ static void hash(char* argv0, int argc, char** argv) {
         float readSeconds;
         float hashSeconds;
         const char* filename = filePath.c_str();
-        bool success = facebook::pdq::hashing::pdqHash256FromFile(
-            filename,
-            hash,
-            quality,
-            imageHeightTimesWidth,
-            readSeconds,
-            hashSeconds);
+        bool success;
+        if (dihedral) {
+          facebook::pdq::hashing::Hash256 hashRotate90, hashRotate180,
+              hashRotate270, hashFlipX, hashFlipY, hashFlipPlus1,
+              hashFlipMinus1;
+          success = facebook::pdq::hashing::pdqDihedralHash256esFromFile(
+              filename,
+              &hash,
+              &hashRotate90,
+              &hashRotate180,
+              &hashRotate270,
+              &hashFlipX,
+              &hashFlipY,
+              &hashFlipPlus1,
+              &hashFlipMinus1,
+              quality,
+              imageHeightTimesWidth,
+              readSeconds,
+              hashSeconds);
+        } else {
+          success = facebook::pdq::hashing::pdqHash256FromFile(
+              filename,
+              hash,
+              quality,
+              imageHeightTimesWidth,
+              readSeconds,
+              hashSeconds);
+        }
         if (!success) {
           numErrors++;
           fprintf(stderr, "Error reading file: %s\n", filename);
@@ -141,6 +159,9 @@ static void hash(char* argv0, int argc, char** argv) {
   }
 
   printf("PHOTO COUNT:               %d\n", (int)hashes.size());
+  if (dihedral) {
+    printf("TOTAL DIHEDRAL HASHES (8/PHOTO):     %d\n", (int)hashes.size() * 8);
+  }
   printf("ERROR COUNT:               %d\n", numErrors);
   printf("TIME SPENT HASHING PHOTOS (SECONDS):     %.6lf\n", totalHashSeconds);
   double photosHashedPerSecond =
