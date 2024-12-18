@@ -32,7 +32,8 @@ LIBHDRS=\
  io/pdqio.h \
  index/mih.h \
  hashing/torben.h \
- ./CImg.h
+ ./CImg.h \
+ common/pdqutils.h
 
 LIBSRCS=\
  common/pdqhashtypes.cpp \
@@ -41,11 +42,13 @@ LIBSRCS=\
  hashing/pdqhashing.cpp \
  downscaling/downscaling.cpp \
  io/pdqio.cpp \
- hashing/torben.cpp
+ hashing/torben.cpp \
+ common/pdqutils.cpp
 
 MAINS=\
  pdq-photo-hasher \
  test-mih \
+ benchmark-query \
  clusterize256 \
  snowball-clusterize256 \
  clusterize256x \
@@ -111,6 +114,8 @@ pdq-downsample-demo: bin/pdq-downsample-demo.cpp $(LIBSRCS) $(LIBHDRS)
 
 test-mih: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/test-mih.cpp $(LIBSRCS) -o test-mih $(LFLAGS)
+benchmark-query: bin/benchmark-query.cpp $(LIBSRCS) $(LIBHDRS)
+	$(CCOPT) bin/benchmark-query.cpp $(LIBSRCS) -o benchmark-query $(LFLAGS)
 test-mihg: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) bin/test-mih.cpp $(LIBSRCS) -o test-mihg $(LFLAGS)
 clusterize256: bin/clusterize256.cpp $(LIBSRCS) $(LIBHDRS)
