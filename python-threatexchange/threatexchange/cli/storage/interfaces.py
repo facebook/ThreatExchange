@@ -2,6 +2,7 @@
 
 """
 Common interface for persisting pytx configuration and concepts.
+
 Most of the individual components of pytx are find to use piecemeal, and
 the full interface covers the most complex and complete useage. A usecase
 with one collection of hashes using one algorithm might be better off 
