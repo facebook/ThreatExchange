@@ -37,6 +37,7 @@ from threatexchange.exchanges.fetch_state import (
 )
 
 from OpenMediaMatch.storage import interface
+from threatexchange.cli.storage.interfaces import SignalTypeConfig
 from OpenMediaMatch.storage.postgres import database, flask_utils
 
 
@@ -140,12 +141,12 @@ class DefaultOMMStore(interface.IUnifiedStore):
         sesh.add(config)
         sesh.commit()
 
-    def get_signal_type_configs(self) -> t.Mapping[str, interface.SignalTypeConfig]:
+    def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         # If a signal is installed, then it is enabled by default. But it may be disabled by an
         # override in the database.
         signal_type_overrides = self._query_signal_type_overrides()
         return {
-            name: interface.SignalTypeConfig(
+            name: SignalTypeConfig(
                 signal_type_overrides.get(name, 1.0),
                 st,
             )

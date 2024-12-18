@@ -35,27 +35,6 @@ from threatexchange.signal_type.signal_base import SignalType
 
 
 @dataclass
-class ContentTypeConfig:
-    """
-    Holder for ContentType configuration.
-    """
-
-    # Content types that are not enabled should not be used in hashing/matching
-    enabled: bool
-    content_type: t.Type[ContentType]
-
-
-class IContentTypeConfigStore(metaclass=abc.ABCMeta):
-    """Interface for accessing ContentType configuration"""
-
-    @abc.abstractmethod
-    def get_content_type_configs(self) -> t.Mapping[str, ContentTypeConfig]:
-        """
-        Return all installed content types.
-        """
-
-
-@dataclass
 class SignalTypeConfig:
     """
     Holder for SignalType configuration
@@ -117,3 +96,24 @@ class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
             for k, v in self.get_signal_type_configs().items()
             if v.enabled and content_type in v.signal_type.get_content_types()
         }
+
+
+@dataclass
+class ContentTypeConfig:
+    """
+    Holder for ContentType configuration.
+    """
+
+    # Content types that are not enabled should not be used in hashing/matching
+    enabled: bool
+    content_type: t.Type[ContentType]
+
+
+class IContentTypeConfigStore(metaclass=abc.ABCMeta):
+    """Interface for accessing ContentType configuration"""
+
+    @abc.abstractmethod
+    def get_content_type_configs(self) -> t.Mapping[str, ContentTypeConfig]:
+        """
+        Return all installed content types.
+        """
