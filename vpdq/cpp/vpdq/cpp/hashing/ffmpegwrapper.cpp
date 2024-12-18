@@ -127,11 +127,11 @@ bool FFmpegVideo::createSwsContext() {
 }
 
 FFmpegFrame::FFmpegFrame(AVFramePtr frame, uint64_t frameNumber)
-    : m_frame(std::move(frame)), m_frameNumber(frameNumber){};
+    : m_frame(std::move(frame)), m_frameNumber(frameNumber) {}
 
 uint64_t FFmpegFrame::get_frame_number() const {
   return m_frameNumber;
-};
+}
 
 unsigned char* FFmpegFrame::get_buffer_ptr() {
   return m_frame->data[0];

@@ -24,7 +24,7 @@ for extension_dir in extensions_dir.iterdir():
 all_extras = set(sum(extras_require.values(), []))
 # We might not get any value from splitting these all out
 extras_require["test"] = sorted({"pytest"} | all_extras)
-extras_require["package"] = ["wheel==0.38.4"]
+extras_require["package"] = ["wheel"]
 extras_require["lint"] = ["black"]
 extras_require["types"] = [
     "mypy==1.7.1",

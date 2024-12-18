@@ -51,9 +51,7 @@ def run_benchmark(
     downsampleFrameDimension: int,
 ):
     with timer("Python hashing time") as pt:
-        python_features = run_python(
-            secondsPerHash, downsampleFrameDimension
-        )
+        python_features = run_python(secondsPerHash, downsampleFrameDimension)
     feature_size = 0
     feature_size = sum(len(feature) for feature in python_features)
     python_time = pt()

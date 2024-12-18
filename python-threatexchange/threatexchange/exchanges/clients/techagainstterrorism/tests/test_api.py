@@ -4,35 +4,58 @@ import typing as t
 import pytest
 
 from threatexchange.exchanges.clients.techagainstterrorism.api import (
-    TATIdeology,
     TATHashListAPI,
+    TATHashListResponse,
+    TATHashListEntry,
+    TATIdeology,
 )
 
 
-def mock_get_hash_list(
-    ideology: str = TATIdeology._all.value,
-) -> t.Optional[t.List[t.Dict[str, str]]]:
+mock_hashes: t.List[TATHashListEntry] = [
+    TATHashListEntry(
+        hash_digest="123abc",
+        algorithm="MD5",
+        ideology=TATIdeology.islamist,
+        file_type="mp4",
+        deleted=False,
+        updated_on=1704901040.222779,
+        id=2819,
+    ),
+    TATHashListEntry(
+        hash_digest="456def",
+        algorithm="MD5",
+        ideology=TATIdeology.far_right,
+        file_type="mp4",
+        deleted=False,
+        updated_on=1704901040.24492,
+        id=2820,
+    ),
+    TATHashListEntry(
+        hash_digest="789ghi",
+        algorithm="PDQ",
+        ideology=TATIdeology.islamist,
+        file_type="gif",
+        deleted=False,
+        updated_on=1704901040.25555,
+        id=2821,
+    ),
+]
 
-    return [
-        {
-            "hash_digest": "12345abcdez",
-            "algorithm": "MD5",
-            "ideology": ideology,
-            "file_type": "mov",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "MD5",
-            "ideology": ideology,
-            "file_type": "m4v",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "PDQ",
-            "ideology": ideology,
-            "file_type": "jpg",
-        },
-    ]
+
+def mock_fetch_hashes(after: t.Optional[str]) -> TATHashListResponse:
+
+    return TATHashListResponse(
+        count=100,
+        next="http://test-hash-list.com",
+        previous=None,
+        checkpoint="1724856487.709035,10594",
+        results=mock_hashes,
+    )
+
+
+def mock_fetch_hashes_iter(checkpoint: str) -> t.Iterator[TATHashListResponse]:
+    for i in range(2):
+        yield mock_fetch_hashes(checkpoint)
 
 
 def mock_get_auth_token() -> str:
@@ -43,105 +66,30 @@ def mock_get_auth_token() -> str:
 def api(monkeypatch) -> TATHashListAPI:
     api_instance = TATHashListAPI(username="valid_user", password="valid_pass")
     monkeypatch.setattr(api_instance, "get_auth_token", mock_get_auth_token)
-    monkeypatch.setattr(api_instance, "get_hash_list", mock_get_hash_list)
+    monkeypatch.setattr(api_instance, "fetch_hashes", mock_fetch_hashes)
+    monkeypatch.setattr(api_instance, "fetch_hashes_iter", mock_fetch_hashes_iter)
+
     return api_instance
 
 
-def test_get_islamist_hash_list(api: TATHashListAPI) -> None:
-    response = api.get_hash_list(ideology=TATIdeology.islamist.value)
+def test_fetch_hashes(api: TATHashListAPI) -> None:
+    response = api.fetch_hashes(after="")
 
-    assert response == [
-        {
-            "hash_digest": "12345abcdez",
-            "algorithm": "MD5",
-            "ideology": "islamist",
-            "file_type": "mov",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "MD5",
-            "ideology": "islamist",
-            "file_type": "m4v",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "PDQ",
-            "ideology": "islamist",
-            "file_type": "jpg",
-        },
-    ]
+    assert response == TATHashListResponse(
+        count=100,
+        next="http://test-hash-list.com",
+        previous=None,
+        checkpoint="1724856487.709035,10594",
+        results=mock_hashes,
+    )
 
 
-def test_get_far_right_hash_list(api: TATHashListAPI) -> None:
-    response = api.get_hash_list(ideology=TATIdeology.far_right.value)
-
-    assert response == [
-        {
-            "hash_digest": "12345abcdez",
-            "algorithm": "MD5",
-            "ideology": "far-right",
-            "file_type": "mov",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "MD5",
-            "ideology": "far-right",
-            "file_type": "m4v",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "PDQ",
-            "ideology": "far-right",
-            "file_type": "jpg",
-        },
-    ]
-
-
-def test_get_all_hash_list(api: TATHashListAPI) -> None:
-    response = api.get_hash_list(TATIdeology._all.value)
-
-    assert response == [
-        {
-            "hash_digest": "12345abcdez",
-            "algorithm": "MD5",
-            "ideology": "all",
-            "file_type": "mov",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "MD5",
-            "ideology": "all",
-            "file_type": "m4v",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "PDQ",
-            "ideology": "all",
-            "file_type": "jpg",
-        },
-    ]
-
-
-def test_get_default_hash_list(api: TATHashListAPI) -> None:
-    response = api.get_hash_list()
-
-    assert response == [
-        {
-            "hash_digest": "12345abcdez",
-            "algorithm": "MD5",
-            "ideology": "all",
-            "file_type": "mov",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "MD5",
-            "ideology": "all",
-            "file_type": "m4v",
-        },
-        {
-            "hash_digest": "12345abcde",
-            "algorithm": "PDQ",
-            "ideology": "all",
-            "file_type": "jpg",
-        },
-    ]
+def test_fetch_hashes_iter(api: TATHashListAPI) -> None:
+    for i, response in enumerate(api.fetch_hashes_iter(checkpoint="")):
+        assert response == TATHashListResponse(
+            count=100,
+            next="http://test-hash-list.com",
+            previous=None,
+            checkpoint="1724856487.709035,10594",
+            results=mock_hashes,
+        )
