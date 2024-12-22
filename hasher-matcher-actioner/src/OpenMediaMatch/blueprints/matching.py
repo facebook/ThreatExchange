@@ -203,7 +203,6 @@ def lookup_get():
     Output:
      * List of matching banks
     """
-    # Url was passed as a query param?
     if request.args.get("url", None):
         if not current_app.config.get("ROLE_HASHER", False):
             abort(403, "Hashing is disabled, missing role")

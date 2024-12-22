@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import tempfile
 import typing as t
 
 from flask.testing import FlaskClient
@@ -112,7 +113,8 @@ def test_banks_update(client: FlaskClient):
     assert get_response.status_code == 200
     json = get_response.get_json()
     assert len(json) == 1
-    assert json[0] == {"name": "MY_TEST_BANK_RENAMED", "matching_enabled_ratio": 0.5}
+    assert json[0] == {"name": "MY_TEST_BANK_RENAMED",
+                       "matching_enabled_ratio": 0.5}
 
 
 def test_banks_delete(client: FlaskClient):
@@ -219,6 +221,26 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [2]}
+
+
+def test_lookup_add_hash_without_role(app: Flask, client: FlaskClient):
+    # role resets to True in the next test
+    client.application.config["ROLE_HASHER"] = False
+
+    # test GET
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    get_resp = client.get(f"/m/lookup?url={image_url}")
+    assert get_resp.status_code == 403
+
+    # test POST with temp file
+    with tempfile.NamedTemporaryFile(suffix='.jpg') as f:
+        # Write a minimal valid JPEG file header
+        f.write(
+            b'\xff\xd8\xff\xe0\x00\x10\x4a\x46\x49\x46\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xff\xd9')
+        f.flush()
+        files = {"file": (f.name, f.name, "image/jpeg")}
+        resp = client.post("/m/lookup", data=files)
+        assert resp.status_code == 403
 
 
 def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
