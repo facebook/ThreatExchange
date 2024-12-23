@@ -50,11 +50,9 @@ class FileContent(ContentType):
                         logger.info("File is a static GIF.")
                         content_type = PhotoContent
             except Exception as e:
-                logger.error(f"Error processing GIF: {e}")
                 raise ValueError(f"Error processing GIF: {e}")
         else:
-            logger.error(f"Unsupported file type: {extension}")
-            raise ValueError(f"Unsupported file type: {extension}")
+            raise ValueError("Unsupported file type: {extension}")
 
         logger.info(f"Content type set to: {content_type.__name__}")
         return content_type

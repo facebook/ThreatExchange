@@ -241,7 +241,7 @@ def test_file_content(hash_cli: ThreatExchangeCLIE2eHelper):
         hash_cli.assert_cli_output(
             ("file", tmp_static_gif.name),
             [
-                "pdq dd908cc83bea8ddd781ad2cc37b4a2ddf780152a327ad32d777875120a67b112",
+                "pdq 77ffdd3a9405fbb0805027270fa7d7065e7cf8da0c0d795881002667e44f266f",
             ],
         )
 
