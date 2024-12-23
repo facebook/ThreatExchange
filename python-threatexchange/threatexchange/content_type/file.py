@@ -52,7 +52,7 @@ class FileContent(ContentType):
             except Exception as e:
                 raise ValueError(f"Error processing GIF: {e}")
         else:
-            raise ValueError("Unsupported file type: {extension}")
+            raise ValueError(f"Unsupported file type: {extension}")
 
         logger.info(f"Content type set to: {content_type.__name__}")
         return content_type
