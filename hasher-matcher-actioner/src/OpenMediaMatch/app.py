@@ -7,7 +7,7 @@ import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from threatexchange.signal_type.pdq import signal as _
-## Resume regularly scheduled imports
+# Resume regularly scheduled imports
 
 import logging
 import os

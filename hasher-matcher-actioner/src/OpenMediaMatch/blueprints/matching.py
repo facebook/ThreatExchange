@@ -139,7 +139,7 @@ def query_index(
     try:
         signal = signal_type.validate_signal_str(signal)
     except Exception as e:
-        abort(400, f"invalid signal type: {e}")
+        abort(400, f"invalid signal: {e}")
 
     index = _get_index(signal_type)
 
@@ -203,8 +203,10 @@ def lookup_get():
     Output:
      * List of matching banks
     """
-    # Url was passed as a query param?
     if request.args.get("url", None):
+        if not current_app.config.get("ROLE_HASHER", False):
+            abort(403, "Hashing is disabled, missing role")
+
         hashes = hashing.hash_media()
         resp = {}
         for signal_type in hashes.keys():
@@ -230,6 +232,9 @@ def lookup_post():
     Output:
      * List of matching banks
     """
+    if not current_app.config.get("ROLE_HASHER", False):
+        abort(403, "Hashing is disabled, missing role")
+
     hashes = hashing.hash_media_post()
 
     resp = {}
