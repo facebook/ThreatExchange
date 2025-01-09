@@ -39,6 +39,8 @@ class NCMECCheckpoint(
 
     # The biggest value of "to", and the next "from"
     get_entries_max_ts: int
+    next_fetch: str
+    last_fetch_time: int
 
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.get_entries_max_ts
@@ -46,7 +48,7 @@ class NCMECCheckpoint(
     @classmethod
     def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
         """Synthesizes a checkpoint from the API response"""
-        return cls(response.max_timestamp)
+        return cls(response.max_timestamp, response.next, int(time.time()))
 
     def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
         """Implemented for pickle version compatibility."""
@@ -240,15 +242,18 @@ class NCMECSignalExchangeAPI(
                the cursor
         """
         start_time = 0
+        next_fetch = ""
         if checkpoint is not None:
             start_time = checkpoint.get_entries_max_ts
+            next_fetch = checkpoint.next_fetch
         # Avoid being exactly at end time for updates showing up multiple
         # times in the fetch, since entries are not ordered by time
         end_time = int(time.time()) - 5
 
         client = self.get_client(self.collab.environment)
-        # We could probably mutate start time, but new variable for clarity
+        # We could probably mutate start time and next, but new variable for clarity
         current_start = start_time
+        current_next_fetch = next_fetch
         # The range we are fetching
         duration = end_time - current_start
         # A counter for when we want to increase our duration
@@ -277,7 +282,7 @@ class NCMECSignalExchangeAPI(
             updates: t.List[api.NCMECEntryUpdate] = []
             for i, entry in enumerate(
                 client.get_entries_iter(
-                    start_timestamp=current_start, end_timestamp=current_end
+                    start_timestamp=current_start, end_timestamp=current_end, next_=current_next_fetch,
                 )
             ):
                 if i == 0:  # First batch, check for overfetch
@@ -306,9 +311,17 @@ class NCMECSignalExchangeAPI(
                 elif i % 100 == 0:
                     # If we get down to one second, we can potentially be
                     # fetching an arbitrary large amount of data in one go,
-                    # so log something occasionally
-                    log(f"large fetch ({i}), up to {len(updates)}")
-                updates.extend(entry.updates)
+                    # so store the checkpoint occasionally
+                    log(f"large fetch ({i}), up to {len(updates)}. storing checkpoint")
+                    yield state.FetchDelta(
+                        {f"{entry.member_id}-{entry.id}": entry for entry in updates},
+                        NCMECCheckpoint(get_entries_max_ts=current_start, next_fetch=entry.next, last_fetch_time=int(time.time())),
+
+                    )
+                    current_next_fetch = entry.next
+                    updates = []
+                else:
+                    updates.extend(entry.updates)
             else:  # AKA a successful fetch
                 # If we're hovering near the single-fetch limit for a period
                 # of time, we can likely safely expand our range.
@@ -329,9 +342,10 @@ class NCMECSignalExchangeAPI(
                     low_fetch_counter = 0
                 yield state.FetchDelta(
                     {f"{entry.member_id}-{entry.id}": entry for entry in updates},
-                    NCMECCheckpoint(current_end),
+                    NCMECCheckpoint(get_entries_max_ts=current_end, next_fetch="", last_fetch_time=int(time.time())),
                 )
                 current_start = current_end
+                current_next_fetch = ""
 
     @classmethod
     def fetch_value_merge(
