@@ -282,7 +282,9 @@ class NCMECSignalExchangeAPI(
             updates: t.List[api.NCMECEntryUpdate] = []
             for i, entry in enumerate(
                 client.get_entries_iter(
-                    start_timestamp=current_start, end_timestamp=current_end, next_=current_next_fetch,
+                    start_timestamp=current_start,
+                    end_timestamp=current_end,
+                    next_=current_next_fetch,
                 )
             ):
                 if i == 0:  # First batch, check for overfetch
@@ -315,8 +317,11 @@ class NCMECSignalExchangeAPI(
                     log(f"large fetch ({i}), up to {len(updates)}. storing checkpoint")
                     yield state.FetchDelta(
                         {f"{entry.member_id}-{entry.id}": entry for entry in updates},
-                        NCMECCheckpoint(get_entries_max_ts=current_start, next_fetch=entry.next, last_fetch_time=int(time.time())),
-
+                        NCMECCheckpoint(
+                            get_entries_max_ts=current_start,
+                            next_fetch=entry.next,
+                            last_fetch_time=int(time.time()),
+                        ),
                     )
                     current_next_fetch = entry.next
                     updates = []
@@ -342,7 +347,11 @@ class NCMECSignalExchangeAPI(
                     low_fetch_counter = 0
                 yield state.FetchDelta(
                     {f"{entry.member_id}-{entry.id}": entry for entry in updates},
-                    NCMECCheckpoint(get_entries_max_ts=current_end, next_fetch="", last_fetch_time=int(time.time())),
+                    NCMECCheckpoint(
+                        get_entries_max_ts=current_end,
+                        next_fetch="",
+                        last_fetch_time=int(time.time()),
+                    ),
                 )
                 current_start = current_end
                 current_next_fetch = ""

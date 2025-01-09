@@ -148,7 +148,7 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     max_ts = 1197433091
 
     # 1.0.x
-    current = NCMECCheckpoint(get_entries_max_ts=max_ts)
+    current = NCMECCheckpoint(get_entries_max_ts=max_ts, next="", last_fetch_time=0)
 
     # 0.99.x
     @dataclass
