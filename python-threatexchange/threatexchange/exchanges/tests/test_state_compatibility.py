@@ -147,8 +147,23 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     ## Current
     max_ts = 1197433091
 
+    current = NCMECCheckpoint(
+        get_entries_max_ts=max_ts, next_fetch="", last_fetch_time=0
+    )
+
     # 1.0.x
-    current = NCMECCheckpoint(get_entries_max_ts=max_ts, next="", last_fetch_time=0)
+    @dataclass
+    class NCMECCheckpointWithoutNext(FetchCheckpointBase):
+        """
+        0.99.x => 1.0.0
+
+        get_entries_max_ts: int =>
+            get_entries_max_ts: int
+            next_fetch: str
+            last_fetch_time: int
+        """
+
+        get_entries_max_ts: int
 
     # 0.99.x
     @dataclass
@@ -161,9 +176,10 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
 
         max_timestamp: int
 
+    checkpoint_without_next = NCMECCheckpointWithoutNext(get_entries_max_ts=max_ts)
     ts_moved = NCMECCheckpointTsMoved(max_timestamp=max_ts)
 
-    return (current, [ts_moved])
+    return (current, [checkpoint_without_next, ts_moved])
 
 
 @pytest.mark.parametrize(

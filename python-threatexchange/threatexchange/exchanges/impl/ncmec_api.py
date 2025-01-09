@@ -39,8 +39,8 @@ class NCMECCheckpoint(
 
     # The biggest value of "to", and the next "from"
     get_entries_max_ts: int
-    next_fetch: str
-    last_fetch_time: int
+    next_fetch: t.Optional[str] = ""
+    last_fetch_time: t.Optional[int] = 0
 
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.get_entries_max_ts
@@ -245,7 +245,7 @@ class NCMECSignalExchangeAPI(
         next_fetch = ""
         if checkpoint is not None:
             start_time = checkpoint.get_entries_max_ts
-            next_fetch = checkpoint.next_fetch
+            next_fetch = checkpoint.next_fetch or ""
         # Avoid being exactly at end time for updates showing up multiple
         # times in the fetch, since entries are not ordered by time
         end_time = int(time.time()) - 5
@@ -324,9 +324,8 @@ class NCMECSignalExchangeAPI(
                         ),
                     )
                     current_next_fetch = entry.next
-                    updates = []
-                else:
-                    updates.extend(entry.updates)
+                    break
+                updates.extend(entry.updates)
             else:  # AKA a successful fetch
                 # If we're hovering near the single-fetch limit for a period
                 # of time, we can likely safely expand our range.
