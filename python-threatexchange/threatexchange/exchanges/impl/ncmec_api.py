@@ -310,7 +310,10 @@ class NCMECSignalExchangeAPI(
                         # Our entry estimatation (based on the cursor parameters)
                         # occasionally seem to over-estimate
                         log(f"est {entry.estimated_entries_in_range} entries")
-                elif i % 100 == 0:
+
+                updates.extend(entry.updates)
+
+                if i % 100 == 0:
                     # If we get down to one second, we can potentially be
                     # fetching an arbitrary large amount of data in one go,
                     # so store the checkpoint occasionally
@@ -324,8 +327,8 @@ class NCMECSignalExchangeAPI(
                         ),
                     )
                     current_next_fetch = entry.next
-                    break
-                updates.extend(entry.updates)
+                    updates = []
+
             else:  # AKA a successful fetch
                 # If we're hovering near the single-fetch limit for a period
                 # of time, we can likely safely expand our range.
