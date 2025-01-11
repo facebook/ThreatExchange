@@ -68,6 +68,14 @@ def hash_media() -> dict[str, str]:
 
 
 @bp.route("/hash", methods=["POST"])
+def hash_media_post():
+    """
+    Calculate the hash for the provided file.
+    """
+
+    return hash_file()
+
+
 def hash_file() -> dict[str, str]:
     """
     Hash the provided file and return the hash values.
