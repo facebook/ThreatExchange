@@ -307,7 +307,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
 
 
 @dataclass
-class BankConfig:
+class IBank:
     # UPPER_WITH_UNDER syntax
     name: str
     # 0.0-1.0 - what percentage of contents should be
@@ -320,7 +320,7 @@ class BankConfig:
 
 
 @dataclass
-class BankContentConfig:
+class IBankContent:
     """
     Represents all the signals (hashes) for one piece of content.
 
@@ -345,7 +345,7 @@ class BankContentConfig:
     collab_metadata: t.Mapping[str, t.Sequence[str]]
     original_media_uri: t.Optional[str]
 
-    bank: BankConfig
+    bank: IBank
 
     @property
     def enabled(self) -> bool:
@@ -393,17 +393,17 @@ class IBankStore(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def get_banks(self) -> t.Mapping[str, BankConfig]:
+    def get_banks(self) -> t.Mapping[str, IBank]:
         """Return all bank configs"""
 
-    def get_bank(self, name: str) -> t.Optional[BankConfig]:
+    def get_bank(self, name: str) -> t.Optional[IBank]:
         """Return one bank config"""
         return self.get_banks().get(name)
 
     @abc.abstractmethod
     def bank_update(
         self,
-        bank: BankConfig,
+        bank: IBank,
         *,
         create: bool = False,
         rename_from: t.Optional[str] = None,
@@ -426,11 +426,11 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     # Bank content
     @abc.abstractmethod
-    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
+    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[IBankContent]:
         """Get the content config for a bank"""
 
     @abc.abstractmethod
-    def bank_content_update(self, val: BankContentConfig) -> None:
+    def bank_content_update(self, val: IBankContent) -> None:
         """Update the content config for a bank"""
 
     @abc.abstractmethod
@@ -438,7 +438,7 @@ class IBankStore(metaclass=abc.ABCMeta):
         self,
         bank_name: str,
         content_signals: t.Dict[t.Type[SignalType], str],
-        config: t.Optional[BankContentConfig] = None,
+        config: t.Optional[IBankContent] = None,
     ) -> int:
         """
         Add content (Photo, Video, etc) to a bank, where it can match content.
@@ -458,13 +458,18 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
+        self,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+        batch_size: int = 100,
+        enabled_only: bool = True,
     ) -> t.Iterator[BankContentIterationItem]:
         """
         Yield the entire content of the bank in batches.
 
         If a signal type is provided, will yield signals of that type if
         they are available for that content.
+
+        If enabled_only is true, will only yield signals for content that are enabled.
         """
 
 

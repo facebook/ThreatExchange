@@ -68,15 +68,16 @@ def hash_media() -> dict[str, str]:
 
 
 @bp.route("/hash", methods=["POST"])
-def hash_media_post():
+def hash_file() -> dict[str, str]:
     """
-    Calculate the hash for the provided file.
+    Hash the provided file and return the hash values.
+
+    Input:
+        * files - the multipart/form-data to hash (only one file allowed)
+
+    Output:
+        * Mapping of signal types to hash values
     """
-    return hash_media_post_impl()
-
-
-def hash_media_post_impl() -> dict[str, str]:
-    """ """
     if not request.files:
         return abort(400, "Missing multipart/form-data file upload")
 
@@ -142,6 +143,9 @@ def _lookup_content_type(arg: str) -> t.Type[ContentType]:
 def _parse_request_signal_type(
     content_type: t.Type[ContentType],
 ) -> t.Mapping[str, t.Type[SignalType]]:
+    """
+    Parse the signal types from the request args.
+    """
     signal_types = get_storage().get_enabled_signal_types_for_content_type(content_type)
     if not signal_types:
         abort(500, "No signal types configured!")

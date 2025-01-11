@@ -59,8 +59,8 @@ from threatexchange.utils import dataclass_json
 
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 from OpenMediaMatch.storage.interface import (
-    BankConfig,
-    BankContentConfig,
+    IBank,
+    IBankContent,
     FetchStatus,
     SignalTypeIndexBuildCheckpoint,
     BankContentIterationItem,
@@ -82,6 +82,11 @@ def _bank_name_ok(name: str) -> bool:
 
 
 class Bank(db.Model):  # type: ignore[name-defined]
+    """
+    A collection of content that has been labeled with similar labels. Basically a folder.
+    Matches to the contents of this bank should be classified with those labels.
+    """
+
     __tablename__ = "bank"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -102,11 +107,11 @@ class Bank(db.Model):  # type: ignore[name-defined]
         single_parent=True,
     )
 
-    def as_storage_iface_cls(self) -> BankConfig:
-        return BankConfig(self.name, self.enabled_ratio)
+    def as_storage_iface_cls(self) -> IBank:
+        return IBank(self.name, self.enabled_ratio)
 
     @classmethod
-    def from_storage_iface_cls(cls, cfg: BankConfig) -> t.Self:
+    def from_storage_iface_cls(cls, cfg: IBank) -> t.Self:
         return cls(name=cfg.name, enabled_ratio=cfg.matching_enabled_ratio)
 
     @validates("name")
@@ -117,6 +122,12 @@ class Bank(db.Model):  # type: ignore[name-defined]
 
 
 class BankContent(db.Model):  # type: ignore[name-defined]
+    """
+    A single piece of content that has been labeled.
+    Due to data retention limits for harmful content, and hash sharing,
+    this may no longer point to any original content, but represent the idea of a single piece of content.
+    """
+
     __tablename__ = "bank_content"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -137,15 +148,15 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
     # Should we store the content type as well?
 
-    disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
+    disable_until_ts: Mapped[int] = mapped_column(default=IBankContent.ENABLED)
     original_content_uri: Mapped[t.Optional[str]]
 
     signals: Mapped[t.List["ContentSignal"]] = relationship(
         back_populates="content", cascade="all, delete"
     )
 
-    def as_storage_iface_cls(self) -> BankContentConfig:
-        return BankContentConfig(
+    def as_storage_iface_cls(self) -> IBankContent:
+        return IBankContent(
             self.id,
             disable_until_ts=self.disable_until_ts,
             collab_metadata={},
@@ -155,6 +166,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
 
 class ContentSignal(db.Model):  # type: ignore[name-defined]
+    """
+    The signals for a single piece of labeled content.
+    """
+
     content_id: Mapped[int] = mapped_column(
         ForeignKey(BankContent.id, ondelete="CASCADE"),
         primary_key=True,
