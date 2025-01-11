@@ -479,13 +479,13 @@ class DefaultOMMStore(interface.IUnifiedStore):
         assert dat is not None
         return pickle.loads(dat)
 
-    def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
+    def get_banks(self) -> t.Mapping[str, interface.IBank]:
         return {
             b.name: b.as_storage_iface_cls()
             for b in database.db.session.execute(select(database.Bank)).scalars().all()
         }
 
-    def get_bank(self, name: str) -> t.Optional[interface.BankConfig]:
+    def get_bank(self, name: str) -> t.Optional[interface.IBank]:
         """Override for more efficient lookup."""
         bank = database.db.session.execute(
             select(database.Bank).where(database.Bank.name == name)
@@ -500,7 +500,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_update(
         self,
-        bank: interface.BankConfig,
+        bank: interface.IBank,
         *,
         create: bool = False,
         rename_from: t.Optional[str] = None,
@@ -508,7 +508,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if create:
             database.db.session.add(database.Bank.from_storage_iface_cls(bank))
         else:
-            previous = database.Bank.query.filter_by(
+            previous: database.Bank = database.Bank.query.filter_by(
                 name=rename_from if rename_from is not None else bank.name
             ).one_or_404()
             previous.name = bank.name
@@ -524,7 +524,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_content_get(
         self, ids: t.Iterable[int]
-    ) -> t.Sequence[interface.BankContentConfig]:
+    ) -> t.Sequence[interface.IBankContent]:
         return [
             b.as_storage_iface_cls()
             for b in database.db.session.query(database.BankContent)
@@ -532,18 +532,22 @@ class DefaultOMMStore(interface.IUnifiedStore):
             .all()
         ]
 
-    def bank_content_update(self, val: interface.BankContentConfig) -> None:
-        # TODO
-        raise Exception("Not implemented")
+    def bank_content_update(self, val: interface.IBankContent) -> None:
+        sesh = database.db.session
+        bank_content = sesh.execute(
+            select(database.BankContent).where(database.BankContent.id == val.id)
+        ).scalar_one_or_none()
+        if bank_content is None:
+            raise KeyError(f"No such bank content with ID {val.id}")
+        bank_content.set_typed_config(val)
+        sesh.commit()
 
     def bank_add_content(
         self,
         bank_name: str,
-        content_signals: t.Dict[t.Type[SignalType], str],
-        config: t.Optional[interface.BankContentConfig] = None,
+        signals: t.Dict[t.Type[SignalType], str],
+        config: t.Optional[interface.IBankContent] = None,
     ) -> int:
-        # Add content to the bank provided.
-        # Returns the ID of the content added.
         sesh = database.db.session
 
         bank = self._get_bank(bank_name)
@@ -551,10 +555,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if config is not None:
             content.original_content_uri = config.original_media_uri
         sesh.add(content)
-        for content_signal, value in content_signals.items():
+        for signal_type, value in signals.items():
             hash = database.ContentSignal(
                 content=content,
-                signal_type=content_signal.get_name(),
+                signal_type=signal_type.get_name(),
                 signal_val=value,
             )
             sesh.add(hash)
@@ -605,7 +609,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
         )
 
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
+        self,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+        batch_size: int = 100,
+        enabled_only: bool = True,
     ) -> t.Iterator[interface.BankContentIterationItem]:
         # Query for all ContentSignals and stream results with the proper batch size
         query = (
@@ -618,10 +625,21 @@ class DefaultOMMStore(interface.IUnifiedStore):
             .execution_options(stream_results=True, max_row_buffer=batch_size)
         )
 
-        # Conditionally apply the filter if signal_type is provided
         if signal_type is not None:
             query = query.filter(
                 database.ContentSignal.signal_type == signal_type.get_name()
+            )
+
+        if enabled_only:
+            query = query.join(database.BankContent).where(
+                (
+                    database.BankContent.disable_until_ts
+                    == interface.IBankContent.ENABLED
+                )
+                or (
+                    database.BankContent.disable_until_ts
+                    < func.extract("epoch", func.now())
+                )
             )
 
         # Execute the query and stream results with the proper yield batch size
@@ -632,7 +650,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             if not partition:
                 break
 
-            # Yield the results as tuples (signal_val, content_id)
+            # Yield the results as BankContentIterationItem
             for row in partition:
                 yield row._tuple()[0].as_iteration_item()
 

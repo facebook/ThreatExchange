@@ -57,8 +57,8 @@ def bank_create():
     return jsonify(bank_create_impl(name, enabled_ratio)), 201
 
 
-def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.BankConfig:
-    bank = iface.BankConfig(name=name, matching_enabled_ratio=enabled_ratio)
+def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.IBank:
+    bank = iface.IBank(name=name, matching_enabled_ratio=enabled_ratio)
     try:
         persistence.get_storage().bank_update(bank, create=True)
     except ValueError as e:
@@ -127,13 +127,13 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
-def bank_add_file(bank_name: str):
+def bank_add_content(bank_name: str):
     """
     Add content to a bank by providing a URI to the content (via the `url`
     query parameter), or uploading a file (via multipart/form-data).
 
     @see OpenMediaMatch.blueprints.hashing hash_media()
-    @see OpenMediaMatch.blueprints.hashing hash_media_post()
+    @see OpenMediaMatch.blueprints.hashing hash_file()
 
     Inputs:
      * The content to be banked, in one of these formats:
@@ -173,14 +173,14 @@ def bank_add_file(bank_name: str):
         hashes = hashing.hash_media()
     # File uploaded via multipart/form-data?
     elif request.files:
-        hashes = hashing.hash_media_post_impl()
+        hashes = hashing.hash_file()
     else:
         abort(400, "Neither `url` nor multipart file upload was received")
     return _bank_add_signals(bank, hashes, metadata)
 
 
 def _bank_add_signals(
-    bank: iface.BankConfig,
+    bank: iface.IBank,
     signal_type_to_signal_str: dict[str, str],
     metadata: t.Optional[BankedContentMetadata],
 ) -> dict[str, t.Any]:
@@ -200,7 +200,7 @@ def _bank_add_signals(
         except Exception as e:
             abort(400, f"Invalid {name} signal: {str(e)}")
 
-    content_config = iface.BankContentConfig(
+    content_config = iface.IBankContent(
         id=0, disable_until_ts=0, collab_metadata={}, original_media_uri=None, bank=bank
     )
 
@@ -210,6 +210,32 @@ def _bank_add_signals(
         "id": content_id,
         "signals": {st.get_name(): val for st, val in signals.items()},
     }
+
+
+@bp.route("/bank/<bank_name>/content/<content_id>", methods=["PUT"])
+def bank_update_content(bank_name: str, content_id: int):
+    """
+    Update the metadata for a banked content item.
+    """
+    storage = persistence.get_storage()
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        abort(404, f"bank '{bank_name}' not found")
+    content = storage.bank_content_get([content_id])
+    if not content:
+        abort(404, f"content '{content_id}' not found")
+    content = content[0]
+    data = request.get_json()
+
+    try:
+        if "disable_until_ts" in data:
+            content.disable_until_ts = flask_utils.str_to_type(
+                data["disable_until_ts"], int
+            )
+        storage.bank_content_update(content)
+    except Exception as e:
+        abort(400, *e.args)
+    return jsonify(content)
 
 
 @bp.route("/bank/<bank_name>/content/<content_id>", methods=["DELETE"])

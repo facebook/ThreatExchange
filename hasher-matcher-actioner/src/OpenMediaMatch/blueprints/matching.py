@@ -227,7 +227,7 @@ def lookup_get():
 def lookup_post():
     """
     Look up the hash for the uploaded file in the similarity index.
-    @see OpenMediaMatch.blueprints.hashing hash_media_post()
+    @see OpenMediaMatch.blueprints.hashing hash_file()
 
     Input:
      * Uploaded file.
@@ -240,7 +240,7 @@ def lookup_post():
     if not current_app.config.get("ROLE_HASHER", False):
         abort(403, "Hashing is disabled, missing role")
 
-    hashes = hashing.hash_media_post()
+    hashes = hashing.hash_file()
 
     resp = {}
     for signal_type in hashes.keys():
@@ -252,10 +252,9 @@ def lookup_post():
 
 def lookup(signal, signal_type_name):
     current_app.logger.debug("performing lookup")
-    results_by_bank_content_id = {
-        r.metadata: r for r in query_index(signal, signal_type_name)
-    }
+    results_by_bank_content_id = lookup_signal(signal, signal_type_name)
     storage = get_storage()
+    current_app.logger.debug("getting bank content")
     contents = storage.bank_content_get(results_by_bank_content_id)
     enabled_content = [c for c in contents if c.enabled]
     current_app.logger.debug(
