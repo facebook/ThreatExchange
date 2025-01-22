@@ -41,13 +41,13 @@ class NCMECCheckpoint(
 
     # The biggest value of "to", and the next "from"
     get_entries_max_ts: int
-    # A url to fetch the next page of results.
+    # A url to fetch the next page of results
     # Only reference this value through get_paging_url_if_recent
-    paging_url: str
-    # a timestamp for the last fetch time, specifically used with a paging_url.
+    paging_url: str = ""
+    # a timestamp for the last fetch time, specifically used with a pagingpyth_url
     # NCMEC suggests not storing paging_urls long term so we consider them invalid
     # 12hr after the last_fetch_time
-    last_fetch_time: int
+    last_fetch_time: int = field(hash=True, default_factory=lambda: int(time.time()))
 
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.get_entries_max_ts
@@ -68,6 +68,14 @@ class NCMECCheckpoint(
         ### field 'max_timestamp' renamed to 'get_entries_max_ts'
         if "max_timestamp" in d:
             d["get_entries_max_ts"] = d.pop("max_timestamp")
+
+        # 1.0.0 => 1.2.3:
+        # Add last_fetch_time
+        # note: the default_factory value was not being set correctly when
+        # reading from pickle
+        if not "last_fetch_time" in d:
+            d["last_fetch_time"] = int(time.time())
+
         self.__dict__ = d
 
 

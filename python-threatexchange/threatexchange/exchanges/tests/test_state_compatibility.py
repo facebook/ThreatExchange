@@ -30,6 +30,7 @@ i.e.
 import copy
 from dataclasses import dataclass, field
 import pickle
+import time
 import typing as t
 
 import pytest
@@ -148,7 +149,9 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     max_ts = 1197433091
 
     current = NCMECCheckpoint(
-        get_entries_max_ts=max_ts, paging_url="", last_fetch_time=0
+        get_entries_max_ts=max_ts,
+        paging_url="",
+        last_fetch_time=int(time.time()),
     )
 
     # 1.0.x
@@ -183,17 +186,21 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
 
 
 @pytest.mark.parametrize(
-    ("current_version", "historical_versions"),
+    "get_checkpoint_func",
     [
-        get_SignalOpinion(),
-        get_FBThreatExchangeOpinion(),
-        get_NCMECOpinion(),
-        get_NCMECCheckpoint(),
+        get_SignalOpinion,
+        get_FBThreatExchangeOpinion,
+        get_NCMECOpinion,
+        get_NCMECCheckpoint,
     ],
 )
 def test_previous_pickle_state(
-    current_version: object, historical_versions: t.Sequence[object]
+    get_checkpoint_func: t.Callable[[], t.Tuple[object, t.Sequence[object]]],
+    monkeypatch: pytest.MonkeyPatch,
 ):
+    monkeypatch.setattr("time.time", lambda: 10**8)
+
+    current_version, historical_versions = get_checkpoint_func()
     # Sanity
     serialized = pickle.dumps(current_version)
     assert (
