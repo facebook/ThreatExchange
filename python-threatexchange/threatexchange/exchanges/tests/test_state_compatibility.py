@@ -148,18 +148,18 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     max_ts = 1197433091
 
     current = NCMECCheckpoint(
-        get_entries_max_ts=max_ts, next_fetch="", last_fetch_time=0
+        get_entries_max_ts=max_ts, paging_url="", last_fetch_time=0
     )
 
     # 1.0.x
     @dataclass
     class NCMECCheckpointWithoutNext(FetchCheckpointBase):
         """
-        0.99.x => 1.0.0
+        0.99.x => 1.2.3
 
         get_entries_max_ts: int =>
             get_entries_max_ts: int
-            next_fetch: str
+            paging_url: str
             last_fetch_time: int
         """
 
