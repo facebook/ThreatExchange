@@ -9,7 +9,7 @@ from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchan
 from threatexchange.signal_type.signal_base import SignalType, CanGenerateRandomSignal
 
 from OpenMediaMatch import persistence
-from OpenMediaMatch.storage.interface import IBank
+from OpenMediaMatch.storage.interface import BankConfig
 
 
 def seed_sample() -> None:
@@ -35,7 +35,7 @@ def seed_banks_random(banks: int = 2, seeds: int = 10000) -> None:
 
     for i in range(banks):
         # create bank
-        bank = IBank(name=f"SEED_BANK_{i}", matching_enabled_ratio=1.0)
+        bank = BankConfig(name=f"SEED_BANK_{i}", matching_enabled_ratio=1.0)
         storage.bank_update(bank, create=True)
 
         # Add hashes

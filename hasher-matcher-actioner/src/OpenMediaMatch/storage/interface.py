@@ -290,7 +290,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
 
 
 @dataclass
-class IBank:
+class BankConfig:
     # UPPER_WITH_UNDER syntax
     name: str
     # 0.0-1.0 - what percentage of contents should be
@@ -303,7 +303,7 @@ class IBank:
 
 
 @dataclass
-class IBankContent:
+class BankContentConfig:
     """
     Represents all the signals (hashes) for one piece of content.
 
@@ -328,7 +328,7 @@ class IBankContent:
     collab_metadata: t.Mapping[str, t.Sequence[str]]
     original_media_uri: t.Optional[str]
 
-    bank: IBank
+    bank: BankConfig
 
     @property
     def enabled(self) -> bool:
@@ -376,17 +376,17 @@ class IBankStore(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def get_banks(self) -> t.Mapping[str, IBank]:
+    def get_banks(self) -> t.Mapping[str, BankConfig]:
         """Return all bank configs"""
 
-    def get_bank(self, name: str) -> t.Optional[IBank]:
+    def get_bank(self, name: str) -> t.Optional[BankConfig]:
         """Return one bank config"""
         return self.get_banks().get(name)
 
     @abc.abstractmethod
     def bank_update(
         self,
-        bank: IBank,
+        bank: BankConfig,
         *,
         create: bool = False,
         rename_from: t.Optional[str] = None,
@@ -409,11 +409,11 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     # Bank content
     @abc.abstractmethod
-    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[IBankContent]:
+    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
         """Get the content config for a bank"""
 
     @abc.abstractmethod
-    def bank_content_update(self, val: IBankContent) -> None:
+    def bank_content_update(self, val: BankContentConfig) -> None:
         """Update the content config for a bank"""
 
     @abc.abstractmethod
@@ -421,7 +421,7 @@ class IBankStore(metaclass=abc.ABCMeta):
         self,
         bank_name: str,
         content_signals: t.Dict[t.Type[SignalType], str],
-        config: t.Optional[IBankContent] = None,
+        config: t.Optional[BankContentConfig] = None,
     ) -> int:
         """
         Add content (Photo, Video, etc) to a bank, where it can match content.

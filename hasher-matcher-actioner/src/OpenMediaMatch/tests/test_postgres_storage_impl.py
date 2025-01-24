@@ -197,7 +197,7 @@ def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
     interface, but there is a race here because unlinking may not happen
     in a transaction. See github.com/facebook/ThreatExchange/issues/1673
     """
-    bank_cfg = interface.IBank("TEST", matching_enabled_ratio=1.0)
+    bank_cfg = interface.BankConfig("TEST", matching_enabled_ratio=1.0)
     storage.bank_update(bank_cfg, create=True)
     storage.bank_add_content(
         bank_cfg.name, {VideoMD5Signal: VideoMD5Signal.get_examples()[0]}

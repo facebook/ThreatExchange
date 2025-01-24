@@ -479,13 +479,13 @@ class DefaultOMMStore(interface.IUnifiedStore):
         assert dat is not None
         return pickle.loads(dat)
 
-    def get_banks(self) -> t.Mapping[str, interface.IBank]:
+    def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
         return {
             b.name: b.as_storage_iface_cls()
             for b in database.db.session.execute(select(database.Bank)).scalars().all()
         }
 
-    def get_bank(self, name: str) -> t.Optional[interface.IBank]:
+    def get_bank(self, name: str) -> t.Optional[interface.BankConfig]:
         """Override for more efficient lookup."""
         bank = database.db.session.execute(
             select(database.Bank).where(database.Bank.name == name)
@@ -500,7 +500,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_update(
         self,
-        bank: interface.IBank,
+        bank: interface.BankConfig,
         *,
         create: bool = False,
         rename_from: t.Optional[str] = None,
@@ -524,7 +524,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_content_get(
         self, ids: t.Iterable[int]
-    ) -> t.Sequence[interface.IBankContent]:
+    ) -> t.Sequence[interface.BankContentConfig]:
         return [
             b.as_storage_iface_cls()
             for b in database.db.session.query(database.BankContent)
@@ -532,7 +532,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             .all()
         ]
 
-    def bank_content_update(self, val: interface.IBankContent) -> None:
+    def bank_content_update(self, val: interface.BankContentConfig) -> None:
         sesh = database.db.session
         bank_content = sesh.execute(
             select(database.BankContent).where(database.BankContent.id == val.id)
@@ -546,7 +546,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self,
         bank_name: str,
         signals: t.Dict[t.Type[SignalType], str],
-        config: t.Optional[interface.IBankContent] = None,
+        config: t.Optional[interface.BankContentConfig] = None,
     ) -> int:
         sesh = database.db.session
 
@@ -634,7 +634,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             query = query.join(database.BankContent).where(
                 (
                     database.BankContent.disable_until_ts
-                    == interface.IBankContent.ENABLED
+                    == interface.BankContentConfig.ENABLED
                 )
                 or (
                     database.BankContent.disable_until_ts

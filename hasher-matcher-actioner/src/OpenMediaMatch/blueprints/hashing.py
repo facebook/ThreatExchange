@@ -73,10 +73,10 @@ def hash_media_post():
     Calculate the hash for the provided file.
     """
 
-    return hash_file()
+    return hash_media_from_form_data()
 
 
-def hash_file() -> dict[str, str]:
+def hash_media_from_form_data() -> dict[str, str]:
     """
     Hash the provided file and return the hash values.
 

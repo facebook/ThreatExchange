@@ -227,7 +227,7 @@ def lookup_get():
 def lookup_post():
     """
     Look up the hash for the uploaded file in the similarity index.
-    @see OpenMediaMatch.blueprints.hashing hash_file()
+    @see OpenMediaMatch.blueprints.hashing hash_media_from_form_data()
 
     Input:
      * Uploaded file.
@@ -240,7 +240,7 @@ def lookup_post():
     if not current_app.config.get("ROLE_HASHER", False):
         abort(403, "Hashing is disabled, missing role")
 
-    hashes = hashing.hash_file()
+    hashes = hashing.hash_media_from_form_data()
 
     resp = {}
     for signal_type in hashes.keys():
