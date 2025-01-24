@@ -59,8 +59,8 @@ from threatexchange.utils import dataclass_json
 
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 from OpenMediaMatch.storage.interface import (
-    IBank,
-    IBankContent,
+    BankConfig,
+    BankContentConfig,
     FetchStatus,
     SignalTypeIndexBuildCheckpoint,
     BankContentIterationItem,
@@ -107,11 +107,11 @@ class Bank(db.Model):  # type: ignore[name-defined]
         single_parent=True,
     )
 
-    def as_storage_iface_cls(self) -> IBank:
-        return IBank(self.name, self.enabled_ratio)
+    def as_storage_iface_cls(self) -> BankConfig:
+        return BankConfig(self.name, self.enabled_ratio)
 
     @classmethod
-    def from_storage_iface_cls(cls, cfg: IBank) -> t.Self:
+    def from_storage_iface_cls(cls, cfg: BankConfig) -> t.Self:
         return cls(name=cfg.name, enabled_ratio=cfg.matching_enabled_ratio)
 
     @validates("name")
@@ -148,15 +148,15 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
     # Should we store the content type as well?
 
-    disable_until_ts: Mapped[int] = mapped_column(default=IBankContent.ENABLED)
+    disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
     original_content_uri: Mapped[t.Optional[str]]
 
     signals: Mapped[t.List["ContentSignal"]] = relationship(
         back_populates="content", cascade="all, delete"
     )
 
-    def as_storage_iface_cls(self) -> IBankContent:
-        return IBankContent(
+    def as_storage_iface_cls(self) -> BankContentConfig:
+        return BankContentConfig(
             self.id,
             disable_until_ts=self.disable_until_ts,
             collab_metadata={},
