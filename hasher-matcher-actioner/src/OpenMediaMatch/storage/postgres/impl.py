@@ -537,7 +537,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         bank_content = sesh.execute(
             select(database.BankContent).where(database.BankContent.id == val.id)
         ).scalar_one_or_none()
-        if bank_content is None:
+        if not bank_content:
             raise KeyError(f"No such bank content with ID {val.id}")
         bank_content.set_typed_config(val)
         sesh.commit()
