@@ -38,7 +38,7 @@ class GenericFrame {
    *  @param frameNumber The frame number in the video.
    **/
   GenericFrame(std::vector<unsigned char> buffer, uint64_t frameNumber)
-      : m_buffer(std::move(buffer)), m_frameNumber(frameNumber){};
+      : m_buffer(std::move(buffer)), m_frameNumber(frameNumber) {}
 
   /** @brief Get the frame number.
    *
