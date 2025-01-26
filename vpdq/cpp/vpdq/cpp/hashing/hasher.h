@@ -38,7 +38,7 @@ class GenericFrame {
    *  @param frameNumber The frame number in the video.
    **/
   GenericFrame(std::vector<unsigned char> buffer, uint64_t frameNumber)
-      : m_buffer(std::move(buffer)), m_frameNumber(frameNumber){};
+      : m_buffer(std::move(buffer)), m_frameNumber(frameNumber) {}
 
   /** @brief Get the frame number.
    *
@@ -74,7 +74,7 @@ class VpdqHasher {
    *  @note Spawns hashing threads and begins hashing. Frames are hashed as they
    *        are added to the queue.
    **/
-  VpdqHasher(size_t thread_count, VideoMetadata video_metadata);
+  VpdqHasher(unsigned int thread_count, VideoMetadata video_metadata);
 
   /** @brief Add a frame to the hashing queue.
    *
@@ -106,6 +106,14 @@ class VpdqHasher {
   ~VpdqHasher() { stop_hashing(); }
 
  private:
+  /** @brief State of video hashing.
+   **/
+  bool m_done_hashing;
+
+  /** @brief Video metadata.
+   **/
+  VideoMetadata m_video_metadata;
+
   /** @brief True if hashing is multithreaded, false if singlethreaded.
    **/
   bool m_multithreaded;
@@ -134,14 +142,6 @@ class VpdqHasher {
   /** @brief PDQ hashes from the frame queue.
    **/
   std::vector<vpdqFeature> m_result;
-
-  /** @brief State of video hashing.
-   **/
-  bool m_done_hashing;
-
-  /** @brief Video metadata.
-   **/
-  VideoMetadata m_video_metadata;
 
   /** @brief Hashes frames from the queue and inserts the PDQ hash into the
    *         result.
@@ -185,9 +185,9 @@ vpdqFeature hashFrame(TFrame& frame, const VideoMetadata& video_metadata) {
 
 template <typename TFrame>
 VpdqHasher<TFrame>::VpdqHasher(
-    size_t thread_count, VideoMetadata video_metadata)
-    : m_done_hashing(false), m_video_metadata(video_metadata) {
-  // Set thread count if specified
+    unsigned int thread_count, VideoMetadata video_metadata)
+    : m_done_hashing(false), m_video_metadata(std::move(video_metadata)) {
+  // Set thread count, if specified.
   if (thread_count == 0) {
     thread_count = std::thread::hardware_concurrency();
     // Some platforms may return 0 for hardware_concurrency(), per the standard.
@@ -197,12 +197,12 @@ VpdqHasher<TFrame>::VpdqHasher(
     }
   }
 
-  m_multithreaded = (thread_count != 1);
+  m_multithreaded = (thread_count > 1);
 
-  // Create consumer hasher threads if multithreading
+  // Create consumer hasher threads (multithreaded only)
   if (m_multithreaded) {
     consumer_threads.reserve(thread_count);
-    for (size_t thread_idx{0}; thread_idx < thread_count; ++thread_idx) {
+    for (unsigned int thread_idx{0}; thread_idx < thread_count; ++thread_idx) {
       consumer_threads.emplace_back(std::thread(&VpdqHasher::consumer, this));
     }
   }
@@ -237,6 +237,10 @@ void VpdqHasher<TFrame>::stop_hashing() {
     for (auto& thread : consumer_threads) {
       thread.join();
     }
+  } else {
+    // This variable isn't currently used for single-threaded hashing, but
+    // update it anyway for good measure.
+    m_done_hashing = true;
   }
 }
 
