@@ -222,8 +222,12 @@ ffmpeg version 4.4.2 Copyright (c) 2000-2023 the FFmpeg developers
 
 Some package managers will install the libav* libraries bundled with FFmpeg. But if yours does not then you will need to install them manually.
 
-Required:
+Required packages (Ubuntu):
 
+- python3-dev
+- pkg-config
+- cmake
+- ffmpeg
 - libavdevice
 - libavfilter
 - libavformat
