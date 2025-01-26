@@ -190,6 +190,11 @@ VpdqHasher<TFrame>::VpdqHasher(
   // Set thread count if specified
   if (thread_count == 0) {
     thread_count = std::thread::hardware_concurrency();
+    // Some platforms may return 0 for hardware_concurrency(), per the standard.
+    // If that occurs, set it to single-threaded.
+    if (thread_count == 0) {
+      thread_count = 1;
+    }
   }
 
   m_multithreaded = (thread_count != 1);
