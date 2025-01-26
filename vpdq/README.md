@@ -340,15 +340,20 @@ Matching File chair-22-with-small-logo-bar.txt
 
 ### Python Binding
 
-A Cython binding is available to that using the C++ library for Linux and macos.
+A Python binding for vpdq is available on Linux and macos that utilizes the C++ implementation.
 
-All of the dependencies from the C++ implementation are required to build the binding.
+All of the [dependencies](#dependencies) for the C++ implementation are required to build the Python binding.
+
+Install vpdq Python binding:
 
 ```sh
 pip install vpdq
 ```
 
 See [README.md in `python/`](./python/README.md) for more information.
+
+> **Note:** Wheels are not currently distributed. But, in the future building wheels with manylinux and packaging the dynamically
+> linked libav* libraries may be useful to end users to skip the build and dependency process. 
 
 ## FAISS
 
