@@ -29,5 +29,5 @@ cmake.build-type = "RelWithDebInfo"
 [project.optional-dependencies]
 dev = [
   "pytest",
-  "clang-format",
+  "clang-format~=14.0", # Github Actions CI uses version 14
 ]
