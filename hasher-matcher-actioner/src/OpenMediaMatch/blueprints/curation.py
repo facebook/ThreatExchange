@@ -441,10 +441,6 @@ def exchange_delete(exchange_name: str):
     }
     """
     storage = persistence.get_storage()
-    collab = storage.exchange_get(exchange_name)
-    if collab is None:
-        abort(404, f"exchange '{exchange_name}' not found")
-
     storage.exchange_delete(exchange_name)
     return {"message": "Exchange deleted"}
 

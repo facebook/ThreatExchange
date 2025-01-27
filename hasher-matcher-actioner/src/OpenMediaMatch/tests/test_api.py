@@ -169,9 +169,8 @@ def test_exchange_delete(app: Flask, client: FlaskClient):
     delete_response = client.delete(
         "/c/exchange/TEST_EXCHANGE",
     )
-    # test exchange not found
-    assert delete_response.status_code == 404
-    assert delete_response.get_json()["message"] == "exchange 'TEST_EXCHANGE' not found"
+    # deleting an exchange that doesn't exist returns 200
+    assert delete_response.status_code == 200
 
     # create an exchange
     post_response = client.post(
@@ -180,7 +179,7 @@ def test_exchange_delete(app: Flask, client: FlaskClient):
     )
     assert post_response.status_code == 201
 
-    # test a successful delete
+    # test a real delete
     delete_response = client.delete(
         "/c/exchange/FOO_EXCHANGE",
     )
