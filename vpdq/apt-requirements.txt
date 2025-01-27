@@ -1,0 +1,1 @@
+python3-dev pkg-config cmake ffmpeg libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
