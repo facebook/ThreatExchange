@@ -32,6 +32,8 @@ from dataclasses import dataclass, field
 import pickle
 import time
 import typing as t
+from unittest.mock import patch
+
 
 import pytest
 
@@ -42,6 +44,8 @@ from threatexchange.exchanges.fetch_state import (
 )
 from threatexchange.exchanges.impl.fb_threatexchange_api import FBThreatExchangeOpinion
 from threatexchange.exchanges.impl.ncmec_api import NCMECCheckpoint, NCMECOpinion
+
+MOCK_FROZEN_TIME = 10**8
 
 
 def get_SignalOpinion() -> t.Tuple[SignalOpinion, t.Sequence[object]]:
@@ -150,13 +154,13 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
 
     current = NCMECCheckpoint(
         get_entries_max_ts=max_ts,
-        paging_url="",
-        last_fetch_time=int(time.time()),
+        _paging_url="",
+        last_fetch_time=MOCK_FROZEN_TIME,
     )
 
     # 1.0.x
     @dataclass
-    class NCMECCheckpointWithoutNext(FetchCheckpointBase):
+    class NCMECCheckpointWithoutPagingUrl(FetchCheckpointBase):
         """
         0.99.x => 1.2.3
 
@@ -179,28 +183,32 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
 
         max_timestamp: int
 
-    checkpoint_without_next = NCMECCheckpointWithoutNext(get_entries_max_ts=max_ts)
+    checkpoint_without_paging_url = NCMECCheckpointWithoutPagingUrl(
+        get_entries_max_ts=max_ts
+    )
     ts_moved = NCMECCheckpointTsMoved(max_timestamp=max_ts)
 
-    return (current, [checkpoint_without_next, ts_moved])
+    return (current, [checkpoint_without_paging_url, ts_moved])
+
+
+@pytest.fixture
+def mock_time(monkeypatch: pytest.MonkeyPatch):
+    with patch("time.time", return_value=MOCK_FROZEN_TIME):
+        yield MOCK_FROZEN_TIME
 
 
 @pytest.mark.parametrize(
-    "get_checkpoint_func",
+    ("current_version", "historical_versions"),
     [
-        get_SignalOpinion,
-        get_FBThreatExchangeOpinion,
-        get_NCMECOpinion,
-        get_NCMECCheckpoint,
+        get_SignalOpinion(),
+        get_FBThreatExchangeOpinion(),
+        get_NCMECOpinion(),
+        get_NCMECCheckpoint(),
     ],
 )
 def test_previous_pickle_state(
-    get_checkpoint_func: t.Callable[[], t.Tuple[object, t.Sequence[object]]],
-    monkeypatch: pytest.MonkeyPatch,
+    current_version: object, historical_versions: t.Sequence[object], mock_time: int
 ):
-    monkeypatch.setattr("time.time", lambda: 10**8)
-
-    current_version, historical_versions = get_checkpoint_func()
     # Sanity
     serialized = pickle.dumps(current_version)
     assert (

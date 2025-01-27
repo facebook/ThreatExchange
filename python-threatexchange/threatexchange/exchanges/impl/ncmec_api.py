@@ -37,14 +37,12 @@ class NCMECCheckpoint(
     NCMEC IDs seem to stay around forever, so no need for is_stale()
     """
 
-    PAGING_URL_EXPIRATION = 12 * 60 * 60
-
     # The biggest value of "to", and the next "from"
     get_entries_max_ts: int
     # A url to fetch the next page of results
-    # Only reference this value through get_paging_url_if_recent
-    paging_url: str = ""
-    # a timestamp for the last fetch time, specifically used with a pagingpyth_url
+    # Only reference this value through `paging_url` property
+    _paging_url: str = ""
+    # a timestamp for the last fetch time, specifically used with a paging_url
     # NCMEC suggests not storing paging_urls long term so we consider them invalid
     # 12hr after the last_fetch_time
     last_fetch_time: int = field(hash=True, default_factory=lambda: int(time.time()))
@@ -52,8 +50,10 @@ class NCMECCheckpoint(
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.get_entries_max_ts
 
-    def get_paging_url_if_recent(self) -> str:
-        if int(time.time()) - self.last_fetch_time < self.PAGING_URL_EXPIRATION:
+    @property
+    def paging_url(self) -> str:
+        PAGING_URL_EXPIRATION = 12 * 60 * 60
+        if int(time.time()) - self.last_fetch_time < PAGING_URL_EXPIRATION:
             return self.paging_url
         return ""
 
@@ -265,7 +265,7 @@ class NCMECSignalExchangeAPI(
         current_paging_url = ""
         if checkpoint is not None:
             start_time = checkpoint.get_entries_max_ts
-            current_paging_url = checkpoint.get_paging_url_if_recent()
+            current_paging_url = checkpoint.paging_url
         # Avoid being exactly at end time for updates showing up multiple
         # times in the fetch, since entries are not ordered by time
         end_time = int(time.time()) - 5
@@ -334,15 +334,16 @@ class NCMECSignalExchangeAPI(
 
                 updates.extend(entry.updates)
 
-                if (i + 1) % 100 == 0:
-                    # On large fetches, yield a checkpoint to avoid re-fetching later
-                    log(f"large fetch ({i}), up to {len(updates)}. yielding checkpoint")
+                if i > 100 and len(updates) > 0:
+                    # On large fetches, yield a checkpoint on each iteration
+                    log(
+                        f"large fetch ({i}) with {len(updates)} updates. yielding checkpoint"
+                    )
                     yield state.FetchDelta(
                         {f"{entry.member_id}-{entry.id}": entry for entry in updates},
                         NCMECCheckpoint(
                             get_entries_max_ts=current_start,
-                            paging_url=entry.next,
-                            last_fetch_time=int(time.time()),
+                            _paging_url=entry.next,
                         ),
                     )
                     updates = []
@@ -366,15 +367,11 @@ class NCMECSignalExchangeAPI(
                 else:  # Not too small, not too large, just right
                     low_fetch_counter = 0
 
-                current_paging_url = ""
                 yield state.FetchDelta(
                     {f"{entry.member_id}-{entry.id}": entry for entry in updates},
-                    NCMECCheckpoint(
-                        get_entries_max_ts=current_end,
-                        paging_url=current_paging_url,
-                        last_fetch_time=int(time.time()),
-                    ),
+                    NCMECCheckpoint(get_entries_max_ts=current_end),
                 )
+                current_paging_url = ""
                 current_start = current_end
 
     @classmethod
