@@ -45,7 +45,7 @@ class NCMECCheckpoint(
     # a timestamp for the last fetch time, specifically used with a paging_url
     # NCMEC suggests not storing paging_urls long term so we consider them invalid
     # 12hr after the last_fetch_time
-    last_fetch_time: int = field(hash=True, default_factory=lambda: int(time.time()))
+    last_fetch_time: int = field(default_factory=lambda: int(time.time()))
 
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.get_entries_max_ts
