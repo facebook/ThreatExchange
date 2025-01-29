@@ -298,7 +298,6 @@ class NCMECSignalExchangeAPI(
             duration = max(1, duration)  # Infinite loop defense
             # Don't fetch past our designated end
             current_end = min(end_time, current_start + duration)
-            updates: t.List[api.NCMECEntryUpdate] = []
             for i, entry in enumerate(
                 client.get_entries_iter(
                     start_timestamp=current_start,
@@ -332,26 +331,22 @@ class NCMECSignalExchangeAPI(
                         # occasionally seem to over-estimate
                         log(f"est {entry.estimated_entries_in_range} entries")
 
-                updates.extend(entry.updates)
+                if i % 100 == 5:
+                    # On large fetches, log notice every once in a while
+                    log(f"large fetch ({i}) with {len(entry.updates)} updates.")
 
-                if i > 100 and len(updates) > 0:
-                    # On large fetches, yield a checkpoint on each iteration
-                    log(
-                        f"large fetch ({i}) with {len(updates)} updates. yielding checkpoint"
-                    )
-                    yield state.FetchDelta(
-                        {f"{entry.member_id}-{entry.id}": entry for entry in updates},
-                        NCMECCheckpoint(
-                            get_entries_max_ts=current_start,
-                            _paging_url=entry.next,
-                        ),
-                    )
-                    updates = []
+                yield state.FetchDelta(
+                    {f"{entry.member_id}-{entry.id}": entry for entry in entry.updates},
+                    NCMECCheckpoint(
+                        get_entries_max_ts=current_start,
+                        _paging_url=entry.next,
+                    ),
+                )
 
             else:  # AKA a successful fetch
                 # If we're hovering near the single-fetch limit for a period
                 # of time, we can likely safely expand our range.
-                if len(updates) < api.NCMECHashAPI.ENTRIES_PER_FETCH * 2:
+                if len(entry.updates) < api.NCMECHashAPI.ENTRIES_PER_FETCH * 2:
                     low_fetch_counter += 1
                     if low_fetch_counter >= self.FETCH_SHRINK_FACTOR:
                         log("multiple low fetches, increasing duration")
@@ -360,7 +355,9 @@ class NCMECSignalExchangeAPI(
                         low_fetch_counter = 0
                 # If we are not quite at our limit, but getting close to it,
                 # pre-emptively shrink to try and stay under the limit
-                elif len(updates) > self.MAX_FETCH_SIZE / self.FETCH_SHRINK_FACTOR:
+                elif (
+                    len(entry.updates) > self.MAX_FETCH_SIZE / self.FETCH_SHRINK_FACTOR
+                ):
                     log("close to overfetch limit, reducing duration")
                     duration //= self.FETCH_SHRINK_FACTOR
                     low_fetch_counter = 0
@@ -368,7 +365,7 @@ class NCMECSignalExchangeAPI(
                     low_fetch_counter = 0
 
                 yield state.FetchDelta(
-                    {f"{entry.member_id}-{entry.id}": entry for entry in updates},
+                    [],
                     NCMECCheckpoint(get_entries_max_ts=current_end),
                 )
                 current_paging_url = ""
