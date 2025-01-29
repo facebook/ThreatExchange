@@ -18,7 +18,9 @@ from OpenMediaMatch.utils import flask_utils
 import OpenMediaMatch.storage.interface as iface
 from OpenMediaMatch.blueprints import hashing
 
-MAX_TIME = int(time.mktime((datetime.now() + timedelta(days=365 * 100)).timetuple()))
+
+def five_years_from_now() -> int:
+    return int(time.mktime((datetime.now() + timedelta(days=365 * 5)).timetuple()))
 
 
 class BankedContentMetadata(t.TypedDict):
@@ -94,9 +96,7 @@ def bank_update(bank_name: str):
     except ValueError as e:
         abort(400, *e.args)
     except IntegrityError:
-        abort(403, "Bank already exists")
-    except Exception as e:
-        abort(500, *e.args)
+        abort(403, "Bank name already exists")
     return jsonify(bank)
 
 
@@ -132,6 +132,18 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
             400, f"metadata contains unexpected keys: {' ,'.join(sorted(unexpected))}"
         )
     return t.cast(BankedContentMetadata, metadata)
+
+
+@bp.route("/bank/<bank_name>/content/<content_id>", methods=["GET"])
+def bank_get_content(bank_name: str, content_id: int):
+    storage = persistence.get_storage()
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        abort(404, f"bank '{bank_name}' not found")
+    content = storage.bank_content_get([content_id])
+    if not content:
+        abort(404, f"content '{content_id}' not found")
+    return jsonify(content[0])
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
@@ -246,19 +258,13 @@ def bank_update_content(bank_name: str, content_id: int):
         if "disable_until_ts" in data:
             disable_until_ts = flask_utils.str_to_type(data["disable_until_ts"], int)
             if disable_until_ts < 0:
-                raise ValueError("disable_until_ts must be a non-negative integer")
-            if disable_until_ts > MAX_TIME:
-                raise ValueError(
-                    "disable_until_ts must be less than 100 years in the future"
-                )
+                abort(400, "disable_until_ts must be a non-negative integer")
+            if disable_until_ts > five_years_from_now():
+                abort(400, "disable_until_ts must be less than 5 years in the future")
             content.disable_until_ts = disable_until_ts
         storage.bank_content_update(content)
-    except ValueError as e:
-        abort(400, *e.args)
     except KeyError as e:
         abort(404, *e.args)
-    except Exception as e:
-        abort(500, *e.args)
     return jsonify(content)
 
 
