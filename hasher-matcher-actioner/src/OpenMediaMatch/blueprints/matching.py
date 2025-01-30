@@ -278,7 +278,7 @@ def lookup(signal, signal_type_name):
             # is it possible to return the content_signal.signal_val here?
             {
                 "content_id": content.id,
-                "distance": match.similarity_info.pretty_str(),
+                "distance": match.similarity_info.distance,
             }
         )
     return results
