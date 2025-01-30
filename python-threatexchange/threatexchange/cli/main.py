@@ -12,7 +12,7 @@ The flow the CLI is generally:
   3. Match data
      $ threatexchange match photo my_photo.jpg
   4. Contribute labels to external APIs
-     $ threatexchange label photo my_photo.jpg dog 
+     $ threatexchange label photo my_photo.jpg dog
      $ threatexchange label photo my_photo.jpg --false-positive
 
 Additionally, there are a number of utility commands:

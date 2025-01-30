@@ -4,7 +4,7 @@
 A production-ish OMM config, for the curator role.
 
 The curator role only gets internal traffic, and so you can probably
-get away with a single instance for a long time. 
+get away with a single instance for a long time.
 """
 
 import os

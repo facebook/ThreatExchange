@@ -11,7 +11,7 @@ We haven't made all of the hard decisions on the storage yet, and
 think future deployers may change their mind about which backends to
 use. We know we are going to have more than relational data, so
 SQLAlchemy isn't going to be enough. Thus an even more abstract
-accessor. 
+accessor.
 """
 
 import typing as t
