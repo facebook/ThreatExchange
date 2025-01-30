@@ -84,7 +84,6 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     # Fetch 2
     delta = next(it, None)
     assert delta is not None
-    assert len(delta.updates) == 1
     exchange.naive_fetch_merge(total_updates, delta.updates)
 
     assert_delta(
@@ -98,7 +97,7 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
 
     # Fetch 3
     delta = next(it, None)
-    assert len(delta.updates) == 2
+    assert delta is not None
     exchange.naive_fetch_merge(total_updates, delta.updates)
     assert_delta(
         delta,
@@ -111,15 +110,22 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
 
     # Fetch 4
     delta = next(it, None)
-    assert len(delta.updates) == 2
+    assert delta is not None
     exchange.naive_fetch_merge(total_updates, delta.updates)
     assert_delta(delta, {"101-willupdate", "101-willdelete"}, 0, False, 0, "")
 
-    ## No more data, but one final checkpoint
+    # No more data, but one final checkpoint
     delta = next(it, None)
-    assert len(delta.updates) == 0
-    progress_timestamp = frozen_time - 5
-    assert_delta(delta, set(), progress_timestamp, False, progress_timestamp, "")
+    assert delta is not None
+    expected_progress_timestamp = frozen_time - 5
+    assert_delta(
+        delta,
+        set(),
+        expected_progress_timestamp,
+        False,
+        expected_progress_timestamp,
+        "",
+    )
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], exchange.collab, total_updates
@@ -160,12 +166,26 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
 def test_empty_fetch(
     empty_exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
 ):
+    frozen_time = 1664496000
+    monkeypatch.setattr("time.time", lambda: frozen_time)
     it = empty_exchange.fetch_iter([], None)
     # No updates
     delta = next(it, None)
     assert delta is not None
-    assert len(delta.updates) == 0
     assert_delta(delta, set(), 0, False, 0, "")
+
+    # No more data, but one final checkpoint
+    delta = next(it, None)
+    assert delta is not None
+    expected_progress_timestamp = frozen_time - 5
+    assert_delta(
+        delta,
+        set(),
+        expected_progress_timestamp,
+        False,
+        expected_progress_timestamp,
+        "",
+    )
 
     delta = next(it, None)
     assert delta is None  # We fetched everything

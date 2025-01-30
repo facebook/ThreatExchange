@@ -371,7 +371,7 @@ class NCMECSignalExchangeAPI(
                     low_fetch_counter = 0
 
                 yield state.FetchDelta(
-                    [],
+                    {},
                     NCMECCheckpoint(get_entries_max_ts=current_end),
                 )
                 current_paging_url = ""

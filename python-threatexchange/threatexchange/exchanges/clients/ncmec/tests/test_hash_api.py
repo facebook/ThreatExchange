@@ -91,6 +91,7 @@ def empty_api_response(monkeypatch: pytest.MonkeyPatch):
         resp.content  # Set the rest of Request's internal state
         return resp
 
+    session = None
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],
         get=_mock_get_impl,
