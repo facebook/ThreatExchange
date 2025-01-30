@@ -4,15 +4,15 @@
 Abstraction layer for fetching information needed to run OMM.
 
 To try and separate concerns for extension, this file provides
-access to all the persistent data needed to run OMM. In the 
-default implementation, we have a unified implementation that 
+access to all the persistent data needed to run OMM. In the
+default implementation, we have a unified implementation that
 implements all interfaces, but different implementations may
 prefer to store different data in different places.
 
 For implementations, see storage.mocked.MockedStore, which provides
 plausable defaults for all of these interfaces, useful for testing,
 or storage.default.DefaultOMMStore, which uses a combination of
-static configuration and postgres. 
+static configuration and postgres.
 """
 
 import abc

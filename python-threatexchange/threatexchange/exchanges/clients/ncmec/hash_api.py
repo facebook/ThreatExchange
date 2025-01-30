@@ -3,7 +3,7 @@
 """
 Simple implementation for the NCMEC hash sharing XML API
 
-You can find the complete documentation at 
+You can find the complete documentation at
 https://report.cybertip.org/hashsharing/v2/documentation.pdf
 """
 

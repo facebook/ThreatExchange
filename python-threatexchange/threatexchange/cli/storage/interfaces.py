@@ -5,19 +5,19 @@ Common interface for persisting pytx configuration and concepts.
 
 Most of the individual components of pytx are find to use piecemeal, and
 the full interface covers the most complex and complete useage. A usecase
-with one collection of hashes using one algorithm might be better off 
+with one collection of hashes using one algorithm might be better off
 hardcoding those things rather than fully implementing the interface.
 
 # Migration Notes
 There's an earlier attempt at these interfaces used for CLI at
 <@Mackay-Fisher add the right pointer to the CLI storage>.
-During the development of Hasher-Matcher-Actioner 2.0 
+During the development of Hasher-Matcher-Actioner 2.0
 (github.com/facebook/ThreatExchange/tree/main/hasher-matcher-actioner/)
 we realized that the original attempt at this wouldn't meet the needs
-of that code and wrote a new interface. 
+of that code and wrote a new interface.
 
 As of 12/2024, we are now migrating that interface from HMA into pytx
-proper as part of a migration to dbm 
+proper as part of a migration to dbm
 (github.com/facebook/ThreatExchange/issues/1687). The general approach is:
 1. Copy the interface unchanged from HMA to pytx
 2. Release a new version of pytx

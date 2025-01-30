@@ -3,8 +3,8 @@
 """
 Helpers for fetch benchmarking and testing.
 
-In the long term, these are generic enough that should probably live in 
-python-threatexchange, but for short-term needs we're just working on them 
+In the long term, these are generic enough that should probably live in
+python-threatexchange, but for short-term needs we're just working on them
 here.
 """
 from dataclasses import dataclass, field, replace

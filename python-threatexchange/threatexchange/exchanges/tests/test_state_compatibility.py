@@ -11,7 +11,7 @@ paste the old definition into one of the testcases below.
 
 In the test cases, the class descriptions will be used for context, so
 include:
-  1. The last version it was available 
+  1. The last version it was available
   2. The change
 
 i.e.
@@ -24,7 +24,7 @@ i.e.
         '''
         owner: int
         category: SignalOpinionCategory
-        tags: t.Set[str] 
+        tags: t.Set[str]
 """
 
 import copy

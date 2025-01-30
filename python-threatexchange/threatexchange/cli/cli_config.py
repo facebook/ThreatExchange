@@ -3,7 +3,7 @@
 """
 Local storage and configuration for the CLI.
 
-The CLI and Hasher-Matcher-Actioner are roughly parallel, but this isn't a 
+The CLI and Hasher-Matcher-Actioner are roughly parallel, but this isn't a
 scalable service running on AWS. Instead, we have all of our state in
 a file (likely ~/.threatexchange)
 """

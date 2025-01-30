@@ -7,11 +7,11 @@ See the top-level README.md for an explanation of roles.
 
 You only need a hasher role if you are not doing hashing on the instances
 of your service that are handling the content uploads, which can save on
-transmission costs at the expense of CPU cost on your frontend. 
+transmission costs at the expense of CPU cost on your frontend.
 
 A common pattern is to use a queue external to OMM to build up items to be
 hashed and checked, in which case a hasher role might be your largest tier,
-since converting large content like videos can take a significant amount of 
+since converting large content like videos can take a significant amount of
 CPU.
 """
 
