@@ -13,7 +13,7 @@ from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from threatexchange.signal_type.pdq.signal import PdqSignal
 
 
-def test_raw_hash_add_to_match_no_distance(app: Flask, client: FlaskClient):
+def test_add_hashes_and_find_match(app: Flask, client: FlaskClient):
     bank_name = "TEST_BANK"
     create_bank(client, bank_name)
 
