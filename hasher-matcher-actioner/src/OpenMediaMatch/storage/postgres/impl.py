@@ -341,7 +341,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         existing_checkpoint = cfg.as_checkpoint(self.exchange_apis_get_installed())
         assert (
             existing_checkpoint == old_checkpoint
-        ), "Old checkpoint doesn't match, race condition?"
+        ), "Checkpoint has changed since fetch started - multiple fetch processes may be running simultaneously."
 
         api_cls = self.exchange_apis_get_installed().get(collab.api)
         assert api_cls is not None, "Invalid API cls?"
