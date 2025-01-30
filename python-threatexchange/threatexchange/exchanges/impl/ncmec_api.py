@@ -54,7 +54,7 @@ class NCMECCheckpoint(
     def paging_url(self) -> str:
         PAGING_URL_EXPIRATION = 12 * 60 * 60
         if int(time.time()) - self.last_fetch_time < PAGING_URL_EXPIRATION:
-            return self.paging_url
+            return self._paging_url
         return ""
 
     @classmethod
@@ -298,6 +298,7 @@ class NCMECSignalExchangeAPI(
             duration = max(1, duration)  # Infinite loop defense
             # Don't fetch past our designated end
             current_end = min(end_time, current_start + duration)
+            entry = None
             for i, entry in enumerate(
                 client.get_entries_iter(
                     start_timestamp=current_start,
@@ -346,7 +347,10 @@ class NCMECSignalExchangeAPI(
             else:  # AKA a successful fetch
                 # If we're hovering near the single-fetch limit for a period
                 # of time, we can likely safely expand our range.
-                if len(entry.updates) < api.NCMECHashAPI.ENTRIES_PER_FETCH * 2:
+                if (
+                    entry
+                    and len(entry.updates) < api.NCMECHashAPI.ENTRIES_PER_FETCH * 2
+                ):
                     low_fetch_counter += 1
                     if low_fetch_counter >= self.FETCH_SHRINK_FACTOR:
                         log("multiple low fetches, increasing duration")
@@ -356,7 +360,9 @@ class NCMECSignalExchangeAPI(
                 # If we are not quite at our limit, but getting close to it,
                 # pre-emptively shrink to try and stay under the limit
                 elif (
-                    len(entry.updates) > self.MAX_FETCH_SIZE / self.FETCH_SHRINK_FACTOR
+                    entry
+                    and len(entry.updates)
+                    > self.MAX_FETCH_SIZE / self.FETCH_SHRINK_FACTOR
                 ):
                     log("close to overfetch limit, reducing duration")
                     duration //= self.FETCH_SHRINK_FACTOR
