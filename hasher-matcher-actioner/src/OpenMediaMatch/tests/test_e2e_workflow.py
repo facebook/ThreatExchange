@@ -41,6 +41,11 @@ def test_raw_hash_add_to_match_no_distance(app: Flask, client: FlaskClient):
     assert resp.status_code == 200
     assert resp.json == {"TEST_BANK": [{"content_id": 16, "distance": "0"}]}
 
+    # Test lookup with no match
+    resp = client.get(f"/m/lookup?signal_type=pdq&signal=5555555555555555555555555555555555555555555555555555555555555555")
+    assert resp.status_code == 200
+    assert resp.json == {}
+
 
 def test_raw_hash_add_to_match_with_distance(app: Flask, client: FlaskClient):
     bank_name = "TEST_BANK"

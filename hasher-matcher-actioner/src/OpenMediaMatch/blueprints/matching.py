@@ -258,8 +258,6 @@ def lookup(signal, signal_type_name):
         "lookup matches %d content ids (%d enabled_content)", len(contents),
         len(enabled_content)
     )
-    if not enabled_content:
-        return []
     banks = {c.bank.name: c.bank for c in enabled_content}
     rand = random.Random(request.args.get("seed"))
     coinflip = rand.random()
