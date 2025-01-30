@@ -4,6 +4,7 @@
 Endpoints for matching content and hashes.
 """
 
+from collections import defaultdict
 from dataclasses import dataclass
 import datetime
 import random
@@ -247,11 +248,11 @@ def lookup_post():
 
 def lookup(signal, signal_type_name):
     current_app.logger.debug("performing lookup")
-    raw_results = lookup_signal(signal, signal_type_name)
+    results_by_content_id = {
+        r.metadata: r for r in query_index(signal, signal_type_name)
+    }
     storage = get_storage()
-    current_app.logger.debug("getting bank content")
-    current_app.logger.debug(raw_results)
-    contents = storage.bank_content_get(raw_results)
+    contents = storage.bank_content_get(results_by_content_id.keys())
     enabled = [c for c in contents if c.enabled]
     current_app.logger.debug(
         "lookup matches %d content ids (%d enabled)", len(contents), len(enabled)
@@ -261,13 +262,25 @@ def lookup(signal, signal_type_name):
     banks = {c.bank.name: c.bank for c in enabled}
     rand = random.Random(request.args.get("seed"))
     coinflip = rand.random()
-    enabled_banks = [
+    enabled_banks = {
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
-    ]
+    }
     current_app.logger.debug(
         "lookup matches %d banks (%d enabled)", len(banks), len(enabled_banks)
     )
-    return enabled_banks
+    results = defaultdict(list)
+    for content in enabled:
+        if content.bank.name not in enabled_banks:
+            next
+
+        match = results_by_content_id.get(content.id)
+        results[content.bank.name].append(
+            {
+                "content_id": content.id,
+                "distance": match.similarity_info.pretty_str(),
+            }
+        )
+    return results
 
 
 @bp.route("/index/status")

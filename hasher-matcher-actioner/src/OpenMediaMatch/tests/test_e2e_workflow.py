@@ -37,9 +37,9 @@ def test_raw_hash_add_to_match_no_distance(app: Flask, client: FlaskClient):
     assert build_info["size"] == len(hashes)
 
     # Now match
-    resp = client.get(f"/m/raw_lookup?signal_type=pdq&signal={hashes[-1]}")
+    resp = client.get(f"/m/lookup?signal_type=pdq&signal={hashes[-1]}")
     assert resp.status_code == 200
-    assert resp.json == {"matches": [16]}
+    assert resp.json == {"TEST_BANK": [{"content_id": 16, "distance": "0"}]}
 
 
 def test_raw_hash_add_to_match_with_distance(app: Flask, client: FlaskClient):
@@ -67,7 +67,7 @@ def test_raw_hash_add_to_match_with_distance(app: Flask, client: FlaskClient):
 
     # Now match
     resp = client.get(
-        f"/m/raw_lookup?signal_type=pdq&include_distance=true&signal={hashes[-1]}"
+        f"/m/lookup?signal_type=pdq&include_distance=true&signal={hashes[-1]}"
     )
     assert resp.status_code == 200
-    assert resp.json == {"matches": [{"content_id": 16, "distance": "0"}]}
+    assert resp.json == {"TEST_BANK": [{"content_id": 16, "distance": "0"}]}
