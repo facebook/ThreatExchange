@@ -14,6 +14,7 @@ from threatexchange.exchanges.clients.ncmec.hash_api import (
 )
 from threatexchange.exchanges.clients.ncmec.tests.data import (
     ENTRIES_LARGE_FINGERPRINTS,
+    ENTRIES_NO_DATA_XML,
     ENTRIES_XML,
     ENTRIES_XML2,
     ENTRIES_XML3,
@@ -70,6 +71,30 @@ def api(monkeypatch: pytest.MonkeyPatch):
     session = Mock(
         strict_spec=["get", "__enter__", "__exit__"],
         get=mock_get_impl,
+        _put=Mock(),
+        __enter__=lambda _: session,
+        __exit__=lambda *args: None,
+    )
+    monkeypatch.setattr(api, "_get_session", lambda: session)
+    return api
+
+
+@pytest.fixture
+def empty_api_response(monkeypatch: pytest.MonkeyPatch):
+    api = NCMECHashAPI("fake_user", "fake_pass", NCMECEnvironment.test_Industry)
+
+    def _mock_get_impl(url: str, **params):
+        content = ENTRIES_NO_DATA_XML
+        resp = requests.Response()
+        resp._content = content.encode()
+        resp.status_code = 200
+        resp.content  # Set the rest of Request's internal state
+        return resp
+
+    session = None
+    session = Mock(
+        strict_spec=["get", "__enter__", "__exit__"],
+        get=_mock_get_impl,
         _put=Mock(),
         __enter__=lambda _: session,
         __exit__=lambda *args: None,

@@ -565,7 +565,11 @@ class NCMECHashAPI:
             )
 
     def get_entries_iter(
-        self, *, start_timestamp: int = 0, end_timestamp: int = 0
+        self,
+        *,
+        start_timestamp: int = 0,
+        end_timestamp: int = 0,
+        checkpointed_paging_url: str = "",
     ) -> t.Iterator[GetEntriesResponse]:
         """
         A simple wrapper around get_entries to keep fetching until complete.
@@ -574,7 +578,7 @@ class NCMECHashAPI:
         much of the data you have fetched. @see get_entries
         """
         has_more = True
-        next_ = ""
+        next_ = checkpointed_paging_url
         while has_more:
             result = self.get_entries(
                 start_timestamp=start_timestamp,

@@ -23,6 +23,14 @@ NEXT_UNESCAPED3 = (
     "&to=2017-10-30T00%3A00%3A00.000Z&start=4001&size=1000&max=5000"
 )
 
+ENTRIES_NO_DATA_XML = """
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
+    <images count="0"/>
+    <videos count="0"/>
+</queryResult>
+""".strip()
+
 ENTRIES_XML = """
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <queryResult xmlns="https://hashsharing.ncmec.org/hashsharing/v2">
