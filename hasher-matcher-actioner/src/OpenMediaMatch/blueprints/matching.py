@@ -255,8 +255,9 @@ def lookup(signal, signal_type_name):
     contents = storage.bank_content_get(results_by_content_id.keys())
     enabled_content = [c for c in contents if c.enabled]
     current_app.logger.debug(
-        "lookup matches %d content ids (%d enabled_content)", len(contents),
-        len(enabled_content)
+        "lookup matches %d content ids (%d enabled_content)",
+        len(contents),
+        len(enabled_content),
     )
     banks = {c.bank.name: c.bank for c in enabled_content}
     rand = random.Random(request.args.get("seed"))
