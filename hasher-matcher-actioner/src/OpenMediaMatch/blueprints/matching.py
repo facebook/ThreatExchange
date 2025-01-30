@@ -253,23 +253,24 @@ def lookup(signal, signal_type_name):
     }
     storage = get_storage()
     contents = storage.bank_content_get(results_by_content_id.keys())
-    enabled = [c for c in contents if c.enabled]
+    enabled_content = [c for c in contents if c.enabled]
     current_app.logger.debug(
-        "lookup matches %d content ids (%d enabled)", len(contents), len(enabled)
+        "lookup matches %d content ids (%d enabled_content)", len(contents),
+        len(enabled_content)
     )
-    if not enabled:
+    if not enabled_content:
         return []
-    banks = {c.bank.name: c.bank for c in enabled}
+    banks = {c.bank.name: c.bank for c in enabled_content}
     rand = random.Random(request.args.get("seed"))
     coinflip = rand.random()
     enabled_banks = {
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
     }
     current_app.logger.debug(
-        "lookup matches %d banks (%d enabled)", len(banks), len(enabled_banks)
+        "lookup matches %d banks (%d enabled_content)", len(banks), len(enabled_banks)
     )
     results = defaultdict(list)
-    for content in enabled:
+    for content in enabled_content:
         if content.bank.name not in enabled_banks:
             next
 
