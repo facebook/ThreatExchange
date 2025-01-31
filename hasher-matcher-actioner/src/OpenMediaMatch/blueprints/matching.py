@@ -275,7 +275,6 @@ def lookup(signal, signal_type_name):
 
         match = results_by_content_id.get(content.id)
         results[content.bank.name].append(
-            # is it possible to return the content_signal.signal_val here?
             {
                 "content_id": content.id,
                 "distance": match.similarity_info.distance,
