@@ -1,8 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import unittest
 import pathlib
-
+import pytest
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
 TEST_FILE = pathlib.Path(__file__).parent.parent.parent.parent.joinpath(
@@ -10,14 +9,13 @@ TEST_FILE = pathlib.Path(__file__).parent.parent.parent.parent.joinpath(
 )
 
 
-class VideoMD5SignalTestCase(unittest.TestCase):
-    def setUp(self):
-        self.a_file = open(TEST_FILE, "rb")
-
-    def tearDown(self):
-        self.a_file.close()
-
-    def test_can_hash_simple_files(self):
-        assert "d35c785545392755e7e4164457657269" == VideoMD5Signal.hash_from_bytes(
-            self.a_file.read()
-        ), "MD5 hash does not match"
+def test_can_hash_simple_files():
+    """
+    Test that the VideoMD5Signal produces the expected hash.
+    """
+    with open(TEST_FILE, "rb") as f:
+        file_content = f.read()
+    
+    expected_hash = "d35c785545392755e7e4164457657269"
+    computed_hash = VideoMD5Signal.hash_from_bytes(file_content)
+    assert computed_hash == expected_hash, "MD5 hash does not match"
