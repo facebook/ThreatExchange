@@ -1,7 +1,7 @@
 import typing as t
 import random
 import io
-import faiss  # type: ignore
+import faiss
 
 from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2
 from threatexchange.signal_type.pdq.signal import PdqSignal
