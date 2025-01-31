@@ -256,7 +256,7 @@ def lookup(signal, signal_type_name):
         r.metadata: r for r in query_index(signal, signal_type_name)
     }
     storage = get_storage()
-    contents = storage.bank_content_get(results_by_content_id.keys())
+    contents = storage.bank_content_get(results_by_content_id)
     enabled_content = [c for c in contents if c.enabled]
     current_app.logger.debug(
         "lookup matches %d content ids (%d enabled_content)",
