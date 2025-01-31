@@ -19,8 +19,9 @@ class TestRawTextSignal(MatchesStrAutoTest):
             ("a ", "a"),  # Whitespace is trimmed
         ]
 
-    def get_compare_hash_cases(self) -> t.Iterable[THashValidateCase]:
-        raise NotImplementedError("RawTextSignal is not a FileHasher, compare_hash is not supported")
+    @pytest.mark.skip(reason="RawTextSignal is not a FileHasher, compare_hash is not supported")
+    def test_compare_hash(self) -> None:
+        pass
 
     def get_matches_str_cases(self) -> t.Iterable[TMatchesStrCase]:
         return [
