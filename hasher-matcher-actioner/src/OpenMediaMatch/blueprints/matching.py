@@ -252,11 +252,11 @@ def lookup_post():
 
 def lookup(signal, signal_type_name):
     current_app.logger.debug("performing lookup")
-    results_by_content_id = {
+    results_by_bank_content_id = {
         r.metadata: r for r in query_index(signal, signal_type_name)
     }
     storage = get_storage()
-    contents = storage.bank_content_get(results_by_content_id)
+    contents = storage.bank_content_get(results_by_bank_content_id)
     enabled_content = [c for c in contents if c.enabled]
     current_app.logger.debug(
         "lookup matches %d content ids (%d enabled_content)",
@@ -277,7 +277,7 @@ def lookup(signal, signal_type_name):
         if content.bank.name not in enabled_banks:
             continue
 
-        match = results_by_content_id.get(content.id)
+        match = results_by_bank_content_id.get(content.id)
         results[content.bank.name].append(
             {
                 "content_id": content.id,
