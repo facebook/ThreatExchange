@@ -271,7 +271,7 @@ def lookup(signal, signal_type_name):
     results = defaultdict(list)
     for content in enabled_content:
         if content.bank.name not in enabled_banks:
-            next
+            continue
 
         match = results_by_content_id.get(content.id)
         results[content.bank.name].append(
