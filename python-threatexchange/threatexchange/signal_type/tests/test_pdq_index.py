@@ -51,10 +51,10 @@ def assert_equal_pdq_index_match_results(
         acc[item.similarity_info.distance].add(hash(frozenset(item.metadata)))
         return acc
 
-    distance_to_result_items_map = functools.reduce(
+    distance_to_result_items_map: t.Dict[int, t.Set[int]] = functools.reduce(
         quality_indexed_dict_reducer, result, {}
     )
-    distance_to_expected_items_map = functools.reduce(
+    distance_to_expected_items_map: t.Dict[int, t.Set[int]] = functools.reduce(
         quality_indexed_dict_reducer, expected, {}
     )
 

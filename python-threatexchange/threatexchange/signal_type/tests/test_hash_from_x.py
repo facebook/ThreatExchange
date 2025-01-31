@@ -9,7 +9,8 @@ from threatexchange.signal_type import (
     url,
 )
 from threatexchange.signal_type.pdq import signal
-from threatexchange.signal_type.signal_base import TextHasher
+from threatexchange.signal_type.signal_base import TextHasher, SignalType
+import typing as t
 
 
 SIGNAL_TYPES_TO_TEST = [
@@ -26,7 +27,7 @@ def test_signal_names_unique():
     """
     Verify uniqueness of signal type names across all signal types.
     """
-    seen = {}
+    seen: dict[str, t.Any] = {}
     for signal_type in SIGNAL_TYPES_TO_TEST:
         name = signal_type.get_name()
         assert (
