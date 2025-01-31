@@ -202,7 +202,9 @@ def lookup_get():
      Also (applies to both cases):
      * Optional seed (content id) for consistent coinflip
     Output:
-     * List of matching banks
+     * JSON object with a key of each bank name with matches.
+       For each bank, there is list of objects containing details
+       about each match.
     """
     if request.args.get("url", None):
         if not current_app.config.get("ROLE_HASHER", False):
@@ -231,7 +233,9 @@ def lookup_post():
      * Uploaded file.
      * Optional seed (content id) for consistent coinflip
     Output:
-     * List of matching banks
+     * JSON object with a key of each bank name with matches.
+       For each bank, there is list of objects containing details
+       about each match.
     """
     if not current_app.config.get("ROLE_HASHER", False):
         abort(403, "Hashing is disabled, missing role")
