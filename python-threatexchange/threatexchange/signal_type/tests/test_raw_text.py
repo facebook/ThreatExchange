@@ -13,11 +13,14 @@ import typing as t
 class TestRawTextSignal(MatchesStrAutoTest):
     TYPE = RawTextSignal
 
-    def get_compare_hash_cases(self) -> t.Iterable[THashValidateCase]:
+    def get_validate_hash_cases(self) -> t.Iterable[THashValidateCase]:
         return [
-            ("a", "a"),  # Same strings should match
-            ("b", "b"),  # Different strings should not match
+            ("a", "a"),  # Normal case
+            ("a ", "a"),  # Whitespace is trimmed
         ]
+
+    def get_compare_hash_cases(self) -> t.Iterable[THashValidateCase]:
+        raise NotImplementedError("RawTextSignal is not a FileHasher, compare_hash is not supported")
 
     def get_matches_str_cases(self) -> t.Iterable[TMatchesStrCase]:
         return [
