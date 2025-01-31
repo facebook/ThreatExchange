@@ -270,7 +270,7 @@ def lookup(signal, signal_type_name):
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
     }
     current_app.logger.debug(
-        "lookup matches %d banks (%d enabled_content)", len(banks), len(enabled_banks)
+        "lookup matches %d banks (%d enabled_banks)", len(banks), len(enabled_banks)
     )
     results = defaultdict(list)
     for content in enabled_content:
