@@ -115,8 +115,8 @@ def test_supports_pickling(index):
         reconstructed_index.index.faiss_index != index.index.faiss_index
     ), "Unpickling should create its own FAISS index in memory"
 
-    assert (
-        len(reconstructed_index) == len(index)
+    assert len(reconstructed_index) == len(
+        index
     ), "Index size mismatch after unpickling"
 
     query = test_entries[0][0]

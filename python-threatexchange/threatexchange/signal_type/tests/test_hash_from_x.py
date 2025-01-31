@@ -9,7 +9,7 @@ from threatexchange.signal_type import (
     url,
 )
 from threatexchange.signal_type.pdq import signal
-from threatexchange.signal_type.signal_base import TextHasher, SignalType
+from threatexchange.signal_type.signal_base import TextHasher
 import typing as t
 
 
