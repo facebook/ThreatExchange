@@ -104,12 +104,14 @@ def test_pdq_index_with_exact_distance():
 def test_serialize_deserialize_index():
     get_random_hashes = _get_hash_generator()
     base_hashes = get_random_hashes(100)
-    index = PDQIndex2(entries=[(h, base_hashes.index(h)) for h in base_hashes])
+    index: PDQIndex2 = PDQIndex2(
+        entries=[(h, base_hashes.index(h)) for h in base_hashes]
+    )
 
     buffer = io.BytesIO()
     index.serialize(buffer)
     buffer.seek(0)
-    deserialized_index = PDQIndex2.deserialize(buffer)
+    deserialized_index: PDQIndex2 = PDQIndex2.deserialize(buffer)
 
     assert isinstance(deserialized_index, PDQIndex2)
     assert isinstance(deserialized_index._index.faiss_index, faiss.IndexFlatL2)
@@ -120,7 +122,7 @@ def test_serialize_deserialize_index():
 
 def test_empty_index_query():
     """Test querying an empty index."""
-    index = PDQIndex2()
+    index: PDQIndex2 = PDQIndex2()
 
     # Query should return empty list
     results = index.query(PdqSignal.get_random_signal())
