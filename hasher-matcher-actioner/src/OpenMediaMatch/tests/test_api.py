@@ -80,7 +80,7 @@ def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
     sample_name = StaticSampleSignalExchangeAPI.get_name()
     tx_name = FBThreatExchangeSignalExchangeAPI.get_name()
     # Monkeypatch installed types
-    storage.exchange_types = {  # type:ignore
+    storage.exchange_types = {
         api_cls.get_name(): api_cls
         for api_cls in (
             FBThreatExchangeSignalExchangeAPI,
