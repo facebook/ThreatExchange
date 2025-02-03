@@ -33,30 +33,40 @@ dependencies = [
     "packaging",  # fix ModuleNotFoundError in faiss/loader.py
 ]
 
-[project.scripts]
-threatexchange = "threatexchange.cli.main:main"
-tx = "threatexchange.cli.main:main"
-
-[tool.hatch.metadata.hooks.requirements_txt]
-files = ["threatexchange/extensions/*/requirements.txt"]
-
-[tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
-test = ["pytest"]
-package = ["wheel"]
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "black",  # Added for CI
+]
 lint = ["black"]
 types = [
     "mypy==1.7.1",
     "types-python-dateutil",
     "types-requests",
 ]
-dev = [
+all = [
     "pytest",
-    "wheel",
     "black",
+    "wheel",
     "mypy==1.7.1",
     "types-python-dateutil",
     "types-requests",
 ]
+dev = [
+    "pytest",
+    "black",
+    "wheel",
+    "mypy==1.7.1",
+    "types-python-dateutil",
+    "types-requests",
+]
+
+[project.scripts]
+threatexchange = "threatexchange.cli.main:main"
+tx = "threatexchange.cli.main:main"
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["threatexchange/extensions/*/requirements.txt"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["threatexchange"]
@@ -68,4 +78,9 @@ exclude = [
 ]
 
 [tool.hatch.metadata]
-allow-direct-references = true 
+allow-direct-references = true
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$' 
