@@ -43,7 +43,7 @@ def test_add_hashes_and_find_match(app: Flask, client: FlaskClient):
 
     # Test lookup with no match
     resp = client.get(
-        "/m/lookup?signal_type=pdq&signal=5555555555555555555555555555555555555555555555555555555555555555"
+        "/m/lookup?signal_type=pdq&signal={}".format("5" * 64)
     )
     assert resp.status_code == 200
     assert resp.json == {}
