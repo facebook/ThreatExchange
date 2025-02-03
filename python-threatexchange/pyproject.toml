@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling", "hatch-requirements-txt", "hatch-fancy-pypi-readme"]
+build-backend = "hatchling.build"
+
+[project]
+name = "threatexchange"
+version = "1.2.4"  # Match version.txt
+description = "Python Library for Signal Exchange"
+readme = "README.md"
+license = { text = "BSD" }
+authors = [
+    { name = "Facebook", email = "threatexchange@meta.com" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3.8",
+]
+keywords = ["facebook", "threatexchange", "ncmec", "stopncii", "pdq"]
+requires-python = ">=3.8"
+dependencies = [
+    "python-Levenshtein",
+    "requests",
+    "urllib3",  # For allow_methods
+    "python-dateutil",
+    "types-python-dateutil",
+    "dacite",
+    "Pillow",  # pdq
+    "pdqhash",  # pdq
+    "faiss-cpu",  # faiss
+    "numpy",  # faiss
+    "packaging",  # fix ModuleNotFoundError in faiss/loader.py
+]
+
+[project.scripts]
+threatexchange = "threatexchange.cli.main:main"
+tx = "threatexchange.cli.main:main"
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["threatexchange/extensions/*/requirements.txt"]
+
+[tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
+test = ["pytest"]
+package = ["wheel"]
+lint = ["black"]
+types = [
+    "mypy==1.7.1",
+    "types-python-dateutil",
+    "types-requests",
+]
+dev = [
+    "pytest",
+    "wheel",
+    "black",
+    "mypy==1.7.1",
+    "types-python-dateutil",
+    "types-requests",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["threatexchange"]
+include = ["threatexchange/py.typed"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "tests*",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true 
