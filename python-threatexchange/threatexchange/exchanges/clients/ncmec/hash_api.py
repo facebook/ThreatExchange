@@ -569,7 +569,10 @@ class NCMECHashAPI:
         *,
         start_timestamp: int = 0,
         end_timestamp: int = 0,
-        checkpointed_paging_url: str = "",
+        # DANGER DANGER - if you pass this, you *MUST* use the same start/end time
+        # as when the NCMEC API gave it back to you, or else you'll skip entries.
+        # see #1744
+        resume_paging_url: str = "",
     ) -> t.Iterator[GetEntriesResponse]:
         """
         A simple wrapper around get_entries to keep fetching until complete.
@@ -578,7 +581,7 @@ class NCMECHashAPI:
         much of the data you have fetched. @see get_entries
         """
         has_more = True
-        next_ = checkpointed_paging_url
+        next_ = resume_paging_url
         while has_more:
             result = self.get_entries(
                 start_timestamp=start_timestamp,
