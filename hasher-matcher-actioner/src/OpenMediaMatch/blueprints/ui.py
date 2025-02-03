@@ -169,7 +169,7 @@ def ui_create_bank():
 @bp.route("/query", methods=["POST"])
 def upload():
     current_app.logger.debug("[query] hashing input")
-    signals = hashing.hash_media_post_impl()
+    signals = hashing.hash_media_from_form_data()
 
     current_app.logger.debug("[query] performing lookup")
     banks = {

@@ -441,13 +441,18 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
+        self,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+        batch_size: int = 100,
+        enabled_only: bool = True,
     ) -> t.Iterator[BankContentIterationItem]:
         """
         Yield the entire content of the bank in batches.
 
         If a signal type is provided, will yield signals of that type if
         they are available for that content.
+
+        If enabled_only is true, will only yield signals for content that are enabled.
         """
 
 
