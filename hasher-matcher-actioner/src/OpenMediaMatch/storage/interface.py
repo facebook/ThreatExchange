@@ -24,6 +24,7 @@ import flask
 from threatexchange.storage.interfaces import (
     ISignalTypeConfigStore,
     IContentTypeConfigStore,
+    ContentTypeConfig,
 )
 from threatexchange.utils import dataclass_json
 from threatexchange.content_type.content_base import ContentType
@@ -40,17 +41,6 @@ from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPI,
     TSignalExchangeAPICls,
 )
-
-
-@dataclass
-class ContentTypeConfig:
-    """
-    Holder for ContentType configuration.
-    """
-
-    # Content types that are not enabled should not be used in hashing/matching
-    enabled: bool
-    content_type: t.Type[ContentType]
 
 
 @dataclass
