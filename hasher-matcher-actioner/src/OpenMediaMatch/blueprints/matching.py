@@ -280,7 +280,7 @@ def lookup(signal, signal_type_name):
         match = results_by_bank_content_id.get(content.id)
         results[content.bank.name].append(
             {
-                "content_id": content.id,
+                "bank_content_id": content.id,
                 "distance": match.similarity_info.distance,
             }
         )
