@@ -21,9 +21,11 @@ import typing as t
 import time
 
 import flask
-from threatexchange.storage.interfaces import ISignalTypeConfigStore
+from threatexchange.storage.interfaces import (
+    ISignalTypeConfigStore,
+    IContentTypeConfigStore,
+)
 from threatexchange.utils import dataclass_json
-from threatexchange.storage.interfaces import IContentTypeConfigStore
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.index import SignalTypeIndex
