@@ -32,30 +32,17 @@ dependencies = [
     "numpy",  # faiss
     "packaging",  # fix ModuleNotFoundError in faiss/loader.py
 ]
+urls = {Homepage = "https://www.github.com/facebook/ThreatExchange"}
 
 [project.optional-dependencies]
+# Note: test, all, and dev will be dynamically populated with extension dependencies
 test = [
     "pytest",
     "black",  # Added for CI
 ]
+package = ["wheel"]
 lint = ["black"]
 types = [
-    "mypy==1.7.1",
-    "types-python-dateutil",
-    "types-requests",
-]
-all = [
-    "pytest",
-    "black",
-    "wheel",
-    "mypy==1.7.1",
-    "types-python-dateutil",
-    "types-requests",
-]
-dev = [
-    "pytest",
-    "black",
-    "wheel",
     "mypy==1.7.1",
     "types-python-dateutil",
     "types-requests",
@@ -67,10 +54,13 @@ tx = "threatexchange.cli.main:main"
 
 [tool.hatch.metadata.hooks.requirements_txt]
 files = ["threatexchange/extensions/*/requirements.txt"]
+# This will dynamically add extension dependencies to test/all/dev
+merge-extras = ["test", "all", "dev"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["threatexchange"]
 include = ["threatexchange/py.typed"]
+exclude = ["tests*"]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
