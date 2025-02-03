@@ -28,6 +28,27 @@ _API_NAME: str = "ncmec"
 
 
 @dataclass
+class _NCMECPagingInfo:
+    """
+    Store paging information for resume mid-page.
+
+    NCMEC suggests not storing paging_urls long term so we consider them invalid
+    12hr after the last_fetch_time
+    """
+
+    paging_url: str
+    paging_end_ts: int
+    paging_url_ts: int = field(default_factory=lambda: int(time.time()))
+
+    @property
+    def is_valid(self) -> bool:
+        return time.time() - self.paging_end_ts <= 12 * 60 * 60
+
+    def __bool__(self) -> bool:
+        return self.is_valid
+
+
+@dataclass
 class NCMECCheckpoint(
     state.FetchCheckpointBase,
 ):
@@ -41,26 +62,31 @@ class NCMECCheckpoint(
     get_entries_max_ts: int
     # A url to fetch the next page of results
     # Only reference this value through `paging_url` property
-    _paging_url: str = ""
-    # a timestamp for the last fetch time, specifically used with a paging_url
-    # NCMEC suggests not storing paging_urls long term so we consider them invalid
-    # 12hr after the last_fetch_time
-    last_fetch_time: int = field(default_factory=lambda: int(time.time()))
+    paging_info = t.Optional[_NCMECPagingInfo]
 
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.get_entries_max_ts
 
-    @property
-    def paging_url(self) -> str:
-        PAGING_URL_EXPIRATION = 12 * 60 * 60
-        if int(time.time()) - self.last_fetch_time < PAGING_URL_EXPIRATION:
-            return self._paging_url
-        return ""
+    @classmethod
+    def from_completed_ncmec_fetch(cls, target_end_ts: int) -> "NCMECCheckpoint":
+        """Get the value for a completed fetch (iterated to no more records)"""
+        return cls(target_end_ts)
 
     @classmethod
-    def from_ncmec_fetch(cls, response: api.GetEntriesResponse) -> "NCMECCheckpoint":
-        """Synthesizes a checkpoint from the API response"""
-        return cls(response.max_timestamp, response.next, int(time.time()))
+    def from_paged_ncmec_fetch(
+        cls,
+        response: api.GetEntriesResponse,
+        *,
+        current_start: int,
+        current_end: int,
+    ) -> "NCMECCheckpoint":
+        """Get a checkpoint for an in-progress paged fetch"""
+        if not response.next:  # This is actually a completed fetch
+            return cls.from_completed_ncmec_fetch(current_end + 1)
+        return cls(
+            current_start,
+            _NCMECPagingInfo(paging_url=response.next, paging_end_ts=current_end),
+        )
 
     def __setstate__(self, d: t.Dict[str, t.Any]) -> None:
         """Implemented for pickle version compatibility."""
@@ -68,13 +94,6 @@ class NCMECCheckpoint(
         ### field 'max_timestamp' renamed to 'get_entries_max_ts'
         if "max_timestamp" in d:
             d["get_entries_max_ts"] = d.pop("max_timestamp")
-
-        # 1.0.0 => 1.2.3:
-        # Add last_fetch_time
-        # note: the default_factory value was not being set correctly when
-        # reading from pickle
-        if not "last_fetch_time" in d:
-            d["last_fetch_time"] = int(time.time())
 
         self.__dict__ = d
 
@@ -262,10 +281,10 @@ class NCMECSignalExchangeAPI(
                the cursor
         """
         start_time = 0
-        current_paging_url = ""
+        checkpoint_paging_info = None
         if checkpoint is not None:
             start_time = checkpoint.get_entries_max_ts
-            current_paging_url = checkpoint.paging_url
+            checkpoint_paging_info = checkpoint.paging_info
         # Avoid being exactly at end time for updates showing up multiple
         # times in the fetch, since entries are not ordered by time
         end_time = int(time.time()) - 5
@@ -294,21 +313,32 @@ class NCMECSignalExchangeAPI(
                 duration_str,
             )
 
-        while current_start < end_time:
+        while current_start < end_time:  # We have not completed the interval
+            # Duration updated by probing behavior
             duration = max(1, duration)  # Infinite loop defense
             # Don't fetch past our designated end
             current_end = min(end_time, current_start + duration)
-            entry = None
+            resume_paging_url = None
+            total_fetched = 0
+            enumerate_start = 0
+            # Use the checkpoint paging info exactly once
+            if checkpoint_paging_info:
+                assert checkpoint.get_entries_max_ts == current_start  # sanity
+                assert checkpoint_paging_info.paging_end_ts < end_time
+                resume_paging_url = checkpoint_paging_info.paging_url
+                current_end = checkpoint_paging_info.paging_end_ts
+                enumerate_start = 1  # Skip over probing behavior
+                checkpoint_paging_info = None
             for i, entry in enumerate(
                 client.get_entries_iter(
                     start_timestamp=current_start,
                     end_timestamp=current_end,
-                    checkpointed_paging_url=current_paging_url,
-                )
+                    resume_paging_url=resume_paging_url,
+                ),
+                start=enumerate_start,
             ):
-                if (
-                    i == 0 and not current_paging_url
-                ):  # First batch, check for overfetch when not using a checkpoint
+                total_fetched += len(entry.updates)
+                if i == 0:  # First fetch, do probing behavior
                     if (
                         entry.estimated_entries_in_range > self.MAX_FETCH_SIZE
                         and duration > 1
@@ -329,28 +359,26 @@ class NCMECSignalExchangeAPI(
                         break  # Retry get_entries_iter with new parameters
                     else:
                         # Our entry estimatation (based on the cursor parameters)
-                        # occasionally seem to over-estimate
+                        # seems to over-estimate closer to 'now'
                         log(f"est {entry.estimated_entries_in_range} entries")
 
-                if i % 100 == 5:
+                if i % 100 == 1:
                     # On large fetches, log notice every once in a while
                     log(f"large fetch ({i}) with {len(entry.updates)} updates.")
 
                 yield state.FetchDelta(
                     {f"{entry.member_id}-{entry.id}": entry for entry in entry.updates},
-                    NCMECCheckpoint(
-                        get_entries_max_ts=current_start,
-                        _paging_url=entry.next,
+                    NCMECCheckpoint.from_paged_ncmec_fetch(
+                        entry,
+                        current_start=current_start,
+                        current_end=current_end,
                     ),
                 )
 
-            else:  # AKA a successful fetch
+            else:  # AKA a completed fetch
                 # If we're hovering near the single-fetch limit for a period
                 # of time, we can likely safely expand our range.
-                if (
-                    entry
-                    and len(entry.updates) < api.NCMECHashAPI.ENTRIES_PER_FETCH * 2
-                ):
+                if total_fetched < api.NCMECHashAPI.ENTRIES_PER_FETCH * 2:
                     low_fetch_counter += 1
                     if low_fetch_counter >= self.FETCH_SHRINK_FACTOR:
                         log("multiple low fetches, increasing duration")
@@ -359,11 +387,7 @@ class NCMECSignalExchangeAPI(
                         low_fetch_counter = 0
                 # If we are not quite at our limit, but getting close to it,
                 # pre-emptively shrink to try and stay under the limit
-                elif (
-                    entry
-                    and len(entry.updates)
-                    > self.MAX_FETCH_SIZE / self.FETCH_SHRINK_FACTOR
-                ):
+                elif total_fetched > self.MAX_FETCH_SIZE / self.FETCH_SHRINK_FACTOR:
                     log("close to overfetch limit, reducing duration")
                     duration //= self.FETCH_SHRINK_FACTOR
                     low_fetch_counter = 0
@@ -372,9 +396,8 @@ class NCMECSignalExchangeAPI(
 
                 yield state.FetchDelta(
                     {},
-                    NCMECCheckpoint(get_entries_max_ts=current_end),
+                    NCMECCheckpoint.from_completed_ncmec_fetch(current_end),
                 )
-                current_paging_url = ""
                 current_start = current_end
 
     @classmethod
