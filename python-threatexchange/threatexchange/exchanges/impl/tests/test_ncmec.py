@@ -54,11 +54,13 @@ def assert_delta(
     assert delta.checkpoint.get_progress_timestamp() == progress_timestamp
     assert delta.checkpoint.is_stale() is is_stale
     assert delta.checkpoint.get_entries_max_ts == get_entries_max_ts
-    assert delta.checkpoint.paging_url == paging_url
+    if paging_url:
+        assert delta.checkpoint.paging_info is not None
+        assert delta.checkpoint.paging_info.paging_url == paging_url
 
 
 def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch):
-    frozen_time = 1664496000
+    frozen_time = 59  # Avoid probing
     monkeypatch.setattr("time.time", lambda: frozen_time)
     it = exchange.fetch_iter([], None)
     total_updates: t.Dict[str, NCMECEntryUpdate] = {}
@@ -112,20 +114,20 @@ def test_fetch(exchange: NCMECSignalExchangeAPI, monkeypatch: pytest.MonkeyPatch
     delta = next(it, None)
     assert delta is not None
     exchange.naive_fetch_merge(total_updates, delta.updates)
-    assert_delta(delta, {"101-willupdate", "101-willdelete"}, 0, False, 0, "")
 
-    # No more data, but one final checkpoint
-    delta = next(it, None)
-    assert delta is not None
     expected_progress_timestamp = frozen_time - 5
     assert_delta(
         delta,
-        set(),
+        {"101-willupdate", "101-willdelete"},
         expected_progress_timestamp,
         False,
         expected_progress_timestamp,
         "",
     )
+
+    # No more iterator
+    delta = next(it, None)
+    assert delta is None
 
     as_signals = NCMECSignalExchangeAPI.naive_convert_to_signal_type(
         [VideoMD5Signal], exchange.collab, total_updates
@@ -172,11 +174,7 @@ def test_empty_fetch(
     # No updates
     delta = next(it, None)
     assert delta is not None
-    assert_delta(delta, set(), 0, False, 0, "")
 
-    # No more data, but one final checkpoint
-    delta = next(it, None)
-    assert delta is not None
     expected_progress_timestamp = frozen_time - 5
     assert_delta(
         delta,

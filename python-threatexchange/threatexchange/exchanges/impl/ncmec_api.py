@@ -42,7 +42,7 @@ class _NCMECPagingInfo:
 
     @property
     def is_valid(self) -> bool:
-        return time.time() - self.paging_end_ts <= 12 * 60 * 60
+        return time.time() - self.paging_url_ts <= 12 * 60 * 60
 
     def __bool__(self) -> bool:
         return self.is_valid
@@ -62,7 +62,7 @@ class NCMECCheckpoint(
     get_entries_max_ts: int
     # A url to fetch the next page of results
     # Only reference this value through `paging_url` property
-    paging_info = t.Optional[_NCMECPagingInfo]
+    paging_info: t.Optional[_NCMECPagingInfo] = None
 
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.get_entries_max_ts
@@ -82,7 +82,7 @@ class NCMECCheckpoint(
     ) -> "NCMECCheckpoint":
         """Get a checkpoint for an in-progress paged fetch"""
         if not response.next:  # This is actually a completed fetch
-            return cls.from_completed_ncmec_fetch(current_end + 1)
+            return cls.from_completed_ncmec_fetch(current_end)
         return cls(
             current_start,
             _NCMECPagingInfo(paging_url=response.next, paging_end_ts=current_end),
@@ -297,20 +297,22 @@ class NCMECSignalExchangeAPI(
         # A counter for when we want to increase our duration
         # We want to be conservative
         low_fetch_counter = 0
+        hi_fetch_counter = 0
+
+        def duration_str(sec):
+            if sec < 1800:
+                return f"{sec} seconds"
+            elif sec < 43200:
+                return f"{sec / 3600:.2f} hours"
+            return f"{sec / (3600 * 24):.2f} days"
 
         def log(event: str) -> None:
             """Helper to log fetch events"""
-            if duration < 1800:
-                duration_str = f"{duration} seconds"
-            elif duration < 43200:
-                duration_str = f"{duration / 3600:.2f} hours"
-            else:
-                duration_str = f"{duration / (3600 * 24):.2f} days"
             logging.info(
                 "NCMEC API %s @%s (%s)",
                 event,
                 api._date_format(current_start),
-                duration_str,
+                duration_str(duration),
             )
 
         while current_start < end_time:  # We have not completed the interval
@@ -318,15 +320,17 @@ class NCMECSignalExchangeAPI(
             duration = max(1, duration)  # Infinite loop defense
             # Don't fetch past our designated end
             current_end = min(end_time, current_start + duration)
-            resume_paging_url = None
+            resume_paging_url = ""
             total_fetched = 0
             enumerate_start = 0
             # Use the checkpoint paging info exactly once
-            if checkpoint_paging_info:
+            if checkpoint and checkpoint_paging_info:
                 assert checkpoint.get_entries_max_ts == current_start  # sanity
                 assert checkpoint_paging_info.paging_end_ts < end_time
                 resume_paging_url = checkpoint_paging_info.paging_url
                 current_end = checkpoint_paging_info.paging_end_ts
+                duration = current_end - current_start  # For logging string
+                log("Resuming mid-page")
                 enumerate_start = 1  # Skip over probing behavior
                 checkpoint_paging_info = None
             for i, entry in enumerate(
@@ -338,33 +342,35 @@ class NCMECSignalExchangeAPI(
                 start=enumerate_start,
             ):
                 total_fetched += len(entry.updates)
-                if i == 0:  # First fetch, do probing behavior
+                if (
+                    i == 0 and duration > 1 and entry.next
+                ):  # First fetch, do probing behavior
+                    duration_guess = entry.max_timestamp - current_start
                     if (
-                        entry.estimated_entries_in_range > self.MAX_FETCH_SIZE
-                        and duration > 1
+                        duration > 60
+                        or duration_guess < duration // self.FETCH_SHRINK_FACTOR
                     ):
-                        log(
-                            f"est {entry.estimated_entries_in_range} is over max fetch, duration reduced"
-                        )
+                        old_duration = duration
                         # We want to at last shrink by our shrink factor
                         duration = min(
-                            duration // self.FETCH_SHRINK_FACTOR,
-                            # Especially in early fetches, we are overfetching
-                            # by a huge amount, so shrink in proportion to overfetch
                             duration
-                            * self.MAX_FETCH_SIZE
-                            // entry.estimated_entries_in_range,
+                            // self.FETCH_SHRINK_FACTOR
+                            // (2**hi_fetch_counter),
+                            duration_guess - 1,
                         )
+                        log(
+                            f"est {duration_str(duration_guess)} span, "
+                            + f"shrinking from {duration_str(old_duration)}"
+                        )
+                        hi_fetch_counter += 1
                         low_fetch_counter = 0  # Don't grow right after a shrink
                         break  # Retry get_entries_iter with new parameters
-                    else:
-                        # Our entry estimatation (based on the cursor parameters)
-                        # seems to over-estimate closer to 'now'
-                        log(f"est {entry.estimated_entries_in_range} entries")
+                else:
+                    hi_fetch_counter = 0
 
-                if i % 100 == 1:
+                if i % 100 == 5:
                     # On large fetches, log notice every once in a while
-                    log(f"large fetch ({i}) with {len(entry.updates)} updates.")
+                    log(f"large fetch ({i}) with {total_fetched} updates.")
 
                 yield state.FetchDelta(
                     {f"{entry.member_id}-{entry.id}": entry for entry in entry.updates},
@@ -375,7 +381,7 @@ class NCMECSignalExchangeAPI(
                     ),
                 )
 
-            else:  # AKA a completed fetch
+            else:  # Exhausted the fetch
                 # If we're hovering near the single-fetch limit for a period
                 # of time, we can likely safely expand our range.
                 if total_fetched < api.NCMECHashAPI.ENTRIES_PER_FETCH * 2:
@@ -393,11 +399,6 @@ class NCMECSignalExchangeAPI(
                     low_fetch_counter = 0
                 else:  # Not too small, not too large, just right
                     low_fetch_counter = 0
-
-                yield state.FetchDelta(
-                    {},
-                    NCMECCheckpoint.from_completed_ncmec_fetch(current_end),
-                )
                 current_start = current_end
 
     @classmethod
