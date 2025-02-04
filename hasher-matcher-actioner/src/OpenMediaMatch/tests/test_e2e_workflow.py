@@ -42,8 +42,6 @@ def test_add_hashes_and_find_match(app: Flask, client: FlaskClient):
     assert resp.json == {"TEST_BANK": [{"bank_content_id": 16, "distance": 0}]}
 
     # Test lookup with no match
-    resp = client.get(
-        "/m/lookup?signal_type=pdq&signal={}".format("5" * 64)
-    )
+    resp = client.get("/m/lookup?signal_type=pdq&signal={}".format("5" * 64))
     assert resp.status_code == 200
     assert resp.json == {}
