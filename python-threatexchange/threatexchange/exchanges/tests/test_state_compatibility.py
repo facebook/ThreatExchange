@@ -30,7 +30,6 @@ i.e.
 import copy
 from dataclasses import dataclass, field
 import pickle
-import time
 import typing as t
 from unittest.mock import patch
 
@@ -152,25 +151,7 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     ## Current
     max_ts = 1197433091
 
-    current = NCMECCheckpoint(
-        get_entries_max_ts=max_ts,
-        _paging_url="",
-        last_fetch_time=MOCK_FROZEN_TIME,
-    )
-
-    # 1.0.x
-    @dataclass
-    class NCMECCheckpointWithoutPagingUrl(FetchCheckpointBase):
-        """
-        0.99.x => 1.2.3
-
-        get_entries_max_ts: int =>
-            get_entries_max_ts: int
-            paging_url: str
-            last_fetch_time: int
-        """
-
-        get_entries_max_ts: int
+    current = NCMECCheckpoint(get_entries_max_ts=max_ts)
 
     # 0.99.x
     @dataclass
@@ -183,12 +164,9 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
 
         max_timestamp: int
 
-    checkpoint_without_paging_url = NCMECCheckpointWithoutPagingUrl(
-        get_entries_max_ts=max_ts
-    )
     ts_moved = NCMECCheckpointTsMoved(max_timestamp=max_ts)
 
-    return (current, [checkpoint_without_paging_url, ts_moved])
+    return (current, [ts_moved])
 
 
 @pytest.fixture
