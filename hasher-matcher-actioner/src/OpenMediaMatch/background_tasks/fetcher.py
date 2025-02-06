@@ -15,7 +15,7 @@ from threatexchange.exchanges.fetch_state import (
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.storage.interface import ISignalExchangeStore
-from threatexchange.cli.storage.interfaces import SignalTypeConfig
+from threatexchange.storage.interfaces import SignalTypeConfig
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 
 logger = logging.getLogger(__name__)

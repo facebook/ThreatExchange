@@ -21,7 +21,11 @@ import typing as t
 import time
 
 import flask
-from threatexchange.cli.storage.interfaces import ISignalTypeConfigStore
+from threatexchange.storage.interfaces import (
+    ISignalTypeConfigStore,
+    IContentTypeConfigStore,
+    ContentTypeConfig,
+)
 from threatexchange.utils import dataclass_json
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
@@ -37,27 +41,6 @@ from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPI,
     TSignalExchangeAPICls,
 )
-
-
-@dataclass
-class ContentTypeConfig:
-    """
-    Holder for ContentType configuration.
-    """
-
-    # Content types that are not enabled should not be used in hashing/matching
-    enabled: bool
-    content_type: t.Type[ContentType]
-
-
-class IContentTypeConfigStore(metaclass=abc.ABCMeta):
-    """Interface for accessing ContentType configuration"""
-
-    @abc.abstractmethod
-    def get_content_type_configs(self) -> t.Mapping[str, ContentTypeConfig]:
-        """
-        Return all installed content types.
-        """
 
 
 @dataclass

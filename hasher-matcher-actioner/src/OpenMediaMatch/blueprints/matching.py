@@ -4,6 +4,7 @@
 Endpoints for matching content and hashes.
 """
 
+from collections import defaultdict
 from dataclasses import dataclass
 import datetime
 import random
@@ -201,7 +202,9 @@ def lookup_get():
      Also (applies to both cases):
      * Optional seed (content id) for consistent coinflip
     Output:
-     * List of matching banks
+     * JSON object with a key of each bank name with matches.
+       For each bank, there is list of objects containing details
+       about each match.
     """
     if request.args.get("url", None):
         if not current_app.config.get("ROLE_HASHER", False):
@@ -230,7 +233,9 @@ def lookup_post():
      * Uploaded file.
      * Optional seed (content id) for consistent coinflip
     Output:
-     * List of matching banks
+     * JSON object with a key of each bank name with matches.
+       For each bank, there is list of objects containing details
+       about each match.
     """
     if not current_app.config.get("ROLE_HASHER", False):
         abort(403, "Hashing is disabled, missing role")
@@ -247,27 +252,39 @@ def lookup_post():
 
 def lookup(signal, signal_type_name):
     current_app.logger.debug("performing lookup")
-    raw_results = lookup_signal(signal, signal_type_name)
+    results_by_bank_content_id = {
+        r.metadata: r for r in query_index(signal, signal_type_name)
+    }
     storage = get_storage()
-    current_app.logger.debug("getting bank content")
-    current_app.logger.debug(raw_results)
-    contents = storage.bank_content_get(raw_results)
-    enabled = [c for c in contents if c.enabled]
+    contents = storage.bank_content_get(results_by_bank_content_id)
+    enabled_content = [c for c in contents if c.enabled]
     current_app.logger.debug(
-        "lookup matches %d content ids (%d enabled)", len(contents), len(enabled)
+        "lookup matches %d content ids (%d enabled_content)",
+        len(contents),
+        len(enabled_content),
     )
-    if not enabled:
-        return []
-    banks = {c.bank.name: c.bank for c in enabled}
+    banks = {c.bank.name: c.bank for c in enabled_content}
     rand = random.Random(request.args.get("seed"))
     coinflip = rand.random()
-    enabled_banks = [
+    enabled_banks = {
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
-    ]
+    }
     current_app.logger.debug(
-        "lookup matches %d banks (%d enabled)", len(banks), len(enabled_banks)
+        "lookup matches %d banks (%d enabled_banks)", len(banks), len(enabled_banks)
     )
-    return enabled_banks
+    results = defaultdict(list)
+    for content in enabled_content:
+        if content.bank.name not in enabled_banks:
+            continue
+
+        match = results_by_bank_content_id.get(content.id)
+        results[content.bank.name].append(
+            {
+                "bank_content_id": content.id,
+                "distance": match.similarity_info.distance,
+            }
+        )
+    return results
 
 
 @bp.route("/index/status")

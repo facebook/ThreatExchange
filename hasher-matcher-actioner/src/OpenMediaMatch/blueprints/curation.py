@@ -431,20 +431,18 @@ def exchange_update(exchange_name: str):
 def exchange_delete(exchange_name: str):
     """
     Delete exchange configuration
+
     Inputs:
-     * Configuration name
-     * (optional) whether to also delete the associated bank (defaults to true)
+     * Exchange name
 
     Returns:
     {
-      "message": "success",
+      "message": "Exchange deleted",
     }
     """
     storage = persistence.get_storage()
-    collab = storage.exchange_get(exchange_name)
-    if collab is None:
-        return {"message": "success"}
-    abort(501, "Not yet implemented")
+    storage.exchange_delete(exchange_name)
+    return {"message": "Exchange deleted"}
 
 
 # Signal Types

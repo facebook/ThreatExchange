@@ -163,3 +163,25 @@ def test_compare_hashes(app: Flask, client: FlaskClient):
             json=bad_input,
         )
         assert resp.status_code == 400
+
+
+def test_exchange_delete(app: Flask, client: FlaskClient):
+    delete_response = client.delete(
+        "/c/exchange/TEST_EXCHANGE",
+    )
+    # deleting an exchange that doesn't exist returns 200
+    assert delete_response.status_code == 200
+
+    # create an exchange
+    post_response = client.post(
+        "/c/exchanges",
+        json={"api": "sample", "bank": "FOO_EXCHANGE", "api_json": {}},
+    )
+    assert post_response.status_code == 201
+
+    # test a real delete
+    delete_response = client.delete(
+        "/c/exchange/FOO_EXCHANGE",
+    )
+    assert delete_response.status_code == 200
+    assert delete_response.get_json()["message"] == "Exchange deleted"

@@ -27,7 +27,6 @@ from threatexchange.exchanges.clients.ncmec.tests.data import (
 
 
 def mock_get_impl(url: str, **params):
-    content = ENTRIES_XML
     if url.endswith(NEXT_UNESCAPED):
         content = ENTRIES_XML2
     elif url.endswith(NEXT_UNESCAPED2):
@@ -36,6 +35,10 @@ def mock_get_impl(url: str, **params):
         content = ENTRIES_XML4
     elif url.endswith("/status"):
         content = STATUS_XML
+    elif url.endswith("/entries"):  # should also check params
+        content = ENTRIES_XML
+    else:
+        raise ValueError(f"Unexpected call? {url}")
     # Void your warantee by messing with requests state
     resp = requests.Response()
     resp._content = content.encode()
