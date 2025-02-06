@@ -31,6 +31,7 @@ dependencies = [
     "faiss-cpu",  # faiss
     "numpy",  # faiss
     "packaging",  # fix ModuleNotFoundError in faiss/loader.py
+    "vpdq",
 ]
 urls = {Homepage = "https://www.github.com/facebook/ThreatExchange"}
 
