@@ -13,6 +13,7 @@ from threatexchange.signal_type.pdq.pdq_utils import (
 )
 from threatexchange.signal_type.pdq.pdq_index import PDQIndex
 
+
 def _get_hash_generator(seed: int = 42):
     random.seed(seed)
 
@@ -20,6 +21,7 @@ def _get_hash_generator(seed: int = 42):
         return [PdqSignal.get_random_signal() for _ in range(n)]
 
     return get_n_hashes
+
 
 def _brute_force_match(
     base: t.List[str], query: str, threshold: int = PDQ_CONFIDENT_MATCH_THRESHOLD
@@ -32,27 +34,31 @@ def _brute_force_match(
             matches.add((i, distance))
     return matches
 
+
 def test_flat_index_small_dataset():
     """Test that flat index is used for small datasets."""
     get_random_hashes = _get_hash_generator()
-    base_hashes = get_random_hashes(100) # Below IVF threshold here. 
+    base_hashes = get_random_hashes(100)  # Below IVF threshold here.
     index = PDQSignalTypeIndex2.build([(h, base_hashes.index(h)) for h in base_hashes])
 
     assert isinstance(index._index._index.faiss_index, faiss.IndexFlatL2)
 
+
 def test_ivf_index_large_dataset():
     """Test that IVF index is used for large datasets."""
     get_random_hashes = _get_hash_generator()
-    base_hashes = get_random_hashes(2000)  
+    base_hashes = get_random_hashes(2000)
     index = PDQSignalTypeIndex2.build([(h, base_hashes.index(h)) for h in base_hashes])
 
     assert isinstance(index._index._index.faiss_index, faiss.IndexIVFFlat)
+
 
 def test_empty_index_query():
     """Test querying an empty index."""
     index = PDQSignalTypeIndex2()
     results = index.query(PdqSignal.get_random_signal())
     assert len(results) == 0
+
 
 def test_single_hash_query():
     """Test querying with a single hash."""
@@ -65,6 +71,7 @@ def test_single_hash_query():
     assert results[0].metadata == "test_entry"
     assert results[0].similarity_info.distance == 0
 
+
 def test_add_all_and_query():
     """Test adding multiple hashes and querying."""
     get_random_hashes = _get_hash_generator()
@@ -73,8 +80,9 @@ def test_add_all_and_query():
     index.add_all([(h, base_hashes.index(h)) for h in base_hashes])
 
     results = index.query(base_hashes[0])
-    assert len(results) >= 1  
-    assert any(r.metadata == 0 for r in results)  
+    assert len(results) >= 1
+    assert any(r.metadata == 0 for r in results)
+
 
 def test_build_and_query():
     """Test building index and querying."""
@@ -83,8 +91,9 @@ def test_build_and_query():
     index = PDQSignalTypeIndex2.build([(h, base_hashes.index(h)) for h in base_hashes])
 
     results = index.query(base_hashes[0])
-    assert len(results) >= 1  
-    assert any(r.metadata == 0 for r in results)  
+    assert len(results) >= 1
+    assert any(r.metadata == 0 for r in results)
+
 
 def test_len():
     """Test length reporting."""
@@ -95,6 +104,7 @@ def test_len():
 
     index.add_all([(h, base_hashes.index(h)) for h in base_hashes])
     assert len(index) == 100
+
 
 def test_serialize_deserialize_empty_index():
     """Test serialization/deserialization of empty index."""
@@ -108,10 +118,11 @@ def test_serialize_deserialize_empty_index():
     assert len(deserialized) == 0
     assert deserialized._index is None
 
+
 def test_serialize_deserialize_flat_index():
     """Test serialization/deserialization of flat index."""
     get_random_hashes = _get_hash_generator()
-    base_hashes = get_random_hashes(100)  
+    base_hashes = get_random_hashes(100)
     index = PDQSignalTypeIndex2.build([(h, base_hashes.index(h)) for h in base_hashes])
     buffer = io.BytesIO()
 
@@ -126,10 +137,11 @@ def test_serialize_deserialize_flat_index():
     assert len(results) >= 1
     assert any(r.metadata == 0 for r in results)
 
+
 def test_serialize_deserialize_ivf_index():
     """Test serialization/deserialization of IVF index."""
     get_random_hashes = _get_hash_generator()
-    base_hashes = get_random_hashes(2000)  
+    base_hashes = get_random_hashes(2000)
     index = PDQSignalTypeIndex2.build([(h, base_hashes.index(h)) for h in base_hashes])
     buffer = io.BytesIO()
 
@@ -143,6 +155,7 @@ def test_serialize_deserialize_ivf_index():
     results = deserialized.query(base_hashes[0])
     assert len(results) >= 1
     assert any(r.metadata == 0 for r in results)
+
 
 def test_compatibility_with_old_index():
     """Test that we can read indices serialized with the old PDQIndex class."""
