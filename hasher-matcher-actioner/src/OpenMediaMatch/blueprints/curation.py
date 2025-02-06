@@ -248,10 +248,10 @@ def bank_update_content(bank_name: str, content_id: int):
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    content = storage.bank_content_get([content_id])
-    if not content:
+    contents = storage.bank_content_get([content_id])
+    if not contents:
         abort(404, f"content '{content_id}' not found")
-    content = content[0]
+    content = contents[0]
     data = request.get_json()
 
     try:

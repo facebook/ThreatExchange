@@ -132,11 +132,13 @@ def test_bank_get_content(client: FlaskClient):
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
     assert add_response.status_code == 200, str(add_response.get_json())
-    content_id = add_response.json["id"]
+    assert add_response.json
+    content_id = add_response.json.get("id")
 
     # Get content by id
     get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
     assert get_response.status_code == 200, str(get_response.get_json())
+    assert get_response.json
     assert get_response.json.get("id") == content_id
 
 
@@ -184,7 +186,8 @@ def test_bank_update_content(client: FlaskClient):
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
     assert add_response.status_code == 200, str(add_response.get_json())
-    content_id = add_response.json["id"]
+    assert add_response.json
+    content_id = add_response.json.get("id")
 
     # Define new disable_until_ts value and update content
     new_disable_ts = int((datetime.now() + timedelta(days=365)).timestamp())
@@ -193,6 +196,7 @@ def test_bank_update_content(client: FlaskClient):
         json={"disable_until_ts": new_disable_ts},
     )
     assert update_response.status_code == 200, str(update_response.get_json())
+    assert update_response.json
     updated_content = update_response.json
     assert updated_content.get("disable_until_ts") == new_disable_ts
 
@@ -207,7 +211,8 @@ def test_bank_update_content_400(client: FlaskClient):
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
     assert add_response.status_code == 200, str(add_response.get_json())
-    content_id = add_response.json["id"]
+    assert add_response.json
+    content_id = add_response.json.get("id")
 
     # Define new disable_until_ts value too far in the future and update content
     new_disable_ts = 9999999999
