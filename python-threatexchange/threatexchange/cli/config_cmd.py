@@ -198,7 +198,7 @@ class _UpdateCollabCommand(command_base.Command):
                 origin, collections.abc.Collection
             ):
                 def make_collection(s: str) -> t.Any:
-                    return origin(arg_type(p.strip()) for p in s.split(","))
+                    return list(arg_type(p.strip()) for p in s.split(","))
                 argparse_type = make_collection
                 metavar = f"{arg_type.__name__}[,{arg_type.__name__}[,...]]"
             elif origin == t.Union:  # Should this be is?
