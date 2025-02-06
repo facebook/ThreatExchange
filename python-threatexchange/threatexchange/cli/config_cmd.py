@@ -184,12 +184,12 @@ class _UpdateCollabCommand(command_base.Command):
         ), "rework class to not have forward ref"
 
         origin = t.get_origin(field.type)
-        argparse_type: t.Union[t.Type[t.Any], t.Callable[[str], t.Any]] = field.type
+        argparse_type: t.Callable[[str], t.Any] = field.type
         metavar: str
         if isinstance(field.type, type) and issubclass(field.type, Enum):
             argparse_type = common.argparse_choices_pre_type(
                 [m.name for m in field.type],
-                lambda s: getattr(field.type, s),
+                lambda s: field.type[s],
             )
             metavar = f"[{','.join(m.name for m in field.type)}]"
         elif origin is not None:
@@ -197,13 +197,11 @@ class _UpdateCollabCommand(command_base.Command):
             if isinstance(origin, type) and issubclass(
                 origin, collections.abc.Collection
             ):
-                def make_collection(s: str) -> t.Any:
-                    return list(arg_type(p.strip()) for p in s.split(","))
-                argparse_type = make_collection
+                argparse_type = lambda s: origin(arg_type(p.strip()) for p in s.split(","))  # type: ignore  # mypy not smart enough for origin == type
                 metavar = f"{arg_type.__name__}[,{arg_type.__name__}[,...]]"
             elif origin == t.Union:  # Should this be is?
                 argparse_type = arg_type
-                metavar = getattr(arg_type, "__name__", str(arg_type))
+                metavar = arg_type.__name__
             else:
                 raise AssertionError(
                     f"Unhandled complex type for {field.name}: {field.type}"
