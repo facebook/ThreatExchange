@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "threatexchange"
-version = "1.2.6"  # Match version.txt
+version = "1.2.6"
 description = "Python Library for Signal Exchange"
 readme = "README.md"
 license = { text = "BSD" }
@@ -33,32 +33,32 @@ dependencies = [
     "packaging",  # fix ModuleNotFoundError in faiss/loader.py
     "vpdq",
     # Extension dependencies
-    "py-tlsh",  # tlsh extension
-    "pdfminer.six",  # pdf extension
-    "pytesseract",  # pdq_ocr extension
+    "py-tlsh",
+    "pdfminer.six",
+    "pytesseract",
 ]
 urls = {Homepage = "https://www.github.com/facebook/ThreatExchange"}
 
 [project.optional-dependencies]
 # Core development dependencies
 dev = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "mypy==1.7.1",
+    "pytest",
+    "black",
+    "mypy",
     "types-python-dateutil",
     "types-requests",
 ]
 # Minimal test dependencies
 test = [
-    "pytest>=7.0.0",
+    "pytest",
 ]
 # Minimal lint dependencies
 lint = [
-    "black>=23.0.0",
+    "black",
 ]
 # Minimal type checking dependencies
 types = [
-    "mypy==1.7.1",
+    "mypy",
     "types-python-dateutil",
     "types-requests",
 ]
