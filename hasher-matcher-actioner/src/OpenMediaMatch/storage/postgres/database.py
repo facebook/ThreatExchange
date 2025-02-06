@@ -155,6 +155,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
         back_populates="content", cascade="all, delete"
     )
 
+    def set_typed_config(self, cfg: BankContentConfig) -> t.Self:
+        self.disable_until_ts = cfg.disable_until_ts
+        return self
+
     def as_storage_iface_cls(self) -> BankContentConfig:
         return BankContentConfig(
             self.id,
