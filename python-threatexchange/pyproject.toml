@@ -32,6 +32,10 @@ dependencies = [
     "numpy",  # faiss
     "packaging",  # fix ModuleNotFoundError in faiss/loader.py
     "vpdq",
+    # Extension dependencies
+    "py-tlsh",  # tlsh extension
+    "pdfminer.six",  # pdf extension
+    "pytesseract",  # pdq_ocr extension
 ]
 urls = {Homepage = "https://www.github.com/facebook/ThreatExchange"}
 
