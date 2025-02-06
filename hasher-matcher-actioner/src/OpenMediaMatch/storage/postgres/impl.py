@@ -613,7 +613,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self,
         signal_type: t.Optional[t.Type[SignalType]] = None,
         batch_size: int = 100,
-        enabled_only: bool = True,
     ) -> t.Iterator[interface.BankContentIterationItem]:
         # Query for all ContentSignals and stream results with the proper batch size
         query = (
@@ -629,18 +628,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if signal_type is not None:
             query = query.filter(
                 database.ContentSignal.signal_type == signal_type.get_name()
-            )
-
-        if enabled_only:
-            query = query.join(database.BankContent).where(
-                (
-                    database.BankContent.disable_until_ts
-                    == interface.BankContentConfig.ENABLED
-                )
-                or (
-                    database.BankContent.disable_until_ts
-                    < func.extract("epoch", func.now())
-                )
             )
 
         # Execute the query and stream results with the proper yield batch size

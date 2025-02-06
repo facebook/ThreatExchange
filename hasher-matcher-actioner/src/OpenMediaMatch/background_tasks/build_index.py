@@ -72,7 +72,7 @@ def build_index(
     index_cls = for_signal_type.get_index_cls()
     signal_list = []
     last_cs = None
-    for last_cs in bank_store.bank_yield_content(for_signal_type, enabled_only=True):
+    for last_cs in bank_store.bank_yield_content(for_signal_type):
         tuple = (last_cs.signal_val, last_cs.bank_content_id)
         signal_list.append(tuple)
     built_index = index_cls.build(signal_list)
