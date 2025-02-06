@@ -71,8 +71,6 @@ def run_benchmark(
         build = lambda: hashes
     elif test_type == IndexType.FLAT:
         build = lambda: build_flat(hashes)
-    else:
-        raise ValueError("Invalid test type")
 
     with timer("build"):
         index = build()

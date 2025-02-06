@@ -2,7 +2,6 @@
 
 import argparse
 import binascii
-import os
 import time
 import pickle
 
