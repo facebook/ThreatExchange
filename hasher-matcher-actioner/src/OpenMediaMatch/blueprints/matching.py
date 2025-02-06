@@ -252,7 +252,9 @@ def lookup_post():
 
 def lookup(signal, signal_type_name):
     current_app.logger.debug("performing lookup")
-    results_by_bank_content_id = lookup_signal(signal, signal_type_name)
+    results_by_bank_content_id = {
+        r.metadata: r for r in query_index(signal, signal_type_name)
+    }
     storage = get_storage()
     current_app.logger.debug("getting bank content")
     contents = storage.bank_content_get(results_by_bank_content_id)
