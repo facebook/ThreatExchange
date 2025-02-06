@@ -55,6 +55,7 @@ tx = "threatexchange.cli.main:main"
 
 [tool.hatch.version]
 path = "version.txt"
+pattern = "^(?P<version>[\\d.]+)$"
 
 [tool.hatch.build.targets.wheel]
 packages = ["threatexchange"]
