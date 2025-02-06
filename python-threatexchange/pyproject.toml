@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "threatexchange"
-version = "1.2.4"  # Match version.txt
+version = "1.2.6"  # Match version.txt
 description = "Python Library for Signal Exchange"
 readme = "README.md"
 license = { text = "BSD" }
