@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling", "hatch-requirements-txt", "hatch-fancy-pypi-readme"]
+requires = ["hatchling", "hatch-fancy-pypi-readme"]
 build-backend = "hatchling.build"
 
 [project]
 name = "threatexchange"
-version = "1.2.6"
+dynamic = ["version"]
 description = "Python Library for Signal Exchange"
 readme = "README.md"
 license = { text = "BSD" }
@@ -40,24 +40,9 @@ dependencies = [
 urls = {Homepage = "https://www.github.com/facebook/ThreatExchange"}
 
 [project.optional-dependencies]
-# Core development dependencies
 dev = [
     "pytest",
     "black",
-    "mypy",
-    "types-python-dateutil",
-    "types-requests",
-]
-# Minimal test dependencies
-test = [
-    "pytest",
-]
-# Minimal lint dependencies
-lint = [
-    "black",
-]
-# Minimal type checking dependencies
-types = [
     "mypy",
     "types-python-dateutil",
     "types-requests",
@@ -68,10 +53,8 @@ package = ["wheel"]
 threatexchange = "threatexchange.cli.main:main"
 tx = "threatexchange.cli.main:main"
 
-[tool.hatch.metadata.hooks.requirements_txt]
-files = ["threatexchange/extensions/*/requirements.txt"]
-# Extensions will be merged into dev group
-merge-extras = ["dev"]
+[tool.hatch.version]
+path = "version.txt"
 
 [tool.hatch.build.targets.wheel]
 packages = ["threatexchange"]
