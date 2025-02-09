@@ -43,7 +43,7 @@ auto const dct_matrix_64 = [] {
   const size_t num_rows = 16;
   const size_t num_cols = 64;
   const float matrix_scale_factor = std::sqrt(2.0 / double{num_cols});
-
+  // some file change to cause the build to run
   std::array<float, (num_rows * num_cols)> dct_matrix;
   for (size_t i = 0; i < num_rows; i++) {
     for (size_t j = 0; j < num_cols; j++) {
