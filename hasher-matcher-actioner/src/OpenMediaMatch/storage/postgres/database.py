@@ -82,6 +82,11 @@ def _bank_name_ok(name: str) -> bool:
 
 
 class Bank(db.Model):  # type: ignore[name-defined]
+    """
+    A collection of content that has been labeled with similar labels. Basically a folder.
+    Matches to the contents of this bank should be classified with those labels.
+    """
+
     __tablename__ = "bank"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -117,6 +122,12 @@ class Bank(db.Model):  # type: ignore[name-defined]
 
 
 class BankContent(db.Model):  # type: ignore[name-defined]
+    """
+    A single piece of content that has been labeled.
+    Due to data retention limits for harmful content, and hash sharing,
+    this may no longer point to any original content, but represent the idea of a single piece of content.
+    """
+
     __tablename__ = "bank_content"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -144,6 +155,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
         back_populates="content", cascade="all, delete"
     )
 
+    def set_typed_config(self, cfg: BankContentConfig) -> t.Self:
+        self.disable_until_ts = cfg.disable_until_ts
+        return self
+
     def as_storage_iface_cls(self) -> BankContentConfig:
         return BankContentConfig(
             self.id,
@@ -155,6 +170,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
 
 class ContentSignal(db.Model):  # type: ignore[name-defined]
+    """
+    The signals for a single piece of labeled content.
+    """
+
     content_id: Mapped[int] = mapped_column(
         ForeignKey(BankContent.id, ondelete="CASCADE"),
         primary_key=True,
