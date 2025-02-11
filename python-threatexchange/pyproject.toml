@@ -31,15 +31,16 @@ dependencies = [
     "faiss-cpu",  # faiss
     "numpy",  # faiss
     "packaging",  # fix ModuleNotFoundError in faiss/loader.py
-    "vpdq",
-    # Extension dependencies
-    "py-tlsh",
-    "pdfminer.six",
-    "pytesseract",
 ]
 urls = {Homepage = "https://www.github.com/facebook/ThreatExchange"}
 
 [project.optional-dependencies]
+extensions = [
+    "vpdq",
+    "py-tlsh",
+    "pdfminer.six",
+    "pytesseract",
+]
 dev = [
     "pytest",
     "black",
