@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "threatexchange"
 dynamic = ["version"]
-description = "Python Library for Signal Exchange"
+description = "DESCRIPTION.rst"
 readme = "README.md"
 license = { text = "BSD" }
 authors = [
@@ -55,7 +55,7 @@ tx = "threatexchange.cli.main:main"
 
 [tool.hatch.version]
 path = "version.txt"
-pattern = "^(?P<version>[\\d.]+)$"
+pattern = "^(?P<version>\\d+\\.\\d+\\.\\d+)$"
 
 [tool.hatch.build.targets.wheel]
 packages = ["threatexchange"]
