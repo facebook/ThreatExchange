@@ -54,28 +54,28 @@ query: 26.0294s
 Results (PDQ Faiss):
 -------
 ```
-% python3 benchmarks/benchmark_pdq_faiss_matchers.py --dataset-size 10000 --num-queries 1000 --thresholds 255
+% python3 benchmarks/benchmark_pdq_faiss_matchers.py --dataset-size 10000 --num-queries 1000 --thresholds 31
 Benchmark: PDQ Faiss Matcher Comparison
 
 Options:
 	 faiss_threads :  1
 	 dataset_size :  10000
 	 num_queries :  1000
-	 thresholds :  [255]
+	 thresholds :  [31]
 	 seed :  None
 
-using random seed of  1738860222531631000
-use --seed  1738860222531631000  to rerun with same random values
+using random seed of  1739236966565067000
+use --seed  1739236966565067000  to rerun with same random values
 
 Building Stats:
-	PDQFlatHashIndex: time to build (s):  0.01552891731262207
+	PDQFlatHashIndex: time to build (s):  0.015399932861328125
 	PDQFlatHashIndex: approximate size: 390KB
-	PDQMultiHashIndex: time to build (s):  0.03090691566467285
-	PDQMultiHashIndex: approximate size: 1,208KB
+	PDQMultiHashIndex: time to build (s):  0.030457258224487305
+	PDQMultiHashIndex: approximate size: 1,207KB
 
-Benchmarks for threshold:  255
-	PDQFlatHashIndex - Total Time to search  (s):  18.220859050750732
-	PDQMultiHashIndex - Total Time to search  (s):  52.216137170791626
+Benchmarks for threshold:  31
+	PDQFlatHashIndex - Total Time to search  (s):  0.012083053588867188
+	PDQMultiHashIndex - Total Time to search  (s):  0.01529383659362793
 	PDQFlatHashIndex - Precent of targets found:  100.0
 	PDQMultiHashIndex - Precent of targets found:  100.0
 ```

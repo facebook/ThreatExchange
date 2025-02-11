@@ -6,8 +6,6 @@ Script to benchmark performance of vpdq brute_force, index with faiss and faiss 
 
 import argparse
 import time
-import pickle
-import numpy as np
 
 from enum import Enum
 from contextlib import contextmanager, nullcontext
@@ -73,41 +71,30 @@ def run_benchmark(
         build = lambda: hashes
     elif test_type == IndexType.FLAT:
         build = lambda: build_flat(hashes)
+    else:
+        raise ValueError("Invalid test type")
 
-    start_build = time.perf_counter()
+    with timer("build"):
+        index = build()
+
+    query_generation_timer = nullcontext()
+    if query_size > 10000:
+        query_generation_timer = timer("Generating queries", True)
+    with query_generation_timer:
+        hq = get_random_vpdq_features(query_size)
     if test_type == IndexType.SIGNAL_TYPE:
-        index = build_signal(hashes)
-        serialized = pickle.dumps(index)
+        query = lambda: signal_match(hq, index)
     elif test_type == IndexType.BRUTE_FORCE:
-        index = hashes
-        serialized = pickle.dumps(index)
+        query = lambda: brute_force_match(hq, index)
     elif test_type == IndexType.FLAT:
-        index = build_flat(hashes)
-        serialized = pickle.dumps(index)
-    build_time = time.perf_counter() - start_build
-    
-    print(f"Build time: {build_time:.4f}s")
-    print(f"Index size: {len(serialized) // 1024:,d}KB")
+        query = lambda: index.search_with_distance_in_result(
+            hq, VPDQ_DISTANCE_THRESHOLD
+        )
 
-    # Generate target queries with known matches
-    target_indices = np.random.choice(len(hashes), query_size)
-    target_hashes = [hashes[i] for i in target_indices]
-    
     with timer("query") as t:
-        if test_type == IndexType.SIGNAL_TYPE:
-            results = [signal_match(h, index) for h in target_hashes]
-        elif test_type == IndexType.BRUTE_FORCE:
-            results = [brute_force_match(h, index) for h in target_hashes]
-        elif test_type == IndexType.FLAT:
-            results = [
-                index.search_with_distance_in_result(h, VPDQ_DISTANCE_THRESHOLD)
-                for h in target_hashes
-            ]
-    
+        query()
     query_time = t()
-    matches_found = sum(1 for r in results if len(r) > 0)
     print(f"  Per query: {1000 * query_time / query_size:.4f}ms")
-    print(f"  Match rate: {100 * matches_found / query_size:.2f}%")
 
 
 def build_flat(videos):
@@ -125,17 +112,14 @@ def build_signal(hashes):
 
 
 def signal_match(hash, index):
-    return index.query(vpdq_to_json(hash))
+    index.query(vpdq_to_json(hash))
 
 
 def brute_force_match(query, hashes):
-    results = []
     for hash in hashes:
-        if match_VPDQ_hash_brute(
+        match_VPDQ_hash_brute(
             query, hash, VPDQ_QUALITY_THRESHOLD, VPDQ_DISTANCE_THRESHOLD
-        ):
-            results.append(hash)
-    return results
+        )
 
 
 def get_argparse():
