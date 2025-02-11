@@ -508,7 +508,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if create:
             database.db.session.add(database.Bank.from_storage_iface_cls(bank))
         else:
-            previous = database.Bank.query.filter_by(
+            previous: database.Bank = database.Bank.query.filter_by(
                 name=rename_from if rename_from is not None else bank.name
             ).one_or_404()
             previous.name = bank.name
@@ -533,28 +533,33 @@ class DefaultOMMStore(interface.IUnifiedStore):
         ]
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
-        # TODO
-        raise Exception("Not implemented")
+        sesh = database.db.session
+        bank_content = sesh.execute(
+            select(database.BankContent).where(database.BankContent.id == val.id)
+        ).scalar_one_or_none()
+        if not bank_content:
+            raise KeyError(f"No such bank content with ID {val.id}")
+        bank_content.set_typed_config(val)
+        sesh.commit()
 
     def bank_add_content(
         self,
         bank_name: str,
-        content_signals: t.Dict[t.Type[SignalType], str],
+        signals: t.Dict[t.Type[SignalType], str],
         config: t.Optional[interface.BankContentConfig] = None,
     ) -> int:
-        # Add content to the bank provided.
-        # Returns the ID of the content added.
         sesh = database.db.session
 
         bank = self._get_bank(bank_name)
         content = database.BankContent(bank=bank)
         if config is not None:
             content.original_content_uri = config.original_media_uri
+            content.disable_until_ts = config.disable_until_ts
         sesh.add(content)
-        for content_signal, value in content_signals.items():
+        for signal_type, value in signals.items():
             hash = database.ContentSignal(
                 content=content,
-                signal_type=content_signal.get_name(),
+                signal_type=signal_type.get_name(),
                 signal_val=value,
             )
             sesh.add(hash)
@@ -605,7 +610,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         )
 
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
+        self,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+        batch_size: int = 100,
     ) -> t.Iterator[interface.BankContentIterationItem]:
         # Query for all ContentSignals and stream results with the proper batch size
         query = (
@@ -618,7 +625,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
             .execution_options(stream_results=True, max_row_buffer=batch_size)
         )
 
-        # Conditionally apply the filter if signal_type is provided
         if signal_type is not None:
             query = query.filter(
                 database.ContentSignal.signal_type == signal_type.get_name()
@@ -632,7 +638,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             if not partition:
                 break
 
-            # Yield the results as tuples (signal_val, content_id)
+            # Yield the results as BankContentIterationItem
             for row in partition:
                 yield row._tuple()[0].as_iteration_item()
 

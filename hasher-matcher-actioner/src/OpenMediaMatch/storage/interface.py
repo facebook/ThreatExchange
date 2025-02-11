@@ -441,7 +441,9 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
+        self,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+        batch_size: int = 100,
     ) -> t.Iterator[BankContentIterationItem]:
         """
         Yield the entire content of the bank in batches.
