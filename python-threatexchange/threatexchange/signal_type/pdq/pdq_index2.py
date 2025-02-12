@@ -5,7 +5,6 @@ Implementation of SignalTypeIndex abstraction for PDQ
 """
 
 import typing as t
-from typing import Self
 import faiss
 import numpy as np
 import pickle
@@ -33,6 +32,29 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
     designed to be simpler and fix hard-to-squash bugs in the existing implementation.
     Purpose of this class: to replace the original index in pytx 2.0
     """
+
+    IVF_THRESHOLD = 1000
+
+    @classmethod
+    def build(
+        cls: t.Type["PDQIndex2"], entries: t.Iterable[t.Tuple[str, IndexT]]
+    ) -> "PDQIndex2":
+        """
+        Build an index from a set of entries.
+        Selects between flat and IVF index based on number of entries.
+        """
+        entries_list = list(entries)
+
+        if len(entries_list) >= cls.IVF_THRESHOLD:
+            nlist = int(len(entries_list) ** 0.5)
+            quantizer = faiss.IndexFlatL2(BITS_IN_PDQ)
+            index = faiss.IndexIVFFlat(quantizer, BITS_IN_PDQ, nlist)
+            vectors = convert_pdq_strings_to_ndarray([h for h, _ in entries_list])
+            index.train(vectors)
+        else:
+            index = faiss.IndexFlatL2(BITS_IN_PDQ)
+
+        return cls(index=index, entries=entries_list)
 
     def __init__(
         self,
@@ -134,78 +156,3 @@ class _PDQFaissIndex:
 
     def __setstate__(self, data):
         self.faiss_index = faiss.deserialize_index(data)
-
-
-class PDQSignalTypeIndex2(SignalTypeIndex[IndexT]):
-    """
-    Signal type index implementation for PDQ that uses PDQIndex2 internally.
-    This class handles the selection between flat and IVF indices based on input size.
-    """
-
-    IVF_THRESHOLD = 1000
-
-    @classmethod
-    def build(cls: t.Type[Self], entries: t.Iterable[t.Tuple[str, IndexT]]) -> Self:
-        """
-        Build an index from a set of entries.
-        Selects between flat and IVF index based on number of entries.
-        """
-
-        entries_list = list(entries)
-        ret = cls()
-
-        if len(entries_list) >= cls.IVF_THRESHOLD:
-
-            nlist = int(len(entries_list) ** 0.5)
-            quantizer = faiss.IndexFlatL2(BITS_IN_PDQ)
-            index = faiss.IndexIVFFlat(quantizer, BITS_IN_PDQ, nlist)
-
-            vectors = convert_pdq_strings_to_ndarray([h for h, _ in entries_list])
-            index.train(vectors)
-        else:
-
-            index = faiss.IndexFlatL2(BITS_IN_PDQ)
-
-        ret._index = PDQIndex2(index=index, entries=entries_list)
-        return ret
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._index: t.Optional[PDQIndex2] = None
-
-    def query(self, hash: str) -> t.Sequence[PDQIndexMatch[IndexT]]:
-        """Look up entries against the index."""
-        if self._index is None:
-            return []
-        return self._index.query(hash)
-
-    def add(self, signal_str: str, entry: IndexT) -> None:
-        """Add an entry to the index."""
-        if self._index is None:
-            self._index = PDQIndex2()
-        self._index.add(signal_str, entry)
-
-    def add_all(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
-        """Add multiple entries to the index."""
-        if self._index is None:
-            self._index = PDQIndex2()
-        self._index.add_all(entries)
-
-    def __len__(self) -> int:
-        """Return number of entries in the index."""
-        if self._index is None:
-            return 0
-        return len(self._index)
-
-    def serialize(self, f: t.BinaryIO) -> None:
-        """Serialize the index to a binary file."""
-
-        pickle.dump(self._index, f)
-
-    @classmethod
-    def deserialize(cls, f: t.BinaryIO) -> "PDQSignalTypeIndex2":
-        """Deserialize the index from a binary file."""
-
-        ret = cls()
-        ret._index = pickle.load(f)
-        return ret

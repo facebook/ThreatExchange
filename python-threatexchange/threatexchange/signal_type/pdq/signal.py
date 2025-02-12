@@ -20,8 +20,6 @@ from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
 from threatexchange.signal_type.pdq.pdq_index import PDQIndex
-from threatexchange.signal_type.pdq.pdq_index2 import PDQSignalTypeIndex2
-from threatexchange.signal_type.pdq.pdq_index import SignalTypeIndex
 
 
 class PdqSignal(
@@ -55,8 +53,8 @@ class PdqSignal(
         return [PhotoContent]
 
     @classmethod
-    def get_index_cls(cls) -> t.Type[SignalTypeIndex]:
-        return PDQSignalTypeIndex2
+    def get_index_cls(cls) -> t.Type[PDQIndex]:
+        return PDQIndex
 
     @classmethod
     def validate_signal_str(cls, signal_str: str) -> str:
