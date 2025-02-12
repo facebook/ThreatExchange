@@ -1,6 +1,8 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+from datetime import datetime, timedelta
 import re
+import time
 import typing as t
 
 from flask import Blueprint, Response, request, jsonify, abort
@@ -15,6 +17,10 @@ from OpenMediaMatch import persistence
 from OpenMediaMatch.utils import flask_utils
 import OpenMediaMatch.storage.interface as iface
 from OpenMediaMatch.blueprints import hashing
+
+
+def five_years_from_now() -> int:
+    return int(time.mktime((datetime.now() + timedelta(days=365 * 5)).timetuple()))
 
 
 class BankedContentMetadata(t.TypedDict):
@@ -89,6 +95,8 @@ def bank_update(bank_name: str):
         storage.bank_update(bank, rename_from=rename_from)
     except ValueError as e:
         abort(400, *e.args)
+    except IntegrityError:
+        abort(403, "Bank name already exists")
     return jsonify(bank)
 
 
@@ -126,14 +134,26 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
     return t.cast(BankedContentMetadata, metadata)
 
 
+@bp.route("/bank/<bank_name>/content/<content_id>", methods=["GET"])
+def bank_get_content(bank_name: str, content_id: int):
+    storage = persistence.get_storage()
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        abort(404, f"bank '{bank_name}' not found")
+    content = storage.bank_content_get([content_id])
+    if not content:
+        abort(404, f"content '{content_id}' not found")
+    return jsonify(content[0])
+
+
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
-def bank_add_file(bank_name: str):
+def bank_add_content(bank_name: str):
     """
     Add content to a bank by providing a URI to the content (via the `url`
     query parameter), or uploading a file (via multipart/form-data).
 
     @see OpenMediaMatch.blueprints.hashing hash_media()
-    @see OpenMediaMatch.blueprints.hashing hash_media_post()
+    @see OpenMediaMatch.blueprints.hashing hash_media_from_form_data()
 
     Inputs:
      * The content to be banked, in one of these formats:
@@ -173,7 +193,7 @@ def bank_add_file(bank_name: str):
         hashes = hashing.hash_media()
     # File uploaded via multipart/form-data?
     elif request.files:
-        hashes = hashing.hash_media_post_impl()
+        hashes = hashing.hash_media_from_form_data()
     else:
         abort(400, "Neither `url` nor multipart file upload was received")
     return _bank_add_signals(bank, hashes, metadata)
@@ -201,7 +221,11 @@ def _bank_add_signals(
             abort(400, f"Invalid {name} signal: {str(e)}")
 
     content_config = iface.BankContentConfig(
-        id=0, disable_until_ts=0, collab_metadata={}, original_media_uri=None, bank=bank
+        id=0,
+        disable_until_ts=iface.BankContentConfig.ENABLED,
+        collab_metadata={},
+        original_media_uri=None,
+        bank=bank,
     )
 
     content_id = storage.bank_add_content(bank.name, signals, content_config)
@@ -210,6 +234,38 @@ def _bank_add_signals(
         "id": content_id,
         "signals": {st.get_name(): val for st, val in signals.items()},
     }
+
+
+@bp.route("/bank/<bank_name>/content/<content_id>", methods=["PUT"])
+def bank_update_content(bank_name: str, content_id: int):
+    """
+    Update the metadata for a banked content item.
+
+    Inputs:
+        * disable_until_ts (optional): Unix timestamp in seconds.
+    """
+    storage = persistence.get_storage()
+    bank = storage.get_bank(bank_name)
+    if not bank:
+        abort(404, f"bank '{bank_name}' not found")
+    contents = storage.bank_content_get([content_id])
+    if not contents:
+        abort(404, f"content '{content_id}' not found")
+    content = contents[0]
+    data = request.get_json()
+
+    try:
+        if "disable_until_ts" in data:
+            disable_until_ts = flask_utils.str_to_type(data["disable_until_ts"], int)
+            if disable_until_ts < 0:
+                abort(400, "disable_until_ts must be a non-negative integer")
+            if disable_until_ts > five_years_from_now():
+                abort(400, "disable_until_ts must be less than 5 years in the future")
+            content.disable_until_ts = disable_until_ts
+        storage.bank_content_update(content)
+    except KeyError as e:
+        abort(404, *e.args)
+    return jsonify(content)
 
 
 @bp.route("/bank/<bank_name>/content/<content_id>", methods=["DELETE"])

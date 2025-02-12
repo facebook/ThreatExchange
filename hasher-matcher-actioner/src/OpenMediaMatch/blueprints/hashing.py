@@ -72,11 +72,20 @@ def hash_media_post():
     """
     Calculate the hash for the provided file.
     """
-    return hash_media_post_impl()
+
+    return hash_media_from_form_data()
 
 
-def hash_media_post_impl() -> dict[str, str]:
-    """ """
+def hash_media_from_form_data() -> dict[str, str]:
+    """
+    Hash the provided file and return the hash values.
+
+    Input:
+        * files - the multipart/form-data to hash (only one file allowed)
+
+    Output:
+        * Mapping of signal types to hash values
+    """
     if not request.files:
         return abort(400, "Missing multipart/form-data file upload")
 
@@ -142,6 +151,9 @@ def _lookup_content_type(arg: str) -> t.Type[ContentType]:
 def _parse_request_signal_type(
     content_type: t.Type[ContentType],
 ) -> t.Mapping[str, t.Type[SignalType]]:
+    """
+    Parse the signal types from the request args.
+    """
     signal_types = get_storage().get_enabled_signal_types_for_content_type(content_type)
     if not signal_types:
         abort(500, "No signal types configured!")
