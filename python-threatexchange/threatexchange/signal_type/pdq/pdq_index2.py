@@ -7,7 +7,6 @@ Implementation of SignalTypeIndex abstraction for PDQ
 import typing as t
 import faiss
 import numpy as np
-import pickle
 
 from threatexchange.signal_type.index import (
     IndexMatchUntyped,
