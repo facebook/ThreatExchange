@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #include <algorithm>
 #include <chrono>
 #include <iostream>

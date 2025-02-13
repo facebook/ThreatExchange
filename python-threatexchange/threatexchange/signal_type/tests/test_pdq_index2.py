@@ -1,11 +1,14 @@
-import typing as t
-import random
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import io
+import random
+import typing as t
+
 import faiss
 
 from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2
-from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.pdq.pdq_utils import simple_distance
+from threatexchange.signal_type.pdq.signal import PdqSignal
 
 
 def _get_hash_generator(seed: int = 42):
