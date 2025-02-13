@@ -532,6 +532,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
                 database.ContentSignal,
                 database.ContentSignal.content_id == database.BankContent.id,
                 isouter=True,
+            ).filter(
+                (database.ContentSignal.signal_type == signal_type)
+                | (database.ContentSignal.signal_type.is_(None))
             )
 
         query = query.filter(database.BankContent.id.in_(ids))
