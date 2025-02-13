@@ -304,7 +304,9 @@ def test_bank_get_content_signal_validation(client: FlaskClient):
     content_id = response.json["id"]
 
     # Test valid signal type without signals
-    response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=video_md5")
+    response = client.get(
+        f"/c/bank/{bank_name}/content/{content_id}?signal_type=video_md5"
+    )
     assert response.status_code == 200
     assert isinstance(response.json, dict)
     assert "signals" in response.json
@@ -318,7 +320,9 @@ def test_bank_get_content_signal_validation(client: FlaskClient):
     assert response.json["signals"] == {"pdq": "0" * 64}
 
     # Test an invalid signal type
-    response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=invalid")
+    response = client.get(
+        f"/c/bank/{bank_name}/content/{content_id}?signal_type=invalid"
+    )
     assert response.status_code == 400
     assert isinstance(response.json, dict)
     assert "message" in response.json

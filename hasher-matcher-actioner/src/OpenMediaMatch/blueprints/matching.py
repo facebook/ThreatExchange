@@ -284,12 +284,14 @@ def lookup(signal, signal_type_name):
 
         match = results_by_bank_content_id.get(content.id)
         if match:
-            results[content.bank.name].append({
-                "bank_content_id": content.id,
-                "distance": match.similarity_info.distance,
-                "signal_type": signal_type_name,
-                "signal_value": signal,
-            })
+            results[content.bank.name].append(
+                {
+                    "bank_content_id": content.id,
+                    "distance": match.similarity_info.distance,
+                    "signal_type": signal_type_name,
+                    "signal_value": signal,
+                }
+            )
     return results
 
 
