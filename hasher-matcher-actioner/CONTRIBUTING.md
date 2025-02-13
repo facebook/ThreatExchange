@@ -118,7 +118,7 @@ Although you can remove the need for this by setting the "black" extension as yo
 cd /workspace
 mypy src/OpenMediaMatch
 ```
-If you don't run it in this directory, mypyp won't be able to find its settings folder and you'll get different results than the CI.
+If you don't run it in this directory, mypy won't be able to find its settings folder and you'll get different results than the CI.
 
 ## Save Keystrokes on Common commands
 Add these to your ~/.bashrc file and then reload with `. ~/.bashrc`
@@ -129,7 +129,7 @@ alias t='(cd /workspace/src/OpenMediaMatch && py.test)'
 alias myt='my && t'
 ```
 
-## Recover from mysterious errors during sever startup?
+## Recover from mysterious errors during server startup?
 If you had a syntax error in your code when you opened vscode, the automatic flask run that is created for you may fail. You can easily manually run it!
 
 Create a new terminal window, and then run:
@@ -143,9 +143,9 @@ This is the same command that automatic window runs. Keep fixing errors until it
 ### It's worse than that!
 When you create your devcontainer, data inside is persisted. However, if dependencies to the devcontainer are changed, or a bad database migration appears, you may end up in a strange state that cannot be recovered from. To reset fresh, you will want to rebuild your devcontainer, which you can do from within vscode.
 
-From the menu, go to "View" > "Command Pallet", and in the window that appears, complete to "Devcontainers: Rebuild container".
+From the menu, go to "View" > "Command Palette", and in the window that appears, complete to "Devcontainers: Rebuild container".
 
-This will shutdown your container and rebuild it from scratch. 
+This will shutdown your container and rebuild it from scratch.
 
 ## Reset my database?
 If your database has gotten into a funky state, run
