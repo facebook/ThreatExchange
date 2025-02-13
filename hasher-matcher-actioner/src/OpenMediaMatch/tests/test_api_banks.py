@@ -288,3 +288,32 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [2]}
+
+
+def test_bank_get_content_signal_validation(client: FlaskClient):
+    """Test signal type validation for bank content retrieval"""
+    bank_name = "TEST_BANK"
+    create_bank(client, bank_name)
+
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    post_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
+    )
+    content_id = post_response.json["id"]
+
+    response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=pdq")
+    assert response.status_code == 200
+    assert "signals" in response.json
+    assert isinstance(response.json["signals"], dict)
+    assert "pdq" in response.json["signals"]
+    assert isinstance(response.json["signals"]["pdq"], str)
+
+    response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=invalid")
+    assert response.status_code == 400
+    assert "No such signal type" in response.json["error"]
+
+    response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=video_md5")
+    assert response.status_code == 200
+    assert "signals" in response.json
+    assert isinstance(response.json["signals"], dict)
+    assert len(response.json["signals"]) == 0
