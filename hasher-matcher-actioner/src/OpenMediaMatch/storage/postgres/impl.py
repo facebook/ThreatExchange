@@ -531,9 +531,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
             query = query.outerjoin(
                 database.ContentSignal,
                 database.ContentSignal.content_id == database.BankContent.id,
-            ).filter(
-                (database.ContentSignal.signal_type == signal_type)
-                | (database.ContentSignal.signal_type.is_(None))
             )
 
         query = query.filter(database.BankContent.id.in_(ids))
