@@ -312,7 +312,7 @@ def test_bank_get_content_signal_validation(client: FlaskClient):
         f"/c/bank/{bank_name}/content/{content_id}?signal_type=invalid"
     )
     assert response.status_code == 400
-    assert "No such signal type" in response.json["error"]
+    assert "No such signal type" in response.json["message"]
 
     response = client.get(
         f"/c/bank/{bank_name}/content/{content_id}?signal_type=video_md5"
