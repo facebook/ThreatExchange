@@ -301,29 +301,34 @@ def test_bank_get_content_signal_validation(client: FlaskClient):
         json={"pdq": "0" * 64},
     )
     assert response.status_code == 200
-    content_id = response.json["id"]
+    response_json = response.get_json()
+    assert response_json is not None
+    content_id = response_json["id"]
 
     # Test valid signal type without signals
     response = client.get(
         f"/c/bank/{bank_name}/content/{content_id}?signal_type=video_md5"
     )
     assert response.status_code == 200
-    assert isinstance(response.json, dict)
-    assert "signals" in response.json
-    assert response.json["signals"] == {}
+    response_json = response.get_json()
+    assert response_json is not None
+    assert "signals" in response_json
+    assert response_json["signals"] == {}
 
     # Test a valid signal type with signals
     response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=pdq")
     assert response.status_code == 200
-    assert isinstance(response.json, dict)
-    assert "signals" in response.json
-    assert response.json["signals"] == {"pdq": "0" * 64}
+    response_json = response.get_json()
+    assert response_json is not None
+    assert "signals" in response_json
+    assert response_json["signals"] == {"pdq": "0" * 64}
 
     # Test an invalid signal type
     response = client.get(
         f"/c/bank/{bank_name}/content/{content_id}?signal_type=invalid"
     )
     assert response.status_code == 400
-    assert isinstance(response.json, dict)
-    assert "message" in response.json
-    assert "No such signal type" in response.json["message"]
+    response_json = response.get_json()
+    assert response_json is not None
+    assert "message" in response_json
+    assert "No such signal type" in response_json["message"]
