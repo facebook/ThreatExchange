@@ -8,8 +8,7 @@ developing locally and submitting pull requests on Github.
 ### Self-managed Python
 
 If you're a regular Python developer and already have a Python development environment that works for you,
-you can use it. `python-threatexchange` is laid out like any Python package, complete with `setup.py`
-where all dependencies are defined.
+you can use it. `python-threatexchange` uses a `pyproject.toml` file for its build configuration where all dependencies are defined.
 
 ### macOS, Homebrew, virtualenv
 

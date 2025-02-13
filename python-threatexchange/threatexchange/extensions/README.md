@@ -9,7 +9,7 @@ Using the pattern described here, you can quickly bundle content, signals, and A
 This is meant for both existing users of those tools to test out new techniques to improve their ability to detect harm, but also for researchers and the general public to create  improved techniques, which could then be rapidly adopted by existing exchange programs if shown to be effective.
 
 ## What's in This Directory
-A number of extensions that require additional libraries to be installed, but are common or interesting enough to be maintained along with the core library. If you install all of the "extras_require" in setup.py, you'll have all the tools you need to run all the extensions.
+A number of extensions require additional libraries to be installed but are common or interesting enough to be maintained along with the core library. If you install all of the optional dependencies specified in `pyproject.toml`, you'll have all the tools you need to run all the extensions.
 
 # Creating Extensions
 You can create your own extensions easily, and we encourage you to do so!

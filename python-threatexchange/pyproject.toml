@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling", "hatch-fancy-pypi-readme"]
+build-backend = "hatchling.build"
+
+[project]
+name = "threatexchange"
+dynamic = ["version"]
+description = "DESCRIPTION.rst"
+readme = "README.md"
+license = { text = "BSD" }
+authors = [
+    { name = "Facebook", email = "threatexchange@meta.com" },
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3.8",
+]
+keywords = ["facebook", "threatexchange", "ncmec", "stopncii", "pdq"]
+requires-python = ">=3.8"
+dependencies = [
+    "python-Levenshtein",
+    "requests",
+    "urllib3",  # For allow_methods
+    "python-dateutil",
+    "types-python-dateutil",
+    "dacite",
+    "Pillow",  # pdq
+    "pdqhash",  # pdq
+    "faiss-cpu",  # faiss
+    "numpy",  # faiss
+    "packaging",  # fix ModuleNotFoundError in faiss/loader.py
+]
+urls = {Homepage = "https://www.github.com/facebook/ThreatExchange"}
+
+[project.optional-dependencies]
+extensions = [
+    "vpdq",
+    "py-tlsh",
+    "pdfminer.six",
+    "pytesseract",
+]
+dev = [
+    "pytest",
+    "black",
+    "mypy",
+    "types-python-dateutil",
+    "types-requests",
+]
+package = ["wheel"]
+
+[project.scripts]
+threatexchange = "threatexchange.cli.main:main"
+tx = "threatexchange.cli.main:main"
+
+[tool.hatch.version]
+path = "version.txt"
+pattern = "^(?P<version>\\d+\\.\\d+\\.\\d+)$"
+
+[tool.hatch.build.targets.wheel]
+packages = ["threatexchange"]
+include = ["threatexchange/py.typed"]
+exclude = ["tests*"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "tests*",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
+include = '\.pyi?$' 
