@@ -172,10 +172,19 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         self.banks.pop(name, None)
 
     def bank_content_get(
-        self, id: t.Iterable[int]
+        self, id: t.Iterable[int], signal_type: t.Optional[str] = None
     ) -> t.Sequence[interface.BankContentConfig]:
-        # TODO
-        raise Exception("Not implemented")
+        return [
+            interface.BankContentConfig(
+                id=i,
+                disable_until_ts=interface.BankContentConfig.ENABLED,
+                collab_metadata={},
+                original_media_uri=None,
+                bank=self.get_bank("MOCK_BANK"),
+                signals={} if signal_type is None else {},
+            )
+            for i in id
+        ]
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
         # TODO
