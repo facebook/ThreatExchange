@@ -70,3 +70,51 @@ Original resolution Python hashing time: 34.4134s
   Number of mismatches: 153, 0.02 percent in total.
   Average 17.71 hamming distance away.
 ```
+
+# Observed Performance
+- Model: MacBook Air
+- Memory: 16 GB
+- Operating System: macOS 15.2
+- Chip: Apple M2
+- Core Configuration: 8 cores total
+
+Results (vPDQ):
+-------
+```
+% python3 benchmark_vpdq_index.py brute_force -f 500 -v 20  -q 1000
+build: 0.0000s
+query: 684.5324s
+  Per query: 684.5324ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 20 -q 1000
+build: 0.0048s
+query: 0.0051s
+  Per query: 0.0051ms
+
+
+% python3 benchmark_vpdq_index.py signal_type -f 500 -v 2000 -q 10000
+Generating data...
+Generating data: 1.2398s
+build: 3.2970s
+query: 2.8439s
+  Per query: 0.2844ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 2000 -q 10000
+Generating data...
+Generating data: 1.2237s
+build: 0.4786s
+query: 2.5248s
+  Per query: 0.2525ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 2000 -q 100000
+Generating data...
+Generating data: 1.2195s
+build: 0.4800s
+Generating queries...
+Generating queries: 0.1017s
+query: 26.0294s
+  Per query: 0.2603ms
+```
