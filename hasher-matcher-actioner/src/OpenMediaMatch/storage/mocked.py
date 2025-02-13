@@ -174,13 +174,17 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def bank_content_get(
         self, id: t.Iterable[int], signal_type: t.Optional[str] = None
     ) -> t.Sequence[interface.BankContentConfig]:
+        mock_bank = self.get_bank("MOCK_BANK")
+        if mock_bank is None:
+            mock_bank = interface.BankConfig("MOCK_BANK", matching_enabled_ratio=1.0)
+
         return [
             interface.BankContentConfig(
                 id=i,
                 disable_until_ts=interface.BankContentConfig.ENABLED,
                 collab_metadata={},
                 original_media_uri=None,
-                bank=self.get_bank("MOCK_BANK"),
+                bank=mock_bank,
                 signals={} if signal_type is None else {},
             )
             for i in id
