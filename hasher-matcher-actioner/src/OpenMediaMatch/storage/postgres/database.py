@@ -166,6 +166,11 @@ class BankContent(db.Model):  # type: ignore[name-defined]
             collab_metadata={},
             original_media_uri=None,
             bank=self.bank.as_storage_iface_cls(),
+            signals=(
+                {s.signal_type: s.signal_val for s in self.signals}
+                if self.signals
+                else {}
+            ),
         )
 
 
