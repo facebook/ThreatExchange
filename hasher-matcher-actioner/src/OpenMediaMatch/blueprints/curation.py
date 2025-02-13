@@ -29,6 +29,14 @@ class BankedContentMetadata(t.TypedDict):
     json: t.NotRequired[dict[t.Any, t.Any]]
 
 
+class BankContentResponse(t.TypedDict):
+    id: int
+    bank: str
+    enabled: bool
+    original_media_uri: t.Optional[str]
+    signals: t.Dict[str, str]
+
+
 bp = Blueprint("curation", __name__)
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
@@ -136,14 +144,37 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
 
 @bp.route("/bank/<bank_name>/content/<content_id>", methods=["GET"])
 def bank_get_content(bank_name: str, content_id: int):
+    """
+    Get content from a bank by ID.
+
+    Query Parameters:
+        signal_type (optional): If specified, includes the signal value for this signal type
+    """
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    content = storage.bank_content_get([content_id])
+
+    signal_type = request.args.get("signal_type")
+    if signal_type:
+        signal_type_cfgs = storage.get_signal_type_configs()
+        if signal_type not in signal_type_cfgs:
+            abort(400, f"No such signal type '{signal_type}'")
+
+    content = storage.bank_content_get([content_id], signal_type)
     if not content:
         abort(404, f"content '{content_id}' not found")
-    return jsonify(content[0])
+
+    content_obj = content[0]
+    response: BankContentResponse = {
+        "id": content_obj.id,
+        "bank": content_obj.bank.name,
+        "enabled": content_obj.enabled,
+        "original_media_uri": content_obj.original_media_uri,
+        "signals": content_obj.signals,
+    }
+
+    return jsonify(response)
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
