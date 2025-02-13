@@ -16,7 +16,7 @@ static configuration and postgres.
 """
 
 import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import typing as t
 import time
 
@@ -329,6 +329,7 @@ class BankContentConfig:
     original_media_uri: t.Optional[str]
 
     bank: BankConfig
+    signals: t.Dict[str, str] = field(default_factory=dict)
 
     @property
     def enabled(self) -> bool:
@@ -409,8 +410,19 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     # Bank content
     @abc.abstractmethod
-    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
-        """Get the content config for a bank"""
+    def bank_content_get(
+        self, id: t.Iterable[int], signal_type: t.Optional[str] = None
+    ) -> t.Sequence[BankContentConfig]:
+        """
+        Get the content config for a bank.
+
+        Args:
+            id: The IDs of the bank content to retrieve
+            signal_type: Optional signal type to include in the response
+
+        Returns:
+            List of bank content configs, optionally including signal values
+        """
 
     @abc.abstractmethod
     def bank_content_update(self, val: BankContentConfig) -> None:
