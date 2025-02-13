@@ -249,7 +249,7 @@ SELECT * FROM hamming_test WHERE HAMMING_DISTANCE_256(hash, "f8f8f0cce0f4e84d0e3
 
 # Examples using Int64 Hashes
 
-Preliminary experiments using sets of 4 int64 vals to represent the hashes instead of hex strings has shown to boost performance by 5x. 
+Preliminary experiments using sets of 4 int64 vals to represent the hashes instead of hex strings has shown to boost performance by 5x.
 
 Below are analogous MySQL examples using the Set-of-4-int64-vals hash representations.
 

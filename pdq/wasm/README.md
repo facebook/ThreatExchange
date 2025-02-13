@@ -27,7 +27,7 @@ a.	Microsoft: .NET specific libraries.  Please refer to the libraries under test
 b.	Selenium Drivers: To run the test scripts, since the browser must be invoked to perform the test scripts
 c.	Browser drivers: Chrome Drivers and Gecko Drivers (Firefox drivers)
 9.	Software code for this entire project: <<Need to be filled >>
-10.	For the remainder of this document, it is assumed that the downloaded code is in /tmp/. 
+10.	For the remainder of this document, it is assumed that the downloaded code is in /tmp/.
 
 
 PDQ / MD5 WEB ASSEMBLY 
@@ -47,13 +47,13 @@ docker run --rm -v /tmp/ThreatExchange:/src emscripten/emsdk:3.1.7 emmake make w
 
 STEPS FOR RUNNING THE TESTS FOR PDQ / MD5 WEB ASSEMBLY:
 The tests for these web assembly are run using the Selenium Test Drivers. This is because, the invocation of browsers and operating the browser as if an user is interacting through the browser to generate the hashes locally, instead of uploading it.  The test program is built using Microsoft .NET 6.0 Core and can be run on Windows, MacOS and Linux environments.  The steps for building and running the tests are:
-1.	Make sure all prerequisites are installed in the environment that runs the tests. The prerequisites are described above. 
+1.	Make sure all prerequisites are installed in the environment that runs the tests. The prerequisites are described above.
 
 2.	Copy the pdq-photo-hasher.js and pdq-photo-hasher.wasm files generated in the previous section to /tmp/ThreatExchange/pdq/wasm/scripts folder.
 
 3.	Navigate to the folder /tmp/ThreatExchange/pdq/wasm and open a command window in that directory.
 
-4.	Run npm install in the /tmp/ThreatExchange/pdq/wasm directory to make sure that necessary node modules are installed. 
+4.	Run npm install in the /tmp/ThreatExchange/pdq/wasm directory to make sure that necessary node modules are installed.
 
 5.	Edit the file named server.js, which is used by node server.  In Line 5, a port number is specified for running the node web server.  [For the document purpose, we will assume that it is 9095]
 
@@ -65,9 +65,9 @@ node server.js
 8.	Open a Command window and run the following command:
 dotnet build
 
-9.	The build process will successfully create executables under the directory: bin/Debug/net6.0 directory. 
+9.	The build process will successfully create executables under the directory: bin/Debug/net6.0 directory.
 
-10.	The test data is provided through the file named: PDQMD5TestData.csv under the directory /tmp/ThreatExchange/pdq/wasm/test/TestData.  Please make sure that file paths are correct for the image files in that PDQMD5TestData.csv .  if not adjust the paths appropriately for each image file. 
+10.	The test data is provided through the file named: PDQMD5TestData.csv under the directory /tmp/ThreatExchange/pdq/wasm/test/TestData.  Please make sure that file paths are correct for the image files in that PDQMD5TestData.csv .  if not adjust the paths appropriately for each image file.
 
 11.	Now, run the test script driver using the following command:
 dotnet run chrome pdqmd5 /tmp/ThreatExchange/pdq/wasm/test/TestData/PDQMD5TestData.csv http://localhost:9095
@@ -75,7 +75,7 @@ dotnet run chrome pdqmd5 /tmp/ThreatExchange/pdq/wasm/test/TestData/PDQMD5TestDa
 The arguments for this command are provided below in the table:
 Argument Position	Description	Possible Values
 Arg 1	The name of the Browser Driver.	chrome , firefox
-Arg 2	Specifies the type of Hash to be calculated	pdqmd5 , tmk 
+Arg 2	Specifies the type of Hash to be calculated	pdqmd5 , tmk
 Arg 3	Specifies the location of the file where test data is available. 	Filename with path
 Arg 4	Specifies the URL that runs the .js file and .wasm file. Specified in Step 5 above. A Valid URL.
 
@@ -99,13 +99,13 @@ docker run --rm -v /tmp/ThreatExchange:/src emscripten/emsdk:3.1.7 emmake make w
 
 STEPS FOR RUNNING THE TESTS FOR PDQ / MD5 WEB ASSEMBLY:
 The tests for these web assembly are run using the Selenium Test Drivers. This is because, the invocation of browsers and operating the browser as if an user is interacting through the browser to generate the hashes locally, instead of uploading it.  The test program is built using Microsoft .NET 6.0 Core and can be run easily on Windows, MacOS and Linux environments.  The steps for building and running the tests are:
-1.	Make sure all prerequisites are installed in the environment that runs the tests. The prerequisites are described above. 
+1.	Make sure all prerequisites are installed in the environment that runs the tests. The prerequisites are described above.
 
 2.	Copy the tmk-hash-video.js and tmk-hash-video.wasm files generated in the previous section to /tmp/ThreatExchange/tmk/wasm/scripts folder.
 
 3.	Navigate to the folder /tmp/ThreatExchange/tmk/wasm and open a command window in that directory.
 
-4.	Run npm install in the /tmp/ThreatExchange/tmk/wasm directory to make sure that necessary node modules are installed. 
+4.	Run npm install in the /tmp/ThreatExchange/tmk/wasm directory to make sure that necessary node modules are installed.
 
 5.	Edit the file named server.js, which is used by node server.  In Line 5, a port number is specified for running the node web server.  [For the document purpose, we will assume that it is 9096]
 
@@ -117,9 +117,9 @@ node server.js
 8.	Open a Command window and run the following command:
 dotnet build
 
-9.	The build process will successfully create executables under the directory: bin/Debug/net6.0 directory. 
+9.	The build process will successfully create executables under the directory: bin/Debug/net6.0 directory.
 
-10.	The test data is provided through the file named: TMKTestData.csv under the directory /tmp/ThreatExchange/tmk/wasm/test/TestData.  Please make sure that file paths are correct for the image files in that TMKTestData.csv .  if not adjust the paths appropriately for each image file. 
+10.	The test data is provided through the file named: TMKTestData.csv under the directory /tmp/ThreatExchange/tmk/wasm/test/TestData.  Please make sure that file paths are correct for the image files in that TMKTestData.csv .  if not adjust the paths appropriately for each image file.
 
 11.	Now, run the test script driver using the following command:
 dotnet run chrome tmk /tmp/ThreatExchange/tmk/wasm/test/TestData/TMKTestData.csv /tmp/testdata http://localhost:9096
@@ -129,9 +129,9 @@ Argument Position	Description	Possible Values
 Arg 1	The name of the Browser Driver.	chrome , firefox
 Arg 2	Specifies the type of Hash to be calculated	pdqmd5  , tmk
 Arg 3	Specifies the location of the file where test data is available. 	Filename with path
-Arg 4	Specifies the location where temporary tmk and video files are stored during the hash generation process .  	File location that must already exist. 
+Arg 4	Specifies the location where temporary tmk and video files are stored during the hash generation process .  	File location that must already exist.
 Arg 5	Specifies the URL that runs the .js file and .wasm file. Specified in Step 5 above. 	A Valid URL.
 
-12.	If the tests are successful, the messages for all images display as “hash matching”. 
+12.	If the tests are successful, the messages for all images display as “hash matching”.
 
 

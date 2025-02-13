@@ -15,7 +15,7 @@ All of the refernce notebooks make heavy use of the following Python libraries t
   - [Pytx](https://pytx.readthedocs.org/en/latest/installation.html) for ThreatExchange access
   - [Seaborn](https://stanford.edu/~mwaskom/software/seaborn/) for making charts pretty
 
-All of the python packages mentioned can be installed via 
+All of the python packages mentioned can be installed via
 
 ```
 pip install <package_name>

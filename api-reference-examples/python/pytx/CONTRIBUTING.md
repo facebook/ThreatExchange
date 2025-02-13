@@ -29,7 +29,7 @@ After that, whenever you commit, pre-commit will run and either fix up minor iss
 But `--no-verify` is so uncool.
 
 ### Running Tests
-pytx is a bit short on tests, but you could help fix that. 
+pytx is a bit short on tests, but you could help fix that.
 To run the tests `make test`
 
 ## Documenting Changes

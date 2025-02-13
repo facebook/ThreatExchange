@@ -8,13 +8,13 @@ MacBook Pro (16-inch, 2021), Apple M1 Pro, 32 GB Ram
 Results:
 -------
 ```
-% python3 benchmark.py      
+% python3 benchmark.py  
 Python hashing time: 34.1643s
   Total hash: 7069  Per hash: 4.8330ms
 CPP hashing time: 34.3673s
   Total hash: 7069  Per hash: 4.8617ms
 
-% python3 benchmark.py -r 1 
+% python3 benchmark.py -r 1
 Python hashing time: 6.9934s
   Total hash: 241  Per hash: 29.0182ms
 CPP hashing time: 7.3139s
@@ -60,7 +60,7 @@ Original resolution Python hashing time: 35.2615s
   Number of mismatches: 20, 0.00 percent in total.
   Average 9.39 hamming distance away.
 
-% python3 benchmark.py -s 60 
+% python3 benchmark.py -s 60
 Python hashing time: 3.0915s
   Total hash: 7069  Per hash: 0.4373ms
 CPP hashing time: 3.3920s
