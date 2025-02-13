@@ -178,8 +178,8 @@ def lookup_signal_with_distance(
         {
             "bank_content_id": m.metadata,
             "distance": m.similarity_info.pretty_str(),
-            "signal_type": signal_type_name,
-            "signal_value": signal,
+            "signal_type": m.similarity_info.signal_type.get_name(),
+            "signal_value": m.similarity_info.signal_value,
         }
         for m in results
     ]

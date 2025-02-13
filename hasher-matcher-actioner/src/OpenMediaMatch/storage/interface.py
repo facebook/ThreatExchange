@@ -16,7 +16,7 @@ static configuration and postgres.
 """
 
 import abc
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import typing as t
 import time
 
@@ -329,7 +329,6 @@ class BankContentConfig:
     original_media_uri: t.Optional[str]
 
     bank: BankConfig
-    signals: t.Dict[str, str] = field(default_factory=dict)
 
     @property
     def enabled(self) -> bool:
