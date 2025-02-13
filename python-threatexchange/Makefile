@@ -2,7 +2,7 @@ all:
 	echo >&2 "Must specify target."
 
 package:
-	python3 ./setup.py sdist bdist_wheel
+	python3 -m build
 
 local_install:
 	python3 -m pip install -e .[all]
