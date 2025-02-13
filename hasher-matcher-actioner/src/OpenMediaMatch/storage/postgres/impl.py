@@ -523,9 +523,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         database.db.session.commit()
 
     def bank_content_get(
-        self,
-        ids: t.Iterable[int],
-        signal_type: t.Optional[str] = None
+        self, ids: t.Iterable[int], signal_type: t.Optional[str] = None
     ) -> t.Sequence[interface.BankContentConfig]:
         query = database.db.session.query(database.BankContent)
 
@@ -533,10 +531,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
             query = query.join(
                 database.ContentSignal,
                 database.ContentSignal.content_id == database.BankContent.id,
-                isouter=True
+                isouter=True,
             ).filter(
-                (database.ContentSignal.signal_type == signal_type) |
-                (database.ContentSignal.signal_type.is_(None))
+                (database.ContentSignal.signal_type == signal_type)
+                | (database.ContentSignal.signal_type.is_(None))
             )
 
         query = query.filter(database.BankContent.id.in_(ids))
@@ -548,7 +546,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
             if signal_type is not None:
                 content_config.signals = {}
                 if bc.signals:
-                    matching_signals = [s for s in bc.signals if s.signal_type == signal_type]
+                    matching_signals = [
+                        s for s in bc.signals if s.signal_type == signal_type
+                    ]
                     if matching_signals:
                         content_config.signals = {
                             signal_type: matching_signals[0].signal_val
