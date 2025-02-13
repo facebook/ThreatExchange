@@ -288,7 +288,7 @@ def lookup(signal, signal_type_name):
                 "bank_content_id": content.id,
                 "distance": match.similarity_info.distance,
                 "signal_type": signal_type_name,
-                "signal_value": signal
+                "signal_value": signal,
             }
         )
     return results
