@@ -1,8 +1,8 @@
 # ThreatExchange Extensions
 
-Originally, this library was meant specifically for Facebook's [ThreatExchange](https://developers.facebook.com/docs/threat-exchange/) platform. However, we think that the concept of open source trust and safety could benefit from a library that allows the infrastructure for sharing signals and hashes from many sources, and potentially apply many techniques. 
+Originally, this library was meant specifically for Facebook's [ThreatExchange](https://developers.facebook.com/docs/threat-exchange/) platform. However, we think that the concept of open source trust and safety could benefit from a library that allows the infrastructure for sharing signals and hashes from many sources, and potentially apply many techniques.
 
-Not all techniques will make sense for all use cases, but there are several concepts like "Content", "Signal", and "Exchange" which we think are universally applicable. 
+Not all techniques will make sense for all use cases, but there are several concepts like "Content", "Signal", and "Exchange" which we think are universally applicable.
 
 Using the pattern described here, you can quickly bundle content, signals, and APIs that can then be compatible with the threatexchange CLI, and Hasher-Matcher-Actioner tools.
 
@@ -44,7 +44,7 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | API | N/A | iwf | Reserved to prevent confusion with IWF API
 
 ## Writing a ThreatExchange Expansion Module
-Using the interfaces for SignalType, ContentType, and SignalExchangeAPI, create classes that extend as many of those as you think should be bundled together. 
+Using the interfaces for SignalType, ContentType, and SignalExchangeAPI, create classes that extend as many of those as you think should be bundled together.
 
 Next, in a module (`__init__.py` is fine), you'll want to have a variable named `TX_MANIFEST` that is assigned a `ThreatExchangeExtensionManifest` object. From there, simply list all the objects that you've implemented.
 
@@ -65,7 +65,7 @@ TX_MANIFEST = ThreatExchangeExtensionManifest(
 ```
 
 ### PyPi Packaging and Naming
-PEP423 suggests "threatexchangecontributions.X" as potential package name, but that is quite lengthy. We're worried people will get confused about who maintains extensions if they are named "threatexchange" or "threatexchange.extensions" (the extensions in this directory are maintained by this project). If you want to try and link your package name to the project without going for the wordy version, "tx_extensions.X" appears to be free real estate in pypi (though tx is an unrelated package). 
+PEP423 suggests "threatexchangecontributions.X" as potential package name, but that is quite lengthy. We're worried people will get confused about who maintains extensions if they are named "threatexchange" or "threatexchange.extensions" (the extensions in this directory are maintained by this project). If you want to try and link your package name to the project without going for the wordy version, "tx_extensions.X" appears to be free real estate in pypi (though tx is an unrelated package).
 
 ### Handling Dependencies on Other Extensions or Libraries
 If your extension will function correctly without another extension (for example an API that can fetch some signal types without the SignalType), we suggest making a decision between having your library work without it (for example, by checking whether that SignalType is importable), or by simply making it required. If distributing your extension via pypi, using extra requires for the additional functionality seems to be a good compromise.
