@@ -1,13 +1,14 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import typing as t
 from dataclasses import dataclass
+
+from threatexchange.exchanges import auth, fetch_state as state, signal_exchange_api
 from threatexchange.exchanges.clients.techagainstterrorism import api
-from threatexchange.exchanges import fetch_state as state
-from threatexchange.exchanges import signal_exchange_api
-from threatexchange.exchanges import auth
 from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
-from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.signal_base import SignalType
 
 
 @dataclass
