@@ -1,3 +1,7 @@
+// ================================================================
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// ================================================================
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
