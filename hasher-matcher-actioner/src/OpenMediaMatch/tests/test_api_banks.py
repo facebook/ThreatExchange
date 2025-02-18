@@ -288,3 +288,45 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [2]}
+
+
+def test_bank_get_content_signal_validation(client: FlaskClient):
+    """Test signal type validation for bank content retrieval"""
+    bank_name = "TEST_BANK"
+    create_bank(client, bank_name)
+
+    # Add some content with a PDQ signal
+    response = client.post(
+        f"/c/bank/{bank_name}/signal",
+        json={"pdq": "0" * 64},
+    )
+    assert response.status_code == 200
+    response_json = response.get_json()
+    assert response_json is not None
+    content_id = response_json["id"]
+
+    response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=pdq")
+    assert response.status_code == 200
+    response_json = response.get_json()
+    assert response_json is not None
+    assert "signals" in response_json
+    assert response_json["signals"] == {"pdq": "0" * 64}
+
+    response = client.get(
+        f"/c/bank/{bank_name}/content/{content_id}?signal_type=invalid"
+    )
+    assert response.status_code == 400
+    response_json = response.get_json()
+    assert response_json is not None
+    assert "message" in response_json
+    assert "No such signal type" in response_json["message"]
+
+    response = client.get(
+        f"/c/bank/{bank_name}/content/{content_id}?signal_type=video_md5"
+    )
+    assert response.status_code == 200
+    response_json = response.get_json()
+    assert response_json is not None
+    assert "signals" in response_json
+    assert isinstance(response_json["signals"], dict)
+    assert len(response_json["signals"]) == 0

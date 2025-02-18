@@ -40,6 +40,8 @@ bp.register_error_handler(HTTPException, api_error_handler)
 class MatchWithDistance(t.TypedDict):
     content_id: int
     distance: str
+    signal_type: str
+    signal_value: str
 
 
 @dataclass
@@ -165,6 +167,8 @@ def lookup_signal_with_distance(
         {
             "content_id": m.metadata,
             "distance": m.similarity_info.pretty_str(),
+            "signal_type": signal_type_name,
+            "signal_value": signal,
         }
         for m in results
     ]
@@ -279,12 +283,15 @@ def lookup(signal, signal_type_name):
             continue
 
         match = results_by_bank_content_id.get(content.id)
-        results[content.bank.name].append(
-            {
-                "bank_content_id": content.id,
-                "distance": match.similarity_info.distance,
-            }
-        )
+        if match:
+            results[content.bank.name].append(
+                {
+                    "bank_content_id": content.id,
+                    "distance": match.similarity_info.distance,
+                    "signal_type": signal_type_name,
+                    "signal_value": signal,
+                }
+            )
     return results
 
 
