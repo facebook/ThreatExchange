@@ -84,7 +84,7 @@ to run tests.
 ### Writing Tests
 New functionality should have unittests. Core functionality like SignalType and SignalExchangeAPI have good examples of tests in their various directories.
 
-We prefer tests to live in their own files in the /tests/ directory where the code under test is. 
+We prefer tests to live in their own files in the /tests/ directory where the code under test is.
 
 ### Skipped Tests
 Many tests rely on extensions that are not installed by default when you install `threatexchange`. It is okay to submit a PR without running skipped tests, they will be run by workflow. If you find out that tests are failing, you can follow the instructions in the extensions directories to install the needed dependencies, which will make the tests runnable locally.
@@ -99,7 +99,7 @@ fastest way to do this is
     threatexchange --help
 
 ## Releasing A New PyPI version
-Releases of the library are managed by a [GitHub action](../.github/workflows/python-threatexchange-release.yaml), which are triggered by changes to [version.txt](./version.txt). 
+Releases of the library are managed by a [GitHub action](../.github/workflows/python-threatexchange-release.yaml), which are triggered by changes to [version.txt](./version.txt).
 
 Version releases should be in a PR on their own, and not included with functional changes.
 
@@ -120,7 +120,7 @@ $ make push
 We will only rarely add new extensions, which require additional dependencies, and are not enabled by default. We encourage authors to write and own their own extensions! Feel free to create PR's to add your own extensions to the list of known ones in the README.
 
 # Writing Pull Requests
-Thank you for considering writing improvements to the library! We accept pull requests! 
+Thank you for considering writing improvements to the library! We accept pull requests!
 Please see the detailed instructions in the root-level [CONTRIBUTING](../CONTRIBUTING.md) on making PRs.
 
 The following are additional considerations or pytx-specific notes:

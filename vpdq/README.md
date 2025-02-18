@@ -396,7 +396,7 @@ query: 26.0294s
 ```
 
 > **Note:** Wheels are not currently distributed. But, in the future building wheels with manylinux and packaging the dynamically
-> linked libav* libraries may be useful to end users to skip the build and dependency process. 
+> linked libav* libraries may be useful to end users to skip the build and dependency process.
 
 ## FAISS
 

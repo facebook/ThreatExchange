@@ -1,5 +1,5 @@
 # Repo Organization and project-level CONTRIBUTING.md
-This repository is organized as a collection of sub-projects, some of which reference each other. 
+This repository is organized as a collection of sub-projects, some of which reference each other.
 This explainer is about the entire repository, but there are more specific notes for how to
 develop on subprojects in the various directories that contain them.
 
@@ -21,13 +21,13 @@ Here's an easy way to get started:
 
    git clone git@github.com:your-username/ThreatExchange
 
-Next, [fork]([fork](https://help.github.com/articles/fork-a-repo/) your own copy of the repo. 
+Next, [fork]([fork](https://help.github.com/articles/fork-a-repo/) your own copy of the repo.
 Here's where you'll push development branches. Note the name, we'll need it in the next step.
 
 Next, we'll add your forked copy as a remote.
 
     # From the root directory of your locally cloned repo
-    git remote add fork git@github.com:<USUALLY_YOUR_USERNAME>/ThreatExchange 
+    git remote add fork git@github.com:<USUALLY_YOUR_USERNAME>/ThreatExchange
 
 Lastly, we'll add the fork as the preferred repo to push to
 
@@ -42,18 +42,18 @@ This will give you an easy develoment cycle for updating your copy:
 If you are a git expert, you likely know of other ways to set this up, to your preference!
 
 ## Branch locally and develop!
-First, make a branch in your cloned fork. 
+First, make a branch in your cloned fork.
 
     git co -b <MY_COOL_FEATURE_BRANCH_NAME>
 
 We suggest naming the branch by feature name
 or “issue_XX” where XX is the issue number the branch is associated with. Make
-your changes in your branch and test thoroughly. 
+your changes in your branch and test thoroughly.
 
     git commit -am "[hma] Made cool changes to hasher-matcher-actioner"
     git push  # Pushes to your fork if you followed the setup!
 
-If this is a large feature you can push your branch to your fork often to save your work. 
+If this is a large feature you can push your branch to your fork often to save your work.
 When making commits to your branch, make sure you write [well-formed][wf] commit
 messages and update documentation accordingly (see the next section).
 
@@ -65,10 +65,10 @@ If your change will add a new API, new functionality, or refactor a large sectio
 it's best to socialize your intent first and get some feedback. Maintainers can let you know
 if there are some concerns about the change (e.g. some projects deliberately minimize the number
 of dependencies - if you are planning on pulling Node.js into a project, it's unlikely to be 
-accepted! 
+accepted!
 
 This is also a place where maintainers can give you pointers on what they'll be looking for in
-testing. 
+testing.
 
 Don't let this step dissuade you, we want to work with you to help you figure out the best
 solution. If we ultimately don't believe we can support it in the main repo, you are welcome
@@ -104,7 +104,7 @@ in the directory you are working with, or in smaller projects, a top-level `test
 folder that contains all the tests.
 
 For changes that aren't easy to unittest, we still want to know you are sure your 
-change does the right thing. Make sure to include the testing steps you used. 
+change does the right thing. Make sure to include the testing steps you used.
 If you add more testing steps (e.g. as a result of review feedback)
 
 ### Submit a PR
@@ -122,21 +122,21 @@ Make sure to include a summary of changes (especially the "why" or problem you a
 Make sure to link the issue if it's for an issue!
 
 #### Draft Reviews and RFC
-If you are not sure about a potential change, and want to get feedback on a review, you can still submit a PR as a draft PR, or clearly label the PR with "[RFC]" (request for comment). 
+If you are not sure about a potential change, and want to get feedback on a review, you can still submit a PR as a draft PR, or clearly label the PR with "[RFC]" (request for comment).
 Reviewers will know not to merge your changes but may still send you an Accept if they would merge it without changes (or use "Request Changes" to indicate the same thing, just that they want you to convert from draft).
 
 ### Continuous Integration
-If you are a new contributor, the continuous integration (CI) won't run until it's triggered by a maintainer of the repo. 
+If you are a new contributor, the continuous integration (CI) won't run until it's triggered by a maintainer of the repo.
 If there is CI failure, we usually won't merge the change!
 
 ### Review
 Once you’ve submitted a PR you're waiting on us for review. We aim to check the repo every business day, but sometimes we are slow, especially if there aren't new changes.
-We aim to try and get you a full review every business day (e.g. resulting in either "request changes" or merge), but we can't always do this. 
+We aim to try and get you a full review every business day (e.g. resulting in either "request changes" or merge), but we can't always do this.
 We don't expect it takes longer than 5 business days to get a first review.
 
 To make changes on your code for review, checkout your branch again
 
-    git checkout <MY_COOL_FEATURE_BRANCH_NAME> 
+    git checkout <MY_COOL_FEATURE_BRANCH_NAME>
 
 Make your changes as new commits (don't amend your previous commits as they break history and make it harder to review)
 
@@ -145,7 +145,7 @@ Make your changes as new commits (don't amend your previous commits as they brea
 Then push your changes to your fork again - they'll automatically update your PR!
 
    git push  # assumes you set up the default push target to your fork
- 
+
 Here are some things to expect from review:
 1. If your summary isn't detailed and we aren't sure what the change is aiming to do, we might request changes without reviewing much of the code.
 2. If you don't have a test plan or your change is missing updates for unittesting, we will likely request changes.
@@ -156,7 +156,7 @@ Here are some things to expect from review:
     4. `alt/code golf:` The reviewer is providing an alternative implementation that might be shorter or have a stylistic difference. Implicitly `ignorable:`
 
 #### Resolving Conversations
-Standard practice is to let the commentor who created a comment thread, or another reviewer "resolve conversations" after you’ve responded to or addressed the issue. Reviewers may un-resolve conversations they think still need discussion. 
+Standard practice is to let the commentor who created a comment thread, or another reviewer "resolve conversations" after you’ve responded to or addressed the issue. Reviewers may un-resolve conversations they think still need discussion.
 
 #### Clearing Reviews After Response
 Sometimes Github will still show "Changes Requested" even if you have responded to all changes (or interactions with conversation resolution). Please [dismiss reviews with changes requested](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/dismissing-a-pull-request-review) that are stuck in "Requested Changes" once you think you have addressed everything.
@@ -165,9 +165,9 @@ Sometimes Github will still show "Changes Requested" even if you have responded 
 ### Merging
 Once your code is accepted, we usually merge it right away! If you don't want us to do this, please note it in the summary. You can always do followups as another PR!
 
-### PR Sizes & Landing-and-iterating 
+### PR Sizes & Landing-and-iterating
 We generally prefer smaller changes (<100-500 lines of functional py code, not including unittests), and so if you have a larger feature, consider opening an issue to explain your full plans, and then doing a series of PRs all linking to that issue.
-We understand that everyone contributing is essentially volunteering time, and so want to make the best use of your time as well. If you have run out of time to donate, and have already done a few passes of review, please let us know as a comment. 
-A maintainer might be willing to finish your PR, or merge it as is, and make an issue to clean it up after. 
+We understand that everyone contributing is essentially volunteering time, and so want to make the best use of your time as well. If you have run out of time to donate, and have already done a few passes of review, please let us know as a comment.
+A maintainer might be willing to finish your PR, or merge it as is, and make an issue to clean it up after.
 If you have contributed multiple PRs, we'll generally give you more slack in this department, since we have seen you come back!
 

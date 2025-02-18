@@ -10,12 +10,12 @@ Documentation referenced in this project is located [here](https://github.com/fa
 var threatexchange = require('node-threatexchange');
 
 var app_id = 'APP_ID',
-var app_secret ='APP_SECRET' 
+var app_secret ='APP_SECRET'
 
 var api = threatexchange.createThreatExchange(app_id,app_secret);
 ```
 
-Refer to `test/test.js` for usage of each endpoint. 
+Refer to `test/test.js` for usage of each endpoint.
 
 Current endpoints implemented:
 

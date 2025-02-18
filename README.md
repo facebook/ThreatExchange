@@ -4,7 +4,7 @@ This repository originally started as code to support Meta's ThreatExchange API,
 
 ## PDQ Image Hashing and Similarity Matching
 
-PDQ is a photo hashing algorithm that can turn photos into 256 bit signatures which can then be used to match other photos. 
+PDQ is a photo hashing algorithm that can turn photos into 256 bit signatures which can then be used to match other photos.
 
 ## TMK+PDQF (TMK) Video Hashing and Similarity Matching
 
