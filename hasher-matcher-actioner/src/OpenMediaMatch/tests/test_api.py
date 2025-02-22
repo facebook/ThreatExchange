@@ -49,8 +49,12 @@ def test_lookup_success(app: Flask, client: FlaskClient):
     image = Image.open(BytesIO(response.content))
     with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
         image.save(f, format="JPEG")
-        files = {"photo": (f.name, f.name, "image/jpeg")}
-        resp = client.post("/m/lookup", data=files)
+        file_tuple = (f.name, f.name, "image/jpeg")
+        resp = client.post("/m/lookup", data={"photo": file_tuple})
+        assert resp.status_code == 200
+
+        # It's not really a video, but MD5 is simple that we can fake it
+        resp = client.post("/m/lookup", data={"video": file_tuple})
         assert resp.status_code == 200
 
 
