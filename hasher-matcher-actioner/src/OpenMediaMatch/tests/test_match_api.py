@@ -49,14 +49,14 @@ def test_raw_lookups(client_with_sample_data: FlaskClient):
 
         resp = client.get("/m/raw_lookup", query_string=query_str)
         assert resp.status_code == 200
-        match_count = len(resp.json["matches"])
+        match_count = len(resp.json["matches"])  # type: ignore
         assert match_count >= 1
 
         # With distance
-        query_str["include_distance"] = True
+        query_str["include_distance"] = True  # type: ignore
         resp = client.get("/m/raw_lookup", query_string=query_str)
         assert resp.status_code == 200
-        with_dist_matches = resp.json["matches"]
+        with_dist_matches = resp.json["matches"]  # type: ignore
         assert len(with_dist_matches) == match_count
 
         for match in with_dist_matches:
