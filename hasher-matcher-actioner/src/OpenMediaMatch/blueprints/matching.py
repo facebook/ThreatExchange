@@ -112,7 +112,11 @@ IndexCache = t.Mapping[str, _SignalIndexInMemoryCache]
 @bp.route("/raw_lookup")
 def raw_lookup():
     """
-    Look up a hash in the similarity index
+    Look up a hash in the similarity index.
+
+    Note that enable/disable status is NOT checked - you'll need to do it
+    yourself or call /lookup instead.
+
     Input:
      * Signal type (hash type)
      * Signal value (the hash)
