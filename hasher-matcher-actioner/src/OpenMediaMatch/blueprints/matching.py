@@ -37,9 +37,16 @@ bp = Blueprint("matching", __name__)
 bp.register_error_handler(HTTPException, api_error_handler)
 
 
+# Type helpers
+
+
 class MatchWithDistance(t.TypedDict):
-    content_id: int
+    bank_content_id: int
     distance: str
+
+
+TMatchByBank = t.Mapping[str, t.Sequence[MatchWithDistance]]
+TBankMatchBySignalType = t.Mapping[str, TMatchByBank]
 
 
 @dataclass
@@ -167,7 +174,7 @@ def lookup_signal_with_distance(
     results = query_index(signal, signal_type_name)
     return [
         {
-            "content_id": m.metadata,
+            "bank_content_id": m.metadata,
             "distance": m.similarity_info.pretty_str(),
         }
         for m in results
@@ -190,7 +197,7 @@ def _validate_and_transform_signal_type(
 
 
 @bp.route("/lookup", methods=["GET"])
-def lookup_get():
+def lookup_get() -> t.Union[TMatchByBank, TBankMatchBySignalType]:
     """
     Look up a hash in the similarity index. The hash can either be specified via
     `signal_type` and `signal` query params, or a file url can be provided in the
@@ -206,29 +213,57 @@ def lookup_get():
      Also (applies to both cases):
      * Optional seed (content id) for consistent coinflip
     Output:
-     * JSON object with a key of each bank name with matches.
-       For each bank, there is list of objects containing details
-       about each match.
+     * JSON object keyed by signal type, to a JSON object of bank
+       matches. If Signal Type is given, the outer JSON object is
+       elided.
+
+    Example output:
+    {
+        "pdq": {
+            "BANK_A": [
+                {"bank_content_id": 1001, "distance": 4},
+                {"bank_content_id": 1002, "distance": 0},
+            ],
+            "BANK_B": [
+                {"bank_content_id": 4434, "distance": 0},
+            ]
+        },
+    }
+
+    Example output (with signal type set)
+    {
+        "BANK_A": [
+            {"bank_content_id": 1001, "distance": 4},
+            {"bank_content_id": 1002, "distance": 0},
+        ],
+        "BANK_B": [
+            {"bank_content_id": 4434, "distance": 0},
+        ]
+    }
     """
+    resp: dict[str, TMatchByBank] = {}
     if request.args.get("url", None):
         if not current_app.config.get("ROLE_HASHER", False):
             abort(403, "Hashing is disabled, missing role")
 
         hashes = hashing.hash_media()
-        resp = {}
         for signal_type in hashes.keys():
             signal = hashes[signal_type]
             resp[signal_type] = lookup(signal, signal_type)
     else:
         signal = require_request_param("signal")
         signal_type = require_request_param("signal_type")
-        resp = lookup(signal, signal_type)
+        # Don't
+        return lookup(signal, signal_type)
 
+    selected_st = request.args.get("signal_type")
+    if selected_st is not None:
+        return resp[selected_st]
     return resp
 
 
 @bp.route("/lookup", methods=["POST"])
-def lookup_post():
+def lookup_post() -> TBankMatchBySignalType:
     """
     Look up the hash for the uploaded file in the similarity index.
     @see OpenMediaMatch.blueprints.hashing hash_media_from_form_data()
@@ -237,9 +272,8 @@ def lookup_post():
      * Uploaded file.
      * Optional seed (content id) for consistent coinflip
     Output:
-     * JSON object with a key of each bank name with matches.
-       For each bank, there is list of objects containing details
-       about each match.
+     * JSON object keyed by signal type to bank matches
+       (@see lookup_get)
     """
     if not current_app.config.get("ROLE_HASHER", False):
         abort(403, "Hashing is disabled, missing role")
@@ -254,7 +288,7 @@ def lookup_post():
     return resp
 
 
-def lookup(signal, signal_type_name):
+def lookup(signal: str, signal_type_name: str) -> TMatchByBank:
     current_app.logger.debug("performing lookup")
     results_by_bank_content_id = {
         r.metadata: r for r in query_index(signal, signal_type_name)
@@ -282,13 +316,12 @@ def lookup(signal, signal_type_name):
         if content.bank.name not in enabled_banks:
             continue
 
-        match = results_by_bank_content_id.get(content.id)
-        results[content.bank.name].append(
-            {
-                "bank_content_id": content.id,
-                "distance": match.similarity_info.distance,
-            }
-        )
+        matched_content = results_by_bank_content_id[content.id]
+        match: MatchWithDistance = {
+            "bank_content_id": content.id,
+            "distance": matched_content.similarity_info.pretty_str(),
+        }
+        results[content.bank.name].append(match)
     return results
 
 
