@@ -253,7 +253,6 @@ def lookup_get() -> t.Union[TMatchByBank, TBankMatchBySignalType]:
     else:
         signal = require_request_param("signal")
         signal_type = require_request_param("signal_type")
-        # Don't
         return lookup(signal, signal_type)
 
     selected_st = request.args.get("signal_type")
