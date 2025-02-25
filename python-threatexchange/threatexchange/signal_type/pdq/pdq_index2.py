@@ -45,7 +45,7 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
         entries_list = list(entries)
 
         if len(entries_list) >= cls.IVF_THRESHOLD:
-            nlist = int(len(entries_list) ** 0.5)
+            nlist = len(entries_list) // 2
             quantizer = faiss.IndexFlatL2(BITS_IN_PDQ)
             index = faiss.IndexIVFFlat(quantizer, BITS_IN_PDQ, nlist)
             vectors = convert_pdq_strings_to_ndarray([h for h, _ in entries_list])
