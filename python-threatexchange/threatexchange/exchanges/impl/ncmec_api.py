@@ -372,10 +372,9 @@ class NCMECSignalExchangeAPI(
                     # On large fetches, log notice every once in a while
                     log(f"large fetch ({i}) with {total_fetched} updates.")
 
-                # Filter out deleted entries directly
                 updates = {}
                 for entry in entry.updates:
-                    if not entry.deleted:  # Skip deleted entries 
+                    if not entry.deleted:
                         updates[f"{entry.member_id}-{entry.id}"] = entry
 
                 yield state.FetchDelta(
