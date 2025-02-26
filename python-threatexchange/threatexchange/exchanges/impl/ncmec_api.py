@@ -373,7 +373,10 @@ class NCMECSignalExchangeAPI(
                     log(f"large fetch ({i}) with {total_fetched} updates.")
 
                 yield state.FetchDelta(
-                    {f"{update.member_id}-{update.id}": update for update in entry.updates},
+                    {
+                        f"{update.member_id}-{update.id}": update
+                        for update in entry.updates
+                    },
                     NCMECCheckpoint.from_paged_ncmec_fetch(
                         entry,
                         current_start=current_start,
