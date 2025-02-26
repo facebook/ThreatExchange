@@ -168,7 +168,7 @@ class SignalExchangeAPI(
         Merge a new update produced by fetch.
 
         DEPRECATED: This method will be removed in version 2.x.x.
-        Any implementations that convert records into None to signal a deletion 
+        Any implementations that convert records into None to signal a deletion
         should instead move that logic into the fetch() method.
 
         Returning a value of None indicates that the entry should be deleted.

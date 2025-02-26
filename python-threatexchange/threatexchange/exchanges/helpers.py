@@ -56,13 +56,13 @@ class _StateTracker:
             self._delta = value
         else:
             old = self._delta.updates
-        
+
         for k, v in value.updates.items():
             if v is None:
                 old.pop(k, None)
             else:
                 old[k] = v
-                
+
         self._delta.updates = old
         self._delta.checkpoint = value.checkpoint
         self.dirty = True
