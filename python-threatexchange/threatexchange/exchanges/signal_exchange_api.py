@@ -167,6 +167,10 @@ class SignalExchangeAPI(
         """
         Merge a new update produced by fetch.
 
+        DEPRECATED: This method will be removed in version 2.x.x.
+        Any implementations that convert records into None to signal a deletion 
+        should instead move that logic into the fetch() method.
+
         Returning a value of None indicates that the entry should be deleted.
 
         Most implementations will probably prefer the default, which is to
@@ -188,6 +192,8 @@ class SignalExchangeAPI(
     ) -> None:
         """
         Merge the results of a fetch in-memory.
+
+        DEPRECATED: This method will be removed in version 2.x.x.
 
         This implementation is mostly for demonstration purposes and testing,
         since even simple usecases may prefer to avoid loading the whole dataset

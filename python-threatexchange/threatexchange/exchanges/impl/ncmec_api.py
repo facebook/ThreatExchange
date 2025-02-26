@@ -372,8 +372,14 @@ class NCMECSignalExchangeAPI(
                     # On large fetches, log notice every once in a while
                     log(f"large fetch ({i}) with {total_fetched} updates.")
 
+                # Filter out deleted entries directly
+                updates = {}
+                for entry in entry.updates:
+                    if not entry.deleted:  # Skip deleted entries 
+                        updates[f"{entry.member_id}-{entry.id}"] = entry
+
                 yield state.FetchDelta(
-                    {f"{entry.member_id}-{entry.id}": entry for entry in entry.updates},
+                    updates,
                     NCMECCheckpoint.from_paged_ncmec_fetch(
                         entry,
                         current_start=current_start,
@@ -407,6 +413,10 @@ class NCMECSignalExchangeAPI(
         old: t.Optional[api.NCMECEntryUpdate],
         new: t.Optional[api.NCMECEntryUpdate],
     ) -> t.Optional[api.NCMECEntryUpdate]:
+        """
+        DEPRECATED: This method will be removed in version 2.x.x.
+        The deletion logic has been moved directly to fetch_iter().
+        """
         assert new is not None, "fetch shouldn't do this"
         if new.deleted:
             return None
