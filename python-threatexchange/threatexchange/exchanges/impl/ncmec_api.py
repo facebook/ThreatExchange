@@ -372,13 +372,8 @@ class NCMECSignalExchangeAPI(
                     # On large fetches, log notice every once in a while
                     log(f"large fetch ({i}) with {total_fetched} updates.")
 
-                updates = {}
-                for entry in entry.updates:
-                    if not entry.deleted:
-                        updates[f"{entry.member_id}-{entry.id}"] = entry
-
                 yield state.FetchDelta(
-                    updates,
+                    {f"{update.member_id}-{update.id}": update for update in entry.updates},
                     NCMECCheckpoint.from_paged_ncmec_fetch(
                         entry,
                         current_start=current_start,
