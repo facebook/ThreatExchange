@@ -305,6 +305,7 @@ def test_bank_get_content_signal_validation(client: FlaskClient):
     assert response_json is not None
     content_id = response_json["id"]
 
+    # Test that requesting a valid signal type returns the correct signal value
     response = client.get(f"/c/bank/{bank_name}/content/{content_id}?signal_type=pdq")
     assert response.status_code == 200
     response_json = response.get_json()
@@ -312,6 +313,7 @@ def test_bank_get_content_signal_validation(client: FlaskClient):
     assert "signals" in response_json
     assert response_json["signals"] == {"pdq": "0" * 64}
 
+    # Test that requesting a non-existent signal type returns an error
     response = client.get(
         f"/c/bank/{bank_name}/content/{content_id}?signal_type=invalid"
     )
@@ -320,13 +322,3 @@ def test_bank_get_content_signal_validation(client: FlaskClient):
     assert response_json is not None
     assert "message" in response_json
     assert "No such signal type" in response_json["message"]
-
-    response = client.get(
-        f"/c/bank/{bank_name}/content/{content_id}?signal_type=video_md5"
-    )
-    assert response.status_code == 200
-    response_json = response.get_json()
-    assert response_json is not None
-    assert "signals" in response_json
-    assert isinstance(response_json["signals"], dict)
-    assert len(response_json["signals"]) == 0

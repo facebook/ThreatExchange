@@ -150,6 +150,26 @@ def bank_get_content(bank_name: str, content_id: int):
     Query Parameters:
         signal_type (optional): If specified, includes the signal value for this signal type
 
+    Returns: JSON representation of the bank content
+
+    Without signal_type parameter:
+    {
+      'id': 1234,
+      'bank': 'TEST_BANK',
+      'enabled': true,
+      'original_media_uri': 'file:///data/media/uploaded_content_123.jpg'
+    }
+
+    With signal_type parameter:
+    {
+      'id': 1234,
+      'bank': 'TEST_BANK',
+      'enabled': true,
+      'original_media_uri': 'file:///data/media/uploaded_content_123.jpg',
+      'signals': {
+         'pdq': 'f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22'
+      }
+    }
     """
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
@@ -177,7 +197,7 @@ def bank_get_content(bank_name: str, content_id: int):
     if signal_type and content_obj.signals:
         response["signals"] = content_obj.signals
 
-    return jsonify(response)
+    return response
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])

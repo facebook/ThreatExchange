@@ -160,6 +160,18 @@ class BankContent(db.Model):  # type: ignore[name-defined]
         return self
 
     def as_storage_iface_cls(self, include_signals: bool = False) -> BankContentConfig:
+        """
+        Convert a database BankContent record to a BankContentConfig interface object.
+
+        Args:
+            include_signals: If True, include the signals in the returned object.
+                             If False (default), signals will not be included, which
+                             improves performance by avoiding potentially expensive
+                             lazy loading of the signals relationship.
+
+        Returns:
+            A BankContentConfig with signals only included if explicitly requested.
+        """
         content_config = BankContentConfig(
             id=self.id,
             disable_until_ts=self.disable_until_ts,

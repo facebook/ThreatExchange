@@ -43,8 +43,6 @@ bp.register_error_handler(HTTPException, api_error_handler)
 class MatchWithDistance(t.TypedDict):
     bank_content_id: int
     distance: str
-    signal_type: str
-    signal_value: str
 
 
 TMatchByBank = t.Mapping[str, t.Sequence[MatchWithDistance]]

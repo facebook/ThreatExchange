@@ -308,7 +308,11 @@ class BankContentConfig:
     Represents all the signals (hashes) for one piece of content.
 
     When signals come from external sources, or the original content
-    has been lost
+    has been lost.
+
+    Signals are only included in this object when explicitly requested via
+    signal_type parameter in bank_content_get().
+    The signals field will be None unless specifically requested.
     """
 
     ENABLED: t.ClassVar[int] = 1
@@ -329,7 +333,10 @@ class BankContentConfig:
     original_media_uri: t.Optional[str]
 
     bank: BankConfig
-    signals: t.Dict[str, str] = field(default_factory=dict)
+
+    # Dictionary mapping signal_type names to signal values
+    # which is only populated when explicitly requested
+    signals: t.Optional[dict[str, str]] = None
 
     @property
     def enabled(self) -> bool:
@@ -418,10 +425,16 @@ class IBankStore(metaclass=abc.ABCMeta):
 
         Args:
             id: The IDs of the bank content to retrieve
-            signal_type: Optional signal type to include in the response
+            signal_type: Optional signal type to include in the response.
+                If provided, signals of this type will be included in the result.
+                If not provided, no signals will be fetched, significantly improving
+                performance by avoiding unnecessary database joins.
 
         Returns:
-            List of bank content configs, optionally including signal values
+            List of bank content configs. The 'signals' field will only be populated
+            when signal_type is specified, and will only contain signals of the requested type.
+            When signal_type is not specified, the 'signals' field will not be present in the
+            returned objects, helping to reduce response size and improve clarity.
         """
 
     @abc.abstractmethod
