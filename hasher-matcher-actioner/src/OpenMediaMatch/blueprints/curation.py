@@ -34,7 +34,7 @@ class BankContentResponse(t.TypedDict):
     bank: str
     enabled: bool
     original_media_uri: t.Optional[str]
-    signals: t.Dict[str, str]
+    signals: t.NotRequired[dict[str, str]]
 
 
 bp = Blueprint("curation", __name__)
@@ -149,6 +149,7 @@ def bank_get_content(bank_name: str, content_id: int):
 
     Query Parameters:
         signal_type (optional): If specified, includes the signal value for this signal type
+
     """
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
@@ -171,8 +172,10 @@ def bank_get_content(bank_name: str, content_id: int):
         "bank": content_obj.bank.name,
         "enabled": content_obj.enabled,
         "original_media_uri": content_obj.original_media_uri,
-        "signals": content_obj.signals,
     }
+
+    if signal_type and content_obj.signals:
+        response["signals"] = content_obj.signals
 
     return jsonify(response)
 

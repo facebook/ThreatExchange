@@ -538,7 +538,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         result = []
         for bc in bank_contents:
-            content_config = bc.as_storage_iface_cls()
+            content_config = bc.as_storage_iface_cls(include_signals=False)
             if signal_type is not None:
                 content_config.signals = {}
                 if bc.signals:

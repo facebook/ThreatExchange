@@ -159,19 +159,20 @@ class BankContent(db.Model):  # type: ignore[name-defined]
         self.disable_until_ts = cfg.disable_until_ts
         return self
 
-    def as_storage_iface_cls(self) -> BankContentConfig:
-        return BankContentConfig(
-            self.id,
+    def as_storage_iface_cls(self, include_signals: bool = False) -> BankContentConfig:
+        content_config = BankContentConfig(
+            id=self.id,
             disable_until_ts=self.disable_until_ts,
             collab_metadata={},
-            original_media_uri=None,
+            original_media_uri=self.original_content_uri,
             bank=self.bank.as_storage_iface_cls(),
-            signals=(
-                {s.signal_type: s.signal_val for s in self.signals}
-                if self.signals
-                else {}
-            ),
         )
+
+        # Only include signals when explicitly requested
+        if include_signals:
+            content_config.signals = {s.signal_type: s.signal_val for s in self.signals}
+
+        return content_config
 
 
 class ContentSignal(db.Model):  # type: ignore[name-defined]

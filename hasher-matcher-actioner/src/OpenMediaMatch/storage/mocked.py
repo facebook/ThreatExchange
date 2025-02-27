@@ -178,17 +178,23 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         if mock_bank is None:
             mock_bank = interface.BankConfig("MOCK_BANK", matching_enabled_ratio=1.0)
 
-        return [
-            interface.BankContentConfig(
-                id=i,
+        results = []
+        for content_id in id:
+            config = interface.BankContentConfig(
+                id=content_id,
                 disable_until_ts=interface.BankContentConfig.ENABLED,
                 collab_metadata={},
                 original_media_uri=None,
                 bank=mock_bank,
-                signals={} if signal_type is None else {},
             )
-            for i in id
-        ]
+
+            if signal_type is not None:
+                # For mocked data, we'll just use the ID as the signal value.
+                config.signals = {signal_type: f"mock_signal_{content_id}"}
+
+            results.append(config)
+
+        return results
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
         # TODO
