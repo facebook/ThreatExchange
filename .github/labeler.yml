@@ -7,13 +7,15 @@ python-threatexchange:
 hma:
 - changed-files:
     any-glob-to-any-file:
-    - "hasher-matcher-actioner/**/*"
-    - "open-media-match/*"
+    - 'hasher-matcher-actioner/**/*'
+    - 'open-media-match/*'
 
 pdq:
 - changed-files:
-    any-glob-to-any-file: "pdq/**/*"
+    any-glob-to-any-file:
+    - 'pdq/**/*'
 
 hma-ui:
 - changed-files:
-    any-glob-to-any-file: "hasher-matcher-actioner/webapp/**/*"
+    any-glob-to-any-file:
+    - 'hasher-matcher-actioner/webapp/**/*'
