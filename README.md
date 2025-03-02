@@ -16,7 +16,7 @@ Video PDQ (or vPDQ for short) is a simple video hashing algorithm that determine
 
 ## Hasher-Matcher-Actioner (HMA) Trust & Safety Platform
 
-HMA is a ready-to-deploy content moderation project for AWS, containing many submodules. It allows you to maintain lists of known content to scan for, which you can either curate yourself or connect to other hash exchange programs to share and recieve lists.  More can be found [at the wiki](https://github.com/facebook/ThreatExchange/wiki).
+HMA is a ready-to-deploy content moderation project for AWS, containing many submodules. It allows you to maintain lists of known content to scan for, which you can either curate yourself or connect to other hash exchange programs to share and receive lists.  More can be found [at the wiki](https://github.com/facebook/ThreatExchange/wiki).
 
 A second version of this project, called "[Open Media Match](https://github.com/facebook/ThreatExchange/tree/main/open-media-match)" is under construction, which uses a cloud-agnostic docker-based deployment.
 
