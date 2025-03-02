@@ -19,3 +19,8 @@ hma-ui:
 - changed-files:
     any-glob-to-any-file:
     - 'hasher-matcher-actioner/webapp/**/*'
+
+vpdq:
+- changed-files:
+    any-glob-to-any-file:
+    - 'vpdq/**/*'
