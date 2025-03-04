@@ -23,7 +23,7 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | Signal | threatexchange | trend_query | Simple regex on strings 
 | Signal | threatexchange | url | Match known URLs
 | Signal | threatexchange | pdq | Photo scanning with PDQ
-| Signal | threatexchange | url_md5 | Match hashes of known URLs
+| Signal | threatexchange | ~url_md5~ | ~Experimental hashing of URL strings~ we intend to deprecate this
 | Signal | threatexchange | video_md5 | MD5 of video
 | Signal | threatexchange.extensions.pdq_ocr | pdq_ocr | photos+text (memes)
 | Signal | threatexchange.extensions.text_tlsh | text_tlsh | tlsh scanning on text
