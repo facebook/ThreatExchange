@@ -32,6 +32,8 @@ One technique that can allow platforms to combine efforts to combat harm is by s
 
 The python-threatexchange library aims to simplify the exchange of signals via platforms like the above, as well as provide a baseline of functionality available to simplify the testing and creation of new exchanges and techniques, as well as provide cross-compatibility.
 
+A list of implemented interfaces for matching and exchange can be found in the [extensions README](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange/threatexchange/extensions/README.md).
+
 ## Philosophy of the Library
 
 This library is maintained by a small team at Meta with a limited range of experience, and so we will prioritize the use cases we are most familiar with. We believe that accessibility is a barrier for many platforms and so will put as much as we can in the open. We also understand that it may not make sense to use only publicly visible approaches, and welcome platform-specific modifications and derivatives. However, we also accept pull requests! If you think functionality is widely applicable, or you have a bug bothering you, we accept pull requests! If you are thinking a larger change may be needed (such as adding an entirely new subcommand to the CLI), we appreciate if you reach out to talk through a feature before submitting it!
