@@ -243,5 +243,5 @@ class SignalTypeIndex(t.Generic[T]):
 
     @classmethod
     def deserialize(cls: t.Type[Self], fin: t.BinaryIO) -> Self:
-        """Instanciate an index from a previous call to serialize"""
+        """Instantiate an index from a previous call to serialize"""
         return pickle.loads(fin.read())

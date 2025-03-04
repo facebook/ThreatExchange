@@ -118,7 +118,7 @@ def create_app() -> flask.Flask:
         # There is currently no check for multiple schedulers running.
         # DO NOT RUN multiple workers with TASK_FETCHER=True or TASK_INDEXER=True -
         # running multiple instances of these tasks may cause database conflicts
-        # or other undesireable behavior
+        # or other undesirable behavior
         if (
             _is_werkzeug_reloaded_process() or _is_gunicorn()
         ) and not running_migrations:

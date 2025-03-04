@@ -35,7 +35,7 @@ Required:
 -o|--output-feature-vectors-file-name ...
 Optional:
 -v|--verbose
--d|--output-directory ...: instead of specifiying output-file name, just give a
+-d|--output-directory ...: instead of specifying output-file name, just give a
   directory and the output file name will be auto-computed from the input video
   file name.
 ```

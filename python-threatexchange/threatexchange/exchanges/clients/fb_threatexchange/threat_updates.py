@@ -94,7 +94,7 @@ class ThreatUpdatesDelta:
 
     As a parallelization trick, if you need to fetch between t1 and t3,
     you can pick a point between them, t2, and fetch [t1, t2) and [t2, t3)
-    simulatenously, and the merging of the two is guaranteed to be the same
+    simultaneously, and the merging of the two is guaranteed to be the same
     as [t1, t3). The split() and merge() commands aid with this operation
     """
 

@@ -38,7 +38,7 @@ void usage(char* argv0, int exit_rc) {
   fprintf(fp, "-v|--verbose\n");
   fprintf(
       fp,
-      "-d|--output-directory ...: instead of specifiying "
+      "-d|--output-directory ...: instead of specifying "
       "output-file name, just give a directory and the output file name will "
       "be auto-computed from the input video file name.\n");
   exit(exit_rc);
