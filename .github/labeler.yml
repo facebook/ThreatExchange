@@ -1,26 +1,27 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 python-threatexchange:
-- changed-files:
-    any-glob-to-any-file: 'python-threatexchange/**/*'
+- any:
+    - changed-files:
+        - any-glob-to-any-file: ['python-threatexchange/**/*']
   
 hma:
-- changed-files:
-    any-glob-to-any-file:
-    - 'hasher-matcher-actioner/**/*'
-    - 'open-media-match/**/*'
+- any:
+    - changed-files:
+        - any-glob-to-any-file: ['hasher-matcher-actioner/**/*', 'open-media-match/**/*']
 
 pdq:
-- changed-files:
-    any-glob-to-any-file:
-    - 'pdq/**/*'
+- any:
+    - changed-files:
+        - any-glob-to-any-file: ['pdq/**/*']
 
 hma-ui:
-- changed-files:
-    any-glob-to-any-file:
-    - 'hasher-matcher-actioner/webapp/**/*'
+- any:
+    - changed-files:
+        - any-glob-to-any-file: ['hasher-matcher-actioner/webapp/**/*']
 
 vpdq:
-- changed-files:
-    any-glob-to-any-file:
-    - 'vpdq/**/*'
+- any:
+    - changed-files:
+        - any-glob-to-any-file: ['vpdq/**/*']
+        
