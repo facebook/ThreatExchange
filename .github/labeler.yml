@@ -2,13 +2,13 @@
 
 python-threatexchange:
 - changed-files:
-    any-glob-to-any-file: "python-threatexchange/**/*"
+    any-glob-to-any-file: 'python-threatexchange/**/*'
   
 hma:
 - changed-files:
     any-glob-to-any-file:
     - 'hasher-matcher-actioner/**/*'
-    - 'open-media-match/*'
+    - 'open-media-match/**/*'
 
 pdq:
 - changed-files:
