@@ -261,7 +261,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         old_checkpoint: t.Optional[FetchCheckpointBase],
         # The merged data from sequential fetches of the API
         dat: t.Dict[str, t.Any],
-        # The last checkpoint recieved by the API
+        # The last checkpoint received by the API
         checkpoint: FetchCheckpointBase,
     ) -> None:
         """

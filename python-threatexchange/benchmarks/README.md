@@ -35,6 +35,6 @@ Building Stats:
 Benchmarks for threshold:  31
 	PDQFlatHashIndex - Total Time to search  (s):  0.012083053588867188
 	PDQMultiHashIndex - Total Time to search  (s):  0.01529383659362793
-	PDQFlatHashIndex - Precent of targets found:  100.0
-	PDQMultiHashIndex - Precent of targets found:  100.0
+	PDQFlatHashIndex - Percent of targets found:  100.0
+	PDQMultiHashIndex - Percent of targets found:  100.0
 ```

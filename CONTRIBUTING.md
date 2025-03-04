@@ -34,7 +34,7 @@ Lastly, we'll add the fork as the preferred repo to push to
     # From the root directory of your locally cloned repo
      git config --global push.default fork
 
-This will give you an easy develoment cycle for updating your copy:
+This will give you an easy development cycle for updating your copy:
 
     git co main  # co is a common shortcut for `checkout`
     git pull  # Get all the new commits from the upstream
