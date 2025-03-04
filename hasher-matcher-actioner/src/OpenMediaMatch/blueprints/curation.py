@@ -29,6 +29,14 @@ class BankedContentMetadata(t.TypedDict):
     json: t.NotRequired[dict[t.Any, t.Any]]
 
 
+class BankContentResponse(t.TypedDict):
+    id: int
+    bank: str
+    enabled: bool
+    original_media_uri: t.Optional[str]
+    signals: t.NotRequired[dict[str, str]]
+
+
 bp = Blueprint("curation", __name__)
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
@@ -136,14 +144,60 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
 
 @bp.route("/bank/<bank_name>/content/<content_id>", methods=["GET"])
 def bank_get_content(bank_name: str, content_id: int):
+    """
+    Get content from a bank by ID.
+
+    Query Parameters:
+        signal_type (optional): If specified, includes the signal value for this signal type
+
+    Returns: JSON representation of the bank content
+
+    Without signal_type parameter:
+    {
+      'id': 1234,
+      'bank': 'TEST_BANK',
+      'enabled': true,
+      'original_media_uri': 'file:///data/media/uploaded_content_123.jpg'
+    }
+
+    With signal_type parameter:
+    {
+      'id': 1234,
+      'bank': 'TEST_BANK',
+      'enabled': true,
+      'original_media_uri': 'file:///data/media/uploaded_content_123.jpg',
+      'signals': {
+         'pdq': 'f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22'
+      }
+    }
+    """
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    content = storage.bank_content_get([content_id])
+
+    signal_type = request.args.get("signal_type")
+    if signal_type:
+        signal_type_cfgs = storage.get_signal_type_configs()
+        if signal_type not in signal_type_cfgs:
+            abort(400, f"No such signal type '{signal_type}'")
+
+    content = storage.bank_content_get([content_id], signal_type)
     if not content:
         abort(404, f"content '{content_id}' not found")
-    return jsonify(content[0])
+
+    content_obj = content[0]
+    response: BankContentResponse = {
+        "id": content_obj.id,
+        "bank": content_obj.bank.name,
+        "enabled": content_obj.enabled,
+        "original_media_uri": content_obj.original_media_uri,
+    }
+
+    if signal_type and content_obj.signals:
+        response["signals"] = content_obj.signals
+
+    return response
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
