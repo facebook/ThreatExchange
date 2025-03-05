@@ -19,7 +19,7 @@ mock_hashes: t.List[TATHashListEntry] = [
         file_type="mp4",
         deleted=False,
         updated_on=1704901040.222779,
-        created_on='2025-03-03 23:05:22,587',
+        created_on="2025-03-03 23:05:22,587",
         id=2819,
     ),
     TATHashListEntry(
@@ -29,7 +29,7 @@ mock_hashes: t.List[TATHashListEntry] = [
         file_type="mp4",
         deleted=False,
         updated_on=1704901040.24492,
-        created_on='2025-03-03 23:05:22,587',
+        created_on="2025-03-03 23:05:22,587",
         id=2820,
     ),
     TATHashListEntry(
@@ -39,7 +39,7 @@ mock_hashes: t.List[TATHashListEntry] = [
         file_type="gif",
         deleted=False,
         updated_on=1704901040.25555,
-        created_on='2025-03-03 23:05:22,587',
+        created_on="2025-03-03 23:05:22,587",
         id=2821,
     ),
 ]
