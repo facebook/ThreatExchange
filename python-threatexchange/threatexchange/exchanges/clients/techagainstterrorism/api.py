@@ -3,6 +3,7 @@
 """Simple implementation for the Tech Against Terrorism Hash List REST API"""
 
 from dataclasses import dataclass
+import datetime
 from enum import Enum
 import requests
 import logging
@@ -32,6 +33,7 @@ class TATHashListEntry:
     file_type: str
     deleted: bool
     updated_on: float
+    created_on: datetime
     id: int
 
 
