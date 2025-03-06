@@ -101,7 +101,7 @@ For some applications, the amount of data will be too large to fit in memory - i
 
 ### Extensions
 
-This library can make use of extensions provided by any party, public or private, as long as they conform to the conventions established in the library. Extensions are a way to prototype out new techniques, and quickly make them available in existing exchanges. Some exchanges, like ThreatExchange, allow sharing arbitrary data with arbitrary labels, and so a new technique can be rapidly demonstrated cross-platform even if not officially supported.
+This library can make use of extensions provided by any party, public or private, as long as they conform to the conventions established in the library. Extensions are a way to prototype out new techniques and quickly make them available in existing exchanges. Some exchanges, like ThreatExchange, allow sharing arbitrary data with arbitrary labels, and so a new technique can be rapidly demonstrated cross-platform even if not officially supported.
 
 # `threatexchange` CLI
 
