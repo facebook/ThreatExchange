@@ -2,16 +2,16 @@
 
 python-threatexchange:
 - changed-files:
-    any-glob-to-any-file: python-threatexchange/**
+    any-glob-to-any-file: 'python-threatexchange/**'
   
 hma:
 - changed-files:
-    any-glob-to-any-file: hasher-matcher-actioner/**
+    any-glob-to-any-file: 'hasher-matcher-actioner/**'
 
 pdq:
 - changed-files:
-    any-glob-to-any-file: pdq/**
+    any-glob-to-any-file: 'pdq/**'
 
 vpdq:
 - changed-files:
-    any-glob-to-any-file: vpdq/**
+    any-glob-to-any-file: 'vpdq/**'
