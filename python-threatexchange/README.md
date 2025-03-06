@@ -48,7 +48,7 @@ The basic flow of data through the system is:
 
 1. Configure which sources of data (signals) you want to pull from (aka collaborations)
 2. Download from all sources
-3. Store the signals and build an efficient matching datastructure (index)
+3. Store the signals and build an efficient matching data structure (index)
 4. Match content against stored signals
 
 ### Collaborations
