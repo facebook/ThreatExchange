@@ -1,5 +1,9 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+labeltest:
+- changed-files:
+  - any-glob-to-any-file: '**'
+
 python-threatexchange:
 - changed-files:
     any-glob-to-any-file: "python-threatexchange/**/*"
