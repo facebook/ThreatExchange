@@ -184,12 +184,12 @@ class _UpdateCollabCommand(command_base.Command):
         ), "rework class to not have forward ref"
 
         origin = t.get_origin(field.type)
-        argparse_type: t.Callable[[str], t.Any] = field.type
+        argparse_type: t.Any = field.type
         metavar: str
         if isinstance(field.type, type) and issubclass(field.type, Enum):
             argparse_type = common.argparse_choices_pre_type(
                 [m.name for m in field.type],
-                lambda s: field.type[s],
+                lambda s: field.type[s],  # type: ignore[index]
             )
             metavar = f"[{','.join(m.name for m in field.type)}]"
         elif origin is not None:
@@ -207,7 +207,7 @@ class _UpdateCollabCommand(command_base.Command):
                     f"Unhandled complex type for {field.name}: {field.type}"
                 )
         else:
-            metavar = field.type.__name__
+            metavar = field.type.__name__  # type: ignore[union-attr]
 
         help = "[missing] Add a help annotation on the config class!"
         if field.metadata:
