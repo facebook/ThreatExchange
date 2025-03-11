@@ -7,7 +7,7 @@ The SignalExchangeAPI talks to external APIs to read/write signals
 """
 
 import logging
-
+import warnings
 from abc import ABC, abstractmethod
 import typing as t
 
@@ -178,6 +178,13 @@ class SignalExchangeAPI(
 
         It is safe to mutate `new` inline and return it, if needed.
         """
+        warnings.warn(
+            "fetch_value_merge() is deprecated and will be removed in version 2.x.x. "
+            "Any implementations that convert records into None to signal a deletion "
+            "should instead move that logic into the fetch() method.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         # Default implementation is replace
         return new
 
@@ -202,12 +209,16 @@ class SignalExchangeAPI(
         For example, if you have nothing else, merging NCMEC update records
         together keyed by ID will eventually get you an entire copy of the database.
         """
+        warnings.warn(
+            "naive_fetch_merge() is deprecated and will be removed in version 2.x.x.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         for k, v in new.items():
-            new_v = cls.fetch_value_merge(old.get(k), v)
-            if new_v is None:
+            if v is None:
                 old.pop(k, None)
             else:
-                old[k] = new_v
+                old[k] = v
 
     # TODO - rename this to make it more clear what it's doing
     #        and consider making it one-key-at-a-time

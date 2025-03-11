@@ -10,6 +10,7 @@ SignalExchangeAPI impl for the NCMEC hash exchange API
 import logging
 import time
 import typing as t
+import warnings
 from dataclasses import dataclass, field
 
 from threatexchange.exchanges.clients.ncmec import hash_api as api
@@ -414,6 +415,12 @@ class NCMECSignalExchangeAPI(
         DEPRECATED: This method will be removed in version 2.x.x.
         The deletion logic has been moved directly to fetch_iter().
         """
+        warnings.warn(
+            "fetch_value_merge() is deprecated and will be removed in version 2.x.x. "
+            "The deletion logic has been moved directly to fetch_iter().",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         assert new is not None, "fetch shouldn't do this"
         if new.deleted:
             return None

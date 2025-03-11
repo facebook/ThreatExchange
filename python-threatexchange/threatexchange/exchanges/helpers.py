@@ -57,11 +57,7 @@ class _StateTracker:
         else:
             old = self._delta.updates
 
-        for k, v in value.updates.items():
-            if v is None:
-                old.pop(k, None)
-            else:
-                old[k] = v
+        self.api_cls.naive_fetch_merge(old, value.updates)
 
         self._delta.updates = old
         self._delta.checkpoint = value.checkpoint
