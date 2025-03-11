@@ -5,7 +5,7 @@ Simple dbm implementation of the storage interface.
 """
 
 import dbm
-from enum import StrEnum
+from enum import Enum
 from dataclasses import dataclass
 import typing as t
 from pathlib import Path
@@ -22,7 +22,7 @@ from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 
 
-class _DbType(StrEnum):
+class _DbType(Enum):
     SIGNAL_TYPE = "signal_type"
     CONTENT_TYPE = "content_type"
     EXCHANGE_TYPE = "exchange_type"
@@ -54,9 +54,9 @@ class DBMStore(iface.ISignalTypeConfigStore):
         self,
         folder: Path,
         *,
-        signal_types: t.Sequence[t.Type[SignalType]] | None = None,
-        content_types: t.Sequence[t.Type[ContentType]] | None = None,
-        exchange_types: t.Sequence[TSignalExchangeAPICls] | None = None,
+        signal_types: t.Optional[t.Sequence[t.Type[SignalType]]] = None,
+        content_types: t.Optional[t.Sequence[t.Type[ContentType]]] = None,
+        exchange_types: t.Optional[t.Sequence[TSignalExchangeAPICls]] = None,
     ) -> None:
         assert folder.is_dir(), "must be path"
         self._folder = folder
@@ -82,10 +82,10 @@ class DBMStore(iface.ISignalTypeConfigStore):
         ), "All exchange types must have unique names"
 
     def _open(self, db: _DbType, *, sub_db: str = ""):
-        file = self._folder / db
+        file = self._folder / str(db)
         if sub_db:
             file = file / sub_db
-        return dbm.open(file, "c")
+        return dbm.open(str(file), "c")
 
     def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
         """Return all installed signal types."""
