@@ -8,7 +8,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 import datetime
 import random
-import sys
 import typing as t
 import time
 
