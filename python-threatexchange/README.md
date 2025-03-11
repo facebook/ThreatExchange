@@ -32,6 +32,8 @@ One technique that can allow platforms to combine efforts to combat harm is by s
 
 The python-threatexchange library aims to simplify the exchange of signals via platforms like the above, as well as provide a baseline of functionality available to simplify the testing and creation of new exchanges and techniques, as well as provide cross-compatibility.
 
+A list of implemented interfaces for matching and exchange can be found in the [extensions README](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange/threatexchange/extensions/README.md).
+
 ## Philosophy of the Library
 
 This library is maintained by a small team at Meta with a limited range of experience, and so we will prioritize the use cases we are most familiar with. We believe that accessibility is a barrier for many platforms and so will put as much as we can in the open. We also understand that it may not make sense to use only publicly visible approaches, and welcome platform-specific modifications and derivatives. However, we also accept pull requests! If you think functionality is widely applicable, or you have a bug bothering you, we accept pull requests! If you are thinking a larger change may be needed (such as adding an entirely new subcommand to the CLI), we appreciate if you reach out to talk through a feature before submitting it!
@@ -46,7 +48,7 @@ The basic flow of data through the system is:
 
 1. Configure which sources of data (signals) you want to pull from (aka collaborations)
 2. Download from all sources
-3. Store the signals and build an efficient matching datastructure (index)
+3. Store the signals and build an efficient matching data structure (index)
 4. Match content against stored signals
 
 ### Collaborations
@@ -99,7 +101,7 @@ For some applications, the amount of data will be too large to fit in memory - i
 
 ### Extensions
 
-This library can make use of extensions provided by any party, public or private, as long as they conform to the conventions established in the library. Extensions are a way to prototype out new techniques, and quickly make them available in existing exchanges. Some exchanges, like ThreatExchange, allow sharing arbitrary data with arbitrary labels, and so a new technique can be rapidly demonstrated cross-platform even if not officially supported.
+This library can make use of extensions provided by any party, public or private, as long as they conform to the conventions established in the library. Extensions are a way to prototype out new techniques and quickly make them available in existing exchanges. Some exchanges, like ThreatExchange, allow sharing arbitrary data with arbitrary labels, and so a new technique can be rapidly demonstrated cross-platform even if not officially supported.
 
 # `threatexchange` CLI
 

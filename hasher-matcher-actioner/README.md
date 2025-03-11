@@ -18,7 +18,7 @@ The name "hasher, matcher, actioner" refers to the technical process by which ne
 
 ## Configurability
 
-There is no one-size-fits all solution to make platforms safe, and even in the narrow scope of hashing and matching technology, there are many possible solutions. HMA is designed to be highly configurable, such that new algorithms, hash exchanges, or other capabilities could be integrated later. If you want to use a custom or proprietary hashing algorithm with HMA, you simple need to follow the interfaces defined in [python-threatexchange ](../python-threatexchange) to add new capabilities.
+There is no one-size-fits all solution to make platforms safe, and even in the narrow scope of hashing and matching technology, there are many possible solutions. HMA is designed to be highly configurable, such that new algorithms, hash exchanges, or other capabilities could be integrated later. If you want to use a custom or proprietary hashing algorithm with HMA, you simple need to follow the interfaces defined in [python-threatexchange ](../python-threatexchange) to add new capabilities. A full list of known available algorithms and compatible exchanges can be found at [the python-threatexchange/extensions README](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange/threatexchange/extensions/README.md).
 
 You can find an example on expanding the base image to include the Clip tx extension [here](https://github.com/juanmrad/HMA-CLIP-demo)
 

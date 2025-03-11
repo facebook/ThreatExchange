@@ -8,7 +8,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 import datetime
 import random
-import sys
 import typing as t
 import time
 
@@ -128,7 +127,7 @@ def raw_lookup():
      * Signal type (hash type)
      * Signal value (the hash)
      * Optional list of banks to restrict search to
-     * Optional include_distance (bool) wether or not to return distance values on match
+     * Optional include_distance (bool) whether or not to return distance values on match
     Output:
      * List of matching with content_id and, if included, distance values
     """

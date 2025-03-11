@@ -23,14 +23,14 @@ ContentType, SignalType, and SignalExchangeAPI all require a unique string name 
 | Signal | threatexchange | trend_query | Simple regex on strings 
 | Signal | threatexchange | url | Match known URLs
 | Signal | threatexchange | pdq | Photo scanning with PDQ
-| Signal | threatexchange | url_md5 | Match hashes of known URLs
+| Signal | threatexchange | ~url_md5~ | ~Experimental hashing of URL strings~ we intend to deprecate this
 | Signal | threatexchange | video_md5 | MD5 of video
 | Signal | threatexchange.extensions.pdq_ocr | pdq_ocr | photos+text (memes)
 | Signal | threatexchange.extensions.text_tlsh | text_tlsh | tlsh scanning on text
 | Signal | threatexchange.extensions.vpdq | vpdq | vPDQ video hashing
 | Signal | [tx-extension-clip](https://pypi.org/project/tx-extension-clip/) | clip | [CLIP](https://github.com/openai/CLIP) image embedding with a preloaded model
 | Signal | TBD | tmk_pdqf | The planned name for TMK+PDQF video hashing 
-| Signal | [threatexchange_photodna](https://github.com/TechnologyCoalitionOrg/) | photodna | Microsoft PhotoDNA hashing (PhotoDNA license required, see [Microsoft](https://www.microsoft.com/en-us/PhotoDNA/Contact-Us) or the [Tech Coalition](https://www.technologycoalition.org/contact)).
+| Signal | [threatexchange_photodna](https://github.com/TechnologyCoalitionOrg/) | photodna | Microsoft PhotoDNA hashing (PhotoDNA license required, contact [Microsoft](https://www.microsoft.com/en-us/PhotoDNA/Contact-Us) or the [Tech Coalition](https://www.technologycoalition.org/contact) to get access).
 | Content | threatexchange | text | Text files and strings
 | Content | threatexchange | photo | Photo formats
 | Content | threatexchange | video | Video formats
