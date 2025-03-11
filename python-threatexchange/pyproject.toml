@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "threatexchange"
 dynamic = ["version"]
-description = "DESCRIPTION.rst"
+description = "threatexchange is a Python Library and CLI tool for interfacing with Facebook's ThreatExchange."
 readme = "README.md"
 license = { text = "BSD" }
 authors = [
