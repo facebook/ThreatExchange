@@ -23,7 +23,7 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
   fprintf(
       fp,
-      "-d|--output-directory ...: instead of specifiying "
+      "-d|--output-directory ...: instead of specifying "
       "output-file name, just give a directory and the output file name will "
       "be auto-computed from the input video file name. For example, avideofile.mp4 -> output_directory>/avideofile.txt\n");
   fprintf(
