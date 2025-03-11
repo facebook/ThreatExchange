@@ -7,9 +7,10 @@ The SignalExchangeAPI talks to external APIs to read/write signals
 """
 
 import logging
-import warnings
+
 from abc import ABC, abstractmethod
 import typing as t
+import warnings
 
 from threatexchange import common
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
@@ -185,6 +186,7 @@ class SignalExchangeAPI(
             DeprecationWarning,
             stacklevel=2,
         )
+        
         # Default implementation is replace
         return new
 
@@ -200,8 +202,6 @@ class SignalExchangeAPI(
         """
         Merge the results of a fetch in-memory.
 
-        DEPRECATED: This method will be removed in version 2.x.x.
-
         This implementation is mostly for demonstration purposes and testing,
         since even simple usecases may prefer to avoid loading the whole dataset
         in memory and merging by key.
@@ -209,11 +209,6 @@ class SignalExchangeAPI(
         For example, if you have nothing else, merging NCMEC update records
         together keyed by ID will eventually get you an entire copy of the database.
         """
-        warnings.warn(
-            "naive_fetch_merge() is deprecated and will be removed in version 2.x.x.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         for k, v in new.items():
             if v is None:
                 old.pop(k, None)
