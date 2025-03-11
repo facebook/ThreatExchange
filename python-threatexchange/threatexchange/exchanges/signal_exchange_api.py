@@ -186,7 +186,7 @@ class SignalExchangeAPI(
             DeprecationWarning,
             stacklevel=2,
         )
-        
+
         # Default implementation is replace
         return new
 
